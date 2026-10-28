@@ -2,7 +2,8 @@
 //
 // Once the Scene Dock has been taken back he stands where its door was, and
 // from then on he comes after you. He walks the ground you walked, in your
-// footsteps, and never shortens the distance on his own. Before the lift he
+// footsteps. On the last approach he takes back two short lengths of ground.
+// Before the lift he
 // gives ground when you come at him. In Source proper, keep coming and he
 // comes to meet you, and the distance you close stays closed. He is late to
 // everything, keeps his own pace and stops now and then, so his steps never
@@ -23,6 +24,11 @@ export const SOURCE_HUSH_FOLLOW = Object.freeze({
   // Walking pace in metres per second. He is slower than you when close and
   // faster when he has fallen well behind; the pace itself drifts.
   pace: Object.freeze({ base: 4.1, behindGain: .55, min: 1.4, max: 6.3, drift: .14 }),
+  // Source's controller can cover 11m/s (more diagonally). Match measured,
+  // accepted travel rather than the older 4.8m/s test fixture. Extra speed is
+  // physical catch-up along the trail; no camera-dependent relocation.
+  properPace: Object.freeze({ max: 18, catchup: 4, accel: 14, tau: .4 }),
+  onward: Object.freeze({ floor: 8, gain: 6, windows: Object.freeze([[6, 12], [22, 28]]) }),
   meetPace: Object.freeze({ min: 2.2, max: 3.4 }),
   accel: 3, decel: 4.5,
   // How long a change in what you are doing takes to reach him.
@@ -64,6 +70,15 @@ export function normalizeSourceHushFollow(value = null) {
     floor: active ? Number(v.floor) : 0,
     heading: finite(v.heading),
     gap: clamp(v.gap ?? F.gap.max, F.gap.contact, F.gap.max),
+    onward: v.onward?.active ? {
+      active: true,
+      startDistance: clamp(v.onward.startDistance, 0, 10000),
+      progress: clamp(v.onward.progress, 0, 10000),
+      initialGap: clamp(v.onward.initialGap ?? v.gap ?? F.gap.max, F.onward.floor, F.gap.max),
+    } : null,
+    trail: active && Array.isArray(v.trail) ? v.trail.slice(-F.crumb.max)
+      .filter(p=>p&&[p.x,p.z,p.floor].every(n=>Number.isFinite(Number(n))))
+      .map(p=>({x:Number(p.x),z:Number(p.z),floor:Number(p.floor)})) : [],
   };
 }
 
@@ -76,12 +91,13 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
   const random = seeded(seed);
   const between = ([lo, hi]) => lo + (hi - lo) * random();
   let state = normalizeSourceHushFollow(initial);
-  let trail = state.active ? [{ x: state.x, z: state.z, floor: state.floor }] : [];
+  let trail = state.active ? state.trail.length ? state.trail : [{ x: state.x, z: state.z, floor: state.floor }] : [];
   let speed = 0, clock = 0, phase = random() * 6.283;
   let intent = 'wait', pendingIntent = 'wait', pendingFor = 0, pendingNeeds = between([F.notice.min, F.notice.max]);
   let filteredApproach = 0, lastPlayer = null;
   let pauseIn = between(F.pause.every), pauseLeft = 0;
   let withdrawTo = 0, lineCheckIn = 0;
+  let playerPace = 0;
 
   function distanceTo(player) { return Math.hypot(player.x - state.x, player.z - state.z); }
 
@@ -91,6 +107,7 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
     state.gap = clamp(d, F.gap.min, F.gap.max);
     trail = [{ x, z, floor }];
     intent = pendingIntent = 'wait'; speed = 0; lastPlayer = null; filteredApproach = 0;
+    playerPace = 0;
   }
 
   // Lay a breadcrumb where the player now stands. Walking back over your own
@@ -121,6 +138,14 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
     state.heading = player ? headingTo(state, player) : state.heading;
     trail = path.map((p) => ({ x: p.x, z: p.z, floor: p.floor }));
     intent = pendingIntent = 'wait'; speed = 0; lastPlayer = null; filteredApproach = 0;
+    playerPace = 0;
+  }
+
+  function beginOnward(distance) {
+    if (!state.active || state.onward?.active) return false;
+    state.onward = { active: true, startDistance: clamp(distance, 0, 10000), progress: 0,
+      initialGap: Math.max(F.onward.floor, state.gap) };
+    return true;
   }
 
   // After a talk he gives you room: a few slow steps back, and a longer
@@ -138,11 +163,12 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
     if (pendingFor >= pendingNeeds) { intent = next; pendingFor = 0; }
   }
 
-  function steer(target, wanted, dt, { backwards = false, face = null, accel = F.accel } = {}) {
+  function steer(target, wanted, dt, { backwards = false, face = null, accel = F.accel, maxMove = Infinity } = {}) {
     const dx = target.x - state.x, dz = target.z - state.z, d = Math.hypot(dx, dz);
     const rate = wanted > speed ? accel : F.decel;
     speed += clamp(wanted - speed, -rate * dt, rate * dt);
-    const move = Math.min(d, Math.max(0, speed) * dt);
+    const move = Math.min(d, Math.max(0, speed) * dt, Math.max(0, maxMove));
+    if (move < speed * dt - 1e-6) speed = dt > 0 ? move / dt : 0;
     if (d > 1e-6) { state.x += dx / d * move; state.z += dz / d * move; }
     if (Number.isFinite(target.floor)) {
       const rise = target.floor - state.floor;
@@ -160,7 +186,7 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
 
   // Walk the breadcrumbs toward the player, taking a straight line wherever
   // the ground allows it.
-  function walkTrail(player, wanted, dt) {
+  function walkTrail(player, wanted, dt, options) {
     lineCheckIn -= dt;
     if (lineCheckIn <= 0) {
       lineCheckIn = .25;
@@ -168,14 +194,34 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
     }
     while (trail.length > 1 && Math.hypot(trail[0].x - state.x, trail[0].z - state.z) < .35) trail.shift();
     const target = trail[0] || player;
-    steer(target, wanted, dt);
+    // A legacy save has no trail around its last corner. Do not invent a
+    // straight shortcut through a wall or a cleft while reacquiring the route.
+    if (Math.hypot(target.x-state.x,target.z-state.z)>F.crumb.step*3
+      && !lineClear({x:state.x,z:state.z,floor:state.floor},target)) { speed=0;return; }
+    steer(target, wanted, dt, options);
   }
 
   function tick(dt, { player, proper = false, busy = false } = {}) {
     if (!state.active || !player) return frame(player);
     const seconds = clamp(dt, 0, .25);
-    clock += seconds;
     const d = distanceTo(player);
+    // Blocked presentation cannot spend either a gain or a notice interval.
+    if (busy) { speed = 0; lastPlayer = { x: player.x, z: player.z }; return frame(player); }
+    clock += seconds;
+    const travel = lastPlayer ? Math.hypot(player.x-lastPlayer.x, player.z-lastPlayer.z) : 0;
+    const measured = seconds > 0 ? clamp(travel / seconds, 0, F.properPace.max) : 0;
+    playerPace += (measured-playerPace) * (1-Math.exp(-seconds/F.properPace.tau));
+    if (proper && state.onward?.active) {
+      const onward = state.onward;
+      // The upper-bank route approaches the row sideways. Count the real walk,
+      // including a wrong-door detour, rather than only its depth toward a plane.
+      // A load/warp is not a walked gain and the finite budget never resets.
+      if(seconds>0 && travel<=F.crumb.step+F.properPace.max*seconds) onward.progress += travel;
+      const gain = F.onward.windows.reduce((sum, [from, to]) => sum + clamp((onward.progress-from)/(to-from), 0, 1)*F.onward.gain/2, 0);
+      // An already-earned voluntary meeting stays close. Only the ambient
+      // approach is drawn toward the non-contact floor.
+      if (state.gap >= F.onward.floor) state.gap = Math.max(F.onward.floor, Math.min(state.gap, onward.initialGap-gain));
+    }
     // Only the player's own movement toward him counts as coming at him. His
     // walking closes distance too, and must never read as being approached.
     if (lastPlayer && seconds > 0 && d > 1e-6) {
@@ -183,7 +229,6 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
       filteredApproach += (rate - filteredApproach) * (1 - Math.exp(-seconds / F.notice.tau));
     }
     lastPlayer = { x: player.x, z: player.z };
-    if (busy) { speed = 0; turnToward(headingTo(state, player), seconds); return frame(player); }
 
     const coming = filteredApproach > (intent === 'meet' || intent === 'yield' ? F.approach.stop : F.approach.start);
     let next;
@@ -199,7 +244,12 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
 
     if (intent === 'follow' && pauseLeft <= 0) {
       pauseIn -= seconds;
-      if (pauseIn <= 0 && d < state.gap + 8) { pauseLeft = between(F.pause.length); pauseIn = between(F.pause.every); }
+      if (pauseIn <= 0 && d < state.gap + 8) {
+        // A two-second arrest at the live controller's top pace used to lose
+        // another thirty metres. Preserve the hesitation's travelled length.
+        pauseLeft = between(F.pause.length) * (proper ? Math.min(1,F.pace.base/Math.max(F.pace.base,playerPace)) : 1);
+        pauseIn = between(F.pause.every);
+      }
     }
     if (pauseLeft > 0) {
       pauseLeft -= seconds;
@@ -210,8 +260,13 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
     const drift = 1 + F.pace.drift * Math.sin(clock * .31 + phase) + F.pace.drift * .4 * Math.sin(clock * 1.07 + phase * 2);
     if (intent === 'follow') {
       const behind = Math.max(0, d - state.gap);
-      const wanted = clamp((F.pace.base + F.pace.behindGain * (behind - F.slack)) * drift, F.pace.min, F.pace.max);
-      walkTrail(player, wanted, seconds);
+      const pace = proper ? Math.max(F.pace.base, playerPace) : F.pace.base;
+      let wanted = clamp((pace + F.pace.behindGain * (behind - F.slack)) * (proper ? 1 : drift), F.pace.min,
+        proper ? Math.max(F.pace.max, playerPace+F.properPace.catchup) : F.pace.max);
+      const floor = Math.max(proper && state.onward?.active ? F.onward.floor : F.gap.contact, state.gap-.5);
+      // At a stop or wrong door, dissipate momentum before the promised gap.
+      wanted = Math.min(wanted, (proper ? playerPace : 0) + Math.sqrt(2*F.decel*Math.max(0,d-floor)));
+      walkTrail(player, wanted, seconds, { accel: proper ? F.properPace.accel : F.accel, maxMove: Math.max(0,d-floor) });
     } else if (intent === 'meet') {
       // The distance you close stays closed, and he closes it with you.
       state.gap = clamp(Math.min(state.gap, d), F.gap.contact, F.gap.max);
@@ -241,12 +296,15 @@ export function createSourceHushFollow(initial = null, { seed = 1, lineClear = (
       active: state.active, x: state.x, z: state.z, floor: state.floor, heading: state.heading,
       gap: state.gap, distance: d, intent: pauseLeft > 0 ? 'pause' : intent, speed,
       withinContact: state.active && d <= F.contactRange && player && Math.abs(finite(player.floor) - state.floor) <= F.contactFloor,
+      onward: state.onward ? { ...state.onward } : null,
       trail: trail.length,
     });
   }
 
   return {
-    begin, record, relocate, release, tick, frame,
-    snapshot: () => ({ version: 1, active: state.active, x: state.x, z: state.z, floor: state.floor, heading: state.heading, gap: state.gap }),
+    begin, beginOnward, record, relocate, release, tick, frame,
+    snapshot: () => ({ version: 1, active: state.active, x: state.x, z: state.z, floor: state.floor, heading: state.heading, gap: state.gap,
+      onward: state.onward ? { ...state.onward } : null,
+      trail: trail.map(p=>({...p})) }),
   };
 }

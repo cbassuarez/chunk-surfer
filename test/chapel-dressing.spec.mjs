@@ -116,7 +116,7 @@ test('light states reuse the apparition family; protection and flash-off remove 
   const modes=[{options:{},variant:12},{options:{torchOn:true},variant:11},{options:{lights},variant:10}];
   for(const {options,variant} of modes){
     const frame=chapelDressingRenderInstances([p],{group:'upper',...options});
-    assert.equal(frame[0].apparitionVariant,variant);
+    assert.equal(frame[0].apparitionVariant,0,'congregant clothing and skin use material lighting in every light state');
     assert.deepEqual([frame[0].x,frame[0].y,frame[0].z,frame[0].yaw,frame[0].mesh],[p.x,p.y,p.z,p.yaw,p.mesh],
       'a light transition does not restage or retarget the body');
   }
@@ -167,8 +167,8 @@ test('a single held Mass has credible congregation and service roles, not a rand
   const acolytes=placed.filter(p=>p.role==='acolyte');
   assert.equal(CHAPEL_MASS.moment,'held-eucharistic-prayer');
   assert.equal(congregation.length,45);assert.equal(celebrants.length,1);assert.equal(acolytes.length,2);
-  assert.equal(congregation.filter(p=>p.posture==='kneeling-prayer').length,36);
-  assert.equal(congregation.filter(p=>p.posture==='seated-prayer').length,9);
+  assert.equal(congregation.filter(p=>p.posture==='kneeling-prayer').length,9);
+  assert.equal(congregation.filter(p=>p.posture==='seated-prayer').length,36);
   assert.ok(congregation.every(p=>Math.abs(p.yaw-Math.PI)<.04),'every prayer remains addressed to the same altar');
   assert.ok(congregation.every(p=>!p.mesh.includes('turned')),'no unrelated looking-around idle pose');
   for(const p of [...celebrants,...acolytes]){

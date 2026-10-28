@@ -18,7 +18,7 @@ const battleFixture = () => ({
   },
 });
 
-async function harness({continuation=null,composure=1,battle=battleFixture(),endTask=null,stacked=false,native=false,hasFocus=null}={}) {
+async function harness({continuation=null,composure=1,battle=battleFixture(),endTask=null,stacked=false,native=false,hasFocus=null,completeTask=null}={}) {
   const begins=[],frames=[],ends=[],checkpoints=[],outcomes=[],interferenceCalls=[];
   // The real music session samples its audio clock; combat calls update()
   // without dt. This deterministic clock counts those samples.
@@ -28,6 +28,7 @@ async function harness({continuation=null,composure=1,battle=battleFixture(),end
     frame(frame){frames.push(structuredClone(frame));},
     end(result){ends.push(result);return endTask?.promise;},mode:()=> native?'native':'simulated',debug:()=>({mode:native?'native':'simulated'}),
     ...(hasFocus?{hasFocus}:{}),
+    ...(completeTask?{completeBreach:frame=>{interferenceCalls.push(['final-frame',structuredClone(frame)]);return completeTask.promise;}}:{}),
   };
   const scene=makeCombatScene({
     battle,continuation,sourceDesktop:desktop,musicSession:music,difficulty:'standard',
@@ -89,6 +90,27 @@ test('committed Source contact opens the desktop before any damage and retains t
     assert.equal(opened.state.composure,40);
     assert.equal(opened.sourceDesktop.phase,'desktop');
     assert.ok(h.checkpoints.some(value=>value.continuation.sourceDesktop.breached));
+  }finally{h.scene.exit();await flush();}
+});
+
+test('the final desktop frame must be usable before any decision, projectile or reaction opportunity resumes',async()=>{
+  const battle=battleFixture();battle.combat.desktopOnCommit=true;
+  const completeTask=deferred(),h=await harness({battle,composure:40,completeTask});
+  try{
+    h.begins[0].resolve();await flush();
+    for(let i=0;i<90;i++)h.scene.update(.05);
+    const held=h.scene.battleView(),frames=h.frames.length;
+    assert.equal(held.phase,'desktop-breach');assert.equal(held.sourceDesktop.waiting,true);
+    assert.equal(held.sourceDesktop.breach.elapsed,2.4);assert.equal(held.state.composure,40);
+    assert.equal(held.turnClock,null);assert.equal(held.resolution,null);assert.equal(held.state.turns,0);
+    press(h.scene,'ArrowDown');press(h.scene,'Enter');
+    for(let i=0;i<40;i++)h.scene.update(.05);
+    assert.equal(h.frames.length,frames,'waiting cannot flood a coalesced native final-frame acknowledgement');
+    assert.equal(h.scene.battleView().state.turns,0);
+    assert.equal(h.interferenceCalls.filter(x=>x[0]==='final-frame').length,1);
+    completeTask.resolve(true);await flush();h.scene.update(.001);
+    const resumed=h.scene.battleView();assert.equal(resumed.phase,'tool');
+    assert.equal(resumed.state.composure,40);assert.ok(resumed.turnClock.left>=4.999);
   }finally{h.scene.exit();await flush();}
 });
 

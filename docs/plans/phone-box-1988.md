@@ -77,6 +77,8 @@ broken with the rest.
   pass, again — until he **lifts the receiver**. On the line, at once: the van's car phone still off the hook
   from pass 1 (the cab, the rain on the windscreen, his own breathing) and
   somebody waiting, who says "there you are", and hangs up.
+  Once answered, that kiosk stays quiet for the rest of the pass. Unclaimed
+  practical incoming calls resume at the next kiosk; the rotary remains usable.
 - **Late passes (22 on)**: lifting the receiver, he is already on the line with
   himself. His choice whether to lift it. With the mic on and consent given,
   what he says comes back delayed and fainter; without it, breathing and this

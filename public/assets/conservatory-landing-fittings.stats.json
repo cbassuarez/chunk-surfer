@@ -1,0 +1,1930 @@
+{
+  "schemaVersion": 1,
+  "asset": "assets/conservatory-landing-fittings.glb",
+  "frontAxis": "-z",
+  "localOrigin": [
+    0,
+    0,
+    0
+  ],
+  "letteringFace": {
+    "center": [
+      0,
+      -0.04,
+      -0.0526
+    ],
+    "readerRight": [
+      -1,
+      0,
+      0
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "widthM": 2.28,
+    "heightM": 0.26,
+    "panelCenter": [
+      0,
+      -0.04,
+      -0.04
+    ],
+    "panelSize": [
+      2.36,
+      0.32,
+      0.025
+    ]
+  },
+  "maximumTriangles": 4000,
+  "totalTriangles": 2016,
+  "meshes": {
+    "stair_sconce_pair_opal": {
+      "triangles": 924,
+      "bounds": {
+        "min": [
+          -1.559999942779541,
+          -0.20000000298023224,
+          -0.49000000953674316
+        ],
+        "max": [
+          1.559999942779541,
+          0.38999998569488525,
+          0.17000000178813934
+        ]
+      },
+      "originalEnvelope": {
+        "min": [
+          -1.56,
+          -0.2,
+          -0.49
+        ],
+        "max": [
+          1.56,
+          0.39,
+          0.17
+        ]
+      },
+      "rearContact": {
+        "axis": "z",
+        "coordinate": 0.17,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "partId": "continuous-backboard",
+        "rectangle": {
+          "min": [
+            -1.51,
+            -0.2,
+            0.17
+          ],
+          "max": [
+            1.51,
+            0.2,
+            0.17
+          ]
+        }
+      },
+      "parts": [
+        {
+          "id": "continuous-backboard",
+          "role": "wall-contact-backboard",
+          "material": "backboard exposed timber",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5099999904632568,
+              -0.20000000298023224,
+              0.14000000059604645
+            ],
+            "max": [
+              1.5099999904632568,
+              0.20000000298023224,
+              0.17000000178813934
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "chipped-backboard-coat",
+          "role": "worn-backboard-paint",
+          "material": "backboard old dark paint",
+          "startTriangle": 0,
+          "triangles": 128,
+          "bounds": {
+            "min": [
+              -1.5099999904632568,
+              -0.20000000298023224,
+              0.1340000033378601
+            ],
+            "max": [
+              1.5099999904632568,
+              0.20000000298023224,
+              0.1420000046491623
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:-1.09:-0.135",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1425000429153442,
+              -0.1574999988079071,
+              -0.029500000178813934
+            ],
+            "max": [
+              -1.037500023841858,
+              -0.11249999701976776,
+              0.1420000046491623
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:-1.09:0.095",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1425000429153442,
+              0.07249999791383743,
+              -0.029500000178813934
+            ],
+            "max": [
+              -1.037500023841858,
+              0.11749999970197678,
+              0.1420000046491623
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:1.09:-0.135",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.037500023841858,
+              -0.1574999988079071,
+              -0.029500000178813934
+            ],
+            "max": [
+              1.1425000429153442,
+              -0.11249999701976776,
+              0.1420000046491623
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:1.09:0.095",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 36,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.037500023841858,
+              0.07249999791383743,
+              -0.029500000178813934
+            ],
+            "max": [
+              1.1425000429153442,
+              0.11749999970197678,
+              0.1420000046491623
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-sign-panel",
+          "role": "unchanged-lettering-panel",
+          "material": "sign black enamel",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1799999475479126,
+              -0.20000000298023224,
+              -0.05249999836087227
+            ],
+            "max": [
+              1.1799999475479126,
+              0.11999999731779099,
+              -0.027499999850988388
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:-1.155:-0.17",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 0,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.162500023841858,
+              -0.17713291943073273,
+              -0.05299999937415123
+            ],
+            "max": [
+              -1.1475000381469727,
+              -0.16286706924438477,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:-1.155:-0.17",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 0,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.159000039100647,
+              -0.17380422353744507,
+              -0.05380000174045563
+            ],
+            "max": [
+              -1.1510000228881836,
+              -0.16619578003883362,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:-1.155:-0.17",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1575000286102295,
+              -0.17035000026226044,
+              -0.053950000554323196
+            ],
+            "max": [
+              -1.152500033378601,
+              -0.16965000331401825,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:-1.155:0.09",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 40,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.162500023841858,
+              0.0828670784831047,
+              -0.05299999937415123
+            ],
+            "max": [
+              -1.1475000381469727,
+              0.09713292121887207,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:-1.155:0.09",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 40,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.159000039100647,
+              0.08619577437639236,
+              -0.05380000174045563
+            ],
+            "max": [
+              -1.1510000228881836,
+              0.09380422532558441,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:-1.155:0.09",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1575000286102295,
+              0.089649997651577,
+              -0.053950000554323196
+            ],
+            "max": [
+              -1.152500033378601,
+              0.09035000205039978,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:1.155:-0.17",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 80,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1475000381469727,
+              -0.17713291943073273,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.162500023841858,
+              -0.16286706924438477,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:1.155:-0.17",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 80,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1510000228881836,
+              -0.17380422353744507,
+              -0.05380000174045563
+            ],
+            "max": [
+              1.159000039100647,
+              -0.16619578003883362,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:1.155:-0.17",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.152500033378601,
+              -0.17035000026226044,
+              -0.053950000554323196
+            ],
+            "max": [
+              1.1575000286102295,
+              -0.16965000331401825,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:1.155:0.09",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 120,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1475000381469727,
+              0.0828670784831047,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.162500023841858,
+              0.09713292121887207,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:1.155:0.09",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 120,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1510000228881836,
+              0.08619577437639236,
+              -0.05380000174045563
+            ],
+            "max": [
+              1.159000039100647,
+              0.09380422532558441,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:1.155:0.09",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 36,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.152500033378601,
+              0.089649997651577,
+              -0.053950000554323196
+            ],
+            "max": [
+              1.1575000286102295,
+              0.09035000205039978,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:-0.78",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -0.8399999737739563,
+              0.11100000143051147,
+              -0.05299999937415123
+            ],
+            "max": [
+              -0.7200000286102295,
+              0.11699999868869781,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:0.62",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.578000009059906,
+              -0.19750000536441803,
+              -0.05299999937415123
+            ],
+            "max": [
+              0.6620000004768372,
+              -0.19050000607967377,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:1.174",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.1699999570846558,
+              -0.12950000166893005,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.1779999732971191,
+              -0.09049999713897705,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "unfaded-repair:0.71",
+          "role": "localized-unfaded-repair",
+          "material": "unfaded repair paint",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.6200000047683716,
+              0.16699999570846558,
+              0.13249999284744263
+            ],
+            "max": [
+              0.800000011920929,
+              0.19300000369548798,
+              0.13410000503063202
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "unfaded-repair:-1.35",
+          "role": "localized-unfaded-repair",
+          "material": "unfaded repair paint",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3875000476837158,
+              0.15199999511241913,
+              0.13249999284744263
+            ],
+            "max": [
+              -1.3125,
+              0.17800000309944153,
+              0.13410000503063202
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "sconce-foot:-1.42",
+          "role": "lamp-wall-foot",
+          "material": "tarnished brass",
+          "startTriangle": 160,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.4600000381469727,
+              -0.11999999731779099,
+              -0.009999999776482582
+            ],
+            "max": [
+              -1.3799999952316284,
+              0.11999999731779099,
+              0.17000000178813934
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "sconce-arm:-1.42",
+          "role": "lamp-arm",
+          "material": "tarnished brass",
+          "startTriangle": 172,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.4424999952316284,
+              -0.021189192309975624,
+              -0.2875675559043884
+            ],
+            "max": [
+              -1.3975000381469727,
+              0.1211891919374466,
+              0.007567569147795439
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "opal:-1.42",
+          "role": "original-opal-lamp",
+          "material": "aged opal glass",
+          "startTriangle": 0,
+          "triangles": 64,
+          "bounds": {
+            "min": [
+              -1.559999942779541,
+              0.029999999329447746,
+              -0.49000000953674316
+            ],
+            "max": [
+              -1.2799999713897705,
+              0.33000001311302185,
+              -0.20999999344348907
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cap:-1.42",
+          "role": "lamp-cap",
+          "material": "tarnished brass",
+          "startTriangle": 184,
+          "triangles": 48,
+          "bounds": {
+            "min": [
+              -1.4950000047683716,
+              0.33000001311302185,
+              -0.42500001192092896
+            ],
+            "max": [
+              -1.3450000286102295,
+              0.38999998569488525,
+              -0.2750000059604645
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "foot-patina:-1.42",
+          "role": "localized-brass-patina",
+          "material": "brass verdigris",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.4509999752044678,
+              -0.09000000357627869,
+              -0.01140000019222498
+            ],
+            "max": [
+              -1.4329999685287476,
+              -0.06400000303983688,
+              -0.009600000455975533
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "sconce-foot:1.42",
+          "role": "lamp-wall-foot",
+          "material": "tarnished brass",
+          "startTriangle": 232,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3799999952316284,
+              -0.11999999731779099,
+              -0.009999999776482582
+            ],
+            "max": [
+              1.4600000381469727,
+              0.11999999731779099,
+              0.17000000178813934
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "sconce-arm:1.42",
+          "role": "lamp-arm",
+          "material": "tarnished brass",
+          "startTriangle": 244,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3975000381469727,
+              -0.021189192309975624,
+              -0.2875675559043884
+            ],
+            "max": [
+              1.4424999952316284,
+              0.1211891919374466,
+              0.007567569147795439
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "opal:1.42",
+          "role": "original-opal-lamp",
+          "material": "aged opal glass",
+          "startTriangle": 64,
+          "triangles": 64,
+          "bounds": {
+            "min": [
+              1.2799999713897705,
+              0.029999999329447746,
+              -0.49000000953674316
+            ],
+            "max": [
+              1.559999942779541,
+              0.33000001311302185,
+              -0.20999999344348907
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cap:1.42",
+          "role": "lamp-cap",
+          "material": "tarnished brass",
+          "startTriangle": 256,
+          "triangles": 48,
+          "bounds": {
+            "min": [
+              1.3450000286102295,
+              0.33000001311302185,
+              -0.42500001192092896
+            ],
+            "max": [
+              1.4950000047683716,
+              0.38999998569488525,
+              -0.2750000059604645
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "foot-patina:1.42",
+          "role": "localized-brass-patina",
+          "material": "brass verdigris",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3890000581741333,
+              -0.09000000357627869,
+              -0.01140000019222498
+            ],
+            "max": [
+              1.406999945640564,
+              -0.06400000303983688,
+              -0.009600000455975533
+            ]
+          },
+          "closed": true
+        }
+      ]
+    },
+    "stair_bulkhead_pair": {
+      "triangles": 1092,
+      "bounds": {
+        "min": [
+          -1.590000033378601,
+          -0.298564076423645,
+          -0.2199999988079071
+        ],
+        "max": [
+          1.590000033378601,
+          0.298564076423645,
+          0.14000000059604645
+        ]
+      },
+      "originalEnvelope": {
+        "min": [
+          -1.59,
+          -0.299,
+          -0.22
+        ],
+        "max": [
+          1.59,
+          0.299,
+          0.14
+        ]
+      },
+      "rearContact": {
+        "axis": "z",
+        "coordinate": 0.14,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "partId": "continuous-backboard",
+        "rectangle": {
+          "min": [
+            -1.51,
+            -0.2,
+            0.14
+          ],
+          "max": [
+            1.51,
+            0.2,
+            0.14
+          ]
+        }
+      },
+      "parts": [
+        {
+          "id": "continuous-backboard",
+          "role": "wall-contact-backboard",
+          "material": "exposed iron edge",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5099999904632568,
+              -0.20000000298023224,
+              0.10999999940395355
+            ],
+            "max": [
+              1.5099999904632568,
+              0.20000000298023224,
+              0.14000000059604645
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "chipped-backboard-coat",
+          "role": "worn-backboard-paint",
+          "material": "backboard old dark paint",
+          "startTriangle": 0,
+          "triangles": 128,
+          "bounds": {
+            "min": [
+              -1.5099999904632568,
+              -0.20000000298023224,
+              0.10400000214576721
+            ],
+            "max": [
+              1.5099999904632568,
+              0.20000000298023224,
+              0.1120000034570694
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:-1.09:-0.135",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1425000429153442,
+              -0.1574999988079071,
+              -0.029500000178813934
+            ],
+            "max": [
+              -1.037500023841858,
+              -0.11249999701976776,
+              0.1120000034570694
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:-1.09:0.095",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1425000429153442,
+              0.07249999791383743,
+              -0.029500000178813934
+            ],
+            "max": [
+              -1.037500023841858,
+              0.11749999970197678,
+              0.1120000034570694
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:1.09:-0.135",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.037500023841858,
+              -0.1574999988079071,
+              -0.029500000178813934
+            ],
+            "max": [
+              1.1425000429153442,
+              -0.11249999701976776,
+              0.1120000034570694
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "panel-standoff:1.09:0.095",
+          "role": "integral-panel-standoff",
+          "material": "dull painted steel",
+          "startTriangle": 36,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.037500023841858,
+              0.07249999791383743,
+              -0.029500000178813934
+            ],
+            "max": [
+              1.1425000429153442,
+              0.11749999970197678,
+              0.1120000034570694
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-sign-panel",
+          "role": "unchanged-lettering-panel",
+          "material": "sign black enamel",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1799999475479126,
+              -0.20000000298023224,
+              -0.05249999836087227
+            ],
+            "max": [
+              1.1799999475479126,
+              0.11999999731779099,
+              -0.027499999850988388
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:-1.155:-0.17",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 0,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.162500023841858,
+              -0.17713291943073273,
+              -0.05299999937415123
+            ],
+            "max": [
+              -1.1475000381469727,
+              -0.16286706924438477,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:-1.155:-0.17",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 0,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.159000039100647,
+              -0.17380422353744507,
+              -0.05380000174045563
+            ],
+            "max": [
+              -1.1510000228881836,
+              -0.16619578003883362,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:-1.155:-0.17",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1575000286102295,
+              -0.17035000026226044,
+              -0.053950000554323196
+            ],
+            "max": [
+              -1.152500033378601,
+              -0.16965000331401825,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:-1.155:0.09",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 40,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.162500023841858,
+              0.0828670784831047,
+              -0.05299999937415123
+            ],
+            "max": [
+              -1.1475000381469727,
+              0.09713292121887207,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:-1.155:0.09",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 40,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              -1.159000039100647,
+              0.08619577437639236,
+              -0.05380000174045563
+            ],
+            "max": [
+              -1.1510000228881836,
+              0.09380422532558441,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:-1.155:0.09",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.1575000286102295,
+              0.089649997651577,
+              -0.053950000554323196
+            ],
+            "max": [
+              -1.152500033378601,
+              0.09035000205039978,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:1.155:-0.17",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 80,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1475000381469727,
+              -0.17713291943073273,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.162500023841858,
+              -0.16286706924438477,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:1.155:-0.17",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 80,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1510000228881836,
+              -0.17380422353744507,
+              -0.05380000174045563
+            ],
+            "max": [
+              1.159000039100647,
+              -0.16619578003883362,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:1.155:-0.17",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.152500033378601,
+              -0.17035000026226044,
+              -0.053950000554323196
+            ],
+            "max": [
+              1.1575000286102295,
+              -0.16965000331401825,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-patina:1.155:0.09",
+          "role": "localized-fixing-patina",
+          "material": "fastener oxidation",
+          "startTriangle": 120,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1475000381469727,
+              0.0828670784831047,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.162500023841858,
+              0.09713292121887207,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "original-fixing:1.155:0.09",
+          "role": "sign-fixing",
+          "material": "tarnished brass",
+          "startTriangle": 120,
+          "triangles": 40,
+          "bounds": {
+            "min": [
+              1.1510000228881836,
+              0.08619577437639236,
+              -0.05380000174045563
+            ],
+            "max": [
+              1.159000039100647,
+              0.09380422532558441,
+              -0.05220000073313713
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "fixing-slot:1.155:0.09",
+          "role": "screw-slot",
+          "material": "screw slot",
+          "startTriangle": 36,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.152500033378601,
+              0.089649997651577,
+              -0.053950000554323196
+            ],
+            "max": [
+              1.1575000286102295,
+              0.09035000205039978,
+              -0.05375000089406967
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:-0.78",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -0.8399999737739563,
+              0.11100000143051147,
+              -0.05299999937415123
+            ],
+            "max": [
+              -0.7200000286102295,
+              0.11699999868869781,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:0.62",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 24,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.578000009059906,
+              -0.19750000536441803,
+              -0.05299999937415123
+            ],
+            "max": [
+              0.6620000004768372,
+              -0.19050000607967377,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "enamel-edge-loss:1.174",
+          "role": "localized-enamel-edge-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 36,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.1699999570846558,
+              -0.12950000166893005,
+              -0.05299999937415123
+            ],
+            "max": [
+              1.1779999732971191,
+              -0.09049999713897705,
+              -0.052299998700618744
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "unfaded-repair:0.71",
+          "role": "localized-unfaded-repair",
+          "material": "unfaded repair paint",
+          "startTriangle": 0,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.6200000047683716,
+              0.16699999570846558,
+              0.10249999910593033
+            ],
+            "max": [
+              0.800000011920929,
+              0.19300000369548798,
+              0.10409999638795853
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "unfaded-repair:-1.35",
+          "role": "localized-unfaded-repair",
+          "material": "unfaded repair paint",
+          "startTriangle": 12,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3875000476837158,
+              0.15199999511241913,
+              0.10249999910593033
+            ],
+            "max": [
+              -1.3125,
+              0.17800000309944153,
+              0.10409999638795853
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "bulkhead-foot:-1.42",
+          "role": "lamp-wall-foot",
+          "material": "dull painted steel",
+          "startTriangle": 48,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.590000033378601,
+              -0.14000000059604645,
+              -0.019999999552965164
+            ],
+            "max": [
+              -1.25,
+              0.14000000059604645,
+              0.14000000059604645
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "bulkhead-opal:-1.42",
+          "role": "original-opal-lamp",
+          "material": "aged opal glass",
+          "startTriangle": 0,
+          "triangles": 64,
+          "bounds": {
+            "min": [
+              -1.559999942779541,
+              -0.05000000074505806,
+              -0.2199999988079071
+            ],
+            "max": [
+              -1.2799999713897705,
+              0.05000000074505806,
+              0.05999999865889549
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:0",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 60,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.2690000534057617,
+              -0.1599999964237213,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.2510000467300415,
+              0.1599999964237213,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:0",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 72,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.2660000324249268,
+              -0.006000000052154064,
+              -0.15000000596046448
+            ],
+            "max": [
+              -1.253999948501587,
+              0.006000000052154064,
+              0.10000000149011612
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:1",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 84,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3489999771118164,
+              -0.0214359350502491,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.3309999704360962,
+              0.298564076423645,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:1",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 96,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3459999561309814,
+              0.11401647329330444,
+              -0.15044431388378143
+            ],
+            "max": [
+              -1.3339999914169312,
+              0.14454759657382965,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:2",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 108,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5089999437332153,
+              -0.0214359350502491,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.4910000562667847,
+              0.298564076423645,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:2",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 120,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.50600004196167,
+              0.11401647329330444,
+              -0.15044431388378143
+            ],
+            "max": [
+              -1.49399995803833,
+              0.14454759657382965,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:3",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 132,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5889999866485596,
+              -0.1599999964237213,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.5709999799728394,
+              0.1599999964237213,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:3",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 144,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5859999656677246,
+              -0.006000000052154064,
+              -0.15000000596046448
+            ],
+            "max": [
+              -1.5740000009536743,
+              0.006000000052154064,
+              0.10000000149011612
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:4",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 156,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.5089999437332153,
+              -0.298564076423645,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.4910000562667847,
+              0.0214359350502491,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:4",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 168,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.50600004196167,
+              -0.14454759657382965,
+              -0.15044431388378143
+            ],
+            "max": [
+              -1.49399995803833,
+              -0.11401647329330444,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:-1.42:5",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 180,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3489999771118164,
+              -0.298564076423645,
+              -0.1589999943971634
+            ],
+            "max": [
+              -1.3309999704360962,
+              0.0214359350502491,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:-1.42:5",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 192,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.3459999561309814,
+              -0.14454759657382965,
+              -0.15044431388378143
+            ],
+            "max": [
+              -1.3339999914169312,
+              -0.11401647329330444,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-wear:-1.42",
+          "role": "localized-cage-paint-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 48,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              -1.2690000534057617,
+              -0.11949999630451202,
+              -0.1595499962568283
+            ],
+            "max": [
+              -1.2510000467300415,
+              -0.0885000005364418,
+              -0.15884999930858612
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "bulkhead-foot:1.42",
+          "role": "lamp-wall-foot",
+          "material": "dull painted steel",
+          "startTriangle": 204,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.25,
+              -0.14000000059604645,
+              -0.019999999552965164
+            ],
+            "max": [
+              1.590000033378601,
+              0.14000000059604645,
+              0.14000000059604645
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "bulkhead-opal:1.42",
+          "role": "original-opal-lamp",
+          "material": "aged opal glass",
+          "startTriangle": 64,
+          "triangles": 64,
+          "bounds": {
+            "min": [
+              1.2799999713897705,
+              -0.05000000074505806,
+              -0.2199999988079071
+            ],
+            "max": [
+              1.559999942779541,
+              0.05000000074505806,
+              0.05999999865889549
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:0",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 216,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.5709999799728394,
+              -0.1599999964237213,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.5889999866485596,
+              0.1599999964237213,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:0",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 228,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.5740000009536743,
+              -0.006000000052154064,
+              -0.15000000596046448
+            ],
+            "max": [
+              1.5859999656677246,
+              0.006000000052154064,
+              0.10000000149011612
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:1",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 240,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.4910000562667847,
+              -0.0214359350502491,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.5089999437332153,
+              0.298564076423645,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:1",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 252,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.49399995803833,
+              0.11401647329330444,
+              -0.15044431388378143
+            ],
+            "max": [
+              1.50600004196167,
+              0.14454759657382965,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:2",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 264,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3309999704360962,
+              -0.0214359350502491,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.3489999771118164,
+              0.298564076423645,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:2",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 276,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3339999914169312,
+              0.11401647329330444,
+              -0.15044431388378143
+            ],
+            "max": [
+              1.3459999561309814,
+              0.14454759657382965,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:3",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 288,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.2510000467300415,
+              -0.1599999964237213,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.2690000534057617,
+              0.1599999964237213,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:3",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 300,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.253999948501587,
+              -0.006000000052154064,
+              -0.15000000596046448
+            ],
+            "max": [
+              1.2660000324249268,
+              0.006000000052154064,
+              0.10000000149011612
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:4",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 312,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3309999704360962,
+              -0.298564076423645,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.3489999771118164,
+              0.0214359350502491,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:4",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 324,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.3339999914169312,
+              -0.14454759657382965,
+              -0.15044431388378143
+            ],
+            "max": [
+              1.3459999561309814,
+              -0.11401647329330444,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage:1.42:5",
+          "role": "lamp-cage",
+          "material": "dull painted steel",
+          "startTriangle": 336,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.4910000562667847,
+              -0.298564076423645,
+              -0.1589999943971634
+            ],
+            "max": [
+              1.5089999437332153,
+              0.0214359350502491,
+              -0.14100000262260437
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-return:1.42:5",
+          "role": "integral-cage-return",
+          "material": "dull painted steel",
+          "startTriangle": 348,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.49399995803833,
+              -0.14454759657382965,
+              -0.15044431388378143
+            ],
+            "max": [
+              1.50600004196167,
+              -0.11401647329330444,
+              0.10044431686401367
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "cage-wear:1.42",
+          "role": "localized-cage-paint-loss",
+          "material": "exposed iron edge",
+          "startTriangle": 60,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              1.5709999799728394,
+              -0.11949999630451202,
+              -0.1595499962568283
+            ],
+            "max": [
+              1.5889999866485596,
+              -0.0885000005364418,
+              -0.15884999930858612
+            ]
+          },
+          "closed": true
+        }
+      ]
+    }
+  },
+  "sourceSha256": {
+    "tools/chunk_surfer/build-landing-fittings.mjs": "ebae3599fbaab93b368740d394ae8baff1a4bfdf736fea3476807780efcc4571",
+    "src/data/corridor-lettering.js": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d"
+  },
+  "protectedSha256": {
+    "public/assets/conservatory-props.glb": "813820b9e372b8c70d261abe880360758eef45db4c6eb96663ce5be582380fa8",
+    "public/assets/conservatory-props.stats.json": "1713db1cababfae989be966f4445c5816618b8edef8f8a38ecd71a4483b3ca08",
+    "public/assets/conservatory-props.credits.json": "ec99f0c5d37249717e2cfb5fe52f92132b02483146a76b39380f8a7c0a4a7f90",
+    "src/data/corridor-lettering.js": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d"
+  },
+  "bytes": 170768,
+  "sha256": "6b7860a05b66c00ef789612e60df57df2e8f99fa5d4a9b5472058fdc11024200",
+  "materials": [
+    "tarnished brass",
+    "dull painted steel",
+    "aged opal glass",
+    "sign black enamel",
+    "backboard exposed timber",
+    "backboard old dark paint",
+    "unfaded repair paint",
+    "exposed iron edge",
+    "fastener oxidation",
+    "brass verdigris",
+    "screw slot"
+  ]
+}

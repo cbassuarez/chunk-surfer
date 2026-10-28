@@ -5,6 +5,8 @@ import { CHAPEL_SERVICE_AUDIO_SOURCES } from './chapel-service-audio.js';
 import { CHAPEL_CHOIR_SOURCE } from './chapel-choir.js';
 import { ST_BRENDANS_AUDIO_SOURCES } from './st-brendans-audio.js';
 import { STANDING_TEAR_REPERTOIRE } from './standing-tear-memory-score.js';
+import { DOOR_AUDIO_SOURCES } from './door-audio-assets.js';
+import {WINDOW_MEDIA_EXTENSION_SOURCES} from './window-media-sources.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -83,6 +85,10 @@ export const CREDITS = Object.freeze([
       'Clinical eye footage — Otranto and Eberhard (CC BY 2.0)',
       'S5 video courtesy Dr. W.E. Burr',
       'Project flower footage — Sebastian Suarez-Solis',
+      ...WINDOW_MEDIA_EXTENSION_SOURCES.flatMap(source=>[
+        `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+        `Adapted: ${source.changes}`,
+      ]),
       'Commons derivatives edited, looped, color-processed and datamoshed',
     ]),
   }),
@@ -95,11 +101,11 @@ export const CREDITS = Object.freeze([
   }),
   Object.freeze({
     heading: 'Standing Tear — Retained Music',
-    lines: Object.freeze(STANDING_TEAR_REPERTOIRE.flatMap(source=>[
+    lines: Object.freeze([...STANDING_TEAR_REPERTOIRE.flatMap(source=>[
       source.attribution||`${source.composer} — ${source.title} — ${source.performer} (${source.licence})`,
       ...(source.kind==='recording'?[source.source,source.licenceUrl]:[]),
       `Adapted: ${source.changes}`,
-    ])),
+    ]), 'Also spatially looped in Source II–III surroundings; decoded 10/12-bit PCM amplitude quantization, separate 28/36 kHz sample holding, camera-relative placement, filtering and 6.8-second synthetic convolution; local machinery warnings duck this bus.']),
   }),
   Object.freeze({
     heading: 'Sound Effect Recordings',
@@ -107,6 +113,13 @@ export const CREDITS = Object.freeze([
       ...soundEffectCredits(),
       'Excerpted, layered, bitcrushed and placed',
     ]),
+  }),
+  Object.freeze({
+    heading: 'Door Mechanism Recordings',
+    lines: Object.freeze(DOOR_AUDIO_SOURCES.flatMap(source=>[
+      `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+      `Adapted: ${source.changes}`,
+    ])),
   }),
   Object.freeze({
     heading: 'Chapel Service Recordings',

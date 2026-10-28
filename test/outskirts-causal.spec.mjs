@@ -112,7 +112,8 @@ test('finalized stored tapes retain continuing struggle and recorded gait while 
     const runtime = createSourceSpaceRuntime({ initialState: built.state });
     runtime.setPlayerPosition(approach); runtime.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw, pitch: stop.pitch });
     assert.equal(runtime.outskirtsCharacterFrame().fold.phase, 'armed');
-    const position = { ...approach, x: approach.x - 1 };
+    const position = { ...approach, x: approach.x + Math.round(Math.sin(stop.yaw)),
+      y: approach.y - Math.round(Math.cos(stop.yaw)) };
     assert.equal(runtime.geometry.canStep(approach.x, approach.y, position.x, position.y).ok, true);
     runtime.setPlayerPosition(position); runtime.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw, pitch: stop.pitch });
     assert.equal(runtime.outskirtsCharacterFrame().fold.phase, 'force');
@@ -138,9 +139,10 @@ test('finalized stored tapes retain continuing struggle and recorded gait while 
     const replay = shadowFrameAt(stored, 15500).outskirtsCharacters;
     assert.ok(replay.fold.elapsed > 15 && replay.fold.phase === 'pain');
     assert.equal(replay.locomotion.pass, 6);
-    assert.ok(Math.abs(replay.locomotion.across + 4.85) < 1e-5, 'recorded observer is not at the current frontal approach');
-    assert.ok(Math.abs(replay.locomotion.yaw - stop.yaw) < 1e-5); assert.equal(replay.locomotion.pitch, stop.pitch);
-    assert.equal(replay.locomotion.floorOffset, .12);
+    assert.ok(Math.abs(replay.locomotion.across-(position.x-built.position.x)*CELL)<1e-5,'recorded observer is not at the current frontal approach');
+    const yawDifference=replay.locomotion.yaw-stop.yaw;
+    assert.ok(Math.abs(Math.atan2(Math.sin(yawDifference),Math.cos(yawDifference)))<1e-5);assert.equal(replay.locomotion.pitch,stop.pitch);
+    assert.equal(replay.locomotion.floorOffset,0,'the canonical counter approach is on the ground, not the former roadside kerb');
     const sourceState = stored.events.find(e => e.type === 'space.source-state').payload.sourceState;
     const replayRuntime = createSourceSpaceRuntime({ initialState: sourceState }); replayRuntime.setPlayerPosition(position);
     assert.equal(replayRuntime.applyOutskirtsCharacterFrame(replay), true);

@@ -7,6 +7,7 @@ import { deriveUnlocks, diffUnlocks, witnessEditionStatus } from '../src/progres
 import { returnUnlockDefinition } from '../src/progression/report.js';
 import { exportProfile, mergeImportedProfile } from '../src/progression/profile.js';
 import { uiWrap } from '../src/render/ui.js';
+import { returnAccountLines } from '../src/game/return-report.js';
 import {
   FIELD_KIT_OPTIONS, freshFieldKit, normalizeFieldKit, fieldKitEffects,
   fieldKitOptionAvailability, resolveFieldKit, fieldKitForNewRun, fieldKitCosmeticSelection,
@@ -181,19 +182,17 @@ test('return report names the actual unlock and renders fit-at-van guidance with
   assert.match(definition.description, /PERMANENT RECORDER FINISH/);
   assert.match(definition.description, /FIT AT THE VAN/);
   assert.equal(returnUnlockDefinition('cosmetic:other'), null);
-  const source = readFileSync(new URL('../src/game/return-report.js', import.meta.url), 'utf8');
-  const start = source.indexOf("if (current === 'unlocks') {");
-  const end = source.indexOf("if (current === 'second-shift')", start);
-  assert.ok(start > 0 && end > start);
   for (const w of [32, 52, 88]) {
-    const lines = [], body = { x: 0, y: 0, w, h: 20 };
-    vm.runInNewContext(`(function(){${source.slice(start, end)}})()`, {
-      body, current: 'unlocks', currentStage: { ids: ['cosmetic:witness'] }, FEATURE_COPY: {}, UI_COLOR: {},
-      returnUnlockDefinition, uiWrap, drawVfdText() {}, uiText(x, y, text) { lines.push({ x, y, text }); },
-    });
+    // Last Exposure puts the complete account behind VIEW RUN. Exercise the
+    // actual wrapping submitted to those pages instead of slicing old stages.
+    const lines = returnAccountLines({
+      endingId: 'surfaced', takes: { completed: 2, spoiled: 0 }, injuries: 0,
+      disclosures: { found: 0 }, equipment: { issued: 4, returned: 4 },
+      newlyUnlockedFeatures: ['cosmetic:witness'],
+    }, { width: w });
     const rendered = lines.map((line) => line.text).join(' ');
     assert.match(rendered, /WITNESS EDITION/); assert.match(rendered, /FIT AT THE VAN\./);
     assert.doesNotMatch(rendered, /DISPLAY \/ WITNESS/);
-    for (const line of lines) { assert.ok(line.x + line.text.length <= w); assert.ok(line.y < body.h); }
+    for (const line of lines) assert.ok(line.text.length <= w, 'each optional-account row fits its real page width');
   }
 });

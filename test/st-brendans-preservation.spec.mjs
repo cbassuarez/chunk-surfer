@@ -143,12 +143,12 @@ const protectedHashes = {
   "public/audio/stop-listening/stephan-slime-smacking-01.mp3": "e615616d890b178bc3b700914b1a3d0151aa424b327aec2e0dd633d7228bbb35",
   "public/audio/stop-listening/stephan-slime-smacking-02.mp3": "611ca244a87bb6193c863f3373908b99a50c8d23636173d06cf77ffbb8151e4b",
   "public/audio/stop-listening/stephan-slime-smacking-03.mp3": "0d33b4517809f4d79a4eb4429bbe7b26c0b8719b297993a82c39b2b1c3ee45cd",
-  "src/audio/chapel-service.js": "eb9d9c70289e3c6a425fa212eb464bcb7d7f302c60727ca1567bda87190b4550",
+  "src/audio/chapel-service.js": "ef031203401ab8061e88d343e9ac5bed3ecc32470c6b0f2453d833ad32b07866",
   "src/audio/stop-listening-gut.js": "c9d59409dff07a1d8f2f12fb63e94f7f5b6968cf506a0a27d333be1ad65d29a4",
   "src/data/chapel-service-audio.js": "3a1501837baacb2f459757bcc0432b9fc5a404e27132ebbedf98b8fb417ab39b",
   "src/data/chapel-service-score.js": "0e7dec5d1ef57af3ed38ecdf92a1efdf2e3ba1c76f782bb1fcaed31c2e282bd6",
   "src/data/stop-listening.js": "44f246406f662a6bb0f40b0299b74c2523f17961e5d195d66d60a3982b4eebb9",
-  "src/game/chapel-service.js": "55336685f8b4ebdc8176b00dce4629c19420ff1ae5a2b409f4dbd5def3ecdef5",
+  "src/game/chapel-service.js": "3b1ca498d5d25fbf8c82e0986fa8378c0f012cb9c9b7723684d0fba04d483387",
   "src/game/stop-listening.js": "2ef8f56d4bb37cfb43c9a8d38724969ebfeb96ab4934f8e1d8238f5a5a012d51",
   "tools/chunk_surfer/build-chapel-service-audio.mjs": "33bbb1a9982799dbd6e00d1de3c72e2e1d2815932b5aa6ee55e20b4e68c4ea33",
   "tools/chunk_surfer/build-stop-listening-audio.mjs": "22b4b0174eb684ba326f1cf5f8dd26aba2cd3f0566dfcc02053754ac49458291",
@@ -156,6 +156,12 @@ const protectedHashes = {
 };
 const after = preservationContract();
 const digest = value => hash(JSON.stringify(value));
+// The October 24 coastal music-box opening is additive. Preserve the original
+// fight contracts byte-for-byte when no new opening has been requested.
+const originalCathedralContract = definitions => definitions.map(({ coastalOpening, ...original }) => {
+  assert.equal(coastalOpening, false, 'the coastal opening must be opt-in');
+  return original;
+});
 test("St Brendan's preserves the long descent, stair mouths, clear route and physical contact", () => {
   assert.equal(digest(after.geometry), before.geometry, "geometry differs from the pre-treatment contract");
   assert.equal(digest(after.shell), before.shell, "shell differs from the pre-treatment contract");
@@ -171,9 +177,17 @@ test("the three safe apparatus lessons retain their choices, outcomes, text and 
 });
 
 test("both cathedral fight phases, optional opening reference and damage/alarm contract stay unchanged", () => {
-  assert.equal(digest(after.combat), before.combat, "combat differs from the pre-treatment contract");
-  assert.equal(digest(after.personalCombat), before.personalCombat, "personalCombat differs from the pre-treatment contract");
+  assert.equal(digest(originalCathedralContract(after.combat)), before.combat, "combat differs from the pre-treatment contract");
+  assert.equal(digest(originalCathedralContract(after.personalCombat)), before.personalCombat, "personalCombat differs from the pre-treatment contract");
   assert.equal(digest(after.damage), before.damage, "damage differs from the pre-treatment contract");
+});
+
+test('the coastal music-box reference is opt-in and cannot change phase two', () => {
+  const first = cathedralBellCombatDefinition({ phase: 1, coastalOpening: true });
+  assert.equal(first.coastalOpening, true);
+  assert.equal(first.openingTake?.id, 'cathedral:coastal-box-reference');
+  assert.equal(first.openingTake?.label, 'MUSIC BOX / TWO NOTES');
+  assert.equal(cathedralBellCombatDefinition({ phase: 2, coastalOpening: true }).coastalOpening, false);
 });
 
 test("won/lost encounters and west-door body extraction retain existing states and route", () => {
@@ -182,7 +196,7 @@ test("won/lost encounters and west-door body extraction retain existing states a
   assert.equal(digest(after.exitAccess), before.exitAccess, "exitAccess differs from the pre-treatment contract");
 });
 
-test('Ear gurgles and chapel service retain all original source, built clip, score and runtime bytes', () => {
+test('Ear gurgles and chapel service match the approved post-murmur preservation manifest', () => {
   assert.equal(Object.keys(protectedHashes).length, 70);
   assert.deepEqual(after.protectedHashes, protectedHashes);
 });

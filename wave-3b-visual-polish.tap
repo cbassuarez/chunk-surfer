@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: machine panel hardware leaves the authored body rectangle unchanged
+ok 1 - machine panel hardware leaves the authored body rectangle unchanged
+  ---
+  duration_ms: 0.946291
+  type: 'test'
+  ...
+# Subtest: VFD bloom is spatial halation and never described as temporal persistence
+ok 2 - VFD bloom is spatial halation and never described as temporal persistence
+  ---
+  duration_ms: 0.27025
+  type: 'test'
+  ...
+# Subtest: screen-body polish is resize-baked and ordered below contact flash
+ok 3 - screen-body polish is resize-baked and ordered below contact flash
+  ---
+  duration_ms: 0.100167
+  type: 'test'
+  ...
+# Subtest: fear polish stays peripheral and preserves the existing frame contract
+ok 4 - fear polish stays peripheral and preserves the existing frame contract
+  ---
+  duration_ms: 0.042708
+  type: 'test'
+  ...
+# Subtest: torch optical polish remains cone-local and adds no fog or HUSH figure
+ok 5 - torch optical polish remains cone-local and adds no fog or HUSH figure
+  ---
+  duration_ms: 0.734667
+  type: 'test'
+  ...
+# Subtest: opening rain is exterior-gated, depth-aware, and composed into the world
+ok 6 - opening rain is exterior-gated, depth-aware, and composed into the world
+  ---
+  duration_ms: 1.299583
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 67.031417

@@ -20,8 +20,16 @@ test('visible warm practicals replace the ordinary lamps only after the isolated
   assert.equal(JSON.stringify(PUB_LIGHT_ANCHORS),shared,'Source shared anchors retain their original contract');
 });
 test('the actual nearest-light budget admits face-height practicals at the snug and the bar',()=>{
-  for(const[point,expected]of[[{x:29.3,z:86.3},'pub-table-lamp-0'],[{x:36.2,z:86.3},'pub-counter-lamp']]){
+  for(const[point,expected]of[[pubWorldFromLocal({x:-1.25,z:-27.7}),'pub-table-lamp-0'],[pubWorldFromLocal({x:-1.25,z:-20.8}),'pub-counter-lamp']]){
     const lights=resolveLocalLights(context,{origin:point,pubHospitalityReady:true});assert.ok(lights.length<=8);
     assert.ok(lights.some(l=>l.id===expected),`${expected} survives the eight-light limit`);
+  }
+});
+test('the pub spill remains eligible from the actual district street and pavement',()=>{
+  const origin={x:EXTERIOR_PUB.interiorAnchor.x,z:EXTERIOR_PUB.frontWorldZ-2};
+  for(const zone of[ZONE.street,ZONE.civicCourt]){
+    const street=resolveLightingContext({group:'ground',zone});
+    const lights=resolveLocalLights(street,{origin,slots:Infinity});
+    assert.ok(lights.some(light=>light.id==='district-south-pub-spill'),`pub light reaches district zone${zone}`);
   }
 });

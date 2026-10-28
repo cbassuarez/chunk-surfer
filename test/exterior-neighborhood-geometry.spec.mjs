@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {buildExteriorNeighbourhood,NEIGHBOURHOOD_MATERIALS} from '../tools/chunk_surfer/exterior-neighborhood-geometry.mjs';
-import {EXTERIOR_NEIGHBOURHOOD as C,EXTERIOR_FRONTAGE_REVISION,exteriorDeedWindowLit} from '../src/data/exterior-frontages.js';
+import {EXTERIOR_NEIGHBOURHOOD as C,EXTERIOR_FRONTAGE_REVISION,EXTERIOR_TRADE_DEEDS,EXTERIOR_FRONTAGE_DRESSING,EXTERIOR_FRONTAGE_INSPECTABLES,exteriorDeedWindowLit} from '../src/data/exterior-frontages.js';
 import {parseGlb} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 
 function build(){
@@ -17,8 +17,8 @@ const pack=parseGlb(fs.readFileSync(new URL('../public/assets/exterior-frontages
 const stats=JSON.parse(fs.readFileSync(new URL('../public/assets/exterior-frontages.stats.json',import.meta.url)));
 const read=(index)=>{const a=pack.json.accessors[index],v=pack.json.bufferViews[a.bufferView],n={SCALAR:1,VEC2:2,VEC3:3}[a.type],size={5126:4,5125:4,5123:2}[a.componentType],method={5126:'readFloatLE',5125:'readUInt32LE',5123:'readUInt16LE'}[a.componentType],start=(v.byteOffset||0)+(a.byteOffset||0),stride=v.byteStride||n*size;return Array.from({length:a.count},(_,i)=>Array.from({length:n},(_,k)=>pack.bin[method](start+i*stride+k*size)));};
 
-test('separate replacement owns exactly the three ordinary row roles and closed courts',()=>{
-  assert.deepEqual(out.meshes.map(m=>m.name),[...C.rows.map(r=>r.mesh),C.court.mesh]);
+test('separate replacement owns reusable row bodies, closed courts and only lightweight row identity meshes',()=>{
+  assert.deepEqual(out.meshes.map(m=>m.name),[...C.rows.map(r=>r.mesh),C.court.mesh,...EXTERIOR_FRONTAGE_DRESSING.map(r=>r.mesh)]);
   assert.deepEqual(pack.json.meshes.map(m=>m.name),out.meshes.map(m=>m.name));
   for(const forbidden of['district_civic_frontage','exterior_pub_frontage','exterior_pub_interior','yard_van','opening_street_frontage'])assert.equal(pack.json.meshes.some(m=>m.name===forbidden),false);
   assert.ok(out.reports.slice(0,3).every(r=>r.deeds.length===8));
@@ -41,6 +41,7 @@ test('masonry has true four-light apertures ahead of the room backing, including
 
 test('occupied rooms have sparse physical lamps and objects behind sashes; no front glow card',()=>{
   for(const r of out.reports){
+    if(!r.windows.length)continue;
     assert.ok(r.windows.some(w=>w.lit)&&r.windows.some(w=>!w.lit));
     for(const w of r.windows){
       const own=r.parts.filter(p=>p.id.startsWith(w.id+'-')),emission=own.filter(p=>['litRoom','bulb'].includes(p.material));
@@ -86,7 +87,8 @@ test('new facade stock stays within the old street projection and original row p
   for(const r of out.reports.slice(0,3))for(const p of r.parts){
     if(p.kind!=='box'||p.id.startsWith('street-'))continue;
     const top=p.center[1]+p.size[1]/2,bottom=p.center[1]-p.size[1]/2;
-    assert.ok(p.center[0]+p.size[0]/2<=C.maximumProjection+1e-7,`${p.id} narrows the pavement`);
+    const overhead=p.id.includes('awning-')&&bottom>=C.minimumAwningClearance;
+    assert.ok(p.center[0]+p.size[0]/2<=(overhead?C.maximumOverheadProjection:C.maximumProjection)+1e-7,`${p.id} narrows the pavement`);
     assert.ok(p.center[2]-p.size[2]/2>=-32-1e-7&&p.center[2]+p.size[2]/2<=32+1e-7);
     if(bottom<1.7&&top>.45)assert.ok(p.center[0]+p.size[0]/2<=.32+1e-7,'no extra eye/body-height projection beyond the existing envelope');
   }
@@ -106,7 +108,8 @@ test('actual exported geometry has finite unit normals, nondegenerate triangles 
     total+=indices.length/3;
   }
   assert.equal(total,stats.totalTriangles);assert.ok(total<=C.maximumPackTriangles);assert.ok(stats.bytes<=C.maximumPackBytes);
-  assert.ok(pack.json.images.length===3,'one shared paper print, normal and ORM atlas');
+  assert.ok(pack.json.images.length%3===0&&pack.json.images.length<=C.maximumPrintPages*3,'bounded shared albedo, normal and ORM atlas pages');
+  assert.ok(stats.textureBaseLevelBytes<=C.maximumPrintBaseLevelBytes,'paint textures retain an explicit memory ceiling');
   assert.ok(pack.json.materials.every(m=>!m.alphaMode||m.alphaMode==='OPAQUE'));
   assert.ok(pack.json.materials.filter(m=>m.name.startsWith('physical print:')).every(m=>m.extras.printedSurface.emission==='none'&&m.extras.printedSurface.coverage==='baseColorAlpha'));
 });
@@ -117,9 +120,56 @@ test('build receipt binds the exact source, font and output bytes',()=>{
   assert.equal(stats.sha256,sha(fs.readFileSync(new URL('../public/assets/exterior-frontages.glb',import.meta.url))));
   for(const[file,digest]of Object.entries(stats.sourceHashes))assert.equal(sha(fs.readFileSync(new URL(file,root))),digest,`${file} must be rebuilt`);
   const print=JSON.parse(fs.readFileSync(new URL('../public/assets/exterior-frontage-lettering/atlas-manifest.json',import.meta.url)));
-  assert.ok(print.entries.every(e=>e.metrics.font==='NimbusSans-Bold.otf'&&e.metrics.fontSha256?.length===64));
-  assert.ok(print.entries.every(e=>e.finish.profile==='paper-print'));
+  assert.ok(print.entries.every(e=>['NimbusSans-Bold.otf','NimbusRoman-Bold.otf'].includes(e.metrics.font)&&e.metrics.fontSha256?.length===64));
+  assert.ok(print.entries.every(e=>['paper-print','enamel'].includes(e.finish.profile)));
   assert.ok(stats.pending.includes('native final-dither movement inspection'),'source proof never silently signs off perception');
+});
+
+test('selected commercial deeds replace ground-floor stock with separate flat/shop doors and particular displays',()=>{
+  for(const row of C.rows){
+    const r=out.reports.find(r=>r.mesh===row.mesh);
+    assert.equal(r.trades.length,EXTERIOR_TRADE_DEEDS[row.kind].length);
+    for(const t of r.trades){
+      const own=r.parts.filter(p=>p.id.startsWith(`deed-${t.deed}-`));
+      for(const id of['shop-stall-riser','shop-fascia','flat-closed-door','shop-closed-door','shop-riser-repaired-board'])assert.ok(own.some(p=>p.id.endsWith(id)),`${row.kind}:${t.deed} has ${id}`);
+      assert.ok(r.windows.some(w=>w.id.startsWith(`deed-${t.deed}-`)&&w.width>=4.3&&w.trade===t.display));
+      if(!t.closed)assert.ok(own.some(p=>p.id.includes(`shop-stock-${t.display}-`)),`${t.display} has material contents, not a trade name on empty glazing`);
+      assert.equal(own.some(p=>/sash-0-/.test(p.id)),false,'old domestic ground-floor sash stock is replaced');
+    }
+    assert.ok(r.deeds.some(d=>d.kind==='house'||d.kind==='workshop'),'ordinary uses remain beside commerce');
+  }
+  assert.equal(EXTERIOR_TRADE_DEEDS.terrace.some(s=>s.deed===3),false,'the separately fitted Stationers deed remains untouched');
+  assert.equal(EXTERIOR_TRADE_DEEDS.passage.some(s=>s.deed===4),false,'the existing court mouth never becomes a shop');
+});
+
+test('awnings are supported overhead and former pavement column feet are removed',()=>{
+  const clear=C.minimumAwningClearance;
+  for(const r of out.reports.slice(0,3)){
+    assert.equal(r.parts.some(p=>p.id.startsWith('street-lamp-post-')),false,'no column foot narrows the clear route');
+    const heads=r.parts.filter(p=>p.id.startsWith('street-lamp-head-'));
+    assert.equal(heads.length,4);assert.ok(heads.every(p=>p.center[0]===1.10&&p.center[1]===5.80));
+    for(const t of r.trades.filter(t=>t.awning==='deployed')){
+      const own=r.parts.filter(p=>p.id.startsWith(`deed-${t.deed}-awning-`));
+      assert.ok(own.some(p=>p.id.endsWith('fixing-arm--1'))&&own.some(p=>p.id.endsWith('fixing-arm-1')));
+      for(const p of own.filter(p=>p.kind==='quad')){const[a,b,c]=p.points,u=b.map((v,k)=>v-a[k]),v=c.map((v,k)=>v-a[k]),ny=u[2]*v[0]-u[0]*v[2];assert.ok(p.id.endsWith('-top')?ny>0:ny<0,'canvas top and underside face their actual lighting sides');}
+      for(const p of own){const points=p.points??(p.kind==='beam'?[p.a,p.b]:[p.center.map((v,k)=>v-p.size[k]/2),p.center.map((v,k)=>v+p.size[k]/2)]);for(const q of points){assert.ok(q[1]>=clear,'no low canvas or bracket crosses the head path');assert.ok(q[0]<=C.maximumOverheadProjection);}}
+    }
+  }
+});
+
+test('placed rows have different named trades on real fascias without duplicating building bodies',()=>{
+  const prints=out.reports.slice(4).flatMap(r=>r.prints);
+  assert.equal(EXTERIOR_FRONTAGE_DRESSING.length,9);
+  assert.equal(new Set(prints.map(p=>p.lines[0])).size,prints.length,'business names belong to distinct placed neighbours');
+  assert.ok(out.reports.slice(4).every(r=>r.triangles<=60&&r.windows.length===0&&r.deeds.length===0),'row names do not clone complete buildings');
+  for(const row of EXTERIOR_FRONTAGE_DRESSING){
+    assert.equal(row.id==='district-south-row-a',false,'the finished pub and six south shops have no replacement signs');
+    const r=out.reports.find(r=>r.mesh===row.mesh);
+    assert.equal(r.prints.length,row.shops.length+row.workshops.length);
+    assert.ok(r.prints.every(p=>p.center[0]>.19||p.id.includes('workshop')),'paint faces sit just ahead of their carriers');
+    assert.equal(EXTERIOR_FRONTAGE_INSPECTABLES.filter(i=>i.rowId===row.id).length,row.shops.length);
+  }
+  assert.ok(EXTERIOR_FRONTAGE_INSPECTABLES.every(i=>i.text.includes(i.trade)&&i.mountNormal&&Number.isFinite(i.physical.x+i.physical.y)));
 });
 
 test('shape authoring is deterministic and reuses its material table',()=>{

@@ -193,7 +193,9 @@ const PROFILES = Object.freeze({
         }),
         C('chapel:previous', 'PREVIOUS RECORDIST HELD OFF-MIC', 15),
       ]),
-      movement('surfer', 'THE SURFER', 20, [
+      // Leave a later card alive after an opening capture and its free TEMPO.
+      // These last three phases deepen the decision, not incoming damage.
+      movement('surfer', 'THE SURFER', 30, [
         B('chapel:surfer', 'SURFER PRINT ON THE TAPE', 15, { takeLabel: 'SURFER PRINT', playbackDamage: 10 }),
         C('chapel:wearing', 'THE THING WEARING THE WORD', 15),
         O('chapel:process', 'PROCESS WITHOUT AN OPERATOR', 20, {
@@ -209,7 +211,7 @@ const PROFILES = Object.freeze({
       // the one the run has been walking toward; it closes with chains rather
       // than with single blows, which is also the first place in the game a
       // player meets a followup outside the natatorium's deep end.
-      movement('contract', 'THE CONTRACT', 20, [
+      movement('contract', 'THE CONTRACT', 30, [
         B('chapel:terms', 'TERMS READ INTO THE RECORDER', 15, { takeLabel: 'CONTRACT TERMS', playbackDamage: 10 }),
         L('chapel:contract-loop', 'AGREEMENT FED BACK AS CONSENT', 15),
         O('chapel:signature', 'SIGNATURE DRIVEN PAST ZERO', 20, {
@@ -217,7 +219,7 @@ const PROFILES = Object.freeze({
           followups: [O('chapel:countersign', 'AND A COUNTERSIGNATURE', GRID)],
         }),
       ]),
-      movement('source', 'THE SOURCE', 20, [
+      movement('source', 'THE SOURCE', 30, [
         B('chapel:body-return', 'BODY BORROWED RETURN', 15, { takeLabel: 'BODY BORROWED RETURN', takeTag: 'body', playbackDamage: 10 }),
         O('chapel:source-pressure', 'THE SOURCE PRESSES FOR AN ANSWER', 20, {
           effect: 'ringing',
@@ -267,7 +269,7 @@ const PROFILES = Object.freeze({
       // THE LAST THING IN THE NIGHT. It was the cheapest fight in the game —
       // less than the natatorium the run opens with. The recursion is the point
       // of this encounter, so the blows that recur are the ones that chain.
-      movement('call-site', 'THE CALL SITE', 25, [
+      movement('call-site', 'THE CALL SITE', 30, [
         B('source:address', 'THE RECORDIST AT THIS ADDRESS', 15, { takeLabel: 'CALL SITE', playbackDamage: 10 }),
         C('source:alias', 'AN ALIAS WEARING YOUR NAME', 15),
         O('source:stack', 'THE STACK OPENS UNDERFOOT', 20, {
@@ -275,7 +277,7 @@ const PROFILES = Object.freeze({
           followups: [O('source:stack-deeper', 'AND KEEPS OPENING', GRID)],
         }),
       ]),
-      movement('borrowed-body', 'THE BORROWED BODY', 25, [
+      movement('borrowed-body', 'THE BORROWED BODY', 30, [
         B('source:body', 'BODY RETURN ON THE MONITOR', 15, { takeLabel: 'BORROWED BODY', takeTag: 'body', playbackDamage: 10 }),
         L('source:recursion', 'RECORDIST CALLS RECORDIST', 20, {
           followups: [L('source:recursion-again', 'CALLS RECORDIST CALLS', GRID)],
@@ -285,7 +287,7 @@ const PROFILES = Object.freeze({
       // The last movement of the last fight. The silence that heals it is what
       // makes this a race as well as a fight, so the blows around it have to be
       // worth racing against.
-      movement('final-clause', 'THE FINAL CLAUSE', 25, [
+      movement('final-clause', 'THE FINAL CLAUSE', 30, [
         B('source:return', 'RETURN VALUE STILL SPEAKING', 15, { takeLabel: 'RETURN VALUE', takeTag: 'body', playbackDamage: 15 }),
         L('source:final-loop', 'SOURCE FED BACK INTO SURFER', 20, {
           followups: [L('source:final-echo', 'AND THE CLAUSE RETURNS ITSELF', GRID)],

@@ -1,6 +1,7 @@
 fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
         build_dock_tile_plugin();
+        build_dock_assembly();
     }
     tauri_build::build()
 }
@@ -53,4 +54,55 @@ fn build_dock_tile_plugin() {
         .status()
         .expect("codesign is needed to seal the Dock tile plug-in");
     assert!(status.success(), "the Dock tile plug-in could not be signed");
+}
+
+// AppKit owns the finite launch animation and its main-run-loop timer. Build a
+// target-architecture static helper; the separate closed-app plug-in remains
+// universal and static.
+fn build_dock_assembly() {
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    let source = manifest.join("macos/DockTile/DockAssembly.m");
+    let output = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    let object = output.join("DockAssembly.o");
+    let library = output.join("libchunk_surfer_dock_assembly.a");
+    println!("cargo:rerun-if-changed={}", source.display());
+    println!("cargo:rerun-if-env-changed=MACOSX_DEPLOYMENT_TARGET");
+    let architecture = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
+        Ok("aarch64") => "arm64",
+        Ok("x86_64") => "x86_64",
+        other => panic!("unsupported macOS Dock assembly target: {other:?}"),
+    };
+    let deployment = std::env::var("MACOSX_DEPLOYMENT_TARGET").unwrap_or_else(|_| {
+        if architecture == "arm64" {
+            "11.0"
+        } else {
+            "10.13"
+        }
+        .into()
+    });
+    let status = Command::new("xcrun")
+        .args(["clang", "-c", "-fobjc-arc", "-arch", architecture])
+        .arg(format!("-mmacosx-version-min={deployment}"))
+        .args(["-o"])
+        .arg(&object)
+        .arg(&source)
+        .status()
+        .expect("xcrun clang is needed to build the Dock assembly helper");
+    assert!(status.success(), "the Dock assembly helper did not compile");
+    let status = Command::new("xcrun")
+        .args(["ar", "crs"])
+        .arg(&library)
+        .arg(&object)
+        .status()
+        .expect("xcrun ar is needed to archive the Dock assembly helper");
+    assert!(
+        status.success(),
+        "the Dock assembly helper could not be archived"
+    );
+    println!("cargo:rustc-link-search=native={}", output.display());
+    println!("cargo:rustc-link-lib=static=chunk_surfer_dock_assembly");
+    println!("cargo:rustc-link-lib=framework=AppKit");
 }

@@ -63,6 +63,8 @@ test('production inspection recognizes the paper after a real objective save/rel
   const inspect = productionFunction('inspectPropTracked', '\nfunction auditionPropTracked(', {
     PROPS: { inspectProp(id) { const prop = props.get(id); const known = seen.has(id); seen.add(id); return known ? prop.inspect.again : prop.inspect.first; } },
     OBJ, furnitureRecognitionLine, flagTest: () => false,
+    academicBouncers: {learnFromProp: () => null}, // An unrelated, unearned admission clue.
+
     EVENT_TYPES: { PROP_INSPECTED: 'prop-inspected' },
     emitProgress: (...args) => events.push(args),
   });

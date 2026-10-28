@@ -19,7 +19,7 @@ test('world paper pigment preserves decoded RGB and exact catalog tile semantics
   assert.ok(rgb.equals(pigment),'adding print coverage changed the original world-paper RGB bytes');
   assert.equal(report.rgbByteExact,true);assert.equal(report.decodedRgbSha256,sha(rgb));
   assert.equal(report.pngSha256,sha(readFileSync(PAPER_PIGMENT_PATH)));
-  assert.equal(report.count,213);assert.deepEqual(report.tile,[128,181]);
+  assert.equal(report.count,catalog.atlas.count,'pigment report must cover the authoritative catalog, including new pages');assert.deepEqual(report.tile,[128,181]);
   assert.equal(report.columns,catalog.atlas.columns);assert.equal(report.rows,catalog.atlas.rows);
   assert.equal(report.sourcePages.length,catalog.atlas.count);
   for(const p of report.sourcePages){const expected=catalog.documents[p.id].pages[p.pageIndex];

@@ -7,6 +7,7 @@ import {
   normalizeChunkSurfState, reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { cathedralBellCombatBattle } from '../src/data/combat-definitions.js';
+import {freshChapelTapeDemand,chapelTapeDemandBlocksProgress} from '../src/game/chapel-tape-demand.js';
 import { TOWER_PERSONAL_TAKE, TOWER_PERSONAL_CUE, TOWER_PERSONAL_SECONDS } from '../src/audio/tower-personal-recording.js';
 import { MOVE_MS, WORLD_BOUNDARY_FRICTION } from '../src/config.js';
 import { CELL } from '../src/data/floorplan/legend.js';
@@ -30,7 +31,9 @@ const personalFunctions = [
 ].join('\n');
 
 function personalHarness() {
-  const saved = { px: 10, py: 20, flags: {}, chunkSurf: { station: { personal: { active: false, completed: false, recordingHeard: false } } } };
+  // This fixture exercises a visit to the school-hall *after* the coastal
+  // memory handoff. An unfinished route goes to the coast instead of this room.
+  const saved = { px: 10, py: 20, flags: {}, chunkSurf: { station: { personal: { active: false, completed: true, recordingHeard: false } } } };
   const snapshots = [], poses = [], ticks = [], playback = [], scenePushes = [], spoken = [], events = [], renders = [], audioOrder = [];
   let current = copy(saved.chunkSurf), canListen = true, paused = false, hidden = false, blocked = false, heldAudio = null, archived = null, recorderLost = false;
   let recording = false, tapePlaying = false, knownTake = false;
@@ -84,6 +87,14 @@ function personalHarness() {
     createTowerPersonalMonitor: (options) => createTowerPersonalMonitor({ ...options, play: sandbox.playTowerPersonalRecording }),
     createTowerPersonalWorldSignal: () => null, playTowerPersonalContact: () => null,
     sourceCameraPatch: () => ({}),
+    // This personal-room fixture has no exterior rig inspection, Chapel demand,
+    // native lifecycle hold, or coastal recording transport to reconcile.
+    tryRigCheck: () => false,
+    chapelTapeDemandBlocksProgress: () => false,
+    holdUnavailableGameplayInput: () => false,
+    reconcileCoastalMemoryTake: () => false,
+    beginCoastalMemoryJourney: () => false, // This fixture has no optional coastal visit.
+
     CUES: { CUE: { recorder: 'recorder', door: 'door' }, playCue: noOp },
     SPEECH: { say: (line) => spoken.push(copy(line)) },
     PB: {
@@ -101,7 +112,7 @@ function personalHarness() {
     REC: { isRecording: () => recording, saveRecState: () => ({ takes: ['main_b3'] }) },
     currentWorld: () => 'main_b3', ensureTapeAudio: noOp, roomToneCharacter: () => 1,
     framedLine: (_id, line) => line, LINES: { playback: { text: 'Playback.' }, playbackNone: { text: 'No take.' } },
-    getSave: () => saved,
+    getSave: () => saved, flagTest: name=>!!saved.flags[name],
     saveCommit(patch) { Object.assign(saved, copy(patch)); snapshots.push(copy(saved)); },
     pushEvent: (text) => events.push(text), shakeMode: () => 'reduced',
     PRES: { isActive: () => false, despawn: noOp },
@@ -229,7 +240,9 @@ test('entry clears the obsolete return job and completed exit saves the exact ro
   assert.equal(h.sandbox.py, h.returnPose.y);
   assert.equal(h.sandbox.look.yaw, h.returnPose.yaw);
   assert.equal(h.sandbox.look.pitch, h.returnPose.pitch);
-  const completedSaves = h.snapshots.filter((save) => save.chunkSurf.station.personal.completed);
+  // A completed personal route may have an active in-room checkpoint.
+  // The *exit* contract requires that inactive checkpoints carry road pose.
+  const completedSaves = h.snapshots.filter((save) => save.chunkSurf.station.personal.completed && !save.chunkSurf.station.personal.active);
   assert.ok(completedSaves.length > 0);
   for (const save of completedSaves) {
     assert.equal(save.chunkSurf.station.personal.active, false);
@@ -555,6 +568,9 @@ for (const completed of [false, true]) {
       chunkSurfRuntime: completed ? null : { state: () => save.chunkSurf },
       saveCommit(patch) { Object.assign(save, copy(patch)); commits.push(copy(save)); },
       pushEvent: (line) => events.push(line),
+      // The fixture has no coastal take; the real personal-tape recovery
+      // and ordinary recorder stores remain under test.
+      reconcileCoastalMemoryTake:()=>false,
       reconcileChapelTowerTakes() {
         assert.equal(ordinaryTakeCount(REAL_PB.takeRoomIds()), 2, 'ordinary takes are restored before any personal reconciliation');
       },
@@ -631,6 +647,10 @@ test('arriving and waiting under the lantern preserves the reward until the play
     ensureCtx: noOp, CR: { fx: {} }, STORY: {},
     cathedralStaging: noOp, stageCathedral: noOp, presentFinale: noOp,
     openCathedralLesson: () => false, prepareCathedralRetry: () => null, cathedralFightCheckpoint: noOp,
+    chapelTapeDemandBlocksProgress,
+    chapelTapeDemandState:()=>freshChapelTapeDemand('personal-cathedral-test'),
+    // The belfry reward fixture has no Tower warning or academic encounter.
+    interactTowerWarning:()=>false, talkToAcademicBouncers:()=>false,
     resolveCathedralLoss: noOp, openCathedralSecondPhase: noOp, cancelApparitionApplause: noOp,
     PB: { isPlaying: () => false },
   };
@@ -678,7 +698,8 @@ test('held personal movement uses the authored cadence in cardinal and diagonal 
         towerLandFrame: () => ({ active: true, walkMetresPerSecond: 1.35 }), sourceVoidFrame: () => ({}) },
       sourceShoreOutside: () => false, clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
       setupHandoffBlocksMovement: () => false, paused: false, scenes: { blocksInput: () => false },
-      inCover: () => false, arrowDelta: () => direction, renderMove: null, nextMoveAtMs: 0,
+      inCover: () => false, holdUnavailableGameplayInput:()=>false,
+      arrowDelta: () => direction, renderMove: null, nextMoveAtMs: 0,
       maybeLockHushFromInputDelta: () => {}, step: (dx, dy) => steps.push([dx, dy]) };
     vm.createContext(sandbox);
     vm.runInContext(section('function storyMoveScale(){', '\nfunction currentTurnIntervalMs(')

@@ -9,7 +9,7 @@ const file=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const pack=readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url));
 const gltf=JSON.parse(pack.subarray(20,20+pack.readUInt32LE(12)).toString());
 
-test('quiet ink is limited to authored escape and roof iron, preserving opaque depth',()=>{
+test('quiet ink is limited to authored escape, roof and garden iron, preserving opaque depth',()=>{
   const tagged=gltf.materials.flatMap((material,index)=>material.extras?.fireEscapeRole==='quiet-metal'?[index]:[]);
   const stairIndex=tagged.find(index=>gltf.materials[index].name==='subdued fire escape iron');
   assert.notEqual(stairIndex,undefined);
@@ -18,7 +18,16 @@ test('quiet ink is limited to authored escape and roof iron, preserving opaque d
   assert.equal(material.alphaMode||'OPAQUE','OPAQUE');
   assert.equal(pbr.metallicFactor,0);assert.equal(pbr.roughnessFactor,1);
   const owners=gltf.meshes.filter(mesh=>mesh.primitives.some(p=>tagged.includes(p.material)));
-  assert.ok(owners.every(mesh=>mesh.name.startsWith('academic_roof_')));
+  // The existing garden builder explicitly reuses this charcoal iron palette.
+  // Its opaque low border hoops are the sole non-roof owner; generic street
+  // furniture, vehicles, windows and Ren must not acquire the optical tag.
+  assert.ok(owners.every(mesh=>mesh.name.startsWith('academic_roof_')||mesh.name==='exterior_garden_hardscape'));
+  const garden=owners.find(mesh=>mesh.name==='exterior_garden_hardscape');assert.ok(garden);
+  const gardenQuiet=garden.primitives.filter(p=>tagged.includes(p.material));
+  assert.ok(gardenQuiet.length>0);assert.ok(gardenQuiet.every(p=>gltf.materials[p.material].name==='roof charcoal bronze and iron'));
+  const generator=file('../tools/chunk_surfer/exterior-foreground-geometry.mjs');
+  assert.match(generator,/const iron=\{name:'roof charcoal bronze and iron'[\s\S]*fireEscapeRole:'quiet-metal'/);
+
   const stair=owners.find(mesh=>mesh.name==='academic_roof_service_stair');
   assert.ok(stair);
   assert.deepEqual(gltf.meshes.filter(mesh=>mesh.primitives.some(p=>p.material===stairIndex))

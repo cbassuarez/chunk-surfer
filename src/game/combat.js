@@ -1,6 +1,10 @@
 import { makePracticeFightScene } from './practice-fight.js';
 import { sourceDesktopInputActive } from './source-desktop-focus.js';
 import { makeBattlePreparation } from './battle-preparation.js';
+import { preparationBattleTools } from './combat-operating-facts.js';
+import { drawEncounterSplash } from '../render/encounter-view.js';
+import { SOURCE_DESKTOP_BREACH_SECONDS, sourceDesktopFailureBeat } from './source-desktop-state.js';
+import { paintSourceDesktopDiagnostic, sourceDesktopDiagnosticLayout } from '../render/source-desktop-view.js';
 import { combatCheckpointSnapshot, restoreCombatCheckpoint } from './combat-checkpoint.js';
 import { combatHandsSnapshot } from './combat-hands-state.js';
 import { getMeta, getSave } from './save.js';
@@ -95,6 +99,7 @@ import { createBattleWaterAudio } from '../audio/battle-water.js';
 import { createFireballExchange, FIREBALL_RETURN_DAMAGE } from './fireball-exchange.js';
 import { createFireballVoice } from '../audio/fireball-voice.js';
 import { pressControl, releaseControl, cancelControlScope } from './control-feedback.js';
+import { reviewKey, reviewText, registerReviewRegion } from './local-text-review.js';
 
 // Five to eight seconds, cycling, so the clock is a rhythm rather than a number
 // the player learns to count against.
@@ -143,11 +148,53 @@ const CHANNELS = Object.freeze([
   { id: SOURCE_CHANNEL.CONTAIN, label: 'ISOLATE / CONTAIN', glyph: '▣' },
   { id: SOURCE_CHANNEL.SUBMIT, label: 'OPEN / SUBMIT', glyph: '◇' },
 ]);
-const textOf = (line) => String(line?.text ?? line ?? '');
+const originalTextOf = (line) => String(line?.text ?? line ?? '');
+const textOf = (line) => line?.reviewFieldKeys?.text
+  ? reviewText(line.reviewFieldKeys.text, originalTextOf(line)) : originalTextOf(line);
+const leadOf = (line) => {
+  const original = String(line?.lead || '');
+  return (line?.reviewFieldKeys?.lead ? reviewText(line.reviewFieldKeys.lead, original) : original).trim();
+};
 const whoOf = (line) => line?.who || 'direction';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
 const lerp = (a, b, t) => Number(a || 0) + (Number(b || 0) - Number(a || 0)) * t;
 const ease = (t) => 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+
+// Index the authored list before conditions hide any entries. Review copies
+// carry presentation metadata; the battle document and its mechanics stay intact.
+export function battleTextReviewLines(lines = [], { sceneId, nodeId } = {}) {
+  return (Array.isArray(lines) ? lines : []).map((line, index) => {
+    const original = line && typeof line === 'object' ? line : { text: originalTextOf(line) };
+    const sourceId = original.sourceId || original.id || '';
+    const context = { sceneId, nodeId, sourceId, index, collection: 'battle-lines' };
+    const id = reviewKey({ ...context, field: 'target' });
+    const reviewFieldKeys = { text: reviewKey({ ...context, field: 'text' }) };
+    const fields = [{ key: reviewFieldKeys.text, label: original.who === 'me' ? 'Spoken utterance' : 'Battle dialogue', original: originalTextOf(original) }];
+    if (original.lead != null) {
+      reviewFieldKeys.lead = reviewKey({ ...context, field: 'lead' });
+      fields.push({ key: reviewFieldKeys.lead, label: 'Lead-in', original: String(original.lead) });
+    }
+    return { ...original, reviewFieldKeys,
+      reviewTarget: { id, sceneId, nodeId, sourceId, speaker: whoOf(original), fields } };
+  });
+}
+
+export function battleThoughtReviewLine(line, { sceneId, nodeId } = {}) {
+  const original = originalTextOf(line);
+  // A computed trace can replace a row on the next beat. Its original text,
+  // rather than its position in that transient list, identifies the variant.
+  const context = { sceneId, nodeId, collection: `battle-thoughts:${line?.tone || 'thought'}` };
+  const key = reviewKey({ ...context, field: 'text' }, original);
+  return { ...line, reviewFieldKeys: { text: key }, reviewTarget: {
+    id: reviewKey({ ...context, field: 'target' }, original), sceneId, nodeId,
+    sourceId: '', speaker: 'you', fields: [{ key, label: 'Internal thought', original }],
+  } };
+}
+
+function registerBattleReviewRow(line, displayed, x, y, width) {
+  const shown = String(displayed || '').slice(0, Math.max(0, Math.floor(width)));
+  if (line?.reviewTarget && shown.length) registerReviewRegion(line.reviewTarget, { x, y, w: shown.length, h: 1 });
+}
 
 export function combatDeckDirection(event = {}) {
   const action = String(event.controllerAction || '');
@@ -194,8 +241,8 @@ function opponentArt(ref, combatId = '') {
 // EFFECTIVE" slot: the player has to be able to tell, without reading a number,
 // whether what they did worked — and if it did not, what the blow did instead.
 export function strikeVerdict(last = {}, { parried = false } = {}) {
-  if (last.perfect) return { text: 'COUNTERED · NOTHING GETS THROUGH', role: 'ui-counter' };
   if (parried || last.parried) return { text: 'TURNED BACK ON IT', role: 'ui-counter' };
+  if (last.perfect) return { text: last.received > 0 ? 'COUNTERED · SOME GETS THROUGH' : 'COUNTERED · NOTHING GETS THROUGH', role: 'ui-counter' };
   if (last.snrTo === 'noise' && last.received) return { text: 'IT LANDS HARD · YOU ARE IN NOISE', role: 'ui-danger' };
   if (last.received > 1) return { text: 'IT LANDS HARD', role: 'ui-danger' };
   if (last.received) return { text: 'IT CONNECTS', role: 'ui-primary' };
@@ -287,6 +334,13 @@ export function makeCombatScene({
   let phase = 'arrival';
   let queue = [];
   let cur = null;
+  let currentReviewText = '', currentReviewLead = '', currentBarkReviewText = '';
+  const reviewNodeForList = new Map([[battle.intro, 'intro'], [battle.win, 'win'], [battle.lose, 'lose']]);
+  battle.combat.movements.forEach((entry, index) => {
+    for (const channel of ['before', 'after', 'onListen']) {
+      if (Array.isArray(entry[channel])) reviewNodeForList.set(entry[channel], `movement:${entry.id || index}:${channel}`);
+    }
+  });
   let typed = 0;
   let acc = 0;
   let held = 0;
@@ -312,6 +366,7 @@ export function makeCombatScene({
   let desktopReady = false;
   let desktopResume = null;
   let desktopStarted = false;
+  let desktopCompleting = false, desktopInputReady = false;
   let checkpointElapsed = 0;
 
   function desktopFrame() {
@@ -325,7 +380,8 @@ export function makeCombatScene({
       paused:(!!topScene && topScene !== scene) || (typeof document !== 'undefined' &&
         (document.hidden || (sourceDesktop?.mode?.()==='native' && !sourceDesktopInputActive(sourceDesktop)))),
       phase:phase === 'desktop-breach' ? 'dissolving' : frame.breached || desktopStarted ? 'desktop' : 'contained',
-      transition:phase === 'desktop-breach' ? Math.min(1,desktopElapsed / 2.4) : frame.breached ? 1 : 0,
+      transition:phase === 'desktop-breach' ? Math.min(1,desktopElapsed / SOURCE_DESKTOP_BREACH_SECONDS) : frame.breached ? 1 : 0,
+      breach:phase === 'desktop-breach' ? {elapsed:desktopElapsed} : null,
       intent:{kind:intent?.kind || 'broadcast',progress:resolution ? Math.min(1,resolution.elapsed / resolution.duration) : 0},
       reaction:reaction ? {...reaction,progress:resolution ? Math.min(1,resolution.elapsed / resolution.duration) : 0} : null,
       toolId:resolution?.action?.tool || activeTool()?.id || '', actionId:resolution?.action?.id || '',
@@ -366,8 +422,9 @@ export function makeCombatScene({
     if (!sourceDesktop || phase === 'desktop-breach') return false;
     desktopStarted = true;
     phase = 'desktop-breach';
-    desktopElapsed = restoring || shakeMode() !== 'full' ? 2.4 : 0;
+    desktopElapsed = restoring || shakeMode() !== 'full' ? SOURCE_DESKTOP_BREACH_SECONDS : 0;
     desktopReady = false;
+    desktopCompleting=false;desktopInputReady=false;
     disarmTurnClock(); clearBark(); resetDeckControls();
     fireballExchange.cancel('source-desktop-breach');
     // The impact has become the peel. Frozen hit overlays must not return on
@@ -614,7 +671,7 @@ export function makeCombatScene({
     const available = Math.max(2, Math.min(6, rows - 20));
     // A lead-in eats rows off the top and indents the body, so the paging maths
     // here has to know about it or the MORE state disagrees with what is drawn.
-    const lead = String(cur?.lead || '').trim();
+    const lead = leadOf(cur);
     if (!lead) return { width, rows: available };
     const leadRows = hardWrapBattleText(lead, width).length;
     return { width: Math.max(12, width - 2), rows: Math.max(1, available - leadRows) };
@@ -696,17 +753,21 @@ export function makeCombatScene({
       disarmTurnClock();
       resetDeckControls();
       musicSession?.setDialogueActive?.(true);
+      const openingState = (draft=null) => {
+        const fresh=getPreparedLoadout?.()||loadout;
+        return createCombatState(battle.combat, {
+          difficulty,seed,injuries:fresh.injuries,composure:fresh.composure??null,
+          battery:fresh.battery,torchDrainScale:fresh.torchDrainScale,
+          tools:draft?preparationBattleTools(draft):fresh.tools,
+          techniques:draft?draft.build.techniques:fresh.techniques,
+          carriedRead,continuation,startingMovementIndex:state.movementIndex,source,
+        });
+      };
       preparationMenu = makeBattlePreparation({
-        ...preparation, audio,
+        ...preparation, audio, title:battle.enemy,getOpeningState:openingState,
         onReady: ({confirmHeld}) => {
           if (!sceneEntered) return;
-          const fresh = getPreparedLoadout?.() || loadout;
-          state = createCombatState(battle.combat, {
-            difficulty, seed, injuries:fresh.injuries, composure:fresh.composure ?? null,
-            battery:fresh.battery, torchDrainScale:fresh.torchDrainScale,
-            tools:fresh.tools, techniques:fresh.techniques,
-            carriedRead, continuation, startingMovementIndex:state.movementIndex, source,
-          });
+          state = openingState();
           preparationDone = true;
           preparationMenu = null;
           phase = 'ready'; readyElapsed = 0; entryConfirmLocked = confirmHeld;
@@ -714,6 +775,12 @@ export function makeCombatScene({
         },
       });
       return;
+    }
+    if (sourceDesktop && battle.combat?.desktopOnCommit && !desktopStarted) {
+      // Keep the title/preparation composition intact until the player is
+      // READY. The failing desktop then opens before the first live decision.
+      state.sourceDesktop = {...state.sourceDesktop,breached:true};
+      if (beginDesktopBreach({resume:()=>beginToolSelection()})) return;
     }
     phase = 'tool';
     takeConfirmation = false;
@@ -745,8 +812,8 @@ export function makeCombatScene({
   // `when:` is honoured here and nowhere else in the fight — a line the flags
   // hide never enters the queue. The rule comes from conversation.js so that a
   // line cannot be invisible in a thought tree and visible in a battle.
-  function speak(lines, then) {
-    queue = visibleList(lines || []).filter((line) => textOf(line)).slice();
+  function speak(lines, then, nodeId = reviewNodeForList.get(lines) || 'dialogue') {
+    queue = visibleList(battleTextReviewLines(lines, { sceneId: `battle:${battle.id}`, nodeId })).filter((line) => originalTextOf(line));
     onTalkEnd = then || (() => {});
     phase = 'talk';
     nextLine();
@@ -774,7 +841,9 @@ export function makeCombatScene({
   let barkHold = 0;
 
   function armBarks(m) {
-    barkQueue = visibleList(m?.onListen || []).filter((line) => textOf(line));
+    barkQueue = visibleList(battleTextReviewLines(m?.onListen, {
+      sceneId: `battle:${battle.id}`, nodeId: `movement:${m?.id || state.movementIndex}:onListen`,
+    })).filter((line) => originalTextOf(line));
     bark = null;
     barkHold = 0;
   }
@@ -784,9 +853,10 @@ export function makeCombatScene({
     // finished; a bark on top of it is the wall of prose again with extra steps.
     if (bark || !barkQueue.length || integer(state.turnsInMovement, 0) < 1) return;
     bark = barkQueue.shift();
-    barkHold = battleLineAutoHoldSeconds(bark);
+    barkHold = battleLineAutoHoldSeconds({ ...bark, text: textOf(bark) });
     const who = whoOf(bark);
     const text = textOf(bark);
+    currentBarkReviewText = text;
     if (bark.cue) fx?.cue?.(bark.cue, { group: 'battle' });
     if (text && isVoiced(who) && bark.voice !== false) voice.start(text, { speaker: who, rate: bark.rate || 1 });
   }
@@ -811,6 +881,8 @@ export function makeCombatScene({
     activeLineSeenBefore = activeLineId ? replay.lineStatus?.(activeLineId) === 'seen-before-run' : false;
     const who = whoOf(cur);
     const text = textOf(cur);
+    currentReviewText = text;
+    currentReviewLead = leadOf(cur);
     const spoken = text && isVoiced(who) && cur.voice !== false;
     musicSession?.setDialogueActive?.(!!spoken);
     // Grouped, so stopCueGroup('battle') reaches it. Ungrouped, a line's cue
@@ -818,6 +890,39 @@ export function makeCombatScene({
     if (cur.cue) fx?.cue?.(cur.cue, { group: 'battle' });
     if (spoken) handle = voice.start(text, { speaker: who, rate: cur.rate || 1 });
     else if (text) audio?.startTyping?.({ gain: TYPE_GAIN * (TYPE_LEVEL[who === 'direction' ? 'direction' : 'thought'] || 1) });
+  }
+
+  function revealReviewedLine() {
+    stopVoice();
+    voice.stop?.();
+    audio?.stopTyping?.();
+    musicSession?.setDialogueActive?.(false);
+    if (cur) {
+      typed = textOf(cur).length;
+      acc = 1e6;
+      lineDoneAt = now;
+      // A review reveal is not a normal completed reading or a replay assist.
+      activeLineId = null;
+    }
+  }
+
+  function refreshReviewedBattleText() {
+    if (cur) {
+      const text = textOf(cur), lead = leadOf(cur);
+      if (text !== currentReviewText || lead !== currentReviewLead) {
+        currentReviewText = text; currentReviewLead = lead;
+        revealReviewedLine();
+        talkPage = 0;
+      }
+    }
+    if (bark) {
+      const text = textOf(bark);
+      if (text !== currentBarkReviewText) {
+        currentBarkReviewText = text;
+        voice.stop?.();
+        barkHold = battleLineAutoHoldSeconds({ ...bark, text });
+      }
+    }
   }
 
   function combatCheckpoint() {
@@ -860,13 +965,13 @@ export function makeCombatScene({
     armBarks(next);
     if (resume) { resumeDecision(); return; }
     const lines = next?.before || [];
-    if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(phase === 'prepare'); });
+    if (lines.length) speak(lines, () => { beginToolSelection(); musicSession?.setDialogueActive?.(phase === 'prepare'); }, `movement:${next?.id || index}:before`);
     else { beginToolSelection(); musicSession?.setDialogueActive?.(phase === 'prepare'); }
   }
 
   function enterMovement(index = state.movementIndex, { sentBack: sentBackHandoff = false } = {}) {
     const next = movement(index);
-    if (sourceDesktop && battle.combat?.desktopOnCommit && !desktopStarted) {
+    if (sourceDesktop && battle.combat?.desktopOnCommit && !desktopStarted && preparationDone) {
       // Presentation is part of the warned commitment, never a reward for
       // taking damage. This spends no cover, recovery, health or movement.
       state.sourceDesktop = {...state.sourceDesktop,breached:true};
@@ -968,7 +1073,7 @@ export function makeCombatScene({
     }
     if (skipOpening) { enterMovement(state.movementIndex); return; }
     const opening = battle.intro || [];
-    if (opening.length) speak(opening, () => enterMovement(0));
+    if (opening.length) speak(opening, () => enterMovement(0), 'intro');
     else enterMovement(0);
   }
 
@@ -1040,7 +1145,7 @@ export function makeCombatScene({
         } else scenes.pop();
         (metrics.result === 'win' ? onWin : onLose)(legacyMetrics);
       });
-    });
+    }, metrics.result === 'win' ? 'win' : 'lose');
   }
 
   function syncResourceSpend(before, after) {
@@ -1195,7 +1300,7 @@ export function makeCombatScene({
       if(!fromFireball)fireballExchange.cancel();
       const finished=movement(state.last?.transition?.from??fallbackMovementIndex);
       const tail=[...(finished?.after||[])];
-      if(tail.length)speak(tail,beginResultDelivery);
+      if(tail.length)speak(tail,beginResultDelivery,`movement:${finished?.id || fallbackMovementIndex}:after`);
       else beginResultDelivery();
       return true;
     }
@@ -1551,7 +1656,10 @@ export function makeCombatScene({
     if (phase === 'talk' && cur) {
       text(3, whoOf(cur).toUpperCase(), 'ui-label');
       const view = currentBattleDialogueView({ width: Math.max(12, cols - 8), rows: 4 });
-      view.rows.forEach((line, index) => text(4.1 + index, line, 'ui-primary'));
+      view.rows.forEach((line, index) => {
+        text(4.1 + index, line, 'ui-primary');
+        registerBattleReviewRow(cur, line, panel.x + 1, panel.y + 4.1 + index, width);
+      });
       text(panel.h - 1.2, view.hasMore ? `MORE ${view.page + 1}/${view.pageCount} · PRESS CONTINUE` : 'PRESS CONTINUE', 'ui-amber');
       return;
     }
@@ -1608,6 +1716,8 @@ export function makeCombatScene({
     blocksInput: true,
     blocksWorld: true,
     lensPreset: 'battle',
+    textReviewSuspend() { revealReviewedLine(); },
+    textReviewResume() { refreshReviewedBattleText(); },
 
     // ESCAPE, BUT ONLY FOR THE ONE QUESTION.
     //
@@ -1711,9 +1821,12 @@ export function makeCombatScene({
     },
 
     battleView() {
+      refreshReviewedBattleText();
       return {
         phase,
-        sourceDesktop:sourceDesktop ? { ...desktopFrame(),presentation:sourceDesktop.debug?.(),waiting:phase==='desktop-breach'&&!desktopReady } : null,
+        dialogue: cur ? { text: textOf(cur), lead: leadOf(cur), typed, page: talkPage, reviewTarget: cur.reviewTarget } : null,
+        bark: bark ? { text: textOf(bark), reviewTarget: bark.reviewTarget } : null,
+        sourceDesktop:sourceDesktop ? { ...desktopFrame(),presentation:sourceDesktop.debug?.(),waiting:phase==='desktop-breach'&&(!desktopReady||desktopCompleting&&!desktopInputReady) } : null,
         checkpoint:cathedral ? cathedralCheckpoint() : combatCheckpoint(),
         preparation: preparationMenu?.snapshot() || null,
         preparationDone,
@@ -1772,13 +1885,24 @@ export function makeCombatScene({
     },
 
     update(dt) {
+      refreshReviewedBattleText();
       if (sourceDesktop?.mode?.() === 'native' && !sourceDesktopInputActive(sourceDesktop)) {
         sourceDesktop.frame?.({...desktopFrame(),paused:true}); return;
       }
       if (phase === 'desktop-breach') {
-        if (desktopReady) desktopElapsed = Math.min(2.4,desktopElapsed + Math.max(0,Math.min(.08,dt)));
-        sourceDesktop?.frame?.(desktopFrame());
-        if (desktopReady && desktopElapsed >= 2.4) { const resume=desktopResume; desktopResume=null; resume?.(); }
+        if(!desktopCompleting){
+          if (desktopReady) desktopElapsed = Math.min(SOURCE_DESKTOP_BREACH_SECONDS,desktopElapsed + Math.max(0,Math.min(.08,dt)));
+          sourceDesktop?.frame?.(desktopFrame());
+          if(desktopReady&&desktopElapsed>=SOURCE_DESKTOP_BREACH_SECONDS){
+            if(sourceDesktop.completeBreach){
+              desktopCompleting=true;
+              Promise.resolve(sourceDesktop.completeBreach(desktopFrame())).then(usable=>{
+                if(sceneEntered&&phase==='desktop-breach')desktopInputReady=usable!==false;
+              }).catch(()=>{});
+            }else desktopInputReady=true;
+          }
+        }
+        if(desktopInputReady){const resume=desktopResume;desktopResume=null;resume?.();}
         return;
       }
       if (phase === 'prepare') { now += dt; preparationMenu?.update(dt); return; }
@@ -1894,6 +2018,7 @@ export function makeCombatScene({
     },
 
     key(e) {
+      refreshReviewedBattleText();
       if (phase === 'desktop-breach') return e.key !== 'Escape';
       if (phase === 'prepare') return preparationMenu?.key(e) ?? true;
       if (phase === 'ready' || (encounterIntro && phase === 'arrival')) return e.key !== 'Escape';
@@ -2091,7 +2216,14 @@ export function makeCombatScene({
     },
 
     render() {
+      refreshReviewedBattleText();
       preparationMenu?.visible(scenes.top({ includeOverlay:true }) === scene);
+      if (phase === 'prepare') {
+        // Preparation is the held encounter title, with the same opponent and
+        // darkness behind the case. The live fight's meters/hands start at READY.
+        drawEncounterSplash(battle,{phase:'versus',reducedMotion:true,showTitle:false});
+        return;
+      }
       // The reprise is a real handoff to the room renderer. Leaving this panel
       // composited underneath the child scene makes the old fight read as the
       // replayed space and hides the very evidence Source is weaponising.
@@ -2107,6 +2239,8 @@ export function makeCombatScene({
         : '[SPACE] PARRY';
       const footer = phase === 'interlude'
         ? 'SOURCE HAS THE TRANSPORT'
+        : phase === 'desktop-breach'
+          ? 'OUTPUT HELD · WAIT'
         : phase === 'prepare'
           ? 'TURNS PAUSED'
         : phase === 'ready'
@@ -2473,12 +2607,17 @@ export function makeCombatScene({
             chargeReady: availableCombatActions(intentState).some((move) => move.special && move.enabled),
             apparitions,
           });
+          const thoughtContext = { sceneId: `battle:${battle.id}`,
+            nodeId: `movement:${movement(intentState.movementIndex)?.id || intentState.movementIndex}:intent:${intent.id || intent.kind}:phase:${intentState.phase || phase}` };
           let intentRow = 1;
           for (const line of thought) {
             const role = line.tone === 'miss' || line.tone === 'warn' ? 'ui-danger'
               : line.tone === 'plan' ? 'ui-counter'
                 : line.tone === 'stance' ? 'ui-amber' : 'ui-primary';
-            uiText(intentX, stageY + intentRow, line.text.slice(0, intentW), role, line.tone === 'read' ? .82 : .95);
+            const reviewed = battleThoughtReviewLine(line, thoughtContext);
+            const displayed = textOf(reviewed).slice(0, intentW);
+            uiText(intentX, stageY + intentRow, displayed, role, line.tone === 'read' ? .82 : .95);
+            registerBattleReviewRow(reviewed, displayed, intentX, stageY + intentRow, intentW);
             intentRow += 1;
           }
           // The surfer's guard is telegraphed here too, in the same voice:
@@ -2486,7 +2625,10 @@ export function makeCombatScene({
           // up instead.
           if (state.enemyGuard) {
             const guarding = state.enemyGuard.mode === 'parry' ? 'turn' : 'slip';
-            uiText(intentX, stageY + intentRow, `it's set to ${guarding} my swing.`.slice(0, intentW), 'ui-danger', .85);
+            const reviewed = battleThoughtReviewLine({ text: `it's set to ${guarding} my swing.`, tone: 'warn' }, thoughtContext);
+            const displayed = textOf(reviewed).slice(0, intentW);
+            uiText(intentX, stageY + intentRow, displayed, 'ui-danger', .85);
+            registerBattleReviewRow(reviewed, displayed, intentX, stageY + intentRow, intentW);
             intentRow += 1;
           }
           regionRects.intent = { x: intentX, y: stageY + 1, w: intentW, h: intentRow + .2 };
@@ -2588,8 +2730,10 @@ export function makeCombatScene({
       // collide with the interference line above because that path returns.
       if (bark && phase !== 'talk') {
         const who = whoOf(bark);
-        const spoken = `${who === 'direction' ? '' : `${who} — `}${textOf(bark)}`;
+        const prefix = who === 'direction' ? '' : `${who} — `;
+        const spoken = `${prefix}${textOf(bark)}`;
         uiText(layout.detail.x, layout.detail.y, spoken.slice(0, layout.detail.w), who === 'direction' ? 'ui-secondary' : 'ui-primary', .88);
+        registerBattleReviewRow(bark, textOf(bark), layout.detail.x + prefix.length, layout.detail.y, layout.detail.w - prefix.length);
       }
 
       if (phase === 'arrival') {
@@ -2599,6 +2743,16 @@ export function makeCombatScene({
         toolRows=[];moveRows=[];channelRows=[];reactionRect=null;
         uiText(layout.body.x,layout.body.y,'YOUR PROGRESS HOLDS. THE SHELTER DOES NOT.'.slice(0,layout.body.w),'ui-primary',.9);
         uiText(layout.body.x,layout.body.y+1.3,'HOLD rebuilds surviving cover. EXPOSE spends it for a counter.'.slice(0,layout.body.w),'ui-secondary',.78);
+        if(!desktopIsland){
+          // The contained fallback fails across its output, not in a little
+          // error card inside the opponent portrait. The ledger stays below it.
+          const failure=sourceDesktopFailureBeat(desktopElapsed);
+          if(failure.diagnostic>0)uiDraw(({ctx,dpr,cellW,cellH})=>{
+            ctx.scale(dpr,dpr);
+            const bounds=sourceDesktopDiagnosticLayout(cols*cellW,rows*cellH,{command:{y:layout.playerGauge.y*cellH}});
+            paintSourceDesktopDiagnostic(ctx,bounds,{opacity:failure.diagnostic});
+          });
+        }
         return;
       }
       if (phase === 'prepare') return;
@@ -2626,7 +2780,7 @@ export function makeCombatScene({
         // overflow mark, and knocked out of VOICED so the line typed instead of
         // speaking and the music never ducked for it. As its own field it keeps
         // a real speaker, and it wraps.
-        const lead = String(cur.lead || '').trim();
+        const lead = leadOf(cur);
         const leadRows = lead ? hardWrapBattleText(lead, dlgW) : [];
         const bodyIndent = lead ? 2 : 0;
         const view = currentBattleDialogueView({
@@ -2635,19 +2789,15 @@ export function makeCombatScene({
         });
 
         uiText(panel.x, speakerY, who.toUpperCase().slice(0, panel.w), 'ui-label');
-        leadRows.forEach((line, index) => uiText(
-          panel.x,
-          textY + index,
-          line.slice(0, dlgW),
-          'ui-secondary',
-          .74,
-        ));
-        view.rows.forEach((line, index) => uiText(
-          panel.x + bodyIndent,
-          textY + leadRows.length + index,
-          line.slice(0, dlgW - bodyIndent),
-          who === 'direction' ? 'ui-secondary' : 'ui-primary',
-        ));
+        leadRows.forEach((line, index) => {
+          uiText(panel.x, textY + index, line.slice(0, dlgW), 'ui-secondary', .74);
+          registerBattleReviewRow(cur, line, panel.x, textY + index, dlgW);
+        });
+        view.rows.forEach((line, index) => {
+          uiText(panel.x + bodyIndent, textY + leadRows.length + index,
+            line.slice(0, dlgW - bodyIndent), who === 'direction' ? 'ui-secondary' : 'ui-primary');
+          registerBattleReviewRow(cur, line, panel.x + bodyIndent, textY + leadRows.length + index, dlgW - bodyIndent);
+        });
 
         const done = typed >= text.length && (!handle || handle.done());
         const hint = view.hasMore

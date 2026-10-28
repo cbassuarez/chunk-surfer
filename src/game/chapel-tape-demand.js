@@ -1,9 +1,17 @@
-// The building can catch the case. It never owns, edits or reconstructs the
-// physical tape: this controller has no recording, audio or inventory imports.
+// The building can catch the case. This controller records physical failure
+// and a damage request; the tape store alone applies damage to real recordings.
+// It has no recording, audio or inventory imports.
 export const CHAPEL_TAPE_DEMAND_FLAG='chapelTapeDemand.checkpoint';
 export const CHAPEL_TAPE_DEMAND_PACK='/assets/chapel-tape-demand.glb';
 export const CHAPEL_TAPE_DEMAND_COPY='GIVE ME THE TAPES';
 export const CHAPEL_TAPE_DEMAND_PULL_SECONDS=1.65;
+export const CHAPEL_TAPE_DEMAND_STRAIN_SECONDS=1.0;
+export const CHAPEL_TAPE_DEMAND_DAMAGED_STRAIN_SECONDS=1.8;
+export const CHAPEL_TAPE_DEMAND_REACH_M=1.3;
+export const CHAPEL_TAPE_DAMAGE_ROOMS=Object.freeze(['main_b3','the_tub','amplifications','soundnoisemusic']);
+const catchDoors=new Set(['chapel-c17','front-main']);
+const catchGroups=new Set(['ground','upper','academic','basement','hall']);
+const damageRooms=new Set(CHAPEL_TAPE_DAMAGE_ROOMS);
 const statuses=new Set(['dormant','armed','departing','caught','released','complete']);
 const stages={surfaced:new Set(['public-doors','service-road']),inversion:new Set(['door','at-door','rescue','wrong-door-returned'])};
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
@@ -12,7 +20,42 @@ const point=value=>value&&finite(value.x)&&finite(value.y)&&Math.abs(value.x)<10
 const world=value=>value&&finite(value.x)&&finite(value.y)&&finite(value.z)?{x:value.x,y:value.y,z:value.z}:null;
 const view=value=>value&&finite(value.yaw)&&finite(value.pitch)?{yaw:value.yaw,pitch:clamp(value.pitch,-.62,.62)}:null;
 export function freshChapelTapeDemand(runId=''){
-  return{schema:1,runId:String(runId||''),status:'dormant',route:null,progress:0,catch:null,departure:null};
+  return{schema:1,runId:String(runId||''),status:'dormant',route:null,progress:0,catch:null,departure:null,spent:[],failures:0,caseDamaged:false,spill:null};
+}
+function damageTarget(raw){
+  if(!raw||typeof raw.takeId!=='string'||!raw.takeId.trim()||raw.takeId.length>128||!damageRooms.has(raw.roomId)
+    ||!Number.isSafeInteger(raw.ordinal)||raw.ordinal<1||raw.ordinal>100000)return null;
+  return{takeId:raw.takeId,roomId:raw.roomId,ordinal:raw.ordinal};
+}
+function catchRecord(raw){
+  if(!raw||!catchDoors.has(raw.doorId)||!world(raw.anchor)||!point(raw.position))return null;
+  const base={doorId:raw.doorId,anchor:world(raw.anchor),position:point(raw.position),group:String(raw.group||''),wallYaw:finite(raw.wallYaw)?raw.wallYaw:0,view:view(raw.view)};
+  // Schema-1 effort checkpoints predate custody. They resume under their old
+  // release rule instead of silently turning a saved hold into a new puzzle.
+  if(raw.mode==null)return base;
+  if(raw.mode!=='spatial')return null;
+  if(!finite(raw.initialDistance)||raw.initialDistance<.1||raw.initialDistance>3.5
+    ||!catchGroups.has(base.group)
+    ||raw.kind!=null&&!['building','congregation'].includes(raw.kind)
+    ||raw.holder!=null&&!['player','anchor'].includes(raw.holder))return null;
+  return{...base,mode:'spatial',kind:raw.kind||'building',
+    receiverId:typeof raw.receiverId==='string'?raw.receiverId.slice(0,128):null,
+    floor:finite(raw.floor)?raw.floor:base.anchor.y-.94,
+    damageTarget:damageTarget(raw.damageTarget),
+    initialDistance:raw.initialDistance,strainSeconds:clamp(raw.strainSeconds,0,CHAPEL_TAPE_DEMAND_DAMAGED_STRAIN_SECONDS),holder:raw.holder||'player'};
+}
+const spillDamageId=(runId,doorId)=>`chapel-spill:${runId}:${doorId}:2`;
+function spillRecord(raw,runId){
+  if(!raw||!catchDoors.has(raw.doorId)||!catchGroups.has(raw.group)||!world(raw.anchor)||!point(raw.position)
+    ||raw.damageId!==spillDamageId(runId,raw.doorId))return null;
+  const target=damageTarget(raw.target),applied=!!target&&raw.applied===true;
+  const fulfilled=!target||applied&&(raw.fulfilled===true||raw.needsRetake===false);
+  return{damageId:raw.damageId,target,anchor:world(raw.anchor),position:point(raw.position),group:raw.group,doorId:raw.doorId,
+    wallYaw:finite(raw.wallYaw)?raw.wallYaw:0,floor:finite(raw.floor)?raw.floor:raw.anchor.y-.94,
+    kind:raw.kind==='congregation'?'congregation':'building',applied,needsRetake:!!target&&!fulfilled,fulfilled};
+}
+export function chapelTapeDemandStrainSeconds(state){
+  return state?.failures>=1?CHAPEL_TAPE_DEMAND_DAMAGED_STRAIN_SECONDS:CHAPEL_TAPE_DEMAND_STRAIN_SECONDS;
 }
 function objectiveTimeline(value,route){
   if(route!=='inversion'||value?.schema!==1||value.id!=='inversion-objective'
@@ -34,13 +77,38 @@ export function normalizeChapelTapeDemand(raw,{runId=''}={}){
   const base=freshChapelTapeDemand(runId);
   if(!runId||raw?.schema!==1||raw.runId!==runId||!statuses.has(raw.status))return base;
   const route=Object.hasOwn(stages,raw.route)?raw.route:null;
-  const caught=raw.catch&&['chapel-c17','front-main'].includes(raw.catch.doorId)&&world(raw.catch.anchor)&&point(raw.catch.position)
-    ?{doorId:raw.catch.doorId,anchor:world(raw.catch.anchor),position:point(raw.catch.position),group:String(raw.catch.group||''),wallYaw:finite(raw.catch.wallYaw)?raw.catch.wallYaw:0,view:view(raw.catch.view)}:null;
+  const caught=catchRecord(raw.catch);
+  const spent=[...new Set((Array.isArray(raw.spent)?raw.spent:[]).filter(id=>catchDoors.has(id)))];
+  const spill=spillRecord(raw.spill,runId);
+  const failures=Math.max(spill?2:0,Math.floor(clamp(raw.failures,0,2)));
   let status=raw.status;
   if(['departing','caught','released'].includes(status)&&!route)status='armed';
   // Damaged saves cannot restore an invisible tether or an impossible lock.
   if(status==='caught'&&!caught)status='departing';
-  return{...base,status,route,progress:status==='released'||status==='complete'?1:clamp(raw.progress,0,.99999),catch:caught,departure:departure(raw.departure,route)};
+  // Released old saves must not replay their already-survived threshold.
+  if(['released','complete'].includes(status)&&caught&&!spent.includes(caught.doorId))spent.push(caught.doorId);
+  if(status==='caught'&&caught&&spent.includes(caught.doorId))status='released';
+  return{...base,status,route,progress:status==='released'||status==='complete'?1:clamp(raw.progress,0,.99999),catch:caught,departure:departure(raw.departure,route),spent,
+    failures,caseDamaged:failures>=1,spill};
+}
+export function chapelTapeDemandCanCatch(state,doorId){
+  return catchDoors.has(doorId)&&['departing','released'].includes(state?.status)&&!state.spent?.includes(doorId);
+}
+export function chapelTapeDemandInteraction(state,physicalPoint){
+  const caught=state?.catch,held=state?.status==='caught'&&caught?.holder==='anchor';
+  if(state?.status!=='caught'||caught?.mode!=='spatial'||!caught.anchor||!finite(physicalPoint?.x)||!finite(physicalPoint?.z))return{distanceM:Infinity,slack:false,canRelease:false,held};
+  // Runtime points carry the support floor, not the eye or hand. A case left
+  // upstairs cannot be reclaimed through the ceiling from matching x/z below.
+  // Older callers without a height keep their original horizontal contract.
+  if(physicalPoint.y!=null&&(!finite(physicalPoint.y)||Math.abs(caught.anchor.y-(physicalPoint.y+1))>1.25))return{distanceM:Infinity,slack:false,canRelease:false,held};
+  const distanceM=Math.hypot(physicalPoint.x-caught.anchor.x,physicalPoint.z-caught.anchor.z);
+  const slack=held||distanceM<=Math.max(.85,caught.initialDistance-.18);
+  return{distanceM,slack,canRelease:distanceM<=CHAPEL_TAPE_DEMAND_REACH_M&&slack,held};
+}
+function released(state){
+  return{...state,status:'released',progress:1,
+    catch:state.catch.mode==='spatial'?{...state.catch,holder:'player',strainSeconds:0}:state.catch,
+    spent:[...new Set([...state.spent,state.catch.doorId])]};
 }
 export function reduceChapelTapeDemand(raw,event={},context={}){
   const state=normalizeChapelTapeDemand(raw,context);
@@ -53,17 +121,38 @@ export function reduceChapelTapeDemand(raw,event={},context={}){
     return{...state,route:event.route,status:state.status==='armed'?'departing':state.status,departure:departure(event.departure,event.route)||state.departure};
   }
   if(event.type==='snapshot'&&state.route)return{...state,departure:departure(event.departure,state.route)||state.departure};
+  if(event.type==='damage-applied'&&state.spill?.target&&event.damageId===state.spill.damageId&&!state.spill.applied){
+    const needsRetake=event.needsRetake!==false;
+    return{...state,spill:{...state.spill,applied:true,needsRetake,fulfilled:!needsRetake}};
+  }
+  if(event.type==='repair-status'&&state.spill?.applied&&event.damageId===state.spill.damageId&&!state.spill.fulfilled){
+    if(event.needsRetake!==true&&event.needsRetake!==false)return state;
+    return{...state,spill:{...state.spill,needsRetake:event.needsRetake,fulfilled:!event.needsRetake}};
+  }
   if(event.type==='stay')return state.status==='dormant'?state:{...state,status:'armed',route:null,catch:null,departure:null,progress:0};
-  if(event.type==='catch'&&state.status==='departing'){
+  if(event.type==='catch'&&chapelTapeDemandCanCatch(state,event.catch?.doorId)){
     const next=normalizeChapelTapeDemand({...state,status:'caught',catch:event.catch,progress:0},context);
     return next.status==='caught'?next:state;
   }
-  if(event.type==='pull'&&state.status==='caught'&&!event.paused){
-    const seconds=clamp(event.seconds,0,.1),amount=state.progress+seconds/CHAPEL_TAPE_DEMAND_PULL_SECONDS,progress=amount>=1-1e-9?1:Math.min(1,amount);
-    return{...state,progress,status:progress>=1?'released':'caught'};
+  if(event.type==='interact'&&state.status==='caught'&&state.catch?.mode==='spatial'&&!event.paused){
+    return finite(event.distanceM)&&event.distanceM<=CHAPEL_TAPE_DEMAND_REACH_M&&event.distanceM>=0&&(state.catch.holder==='anchor'||event.slack===true)?released(state):state;
   }
-  if(event.type==='complete'&&state.status!=='dormant')return{...state,status:'complete',progress:1};
-  if(event.type==='recover-missing-asset'&&state.status==='caught')return{...state,status:'released',progress:1};
+  if(event.type==='strain'&&state.status==='caught'&&state.catch?.mode==='spatial'&&state.catch.holder==='player'&&!event.paused){
+    const limit=chapelTapeDemandStrainSeconds(state),strainSeconds=Math.min(limit,state.catch.strainSeconds+clamp(event.seconds,0,.1));
+    const lost=strainSeconds>=limit-1e-9;
+    const failures=lost?Math.min(2,state.failures+1):state.failures;
+    const caught={...state.catch,strainSeconds,holder:lost?'anchor':'player'};
+    const spill=lost&&failures>=2&&!state.spill?spillRecord({damageId:spillDamageId(state.runId,caught.doorId),target:caught.damageTarget,
+      anchor:caught.anchor,position:caught.position,group:caught.group,doorId:caught.doorId,wallYaw:caught.wallYaw,floor:caught.floor,kind:caught.kind},state.runId):state.spill;
+    return{...state,failures,caseDamaged:failures>=1,spill,catch:caught};
+  }
+  if(event.type==='pull'&&state.status==='caught'&&state.catch?.mode!=='spatial'&&!event.paused){
+    const seconds=clamp(event.seconds,0,.1),amount=state.progress+seconds/CHAPEL_TAPE_DEMAND_PULL_SECONDS,progress=amount>=1-1e-9?1:Math.min(1,amount);
+    return progress>=1?released(state):{...state,progress};
+  }
+  if(event.type==='complete'&&state.status!=='dormant')return{...state,status:'complete',progress:1,
+    catch:state.catch?.mode==='spatial'?{...state.catch,holder:'player',strainSeconds:0}:state.catch};
+  if(event.type==='recover-missing-asset'&&state.status==='caught')return released(state);
   return state;
 }
 export function chapelTapeDemandVisible(state,{chapelWon=false,chapelRoute=true,runId=''}={}){
@@ -86,10 +175,15 @@ export function chapelTapeDemandCrossesDoor(from,to,door){
 export function chapelTapeDemandMove(state,{from,to,physicalFrom,physicalTo}={}){
   if(!chapelTapeDemandBlocksProgress(state))return{allowed:true,effortM:0};
   const anchor=state.catch?.anchor;if(!anchor||!physicalFrom||!physicalTo)return{allowed:true,effortM:0};
+  if(state.catch.mode==='spatial'&&state.catch.holder==='anchor')return{allowed:true,effortM:0};
   const distance=p=>Math.hypot(p.x-anchor.x,p.z-anchor.z),a=distance(physicalFrom),b=distance(physicalTo);
   // Backing toward the snag slackens it. Walking away tensions it and puts
   // force into the strap, rather than silently deleting a movement input.
   const effortM=Math.max(0,b-a);
+  if(state.catch.mode==='spatial'){
+    const radius=Math.max(1.02,state.catch.initialDistance);
+    return{allowed:b<=radius+.015||b<a-.005,effortM:b>radius+.015?effortM:0};
+  }
   return{allowed:b<=1.02||b<a-.015,effortM:b>1.02?effortM:0};
 }
 export function chapelTapeDemandResume(raw,save){

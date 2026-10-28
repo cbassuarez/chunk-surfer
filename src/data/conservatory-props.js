@@ -6,6 +6,7 @@ import {
   EXTERIOR_INSPECTABLES,
   YARD_SERVICE_RANGES,
   districtLogicalAt,
+  exteriorStreetAt,
 } from './exterior-district.js';
 import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
 import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
@@ -28,10 +29,19 @@ import { PUB_NEW_ACTORS, PUB_MESHES, pubActor, pubFacePoint } from './pub-popula
 import { PUB_FAVOR_MESHES, PUB_FAVOR_PROPS } from './pub-favors.js';
 import { ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS, academicGalleryPlacement } from './academic-gallery-treatment.js';
 import { LOADING_BAY_ACCESS } from './loading-bay-access.js';
+import {SCENE_DOCK_MESHES,SCENE_DOCK_COLLIDERS} from './scene-dock-dressing.js';
 import { VAN_REAR_STOCK_PARTS } from './van-rear-stock.js';
 import { ARRIVAL_COURT, ARRIVAL_COURT_MESHES, ARRIVAL_COURT_COLLIDERS } from './arrival-court.js';
 import { MAIN_STAIR_WALL_MESHES, MAIN_STAIR_WALL_PROPS } from './main-stair-wall-dressing.js';
+import { STAIR_LANDING_PROPS } from './stair-landing-dressing.js';
 import { STATIONERS_MESHES, STATIONERS_PROPS, STATIONERS_COLLIDERS } from './exterior-stationers.js';
+import { GLASS_COURT, GLASS_COURT_MESHES, GLASS_COURT_PROPS, GLASS_COURT_COLLIDERS } from './glass-court.js';
+import { GLASS_COURT_PRESENCES } from './glass-court-presences.js';
+import {EXTERIOR_FRONTAGE_DRESSING,EXTERIOR_FRONTAGE_INSPECTABLES} from './exterior-frontages.js';
+import {EXTERIOR_STREET_FABRIC_MESHES,EXTERIOR_STREET_FABRIC_PROPS} from './exterior-street-fabric.js';
+import {EXTERIOR_GRAFFITI_MESHES,EXTERIOR_GRAFFITI_COURTS} from './exterior-graffiti.js';
+import {ELLERY_PUBLIC_FRONT_MESHES,ELLERY_PUBLIC_FRONT_PROPS} from './ellery-public-front.js';
+import { DEMOLITION_EXCAVATOR } from './demolition-machinery.js';
 
 const P = (id, mesh, x, y, yaw = 0, extra = {}) => ({ id, mesh, x, y, yaw, scale:1, ...extra });
 
@@ -127,6 +137,13 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...SCENE_DOCK_MESHES,
+  ...GLASS_COURT_MESHES,
+  ...EXTERIOR_STREET_FABRIC_MESHES,
+  ...EXTERIOR_GRAFFITI_MESHES,
+  ...ELLERY_PUBLIC_FRONT_MESHES,
+  ...Object.fromEntries(EXTERIOR_FRONTAGE_DRESSING.map(row=>[row.mesh,{w:.32,d:64,h:4.4,blocks:false}])),
+  frontage_inspection_anchor:{w:1.2,d:.12,h:1.8,blocks:false},
   ...STATIONERS_MESHES,
   ...ARRIVAL_COURT_MESHES,
   ...Object.fromEntries(VAN_REAR_STOCK_PARTS.map(part=>[part.mesh,{w:2,d:4.5,blocks:false}])),
@@ -238,7 +255,7 @@ export const PROP_MESH = Object.freeze({
   yard_clutter:{w:6.0,d:3.2,blocks:false}, yard_markings:{w:16.0,d:13.0,blocks:false},
   yard_sign:{w:1.9,d:.2,blocks:false}, yard_road:{w:34.4,d:11.0,blocks:false},
   demolition_scaffold_run:{w:7.8,d:1.4,h:7.2,blocks:true},
-  demolition_excavator:{w:2.4,d:6.0,h:3.4,blocks:true},
+  demolition_excavator:{w:DEMOLITION_EXCAVATOR.baseCollision.width,d:DEMOLITION_EXCAVATOR.baseCollision.depth,h:DEMOLITION_EXCAVATOR.baseCollision.height,blocks:true},
   demolition_heras_fence:{w:4.1,d:.7,h:2.15,blocks:true},
   demolition_light_tower:{w:1.5,d:1.4,h:4.8,blocks:true},
   demolition_generator:{w:2.5,d:3.6,h:1.55,blocks:true},
@@ -392,6 +409,8 @@ export const PROP_MESH = Object.freeze({
 // Visible structure has matching height-aware collision. Coordinates are
 // authored logical metres; elevation is absolute world height.
 export const STRUCTURAL_COLLIDERS = Object.freeze([
+  ...SCENE_DOCK_COLLIDERS,
+  ...GLASS_COURT_COLLIDERS,
   // Four physical poles, including the two double-faced vehicle posts.
   // The envelope includes a pedestrian body's clearance on the .5m grid.
   ...[...STREET_PILOT.vehicleSignals,...STREET_PILOT.pedestrianSignals]
@@ -465,8 +484,22 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
   }));
 
 export const CONSERVATORY_PROPS = [
+  ...EXTERIOR_STREET_FABRIC_PROPS.map(p=>DP(p.id,p.mesh,64,-1,0,{...p,worldAligned:true,renderOffsetZ:47})),
+  ...ELLERY_PUBLIC_FRONT_PROPS,
+  // An inspection belongs to one existing display inside the combined row
+  // mesh. Its proxy supplies a small reticle target, not another plaque.
+  ...EXTERIOR_FRONTAGE_INSPECTABLES.flatMap(entry=>{
+    const x=entry.physical.x+entry.mountNormal.nx*.80,y=entry.physical.y+entry.mountNormal.ny*.80;
+    if(!exteriorStreetAt(x,y))return[];
+    return[DP(entry.id,'frontage_inspection_anchor',x,y,0,{
+    blocks:false,interactionProxy:true,label:entry.label,interactionPriority:-1,elevation:.8,
+    inspect:inspect(entry.text,entry.text),renderGroups:['ground'],
+  })];}),
+  ...GLASS_COURT_PROPS,
+  ...GLASS_COURT_PRESENCES,
   ...STATIONERS_PROPS,
   ...MAIN_STAIR_WALL_PROPS,
+  ...STAIR_LANDING_PROPS,
   ...PUB_FAVOR_PROPS,
   ...ACADEMIC_GALLERY_PROPS,
   ...INSTITUTION_OCCUPATION_PROPS, ...BUILDING_AMENITY_PROPS,
@@ -530,6 +563,7 @@ export const CONSERVATORY_PROPS = [
   // One roof, seen from both sides of the goods threshold. Unlike the exterior
   // sightline shell this is never visibility-switched, so entering the room
   // cannot replace rafters and ceiling panels with a flat black plane.
+  P('dock-scene-fabric','scene_dock_room_fabric',53.0,7.5,0,{interactive:false,structural:true,blocks:false}),
   P('dock-scene-roof','scene_dock_roof_structure',53.0,7.5,0,{
     interactive:false,structural:true,blocks:false,
   }),
@@ -706,7 +740,7 @@ export const CONSERVATORY_PROPS = [
   P('cathedral-construction-light-tower','demolition_light_tower',55.5,254.0,-.25,{
     interactive:false,structural:true,blocks:true,
   }),
-  P('demolition-excavator-between-buildings','demolition_excavator',78.5,263.0,.08,{
+  P(DEMOLITION_EXCAVATOR.id,DEMOLITION_EXCAVATOR.mesh,50+DEMOLITION_EXCAVATOR.placement.x,200+DEMOLITION_EXCAVATOR.placement.z,DEMOLITION_EXCAVATOR.placement.yaw,{
     interactive:false,structural:true,blocks:true,
   }),
   P('yard-road','yard_road',58.0,207.5,0,{interactive:false,structural:true}),
@@ -773,14 +807,17 @@ export const CONSERVATORY_PROPS = [
   // Repeating three distinct sixty-four-metre rows gives every side independent
   // roof heights and uses without pretending every closed door is an interior.
   DP('district-west-row-a','district_passage_frontage',-14,20,0,{interactive:false,structural:true,renderOffsetX:-1.05}),
-  DP('district-west-row-b','district_workshop_frontage',-14,82,0,{interactive:false,structural:true,renderOffsetX:-1.05}),
+  DP('district-west-row-b','district_workshop_frontage',-14,82,0,{interactive:false,structural:true,renderOffsetX:-1.05-EXTERIOR_PUB.servicePassage.westFrontageSetback}),
   DP('district-east-row-a','district_passage_frontage',142,20,Math.PI,{interactive:false,structural:true,renderOffsetX:1.05}),
   DP('district-east-row-b','district_workshop_frontage',142,82,Math.PI,{interactive:false,structural:true,renderOffsetX:1.05}),
   DP('district-north-row-a','district_terrace_frontage_stationer',18,-14,Math.PI/2,{fallbackMesh:'district_terrace_frontage',interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-north-row-b','district_passage_frontage',82,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-north-row-c','district_terrace_frontage',138,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   DP('district-south-row-a','district_civic_frontage',18,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
-  P('pub-complete-frontage','exterior_pub_frontage',pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,85).x,pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,85).y,-Math.PI/2,{interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,renderOffsetZ:.05,renderGroups:['ground']}),
+  P('pub-complete-frontage','exterior_pub_frontage',pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,EXTERIOR_PUB.facadeAnchor.z).x,pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,EXTERIOR_PUB.facadeAnchor.z).y,EXTERIOR_PUB.row.yaw,{
+    interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,
+    renderOffsetZ:EXTERIOR_PUB.facadeAnchor.z-Math.round(EXTERIOR_PUB.facadeAnchor.z*2)/2,renderGroups:['ground'],
+  }),
   P('pub-complete-interior','exterior_pub_interior',pubLogicalAt(EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z).x,pubLogicalAt(EXTERIOR_PUB.interiorAnchor.x,EXTERIOR_PUB.interiorAnchor.z).y,-Math.PI/2,{
     interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,
     renderOffsetZ:EXTERIOR_PUB.interiorAnchor.z-Math.round(EXTERIOR_PUB.interiorAnchor.z*2)/2,
@@ -800,6 +837,8 @@ export const CONSERVATORY_PROPS = [
   DP('district-south-court-walls','district_court_walls',86,107,0,{interactive:false,structural:true,scaleZ:16/16}),
   DP('district-west-court-walls','district_court_walls',-15,24,Math.PI/2,{interactive:false,structural:true,scaleZ:15/16}),
   DP('district-east-court-walls','district_court_walls',143,16,-Math.PI/2,{interactive:false,structural:true,scaleZ:20/16}),
+  ...EXTERIOR_GRAFFITI_COURTS.map(court=>DP(`district-${court.id}-graffiti`,`exterior_graffiti_${court.id}`,court.x,court.z,court.yaw,
+    {interactive:false,structural:true,blocks:false,scaleZ:court.scaleZ})),
   DP('district-outer-sprawl','district_outer_sprawl',-7,-7,0,{interactive:false,structural:true}),
   DP('district-outer-streets','district_outer_streets',-7,-7,0,{interactive:false,structural:true}),
   DP('district-south-post-box','district_post_box',8,105,0,{interactive:false,structural:true}),
@@ -971,17 +1010,19 @@ export const CONSERVATORY_PROPS = [
   // ── Loading dock: LAST LOAD-OUT ──────────────────────────────────────────
   // The room has a three-metre freight spine at x64–66. Everything lives at
   // the perimeter so the setup is dense without becoming a prop maze.
-  P('dock-level-check-box','tower_rope_mat',65.0,10.0,0,{interactive:false,blocks:false,scale:1.45,elevation:.07}),
+  P('dock-level-check-box','scene_dock_check_position',65.0,10.0,0,{interactive:false,blocks:false,elevation:.010}),
   P('dock-sign-studios-plant','scene_dock_sign_services',62.4,14.55,0,{
     mount:'wall',elevation:2.42,interactive:false,structural:true,blocks:false,
   }),
-  P('dock-desk-1','school_desk',60.0,6.0,.15,{
+  P('dock-desk-1','scene_dock_dispatch_desk',60.0,6.0,.15,{
     label:'signing desk',inspectAt:{x:59.6,y:7.0},dockInvestigation:true,
-    inspect:inspect('A school desk doing the job of a dispatch station. Somebody meant to come back to it.','The little desk is still waiting for the rest of its shift.'),
+    inspect:inspect('A scarred dispatch desk, its pigeonholes still holding the previous shift. Somebody meant to come back to it.','The open drawer is still waiting for the rest of its shift.'),
   }),
   // Measured rather than typed: it was at .83 against a school desk whose work
   // surface is .72, so the clipboard was sunk a hand's width INTO the desk.
+  // The dedicated dispatch desk keeps that same measured work plane.
   P('dock-work-order-clipboard','loose_note',60.2,6.05,.12,{
+    renderOffsetX:-Math.cos(.15)*.22-Math.sin(.15)*.10,renderOffsetZ:-Math.sin(.15)*.22+Math.cos(.15)*.10,
     label:'unfinished clipboard',on:'dock-desk-1',blocks:false,inspectAt:{x:60.55,y:7.0},dockInvestigation:true,
     inspect:inspect('Your job is clipped over somebody else’s unfinished leaving.','The last line is still waiting to be crossed out.'),
   }),
@@ -999,16 +1040,16 @@ export const CONSERVATORY_PROPS = [
       again:'Click. Nothing. Somehow that is comforting now.',
     },
   }),
-  P('dock-hand-truck','equipment_cart',70.8,5.35,Math.PI/2,{
-    label:'strapped hand truck',scale:.72,inspectAt:{x:70.1,y:5.5},dockInvestigation:true,
+  P('dock-hand-truck','scene_dock_hand_truck',70.8,5.35,Math.PI/2,{
+    label:'strapped hand truck',scale:1,inspectAt:{x:70.1,y:5.5},dockInvestigation:true,
     inspect:inspect('A hand truck tied up neatly before it ever carried the load.','FRAME FIRST, still chalked across its foot.'),
   }),
-  P('dock-freight-crates','equipment_rack',72.1,7.45,0,{
-    label:'empty freight crates',scale:1.15,inspectAt:{x:71.0,y:7.5},dockInvestigation:true,
+  P('dock-freight-crates','scene_dock_freight_crates',72.1,7.45,0,{
+    label:'empty freight crates',scale:1,inspectAt:{x:71.0,y:7.5},dockInvestigation:true,
     inspect:inspect('Three empty crates. Everything in the room had somewhere to go except the chandelier.','The empty boxes still smell of rain and hot dust.'),
   }),
-  P('dock-freight-crate-low','instrument_case',71.5,8.55,Math.PI/2,{interactive:false,blocks:false,scale:1.15}),
-  P('dock-road-case','instrument_case',60.1,12.45,Math.PI/2,{
+  P('dock-freight-crate-low','scene_dock_crate_low',71.5,8.55,Math.PI/2,{interactive:false,blocks:false}),
+  P('dock-road-case','scene_dock_road_case_open',60.1,12.45,-Math.PI/2,{
     label:'previous recordist’s case',dockInvestigation:true,
     ...play(DOCK_CASE,'An open road case with a recorder-shaped absence inside it.','Four tally marks under the handle. Space for one more.'),
     acousticKind:'handling_noise',hushPlayback:{mode:'interval',minMs:5200,maxMs:7600},
@@ -1017,8 +1058,8 @@ export const CONSERVATORY_PROPS = [
       heard:{first:'The case stayed here. Its little metal cough came from across the room.',again:'One sound. Two places. Keep them separate.'},
     },
   }),
-  P('dock-cable-reel','lane_reel',71.8,10.7,0,{
-    label:'empty cable reel',scale:.82,blocks:true,dockInvestigation:true,
+  P('dock-cable-reel','scene_dock_cable_reel',71.8,10.7,0,{
+    label:'empty cable reel',scale:1,blocks:true,dockInvestigation:true,
     ...play(DOCK_REEL,'An empty reel, wound clean and left with nothing to carry.','The handle rests one tooth past certainty.'),
     acousticKind:'mechanical_click',hushPlayback:{mode:'interval',minMs:5600,maxMs:8200},
     aftermathInspect:{
@@ -1026,8 +1067,8 @@ export const CONSERVATORY_PROPS = [
       heard:{first:'The handle did not turn. The click still came from behind the desk.',again:'You know what you heard. You do not know what heard you.'},
     },
   }),
-  P('dock-shutter-bar','plant_pipe_straight',72.4,12.45,0,{
-    label:'singing shutter bar',scale:.88,blocks:false,inspectAt:{x:71.4,y:12.45},dockInvestigation:true,
+  P('dock-shutter-bar','scene_dock_shutter_bar',72.4,11.0,Math.PI/2,{renderOffsetX:.60,
+    label:'singing shutter bar',scale:1,blocks:false,inspectAt:{x:71.4,y:11.0},dockInvestigation:true,
     ...play(DOCK_SHUTTER,'A steel bar runs shoulder-high across the loading shutter. Put a knuckle to it and the whole wall rings.','Put a hand on it and the room goes quiet.'),
     acousticKind:'structure_impact',hushPlayback:{mode:'interval',minMs:6100,maxMs:9000},
     aftermathInspect:{
@@ -1035,17 +1076,17 @@ export const CONSERVATORY_PROPS = [
       heard:{first:'Your knock returned from above the chandelier, where there is no steel to carry it.',again:'The room knew the sound well enough to put it somewhere else.'},
     },
   }),
-  P('dock-chandelier-frame','tower_frame',69.0,6.25,0,{
-    label:'caged chandelier',scale:.34,blocks:false,inspectAt:{x:67.45,y:7.1},dockInvestigation:true,
+  P('dock-chandelier-frame','scene_dock_chandelier_cage',69.0,6.25,0,{
+    label:'caged chandelier',scale:1,blocks:true,inspectAt:{x:67.45,y:7.1},dockInvestigation:true,
     inspect:inspect('A chandelier locked inside a wheeled cage. Its wire ends in open air.','Too carefully held for rubbish. Too dead to be a lamp.'),
     aftermathInspect:{
       first:'Black bulbs. Bright glass. Every wheel still locked.',
       again:'The cage never moved. The thing inside it changed anyway.',
     },
   }),
-  P('dock-chandelier-intact','chandelier_03',69.0,6.25,0,{label:'chandelier lamps',interactive:false,blocks:false,scale:1.48,elevation:1.05}),
-  P('dock-chandelier-spent','chandelier_03',69.05,6.3,.48,{label:'ruptured chandelier lamps',interactive:false,blocks:false,scale:1.18,scaleY:.48,elevation:.48}),
-  P('dock-chandelier-tag','loose_note',67.85,6.55,-.2,{interactive:false,blocks:false,scale:.8,elevation:1.0}),
+  P('dock-chandelier-intact','chandelier_03',69.0,6.25,0,{label:'chandelier lamps',interactive:false,blocks:false,scale:1.48,elevation:2.475}),
+  P('dock-chandelier-spent','chandelier_03',69.05,6.3,.48,{label:'ruptured chandelier lamps',interactive:false,blocks:false,scale:1.18,scaleY:.48,elevation:.93}),
+  P('dock-chandelier-tag','loose_note',68.15,6.25,-.2,{interactive:false,blocks:false,scale:.45,elevation:2.55}),
 
   // Loading dock / foyer: work furniture, not a showroom.
   P('foyer-pew-1','pew',83.0,5.5,0,{inspect:inspect('One chapel pew never made it upstairs. A paper removal tag is still tied to it.','The tag says RETURN TO CHAPEL.')}),
@@ -1655,9 +1696,8 @@ export const CONSERVATORY_PROPS = [
     P(`hall-stand-${i}`,'music_stand',107.0+i*1.2,11.0,0,{inspect:inspect('A music stand at sitting height.','No part on it.')}),
   ]),
 
-  // Stair flights, landings, and their approach corridors intentionally stay
-  // bare. The architecture and torch define the route; rails, paintings,
-  // furniture, frames, and hanging fixtures made the safe throat ambiguous.
+  // Flights and approach throats stay clear. The audited waiting bays above
+  // keep their sofas outside those routes and paintings on physical masonry.
 
   // Practice suite. Every threshold remains visibly wedged open, but each room
   // now records a different interruption. The wall-backed uprights are the
@@ -1947,22 +1987,21 @@ export const CONSERVATORY_PROPS = [
   }),
 
   // ── Natatorium: an Edwardian municipal bath under a later steel refit ───
-  // The roof, cubicles and end-window dressing all sit on the ONE authored
-  // room envelope. Nothing below the roof spans the hall, and both cubicle
-  // banks are shallow wall furniture, so this cannot regress into the former
-  // room-inside-a-room failure.
+  // The roof, shallow cubicle banks and end-window dressing follow the original
+  // pool envelope. Only the north dry band contains the new glazed greenhouse
+  // and changing buffer; the basin, access stair and pool deck remain open.
   P('natatorium-roof-structure','natatorium_roof_structure',83.0,38.5,0,{interactive:false,structural:true,floorOverride:0}),
   P('natatorium-perimeter-relief','natatorium_perimeter_relief',83.0,38.5,0,{interactive:false,structural:true,floorOverride:0}),
-  // A real baths entrance: the dry lobby has an admission point, wet/dry
-  // drains, glazed control screens and a clear accessible lane before the pool
-  // reveals itself. It is dressing, not a second collision envelope.
+  // The supplemental glasshouse pack rehosts this mesh's admission hardware:
+  // screens behind the planting, counter and folded turnstile inside changing.
+  // Its stable anchor remains save-compatible; glass-court owns the barriers.
   P('natatorium-entrance-fixtures','natatorium_entrance_fixtures',84.0,30.0,0,{interactive:false,structural:true}),
-  P('pool-entry-rules','notice_board',78.0,28.0,Math.PI,{
-    mount:'wall',elevation:1.28,inspectAt:{x:75,y:28.4},
+  P('pool-entry-rules','notice_board',95.0,28.0,Math.PI,{
+    mount:'wall',mountNormal:{nx:0,ny:1},physicalWall:{x:95,z:28,normal:{x:0,z:1}},elevation:1.28,inspectAt:{x:95,y:29.6},
     inspect:inspect('Municipal baths rules under wired glass: shower first, no outdoor shoes beyond the blue line, children accompanied. Closing time has been pasted over three times.','Shower first. Outdoor shoes stop at the blue line.'),
   }),
   P('pool-entry-first-aid','key_cabinet',93.0,28.0,Math.PI,{
-    mount:'wall',scale:.68,elevation:1.08,inspectAt:{x:93,y:28.4},
+    mount:'wall',mountNormal:{nx:0,ny:1},physicalWall:{x:93,z:28,normal:{x:0,z:1}},scale:.68,elevation:1.08,inspectAt:{x:93,y:29.6},
     inspect:inspect('A green first-aid cabinet beside the entrance. The inventory card still lists eye wash, foil blankets and a resuscitation mask; the seal is broken.','First aid. Seal broken, card still signed.'),
   }),
   P('natatorium-cubicles-west','natatorium_cubicle_bank',71.4,40.5,-Math.PI/2,{interactive:false,structural:true}),
@@ -2157,7 +2196,7 @@ export const CONSERVATORY_PROPS = [
   // one van beat, along with the case, the order and the badge. Two [E] targets
   // a foot apart made the opening a hunt for the second one.
   P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,interactive:false,structural:true,label:'blue-handled adjustable spanner'}),
-  P('getin-heavy-stillson','stillson_wrench',70.5,6.25,.08,{action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
+  P('getin-heavy-stillson','stillson_wrench',70.8,4.25,.08,{elevation:.86,renderOffsetX:-.20,renderOffsetZ:-.25,action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
 
   // ── THE VIGIL ────────────────────────────────────────────────────────────
   //
@@ -2185,4 +2224,9 @@ export const CONSERVATORY_PROPS = [
     :P(entry.id,entry.mesh,50+entry.x,200+entry.y,entry.yaw,{
       interactive:false,structural:true,blocks:false,vigilActorId:entry.actorId||null,vigilCluster:entry.cluster,
     })),
-].map(academicGalleryPlacement);
+].map(academicGalleryPlacement).flatMap(prop=>{
+  const dressing=EXTERIOR_FRONTAGE_DRESSING.find(row=>row.id===prop.id);
+  if(!dressing)return[prop];
+  const {fallbackMesh,...pose}=prop;
+  return[prop,{...pose,id:`${prop.id}-trade-layer`,mesh:dressing.mesh,interactive:false,blocks:false}];
+});

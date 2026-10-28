@@ -11,6 +11,7 @@ import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {EXTERIOR_PUB,pubExteriorAt,pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
+import {SOUTH_ROW_SHOPS} from '../src/data/plaza-shopfronts.js';
 import {captureExteriorMapSource,buildExteriorMapModel,usesExteriorMap,exteriorMapOccupancyFilter} from '../src/game/exterior-map-model.js';
 import {findGridRoute} from '../src/game/map-routing.js';
 import {buildMinimapCommands} from '../src/render/map-commands.js';
@@ -50,9 +51,29 @@ test('Lyric shell and entrance follow the relocated canonical pub, including sta
   assert.equal(shape.points[0].x,EXTERIOR_PUB.bounds.x0);assert.equal(shape.points[2].y,EXTERIOR_PUB.bounds.z1);
   assert.ok(target.position.y<EXTERIOR_PUB.frontWorldZ,'marker is on the outside apron, not in furniture');
 });
-test('formerly pub-owned street deeds are still opaque closed shops, while court mouths remain openings',()=>{
+test('Bindery and Lyric have named, truthful street-map and minimap addresses',()=>{
+  const bindery=source.spaces.find(s=>s.id==='outside:bindery'),lyric=source.spaces.find(s=>s.id==='outside:lyric');
+  assert.ok(bindery);assert.equal(bindery.shortLabel,'BINDERY');assert.equal(lyric.shortLabel,'THE LYRIC');
+  const deed=SOUTH_ROW_SHOPS.find(shop=>shop.useId==='bindery');
+  const footprint=source.district.footprints.find(shape=>shape.id===`${deed.rowId}:${deed.deed}`);
+  assert.equal(footprint.label,'THE BINDERY');
+  assert.ok(bindery.position.x>Math.min(...footprint.points.map(p=>p.x))&&bindery.position.x<Math.max(...footprint.points.map(p=>p.x)));
+  assert.ok(bindery.position.y<Math.min(...footprint.points.map(p=>p.y)),'the mark is on public pavement, outside the closed shop');
+  assert.equal(bindery.access,'shopfront');assert.equal(bindery.doorIds,undefined,'a map mark must not invent an enterable door');
+  assert.ok(source.floors[0].open.has(`${Math.floor(bindery.position.x)},${Math.floor(bindery.position.y)}`));
+  for(const place of[bindery,lyric]){
+    const commands=buildMinimapCommands({model:modelFor({player:playerAt(place)}),viewport:{x:1,y:1,w:22,h:10},aspect:.5});
+    assert.ok(commands.some(c=>c.kind==='district-landmark'&&c.id===place.id&&c.label===place.shortLabel&&c.showLabel));
+    OBJ.setPlayerWaypoint({spaceId:place.id,floorId:'district',label:place.label,position:place.position});
+    const saved=structuredClone(OBJ.saveObjState());OBJ.clearWaypoint();OBJ.loadObjState(saved,{validTargets:[],validSpaces:FACILITY_SPACE_IDS});
+    assert.equal(OBJ.playerWaypoint()?.spaceId,place.id);OBJ.clearWaypoint();
+  }
+});
+test('the Lyric owns its two south-row deeds once, while court mouths remain openings',()=>{
   const shapes=source.district.footprints;
-  assert.ok(shapes.some(f=>f.id==='district-south-row-a:0'));assert.ok(shapes.some(f=>f.id==='district-south-row-a:1'));
+  assert.equal(shapes.filter(f=>f.id==='lyric').length,1);
+  assert.ok(!shapes.some(f=>f.id==='district-south-row-a:0'));assert.ok(!shapes.some(f=>f.id==='district-south-row-a:1'));
+  assert.ok(shapes.some(f=>f.id==='district-south-row-a:2'),'the next ordinary shop deed remains mapped');
   assert.ok(!shapes.some(f=>f.id==='district-north-row-b:4'));
   assert.ok(shapes.some(f=>f.role==='church'));assert.ok(shapes.some(f=>f.role==='outbuilding'));
 });

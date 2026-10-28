@@ -224,22 +224,24 @@ test('the four proven furniture conflicts move to clear wall hosts without remov
     ['architecture-space-studio-b2-switch','b2-piano'],
     ['architecture-space-faculty-office-east-switch','occupation-academic-post'],
     ['architecture-space-academic-reception-socket-a','amenity-staff-coat-lockers'],
-    // The physical-host repair independently rejects these earlier choices.
-    // Their new unreserved poses must positively fit the real wall and locker.
-    ['architecture-space-academic-reception-socket-b','amenity-staff-coat-lockers',false],
+    // A real wall can still be hidden by furniture: this surviving physical
+    // socket host remains inside the locker until its reservation is applied.
+    ['architecture-space-academic-reception-socket-b','amenity-staff-coat-lockers'],
+    // Physical-host rejection independently clears these earlier conflicts;
+    // their replacement poses must still retain real masonry and clearance.
     ['architecture-space-academic-reception-radiator','amenity-staff-coat-lockers',false],
     ['architecture-space-stripped-office-socket-b','amenity-staff-service-connections',false],
   ];
   for(const [id,hostId,reservationStillRequired=true]of cases){
     const before=unreserved.placements.find(p=>p.id===id),after=repaired.placements.find(p=>p.id===id),host=hosts.get(hostId);
     assert.ok(before&&after,`${id}: fitting remains in its original room kit`);
-    if(reservationStillRequired)assert.ok(boxesOverlap(resolvedFixtureBox(before),host),`${id}: regression reconstructs the original host conflict`);
-    else {
-      const x=Math.round(before.x/CELL),y=Math.round(before.y/CELL),spec=ARCHITECTURE_FITTING_MESHES[before.mesh];
-      assert.ok(physicalWallFaceHasHost(FP,{x,y,...before.mountNormal},{bottom:FP.floorAt(x,y)+before.elevation+.001,
-        height:spec.h-.002,halfWidthCells:spec.w/(2*CELL)}),`${id}: the unreserved replacement has a full physical wall host`);
-      assert.ok(!boxesOverlap(resolvedFixtureBox(before),host),`${id}: rejecting the phantom wall also clears the existing host`);
+    for(const [name,p]of [['unreserved',before],['reserved',after]]){
+      const x=Math.round(p.x/CELL),y=Math.round(p.y/CELL),spec=ARCHITECTURE_FITTING_MESHES[p.mesh];
+      assert.ok(physicalWallFaceHasHost(FP,{x,y,...p.mountNormal},{bottom:FP.floorAt(x,y)+p.elevation+.001,
+        height:spec.h-.002,halfWidthCells:spec.w/(2*CELL)}),`${id}: ${name} placement retains a full physical wall host`);
     }
+    if(reservationStillRequired)assert.ok(boxesOverlap(resolvedFixtureBox(before),host),`${id}: the real wall alone does not clear the existing furniture`);
+    else assert.ok(!boxesOverlap(resolvedFixtureBox(before),host),`${id}: rejecting the phantom wall also clears the existing host`);
     assert.ok(!boxesOverlap(resolvedFixtureBox(after),host,host.clearance-.002),`${id}: real mounted geometry clears the existing host`);
   }
   assert.deepEqual(repaired.statistics.unresolvedRooms,[],'no reservation suppresses a required fitting');

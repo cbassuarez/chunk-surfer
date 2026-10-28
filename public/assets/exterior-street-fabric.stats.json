@@ -1,0 +1,743 @@
+{
+  "revision": "ellery-street-fabric-1",
+  "pack": "exterior-street-fabric.glb",
+  "generator": "tools/chunk_surfer/build-exterior-street-fabric.mjs",
+  "coordinateSpace": "metres; Y up",
+  "origin": {
+    "x": 64,
+    "z": 46
+  },
+  "totalTriangles": 11334,
+  "meshes": {
+    "exterior_street_kerbs": {
+      "triangles": 7022,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -76.625,
+          0.03137254901960772,
+          -58.625
+        ],
+        "max": [
+          76.625,
+          0.15686274509803866,
+          58.625
+        ]
+      }
+    },
+    "exterior_street_paving_joints": {
+      "triangles": 1886,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -78.49,
+          0.15786274509803866,
+          -60.49
+        ],
+        "max": [
+          78.49000000000001,
+          0.15786274509803866,
+          60.489999999999995
+        ]
+      }
+    },
+    "exterior_street_services": {
+      "triangles": 2202,
+      "primitives": 5,
+      "bounds": {
+        "min": [
+          -78.25,
+          0.03269349845201226,
+          -60.25
+        ],
+        "max": [
+          78.25,
+          0.15936274509803866,
+          60.25
+        ]
+      }
+    },
+    "exterior_street_nameplates": {
+      "triangles": 56,
+      "primitives": 5,
+      "bounds": {
+        "min": [
+          -78.85,
+          3.995,
+          -60.85
+        ],
+        "max": [
+          78.84999999999998,
+          4.245,
+          60.85
+        ]
+      }
+    },
+    "exterior_street_wall_services": {
+      "triangles": 168,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          0,
+          0.8,
+          -0.32
+        ],
+        "max": [
+          0.3055,
+          4.1,
+          0.32
+        ]
+      }
+    }
+  },
+  "sourceHashes": {
+    "src/data/exterior-street-fabric.js": "13df3f12c6fd1b7cfc025d68a7c4c032989a26eab2d579512563c16bc6ed1487",
+    "tools/chunk_surfer/exterior-street-fabric-geometry.mjs": "4fb019c01719549d753580ca3003c026a838be0f16cc36c5b3d512d55ab2dd51",
+    "tools/chunk_surfer/build-exterior-street-fabric.mjs": "e1fba201c30b966412f20a15abfc1dc4afa1a58028f3cc2c33219235528825ce",
+    "src/data/street-pilot.js": "d0761b11648bc781bcab355ad8156859db215cf3888ebee1e3efaa6ea9303b6b",
+    "src/data/exterior-foreground.js": "0ce18cf99db743822f15ba1d33c719a6af72a50e460428e7700a36ef3fa58cc2",
+    "src/data/main-stair-geometry.js": "e5594ac5681c0b55afa49cf2b7c2f2f74d852b4d3b3e36b1a60370e6ac50d0d3"
+  },
+  "protectedAssets": {
+    "public/assets/street-pilot.glb": "dc23f03c5862afc66c9df406b5b02369b68d64f2ee6f8db912d22dabd2ac3c49",
+    "public/assets/conservatory-props.glb": "d0c13b1c05c0376aaef963b54c86b27cae04f56112e6242de8bb850032e6dfe7",
+    "public/assets/exterior-frontages.glb": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5",
+    "public/assets/conservatory-landing-fittings.glb": "6b7860a05b66c00ef789612e60df57df2e8f99fa5d4a9b5472058fdc11024200"
+  },
+  "protectedAssetsUnchanged": true,
+  "seams": {
+    "northPilot": {
+      "x": [
+        63,
+        93
+      ],
+      "kerbZ": [
+        -12.5,
+        -2.5
+      ],
+      "authoredFootwayTop": 0.12,
+      "authoredSettTop": 0.025,
+      "drawnFootwayTop": 0.15686274509803866,
+      "drawnSettTop": 0.03137254901960773,
+      "maximumConstructionGap": 0.007,
+      "pilotAssetUnchanged": true
+    },
+    "busStop": {
+      "preservedFootway": {
+        "x0": -14.5,
+        "x1": -11,
+        "z0": 12,
+        "z1": 20,
+        "floor": 0.12
+      },
+      "ends": "existing95mm collision transitions retained, not certified accessible"
+    }
+  },
+  "placements": [
+    {
+      "id": "north:-1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 9.18,
+        "x1": 9.82,
+        "z0": -12.389999999999999,
+        "z1": -12.049999999999999
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:-1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 33.18,
+        "x1": 33.82,
+        "z0": -12.389999999999999,
+        "z1": -12.049999999999999
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:-1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 57.18,
+        "x1": 57.82,
+        "z0": -12.389999999999999,
+        "z1": -12.049999999999999
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:-1:gully:105.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 105.18,
+        "x1": 105.82,
+        "z0": -12.389999999999999,
+        "z1": -12.049999999999999
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 9.18,
+        "x1": 9.82,
+        "z0": -2.95,
+        "z1": -2.6100000000000003
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 33.18,
+        "x1": 33.82,
+        "z0": -2.95,
+        "z1": -2.6100000000000003
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 57.18,
+        "x1": 57.82,
+        "z0": -2.95,
+        "z1": -2.6100000000000003
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north:1:gully:105.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 105.18,
+        "x1": 105.82,
+        "z0": -2.95,
+        "z1": -2.6100000000000003
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:-1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 9.18,
+        "x1": 9.82,
+        "z0": 94.61,
+        "z1": 94.95
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:-1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 33.18,
+        "x1": 33.82,
+        "z0": 94.61,
+        "z1": 94.95
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:-1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 57.18,
+        "x1": 57.82,
+        "z0": 94.61,
+        "z1": 94.95
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:-1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 81.18,
+        "x1": 81.82,
+        "z0": 94.61,
+        "z1": 94.95
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:-1:gully:105.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 105.18,
+        "x1": 105.82,
+        "z0": 94.61,
+        "z1": 94.95
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 9.18,
+        "x1": 9.82,
+        "z0": 104.05,
+        "z1": 104.39
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 33.18,
+        "x1": 33.82,
+        "z0": 104.05,
+        "z1": 104.39
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 57.18,
+        "x1": 57.82,
+        "z0": 104.05,
+        "z1": 104.39
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 81.18,
+        "x1": 81.82,
+        "z0": 104.05,
+        "z1": 104.39
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "south:1:gully:105.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 105.18,
+        "x1": 105.82,
+        "z0": 104.05,
+        "z1": 104.39
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:-1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -12.389999999999999,
+        "x1": -12.049999999999999,
+        "z0": 9.18,
+        "z1": 9.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:-1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -12.389999999999999,
+        "x1": -12.049999999999999,
+        "z0": 33.18,
+        "z1": 33.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:-1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -12.389999999999999,
+        "x1": -12.049999999999999,
+        "z0": 57.18,
+        "z1": 57.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:-1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -12.389999999999999,
+        "x1": -12.049999999999999,
+        "z0": 81.18,
+        "z1": 81.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -2.95,
+        "x1": -2.6100000000000003,
+        "z0": 9.18,
+        "z1": 9.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -2.95,
+        "x1": -2.6100000000000003,
+        "z0": 33.18,
+        "z1": 33.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -2.95,
+        "x1": -2.6100000000000003,
+        "z0": 57.18,
+        "z1": 57.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "west:1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": -2.95,
+        "x1": -2.6100000000000003,
+        "z0": 81.18,
+        "z1": 81.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:-1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 130.61,
+        "x1": 130.95,
+        "z0": 9.18,
+        "z1": 9.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:-1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 130.61,
+        "x1": 130.95,
+        "z0": 33.18,
+        "z1": 33.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:-1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 130.61,
+        "x1": 130.95,
+        "z0": 57.18,
+        "z1": 57.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:-1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 130.61,
+        "x1": 130.95,
+        "z0": 81.18,
+        "z1": 81.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:1:gully:9.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 140.05,
+        "x1": 140.39,
+        "z0": 9.18,
+        "z1": 9.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:1:gully:33.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 140.05,
+        "x1": 140.39,
+        "z0": 33.18,
+        "z1": 33.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:1:gully:57.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 140.05,
+        "x1": 140.39,
+        "z0": 57.18,
+        "z1": 57.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "east:1:gully:81.5",
+      "kind": "drainage-gully",
+      "footprint": {
+        "x0": 140.05,
+        "x1": 140.39,
+        "z0": 81.18,
+        "z1": 81.82
+      },
+      "authoredTop": 0.032,
+      "drawnTop": 0.04061919504643948,
+      "drains": "sett margin beside footway kerb"
+    },
+    {
+      "id": "north-electric",
+      "kind": "flush-utility-cover",
+      "use": "electricity",
+      "footprint": {
+        "x0": 22.94,
+        "x1": 24.459999999999997,
+        "z0": -14.25,
+        "z1": -13.39
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "north-telecom",
+      "kind": "flush-utility-cover",
+      "use": "telecommunications",
+      "footprint": {
+        "x0": 107.5,
+        "x1": 109.1,
+        "z0": -1.6099999999999997,
+        "z1": -0.7499999999999998
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "south-electric",
+      "kind": "flush-utility-cover",
+      "use": "electricity",
+      "footprint": {
+        "x0": 63.139999999999986,
+        "x1": 64.66,
+        "z0": 105.38999999999999,
+        "z1": 106.25
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "south-telecom",
+      "kind": "flush-utility-cover",
+      "use": "telecommunications",
+      "footprint": {
+        "x0": 109.9,
+        "x1": 111.5,
+        "z0": 92.75,
+        "z1": 93.61000000000001
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "west-electric",
+      "kind": "flush-utility-cover",
+      "use": "electricity",
+      "footprint": {
+        "x0": -14.25,
+        "x1": -13.39,
+        "z0": 40.63999999999999,
+        "z1": 42.160000000000004
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "east-electric",
+      "kind": "flush-utility-cover",
+      "use": "electricity",
+      "footprint": {
+        "x0": 141.39,
+        "x1": 142.25,
+        "z0": 64.33999999999999,
+        "z1": 65.86
+      },
+      "authoredTop": 0.1225,
+      "drawnTop": 0.15936274509803866
+    },
+    {
+      "id": "street-name-borough",
+      "kind": "wall-nameplate",
+      "center": [
+        83.2,
+        4.12,
+        -14.82
+      ],
+      "width": 1.94,
+      "height": 0.25,
+      "support": "existing masonry beside the named existing court mouth"
+    },
+    {
+      "id": "street-name-west-mews",
+      "kind": "wall-nameplate",
+      "center": [
+        -14.82,
+        4.12,
+        29.2
+      ],
+      "width": 1.44,
+      "height": 0.25,
+      "support": "existing masonry beside the named existing court mouth"
+    },
+    {
+      "id": "street-name-workshop",
+      "kind": "wall-nameplate",
+      "center": [
+        142.82,
+        4.12,
+        21.2
+      ],
+      "width": 1.94,
+      "height": 0.25,
+      "support": "existing masonry beside the named existing court mouth"
+    },
+    {
+      "id": "street-name-lyric-yard",
+      "kind": "wall-nameplate",
+      "center": [
+        80.8,
+        4.12,
+        106.82
+      ],
+      "width": 1.54,
+      "height": 0.25,
+      "support": "existing masonry beside the named existing court mouth"
+    }
+  ],
+  "constructionPartCount": 5565,
+  "constructionRoleCounts": {
+    "kerb": 3505,
+    "gutter": 701,
+    "flag-joint": 943,
+    "gully": 340,
+    "cover": 60,
+    "bus-stop-kerb": 1,
+    "wall-nameplate": 4,
+    "box": 10,
+    "cylinder": 1
+  },
+  "section": {
+    "carriagewayWidth": 6,
+    "settMarginWidth": 2,
+    "footwayWidth": 2,
+    "roadFloor": 0,
+    "settFloor": 0.025,
+    "footwayFloor": 0.12,
+    "kerbWidth": 0.15
+  },
+  "drawnSection": {
+    "roadFloor": 0.03137254901960773,
+    "settFloor": 0.03137254901960773,
+    "footwayFloor": 0.15686274509803866
+  },
+  "worldFloorChanged": false,
+  "collisionChanged": false,
+  "lightSources": "Exported physical row-socket helper; native light selection and visual acceptance remain root integration.",
+  "pending": [
+    "native final dither approach and continuous footway traversal",
+    "lamp pools/light-budget integration",
+    "nameplate recognition at intended distance"
+  ],
+  "bytes": 1050532,
+  "sha256": "f780ccd6ac839f78c360a8b0b017e1da52300043b0f39d0df304101fff8b4bba",
+  "textureBaseLevelBytes": 2587200
+}

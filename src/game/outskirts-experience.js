@@ -46,12 +46,31 @@ function normalizeWoman(value = {}) {
     receivedAt: moment(value.receivedAt), receiveId: typeof value.receiveId === 'string' ? value.receiveId.slice(0, 120) : null,
     acknowledgedAt: moment(value.acknowledgedAt), acknowledgeYaw: clamp(value.acknowledgeYaw ?? .26, -.6, .6), stepAt: moment(value.stepAt) };
 }
+function normalizeBusTransit(value,oldStage=0){
+  const v=value?.version===1?value:null,legacy=!v&&oldStage>=3;
+  const moment=n=>n==null?null:Math.max(0,finite(n));
+  const completed=legacy||!!v?.exited;
+  const point=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)?{x:p.x,z:p.z}:null;
+  const raw=v?.interior,interior=raw&&[raw.origin?.x,raw.origin?.y,raw.origin?.z,raw.origin?.yaw,
+    raw.returnPose?.x,raw.returnPose?.y,raw.busPose?.x,raw.busPose?.z,raw.busPose?.yaw,raw.busPose?.ground].every(Number.isFinite)
+    ?{active:!!raw.active,origin:{...raw.origin},returnPose:{...raw.returnPose},outsidePose:raw.outsidePose&&Number.isFinite(raw.outsidePose.x)&&Number.isFinite(raw.outsidePose.y)?{...raw.outsidePose}:{...raw.returnPose},busPose:{...raw.busPose},enteredAt:moment(raw.enteredAt),walkCheckpoint:Math.floor(clamp(raw.walkCheckpoint,0,100)),stepIndex:Math.floor(clamp(raw.stepIndex,0,10000))}:null;
+  return{version:1,doorOpened:v?!!v.doorOpened:oldStage>=2,entered:v?!!v.entered:legacy,
+    close:v?!!v.close:legacy,exited:v?!!v.exited:legacy,
+    doorAt:moment(v?.doorAt),enteredAt:moment(v?.enteredAt),closeAt:moment(v?.closeAt),exitedAt:moment(v?.exitedAt),
+    noticeAt:moment(v?.noticeAt??(completed?v?.closeAt??0:null)),passAt:moment(v?.passAt??(completed?v?.exitedAt??0:null)),
+    gazeYaw:clamp(v?.gazeYaw??(completed?-2.1:0),-2.75,1.1),gazeSampleAt:moment(v?.gazeSampleAt),
+    trapAt:moment(v?.trapAt),frontTryAt:moment(v?.frontTryAt),tryAt:moment(v?.tryAt),openAt:moment(v?.openAt??(completed?0:null)),
+    crossedAt:moment(v?.crossedAt??(completed?v?.exitedAt??0:null)),stripCueCount:Math.floor(clamp(v?.stripCueCount??(completed?4:0),0,4)),
+    stripPositions:Array.isArray(v?.stripPositions)?v.stripPositions.slice(0,4).map(point):[],
+    entryLattice:v?.entryLattice&&Number.isFinite(v.entryLattice.x)&&Number.isFinite(v.entryLattice.y)?{x:v.entryLattice.x,y:v.entryLattice.y}:null,
+    attemptPose:v?.attemptPose&&[v.attemptPose.x,v.attemptPose.y,v.attemptPose.z,v.attemptPose.yaw].every(Number.isFinite)?{...v.attemptPose}:null,interior};
+}
 // A bounded capture/replay record. The full walk history belongs to Source state,
 // not every causal frame. Unknown versions are deliberately not approximated.
 export function normalizeOutskirtsCharacterFrame(value) {
   if (!value || typeof value !== 'object' || (value.version != null && value.version !== 1)) return null;
   return { version: 1, clock: clamp(value.clock, 0, 3_600_000), fold: normalizeFold(value.fold), locomotion: normalizeLocomotion(value.locomotion),
-    busStage: clamp(value.busStage, 0, 4), woman: normalizeWoman(value.woman) };
+    busStage: clamp(value.busStage, 0, 4), busTransit:normalizeBusTransit(value.busTransit,value.busStage), woman: normalizeWoman(value.woman) };
 }
 
 export function normalizeOutskirtsExperience(value = {}) {
@@ -62,6 +81,7 @@ export function normalizeOutskirtsExperience(value = {}) {
     observed: (Array.isArray(v.observed) ? v.observed : []).filter(p => typeof p?.id === 'string').slice(-128)
       .map(p => ({ id: p.id.slice(0, 120), seen: !!p.seen, gone: !!p.gone, epoch: clamp(p.epoch, 0, 32), face: p.face == null ? null : finite(p.face) })),
     busStage: clamp(v.busStage, 0, 4),
+    busTransit: normalizeBusTransit(v.busTransit,v.busStage),
     woman: normalizeWoman(v.woman),
     history: (Array.isArray(v.history) ? v.history : []).slice(-1800)
       .filter(p => Number.isFinite(p?.along) && Number.isFinite(p?.across))
@@ -160,7 +180,7 @@ export function createOutskirtsExperience(initialState) {
     const frame = normalizeOutskirtsCharacterFrame(value);
     if (!frame) return false;
     state.clock = frame.clock; state.fold = frame.fold; state.locomotion = frame.locomotion;
-    state.busStage = frame.busStage; state.woman = frame.woman;
+    state.busStage = frame.busStage; state.busTransit=frame.busTransit; state.woman = frame.woman;
     womanCueSamples.clear();
     return true;
   }
@@ -169,6 +189,13 @@ export function createOutskirtsExperience(initialState) {
     const delta = suspended ? 0 : clamp(dt, 0, .25);
     if (!delta) return { transition: false, frame: characterFrame() };
     state.clock = Math.round((state.clock + delta) * 1e6) / 1e6;
+    const bus=state.busTransit;
+    if(bus.trapAt!=null){
+      for(const [i,at]of [.35,1.05,1.85,2.65].entries())if(bus.stripCueCount<=i&&state.clock-bus.trapAt>=at){
+        bus.stripCueCount=i+1;events.push({id:`outskirts-bus:strip-${i}`,cue:'bus-strip',variant:i,
+          ...(bus.stripPositions[i]||{}),strength:.48});
+      }
+    }
     const previous = state.locomotion;
     const samePass = previous && previous.pass === pass;
     const distance = samePass ? Math.hypot(along - previous.along, across - previous.across) : 0;
@@ -229,6 +256,72 @@ export function createOutskirtsExperience(initialState) {
     if (state.busStage === 3 && visible && crossed) state.busStage = 4;
     return state.busStage;
   }
+  function busTransit({active,visible,entryNear,inside,closeWoman,exited,noticeNear,passing,gazeYaw,entryPosition,position,
+    escapeLook=false,entryClear=false,midAisle=false,stripPositions=[],entryLattice=null,acknowledgeYaw=.26}={}){
+    if(!active)return state.busStage;
+    const t=state.busTransit,emit=(id,cue,strength,at)=>events.push({id:`outskirts-bus:${id}`,cue,...at,strength});
+    if(state.busStage===0&&visible){state.busStage=1;emit('arrival-air','bus-air',.45,entryPosition);}
+    if(!t.doorOpened&&(entryNear||inside)){
+      t.doorOpened=true;t.doorAt=state.clock;state.busStage=Math.max(2,state.busStage);
+      emit('entry-open','bus-door',.52,entryPosition);
+    }
+    if(!t.entered&&inside){
+      t.entered=true;t.enteredAt=state.clock;state.busStage=Math.max(3,state.busStage);
+      if(entryLattice&&Number.isFinite(entryLattice.x)&&Number.isFinite(entryLattice.y))t.entryLattice={x:entryLattice.x,y:entryLattice.y};
+      emit('floor-load','bus-load',.58,entryPosition);
+    }
+    if(t.entered&&t.trapAt==null&&((entryClear&&escapeLook)||midAisle)){
+      t.trapAt=state.clock;t.stripPositions=stripPositions.slice(0,4).map(p=>({...p}));
+      emit('entry-shut','bus-entry-shut',.72,entryPosition);
+    }
+    // The woman reacts to a physical approach, not to a timed wait in the
+    // aisle. A rushed legitimate exit still preserves notice -> pass order.
+    const passNow=t.entered&&((inside&&passing)||exited);
+    if(t.entered&&t.noticeAt==null&&((inside&&noticeNear)||passNow)){
+      t.noticeAt=state.clock;emit('woman-notice','bus-woman-notice',.64,position);
+    }
+    if(t.noticeAt!=null&&Number.isFinite(gazeYaw)){
+      const at=t.gazeSampleAt,dt=at==null?0:Math.max(0,state.clock-at);
+      if(at==null)t.gazeYaw=clamp(gazeYaw,-2.75,1.1);
+      else t.gazeYaw=mix(t.gazeYaw,clamp(gazeYaw,-2.75,1.1),1-Math.exp(-Math.min(.25,dt)*6));
+      t.gazeSampleAt=state.clock;
+    }
+    if(t.entered&&!t.close&&inside&&closeWoman){
+      t.close=true;t.closeAt=state.clock;state.woman.acknowledgedAt=state.clock;
+      state.woman.acknowledgeYaw=clamp(acknowledgeYaw,-.6,.6);
+      emit('rear-cloth','coat-rustle',.62,position);
+    }
+    if(passNow&&t.passAt==null){t.passAt=state.clock;emit('woman-pass','bus-woman-pass',.78,position);}
+    if(t.entered&&!t.exited&&exited){
+      t.exited=true;t.exitedAt=state.clock;state.busStage=4;
+      emit('rear-step','bus-exit',.42,position);
+    }
+    return state.busStage;
+  }
+  function busDoorTry({front=false,position={},playerPose=null}={}){
+    const t=state.busTransit,key=front?'frontTryAt':'tryAt';
+    if(!t.entered||t.exited||t.interior?.active||front&&t.trapAt==null)return{handled:false,reason:'unavailable'};
+    const changed=t[key]==null,event={id:`outskirts-bus:${front?'front':'rear'}-stuck`,cue:'bus-door-stuck',...position,strength:.74};
+    if(changed){t[key]=state.clock;t.attemptPose=playerPose;events.push(event);}
+    return{handled:true,changed,status:'stuck',event,eventsQueued:true};
+  }
+  function busWomanOpen({position={}}={}){
+    const t=state.busTransit;
+    if(t.tryAt==null||t.exited||t.interior?.active)return{handled:false,reason:'rear-door-not-tried'};
+    if(state.clock-t.tryAt<1.65)return{handled:false,reason:'rear-door-attempt-in-progress'};
+    const since=state.woman.receivedAt==null?Infinity:state.clock-state.woman.receivedAt;
+    if(since<4||since>=9&&since<11)return{handled:false,reason:'useful-hand-busy'};
+    const changed=t.openAt==null,event={id:'outskirts-bus:body-open',cue:'bus-body-open',...position,strength:.86};
+    if(changed){t.openAt=state.clock;events.push(event);}
+    return{handled:true,changed,status:changed?'opening':'already-opening',event,eventsQueued:true};
+  }
+  function busSetInterior(interior){state.busTransit.interior=interior?normalizeBusTransit({...state.busTransit,interior},state.busStage).interior:null;return state.busTransit.interior;}
+  function busCompleteCrossing(position={}){
+    const t=state.busTransit;if(t.exited)return false;
+    t.crossedAt=state.clock;t.exitedAt=state.clock;t.exited=true;state.busStage=4;
+    if(t.interior)t.interior.active=false;
+    events.push({id:'outskirts-bus:rear-step',cue:'bus-body-expel',...position,strength:.55});return true;
+  }
   function action(id, cue, position, { strength, variant } = {}) {
     if (state.actions.includes(id)) return false;
     state.actions.push(id);
@@ -266,7 +359,7 @@ export function createOutskirtsExperience(initialState) {
     return { ...state.woman };
   }
   return {
-    remember, echo, bus, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
+    remember, echo, bus, busTransit,busDoorTry,busWomanOpen,busSetInterior,busCompleteCrossing, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
     setRoadLoop: ({ turns = state.loopTurns, holding = state.loopHolding } = {}) => {
       state.loopTurns = Math.floor(clamp(turns, 0, 1_000_000)); state.loopHolding = holding === true;
       return { turns: state.loopTurns, holding: state.loopHolding };
@@ -277,6 +370,7 @@ export function createOutskirtsExperience(initialState) {
       if (state.locomotion && Number.isFinite(deltaAlong)) state.locomotion.along += deltaAlong;
     },
     busStage: () => state.busStage,
+    busTransitState:()=>({...normalizeBusTransit(state.busTransit,state.busStage),clock:state.clock}),
     hasAction: id => state.actions.includes(id),
     events: () => events.splice(0),
     setPlayback: value => { state.playback = { ...state.playback, ...value }; },
@@ -284,7 +378,7 @@ export function createOutskirtsExperience(initialState) {
     snapshot: ({ seen = state.seen, lampsOff = state.lampsOff, observed = state.observed } = {}) => ({
       ...state, seen: [...seen], lampsOff: [...lampsOff], observed,
       actions: [...state.actions], history: state.history.map(p => ({ ...p, ...(p.body ? { body: { ...p.body } } : {}) })),
-      fold: { ...state.fold, cues: [...state.fold.cues] }, locomotion: state.locomotion && { ...state.locomotion }, woman: { ...state.woman }, playback: { ...state.playback },
+      fold: { ...state.fold, cues: [...state.fold.cues] }, locomotion: state.locomotion && { ...state.locomotion }, woman: { ...state.woman }, busTransit:normalizeBusTransit(state.busTransit,state.busStage), playback: { ...state.playback },
     }),
   };
 }

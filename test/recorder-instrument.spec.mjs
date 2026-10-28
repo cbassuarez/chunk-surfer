@@ -7,6 +7,8 @@ import { dbToUnit, dbForLinear, locationMarks, meterMarks } from '../src/render/
 import { normalizeFieldKit } from '../src/game/field-kit.js';
 import { drawElectronicText as renderElectronicText } from '../src/render/electronic-text.js';
 import { witnessEndingIds } from '../src/render/witness-material.js';
+import { drawHardwareCap as renderHardwareCap } from '../src/render/hardware-material.js';
+import { drawHardwarePrint as renderHardwarePrint } from '../src/render/hardware-faceplate.js';
 
 test.afterEach(()=>uiSetScale(1));
 const near=(a,b,message='')=>assert.ok(Math.abs(a-b)<1e-8,`${message}: ${a} != ${b}`);
@@ -111,6 +113,8 @@ function drawingHarness({alpha=1,dpr=1,travel=0}={}){
     drawInstrumentPlate:(_,options)=>record('plate',[options]),drawInstrumentWell:(_,options)=>record('well',[options]),
     drawInstrumentGlass:(_,options)=>record('glass',[options]),drawVfdGrid:(_,options)=>record('grid',[options]),
     drawWitnessChassis:(_,options)=>record('witness',[options]),witnessEndingIds,
+    drawHardwareCap:(target,x,y,w,h,options)=>{const geometry=renderHardwareCap(target,x,y,w,h,options);record('cap',[x,y,w,h,options,geometry]);return geometry;},
+    drawHardwarePrint:(target,label,x,y,options)=>{record('capPrint',[label,x,y,options]);return renderHardwarePrint(target,label,x,y,options);},
     drawElectronicText:(target,text,x,y,options)=>{
       record('electronicText',[String(text),...point(x,y),options]);
       return renderElectronicText(target,text,x,y,options);
@@ -166,8 +170,11 @@ test('WITNESS replaces only the physical chassis and preserves the real VFD aper
   assert.equal(h.commands.filter(command=>command.kind==='fillText').map(command=>command.args[0]).join(''),'RECSTOPTAKES','only cap printing is above the clear cover');
   const well=h.commands.findIndex(command=>command.kind==='well'),glass=h.commands.findIndex(command=>command.kind==='glass');
   assert.ok(!h.commands.slice(well,glass).some(command=>command.kind==='fillText'));
-  const caps=h.commands.filter(command=>command.kind==='fillText'&&command.state.fillStyle==='#262e26');
-  assert.ok(caps.every(command=>Math.abs(command.args[2]-(334+.7+33/2+3.7))<1e-8),'sampled travel also moves the actual caps');
+  const caps=h.commands.filter(command=>command.kind==='cap');
+  assert.equal(caps.length,3);
+  assert.ok(caps.every(command=>command.args[4].travel===.7),'sampled travel also moves the actual caps');
+  const prints=h.commands.filter(command=>command.kind==='capPrint');
+  assert.ok(prints.every((command,i)=>Math.abs(command.args[2]-(caps[i].args[1]+caps[i].args[5].content.y))<1e-8),'printed ink moves with the cap face');
 });
 
 test('saved WITNESS ending stamps are copied, canonical, and independently overridable for previews',()=>{
@@ -188,8 +195,8 @@ test('all finish, button and phosphor options change physical paint but never la
     assert.equal(h.commands.find(command=>command.kind==='plate').args[0].finish,finish);
     const etching=h.commands.filter(command=>command.kind==='fillText'&&command.state.fillStyle===(finish==='aluminum'?'#333830':'#d7d9bd'));
     assert.ok(etching.map(command=>command.args[0]).join('').startsWith('AUDIOCORP'),'ink remains legible on the chosen plate');
-    const caps=h.commands.filter(command=>command.kind==='fill'&&command.state.fillStyle?.stops?.length===4).map(command=>command.state.fillStyle.stops.map(([,color])=>color));
-    assert.equal(caps.length,3);assert.equal(new Set(caps.map(colors=>colors[1])).size,3,'each physical cap has its own pigment');capColors.add(JSON.stringify(caps));
+    const caps=h.commands.filter(command=>command.kind==='cap').map(command=>command.args[4].color);
+    assert.equal(caps.length,3);assert.equal(new Set(caps).size,3,'each physical cap has its own pigment');capColors.add(JSON.stringify(caps));
     const palette=h.recorderDisplayPalette(preview),segments=h.commands.filter(command=>command.kind==='fill'&&command.state.fillStyle===palette.counter);
     assert.ok(segments.length>0,'the actual counter changes phosphor');
     const inactive=h.commands.filter(command=>command.state.fillStyle===palette.passive);
@@ -198,6 +205,30 @@ test('all finish, button and phosphor options change physical paint but never la
     assert.ok(h.commands.some(command=>command.state.strokeStyle===palette.peak));
   }
   assert.equal(capColors.size,3,'three real button-plastic sets, not metadata-only selectors');
+});
+
+test('recorder keys use actual shared lens hardware, independent lamp state and device-scaled print',()=>{
+  for(const dpr of [1,2]){
+    const h=drawingHarness({dpr,travel:.5});
+    h.drawRecorderInstrument({...baseView(),buttons:{keys:[
+      {id:'rec',label:'REC',lit:true},{id:'stop',label:'STOP',focused:true},
+      {id:'takes',label:'TAKES',enabled:false},
+    ]}});
+    const caps=h.commands.filter(c=>c.kind==='cap'),prints=h.commands.filter(c=>c.kind==='capPrint');
+    assert.equal(caps.length,3);assert.equal(prints.length,3);
+    assert.deepEqual(caps.map(c=>c.args[4].lampHeat),[1,0,0]);
+    assert.deepEqual(caps.map(c=>c.args[4].focused),[false,true,false]);
+    assert.equal(caps[2].args[4].enabled,false);
+    for(let i=0;i<3;i++){
+      const [x,y,w,h,options,geometry]=caps[i].args;
+      near(options.dpr,dpr);near(prints[i].args[1],x+geometry.content.x);
+      near(prints[i].args[2],y+geometry.content.y);
+      near(prints[i].args[3].width,geometry.content.w);near(prints[i].args[3].height,geometry.content.h);
+      near(w,89*dpr);near(h,33*dpr);
+    }
+  }
+  const physical=readFileSync(new URL('../src/render/battle-hand-tools.js',import.meta.url),'utf8');
+  assert.doesNotMatch(physical,/VACUUM FLUORESCENT/,'the held model does not reintroduce the removed legend');
 });
 
 test('special-mode electrode text inherits preview phosphor without leaking through nested or throwing callbacks',()=>{
@@ -234,10 +265,12 @@ test('the setup microphone check shares the selected phosphor and still reads on
 test('native printing stays on metal and plastic while every under-glass label uses VFD electrodes',()=>{
   const h=drawingHarness();h.drawRecorderInstrument(baseView());
   const printed=h.commands.filter(command=>command.kind==='fillText');assert.ok(printed.length>0);
-  assert.ok(printed.every(command=>/^400 [\d.]+px Arial,Helvetica,sans-serif$/.test(command.state.font)));
-  const labels=printed.filter(command=>command.state.fillStyle==='#262e26').map(command=>command.args[0]).join('');
-  assert.equal(labels,'RECSTOPTAKES');
-  assert.ok(printed.filter(command=>command.state.fillStyle==='#262e26').every(command=>command.args[2]>315),'all controls print below the display, not beside the counter');
+  const labels=h.commands.filter(command=>command.kind==='capPrint');
+  assert.deepEqual(labels.map(command=>command.args[0]),['REC','STOP','TAKES']);
+  assert.ok(labels.every(command=>command.args[2]>315),'all controls print below the display, not beside the counter');
+  assert.ok(labels.every(command=>command.args[3].finish==='screenprint'));
+  assert.ok(!printed.map(command=>command.args[0]).join('').includes('VACUUM FLUORESCENT'));
+  assert.ok(h.commands.filter(command=>command.kind==='cap').every(command=>command.args[4].finish==='lens'),'the map and sheet cap material is used');
   const well=h.commands.findIndex(command=>command.kind==='well'),glass=h.commands.findIndex(command=>command.kind==='glass');
   assert.ok(well>=0&&glass>well);
   assert.ok(!h.commands.slice(well,glass).some(command=>command.kind==='fillText'),'native fonts never land under the display cover');
@@ -364,7 +397,7 @@ test('special-mode content replaces the readout but keeps its complete glass and
   h.drawRecorderInstrument(view,{drawContent:g=>{calls++;assert.deepEqual(g.body,g.transcriptRect);return'finished';}});
   assert.equal(calls,1);assert.equal(h.commands.filter(command=>command.kind==='grid').length,0);
   assert.ok(h.commands.some(command=>command.kind==='glass'));
-  assert.equal(h.commands.filter(command=>command.kind==='fillText'&&command.state.fillStyle==='#262e26').map(command=>command.args[0]).join(''),'RECSTOPTAKES');
+  assert.deepEqual(h.commands.filter(command=>command.kind==='capPrint').map(command=>command.args[0]),['REC','STOP','TAKES']);
 });
 
 test('layout and renderer stay callable in Node without a Canvas',()=>{

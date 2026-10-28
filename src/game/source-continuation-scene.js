@@ -1,4 +1,5 @@
 import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry} from './source-continuation.js';
+import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const movement=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
@@ -7,12 +8,12 @@ const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
 // This scene borrows the shared renderer. It never writes the original body's
 // position, recorder, injuries, inventory, quest receipts or Contact consent.
 export function createSourceContinuationScene({checkpoint,renderer,audio=null,studyRotation=0,
-  onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{}}={}){
+  onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('Source continuation needs its physical renderer.');
   let state=normalizeSourceContinuation(checkpoint),ready=false,closed=false,paused=false,
     leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=null;
   const rotation=Number.isFinite(studyRotation)?studyRotation:0;
-  const presented=(x,z)=>{const dx=x+23,c=Math.cos(rotation),s=Math.sin(rotation);return{x:-23+dx*c-z*s,z:dx*s+z*c};};
+  const presented=(x,z)=>{const center=SOURCE_CONTINUATION.catch.center,dx=x-center.x,dz=z-center.z,c=Math.cos(rotation),s=Math.sin(rotation);return{x:center.x+dx*c-dz*s,z:center.z+dx*s+dz*c};};
   function soundState(){
     if(state.phase!=='catch'||!rotation)return state;
     const w=state.counterweight;
@@ -60,7 +61,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     const result=stepSourceContinuation(state,input);state=result.state;
     const events=result.events|| (result.event?[result.event]:[]);
     for(const event of events){
-      if(['phase','drop','land','capture','recovered','reveal-complete'].includes(event.type)){
+      if(['drop','land','capture','recovered','reveal-complete'].includes(event.type)){
         const released=[...keys];clear();
         trace({type:'control-boundary',reason:event.type,phase:state.phase,elapsed:state.elapsed,released});
       }
@@ -72,7 +73,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   }
   const scene={
     id:'source-continuation',blocksWorld:true,blocksInput:true,suppressesHud:true,
-    allowsLook:false,handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
+    get allowsLook(){return live()&&!paused&&state.status!=='returned'&&state.status!=='completed';},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(initializing)return initializing;
       save('loading');
@@ -93,24 +94,22 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       if(handoff){
         if(!ready||renderer.ready?.()===false){clear();audio?.pause?.();return;}
         handoff.elapsed+=Math.min(.25,Math.max(0,Number(dt)||0));
-        audio?.update?.({dt,state:soundState(),focus:null,paused:false,ready:true});
+        audio?.update?.({dt,state:soundState(),surroundingsState:state,focus:null,paused:false,ready:true});
         if(handoff.elapsed>=handoff.duration)dispatchFinish(handoff.kind);
         return;
       }
       if(leaving)return;
       if(!live()){clear();audio?.stop?.();return;}
+      onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
       const overhead=state.phase==='catch';
-      const turn=overhead?0:Number(keys.has('arrowright'))-Number(keys.has('arrowleft'));
-      let forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
-        side=Number(keys.has('d')||overhead&&keys.has('arrowright'))-Number(keys.has('a')||overhead&&keys.has('arrowleft'));
-      if(overhead&&rotation){const c=Math.cos(rotation),s=Math.sin(rotation),x=side*c-forward*s,z=-side*s-forward*c;side=x;forward=-z;}
-      apply({dt,forward,side,
-        ...(turn?{look:{yaw:state.yaw+turn*Math.min(.25,Math.max(0,Number(dt)||0))*1.8,pitch:state.pitch}}:{}),renderReady:true});
+      const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+        side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
+      apply({dt,forward,side,renderReady:true});
       if(closed||leaving)return;
       const focus=continuationFocus(state);
       const soundFocus=focus&&overhead&&rotation?{...focus,...presented(focus.x,focus.z),
         position:focus.position?{...focus.position,...presented(focus.position.x,focus.position.z)}:undefined}:focus;
-      audio?.update?.({dt,state:soundState(),focus:soundFocus,paused:false,ready:true});
+      audio?.update?.({dt,state:soundState(),surroundingsState:state,focus:soundFocus,paused:false,ready:true});
       saveClock+=Math.min(.25,Math.max(0,Number(dt)||0));traceClock+=Math.min(.25,Math.max(0,Number(dt)||0));
       if(saveClock>=1){saveClock=0;save('position');}
       if(traceClock>=.1){traceClock=0;trace({type:'pose',elapsed:state.elapsed,phase:state.phase,
@@ -125,13 +124,15 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
         threat:sourceContinuationThreatTelemetry(state,{horizonSeconds:0}),
         threatDistanceMetres:state.phase==='catch'&&state.counterweight?.active
           ?Math.hypot(state.x-state.counterweight.x,state.z-state.counterweight.z,state.feet-state.counterweight.y)
-          :state.phase==='wrong-return'&&state.closure?.mode==='closing'?Math.abs(state.z-state.closure.frontZ):null});}
+          :state.phase==='wrong-return'&&state.closure?.mode==='closing'?Number.isFinite(state.closure.frontX)?Math.abs(state.x-state.closure.frontX):Math.abs(state.z-state.closure.frontZ):null});}
     },
     view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,handoff:copy(handoff),focus:live()?continuationFocus(state):null}),
     serialize:snapshot,checkpoint:()=>save('requested'),
     pause(){if(closed)return false;paused=true;clear();audio?.pause?.();save('pause');return true;},
     resume(){if(closed)return false;paused=false;clear();return true;},
-    setLook(look){if(state.phase==='catch'||!live()||paused)return false;apply({dt:0,look,renderReady:true});return true;},
+    lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),
+    lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
+    setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look,renderReady:true});return true;},
     key(e={}){
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
@@ -140,13 +141,14 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       if(!live()){
         clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish(key==='e'&&failedFinish?failedFinish:'return');return true;
       }
+      if(!e.repeat&&(key==='f'||e.controllerAction==='torch')){onTorch();trace({type:'torch-input',elapsed:state.elapsed});return true;}
       if(movement.includes(key)){if(!e.repeat&&!state.reveal&&!state.recovery&&!state.fall)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});
       return true;
     },
     keyup(e={}){keys.delete(keyOf(e));return true;},
     pointer(e={}){
-      if(!live()||paused||state.phase==='catch'){drag=null;return true;}
+      if(!scene.allowsLook){drag=null;return true;}
       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}
       if(e.type==='pointerup'||e.type==='pointercancel')drag=null;
       if(e.type==='pointermove'&&drag){const x=Number(e.clientX??e.x)||0,y=Number(e.clientY??e.y)||0;

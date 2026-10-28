@@ -83,7 +83,9 @@ function outwardEvent(event, runId) {
 export function stepEndingWrongDoorDemolition(value, input = {}) {
   const before = normalizeEndingWrongDoorDemolition(value);
   if (before.status !== 'active') return { state: before, events: [], event: null, saveDue: false };
-  const result = stepSourceEarthfall(before.physical, input);
+  // The ending borrows the descent, but keeps its deliberate lower-door
+  // choice. Ordinary Source II still admits a player automatically on approach.
+  const result = stepSourceEarthfall(before.physical, { ...input, automaticDoors: false });
   const state = wrapPhysical(result.state, before.runId);
   const events = result.events.map(event => outwardEvent(event, before.runId));
   return {

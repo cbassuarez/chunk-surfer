@@ -3,12 +3,43 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
 import {bakeLetteringAtlases,printedSurfaceMetadata} from '../tools/chunk_surfer/lettering/physical-lettering.mjs';
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chunk-print-regression-'));
 const job={id:'maker',lines:['ABCDEFGHIJKLMNOPQRSTUVWXYZ','0123456789 / : ? . -'],widthM:3,heightM:.8,capHeightM:.13,category:'personal',palette:{ground:[.7,.68,.6],ink:[.01,.012,.01]}};
 const narrow={...job,id:'factory',copy:'STUDIOS / PLANT',lines:undefined,category:'institution'};
 try{
+ // These real record-sized tiles used to strand 13,248 pixels when the
+ // MaxRects search varied width but always allowed a full-height bin.
+ const bundled='/Users/seb/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3';
+ const python=process.env.CHUNK_SURFER_LETTERING_PYTHON||(fs.existsSync(bundled)?bundled:'python3');
+ const packing=spawnSync(python,['-c',`
+import sys,json,math,copy
+sys.path.insert(0,sys.argv[1])
+from rasterize import pack_tiles
+tiles=[dict(width=w,height=h,job=dict(id=str(i)),pixels='unchanged-'+str(i)) for i,(w,h) in enumerate([(512,99),(233,131),(248,74)])]
+def run(source):
+ pages=pack_tiles(source,1024,16)
+ return [dict(width=max(64,math.ceil(max(t['x']+t['width']+16 for t in page)/8)*8),height=max(64,math.ceil(max(t['y']+t['height']+16 for t in page)/8)*8),tiles=page) for page in pages]
+print(json.dumps(dict(original=tiles,first=run(copy.deepcopy(tiles)),repeat=run(copy.deepcopy(tiles)),reversed=run(copy.deepcopy(tiles[::-1])))))
+`,fileURLToPath(new URL('../tools/chunk_surfer/lettering/',import.meta.url))],{encoding:'utf8'});
+ assert.equal(packing.status,0,packing.stderr||packing.error?.message);
+ const packed=JSON.parse(packing.stdout);
+ assert.deepEqual(packed.first,packed.repeat,'Packing must be deterministic');
+ assert.deepEqual(packed.first,packed.reversed,'Stable tile ids must resolve input-order ties');
+ assert.ok(packed.first.reduce((area,page)=>area+page.width*page.height,0)<=150144,'Height search lost its compact record-stamp packing');
+ const unpacked=[];
+ for(const page of packed.first){
+  assert.ok(page.width<=1024&&page.height<=1024);
+  for(const [i,tile]of page.tiles.entries()){
+   const {x,y,...original}=tile;unpacked.push(original);
+   assert.ok(x>=16&&y>=16&&x+tile.width+16<=page.width&&y+tile.height+16<=page.height,'A cropped page clipped a full print gutter');
+   for(const other of page.tiles.slice(i+1))assert.ok(x+tile.width+16<=other.x-16||other.x+other.width+16<=x-16||y+tile.height+16<=other.y-16||other.y+other.height+16<=y-16,'Packed print gutters overlap');
+  }
+ }
+ assert.deepEqual(unpacked.sort((a,b)=>a.job.id.localeCompare(b.job.id)),packed.original,'Packing must retain every tile, dimension and pixel payload');
  const a=await bakeLetteringAtlases([job,narrow,{...narrow,id:'factory-copy'}],{outputDir:path.join(dir,'a')}),b=await bakeLetteringAtlases([job,narrow,{...narrow,id:'factory-copy'}],{outputDir:path.join(dir,'b')});
  const hash=x=>createHash('sha256').update(x).digest('hex');
  assert.deepEqual(a.pages.map(p=>hash(p.albedo)),b.pages.map(p=>hash(p.albedo)),'Repeated bakes alter physical print');

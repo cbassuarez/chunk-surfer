@@ -7,6 +7,8 @@ import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { EXTERIOR_INSPECTABLES } from '../src/data/exterior-district.js';
 import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../src/data/world-inscriptions.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import { applyInstitutionPosters } from '../src/data/institution-poster-sites.js';
+import { hallChandelierInstances } from '../src/data/hall-chandelier-treatment.js';
 
 const matrix=Float32Array.from({length:16},(_,i)=>i+.25);
 const host={id:'one-host',mesh:'imported-host',x:12,y:3,z:7,yaw:1.3,
@@ -40,6 +42,7 @@ const labels=hosts.map(p=>({id:`${p.id}-ink`,hostId:p.id,hostMesh:p.mesh,mesh:`l
 const calls=[];
 const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchitecturalLocalLights:()=>{},
   renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
+  applyInstitutionPosters,hallChandelierInstances,hallChandelierRendered:[{id:'stale-hall-fixture'}],
   exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:p=>p,
   pubHospitalityRendered:[],PUB_NEW_ACTORS:[],STREET_CROWD_ACTOR_IDS:new Set(),streetCrowdRenderReady:false,
   R3:{},
@@ -53,8 +56,9 @@ const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchi
   boothPresentationPose:'closed',brendanFinale:()=>null,hiddenCrossEnvelopeProp:()=>false,
   waterBodies:[{id:'basin',active:()=>true,levelM:8.2}],vigilCharacterIdForMesh:()=>null,
   boothGuardRenderInstance:p=>p,worldPaperIndex:()=>-1,storyGuidanceEmissive:()=>null,propEmissive:()=>null,doorRenderInstances:()=>[]};
-const actual=new Function(...Object.keys(boundary),`${main.slice(start,end)}\nreturn worldRenderInstances;`)(...Object.values(boundary));
-const final=actual('ground');assert.deepEqual(calls,[{group:'ground',inscriptions:false,batchDressing:true},{group:'academicRoof',inscriptions:false}]);
+const adapter=new Function(...Object.keys(boundary),`${main.slice(start,end)}\nreturn {render:worldRenderInstances,fittings:()=>hallChandelierRendered};`)(...Object.values(boundary));
+const final=adapter.render('ground');assert.deepEqual(calls,[{group:'ground',inscriptions:false,batchDressing:true},{group:'academicRoof',inscriptions:false}]);
+assert.deepEqual(adapter.fittings(),[],'the actual ground submission releases a stale Hall fixture track');
 assert.ok(!final.some(p=>p.id.includes('academic-roof-home-cassette')),'hidden host must not leave floating letters');
 const gate=final.find(p=>p.id==='roof-gate'),gateInk=final.find(p=>p.letteringHostId==='roof-gate');
 assert.deepEqual([gate.x,gate.z,gate.yaw],[3,5,.2+Math.PI/2]);

@@ -20,7 +20,8 @@ function harness(){
   const layout=createTwoTierBellFrameLayout(ELLERY_BELLS,{centerX:16,centerZ:73});
   const calls=[],state={floor:10.2,group:'cathedral',zone:ZONE.church,damage:[],blocked:false,recording:false,focused:true};
   const context={storyMode:true,inRogue:true,usingPlan:()=>true,usingSpecialSpace:()=>false,
-    sourceDriveSession:null,sourcePubScene:null,planName:'conservatory',px:38,py:145,CELL:.5,BODY_EYE_M:1.62,
+    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    planName:'conservatory',px:38,py:145,CELL:.5,BODY_EYE_M:1.62,
     FP:{isLoaded:()=>true,zoneAt:()=>state.zone,physicalSpanData:()=>layout,
       logicalToPhysical:()=>({x:38,y:state.floor,z:145,renderGroup:state.group}),floorAt:()=>state.floor,
       logicalAtPhysical:(x,z)=>({x,y:z})},ZONE,CATHEDRAL_STAGING,
@@ -54,6 +55,8 @@ test('actual main integration covers nave, triforium, turret and belfry, excludi
   }
   s.zone=ZONE.dock;assert.equal(c.currentStBrendansSoundInput().active,false);
   c.sourceDriveSession={};s.zone=ZONE.church;assert.equal(c.currentStBrendansSoundInput().active,false);
+  c.sourceDriveSession=null;c.sourceContinuationScene={};assert.equal(c.currentStBrendansSoundInput().active,false);
+  c.sourceContinuationScene=null;c.coastalMemoryScene={};assert.equal(c.currentStBrendansSoundInput().active,false);
 });
 
 test('sound remains at actual fixed pivots during a head turn and follows the physically fallen bell',()=>{

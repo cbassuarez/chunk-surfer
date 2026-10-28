@@ -179,6 +179,7 @@ export function streetPilotStaticInstances(){
     ...STREET_PILOT.vehicleSignals.map(node=>fixedInstance(node,
       node.id.endsWith('secondary')?STREET_PILOT_MESHES.vehicleHead:STREET_PILOT_MESHES.vehicleHousing,'housing')),
     ...STREET_PILOT.pedestrianSignals.map(node=>fixedInstance(node,STREET_PILOT_MESHES.pedestrianHousing,'housing')),
+    ...STREET_PILOT.pedestrianButtons.map(node=>fixedInstance(node,STREET_PILOT_MESHES.pedestrianButton,'button')),
   ];
 }
 

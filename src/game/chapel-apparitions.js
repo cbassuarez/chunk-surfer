@@ -1,8 +1,8 @@
 // THE CHAPEL'S RULE: THEY WATCH YOU, AND THE TAPE HEARS THEM.
 //
-// Every place has its own rules. Here the congregation is never still: each
-// body twitches, its upper body twists in the pew and its head snaps round to
-// you in jumps, never a smooth pan. Bodies on the ceiling crawl. Everyone who
+// Most of the congregation continues its shared prayer. One seated visitor is
+// persistently attentive to the living player; recording still brings the
+// others round, with the existing jumpy warning and murmur rule. Bodies on the ceiling crawl. Everyone who
 // can see you murmurs, and the murmur lands on a take, so this is the hardest
 // room in the building to record: you need a place few of them can see, and to
 // keep still in it (moving brings more heads round, faster).
@@ -27,8 +27,9 @@ export const CHAPEL_APPARITION = Object.freeze({
   // spoils a take (config ROOM_TONE.spoilNoise).
   murmur: Object.freeze({ ref: 2.5, unseen: .16, throughStone: .2, gain: .055, voices: 8 }),
   // How worked up the room is. A rolling take makes it worse by the second, and
-  // worst at the end: measured over the nave for a still recordist, 95% of it
-  // is clean at 10s, 22% at 30s, 9% at the 45s minimum and two spots at 60s.
+  // worst at the end. The seated sightlines retain dangerous nave positions
+  // and a usable altar-rail corner; focused recording-path checks own that
+  // tuning, rather than a stale percentage from the former kneeling layout.
   agitation: Object.freeze({ idle: .25, takeStart: .3, takeEnd: 4.2, curve: 2, moving: .4 }),
   // How often each body re-checks whether stone stands between it and you.
   sightCheckS: .3,
@@ -113,7 +114,7 @@ export function createChapelApparitions() {
       const random = rng(hash(p.id));
       f = { random, head: { yaw: 0, pitch: 0 }, headTarget: { yaw: 0, pitch: 0 }, twist: 0, twistTarget: 0,
         nextSaccade: random() * 1.2, nextTwitch: random() * 3, twitchAt: -99, twitchVector: [0, 0, 0, 0],
-        phase: random() * 100, crawlSeed: random() * 50 };
+        phase: random() * 100, crawlSeed: random() * 50, pewShift: 0 };
       figures.set(p.id, f);
     }
     return f;
@@ -175,12 +176,13 @@ export function createChapelApparitions() {
 
     for (const p of congregation) {
       const f = stateFor(p), kind = p.figure || 'seated', pivots = PIVOTS[kind] || PIVOTS.seated;
-      schedule(f, timeSec, { moving, recording, reduced });
+      schedule(f, timeSec, { moving: p.watchful ? moving : recording ? moving : 0, recording, reduced: reduced || (!recording && !p.watchful) });
       const s = p.scale || 1, body = mul(translate(p.x, p.y, p.z), mul(yawM(p.yaw || 0), scale(s)));
       const audibleChoir = !!choir?.audible && !!choir?.loaded;
       const target = chapelChoirPose({ phase: choir?.phase, presence: p,
-        active: audibleChoir, reducedMotion: reducedMotion || reduced });
-      const performance = f.performance || (f.performance = { ...target, blend: audibleChoir ? 1 : 0 });
+        active: audibleChoir, reducedMotion: reducedMotion || reduced,
+        amount: choir?.arrivalEnvelope ?? 1, fervour: choir?.fervour ?? 0, elapsed: choir?.elapsed ?? choir?.phase });
+      const performance = f.performance || (f.performance = { lift:0, jaw:0, breathe:0, headPitch:0, roll:0, blend:0 });
       if (!choir?.frozen) {
         for (const key of ['lift', 'jaw', 'breathe', 'headPitch', 'roll']) {
           const seconds = key === 'lift' ? .65 : key === 'jaw' ? .075 : .22;
@@ -188,21 +190,24 @@ export function createChapelApparitions() {
         }
         performance.blend += ((audibleChoir ? 1 : 0) - performance.blend) * (1 - Math.exp(-dt / .35));
       }
-      const singingBody = mul(translate(p.x, p.y + performance.lift, p.z), mul(yawM(p.yaw || 0), scale(s)));
-      const charge = [...emissiveFor(p)];
-      charge[3] = Math.max(charge[3] || 0, performance.blend * (.27 + .15 * performance.breathe));
-      const bodyStyle = { emissive: charge, apparitionVariant: performance.blend > .03 ? 10 : variantFor(p) };
+      const seatSide = p.watchful ? f.pewShift : 0;
+      const singingBody = mul(translate(p.x+Math.cos(p.yaw||0)*seatSide, p.y + performance.lift,
+        p.z+Math.sin(p.yaw||0)*seatSide), mul(yawM(p.yaw || 0), scale(s)));
+      // The pressure shader intentionally discards all base-material shading.
+      // It belongs to spectral ceiling inhabitants, not to every coat and face.
+      const bodyStyle = { emissive: [0,0,0,0], apparitionVariant: 0 };
       const emitHead = (matrix) => {
         if (performance.blend > .015 && M.singingHead && M.singingJaw) {
           const material = { apparitionVariant: 0, emissive: [0, 0, 0, 0] };
           emit(p, M.singingHead, matrix, { ...material, id: `${p.id}:head` });
           emit(p, M.singingJaw, mul(matrix, mul(translate(...(pivots.jaw || [0, -.005, .005])), pitchM(-performance.jaw))),
             { ...material, id: `${p.id}:jaw` });
-        } else emit(p, M.head, matrix, { id: `${p.id}:head` });
+        } else emit(p, M.head, matrix, { apparitionVariant:0, emissive:[0,0,0,0], id: `${p.id}:head` });
         const mouth = apply(matrix, [0, -.04, -.14]);
         singing.push({ id: p.id, role: p.role, lift: performance.lift, jaw: performance.jaw,
           breathe: performance.breathe, blend: performance.blend, activity: target.activity,
-          mouth: { x: mouth[0], y: mouth[1], z: mouth[2] }, ceilingY: p.ceilingY });
+          mouth: { x: mouth[0], y: mouth[1], z: mouth[2] }, ceilingY: p.ceilingY,
+          watchful:!!p.watchful, headYaw:f.head.yaw, bodyTwist:f.twist, pewShift:f.pewShift });
       };
       // Where you are from this body: a bearing relative to its altar-facing yaw.
       let seen = false, open = true, relYaw = 0, pitch = 0, distance = Infinity;
@@ -212,33 +217,39 @@ export function createChapelApparitions() {
         relYaw = wrap(Math.atan2(dx, -dz) - (p.yaw || 0));
         pitch = Math.atan2(dy, Math.hypot(dx, dz));
         open = distance < A.range && sees(f, { x: neck[0], y: neck[1], z: neck[2] }, eye, canSee, timeSec);
-        seen = open && Math.abs(relYaw) < A.sightDeg * DEG;
+        seen = open && Math.abs(relYaw) < (p.watchful ? 180.01 : A.sightDeg) * DEG;
       }
       if (f.saccadeDue) {
         f.saccadeDue = false;
         // A jump lands near you, never exactly: two to five degrees off.
         const miss = (f.random() * 2 - 1) * (2 + 3 * f.random()) * DEG;
         if (seen) {
-          const twist = clamp(relYaw * .38, -A.twistDeg * DEG, A.twistDeg * DEG);
+          const attentive = p.watchful || recording;
+          const twistLimit = p.watchful ? 29 : A.twistDeg;
+          const twist = attentive ? clamp(relYaw * (p.watchful ? .17 : .38), -twistLimit * DEG, twistLimit * DEG) : 0;
           f.twistTarget = twist;
-          f.headTarget = { yaw: clamp(relYaw - twist + miss, -A.headDeg * DEG, A.headDeg * DEG), pitch: clamp(pitch + miss * .5, -A.pitchDeg * DEG, A.pitchDeg * DEG) };
+          const headLimit = p.watchful ? 152 : A.headDeg;
+          f.headTarget = { yaw: attentive ? clamp(relYaw - twist + miss, -headLimit * DEG, headLimit * DEG) : miss * 1.5,
+            pitch: attentive ? clamp(pitch + miss * .5, -A.pitchDeg * DEG, A.pitchDeg * DEG) : 0 };
         } else {
           // Unseen, a head drifts back toward the altar, by fits.
           f.twistTarget *= .4;
           f.headTarget = { yaw: f.headTarget.yaw * .35 + miss * 3, pitch: f.headTarget.pitch * .35 };
         }
       }
-      f.head.yaw += (f.headTarget.yaw - f.head.yaw) * snap;
-      f.head.pitch += (f.headTarget.pitch - f.head.pitch) * snap;
+      const headStep=p.watchful?1-Math.exp(-dt/(reduced||reducedMotion ? .6 : .24)):snap;
+      f.head.yaw += (f.headTarget.yaw - f.head.yaw) * headStep;
+      f.head.pitch += (f.headTarget.pitch - f.head.pitch) * headStep;
       f.twist += (f.twistTarget - f.twist) * slow;
+      if(!choir?.frozen)f.pewShift+=((p.watchful&&seen?Math.sin(relYaw)*.045:0)-f.pewShift)*(1-Math.exp(-dt/1.4));
       if (seen) watchers++;
-      const k = twitchOf(f, timeSec) * amp, v = f.twitchVector, w = 2 * Math.PI;
-      const shake = tremor * .009 * Math.sin(timeSec * w * (9 + (f.phase % 4)) + f.phase);
+      const k = twitchOf(f, timeSec) * amp * (recording ? 1 : p.watchful ? .16 : .045), v = f.twitchVector, w = 2 * Math.PI;
+      const shake = tremor * (recording ? .009 : .0006) * Math.sin(timeSec * w * (9 + (f.phase % 4)) + f.phase);
       const twitchUpper = mul(yawM(f.twist + k * v[0] * .16), mul(pitchM(k * v[1] * .17 + shake + performance.headPitch * .12),
         mul(rollM(k * v[2] * .13 + performance.roll), stretch(1 + performance.breathe * .014, 1 + performance.breathe * .018, 1 + performance.breathe * .025))));
       const rest = pivots.headRest || [0, 0, 0];
-      const headTurn = mul(yawM(f.head.yaw * (1 - performance.blend * .55) + k * v[3] * .26 + shake * 2),
-        pitchM(rest[0] * (1 - performance.blend) + f.head.pitch * (1 - performance.blend * .65) + k * v[1] * .22 + performance.headPitch));
+      const headTurn = mul(yawM(f.head.yaw * (1 - performance.blend * (p.watchful ? 0 : .55)) + k * v[3] * .26 + shake * 2),
+        pitchM(rest[0] * (1 - performance.blend) + f.head.pitch * (1 - performance.blend * (p.watchful ? 0 : .65)) + k * v[1] * .22 + performance.headPitch));
       if (kind === 'celebrant' || kind === 'acolyte') {
         const robe = mul(singingBody, mul(translate(...pivots.upper), mul(mul(yawM(k * v[0] * .08), rollM(k * v[2] * .06)), translate(...pivots.upper.map((q) => -q)))));
         emit(p, M[kind], robe, bodyStyle);

@@ -1,8 +1,9 @@
-// The former Lyric's west end is a real opaque corner. The one-metre service
+// The Lyric's west end is a real masonry corner. The one-metre service
 // passage already exists between that end wall and the west workshop frontage;
 // its paving is now physical floor, rather than a person walking into void.
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 import {districtLogicalAt} from './exterior-district.js';
+import {EXTERIOR_PUB,pubWorldFromLocal} from './exterior-pub.js';
 
 const freeze=value=>{
   if(value&&typeof value==='object'&&!Object.isFrozen(value)){
@@ -10,15 +11,23 @@ const freeze=value=>{
   }
   return value;
 };
+// Conservative boxes within actual opaque shell parts. In particular, never
+// hide the side window with the occupied ground volume of a closed shop.
+const pubMasonry=(id,min,max)=>{
+  const a=pubWorldFromLocal({x:min[0],z:min[2]}),b=pubWorldFromLocal({x:max[0],z:max[2]});
+  return{id,mesh:'exterior_pub_frontage',minX:Math.min(a.x,b.x),maxX:Math.max(a.x,b.x),
+    minZ:Math.min(a.z,b.z),maxZ:Math.max(a.z,b.z),minY:EXTERIOR_PUB.floor+min[1],maxY:EXTERIOR_PUB.floor+max[1]};
+};
 export const TOWER_WARNING=freeze({
   id:'tower-warning',
   position:{x:-12.75,y:.12,z:105.25},
   yaw:0,
   route:[
     {x:-12.75,y:.12,z:105.25},
-    {x:-14.4,y:.12,z:105.25},
-    {x:-14.4,y:.12,z:108.25},
-    {x:-14.4,y:.12,z:111.75},
+    // The real service passage clears both buildings' projecting window sills.
+    {x:EXTERIOR_PUB.servicePassage.centreX,y:.12,z:105.25},
+    {x:EXTERIOR_PUB.servicePassage.centreX,y:.12,z:108.25},
+    {x:EXTERIOR_PUB.servicePassage.centreX,y:.12,z:111.75},
   ],
   walkSpeed:.82,
   interactRadius:2.8,
@@ -34,17 +43,17 @@ export const TOWER_WARNING=freeze({
   // This is a physical knowledge boundary, never a timer or an alpha fade.
   // The host may retire the body only when actual sight lines are blocked.
   departure:{corner:{x:-14,z:107.05},endpointMustBeOccluded:true},
-  // Conservative solid portions of the actual placed masonry, below all
-  // roof geometry. Values come from district-south-row-a's first party return
-  // and occupied back volume, and west-row-b's final occupied deed. These do
-  // not seal any display/window aperture or the service passage itself.
+  // Actual pub return courses/piers, plus the neighbouring occupied workshop.
+  // The ground-floor side window and public room remain genuinely open.
   occluders:[
-    {id:'old-lyric-west-party-return',mesh:'district_civic_frontage',
-      minX:-14,maxX:-13.88,minZ:107.05,maxZ:112.45,minY:.12,maxY:12.92},
-    {id:'old-lyric-first-occupied-volume',mesh:'district_civic_frontage',
-      minX:-13.92,maxX:-6.08,minZ:108.10,maxZ:112.45,minY:.12,maxY:12.92},
+    pubMasonry('lyric-west-return-low',[-5.4,0,-32],[0,1.10,-31.82]),
+    pubMasonry('lyric-west-return-head',[-5.4,2.82,-32],[0,3.40,-31.82]),
+    pubMasonry('lyric-west-return-front-pier',[-1.90,1.10,-32],[0,2.82,-31.82]),
+    pubMasonry('lyric-west-return-rear-pier',[-5.4,1.10,-32],[-4.10,2.82,-31.82]),
+    pubMasonry('lyric-west-upper-return',[-5.4,3.54,-32],[0,12.8,-31.84]),
     {id:'west-workshop-last-occupied-volume',mesh:'district_workshop_frontage',
-      minX:-21.85,maxX:-16.10,minZ:106.08,maxZ:113.92,minY:.12,maxY:10.52},
+      minX:-21.85-EXTERIOR_PUB.servicePassage.westFrontageSetback,
+      maxX:-16.10-EXTERIOR_PUB.servicePassage.westFrontageSetback,minZ:106.08,maxZ:113.92,minY:.12,maxY:10.52},
   ],
 });
 

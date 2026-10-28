@@ -36,5 +36,10 @@ test('opening bed proximity tick runs during the prologue world loop', () => {
   assert.match(source, /function tickOpeningSceneBed\(\)/);
   assert.match(source, /FP\.toRuntimePoint\(\{x:73\.85,y:214\}\)/);
   assert.match(source, /STORY\.setOpeningSceneBedProximity\?\./);
-  assert.match(source, /tickOpeningSceneBed\(\);\s*(?:tick\w+\([^)]*\);\s*)*if\(!scenes\.blocksWorld\(\)\)/s);
+  const loopStart=source.indexOf('function loop(');
+  assert.ok(loopStart>=0,'the production world loop exists');
+  const loop=source.slice(loopStart,source.indexOf('\n}',loopStart)+2);
+  const bed=loop.indexOf('tickOpeningSceneBed();');
+  const world=loop.indexOf('if(!scenes.blocksWorld())',bed);
+  assert.ok(bed>=0&&world>bed,'opening bed proximity updates before blocked-world progression, regardless of unrelated audio ticks');
 });

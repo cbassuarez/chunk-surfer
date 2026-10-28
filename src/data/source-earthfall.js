@@ -7,23 +7,24 @@ export const SOURCE_EARTHFALL = freeze({
   fixedStep: 1 / 120,
   maxFrameDelta: .25,
   walkSpeed: 3.2,
-  airSpeed: 2,
+  airSpeed: .4,
   bodyRadius: .22,
   eyeHeight: 1.62,
   upperFloor: 100,
   lowerFloor: 0,
-  earth: freeze({ minX: -80, maxX: 80, minZ: -100, maxZ: 30 }),
-  // The real catch extends16m past each upper edge: enough for the complete
-  // airborne drift at2m/s. It catches the body without clamping it to a path.
-  catch: freeze({ minX: -96, maxX: 96, minZ: -116, maxZ: 46, interceptY: 12, settleSeconds: 1.2, thickness: .28 }),
-  passage: freeze({ halfWidth: 7, entryZ: 0, exitZ: -42 }),
+  earth: freeze({ minX: -9, maxX: 9, minZ: -48, maxZ: 4 }),
+  // A finite visible landing head receives the reachable fall footprint.
+  // Beyond it only a3.6m spine crosses the void; no broad hidden catch exists.
+  catch: freeze({ minX: -12, maxX: 12, minZ: -15, maxZ: 7, interceptY: 0, settleSeconds: .48, thickness: .55 }),
+  passage: freeze({ halfWidth: 1.8, entryZ: 0, upperExitZ: -42, exitZ: -66, priorExitZ: -42 }),
+  lowering: freeze({ startAt: .6, drop: 8 }),
   spawn: freeze({ x: 0, z: -1.7, feet: 100, yaw: 0, pitch: 0 }),
   commitmentZ: -2.4,
   fractureAt: .6,
   footingLossAt: 3,
   gravity: 9.8,
   terminalSpeed: 26,
-  door: freeze({ width: 3, height: 3.05, openSeconds: .8, focusDistance: 2.2 }),
+  door: freeze({ width: 3, height: 3.05, openSeconds: .8, focusDistance: 2.2, approachDistance: 6.5 }),
 });
 
 export const SOURCE_EARTHFALL_CUES = freeze([
@@ -54,7 +55,7 @@ const earthfallCells = (() => {
     const points = freeze([grid[k], grid[k + 1], grid[k + columns + 2], grid[k + columns + 1]]);
     cells.push(freeze({ id: `earth-${index}`, index, points,
       center: freeze({ x: points.reduce((n, p) => n + p[0], 0) / 4, y: SOURCE_EARTHFALL.upperFloor, z: points.reduce((n, p) => n + p[2], 0) / 4 }),
-      depth: 1.2 + cellHash(index, 3) * 2.8,
+      depth: .28 + cellHash(index, 3) * .36,
     }));
   }
   return freeze(cells);
@@ -70,21 +71,29 @@ export const earthfallContains = (bounds, x, z, margin = 0) => Number.isFinite(x
   && x >= bounds.minX + margin && x <= bounds.maxX - margin
   && z >= bounds.minZ + margin && z <= bounds.maxZ - margin;
 
-export function earthfallCatchHeight(elapsed, startVelocity = -SOURCE_EARTHFALL.terminalSpeed) {
-  const p = Math.max(0, Math.min(1, Number(elapsed) / SOURCE_EARTHFALL.catch.settleSeconds || 0));
-  const height = SOURCE_EARTHFALL.catch.interceptY;
-  const v = Math.max(-SOURCE_EARTHFALL.terminalSpeed, Math.min(0, Number(startVelocity) || 0));
-  return height * (2 * p ** 3 - 3 * p ** 2 + 1)
-    + v * SOURCE_EARTHFALL.catch.settleSeconds * (p ** 3 - 2 * p ** 2 + p);
+export const earthfallCatchHeight = () => SOURCE_EARTHFALL.lowerFloor;
+export const earthfallCatchVelocity = () => 0;
+const ease = value => {const t=Math.max(0,Math.min(1,Number(value)||0));return t*t*(3-2*t);};
+export const sourceEarthfallLoweringOffset = elapsed => SOURCE_EARTHFALL.lowering.drop
+  * ease(((Number(elapsed)||0)-SOURCE_EARTHFALL.lowering.startAt)/(SOURCE_EARTHFALL.footingLossAt-SOURCE_EARTHFALL.lowering.startAt));
+export const sourceEarthfallUpperHeight = elapsed => SOURCE_EARTHFALL.upperFloor-sourceEarthfallLoweringOffset(elapsed);
+const fallTime = distance => {
+  const c=SOURCE_EARTHFALL,t=c.terminalSpeed/c.gravity,d=c.gravity*t*t/2;
+  return distance<=d?Math.sqrt(Math.max(0,distance)*2/c.gravity):t+(distance-d)/c.terminalSpeed;
+};
+export const SOURCE_EARTHFALL_STRATA = freeze([74,49,25].map((y,index)=>freeze({
+  id:`stratum-${index}`,index,y,releaseAt:SOURCE_EARTHFALL.footingLossAt
+    +fallTime(SOURCE_EARTHFALL.upperFloor-SOURCE_EARTHFALL.lowering.drop-y)-.72,
+  minX:-15,maxX:15,minZ:-22,maxZ:12,thickness:[1.6,.55,.28][index],construction:['coffer','soundboard','binding'][index],
+})));
+export function sourceEarthfallStratumPose(layer,piece,elapsed){
+ const age=Math.max(0,(Number(elapsed)||0)-layer.releaseAt),fold=ease(age/.7),west=piece%2===0;
+ return{x:(west?-1:1)*7.5+(west?-1:1)*Math.min(24,age*9),
+   y:layer.y-Math.min(90,age*6+4.9*age*age),z:piece<2?-13.5:3.5,
+   roll:(west?-1:1)*fold*1.36,pitch:(piece<2?-.06:.06)*fold};
 }
-
-export function earthfallCatchVelocity(elapsed, startVelocity = -SOURCE_EARTHFALL.terminalSpeed) {
-  const p = Math.max(0, Math.min(1, Number(elapsed) / SOURCE_EARTHFALL.catch.settleSeconds || 0));
-  const height = SOURCE_EARTHFALL.catch.interceptY;
-  const v = Math.max(-SOURCE_EARTHFALL.terminalSpeed, Math.min(0, Number(startVelocity) || 0));
-  return height / SOURCE_EARTHFALL.catch.settleSeconds * (6 * p ** 2 - 6 * p)
-    + v * (3 * p ** 2 - 4 * p + 1);
-}
+export const sourceEarthfallLowerContains = (x,z,margin=0) => earthfallContains(SOURCE_EARTHFALL.catch,x,z,margin)
+  || earthfallContains({minX:-SOURCE_EARTHFALL.passage.halfWidth,maxX:SOURCE_EARTHFALL.passage.halfWidth,minZ:SOURCE_EARTHFALL.passage.exitZ-3,maxZ:SOURCE_EARTHFALL.catch.minZ+.5},x,z,margin);
 
 // Supporting cuts travel from the clear central spine toward the outer bands.
 // The cuts are visible while weight is held; no supported earth vertex moves.
@@ -114,10 +123,9 @@ export function sourceEarthfallControlledDrop(elapsed, releaseAt = SOURCE_EARTHF
 }
 export const earthfallReleaseDistance = elapsed => sourceEarthfallControlledDrop(elapsed, SOURCE_EARTHFALL.footingLossAt, Infinity);
 
-// The only forward door stands at the far end of the upper corridor first.
-// It leaves with that earth, then stands on Source II before the body arrives.
-export const earthfallExitDoorHeight = elapsed => Math.max(SOURCE_EARTHFALL.lowerFloor,
-  SOURCE_EARTHFALL.upperFloor - earthfallReleaseDistance(elapsed));
+// The lower door belongs to Source II. Its ruined upper counterpart remains
+// far above, making the descent legible instead of riding the player down.
+export const earthfallExitDoorHeight = () => SOURCE_EARTHFALL.lowerFloor;
 
 const smooth = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
 // A real outer support edge is the bearing for each paired slab. Rotation
@@ -146,8 +154,10 @@ export function sourceEarthfallFracturePose(index, elapsed, center = { x: 0, y: 
   const x = Number(center.x) - bearing.x, z = Number(center.z) - bearing.z, projection = ux * x + uz * z;
   const drop = sourceEarthfallControlledDrop(time, plan.releaseAt, 180, plan.departureSpeed);
   return {
-    x: bearing.x + c * x + ux * projection * d,
-    y: Number(center.y) - drop + (uz * x - ux * z) * s,
+    // Once the bearing folds clear, the freed bank settles into its own
+    // outside trench. It cannot continue as another sheet beneath the player.
+    x: bearing.x + c * x + ux * projection * d + Math.sign(Number(center.x)||1)*Math.min(24,4.2*Math.max(0,age-.5)**1.4),
+    y: Number(center.y) - sourceEarthfallLoweringOffset(time) - drop + (uz * x - ux * z) * s,
     z: bearing.z + c * z + uz * projection * d,
     pitch: Math.atan2(ux * s, c),
     roll: Math.asin(Math.max(-1, Math.min(1, uz * s))),

@@ -6,7 +6,9 @@ import { sourceStrataGeometry } from '../src/data/source-exposed-strata.js';
 import {
   createSourceDesktopEnvelopeGate, normalizeSourceDesktopSnapshot, sourceDesktopRenderFrame,
   sourceDesktopLayout, sourceDesktopGlyphLines, SOURCE_DESKTOP_PLATES, SOURCE_DESKTOP_DISSOLVE_SECONDS,
+  sourceDesktopDiagnosticLayout,
 } from '../src/render/source-desktop-view.js';
+import {sourceDesktopFailureBeat} from '../src/game/source-desktop-state.js';
 
 const state = overrides => ({ token:'encounter-a', phase:'contained', clock:4,
   cover:{count:3,capacity:3,guard:5,exposed:false}, intent:{kind:'broadcast',progress:.25}, ...overrides });
@@ -24,6 +26,27 @@ test('the same authored body survives contained, dissolving and desktop presenta
   assert.deepEqual(frames.map(f=>f.openness),[0,.15625,.5,.84375,1]);
   assert.equal(sourceDesktopRenderFrame(state({phase:'desktop'})).openness,1);
   assert.equal(sourceDesktopRenderFrame(state({phase:'reforming',transition:1})).openness,0);
+});
+
+test('the authoritative breach clock holds, names the failure, then peels the same physical shelter',()=>{
+  const samples=[0,.35,.8,1.15,1.65,2.4].map(sourceDesktopFailureBeat);
+  assert.deepEqual(samples.map(x=>x.stage),['held','diagnostic','diagnostic','peeling','peeling','exposed']);
+  assert.deepEqual(samples.map(x=>x.diagnostic),[0,1,1,1,0,0]);
+  const held=sourceDesktopRenderFrame(state({phase:'dissolving',transition:.3,breach:{elapsed:.8}}));
+  assert.equal(held.openness,0);assert.equal(held.failure.stage,'diagnostic');
+  const peel=sourceDesktopRenderFrame(state({phase:'dissolving',transition:.75,breach:{elapsed:1.8}}));
+  assert.ok(peel.openness>0&&peel.openness<1);assert.deepEqual(peel.body,held.body);
+  const paused=normalizeSourceDesktopSnapshot({...held.state,breach:{elapsed:2.4},paused:true},held.state);
+  assert.equal(paused.breach.elapsed,.8);assert.equal(sourceDesktopRenderFrame(paused).failure.stage,'diagnostic');
+  const restored=sourceDesktopRenderFrame(state({phase:'dissolving',transition:1,breach:{elapsed:2.4}}));
+  assert.equal(restored.openness,1);assert.equal(restored.failure.diagnostic,0,'reload must not replay the fatal diagnostic');
+});
+
+test('the passive failure diagnostic clears every command and reaction allocation',()=>{
+  for(const[w,h]of[[640,480],[1280,800],[2560,1440],[900,1600]])for(const y of[h*.3,h*.5,h*.72]){
+    const diagnostic=sourceDesktopDiagnosticLayout(w,h,{command:{x:0,y,width:w,height:h-y}});
+    assert.ok(diagnostic.height<y);assert.ok(diagnostic.padding>0);assert.ok(diagnostic.titleSize>=17);
+  }
 });
 
 test('pause freezes both the sampled character and shell while closing can still clear it', () => {

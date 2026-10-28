@@ -12,6 +12,7 @@ import {segmentHitsTriangle} from './helpers/packed-prop-mesh.mjs';
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/atrium-wc-radiator-baseline.json',import.meta.url)));
 const builder=readFileSync(new URL('../tools/chunk_surfer/build-props.mjs',import.meta.url),'utf8');
 const between=(a,b)=>builder.slice(builder.indexOf(a),builder.indexOf(b));
+const sourceMaterials=new Function(between('const materials = [','const MAT = {')+';return materials;')();
 const group=(m,mat)=>{if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],uvs:[],indices:[]});return m.groups.get(mat);};
 const primitives=new Function('group','signAssemblies','BUILDING_WINDOW_HOST_ORIGINS',[
   between('function addBox(','function addPlate('),between('function addBeam(','function addQuad('),
@@ -77,7 +78,16 @@ test('approved core plan, WC pose, working approach and the nonblocking atrium i
 });
 
 test('installed actual GLB includes the removal rather than retaining source-only completion',()=>{
-  const actual=triangles(packed('atrium_public_fittings'));
+  // The baseline records source MAT slots. Atlas packing may reorder material
+  // ordinals, so recover those slots through the complete source definitions.
+  // Keep the historical baseline and every packed geometry byte unchanged.
+  const groups=packed('atrium_public_fittings').map(g=>{
+    const material=gltf.materials[g.material],matches=sourceMaterials.map((m,i)=>m.name===material.name?i:-1).filter(i=>i>=0);
+    assert.equal(matches.length,1,`unrecognized or ambiguous atrium material ${material.name}`);
+    assert.deepEqual(material,sourceMaterials[matches[0]],`${material.name} retains its complete authored surface`);
+    return {...g,material:matches[0]};
+  });
+  const actual=triangles(groups);
   assert.equal(actual.length,nowTriangles.length,'rebake required: installed atrium still contains obsolete sanitary-bay radiator geometry');
   assert.equal(digest(actual),digest(nowTriangles),'installed atrium must match every executed production triangle/material/normal/UV');
 });

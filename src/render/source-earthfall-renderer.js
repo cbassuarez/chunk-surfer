@@ -4,9 +4,11 @@ import * as R3 from './r3d.js';
 import * as P3 from './props3d.js';
 import {CELL,EYE,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
-import {SOURCE_EARTHFALL as C,sourceEarthfallFracturePose,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop} from '../data/source-earthfall.js';
+import {SOURCE_EARTHFALL as C,sourceEarthfallFracturePose,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop,sourceEarthfallUpperHeight,SOURCE_EARTHFALL_STRATA,sourceEarthfallStratumPose} from '../data/source-earthfall.js';
 import {sourceEarthfallFrame} from '../game/source-earthfall.js';
-import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
+import {sourceContinuationMeshPayload,sourceContinuationRenderFrame,prewarmSourceContinuationAssets,SOURCE_CONTINUATION_ARCHITECTURE} from './source-continuation-renderer.js';
+import {freshSourceContinuation} from '../game/source-continuation.js';
+import {sourceContinuationEntranceOffset} from '../game/source-continuation-entry.js';
 import {SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
@@ -42,15 +44,18 @@ const CRACK_EDGES=(()=>{const edges=new Map();for(const cell of CELLS)for(let k=
 }return[...edges.values()];})();
 const SHARED=[
   {id:'catch',name:PREFIX+'catch',kind:'catch',material:'dark-source',...box(C.catch.minX,C.catch.maxX,-C.catch.thickness,0,C.catch.minZ,C.catch.maxZ)},
-  {id:'path',name:PREFIX+'path',kind:'path',material:'source',...box(-C.passage.halfWidth,C.passage.halfWidth,-.32,0,C.passage.exitZ-3,C.passage.entryZ)},
+  {id:'path',name:PREFIX+'path',kind:'path',material:'source',...box(-C.passage.halfWidth,C.passage.halfWidth,-.55,0,C.passage.exitZ-3,C.catch.minZ+.5)},
+  {id:'bearing',name:PREFIX+'bearing',kind:'bearing',material:'source',...box(-.5,.5,-.5,.5,-.5,.5)},
+  {id:'edge',name:PREFIX+'edge',kind:'edge',material:'source',...box(-.5,.5,-.07,0,-.04,.04)},
   {id:'lamp',name:PREFIX+'lamp',kind:'lamp',material:'dark-metal',...box(-.16,.16,-.07,.07,-.09,.09)},
   {id:'crack',name:PREFIX+'crack',kind:'crack',material:'dark-metal',...box(-.5,.5,0,.005,-.5,.5)},
 ];
-const LIBRARY=[...CELLS,...SHARED],GOODS=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
+const STRATA=SOURCE_EARTHFALL_STRATA.flatMap(layer=>Array.from({length:4},(_,piece)=>({id:`${layer.id}-${piece}`,name:PREFIX+`${layer.id}-${piece}`,kind:'stratum',material:'source',layer,piece,...box(-7.5,7.5,-layer.thickness,0,-8.5,8.5)})));
+const LIBRARY=[...CELLS,...SHARED,...STRATA],GOODS=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
 const DOOR_MESHES=[GOODS.frameMesh,GOODS.leafMesh,GOODS.freeStandingHeadMesh].filter(Boolean);
 const REQUIRED_BASE=['grand_piano','instrument_case'];
 const REQUIRED_DEMO=[DEMO.staticMesh,...DEMO.parts.map(p=>p.mesh)];
-export const SOURCE_EARTHFALL_RENDER_BUDGET=Object.freeze({earthCells:120,customTriangles:LIBRARY.reduce((n,p)=>n+p.i.length/3,0),far:240,presences:24});
+export const SOURCE_EARTHFALL_RENDER_BUDGET=Object.freeze({earthCells:120,strata:3,sectionPanels:12,sectionModels:6,customTriangles:LIBRARY.reduce((n,p)=>n+p.i.length/3,0),far:SOURCE_CONTINUATION_ARCHITECTURE.far,presences:24});
 export function sourceEarthfallGeometry(){return LIBRARY;}
 
 export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
@@ -90,7 +95,7 @@ const MODEL_SUPPORT={grand_piano:[
   ...[-.275,.275].flatMap(x=>[-1.47,-1.23].flatMap(z=>Array.from({length:8},(_,i)=>[x+Math.cos(i*Math.PI/4)*.025,.02,z+Math.sin(i*Math.PI/4)*.025]))),
 ],instrument_case:[[-.6,.01,-.21],[.6,.01,-.21],[.6,.01,.21],[-.6,.01,.21]]};
 function controlledModel(station,elapsed,reduced){
-  const plan=sourceEarthfallReleasePlan(station.id,{x:station.x,y:C.upperFloor,z:station.z}),age=Math.max(0,elapsed-plan.releaseAt),drop=sourceEarthfallControlledDrop(elapsed,plan.releaseAt,100,plan.departureSpeed);
+  const plan=sourceEarthfallReleasePlan(station.id,{x:station.x,y:C.upperFloor,z:station.z}),age=Math.max(0,elapsed-plan.releaseAt),drop=sourceEarthfallControlledDrop(elapsed,plan.releaseAt,14,plan.departureSpeed);
   const distance=Math.hypot(station.x,station.z+21)||1,dx=-station.x/distance,dz=(-21-station.z)/distance,lean=reduced?0:smooth(0,1.25,age)*(station.mesh==='grand_piano'?.13:.095);
   const m=multiply(rotation(dz*lean,-dx*lean),matrix(0,0,0,station.yaw,station.scale));
   const contact=Math.min(...MODEL_SUPPORT[station.mesh].map(p=>m[1]*p[0]+m[5]*p[1]+m[9]*p[2]));
@@ -98,7 +103,7 @@ function controlledModel(station,elapsed,reduced){
   return{matrix:m,supportY:C.upperFloor-drop,releaseAt:plan.releaseAt,band:plan.band};
 }
 const facadePlan=sourceEarthfallReleasePlan(0,{x:-18,y:C.upperFloor,z:-35});
-const facadeDrop=elapsed=>sourceEarthfallControlledDrop(elapsed,facadePlan.releaseAt,100,facadePlan.departureSpeed);
+const facadeDrop=()=>0;
 
 export function sourceEarthfallRenderFrame(state,presentation={}){
   const frame=sourceEarthfallFrame(state),props=[],lights=[],reduced=presentation.reducedMotion===true||presentation.reduceMotion===true||presentation.shakeMode==='off',effectsOff=presentation.effectsMode==='off'||presentation.flashMode==='off';
@@ -125,13 +130,43 @@ export function sourceEarthfallRenderFrame(state,presentation={}){
       if(frame.elapsed<initiationAt){index++;continue;}
       const width=.008+.065*smooth(initiationAt,initiationAt+.22,frame.elapsed);
       const dx=b[0]-a[0],dz=b[2]-a[2];
-      put('tear-'+index++,PREFIX+'crack',matrix((a[0]+b[0])/2,C.upperFloor+.002,(a[2]+b[2])/2,-Math.atan2(dz,dx),Math.hypot(dx,dz),1,width),{earthfallRole:'tear',initiationAt,supportBand:band});
+      put('tear-'+index++,PREFIX+'crack',matrix((a[0]+b[0])/2,sourceEarthfallUpperHeight(frame.elapsed)+.002,(a[2]+b[2])/2,-Math.atan2(dz,dx),Math.hypot(dx,dz),1,width),{earthfallRole:'tear',initiationAt,supportBand:band});
     }
   }
   const catchCenter=CENTERS.get(PREFIX+'catch');
-  put('folio-catch',PREFIX+'catch',matrix(catchCenter[0],catchCenter[1]+frame.catchSurfaceY,catchCenter[2]),{earthfallRole:'catch',supportY:frame.catchSurfaceY,cullRadius:128});
+  put('folio-catch',PREFIX+'catch',matrix(catchCenter[0],catchCenter[1]+frame.catchSurfaceY,catchCenter[2]),{earthfallRole:'catch',supportY:frame.catchSurfaceY,cullRadius:18});
   const pathCenter=CENTERS.get(PREFIX+'path');
-  put('lower-path',PREFIX+'path',matrix(pathCenter[0],pathCenter[1]+frame.catchSurfaceY+.004,pathCenter[2]),{earthfallRole:'path',supportY:frame.catchSurfaceY,cullRadius:30});
+  put('lower-path',PREFIX+'path',matrix(pathCenter[0],pathCenter[1]+C.lowerFloor,pathCenter[2]),{earthfallRole:'path',supportY:C.lowerFloor,cullRadius:Math.hypot(C.passage.halfWidth,(C.catch.minZ+.5-(C.passage.exitZ-3))/2)+.3});
+  const head=C.catch,edgeY=C.lowerFloor+.012;
+  for(const[x,z,length,yaw,id]of[
+    [head.minX,(head.minZ+head.maxZ)/2,head.maxZ-head.minZ,Math.PI/2,'west'],
+    [head.maxX,(head.minZ+head.maxZ)/2,head.maxZ-head.minZ,Math.PI/2,'east'],
+    [0,head.maxZ,head.maxX-head.minX,0,'near'],
+    [(head.minX-C.passage.halfWidth)/2,head.minZ,-C.passage.halfWidth-head.minX,0,'far-west'],
+    [(head.maxX+C.passage.halfWidth)/2,head.minZ,head.maxX-C.passage.halfWidth,0,'far-east'],
+  ])put('landing-edge-'+id,PREFIX+'edge',matrix(x,edgeY,z,yaw,length,1,1),{earthfallRole:'landing-edge'});
+  for(const piece of STRATA){
+    const pose=sourceEarthfallStratumPose(piece.layer,piece.piece,frame.elapsed),b=CENTERS.get(piece.name);
+    const m=multiply(matrix(pose.x,pose.y,pose.z),rotation(pose.pitch,pose.roll)),layer=piece.layer;
+    put(piece.id,piece.name,multiply(m,matrix(b[0],b[1],b[2])),{earthfallRole:'stratum',layer:layer.index,construction:layer.construction,releaseAt:layer.releaseAt,cullRadius:16});
+    // These are sections of this building, not three interchangeable plates.
+    // Every rib and borrowed native model follows its actual failing panel.
+    if(layer.construction==='coffer')for(const[z,k]of[[-5.5,0],[0,1],[5.5,2]])
+      put(piece.id+'-coffer-'+k,PREFIX+'bearing',multiply(m,matrix(0,-layer.thickness-.32,z,0,14.6,.64,.32)),{earthfallRole:'stratum-support',layer:layer.index,construction:layer.construction});
+    if(layer.construction==='soundboard'){
+      for(let k=0;k<7;k++)put(piece.id+'-rib-'+k,PREFIX+'bearing',multiply(m,matrix(-6+k*2,-layer.thickness-.25,0,0,.16,.5,16.4)),{earthfallRole:'stratum-support',layer:layer.index,construction:layer.construction});
+      if(piece.piece<2)put(piece.id+'-piano','grand_piano',multiply(m,matrix(piece.piece%2?2:-2,-6.2,0,piece.piece%2?Math.PI:0,5)),{earthfallRole:'stratum-model',layer:layer.index,construction:layer.construction,cullRadius:12});
+    }
+    if(layer.construction==='binding'){
+      const side=piece.piece%2?1:-1;
+      put(piece.id+'-case','instrument_case',multiply(m,matrix(side*3,-2.8,0,Math.PI/2,7)),{earthfallRole:'stratum-model',layer:layer.index,construction:layer.construction,cullRadius:12});
+      for(const[z,k]of[[-6.5,0],[6.5,1]])put(piece.id+'-strap-'+k,PREFIX+'bearing',multiply(m,matrix(side*6.6,-1.5,z,0,.12,3,.18)),{earthfallRole:'stratum-support',layer:layer.index,construction:layer.construction});
+    }
+  }
+  // This upper threshold belongs to the ruined approach and never falls into
+  // the lower door. The player can look back100m to its retained frame.
+  const remnant=matrix(0,C.upperFloor,C.passage.upperExitZ,0,C.door.width/GOODS.opening.width,C.door.height/GOODS.opening.height,1);
+  put('upper-exit-remnant',GOODS.frameMesh,remnant,{earthfallRole:'upper-ruin'});
   for(const door of [frame.entryDoor,frame.exitDoor]){
     const base=matrix(door.x,door.y,door.z,door.kind==='entry'?Math.PI:0,door.width/GOODS.opening.width,door.height/GOODS.opening.height,1);
     put(`door-${door.kind}`,GOODS.frameMesh,base,{earthfallRole:'door',doorId:door.id});
@@ -150,6 +185,8 @@ export function sourceEarthfallRenderFrame(state,presentation={}){
   }
   for(const station of MODEL_STATIONS){
     const model=controlledModel(station,frame.elapsed,reduced);
+    const contacts=MODEL_SUPPORT[station.mesh].map(p=>[model.matrix[0]*p[0]+model.matrix[8]*p[2]+model.matrix[12],model.matrix[2]*p[0]+model.matrix[10]*p[2]+model.matrix[14]]),xs=contacts.map(p=>p[0]),zs=contacts.map(p=>p[1]),minX=Math.min(...xs)-.6,maxX=Math.max(...xs)+.6,minZ=Math.min(...zs)-.6,maxZ=Math.max(...zs)+.6;
+    put('model-bank-'+station.id,PREFIX+'bearing',matrix((minX+maxX)/2,model.supportY-.3,(minZ+maxZ)/2,0,maxX-minX,.6,maxZ-minZ),{earthfallRole:'upper-bank',supportY:model.supportY});
     put('model-'+station.id,station.mesh,model.matrix,{earthfallRole:'model',supportY:model.supportY,releaseAt:model.releaseAt,supportBand:model.band});
   }
   if(frame.committed&&!effectsOff){
@@ -162,23 +199,43 @@ export function sourceEarthfallRenderFrame(state,presentation={}){
       put('residue-'+i,poses[i%poses.length],m,{earthfallRole:'residue',structural:false,apparitionVariant:14,emissive:[0,0,0,.34+hash(i,33)*.3]});
     }
   }
+  lights.push({id:PREFIX+'lower-head',x:0,y:3.8,z:-7,radius:22,intensity:2.8,color:[.55,.68,.69],penetration:1});
+  lights.push({id:PREFIX+'lower-spine',x:2.2,y:3.2,z:-28,radius:19,intensity:2.1,color:[.52,.64,.65],penetration:1});
   lights.push({id:PREFIX+'west-work',x:-10,y:C.upperFloor-facadeDrop(frame.elapsed)+14,z:-19,radius:95,intensity:5,color:[.65,.72,.70],penetration:1});
   lights.push({id:PREFIX+'west-graze',x:-7,y:C.upperFloor-facadeDrop(frame.elapsed)+6.4,z:-44,radius:75,intensity:3.6,color:[.67,.74,.72],penetration:1});
   const eye=[frame.player.x,frame.player.feet+C.eyeHeight,frame.player.z];
   return{source:frame,phase:frame.phase,props,lights,eye,yaw:frame.player.yaw,pitch:frame.player.pitch,authoredCamera:{eye,yaw:frame.player.yaw,pitch:frame.player.pitch},counts:{props:props.length,earth:CELLS.length,presences:props.filter(p=>p.earthfallRole==='residue').length},falling:frame.falling,catchSurfaceY:frame.catchSurfaceY};
 }
 
-export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},installMeshes=installSourceEarthfallMeshes,transformFrame=null}={}){
+let continuationPreview=null;
+// The lower doorway is the same physical plane on both sides. Its destination
+// is already present while approaching; no camera or scene owner is borrowed.
+export function sourceEarthfallContinuationPreview(){
+  if(continuationPreview)return continuationPreview;
+  const entry={...freshSourceContinuation(),doorOpen:{'wrong-entry-return':true}};
+  const world=sourceContinuationRenderFrame(entry),offset=-sourceContinuationEntranceOffset().z;
+  continuationPreview={props:world.props.filter(p=>!p.inheritedRuins&&p.role!=='inherited-earthfall'&&p.doorId!=='wrong-entry-return'&&!p.id.includes('wrong-entry-throat')).map(p=>{
+    const m=new Float32Array(p.matrix);m[14]+=offset;
+    const moved={...p,id:'earthfall-preview-'+p.id,matrix:m,x:p.x,y:p.y,z:p.z+offset,continuationPreview:true};
+    if(p.physicalBounds)moved.physicalBounds={min:p.physicalBounds.min.map((v,k)=>v+(k===2?offset:0)),max:p.physicalBounds.max.map((v,k)=>v+(k===2?offset:0))};
+    return moved;
+  }),lights:world.lights.filter(light=>!light.inheritedEarthfall).map(light=>({...light,id:'earthfall-preview-'+light.id,z:light.z+offset})),
+    surroundingsGate:{...world.surroundings.gate,z:world.surroundings.gate.z+offset}};
+  return continuationPreview;
+}
+
+export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},installMeshes=installSourceEarthfallMeshes,transformFrame=null,previewContinuation=false,getTorch=()=>({on:false,look:{power:0}})}={}){
   let initialized=false,released=false,loading=null,repair=null,error=null,last=null,releaseRange=null;
   const rangeOwner=Symbol('source-earthfall');
   const required=[...LIBRARY.map(p=>p.name),...REQUIRED_BASE,...REQUIRED_DEMO,...DOOR_MESHES,...Object.values(ST_BRENDANS_PRESENCE_MESH)];
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh));};
-  function clearSource(){for(const name of ['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);for(const name of ['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);}
+  function clearSource(){for(const name of ['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);for(const name of ['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);}
   async function install(){
     if(released)return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The descending earth mesh context is unavailable.');
     for(const [meshes,url]of [[REQUIRED_DEMO,'assets/source-demolition.glb'],[Object.values(ST_BRENDANS_PRESENCE_MESH),ST_BRENDANS_PRESENCE_PACK],[DOOR_MESHES,'assets/conservatory-doors.glb']]){
       const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(url));if(released)return false;
     }
+    if(previewContinuation)await prewarmSourceContinuationAssets({renderer,props,resolveAsset});
     const catalog=new Set(props.propMeshCatalog?.()||[]),missing=required.filter(mesh=>!catalog.has(mesh));if(missing.length)throw Error('Descending Source meshes missing: '+missing.join(', '));return true;
   }
   function initialize(){
@@ -199,9 +256,16 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
     // replace the last descending view with a loading-black frame.
     if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});return true;}
     const physical=sourceEarthfallRenderFrame(state,presentation);
+    if(previewContinuation){
+      const preview=sourceEarthfallContinuationPreview();physical.props.push(...preview.props);props.setSourceSurroundingsGate?.(preview.surroundingsGate);
+      const nearest=l=>(l.x-physical.eye[0])**2+(l.y-physical.eye[1])**2+(l.z-physical.eye[2])**2;
+      physical.lights.push(...preview.lights.sort((a,b)=>nearest(a)-nearest(b)).slice(0,4));
+      physical.counts={...physical.counts,props:physical.props.length,continuationPreview:preview.props.length};
+    }
     last=typeof transformFrame==='function'?transformFrame(state,presentation,physical):physical;
     renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
-    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:SOURCE_EARTHFALL_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false})!==false;
+    const torch=getTorch?.();
+    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:SOURCE_EARTHFALL_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:torch?.on?1:0,torchLook:torch?.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false})!==false;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
   return{initialize,render,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,error,restoringScenery:!!repair,budget:SOURCE_EARTHFALL_RENDER_BUDGET,frame:last?{phase:last.phase,eye:last.eye,counts:last.counts,catchSurfaceY:last.catchSurfaceY}:null})};

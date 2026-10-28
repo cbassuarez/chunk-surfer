@@ -64,8 +64,10 @@ test('production tick gives choir the normal protection input, keeps legacy fail
   };
   vm.createContext(context); vm.runInContext(code, context); context.tickChapelServiceAudio();
   assert.equal(calls[0][1], input); assert.equal(calls[1][1].muted, true); assert.equal(calls[2][1].murmur, true);
-  context.chapelChoirAudio.update = () => ({ loaded: false, failed: 'missing recording' });
-  calls.length = 0; context.tickChapelServiceAudio(); assert.equal(calls[0][0], 'legacy'); assert.equal(calls[0][1].muted, false);
+  context.chapelChoirAudio.update = () => ({ loaded: false, failed: 'missing recording',nearby:true,fallbackFadeSeconds:8 });
+  calls.length = 0; context.tickChapelServiceAudio(); assert.equal(calls[0][0], 'legacy'); assert.equal(calls[0][1].muted, false);assert.equal(calls[0][1].fadeInSeconds,8);
+  context.chapelChoirAudio.update=()=>({loaded:false,failed:null,nearby:true});calls.length=0;context.tickChapelServiceAudio();
+  assert.equal(calls[0][1].muted,true,'a pending choir load cannot start a global-phase spoken service');
   assert.match(main, /createChapelChoirRuntime\(\{context:actx,destination:sfxGain,score:CHAPEL_CHOIR_SCORE/);
   assert.match(main.match(/function resetRunAudio[\s\S]*?\n\}/)[0], /chapelChoirAudio\?\.stop/);
 });

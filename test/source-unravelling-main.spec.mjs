@@ -21,6 +21,7 @@ function flurryHarness(active){
   const sandbox={
     chunkSurfRuntime:{horizonFrame:()=>({unravelling:{active}}),outskirtsPassAt:()=>24,setOutskirtsFlurry:value=>flurry.push(value)},
     tickPhoneWorld(){},payphoneLoopHolds:()=>false,PAYPHONE_PASS:{loop:10},flagGet:()=>false,
+    payphoneIncomingForPass:()=>null,preparePayphoneRoadLoop(){},
     phoneWorld:{box:null},payphoneScene:null,SARAH_PAGE:{flurryFrom:15},performance:{now:()=>clock},
     REC:{COMPOSURE_FLOOR:0,composure:()=>composure,setComposure(value){composure=value;drains.push(value);}},
   };
@@ -64,6 +65,7 @@ test('speech and an embodied choice allow world decay, while pause, a world bloc
     PRES:{isActive:()=>false},sourceFearFloor:0,
     tickHorizonScore(frame){mixed.push(frame.generation);order.push('score');},
     speakHorizonMarker(){},syncOutskirtsNight(){order.push('street');},tickPayphone(){},syncSourceRender(){order.push('render');},
+    preparePayphoneRoadLoop(){},payphoneIncomingForPass:()=>null,
   };
   const api=execute(productionSection('function tickSourceSpace(dt){','\nlet stairAnomalyEnteredAt='),sandbox,'{tickSourceSpace}');
   api.tickSourceSpace(.2);

@@ -124,7 +124,7 @@ test('caught effort follows native focus authority while hidden, paused and bloc
 test('isolated pack is current, opaque solid pigment with filled forward-facing geometry and credible physical case construction',async()=>{
   const bytes=fs.readFileSync(new URL('../public/assets/chapel-tape-demand.glb',import.meta.url)),stats=JSON.parse(fs.readFileSync(new URL('../public/assets/chapel-tape-demand.stats.json',import.meta.url)));
   const sha=b=>crypto.createHash('sha256').update(b).digest('hex');assert.equal(sha(bytes),stats.sha256);for(const[file,hash]of Object.entries(stats.sourceSha256))assert.equal(sha(fs.readFileSync(new URL('../'+file,import.meta.url))),hash);
-  const doc=await new NodeIO().readBinary(bytes),meshes=doc.getRoot().listMeshes();assert.equal(meshes.length,7);assert.ok(stats.bytes<900000&&stats.triangles<20000);
+  const doc=await new NodeIO().readBinary(bytes),meshes=doc.getRoot().listMeshes();assert.equal(meshes.length,14);assert.ok(stats.bytes<900000&&stats.triangles<20000);
   for(const mesh of meshes.filter(m=>m.getName().includes('_paint_')))for(const primitive of mesh.listPrimitives()){
     const material=primitive.getMaterial();assert.equal(material.getAlphaMode(),'OPAQUE');assert.equal(material.getExtras().printedSurface.coverage,'solid');assert.equal(material.getExtras().printedSurface.emission,'none');
     const normals=primitive.getAttribute('NORMAL').getArray();for(let i=2;i<normals.length;i+=3)assert.ok(normals[i]>.75,'filled paint faces its actual room');
@@ -139,6 +139,7 @@ test('the production carried case uses the rendered eye and its whole GLB remain
   const host={storyMode:true,planName:'conservatory',usingSpecialSpace:()=>false,
     R3:{r3dChapelTapeDemandReady:()=>true,r3dViewCamera:()=>camera},FP,CELL,
     logicalX:185,logicalY:117,group:'upper',timeSec:1,shakeMode:()=> 'full',mapWorldHeading:()=>-2,
+    chapelTapeWarningDoor:null,chapelTapeWarningSeconds:0,
     chapelTapeDemandState:()=>caught(),chapelTapeDemandContext:()=>context,
     chapelTapeDemandInstances:(_state,options)=>{submitted=options;return[];},doorDynamicCombined:[],count:0};
   vm.createContext(host);
@@ -212,7 +213,10 @@ test('production before-step and restore hooks bind a real legal chapel aperture
     R3:{r3dChapelTapeDemandReady:()=>true,r3dLookAngles:()=>({yaw:0,pitch:-.1}),r3dSetLookAngles:()=>{}},fireCue:()=>{},
     PROPS:{propCanOccupy:()=>true},applyLensPreset:()=>{},renderMove:null,motionRig:null,trail:[],finaleActive:false,
     MAIN_EXIT_CELL:{x:79,y:3}};
-  vm.createContext(host);vm.runInContext('let chapelTapeTugHeld=false,chapelTapeSavedProgress=0;'+block('function chapelTapeDemandContext(){','// The last walk owns a physical progression'),host);
+  vm.createContext(host);vm.runInContext("let chapelTapeTugHeld=false,chapelTapeSavedProgress=0,chapelTapeWarningDoor='chapel-c17',chapelTapeWarningSeconds=1,chapelCollectionWarningId=null,chapelCollectionWarningSeconds=0;"+block('function chapelTapeDemandContext(){','// The last walk owns a physical progression'),host);
+  assert.equal(vm.runInContext('chapelTapeWarningSeconds=0;chapelTapeDemandBeforeStep({x:186,y:116},{x:186,y:115})',host),false,'a legal crossing without a preceding warning cannot seize the case');
+  assert.equal(save.flags[D.CHAPEL_TAPE_DEMAND_FLAG].status,'departing');
+  vm.runInContext('chapelTapeWarningSeconds=1',host);
   assert.equal(vm.runInContext('chapelTapeDemandBeforeStep({x:186,y:116},{x:186,y:115})',host),true);
   const caughtState=save.flags[D.CHAPEL_TAPE_DEMAND_FLAG];assert.equal(caughtState.status,'caught');assert.equal(caughtState.catch.group,'upper');assert.equal(caughtState.departure.remainingMs,53000);assert.equal(host.escape.deadlineMs,null);assert.ok(writes>0);
   host.escape=null;host.px=10;host.py=10;

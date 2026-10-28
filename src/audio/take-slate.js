@@ -2,8 +2,9 @@
 // No speech recognition or network upload; encoded voice stays in IndexedDB.
 const DB='chunk-surfer-take-slates';
 let storageEpoch=0;
+export function invalidateSlateAudio(){ storageEpoch++; }
 export function clearSlateAudio(){
-  storageEpoch++;
+  invalidateSlateAudio();
   return new Promise(resolve=>{
     if(!globalThis.indexedDB){resolve();return;}
     const request=indexedDB.deleteDatabase(DB);

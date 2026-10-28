@@ -209,8 +209,8 @@ const DOCK_LAYOUT = Object.freeze({
   'dock-level-check-box': { x: .5, y: .018, z: 1, scale: 1.45 },
   'dock-desk-1': { x: -3.65, y: 0, z: 5.4, yaw: .1 },
   'dock-work-order-clipboard': {
-    x: -3.65 - Math.sin(.1) * .04, y: .7235,
-    z: 5.4 - Math.cos(.1) * .04, yaw: .1, scale: .85,
+    x: -3.65 - Math.cos(.1) * .22 + Math.sin(.1) * .10, y: .7235,
+    z: 5.4 + Math.sin(.1) * .22 + Math.cos(.1) * .10, yaw: .1, scale: .85,
     on: 'dock-desk-1', surfaceMetres: .7175,
   },
   'acq-maintenance-searchlight-dock': { x: -4.6, y: 0, z: 4.5, scale: 3 },
@@ -219,8 +219,8 @@ const DOCK_LAYOUT = Object.freeze({
   'dock-freight-crate-low': { x: -2.8, y: 0, z: -6.6, scale: 1.1 },
   'dock-road-case': { x: 4.3, y: 0, z: 4 },
   'dock-cable-reel': { x: -2.6, y: 0, z: -5.6, scale: .72 },
-  'dock-shutter-bar': { x: -5.28, y: 1.05, z: -3.9, yaw: Math.PI / 2, scale: .88 },
-  'dock-chandelier-frame': { x: -2.2, y: 0, z: -.7, scaleX: .22, scaleY: .9, scaleZ: .36 },
+  'dock-shutter-bar': { x: -5.28, y: 0, z: -3.9, yaw: Math.PI / 2, scale: 1 },
+  'dock-chandelier-frame': { x: -2.2, y: 0, z: -.7, scale: 1 },
   // The mesh hangs down from its origin. At the old elevation its lower half
   // was below the floor; this origin attaches it under the cage crossbar.
   'dock-chandelier-intact': { x: -2.2, y: 2.315, z: -.7, scale: 1.48 },
@@ -267,14 +267,14 @@ export function sourceLandingPropPlacements(origin = { x: 0, y: 0 }) {
 // roof, paper, flat mat and fittings are not body obstacles. A cage's whole
 // footprint blocks the body rather than letting it pass through its contents.
 const DOCK_BODY_BOUNDS = Object.freeze({
-  'dock-desk-1': [-.31, .31, -.28, .297],
+  'dock-desk-1': [-0.775, 0.775, -0.37, 0.37],
   'acq-maintenance-searchlight-dock': [-.083, .083, -.127, .127],
-  'dock-hand-truck': [-.575, .575, -.325, .325],
-  'dock-freight-crates': [-.31, .31, -.343, .29],
-  'dock-freight-crate-low': [-.6, .6, -.26, .21],
-  'dock-road-case': [-.6, .6, -.26, .21],
-  'dock-cable-reel': [-.5, .655, -.407, .407],
-  'dock-chandelier-frame': [-4.5, 4.5, -2.52, 2.52],
+  'dock-hand-truck': [-0.3115, 0.3115, -0.305, 0.2972420703400006],
+  'dock-freight-crates': [-0.43, 0.43, -0.36249999999999993, 0.36250000000000004],
+  'dock-freight-crate-low': [-0.6094999999999999, 0.6094999999999999, -0.2475, 0.2475],
+  'dock-road-case': [-0.6, 0.6, -0.2805, 0.32536684897660495],
+  'dock-cable-reel': [-0.3225, 0.45, -0.396, 0.42000000000000004],
+  'dock-chandelier-frame': [-1.0725, 1.0725, -0.84, 0.84],
   'getin-heavy-stillson': [-1.08, .86, -.09, .09],
 });
 

@@ -11,6 +11,8 @@
 // marks an input-modal Source scene whose world/pressure must continue even
 // though the player's locomotion is held.
 
+import {beginReviewFrame} from './local-text-review.js';
+
 const stack = [];
 const listeners = new Set();
 let onLookProfile = () => {};
@@ -131,7 +133,24 @@ export function allowsLook() {
   }
   return false;
 }
+// A borrowed world owns a local camera. Look-permitting speech and passive
+// notices can sit above it, while menus and explicit camera holds still stop it.
+export function lookOwner() {
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const scene = stack[i];
+    if (scene.allowsLook === false || scene.blocksInput && scene.allowsLook !== true) return null;
+    if (scene.allowsLook === true && typeof scene.lookBy === 'function') return scene;
+  }
+  return null;
+}
 export function worldView() { return top()?.worldView?.() || null; }
+
+// Audio and passive presentation need the same hold as the simulation, even
+// when an overlay is intentionally omitted from top().
+export function isFrozen(scene) {
+  const index=stack.indexOf(scene);
+  return index>=0&&index<stack.findLastIndex(owner=>owner.id==='pause'||owner.freezesBelow);
+}
 
 export function update(dt) {
   // Pause and required display transitions freeze authored clocks beneath them.
@@ -151,7 +170,12 @@ export function update(dt) {
 export function render() {
   const frameScenes = [...stack];
   for (const scene of frameScenes) {
-    if (stack.includes(scene)) scene.render?.();
+    if (stack.includes(scene)) {
+      // A modal presenter replaces the text-picking surface beneath it. Menus
+      // cannot expose a thought or conversation hidden behind their faceplate.
+      if (scene.blocksInput && !scene.overlay) beginReviewFrame();
+      scene.render?.();
+    }
   }
 }
 

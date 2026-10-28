@@ -43,13 +43,53 @@ test('bounded repair is idempotent on both shipped packs and credits match exact
   });
 });
 
-test('recorded repair preserved every unrelated mesh and embedded image',()=>{
+test('apron recipe accepts material renumbering but refuses any changed geometry or material identity',()=>{
+  const source=fs.readFileSync('tools/chunk_surfer/build-props.mjs','utf8'),pack=assets[0].pack;
+  const remapped={json:structuredClone(pack.json),bin:pack.bin},last=remapped.json.materials.length-1;
+  remapped.json.materials.reverse();for(const mesh of remapped.json.meshes)for(const p of mesh.primitives)p.material=last-p.material;
+  assert.equal(patchElevation(remapped,source),remapped,'equivalent material ordinals do not rewrite a byte');
+  const changed={json:structuredClone(pack.json),bin:Buffer.from(pack.bin)},mesh=changed.json.meshes.find(m=>m.name==='conservatory_west_elevation');
+  const a=changed.json.accessors[mesh.primitives[0].attributes.POSITION],v=changed.json.bufferViews[a.bufferView],offset=(v.byteOffset||0)+(a.byteOffset||0);
+  changed.bin.writeFloatLE(changed.bin.readFloatLE(offset)+.025,offset);
+  assert.throws(()=>patchElevation(changed,source),/differs from both exact reviewed recipes/,'a 25mm geometry change still refuses repair');
+  const renamed={json:structuredClone(pack.json),bin:pack.bin},material=renamed.json.meshes.find(m=>m.name==='conservatory_west_elevation').primitives[0].material;
+  renamed.json.materials[material].name='unknown replacement';
+  assert.throws(()=>patchElevation(renamed,source),/differs from both exact reviewed recipes/,'geometry cannot silently change material identity');
+});
+
+test('historical aperture repair is preserved across the approved subsequent conservatory rebuild',()=>{
   const proof=JSON.parse(fs.readFileSync('artifacts/exterior-access-repairs/loading-apron-asset-repair.json'));
+  // The approved conservatory rebuilds added civic, pub and yard geometry, then
+  // reconciled ground skirting/dressing for the indoor greenhouse, then the
+  // Lyric row frontage. The exact unchanged elevation/material bytes are proved
+  // by the selective indoor and pub-row merge receipts.
+  // Its new pack must not be mistaken for the
+  // October 24 *historical* after-image. All other successor hashes are rejected.
+  const approvedSuccessor={
+    repair:'5dd24bec964c5a3e2e1d3ec259935dc0bb5b55c80190085da7afc346494d8023',
+    current:'500fab6a1bb8f555026281715da5436430230e3225130c7bf2fd0e480f2b5200',
+  };
   for(const asset of assets){const entry=proof.packs[asset.base];
-    assert.equal(entry.afterSha256,crypto.createHash('sha256').update(asset.bytes).digest('hex'));
-    for(const[name,fingerprint]of Object.entries(entry.unrelatedMeshFingerprints))assert.equal(meshFingerprint(asset.pack,asset.pack.json.meshes.find(m=>m.name===name)),fingerprint,name);
+    const currentSha=crypto.createHash('sha256').update(asset.bytes).digest('hex');
+    const credits=JSON.parse(fs.readFileSync(`public/assets/${asset.base}.credits.json`));
+    assert.equal(credits.pack.sha256,currentSha,`${asset.base} current credits bind its bytes`);
+    const isRepairGeneration=currentSha===entry.afterSha256;
+    if(!isRepairGeneration){
+      assert.equal(asset.base,'conservatory-props','unexpected post-repair rebuild');
+      assert.equal(entry.afterSha256,approvedSuccessor.repair,'historical repair witness must remain intact');
+      assert.equal(currentSha,approvedSuccessor.current,'unreviewed conservatory pack needs its own provenance approval');
+      for(const name of ['conservatory_west_elevation','exterior_pub_frontage','arrival_civic_boundary','arrival_civic_bench'])
+        assert.ok(asset.pack.json.meshes.some(mesh=>mesh.name===name),`${name} is in the approved successor`);
+      // The preceding test proves that the *current* elevation is already the
+      // exact repair recipe, without altering a byte of the published pack.
+    }else{
+      // These fingerprints and image hashes describe the precise repair-time
+      // generation, not unrelated additions in a newer conservatory rebuild.
+      for(const[name,fingerprint]of Object.entries(entry.unrelatedMeshFingerprints))
+        assert.equal(meshFingerprint(asset.pack,asset.pack.json.meshes.find(m=>m.name===name)),fingerprint,name);
+      const hashes=(asset.pack.json.images||[]).map(image=>{const v=asset.pack.json.bufferViews[image.bufferView];return crypto.createHash('sha256').update(asset.pack.bin.subarray(v.byteOffset||0,(v.byteOffset||0)+v.byteLength)).digest('hex');});
+      assert.deepEqual(hashes,entry.embeddedImageHashes);
+    }
     for(const flag of['materialsUnchanged','nodesUnchanged','texturesUnchanged'])assert.equal(entry[flag],true);
-    const hashes=(asset.pack.json.images||[]).map(image=>{const v=asset.pack.json.bufferViews[image.bufferView];return crypto.createHash('sha256').update(asset.pack.bin.subarray(v.byteOffset||0,(v.byteOffset||0)+v.byteLength)).digest('hex');});
-    assert.deepEqual(hashes,entry.embeddedImageHashes);
   }
 });

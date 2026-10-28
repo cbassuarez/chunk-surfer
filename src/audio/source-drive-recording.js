@@ -25,8 +25,9 @@ export async function readSourceDriveAudioEntry(key){
  try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE),request=tx.objectStore(STORE).get(String(key));request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});}finally{db.close();}
 }
 export async function readSourceDriveAudio(ref){return(await readSourceDriveAudioEntry(typeof ref==='string'?ref:ref?.key))?.blob||null;}
+export function invalidateSourceDriveAudio(){ storageEpoch++; }
 export function clearSourceDriveAudio(){
- storageEpoch++;return new Promise(resolve=>{if(!globalThis.indexedDB){resolve(false);return;}const request=indexedDB.deleteDatabase(DB);request.onsuccess=()=>resolve(true);request.onerror=()=>resolve(false);request.onblocked=()=>resolve(false);});
+ invalidateSourceDriveAudio();return new Promise(resolve=>{if(!globalThis.indexedDB){resolve(false);return;}const request=indexedDB.deleteDatabase(DB);request.onsuccess=()=>resolve(true);request.onerror=()=>resolve(false);request.onblocked=()=>resolve(false);});
 }
 export const sourceDriveAudioStore=Object.freeze({put:storeSourceDriveAudio,get:readSourceDriveAudioEntry});
 export async function sourceDriveBlobDigest(blob){

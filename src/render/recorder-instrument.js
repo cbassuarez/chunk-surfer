@@ -4,7 +4,8 @@
 import { uiDraw, uiCellMetrics, uiCurrentScale, uiWithClip, uiWithHardwareLayer } from './ui.js';
 import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass, drawVfdGrid } from './instrument-material.js';
 import { sampleControl } from '../game/control-mechanics.js';
-import { hardwareMotionReduced } from './hardware-material.js';
+import { drawHardwareCap, hardwareMotionReduced } from './hardware-material.js';
+import { drawHardwarePrint } from './hardware-faceplate.js';
 import { dbToUnit, dbForLinear, locationMarks, meterMarks } from './meter.js';
 import { uiBrightness, vfdSettings, themeForSurface } from './palette.js';
 import { normalizeFieldKit } from '../game/field-kit.js';
@@ -39,23 +40,15 @@ export function recorderDisplayPalette(view=null){
   return {...palette,label:theme.phosphor,counter:theme.counter,cursor:theme.counter,
     bar:theme.phosphor,hot:theme.counter,peak:theme.counter,mark:theme.phosphor,meterMark:theme.phosphor};
 }
-const PLASTICS={
-  ivory:['#d0d0bd','#bcbda9','#adad97','#878a76','#f9f4df'],
-  red:['#d79680','#bc6b57','#a95240','#753d32','#f0bc9b'],
-  amber:['#e1c177','#c9a151','#b98a3d','#836331','#fff0bc'],
-  blue:['#9fbcc7','#729aa9','#567d90','#3a586a','#d0e6e7'],
-  yellow:['#e4d58a','#d0bc64','#bca94f','#81783b','#fff4c0'],
-  coral:['#e5b79e','#d09179','#b87661','#835443','#ffe0be'],
-  green:['#c3d3b4','#a7bda0','#8fa98b','#647d64','#e7f0d4'],
-};
-const BUTTON_SETS={classic:['red','ivory','amber'],signal:['red','blue','yellow'],'sea-glass':['coral','green','ivory']};
+// The same moulded lenses and retainers as the map controls. The selected
+// button set remains cosmetic and supplies the physical lens pigments.
+const BUTTON_SETS={classic:['red','white','amber'],signal:['red','blue','#d0bc64'],'sea-glass':['#d09179','green','white']};
 
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,Number(v)||0));
 const finite=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
 const labelCache=new Map();
 const fill=(c,x,y,w,h,color,r=0)=>{c.fillStyle=color;if(r){c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}else c.fillRect(x,y,w,h);};
 const line=(c,x,y,xx,yy,color,width=1)=>{c.beginPath();c.moveTo(x,y);c.lineTo(xx,yy);c.strokeStyle=color;c.lineWidth=width;c.stroke();};
-function gradient(c,x,y,w,h,stops){const g=c.createLinearGradient(x,y,x+w,y+h);for(const [p,color]of stops)g.addColorStop(p,color);return g;}
 // Native type belongs only to physical ink on the faceplate and key caps.
 function text(c,value,x,y,size,color,tracking=0,align='left'){
   value=String(value);c.font=`400 ${size}px Arial,Helvetica,sans-serif`;c.textBaseline='alphabetic';c.textAlign='left';c.fillStyle=color;
@@ -147,6 +140,12 @@ export function recorderOutputReading(view={}){
   if(view.levels)return {snapshot:{db:dbForLinear(Math.max(finite(view.levels.left),finite(view.levels.right)))},label:'OUTPUT LEVEL',marks:null};
   return {snapshot:{db:-96},label:'OUTPUT LEVEL',marks:null};
 }
+export function recorderTransportReadout(transport) {
+  if(!transport||transport.phase==='normal')return null;
+  if(transport.phase==='seized')return {label:'STOP HELD',detail:`STOP ${transport.tries}/${transport.needs}`,held:true};
+  return {label:transport.quietReleased?'BRAKE FREE':'BRAKE DRAG',detail:transport.quietReleased?'STOP READY':'STOP READY',held:false};
+}
+
 function readout(c,view,g){
   const w=g.W-70,h=g.H-166,small=g.compact,b=uiBrightness();
   const colors=recorderDisplayPalette(view),green=colors.label,cyan=view.counterColor||colors.counter;
@@ -164,7 +163,8 @@ function readout(c,view,g){
         dpr:Math.max(sx,sy),tracking:tracking*sx});
     }finally{c.restore();}
   };
-  glow(view.counterLabel||'TIME COUNTER',20,29,11,green,.7);
+  const fault=recorderTransportReadout(view.transport);
+  glow(fault?.label||view.counterLabel||'TIME COUNTER',20,29,11,fault?colors.meterMark:green,.7);
   const value=String(view.counter||'00:00').replace(/^(\d):/,'0$1:');
   const maxW=small?w-40:w*.43,units=[...value].reduce((n,ch)=>n+advance(ch),0);
   const s=Math.min(small?.79:1.08,maxW/Math.max(1,units));let px=21;
@@ -179,7 +179,7 @@ function readout(c,view,g){
   glow('SEC',21+141*s,48+92*s,11,green,.6,'center');
   if(!small){
     const sx=w*.49,sw=w-sx-22,duration=Math.max(1,finite(view.locationSeconds,45));
-    glow('LOCATION INDICATOR',sx,29,11,green,.45);
+    glow(fault?.detail||'LOCATION INDICATOR',sx,29,11,fault?colors.meterMark:green,.45);
     const minor=duration<=60?2.5:duration<=120?5:duration<=300?15:30;
     const major=duration<=60?5:duration<=120?15:duration<=300?30:60;
     for(let seconds=0;seconds<=duration;seconds+=minor){
@@ -227,26 +227,24 @@ export function drawRecorderReadoutCanvas(ctx,{width=666,height=239,...view}={})
   }finally{ctx.restore();}
   return true;
 }
-function button(c,slot,label,key,plastic,state){
-  const press=clamp(state.travel),{x,y,w,h}=slot;
-  c.save();c.translate(x,y+press);c.shadowColor='#1118';c.shadowBlur=4;c.shadowOffsetY=4-press;
-  fill(c,0,0,w,h,'#4d514d',3);c.shadowBlur=0;c.shadowOffsetY=0;
-  fill(c,0,0,w,3,'#a3a59b');fill(c,0,0,3,h,'#8e9288');
-  fill(c,3,3,w-6,h-6,gradient(c,0,0,0,h,[[0,plastic[0]],[.28,plastic[1]],[.78,plastic[2]],[1,plastic[3]]]),1);
-  line(c,4,4,w-4,4,plastic[4],.7);line(c,3,h-2,w-3,h-2,'#242b26',1);
-  const alpha=key.enabled===false?.5:1;c.globalAlpha*=alpha;
-  text(c,label,w/2-4,h/2+3.7,11,'#262e26',.8,'center');
-  const lit=!!key.lit,cx=w-12,cy=h/2;
-  c.beginPath();c.arc(cx,cy,2.5,0,Math.PI*2);c.fillStyle=lit?'#cc7c30':'#4a3422';c.fill();
-  if(key.selected||key.focused)line(c,8,h+3,w-8,h+3,'#bfc7a9',1);
-  c.restore();
+function button(ctx,slot,label,key,color,state,dpr){
+  const cap=drawHardwareCap(ctx,slot.x,slot.y,slot.w,slot.h,{
+    color,finish:'lens',travel:state.travel,lampHeat:state.lampHeat,
+    enabled:key.enabled!==false,focused:!!(key.focused||key.selected),dpr,
+  });
+  const content=cap.content;
+  drawHardwarePrint(ctx,label,slot.x+content.x,slot.y+content.y,{
+    width:content.w,height:content.h,color:'#12150d',align:'center',
+    finish:'screenprint',seed:`recorder:${label}`,dpr,
+  });
 }
 
 export function drawRecorderInstrument(view={}, {drawContent=null}={}){
   const g=recorderFaceLayout(view.rect);if(!g)return null;
   const selectedAppearance=recorderAppearance(view),dark=selectedAppearance.faceplate!=='aluminum',witness=selectedAppearance.faceplate==='witness';
   const defaults=[{id:'rec',label:'REC'},{id:'stop',label:'STOP'},{id:'takes',label:'TAKES'}];
-  const keys=defaults.map((fallback,i)=>view.buttons?.keys?.[i]||{...fallback,enabled:false});
+  const fault=recorderTransportReadout(view.transport);
+  const keys=defaults.map((fallback,i)=>{const key=view.buttons?.keys?.[i]||{...fallback,enabled:false};return key.id==='stop'&&fault?{...key,lit:true}:key;});
   // Sample once: the visible stem and its key cap must describe the same
   // mechanical instant, even when painting the under-shell layer is costly.
   const keyStates=keys.map(key=>sampleControl(key.controlId||`recorder:${key.id}`,{
@@ -294,12 +292,17 @@ export function drawRecorderInstrument(view={}, {drawContent=null}={}){
     if(!witness&&!g.compact){
       const foot=String(view.note||view.footer||view.label||'RECORD / MONITOR').toUpperCase();
       ctx.save();ctx.beginPath();ctx.rect(35,g.H-72,Math.max(0,g.W-395),42);ctx.clip();
-      etch(ctx,foot,35,g.H-55,11,.6,'left',dark);etch(ctx,'VACUUM FLUORESCENT',35,g.H-39,11,.85,'left',dark);ctx.restore();
+      etch(ctx,foot,35,g.H-55,11,.6,'left',dark);ctx.restore();
     }
+    ctx.restore();
+    // Render at device resolution, as on the map and sheets: the cap and its
+    // printed legend travel together inside a fixed, machined retainer.
+    const px=view.rect.x*cellW*dpr,py=view.rect.y*cellH*dpr;
     designSlots.forEach((slot,i)=>{
       const key=keys[i];
-      button(ctx,slot,key.label||defaults[i].label,key,PLASTICS[BUTTON_SETS[selectedAppearance.buttons][i]],keyStates[i]);
-    });ctx.restore();
+      button(ctx,{x:px+slot.x*u,y:py+slot.y*u,w:slot.w*u,h:slot.h*u},
+        key.label||defaults[i].label,key,BUTTON_SETS[selectedAppearance.buttons][i],keyStates[i],u);
+    });
   });
   return g.body;
 }

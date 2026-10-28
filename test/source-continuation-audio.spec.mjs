@@ -54,12 +54,12 @@ test('a new shared bus cuts old voices and context changes rebuild only the boun
   sound.stop(); sound.stop(); assert.equal(sound.snapshot().voices, 0); sound.dispose();
 });
 
-test('stereo follows first-person yaw and Catch fixed north, with real vertical distance attenuation', () => {
+test('stereo follows the actual first-person yaw in both Source sections, with vertical attenuation', () => {
   const at = { x: 5, y: .95, z: 0 }, listener = { x: 0, feet: 0, z: 0, yaw: 0, phase: 'wrong-return' };
   assert.ok(sourceContinuationPlacement(at, listener).pan > .8);
   assert.ok(sourceContinuationPlacement(at, { ...listener, yaw: Math.PI }).pan < -.8);
-  assert.equal(sourceContinuationPlacement(at, { ...listener, phase: 'catch' }).pan,
-    sourceContinuationPlacement(at, { ...listener, phase: 'catch', yaw: Math.PI }).pan);
+  assert.ok(sourceContinuationPlacement(at, { ...listener, phase: 'catch' }).pan>.8);
+  assert.ok(sourceContinuationPlacement(at, { ...listener, phase: 'catch', yaw: Math.PI }).pan<-.8);
   const near = sourceContinuationPlacement(at, listener), below = sourceContinuationPlacement({ ...at, y: -18 }, listener);
   assert.ok(below.distance > near.distance); assert.ok(below.gain < near.gain); assert.ok(below.cutoff < near.cutoff);
   assert.ok(sourceContinuationPlacement({ x: NaN, y: Infinity }, {}).gain > 0, 'malformed optional positions stay finite');

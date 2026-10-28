@@ -459,6 +459,8 @@ test('main samples Source leakage only from the runtime frame after movement cro
     const syncSourceRender=()=>trace.push('render');
     const syncSourceWindowDecay=()=>trace.push('decay');
     const applyTowerPersonalTraversal=()=>false;
+    const preparePayphoneRoadLoop=()=>{}; // No payphone owner in this crossing fixture.
+
     const sourceCameraPatch=()=>({});
     const saveCommit=()=>trace.push('save'),updateAudio=()=>trace.push('audio');
     return ()=>{${sourceBranch}};

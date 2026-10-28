@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { PRINTED_SURFACE_GLSL } from '../src/render/printed-surface.js';
 import { UNRAVELLING_GLSL, horizonEntryDiffusion } from '../src/render/horizon3d.js';
+import { COASTAL_MEMORY_WATER_GLSL } from '../src/render/coastal-memory-water.js';
+import { GLASS_COURT_RAIN_GLSL } from '../src/render/glass-court-weather.js';
+import { OUTSKIRTS_BUS_RAIN_GLSL } from '../src/render/outskirts-bus-weather.js';
 
 // Assemble the actual accessor and template with their actual dependencies.
 // Importing all of r3d in Node would initialize unrelated browser subsystems.
@@ -20,7 +23,7 @@ const shader = runInNewContext([
   section('const RAIN_GLSL =', 'const MARCH_FRAG ='),
   section('const SOURCE_VOID_PHYSICAL_FRAG =', 'export function r3dSourceVoidPhysicalShader'),
   accessor.replace('export ', ''), 'r3dSourceVoidPhysicalShader();',
-].join('\n'), { PRINTED_SURFACE_GLSL, HZ: { UNRAVELLING_GLSL } });
+].join('\n'), { PRINTED_SURFACE_GLSL, COASTAL_MEMORY_WATER_GLSL, GLASS_COURT_RAIN_GLSL, OUTSKIRTS_BUS_RAIN_GLSL, HZ: { UNRAVELLING_GLSL } });
 const executableShader = shader.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
 test('the physical void contains no screen-fixed entry cloud layer', () => {
@@ -41,7 +44,7 @@ test('street dissolution still samples physical depth and world-anchored damage'
 
 test('existing overcast and world-anchored rain remain weather, independent of the removed entry mask', () => {
   assert.match(shader, /empty=mix\(empty,vec3\(\.050,\.057,\.072\)[^;]+clamp\(uOvercast,0\.0,1\.0\)\*\(1\.0-below\)\)/);
-  assert.match(shader, /rainVolume\(uEyeCells,wd,distanceM\)\*uRain/);
+  assert.match(shader, /rainVolume\(uEyeCells\+uWorldPatternOffset\/\.5,wd,distanceM\)\*uRain/);
   assert.match(shader, /vec2 pos = ro\.xz \/ RAIN_CELL_M/);
 });
 

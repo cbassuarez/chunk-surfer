@@ -12,7 +12,12 @@ import { runtimeTree } from '../src/narrative/runtime-content.js';
 import { outskirtsChoiceId, outskirtsPhysicalAction } from '../src/game/outskirts-choice.js';
 
 const fixture=()=>{const built=buildPreTapeGodPreset(0,{seed:4417,marbleEyes:'returned'});const runtime=createSourceSpaceRuntime({initialState:built.state});runtime.setPlayerPosition(built.position);return runtime;};
-const stand=(runtime,p)=>{const at={x:(p.x-1)/CELL-.5,y:p.z/CELL-.5};runtime.setPlayerPosition(at);return at;};
+const stand=(runtime,p)=>{
+  const at={x:(p.x-Math.sin(p.yaw))/CELL-.5,y:(p.z-Math.cos(p.yaw))/CELL-.5};
+  runtime.setPlayerPosition(at);
+  assert.equal(runtime.geometry.canStep(at.x,at.y,at.x,at.y).ok,true,'the visitor stands in front of the shelter on supported ground');
+  return at;
+};
 const frame=runtime=>runtime.propInstances(undefined,undefined,{time:1e9});
 const body=runtime=>frame(runtime).find(p=>p.id==='r0-bus-woman');
 const advance=(runtime,seconds,suspended=false)=>{for(let t=0;t<seconds-1e-8;t+=.05)runtime.tickOutskirtsCharacters(Math.min(.05,seconds-t),{suspended});};

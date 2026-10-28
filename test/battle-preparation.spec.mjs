@@ -8,7 +8,7 @@ import { makeBattlePreparation } from '../src/game/battle-preparation.js';
 import { normalizeCombatBuild, PIN_SOURCES } from '../src/game/combat-progression.js';
 import { TECHNIQUE as T } from '../src/game/combat-state.js';
 import { makeCombatScene } from '../src/game/combat.js';
-import { authoredCombatProfile } from '../src/data/combat-definitions.js';
+import { authoredCombatProfile,sourceCombatBattle } from '../src/data/combat-definitions.js';
 import { paintBattlePreparationReadout } from '../src/render/battle-preparation-view.js';
 const funded=()=>normalizeCombatBuild(null,PIN_SOURCES.encounters);
 const equipment=['light','recorder','radio','interface'];
@@ -189,6 +189,33 @@ test('real combat reveals, reads authored dialogue, then freezes at preparation'
 });
 test('a direct combat continuation retains its existing entry without preparation',()=>{
   const h=fight({prepare:false,intro:false});assert.equal(h.scene.battleView().phase,'tool');assert.equal(h.applied,0);h.scene.exit();
+});
+
+test('Source keeps preparation contained until READY, then breaches before any live opportunity',async()=>{
+  const noop=()=>{},calls=[];
+  const original=sourceCombatBattle(),battle={...original,intro:[],combat:{...original.combat,
+    movements:original.combat.movements.map(m=>({...m,before:[],after:[],barks:[]}))}};
+  const loadout={composure:20,battery:.18,tools:{torch:true,recorder:true,rig:true,fork:true}};
+  const scene=makeCombatScene({battle,difficulty:{},loadout,getPreparedLoadout:()=>loadout,skipOpening:true,
+    preparation:{getLoadout:()=>({top:['light','recorder','interface','tuning-fork']}),
+      getEquipment:()=>['light','recorder','interface','tuning-fork'],apply:()=>true},
+    sourceDesktop:{begin:async()=>{calls.push('begin');},frame:noop,end:noop,mode:()=> 'fallback'},
+    audio:{stopTyping:noop},getAudio:()=>null,fx:{stopCues:noop}});
+  scene.enter();
+  assert.equal(scene.battleView().phase,'prepare');assert.deepEqual(calls,[]);
+  for(let i=0;i<30;i++)scene.update(.05);
+  assert.deepEqual(calls,[],'waiting in preparation moved native windows');
+  assert.equal(scene.battleView().turnClock,null);
+  scene.key({key:'Enter'});scene.keyup({key:'Enter'});
+  assert.equal(scene.battleView().phase,'ready');
+  for(let i=0;i<15;i++)scene.update(.05);
+  assert.equal(scene.battleView().phase,'desktop-breach');assert.deepEqual(calls,['begin']);
+  assert.equal(scene.battleView().state.composure,20);
+  assert.equal(scene.battleView().turnClock,null);
+  await Promise.resolve();await Promise.resolve();
+  for(let i=0;i<60;i++)scene.update(.05);
+  assert.equal(scene.battleView().phase,'tool');assert.deepEqual(calls,['begin']);
+  assert.ok(scene.battleView().turnClock);scene.exit();
 });
 
 // ── AN ITEM WEARS THE COLOUR OF THE SKILL BRANCH IT FEEDS ────────────────────

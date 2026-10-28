@@ -52,6 +52,7 @@ GROUND = {
     "kerbWidthM": .150,
     "crossingX": 0.0,
     "crossingWidthM": 2.8,
+    "stopOffsetM": 4.55,
     "crossingDropHalfLengthM": 2.0,
     "pavementRampOuterM": 6.5,
 }
@@ -569,22 +570,32 @@ def build_markings():
             z=-half+i*.5
             y=GROUND["roadEdgeY"]+.006 if abs(z)<3 else GROUND["settsY"]+.006
             m.box((x,y,z),(.100,.008,.100),"roadPaint")
-    # Near stop line for each approach, within that vehicle's actual lane.
-    for x,z in [(-4.0,-1.5),(4.0,1.5)]:
-        m.face([(x-.10,.015,z-1.5),(x-.10,.015,z+1.5),(x+.10,.015,z+1.5),(x+.10,.015,z-1.5)],"roadPaint")
-    # Eight standard2m marks per approach,150mm gaps,100mm stroke. Only this
-    # receiver extends beyond the detailed30m ground patch, within the same
-    # existing street. Full carriageway incl. parking strips is10m, so a centre
-    # zigzag complements the two edge bands250mm clear of the actual kerb.
+    # A stop line extends to the kerb edge, not only across the moving lane.
+    # 3m clear edge-to-edge separation to the crossing studs (TSM6 18.1.5).
+    offset=GROUND["stopOffsetM"]
+    for side in (-1,1):
+        x=side*offset
+        for z0,z1,y in [(0,3,.018),(3,half,.031)]:
+            lo,hi=sorted((side*z0,side*z1))
+            m.face([(x-.10,y,lo),(x-.10,y,hi),(x+.10,y,hi),(x+.10,y,lo)],"roadPaint")
+    # True 2m-long,100mm-wide marks within 500mm guide lines;150mm clear
+    # longitudinal gaps and600x200mm terminal bars. TSM6 15.8/Figure15-3.
+    length,width,band,gap=2.0,.10,.50,.15
+    angle=math.asin(band/math.hypot(length,width))-math.atan2(width,length)
+    along=length*math.cos(angle)+width*math.sin(angle)
     for approach in (-1,1):
         for centre in (-4.5,0,4.5):
+            inner=offset+.10+gap
             for i in range(8):
-                x0=approach*(4+i*2+.075); x1=approach*(4+(i+1)*2-.075)
-                z0=centre+(.25 if i%2 else -.25); z1=centre+(-.25 if i%2 else .25)
-                dx=x1-x0;dz=z1-z0;length=math.hypot(dx,dz);nx=-dz/length*.05;nz=dx/length*.05
-                y=.028 if abs(centre)>3 else .015
-                m.face([(x0+nx,y,z0+nz),(x0-nx,y,z0-nz),(x1-nx,y,z1-nz),(x1+nx,y,z1+nz)],"roadPaint")
-    return m.finish({"physicalAnchor":[78,-7.5],"studRowCrossingWidthM":GROUND["crossingWidthM"],"traversalWidthM":half*2,"stopLinesLocalX":[-4,4],"zigzags":{"marksPerApproach":8,"unitM":2,"gapM":.15,"strokeM":.10,"bandM":.50,"outerKerbGapM":.25},"status":"Original working-drawing numerical/visual review; final live interpretation pending"})
+                cx=approach*(inner+i*(along+gap)+along*.5)
+                theta=angle*(1 if i%2 else -1)
+                ux=approach*math.cos(theta);uz=math.sin(theta)
+                vx=-uz;vz=ux
+                points=[(cx+u*ux*length*.5+v*vx*width*.5,.031 if abs(centre)>3 else .018,centre+u*uz*length*.5+v*vz*width*.5) for u,v in [(-1,-1),(1,-1),(1,1),(-1,1)]]
+                m.face(list(reversed(points)),"roadPaint")
+            terminal=approach*(inner+8*along+8*gap+.10)
+            m.face([(terminal-.10,.031 if abs(centre)>3 else .018,centre-.30),(terminal-.10,.031 if abs(centre)>3 else .018,centre+.30),(terminal+.10,.031 if abs(centre)>3 else .018,centre+.30),(terminal+.10,.031 if abs(centre)>3 else .018,centre-.30)],"roadPaint")
+    return m.finish({"physicalAnchor":[78,-7.5],"studRowCrossingWidthM":GROUND["crossingWidthM"],"studSizeM":.10,"studPitchM":.50,"traversalWidthM":half*2,"stopLinesLocalX":[-offset,offset],"stopLineFullHalfCarriagewayM":half,"stopToStudClearEdgeM":3.0,"zigzags":{"marksPerApproach":8,"markLengthM":length,"longitudinalExtentM":along,"gapM":gap,"strokeM":width,"bandM":band,"terminalSizeM":[.20,.60],"outerKerbGapM":.25},"status":"DfT visual dimensions source-tested; real highway approval and native perception not certified"})
 
 
 def build_repairs():
@@ -609,7 +620,18 @@ def build_tactile():
                 uvs=[(0,0),(0,1),(1,1),(1,0)]
                 if side<0:points.reverse();uvs.reverse()
                 m.face(points,"tactile",uvs=uvs)
-    return m.finish({"physicalAnchor":[78,-7.5],"controlledCrossing":"muted red blister paving, two400mm-deep rows per side across2.8m width","tileM":.4,"blistersPerTile":[6,6],"blisterDiameterM":.025,"blisterCapHeightM":.005,"treatment":"Tangent-space normal map at physical dimensions; no displaced silhouette or tactile physics claim","tileCount":28,"addedTriangles":56})
+    # L-shaped tail locates the controlled crossing from the back of footway.
+    # Its near edge is800mm deep; the stem is1200mm wide on the right.
+    for side in (-1,1):
+        for row in range(3):
+            z0=side*(5.8+row*.4);z1=side*(6.2+row*.4)
+            for col in range(3):
+                x0=(-1.4 if side<0 else .2)+col*.4;x1=x0+.4
+                points=[(x0,pavement_height(x0,z0)+.002,z0),(x0,pavement_height(x0,z1)+.002,z1),(x1,pavement_height(x1,z1)+.002,z1),(x1,pavement_height(x1,z0)+.002,z0)]
+                uvs=[(0,0),(0,1),(1,1),(1,0)]
+                if side<0:points.reverse();uvs.reverse()
+                m.face(points,"tactile",uvs=uvs)
+    return m.finish({"physicalAnchor":[78,-7.5],"controlledCrossing":"muted red blister paving, two400mm-deep rows per side across2.8m width","tileM":.4,"blistersPerTile":[6,6],"blisterDiameterM":.025,"blisterCapHeightM":.005,"treatment":"Tangent-space normal map at physical dimensions; no displaced silhouette or tactile physics claim","tileCount":46,"addedTriangles":92,"guidanceStemWidthM":1.2,"guidanceStemToBackOfFootway":True})
 
 
 def merged_surface(objects):
@@ -696,6 +718,31 @@ def build_ped_housing():
     return m.finish({"origin":"pole ground datum","type":"far-side two-aspect no pushbutton implied","redCentreY":top,"greenCentreY":low})
 
 
+def build_ped_button():
+    m=Mesh("street_pilot_ped_button")
+    m.beam((0,0,.06),(0,1.38,.06),.057,"darkMetal",12)
+    m.box((0,1.17,-.035),(.20,.37,.17),"signalShell")
+    m.box((0,1.17,-.126),(.174,.342,.014),"roadPaint")
+    # Button centre is1.05m from local footway; the cone is under the unit.
+    m.beam((0,1.05,-.14),(0,1.05,-.157),.027,"signalEdge",24)
+    m.beam((0,.966,-.055),(0,.946,-.055),.013,"signalEdge",12)
+    m.box((0,1.27,-.139),(.144,.046,.008),"signalShell")
+    def label(copy,y,size,role):
+        curve=bpy.data.curves.new("button-label","FONT");curve.body=copy;curve.align_x="CENTER";curve.size=size;curve.resolution_u=2
+        obj=bpy.data.objects.new("button-label",curve);bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.objects.active=obj;obj.select_set(True);bpy.ops.object.convert(target="MESH")
+        obj.data.calc_loop_triangles()
+        for tri in obj.data.loop_triangles:
+            m.face([(obj.data.vertices[i].co.x,y+obj.data.vertices[i].co.y,-.145) for i in reversed(tri.vertices)],role)
+        bpy.data.objects.remove(obj,do_unlink=True)
+    label("PEDESTRIANS",1.326,.018,"signalShell")
+    label("WAIT",1.255,.030,"roadPaint")
+    label("Push button",1.175,.015,"signalShell")
+    label("Wait for signal",1.146,.014,"signalShell")
+    label("opposite",1.121,.015,"signalShell")
+    return m.finish({"type":"diagram4003far-sidepedestrianunit","buttonCentreHeightM":1.05,"modeledTactileCone":True,"interactive":False,"automaticGameDemand":True})
+
+
 def icon_segment(m,a,b,width,centre):
     dx=b[0]-a[0];dy=b[1]-a[1];length=math.hypot(dx,dy)
     nx=-dy/length*width*.5;ny=dx/length*width*.5
@@ -742,7 +789,7 @@ def main():
     surfaces=[build_ground(),build_pavement(),build_kerbs(),build_setts(),build_markings(),build_repairs(),build_tactile()]
     objects=[build_car(),build_wheel(),*surfaces,merged_surface(surfaces),build_signal_shell(),build_signal_shell("street_pilot_signal_head",with_pole=False)]
     objects.extend(build_signal_lens(f"street_pilot_signal_{name}",index) for index,name in enumerate(("red","amber","green")))
-    objects.extend([build_ped_housing(),build_ped_icon("street_pilot_ped_red",False),build_ped_icon("street_pilot_ped_green",True)])
+    objects.extend([build_ped_housing(),build_ped_button(),build_ped_icon("street_pilot_ped_red",False),build_ped_icon("street_pilot_ped_green",True)])
     report={"version":2,"purpose":"Isolated Borough Passage street proof; no wider rollout", "car":CAR,"ground":GROUND,"signal":SIGNAL,"atlas":{"dimensions":[ATLAS_SIDE,ATLAS_SIDE],"maps":["albedo sRGB","ORM linear","normal linear;400mm6x6blister tiles25mmdia/5mmheight"],"estimatedMipmappedBytes":int(ATLAS_SIDE*ATLAS_SIDE*4*3*4/3)},"meshes":{obj.name:{"triangles":triangle_count(obj),"materials":len(obj.data.materials)} for obj in objects},"authorship":"Project-authored mesh/atlas; dimensions/reference provenance retained in street research dossier", "validation":{"visualReview":"pending","liveDither":"pending","participants":"pending"}}
     total=sum(item["triangles"] for item in report["meshes"].values())
     if report["meshes"]["street_pilot_car_body"]["triangles"]>10000: raise RuntimeError("Body triangle budget exceeded")

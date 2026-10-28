@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import {isSignAssembly} from '../tools/chunk_surfer/lettering/sign-assemblies.mjs';
+import {BUILDING_WINDOW_HOST_ORIGINS,subtractBuildingWindowBoxes} from '../tools/chunk_surfer/building-window-geometry.mjs';
 
 // Exercise the actual generator and its vertex helpers without importing the
 // asset-building entry point, which writes the entire shared prop pack.
@@ -26,7 +28,12 @@ const region=source.slice(start,end)
     '  globalThis.townBuilding=townBuilding;\n  // Gaps between the rows');
 const MAT={stone:10,black:2,wood:1,steel:3,agedWhite:17,warmWindow:21,
   brickRed:22,brickDark:23,slate:24,concrete:25,glazedBrick:26,terracotta:28,pubGreen:27,deadLeaf:14};
-const context={MAT,parcels:[],meshes:new Map()};
+// Run the current primitive helpers with their real routing predicates. This
+// town mesh is neither a fabricated sign nor a cut conservatory window host.
+assert.equal(isSignAssembly('district_outer_sprawl'),false);
+assert.equal(Object.hasOwn(BUILDING_WINDOW_HOST_ORIGINS,'district_outer_sprawl'),false);
+const context={MAT,parcels:[],meshes:new Map(),signAssemblies:{isCarrier:isSignAssembly},
+  BUILDING_WINDOW_HOST_ORIGINS,subtractBuildingWindowBoxes};
 vm.createContext(context);
 vm.runInContext(`
   const mesh=(name)=>{const m={name,groups:new Map()};meshes.set(name,m);return m;};

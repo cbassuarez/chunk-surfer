@@ -1,10 +1,8 @@
 // The Dock tile while Chunk Surfer is not running.
 //
-// macOS 26 shrinks any bundle icon that is not the squircle and seats it on a
-// grey plate, so icon.icns stays the squircle tile (Finder, Spotlight and the
-// app switcher read it). The Dock tile is the one place an app may still draw
-// its own shape: this plug-in puts the cut-out ear there, and
-// src/dock_tile.rs does the same while the app runs.
+// The bundle and this plug-in use the same transparent ear. This plug-in
+// keeps the closed-app tile static; the running app owns its one-shot
+// assembly animation through src/dock_tile.rs.
 //
 // This code runs inside the Dock's own helper process
 // (com.apple.dock.external.extra), not in the game. A plug-in that throws
@@ -21,8 +19,7 @@
     // nil means the plug-in is being detached; the view goes with the tile.
     if (dockTile == nil) return;
     NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-    // DockTile.icns carries one drawing per size, so the print stays a print at
-    // every Dock size instead of being scaled down from 1024.
+    // DockTile.icns carries the approved ear at every supported Dock size.
     NSImage *image = [bundle imageForResource:@"DockTile"];
     if (image == nil) return;
     NSSize size = dockTile.size;

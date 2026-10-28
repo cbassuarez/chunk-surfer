@@ -9,6 +9,7 @@ import { outskirtsArrivalLayout, outskirtsPassLayout } from '../src/data/source-
 import { outskirtsCollisionBoxes, outskirtsPointBlocked } from '../src/game/outskirts-geometry.js';
 import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
+import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
 
 const layout = outskirtsArrivalLayout();
 const women = layout.filter((piece) => /^bus-woman/.test(piece.key));
@@ -85,8 +86,10 @@ test('an unseen watcher turns her front toward the remembered player and carries
   const runtime = fixture();
   runtime.setOutskirtsWorldState({ ticketReturned: true });
   const p = runtime.outskirtsPiece('r5-bus-woman');
-  const eye = { x: p.x - 1.2, z: p.z + .7 };
+  const eye = { x: p.x + 1.2, z: p.z + .7 };
   const position = stand(runtime, eye.x, eye.z);
+  assert.equal(runtime.geometry.canStep(position.x, position.y, position.x, position.y).ok, true,
+    'the visitor stands on the open east side of the canonical shelter');
   const toward = Math.atan2(p.x - eye.x, -(p.z - eye.z));
   const first = ticketFollows(instances(runtime, position, toward), p.id);
   const turned = ticketFollows(instances(runtime, position, toward + Math.PI), p.id);
@@ -96,22 +99,26 @@ test('an unseen watcher turns her front toward the remembered player and carries
   assert.ok(facingDot > .999, 'her back faces the player');
 });
 
-test('the bus-gap acknowledges with the rig and retains its one animated 18cm step', () => {
+test('the interior bus encounter follows with its rig while the rear-bay root and useful ticket stay planted', () => {
   const runtime=fixture();runtime.setOutskirtsWorldState({ticketReturned:true});
-  const p=runtime.outskirtsPiece('r7-bus-woman');
-  let position=stand(runtime,p.x+1.33,p.z+1),viewYaw=Math.atan2(p.x-(p.x+1.33),-(p.z-(p.z+1)));
-  assert.ok(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage>=2);
-  const first=ticketFollows(instances(runtime,position,viewYaw),p.id);
-  assert.equal(first.character.clip,'bus_woman_acknowledge_ticket');
-  assert.ok(Math.abs(first.matrix[8]-Math.sin(p.yaw))<.0001,'acknowledgement rotates the planted whole body');
-  position=stand(runtime,p.x+1.33,p.z-3);viewYaw=Math.atan2(-1.33,-3);
+  const p=runtime.outskirtsPiece('r7-bus-woman'),bus=runtime.outskirtsPiece('r7-bus');
+  const at=(x,z)=>({x:bus.x+x*Math.cos(bus.yaw)+z*Math.sin(bus.yaw),z:bus.z-x*Math.sin(bus.yaw)+z*Math.cos(bus.yaw)});
+  const inside=at(.5,2.8);
+  let position=stand(runtime,inside.x,inside.z),viewYaw=Math.atan2(p.x-inside.x,-(p.z-inside.z));
   assert.ok(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage>=3);
-  const start=ticketFollows(instances(runtime,position,viewYaw),p.id);
-  assert.equal(start.character.clip,'bus_woman_step_ticket');
-  assert.ok(Math.abs(start.matrix[14]-p.z)<.0001,'step teleported before the foot lifted');
-  for(let i=0;i<4;i++)runtime.tickOutskirtsCharacters(.25,{viewYaw});
+  const first=ticketFollows(instances(runtime,position,viewYaw),p.id);
+  assert.equal(first.character.clip,'bus_woman_ticket_wait');
+  assert.ok(Math.abs(first.matrix[8]-Math.sin(p.yaw))<.0001,'acknowledgement rotates the planted whole body');
+  assert.ok(Math.abs(first.matrix[12]-p.x)<.0001&&Math.abs(first.matrix[14]-p.z)<.0001);
+  const outside=at(...OUTSKIRTS_BUS_PASSAGE.exit.outside);
+  position=stand(runtime,outside.x,outside.z);viewYaw=Math.atan2(p.x-outside.x,-(p.z-outside.z));
+  assert.equal(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage,4);
+  assert.equal(runtime.outskirtsCharacterFrame().woman.stepAt,null,'leaving the rear door starts the obsolete roadward root step');
+  for(let i=0;i<4;i++){runtime.tickOutskirtsCharacters(.25,{viewYaw});runtime.outskirtsStreetFrame({viewYaw});}
   const end=ticketFollows(instances(runtime,position,viewYaw),p.id);
-  assert.ok(Math.abs(end.matrix[14]-(p.z-.18))<.0001,'the saved crossing step lost its original distance');
+  assert.equal(end.character.clip,'bus_woman_ticket_wait');
+  assert.ok(Math.abs(end.character.joints.bus_woman_head.rotation[1])>.4,'the quiet ticket hold lost its sustained following head turn');
+  assert.ok(Math.abs(end.matrix[12]-p.x)<.0001&&Math.abs(end.matrix[14]-p.z)<.0001,'the planted rear figure moved into the passage');
 });
 
 test('the crowd inspection uses its physical woman anchor for the ticket action', () => {

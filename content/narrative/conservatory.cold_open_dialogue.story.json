@@ -106,22 +106,27 @@
       "lines": [
         {
           "who": "direction",
-          "text": "A lit booth at the vehicle gate. Coffee, key hooks, a stack of forms, a small television with the sound off.",
+          "text": "You approach lit booth at the vehicle gate. Coffee, key hooks, a stack of forms, a small television with the sound off.",
           "id": "start.line.1"
         },
         {
           "who": "direction",
-          "text": "There is a little perch by the booth window covered by a small roof; you stand on it so as to keep from the rain. Uncomfortable to say the least.",
+          "text": "There is a small perch by the booth window covered by a small roof; you stand on it so as to keep from the rain. Uncomfortable to say the least.",
           "id": "start.line.2"
         },
         {
           "who": "guard",
-          "text": "You here for the Ellery gig? Christ. They actually sent someone tonight.",
+          "text": "You here for the Ellery gig?",
           "id": "start.line.3"
         },
         {
+          "id": "start.line.7-2",
+          "who": "guard",
+          "text": "Christ. They actually sent someone tonight."
+        },
+        {
           "who": "direction",
-          "text": "He finds a pen... it doesn't work. He puts it back in the pot with the others.",
+          "text": "He finds a pen and... it doesn't work. He puts it back in the pot with the others.",
           "id": "start.line.6",
           "cues": [
             "pens"
@@ -129,7 +134,7 @@
         },
         {
           "who": "guard",
-          "text": "My wife buys these. Twelve in a pack, and not one of them works.",
+          "text": "My wife buys these, she loves that I love them. Twelve in a pack, and not one of them works. Would break my heart to tell her.",
           "id": "start.line.7"
         },
         {
@@ -174,7 +179,7 @@
           }
         },
         {
-          "text": "\"actually\"?",
+          "text": "\"actually?\"",
           "goto": "greet.actually",
           "id": "start.greet.last",
           "knowledgeId": "coldopen.trunk.last",
@@ -675,12 +680,12 @@
         },
         {
           "who": "you",
-          "text": "You don't argue with the pay though.",
+          "text": "I can't really argue with the pay, though.",
           "id": "order.line.2"
         },
         {
-          "who": "you",
-          "text": "Four hundred, half on acceptance. That's fine. That's more than fine.",
+          "who": "direction",
+          "text": "Four seventy fifty five quid with a rush fee, making it six seventy five, half on acceptance. That's plenty fine. That's more than plenty fine, actually, that makes your entire rent payment this month. ",
           "id": "order.line.3"
         }
       ],
@@ -1580,22 +1585,22 @@
         },
         {
           "who": "guard",
-          "text": "Nobody. Site's condemned. They stopped paying for the night after they stopped paying for the power. Tonight is my last night on the job.",
+          "text": "Nobody. Site's condemned. They stopped paying for it, err, a few months ago? A night or two after they stopped paying for the power. Tonight is my last night on the job.",
           "id": "guard.shift.line.2"
         },
         {
           "who": "me",
-          "text": "So I ring the bell at three in the morning and.",
+          "text": "So I ring the bell at three in the morning and...",
           "id": "guard.shift.line.3"
         },
         {
           "who": "guard",
-          "text": "And nothing. Gate code is on your sheet.",
+          "text": "..and nothing. Leave the keys, don't, hell if I know. ",
           "id": "guard.shift.line.4"
         },
         {
           "who": "guard",
-          "text": "It's a demolition, not a bank.",
+          "text": "These are unprecedented times, lad. Between you and me, I knicked me a poster or two before my final checks today, just as a keepsake. 'be a shame if they all became rubble, don't ye think?  ",
           "id": "guard.shift.line.5"
         }
       ],
@@ -1650,12 +1655,12 @@
         },
         {
           "who": "guard",
-          "text": "Channel two. Martin's on the front desk relay with the old floor plan. If you lose the route, call him. Give us a shout on the hour if you remember.",
+          "text": "Channel two. Martin's on the front desk with the old floor plan. ",
           "id": "guard.radio.line.2"
         },
         {
           "who": "guard",
-          "text": "Let go of transmit when you finish. Give him a second. The battery clip's worn; keep the heel of the set seated.",
+          "text": "If you lose the route, ring him up. Even if ye don't, give us a shout on the hour if you remember.",
           "id": "guard.radio.line.3"
         }
       ],
@@ -1756,12 +1761,12 @@
         },
         {
           "who": "recordist",
-          "text": "That's clean. That's three.",
+          "text": "That's clean. That's three down.",
           "id": "tape.line.4"
         },
         {
           "who": "direction",
-          "text": "A chair. He stands up.",
+          "text": "A chair. He stands up and gets ready for the next room.",
           "id": "tape.line.5"
         }
       ],
@@ -2369,7 +2374,7 @@
         },
         {
           "who": "me",
-          "text": "Thanks?",
+          "text": "Thanks??",
           "id": "coffee.line.3"
         }
       ],
@@ -2517,7 +2522,7 @@
         },
         {
           "who": "guard",
-          "text": "If the service leaf sticks, don't shoulder it. Main doors are through the front foyer, past the box office. Longer walk, same yard.",
+          "text": "Use the grey pair. Main doors are locked for the closure. Your key won’t do them.",
           "id": "threshold.line.foyer",
           "when": "cold.trunk.night"
         },
@@ -2548,7 +2553,7 @@
       "lines": [
         {
           "who": "guard",
-          "text": "One thing. Basement stair's black. Board has been dead since April. Some rooms still have emergency power, but it may not be quiet enough for you.",
+          "text": "One last thing. ",
           "id": "descent.line.1"
         },
         {
@@ -2559,13 +2564,13 @@
         },
         {
           "who": "guard",
-          "text": "Since April. Whole sub-level runs off one board, and that board's been dead longer than I've had this chair. Cellar-black, the lot of it.",
+          "text": "Aye. Most of the lower floors are down. Main board's been dead since this Spring. Some rooms still have emergency power, but it may not be quiet enough for you.",
           "id": "descent.line.3",
           "when": "cold.trunk.night"
         },
         {
           "who": "you",
-          "text": "Basement first, then. While the torch is full.",
+          "text": "Basement first, then, I guess. ",
           "id": "descent.line.4"
         }
       ],
@@ -2703,12 +2708,12 @@
       "lines": [
         {
           "who": "me",
-          "text": "You said actually. Like you had money on it.",
+          "text": "\"Actually\" What's that mean?",
           "id": "greet.actually.line.1"
         },
         {
           "who": "guard",
-          "text": "Third one they've booked. First one to stand where you're standing.",
+          "text": "You're recordist number three. First one to stand where you're standing.",
           "id": "greet.actually.line.2"
         },
         {
@@ -2718,7 +2723,7 @@
         },
         {
           "who": "guard",
-          "text": "Rang in sick, the first. The other supposedly never finished. Same week.",
+          "text": "Rang in sick, the first. The other one just never came I think. ",
           "id": "greet.actually.line.4"
         },
         {

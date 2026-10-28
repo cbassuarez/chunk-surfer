@@ -2,10 +2,10 @@
 // reachability. Rendering lives in render/props3d.js; this module stays pure JS
 // so the browser suites can prove gameplay without WebGL.
 
-import { CELL, F, PLAN_SCALE, isOutdoorZone } from '../data/floorplan/legend.js';
+import { CELL, F, PLAN_SCALE, ZONE, isOutdoorZone } from '../data/floorplan/legend.js';
 import { CONSERVATORY_PROPS, PROP_MESH, STRUCTURAL_COLLIDERS } from '../data/conservatory-props.js';
 import { MESH_SURFACE, PROP_BOUNDS } from '../data/generated/prop-geometry.js';
-import { WALL_CONTACT, wallContactAt } from '../world/wall-contact.js';
+import { WALL_CONTACT, wallContactAt, yawFromNormal } from '../world/wall-contact.js';
 import { propWallPose } from '../world/prop-wall-pose.js';
 import { propInscriptionAttachments } from '../world/prop-inscriptions.js';
 import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../data/world-inscriptions.js';
@@ -15,6 +15,7 @@ import { architectureFittings } from '../world/architecture-fittings.js';
 import * as PROP_GEOMETRY from '../data/generated/prop-geometry.js';
 import { batchBuildingDressingInstances } from '../world/building-dressing-batches.js';
 import { isExteriorObserver } from './prop-visibility.js';
+import {exteriorStreetWallServiceInstances} from '../data/exterior-street-fabric.js';
 import { EXTERIOR_FACADE_MESHES, exteriorFacadeCanOccupy, exteriorFacadeCanStep } from '../world/exterior-facade-collision.js';
 import { leavesPropOverlap } from '../world/prop-body-contact.js';
 
@@ -23,7 +24,7 @@ let instances=[];
 let colliders=[];
 // Optional render packs activate their physical fittings only after loading.
 // This avoids invisible poles when the isolated street proof is unavailable.
-const disabledColliderGroups=new Set(['street-pilot','opening-street']);
+const disabledColliderGroups=new Set(['street-pilot','opening-street','glass-court']);
 export function setColliderGroupEnabled(group,enabled){
   if(enabled)disabledColliderGroups.delete(group);else disabledColliderGroups.add(group);
 }
@@ -115,6 +116,27 @@ function resolveContacts(fp,selected=instances){
   if(typeof plan.size!=='function')return;
   for(const p of selected){
     if(p.mount==='wall'){
+      if(p.physicalWall||p.stairLandingWall){
+        // A measured stair-storey wall is already in the render frame. Never
+        // resnap it to the nearest edge of the logical landing island.
+        const wall=p.physicalWall||p.stairLandingWall,nx=wall.normal.x,ny=wall.normal.z;
+        const contact={planeX:wall.x/CELL,planeY:wall.z/CELL,nx,ny,yaw:yawFromNormal(nx,ny)};
+        const snapped=propWallPose(p,contactBounds[p.mesh],contact),at=fp.logicalToPhysical(p.rx,p.ry);
+        p.renderOffsetX=(snapped.x-at.x)*CELL;
+        p.renderOffsetZ=(snapped.y-at.z)*CELL;
+        p.yaw=snapped.yaw;
+        p.wallContact={nx,ny,gap:0,physical:true,planeX:wall.x,planeZ:wall.z};
+        if(!Number.isFinite(p.inspectAt?.x)&&!Number.isFinite(p.inspectAt?.y)){
+          // Picking and its sight ray use logical metres. Project the visual
+          // delta back into this flat landing's own island, rather than making
+          // an upper-floor sign answer to coordinates on the ground floor.
+          p.interactionX=p.rx*CELL+p.renderOffsetX;
+          p.interactionY=p.ry*CELL+p.renderOffsetZ;
+          p.interactionRx=rt(p.interactionX);
+          p.interactionRy=rt(p.interactionY);
+        }
+        continue;
+      }
       // A PROP MAY NAME THE WALL IT BELONGS TO.
       //
       // wallContactAt otherwise takes the nearest face, and in a three-metre
@@ -223,9 +245,11 @@ function renderInstance(p){
       waterlineBody:p.waterlineBody||null,waterlineOffset};
 }
 export function renderInstances({group=null,inscriptions=true,batchDressing=false}={}){
-  const hosts=instances.filter((p)=>!group||(p.renderGroups||[p.renderGroup]).includes(group)).map(renderInstance);
+  const hosts=instances.filter((p)=>!p.interactionProxy&&colliderActive(p)&&(!group||(p.renderGroups||[p.renderGroup]).includes(group))).map(renderInstance);
   const rendered=batchDressing&&group?batchBuildingDressingInstances(hosts,group,PROP_GEOMETRY.DRESSING_BATCHES):hosts;
-  return inscriptions?attachInscriptions(rendered):rendered;
+  const streetServices=exteriorStreetWallServiceInstances(rendered);
+  const complete=streetServices.length?[...rendered,...streetServices]:rendered;
+  return inscriptions?attachInscriptions(complete):complete;
 }
 
 function pointInProp(mx,mz,p,pad=.20){
@@ -236,7 +260,10 @@ function pointInProp(mx,mz,p,pad=.20){
 export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
   const floor=floorplan?.floorAt?.(toX,toY)??0;
-  const recover=from&&isOutdoorZone(floorplan?.zoneAt?.(from.x,from.y))&&isOutdoorZone(floorplan?.zoneAt?.(toX,toY));
+  // Old pool saves can predate these partitions or the planted bed. Permit
+  // only an outward step from an overlap, using the existing same-side test.
+  const overlapRecoveryZone=zone=>isOutdoorZone(zone)||zone===ZONE.glasshouse||zone===ZONE.poolChanging;
+  const recover=from&&overlapRecoveryZone(floorplan?.zoneAt?.(from.x,from.y))&&overlapRecoveryZone(floorplan?.zoneAt?.(toX,toY));
   const outward=(p,pad)=>recover&&leavesPropOverlap(
     {x:meters(from.x+.5),z:meters(from.y+.5)},{x:mx,z:mz},p,pad);
   const blocked=(p,pad)=>{
@@ -303,7 +330,7 @@ export function tallBlockingPropAt(cx,cy,minHeight=0.95){
   const mx=meters(cx+.5),mz=meters(cy+.5);
   const floor=floorplan?.floorAt?.(cx,cy)??0;
   if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05
-      &&(c.maxElevation-floor)>=minHeight
+      &&(Number.isFinite(c.coverHeight)?c.coverHeight:c.maxElevation-floor)>=minHeight
       &&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return true;
   return instances.some((p)=>{
     if(!p.blocks)return false;
@@ -336,7 +363,24 @@ export function softFloorPropAt(cx,cy){
 
 export function structuralColliders(){return colliders.map(c=>({...c}));}
 
-function clearLine(ax,ay,bx,by){
+function clearLine(ax,ay,bx,by,floor){
+  // The greenhouse's fixed glazing has no opaque grid wall. It reveals the
+  // pool, but a hand still cannot inspect its fixtures through the partition.
+  // Use the real unpadded faces, rather than treating body clearance as glass.
+  for(const c of colliders){
+    if(c.colliderGroup!=='glass-court'||!colliderActive(c)||floor<c.minElevation-.05||floor>c.maxElevation+.05)continue;
+    const cs=Math.cos(-(c.yaw||0)),sn=Math.sin(-(c.yaw||0));
+    const local=(x,y)=>[(x-c.x)*cs-(y-c.y)*sn,(x-c.x)*sn+(y-c.y)*cs];
+    const a=local(ax,ay),b=local(bx,by),margin=Number(c.bodyMargin)||0;
+    const half=[c.width/2-margin,c.depth/2-margin];let lo=0,hi=1;
+    for(let axis=0;axis<2;axis++){
+      const delta=b[axis]-a[axis];
+      if(Math.abs(delta)<1e-9){if(Math.abs(a[axis])>half[axis]){lo=2;break;}continue;}
+      const t0=(-half[axis]-a[axis])/delta,t1=(half[axis]-a[axis])/delta;
+      lo=Math.max(lo,Math.min(t0,t1));hi=Math.min(hi,Math.max(t0,t1));
+    }
+    if(lo<=hi&&hi>1e-5&&lo<1-1e-5)return false;
+  }
   const d=Math.hypot(bx-ax,by-ay),steps=Math.max(1,Math.ceil(d*4));
   for(let i=1;i<steps;i++){
     const t=i/steps,x=rt(ax+(bx-ax)*t),y=rt(ay+(by-ay)*t);
@@ -377,7 +421,7 @@ export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight
     const interactionX=p.interactionX??p.x,interactionY=p.interactionY??p.y;
     const dx=interactionX-mx,dz=interactionY-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
     const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.72)continue;
-    if(!clearLine(mx,mz,interactionX,interactionY))continue;
+    if(!clearLine(mx,mz,interactionX,interactionY,floorplan?.floorAt?.(px,py)||0))continue;
     const ang=Math.abs(wrapAngle(Math.atan2(dx,-dz)-heading));
     // Rank by reticle alignment before proximity. The angular footprint keeps
     // a broad road case forgiving while preventing its edge from stealing a

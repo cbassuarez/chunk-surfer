@@ -30,6 +30,8 @@ let analyser = null;
 let data = null;
 let frequencyData = null;
 let stream = null;
+// Invalidates a pending OS request when the player leaves or revokes consent.
+let requestGeneration = 0;
 let source = null;
 let splitter = null;
 let state = 'idle';          // 'idle' | 'asking' | 'on' | 'denied' | 'unavailable' | 'error'
@@ -248,7 +250,12 @@ export function micInit(audioCtx, options = {}) {
   activeInput = normalizeMicInput(options);
   setState('asking');
   ensureDeviceChangeListener();
+  const generation = ++requestGeneration;
   const request = md.getUserMedia(audioConstraints(activeInput)).then((s) => {
+    if (generation !== requestGeneration) {
+      s?.getTracks?.().forEach((track) => track.stop?.());
+      return micSnapshot();
+    }
     stopStream('asking');
     stream = s;
     const settings = trackSettings(stream);
@@ -258,6 +265,7 @@ export function micInit(audioCtx, options = {}) {
     micRefreshDevices();
     return micSnapshot();
   }).catch((err) => {
+    if (generation !== requestGeneration) return micSnapshot();
     const [next, reason] = classifyGetUserMediaFailure(err);
     stopStream(next, reason);
     return micSnapshot();
@@ -375,6 +383,7 @@ export function micMaySpoil(now = performance.now()) { return now >= spoilMutedU
 export function micTest(level) { testLevel = level == null ? null : level; }
 
 export function micStop() {
+  requestGeneration++;
   stopStream('idle');
   spoilMutedUntil = 0;
 }

@@ -1,6 +1,6 @@
 {
   "pack": "st-brendans-presences",
-  "sha256": "51f09a7d5e57948f213d2c3261c716de902db84b819703858f2e54ea9190d710",
+  "sha256": "481b0f14df9c4706b1c31a851cb68f3c2921e9a1965e9e2d0a2140f1c5f943e5",
   "source": "Original project-native anonymous anatomy; limb taper, body proportions, hands/knees and short floor-charge continue the apparition family in tools/chunk_surfer/build-props.mjs. New held waiting, braced, exhausted seated and upward-witness poses in tools/chunk_surfer/st-brendans-presence-geometry.mjs. No third-party assets.",
   "presentation": "Ordinary opaque, faceless human volumes. No emission, animation, clothing, vestments, particles or lights. Existing runtime apparitionVariant10/11/12 and final dither supply shadow/energy visibility.",
   "seatedContactY": 0.5275,

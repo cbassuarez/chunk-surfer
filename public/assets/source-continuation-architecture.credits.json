@@ -1,0 +1,15 @@
+{
+  "title": "Source II/III folded construction",
+  "sources": [
+    {
+      "path": "public/assets/conservatory-props.glb",
+      "meshes": [
+        "conservatory_west_elevation",
+        "st_brendan_church"
+      ],
+      "use": "Retained original triangles clipped into finite architectural fragments",
+      "license": "Existing project authored material; original credits retained in source asset"
+    }
+  ],
+  "newWork": "Source continuation spindle, bearings, staggered catch frames, architectural joints and stair framing authored in Blender."
+}

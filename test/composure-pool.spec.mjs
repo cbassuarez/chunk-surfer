@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 import * as REC from '../src/game/recordist.js';
 import { createCombatState } from '../src/game/combat-state.js';
-import { deathFrameState, DEATH_BEATS } from '../src/game/death-scene.js';
+import { deathFrameState, DEATH_BEATS, makeDeathScene } from '../src/game/death-scene.js';
+import * as scenes from '../src/game/scenes.js';
+import { recoveryOutcomeReceipt } from '../src/game/recovery-outcome.js';
 import { SHEET_MUSIC, noteHz, sheetMotifHz, sheetMusicById } from '../src/data/sheet-music.js';
 import { createSheetVoice, SHEET_AUDIO_BASE, SHEET_CUTOFF_HZ } from '../src/audio/sheet-voice.js';
 import { existsSync } from 'node:fs';
@@ -281,6 +284,88 @@ test('the canvas half is not gated on the desktop half', () => {
     'death-scene.js must stand alone');
 });
 
+function defeatScreenHarness() {
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const source = main.slice(main.indexOf('function playDefeatScreen('), main.indexOf('// WAKING UP ELSEWHERE'));
+  const timers = new Map(); let serial = 0;
+  const play = vm.runInNewContext(`${source}\nplayDefeatScreen`, {
+    scenes, makeDeathScene, DEATH_BEATS, roomLabel: id => `room ${id}`,
+    personalWindowEffects: { captureSnapshot: () => null },
+    windowChoreography: { restore: () => null },
+    getSave: () => ({run:{id:'ownership-test'}}),lastExposureSerial:0,
+    injuryScareGate:{authorize:()=>null},FEAR:{playContactExposure(){}},flashMode:()=> 'off',
+    paused:false,document:{hidden:false},gameplayInputLifecycleActive:()=>true,
+    setTimeout: (callback, delay) => { const id = ++serial; timers.set(id, { callback, delay }); return id; },
+    clearTimeout: id => timers.delete(id),
+  });
+  return { play, timers };
+}
+
+test('recovery receipts distinguish continuing nights from an already-resolved ending handoff', () => {
+  for (const kind of ['taken','recoverable-defeat']) {
+    const receipt = recoveryOutcomeReceipt({ eventId:`event:${kind}`,runId:'run:one',kind,sourceRoomId:'main_b3' });
+    assert.deepEqual(receipt.handoff,{owner:'wake-up',endingId:''});
+    assert.deepEqual(receipt.committed,{},'unknown costs cannot become an invented no-penalty promise');
+    assert.ok(Object.isFrozen(receipt) && Object.isFrozen(receipt.committed));
+  }
+  for (const kind of ['ending-bound','terminal']) {
+    const receipt = recoveryOutcomeReceipt({ eventId:`event:${kind}`,kind,endingId:'contact-lost' });
+    assert.deepEqual(receipt.handoff,{owner:kind==='terminal'?'ending':'ending-objective',endingId:'contact-lost'});
+    assert.throws(()=>recoveryOutcomeReceipt({eventId:'unresolved',kind}),/Resolve the ending destination/);
+  }
+  const retry = recoveryOutcomeReceipt({eventId:'tower-retry',kind:'recoverable-defeat',handoffOwner:'horizon-bust-return'});
+  assert.equal(retry.handoff.owner,'horizon-bust-return');assert.equal(retry.handoff.endingId,'');
+  assert.throws(()=>recoveryOutcomeReceipt({eventId:'wrong-owner',kind:'terminal',endingId:'tower-lost',handoffOwner:'wake-up'}),/handoff owner/);
+  assert.throws(()=>recoveryOutcomeReceipt({eventId:'contradiction',kind:'taken',endingId:'contact-lost'}),/continuing-night/);
+});
+
+test('a presentation receipt copies only actual committed recovery facts without applying them', () => {
+  const committed = {injuryDelta:1,composure:REC.COMPOSURE_FLOOR,recordingSpoiled:true,
+    recordingSpoilReason:'it took you',lostMinutes:6,lostItemId:'torch',destinationRoomId:'chapel'};
+  const before = structuredClone(committed), recBefore = REC.saveRecState();
+  const receipt = recoveryOutcomeReceipt({eventId:'real-event',kind:'recoverable-defeat',encounterId:'recording-2',committed});
+  assert.deepEqual(receipt.committed,before);assert.notEqual(receipt.committed,committed);
+  assert.deepEqual(committed,before);assert.deepEqual(REC.saveRecState(),recBefore);
+  assert.throws(()=>{ receipt.committed.injuryDelta=99; },TypeError);
+  assert.throws(()=>recoveryOutcomeReceipt({eventId:'invalid',kind:'taken',committed:{newPenalty:1}}),/Invalid committed/);
+});
+
+test('normal defeat completion removes its own scene and clears the watchdog beneath another owner', async () => {
+  scenes.clear(); const h = defeatScreenHarness();
+  try {
+    scenes.push({ id:'battle-owner' });
+    const pending = h.play('main_b3');
+    const owner = scenes.top();
+    const overlay = scenes.push({ id:'unrelated-notice', overlay:true });
+    scenes.update(DEATH_BEATS.loop);
+    await pending;
+    assert.equal(scenes.has('death'), false);
+    assert.equal(scenes.top({includeOverlay:true}), overlay);
+    assert.equal(scenes.has('battle-owner'), true);
+    assert.equal(h.timers.size, 0, 'normal completion cancels its fallback timer');
+    owner.update(DEATH_BEATS.loop);
+    assert.equal(scenes.top({includeOverlay:true}), overlay, 'late completion cannot remove another owner');
+  } finally { scenes.clear(); }
+});
+
+test('the defeat watchdog holds under pause, then releases only its own scene', async () => {
+  scenes.clear(); const h=defeatScreenHarness();
+  try{
+    scenes.push({id:'battle-owner'});let settlements=0;
+    const pending=h.play('main_b3').then(()=>settlements++);
+    const owner=scenes.top(),pause=scenes.push({id:'pause',freezesBelow:true});
+    scenes.update(20);
+    const [timerId,timer]=[...h.timers][0];h.timers.delete(timerId);timer.callback();
+    await Promise.resolve();
+    assert.equal(settlements,0,'wall time cannot apply consequences while the scare is held');
+    assert.equal(scenes.has('death'),true);assert.equal(scenes.top(),pause);
+    scenes.remove(pause);scenes.update(DEATH_BEATS.loop);await pending;
+    assert.equal(settlements,1);assert.equal(scenes.has('death'),false);
+    assert.equal(scenes.has('battle-owner'),true);assert.equal(h.timers.size,0);
+    owner.update(DEATH_BEATS.loop);timer.callback();await Promise.resolve();assert.equal(settlements,1);
+  }finally{scenes.clear();}
+});
+
 test('the night is survivable on one pool, and the sheets are what make it so', () => {
   // Measured with `npm run tune:combat` (see its THE NIGHT table). This is the
   // budget the whole feature stands on: five fights drawing down one pool, with
@@ -319,7 +404,8 @@ test('the night is survivable on one pool, and the sheets are what make it so', 
 test('a defeat drops him to the floor, marks him once, and moves him', () => {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /REC\.setComposure\(REC\.COMPOSURE_FLOOR\)/, 'defeat lands him on the floor');
-  assert.match(main, /wakeAfterDefeat\(defeatRoom\)/, 'and somewhere else in the building');
+  const loss=main.slice(main.indexOf('function openEncounterBattle('),main.indexOf('// A fight opened from the god menu'));
+  assert.match(loss, /wakeAfterDefeat\(defeatRoom,\{endingBound:id==='chapel'\}\)/, 'ordinary costs remain while the chapel keeps its ending-bound owner');
   // The line naming where he was is what stops the new room reading as a bug.
   assert.match(main, /Wasn't I in \$\{label\}\?/);
   // The bench drill and the god menu must never write to the pool.

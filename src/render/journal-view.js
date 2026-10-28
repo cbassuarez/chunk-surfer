@@ -44,6 +44,7 @@ export function journalGeometry(region={}) {
 export function journalListCapacity(region){return journalGeometry(region).capacity;}
 
 const commitmentLabels={none:'NOT AGREED',assigned:'ASSIGNED',accepted:'ACCEPTED',fulfilled:'FULFILLED',declined:'DECLINED',withdrawn:'WITHDRAWN',consented:'CONSENT GIVEN'};
+const stateLine=(commitment,stage)=>[commitment,stage].filter((value,index,all)=>value&&all.findIndex(other=>String(other).toUpperCase()===String(value).toUpperCase())===index).join(' · ');
 export function journalPresentation(entry={}){
   const nature=entry.nature|| (entry.category==='assignment'?'undertaking':entry.category==='record'?'record':'lead');
   const classification=nature==='record'?'RECORD':nature==='undertaking'?'WORK':'LEAD';
@@ -78,7 +79,7 @@ function contentLines(entry,width,includeTitle=false,{includeHeader=false,compac
   const follow=entry.followUp;
   if(follow){
     paragraph(`FOLLOW-UP: ${follow.label||'Further request'}`,'ui-blue');
-    paragraph([commitmentLabels[follow.commitment]||follow.commitment,follow.stage?.label].filter(Boolean).join(' · '),'ui-secondary');
+    paragraph(stateLine(commitmentLabels[follow.commitment]||follow.commitment,follow.stage?.label),'ui-secondary');
     if(follow.next&&follow.nextLabel)paragraph(`${follow.nextLabel}: ${follow.next}`,'ui-amber');
     if(follow.outcome)paragraph(`OUTCOME: ${follow.outcome}`,'ui-primary');
     critical=false;milestones(follow.milestones,!(follow.next&&follow.nextLabel==='NEXT'));

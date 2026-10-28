@@ -5,18 +5,11 @@
 // at the south end) and the prompt is the recordist noticing it. Do those out of
 // order and the tutorial simply agrees with you and moves on.
 //
-// The level check is the ONE deliberate exception: the recordist will not roll a
-// take that counts until he has set his levels in the get-in, in the dark, and
-// rehearsed the room he dreads. This is not a UI lock dressed as fiction — it is
-// the man's own discipline. You set up first because that is the job, and until
-// you have, `setup.levels`/`combat.trained` stay unset and the recorder refuses
-// (see main.js recordAction / onLevelsSet).
-//
-// The level check itself is a real take, on the real recorder: feet still,
-// monitor open, and his light left exactly as he has it, because the setup
-// never puts it out for him. Six seconds instead of forty-five, and nothing is
-// hunting you yet. What the light costs he learns in the daydream that follows
-// it, when something walks up the beam (game/dream-figure.js).
+// A real take counts only after an honest six-second calibration. Navigation
+// then leads to Studio B3. Combat and the dream are taught when a real encounter
+// first needs them; neither is a hidden prerequisite of the recording job.
+// The check uses the real recorder, never counts as a commissioned room and
+// never changes the player's light. Spoiling it is safe and recoverable.
 //
 // Nothing here spawns the presence. The building learns someone is in it at the
 // first REAL take, which is the first one that counts toward the job.
@@ -90,20 +83,12 @@ const STEPS = [
     },
   },
   {
-    // Levels, the mic test, and the daydream that rehearses the fight are one
-    // step, because they are one thing he does: he sets up, in the get-in,
-    // before he goes anywhere. The step does not end when the meter reads good —
-    // it ends when he has also run the worst room in his head, or the next
-    // step's line lands on top of the drill.
-    //
-    // This is a level check, NOT a take. It is set here, in the dark, on the
-    // get-in floor; the five rooms are recorded in the five rooms. (main.js keeps
-    // them apart: see LEVEL_CHECK_ROOM / beginTakeNow.)
+    // An actual instrument measurement, independent of the later rehearsal.
     id: 'level',
     objective: 'SET YOUR LEVELS',
     line: { who: 'you', text: 'Levels, before anything. Headphones on, hear the room — then roll, and hold still.' },
     prompt: () => `${inputPrompt('recorder')}  listen, then ${inputPrompt('recorder')} to roll`,
-    done: (c) => c.levelChecked && c.rehearsed === true,
+    done: (c) => c.levelChecked,
   },
   {
     // The LAST step, and the hand-off out of the dock: kit honest, six seconds
@@ -199,7 +184,7 @@ let spoiltOnce = false;
 export function tickTutorial(dt, ctx) {
   if (!tutorialActive()) return;
   // The saved measurement is authoritative on resume. Restoring it must not
-  // replay onLevelsGood (which hands into the rehearsal), nor can a later
+  // replay onLevelsGood (which hands into navigation), nor can a later
   // context without that field erase a measurement completed this session.
   if (ctx.levelChecked === true) levelChecked = true;
   const step = STEPS[state.step];

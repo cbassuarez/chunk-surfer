@@ -1,12 +1,21 @@
 {
-  "revision": "inhabited-frontages-1",
+  "revision": "yorkshire-trades-2",
   "generator": "tools/chunk_surfer/build-exterior-frontages.mjs",
   "pack": "exterior-frontages.glb",
   "replacementMeshes": [
     "district_terrace_frontage",
     "district_workshop_frontage",
     "district_passage_frontage",
-    "district_court_walls"
+    "district_court_walls",
+    "district_west_row_a_trade",
+    "district_west_row_b_trade",
+    "district_east_row_a_trade",
+    "district_east_row_b_trade",
+    "district_north_row_a_trade",
+    "district_north_row_b_trade",
+    "district_north_row_c_trade",
+    "district_south_row_b_trade",
+    "district_south_row_c_trade"
   ],
   "unchangedContent": [
     "all existing anchors and floorplan",
@@ -16,8 +25,8 @@
   ],
   "meshes": {
     "district_terrace_frontage": {
-      "triangles": 15900,
-      "primitives": 16,
+      "triangles": 16420,
+      "primitives": 19,
       "bounds": {
         "min": [
           -5.4,
@@ -25,20 +34,20 @@
           -32
         ],
         "max": [
-          3.075,
+          1.33,
           16.91,
           32
         ]
       },
-      "windows": 46,
+      "windows": 42,
       "litWindows": 15,
       "deeds": [
         {
           "deed": 0,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -28,
           "height": 11.2,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -51,10 +60,10 @@
         },
         {
           "deed": 2,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -12,
           "height": 12.4,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -67,10 +76,10 @@
         },
         {
           "deed": 4,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 4,
           "height": 10.8,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -83,10 +92,10 @@
         },
         {
           "deed": 6,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 20,
           "height": 13,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -98,13 +107,70 @@
           "closedEarly": false
         }
       ],
+      "trades": [
+        {
+          "deed": 0,
+          "display": "books",
+          "trade": "BOOKSELLER & STATIONER",
+          "paint": "green",
+          "closed": false,
+          "awning": "deployed",
+          "awningClearance": 2.55
+        },
+        {
+          "deed": 1,
+          "display": "cloth",
+          "trade": "TAILOR & DRAPER",
+          "paint": "wood",
+          "closed": true,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 2,
+          "display": "bottles",
+          "trade": "DISPENSING CHEMIST",
+          "paint": "green",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 4,
+          "display": "vessels",
+          "trade": "CHINA & GLASS",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 5,
+          "display": "flowers",
+          "trade": "FLORIST & SEEDSMAN",
+          "paint": "green",
+          "closed": true,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 6,
+          "display": "clocks",
+          "trade": "WATCHMAKER & JEWELLER",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        }
+      ],
+      "prints": [],
       "notices": [
         {
           "id": "neighbourhood-early-closure",
           "center": [
             -0.043,
             1.52,
-            -22.75
+            -17.02
           ],
           "lines": [
             "CLOSED EARLY",
@@ -117,7 +183,7 @@
           "center": [
             -0.043,
             1.52,
-            9.25
+            14.98
           ],
           "lines": [
             "CLOSED EARLY",
@@ -128,8 +194,8 @@
       ]
     },
     "district_workshop_frontage": {
-      "triangles": 11028,
-      "primitives": 16,
+      "triangles": 11088,
+      "primitives": 18,
       "bounds": {
         "min": [
           -6.8,
@@ -137,12 +203,12 @@
           -32
         ],
         "max": [
-          3.075,
+          1.33,
           15.11,
           32
         ]
       },
-      "windows": 26,
+      "windows": 23,
       "litWindows": 7,
       "deeds": [
         {
@@ -171,18 +237,18 @@
         },
         {
           "deed": 3,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -4,
           "height": 11.2,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
           "deed": 4,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 4,
           "height": 11.2,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -203,13 +269,43 @@
         },
         {
           "deed": 7,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 28,
           "height": 10.4,
-          "windows": 4,
+          "windows": 3,
           "closedEarly": false
         }
       ],
+      "trades": [
+        {
+          "deed": 3,
+          "display": "frames",
+          "trade": "FRAMING & GILDING",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 4,
+          "display": "clocks",
+          "trade": "CLOCK REPAIRS",
+          "paint": "green",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 7,
+          "display": "print",
+          "trade": "LETTERPRESS & PRINT",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        }
+      ],
+      "prints": [],
       "notices": [
         {
           "id": "neighbourhood-early-closure",
@@ -240,8 +336,8 @@
       ]
     },
     "district_passage_frontage": {
-      "triangles": 14452,
-      "primitives": 14,
+      "triangles": 14504,
+      "primitives": 18,
       "bounds": {
         "min": [
           -5.41,
@@ -249,36 +345,36 @@
           -32
         ],
         "max": [
-          3.075,
+          1.33,
           16.91,
           32
         ]
       },
-      "windows": 43,
+      "windows": 37,
       "litWindows": 15,
       "deeds": [
         {
           "deed": 0,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -28,
           "height": 11.2,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
           "deed": 1,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -20,
           "height": 11.2,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
           "deed": 2,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": -12,
           "height": 12.4,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
@@ -300,29 +396,86 @@
         },
         {
           "deed": 5,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 12,
           "height": 10.8,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
           "deed": 6,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 20,
           "height": 13,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         },
         {
           "deed": 7,
-          "kind": "house",
+          "kind": "shop-with-flat",
           "z": 28,
           "height": 13,
-          "windows": 6,
+          "windows": 5,
           "closedEarly": false
         }
       ],
+      "trades": [
+        {
+          "deed": 0,
+          "display": "provisions",
+          "trade": "BAKER & CONFECTIONER",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 1,
+          "display": "cloth",
+          "trade": "LINEN & HABERDASHERY",
+          "paint": "green",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 2,
+          "display": "tools",
+          "trade": "IRONMONGER",
+          "paint": "wood",
+          "closed": false,
+          "awning": "deployed",
+          "awningClearance": 2.55
+        },
+        {
+          "deed": 5,
+          "display": "frames",
+          "trade": "FRAMES & RESTORATION",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 6,
+          "display": "books",
+          "trade": "OLD & NEW BOOKS",
+          "paint": "green",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 7,
+          "display": "provisions",
+          "trade": "FAMILY GROCER",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        }
+      ],
+      "prints": [],
       "notices": []
     },
     "district_court_walls": {
@@ -349,21 +502,695 @@
           "closedEarly": false
         }
       ],
+      "trades": [],
+      "prints": [],
+      "notices": []
+    },
+    "district_west_row_a_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-west-row-a-fascia-0",
+          "deed": 0,
+          "lines": [
+            "HARGREAVES",
+            "BAKER & CONFECTIONER"
+          ]
+        },
+        {
+          "id": "district-west-row-a-fascia-1",
+          "deed": 1,
+          "lines": [
+            "DAWSON & DAUGHTER",
+            "LINEN & HABERDASHERY"
+          ]
+        },
+        {
+          "id": "district-west-row-a-fascia-2",
+          "deed": 2,
+          "lines": [
+            "J. BURTON",
+            "IRONMONGER"
+          ]
+        },
+        {
+          "id": "district-west-row-a-fascia-5",
+          "deed": 5,
+          "lines": [
+            "MARSHALL",
+            "FRAMES & RESTORATION"
+          ]
+        },
+        {
+          "id": "district-west-row-a-fascia-6",
+          "deed": 6,
+          "lines": [
+            "M. FLETCHER",
+            "OLD & NEW BOOKS"
+          ]
+        },
+        {
+          "id": "district-west-row-a-fascia-7",
+          "deed": 7,
+          "lines": [
+            "P. BELL",
+            "FAMILY GROCER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_west_row_b_trade": {
+      "triangles": 76,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.020000000000000004,
+          3.125,
+          -30.8
+        ],
+        "max": [
+          0.196,
+          4.32,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-west-row-b-fascia-3",
+          "deed": 3,
+          "lines": [
+            "ROYLE & SON",
+            "FRAMING & GILDING"
+          ]
+        },
+        {
+          "id": "district-west-row-b-fascia-4",
+          "deed": 4,
+          "lines": [
+            "H. PICKERING",
+            "CLOCK REPAIRS"
+          ]
+        },
+        {
+          "id": "district-west-row-b-fascia-7",
+          "deed": 7,
+          "lines": [
+            "WARD PRINTWORKS",
+            "LETTERPRESS & PRINT"
+          ]
+        },
+        {
+          "id": "district-west-row-b-workshop-0",
+          "deed": 0,
+          "lines": [
+            "SUTCLIFFE JOINERY"
+          ]
+        },
+        {
+          "id": "district-west-row-b-workshop-1",
+          "deed": 1,
+          "lines": [
+            "DENTON ENGINEERING"
+          ]
+        },
+        {
+          "id": "district-west-row-b-workshop-2",
+          "deed": 2,
+          "lines": [
+            "HOLT UPHOLSTERY"
+          ]
+        },
+        {
+          "id": "district-west-row-b-workshop-5",
+          "deed": 5,
+          "lines": [
+            "MILLS COACHWORKS"
+          ]
+        },
+        {
+          "id": "district-west-row-b-workshop-6",
+          "deed": 6,
+          "lines": [
+            "NORTH GARAGE"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_east_row_a_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-east-row-a-fascia-0",
+          "deed": 0,
+          "lines": [
+            "MORLEY",
+            "BAKER & CONFECTIONER"
+          ]
+        },
+        {
+          "id": "district-east-row-a-fascia-1",
+          "deed": 1,
+          "lines": [
+            "HUDSON & CO.",
+            "LINEN & HABERDASHERY"
+          ]
+        },
+        {
+          "id": "district-east-row-a-fascia-2",
+          "deed": 2,
+          "lines": [
+            "CARTER & SON",
+            "IRONMONGER"
+          ]
+        },
+        {
+          "id": "district-east-row-a-fascia-5",
+          "deed": 5,
+          "lines": [
+            "BROWNE",
+            "FRAMES & RESTORATION"
+          ]
+        },
+        {
+          "id": "district-east-row-a-fascia-6",
+          "deed": 6,
+          "lines": [
+            "L. ARMITAGE",
+            "OLD & NEW BOOKS"
+          ]
+        },
+        {
+          "id": "district-east-row-a-fascia-7",
+          "deed": 7,
+          "lines": [
+            "DOBSON",
+            "FAMILY GROCER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_east_row_b_trade": {
+      "triangles": 76,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.020000000000000004,
+          3.125,
+          -30.8
+        ],
+        "max": [
+          0.196,
+          4.32,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-east-row-b-fascia-3",
+          "deed": 3,
+          "lines": [
+            "CROFT FRAMING",
+            "FRAMING & GILDING"
+          ]
+        },
+        {
+          "id": "district-east-row-b-fascia-4",
+          "deed": 4,
+          "lines": [
+            "C. HEMSWORTH",
+            "CLOCK REPAIRS"
+          ]
+        },
+        {
+          "id": "district-east-row-b-fascia-7",
+          "deed": 7,
+          "lines": [
+            "EASTERN PRESS",
+            "LETTERPRESS & PRINT"
+          ]
+        },
+        {
+          "id": "district-east-row-b-workshop-0",
+          "deed": 0,
+          "lines": [
+            "WOOLLEY JOINERY"
+          ]
+        },
+        {
+          "id": "district-east-row-b-workshop-1",
+          "deed": 1,
+          "lines": [
+            "BATHS MOTOR WORKS"
+          ]
+        },
+        {
+          "id": "district-east-row-b-workshop-2",
+          "deed": 2,
+          "lines": [
+            "CROWN UPHOLSTERY"
+          ]
+        },
+        {
+          "id": "district-east-row-b-workshop-5",
+          "deed": 5,
+          "lines": [
+            "WHARF ENGINEERING"
+          ]
+        },
+        {
+          "id": "district-east-row-b-workshop-6",
+          "deed": 6,
+          "lines": [
+            "EAST GARAGE"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_north_row_a_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          23.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-north-row-a-fascia-0",
+          "deed": 0,
+          "lines": [
+            "WALKER & PEEL",
+            "BOOKSELLER & STATIONER"
+          ]
+        },
+        {
+          "id": "district-north-row-a-fascia-1",
+          "deed": 1,
+          "lines": [
+            "H. BIRTLES",
+            "TAILOR & DRAPER"
+          ]
+        },
+        {
+          "id": "district-north-row-a-fascia-2",
+          "deed": 2,
+          "lines": [
+            "R. ASQUITH",
+            "DISPENSING CHEMIST"
+          ]
+        },
+        {
+          "id": "district-north-row-a-fascia-4",
+          "deed": 4,
+          "lines": [
+            "BROOK & SON",
+            "CHINA & GLASS"
+          ]
+        },
+        {
+          "id": "district-north-row-a-fascia-5",
+          "deed": 5,
+          "lines": [
+            "ELM FLORIST",
+            "FLORIST & SEEDSMAN"
+          ]
+        },
+        {
+          "id": "district-north-row-a-fascia-6",
+          "deed": 6,
+          "lines": [
+            "V. HALL",
+            "WATCHMAKER & JEWELLER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_north_row_b_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-north-row-b-fascia-0",
+          "deed": 0,
+          "lines": [
+            "M. THORNTON",
+            "BAKER & CONFECTIONER"
+          ]
+        },
+        {
+          "id": "district-north-row-b-fascia-1",
+          "deed": 1,
+          "lines": [
+            "HOLT & SISTER",
+            "LINEN & HABERDASHERY"
+          ]
+        },
+        {
+          "id": "district-north-row-b-fascia-2",
+          "deed": 2,
+          "lines": [
+            "J. WINTER",
+            "IRONMONGER"
+          ]
+        },
+        {
+          "id": "district-north-row-b-fascia-5",
+          "deed": 5,
+          "lines": [
+            "BELL & SON",
+            "FRAMES & RESTORATION"
+          ]
+        },
+        {
+          "id": "district-north-row-b-fascia-6",
+          "deed": 6,
+          "lines": [
+            "WEST RIDING BOOKS",
+            "OLD & NEW BOOKS"
+          ]
+        },
+        {
+          "id": "district-north-row-b-fascia-7",
+          "deed": 7,
+          "lines": [
+            "F. DIXON",
+            "FAMILY GROCER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_north_row_c_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          23.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-north-row-c-fascia-0",
+          "deed": 0,
+          "lines": [
+            "THE READING ROOM",
+            "BOOKSELLER & STATIONER"
+          ]
+        },
+        {
+          "id": "district-north-row-c-fascia-1",
+          "deed": 1,
+          "lines": [
+            "ELLIOTT & CO.",
+            "TAILOR & DRAPER"
+          ]
+        },
+        {
+          "id": "district-north-row-c-fascia-2",
+          "deed": 2,
+          "lines": [
+            "H. FARRAR",
+            "DISPENSING CHEMIST"
+          ]
+        },
+        {
+          "id": "district-north-row-c-fascia-4",
+          "deed": 4,
+          "lines": [
+            "RIDGEWAY CHINA",
+            "CHINA & GLASS"
+          ]
+        },
+        {
+          "id": "district-north-row-c-fascia-5",
+          "deed": 5,
+          "lines": [
+            "FERN & ROOT",
+            "FLORIST & SEEDSMAN"
+          ]
+        },
+        {
+          "id": "district-north-row-c-fascia-6",
+          "deed": 6,
+          "lines": [
+            "J. INGHAM",
+            "WATCHMAKER & JEWELLER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_south_row_b_trade": {
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -31.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-south-row-b-fascia-0",
+          "deed": 0,
+          "lines": [
+            "HARRISON",
+            "BAKER & CONFECTIONER"
+          ]
+        },
+        {
+          "id": "district-south-row-b-fascia-1",
+          "deed": 1,
+          "lines": [
+            "WAKEFIELD LINEN",
+            "LINEN & HABERDASHERY"
+          ]
+        },
+        {
+          "id": "district-south-row-b-fascia-2",
+          "deed": 2,
+          "lines": [
+            "T. LISTER",
+            "IRONMONGER"
+          ]
+        },
+        {
+          "id": "district-south-row-b-fascia-5",
+          "deed": 5,
+          "lines": [
+            "TOWN FRAMERS",
+            "FRAMES & RESTORATION"
+          ]
+        },
+        {
+          "id": "district-south-row-b-fascia-6",
+          "deed": 6,
+          "lines": [
+            "R. NAYLOR",
+            "OLD & NEW BOOKS"
+          ]
+        },
+        {
+          "id": "district-south-row-b-fascia-7",
+          "deed": 7,
+          "lines": [
+            "LEONARD & CO.",
+            "FAMILY GROCER"
+          ]
+        }
+      ],
+      "notices": []
+    },
+    "district_south_row_c_trade": {
+      "triangles": 76,
+      "primitives": 3,
+      "bounds": {
+        "min": [
+          -0.020000000000000004,
+          3.125,
+          -30.8
+        ],
+        "max": [
+          0.196,
+          4.32,
+          31.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "district-south-row-c-fascia-3",
+          "deed": 3,
+          "lines": [
+            "SOUTHERN FRAMERS",
+            "FRAMING & GILDING"
+          ]
+        },
+        {
+          "id": "district-south-row-c-fascia-4",
+          "deed": 4,
+          "lines": [
+            "A. KENDALL",
+            "CLOCK REPAIRS"
+          ]
+        },
+        {
+          "id": "district-south-row-c-fascia-7",
+          "deed": 7,
+          "lines": [
+            "MERCURY PRINT",
+            "LETTERPRESS & PRINT"
+          ]
+        },
+        {
+          "id": "district-south-row-c-workshop-0",
+          "deed": 0,
+          "lines": [
+            "G. DENHAM JOINERY"
+          ]
+        },
+        {
+          "id": "district-south-row-c-workshop-1",
+          "deed": 1,
+          "lines": [
+            "SOUTH MOTOR WORKS"
+          ]
+        },
+        {
+          "id": "district-south-row-c-workshop-2",
+          "deed": 2,
+          "lines": [
+            "WILTON UPHOLSTERY"
+          ]
+        },
+        {
+          "id": "district-south-row-c-workshop-5",
+          "deed": 5,
+          "lines": [
+            "KIRK ENGINEERING"
+          ]
+        },
+        {
+          "id": "district-south-row-c-workshop-6",
+          "deed": 6,
+          "lines": [
+            "RAILWAY GARAGE"
+          ]
+        }
+      ],
       "notices": []
     }
   },
-  "totalTriangles": 43828,
-  "materialCount": 16,
-  "textureBaseLevelBytes": 1170624,
+  "totalTriangles": 44760,
+  "materialCount": 22,
+  "textureBaseLevelBytes": 13427904,
   "pending": [
     "native final-dither movement inspection",
     "fresh-player recognition of occupied rooms and early closures"
   ],
   "sourceHashes": {
-    "src/data/exterior-frontages.js": "53aa12a788b20120440e57b4bb5c975b1146a6b6c617e276bb6195e4e8f3a59c",
-    "tools/chunk_surfer/exterior-neighborhood-geometry.mjs": "0b4eb03c7716eb0f7bb875bf9e95c16b6632cfb175e852b1c2bad7a60c5a9a54",
-    "tools/chunk_surfer/build-exterior-frontages.mjs": "1e60230a2344a00d1fb28cf8155dfd7d2668fe0a9ada0e0843644ea59a10b153"
+    "src/data/exterior-frontages.js": "255cc48fdcdf74f35e4cf56c749bc62b1ba91c5b0acaa5d7850c06f53cececaf",
+    "tools/chunk_surfer/exterior-neighborhood-geometry.mjs": "1afa04b20541144a10ea2c20f488095a9964b583f411a75ccafcc60275b9726b",
+    "tools/chunk_surfer/build-exterior-frontages.mjs": "a41998407a78f9614784d89deeeeade750a94225daf9cf6121f794db99831d18"
   },
-  "bytes": 3495580,
-  "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611"
+  "bytes": 4582068,
+  "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5"
 }

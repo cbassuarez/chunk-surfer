@@ -120,8 +120,15 @@ test('only deliberate launch opt-ins can change the default, and nosd always win
   }
   assert.equal(stableDiffusionOffAtStartup(new URLSearchParams('sd=0&lens=0')), true);
   assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(), { startupOptIn: true }), false);
-  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(), { ...off, startupOptIn: true }), true);
+  assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(), { ...off, startupOptIn: true }), false);
   assert.equal(stableDiffusionOffAtStartup(new URLSearchParams('nosd'), { storage: { getItem: () => '0' }, startupOptIn: true }), true);
+  // No-SD production builds cannot be revived by an old ON preference, a
+  // query override or the development launch flag.
+  for (const query of ['sd=1', 'lens=1', 'diffusion=ws://127.0.0.1:8000', '']) {
+    assert.equal(stableDiffusionOffAtStartup(new URLSearchParams(query), {
+      ...off, available: false, startupOptIn: true,
+    }), true);
+  }
 });
 
 function sdContext({ off = false, lens = null, storage = new Map(), dev = true, fetchReply = null, survivors = [] } = {}) {
@@ -138,7 +145,7 @@ function sdContext({ off = false, lens = null, storage = new Map(), dev = true, 
     console, Promise, Map, Date, String, Math, window, R3, globalThis: { localStorage: store, performance: { memory: { usedJSHeapSize: 1234 } } },
     sdOff: off, sdLastNuke: null, sdLastScan: null, lensStarting: null, lensDisabled: false, lensBlockedEulaLogged: false, SD_OFF_KEY,
     persistStableDiffusionOff: (value) => persistStableDiffusionOff(value, store),
-    IS_TAURI: false, DEV: dev, activeLookProfile: 'explore',
+    IS_TAURI: false, DEV: dev, SD_DEV_ENABLED: dev, activeLookProfile: 'explore',
     params: () => new URLSearchParams(), pushEvent: (line) => events.push(line), applyLookProfile: (name) => looks.push(name),
     setLocalDiffusionActive: (on) => local.push(on), lensStartBlockedByEula: () => false,
     startLens: async () => ({ started: true }),
@@ -185,6 +192,17 @@ test('switching SD back on restores the textures and starts the lens through the
   assert.deepEqual(f.looks, ['explore']);
 });
 
+test('production God menu cannot enable an SD service even with a saved ON preference', async () => {
+  const f = sdContext({ off: false, dev: false, storage: new Map([['chunk-surfer.sd-off', '0']]) });
+  assert.equal(f.ctx.stableDiffusionOff(), true);
+  assert.equal(f.ctx.switchStableDiffusionOn(), false);
+  assert.equal(f.ctx.ensureLensStarted(), null);
+  assert.equal(f.R3.restored, 0);
+  assert.deepEqual(f.local, []);
+  assert.equal(f.storage.get('chunk-surfer.sd-off'), '0', 'a packaged build must not rewrite the local developer preference');
+  assert.match(f.events.at(-1), /only in local --sd development/);
+});
+
 test('the nuke switches SD off first, ends the lens processes, then looks again', async () => {
   const f = sdContext({ lens: { stop() {}, banks: new Map() } });
   const result = await f.ctx.nukeStableDiffusion();
@@ -211,7 +229,8 @@ test('the nuke switches SD off first, ends the lens processes, then looks again'
 test('the boot gate and its retry pass straight through with SD off', () => {
   assert.match(main, /const calibrate=async\(\)=>stableDiffusionOff\(\)\?null:activateStartupBank\(await requireLensStarted\(qp\)\);/);
   assert.match(main, /retry:async\(\)=>\{\n\s+if\(stableDiffusionOff\(\)\)return null;/);
-  assert.match(main, /let sdOff=stableDiffusionOffAtStartup\(params\(\),/);
+  assert.match(main, /let sdOff=stableDiffusionOffAtStartup\(params\(\),\{available:SD_DEV_ENABLED/);
+  assert.match(main, /const SD_DEV_ENABLED=import\.meta\.env\.DEV && import\.meta\.env\.VITE_STABLE_DIFFUSION==='1'/);
   // Booting into the baseline frees the arrays the renderer allocates up front,
   // and nothing that wakes the building turns diffusion back on.
   assert.match(main, /R3\.r3dInit\(MAP_EL\);\n.*\n.*\n\s+if\(stableDiffusionOff\(\)\)R3\.r3dReleaseSurfaceDream\?\.\(\);/);

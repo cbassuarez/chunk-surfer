@@ -8,6 +8,7 @@ import { OUTSKIRT_LAST_MARK, OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES } f
 
 const experience = createOutskirtsExperience();
 const position = { x: 4, z: 20 };
+// The retained legacy encounter remains available to older exterior bus uses.
 for (let i = 0; i < 100; i++) experience.bus({ active: true, visible: true, near: false, crossed: false, position });
 assert.equal(experience.busStage(), 1, 'waiting at a safe distance cannot spend the close encounter');
 assert.deepEqual(experience.events().map(e => e.cue), ['bus-air']);
@@ -18,6 +19,48 @@ assert.deepEqual(experience.events().map(e => e.cue), ['coat-rustle', 'footstep'
 const restored = createOutskirtsExperience(normalizeChunkSurfState({ outskirtsExperience: experience.snapshot() }).outskirtsExperience);
 restored.bus({ active: true, visible: false, near: true, crossed: true, position });
 assert.deepEqual(restored.events(), [], 'retreat/reload cannot replay a spent scare');
+
+// The one interior crossing has separate physical milestones. Opening the
+// entrance cannot spend the encounter with the woman at the rear of the aisle.
+const transit = createOutskirtsExperience();
+transit.tickCharacters(.25);
+transit.busTransit({ active: true, visible: true, entryNear: false, inside: false,
+  closeWoman: false, exited: false, entryPosition: position, position });
+assert.equal(transit.busStage(), 1);
+transit.busTransit({ active: true, visible: false, entryNear: true, inside: false,
+  closeWoman: true, exited: true, entryPosition: position, position });
+assert.equal(transit.busStage(), 2);
+assert.equal(transit.busTransitState().entered, false);
+assert.equal(transit.busTransitState().close, false, 'proximity outside the side skin spends the rear encounter');
+assert.equal(transit.busTransitState().exited, false, 'the exit can be completed without boarding');
+assert.deepEqual(transit.events().map(e => e.id), ['outskirts-bus:arrival-air', 'outskirts-bus:entry-open']);
+transit.tickCharacters(.25);
+transit.busTransit({ active: true, visible: false, entryNear: false, inside: true,
+  closeWoman: false, exited: false, entryPosition: position, position });
+assert.equal(transit.busStage(), 3);
+const aboardTransit = transit.busTransitState();
+const transitReload = createOutskirtsExperience(JSON.parse(JSON.stringify(transit.snapshot())));
+assert.deepEqual(transitReload.busTransitState(), aboardTransit, 'reload restarts the physical door/boarding clock');
+transitReload.busTransit({ active: true, inside: false, closeWoman: false, exited: false,
+  entryPosition: position, position });
+assert.equal(transitReload.busStage(), 3, 'retreat resets boarding or closes the entrance');
+transitReload.tickCharacters(.25);
+transitReload.busTransit({ active: true, inside: true, closeWoman: true, exited: false,
+  entryPosition: position, position });
+assert.equal(transitReload.busTransitState().close, true);
+transitReload.busTransit({ active: true, inside: false, closeWoman: false, exited: true,
+  entryPosition: position, position });
+assert.equal(transitReload.busStage(), 4);
+assert.deepEqual(transitReload.events().map(e => e.id), ['outskirts-bus:rear-cloth','outskirts-bus:woman-notice','outskirts-bus:woman-pass','outskirts-bus:rear-step']);
+const completedTransit = transitReload.busTransitState();
+transitReload.busTransit({ active: true, inside: true, closeWoman: true, exited: true,
+  entryPosition: position, position });
+assert.deepEqual(transitReload.busTransitState(), completedTransit);
+assert.deepEqual(transitReload.events(), [], 'walking back through repeats the interior cues');
+const legacyCompleted = createOutskirtsExperience({ busStage: 3 });
+legacyCompleted.busTransit({ active: true, entryNear: true, inside: true, closeWoman: true, exited: true,
+  entryPosition: position, position });
+assert.deepEqual(legacyCompleted.events(), [], 'legacy completed bus encounters replay as new interior scares');
 
 for (const [local, across, yaw] of [[0, -2, .1], [12, 3, 1.2], [24, 1, -.8]]) {
   experience.remember({ pass: 0, along: OUTSKIRT_STRETCH_START + local, across, yaw, time: local });
@@ -57,8 +100,17 @@ runtime.setLastLightPlayback({ started: true, elapsed: 32.5 });
 const reloaded = createSourceSpaceRuntime({ initialState: runtime.state() });
 reloaded.setPlayerPosition(atMark);
 assert.equal(reloaded.outskirtsLastLight().playback.elapsed, 32.5, 'the fixed recording resumes rather than skipping/restarting');
+assert.equal(runtime.geometry.canStep(atMark.x, atMark.y, atMark.x, atMark.y + 1).ok, true,
+  'the retreat step is open before playback owns movement');
 runtime.setLastLightHold(true);
-assert.equal(runtime.geometry.canStep(atMark.x, atMark.y, atMark.x, atMark.y + 1).ok, true, 'playback does not introduce an invisible retreat wall');
+assert.deepEqual(runtime.geometry.canStep(atMark.x, atMark.y, atMark.x, atMark.y + 1),
+  { ok: false, why: 'last-light recording' }, 'the authored recording holds movement only during playback');
+runtime.setLastLightOut(true);
+assert.equal(runtime.geometry.canStep(atMark.x, atMark.y, atMark.x, atMark.y + 1).ok, true,
+  'completion releases the same retreat step even before the presentation clears its hold');
+runtime.setLastLightHold(false);
+assert.equal(runtime.geometry.canStep(atMark.x, atMark.y, atMark.x, atMark.y + 1).ok, true,
+  'the finished recording leaves no retreat wall');
 
 const savedObservation = { id: 'r2-booth-guard', seen: true, gone: true, epoch: 1, face: null };
 const unvisitedReload = createSourceSpaceRuntime({ initialState: { ...built.state, outskirtsExperience: { observed: [savedObservation] } } });

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { WINDOW_RAMP, WINDOW_RAMP_APPROVED } from '../src/render/window-surface-look.js';
 import { FIREBALL_SURFACE_LABELS,substantiallyOnscreenPosition } from '../src/platform/personalized-window-effects.js';
+import { createWindowVideoClock, normalizeWindowMediaAssignment } from '../src/platform/window-composition.js';
 
 assert.deepEqual(FIREBALL_SURFACE_LABELS,['fireball-cast-1','fireball-cast-2','fireball-cast-3','fireball-cast-4']);
 assert.deepEqual(substantiallyOnscreenPosition({position:{x:-3900,y:-200},size:{width:200,height:200},monitor:{position:{x:-3840,y:-120},size:{width:3840,height:2160}}}),{x:-3880,y:-160});
@@ -88,7 +89,23 @@ assert.match(effects,/const size=240/,'the webview pool agrees with the native c
 assert.match(effects,/let surface=await api\.WebviewWindow\.getByLabel\(label\)/);
 assert.match(effects,/surface=new api\.WebviewWindow\(label/);
 const mediaSurface=readFileSync(new URL('../src/window-media-surface.js',import.meta.url),'utf8');
-assert.match(mediaSurface,/\(elapsed\/loopMs\)\*mediaSeconds/,'short clips map over the authored composition loop instead of pinning their final frame');
+// This transport moved from the native presenter into the clock shared with
+// simulation. Exercise the preserved score-time behavior and the explicit
+// source-time exception rather than pinning the old function's source text.
+for(const seconds of[5,12]){
+  const assignment=normalizeWindowMediaAssignment({content:{kind:'video',assetId:'clouds'}});
+  const clock=createWindowVideoClock({score:{epochMs:1000,durationMs:12000,loop:true},assignment,nowMs:1000});
+  assert.equal(assignment.clockMode,'score','existing plans keep their authored composition clock');
+  assert.equal(clock.time(7000,{durationSeconds:seconds}),seconds/2);
+  assert.equal(clock.time(19000,{durationSeconds:seconds}),seconds/2,'short clips loop over the score instead of pinning a final frame');
+  assert.equal(clock.playbackRate({durationSeconds:seconds}),seconds/12);
+}
+{
+  const assignment=normalizeWindowMediaAssignment({content:{kind:'video',assetId:'clouds'},clockMode:'source',phaseOffsetMs:650});
+  const clock=createWindowVideoClock({score:{epochMs:1000,durationMs:120000,loop:false},assignment,nowMs:1000});
+  assert.equal(clock.time(6000,{durationSeconds:12}),5.65,'new source-clock studies retain real media-time offsets');
+  assert.equal(clock.playbackRate({durationSeconds:12}),1,'a long event score cannot slow a performed action tenfold');
+}
 assert.match(mediaSurface,/(?:video|media)\.playbackRate=Math\.max/);
 assert.doesNotMatch(mediaSurface,/float bayer/,'window media no longer inherits an ordered Bayer screen');
 assert.match(mediaSurface,/blueNoiseRank\(cellId\)/,'one physical-desktop blue-noise field thresholds every pane');

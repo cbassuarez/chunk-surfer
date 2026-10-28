@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 import { CELL } from '../src/data/floorplan/legend.js';
 import { freshChunkSurfState } from '../src/game/chunk-surf-state.js';
@@ -87,6 +88,19 @@ assert.ok(SOURCE_HAYSTACK.entryPressure > 0.62, 'haystack must enter above the t
 // visible HUSH body card.
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(main, /hushBodySpaceAllowed\s*=\s*!usingSpecialSpace\(\)\|\|usingSourceSpace\(\)/);
-assert.match(main, /hushBodyAllowed:!worldView\?\.suppressActors&&hushBodySpaceAllowed/);
+assert.match(main, /const pressureFrame=pressureRenderFrame\(worldView\)/);
+assert.match(main, /hushBodyAllowed:pressureFrame\.allowed&&hushBodySpaceAllowed/);
+const policy=main.match(/function pressureRenderFrame\(worldView\)\{[\s\S]*?\n\}/)?.[0];
+assert.ok(policy,'the render-only actor policy remains explicit');
+const primary={id:'source-rear'},secondary={id:'source-front'};
+const renderFrame=runInNewContext(policy+'\npressureRenderFrame;',{
+  pressurePerformance:{snapshot:()=>({primary,secondary}),isReplay:()=>false},
+  scenes:{top:()=>null},
+});
+assert.equal(renderFrame(null).primary,primary,'ordinary Source rendering retains its rear body');
+assert.equal(renderFrame(null).secondary,secondary,'ordinary Source rendering retains its forward bracket');
+const suppressed=renderFrame({suppressActors:true});
+assert.equal(suppressed.allowed,false);assert.equal(suppressed.primary,null);assert.equal(suppressed.secondary,null,
+  'modal suppression still removes both live bodies');
 
 console.log('source search escalation tests ok');

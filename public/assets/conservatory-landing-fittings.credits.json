@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "license": "Project source",
+  "origin": "Project-authored closed code-native geometry and materials; original lamp geometry and sign datums retained.",
+  "source": "tools/chunk_surfer/build-landing-fittings.mjs",
+  "sourceSha256": {
+    "tools/chunk_surfer/build-landing-fittings.mjs": "ebae3599fbaab93b368740d394ae8baff1a4bfdf736fea3476807780efcc4571",
+    "src/data/corridor-lettering.js": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d"
+  },
+  "pack": {
+    "file": "public/assets/conservatory-landing-fittings.glb",
+    "bytes": 170768,
+    "sha256": "6b7860a05b66c00ef789612e60df57df2e8f99fa5d4a9b5472058fdc11024200"
+  },
+  "lettering": "No new text, font, glyph or atlas. Existing corridor lettering overlays reuse unchanged panel and ink datums.",
+  "aging": "Localized closed paint-skin edge losses, fastener oxidation, sparse repairs and brass/cage wear. The central lettering region is untouched.",
+  "meshes": [
+    {
+      "name": "stair_sconce_pair_opal",
+      "triangles": 924,
+      "bounds": {
+        "min": [
+          -1.559999942779541,
+          -0.20000000298023224,
+          -0.49000000953674316
+        ],
+        "max": [
+          1.559999942779541,
+          0.38999998569488525,
+          0.17000000178813934
+        ]
+      },
+      "rearContact": {
+        "axis": "z",
+        "coordinate": 0.17,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "partId": "continuous-backboard",
+        "rectangle": {
+          "min": [
+            -1.51,
+            -0.2,
+            0.17
+          ],
+          "max": [
+            1.51,
+            0.2,
+            0.17
+          ]
+        }
+      }
+    },
+    {
+      "name": "stair_bulkhead_pair",
+      "triangles": 1092,
+      "bounds": {
+        "min": [
+          -1.590000033378601,
+          -0.298564076423645,
+          -0.2199999988079071
+        ],
+        "max": [
+          1.590000033378601,
+          0.298564076423645,
+          0.14000000059604645
+        ]
+      },
+      "rearContact": {
+        "axis": "z",
+        "coordinate": 0.14,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "partId": "continuous-backboard",
+        "rectangle": {
+          "min": [
+            -1.51,
+            -0.2,
+            0.14
+          ],
+          "max": [
+            1.51,
+            0.2,
+            0.14
+          ]
+        }
+      }
+    }
+  ]
+}

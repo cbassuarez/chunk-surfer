@@ -12,7 +12,7 @@ export const PROP_INSTANCE_BINDINGS=Object.freeze([
 // circuit fixtures retain their practical scale when no local switch is given.
 export function propPoweredMaterialScale(instance={},practicalScale=1){
   const local=Number.isFinite(instance.fixturePower)?Math.max(0,Math.min(1,instance.fixturePower)):1;
-  const circuit=instance.sourceMemoryFixture?Math.max(0,Number(practicalScale)||0):1;
+  const circuit=instance.sourceMemoryFixture||instance.practicalFixture?Math.max(0,Number(practicalScale)||0):1;
   return local*circuit;
 }
 export function writePropInstanceFlags(data,at,{zone=0,portrait=0,structural=false,fixturePower=1}={}){

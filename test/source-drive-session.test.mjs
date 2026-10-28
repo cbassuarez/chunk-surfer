@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createSourceDriveSession, freshSourceDriveCheckpoint, normalizeSourceDriveCheckpoint, SOURCE_DRIVE_ASSETS } from '../src/game/source-drive-session.js';
 import { roadAt } from '../src/game/source-drive/road.js';
+import {driveDoorCrossingFrame} from '../src/game/source-drive/door-crossing.js';
+import {driveColliders} from '../src/game/source-drive/scene.js';
+import {ORDINARY_DESTINATION} from '../src/game/source-drive/route-layout.js';
 
 const metrics = JSON.parse(await readFile(new URL('../artifacts/source-drive-study/geometry/metrics.json', import.meta.url)));
 const returnPose = { x: 203.125, y: -1080.04, facing: 2, yaw: 1.821, pitch: -.087, floorH: 15.2 };
@@ -197,6 +200,35 @@ test('finish requires an intentional apron stop and does not require a recording
   assert.equal(await f.session.start(), false, 'the completed encounter does not restart');
   assert.equal(f.session.render(), false);
   await f.session.dispose();
+});
+
+test('ordinary driving opens the real goods pair and carries the whole van through without Enter or a stop',async()=>{
+  const f=fixture({checkpoint:checkpointAt(1207)});await f.session.start();
+  f.session.key({key:'Enter'});await Promise.resolve();assert.equal(f.commits.length,0,'Enter cannot leave a parked van');
+  f.session.input('forward',true);let crossingFrame=null;
+  for(let i=0;i<900&&!f.session.status().returned;i++){
+    f.session.update(1/60);const state=f.session.status().state,door=driveDoorCrossingFrame(state);
+    if(door.contact&&!crossingFrame)crossingFrame={door,state,frame:f.session.frame()};
+    await Promise.resolve();
+  }
+  assert.equal(f.commits.length,1,'physical passage commits exactly once');
+  assert.equal(f.commits[0].crossing.kind,'driven-door');
+  assert.ok(f.commits[0].crossing.rearDistance>ORDINARY_DESTINATION.d,'the rear bumper has cleared before handoff');
+  assert.ok(f.commits[0].crossing.speed>1,'the handoff does not first stop the van');
+  assert.equal(crossingFrame.door.open,1,'both leaves clear the moving bumper');
+  assert.equal(driveColliders(crossingFrame.state).some(c=>c.id==='goods-pair-solid'),false);
+  assert.equal(driveColliders(crossingFrame.state).filter(c=>c.id.startsWith('goods-frame-post')).length,2,'the real jambs remain physical');
+  const leaves=crossingFrame.frame.scene.props.filter(p=>p.id.startsWith('canonical-goods-leaf'));
+  assert.equal(leaves.length,2);assert.ok(leaves.every(p=>Math.abs(p.matrix[0])<.04),'visible leaves actually turn clear');
+  assert.equal(f.session.status().state.events.filter(e=>e.type==='goods-threshold-impact').length,1);
+  assert.equal(f.joints.filter(hit=>hit.strength===1.2).length,1,'the impact calls the live acoustic owner, not only event metadata');
+  assert.ok(crossingFrame.state.heaveVelocity>.04,'the same threshold kick reaches the van suspension');
+  await f.session.dispose();
+});
+
+test('an offset pass cannot silently complete by going around the goods pair',()=>{
+  const cp=checkpointAt(1233,{x:3.5});
+  assert.equal(driveDoorCrossingFrame(cp.drive).complete,false);
 });
 
 test('a stale parked checkpoint outside the apron cannot commit the exterior return', async () => {

@@ -24,6 +24,8 @@
 // back toward the door, the way he came — which is to say, toward him.
 
 import { outskirtsTownPlacement, outskirtsTownBoundaryCollision } from './source-outskirts-town.js';
+import { outskirtsFoldLayout } from './source-outskirts-folds.js';
+import { OUTSKIRTS_BUS_PASSAGE, busPassageCollisionBoxes, busPassageRoadPoint } from './outskirts-bus-passage.js';
 export { SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet } from './source-outskirts-town.js';
 
 const freeze = Object.freeze;
@@ -47,15 +49,15 @@ export const OUTSKIRT_WALKABLE_MESHES = freeze(['yard_road', 'outskirts_road', '
 // walking around the first wall end from the still ground, rather than inventing
 // a second, wider corridor outside the visible boundary.
 export const OUTSKIRT_CORRIDOR = freeze({ halfWidth: 11.5, boundaryThroughPass: 20, boundaryMeshOffset: 11.66 });
-// Player-facing pass 8. The front of the transverse bus points east. A 1.70m
-// opening between its nose and the rail leaves 1.20m for the body's centre after
-// the 25cm radius on either side. There is no alternative route around the back.
+// Player-facing pass8 is the single mandatory interior crossing. Its front
+// nearside door faces the approach; the rear offside exit faces onward. Both
+// end gaps are visibly closed. Other blocked passes retain their old nose gap.
 export const OUTSKIRT_BUS_ENCOUNTER = freeze({
-  pass: 7, busKey: 'bus', womanKey: 'bus-woman', across: 0, along: 24.5, yaw: -Math.PI / 2,
-  approachAlong: 19, closeAlong: 22.7, crossedAlong: 27,
-  laneMinAcross: 4.6, laneMaxAcross: 6.3, laneAcross: 5.45,
-  physicalClearance: 1.7, bodyClearance: 1.2,
-  womanAcross: 4.12, womanAlong: 24.3,
+  pass:OUTSKIRTS_BUS_PASSAGE.pass,busKey:'bus',womanKey:'bus-woman',
+  across:OUTSKIRTS_BUS_PASSAGE.across,along:OUTSKIRTS_BUS_PASSAGE.along,yaw:OUTSKIRTS_BUS_PASSAGE.yaw,
+  approachAlong:16,closeAlong:23.25,crossedAlong:26.25,
+  womanAcross:busPassageRoadPoint(OUTSKIRTS_BUS_PASSAGE.woman.x,OUTSKIRTS_BUS_PASSAGE.woman.z).across,
+  womanAlong:busPassageRoadPoint(OUTSKIRTS_BUS_PASSAGE.woman.x,OUTSKIRTS_BUS_PASSAGE.woman.z).along,
 });
 // The seventh lodge's guard sits beside the hatch facing the road. Character,
 // chair and lower side ledge share one floor origin and local -Z facing.
@@ -160,8 +162,8 @@ export const OUTSKIRT_STRETCH = freeze([
 const FACES = freeze(['bus', 'bus-woman', 'van', 'van-lamp', 'booth-guard']);
 
 // ── EACH PASS, WORN, AND SOMETIMES BROKEN ───────────────────────────────────
-// What goes badly wrong on a pass that breaks. Nothing is giant, fallen or
-// floating: it is always the order of things that fails, never the things.
+// Ground-level rearrangements. Separate rigid street returns acquire impossible
+// gravities from displayed pass4; the walked objects retain their dimensions.
 export const OUTSKIRT_BREAKS = freeze([
   'mirrored',   // the whole scene the wrong way round
   'stutter',    // everything twice, a step apart, like a skipped frame
@@ -206,7 +208,7 @@ export const outskirtWear = (k) => Math.max(0, Math.min(1, k / LAST));
 const QUIET_PASSES = freeze([0, 1, 13, 28]);
 // Breaks the road must have at least once, whatever the hash says, on a pass it
 // leaves unbroken: somebody walking the road a moment ahead of him.
-const PINNED_BREAKS = freeze({ 7: 'blocked', 17: 'already-walked', 20: 'stranger', 21: 'no-road', 23: 'unfinished', 26: 'emptied', 27: 'stutter' });
+const PINNED_BREAKS = freeze({ 3: 'mirrored', 4: 'turned', 7: 'blocked', 17: 'already-walked', 20: 'stranger', 21: 'no-road', 23: 'unfinished', 26: 'emptied', 27: 'stutter' });
 export const outskirtBreakChance = (k) => (k < 2 ? 0 : 0.06 + 0.7 * outskirtWear(k) ** 2);
 
 // THE ROAD GOES. Where along it (by wear, 0 to 1) each kind of thing starts to
@@ -286,7 +288,7 @@ const firstBreaks = () => {
 const BEATS_WRITTEN = freeze([
   freeze({ id: 'outside', trigger: 'reach', along: 2, line: 'Outside. The same night.' }),
   freeze({ id: 'lodge', trigger: 'reach', stretch: 0, along: 10, line: 'Lit. Nobody in it.' }),
-  freeze({ id: 'lamps-behind', trigger: 'lookBack', stretch: 0, along: 22, line: 'They go out behind me.' }),
+  freeze({ id: 'lamps-behind', trigger: 'lookBack', stretch: 2, along: 22, line: 'They go out behind me.' }),
   freeze({ id: 'again', trigger: 'reach', stretch: 1, along: 1.2, line: 'I have walked this bit.' }),
   freeze({ id: 'aboard', trigger: 'reach', stretch: 1, along: 21, line: 'She got on.' }),
   freeze({ id: 'guard-gone', trigger: 'unseen', stretch: 2, piece: 'booth-guard', line: 'He was there.' }),
@@ -445,7 +447,7 @@ function passPieces(pass) {
     case 'blocked':
       pieces = pieces.filter((piece) => piece.id !== 'bus' && (k !== OUTSKIRT_BUS_ENCOUNTER.pass || !piece.id.startsWith('bus-woman')));
       pieces.push(put('bus', 'outskirts_bus', 0, 24.5, {
-        yaw: OUTSKIRT_BUS_ENCOUNTER.yaw, inspect: 'bus', interact: [-1.6, -3.15], closeReach: 1.8,
+        yaw: -Math.PI/2, inspect: 'bus', interact: [-1.6, -3.15], closeReach: 1.8,
         keepThrough: k, encounter: k === OUTSKIRT_BUS_ENCOUNTER.pass ? 'bus-close' : undefined,
       }));
       // Both ends meet a visible barrier. Only the east nose gap remains, and
@@ -454,9 +456,17 @@ function passPieces(pass) {
         put('funnel-west', 'outskirts_bus_funnel_west', -8.05, 24.5, { yaw: Math.PI / 2, structural: true }),
         put('funnel-east', 'outskirts_bus_funnel_east', 8.9, 24.5, { yaw: Math.PI / 2, structural: true }),
       );
-      if (k === OUTSKIRT_BUS_ENCOUNTER.pass) pieces.push(put('bus-woman', 'outskirts_bus_woman',
-        OUTSKIRT_BUS_ENCOUNTER.womanAcross, OUTSKIRT_BUS_ENCOUNTER.womanAlong,
-        { yaw: -Math.PI / 2, y: 0.50, inspect: 'woman', closeReach: 1.6, interact: [0, 0], keepThrough: k, encounter: 'bus-close', watcher: false, collision: 'none' }));
+      if (k === OUTSKIRT_BUS_ENCOUNTER.pass) {
+        const c=OUTSKIRTS_BUS_PASSAGE;
+        pieces=pieces.filter(piece=>piece.id!=='bus'&&!piece.id.startsWith('funnel-'));
+        pieces.push(put('bus',c.mesh,c.across,c.along,{yaw:c.yaw,busPassage:true,
+          collision:busPassageCollisionBoxes(),inspect:'bus',interact:c.entry.approach,closeReach:1.8,
+          keepThrough:k,encounter:'bus-close'}));
+        for(const barrier of c.barriers)pieces.push(put(barrier.id,barrier.mesh,barrier.across,barrier.along,{yaw:barrier.yaw,structural:true}));
+        pieces.push(put('bus-woman','outskirts_bus_woman',OUTSKIRT_BUS_ENCOUNTER.womanAcross,OUTSKIRT_BUS_ENCOUNTER.womanAlong,
+          {yaw:c.yaw+c.woman.yaw,y:c.woman.y,inspect:'woman',closeReach:1.6,interact:[0,0],keepThrough:k,
+            encounter:'bus-close',watcher:false,collision:'none'}));
+      }
       break;
     case 'no-road':
       pieces = pieces.filter((piece) => piece.id !== 'road');
@@ -533,12 +543,13 @@ function passPieces(pass) {
   // What belongs to something goes with it: no dash pages hanging where the van
   // was, no lodge lamp standing in the air.
   const has = (id) => pieces.some((piece) => piece.id === id);
-  return pieces.filter((piece) => {
+  const supported = pieces.filter((piece) => {
     if ((piece.id.startsWith('van-') || piece.id.startsWith('page-dash')) && !has('van')) return false;
     if ((piece.id.startsWith('booth-') || piece.attachedTo === 'booth') && !has('booth')) return false;
     if (piece.id === 'coat' && !has('shelter')) return false;
     return true;
   });
+  return [...supported, ...outskirtsFoldLayout(k, OUTSKIRT_STRETCH)];
 }
 
 // Pass-local layout also permits inspecting an authored break independently of
@@ -567,6 +578,8 @@ export function outskirtsArrivalLayout() {
         wear: pass.wear,
         broken: pass.break,
         along: start + piece.along,
+        ...(piece.bounds ? { bounds: freeze({ ...piece.bounds,
+          along0: start + piece.bounds.along0, along1: start + piece.bounds.along1 }) } : {}),
       }));
     }
   }

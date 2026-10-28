@@ -664,7 +664,7 @@ test('Body Return is an optional Source battle advantage', () => {
   const assisted = sourceCombatDefinition({ bodyReturn: true });
   assert.equal(ordinary.baseComposure, 8 * GRID);
   assert.equal(assisted.baseComposure, 10 * GRID);
-  assert.equal(ordinary.movements.find((entry) => entry.id === 'borrowed-body').coherence, 5 * GRID);
+  assert.equal(ordinary.movements.find((entry) => entry.id === 'borrowed-body').coherence, 6 * GRID);
   assert.equal(assisted.movements.find((entry) => entry.id === 'borrowed-body').coherence, 4 * GRID);
   assert.equal(assisted.bodyReturnAssist, true);
 });

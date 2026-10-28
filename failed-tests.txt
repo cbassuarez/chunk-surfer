@@ -1,0 +1,44 @@
+not ok 37 - aside Hugh can exchange locally with Odette and Agathe across the open stairwell; Vera cannot join Agathe
+not ok 10 - test/acquisition-props.test.mjs
+not ok 155 - late-stage physical receipt saves its useful hand, single paper and corrected anatomy without restarting
+not ok 157 - a close visible traction cue is saved once while distant, paused and unseen samples stay silent
+not ok 567 - short keyboard rails preserve F6, Enter and close in both room and control focus
+not ok 569 - offline hardware keeps dark disabled controls without invented progress, position or room facts
+not ok 104 - test/outskirts-characters.spec.mjs
+not ok 106 - test/outskirts-vacant-dog.spec.mjs
+not ok 602 - save completion commits the issue, reload preserves it, and a fresh run resets it
+not ok 603 - legacy trained saves gain the issue through normal load with preserved earned cables
+not ok 110 - test/payphone-road-loop-runtime.spec.mjs
+not ok 130 - test/r3d-prop-composite-smoke.spec.mjs
+not ok 739 - quiet ink is limited to authored escape and roof iron, preserving opaque depth
+not ok 147 - test/source-approach.spec.mjs
+not ok 156 - test/source-dock-runtime.spec.mjs
+not ok 893 - production and study continuous acoustic paths are byte-identical
+not ok 1081 - accepted movement and existing scene, lifecycle, access and prop guards precede entry
+not ok 1082 - active, completed and refused attempts never re-arm themselves
+not ok 203 - test/transparent-pixel-mesh-runtime-smoke.spec.mjs
+not ok 88 - external removal releases a dialogue once; completion and Escape keep distinct outcomes
+not ok 94 - test/map-live-data.spec.mjs
+not ok 104 - test/outskirts-experience.spec.mjs
+not ok 106 - test/outskirts-walk.spec.mjs
+not ok 125 - test/prop-render-runtime-smoke.spec.mjs
+not ok 1280 - void optics are scoped outside and boundary geometry can persist independently inside
+not ok 1425 - the physical level bar moves on the actual recorder panel, including the shared LED origin offset
+not ok 208 - test/vegetation-renderer.spec.mjs
+not ok 116 - an ambient greeting turns its real speaker toward the visitor before an E interaction
+not ok 128 - the larger society keeps the original anchors and gives each new local partner a distinct remembered subject
+not ok 226 - an unseen watcher turns her front toward the remembered player and carries the ticket with her
+not ok 232 - receiving uses a saved finite gesture, stores the paper, and later waits with it
+not ok 51 - test/district-town-grandeur.spec.mjs
+not ok 478 - softFloor lives on the mesh, and only textiles have it
+not ok 479 - the textile pack is CC0, credited, and inside its budget
+not ok 73 - test/gilt-lettering.spec.mjs
+not ok 89 - test/main-stair-construction.spec.mjs
+not ok 107 - test/paper3d.spec.mjs
+not ok 785 - school and workroom use distinct ordinary physical characters with persisted, pause-safe performances
+not ok 786 - both transfer actors follow one four-second saved timeline and one recorder at every quarter
+not ok 787 - the production GLB submits independent frozen body palettes to material, torch shadow and reflection passes
+not ok 146 - test/sign-lettering.spec.mjs
+not ok 957 - production and study acoustic/programme owners stay identical
+not ok 179 - test/source-search-escalation.spec.mjs
+not ok 1252 - every event-driven ending cue names a stable authored cutscene beat or the shared final hold

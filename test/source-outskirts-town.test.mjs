@@ -5,6 +5,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { PLAZA_SHOPFRONTS } from '../src/data/plaza-shopfronts.js';
+import { EXTERIOR_PUB } from '../src/data/exterior-pub.js';
 import { SOURCE_OUTSKIRTS_TOWN, canonicalOutskirtsExteriorPose, exteriorToOutskirts,
   outskirtsTownPlacement, outskirtsTownSet } from '../src/data/source-outskirts-town.js';
 import { OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_STRETCH, OUTSKIRT_STRETCH_METRES,
@@ -37,13 +38,28 @@ test('Source uses actual exterior rendered poses, not an independently arranged 
 });
 
 test('the opposite renderer yaw conventions preserve arbitrary actual model points without reflection',()=>{
-  for(const id of ['yard-booth','yard-van','yard-bus-shelter','yard-gate-piers','district-north-row-a','district-south-row-a']){
+  for(const id of ['yard-booth','yard-van','yard-bus-shelter','yard-gate-piers','district-north-row-a','district-south-row-a','pub-complete-frontage','pub-complete-interior']){
     const a=actual.get(id),s=outskirtsTownPlacement(id);
     for(const [x,z]of[[1,0],[0,1],[-.73,-2.05],[2.1,3.7]]){
       const world={x:a.x+x*Math.cos(a.yaw)-z*Math.sin(a.yaw),z:a.z+x*Math.sin(a.yaw)+z*Math.cos(a.yaw)};
       const expected=exteriorToOutskirts(world),drawn=localWorld(s,[x,z]);
       near(drawn.across,expected.across,`${id} across`);near(drawn.along,expected.along,`${id} along`);
     }
+  }
+});
+
+test('the remembered Lyric occupies its actual current two-deed place instead of the yard coordinate island',()=>{
+  const set=outskirtsTownSet();
+  for(const[id,anchor]of[['pub-complete-frontage',EXTERIOR_PUB.facadeAnchor],['pub-complete-interior',EXTERIOR_PUB.interiorAnchor]]){
+    const context=set.find(p=>p.canonicalId===id);assert.ok(context,`${id}: no empty pub bays in the remembered town`);
+    const ordinary=actual.get(id);assert.ok(ordinary,id);
+    const canonical=canonicalOutskirtsExteriorPose(id);
+    near(canonical.x,anchor.x,`${id} exact current worldX`);near(canonical.z,anchor.z,`${id} exact current worldZ`);
+    near(canonical.y,EXTERIOR_PUB.floor,`${id} floor, without a second yard offset`);
+    const expected=exteriorToOutskirts({x:ordinary.x,y:ordinary.y,z:ordinary.z,yaw:ordinary.yaw});
+    near(context.across,expected.across,`${id} road across`);near(context.along,expected.along,`${id} road along`);
+    near(context.yaw,expected.yaw,`${id} road heading`);
+    assert.ok(context.bounds.across1< -11.5,'the canonical pub stays beyond the walking road rather than becoming an uncollidable obstacle');
   }
 });
 

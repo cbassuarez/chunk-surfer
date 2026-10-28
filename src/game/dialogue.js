@@ -27,6 +27,7 @@ import { resolveStoryArt } from './story-art.js';
 import { freshStoryArtShotState, resolveStoryArtShot } from './story-art-shot.js';
 import { interpolate } from './terror.js';
 import { promptLine } from './bindings.js';
+import { reviewText, reviewTarget, registerReviewRegion } from './local-text-review.js';
 
 const PORTRAIT_W = 22, PORTRAIT_H = 13;
 
@@ -43,6 +44,16 @@ export function getNode(id) { return script[id]; }
 
 // How many times each node has been played this run — drives `decay`.
 function visits(id) { return Number(flagGet(`__seen.${id}`)) || 0; }
+
+function textTarget(nodeId, node, source, index, collection, fields) {
+  const sourceId = String(source?.sourceId || source?.id || '');
+  const sceneId = `dialogue:${nodeId}`;
+  const id = ['dialogue', nodeId, collection, sourceId || String(index)].map(encodeURIComponent).join(':');
+  return reviewTarget({ id, sceneId, nodeId, sourceId, speaker: collection === 'choices' ? 'me' : source?.who || node.speaker || 'direction',
+    collection, authoredIndex: index,
+    fields: fields.map(field => ({ ...field, key: `${id}:${field.name}` })),
+  });
+}
 
 export function startDialogue(nodeId) {
   const node = script[nodeId];
@@ -62,6 +73,10 @@ function visibleLines(node, id) {
     const line = { ...src };
     if (line.text != null) line.text = interpolate(line.text);
     if (line.direction != null) line.direction = interpolate(line.direction);
+    const field = line.text != null ? 'text' : line.direction != null ? 'direction' : null;
+    if (field) line.reviewTarget = textTarget(id, node, src, i, 'lines', [
+      { name: field, label: field === 'text' ? 'Spoken text' : 'Stage direction', original: String(line[field]) },
+    ]);
     // decay: on each revisit another line has already been said, and is not
     // said again. What remains is the residue of a conversation.
     if (node.register === 'decay' && seen > 0 && i < Math.min(seen, node.lines.length - 1)) {
@@ -83,11 +98,31 @@ function makeDialogueScene(nodeId) {
   let done = false;       // all lines shown; choices (if any) active
   let choiceIdx = 0;
   let acc = 0;
+  let reviewSuspended = false;
   let storyArtState = freshStoryArtShotState();
   let currentStoryArt = null;
   let currentStoryArtKey = '';
 
-  const choices = () => (node.choices || []).filter((c) => flagTest(c.if));
+  const choices = () => (node.choices || []).map((choice, index) => ({ choice, index }))
+    .filter(({ choice }) => flagTest(choice.if)).map(({ choice, index }) => {
+      const fields = [{ name: 'text', label: 'Choice text', original: String(choice.text || '') }];
+      if (choice.aside != null) fields.push({ name: 'aside', label: 'Choice aside', original: String(choice.aside) });
+      const target = textTarget(nodeId, node, choice, index, 'choices', fields);
+      return { ...choice, reviewTarget: target, text: reviewText(target.fields[0].key, target.fields[0].original),
+        ...(target.fields[1] ? { aside: reviewText(target.fields[1].key, target.fields[1].original) } : {}),
+      };
+    });
+  const lineView = (index = li) => {
+    const source = lines[index], field = source?.reviewTarget?.fields[0];
+    if (!field) return source;
+    return { ...source, [source.text != null ? 'text' : 'direction']: reviewText(field.key, field.original) };
+  };
+  const lineText = line => String(line?.text ?? line?.direction ?? '');
+  let activeText = lineText(lineView());
+  function refreshReview() {
+    const next = lineText(lineView());
+    if (next !== activeText) { activeText = next; chars = next.length; }
+  }
 
   function activeStoryArtRef() {
     const line = done ? null : (lines[li] || null);
@@ -115,10 +150,10 @@ function makeDialogueScene(nodeId) {
   }
 
   function advance() {
-    const line = lines[li];
+    const line = lineView();
     const full = String(line.text ?? line.direction ?? '');
     if (chars < full.length) { chars = full.length; return; }   // reveal all
-    if (li < lines.length - 1) { li++; chars = 0; return; }
+    if (li < lines.length - 1) { li++; chars = 0; activeText = lineText(lineView()); return; }
     if (choices().length) { done = true; return; }
     finish();
   }
@@ -140,10 +175,13 @@ function makeDialogueScene(nodeId) {
     blocksInput: true,
     allowsLook: true,
     lensPreset: node.lensPreset || 'calm',
+    textReviewSuspend() { reviewSuspended = true; },
+    textReviewResume() { reviewSuspended = false; refreshReview(); },
 
     update(dt) {
-      if (done) return;
-      const line = lines[li];
+      refreshReview();
+      if (done || reviewSuspended) return;
+      const line = lineView();
       const full = String(line.text ?? line.direction ?? '');
       if (chars >= full.length) return;
       acc += dt * cps();
@@ -156,6 +194,8 @@ function makeDialogueScene(nodeId) {
     },
 
     key(e) {
+      refreshReview();
+      if (reviewSuspended) return true;
       const list = choices();
       if (done && list.length) {
         choiceIdx = Math.max(0, Math.min(choiceIdx, list.length - 1));
@@ -169,6 +209,7 @@ function makeDialogueScene(nodeId) {
     },
 
     render() {
+      refreshReview();
       const { cols, rows } = uiSize();
       uiScrim(0.5);
 
@@ -258,9 +299,19 @@ function makeDialogueScene(nodeId) {
 
       // lines: everything before the current one stays on screen
       const textW = Math.max(8, contentX + contentW - textX - 2);
+      const rowsOut = [];
+      if (done && choiceList.length) choiceList.slice(0, 5).forEach((c, i) => {
+        const sel = i === choiceIdx, prefix = `${sel ? '>' : ' '} `, continuation = ' '.repeat(prefix.length);
+        uiWrap(c.text, Math.max(8, textW - prefix.length)).slice(0, 2).forEach((part, j) => rowsOut.push({
+          text: `${j === 0 ? prefix : continuation}${part}`, cls: sel ? 'ui-amber' : 'ui-primary',
+          aside: j === 0 && node.register === 'ironic' && c.aside ? `— ${c.aside}` : '', reviewTarget: c.reviewTarget, selected: sel,
+        }));
+      });
+      const clippedChoices = rowsOut.slice(-Math.max(1, Math.min(8, textBottomY - contentY - 1)));
+      const choicesY = clippedChoices.length ? Math.max(contentY, boxY + boxH - 2 - clippedChoices.length) : Infinity;
       let y = contentY + 2;
       for (let i = 0; i <= li && y < textBottomY; i++) {
-        const line = lines[i];
+        const line = lineView(i);
         const isDirection = line.direction != null;
         const full = String(line.text ?? line.direction ?? '');
         const shown = i < li ? full : full.slice(0, chars);
@@ -268,6 +319,7 @@ function makeDialogueScene(nodeId) {
         for (const wrapped of uiWrap(shown, textW)) {
           if (y >= textBottomY) break;
           uiText(textX, y, wrapped, cls, line.struck ? 0.58 : 1);
+          if (line.reviewTarget && wrapped.trim() && y < choicesY) registerReviewRegion(line.reviewTarget, { x: textX, y, w: wrapped.length, h: 1, active: i === li && !done });
           if (line.struck) for (let k = 0; k < wrapped.length; k++) uiGlyph(textX + k, y, '─', 'ui-frame', 0.65);
           y++;
         }
@@ -276,32 +328,22 @@ function makeDialogueScene(nodeId) {
       // choices
       const list = choiceList;
       if (done && list.length) {
-        const rowsOut = [];
-        const visible = list.slice(0, 5);
-        visible.forEach((c, i) => {
-          const sel = i === choiceIdx;
-          const prefix = `${sel ? '>' : ' '} `;
-          const continuation = ' '.repeat(prefix.length);
-          const wrapped = uiWrap(c.text, Math.max(8, textW - prefix.length)).slice(0, 2);
-          wrapped.forEach((part, j) => rowsOut.push({
-            text: `${j === 0 ? prefix : continuation}${part}`,
-            cls: sel ? 'ui-amber' : 'ui-primary',
-            aside: j === 0 && node.register === 'ironic' && c.aside ? `— ${c.aside}` : '',
-          }));
-        });
-        const clipped = rowsOut.slice(-Math.max(1, Math.min(8, textBottomY - contentY - 1)));
-        let cy = Math.max(contentY, boxY + boxH - 2 - clipped.length);
-        clipped.forEach((row) => {
-          uiText(textX, cy, row.text.slice(0, textW), row.cls);
+        let cy = choicesY;
+        clippedChoices.forEach((row) => {
+          const shown = row.text.slice(0, textW);
+          uiText(textX, cy, shown, row.cls);
+          if (row.reviewTarget && shown.trim()) registerReviewRegion(row.reviewTarget, { x: textX, y: cy, w: shown.length, h: 1, selected: row.selected });
           // ironic register: the choice comments on itself, in the margin
           if (row.aside) {
             const ax = textX + Math.min(row.text.length + 2, Math.max(0, textW - 8));
-            uiText(ax, cy, row.aside.slice(0, Math.max(0, textX + textW - ax)), 'ui-secondary');
+            const aside = row.aside.slice(0, Math.max(0, textX + textW - ax));
+            uiText(ax, cy, aside, 'ui-secondary');
+            if (row.reviewTarget && aside.trim()) registerReviewRegion(row.reviewTarget, { x: ax, y: cy, w: aside.length, h: 1, selected: row.selected });
           }
           cy++;
         });
       } else if (!done) {
-        const line = lines[li];
+        const line = lineView();
         const full = String(line.text ?? line.direction ?? '');
         if (chars >= full.length) uiText(boxX + boxW - 4, boxY + boxH - 3, '▾', 'ui-amber');
       }

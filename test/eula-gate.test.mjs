@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 import { eulaAccepted, eulaGateSections, eulaPreamble, eulaSections, eulaVersion } from '../src/game/eula.js';
 import { freshMeta, normalizeMeta } from '../src/progression/schema.js';
@@ -14,7 +15,7 @@ test('the displayed agreement is the bundled agreement', () => {
   // drifting apart. A hand-copied excerpt would pass review once and rot.
   assert.match(read('src/game/eula-text.js'), /from '\.\.\/\.\.\/LEGAL\/EULA\.md\?raw'/);
   assert.match(read('src/game/eula-scene.js'), /EULA_TEXT.*from '\.\/eula-text\.js'/s);
-  const tauri = JSON.parse(read('src-tauri/tauri.lens.conf.json'));
+  const tauri = JSON.parse(read('src-tauri/tauri.conf.json'));
   assert.equal(tauri.bundle?.resources?.['../LEGAL/EULA.md'], 'EULA.md');
 });
 
@@ -91,13 +92,74 @@ test('offline runtime preparation marker survives profile normalization', () => 
   assert.equal(stored.lensRuntimeReadyAt, 4321);
 });
 
-test('the gate stands ahead of calibration, lens startup, and declining quits', () => {
+function launchHarness({ off = true, meta = {}, skipNotices = false } = {}) {
   const main = read('src/main.js');
-  const gateIndex = main.indexOf('if(!eulaAccepted(getMeta(),EULA_TEXT))');
-  const calibrationIndex = main.indexOf('pushCalibration();', gateIndex);
-  // The model may not be asked to do work before the licence is accepted.
-  assert.ok(gateIndex >= 0, 'the EULA gate must exist');
-  assert.ok(calibrationIndex > gateIndex, 'the EULA gate must precede lens calibration');
+  const start = main.indexOf('  const continueAfterNotices=()=>{');
+  const end = main.indexOf('\n}\n', start);
+  assert.ok(start >= 0 && end > start, 'the actual launch continuation and notices exist');
+  const events = [], writes = [], queued = [];
+  let acceptanceReads = 0;
+  const context = {
+    stableDiffusionOff: () => off,
+    afterCalibration: () => events.push('opening'),
+    pushCalibration: () => events.push('development-calibration'),
+    eulaAccepted: (profile, text) => { acceptanceReads++; return eulaAccepted(profile, text); },
+    getMeta: () => meta,
+    EULA_TEXT: EULA,
+    makeEulaScene: (options) => ({ id: 'licence', ...options }),
+    makeDisplayNoticeScene: (options) => ({ id: 'display-notice', ...options }),
+    makeHeadphoneNoticeScene: (options) => ({ id: 'headphone-notice', ...options }),
+    scenes: { push: (scene) => { events.push(scene.id); queued.push(scene); } },
+    metaCommit: (patch) => writes.push(patch),
+    requestQuitDesktop: () => events.push('quit'),
+    qp: new URLSearchParams(skipNotices ? 'nodisplaynotice' : ''),
+    IS_TAURI: true,
+    document: { fullscreenElement: null },
+    currentDisplaySettings: () => ({ displayMode: 'windowed' }),
+    getSave: () => ({ settings: { shake: 'full' } }),
+  };
+  runInNewContext(`(()=>{${main.slice(start, end)}\n})()`, context);
+  return { events, writes, queued, acceptanceReads: () => acceptanceReads };
+}
+
+test('normal startup reaches the opening without licence acceptance for fresh and older profiles', () => {
+  for (const meta of [{}, { eulaAccepted: '' }, { eulaAccepted: '1999-01-01' }]) {
+    const h = launchHarness({ meta });
+    assert.deepEqual(h.events, ['display-notice']);
+    h.queued.at(-1).onDone();
+    assert.deepEqual(h.events, ['display-notice', 'headphone-notice']);
+    h.queued.at(-1).onDone();
+    assert.deepEqual(h.events, ['display-notice', 'headphone-notice', 'opening']);
+    assert.equal(h.acceptanceReads(), 0, 'an absent or obsolete acceptance cannot gate a no-SD build');
+    assert.deepEqual(h.writes, [], 'normal launch does not fabricate legal acceptance');
+  }
+});
+
+test('the launch-advisory shortcut also reaches the opening without a licence or SD calibration', () => {
+  const h = launchHarness({ skipNotices: true });
+  assert.deepEqual(h.events, ['opening']);
+  assert.equal(h.acceptanceReads(), 0);
+  assert.deepEqual(h.writes, []);
+});
+
+test('only an explicitly enabled development lens retains consent before local model startup', () => {
+  const h = launchHarness({ off: false, skipNotices: true });
+  assert.deepEqual(h.events, ['licence']);
+  assert.equal(h.acceptanceReads(), 1);
+  assert.deepEqual(h.writes, []);
+  const scene = h.queued[0];
+  scene.onAccept(eulaVersion(EULA));
+  assert.deepEqual(h.events, ['licence', 'development-calibration']);
+  assert.equal(h.writes.length, 1);
+  assert.equal(h.writes[0].eulaAccepted, eulaVersion(EULA));
+  assert.equal(typeof h.writes[0].eulaAcceptedAt, 'number');
+  const accepted = launchHarness({ off: false, skipNotices: true, meta: { eulaAccepted: eulaVersion(EULA) } });
+  assert.deepEqual(accepted.events, ['development-calibration']);
+  assert.deepEqual(accepted.writes, []);
+});
+
+test('the optional developer lens and Settings retain their separate licence contract', () => {
+  const main = read('src/main.js');
   assert.match(main, /function lensEulaAccepted\(\)\s*\{[^}]*eulaAccepted\(getMeta\(\),EULA_TEXT\)/s);
   assert.match(main, /function lensStartBlockedByEula\(\)\s*\{[^}]*!lensEulaAccepted\(\)/s);
   assert.match(main, /function ensureLensStarted[\s\S]*?lensStartBlockedByEula\(\)/);
@@ -109,6 +171,19 @@ test('the gate stands ahead of calibration, lens startup, and declining quits', 
   // And it stays readable afterwards.
   assert.match(main, /openLicence: \(\) => scenes\.push\(makeEulaScene\(\{ reviewOnly: true \}\)\)/);
   assert.match(read('src/game/settings.js'), /LICENCE \/ EULA/);
+});
+
+test('no-SD visual studies do not require the retired normal startup acceptance', () => {
+  const main = read('src/main.js');
+  const applauseStart = main.indexOf('async function startApparitionApplauseStudy(');
+  const applauseEnd = main.indexOf('\n}', applauseStart);
+  assert.ok(applauseStart >= 0 && applauseEnd > applauseStart);
+  const applause = main.slice(applauseStart, applauseEnd + 2);
+  const street = main.slice(main.indexOf('streetPilotStudyStart:async()=>{'), main.indexOf('\n    streetPilot:', main.indexOf('streetPilotStudyStart:async()=>{')));
+  assert.match(applause, /Unknown study condition/);
+  assert.match(street, /Street study is local development only/);
+  assert.doesNotMatch(applause, /eulaAccepted|Complete the game entry screens/);
+  assert.doesNotMatch(street, /eulaAccepted|Complete the game entry screens/);
 });
 
 test('the licence screen offers no way past it but the two real answers', () => {

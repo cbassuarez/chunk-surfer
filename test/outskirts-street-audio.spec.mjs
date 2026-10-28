@@ -124,3 +124,19 @@ test('shipped Fold sample manifest names real mono PCM excerpts with credited so
     assert.ok(clip.duration>.3&&clip.duration<2);
   }
 });
+
+test('bus woman notice and passing use finite spatial cloth, retain the world bus and cannot repeat after pause',async()=>{
+  const audio=fakeAudio();audio.ctx.decodeAudioData=async()=>({duration:1});
+  const sound=createOutskirtsStreetAudio({...audio,loadSample:async id=>({duration:1.5,id})});
+  sound.update({events:[]},{listener});await new Promise(resolve=>setImmediate(resolve));
+  const events=[{id:'outskirts-bus:woman-notice',cue:'bus-woman-notice',x:-1,z:-1,strength:.64},
+    {id:'outskirts-bus:woman-pass',cue:'bus-woman-pass',x:-1,z:-1,strength:.78}];
+  sound.update({events},{listener});
+  assert.deepEqual(audio.nodes.filter(n=>n.buffer?.id).map(n=>n.buffer.id),['fold-cloth-b','fold-cloth-c']);
+  assert.ok(audio.nodes.some(n=>n.kind==='pan'&&n.pan.value<0));
+  assert.equal(audio.nodes.some(n=>n.kind==='tone'),false,'cloth is not a synthesized voice or musical scare sting');
+  assert.ok(audio.nodes.filter(n=>n.starts).every(n=>n.stops[0]-n.starts[0][0]<2.2));
+  const count=audio.nodes.length;sound.pause();sound.resume();sound.update({events},{listener});
+  assert.equal(audio.nodes.length,count,'spent body sounds replayed after pause');
+  assert.equal(sound.snapshot().voices,0);sound.destroy();
+});

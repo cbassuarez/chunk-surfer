@@ -100,6 +100,9 @@ assert.equal(enemyAttackVoice('broadcast', SCREAM_CUE).verb, 'SCREAMS', 'the scr
 
 // And then whether it worked, in words, not just in numbers.
 assert.match(strikeVerdict({ perfect: true }).text, /COUNTERED/);
+assert.match(strikeVerdict({ perfect:true,received:5 }).text,/SOME GETS THROUGH/,'a correct counter still reports actual chip');
+assert.match(strikeVerdict({ perfect:true,received:0 }).text,/NOTHING GETS THROUGH/);
+assert.match(strikeVerdict({ perfect:true,received:5 },{parried:true}).text,/TURNED BACK/,'a performed parry owns its verdict');
 assert.match(strikeVerdict({ received: 1 }, { parried: true }).text, /TURNED BACK/);
 assert.match(strikeVerdict({ received: 2, snrTo: 'noise' }).text, /NOISE/);
 assert.match(strikeVerdict({ received: 2 }).text, /HARD/);

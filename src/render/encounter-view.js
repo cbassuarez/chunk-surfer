@@ -1,7 +1,7 @@
 import { uiSize, uiFill, uiDraw } from './ui.js';
 import { drawSignalBeing, drawOpponentCombatArt } from './combat-view.js';
 
-export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion = false } = {}) {
+export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion = false, showTitle = true } = {}) {
   const {cols,rows}=uiSize();
   if(phase==='hold'){uiFill(0,0,cols,rows,`rgba(0,0,0,${.2+progress*.77})`);return;}
   uiFill(0,0,cols,rows,'#020503');
@@ -16,6 +16,7 @@ export function drawEncounterSplash(battle, { phase, progress = 0, reducedMotion
     const gradient=ctx.createLinearGradient(0,0,w,0);gradient.addColorStop(0,'#020503');gradient.addColorStop(.37,'#020503cc');gradient.addColorStop(1,'#02050300');
     ctx.fillStyle=gradient;ctx.fillRect(0,0,w,h);
     if(impact){if(!reducedMotion){ctx.fillStyle='#000';ctx.fillRect(0,h*.24,w,h*.04);ctx.fillRect(w*.7,h*.57,w*.3,h*.012);}return;}
+    if(!showTitle)return;
     const name=String(battle.enemy||battle.combat?.enemy||'').trim();
     const x=w*.06,available=w*.80;
     ctx.fillStyle='#b9bba6';ctx.font=`600 ${Math.round(Math.min(15*dpr,h*.027))}px "Hardware Sans", sans-serif`;

@@ -32,6 +32,11 @@ const snapshot = await buildSystemMapSnapshot();
 assert.equal(snapshot.schema, 1);
 assert.equal(snapshot.nodes.length, 21, 'the full lifecycle is represented by twenty-one subsystem buildings');
 assert.equal(snapshot.edges.length, 39, 'semantic routes stay curated instead of becoming a raw import graph');
+const releaseBoundary=snapshot.edges.find(edge=>edge.id==='sd-exclusion-to-release');
+assert.equal(releaseBoundary?.kind,'control');
+assert.match(releaseBoundary.payload,/reject SD models, sidecars and Python runtimes/);
+assert.ok(releaseBoundary.evidence.some(citation=>citation.path==='scripts/validate-lean-bundle.mjs'));
+assert.ok(!snapshot.edges.some(edge=>edge.id==='sidecar-to-release'),'release has no offline SD payload generation path');
 assert.equal(snapshot.traces.length, 8);
 assert.ok(snapshot.traces.some((trace) => trace.id === snapshot.defaultTraceId));
 for (const node of snapshot.nodes) {

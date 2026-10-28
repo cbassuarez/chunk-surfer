@@ -2,19 +2,22 @@
 
 This is the canonical source for manual itch.io and Steam storefront updates. The copy blocks are paste-ready; the positioning, research, release notes, and verification sections are internal publishing guidance.
 
-**Ground-truth audit:** July 15, 2026 against repository version `0.2.1-beta.3`.
+**Release-candidate update:** October 26, 2026 for `v0.3.0`. This is prepared copy,
+not evidence that this version is published. Earlier SD-bundled downloads remain
+unchanged; reconfirm the actual uploaded artifact before posting lean-build claims.
 
 ## Publishing status
 
 - Keep the pitch evergreen. Refresh beta version, artifact size, signing status, hardware requirements, and download labels from the release artifacts immediately before publication.
 - Do not describe a take as “sixty real-time seconds.” The work-order fiction specifies one minute, while ordinary takes currently complete after 45 seconds. The storefront copy therefore says “clean take” or “clean room-tone recording.”
 - Do not add multiplayer, raw-audio recording, guaranteed playtime, procedural uniqueness, or Steam-availability claims without first implementing and verifying them.
-- Keep “only known 3D psychological horror game with a local Stable Diffusion material renderer” narrow. Other games use local diffusion for generated illustrations; the defensible distinction is continuously mutated material detail inside the native 3D renderer, not a universal first-to-use-diffusion claim.
-- External publication is a webmaster action. As checked on July 14, 2026, the public itch.io URL returned a logged-out 404; after publishing, verify it while logged out and on mobile.
+- Do not advertise live Stable Diffusion as an included feature while it is under development and absent from normal distributions.
+- External publication is a webmaster action. The July 14, 2026 visibility check is historical and does not establish current page visibility. Verify the final published page while logged out and on mobile.
+- The `v0.3.0` candidate targets macOS Apple Silicon DMG, Windows x64 portable ZIP and Linux x64 AppImage/deb. Retain the current beta channels and unsigned notices until the exact release artifacts and publication are verified; do not claim macOS Intel or Steam Deck/Proton support from the current matrix.
 
 ## Positioning
 
-**Product promise:** A short first-person psychological horror game in which a field recordist must capture five clean room tones inside a condemned conservatory, the player’s optional computer microphone can make real-room silence part of the challenge, and a local Stable Diffusion material renderer keeps the building’s authored surfaces hallucinating during play.
+**Product promise:** A short first-person psychological horror game in which a field recordist must capture five clean room tones inside a condemned conservatory, the player’s optional computer microphone can make real-room silence part of the challenge, and the building's native material, light and audio systems distort the world during play.
 
 Present the genre, role, objective, failure condition, and microphone behavior before introducing the work-order voice. Then widen the promise to light/noise management, changing corridors, redaction encounters, and literal source-code spaces. Preserve the previous contractor’s identity, the chapel confrontation, HUSH, and the endings as mysteries.
 
@@ -31,7 +34,7 @@ Present the genre, role, objective, failure condition, and microphone behavior b
 | [DON’T SCREAM](https://store.steampowered.com/app/2497900/DONT_SCREAM/) | Explains immediately that the player’s microphone is part of the challenge and states the consequence of making noise. | Disclose the microphone early, but distinguish *Chunk Surfer*: input is optional and noise spoils a recording or draws danger rather than ending the entire run. |
 | [Stifled](https://store.steampowered.com/app/514830/Stifled/) | Connects microphone input to its echolocation system and to enemies hearing the player. | Explain both sides of real-world sound: it can contaminate a take, and sufficiently loud input can provoke an in-game response. |
 | [A Quiet Place: The Road Ahead](https://store.steampowered.com/app/2233120/A_Quiet_Place_The_Road_Ahead/) | Treats microphone noise detection as an explicit optional feature inside a broader stealth-horror premise. | State optionality and continued play without permission wherever microphone behavior is described. |
-| [DREAMIO: AI-Powered Adventures](https://store.steampowered.com/app/2795060/DREAMIO_AI_Powered_Adventures/) | Supports local or cloud diffusion models for dynamically generated illustrations alongside AI story and voice systems. | Do not claim that *Chunk Surfer* is the only game running Stable Diffusion locally. Claim the narrower renderer behavior: generated hallucinations are layered into authored 3D materials and periodically mutated during play, entirely offline. |
+| [DREAMIO: AI-Powered Adventures](https://store.steampowered.com/app/2795060/DREAMIO_AI_Powered_Adventures/) | Uses local or cloud diffusion models for dynamic illustrations. | Keep SD comparisons confined to developer research while Chunk Surfer's optional lens is not distributed. |
 | [The Mortuary Assistant](https://store.steampowered.com/app/1295920/The_Mortuary_Assistant/) | Starts from a recognizable occupation and concrete tasks before escalating into supernatural threat. | Lead with field recording as a job: inspect, monitor, record, retake. Let the conservatory’s behavior become the escalation. |
 | [Home Safety Hotline](https://store.steampowered.com/app/2357910/Home_Safety_Hotline/) | Uses ordinary clerical work and a clear information-handling loop to ground uncanny material. | Make the paperwork and redaction mechanics readable as actions, not merely atmosphere. |
 | [Iron Lung](https://store.steampowered.com/app/1846170/Iron_Lung/) | Compresses role, action, setting, and sensory constraint into a sharp premise, then separates gameplay features from story context. | Keep the first paragraph compact and mechanical; use later sections for the changing building, redaction, source space, and fiction. |
@@ -84,9 +87,9 @@ Monitor each assigned space before committing to a take. Once the recorder rolls
 
 Your torch makes the conservatory legible, but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Balance seeing the route ahead against announcing where you are. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.
 
-### Watch the materials remember wrong.
+### Watch the building remember wrong.
 
-*Chunk Surfer* is, to our knowledge, the only 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play. It does not redraw the camera image or replace the game’s regular 3D texture maps. Instead, it layers AI-generated hallucinations over authored PBR materials; every 5–15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6–12 seconds. Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player’s GPU. No image is uploaded to a cloud service.
+*Chunk Surfer* uses authored PBR materials, native lighting and deliberate rendering distortions to make Ellery Conservatory feel unstable. Material, colour and contrast interact with the building's audio and story systems. The experimental offline Stable Diffusion material renderer is under separate development; it is not bundled with the game and is not required to play.
 
 ### Read what comes back.
 
@@ -110,13 +113,13 @@ Paste the shared About section above first, then append the following release-ma
 <!-- COPY: ITCH BETA START -->
 ## Beta build and installation
 
-This is a beta release. Save files, settings, performance, and packaging may change between builds.
+The v0.3.0 candidate remains a beta distribution. Save files, settings, performance, and packaging may change between builds. Confirm publication and replace this candidate wording before posting.
 
-- **macOS:** Apple Silicon build.
-- **Windows:** 64-bit build. The bundled visual lens currently requires an NVIDIA GPU with CUDA support.
-- **Linux:** 64-bit AppImage and Debian package. The bundled visual lens currently requires an NVIDIA GPU with CUDA support.
+- **macOS:** Apple Silicon DMG.
+- **Windows:** 64-bit portable ZIP; extract the complete folder. Microsoft Edge WebView2 Runtime is required. No diffusion-model or NVIDIA CUDA dependency in this release configuration.
+- **Linux:** 64-bit AppImage and Debian package; no diffusion-model or NVIDIA CUDA dependency in this release configuration.
 - **Signing:** Desktop beta builds are unsigned. The operating system may show a warning; macOS may require manual approval the first time the app opens.
-- **Download size:** The builds are unusually large because the visual lens and its supporting resources run locally and are bundled for offline use.
+- **Download size:** Replace with measurements from the actual lean release files; do not reuse sizes from the earlier SD-bundled beta.
 
 Before publishing an update, replace this block with the platform labels, signing status, hardware requirements, and sizes verified from that release’s actual artifacts.
 <!-- COPY: ITCH BETA END -->
@@ -143,7 +146,7 @@ Use these verb-led sections in this order. They are already embodied in the shar
 
 1. **Listen and record:** monitor a room, commit to a take, stay still and quiet, and retake contaminated recordings.
 2. **Manage light and noise:** spend finite torch battery, avoid attracting attention, and understand that movement, equipment, and injury create risk.
-3. **Watch materials re-hallucinate:** authored PBR surfaces remain underneath while local Stable Diffusion regenerates one visible material at a time inside a larger live shader stack.
+3. **Watch the building distort:** authored PBR materials, dynamic lighting and native graphics effects support the psychological horror.
 4. **Navigate changing corridors:** retrace an unstable building whose unheard and unseen connective spaces can shift.
 5. **Redact the record:** make transcript-redaction decisions inside physical encounters and defend what remains readable.
 6. **Enter the source:** move through literal source files used as terrain and interactable space.
@@ -166,7 +169,7 @@ No new media is required. Upload the existing assets to each storefront and plac
 - Re-read the current release artifacts and replace the itch beta/install block with verified platform, signing, hardware, and size facts.
 - Confirm the Steam short description remains plain text, evergreen, below 300 characters, and includes the genre, five-recording objective, and optional microphone hook.
 - Confirm the opening paragraph alone lets a reader identify: psychological-horror genre; field-recordist role; five clean room tones as the objective; movement/noise as the failure condition; optional microphone loudness as an additional input; and local, non-recording microphone behavior.
-- Confirm the material-renderer paragraph retains all of these searchable claims in plain text: “3D psychological horror game,” “local Stable Diffusion material renderer,” “during play,” “authored PBR materials,” “runs locally and offline,” and “no image is uploaded.”
+- Verify that the storefront does not advertise the development-only Stable Diffusion renderer as an included feature.
 - Preview the short description and About section in Steamworks before submission.
 - After itch publication, inspect the page logged out and on a mobile viewport. Check public visibility, hierarchy, media embeds, alt text, download buttons, supported-platform labels, and beta notices.
 
@@ -181,13 +184,13 @@ Show a reader only the first paragraph of the shared About section, without the 
 | What makes a take fail? | Movement or noise invalidates the recording and requires another attempt. |
 | What does the computer microphone do? | Optionally uses loudness from the player’s real room as gameplay input. |
 | What happens to microphone audio? | Loudness is analyzed locally; audio is never recorded or uploaded, and permission is not required to play. |
-| What is the principal differentiator? | The game joins an in-game silence challenge to the actual noise in the player’s room and places a continuously mutating local Stable Diffusion layer inside its 3D material renderer. |
+| What is the principal differentiator? | A field-recording horror challenge incorporates optional real-room loudness into its sound and listening mechanics. |
 
-The v1.1 opening wording passes a structural audit because all six answers are stated directly within 72 words. This is not a substitute for testing with a reader who has not seen the game; the adjacent Stable Diffusion paragraph carries the separate visual-renderer claim.
+The opening copy specifies the role, task, stakes, and optional microphone feature without claiming that an SD model ships. Test comprehension with a reader who has not seen the game.
 
 ### Ground-truth audit
 
-The current copy is limited to behavior supported by the repository: five target rooms; optional microphone input; local loudness-only analysis; microphone noise spoiling takes; sufficiently loud input provoking an in-game response; torch attraction and battery consumption; sound-generating movement and injury; changing unheard/unseen corridors; playable redaction encounters; literal source-code spaces; six local Stable Diffusion material banks; performance-gated one-visible-material mutations at 5–15-second intervals; 6–12-second crossfades; authored PBR materials, geometry, and lighting remaining authoritative; and no cloud image generation. Re-audit these claims whenever those systems change.
+The shipped-mode claims should be limited to the verified authored game: five target rooms; optional microphone input; local loudness-only analysis; microphone noise spoiling takes; sufficiently loud input provoking an in-game response; torch attraction and battery consumption; sound-generating movement and injury; changing unheard/unseen corridors; playable redaction encounters; literal source-code spaces; and authored PBR materials, geometry and lighting. Local SD remains experimental and is not a shipping feature.
 
 ### Repository checks
 

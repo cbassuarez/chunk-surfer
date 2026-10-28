@@ -44,8 +44,13 @@ function harness() {
       isSpeaking: () => false, skipSpeech: () => h.actions.push('speech-skip') },
     REC: { setSlow() {}, isRecording: () => false, isListening: () => false },
     CONTROLLER: { controllerMotionAxes: () => h.stick },
-    R3: { r3dLook: (x, y) => h.looks.push([x, y]) },
+    controllerGameplayAxes: () => h.stick,
+    R3: { r3dLook: (x, y) => h.looks.push([x, y]), r3dLookAngles: () => ({yaw:0,pitch:0}) },
+    noteExteriorArrivalControl() {},
     costumeInspectionScene: null,
+    towerWarningAudio: null,
+    isMapShortcut: () => false, // These tests exercise lifecycle holds, not map navigation.
+
     shouldOpenPauseForEvent, movementKey: movementCodeForEvent, movementRole: keyboardCodeRole,
     hardwarePromptIds: () => [], pressPromptControl() {}, releasePromptControl() {},
     isBrowserChromeShortcut: () => false, isReservedDesktopShortcut: e => e.code === 'F11',

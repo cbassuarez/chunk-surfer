@@ -3,8 +3,8 @@
   "source": "Retained CC0 MakeHuman anatomy and project-authored face, hair, tailoring, pub wardrobe, seat poses, held glasses, polishing cloth, service tray, bottle opener and order book.",
   "license": "CC0 anatomical sources: tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
   "sourceSha256": {
-    "tools/chunk_surfer/build-pub-characters.mjs": "7e775dce317af073c03cfc0bf3291e9b95520a5aa05e6b1eef1aea149b00b1af",
-    "src/render/pub-character-performance.js": "662e442e769fb7bbae6891e487d0cd2c3db714f18ff5c852818d8d110a457718",
+    "tools/chunk_surfer/build-pub-characters.mjs": "5980a782c58f83f02ef2ece3426a41e33d53998e72fc62e0ca2b995fc01402cf",
+    "src/render/pub-character-performance.js": "78282e0f3a746e76618cb94d8d6658b1ea961b5ad90952a01ec6f11472b84e6d",
     "public/assets/academic-society-characters.glb": "4b5ffdf3cd4e89e7862e18189d5f56748814004cd7da02e4e2ccbb8068f9bc2c",
     "public/assets/recordist-characters/contractor.json": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d",
     "artifacts/bus-woman-production/anatomy.json": "d9ac02ce3b2c05ff74fbb8ab0f3608181f7484527982d430b7a0a49ecf2967bf"
@@ -12,13 +12,13 @@
   "packs": [
     {
       "file": "public/assets/pub-characters.glb",
-      "bytes": 7739932,
-      "sha256": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4"
+      "bytes": 7679960,
+      "sha256": "5bd1a491fa9b826f3f45cafe570bbbdec1bd171452889ad5453e0b1b19254a4d"
     },
     {
       "file": "public/assets/pub-quest-props.glb",
-      "bytes": 117196,
-      "sha256": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8"
+      "bytes": 251520,
+      "sha256": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa"
     }
   ],
   "characters": [
@@ -28,8 +28,8 @@
       "source": "female",
       "seatY": null,
       "wardrobe": "apron",
-      "vertices": 16782,
-      "triangles": 31745,
+      "vertices": 16441,
+      "triangles": 31185,
       "parts": [
         "original odette skin",
         "original odette lip",
@@ -52,9 +52,7 @@
         "contractor-rolled-cuff-L",
         "contractor-rolled-cuff-R",
         "original noe cloth",
-        "original noe tailored trim",
-        "hand held polishing tumbler",
-        "creased off white polishing cloth"
+        "original noe tailored trim"
       ]
     },
     {
@@ -211,8 +209,8 @@
       "source": "male",
       "seatY": 0.4925,
       "wardrobe": "waistcoat",
-      "vertices": 23825,
-      "triangles": 45206,
+      "vertices": 23495,
+      "triangles": 44694,
       "parts": [
         "original listener skin",
         "original listener lip",
@@ -358,9 +356,7 @@
         "waistcoat-button-2",
         "waistcoat-button-3",
         "contractor-rolled-cuff-L",
-        "contractor-rolled-cuff-R",
-        "held thick pub pint",
-        "amber ale inside held pint"
+        "contractor-rolled-cuff-R"
       ]
     },
     {
@@ -407,8 +403,8 @@
       "source": "female",
       "seatY": 0.4925,
       "wardrobe": "waistcoat",
-      "vertices": 19713,
-      "triangles": 37216,
+      "vertices": 19383,
+      "triangles": 36704,
       "parts": [
         "original agathe skin",
         "original agathe lip",
@@ -546,9 +542,7 @@
         "waistcoat-button-2",
         "waistcoat-button-3",
         "contractor-rolled-cuff-L",
-        "contractor-rolled-cuff-R",
-        "held thick pub pint",
-        "amber ale inside held pint"
+        "contractor-rolled-cuff-R"
       ]
     },
     {

@@ -17,7 +17,7 @@ const deferred = () => { let resolve; const promise = new Promise(done => { reso
 
 // This observes routing and scheduled AudioParam/source calls without a
 // browser or an audio device. It makes no claim about rendered sound quality.
-function fixture({ bank = manifest(), phaseOffset = .37, fetchFailure = null,
+function fixture({ bank = manifest(), phaseOffset = 0, fetchFailure = null,
   decodedChannels = 1, decodedDuration = bank.duration, decodeGate = null } = {}) {
   const nodes = [], sources = [], fetched = [], decoded = [];
   let serial = 0;
@@ -73,6 +73,10 @@ function fixture({ bank = manifest(), phaseOffset = .37, fetchFailure = null,
   const master = nodes.find(n => n.kind === 'gain' && n.connections.has(destination));
   return { context, runtime, input, nodes, sources, fetched, decoded, destination, master, phaseOffset, bank };
 }
+function engage(f){
+  f.runtime.update(f.input);f.context.currentTime+=1.5;f.runtime.update(f.input);
+  f.context.currentTime+=.5;return f.runtime.update(f.input);
+}
 function reaches(from, target, visited = new Set()) {
   if (from === target) return true;
   if (!from?.connections || visited.has(from)) return false;
@@ -103,7 +107,7 @@ test('independent parts reject reused audio, repeated roles, original-track alia
 
 test('one recorded voice splits before gain; control and voice start on the same audio clock without pitch change', async () => {
   const f = fixture(); assert.equal(await f.runtime.ready(), true);
-  const state = f.runtime.update(f.input), [voice, control] = f.sources;
+  const state = engage(f), [voice, control] = f.sources;
   assert.equal(state.sourceKind, 'ensemble-mix'); assert.equal(state.independentParts, 0);
   assert.equal(state.sourceCount, 2); assert.equal(f.sources.length, 2, 'natural and projection do not duplicate PCM sources');
   assert.equal(voice.buffer.sampleRate, 48000); assert.equal(control.buffer.sampleRate, 12000);
@@ -115,8 +119,8 @@ test('one recorded voice splits before gain; control and voice start on the same
   }
   assert.deepEqual(voice.starts, control.starts);
   const [at, offset] = voice.starts[0];
-  assert.ok(Math.abs(at - (f.context.currentTime + .012)) < 1e-12);
-  assert.ok(Math.abs(offset - ((at + f.phaseOffset) % f.bank.duration)) < 1e-12);
+  assert.ok(Math.abs(at - (f.context.currentTime - .5 + .012)) < 1e-12);
+  assert.ok(Math.abs(offset - ((.012 + f.phaseOffset) % f.bank.duration)) < 1e-12);
   const envelope = [...voice.connections][0], modulationGain = [...control.connections][0];
   assert.equal(envelope.connections.size, 2, 'one envelope feeds the natural path and modulator');
   assert.equal(modulationGain.name, 'gain'); assert.ok(envelope.connections.has(modulationGain.owner));
@@ -127,7 +131,7 @@ test('one recorded voice splits before gain; control and voice start on the same
 
 test('six declared parts keep six PCM sources and six aligned gain sources, rather than duplicating a mix', async () => {
   const f = fixture({ bank: manifest(true) }); await f.runtime.ready();
-  const state = f.runtime.update(f.input);
+  const state = engage(f);
   assert.equal(state.independentParts, 6); assert.equal(f.decoded.length, 6); assert.equal(state.sourceCount, 12);
   const starts = f.sources.map(source => source.starts[0]);
   assert.ok(starts.every(start => start[0] === starts[0][0] && start[1] === starts[0][1]));
@@ -136,24 +140,26 @@ test('six declared parts keep six PCM sources and six aligned gain sources, rath
   f.runtime.dispose();
 });
 
-test('render stalls and repeated updates cannot grow sources; re-entry seeks the advancing shared phase', async () => {
-  const f = fixture(); await f.runtime.ready(); const first = f.runtime.update(f.input);
+test('render stalls cannot grow sources; distant re-entry begins the same quiet passage by proximity', async () => {
+  const f = fixture(); await f.runtime.ready(); const first = engage(f);
   for (let i = 0; i < 30; i++) f.runtime.update(f.input);
   assert.equal(f.sources.length, 2); assert.equal(f.runtime.frame().started, first.started);
   const retired = [...f.sources]; f.context.currentTime += 100.3;
   assert.equal(f.runtime.update({ ...f.input, active: false }).sourceCount, 0);
   assert.ok(retired.every(source => source.stops.length === 1));
-  f.context.currentTime += .2; const next = f.runtime.update(f.input);
+  f.context.currentTime += .2;
+  assert.equal(f.runtime.update(f.input).engaged,false,'returning has to approach again');
+  const next = engage(f);
   assert.equal(f.sources.length, 4); assert.equal(next.sourceCount, 2);
-  assert.notEqual(next.starts[0].offset, first.starts[0].offset);
-  assert.ok(Math.abs(next.starts[0].offset - ((f.context.currentTime + .012 + f.phaseOffset) % 8)) < 1e-12);
+  assert.equal(next.starts[0].offset, first.starts[0].offset,'a return starts softly from the beginning');
+  assert.ok(Math.abs(next.starts[0].offset - ((.012 + f.phaseOffset) % 8)) < 1e-12);
   assert.equal(f.fetched.length, 2, 'returning does not refetch or redecode the bank');
   assert.equal(f.runtime.update({ active: true, voices: [] }).audible, false, 'removed anchors cannot leak the last position');
   f.runtime.dispose();
 });
 
 test('recording/pause protection covers dry and wet paths and quick return cannot reopen retired reflection history', async () => {
-  const f = fixture(); await f.runtime.ready(); f.runtime.update(f.input);
+  const f = fixture(); await f.runtime.ready(); engage(f);
   const oldRoom = f.nodes.find(node => node.kind === 'convolver');
   const oldEnvelopes = f.sources.filter(source => source.buffer.sampleRate === 48000).map(source => [...source.connections][0]);
   f.context.currentTime += .003;
@@ -172,10 +178,10 @@ test('recording/pause protection covers dry and wet paths and quick return canno
 });
 
 test('speech ducks the full mix without restarting its vocal and control transports', async () => {
-  const f = fixture(); await f.runtime.ready(); f.runtime.update(f.input);
+  const f = fixture(); await f.runtime.ready(); engage(f);
   f.context.currentTime += .4; f.runtime.update({ ...f.input, dialogue: true });
   assert.equal(f.sources.length, 2); assert.equal(f.runtime.frame().sourceCount, 2);
-  assert.deepEqual(f.master.gain.calls.at(-1), ['target', .72 * .16, f.context.currentTime, .4]);
+  assert.deepEqual(f.master.gain.calls.at(-1), ['target', .72 * f.runtime.frame().arrivalEnvelope * .16, f.context.currentTime, .4]);
   f.sources[0].end(); assert.equal(f.runtime.update({ ...f.input, muted: true }).sourceCount, 0);
   assert.ok(f.sources.every(source => source.connections.size === 0)); f.runtime.dispose();
 });

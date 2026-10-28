@@ -4,6 +4,7 @@
 // Surviving rib ends remain rooted; this is an impossible breathing dissection,
 // not a claim that an open human chest can maintain normal pleural pressure.
 import {fitActualHeart,projectToActualHeartSurface} from './thorax-organ-source.mjs';
+import {CUT_HEART_CENTER} from '../../../src/game/source-drive/cut/anatomy-layout.js';
 const TAU=Math.PI*2, mix=(a,b,t)=>a+(b-a)*t;
 export const THORAX_ORGAN_MESHES=['cut_lungs','cut_heart','cut_great_vessels','cut_coronary_vessels','cut_diaphragm','cut_wet_blood','cut_airway'];
 export const THORAX_EXTRA_FRAME_MESHES=['cut_costal_cartilage','cut_intercostal_vessels'];
@@ -63,28 +64,33 @@ export function buildThoraxAnatomy({all,geom,vertex,tri,quad,tube,curve,patch,bo
 
  // Preserve the source's proportions with a single uniform scale. The
  // chamber asymmetry and interventricular groove survive the CPU LOD.
- const actualHeart=fitActualHeart({center:[-2,7.8,-7],maxRadii:[3.45,3,5.5]}),heartStart=heart.p.length/3;
- for(let i=0;i<actualHeart.positions.length;i+=3){const p=actualHeart.positions.slice(i,i+3);vertex(heart,p,[(Math.atan2(p[1]-7.8,p[0]+2)/TAU+.5)*5,(p[2]+10)/2],1);}
+ // The original high, near placement hid the chamber face behind the actual
+ // Transit windshield header. Lower it 1.6 m and carry it 8 m cranially without
+ // changing its source proportions; proximal vessels follow, hila stay fixed.
+ const [hx,hy,hz]=CUT_HEART_CENTER,cardiacShift=[hx+2,hy-7.8,hz+7];
+ const cardiacPoint=(p,weight=1)=>p.map((v,k)=>v+cardiacShift[k]*weight);
+ const actualHeart=fitActualHeart({center:CUT_HEART_CENTER,maxRadii:[3.45,3,5.5]}),heartStart=heart.p.length/3;
+ for(let i=0;i<actualHeart.positions.length;i+=3){const p=actualHeart.positions.slice(i,i+3);vertex(heart,p,[(Math.atan2(p[1]-hy,p[0]-hx)/TAU+.5)*5,(p[2]-hz+3)/2],1);}
  for(let i=0;i<actualHeart.indices.length;i+=3)tri(heart,...actualHeart.indices.slice(i,i+3).map(v=>v+heartStart));
  heart.provenance={source:actualHeart.source,sourceSha256:actualHeart.sourceSha256,license:actualHeart.license,requiredCredit:actualHeart.requiredCredit,uniformScale:actualHeart.scale,parts:actualHeart.parts.map(p=>p.name),adaptation:'External cardiac chambers selected; CPU LOD and local boundary repair; axis conversion, uniform monumental scale and animated surface treatment.'};
  const path=(g,points,r0,r1,segments=12)=>{const f=curve(points),p=[],r=[];for(let j=0;j<=30;j++){const t=j/30;p.push(f(t));r.push(mix(r0,r1,t));}tube(g,p,r,segments,.86);};
  // Aortic arch returns to the posterior-left spine. It does not feed lungs.
- path(great,[[-2.7,8.9,-10],[-3.0,14.3,-12],[-2,18.3,-8],[-1.2,18.8,-4],[-1.7,18.6,13],[-1.8,18.2,28]],.74,.56,14);
+ path(great,[cardiacPoint([-2.7,8.9,-10]),cardiacPoint([-3.0,14.3,-12],.5),[-2,18.3,-8],[-1.2,18.8,-4],[-1.7,18.6,13],[-1.8,18.2,28]],.74,.56,14);
  for(const side of[-1,1]){
   // Pulmonary branches leave the central mediastinum at the restrained hila.
-  path(great,[[-.3,9.0,-9],[side*3.8,12.8,-9],[side*7.1,10.3,-5],[side*8,9.6,-7]],.55,.27);
-  path(great,[[side*8.0,8.3,-4],[side*6.3,8.6,-5],[-1.3,8.7,-7.5]],.34,.49);
+  path(great,[cardiacPoint([-.3,9.0,-9]),cardiacPoint([side*3.8,12.8,-9],.6),cardiacPoint([side*7.1,10.3,-5],.25),[side*8,9.6,-7]],.55,.27);
+  path(great,[[side*8.0,8.3,-4],cardiacPoint([side*6.3,8.6,-5],.5),cardiacPoint([-1.3,8.7,-7.5])],.34,.49);
   for(const z of[-19,-11,2,13]){const y=10.6-Math.abs(z)*.045;path(great,[[side*8,9.5,-6],[side*7.3,y,z*.6],[side*9.2,y,z]],.19,.07,8);}
   // Bronchial roots have cartilage rings and branch, rather than red pipes.
   path(airway,[[0,17.1,-25],[0,16.7,-13],[side*3.2,15.3,-8],[side*7.6,11.2,-7]],.72,.39,12);
  }
  // Coronary vessels hug the epicardium: large paths first, then tributaries.
- for(const sign of[-1,1])for(const k of[0,1,2]){const p=[],r=[];for(let j=0;j<=24;j++){const t=j/24,a=3.3+sign*(.28+k*.55),b=.45+t*2.05,s=Math.sin(b);p.push(projectToActualHeartSurface([-2+3.48*s*Math.cos(a)*(1-.30*Math.max(0,Math.cos(b))),7.8+3.04*s*Math.sin(a)+.7*Math.cos(b),-7+5.56*Math.cos(b)],{center:[-2,7.8,-7]}));r.push(.15-.09*t);}tube(coronary,p,r,8,.78);}
+ for(const sign of[-1,1])for(const k of[0,1,2]){const p=[],r=[];for(let j=0;j<=24;j++){const t=j/24,a=3.3+sign*(.28+k*.55),b=.45+t*2.05,s=Math.sin(b);p.push(projectToActualHeartSurface([hx+3.48*s*Math.cos(a)*(1-.30*Math.max(0,Math.cos(b))),hy+3.04*s*Math.sin(a)+.7*Math.cos(b),hz+5.56*Math.cos(b)],{center:CUT_HEART_CENTER}));r.push(.15-.09*t);}tube(coronary,p,r,8,.78);}
  // Inferior diaphragm has a pale central tendon and radial muscular skirt.
  // Its anterior opening is torn away; the driving aperture is never skinned.
  patch(diaphragm,38,22,(u,v)=>{const x=(u-.5)*27,edge=Math.abs(x)/13.5,z=22+v*8;return[x,10.0+5.0*(1-edge*edge)-2.2*v,z];},{thickness:.22,skip:(u,v)=>Math.abs(u-.5)<.24&&v>.37,mask:(u,v)=>v});
  // Blood is actual adherent volume/runnels on torn pleura, not diffuse red
  // paint everywhere. Diameters are broad enough to survive final sampling.
  for(const side of[-1,1])for(const k of[0,1,2,3]){const z=-18+k*11;path(blood,[[side*8.1,9.9,z],[side*8.0,8.8,z+.24],[side*8.25,7.1,z+.5],[side*8.35,6.4,z+.6]],.18,.08,8);}
- return{organMeshes:THORAX_ORGAN_MESHES,frameMeshes:THORAX_EXTRA_FRAME_MESHES,heartSource:heart.provenance,lungs:'Original authored five-lobe surfaces; not acquired scans.',orientation:{posterior:'+Y',cranial:'-Z',anatomicalLeft:'-X',anteriorOpening:'split at the road'},organMountDistance:829};
+ return{organMeshes:THORAX_ORGAN_MESHES,frameMeshes:THORAX_EXTRA_FRAME_MESHES,heartSource:heart.provenance,heartCenter:CUT_HEART_CENTER,lungs:'Original authored five-lobe surfaces; not acquired scans.',orientation:{posterior:'+Y',cranial:'-Z',anatomicalLeft:'-X',anteriorOpening:'split at the road'},organMountDistance:829};
 }

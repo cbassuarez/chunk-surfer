@@ -5,11 +5,16 @@ import * as P3 from './props3d.js';
 import {CELL,EYE,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
 import {SOURCE_CONTINUATION,continuationSurfaces,continuationSolids,continuationDoors,continuationProps,continuationSupportAt} from '../data/source-continuation.js';
+import * as continuationData from '../data/source-continuation.js';
+import {SOURCE_EARTHFALL} from '../data/source-earthfall.js';
 import {sourceContinuationFrame} from '../game/source-continuation.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
-import {sourcePrintUV,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {sourcePrintUV,sourcePrintMaps,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
+import {sourceSurroundingsFrame} from '../game/source-surroundings.js';
+import {SOURCE_SURROUNDINGS} from '../data/source-surroundings.js';
+import {sourceSurroundingsGeometryLibrary,sourceSurroundingsMeshPayload,sourceSurroundingsProps,installSourceSurroundingsEmitterAliases,SOURCE_SURROUNDINGS_REQUIRED_MESHES} from './source-surroundings-geometry.js';
 
 const PREFIX='source-continuation-';
 const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
@@ -27,16 +32,47 @@ const transform=(m,p)=>[0,1,2].map(a=>m[a]*p[0]+m[a+4]*p[1]+m[a+8]*p[2]+m[a+12])
 const positioned=(id,mesh,m,extra={})=>({id,mesh,x:m[12],y:m[13],z:m[14],matrix:m,zone:ZONE.sourceSpace,structural:true,...extra});
 const name=(phase,kind,id)=>`${PREFIX}${phase}-${kind}-${String(id).replace(/[^a-zA-Z0-9_-]/g,'-')}`;
 const boxFaces=[[0,3,2,1],[4,5,6,7],[0,4,7,3],[1,2,6,5],[0,1,5,4],[3,7,6,2]];
-const paint={source:[.62,.66,.59],concrete:[.52,.55,.50],stone:[.56,.59,.53],wood:[.37,.31,.23],'cold-stone':[.63,.66,.58],'cold-wall':[.60,.64,.57],'case-lining':[.27,.34,.31],'piano-wood':[.43,.34,.23],'dark-metal':[.18,.23,.22],metal:[.27,.31,.30],steel:[.29,.34,.33],'edge-steel':[.028,.036,.034],'next-edge-steel':[.11,.15,.14],'worn-metal':[.52,.43,.25],'linen':[.55,.53,.41],'lip-paint':[.42,.34,.12],dark:[.07,.09,.08],refuge:[.53,.42,.24],warning:[.65,.47,.16]};
+const paint={source:[.62,.66,.59],concrete:[.52,.55,.50],stone:[.56,.59,.53],wood:[.37,.31,.23],'cold-stone':[.63,.66,.58],'cold-wall':[.60,.64,.57],'case-lining':[.27,.34,.31],'piano-wood':[.43,.34,.23],'dark-metal':[.18,.23,.22],metal:[.27,.31,.30],steel:[.29,.34,.33],'edge-steel':[.028,.036,.034],'next-edge-steel':[.11,.15,.14],'worn-metal':[.52,.43,.25],'asphalt':[.055,.065,.062],'earthfall-backing':[.035,.045,.039],'linen':[.55,.53,.41],'lip-paint':[.42,.34,.12],dark:[.07,.09,.08],refuge:[.53,.42,.24],warning:[.65,.47,.16]};
 const isMetal=material=>/metal|steel|iron/.test(material||'');
-const isSource=material=>!isMetal(material)&&!['wood','piano-wood','case-lining','linen','lip-paint','dark','refuge','warning'].includes(material);
+const isSource=material=>!isMetal(material)&&!['asphalt','earthfall-backing','wood','piano-wood','case-lining','linen','lip-paint','dark','refuge','warning'].includes(material);
+
+export const SOURCE_CONTINUATION_ARCHITECTURE=Object.freeze({
+  asset:'assets/source-continuation-architecture.glb',far:SOURCE_SURROUNDINGS.farClip,maxInstances:760,maxLights:8,
+  meshes:Object.freeze(['source_ii_ellery_bay','source_ii_ellery_corner','source_ii_chapel_buttress','source_iii_spindle','source_iii_bearing',
+    'source_iii_catch_frame_0','source_iii_catch_frame_1','source_iii_catch_frame_2','source_iii_catch_frame_3','source_ii_arch_voussoirs','source_ii_stringer','source_ii_case_hinge',
+    'source_ii_case_floor','source_ii_case_lid','source_ii_piano_soundboard','source_ii_tower_cap']),
+});
+export const SOURCE_CONTINUATION_LIGHTING=Object.freeze({ambientIntensity:.45,captureExposure:1.6,whitePointScale:1});
+export function sourceContinuationLighting(value=null){
+  const settings=value&&typeof value==='object'?value:{};
+  return{...sourceBlueprintLighting({ambientColor:[.57,.65,.62],whitePointScale:1,screen:'stochastic'}),
+    ambientIntensity:clamp(finite(settings.ambientIntensity,SOURCE_CONTINUATION_LIGHTING.ambientIntensity),0,1),
+    captureExposure:clamp(finite(settings.captureExposure,SOURCE_CONTINUATION_LIGHTING.captureExposure),.25,6),
+    whitePointScale:1};
+}
+const assemblies=()=>continuationData.CONTINUATION_ASSEMBLIES||[];
+const catchFloor=level=>continuationData.continuationCatchFloor(level);
+const catchStage=level=>continuationData.CONTINUATION_CATCH_STAGES?.[level]||{level,y:catchFloor(level),center:SOURCE_CONTINUATION.catch.center};
+const regionOf=row=>row.region||row.phase||'wrong-return';
 
 function boundsOf(points){const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<points.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],points[i]);max[axis]=Math.max(max[axis],points[i]);}return{min,max,center:min.map((v,i)=>(v+max[i])/2)};}
 function indexedBox(points){return{p:points.flat(),i:boxFaces.flatMap(([a,b,c,d])=>[a,c,b,a,d,c])};}
 function solidGeometry(s){return indexedBox([[s.minX,s.minY,s.minZ],[s.maxX,s.minY,s.minZ],[s.maxX,s.minY,s.maxZ],[s.minX,s.minY,s.maxZ],[s.minX,s.maxY,s.minZ],[s.maxX,s.maxY,s.minZ],[s.maxX,s.maxY,s.maxZ],[s.minX,s.maxY,s.maxZ]]);}
 function surfaceGeometry(s){
-  const bottom=finite(s.thickness,.22),low=s.kind==='ramp'?finite(s.y0,s.y):finite(s.y),high=s.kind==='ramp'?finite(s.y1,s.y):finite(s.y);
-  return indexedBox([[s.minX,low-bottom,s.minZ],[s.maxX,low-bottom,s.minZ],[s.maxX,high-bottom,s.maxZ],[s.minX,high-bottom,s.maxZ],[s.minX,low,s.minZ],[s.maxX,low,s.minZ],[s.maxX,high,s.maxZ],[s.minX,high,s.maxZ]]);
+  if(s.kind==='sector'){
+    const result={p:[],i:[]},c=s.center,steps=Math.max(16,Math.ceil((s.endAngle-s.startAngle)/.055)),thickness=finite(s.thickness,.22);
+    for(let k=0;k<steps;k++){
+      const a=s.startAngle+(s.endAngle-s.startAngle)*k/steps,b=s.startAngle+(s.endAngle-s.startAngle)*(k+1)/steps;
+      const ring=[...[[s.innerRadius,a],[s.outerRadius,a],[s.outerRadius,b],[s.innerRadius,b]].map(([r,t])=>[c.x+Math.cos(t)*r,finite(s.y)-thickness,c.z+Math.sin(t)*r]),
+        ...[[s.innerRadius,a],[s.outerRadius,a],[s.outerRadius,b],[s.innerRadius,b]].map(([r,t])=>[c.x+Math.cos(t)*r,finite(s.y),c.z+Math.sin(t)*r])];
+      // Each annular slice is a closed convex prism. The opening remains real.
+      const o=result.p.length/3;result.p.push(...ring.flat());
+      for(const f of[[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]])result.i.push(o+f[0],o+f[1],o+f[2],o+f[0],o+f[2],o+f[3]);
+    }
+    return result;
+  }
+  const bottom=finite(s.thickness,.22),points=[[s.minX,s.minZ],[s.maxX,s.minZ],[s.maxX,s.maxZ],[s.minX,s.maxZ]],top=points.map(([x,z])=>[x,continuationData.continuationSurfaceY(s,x,z),z]);
+  return indexedBox([...top.map(([x,y,z])=>[x,y-bottom,z]),...top]);
 }
 function cylinderGeometry(sides=24,{disc=false}={}){
   const p=[],i=[];for(let k=0;k<sides;k++){const angle=k/sides*Math.PI*2;p.push(Math.cos(angle)*.5,0,Math.sin(angle)*.5,Math.cos(angle)*.5,disc?.005:1,Math.sin(angle)*.5);}
@@ -95,15 +131,18 @@ const canonical={
   'operator-toes':{...boxesGeometry([[-.18,-.045,.025,.075,-.38,-.13],[.045,.18,.025,.075,-.38,-.13]]),material:'steel'},
   'recovery-sling':{...boxesGeometry([[-.37,.37,.005,.025,-.24,.24],[-.38,-.32,.025,.52,-.24,.24],[.32,.38,.025,.52,-.24,.24]]),material:'linen'},
   'door-lamp-fixture':{...boxesGeometry([[-.035,.035,-.03,.03,0,.85],[-.13,.13,-.08,.08,.75,.95],[-.17,.17,.08,.115,.72,.98]]),material:'refuge'},
+  'road-preview':{...solidGeometry({minX:-.5,maxX:.5,minY:-.35,maxY:0,minZ:-.5,maxZ:.5}),material:'asphalt'},
+  'road-kerb':{...solidGeometry({minX:-.5,maxX:.5,minY:0,maxY:.15,minZ:-.5,maxZ:.5}),material:'stone'},
+
 };
 
 export function sourceContinuationGeometry(state={phase:'wrong-return'}){
   const phase=phaseOf(state),geometry=[];
-  for(const surface of continuationSurfaces(state))geometry.push({id:surface.id,name:name(phase,'surface',surface.id),kind:'surface',material:surface.material||'source',role:surface.role,level:surface.level,descriptor:surface,...surfaceGeometry(surface)});
-  for(const solid of continuationSolids(state))if(solid.role!=='furniture')geometry.push({id:solid.id,name:name(phase,'solid',solid.id),kind:'solid',material:solid.material||'source',role:solid.role,level:solid.level,descriptor:solid,...solidGeometry(solid)});
+  for(const surface of continuationSurfaces(state))geometry.push({id:surface.id,name:name(regionOf(surface),'surface',surface.id),region:regionOf(surface),kind:'surface',material:surface.material||'source',role:surface.role,level:surface.level,descriptor:surface,...surfaceGeometry(surface)});
+  for(const solid of continuationSolids(state))if(solid.role!=='furniture')geometry.push({id:solid.id,name:name(regionOf(solid),'solid',solid.id),region:regionOf(solid),kind:'solid',material:solid.material||'source',role:solid.role,level:solid.level,descriptor:solid,...solidGeometry(solid)});
   return geometry;
 }
-function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g}))];}
+function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary()];}
 const meshLibrary=allGeometry(),meshTriangles=meshLibrary.reduce((n,p)=>n+p.i.length/3,0),rimLibrary=meshLibrary.filter(p=>p.kind==='edge').map(p=>({...p,center:boundsOf(p.p).center}));
 const finishTextures=new WeakMap();
 function finishTexture(gl,material){
@@ -116,6 +155,7 @@ function finishTexture(gl,material){
 // Exported separately so geometry proofs can inspect the actual uploaded
 // triangles. Source print UVs are authored in physical metres before recentering.
 export function sourceContinuationMeshPayload(piece){
+  if(piece.name?.startsWith('source-surroundings-'))return sourceSurroundingsMeshPayload(piece);
   const bounds=boundsOf(piece.p),positions=[],normals=[],uvs=[];
   // Reusable details are authored around a meaningful local anchor (the base
   // of a cylinder/cable, or the centre of a lamp). Only world geometry recentres.
@@ -131,28 +171,47 @@ export function sourceContinuationMeshPayload(piece){
 
 export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
   if(!gl||!pack?.catalog)return[];
+  installSourceSurroundingsEmitterAliases(gl,pack);
   const pieces=meshLibrary,missing=pieces.filter(piece=>!pack.catalog.has(piece.name));if(!missing.length)return pieces.map(p=>p.name);
   const printed=maps||sourceBlueprintMaps(gl);
+  // Broad load-bearing sheets need a visible substrate. Keep the existing
+  // pale physical Source paper there; cyanotype belongs to cut joints and the
+  // former Earthfall path, whose material continuity is already established.
+  const palePrinted=maps?{...maps,blueprint:false}:{...sourcePrintMaps(gl,'divide'),blueprint:false};
   for(const piece of missing){
     const data=sourceContinuationMeshPayload(piece),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
     const bind=(location,values,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    const source=isSource(piece.material),base=paint[piece.material]||paint.source,localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
+    const source=isSource(piece.material),stock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall'?palePrinted:printed,base=piece.base||[...(paint[piece.material]||paint.source),1],localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
     const edge=/edge-steel/.test(piece.material);
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base:[...base,1],emissive:[0,0,0],texture:source?printed.texture:finishTexture(gl,piece.material),normalTexture:source?printed.normalTexture:null,ormTexture:source?printed.ormTexture:null,letteringFinish:source?printed.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:source?1:edge?.91:isMetal(piece.material)?.58:.91,aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:'source-continuation',printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(printed,{base:[...base,1]}):{})}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,base,emissive:piece.emissive||[0,0,0],texture:source?stock.texture:finishTexture(gl,piece.material),normalTexture:source?stock.normalTexture:null,ormTexture:source?stock.ormTexture:null,letteringFinish:source?stock.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.material==='earthfall-backing'?1:source?1:edge?.91:isMetal(piece.material)?.58:.91,aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(stock,{base}):{})}]});
   }
   gl.bindVertexArray(null);return pieces.map(p=>p.name);
 }
 
 const goods=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
 const hoist=SOURCE_CONTINUATION.catch.hoist;
-const retained=['instrument_case','grand_piano','ending_body_standing'];
+const retained=['grand_piano','open_instrument_case','source_demolition_retained'];
+const requiredMeshes=()=>[...new Set([...meshLibrary.map(p=>p.name),...retained,...retainedDoor,...SOURCE_CONTINUATION_ARCHITECTURE.meshes,...assemblies().map(p=>p.mesh),...SOURCE_SURROUNDINGS_REQUIRED_MESHES])];
 const retainedDoor=[goods.frameMesh,goods.leafMesh,goods.freeStandingHeadMesh].filter(Boolean);
 const propKindMesh={case:'instrument_case','case-hinge':'instrument_case',piano:'grand_piano',body:'ending_body_standing'};
 const levelOf=row=>Number.isInteger(row.level)?row.level:Number.isInteger(row.descriptor?.level)?row.descriptor.level:null;
 const assetPreparations=new WeakMap();
+
+export function finishSourceContinuationArchitecture(gl,pack,{maps=null}={}){
+  let printed=maps;
+  for(const name of SOURCE_CONTINUATION_ARCHITECTURE.meshes)for(const primitive of pack.catalog.get(name)?.primitives||[])
+    if(/source-cut joint stock/.test(primitive.materialName||'')){
+      printed ||= sourceBlueprintMaps(gl);
+      Object.assign(primitive,sourceBlueprintMaterial(printed,{base:[1,1,1,1]}),{texture:printed.texture,normalTexture:printed.normalTexture,ormTexture:printed.ormTexture,letteringFinish:printed.letteringFinish});
+      // Imported factors were cached before this explicit material mapping.
+      // Invalidate only the changed joint, so the actual physical channels win.
+      delete primitive.mainFactors;
+    }
+  return SOURCE_CONTINUATION_ARCHITECTURE.meshes;
+}
 
 // The original Source can prepare this bounded catalog while it still owns
 // the view. Preparing assets never borrows a plan, light, camera or prop list.
@@ -162,166 +221,214 @@ export function prewarmSourceContinuationAssets({renderer=R3,props=P3,resolveAss
     const base=await renderer.r3dBasePropsReady?.();if(base===false)throw Error('The Source continuation base prop catalog could not be loaded.');
     if(typeof props.installAuthoredPropMeshes!=='function')throw Error('The Source continuation mesh installer is unavailable.');
     const installed=props.installAuthoredPropMeshes(installMeshes);if(installed===false)throw Error('The Source continuation prop context is unavailable.');
-    const catalog=new Set(props.propMeshCatalog?.()||[]);if(retainedDoor.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));
-    const ready=new Set(props.propMeshCatalog?.()||[]),missing=[...meshLibrary.map(p=>p.name),...retained,...retainedDoor].filter(mesh=>!ready.has(mesh));
+    if(await renderer.r3dAuthoredPropsReady?.()===false)throw Error('The authored Source catalog could not be prepared.');
+    for(const [meshes,path]of[[SOURCE_CONTINUATION_ARCHITECTURE.meshes,SOURCE_CONTINUATION_ARCHITECTURE.asset],[retainedDoor,'assets/conservatory-doors.glb'],[['source_demolition_retained'],'assets/source-demolition.glb']]){
+      const catalog=new Set(props.propMeshCatalog?.()||[]);if(meshes.some(mesh=>!catalog.has(mesh)))await props.addPropPack(resolveAsset(path));
+    }
+    // Printed construction joints coexist with the authored limestone, wood,
+    // iron and case lining. Their broad faces retain native light response.
+    props.installAuthoredPropMeshes(finishSourceContinuationArchitecture);
+    const ready=new Set(props.propMeshCatalog?.()||[]),missing=requiredMeshes().filter(mesh=>!ready.has(mesh));
     if(missing.length)throw Error('Source continuation meshes missing: '+missing.join(', '));return true;
   })();
   assetPreparations.set(props,preparing);preparing.then(()=>{if(assetPreparations.get(props)===preparing)assetPreparations.delete(props);},()=>{if(assetPreparations.get(props)===preparing)assetPreparations.delete(props);});return preparing;
 }
 
-export function sourceContinuationCamera(frame,{viewportAspect=16/9}={}){
-  const player=frame.player||frame,feet=finite(player.y,player.feet),catchMode=phaseOf(frame)==='catch',eye=[...(frame.camera?.eye||[finite(player.x),feet+EYE,finite(player.z)])];
-  if(!catchMode)return{eye,yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
-  const aspect=clamp(viewportAspect,.35,3.5),clearance=Math.max((Math.abs(player.x-eye[0])+.8)/(.95*aspect)+1.9,(Math.abs(player.z-eye[2])+.8)/.95+1.9);eye[1]=Math.max(eye[1],feet+clearance);
-  const reveal=frame.reveal,p=reveal?clamp(reveal.elapsed/Math.max(.01,finite(reveal.duration,1.2)),0,1):1;
-  if(p>=1||!reveal?.from)return{eye,yaw:0,pitch:-Math.PI/2,aimTarget:[eye[0],feet,eye[2]],strictOverhead:true,revealProgress:reveal?1:null};
-  const from=reveal.from,start=[finite(from.x,player.x),finite(from.feet,feet)+SOURCE_CONTINUATION.eyeHeight,finite(from.z,player.z)],rise=smooth(p/.52),slide=smooth((p-.18)/.82),turn=smooth(p/.90);
-  const craneEye=[mix(start[0],eye[0],slide),mix(start[1],eye[1],rise),mix(start[2],eye[2],slide)],aimTarget=[mix(finite(player.x),eye[0],slide),mix(feet+.85,feet,slide),mix(finite(player.z),eye[2],slide)],dx=aimTarget[0]-craneEye[0],dy=aimTarget[1]-craneEye[1],dz=aimTarget[2]-craneEye[2],horizontal=Math.hypot(dx,dz);
-  // Acquire the bodily/floor anchor before the eye has risen far. Interpolating
-  // pitch across the whole crane leaves the bridge below a blank sky midpoint.
-  // A directly downward target leaves yaw free to settle smoothly to north.
-  const trackedPitch=Math.atan2(dy,horizontal),authoredYaw=finite(from.yaw)+angle(-finite(from.yaw))*turn,trackedYaw=horizontal>1e-5?Math.atan2(dx,-dz):authoredYaw,gaze=smooth(p/.12);
-  return{eye:craneEye,yaw:finite(from.yaw)+angle(trackedYaw-finite(from.yaw))*gaze,pitch:mix(finite(from.pitch),trackedPitch,gaze),aimTarget,strictOverhead:false,revealProgress:p};
+export function sourceContinuationCamera(frame){
+  const player=frame.player||frame,feet=finite(player.y,player.feet);
+  return{eye:[finite(player.x),feet+EYE,finite(player.z)],yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
 }
 
-export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,studyRotation=0}={}){
-  const frame=sourceContinuationFrame(state),phase=phaseOf(frame),player=frame.player||state.player||state,geometry=frame.geometry||{},surfaces=geometry.surfaces||continuationSurfaces(state),solids=geometry.solids||continuationSolids(state),doors=geometry.doors||continuationDoors(state),memoryProps=geometry.props||continuationProps(state);
-  const floor=finite(player.y),catchMode=phase==='catch',props=[],lights=[],hiddenAbove=[],shownLevels=new Set(),origin={x:finite(anchor.x),y:finite(anchor.y),z:finite(anchor.z)},camera=sourceContinuationCamera(frame,{viewportAspect}),focus=frame.focus;
-  const put=(id,mesh,x,y,z,yaw=0,sx=1,sy=1,sz=1,extra={})=>{const p=positioned(PREFIX+id,mesh,matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz),extra);props.push(p);return p;};
-  const activeLevel=catchMode?surfaces.filter(s=>Number.isInteger(s.level)&&finite(s.y)<=floor+.45).sort((a,b)=>finite(b.y)-finite(a.y))[0]?.level:undefined;
-  const visible=row=>{if(!catchMode)return true;const level=levelOf(row);if(level!=null&&Number.isInteger(activeLevel)&&level<activeLevel){hiddenAbove.push(row.id);return false;}const top=finite(row.y1,row.y??row.maxY);if(row.kind!=='solid'&&row.role!=='shaft-wall'&&top>floor+.48){hiddenAbove.push(row.id);return false;}return true;};
-  for(const[kind,rows]of[['surface',surfaces],['solid',solids]])for(const row of rows){
-    if(row.role==='furniture'||!visible({...row,kind}))continue;const geom=kind==='surface'?surfaceGeometry(row):solidGeometry(row),bounds=boundsOf(geom.p),center=bounds.center;
-    put(`${phase}-${kind}-${row.id}`,name(phase,kind,row.id),...center,0,1,1,1,{continuation:true,physicalKind:kind,descriptorId:row.id,level:row.level,role:row.role,physicalBounds:{min:[row.minX,kind==='surface'?Math.min(finite(row.y0,row.y),finite(row.y1,row.y))-finite(row.thickness,.22):row.minY,row.minZ],max:[row.maxX,kind==='surface'?Math.max(finite(row.y0,row.y),finite(row.y1,row.y)):row.maxY,row.maxZ]},cullRadius:Math.hypot((row.maxX-row.minX)/2,(row.maxZ-row.minZ)/2)});
+export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,studyRotation=0,reducedMotion=false}={}){
+  const frame=sourceContinuationFrame(state),player=frame.player||state.player||state,geometry=frame.geometry||{},surfaces=geometry.surfaces||continuationSurfaces(state),solids=geometry.solids||continuationSolids(state),doors=geometry.doors||continuationDoors(state),memoryProps=geometry.props||continuationProps(state);
+  const props=[],lights=[],shownLevels=new Set(),origin={x:finite(anchor.x),y:finite(anchor.y),z:finite(anchor.z)},camera=sourceContinuationCamera(frame),focus=frame.focus;
+  const center=SOURCE_CONTINUATION.catch.center;
+  const put=(id,mesh,x,y,z,yaw=0,sx=1,sy=1,sz=1,extra={})=>{
+    const p=positioned(PREFIX+id,mesh,matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz),extra);props.push(p);return p;
+  };
+  const putMatrix=(id,mesh,m,extra={})=>{const p=positioned(PREFIX+id,mesh,multiply(matrix(origin.x,origin.y,origin.z),m),extra);props.push(p);return p;};
+  const beam=(id,a,b,width=.08,material='pin',extra={})=>{
+    const y=b.map((v,k)=>v-a[k]),length=Math.hypot(...y);if(length<.001)return;
+    const n=y.map(v=>v/length),seed=Math.abs(n[1])<.9?[0,1,0]:[1,0,0],cross=(u,v)=>[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],x=cross(n,seed),xl=Math.hypot(...x);for(let k=0;k<3;k++)x[k]/=xl;const z=cross(x,n);
+    putMatrix(id,PREFIX+material,new Float32Array([...x.map(v=>v*width),0,...y,0,...z.map(v=>v*width),0,...a,1]),extra);
+  };
+  // Every support remains in the same world before and after the threshold.
+  // Region identifies its construction; it never removes a floor from view.
+  for(const piece of sourceContinuationGeometry(state)){
+    const row=piece.descriptor;if(row.role==='spindle'||row.role==='arch-pier')continue;const b=boundsOf(piece.p),isSurface=piece.kind==='surface';
+    put(piece.id,piece.name,...b.center,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,
+      physicalBounds:{min:b.min,max:b.max},cullRadius:Math.hypot((b.max[0]-b.min[0])/2,(b.max[2]-b.min[2])/2)});
     if(Number.isInteger(row.level))shownLevels.add(row.level);
-    // Exposed slab edges carry narrow steel bearings underneath the deck.
-    // They cannot cover the gap or add an obstacle on the walking surface.
-    if(!catchMode&&kind==='surface'&&(row.maxX-row.minX)>1&&(row.maxZ-row.minZ)>1){const y=Math.min(finite(row.y0,row.y),finite(row.y1,row.y))-.25;
-      put(`bearing-${phase}-${row.id}`,PREFIX+'block',(row.minX+row.maxX)/2,y,row.minZ+.06,0,row.maxX-row.minX,.10,.10,{decorative:true,level:row.level});}
+    if(isSurface&&row.kind!=='sector'&&row.role!=='stair'){
+      const y=continuationData.continuationSurfaceY(row,(row.minX+row.maxX)/2,(row.minZ+row.maxZ)/2)-finite(row.thickness,.35)-.11;
+      // Bearing courses show a real cut edge without doubling the top surface.
+      if(row.maxX-row.minX>2)put('cut-bearing-'+row.id,PREFIX+'worn-block',(row.minX+row.maxX)/2,y,row.minZ+.07,0,row.maxX-row.minX,.12,.14,{architecturalJoint:true,descriptorId:row.id,region:regionOf(row)});
+    }
   }
-  if(catchMode)for(const piece of rimLibrary){
-    const current=piece.elevation>=floor-.45;
-    if(piece.level<activeLevel||piece.elevation>floor+.48||piece.material!==(current?'edge-steel':'next-edge-steel'))continue;
-    put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation,currentFootprint:current,undersideDepth:.265});
+  for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
+  // The four sectors are framed as four different fabricated objects. All
+  // frames are below the exact support mesh, and the spindle is continuous.
+  put('continuous-spindle','source_iii_spindle',center.x,0,center.z,0,1,1,1,{architecture:true,region:'catch',continuousSpindle:true,cullRadius:45});
+  for(let level=0;level<SOURCE_CONTINUATION.catch.levels;level++){
+    const stage=catchStage(level),y=catchFloor(level);
+    put('radial-bearing-'+level,'source_iii_bearing',center.x,y,center.z,0,1,1,1,{architecture:true,region:'catch',bearing:true,level});
+    put('fabricated-catch-'+level,'source_iii_catch_frame_'+level,center.x,y-.20,center.z,0,1,1,1,{architecture:true,region:'catch',catchConstruction:stage.construction,level,cullRadius:16});
+    const r=stage.outerRadius||13,t=stage.refugeAngle||0,rx=center.x+Math.cos(t)*(r+1.25),rz=center.z+Math.sin(t)*(r+1.25);
+    put('refuge-rib-'+level,PREFIX+'worn-block',rx,y-.85,rz,0,2.7,.65,2.7,{architecture:true,region:'catch',refugeStructure:true,level});
+    // A remote load brace bears each partial shelf without filling its hole.
+    for(const a of[stage.startAngle+.20,stage.endAngle-.20]){
+      const bx=center.x+Math.cos(a)*(r-.3),bz=center.z+Math.sin(a)*(r-.3);
+      beam('radial-tie-'+level+'-'+a,[center.x+Math.cos(a)*.82,y-1.05,center.z+Math.sin(a)*.82],[bx,y-1.8,bz],.12,'pin',{architecture:true,region:'catch',tensionMember:true,level});
+    }
   }
-  if(catchMode&&floor>=SOURCE_CONTINUATION.catch.top-.45)for(const piece of sourceContinuationGeometry({...frame,phase:'wrong-return'})){
-    put('backdrop-'+piece.id,piece.name,...boundsOf(piece.p).center,0,1,1,1,{priorRoom:true,studyFixed:true});
+  // Native models and clipped original building fabric supply their own
+  // proportions. Sideways/inverted fragments demonstrate another gravity
+  // domain while the player's feet and camera retain one stable up direction.
+  for(const row of assemblies()){
+    let m=multiply(matrix(row.x,row.y,row.z,finite(row.yaw)),multiply(rotateX(finite(row.pitch)),rotateZ(finite(row.roll))));
+    m=multiply(m,matrix(0,0,0,0,finite(row.scaleX,row.scale??1),finite(row.scaleY,row.scale??1),finite(row.scaleZ,row.scale??1)));
+    putMatrix('assembly-'+row.id,row.mesh,m,{architecture:true,region:row.region||'wrong-return',assemblyId:row.id,supportId:row.supportId,orientation:row.orientation||'upright',originalModel:row.mesh,cullRadius:32});
+  }
+  // Joined stairs have exact individual treads, continuous offset rails and
+  // stringers below their underside. Opposed flights share a readable landing.
+  for(const link of continuationData.CONTINUATION_STRUCTURAL_LINKS||[]){
+    if(link.kind!=='stair')continue;const width=link.maxX-link.minX,run=link.maxZ-link.minZ,rise=link.y1-link.y0;
+    put('stringer-'+link.id,'source_ii_stringer',(link.minX+link.maxX)/2,link.y0,link.maxZ,0,width,rise/4.2,run,{architecture:true,stairStructure:true,region:'wrong-return',stairId:link.id});
+    for(const side of[-1,1]){
+      const x=(link.minX+link.maxX)/2+side*(width/2+.07);
+      const a=[x,link.y0+1.05,link.maxZ],b=[x,link.y1+1.05,link.minZ];
+      beam('stair-handrail-'+link.id+'-'+side,a,b,.09,'pin',{architecture:true,handrail:true,stairId:link.id});
+      for(let k=0;k<=7;k++){const t=k/7,z=link.maxZ-run*t,y=link.y0+rise*t;beam('stair-baluster-'+link.id+'-'+side+'-'+k,[x,y-.10,z],[x,y+1.05,z],.055,'pin',{architecture:true,baluster:true,stairId:link.id});}
+    }
+  }
+  for(const [x,y,z,yaw,id]of[[0,0,-4,0,'entry'],[10,4.2,-22,Math.PI/2,'mid-return'],[0,8.4,-19,0,'upper-refuge']]){
+    put('jointed-arch-'+id,'source_ii_arch_voussoirs',x,y,z,yaw,1,1,1,{architecture:true,region:'wrong-return',opening:true,cullRadius:8});
   }
   for(const door of doors){
-    if(!visible(door))continue;const width=finite(door.width,1.8),height=finite(door.height,2.3),base=matrix(origin.x+door.x,origin.y+door.y,origin.z+door.z,finite(door.yaw),width/goods.opening.width,height/goods.opening.height,1),fraction=clamp(door.openFraction??door.fraction??(door.open??state.doorOpen?.[door.id]?1:0),0,1);
-    props.push(positioned(PREFIX+'door-'+door.id,goods.frameMesh,base,{continuation:true,doorId:door.id,role:door.role,level:door.level}));
-    if(goods.freeStandingHeadMesh)props.push(positioned(PREFIX+'door-head-'+door.id,goods.freeStandingHeadMesh,base,{doorId:door.id}));
-    const focused=focus?.id===door.id,reach=focused?clamp(1-Math.hypot(player.x-door.x,player.z-door.z)/1.9,0,1):0,hardware=!catchMode||door.level===activeLevel;
+    const width=finite(door.width,1.8),height=finite(door.height,2.3),base=matrix(origin.x+door.x,origin.y+door.y,origin.z+door.z,finite(door.yaw),width/goods.opening.width,height/goods.opening.height,1),fraction=clamp(door.openFraction??door.fraction??(door.open??state.doorOpen?.[door.id]?1:0),0,1);
+    props.push(positioned(PREFIX+'door-'+door.id,goods.frameMesh,base,{continuation:true,doorId:door.id,role:door.role,region:regionOf(door),level:door.level}));
+    if(goods.freeStandingHeadMesh)props.push(positioned(PREFIX+'door-head-'+door.id,goods.freeStandingHeadMesh,base,{doorId:door.id,region:regionOf(door)}));
+    const focused=focus?.id===door.id,reach=focused?clamp(1-Math.hypot(player.x-door.x,player.z-door.z)/1.9,0,1):0;
     for(let k=0;k<goods.leafCount;k++){
-      const leaf=multiply(base,doorLeafLocalMatrix(goods,k,fraction));props.push(positioned(`${PREFIX}door-${door.id}-leaf-${k}`,goods.leafMesh,leaf,{continuation:true,doorId:door.id,level:door.level}));
-      if(hardware){props.push(positioned(`${PREFIX}door-wear-${door.id}-${k}`,PREFIX+'door-wear',leaf,{doorWear:true,doorId:door.id,level:door.level}));
-        const grip=multiply(multiply(multiply(leaf,matrix(1.22,1.435,0)),rotateZ(-reach*.12*(1-fraction))),matrix(-1.22,-1.435,0));props.push(positioned(`${PREFIX}door-handle-${door.id}-${k}`,PREFIX+'door-handle',grip,{doorHandle:true,doorId:door.id,focused,reach,level:door.level}));}
+      const leaf=multiply(base,doorLeafLocalMatrix(goods,k,fraction));props.push(positioned(`${PREFIX}door-${door.id}-leaf-${k}`,goods.leafMesh,leaf,{continuation:true,doorId:door.id,region:regionOf(door),level:door.level}));
+      props.push(positioned(`${PREFIX}door-wear-${door.id}-${k}`,PREFIX+'door-wear',leaf,{doorWear:true,doorId:door.id,level:door.level}));
+      const grip=multiply(multiply(multiply(leaf,matrix(1.22,1.435,0)),rotateZ(-reach*.12*(1-fraction))),matrix(-1.22,-1.435,0));props.push(positioned(`${PREFIX}door-handle-${door.id}-${k}`,PREFIX+'door-handle',grip,{doorHandle:true,doorId:door.id,focused,reach,level:door.level}));
     }
-    const refuge=/return|refuge|entrance|entry/.test(door.role||door.id),lampY=door.y+Math.min(height+.18,2.45),colour=refuge?[.91,.66,.35]:[.55,.72,.76];
-    const side=catchMode&&door.role==='return'||door.role==='false-return'?-1:1,nx=-Math.sin(finite(door.yaw))*side,nz=Math.cos(finite(door.yaw))*side,lampX=door.x+nx*.85,lampZ=door.z+nz*.85;
-    put('door-lamp-'+door.id,PREFIX+'door-lamp-fixture',door.x,lampY,door.z,finite(door.yaw)+(side<0?Math.PI:0),1,1,1,{practical:true,doorId:door.id,level:door.level});
-    lights.push({id:PREFIX+'door-light-'+door.id,x:origin.x+lampX,y:origin.y+lampY-.3,z:origin.z+lampZ,radius:refuge?5:6.5,intensity:(refuge?2.3:2.0)+reach*1.1,color:colour,penetration:1,focusPractical:focused});
-    put('door-foot-'+door.id,PREFIX+'warning',door.x,door.y+.006,door.z,finite(door.yaw),width+.16,1,.26,{threshold:true,doorId:door.id,level:door.level});
+    const refuge=door.role==='return',side=door.role==='final'?1:-1,nx=-Math.sin(finite(door.yaw))*side,nz=Math.cos(finite(door.yaw))*side,lampY=door.y+height+.18;
+    put('door-lamp-'+door.id,PREFIX+'door-lamp-fixture',door.x,lampY,door.z,finite(door.yaw)+(side<0?Math.PI:0),1,1,1,{practical:true,doorId:door.id,region:regionOf(door),level:door.level});
+    lights.push({id:PREFIX+'door-light-'+door.id,x:origin.x+door.x+nx*.85,y:origin.y+lampY-.3,z:origin.z+door.z+nz*.85,radius:refuge?4.3:5.2,intensity:(refuge?.65:.78)+reach*.3,color:refuge?[.79,.60,.36]:[.53,.66,.65],penetration:0,focusPractical:focused});
   }
-  for(const p of memoryProps){
-    if(p.kind==='release-lip'){
-      if(!visible(p))continue;const yaw=Math.atan2(finite(p.dx),-finite(p.dz)),x=finite(p.x),y=finite(p.y),z=finite(p.z);
-      put('lip-tread-'+p.id,PREFIX+'lip-tread',x,y,z,yaw,1,1,1,{releaseTread:true,level:p.level,lipId:p.id,dropDirection:[p.dx,p.dz]});
-      put('lip-paint-'+p.id,PREFIX+'lip-paint',x,y,z,yaw,1,1,1,{releasePaint:true,level:p.level,lipId:p.id});
-      const rx=x+finite(p.dx)*.9,rz=z+finite(p.dz)*.9,receiver=continuationSupportAt(rx,rz,state,{maxY:y-.5,minY:y-SOURCE_CONTINUATION.catch.layerDrop*1.6});
-      if(receiver){const r=receiver.surface,sx=Math.min(Math.abs(p.dx)>.5?.52:1.02,r.maxX-r.minX-.08),sz=Math.min(Math.abs(p.dz)>.5?.52:1.02,r.maxZ-r.minZ-.08);
-        if(sx>.1&&sz>.1)put('lip-shadow-'+p.id,PREFIX+'shadow',clamp(rx,r.minX+sx/2+.02,r.maxX-sx/2-.02),receiver.y+.006,clamp(rz,r.minZ+sz/2+.02,r.maxZ-sz/2-.02),0,sx,1,sz,{landingShadow:true,receiverLevel:receiver.level,receiverId:r.id,lipId:p.id});}
-      continue;
-    }
-    if(!visible(p))continue;let mesh=p.mesh||propKindMesh[p.kind];if(!mesh){if(/counterweight|weight/.test(p.kind))mesh=PREFIX+'counterweight';else if(/rope|cable|pin/.test(p.kind))mesh=PREFIX+'pin';else if(/shadow/.test(p.kind))mesh=PREFIX+'shadow';else if(p.kind==='release-lip')mesh=PREFIX+'warning';else mesh=PREFIX+'block';}
-    const seam=p.kind==='seam',lip=p.kind==='release-lip';
-    put('prop-'+p.id,mesh,finite(p.x),finite(p.y),finite(p.z),finite(p.yaw),finite(p.scaleX,p.scale??(seam?.026:lip?.55:1)),finite(p.scaleY,p.scale??(seam?1.1:1)),finite(p.scaleZ,p.scale??(seam?.09:lip?.16:1)),{continuation:true,decorative:true,role:p.role,level:p.level,kind:p.kind});
-    if(seam){const yaw=p.role==='matching-clue'?-Math.PI/2:0;for(const[y,k]of[[.17,0],[.47,1],[.72,2]])put(`seam-nick-${p.id}-${k}`,PREFIX+'worn-block',p.x,p.y+y,p.z,yaw,.18,.032,.12,{matchingSeam:true,role:p.role});}
+  for(const row of memoryProps){
+    if(row.kind==='release-lip'){
+      const yaw=Math.atan2(finite(row.dx),-finite(row.dz));
+      put('lip-tread-'+row.id,PREFIX+'lip-tread',row.x,row.y,row.z,yaw,1,1,1,{releaseTread:true,level:row.level,lipId:row.id,dropDirection:[row.dx,row.dz]});
+      // Scuffed grip positions, rather than luminous game arrows, face the
+      // actual lower catch. Both supported releases carry identical treatment.
+      put('lip-paint-'+row.id,PREFIX+'lip-paint',row.x,row.y,row.z,yaw,1,1,1,{releasePaint:true,level:row.level,lipId:row.id});
+    }else if(row.mesh)put('prop-'+row.id,row.mesh,row.x,row.y,row.z,finite(row.yaw),finite(row.scaleX,row.scale??1),finite(row.scaleY,row.scale??1),finite(row.scaleZ,row.scale??1),{continuation:true,region:regionOf(row),role:row.role,decorative:true});
+    else if(row.kind==='seam')for(let k=0;k<3;k++)put('seam-'+row.id+'-'+k,PREFIX+'worn-block',row.x,row.y+k*.28,row.z,finite(row.yaw),.18,.032,.12,{matchingSeam:true,role:row.role,region:regionOf(row)});
   }
-  if(!catchMode&&['warning','closing'].includes(frame.closure?.mode)){
-    const z=frame.closure.frontZ,bottom=frame.closure.mode==='warning'?5.4:3;put('closing-front-warning',PREFIX+'warning',5.15,3.008,z,0,7.7,1,.12,{closureWarning:true});
-    if(frame.closure.mode==='warning'){
-      // The announced front is visibly suspended clear of a standing head.
-      // It occupies its real blocking height only when the controller arms it.
-      const row=continuationSolids({...state,closure:{...frame.closure,mode:'closing'}}).find(s=>s.role==='closure');
-      if(row){const b=boundsOf(solidGeometry(row).p);put('suspended-closing-front',name('wrong-return','solid',row.id),b.center[0],b.center[1]+2.4,b.center[2],0,1,1,1,{closureSuspended:true,warning:true});
-        for(const[x,k]of[[row.minX+.2,0],[row.maxX-.2,1]])put('closing-front-cable-'+k,PREFIX+'pin',x,row.maxY+2.4,z,0,.04,2,.04,{closureCable:true});}
-    }
-    for(const[y,k]of[[bottom+.16,0],[bottom+2.9,1]])put('closing-front-bearing-'+k,PREFIX+'worn-block',5.15,y,z+.193,0,7.6,.075,.022,{closureBearing:true});
-    for(const[x,k]of[[1.6,0],[8.7,1]]){put('closing-front-lamp-'+k,PREFIX+'door-lamp-fixture',x,bottom+2.5,z+.18,0,1,1,1,{practical:true,closurePractical:true});lights.push({id:PREFIX+'closing-front-light-'+k,x:origin.x+x,y:origin.y+bottom+2.2,z:origin.z+z+1.03,radius:7.5,intensity:2.8,color:[.88,.66,.38],penetration:1,closurePractical:true});}
+  const closure=frame.closure||{};
+  if(['warning','closing'].includes(closure.mode)){
+    const x=finite(closure.frontX,SOURCE_CONTINUATION.wrongReturn.closureStartX),y=closure.mode==='warning'?12.3:9.9;
+    if(closure.mode==='warning')put('suspended-closing-front',PREFIX+'worn-block',x,y,-12,0,.32,3,4,{closureSuspended:true,warning:true,region:'wrong-return'});
+    for(const z of[-13.7,-10.3])beam('closure-cable-'+z,[x,y+1.5,z],[x,17,z],.04,'pin',{closureCable:true,region:'wrong-return'});
+    put('closing-front-bearing',PREFIX+'worn-block',x,y-1.55,-12,0,.44,.12,4.2,{closureBearing:true,region:'wrong-return'});
   }
-  // First person leaves the body with the viewer. The Catch is an actual
-  // overhead camera over the same world, so its small clothed body is visible.
-  if(catchMode){
-    const atLip=focus?.type==='drop',bodyYaw=atLip?Math.atan2(finite(focus.dx),-finite(focus.dz)):finite(player.yaw),lean=atLip?-.065:frame.fall?-.045*(1-clamp(frame.fall.elapsed/.7,0,1)):0,bodyBase=matrix(origin.x+finite(player.x),origin.y+floor,origin.z+finite(player.z),bodyYaw,.85,1.10,.85),bodyMatrix=multiply(bodyBase,rotateX(lean)),bodyVisible=camera.eye[1]-floor>2.5;
-    if(bodyVisible){props.push(positioned(PREFIX+'operator','ending_body_standing',bodyMatrix,{continuation:true,playerBody:true,level:activeLevel,bodyYaw,lean}));
-      props.push(positioned(PREFIX+'operator-yoke',PREFIX+'operator-yoke',bodyMatrix,{playerGarment:true,level:activeLevel}));
-      props.push(positioned(PREFIX+'operator-toes',PREFIX+'operator-toes',bodyBase,{playerToes:true,level:activeLevel,readyToDrop:atLip}));
-      const kit=multiply(bodyBase,matrix(.22,.83,.08,0,.22/.85,.22/1.10,.22/.85));props.push(positioned(PREFIX+'operator-case','instrument_case',kit,{playerKit:true}));}
+  const weight=frame.counterweight;
+  if(weight){
+    const radius=SOURCE_CONTINUATION.catch.counterweightRadius,top=weight.y+1.4;
+    put('counterweight',PREFIX+'counterweight',weight.x,weight.y,weight.z,0,radius*2,1.4,radius*2,{counterweight:true,mode:weight.mode,level:weight.level,collisionRadius:radius});
+    for(const [y,k]of[[.12,0],[.67,1],[1.26,2]])put('counterweight-hoop-'+k,PREFIX+'counterweight',weight.x,weight.y+y,weight.z,0,radius*2+.025,.075,radius*2+.025,{counterweightHoop:true,region:'catch'});
+    beam('weight-tension-cable',[weight.x,top,weight.z],[weight.x,hoist.railY,weight.z],.045,'pin',{counterweightCable:true,region:'catch'});
+    const h=SOURCE_CONTINUATION.catch.hoist;
+    beam('hoist-rail-long',[h.shaft.x,h.railY,h.shaft.z],[h.start.x,h.railY,h.shaft.z],.16,'pin',{hoistRail:true,region:'catch'});
+    beam('hoist-rail-return',[h.start.x,h.railY,h.shaft.z],[h.start.x,h.railY,h.start.z],.16,'pin',{hoistRail:true,region:'catch'});
+    put('hoist-trolley',PREFIX+'worn-block',weight.x,h.railY-.14,weight.z,0,.38,.20,.38,{hoistTrolley:true,region:'catch'});
+    const receiver=continuationSupportAt(weight.x,weight.z,state,{maxY:weight.y+.08,minY:weight.y-.35});
+    if(receiver)put('counterweight-shadow',PREFIX+'shadow',weight.x,receiver.y+.012,weight.z,0,radius*2+.2,1,radius*2+.2,{threatShadow:true,receiverLevel:receiver.level});
     if(frame.recovery?.kind==='sling'){
-      put('operator-recovery-sling',PREFIX+'recovery-sling',player.x,floor,player.z,bodyYaw,1,1,1,{recoverySling:true});
-      for(const[dx,k]of[[-.35,0],[.35,1]])put('operator-recovery-cable-'+k,PREFIX+'pin',player.x+Math.cos(bodyYaw)*dx,floor+.5,player.z+Math.sin(bodyYaw)*dx,0,.018,Math.max(.1,hoist.railY-floor-.5),.018,{recoveryCable:true});
+      put('operator-recovery-sling',PREFIX+'recovery-sling',player.x,player.y,player.z,player.yaw,1,1,1,{recoverySling:true});
+      for(const dx of[-.35,.35])beam('recovery-line-'+dx,[player.x+dx,player.y+.5,player.z],[player.x+dx,h.railY,player.z],.025,'pin',{recoveryCable:true});
     }
-    const bodyReceiver=continuationSupportAt(player.x,player.z,state,{maxY:floor+.05,minY:-30});
-    if(bodyReceiver)put('operator-contact',PREFIX+'shadow',finite(player.x),bodyReceiver.y+.008,finite(player.z),0,.65,1,.48,{contactShadow:true,receiverLevel:bodyReceiver.level});
-    const ringBounds=surfaces.filter(s=>Number.isInteger(s.level)).reduce((b,s)=>({minX:Math.min(b.minX,s.minX),maxX:Math.max(b.maxX,s.maxX),minZ:Math.min(b.minZ,s.minZ),maxZ:Math.max(b.maxZ,s.maxZ)}),{minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity});
-    const bottom=Math.min(...surfaces.map(s=>finite(s.y)))-.4;
-    if(Number.isFinite(ringBounds.minX))for(const[x,z,k]of[[ringBounds.minX-.12,ringBounds.minZ-.12,0],[ringBounds.maxX+.12,ringBounds.minZ-.12,1],[ringBounds.minX-.12,ringBounds.maxZ+.12,2],[ringBounds.maxX+.12,ringBounds.maxZ+.12,3]]){
-      put('shaft-column-'+k,PREFIX+'block',x,bottom,z,0,.24,Math.max(.5,floor+1.5-bottom),.24,{shaftDepth:true});
-    }
-    const weight=frame.counterweight;if(weight){
-      const radius=SOURCE_CONTINUATION.catch.counterweightRadius,top=weight.y+1.4,repeating=['returning','rewinding','hoisting','traversing','lowering-warning','lowering'].includes(weight.mode),visibleWeight=weight.y<=floor+SOURCE_CONTINUATION.catch.layerDrop+.5||repeating&&top<camera.eye[1]-.5;
-      if(visibleWeight){
-        put('counterweight',PREFIX+'counterweight',weight.x,weight.y,weight.z,0,radius*2,1.4,radius*2,{counterweight:true,mode:weight.mode,level:weight.level,collisionRadius:radius});
-        for(const[y,k]of[[.12,0],[.67,1],[1.26,2]])put('counterweight-hoop-'+k,PREFIX+'counterweight',weight.x,weight.y+y,weight.z,0,radius*2+.02,.075,radius*2+.02,{counterweightHoop:true});
-        for(let k=0;k<8;k++){const a=k/8*Math.PI*2;put('counterweight-rivet-'+k,PREFIX+'pin',weight.x+Math.cos(a)*(radius-.025),top+.006,weight.z+Math.sin(a)*(radius-.025),0,.045,.045,.045,{counterweightRivet:true});}
-        const cableTop=Math.max(top+.4,hoist.railY);put('counterweight-cable',PREFIX+'pin',weight.x,top,weight.z,0,.035,cableTop-top,.035,{counterweightCable:true});
-      }
-      if(repeating){
-        put('hoist-rail-x',PREFIX+'block',(hoist.shaft.x+hoist.start.x)/2,hoist.railY,hoist.shaft.z,0,Math.abs(hoist.shaft.x-hoist.start.x)+.15,.075,.075,{hoistRail:true});
-        put('hoist-rail-z',PREFIX+'block',hoist.start.x,hoist.railY,(hoist.shaft.z+hoist.start.z)/2,0,.075,.075,Math.abs(hoist.shaft.z-hoist.start.z)+.15,{hoistRail:true});
-        if(['hoisting','traversing','lowering-warning','lowering'].includes(weight.mode))put('hoist-trolley',PREFIX+'worn-block',weight.x,hoist.railY-.14,weight.z,0,.24,.14,.24,{hoistTrolley:true});
-      }
-      // The actual weight casts a dark contact at its support. A second broad
-      // return on the occupied shelf announces its approach from above.
-      if(weight.y>=floor-.2){const receiver=continuationSupportAt(weight.x,weight.z,state,{maxY:floor+.05,minY:-30});if(receiver)put('counterweight-shadow',PREFIX+'shadow',weight.x,receiver.y+.012,weight.z,0,radius*2+.25,1,radius*2+.25,{threatShadow:true,mode:weight.mode,receiverLevel:receiver.level});
-        if(weight.active&&weight.mode==='warning')put('counterweight-warning',PREFIX+'warning',weight.x,weight.y+.008,weight.z,0,radius*2+.38,1,radius*2+.38,{counterweightWarning:true});}
-      if(weight.active&&weight.mode==='lowering-warning'){const receiver=continuationSupportAt(weight.x,weight.z,{phase:'catch',feet:SOURCE_CONTINUATION.catch.top},{maxY:SOURCE_CONTINUATION.catch.top+.05,minY:SOURCE_CONTINUATION.catch.top-.05});
-        if(receiver)put('lowering-footprint-warning',PREFIX+'warning',weight.x,receiver.y+.008,weight.z,0,radius*2+.38,1,radius*2+.38,{counterweightWarning:true,loweringWarning:true,receiverLevel:receiver.level});}
-      if(!repeating){const lampX=weight.x+1.3,lampZ=weight.z-.65;put('counterweight-lamp',PREFIX+'lamp',lampX,weight.y+2.1,lampZ,0,1,1,1,{practical:true,counterweightPractical:true});lights.push({id:PREFIX+'counterweight-light',x:origin.x+lampX,y:origin.y+weight.y+2,z:origin.z+lampZ,radius:6,intensity:weight.active?2.1:.7,color:[.88,.59,.24],penetration:1});}
-      else lights.push({id:PREFIX+'hoist-light',x:origin.x+hoist.start.x,y:origin.y+hoist.railY-.7,z:origin.z+hoist.start.z,radius:9,intensity:1.8,color:[.78,.66,.43],penetration:1});
-    }
-    for(const[dx,dz,k]of[[-5,-5,0],[5,5,1],[-5,5,2]])lights.push({id:PREFIX+'shaft-light-'+k,x:origin.x-23+dx,y:origin.y+floor+3.8,z:origin.z+dz,radius:18,intensity:k===0?2.4:1.7,color:k===0?[.63,.73,.72]:[.44,.58,.64],penetration:1});
-  }else{
-    for(const[x,z,k]of[[-9,1,0],[8,-11,1],[-3,-20,2]]){put('wrong-return-lamp-'+k,PREFIX+'lamp',x,3.9,z,0,1.2,1,1,{practical:true});lights.push({id:PREFIX+'wrong-return-light-'+k,x:origin.x+x,y:origin.y+3.8,z:origin.z+z,radius:14,intensity:k===0?1.8:1.4,color:k===0?[.79,.67,.45]:[.52,.67,.70],penetration:1});}
   }
-  let worldEye=camera.eye.map((v,k)=>finite(v)+[origin.x,origin.y,origin.z][k]),cameraAimTarget=camera.aimTarget?.map((v,k)=>finite(v)+[origin.x,origin.y,origin.z][k])||null;const rotation=catchMode?angle(finite(studyRotation)):0;
-  if(Math.abs(rotation)>1e-8){const cx=origin.x+SOURCE_CONTINUATION.catch.center.x,cz=origin.z+SOURCE_CONTINUATION.catch.center.z,rigid=multiply(matrix(cx,0,cz,rotation),matrix(-cx,0,-cz));
-    for(const p of props){if(p.studyFixed)continue;p.matrix=multiply(rigid,p.matrix);p.x=p.matrix[12];p.y=p.matrix[13];p.z=p.matrix[14];
-      if(p.dropDirection){const d=transform(rigid,[p.dropDirection[0],0,p.dropDirection[1]]);p.dropDirection=[d[0]-rigid[12],d[2]-rigid[14]];}if(Number.isFinite(p.bodyYaw))p.bodyYaw=angle(p.bodyYaw+rotation);
-      if(p.physicalBounds){const b=p.physicalBounds,points=[];for(const x of[b.min[0],b.max[0]])for(const y of[b.min[1],b.max[1]])for(const z of[b.min[2],b.max[2]])points.push(...transform(rigid,[x+origin.x,y+origin.y,z+origin.z]));const bounds=boundsOf(points);p.physicalBounds={min:bounds.min,max:bounds.max};}}
-    for(const light of lights){const p=transform(rigid,[light.x,light.y,light.z]);[light.x,light.y,light.z]=p;}worldEye=transform(rigid,worldEye);if(cameraAimTarget)cameraAimTarget=transform(rigid,cameraAimTarget);
+  // Fixed grazing fixtures belong to particular model joints and lower frames.
+  // Their sources sit below/along the fabrication, rather than above a pale
+  // deck. This lets a carried beam reveal an object already readable as mass.
+  for(const [x,y,z,id,radius,intensity,attachment]of[
+    [9.4,5.7,-35.8,'piano-key-joint',9,.82,'ii-whole-piano-bank'],
+    [-19.9,-.6,-2.5,'case-bank-hinge',7,.70,'ii-whole-case-bank'],
+    [-27.97,6.8,-4.38,'case-crescent-brace',10,.84,'fabricated-catch-0'],
+    [-47.32,.7,-4.28,'soundboard-rib',10,.78,'fabricated-catch-1'],
+    [-46.9,-6.5,-18.62,'counterarc-bearing',9,.72,'fabricated-catch-2'],
+  ]){
+    put('practical-'+id,PREFIX+'lamp',x,y,z,0,1,1,1,{practical:true,attached:true});
+    lights.push({id:PREFIX+'fixed-'+id,x:origin.x+x,y:origin.y+y-.14,z:origin.z+z,radius,intensity,color:id==='piano-key-joint'?[.74,.58,.38]:[.43,.58,.60],penetration:0,attachedTo:attachment});
   }
-  const nearest=l=>(l.x-worldEye[0])**2+(l.y-worldEye[1])**2+(l.z-worldEye[2])**2;
-  return{phase,props,lights:lights.sort((a,b)=>Number(!!b.focusPractical)-Number(!!a.focusPractical)||nearest(a)-nearest(b)).slice(0,8),eye:worldEye,yaw:camera.yaw,pitch:camera.pitch,cameraAimTarget,authoredCamera:{eye:worldEye,yaw:camera.yaw,pitch:camera.pitch},strictOverhead:camera.strictOverhead,studyRotation:rotation,revealProgress:camera.revealProgress,recovery:frame.recovery?{kind:frame.recovery.kind,elapsed:frame.recovery.elapsed,duration:frame.recovery.duration}:null,floorH:floor+origin.y,falling:!!frame.fall,activeLevel,shownLevels:[...shownLevels].sort((a,b)=>a-b),hiddenAbove,geometry:{surfaces,solids,doors},counts:{surfaces:props.filter(p=>p.physicalKind==='surface').length,solids:props.filter(p=>p.physicalKind==='solid').length,props:props.length,lights:Math.min(8,lights.length),body:props.filter(p=>p.playerBody).length},source:frame};
+  // The landing and narrow spine behind the entry are the floor just crossed,
+  // with their original lower fixtures translated through the shared door.
+  // They stay fixed in this world; architectural visibility still occludes them.
+  const priorDoor=continuationDoors(state).find(door=>door.id==='wrong-entry-return');
+  const earthfallOffset=finite(priorDoor?.z,3.5)-SOURCE_EARTHFALL.passage.exitZ;
+  for(const row of[
+    {id:'lower-spine',x:2.2,y:3.2,z:-28,radius:19,intensity:2.1,color:[.52,.64,.65]},
+    {id:'lower-head',x:0,y:3.8,z:-7,radius:22,intensity:2.8,color:[.55,.68,.69]},
+  ])lights.push({...row,id:PREFIX+'inherited-'+row.id,x:origin.x+row.x,y:origin.y+row.y,z:origin.z+row.z+earthfallOffset,penetration:0,inheritedEarthfall:true});
+  // These are the retained Earthfall anchors, translated by the real lower
+  // doorway alignment: the current Earthfall exit becomes Source II entry z=3.5.
+  put('upper-exit-remnant',goods.frameMesh,0,100,SOURCE_EARTHFALL.passage.upperExitZ+earthfallOffset,0,3/goods.opening.width,3.05/goods.opening.height,1,{architecture:true,inheritedRuins:true,upperRemnant:true,cullRadius:8});
+  put('upper-ellery-retained','source_demolition_retained',-18,100,9+earthfallOffset,Math.PI,1,1,1,{architecture:true,inheritedRuins:true,upperRemnant:true,sourceAnchor:'earthfall-ellery',cullRadius:90});
+  // A finite service-road view carries the existing drive's destination
+  // language through the final open leaves. It begins beyond the completion
+  // plane; this is a preview of that handoff, not a replacement drive route.
+  const exit=SOURCE_CONTINUATION.catch.finalDoor;
+  put('onward-road-preview',PREFIX+'road-preview',exit.x+7,exit.y,exit.z,0,12,1,6.5,{onwardPreview:true,region:'catch',previewOf:'existing-source-drive',cullRadius:10});
+  for(const side of[-1,1])put('onward-road-kerb-'+side,PREFIX+'road-kerb',exit.x+7,exit.y,exit.z+side*3.35,0,12,1,.2,{onwardPreview:true,kerb:true,region:'catch'});
+  const worlds=['wrong-return','catch'].map(phase=>sourceSurroundingsFrame({...state,phase},{reducedMotion}));
+  for(const world of worlds)props.push(...sourceSurroundingsProps(world,{origin}));
+  const activeWorld=worlds[phaseOf(state)==='catch'?1:0];
+  const surroundings={world:activeWorld.world,clock:activeWorld.time,reducedMotion:!!reducedMotion,
+    score:activeWorld.score,waves:activeWorld.waves,events:activeWorld.impacts,
+    persistentWorlds:worlds.map(world=>({world:world.world,...world.diagnostics.counts})),
+    props:props.filter(p=>p.surroundings).length,
+    gate:{x:origin.x-18,y:origin.y+8.39,z:origin.z-12,width:2.2,height:2.86,normalX:1,normalZ:0}};
+  let eye=camera.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),worldYaw=camera.yaw;
+  const rotation=phaseOf(state)==='catch'?finite(studyRotation):0;
+  if(rotation){const cx=origin.x+center.x,cz=origin.z+center.z,rigid=multiply(matrix(cx,0,cz,rotation),matrix(-cx,0,-cz));for(const p of props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];}for(const l of lights){const q=transform(rigid,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}eye=transform(rigid,eye);worldYaw=angle(worldYaw+rotation);}
+  if(rotation){const gate=surroundings.gate,q=transform(multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),[gate.x,gate.y,gate.z]);gate.x=q[0];gate.z=q[2];gate.normalX=Math.cos(rotation);gate.normalZ=Math.sin(rotation);}
+  const near=light=>Math.hypot(light.x-eye[0],light.y-eye[1],light.z-eye[2]);
+  const lookingBack=phaseOf(state)==='wrong-return'&&-Math.cos(worldYaw)>.45&&Math.abs(Math.sin(worldYaw))<.7;
+  const lightPriority=light=>light.focusPractical?2:lookingBack&&light.inheritedEarthfall?1:0;
+  const selectedLights=lights.sort((a,b)=>lightPriority(b)-lightPriority(a)||near(a)-near(b)).slice(0,SOURCE_CONTINUATION_ARCHITECTURE.maxLights);
+  return{phase:phaseOf(state),props,lights:selectedLights,eye,yaw:worldYaw,pitch:camera.pitch,authoredCamera:{eye,yaw:worldYaw,pitch:camera.pitch},strictOverhead:false,cameraAimTarget:null,
+    revealProgress:null,recovery:frame.recovery?{kind:frame.recovery.kind,elapsed:frame.recovery.elapsed,duration:frame.recovery.duration}:null,floorH:player.y+origin.y,falling:!!frame.fall,activeLevel:state.level,
+    shownLevels:[...shownLevels].sort((a,b)=>a-b),hiddenAbove:[],geometry:{surfaces,solids,doors},source:frame,surroundings,
+    counts:{surfaces:props.filter(p=>p.physicalKind==='surface').length,solids:props.filter(p=>p.physicalKind==='solid').length,props:props.length,lights:selectedLights.length,body:0},
+    architecture:{persistentRegions:[...new Set(props.map(p=>p.region).filter(Boolean))],assemblies:props.filter(p=>p.assemblyId).map(p=>({id:p.assemblyId,mesh:p.mesh,orientation:p.orientation,supportId:p.supportId})),catchStages:SOURCE_CONTINUATION.catch.levels,
+      stairTreads:surfaces.filter(p=>p.role==='stair').length,spindleContinuous:true,upperRemnantHeight:100,far:SOURCE_CONTINUATION_ARCHITECTURE.far,instances:props.length}};
 }
 
-export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},anchor={x:0,y:0,z:0},installMeshes=installSourceContinuationMeshes,getViewport=()=>renderer.r3dViewCamera?.(),studyRotation=0}={}){
-  let initialized=false,released=false,loading=null,repair=null,error=null,last=null,lastFalling=false;
-  const customNames=meshLibrary.map(p=>p.name),required=[...customNames,...retained,...retainedDoor];
+export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},anchor={x:0,y:0,z:0},installMeshes=installSourceContinuationMeshes,getViewport=()=>renderer.r3dViewCamera?.(),getTorch=()=>({on:false,look:{power:0}}),getLighting=()=>null,getReducedMotion=()=>false,studyRotation=0}={}){
+  const rangeOwner=Symbol('source-continuation-range');
+  let releaseRange=null,initialized=false,released=false,loading=null,repair=null,error=null,last=null,lastFalling=false,torchFrame={on:false,look:{power:0}},lightingFrame=sourceContinuationLighting(),lightingKey='';
+  const customNames=meshLibrary.map(p=>p.name),required=requiredMeshes();
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh));};
   function clearSource(){
-    renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);
+    renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);
   }
   async function install(){
     if(released)return false;await prewarmSourceContinuationAssets({renderer,props,resolveAsset,installMeshes});return!released;
   }
+  function updateLighting(){const next=sourceContinuationLighting(getLighting?.()),key=JSON.stringify(next);if(key!==lightingKey){renderer.r3dSetLightingContext?.(next);lightingFrame=next;lightingKey=key;}return next;}
   function initialize(){
     if(loading)return loading;loading=(async()=>{
       if(released)return false;
-      if(!await install()||released)return false;clearSource();const size=256,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);for(let i=0;i<rgba.length;i+=4)rgba.set([0,0,0,ZONE.sourceSpace],i);
-      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});renderer.r3dSetLightingContext?.(sourceBlueprintLighting({ambientColor:[.57,.65,.62],ambientIntensity:.073,captureExposure:4.4,whitePointScale:1,screen:'stochastic'}));renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
-    })().catch(reason=>{error=String(reason?.message||reason);throw reason;});return loading;
+      if(!await install()||released)return false;
+      if(typeof props.setAuthoredPropRange!=='function')throw Error('The Source continuation far-range lease is unavailable.');
+      releaseRange=props.setAuthoredPropRange(rangeOwner,SOURCE_CONTINUATION_ARCHITECTURE.far);
+      clearSource();props.setSourceSurroundingsGate?.({x:finite(anchor.x)-18,y:finite(anchor.y)+8.39,z:finite(anchor.z)-12,width:2.2,height:2.86});const size=256,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);for(let i=0;i<rgba.length;i+=4)rgba.set([0,0,0,ZONE.sourceSpace],i);
+      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});updateLighting();renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
+    })().catch(reason=>{releaseRange?.();releaseRange=null;error=String(reason?.message||reason);throw reason;});return loading;
   }
   function render(state){
     if(!initialized||released)return false;if(error)throw Error(error);
@@ -330,10 +437,11 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
       // its last presented raster instead of flashing a loading-black frame.
       if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});return true;
     }
-    const viewport=getViewport?.();last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,studyRotation});renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
+    const viewport=getViewport?.();last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,studyRotation,reducedMotion:!!getReducedMotion()});props.setSourceSurroundingsGate?.(last.surroundings.gate);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     if(last.falling||lastFalling||last.authoredCamera)renderer.r3dSnapCameraOnNextFrame?.();lastFalling=last.falling;
-    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
+    updateLighting();const heldTorch=getTorch?.();torchFrame={on:!!heldTorch?.on,look:{...(heldTorch?.look||{})}};
+    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredPropRange:SOURCE_CONTINUATION_ARCHITECTURE.far,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:torchFrame.on?1:0,torchLook:torchFrame.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
   }
-  function dispose(){if(released)return false;released=true;initialized=false;clearSource();onRelease();return true;}
-  return{initialize,render,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts}:null})};
+  function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
+  return{initialize,render,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,architecture:last.architecture,surroundings:last.surroundings,torch:torchFrame,lighting:{...lightingFrame}}:null})};
 }

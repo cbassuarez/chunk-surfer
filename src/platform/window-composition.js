@@ -5,7 +5,7 @@ export const WINDOW_MEDIA_PROTOCOL=2;
 export const WINDOW_MEDIA_SURFACE_LABELS=Object.freeze(
   Array.from({length:MAX_MEDIA_SURFACES},(_,index)=>`window-media-${index+1}`),
 );
-export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice','source-warning','source-decay']);
+export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice','source-warning','source-decay','source-study']);
 export const WINDOW_MEDIA_CONTENT_KINDS=Object.freeze(['video','image','snapshot','text','procedural']);
 export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment']);
 export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector','terminal']);
@@ -77,6 +77,7 @@ export function normalizeWindowMediaAssignment(value={}){
     content,
     crop:normalizeCrop(source.crop),
     phaseOffsetMs:Math.max(0,Math.round(Number(source.phaseOffsetMs)||0)),
+    clockMode:source.clockMode==='source'?'source':'score',
   });
 }
 
@@ -348,6 +349,75 @@ export function scoreTimeAt(score,nowMs){
   return score?.loop?elapsed%duration:Math.min(duration,elapsed);
 }
 
+// One application clock for cues, optical faults and transitions. A hold
+// removes elapsed wall time instead of catching the score up on resume.
+export function createWindowMediaClock({epochMs=0,nowMs=epochMs}={}){
+  let epoch=Number.isFinite(Number(epochMs))?Number(epochMs):0,removed=0,heldAt=null;
+  const time=value=>Number.isFinite(Number(value))?Number(value):Date.now();
+  const now=(at=Date.now())=>heldAt===null?time(at)-removed:heldAt-removed;
+  return{
+    now,elapsed:(at=Date.now())=>Math.max(0,now(at)-epoch),
+    hold(value,at=Date.now()){
+      const raw=time(at);
+      if(value&&heldAt===null)heldAt=raw;
+      else if(!value&&heldAt!==null){removed+=Math.max(0,raw-heldAt);heldAt=null;}
+      return now(raw);
+    },
+    reset(nextEpoch=0,at=nextEpoch){epoch=time(nextEpoch);removed=0;heldAt=null;return now(at);},
+    snapshot:(at=Date.now())=>({held:heldAt!==null,nowMs:now(at),elapsedMs:Math.max(0,now(at)-epoch)}),
+  };
+}
+
+// Each image has its own transport. Content freeze is deliberately independent
+// of application hold: stopping a source must not stop its retained reference
+// or the score that stages their separation. Reassignment explicitly rejoins
+// the application timeline with its authored phase offset.
+export function createWindowVideoClock({score={},assignment={},nowMs=Number(score.epochMs)||0,reducedMotion=false}={}){
+  const durationMs=Math.max(1,Number(score.durationMs)||12000);
+  const timeline=createWindowMediaClock({epochMs:Number(score.epochMs)||0,nowMs});
+  let content=assignment,playhead=createWindowMediaClock({epochMs:nowMs,nowMs});
+  let basePhase=(reducedMotion?0:timeline.elapsed(nowMs))+Math.max(0,Number(assignment.phaseOffsetMs)||0);
+  let applicationHeld=false,contentFrozen=false;
+  const raw=value=>Number.isFinite(Number(value))?Number(value):Date.now();
+  const mediaDuration=value=>Math.max(.001,Number(value)||durationMs/1000);
+  const updateHold=at=>playhead.hold(applicationHeld||contentFrozen||!!reducedMotion,at);
+  updateHold(nowMs);
+  function time(at=Date.now(),{durationSeconds}={}){
+    const seconds=mediaDuration(durationSeconds),phase=basePhase+playhead.elapsed(raw(at));
+    const period=content.clockMode==='source'?seconds*1000:durationMs,loop=content.clockMode==='source'||score.loop;
+    const unit=loop?((phase%period)+period)%period/period:Math.max(0,Math.min(1,phase/period));
+    return content.content?.playback==='reverse'?seconds*(1-unit):seconds*unit;
+  }
+  function rebase(phase,at){basePhase=phase;playhead=createWindowMediaClock({epochMs:at,nowMs:at});updateHold(at);}
+  function seek(ms,at=Date.now(),{durationSeconds}={}){
+    const seconds=mediaDuration(durationSeconds),target=Math.max(0,Math.min(seconds,(Number(ms)||0)/1000));
+    const unit=content.content?.playback==='reverse'?1-target/seconds:target/seconds;
+    rebase(unit*(content.clockMode==='source'?seconds*1000:durationMs),raw(at));return target;
+  }
+  function capture(at,options){
+    if(Number.isFinite(options?.currentTimeSeconds))seek(options.currentTimeSeconds*1000,at,options);
+  }
+  return{
+    time,
+    playbackRate:({durationSeconds}={})=>content.clockMode==='source'?1:mediaDuration(durationSeconds)/(durationMs/1000),
+    assign(next,at=Date.now()){
+      content=next||{};const stamp=raw(at);
+      rebase((reducedMotion?0:timeline.elapsed(stamp))+Math.max(0,Number(content.phaseOffsetMs)||0),stamp);
+    },
+    freeze(value,at=Date.now(),options={}){
+      const stamp=raw(at);if(value&&!contentFrozen)capture(stamp,options);
+      contentFrozen=!!value;updateHold(stamp);
+    },
+    hold(value,at=Date.now(),options={}){
+      const stamp=raw(at);if(value&&!applicationHeld)capture(stamp,options);
+      applicationHeld=!!value;timeline.hold(applicationHeld,stamp);updateHold(stamp);
+    },
+    seek,
+    snapshot:(at=Date.now(),options={})=>({held:applicationHeld,frozen:contentFrozen,reducedMotion:!!reducedMotion,
+      timeSeconds:time(at,options),timelineMs:timeline.elapsed(at),phaseOffsetMs:Number(content.phaseOffsetMs)||0}),
+  };
+}
+
 export function paneScoreStateAt(score,{nowMs=score?.epochMs||0,events=[]}={}){
   const state={assignment:score.initial,visible:true,frozen:false,shader:null,seekMs:null,geometry:null};
   const elapsed=scoreTimeAt(score,nowMs),eventSet=new Set(events.map(stableId));
@@ -380,7 +450,7 @@ export function createPaneScoreEnvelope(plan,paneId,{targetLabel,sessionToken,re
   return freeze({
     protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:String(targetLabel||''),sessionToken:stableId(sessionToken),revision:Math.max(1,Math.floor(Number(revision)||1)),
     cueId:plan.cueId,paneId:surface.id,score,snapshotData,snapshotFrames:freeze(frames),
-    description:surface.description,draggable:surface.draggable,desktopOrigin:{x:0,y:0},coherent:false,shader:surface.shader,
+    description:surface.description,draggable:surface.draggable,reducedMotion:!!plan.reducedMotion,desktopOrigin:{x:0,y:0},coherent:false,shader:surface.shader,
     fault:{...plan.fault,seed:(Number(plan.fault?.seed)||0)+surface.index*19,intensity:Math.max(0,Math.min(1,Number(plan.fault?.intensity)*Number(surface.faultScale||1)))},
   });
 }
@@ -497,7 +567,39 @@ export function titleCompositionPlan({endingId='',epochMs=Date.now(),reducedMoti
 }
 
 const DEATH_MEDIA=freeze({natatorium:'demolition',hall:'cathedral',practice:'flowers-seb',chapel:'bellringers-datamosh','source-final':'eye-s3'});
-export function deathCompositionPlan({battleId='',snapshotToken='',reduceDread=false,epochMs=Date.now(),reducedMotion=false,flashMode='full'}={}){
+// The selected Last Exposure keeps the already-dithered world image intact.
+// `terminal` is the existing image pass-through profile; it intentionally does
+// not run this captured final output through the media dither a second time.
+function lastExposureEchoPlan({purpose,battleId='',snapshotToken,epochMs,reducedMotion,flashMode}){
+  const positions=[{x:.06,y:.16},{x:.94,y:.16}];
+  const surfaces=positions.map((initial,index)=>({
+    id:`${purpose}:last-exposure:${index}`,content:{kind:'snapshot',token:snapshotToken},
+    width:192,height:108,entry:initial,initial,
+    target:{anchorX:initial.x,anchorY:initial.y},crop:{x:0,y:0,w:1,h:1},
+    shader:'terminal',faultScale:.1,sensitivity:'none',draggable:false,
+    description:'The same final world exposure; secondary image, no controls',
+  }));
+  const targets=surfaces.map(surface=>surface.id);
+  const cues=[{id:'last-exposure-hold',atMs:0,operations:[
+    {type:'freeze',targets},{type:'shader',targets,coherent:true,intensity:0},
+  ]}];
+  if(purpose==='death')cues.push(
+    {id:'last-exposure-one-remains',atMs:2500,operations:[{type:'hide',targets:[targets[1]]}]},
+    {id:'last-exposure-yield',atMs:4000,operations:[{type:'hide',targets:[targets[0]]}]},
+  );
+  return compileWindowCompositionPlan({
+    compositionId:`${purpose}:last-exposure${battleId?`:${stableId(battleId)}`:''}`,
+    sceneId:purpose==='death'?`battle:${stableId(battleId)}`:'return',purpose,
+    epochMs,reducedMotion,flashMode,surfaces,
+    score:{durationMs:purpose==='death'?5200:9000,loop:false,cues},
+    completion:{mode:'nonblocking'},foldDurationMs:1,
+    fault:{profile:'terminal',intensity:0,seed:0,cadenceMs:720},
+    formation:{mode:'memory-unfold',durationMs:1,staggerMs:0},
+  });
+}
+
+export function deathCompositionPlan({battleId='',snapshotToken='',reduceDread=false,epochMs=Date.now(),reducedMotion=false,flashMode='full',lastExposure=false}={}){
+  if(lastExposure)return lastExposureEchoPlan({purpose:'death',battleId,snapshotToken,epochMs,reducedMotion,flashMode});
   const clinical=battleId==='source-final';
   const observer=reduceDread?procedural('iris-abstraction',{description:'Abstract iris'}):video('eye-s5',{sensitivity:'clinical',description:'Clinical observer'});
   const encounter=clinical&&reduceDread?procedural('game-fragment'):video(DEATH_MEDIA[battleId]||'demolition',{sensitivity:clinical?'clinical':'none'});
@@ -542,8 +644,9 @@ export function deathCompositionPlan({battleId='',snapshotToken='',reduceDread=f
 // sides — and it means the report inherits the composition's own nvme-sector
 // fault, so the phosphor degrades along with everything else in the shot.
 export function returnCompositionPlan({
-  sections=[], snapshotTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+  sections=[], snapshotTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',lastExposure=false,
 }={}){
+  if(lastExposure)return lastExposureEchoPlan({purpose:'return',snapshotToken:snapshotTokens[0],epochMs,reducedMotion,flashMode});
   // Two to eight, because that is what a composition is; a single-pane return
   // is the transport on its own and does not need the desktop at all.
   const count=Math.max(2,Math.min(MAX_MEDIA_SURFACES,snapshotTokens.length));

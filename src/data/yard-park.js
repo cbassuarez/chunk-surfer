@@ -66,21 +66,22 @@ export const YARD_PARK_PROPS = freeze([
   freeze({ id: 'yard-park-tree-sw', mesh: 'opening_street_tree_small_c', fallbackMesh:VEGETATION_FALLBACKS.opening_street_tree_small_c, x: 54, y: 244.5, yaw: 1.04, scale: .98, interactive: false, structural: true, blocks: false }),
   freeze({ id: 'yard-park-tree-se', mesh: 'opening_street_tree_small_b', fallbackMesh:VEGETATION_FALLBACKS.opening_street_tree_small_b, x: 65, y: 245, yaw: -.18, scale: 1.08, interactive: false, structural: true, blocks: false }),
 
-  // Hedge along the west and south edges. These block, and that is the point:
-  // the park has one way in, at the head of its path, so it reads as a place you
-  // enter rather than a texture you walk over. The east side is left open to the
-  // yard, where yard-fence-west already runs out.
+  // The west edge remains planted. At the tower end, a real opening continues
+  // the garden spine into the west-door forecourt. The original overlapping
+  // eleven-metre runs sealed both that path and the door's axis.
   freeze({ id: 'yard-park-hedge-west-north', mesh: 'yard_hedge_dense', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_dense, blocks: true, x: 51, y: 227.8, yaw: 0, scale: 1, interactive: false, structural: true }),
   freeze({ id: 'yard-park-hedge-west-south', mesh: 'yard_hedge_run', blocks: true, x: 51, y: 239.4, yaw: 0, scale: 1, interactive: false, structural: true }),
-  freeze({ id: 'yard-park-hedge-south-west', mesh: 'yard_hedge_corner', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_corner, blocks: true, x: 56, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
-  freeze({ id: 'yard-park-hedge-south-east', mesh: 'yard_hedge_dense', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_dense, blocks: true, x: 64, y: 250.6, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
+  freeze({ id: 'yard-park-hedge-south-west', mesh: 'yard_hedge_corner', fallbackMesh:VEGETATION_FALLBACKS.yard_hedge_corner, blocks: true, x: 54.8, y: 250.6, renderOffsetX:-.2, renderOffsetZ:.1, yaw: Math.PI / 2, scale: .7, interactive: false, structural: true }),
+  // The generic laurel fallback is an eleven-metre hedge, so this compact
+  // end-clump waits for its real mesh rather than briefly covering the gap.
+  freeze({ id: 'yard-park-hedge-south-east', mesh: 'opening_park_laurel', blocks: true, x: 69.5, y: 250.6, renderOffsetZ:.1, yaw: Math.PI / 2, scale: 1, interactive: false, structural: true }),
 
   // Plant only the seams. The paths, fountain, benches and the single entrance
   // stay visibly and physically clear.
   freeze({ id:'yard-park-nettles-west', mesh:'vegetation_nettle_cluster', x:52.1, y:232.2, yaw:.21, scale:.94, interactive:false, structural:true, blocks:false }),
   freeze({ id:'yard-park-weeds-east', mesh:'vegetation_weed_cluster', x:67.7, y:243.1, yaw:-.43, scale:1.06, interactive:false, structural:true, blocks:false }),
   freeze({ id:'yard-park-grass-north-east', mesh:'vegetation_grass_edge', x:66.8, y:224.0, yaw:.08, scale:.92, interactive:false, structural:true, blocks:false }),
-  freeze({ id:'yard-park-grass-south', mesh:'vegetation_grass_edge', x:59.0, y:249.4, yaw:Math.PI/2, scale:1, interactive:false, structural:true, blocks:false }),
+  freeze({ id:'yard-park-grass-south', mesh:'vegetation_grass_edge', x:55.7, y:249.4, renderOffsetX:.2, renderOffsetZ:-.1, yaw:Math.PI/2, scale:1, interactive:false, structural:true, blocks:false }),
   freeze({ id:'yard-park-leaves-west', mesh:'vegetation_leaf_scatter', x:52.6, y:242.2, yaw:.17, scale:.88, interactive:false, structural:true, blocks:false }),
   freeze({ id:'yard-park-leaves-south', mesh:'vegetation_leaf_scatter', x:64.8, y:249.2, yaw:-.24, scale:.82, interactive:false,structural:true, blocks:false }),
 

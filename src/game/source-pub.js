@@ -166,7 +166,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
     if(result.event?.text){say({who:'unknown',voiceSpeaker:'pub-iona',sourceLabel:'IONA',text:result.event.text});save('service');}
   }
   const scene={
-    id:'source-pub',blocksWorld:true,blocksInput:true,suppressesHud:true,allowsLook:false,handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
+    id:'source-pub',blocksWorld:true,blocksInput:true,suppressesHud:true,get allowsLook(){return !closed&&!paused&&!leaving&&!exitPrompt&&renderReady();},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(loadPromise)return loadPromise;
       save('loading');
@@ -185,7 +185,9 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
     checkpoint:()=>save('requested'),serialize:snapshot,
     pause(){if(closed)return false;paused=true;clearMotion();if(ready)save('pause');return true;},
     resume(){paused=false;clearMotion();return !closed;},
-    setLook(look){if(finite(look?.yaw)&&finite(look?.pitch)){state.yaw=heading(look.yaw);state.pitch=clamp(look.pitch,-.8,.75);}},
+    lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),
+    lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
+    setLook(look){if(!scene.allowsLook||!finite(look?.yaw)||!finite(look?.pitch))return false;state.yaw=heading(look.yaw);state.pitch=clamp(look.pitch,-.8,.75);return true;},
     key(e={}){
       const key=String(e.key||e.code||'').toLowerCase().replace(/^key/,'');
       if(key==='escape'||e.controllerAction==='back'){clearMotion();if(ready)save('pause-request');return false;}
@@ -218,7 +220,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
         if(state.caption)uiText(2,4,state.caption,'ui-dim');
         if(state.fall)uiCenter(rows-3,'THE ROOM BELOW · YOU CAN STILL LOOK','ui-secondary');
         if(focus)uiCenter(rows-3,`E · ${focus.label}`,'ui-primary');
-        uiCenter(rows-1,'WASD · WALK   RIGHT DRAG · LOOK   ESC · PAUSE','ui-dim');}
+        uiCenter(rows-1,'WASD · WALK   MOUSE · LOOK   ESC · PAUSE','ui-dim');}
     },
     exit(){if(closed)return false;closed=true;clearMotion();if(!leaving)save('interrupted');renderer?.dispose?.();onExit({checkpoint:snapshot(),completed:state.completed});return true;},
   };

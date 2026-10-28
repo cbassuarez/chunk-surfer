@@ -53,7 +53,7 @@ test('the old white wall is demoted, real open gaps remain, and the final civil 
 });
 
 test('production and study landscape source mirrors are byte-identical',()=>{
- for(const file of['scene.js','landscape-scene.js','landscape-motion.js','costal-geometry.js'])assert.equal(readFileSync(new URL('../src/game/source-drive/cut/'+file,import.meta.url),'utf8'),readFileSync(new URL('../artifacts/source-drive-study/cut/'+file,import.meta.url),'utf8'));
+ for(const file of['scene.js','landscape-scene.js','landscape-motion.js','costal-geometry.js','anatomy-layout.js'])assert.equal(readFileSync(new URL('../src/game/source-drive/cut/'+file,import.meta.url),'utf8'),readFileSync(new URL('../artifacts/source-drive-study/cut/'+file,import.meta.url),'utf8'));
 });
 
 

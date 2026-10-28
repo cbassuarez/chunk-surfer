@@ -1,4 +1,5 @@
 import fs from'node:fs';import{createHash}from'node:crypto';import{BoxGeometry,SphereGeometry,CylinderGeometry,ExtrudeGeometry,Shape,BufferGeometry,BufferAttribute}from'three';import{mergeGeometries}from'three/addons/utils/BufferGeometryUtils.js';import{encodeGlb}from'../rebuild-tree-crowns.mjs';
+import {UK_ROAD_MARKINGS} from '../../../src/data/uk-road-markings.js';
 const out='artifacts/source-drive-study/cut',parts=[];
 const shape=new Shape();[[.04,.62],[.115,.68],[.115,.72],[.065,.775],[.115,.83],[.115,.87],[.04,.93],[.025,.916],[.10,.855],[.10,.838],[.045,.775],[.10,.712],[.10,.692],[.025,.634]].forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();const beam=new ExtrudeGeometry(shape,{steps:1,depth:3.08,bevelEnabled:false});beam.translate(0,0,-1.54);parts.push(beam);
 for(const z of[-.75,.75]){const post=new BoxGeometry(.13,1.05,.085);post.translate(-.03,.425,z);parts.push(post);for(const y of[.70,.85]){const bolt=new SphereGeometry(.018,8,6);bolt.scale(.55,1,1);bolt.translate(.126,y,z);parts.push(bolt);}}
@@ -23,5 +24,20 @@ const road=sourceDoc.meshes.find(m=>m.name==='drive_road'),asphalt=road.primitiv
 for(const[name,key,size]of[['position','POSITION',3],['normal','NORMAL',3],['uv','TEXCOORD_0',2]])g.setAttribute(name,new BufferAttribute(Float32Array.from(readSourceAccessor(asphalt.attributes[key])),size));g.setIndex(readSourceAccessor(asphalt.indices));
 const material=structuredClone(sourceDoc.materials[asphalt.material]),texture=sourceDoc.textures[material.pbrMetallicRoughness.baseColorTexture.index],image=sourceDoc.images[texture.source],view=sourceDoc.bufferViews[image.bufferView],imageBytes=sourceBin.subarray(view.byteOffset,view.byteOffset+view.byteLength);material.pbrMetallicRoughness.baseColorTexture.index=0;doc.materials.push(material);
 mesh('drive_plain_paving',[primitive([g],doc.materials.length-1)]);
+// Paint has its own unscaled transverse width. Widening the stopping courts
+// must not widen a 100mm stroke, move the lane centre or repeat tiny dashes.
+const paintMaterial=doc.materials.length;
+doc.materials.push({name:'UK weathered white thermoplastic',pbrMetallicRoughness:{baseColorFactor:[.72,.72,.68,1],metallicFactor:0,roughnessFactor:.86},extras:{materialFactors:'gltf',studyLocalFinish:true}});
+function paintQuad(x,width,length){
+ const q=new BufferGeometry(),y=.006;
+ q.setAttribute('position',new BufferAttribute(new Float32Array([x-width/2,y,-length/2,x-width/2,y,length/2,x+width/2,y,length/2,x+width/2,y,-length/2]),3));
+ q.setAttribute('normal',new BufferAttribute(new Float32Array([0,1,0,0,1,0,0,1,0,0,1,0]),3));
+ q.setAttribute('uv',new BufferAttribute(new Float32Array([0,0,0,1,1,1,1,0]),2));q.setIndex([0,1,2,0,2,3]);return q;
+}
+const edges=()=>[-1,1].map(side=>paintQuad(side*UK_ROAD_MARKINGS.laneEdgeLateralM,UK_ROAD_MARKINGS.strokeM,1));
+mesh('drive_uk_edge_markings',[primitive(edges(),paintMaterial)]);
+mesh('drive_uk_centre_and_edges',[primitive([...edges(),paintQuad(0,UK_ROAD_MARKINGS.strokeM,UK_ROAD_MARKINGS.markM/UK_ROAD_MARKINGS.roadReceiverLengthM)],paintMaterial)]);
 doc.bufferViews.push({buffer:0,byteOffset:n,byteLength:imageBytes.length});doc.images=[{bufferView:doc.bufferViews.length-1,mimeType:image.mimeType}];doc.textures=[{source:0,sampler:0}];doc.samplers=[texture.sampler===undefined?{wrapS:10497,wrapT:10497}:sourceDoc.samplers[texture.sampler]];chunks.push(imageBytes);n+=imageBytes.length;
-doc.buffers=[{byteLength:n}];const bytes=encodeGlb(doc,Buffer.concat(chunks)),triangles=doc.meshes.flatMap(m=>m.primitives).reduce((t,p)=>t+doc.accessors[p.indices].count/3,0);fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/cut-roadside.glb',bytes);fs.writeFileSync(out+'/roadside-metrics.json',JSON.stringify({sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,triangles,railSpan:3.08,lampEmitter:[.335,4.16,0],unmarkedPaving:{source:'drive.glb / drive_road / damp road aggregate',sourceSha256:createHash('sha256').update(sourceBytes).digest('hex'),textureUnmodified:true,paintPrimitiveOmitted:true},role:'stationary formed rail, hooded inspection lamps and unmarked ordinary asphalt; collision is derived from exact visible mesh bounds in route-boundaries.js'},null,2));console.log(bytes.length,triangles);
+doc.buffers=[{byteLength:n}];const bytes=encodeGlb(doc,Buffer.concat(chunks)),triangles=doc.meshes.flatMap(m=>m.primitives).reduce((t,p)=>t+doc.accessors[p.indices].count/3,0);fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/cut-roadside.glb',bytes);fs.writeFileSync(out+'/roadside-metrics.json',JSON.stringify({sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,triangles,railSpan:3.08,lampEmitter:[.335,4.16,0],unmarkedPaving:{source:'drive.glb / drive_road / damp road aggregate',sourceSha256:createHash('sha256').update(sourceBytes).digest('hex'),textureUnmodified:true,paintPrimitiveOmitted:true},ukRoadMarkings:UK_ROAD_MARKINGS,role:'stationary formed rail, hooded inspection lamps, unchanged asphalt and separately scaled UK road paint; collision remains derived from visible route boundary meshes'},null,2));console.log(bytes.length,triangles);
+
+const canonical="public/assets/source-drive/cut";fs.mkdirSync(canonical,{recursive:true});for(const name of["cut-roadside.glb","roadside-metrics.json"])fs.copyFileSync(out+"/"+name,canonical+"/"+name);

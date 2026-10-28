@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {canonicalAnatomy,retargetMesh} from './characters/vigil-tailoring.mjs';
 import {parseCharacterAsset} from '../../src/render/character-asset.js';
 import {SOURCE_LAST_RECEPTION_RESIDENT_RIGS as RIGS} from '../../src/data/source-last-reception-resident-rigs.js';
-import {PUB_CHARACTER_DESIGNS as DESIGNS,pubCharacterPose} from '../../src/render/pub-character-performance.js';
+import {PUB_CHARACTER_DESIGNS as DESIGNS} from '../../src/render/pub-character-performance.js';
 const root=fileURLToPath(new URL('../../',import.meta.url)),read=file=>JSON.parse(fs.readFileSync(root+file));
 const masters={male:canonicalAnatomy(read('public/assets/recordist-characters/contractor.json')),female:canonicalAnatomy(read('artifacts/bus-woman-production/anatomy.json'))};
 const input=fs.readFileSync(root+'public/assets/academic-society-characters.glb'),academic=parseCharacterAsset(input.buffer.slice(input.byteOffset,input.byteOffset+input.length));
@@ -25,7 +25,6 @@ function write(file){const bin=Buffer.concat(chunks);gltf.buffers=[{byteLength:b
 const skins={};for(const[source,bones]of Object.entries(RIGS)){const joints=bones.map(b=>{const i=gltf.nodes.length;gltf.nodes.push({name:`pub_${source}_${b.name}`,translation:b.head});gltf.scenes[0].nodes.push(i);return i;});skins[source]=gltf.skins.length;gltf.skins.push({name:`pub_${source}_skin`,joints,inverseBindMatrices:accessor(bones.flatMap(b=>[1,0,0,0,0,1,0,0,0,0,1,0,-b.head[0],-b.head[1],-b.head[2],1]),'MAT4')});}
 const academicMesh=(face)=>academic.entries.find(e=>e.name===`academic_society_${face}`||e.name===`academic_population_${face}`);
 function identityMeshes(face){return academicMesh(face).primitives.map(p=>({name:`original ${face} ${academic.json.materials[p.material].extras.characterRole}`,role:academic.json.materials[p.material].extras.characterRole,positions:[...p.positions],normals:[...p.normals],skinIndex:[...p.joints],skinWeight:[...p.weights],indices:[...p.indices]}));}
-function attach(mesh,d,side,center){const rig=RIGS[d.source],bone=rig.findIndex(b=>b.name===`hand_${side}`),rest=rig[bone],pose=pubCharacterPose(d.id,{reducedMotion:true}),p=pose.joints[`pub_${d.source}_${rest.name}`],head=add(rest.head,p.translation),inverse=[-p.rotation[0],-p.rotation[1],-p.rotation[2],p.rotation[3]];for(let v=0;v<mesh.positions.length;v+=3){const point=add(mesh.positions.slice(v,v+3),center);mesh.positions.splice(v,3,...add(rest.head,rot(sub(point,head),inverse)));}mesh.skinIndex=Array.from({length:mesh.positions.length/3},()=>[bone,0,0,0]).flat();return normals(mesh);}
 const summary=[];
 for(const[id,d]of Object.entries(DESIGNS)){
   const source=masters[d.source],male=masters.male,parts=[],mats={skin:material(`${id} natural skin`,d.skin,'skin',.79),hair:material(`${id} fitted hair`,d.hair,'hair',.88),lip:material(`${id} subtle lip`,d.skin.map((v,i)=>v*(i===0?.77:.57)),'lip',.84),'eye white':material(`${id} eye`,[.49,.47,.42],'eye',.48),iris:material(`${id} iris`,[.07,.06,.035],'iris',.5),shirt:material(`${id} woven shirt`,d.shirt,'shirt'),coat:material(`${id} ${d.wardrobe}`,d.coat,'cloth'),trouser:material(`${id} trousers`,d.trouser,'trousers'),shoe:material(`${id} leather shoes`,[.045,.038,.03],'leather',.65),trim:material(`${id} tailored trim`,d.wardrobe==='apron'?[.43,.36,.25]:d.coat.map(v=>Math.min(.7,v*1.2)),'trim'),metal:material(`${id} small buttons`,[.36,.28,.16],'metal',.55,.4),glass:material(`${id} thick clear pub glass`,[.39,.41,.32],'glass',.23),ale:material(`${id} amber ale`,[.29,.16,.045],'ale',.4),cloth:material(`${id} bar cloth`,[.63,.61,.49],'cloth')};
@@ -35,32 +34,39 @@ for(const[id,d]of Object.entries(DESIGNS)){
   for(const m of source.meshes){const role=/tailored-trousers|denim-trousers|sock/.test(m.name)?'trouser':/closed-leather-shoe|leather-shoe|shoe-sole|shoe-welt|lace|instapseam/.test(m.name)?'shoe':null;if(role)push(neutral(m),role);}
   for(const m of male.meshes){let role=null;if(m.name==='contractor-continuous-top'||/rolled-cuff/.test(m.name))role='shirt';else if(m.name==='contractor-folded-pale-collar'&&d.wardrobe!=='pullover')role='shirt';else if(/tailored-waistcoat/.test(m.name)&&['waistcoat','cardigan'].includes(d.wardrobe))role='coat';else if(/waistcoat-bound-edge/.test(m.name)&&['waistcoat','cardigan'].includes(d.wardrobe))role='trim';else if(/waistcoat-button/.test(m.name)&&['waistcoat','cardigan'].includes(d.wardrobe))role='metal';if(role){const out=neutral(m,male);if(d.source==='female')for(let i=0;i<out.positions.length;i+=3){const y=out.positions[i+1],x=out.positions[i],front=Math.max(0,Math.min(1,(-out.positions[i+2]-.04)/.12));out.positions[i+2]-=.018*Math.exp(-(((y-1.18)/.13)**2))*Math.exp(-((x/.17)**2))*front;}push(normals(out),role);}}
   if(d.wardrobe==='apron')for(const m of identityMeshes('noe'))if(['cloth','tailored trim','accent'].includes(m.role)){const donor={...male,meshes:[]},out=retargetMesh(m,donor,source,{height:source.height,width:1,depth:1});push(out,m.role==='cloth'?'coat':'trim');}
-  if(d.stance==='polish'){
-    const scale=pubCharacterPose(id,{reducedMotion:true}).scale,local=pubCharacterPose(id,{reducedMotion:true}).hands.L,center=add(local,[.025,.04,-.075]);
-    push(attach(lathe('hand held polishing tumbler',[[0,0],[.032,0],[.036,.085],[.032,.085],[.028,.005],[0,.005]],[0,0,0]),d,'L',center),'glass');
-    push(attach(sheet('creased off white polishing cloth',[0,0,0],[.14,.17],0),d,'R',add(center,[.035,.01,-.03])),'cloth');
-  }else if(d.stance==='pint'){
-    const center=add(pubCharacterPose(id,{reducedMotion:true}).hands.R,[-.015,-.015,-.07]);
-    push(attach(lathe('held thick pub pint',[[0,0],[.038,0],[.047,.125],[.041,.125],[.033,.008],[0,.008]],[0,0,0]),d,'R',center),'glass');
-    push(attach(lathe('amber ale inside held pint',[[0,.009],[.033,.009],[.040,.105],[0,.105]],[0,0,0]),d,'R',center),'ale');
-  }
   const mesh=gltf.meshes.length;gltf.meshes.push({name:d.mesh,primitives:primitives(parts),extras:{identity:id,source:d.source,anatomical:true,forward:[0,0,-1],seatY:d.seatY??null,wardrobe:d.wardrobe,parts:parts.map(m=>m.name)}});gltf.scenes[0].nodes.push(gltf.nodes.length);gltf.nodes.push({name:d.mesh,mesh,skin:skins[d.source]});summary.push({id,mesh:d.mesh,source:d.source,seatY:d.seatY??null,wardrobe:d.wardrobe,vertices:parts.reduce((n,m)=>n+m.positions.length/3,0),triangles:parts.reduce((n,m)=>n+m.indices.length/3,0),parts:parts.map(m=>m.name)});
 }
 const characterFile='public/assets/pub-characters.glb',characterOutput=write(characterFile);parseCharacterAsset(characterOutput.buffer.slice(characterOutput.byteOffset,characterOutput.byteOffset+characterOutput.length));
 // A static service tray changes physical contents during Iona's optional task.
 gltf=fresh();delete gltf.skins;chunks=[];cursor=0;
 const trayMetal=material('Lyric service tray worn dark wood',[.23,.14,.075],'wood',.91,0),glass=material('Lyric service tumbler thick clear rim',[.40,.43,.38],'glass',.24),water=material('Lyric service drinking water',[.27,.34,.34],'water',.29),beerFilm=material('Lyric collected pint residue',[.23,.15,.06],'ale',.45);
-function serviceTray(name,loaded){
+function serviceTray(name,contents){
+  const loaded=contents==='waters';
   const parts=[],tray=lathe('broad shallow wooden service tray',[[0,.006],[.18,.006],[.194,.012],[.197,.023],[.194,.028],[.185,.026],[.180,.017],[0,.017]],[0,0,0],64);tray.material=trayMetal;parts.push(tray);
-  for(const[x,z]of[[-.075,-.015],[.075,.025]]){
+  for(const[x,z]of contents==='bare'?[]:[[-.075,-.015],[.075,.025]]){
     const profile=loaded?[[0,0],[.031,0],[.035,.100],[.031,.100],[.027,.006],[0,.006]]:[[0,0],[.036,0],[.044,.128],[.039,.128],[.031,.007],[0,.007]],vessel=lathe(loaded?'clean water tumbler':'collected empty pint glass',profile,[x,.017,z],40);vessel.material=glass;parts.push(vessel);
     const liquid=lathe(loaded?'water inside clean tumbler':'small residue inside empty pint',loaded?[[0,.007],[.027,.007],[.030,.078],[0,.078]]:[[0,.007],[.031,.007],[.031,.010],[0,.010]],[x,.017,z],32);liquid.material=loaded?water:beerFilm;parts.push(liquid);
   }
-  const mesh=gltf.meshes.length;gltf.meshes.push({name,primitives:primitives(parts,{skinned:false}),extras:{dimensions:[.394,loaded?.117:.145,.394],origin:'ground',original:true}});gltf.scenes[0].nodes.push(gltf.nodes.length);gltf.nodes.push({name,mesh});
+  const mesh=gltf.meshes.length;gltf.meshes.push({name,primitives:primitives(parts,{skinned:false}),extras:{dimensions:[.394,contents==='bare'?.028:loaded?.117:.145,.394],origin:'ground',original:true}});gltf.scenes[0].nodes.push(gltf.nodes.length);gltf.nodes.push({name,mesh});
 }
-serviceTray('pub_service_tray_loaded',true);serviceTray('pub_service_tray_empty',false);
+serviceTray('pub_service_tray_loaded','waters');serviceTray('pub_service_tray_empty','empties');serviceTray('pub_service_tray_bare','bare');
 function boxProp(name,center,size){const p=[];for(const z of[-1,1])for(const y of[-1,1])for(const x of[-1,1])p.push(add(center,[x*size[0]/2,y*size[1]/2,z*size[2]/2]));return rigid(name,p,[0,2,3,0,3,1,4,5,7,4,7,6,0,1,5,0,5,4,2,6,7,2,7,3,0,4,6,0,6,2,1,3,7,1,7,5]);}
 function addStatic(name,parts,dimensions){const mesh=gltf.meshes.length;gltf.meshes.push({name,primitives:primitives(parts,{skinned:false}),extras:{dimensions,origin:'ground',original:true}});gltf.scenes[0].nodes.push(gltf.nodes.length);gltf.nodes.push({name,mesh});}
+const ceramic=material('Lyric handled tea mug glaze',[.55,.49,.36],'ceramic',.31),tea=material('Lyric tea in held mug',[.16,.095,.035],'tea',.45),ale=material('Lyric amber ale in held pint',[.29,.16,.045],'ale',.4),clothMaterial=material('Lyric polishing cloth',[.63,.61,.49],'cloth',.97);
+function vessel(name,{height,radius,material=glass,liquid=null,fillHeight=height*.78,mug=false}={}){
+  const inner=radius-.006,parts=[],bowl=lathe('thick hollow drinking vessel',[[0,0],[radius*.80,0],[radius,height],[inner,height],[inner*.80,.007],[0,.007]],[0,0,0],48);bowl.material=material;parts.push(bowl);
+  if(liquid!=null){const fill=lathe('visible drink within the open bowl',[[0,.008],[inner*.8,.008],[inner*.97,fillHeight],[0,fillHeight]],[0,0,0],48);fill.material=liquid;parts.push(fill);}
+  if(mug){const points=[],indices=[],segments=32,tube=8;for(let i=0;i<=segments;i++){const a=i/segments*Math.PI*2;for(let j=0;j<tube;j++){const b=j/tube*Math.PI*2;points.push([radius+.016+Math.cos(a)*(.030+.005*Math.cos(b)),height*.53+Math.sin(a)*(.036+.005*Math.cos(b)),Math.sin(b)*.005]);if(i){const v=(i-1)*tube+j,n=(j+1)%tube;indices.push(v,(i-1)*tube+n,i*tube+n,v,i*tube+n,i*tube+j);}}}const handle=rigid('open rounded mug handle',points,indices);handle.material=material;parts.push(handle);}
+  addStatic(name,parts,[mug?radius*2+.051:radius*2,height,radius*2]);
+}
+vessel('pub_held_pint',{height:.125,radius:.047,liquid:ale});
+vessel('pub_held_water',{height:.100,radius:.035,liquid:water});
+vessel('pub_held_mug',{height:.112,radius:.055,material:ceramic,liquid:tea,mug:true});
+vessel('pub_held_glass',{height:.100,radius:.035});
+vessel('pub_service_water_glass',{height:.100,radius:.035,liquid:water});
+vessel('pub_service_empty_glass',{height:.128,radius:.044,liquid:beerFilm,fillHeight:.010});
+const polishingCloth=sheet('creased independent polishing cloth',[0,0,0],[.12,.13],0);polishingCloth.material=clothMaterial;addStatic('pub_polishing_cloth',[polishingCloth],[.12,.13,.03]);
+gltf.meshes.at(-1).extras.origin='palm';
 const openerMetal=material('Lyric steel bottle opener',[.28,.29,.25],'metal',.41,.68),openerRubber=material('Lyric bottle opener oxblood handle',[.16,.035,.025],'rubber',.83),openerPoints=[],openerIndices=[],openerSegments=40;
 for(const y of[.003,.010])for(const[rX,rZ]of[[.023,.028],[.013,.017]])for(let k=0;k<openerSegments;k++){const a=k*Math.PI*2/openerSegments;openerPoints.push([Math.sin(a)*rX,y,Math.cos(a)*rZ-.051]);}
 for(let k=0;k<openerSegments;k++){const n=(k+1)%openerSegments,a=k,b=n,c=openerSegments+k,d=openerSegments+n,A=2*openerSegments+k,B=2*openerSegments+n,C=3*openerSegments+k,D=3*openerSegments+n;openerIndices.push(a,d,b,a,c,d,A,B,D,A,D,C,a,b,B,a,B,A,c,C,D,c,D,d);}

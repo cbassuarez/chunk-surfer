@@ -34,6 +34,7 @@ export const STREET_PILOT_MESHES=freeze({
   pedestrianHousing:'street_pilot_ped_housing',
   pedestrianRed:'street_pilot_ped_red',
   pedestrianGreen:'street_pilot_ped_green',
+  pedestrianButton:'street_pilot_ped_button',
 });
 
 export const STREET_PILOT=freeze({
@@ -46,7 +47,12 @@ export const STREET_PILOT=freeze({
   groundAnchor:{x:78,y:0,z:-7.5},
   road:{z0:-10.5,z1:-4.5,y:.012,collisionFloorM:0},
   crossing:{x0:76.6,x1:79.4,z0:-12.5,z1:-2.5,centreX:78},
-  stopLines:{eastbound:74,westbound:82,widthM:.20},
+  // Nearest paint edges are 3m from the nearest crossing-stud edges (TSM6
+  // 18.1.5). The line spans the complete half carriageway, including setts.
+  stopLines:{eastbound:73.45,westbound:82.55,widthM:.20},
+  markings:{type:'signal-controlled-pedex',crossingDiagram:'1055.1',stopDiagram:'1001',zigzagDiagram:'1001.3',
+    studSizeM:.10,studPitchM:.50,strokeM:.10,zigzagMarkLengthM:2,
+    zigzagGapM:.15,zigzagBandM:.50,zigzagCount:8,terminalWidthM:.20,terminalLengthM:.60},
   noseClearanceM:.35,
   parkingStripZ:-3.5,
   cycle:{
@@ -97,14 +103,14 @@ export const STREET_PILOT=freeze({
     meshForward:'local-negative-z',
   },
   vehicles:[
-    {id:'late-bus',kind:'bus',direction:1,laneZ:-9,stopLineX:74},
-    {id:'north-night-car',kind:'car',direction:-1,laneZ:-6,stopLineX:82},
+    {id:'late-bus',kind:'bus',direction:1,laneZ:-9,stopLineX:73.45},
+    {id:'north-night-car',kind:'car',direction:-1,laneZ:-6,stopLineX:82.55},
   ],
   vehicleSignals:[
-    {id:'eastbound-primary',x:75.6,y:0,z:-12.9,yaw:-Math.PI/2},
-    {id:'eastbound-secondary',x:80.4,y:0,z:-1.1,yaw:-Math.PI/2},
-    {id:'westbound-primary',x:80.4,y:0,z:-1.1,yaw:Math.PI/2},
-    {id:'westbound-secondary',x:75.6,y:0,z:-12.9,yaw:Math.PI/2},
+    {id:'eastbound-primary',x:75.95,y:0,z:-12.9,yaw:-Math.PI/2},
+    {id:'eastbound-secondary',x:80.05,y:0,z:-1.1,yaw:-Math.PI/2},
+    {id:'westbound-primary',x:80.05,y:0,z:-1.1,yaw:Math.PI/2},
+    {id:'westbound-secondary',x:75.95,y:0,z:-12.9,yaw:Math.PI/2},
   ],
   pedestrianSignals:[
     // Far-side faces look back toward the pedestrian approaching from across
@@ -112,6 +118,14 @@ export const STREET_PILOT=freeze({
     {id:'north-far-side',x:79.8,y:0,z:-12.9,yaw:Math.PI},
     {id:'south-far-side',x:76.2,y:0,z:-1.1,yaw:0},
   ],
+  pedestrianButtons:[
+    // Short posts sit beside, rather than inside, the red tactile field. A
+    // turning cone is modeled beneath each housing. Automatic authored demand
+    // remains gameplay-owned; these units do not pretend to be interactive.
+    {id:'north-demand',x:76.1,y:0,z:-13.1,yaw:Math.PI/6},
+    {id:'south-demand',x:79.9,y:0,z:-1.9,yaw:Math.PI+Math.PI/6},
+  ],
+  buttonGeometry:{centreHeightM:1.05,tactileCone:true,footwayAngleDeg:30,interactive:false},
   signalGeometry:{
     vehicleHeadBottomM:2.45,
     vehicleLensCentresM:[3.3625,3.0125,2.6625],
@@ -126,7 +140,7 @@ export const STREET_PILOT=freeze({
   researchStatus:{
     cycle:'DfT sequence and durations checked; local layout remains prototype',
     pedestrianClearance:'10m kerb-to-kerb with 10s blackout and 1s all-red; participant observation pending',
-    signals:'new pilot feature; no existing crossing system is being preserved',
+    signals:'UK Pedex visual treatment; automatic authored demand retained, not a real controller simulation',
     vehicle:'body sockets pending generated-asset measurement',
   },
 });

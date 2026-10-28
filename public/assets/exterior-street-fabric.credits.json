@@ -1,0 +1,35 @@
+{
+  "pack": "exterior-street-fabric.glb",
+  "author": "Chunk Surfer project",
+  "geometry": "Original project-native street construction; existing authored footprint retained",
+  "sources": [
+    "src/data/exterior-street-fabric.js",
+    "tools/chunk_surfer/exterior-street-fabric-geometry.mjs",
+    "tools/chunk_surfer/build-exterior-street-fabric.mjs",
+    "src/data/street-pilot.js",
+    "src/data/exterior-foreground.js",
+    "src/data/main-stair-geometry.js"
+  ],
+  "sha256": "f780ccd6ac839f78c360a8b0b017e1da52300043b0f39d0df304101fff8b4bba",
+  "lettering": {
+    "font": "NimbusSans-Bold.otf",
+    "pipeline": "Existing pinned physical lettering pipeline",
+    "manifest": "assets/fonts/manifest.json",
+    "license": "URW AGPL-3.0 with upstream document exception; vendored license retained"
+  },
+  "references": [
+    {
+      "url": "https://www.gov.uk/government/publications/inclusive-mobility-making-transport-accessible-for-passengers-and-pedestrians",
+      "use": "Two-metre ordinary clear footway and consistent/wall-mounted equipment principles"
+    },
+    {
+      "url": "https://historicengland.org.uk/images-books/publications/streets-for-all/",
+      "use": "Coherent kerbs/drainage, uncluttered street equipment and context-scaled lighting"
+    },
+    {
+      "url": "https://www.leeds.gov.uk/planning/planning-policy/supplementary-planning-documents-and-guidance/adopted-supplementary-planning-documents",
+      "use": "Current local context is2023TransportSPD; revoked StreetDesignGuide not used"
+    }
+  ],
+  "limitations": "Standards-informed fictional game street. No highway certification or survey-derived dimensions claimed."
+}

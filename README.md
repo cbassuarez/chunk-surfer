@@ -4,13 +4,10 @@ Chunk Surfer is a horror game about recording room tone inside Ellery
 Conservatory: five rooms, one minute of clean silence each, and a building that
 keeps listening back.
 
-It is also, to our knowledge, the only 3D psychological horror game with a
-local Stable Diffusion material renderer that keeps generating during play.
-Authored PBR textures remain underneath while one visible surface is
-re-hallucinated every 5–15 seconds, when the frame budget permits, and
-crossfaded into the building over 6–12 seconds. Geometry, lighting, depth,
-movement, and UI remain native. The visual lens runs locally and offline on the
-player's GPU; no image is uploaded to a cloud service.
+The normal renderer uses authored PBR textures with native geometry, lighting,
+depth, movement, and UI. A separate, experimental Stable Diffusion material
+renderer is retained in the source checkout for development; it is not part of
+the ordinary desktop build and is never needed to run the game.
 
 ![Chunk Surfer title screen](docs/media/title-screen.png)
 
@@ -26,9 +23,11 @@ builds instead of split release-file parts.
 | Windows | x64 | itch channel `win-beta` |
 | Linux | x64 | itch channels `linux-appimage-beta` and `linux-deb-beta` |
 
-The beta downloads are intentionally large. Release builds include the offline
-lens sidecar and pinned diffusion model resources up front, so the game should
-not ask players to download model weights after first launch.
+**v0.3.0 release preparation:** this source configuration excludes Stable
+Diffusion, its sidecar, Python runtime and model weights on all three supported
+platforms. It is not a claim that v0.3.0 is already published. Earlier
+SD-bundled downloads are unchanged; check the actual version and artifact
+before describing a public download as the new lean release.
 
 GitHub Releases remain available as a developer mirror at
 [github.com/cbassuarez/chunk-surfer/releases/latest](https://github.com/cbassuarez/chunk-surfer/releases/latest).
@@ -38,13 +37,42 @@ per-file release limit, so use itch unless you specifically need the mirror.
 ### Before You Install
 
 - macOS builds currently target Apple Silicon.
-- Windows and Linux builds target x64 machines with NVIDIA/CUDA-capable
-  hardware for the bundled lens runtime.
+- Windows and Linux builds target x64 machines. New lean builds do not require
+  NVIDIA/CUDA for Stable Diffusion; ordinary 3D graphics support remains required.
+  Hardware compatibility on integrated GPUs and edge devices needs playtesting.
+- Windows portable builds require the Microsoft Edge WebView2 Runtime.
 - Desktop betas are unsigned while release testing is in progress, so your OS
   may show an unsigned-app warning.
 - The microphone feature is optional. If enabled, the game only uses local
-  loudness to decide whether a room is quiet enough; it does not record or
-  upload audio.
+  loudness to decide whether a room is quiet enough. Optional voice slates and
+  voicemail can be recorded locally when you choose to make them; they are not
+  automatically uploaded.
+
+## Uninstall and saved data
+
+Removing the app normally leaves its local save, settings and recorded material
+on this device, so a later install can continue. To remove them as well, open
+**Settings → Memory** from the title screen and choose **Erase all data &
+restart**. Confirm the action when prompted. Wait for the game to restart;
+if it reports a failure, close other game windows and retry. This permanently
+erases local progress, achievements, settings and locally stored recordings.
+Then quit and remove the app using the appropriate method below. The game does
+not erase data merely because the app is uninstalled.
+
+- **macOS:** move Chunk Surfer from Applications to the Trash and empty it.
+- **Windows portable build:** delete the extracted Chunk Surfer folder. If you
+  installed an MSI instead, uninstall Chunk Surfer through Windows Settings →
+  Apps.
+- **Linux AppImage:** delete the AppImage. For a `.deb` install, remove the
+  Chunk Surfer package using your package manager.
+- **Steam:** use the client's uninstall command after choosing whether to erase
+  local data in the game.
+
+The reset must be performed before removing the app. Copies you explicitly
+exported and any operating-system backups are not removed. Platform-level
+microphone grants are controlled by the operating system.
+If a platform's cloud sync is enabled, a cloud copy may restore progress after
+local deletion; its removal and synchronization must be verified separately.
 
 ## Feedback and Bug Reports
 
@@ -76,8 +104,8 @@ Core systems:
 - A field bag with map, documents, equipment, records, and return reports.
 - Full keyboard/mouse and controller-oriented input paths for normal play.
 - Optional local microphone loudness checks for the room-silence mechanic.
-- A local Stable Diffusion material layer that periodically re-hallucinates
-  visible authored surfaces without redrawing the camera image.
+- Authored PBR rendering with experimental local SD materials available only
+  in opt-in development sessions, excluded from v0.3.0 packaging.
 
 <table>
   <tr>
@@ -110,24 +138,27 @@ rewriting the game in another engine.
 
 ```sh
 npm install
-npm run lens:setup       # one time; installs the local GPU lens runtime
 npm run play:latest
 ```
 
-`play:latest` and `tauri:dev` start the separately managed development lens and
-the native Tauri app together. On a fresh cache the calibration screen generates
-all six ten-tile material banks. The authored 22-second opening credits begin
-only after calibration succeeds, and their clock pauses whenever the game is
-hidden or unfocused so the opening cannot expire behind another app.
+This starts the native app with authored PBR materials and **no** Python, SD
+sidecar, model weights, or calibration stage. The 22-second authored opening
+still runs normally. To develop the separately maintained local SD lens:
 
-Development deliberately supplies the same service protocol from the local
-Python environment so iteration can stay fast. Storefront and release builds do
-not use that runtime-download path: they ship the pinned model resources inside
-the app bundle so the download size honestly reflects the storage required to
-play.
+```sh
+npm run lens:setup               # only if developing SD
+npm run play:latest -- --sd      # explicit local SD session
+```
 
-For browser-only work, run `npm run lens:local` in one terminal and `npm run
-dev` in another, then open the Vite URL.
+In opt-in SD sessions, the local Python process generates the selected startup
+material bank and the remaining banks in the background. Existing no-SD
+preferences may be overridden by `--sd` for that session; `?nosd=1` forces a
+baseline in supported development URLs. Normal Tauri release builds cannot
+turn SD back on through URL flags or saved settings.
+
+For browser-only authored-material work, use `npm run dev` and open the Vite URL.
+A development lens session should use the `--sd` launcher, which supplies its
+own authenticated loopback endpoint.
 
 ### Web Build
 
@@ -138,11 +169,33 @@ npm run preview
 
 The Vite build uses `base: './'` so generated assets are safe for static preview and Tauri packaging.
 
+### Local dialogue editing
+
+In a loopback development session or an explicit native debug build, open
+**F10 → SESSION → EDIT DIALOGUE / F7**. The mode starts off on each
+launch. Press **F7** to edit the current dialogue, thought, or selected battle
+line. **Shift+F7** opens the visible-text list and saved edits; use **Tab** and
+**Enter** to choose a line. Editing does not require a pointer gesture or release
+look focus beforehand. Player pickers expose their short prompt and full spoken text as
+separate fields. **Save locally** applies the text immediately; **Esc** closes
+without applying unsaved changes. Editing pauses the encounter and releases
+held movement. It does not replay the line's actions or change its branching.
+
+Use **F8** to flag the current text quickly, or flag it in the editor as
+**Change**, **Remove**, **Rearrange**, or **Tune**, with an optional note.
+**TEXT EDITS / FLAGS / EXPORT** in the same god-menu section lists saved work
+and exports JSON with source context. Edits and flags live in a separate local
+review store; they survive reloads but require enabling the mode again. Reset
+controls restore authored text. If the underlying original changes, its older
+override stays inactive until reviewed. This feature does not write source
+documents or game saves. Ordinary release builds cannot enable it.
+
 ### Stage Steamworks Redistributables
 
 Personalized interference initializes Steamworks in the Tauri shell and reads
-only the current user's persona name. Before a desktop release, stage the
-official Valve redistributables from a Steamworks SDK checkout:
+only the current user's persona name when Steamworks is available. Before a
+Steam release, stage the official Valve redistributables from a Steamworks SDK
+checkout:
 
 ```sh
 npm run steamworks:stage -- /path/to/steamworks_sdk --platform=all
@@ -151,49 +204,65 @@ npm run steamworks:verify
 
 The staged `steam_api64.dll`, `libsteam_api.dylib`, and `libsteam_api.so` files
 belong in `src-tauri/steamworks-runtime/` and are bundled under `steamworks/`.
-`npm run tauri:build` refuses to package the current platform without its
-library. A local `steam_appid.txt` may be used for direct-launch SDK testing,
-but it is gitignored, is not a configured bundle resource, and must never ship.
+`npm run tauri:build:steam` verifies the current platform's Steamworks library
+before packaging. The ordinary `npm run tauri:build` does not require the
+Steamworks verification step. A local `steam_appid.txt` may be used for
+direct-launch SDK testing, but it is gitignored, is not a configured bundle
+resource, and must never ship.
 
-### Package the macOS Beta 6 Candidate
+### Run locally with or without the optional development lens
+
+```sh
+npm run play:latest          # normal game, authored materials only
+npm run play:latest -- --sd  # separate local Stable Diffusion development service
+```
+
+The `--sd` option needs `npm run lens:setup` and the locally installed model
+resources. Ordinary development, test and release builds do not. The SD tools
+remain under `tools/chunk_surfer/diffusion_server/` and are never packed into
+normal distributions.
+
+### Prepare the v0.3.0 Release Candidate
 
 ```sh
 npm run beta:build:mac
 ```
 
-This downloads the pinned model resources at build time, builds the Apple
-Silicon sidecar, merges `src-tauri/tauri.lens.conf.json`, and creates the DMG under
-`src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/`. It is intentionally
-large and can take a long time on its first run.
+This builds the lean authored-renderer game and creates a DMG under
+`src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/`. Neither the
+Stable Diffusion sidecar nor model weights are included. Use
+`npm run lean:verify -- "<path-to-Chunk Surfer.app>"` to check the actual app
+bundle for forbidden SD payload files.
 
-`npm run tauri:build` always merges the lens bundle config. If a packaged build
-does not contain `src-tauri/lens-resources/lens/` and a `chunk-lens` sidecar, it
-is not a release candidate.
-
-The Beta 2 source version is `0.1.1-beta.3`; the release tag is
-`v0.1.1-beta.3`. Before creating that tag, run:
+The candidate source version is `0.3.0`; the intended release tag is `v0.3.0`.
+Before tagging the verified source, run:
 
 ```sh
 npm test
 npm run test:acoustic
 npm run test:desktop
 npm run tauri:check
-npm run beta:preflight
+npm run release:preflight
 ```
 
-`beta:preflight` intentionally requires a clean worktree. Pushing the tag starts
-the release workflow, which builds the mandatory lens package independently on
-macOS Apple Silicon, Windows x64/NVIDIA, and Linux x64/NVIDIA runners and
-publishes a GitHub prerelease. Unsigned local bundles are expected at this
-stage. Signing, notarization, and storefront automation are tracked in
-`STORE_PREP.md`.
+`release:preflight` intentionally requires a clean worktree and checks `v0.3.0`
+against the package, Tauri and Cargo versions and its release notes. The legacy
+`beta:preflight` alias remains available. Pushing a release tag starts the
+workflow and publication, so preparation alone must not create or push the tag.
+A manual workflow run with `publish: false` validates the selected platform
+without publishing. A public release requires successful builds and package
+checks for macOS Apple Silicon, Windows x64 and Linux x64. The existing beta
+channels and unsigned status remain unchanged; a `0.3.0` version does not imply
+signing, notarization or completed platform QA. The optional SD development
+pipeline is not invoked by release CI. See `STORE_PREP.md` for the remaining
+publication checks.
 
-Windows release CI ships a portable zip instead of an installer. The offline
-lens payload is large enough that both NSIS and WiX/MSI can fail on
-GitHub-hosted Windows runners, so the beta release artifact keeps
-`chunk-surfer.exe`, `chunk-lens.exe`, and the `lens/` resources together in one
-folder. GitHub-hosted beta assets larger than 2 GiB are uploaded as split
-`.part-*` files with checksum manifests.
+Windows release CI currently ships a portable ZIP containing
+`chunk-surfer.exe`, the general `EULA.md`, and any staged Steamworks runtime.
+Players must extract the complete folder and keep its files together.
+The Windows payload validator rejects old `chunk-lens` binaries, model weights
+and lens resource directories. The GitHub release mirror still supports split
+assets if an unrelated future package exceeds its size limit.
 
 ### Stage and Publish itch Builds
 
@@ -221,9 +290,10 @@ workflow requires repository secret `BUTLER_API_KEY` and repository variable
 `ITCH_TARGET`.
 
 Local `itch:*` commands are mainly for checking already-downloaded artifacts.
-If your machine only has one platform build, publish just that channel with
-`ITCH_CHANNELS=mac-arm64-beta npm run itch:preview`; otherwise download the CI
-artifacts into `release-assets/` first.
+If your machine only has one platform build, preview just that channel with
+`ITCH_CHANNELS=mac-arm64-beta npm run itch:preview`; this does not publish it.
+For a complete release, download the current-version CI artifacts into
+`release-assets/` first.
 
 ### Tests
 

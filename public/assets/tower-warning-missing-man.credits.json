@@ -1,0 +1,9 @@
+{
+  "asset": "tower-warning-missing-man.glb",
+  "source": "tools/chunk_surfer/characters/build-tower-warning-missing-man.py",
+  "anatomicalSource": "MakeHuman hm08 CC0-1.0 via retained outskirts_overprint_body; see tools/chunk_surfer/character-sources/makehuman/{sources,weights-sources}.json and system/sources.json",
+  "retained": "Anatomical topology/envelopes, right-hand skin UV/texture, boot geometry/material and authored source walk leg motion. Shared source file unchanged.",
+  "bespoke": "Fitted thick knee overcoat, open front, rolled collar, notched lapels, welt pockets, physical cuffs, pinched felt trilby/brim/ribbon, cigarette/ash/ember geometry, diagnostic garment correctives and warning hold/smoke/walk performances.",
+  "conceptReference": "artifacts/outside-warning-ghost-study/concept-missing.png, generated design reference, not projected onto mesh.",
+  "license": "CC0 source components; Chunk Surfer-authored adaptation and geometry."
+}

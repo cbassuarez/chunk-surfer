@@ -30,7 +30,7 @@ export const GOD_PLACE_HOOKS = Object.freeze({
   'yard-fountain': Object.freeze({at:{x:60.5,y:233},facing:2,zone:ZONE.dock,group:'ground',floor:-0.3,component:'loading_bay',layer:'ground'}),
   'district-civic-court': Object.freeze({at:{x:116.5,y:336.5},facing:1,zone:ZONE.civicCourt,group:'ground',floor:0.12,component:'exterior_civic_block',layer:'ground'}),
   'district-bus-shelter': Object.freeze({at:{x:34,y:357},facing:0,zone:ZONE.civicCourt,group:'ground',floor:0.12,component:'exterior_civic_block',layer:'ground'}),
-  'district-pub-door': Object.freeze({at:{x:pubExteriorLogicalAt('pub-east-entry').x-.5,y:pubExteriorLogicalAt('pub-east-entry').y-.5},facing:2,zone:ZONE.dock,group:'ground',floor:0,component:'exterior_pub',layer:'ground'}),
+  'district-pub-door': Object.freeze({at:{x:pubExteriorLogicalAt('pub-east-entry').x-.5,y:pubExteriorLogicalAt('pub-east-entry').y-.5},facing:2,zone:ZONE.civicCourt,group:'ground',floor:0,component:'exterior_pub',layer:'ground'}),
   'district-pub-driver': Object.freeze({at:{x:77,y:282.5},facing:1,zone:ZONE.dock,group:'ground',floor:0,component:'loading_bay',layer:'ground'}),
   'pub-bar': Object.freeze({at:{x:43,y:446.5},facing:1,zone:ZONE.pub,group:'ground',floor:0.12,component:'exterior_pub',layer:'ground'}),
   'pub-vigil': Object.freeze({at:{x:40,y:447.5},facing:1,zone:ZONE.pub,group:'ground',floor:0.12,component:'exterior_pub',layer:'ground'}),

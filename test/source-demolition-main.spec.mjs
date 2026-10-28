@@ -137,15 +137,15 @@ test('global pre-world pass really ticks demolition before the Horizon-specific 
     'the encounter belongs to one global pre-world tick');
   assert.ok(loop.indexOf('tickSourceDemolition(dt)') < loop.indexOf('tickSourceSpace(dt)'));
   for (const name of ['ensureInteractionFocus', 'tickIndependentLook', 'tickHeldTurning', 'tickHeldMovement',
-    'tickPracticePropMotion', 'tickKeyCabinetMotion', 'tickOpeningSceneBed', 'tickHorizonBustPerformance',
-    'tickStopListeningAudio', 'tickChapelServiceAudio', 'tickPubRoomAudio', 'tickStBrendansSound',
-    'tickAcademicAdversaries', 'tickAcademicBouncers', 'tickAcademicSocietyPresentation', 'tickAcademicCrowdDread']) h[name] = () => {};
+    'tickPracticePropMotion', 'tickKeyCabinetMotion', 'tickOpeningSceneBed', 'tickExteriorPeople', 'tickTowerWarning', 'tickHorizonBustPerformance',
+    'tickStopListeningAudio', 'tickChapelServiceAudio', 'tickPubRoomAudio', 'syncArchitectureDoorAudio', 'tickStBrendansSound',
+    'tickAcademicFloorReturns', 'tickAcademicAdversaries', 'tickAcademicBouncers', 'tickAcademicSocietyPresentation', 'tickAcademicCrowdDread']) h[name] = () => {};
   h.tick = 1; h.nowLoopMs = 1000;
   Object.assign(h, {
     tickTowerPersonal: () => false, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
     PRES: { isActive: () => false }, sourceFearFloor: 0,
     tickHorizonScore: () => h.order.push('score'), speakHorizonMarker() {},
-    syncOutskirtsNight() {}, tickPayphone() {}, syncSourceRender: () => h.order.push('render'),
+    preparePayphoneRoadLoop() {}, syncOutskirtsNight() {}, tickPayphone() {}, syncSourceRender: () => h.order.push('render'),
     shakeMode: () => 'full',
   });
   Object.assign(h.chunkSurfRuntime, {
@@ -194,15 +194,17 @@ test('actual black helper requires Source, black world state, enabled effects an
 
 function attachResetDependencies(h) {
   Object.assign(h, {
+    recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>h.order.push('recording-pressure-reset')},
     towerBellDirector: null, bellTowerRuntime: null, bellTowerAudio: null,
     electricalHumRuntime: null, fountainWaterRuntime: null, forkToneRuntime: null,
     metronomeFieldRuntime: null, plantPipeRuntime: null, stopListeningGut: null, stopListeningAudioFrame: null,
-    chapelServiceAudio: null, chapelServiceAudioFrame: null, chapelServiceOcclusionKey: '', chapelServiceOcclusion: new Map(),
+    chapelServiceAudio: null, chapelChoirAudio: null, chapelMurmurAudio: null, chapelServiceAudioFrame: null, chapelServiceOcclusionKey: '', chapelServiceOcclusion: new Map(),
     brendanBellAudio: null, brendanSoundFrame: null, brendanSoundOcclusionKey: '', brendanSoundOcclusion: new Map(),
     personalWindowEffects: { end() {} }, STAB: { reportThreat() {} },
     SPEECH: { clearSpeech() {} }, CUES: { stopAllCues() {} },
     STORY: { stopAll() {}, stopTapeHiss() {} }, RT: { setBed() {} },
     sourceBellFieldAudio: null, sourceFaultTransitionStartedAt: 0,
+    sourceWindowMedia: { stop: async () => false },
     windowChoreography: { leaveSource: () => h.order.push('leave-source') },
     stairAttentionScene: null, stairAnomalyRuntime: null, stairPresenceSnapshot: null,
     sourceExitSnapshot: null, sourcePresenceWasActive: false,
@@ -218,17 +220,20 @@ function attachResetDependencies(h) {
     'clearStationPresentation', 'stopOutskirtsStreetAudio', 'resetOutskirtsLastLight', 'stopBellTowerRuntime',
     'clearInstrument', 'stopHushAudioRuntime', 'stopAllVoices', 'stopWorldLayerVoice', 'silenceAmbientDrone',
     'silenceSampleField', 'pushEvent', 'stopSourceDockDoorAudio', 'stopSourceShoreAudio', 'endHorizonScore',
-    'clearStairEnvironmentalTimers', 'endSourceHaystackMosh', 'resetMotionInput']) h[name] = () => {};
+    'clearStairEnvironmentalTimers', 'endSourceHaystackMosh', 'retireStandingTear', 'resetMotionInput', 'resetArchitectureDoorAudio']) h[name] = () => {};
   for (const name of ['r3dSetHorizon', 'r3dSetSourceShore', 'r3dSetSourceEmergency', 'r3dSetSourceWhiteout',
     'r3dSetSourceFault', 'r3dSetIndoorRain', 'r3dSetLocalLights', 'r3dSetSourceScene', 'r3dSetSourceSurface']) h.R3[name] = () => {};
-  for (const name of ['resetRunAudio', 'clearSourceRuntime', 'godClearSpecialWorlds', 'beginNewGameFlow']) {
+  for (const name of ['cancelRecordingPressureAudio','resetRunAudio', 'clearSourceRuntime', 'godClearSpecialWorlds', 'beginNewGameFlow']) {
     vm.runInContext(production(name), h, { filename: `src/main.js:${name}` });
   }
 }
 
 test('real audio reset and teardown clear demolition ownership, including the explicit new-run path', () => {
   const h = harness(); attachResetDependencies(h); h.tickSourceDemolition(.05);
+  let pressureStops=0;for(let i=0;i<2;i++)h.recordingPressureVoices.add({stop:()=>pressureStops++});
   const manager = h.managers[0]; h.resetRunAudio('test-reset');
+  assert.equal(pressureStops,2);assert.equal(h.recordingPressureVoices.size,0);
+  assert.equal(h.order.filter(e=>e==='recording-pressure-reset').length,1,'audio reset also clears the recording-pressure scheduler');
   assert.equal(manager.resets, 1); assert.equal(manager.destroys, 0);
   assert.equal(h.sourceDemolitionAudio, manager);
   assert.equal(h.clearSourceRuntime({ preserveWindows: true }), true);

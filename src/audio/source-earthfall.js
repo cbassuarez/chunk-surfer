@@ -13,7 +13,7 @@ export const SOURCE_EARTHFALL_AUDIO = Object.freeze({
 });
 const CONFIG = SOURCE_EARTHFALL_AUDIO;
 const MATERIALS = new Set(['restraint', 'failure-body', 'stone-spall']);
-const TYPES = new Set(['strain', 'fracture', 'footing-loss', 'catch', 'land']);
+const TYPES = new Set(['strain', 'fracture', 'footing-loss', 'catch', 'land','stratum-0','stratum-1','stratum-2']);
 const cache = new WeakMap();
 const valid = value => value !== null && value !== undefined && Number.isFinite(Number(value));
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
@@ -279,8 +279,9 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
           didPlay = material('failure-body', event, frame, options, .76);
           if (didPlay && effects) addResidual(event, frame, options);
         }
-        if (event.type === 'catch') didPlay = material('stone-spall', event, frame, options, .30);
-        if (event.type === 'land') didPlay = material('stone-spall', event, frame, options, .42);
+        if(event.type.startsWith('stratum-'))didPlay=material('stone-spall',event,frame,options,.48);
+        if (event.type === 'catch') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallImpactGain)?clamp(options.earthfallImpactGain,0,1):.7);
+        if (event.type === 'land') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallSettleGain)?clamp(options.earthfallSettleGain,0,1):.18);
       }
       if (didPlay) played++; else skipped++;
       history.push({ id: event.id, type: event.type, age: event.age, reason: didPlay ? 'played' : reason || 'voice-budget' });

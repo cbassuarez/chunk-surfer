@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "sha256": "15f9e65c8f030804d02d0ffcc0a957548c732bdc5388a62642c41d1fabc1241e",
+  "bytes": 7161472,
+  "totalVertices": 49456,
+  "totalTriangles": 89414,
+  "meshes": {
+    "bus_body_passage_left": {
+      "vertices": 17035,
+      "triangles": 29540,
+      "primitives": 13,
+      "closedBounds": {
+        "min": [
+          -0.9816170951530957,
+          0.5091760000213981,
+          3.3534429397639642
+        ],
+        "max": [
+          -0.44722128110357817,
+          2.2270125143720856,
+          3.8207015488449887
+        ]
+      },
+      "openBounds": {
+        "min": [
+          -0.9876825870727084,
+          0.501483674445601,
+          3.3557436164164725
+        ],
+        "max": [
+          -0.605,
+          2.668754160574084,
+          3.9192776991636284
+        ]
+      },
+      "side": -1,
+      "extras": {
+        "source": "shipped stage-three woman",
+        "targetNames": [
+          "unfold",
+          "paper",
+          "paperUnfold",
+          "strain"
+        ],
+        "coordinateSpace": "bus-local metres; instance at bus ground matrix"
+      }
+    },
+    "bus_body_passage_right": {
+      "vertices": 31277,
+      "triangles": 57816,
+      "primitives": 16,
+      "closedBounds": {
+        "min": [
+          -0.6754308298714202,
+          0.5091760000213981,
+          3.035773977044192
+        ],
+        "max": [
+          -0.2748994273166367,
+          2.225982169728278,
+          3.7747449374274846
+        ]
+      },
+      "openBounds": {
+        "min": [
+          0.605,
+          0.501483674445601,
+          3.2642010147002556
+        ],
+        "max": [
+          0.9993423433917029,
+          2.6674542490176525,
+          3.9725159654202233
+        ]
+      },
+      "side": 1,
+      "extras": {
+        "source": "shipped stage-three woman",
+        "targetNames": [
+          "unfold",
+          "paper",
+          "paperUnfold",
+          "strain"
+        ],
+        "coordinateSpace": "bus-local metres; instance at bus ground matrix"
+      }
+    },
+    "bus_body_passage_bag": {
+      "vertices": 890,
+      "triangles": 1664,
+      "primitives": 3,
+      "closedBounds": {
+        "min": [
+          -1.0819328423663896,
+          1.284617304801941,
+          3.3871849386465276
+        ],
+        "max": [
+          -0.8337137032948054,
+          1.6936173141002655,
+          3.7004571672352227
+        ]
+      },
+      "openBounds": {
+        "min": [
+          -1.0098447981294343,
+          1.479802064779193,
+          3.3549354427647144
+        ],
+        "max": [
+          -0.8711553174437837,
+          1.995807890463707,
+          3.650564825798313
+        ]
+      },
+      "side": -1,
+      "extras": {
+        "source": "shipped stage-three woman",
+        "targetNames": [
+          "unfold",
+          "paper",
+          "paperUnfold",
+          "strain"
+        ],
+        "coordinateSpace": "bus-local metres; instance at bus ground matrix",
+        "attachment": "bag"
+      }
+    },
+    "bus_body_passage_ticket": {
+      "vertices": 254,
+      "triangles": 394,
+      "primitives": 2,
+      "closedBounds": {
+        "min": [
+          -0.5523228322860967,
+          1.2590496877932427,
+          3.0272316435478746
+        ],
+        "max": [
+          -0.37923326372712846,
+          1.767461229331592,
+          3.210756906622023
+        ]
+      },
+      "openBounds": {
+        "min": [
+          0.8548874947638782,
+          1.447545245646126,
+          3.2814116607881667
+        ],
+        "max": [
+          0.9466095695243646,
+          2.0889714346799737,
+          3.579625411505361
+        ]
+      },
+      "side": 1,
+      "extras": {
+        "source": "shipped stage-three woman",
+        "targetNames": [
+          "unfold",
+          "paper",
+          "paperUnfold",
+          "strain"
+        ],
+        "coordinateSpace": "bus-local metres; instance at bus ground matrix",
+        "attachment": "paper"
+      }
+    }
+  },
+  "materials": 18,
+  "morphTargets": [
+    "unfold",
+    "paper",
+    "paperUnfold",
+    "strain"
+  ],
+  "aperture": {
+    "minX": -0.55,
+    "maxX": 0.55,
+    "floor": 0.5,
+    "top": 2.6,
+    "frontZ": 3,
+    "crossZ": 4.1,
+    "backZ": 4.4
+  },
+  "sourceTriangles": 73306,
+  "medialCutSegments": 1102,
+  "closedCutLoops": 19,
+  "sourceAssets": {
+    "body": "fe7ccca4d3dafcdfe2a85b1844f452f9b344dd7548c3085b69d1a8c14a5694ae",
+    "ordinary": "48cc9e6680daa90dcd0a0e4beae2c8683558e906ba990b95da3591c2230fd030"
+  },
+  "handoff": {
+    "mode": "wait or ticket-wait",
+    "seconds": 4,
+    "passage": {
+      "clock": 4,
+      "noticeAt": 0,
+      "passAt": 1,
+      "closeAt": 0.8,
+      "exitedAt": null,
+      "gazeYaw": -1.5
+    },
+    "instance": "bus matrix at ground"
+  },
+  "contractSha256": "3c4c8dcb8dde83e2b793b78624f369d7d18c4b91b8d904c274db36418ead6410"
+}

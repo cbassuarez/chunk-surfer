@@ -194,7 +194,7 @@ test('the original170m crossing, moving first lift, receiving ledge and offset c
   assert.equal(f.runtime.demolitionFrame().active, false); assert.deepEqual(omen(f), []);
 });
 
-test('the retired late-Outskirts event is absent and its original receding elevation remains', () => {
+test('retired late-Outskirts demolition cannot restore the obsolete following elevation', () => {
   const b = buildChunkSurfGodPreset(PRESET.FIRST_CONTACT, { seed: 4417, injuries: 0 });
   b.state.horizon.demolition = { version: 1, sequenceId: 'source-demolition:conservatoire-west-v1', committed: true, elapsed: 18 };
   const r = createSourceSpaceRuntime({ initialState: b.state }); r.setPlayerPosition(b.position); r.completeNormalExit();
@@ -203,7 +203,7 @@ test('the retired late-Outskirts event is absent and its original receding eleva
   assert.equal(r.state().phase, CHUNK_SURF_PHASE.HORIZON); assert.equal('demolition' in r.state().horizon, false);
   assert.equal(r.state().sourceDemolition.status, 'skipped'); assert.equal(r.demolitionFrame().active, false);
   const props = r.propInstances(p.x, p.y);
-  assert.equal(props.filter(p => p.id === 'source-outskirt-elevation').length, 1);
+  assert.equal(props.some(p => p.id === 'source-outskirt-elevation'), false, 'the retired elevation must not follow the observer');
   assert.equal(props.some(p => p.sourceStructure?.startsWith('source-demolition')), false);
   assert.equal(r.localLights().some(l => l.id.startsWith('source-demolition:work-')), false);
 });

@@ -75,17 +75,13 @@ run({ light: true, workOrderRead: true });
 assert.equal(tutorialStep(), 'level', 'the recorder comes before the plan');
 assert.equal(tutorialGuide('bag'), null, 'the level check does not happen in the bag');
 
-// Six clean seconds hands into the imagined training fight. The level step
-// must stay put until that rehearsal explicitly finishes; a missing context
-// field cannot silently count as a completed fight.
+// Calibration advances to useful navigation without awarding rehearsal.
 run({ light: true, workOrderRead: true, recording: true, takeElapsed: LEVEL_CHECK_SECONDS });
-assert.equal(tutorialStep(), 'level', 'the clean measurement still waits for the rehearsal');
-assert.equal(levelCallbacks, 1, 'a newly completed measurement starts the handoff once');
+assert.equal(tutorialStep(), 'mark', 'a clean measurement leads directly to B3 wayfinding');
+assert.equal(levelCallbacks, 1, 'a newly completed measurement starts its handoff once');
 run({ light: true, workOrderRead: true, recording: true, takeElapsed: LEVEL_CHECK_SECONDS + 1, rehearsed: undefined });
-assert.equal(tutorialStep(), 'level', 'absent rehearsal status is not completion');
+assert.equal(tutorialStep(), 'mark', 'missing combat completion cannot reopen calibration');
 assert.equal(levelCallbacks, 1, 'continuing the clean take cannot repeat the handoff');
-run({ light: true, workOrderRead: true, rehearsed: true });
-assert.equal(tutorialStep(), 'mark', 'explicitly completed rehearsal advances the process-only fallback');
 
 // ── and the waypoint is the last thing, guided hardest ──────────────────────
 const markGuide = tutorialGuide('bag');
@@ -103,25 +99,15 @@ assert.equal(tutorialStep(), 'go', 'a marked room finishes the setup');
 run({ light: true, workOrderRead: true, marked: 'main_b3', leftDock: true });
 assert.equal(tutorialActive(), false, 'leaving the dock ends the setup');
 
-// ── saved levels survive a fresh process without replaying the handoff ──────
-// The persisted post-training flow in main owns Skills/mark/follow. This older
-// process-only tutorial must still resume a saved measurement correctly while
-// waiting for its training result, rather than asking for another six seconds.
+// ── saved calibration survives without inventing combat completion ─────────
 startTutorial();
 const callbacksBeforeReload = levelCallbacks;
 run({ light: true, levelChecked: true, rehearsed: false });
 run({ light: true, workOrderRead: true, levelChecked: true, rehearsed: false });
 assert.equal(tutorialStep(), 'level');
-run({ light: true, workOrderRead: true, levelChecked: true, rehearsed: false });
-assert.equal(tutorialStep(), 'level', 'saved levels alone cannot stand in for the training fight');
 run({ light: true, workOrderRead: true, levelChecked: true, rehearsed: undefined });
-assert.equal(tutorialStep(), 'level', 'missing rehearsal status remains incomplete after reload');
-run({ light: true, workOrderRead: true, levelChecked: true, rehearsed: false,
-  recording: true, takeElapsed: LEVEL_CHECK_SECONDS + 2 });
-assert.equal(levelCallbacks, callbacksBeforeReload, 'restored levels never call onLevelsGood again');
-run({ light: true, workOrderRead: true, rehearsed: true });
-assert.equal(tutorialStep(), 'mark', 'restored levels plus explicit training completion advance without recording');
-assert.equal(levelCallbacks, callbacksBeforeReload, 'advancing the restored step does not replay the callback');
+assert.equal(tutorialStep(), 'mark', 'saved calibration alone advances to navigation');
+assert.equal(levelCallbacks, callbacksBeforeReload, 'saved levels never replay their callback');
 
 // Spoiling costs nothing: the step is never failed, only unfinished.
 loadTutorialState({});

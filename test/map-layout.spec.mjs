@@ -6,7 +6,7 @@ import { mapLayoutFromBag, mapConsoleControls } from '../src/render/map-layout.j
 import { mapActionRail } from '../src/game/map-actions.js';
 import { mapFloor } from '../src/game/map-model.js';
 import { selectedMapSpace } from '../src/game/map-navigation.js';
-import { setActiveInputDevice } from '../src/game/bindings.js';
+import { bindingLabel, setActiveInputDevice } from '../src/game/bindings.js';
 import { roomHistoryText } from '../src/data/room-history.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
 import { fitText } from '../src/render/fit-text.js';
@@ -113,15 +113,17 @@ test('the control rail is short enough that it cannot truncate', () => {
 
 test('short keyboard rails preserve F6, Enter and close in both room and control focus', () => {
   setActiveInputDevice('keyboard');
+  assert.equal(bindingLabel('map'), 'M', 'the standalone map has its own keyboard shortcut');
+  assert.equal(bindingLabel('bag'), 'B', 'the field bag retains its separate keyboard shortcut');
   for (const width of [40, 48, 64, 80, 96]) for (const consoleFocused of [false, true]) {
     const actions = mapActionRail(model.spaces[0], { width, floorCount: 5, consoleFocused });
     const rendered = actions.map(([key, label]) => `[${key}] ${label}`).join('   ');
     assert.ok(rendered.length <= width, `${width} cells: ${rendered}`);
-    for (const key of ['F6', 'ENTER', 'B']) assert.ok(actions.some(action => action[0] === key),
+    for (const key of ['F6', 'ENTER', 'M']) assert.ok(actions.some(action => action[0] === key),
       `${width} cells, ${consoleFocused ? 'console' : 'room'} focus must retain ${key}`);
     assert.deepEqual(actions.find(action => action[0] === 'ENTER'), ['ENTER', consoleFocused ? 'PRESS' : 'SET']);
   }
-  assert.deepEqual(mapActionRail(null, { width: 40, offline: true }), [['B', 'CLOSE']],
+  assert.deepEqual(mapActionRail(null, { width: 40, offline: true }), [['M', 'CLOSE']],
     'an offline instrument only offers its working close action');
 });
 
@@ -180,7 +182,7 @@ test('offline hardware keeps dark disabled controls without invented progress, p
     assert.equal(harness.commands.some(c => c.kind === 'architecture'), false);
     assert.match(labels, /SURVEY INDICATOR OFFLINE/); assert.match(labels, /NO SURVEY LINK/);
     assert.doesNotMatch(labels, /\d+\/\d+ TAKES|YOU|TAKE OUTSTANDING|TAKE RECORDED|NOT VISITED|NEXT LEG/);
-    assert.deepEqual(result.actions, [['B', 'CLOSE']]);
+    assert.deepEqual(result.actions, [['M', 'CLOSE']]);
     const buttons = harness.commands.filter(c => c.kind === 'button');
     // One key per floor, plus the eleven view, target and file controls.
     assert.equal(buttons.length, BUILDING_MAP.floors.length + 11, 'the instrument is physically present, not replaced by an unrelated text panel');

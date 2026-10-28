@@ -181,6 +181,15 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('pool-lobby', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, '168,55', {
     at:{x:84,y:27.5},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],
   }),
+  // A dry planted approach, then a separately ventilated changing vestibule,
+  // then the humid pool. These ordinary paired closers are never interlocked:
+  // either side can always open them without a key, including after a reload.
+  D('glasshouse-changing', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, null, {
+    at:{x:92,y:30},hinge:'right',swing:'dry-out',widthAxis:'y',activeLeaves:[0,1],
+  }),
+  D('changing-pool', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, null, {
+    at:{x:94,y:32},hinge:'right',swing:'pool-in',widthAxis:'x',activeLeaves:[0,1],
+  }),
   D('hall-rear-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,73', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-west', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '154,111', { open: true, hinge: 'right', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-east', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '201,111', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),

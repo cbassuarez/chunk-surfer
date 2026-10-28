@@ -16,7 +16,7 @@ test('active recording keeps the original escape, recorder controls and save int
 test('the ending cannot commit a return from its arrival, collapse, landing or live Source IV exploration',()=>{
   for(const stage of ['arrival','collapse','landing','exploration']){
     const context={getSave:()=>({stage}),endingSourceIVCanFinish:()=>false,finaleActive:true};vm.createContext(context);
-    vm.runInContext(block('function finishEnding(id){','// THE TUB IS NOT A RECORDING BATTLE'),context);
+    vm.runInContext(block('function finishEnding(id,','// THE TUB IS NOT A RECORDING BATTLE'),context);
     assert.equal(vm.runInContext("finishEnding('inversion')",context),false,stage);
     assert.equal(context.finaleActive,true,'rejection does not tear down the live route');
   }

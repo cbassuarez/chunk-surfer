@@ -890,6 +890,9 @@ export function createCombatState(definition, {
     // RUNAWAY FEEDBACK deafens the room for one beat; THROW VOICE makes it decide
     // again. Both are consumed by advanceEnemy, which is where the enemy turn is.
     skipEnemyBeat: false,
+    // A fork-muted Broadcast is consumed when its silent beat passes. Feedback
+    // only postpones a committed beat, so it must not share this ownership tag.
+    forkMutedIntent: null,
     recommitted: false,
     // Three individual Hall opponents. These are combat entities rendered
     // inside the battle scene; the emergency-light apparition director remains
@@ -964,6 +967,9 @@ export function createCombatState(definition, {
       for (const field of ['committed','misread','stance','read','pendingEnemy','enemyGuard','last']) if (saved[field] && typeof saved[field] === 'object') state[field] = clone(saved[field]);
       if (Object.values(SNR_STATE).includes(saved.snrBefore)) state.snrBefore = saved.snrBefore;
       state.phase = saved.phase === 'enemy' && state.pendingEnemy ? 'enemy' : 'select';
+      state.forkMutedIntent = state.skipEnemyBeat && typeof saved.forkMutedIntent === 'string'
+        && currentCombatIntent(state)?.kind === INTENT_KIND.BROADCAST
+        && saved.forkMutedIntent === currentCombatIntent(state)?.id ? saved.forkMutedIntent : null;
     }
   }
   if (state.sourceDesktop) {
@@ -1001,7 +1007,7 @@ export function combatContinuationSnapshot(state) {
   if (state.source) snapshot.source = { armed:state.source.armed, channels:{...state.source.channels} };
   if (state.sourceDesktop) {
     snapshot.sourceDesktop = sourceDesktopSnapshot(state);
-    const movementFields = ['seed','movementIndex','movementCoherence','movementMaxCoherence','intentIndex','cycleIndex','turnsInMovement','movementDamage','committed','read','stance','pendingEnemy','enemyGuard','phase','last','exposedBonus','tuneBonus','misread','misreadsThisMovement','lastMisreadBeat','lastGuardBeat','tuneUsedMovement','tempo','swungLastBeat','skipEnemyBeat','recommitted','snrBefore'];
+    const movementFields = ['seed','movementIndex','movementCoherence','movementMaxCoherence','intentIndex','cycleIndex','turnsInMovement','movementDamage','committed','read','stance','pendingEnemy','enemyGuard','phase','last','exposedBonus','tuneBonus','misread','misreadsThisMovement','lastMisreadBeat','lastGuardBeat','tuneUsedMovement','tempo','swungLastBeat','skipEnemyBeat','forkMutedIntent','recommitted','snrBefore'];
     snapshot.sourceCombat = { version:1, definitionId:state.definition.id, ...Object.fromEntries(movementFields.map((field)=>[field,state[field] ?? null])) };
   }
   return clone(snapshot);
@@ -1035,6 +1041,12 @@ function addSourcePoint(state, amount = 1) {
 }
 
 function advanceIntent(state) {
+  // Explicitly closing a channel also lets its committed card pass. A reserved
+  // fork mute must never silence an unrelated later card instead.
+  if (state.forkMutedIntent) {
+    state.forkMutedIntent = null;
+    state.skipEnemyBeat = false;
+  }
   state.intentIndex += 1;
   state.cycleIndex += 1;
   state.turns += 1;
@@ -1148,6 +1160,11 @@ function sendBackOnBreak(state, notice = '') {
 }
 
 function completeMovement(state) {
+  // A phase killed before its muted beat has no Broadcast left to suppress.
+  if (state.forkMutedIntent) {
+    state.forkMutedIntent = null;
+    state.skipEnemyBeat = false;
+  }
   const finishedIndex = state.movementIndex;
   if (state.definition.kind === 'cathedral') {
     const id = currentMovement(state)?.id;
@@ -1910,7 +1927,7 @@ export function availableCombatActions(state) {
       // in the room has to sit against it, so what it does now depends on what
       // was coming — see the switch in the TUNE branch. Still free, still holds
       // your read for the movement.
-      detail: 'TUNE IT · FREE · WHAT IT DOES DEPENDS ON WHAT IS COMING · YOUR READ HOLDS · ENTER SIGNAL',
+      detail: 'TUNE IT · FREE · YOUR READ HOLDS · A MUTED BROADCAST PASSES · ENTER SIGNAL',
       reveals: hasTechnique(state, TECHNIQUE.PERFECT_PITCH) ? 3 : 2, free: true,
     }] : []),
     ...(state.tools.radio ? [{
@@ -2285,9 +2302,11 @@ export function reduceCombat(input, action = {}) {
     switch (tuned?.kind) {
       case INTENT_KIND.BROADCAST:
         // You cannot broadcast over a reference. It has nothing to say into a
-        // room that is already sounding.
+        // room that is already sounding. That silent beat still passes: the
+        // next card must matter instead of offering the same safe capture again.
         state.skipEnemyBeat = true;
-        tuneNotice = 'FORK · A440 · IT HAS NOTHING TO SAY OVER THIS';
+        state.forkMutedIntent = tuned.id;
+        tuneNotice = 'FORK · A440 · BROADCAST MUTED · IT PASSES AFTER THIS BEAT';
         break;
       case INTENT_KIND.CONCEAL:
         // A true pitch finds it. Whatever it was hiding behind is gone, and the
@@ -2803,6 +2822,8 @@ function advanceHallApparition(state, pending) {
   let hits = [];
   if (state.skipEnemyBeat) {
     state.skipEnemyBeat = false;
+    // The Hall already advances each actor and commits the next round below.
+    state.forkMutedIntent = null;
   } else {
     // THROW VOICE changes this person's committed action without changing who
     // owns the initiative slot or rebuilding the rest of the round.
@@ -2932,18 +2953,20 @@ export function advanceEnemy(input) {
   const pending = state.pendingEnemy || { prevention: 0, playerNotice: '' };
   if (state.apparitions) return advanceHallApparition(state, pending);
 
-  // RUNAWAY FEEDBACK deafened the room. The opponent's committed blow is not
-  // cancelled — it is still written down, and it is still what lands next beat —
-  // it simply does not get thrown this one. That is the difference between a
-  // special that buys a turn and a special that erases a threat.
+  // Feedback postpones the committed blow. A fork-muted Broadcast instead
+  // passes silently, so the next displayed card is a new decision. Both retain
+  // the counter's TEMPO; neither can debit composure on the muted beat.
   if (state.skipEnemyBeat) {
+    const forkMuted = state.forkMutedIntent === currentCombatIntent(state)?.id;
+    state.forkMutedIntent = null;
     state.skipEnemyBeat = false;
     state.pendingEnemy = null;
+    if (forkMuted) advanceIntent(state);
     Object.assign(state.last, {
       received: 0,
       enemyHits: [],
       composureTo: state.composure,
-      notice: `${pending.playerNotice || state.last?.notice || ''} · THE ROOM MISSES ITS BEAT`,
+      notice: `${pending.playerNotice || state.last?.notice || ''} · ${forkMuted ? 'FORK · BROADCAST PASSES' : 'THE ROOM MISSES ITS BEAT'}`,
     });
     state.read = observeEnemyBeat(state.read || emptyEnemyRead(), { intentId: null });
     state.stance = { ...(state.stance || openingStance()), dwell: integer(state.stance?.dwell, 0) + 1 };

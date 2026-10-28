@@ -4,7 +4,7 @@ import { pubQuestState } from './pub-quest.js';
 import { normalizeRoofRenState } from './roof-ren.js';
 import { createAcademicBouncerState } from './academic-bouncers.js';
 import { createAcademicSocietyState } from './academic-society.js';
-import { normalizeMarbleHead } from './marble-head.js';
+import { normalizeMarbleHead, MARBLE_HEAD_BUST } from './marble-head.js';
 import { ACADEMIC_BOUNCER_CLUES, ACADEMIC_BOUNCER_SPOKEN_CLUES,
   ACADEMIC_BOUNCER_CUE, ACADEMIC_BOUNCER_PHRASE } from '../data/academic-bouncers.js';
 
@@ -80,12 +80,12 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       'served-waters': 'Collect the empty glasses from Bert and Farah at the dominoes table.',
       'carrying-empties': 'Return the tray and empty glasses to Iona.',
     }[bar.phase] || 'Return to Iona at The Lyric.';
-    if (!bar.accepted && !declined) next = 'Decide whether to give Iona a hand. You have not promised to help.';
+    if (!bar.accepted && !declined) next = 'Decide whether to help Iona.';
     if (favor?.returned) next = null;
     else if (favor?.accepted) next = favor.carried ? `Return Iona’s ${favor.id === 'opener' ? 'bottle opener' : 'order book'} to her at The Lyric.`
       : favor.id === 'opener' ? 'Find Iona’s bottle opener in the conservatory staff kitchen.'
         : 'Find The Lyric’s order book in the front-of-house box office.';
-    else if (favor) next = favor.declined ? null : 'Decide whether to take on Iona’s request. You have not promised another errand.';
+    else if (favor) next = favor.declined ? null : 'Decide about Iona’s borrowed item.';
     const evidence = [];
     if (bar.watersServed) evidence.push('The waters were served.');
     if (bar.emptiesCollected) evidence.push('The empty glasses were collected.');
@@ -180,7 +180,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       next, location: destination,
       evidence: [ren.indexRead && 'Personal-effects index read.', ren.envelopeRead && 'Release warning read.',
         ren.tapeListened && 'You played the HOME cassette.', returned && 'Cassette returned.'].filter(Boolean),
-      outcome: refused ? 'Your answer remains part of this conversation.' : returned ? 'The cassette errand is finished.'
+      outcome: refused ? 'You declined Ren’s request.' : returned ? 'The cassette errand is finished.'
         : ren.stage === 'withheld' ? 'The cassette remains with you.' : null,
     }));
   }
@@ -222,12 +222,14 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
   const reception = object(data.chunkSurf?.lastReception), invitation = object(reception.windowInvitation);
   if (['carrying', 'declined', 'delivered'].includes(invitation.status)) {
     const delivered = invitation.status === 'delivered', declined = invitation.status === 'declined';
+    const abandoned = declined && invitation.declinedReason === 'abandoned';
     entries.push(entry('last-reception', 'Room by the others', 'The Last Reception', {
       state: declined ? 'declined' : delivered ? 'resolved' : 'active',
       status: status(declined ? invitation.declinedReason === 'abandoned' ? 'LEFT WITH THEM' : 'DECLINED'
         : delivered ? 'INVITATION GIVEN' : 'MESSAGE TO CARRY', delivered ? 'success' : declined ? 'secondary' : 'amber'),
       summary: delivered ? 'You quietly told the person at the window there is room by the others.'
-        : declined ? 'You chose not to carry the invitation.' : 'You agreed to carry a quiet invitation to the person at the window.',
+        : abandoned ? 'You left the message with the person who asked.'
+          : declined ? 'You chose not to carry the invitation.' : 'You agreed to carry a quiet invitation to the person at the window.',
       next: delivered || declined ? null : 'Tell him there is room by the others. He can look again later.',
       evidence: [invitation.settled && 'He turned from the window and joined the company.',
         invitation.acknowledged && 'You returned to the person who asked.'].filter(Boolean),
@@ -240,15 +242,18 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
   const eyes = normalizeMarbleHead(marble ?? data.marbleHead);
   if (eyes.phase !== 'in-the-water') {
     const restored = eyes.phase === 'returned', declined = eyes.phase === 'declined';
-    entries.push(entry('marble-eyes', 'The fountain eyes', 'Park and Academic gallery', {
+    const knowsSocketedFace = restored || eyes.gallery.spoken.includes(MARBLE_HEAD_BUST);
+    entries.push(entry('marble-eyes', declined ? 'The fountain' : 'The fountain eyes',
+      !declined && knowsSocketedFace ? 'Park and Academic gallery' : 'Park', {
       state: declined ? 'declined' : restored ? 'resolved' : 'active',
       status: status(declined ? 'LEFT IN THE WATER' : restored ? 'RETURNED' : 'CARRIED', restored ? 'success' : declined ? 'secondary' : 'amber'),
-      summary: declined ? 'You left the shapes in the fountain.'
+      summary: declined ? 'You left the objects in the water.'
         : restored ? 'You returned the eyes to the damaged gallery bust.' : 'You took the stone eyes from the fountain.',
-      next: restored || declined ? null : 'Look for the gallery face with the corresponding empty sockets.',
+      next: restored || declined ? null : knowsSocketedFace
+        ? 'Look for the gallery face with the corresponding empty sockets.' : 'Look for a face these might fit.',
       evidence: [restored && 'Both eyes are back in their sockets.', flags['key.servicesCore'] && 'You found the Plant Services key.'].filter(Boolean),
       outcome: declined ? 'That decision is settled for this night.' : restored ? 'The damaged face has its eyes again.' : null,
-      location: declined ? place('Park fountain') : place('Academic gallery', 'space:academic-gallery'),
+      location: declined ? place('Park fountain') : knowsSocketedFace ? place('Academic gallery', 'space:academic-gallery') : null,
     }));
   }
 
@@ -290,15 +295,16 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       if (ren.stage !== 'new') records.push(record('memory-request', 'Ren’s request', promised || fulfilled || withdrawn || declined
         ? 'Ren wants the HOME cassette back. You were asked to read the release warning before deciding what to hand over.'
         : 'Ren asked about a cassette among their things in the stripped office.'));
-      if (ren.indexRead) records.push(record('effects-index', 'The office index', 'You found the personal-effects index; the missing R page points through its carbon trace to a drawer.'));
-      if (ren.envelopeRead) records.push(record('release-warning', 'Ren’s own refusal', 'The release envelope contains Ren’s earlier refusal. Returning the cassette remains a deliberate decision.'));
+      if (ren.indexRead) records.push(record('effects-index', 'The office index', 'The R page is missing. Its carbon intake pad may survive in the reception filing bank.'));
+      if (ren.traceRead) records.push(record('effects-trace', 'The carbon trace', 'The impressed line identifies drawer seventeen and the HOME cassette: not to be released to R., at their own request.'));
+      if (ren.envelopeRead) records.push(record('release-warning', 'Ren’s own refusal', 'Ren signed the refusal twice, in two different years.'));
       if (ren.tapeListened) records.push(record('private-tape', 'The HOME cassette', 'You played the private cassette.'));
       if (investigated) records.push(record('left-warning', 'Left in the drawer', 'After reading the warning, you left the cassette where it was.'));
       if (returned) records.push(record('memory-returned', 'Cassette returned', ren.tapeHonesty === 'admitted'
         ? 'You returned the cassette and admitted listening.' : ren.tapeHonesty === 'lied'
           ? 'You returned the cassette and said you had kept it sealed.' : 'You returned the cassette without listening on your own.'));
       if (withdrawn) records.push(record('memory-kept', 'Cassette kept', 'You chose to keep the cassette instead of handing it to Ren.'));
-      if (declined) records.push(record('memory-declined', 'Request declined', 'You chose not to overrule the person who wrote the warning.'));
+      if (declined) records.push(record('memory-declined', 'Request declined', 'You declined to retrieve the cassette.'));
       const sealKnown = ren.sealOffered || ren.sealConsented || ren.locks.sealRefused || ren.ritualComplete;
       const followUp = sealKnown ? { id: 'seal', label: 'Ren’s further request',
         commitment: ren.ritualComplete ? 'fulfilled' : ren.locks.sealRefused ? 'declined' : ren.sealConsented ? 'consented' : 'none',
@@ -313,20 +319,20 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       return represent(value, { nature: ren.stage === 'offered' || ren.stage === 'new' ? 'lead' : 'undertaking',
         commitment: declined ? 'declined' : withdrawn ? 'withdrawn' : fulfilled ? 'fulfilled' : promised ? 'accepted' : 'none',
         state: declined ? 'declined' : fulfilled || withdrawn ? 'resolved' : 'active',
-        status: status(returned ? 'CASSETTE RETURNED' : investigated ? 'WARNING RESPECTED' : declined ? 'DECLINED' : withdrawn ? 'KEPT' : 'OPEN', fulfilled || declined || withdrawn ? 'secondary' : 'amber'),
+        status: status(returned ? 'CASSETTE RETURNED' : investigated ? 'LEFT IN DRAWER' : declined ? 'DECLINED' : withdrawn ? 'KEPT' : 'OPEN', fulfilled || declined || withdrawn ? 'secondary' : 'amber'),
         summary: returned ? 'You returned Ren’s HOME cassette.' : investigated ? 'You investigated the cassette, read the warning and left it in the drawer.'
           : withdrawn ? 'You chose to keep the HOME cassette.' : declined ? 'You declined to retrieve the cassette.'
             : promised ? 'You agreed to investigate the cassette and read its warning before deciding what to hand over.' : 'Ren asked about a cassette in the stripped office.',
         next: parentNext, nextLabel: parentNext ? investigated ? 'OPTIONAL' : ren.envelopeRead || ren.stage === 'offered' ? 'CHOICE' : 'NEXT' : null,
-        stage: { id: `memory:${ren.stage}`, label: returned ? 'Cassette returned' : investigated ? 'Warning respected' : withdrawn ? 'Cassette kept' : declined ? 'Declined' : ren.stage === 'accepted' ? 'Read before deciding' : 'HOME cassette' },
+        stage: { id: `memory:${ren.stage}`, label: returned ? 'Cassette returned' : investigated ? 'Cassette left' : withdrawn ? 'Cassette kept' : declined ? 'Declined' : ren.stage === 'accepted' ? 'Read before deciding' : 'HOME cassette' },
         milestones: [ren.indexRead && milestone('index', 'Read the personal-effects index.', true),
           ren.traceRead && milestone('trace', 'Follow the missing page’s carbon trace.', true),
           ren.envelopeRead && milestone('warning', 'Read the release warning.', true),
           promised && !ren.envelopeRead && milestone('investigate', 'Investigate the office and read before deciding.'),
           ren.stage === 'carrying' && milestone('decide', 'Decide whether to return or keep the cassette.'),
           returned && milestone('return', 'Return the cassette to Ren.', true)].filter(Boolean),
-        records, closure: returned ? closure('Cassette errand fulfilled', 'You returned the HOME cassette. Any further request is a separate decision.')
-          : investigated ? closure('Investigation fulfilled', 'You read the warning and chose to leave the cassette. You promised to look before deciding, not to overrule the warning.')
+        records, closure: returned ? closure('Cassette errand fulfilled', 'You returned the HOME cassette to Ren.')
+          : investigated ? closure('Investigation fulfilled', 'You read the warning and left the cassette in its drawer.')
             : withdrawn ? closure('You kept the cassette', 'You withdrew from handing it over.') : declined ? closure('Declined', 'You did not promise to retrieve it.') : null,
         followUp, trackingKey: `quest:ren:${sealKnown ? 'seal' : 'memory'}`,
         hasOpenCommitment: promised || !!followUp && followUp.commitment === 'consented',
@@ -340,7 +346,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
         nextLabel: admitted ? null : 'OPTIONAL', trackable: !admitted,
         milestones: admitted ? [milestone('welcome', 'Complete the attendants’ welcome.', true)] : [],
         records: clues.map(c => record(c.id, c.title, 'This source explained the reception’s welcome.')),
-        closure: admitted ? closure('Welcome completed', 'You were admitted. You made no promise to remain upstairs.') : null,
+        closure: admitted ? closure('Welcome completed', 'Vera and Hugh admitted you to the reception.') : null,
       });
     }
     if (value.id === 'quest:borrowed-voice') {
@@ -349,9 +355,9 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
         commitment: lent ? 'consented' : company.consent === 'declined' ? 'declined' : 'none',
         stage: { id: `voice:${company.consent}`, label: lent ? 'Revocable permission' : explained ? 'Your choice' : 'Your own voice' },
         nextLabel: explained || lent ? 'CHOICE' : null, trackable: explained,
-        records: [record('voice-boundary', 'One breath is permission, not a promise', lent || company.topics.emile?.includes('need')
-          ? 'Emile may use the breath you lend. You can withdraw through him or Lucien, leave the floor, or let it end. You do not owe the room a performance.'
-          : 'Emile wants a living breath. Permission to use it is not a promise to stay upstairs.'),
+        records: [record('voice-boundary', 'Emile’s request', lent || explained && company.topics.emile?.includes('need')
+          ? `${lent ? 'You lent Emile one living breath.' : 'Emile asked for one living breath for a phrase.'} You can ask him or Lucien for it back, go downstairs, or let it end.`
+          : 'Emile wants a living breath for a phrase.'),
           ...(value.outcome ? [record(`voice:${company.consent}`, 'Your decision', value.outcome)] : [])],
         closure: value.outcome ? closure('Your voice is your own', value.outcome) : null,
       });
@@ -363,11 +369,11 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
         stage: { id: `invitation:${invitation.status}`, label: delivered ? 'Invitation delivered' : carrying ? 'A quiet message' : abandoned ? 'Message left with them' : 'Declined' },
         nextLabel: carrying ? 'NEXT' : null, trackable: carrying, hasOpenCommitment: carrying,
         milestones: carrying || delivered ? [milestone('invitation', 'Quietly invite the person at the window to join the others.', delivered)] : [],
-        records: [record('why-quiet', 'A quiet invitation', 'The person who asked will not call across the room: everyone would listen for news and look at the living visitor. You were asked only to pass on an invitation; he need not accept it.'),
+        records: [record('why-quiet', 'A quiet invitation', 'The person who asked did not want to call across the room and draw attention to you.'),
           ...(delivered ? [record('message-delivered', 'Message delivered', 'You told him there is room by the others. He can look again later.')] : []),
           ...(invitation.settled ? [record('joined-company', 'He joined the company', 'He turned from the window for a while.')] : []),
           ...(invitation.acknowledged ? [record('thanks', 'You spoke again', 'You returned to the person who asked.')] : [])],
-        closure: delivered ? closure('Promise fulfilled', 'The message has been delivered. His decision and any return conversation are not further work you owe.')
+        closure: delivered ? closure('Promise fulfilled', 'You delivered the invitation.')
           : !carrying ? closure(abandoned ? 'Promise withdrawn' : 'Declined', value.outcome) : null,
       });
     }
@@ -382,7 +388,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
     }
     return represent(value, { nature: 'record', commitment: 'none', stage: { id: 'telephone:record', label: 'Call record' },
       records: value.evidence.map((line, index) => record(`telephone:${index}`, 'Received', line)),
-      closure: closure('Call ended', 'This records what the telephone left behind. It is not a promise to make another call.'),
+      closure: closure('Call ended', 'The call is over.'),
       trackingKey: 'quest:source-telephone', trackable: false,
     });
   });

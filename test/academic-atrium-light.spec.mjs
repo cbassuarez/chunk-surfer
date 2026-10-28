@@ -6,6 +6,7 @@ import {ACADEMIC_ROOF,roofPointToPhysical} from '../src/data/academic-roof.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {CELL} from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
+import {localLightConeDescriptor} from '../src/render/local-light-cone.js';
 import {academicAtriumLightEnabled as enabled,academicAtriumLightSample as sample,academicAtriumLightRayInterval as interval,
   academicAtriumLightVolume as volume,academicAtriumRoofRayEnd as roofEnd,ACADEMIC_ATRIUM_LIGHT_GLSL as glsl} from '../src/render/academic-atrium-light.js';
 const active={enabled:true},near=(a,b,tolerance=.00001)=>assert.ok(Math.abs(a-b)<tolerance,`${a} != ${b}`);
@@ -102,12 +103,13 @@ test('actual main context gate uses current building, special-space and render g
 });
 
 test('executed production light setters replace only the unbounded skylight when strictly enabled and reset on leaving',()=>{
- const practical=[],run=Function('academicAtriumLightEnabled','P3','LIGHT_KIND',`
+ const practical=[],run=Function('academicAtriumLightEnabled','P3','LIGHT_KIND','localLightConeDescriptor',`
  let lightingAcademicAtriumLight=false,lightingAmbientColor,lightingAmbientIntensity,lightingWhitePointScale,lightingCaptureExposure,lightingRoofSkyRecovery=0,pitchTarget=0,lightingScreenId,lightingBounceColor,lightingBounceIntensity;
  let localLightCount=0,localShadowIndex=-1,localShadowLight=null;const MAX_LOCAL_LIGHTS=12,municipalLightPower=1,isScreen=()=>false;
  const localLightPositions=new Float32Array(48),localLightColors=new Float32Array(48),localLightBaseIntensity=new Float32Array(12),localLightMunicipal=new Float32Array(12),localLightPenetrations=new Float32Array(12),localLightEmergency=new Float32Array(12);
+ const localLightDirections=new Float32Array(48),localLightConeInner=new Float32Array(12).fill(1);
  ${source(r3d,'r3dSetLightingContext')}\n${source(r3d,'r3dSetLocalLights')}
- return {context:r3dSetLightingContext,lights:r3dSetLocalLights,enabled:()=>lightingAcademicAtriumLight};`)(enabled,{setPracticalLightFrame:l=>practical.push(l)},{EMERGENCY:'emergency'});
+ return {context:r3dSetLightingContext,lights:r3dSetLocalLights,enabled:()=>lightingAcademicAtriumLight};`)(enabled,{setPracticalLightFrame:l=>practical.push(l)},{EMERGENCY:'emergency'},localLightConeDescriptor);
  const lights=[{id:'academic-skylight-spill',x:85},{id:'actual-lamp',x:84}];
  assert.equal(run.lights(lights),2);run.context({group:'academic',academicAtriumLight:true});assert.equal(run.enabled(),true);assert.equal(run.lights(lights),1);assert.equal(practical.at(-1)[0].id,'actual-lamp');assert.equal(lights.length,2,'caller data not mutated');
  run.context({group:'source',academicAtriumLight:true});assert.equal(run.enabled(),false);assert.equal(run.lights(lights),2);

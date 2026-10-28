@@ -51,7 +51,7 @@ export const BAG_ITEM_REGISTRY = Object.freeze({
 });
 
 // The complete acquisition audit. Patterns are deliberate where the game owns
-// a bounded family (fifteen room pages and the in-place Source sheets).
+// a bounded family (sixteen building pages and the in-place Source sheets).
 export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'light', acquired: 'bag.taken', destination: 'kit' },
   { id: 'recorder', acquired: 'bag.taken', destination: 'kit' },
@@ -72,7 +72,7 @@ export const COLLECTED_ITEM_AUDIT = Object.freeze([
   { id: 'pub-service-tray', acquired: 'pub.help.trayTaken && !pub.help.complete', destination: 'kit' },
   { id: 'pub-opener', acquired: 'pub.help.opener.carried', destination: 'kit' },
   { id: 'pub-orderbook', acquired: 'pub.help.orderbook.carried', destination: 'kit' },
-  { id: 'building-pages:1-15', acquired: 'obj.read', destination: 'file' },
+  { id: 'building-pages:1-16', acquired: 'obj.read', destination: 'file' },
   { id: 'battery-cells', acquired: 'pickup', destination: 'battery-resource' },
   { id: 'calibration-pins', acquired: 'pickup', destination: 'skill-resource' },
   { id: 'plant-stillson', acquired: 'grip', destination: 'external-load' },

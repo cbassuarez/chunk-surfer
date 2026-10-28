@@ -94,7 +94,7 @@ export function makeBagScene({
   onClearInput = () => {},
   forceLayout = null,
   debug = null,
-  memory = null,
+  memory = undefined,
   onRemember = () => {},
   getMonitorSource = null,
   embeddedHost = false,
@@ -129,13 +129,17 @@ export function makeBagScene({
     const after = new Set(workingBuild.techniques);
     return before.size !== after.size || [...after].some((id) => !before.has(id));
   };
-  const journalReview = createJournalReview((memory || rememberedNav)?.journalReview);
+  // Omitted memory supports case-local callers. An explicit null comes from
+  // a save with no navigation record, including a fresh run: never borrow the
+  // previous run's tracking or seen-update receipts for that save.
+  const sourceMemory = memory === undefined ? rememberedNav : memory;
+  const journalReview = createJournalReview(sourceMemory?.journalReview);
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
     mapUnavailableReason: mapUnavailableSource(),
     build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
   });
-  let nav = (memory || rememberedNav) ? repairBagSelection(memory || rememberedNav, model) : initialBagState(model, focus || {});
+  let nav = sourceMemory ? repairBagSelection(sourceMemory, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
   if (nav.map) mapNav = reduceMapNav({ ...nav.map, ...MAP_VIEW_DEFAULTS, focusedControlId:null }, { type: 'MODEL_REFRESH' }, model.map);
   let t = 0;

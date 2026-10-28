@@ -13,6 +13,7 @@ import { recoverDriveCheckpointPosition } from './source-drive/checkpoint-recove
 import { driveEvolutionFrame } from './source-drive/evolution.js';
 import { programmeFrame } from './source-drive/radio-programmes.js';
 import { SOURCE_DRIVE_OPENING, seedMovingDriveEntry, driveOpeningView } from './source-drive/entry-cut.js';
+import {driveDoorCrossingFrame} from './source-drive/door-crossing.js';
 
 export const SOURCE_DRIVE_VERSION = 1;
 export const SOURCE_DRIVE_ENCOUNTER = 'source-the-cut-v1';
@@ -95,6 +96,8 @@ export function createSourceDriveSession(host = {}) {
   let previousAxleDistance = -s.z, started = saved.started, clippedTimeSeconds = saved.clippedTimeSeconds;
   let transport = Promise.resolve(), busy = false, lastError = null, checkpointAt = s.programTime;
   let picturePresented = false, automaticStart = null, retryWait = 0, startFailures = 0;
+  let doorFinishRequested=false,doorContacted=s.events?.some(e=>e.type==='goods-threshold-impact')||false,
+    doorOpened=driveDoorCrossingFrame(s).open>0;
 
   const report = error => { lastError = String(error?.message || error); host.onError?.(error); publish(); return error; };
   const event = (type, data = {}) => { const value = note(s, type, data); host.onEvent?.(clone(value)); return value; };
@@ -103,9 +106,9 @@ export function createSourceDriveSession(host = {}) {
   function publish() {
     const tape = tapeStatus();
     host.onStatus?.({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), parked: !!s.arrived, brakeHeld: !!s.brakeHold, positionRecovered: s.boundaryRecovery?.acknowledged===false, returning, returned, busy, error: lastError,
-      canBegin: initialized && s.paused && !returned && !returning, canLeave: initialized && canDismountDrive(s) && !returned && !returning && !keys.has('forward') && !keys.has('reverse'),
-      title: returned ? 'The grey doors' : s.arrived ? 'Parked at the goods apron' : s.paused ? 'The Cut' : '',
-      instruction: returned ? '' : s.arrived ? 'ENTER · LEAVE VAN   E · LISTEN   R · RECORD' : s.paused ? 'PICTURE HELD · ESC · MENU' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : 'R · RECORD   E · LISTEN   X · STOP',
+      canBegin: initialized && s.paused && !returned && !returning, canLeave:false,doorCrossing:driveDoorCrossingFrame(s),
+      title: returned ? 'The grey doors' : s.paused ? 'The Cut' : '',
+      instruction: returned ? '' : s.paused ? 'PICTURE HELD · ESC · MENU' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : s.arrived ? 'W · DRIVE THROUGH THE DOORS   E · LISTEN   R · RECORD' : 'R · RECORD   E · LISTEN   X · STOP',
       recording: !!tape.recording, playing: !!tape.playing });
   }
   function serialize() {
@@ -302,6 +305,9 @@ export function createSourceDriveSession(host = {}) {
     clippedTimeSeconds += incoming - elapsed;
     const old = s.furthest, phase = s.phase, wasArrived = s.arrived, wasHeld = !!s.brakeHold;
     stepDrive(s, elapsed, Object.fromEntries([...keys].map(key => [key, true])), driveColliders(s));
+    const crossing=driveDoorCrossingFrame(s);
+    if(crossing.open>0&&!doorOpened){doorOpened=true;acoustics.click?.('goods-door-release');event('goods-doors-opening',{distance:crossing.distance,speed:s.speed});}
+    if(crossing.contact&&!doorContacted){doorContacted=true;acoustics.joint?.({strength:1.2});applyRoadImpulse(s,.09);event('goods-threshold-impact',{distance:crossing.distance,speed:s.speed});}
     s.lookYaw = look.yaw;
     advanceFingerprint(old);
     const distance = -s.z;
@@ -317,6 +323,12 @@ export function createSourceDriveSession(host = {}) {
       opening.picture=true;event('journey-picture',{speed:s.speed,station:s.station,programmeTime:s.programTime});checkpoint('moving-picture');publish();
     }
     if (s.phase !== phase || s.arrived !== wasArrived || !!s.brakeHold !== wasHeld || s.programTime - checkpointAt >= 4) { checkpointAt = s.programTime; checkpoint('progress'); publish(); }
+    if(crossing.complete&&!doorFinishRequested){
+      doorFinishRequested=true;
+      Promise.resolve(finish({throughDoor:true})).then(ok=>{if(!ok)doorFinishRequested=false;}).catch(error=>{
+        doorFinishRequested=false;retryWait=Math.max(retryWait,5);report(error);
+      });
+    }
   }
   function render() {
     if (!initialized || disposed || returned) return false;
@@ -340,7 +352,7 @@ export function createSourceDriveSession(host = {}) {
     if (k === 'escape') { keys.clear(); host.onPauseRequested?.(); return true; }
     if(opening&&!opening.picture)return true;
     if(e?.repeat&&(k==='enter'||KEY_INPUTS[k]&&!keys.has(KEY_INPUTS[k])))return true;
-    if (k === 'enter') { if(s.arrived&&!s.paused)Promise.resolve(finish()).catch(report); return true; }
+    if (k === 'enter') return true;
     if (KEY_INPUTS[k]) { input(KEY_INPUTS[k], true); return true; }
     if (s.paused || returned || returning || e?.repeat) return false;
     if (/^[123]$/.test(k)) return tune(Number(k) - 1);
@@ -381,17 +393,20 @@ export function createSourceDriveSession(host = {}) {
     if (type === 'wheel') { const target = pick(x, y, width, height); if (target?.id === 'power') return operate('power', () => { s.volume = clamp(s.volume - Math.sign(e.deltaY) * .05, 0, 1); }); if (target?.id === 'tune') return tune((['service', 'company', 'music'].indexOf(s.station) + (e.deltaY > 0 ? 1 : 2)) % 3); }
     return false;
   }
-  function finish() { return transaction(async () => {
-    if (!canDismountDrive(s) || keys.has('forward') || keys.has('reverse') || returned) return false;
+  function finish({throughDoor=false}={}) { return transaction(async () => {
+    const crossing=driveDoorCrossingFrame(s);
+    // Explicit debug callers retain the former parked-finish adapter; normal
+    // controls can complete only by crossing the actual open goods threshold.
+    if (returned || (throughDoor ? !crossing.complete : !canDismountDrive(s)||keys.has('forward')||keys.has('reverse'))) return false;
     if (typeof host.onReturned !== 'function') throw Error('The game has not installed the exterior return owner.');
     returning = true; keys.clear(); s.paused = true; acoustics.setPaused?.(true); await recording?.setPaused?.(true); publish();
     try {
       await recording?.seal?.({ reason: 'journey-return' });
       await recording?.stopPlayback?.();
       const final = serialize(); final.status = 'returned'; final.drive.finished = true;
-      await host.onReturned({ returnPose: clone(saved.returnPose), checkpoint: final, tape: final.tape });
+      await host.onReturned({ returnPose: clone(saved.returnPose), checkpoint: final, tape: final.tape,crossing:throughDoor?{...crossing,kind:'driven-door',speed:s.speed}:null });
       returned = true; s.finished = true; handControl = queuedControl = null;
-      event('journey-returned', { target: 'grey-door exterior before still ground and first outskirts pass' });
+      event('journey-returned', { target:throughDoor?'through grey doors into the next Source section':'grey-door exterior',throughDoor });
       return true;
     } catch (error) { report(error); throw error; }
     finally { returning = false; publish(); }

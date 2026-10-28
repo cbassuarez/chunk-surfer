@@ -1,4 +1,5 @@
 import {normalizeSourceFalseReturn,stepSourceFalseReturn,sourceFalseReturnFocus} from './source-false-return.js';
+import {uiFill,uiSize,uiText} from '../render/ui.js';
 
 const copy=v=>JSON.parse(JSON.stringify(v));
 const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
@@ -41,10 +42,11 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
   }
   const scene={
     id:'source-false-return',blocksWorld:true,blocksInput:true,suppressesHud:true,
-    allowsLook:false,handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
-    initialize(){
+    get allowsLook(){return live()&&!paused&&!leaving;},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
+    initialize({retry=false}={}){
+      if(retry){if(closed||!error)return Promise.resolve(false);initializing=null;error=null;ready=false;}
       if(initializing)return initializing;save('loading');
-      initializing=Promise.resolve().then(()=>renderer.initialize?.()).then(ok=>{if(closed)return false;if(ok===false)throw Error('Ellery has not resolved.');ready=true;error=null;save('entry-or-resume');
+      initializing=Promise.resolve().then(()=>retry&&renderer.retry?renderer.retry():renderer.initialize?.()).then(ok=>{if(closed)return false;if(ok===false)throw Error('Ellery has not resolved.');ready=true;error=null;save('entry-or-resume');
         if(state.status==='completed'&&!state.exitReceipt?.delivered)finish();
         return true;}).catch(err=>{if(!closed)report(err);return false;});return initializing;
     },
@@ -62,17 +64,24 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
       if(traceClock>=.1){traceClock=0;trace({type:'pose',elapsed:state.elapsed,x:state.x,z:state.z,feet:state.feet,yaw:state.yaw,pitch:state.pitch,
         focus:sourceFalseReturnFocus(state,layout)?.id||null,opened:copy(state.opened||[]),sourceDoors:copy(state.sourceDoors||[]),doorOpen:copy(state.doorOpen||{}),doorMotion:copy(state.doorMotion||{}),loopLatch:state.loopLatch,audio:audio?.snapshot?.()||null});}
     },
-    view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,focus:live()?sourceFalseReturnFocus(state,layout):null}),
+    view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,focus:live()?sourceFalseReturnFocus(state,layout):null,
+      fallback:error?{title:'THIS AREA COULD NOT BE LOADED',actions:['R  TRY AGAIN','X  GO BACK']}:
+        !ready&&!closed?{title:'PLEASE WAIT',actions:['X  GO BACK']}:null}),
     serialize:snapshot,checkpoint:()=>save('requested'),
     pause(){if(closed)return false;paused=true;clear();audio?.pause?.();save('pause');return true;},
     resume(){if(closed)return false;paused=false;clear();return true;},
     setLook(look){if(!live()||paused||leaving)return false;apply({dt:0,look,renderReady:true});return true;},
+    lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),
+    lookBy(yawDelta=0,pitchDelta=0){
+      if(!Number.isFinite(yawDelta)||!Number.isFinite(pitchDelta))return false;
+      return scene.setLook({yaw:state.yaw+yawDelta,pitch:state.pitch+pitchDelta});
+    },
     key(e={}){
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(closed||paused||e.ctrlKey||e.metaKey||e.altKey)return true;
-      if(error){if(!e.repeat&&key==='x')onFaultReturn({checkpoint:save('fault-retreat')});else if(!e.repeat&&key==='e'&&state.status==='completed'){leaving=true;dispatch();}return true;}
-      if(!live()||leaving)return true;
+      if(error){if(!e.repeat&&key==='x')onFaultReturn({checkpoint:save('fault-retreat')});else if(!e.repeat&&key==='r')void scene.initialize({retry:true});else if(!e.repeat&&key==='e'&&state.status==='completed'){leaving=true;dispatch();}return true;}
+      if(!live()||leaving){if(!leaving&&!e.repeat&&key==='x')onFaultReturn({checkpoint:save('loading-retreat')});return true;}
       if(!e.repeat&&key==='f'){onTorch();trace({type:'torch-input',elapsed:state.elapsed});return true;}
       if(movement.has(key)){if(!e.repeat)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});return true;
@@ -85,7 +94,18 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
       if(e.type==='pointermove'&&drag){const x=Number(e.clientX??e.x)||0,y=Number(e.clientY??e.y)||0;
         apply({dt:0,look:{yaw:state.yaw+(x-drag.x)*.004,pitch:Math.max(-1.3,Math.min(.62,state.pitch-(y-drag.y)*.003))},renderReady:true});drag={x,y};}return true;
     },
-    render(){if(ready&&!closed)try{if(renderer.render(state)===false)throw Error('The false Ellery view is unavailable.');}catch(err){ready=false;report(err);}},
+    render(){
+      if(closed)return;
+      if(ready)try{if(renderer.render(state)===false)throw Error('The false Ellery view is unavailable.');}catch(err){ready=false;report(err);}
+      // An unavailable borrowed view must never masquerade as a frozen game.
+      // Ordinary exploration remains textless; only loading/failure offers a
+      // visible way back without changing progression or inventing a new exit.
+      const fallback=scene.view().fallback;if(!fallback)return;
+      const size=uiSize(),cols=Math.max(20,size.cols||80),rows=Math.max(8,size.rows||24),y=Math.max(2,rows-5);
+      uiFill(0,y-1,cols,rows-y+1,'#000');
+      uiText(2,y,fallback.title,'ui-primary',1,cols-4);
+      uiText(2,y+2,fallback.actions.join('    '),'ui-secondary',1,cols-4);
+    },
     exit(){if(closed)return false;closed=true;clear();audio?.stop?.();if(!leaving)save('interrupted');renderer.dispose?.();onExit({checkpoint:snapshot()});return true;},
   };
   return scene;

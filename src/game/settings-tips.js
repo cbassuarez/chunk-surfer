@@ -110,13 +110,14 @@ const SETTING_HELP = Object.freeze({
 
   memory: {
     autosave: 'AUTOSAVE is always on.',
-    playTime: 'PLAY TIME is the current run time.',
+    playTime: 'CURRENT RUN PLAY TIME measures active play in this run. Pauses and time away do not count. Older runs show only time measured since this update.',
     steps: 'STEPS counts movement in the current run.',
     area: 'CURRENT AREA is the last known area or room.',
     exportProfile: 'EXPORT PROFILE writes endings, achievements, knowledge, and preferences without the active run.',
     importProfile: 'IMPORT PROFILE merges permanent progress and never replaces the active run.',
     clearRun: 'CLEAR RUN resets the current run but keeps global memory.',
     clearMemory: 'CLEAR MEMORY removes run and meta memory.',
+    eraseForUninstall: 'ERASE ALL DATA permanently removes local progress, settings and recordings, then restarts. To keep them, uninstall without erasing.',
     default: 'MEMORY rows describe or clear saved state.',
   },
 

@@ -1,5 +1,6 @@
 // Promoted from the verified Source drive study; game lifecycle is source-drive-session.js.
 import{worldAt,roadAt}from'../road.js';
+import {CUT_HEART_CENTER} from './anatomy-layout.js';
 import{makeCutLandscape}from'./landscape-scene.js';
 import{cutPose,cutLayerPose,CUT_LIVING_MESHES}from'./motion.js';
 export const CUT_MODULES=Object.freeze([
@@ -15,7 +16,7 @@ export const CUT_MODULES=Object.freeze([
  {id:'cut-departure',d:900,lateral:4.8,height:.92,living:true,ribs:true},
  {id:'cut-last-stratum',d:924,lateral:5.25,height:.76,living:false,ribs:true},
 ]);
-export const CUT_INSPECTION_LAMPS=Object.freeze([{id:'cut-inspection-approach',d:748,lateral:-5.3,intensity:1.1,radius:39},{id:'cut-inspection-hold',d:812,lateral:-7.7,intensity:2.1,radius:43,target:{d:829,local:[-2,7.8,-7]}}]);
+export const CUT_INSPECTION_LAMPS=Object.freeze([{id:'cut-inspection-approach',d:748,lateral:-5.3,intensity:1.1,radius:39},{id:'cut-inspection-hold',d:812,lateral:-7.7,intensity:2.1,radius:43,target:{d:829,local:CUT_HEART_CENTER}}]);
 // The old broad white cliff/curtain is deliberately retired. Four sparse low
 // engineering insets retain material history without competing with the vault.
 const legacyInsets=new Set(['cut-first','cut-exposure','cut-hero','cut-last-stratum']);

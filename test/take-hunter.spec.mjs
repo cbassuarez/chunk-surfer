@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   TAKE_HUNTER, freshTakeHunter, armTakeHunter, stepTakeHunter, takeHunterPressure,
-  tryCancelTake,
+  tryCancelTake, takeHunterTransport,
 } from '../src/game/take-hunter.js';
 
 // ── THE THING YOUR OWN VOICE FETCHES ─────────────────────────────────────────
@@ -177,11 +177,11 @@ import {
     'a scream into the real microphone fetches it too');
 }
 
-// ── THE STOP KEY STOPS WORKING ───────────────────────────────────────────────
+// ── THE TRANSPORT WARNS BEFORE IT RESISTS STOP ──────────────────────────────
 //
-// Ending the take yourself is the clean escape, so it is the thing that fails.
-// You press stop and nothing happens. The cost of finding that out is the
-// seconds it spends closing while you hammer a dead key.
+// Previously, setting the hunter inside seven cells immediately seized STOP.
+// That made a string of startles indistinguishable from dropped input. The
+// distance gate now also requires a full, actively presented drag warning.
 {
   // No hunter, no resistance: the ordinary stop must stay ordinary.
   const idle = tryCancelTake(freshTakeHunter());
@@ -205,14 +205,16 @@ import {
       close = stepTakeHunter(close, 0.1, { recording: true, heard: 0.3 }).state;
     }
     assert.ok(close.cells <= TAKE_HUNTER.seizeCells);
-    assert.equal(tryCancelTake(close).resisted, true, 'but once it is close the machine will not take it');
+    assert.equal(takeHunterTransport(close).warned, true, 'a natural approach has shown the full warning');
+    assert.equal(tryCancelTake(close).resisted, true, 'after that warning a close hunter can seize the transport');
   }
 
   // A range drawn per arming, so it is never a counted number to learn.
-  for (const roll of [0, 0.5, 0.99]) {
+  for (const roll of [0, 0.5, 0.99, 1]) {
     let state = armTakeHunter(freshTakeHunter(), { roll });
-    // Brought inside the seize range, or the machine would simply release.
-    state = { ...state, cells: TAKE_HUNTER.seizeCells };
+    // This represents an approach whose physical warning already completed.
+    // Distance alone deliberately no longer establishes seizure.
+    state = { ...state, cells: TAKE_HUNTER.seizeCells, warningSeconds: TAKE_HUNTER.dragWarningSeconds };
     assert.ok(state.cancelNeeds >= TAKE_HUNTER.cancelMin && state.cancelNeeds <= TAKE_HUNTER.cancelMax,
       `it takes between ${TAKE_HUNTER.cancelMin} and ${TAKE_HUNTER.cancelMax} presses (${state.cancelNeeds})`);
     let presses = 0;
@@ -220,16 +222,187 @@ import {
       const attempt = tryCancelTake(state);
       state = attempt.state;
       if (attempt.released) break;
-      assert.equal(attempt.resisted, true, 'and every press before that does nothing');
+      assert.equal(attempt.resisted, true, 'each resisted press advances the physical forcing attempt');
+      const transport = takeHunterTransport(state);
+      assert.equal(transport.tries, presses + 1, 'the instrument can show that the instruction registered');
+      assert.equal(transport.remaining, state.cancelNeeds - transport.tries, 'and recovery is bounded');
     }
     assert.equal(presses + 1, state.cancelNeeds, 'it lets go exactly when it said it would');
   }
 
   // Letting go of the key does not re-roll it. The number is drawn at arming.
-  const armed = { ...armTakeHunter(freshTakeHunter(), { roll: 0.99 }), cells: TAKE_HUNTER.seizeCells };
+  const armed = { ...armTakeHunter(freshTakeHunter(), { roll: 0.99 }), cells: TAKE_HUNTER.seizeCells,
+    warningSeconds: TAKE_HUNTER.dragWarningSeconds };
   const once = tryCancelTake(armed).state;
   assert.equal(once.cancelNeeds, armed.cancelNeeds, 'the machine does not change its mind');
   assert.equal(once.cancelTries, 1, 'and it remembers being pressed');
+}
+
+// A startle can skip distance, never the active warning interval. Neither a
+// large frame nor repeated STOP instructions can manufacture elapsed warning.
+{
+  let state = armTakeHunter(freshTakeHunter(), { roll: 0 });
+  for (let tick = 0; tick < 30; tick += 1) {
+    state = stepTakeHunter(state, 0.1, { recording: true, heard: 0.06 }).state;
+  }
+  assert.ok(state.cells > TAKE_HUNTER.dragCells);
+  assert.equal(state.warningSeconds, 0, 'time spent outside the warning range earns no warning credit');
+  while (state.cells > TAKE_HUNTER.seizeCells) state = armTakeHunter(state);
+  assert.equal(takeHunterTransport(state).phase, 'drag');
+  assert.equal(tryCancelTake(state).released, true, 'even a close arrival leaves STOP working before warning');
+
+  const jumped = stepTakeHunter({ ...state, seconds: TAKE_HUNTER.graceSeconds }, 200,
+    { recording: true, heard: 0.3 }).state;
+  assert.equal(jumped.warningSeconds, 0.25, 'a frame stall cannot skip the warning');
+  assert.equal(tryCancelTake(jumped).released, true);
+
+  // Start after the existing approach grace; stay safely above contact while
+  // the clock tests the boundary, rather than triggering the contact outcome.
+  state = { ...state, seconds: TAKE_HUNTER.graceSeconds, cells: TAKE_HUNTER.seizeCells };
+  for (let tick = 0; tick < 23; tick += 1) {
+    state = stepTakeHunter(state, 0.1, { recording: true, heard: 0.06 }).state;
+    assert.equal(tryCancelTake(state).released, true, 'every STOP works before 2.4 active warning seconds');
+  }
+  const before = { ...state };
+  for (let press = 0; press < 12; press += 1) state = tryCancelTake(state).state;
+  state = stepTakeHunter(state, 0, { recording: true, heard: 0.3 }).state;
+  assert.equal(state.warningSeconds, before.warningSeconds, 'no simulation tick means no warning progress');
+  assert.equal(state.cancelTries, 0, 'unresisted instructions cannot be banked as force presses');
+
+  state = stepTakeHunter(state, 0.1, { recording: true, heard: 0.06 }).state;
+  assert.equal(takeHunterTransport(state).phase, 'seized', 'seizure starts only after the whole warning');
+  assert.equal(tryCancelTake(state).resisted, true);
+}
+
+// Silence releases the machine sooner than it sends the hunter away. It is a
+// deliberate alternative to forcing STOP, rather than a required input retry.
+{
+  let state = { ...armTakeHunter(freshTakeHunter(), { roll: 0.5 }),
+    cells: 4, seconds: 9, warningSeconds: TAKE_HUNTER.dragWarningSeconds };
+  state = tryCancelTake(state).state;
+  const tries = state.cancelTries;
+  for (let tick = 0; tick < 17; tick += 1) {
+    state = stepTakeHunter(state, 0.1, { recording: true, heard: 0 }).state;
+  }
+  assert.equal(takeHunterTransport(state).phase, 'seized', 'a momentary pause is not the full recovery');
+  state = stepTakeHunter(state, 0.1, { recording: true, heard: 0 }).state;
+  const transport = takeHunterTransport(state);
+  assert.equal(transport.phase, 'drag');
+  assert.equal(transport.quietReleased, true);
+  assert.equal(state.active, true, 'the hunter can remain while STOP is free');
+  assert.ok(state.cells < TAKE_HUNTER.seizeCells, 'recovery does not depend on reaching safety distance');
+  assert.equal(tryCancelTake(state).released, true, 'one STOP now works');
+  assert.equal(state.cancelTries, tries, 'silence does not fabricate forcing presses');
+}
+
+// A legacy state has no proof that the player saw a warning. It therefore
+// keeps a working STOP, even if the old reducer saved it deep inside seizure.
+// Presentation is pure and safe before an active state exists.
+{
+  for (const state of [undefined, null, freshTakeHunter()]) {
+    const transport = takeHunterTransport(state);
+    assert.equal(transport.phase, 'normal');
+    assert.equal(transport.tries, 0);
+    assert.equal(transport.needs, 0);
+    assert.equal(transport.remaining, 0);
+    assert.equal(tryCancelTake(state).released, true);
+  }
+  const { warningSeconds, ...legacy } = { ...armTakeHunter(freshTakeHunter(), { roll: 0.5 }),
+    cells: 3, seconds: 10 };
+  const original = { ...legacy };
+  assert.equal(takeHunterTransport(legacy).phase, 'drag');
+  assert.equal(tryCancelTake(legacy).released, true, 'old distance alone cannot make STOP resist');
+  assert.equal(stepTakeHunter(legacy, 0.1, { recording: true, heard: 0.06 }).state.warningSeconds, 0.1,
+    'the next active tick starts its warning normally');
+  assert.deepEqual(legacy, original, 'presentation and stepping never mutate their input');
+}
+
+// Fast repeated sounds used to compress seizure-to-contact to about a second,
+// shorter than the bounded STOP forcing route. They can close the distance but
+// cannot skip either the warning or the one-shot presented recovery window.
+{
+  let state = armTakeHunter(freshTakeHunter(), { roll: 1 });
+  for (let startle = 0; startle < 12; startle += 1) state = armTakeHunter(state);
+  assert.equal(state.cells, TAKE_HUNTER.contactCells);
+  assert.equal(state.contactWindowElapsed, null);
+  for (let tick = 0; tick < 60 && state.contactWindowElapsed == null; tick += 1) {
+    const result = stepTakeHunter(state, 0.1, { recording: true, heard: .3 });
+    state = armTakeHunter(result.state);
+    assert.equal(result.contact, false, 'startles at contact cannot bypass the pre-seizure warning');
+  }
+  assert.equal(takeHunterTransport(state).phase, 'seized');
+  assert.equal(state.contactWindowElapsed, 0, 'the first presented seizure starts a full window');
+  const seeded = { ...state };
+
+  for (let tick = 0; tick < 39; tick += 1) {
+    state = armTakeHunter(state);
+    const result = stepTakeHunter(state, .1, { recording: true, heard: .3 });
+    state = result.state;
+    assert.equal(result.contact, false, 'even renewed noise leaves the promised four seconds');
+  }
+  const caught = stepTakeHunter(armTakeHunter(state), .1, { recording: true, heard: .3 });
+  assert.equal(caught.contact, true, 'the fixed window expires rather than granting indefinite protection');
+
+  // Native deliveries were about .3s apart. Allow .75s to recognise the fault,
+  // then exercise the maximum eight presses at that cadence against full noise.
+  state = seeded;
+  const advance = seconds => {
+    for (let elapsed = 0; elapsed < seconds - 1e-9; elapsed += .15) {
+      const result = stepTakeHunter(armTakeHunter(state), .15, { recording: true, heard: .3 });
+      state = result.state;
+      assert.equal(result.contact, false, 'the force route remains available at the observed native cadence');
+    }
+  };
+  advance(.75);
+  let released = false;
+  for (let press = 1; press <= TAKE_HUNTER.cancelMax; press += 1) {
+    const attempt = tryCancelTake(state);
+    state = attempt.state;
+    released = attempt.released;
+    assert.equal(attempt.tries, press);
+    if (released) break;
+    advance(.3);
+  }
+  assert.equal(released, true, 'all eight registered presses can finish before contact');
+  assert.ok(state.contactWindowElapsed < TAKE_HUNTER.contactWindowSeconds);
+}
+
+// Quiet still releases STOP in 1.8s. It and later startles do not re-seed the
+// contact window; freezing presentation supplies dt=0 and cannot spend it.
+{
+  let state = { ...armTakeHunter(freshTakeHunter(), { roll: .5 }),
+    cells: 4, seconds: 9, warningSeconds: TAKE_HUNTER.dragWarningSeconds };
+  state = stepTakeHunter(state, .1, { recording: true, heard: .3 }).state;
+  assert.equal(state.contactWindowElapsed, 0);
+  state = tryCancelTake(state).state;
+  for (let tick = 0; tick < 10; tick += 1) {
+    state = stepTakeHunter(state, .1, { recording: true, heard: .3 }).state;
+  }
+  const frozenAt = state.contactWindowElapsed;
+  for (let tick = 0; tick < 20; tick += 1) {
+    state = stepTakeHunter(state, 0, { recording: true, heard: .3 }).state;
+  }
+  assert.equal(state.contactWindowElapsed, frozenAt, 'pause and suppressed presentation do not spend the window');
+  for (let tick = 0; tick < 18; tick += 1) {
+    state = stepTakeHunter(state, .1, { recording: true, heard: 0 }).state;
+  }
+  assert.equal(takeHunterTransport(state).quietReleased, true);
+  assert.equal(tryCancelTake(state).released, true);
+  assert.ok(state.contactWindowElapsed > frozenAt + 1.7, 'quiet does not hold the contact clock');
+  const beforeStartle = state.contactWindowElapsed;
+  state = armTakeHunter(state);
+  assert.equal(state.contactWindowElapsed, beforeStartle, 'a startle cannot reset or extend the promise');
+  state = stepTakeHunter(state, .1, { recording: true, heard: .3 }).state;
+  assert.equal(takeHunterTransport(state).phase, 'seized');
+  assert.ok(state.contactWindowElapsed > beforeStartle, 'renewed seizure continues the original clock');
+  let contact = false;
+  for (let tick = 0; tick < 15 && !contact; tick += 1) {
+    const result = stepTakeHunter(armTakeHunter(state), .1, { recording: true, heard: .3 });
+    state = result.state;
+    contact = result.contact;
+  }
+  assert.equal(contact, true, 'quiet/startle cycling cannot make a new four-second window');
+  assert.deepEqual(stepTakeHunter(state, 0, { recording: false }).state, freshTakeHunter());
 }
 
 console.log('take hunter contracts passed');

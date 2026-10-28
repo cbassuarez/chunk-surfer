@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(path, 'utf8');
 
-test('boot hard-gates credits and title behind mandatory calibration', () => {
+test('optional SD development calibrates before credits; lean production bypasses calibration', () => {
   const main = read('src/main.js');
   const calibration = read('src/game/lens-calibration.js');
   assert.match(main, /makeLensCalibrationScene\(\{[\s\S]*start:calibrate[\s\S]*onReady:afterCalibration/);
@@ -27,7 +27,7 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
   assert.match(calibration, /lowDanger: !!error/);
   assert.match(calibration, /maxAutomaticRetries = 2/);
   assert.match(main, /lensRuntimeReady:LENS_RUNTIME_MARKER/);
-  assert.match(main, /import\.meta\.env\?\.DEV && qp\.has\('firstinstall'\)/);
+  assert.match(main, /const firstInstall=SD_DEV_ENABLED && qp\.has\('firstinstall'\)/);
   assert.match(main, /minimize:minimizeNativeWindow/);
   assert.match(main, /restore:restoreNativeWindow/);
   assert.match(calibration, /RETRY/);
@@ -35,10 +35,11 @@ test('boot hard-gates credits and title behind mandatory calibration', () => {
   assert.doesNotMatch(calibration, /LOADING FAILED|LENS FAILED/i);
   assert.doesNotMatch(calibration, /AUDIOCORP|GENERATIVE LENS|BANKS VERIFIED/);
   assert.doesNotMatch(calibration, /continue without|bypass|skip/i);
+  assert.match(main, /if\(stableDiffusionOff\(\)\)\{afterCalibration\(\);return;\}/);
   assert.doesNotMatch(main, /createLocalDiffusionFallback|THE LENS SLEEPS IN THE DOCK/);
 });
 
-test('production material client stages one boot bank and streams all six complete banks', () => {
+test('opt-in development material client stages one bank and streams all six banks', () => {
   const client = read('src/net/diffusion.js');
   const main = read('src/main.js');
   assert.match(client, /profiles\.length !== 6/);
@@ -204,13 +205,15 @@ test('desktop shell owns random authenticated sidecar lifecycle and cleanup', ()
   assert.doesNotMatch(rust, /CREATE_NEW_CONSOLE|DETACHED_PROCESS|CREATE_NEW_PROCESS_GROUP/);
 });
 
-test('native development has an explicit loopback service path without weakening production ownership', () => {
+test('native development connects to the external loopback service without a bundled fallback', () => {
   const main = read('src/main.js');
   const pkg = JSON.parse(read('package.json'));
   const runner = read('scripts/run-latest.mjs');
   assert.match(main, /import\.meta\.env\?\.DEV[\s\S]*VITE_LENS_DEV_URL/);
   assert.ok(main.indexOf("qp.get('diffusion')") < main.indexOf('VITE_LENS_DEV_URL'));
-  assert.match(main, /if\(IS_TAURI\)[\s\S]*bootstrapNativeLens/);
+  assert.match(main, /if\(!SD_DEV_ENABLED\)return null/);
+  assert.match(main, /if\(IS_TAURI\)throw new Error\('No local lens service/);
+  assert.doesNotMatch(main, /return \{\.\.\.await bootstrapNativeLens\(\),ownedByShell:true\}/);
   assert.equal(pkg.scripts['play:latest'], 'node scripts/run-latest.mjs');
   assert.match(runner, /LENS_EAGER: '0'/);
   assert.match(runner, /port:\s*0/);

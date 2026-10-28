@@ -38,7 +38,9 @@ function renderHarness() {
   const sandbox = { gl, crossingProgram: {}, crossingVao: {}, CU: (name) => name, realmCameraPosition,homeRealmAcquisition,
     realmEyeInterpolator: createRealmEyeInterpolator() };
   vm.createContext(sandbox);
-  vm.runInContext(source.slice(begin).replace('export function', 'function') + '\nglobalThis.render=renderSourceCrossing;', sandbox);
+  const end=source.indexOf('\n}',begin);
+  assert.ok(end>begin,'the production crossing function remains bounded');
+  vm.runInContext(source.slice(begin,end+2).replace('export function', 'function') + '\nglobalThis.render=renderSourceCrossing;', sandbox);
   return { render: sandbox.render, uniforms, get draws() { return draws; },get blending(){return blending;} };
 }
 

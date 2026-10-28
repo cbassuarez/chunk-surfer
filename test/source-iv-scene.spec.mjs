@@ -164,3 +164,19 @@ test('failed initialization or drawing cannot advance the destination or leak fo
   assert.deepEqual(drawFailure.scene.serialize(), stopped); assert.equal(drawFailure.errors.length, 1); assert.deepEqual(drawFailure.sounds, []);
   assert.equal(drawFailure.completes.length, 0); drawFailure.scene.exit();
 });
+
+test('IV preparation, residency loss and a failed render hold the last complete raster',async()=>{
+  let release;
+  const h=harness({initialize:()=>new Promise(resolve=>{release=resolve;})}),before=h.scene.serialize();
+  const loading=h.scene.initialize();h.scene.render();
+  assert.equal(h.stats().clears,0);assert.equal(h.draws.length,0);
+  h.scene.key({key:'w'});h.scene.update(.2);assert.deepEqual(h.scene.serialize(),before);
+  await flush();release(true);await loading;h.scene.render();
+  h.ready(false);h.scene.render();assert.equal(h.stats().clears,0,'the repair renderer owns the held raster');
+  h.ready(true);h.scene.update(.2);const restored=h.scene.serialize();
+  for(const key of ['x','z','feet','yaw','pitch'])assert.equal(restored[key],before[key]);
+  h.scene.render();h.scene.exit();
+  const failed=harness({render:()=>false});await failed.scene.initialize();failed.scene.render();failed.scene.render();
+  assert.ok(failed.scene.view().error);assert.equal(failed.draws.length,1);
+  assert.equal(failed.stats().clears,0,'a retry caption may overlay the preceding image without a black clear');failed.scene.exit();
+});

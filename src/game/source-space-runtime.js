@@ -911,6 +911,11 @@ import {
   OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_DOG_ENCOUNTER, OUTSKIRT_CORRIDOR,
   outskirtBeatAlong, outskirtsArrivalLayout, SOURCE_OUTSKIRTS_TOWN, outskirtsTownSet,
 } from '../data/source-outskirts-arrival.js';
+import { outskirtsFoldVisibility } from '../data/source-outskirts-folds.js';
+import { sourceOutskirtsGraffitiInstances } from './source-outskirts-graffiti.js';
+import { OUTSKIRTS_BUS_PASSAGE as BUS_PASSAGE, busPassageFloorAt } from '../data/outskirts-bus-passage.js';
+import { sweptBusPassageRefuses, busPassageLocation, busPassageLampPower,busPassageOpening,busPassageExitAngle,busPassageBodyCrossing } from './outskirts-bus-passage.js';
+import {BUS_BODY_CORRIDOR,busBodyCorridorContains,busBodyCorridorCanStep,busBodyCorridorFloorAt,busBodyCorridorProps,busBodyCorridorLights} from './bus-body-corridor.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { createOutskirtsExperience } from './outskirts-experience.js';
 import { PAYPHONE_LOOP_ROUTE } from './payphone-road-loop.js';
@@ -1342,6 +1347,7 @@ export function createSourceSpaceRuntime({
   // which is silence, and the piece starts on the step that crosses in. The
   // audio contract needed no change at all.
   function inPreTape(x, y) {
+    if(streetExperience.busTransitState().interior?.active)return !!busInteriorCell(x,y);
     if (![CHUNK_SURF_PHASE.HORIZON, CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)) return false;
     const o = landscapeOrigin(), lx = x - o.x, ly = y - o.y;
     if (ly > SOURCE_PRE_TAPE.from || ly < SOURCE_PRE_TAPE.to) return false;
@@ -1702,10 +1708,12 @@ export function createSourceSpaceRuntime({
   }
 
   function physicalCellAt(x, y) {
+    if(streetExperience.busTransitState().interior?.active)return busInteriorCell(x,y);
     return resolveSourceCell(x, y, physicalHallCell);
   }
 
   function renderCellAt(x, y) {
+    if(streetExperience.busTransitState().interior?.active)return busInteriorCell(x,y);
     return resolveSourceCell(x, y, visualHallCell, true);
   }
 
@@ -1730,6 +1738,8 @@ export function createSourceSpaceRuntime({
     renderCellAt,
     isSolid: (x, y) => !physicalCellAt(x, y),
     canStep(fromX, fromY, toX, toY) {
+      const bodyMove=outskirtsBusPassageTransition({x:fromX,y:fromY},{x:toX,y:toY});
+      if(bodyMove)return bodyMove;
       const from = physicalCellAt(fromX, fromY), to = physicalCellAt(toX, toY);
       if (towerPersonal.active) return { ok: !!to && !towerLandRefuses(toX, toY), why: !to ? 'wall' : towerLandRefuses(toX, toY) ? 'furniture' : undefined };
       if (!to) return {
@@ -1755,7 +1765,7 @@ export function createSourceSpaceRuntime({
       if (phoneBoxRefuses(fromX, fromY, toX, toY)) return { ok: false, why: 'phone box' };
       // Only the active recording holds locomotion; completion releases it.
       if (lastLightHold && !lastLightOut) return { ok: false, why: 'last-light recording' };
-      if (outskirtPieceRefuses(toX, toY) || towerLandRefuses(toX, toY)) return { ok: false, why: 'in the way' };
+      if (outskirtPieceRefuses(toX, toY,fromX,fromY) || towerLandRefuses(toX, toY)) return { ok: false, why: 'in the way' };
       if (doorCorridorRefuses(toX, toY)) return { ok: false, why: 'hedge' };
       if (to.ceil != null && to.ceil - to.floor < EYE + 0.2) return { ok: false, why: 'headroom' };
       if (sourcePhaseActive()) {
@@ -1835,7 +1845,8 @@ export function createSourceSpaceRuntime({
       return { ok: true, floor: to.floor };
     },
     floorAt: (x, y) => physicalCellAt(x, y)?.floor ?? 0,
-    renderedFloorAt: () => divideActiveAt() ? (divide?.feet??physicalCellAt(player.x,player.y)?.floor??4.2) : traversal?.floor ?? (sourceShoreFrame().outside ? shore.frame().bodyFloor : physicalCellAt(player.x, player.y)?.floor) ?? 0,
+    renderedFloorAt: (x=player.x,y=player.y,renderX=x,renderZ=y) => divideActiveAt() ? (divide?.feet??physicalCellAt(player.x,player.y)?.floor??4.2) : traversal?.floor ?? (sourceShoreFrame().outside ? shore.frame().bodyFloor :
+      inPreTape(x,y)&&Number.isFinite(renderX)&&Number.isFinite(renderZ)?physicalCellAt(renderX,renderZ)?.floor:physicalCellAt(player.x, player.y)?.floor) ?? 0,
     ceilAt: (x, y) => physicalCellAt(x, y)?.ceil || HALL_CEIL,
     zoneAt: (x, y) => physicalCellAt(x, y)?.zone || ZONE.none,
     materialAt: (x, y) => physicalCellAt(x, y)?.material || MATERIAL.none,
@@ -2288,8 +2299,8 @@ export function createSourceSpaceRuntime({
 
     // SEARCH/HAYSTACK is a bracket, not a chase. The rear body keeps pace under
     // authored tableau control and the forward body is render-only. Neither is
-    // allowed to resolve contact. Conventional Source pursuits remain available
-    // later in the landscape through the serialized pursuitBeat.
+    // allowed to resolve contact. The later physical follower can gain ground,
+    // while the meeting still requires an explicit warned commitment.
     const meeting = !lastReceptionFrame().inside && state.firstLiftCompleted && !state.finale.route && sourceBossAvailable(state)
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
     const laterPursuit = false;
@@ -2343,15 +2354,26 @@ export function createSourceSpaceRuntime({
       visible: f.active && hushFollowVisible(), x: o.x + f.x / CELL, y: o.y + f.z / CELL,
       floorH: f.floor, heading: f.heading, strength: .96 * through, intent: f.intent,
       distanceMetres: f.distance, gapMetres: f.gap, withinContact: f.withinContact,
+      speed: f.speed, onward: f.onward,
     };
   }
-  function tickHushFollow(dt) {
+  function tickHushFollow(dt, { suspended = false } = {}) {
     if (!sourcePhaseActive() || !hushFollow.frame().active) return;
     const me = hushFollowPlayer();
+    if(suspended){
+      hushFollow.tick(0,{player:me,busy:true});
+      state={...state,sourceHushFollow:hushFollow.snapshot()};return;
+    }
     hushFollow.record(me);
+    const exitDistance = Math.max(0, (player.y - edgeDoorFrame()?.threshold?.[0]?.y) * CELL);
+    // The final choice no longer places the body at the true pair. Arriving
+    // on foot also arms the same finite approach, without requiring a menu.
+    if (state.phase === CHUNK_SURF_PHASE.FINAL && exitDistance <= 55 && !state.finale.route)
+      hushFollow.beginOnward(exitDistance);
     // Before the lift he only gives ground. After it, the cleft and the ledge
     // included, he comes to meet whoever comes to meet him.
-    hushFollow.tick(dt, { player: me, proper: !!state.firstLiftCompleted, busy: !!pendingContact || !!traversal || !hushFollowVisible() });
+    hushFollow.tick(dt, { player: me, proper: !!state.firstLiftCompleted,
+      busy: !!pendingContact || !!traversal || !hushFollowVisible() });
     state = { ...state, sourceHushFollow: hushFollow.snapshot() };
   }
   // A fall through the floor is cut to the forecourt; he is put back in the
@@ -2367,18 +2389,22 @@ export function createSourceSpaceRuntime({
   function hushFollowLineClear(from, to) {
     const length = Math.hypot(to.x - from.x, to.z - from.z);
     if (length < .5) return true;
-    if (Math.abs((Number(to.floor) || 0) - from.floor) > .45) return false;
+    // A shortcut replaces the intervening footsteps with one remote target.
+    // It must stay level: the movement step allowance would let successive
+    // ramp targets raise him while he is still on the flat bank behind them.
+    const levelTolerance = .035;
+    if (Math.abs((Number(to.floor) || 0) - from.floor) > levelTolerance) return false;
     const steps = Math.ceil(length / .5);
     for (let i = 1; i <= steps; i++) {
       const x = from.x + (to.x - from.x) * i / steps, z = from.z + (to.z - from.z) * i / steps;
       if (state.firstLiftCompleted && divideLocation(x, z)) {
         const support = receptionSupport(x, z, from.floor);
         const floor = typeof support === 'number' ? support : support?.floor;
-        if (!Number.isFinite(floor) || Math.abs(floor - from.floor) > .45) return false;
+        if (!Number.isFinite(floor) || Math.abs(floor - from.floor) > levelTolerance) return false;
         if (sourceDivideCollisionAt(x, z, { feet: from.floor, height: EYE, radius: .3 })) return false;
       } else {
         if (sourceStrataCollisionAt(x, z, { feet: from.floor, height: EYE, radius: .3 })) return false;
-        if (Math.abs(shoreSurfaceFloorFor(x, z, from.floor) - from.floor) > .45) return false;
+        if (Math.abs(shoreSurfaceFloorFor(x, z, from.floor) - from.floor) > levelTolerance) return false;
       }
     }
     return true;
@@ -3073,6 +3099,7 @@ export function createSourceSpaceRuntime({
   const PRE_TAPE_AMBIENT_FLOOR = 0.030;
 
   function sourceAmbient() {
+    if(streetExperience.busTransitState().interior?.active)return{color:[.50,.43,.37],intensity:.045,captureExposure:1.4,whitePointScale:1};
     // These rooms have surviving practicals. The void's acquisition gain burns
     // their desks and figures into paper white before the recorded ink pass.
     if (towerPersonal.active) return { color: towerPersonal.stage === 'ash-room' ? [.61, .59, .53] : [.57, .62, .63], intensity: ['tape-field','dead-broadcast'].includes(towerPersonal.stage) ? .12 : .055, whitePointScale: 1, captureExposure: 1.2 };
@@ -3501,6 +3528,7 @@ export function createSourceSpaceRuntime({
     candidates.push(...receptionFocus(px,py));
     candidates.push(...phoneBoxFocus(), ...flurryFocus());
     candidates.push(...outskirtInspectFocus());
+    candidates.push(...busActionFocus());
     if (state.phase === CHUNK_SURF_PHASE.HORIZON) {
       const bust = horizonBustPoint();
       // Radius widened with him: he is a monument standing on the route now, and
@@ -3513,7 +3541,7 @@ export function createSourceSpaceRuntime({
     if ([CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase) && (state.firstLiftCompleted || !sourceShoreFrame().outside)) {
       // THE BODY IS A THING YOU CAN WALK UP TO.
       //
-      // He follows from the taken door and never closes the distance himself.
+      // He follows from the taken door and gains bounded ground on the exit.
       // It never resolves by collision: the meeting is the player's move. Turn,
       // walk at him until he comes to meet you, and interact.
       if (hushMode().contactAvailable && presence?.active
@@ -3565,6 +3593,16 @@ export function createSourceSpaceRuntime({
   }
 
   function onStep(from, to) {
+    const busCrossing=consumeBusPassageCrossing(from,to);
+    if(busCrossing?.handled)return busCrossing;
+    if(streetExperience.busTransitState().interior?.active){
+      player={...player,...to};const body=busInteriorFrame(),interior=streetExperience.busTransitState().interior;
+      interior.stepIndex=(interior.stepIndex||0)+1;streetExperience.busSetInterior(interior);
+      streetExperience.action(`outskirts-bus:organ-step-${interior.stepIndex}`,'bus-body-step',{x:(to.x+.5)*CELL,z:(to.y+.5)*CELL},{strength:.22});
+      const checkpoint=Math.floor(Math.max(0,body.along)/8);
+      if(checkpoint!==interior.walkCheckpoint){streetExperience.busSetInterior({...interior,walkCheckpoint:checkpoint});setState(state,{immediate:false,recordCausal:false});}
+      return{handled:true,event:'bus-interior-walk',position:{...player}};
+    }
     if (coastalMemory.active) return { handled: true, event: 'coastal-owner', checkpoint: coastalMemoryState(), position: { ...coastalMemory.returnPose } };
     demolitionForwardStep=sourcePhaseActive()&&!state.firstLiftCompleted&&to.y<from.y&&Math.hypot(to.x-from.x,to.y-from.y)*CELL<=SOURCE_DEMOLITION.maxAcceptedStep;
     if (towerPersonal.active) {
@@ -3760,6 +3798,7 @@ export function createSourceSpaceRuntime({
     }
     if (focus.kind === 'source-edge-door') return openEdgeDoor(focus.id);
     if (focus.kind === 'payphone') return { handled: true, event: 'payphone', text: '' };
+    if(focus.kind==='bus-action')return{handled:true,event:'bus-action',action:focus.action,stretch:BUS_PASSAGE.pass};
     if (focus.kind === 'outskirt-piece') return { handled: true, event: 'outskirts-inspect', inspect: focus.inspect, stretch: focus.stretch, id: focus.id, text: '' };
     if (focus.kind === 'source-sheet') {
       const previouslyRead = !!sourceDialogue.assignments?.[focus.id];
@@ -3893,7 +3932,8 @@ export function createSourceSpaceRuntime({
   }
 
   function tick(dt, { px = player.x, py = player.y, facing = player.facing, yaw = null,
-    demolitionAssetsReady=false,protectedPresentation=false,suspendedPresentation=false,demolitionAlreadyTicked=false } = {}) {
+    demolitionAssetsReady=false,protectedPresentation=false,suspendedPresentation=false,demolitionAlreadyTicked=false,
+    followerSuspended=false } = {}) {
     player = { ...player, x: px, y: py, facing };
     if (Number.isFinite(Number(yaw)) && yaw !== null) lookYaw = Number(yaw);
     const elapsed = Math.max(0, Number(dt) || 0);
@@ -3906,7 +3946,7 @@ export function createSourceSpaceRuntime({
       state={...state,sourceShore:shore.snapshot()};
     }
     tickRoomTake(elapsed);
-    tickHushFollow(elapsed);
+    tickHushFollow(elapsed,{suspended:followerSuspended});
     tickShorePieces();
     const doorPoint = landingWorld(SOURCE_LANDING_PORTAL_LOCAL);
     const bodyClear = Math.hypot((px - doorPoint.x) * CELL - .5, (py - doorPoint.y) * CELL) > 1.2;
@@ -5031,6 +5071,26 @@ export function createSourceSpaceRuntime({
     return { handled: true, event: 'edge-door-opened', side: state.phase === CHUNK_SURF_PHASE.HORIZON ? 'outskirts' : 'field', text: '' };
   }
 
+  // The Cut has already shown the goods leaves opening around the van. Hand
+  // back on their outward side with a full vehicle's clearance; walking the
+  // threshold again would repeat an encounter the drive has just completed.
+  // The host saves this pose, recorder and finished-drive checkpoint together.
+  function completeDrivenDoorCrossing({pose=player,clearanceMetres=3.4}={}) {
+    if(!state.active||state.phase!==CHUNK_SURF_PHASE.HORIZON||state.finale?.route===SOURCE_FINALE_ROUTE.CONTACT||state.finale?.bust?.decision)return {handled:false};
+    const door=edgeDoorFrame();
+    if(!door||![pose?.x,pose?.y].every(Number.isFinite))return {handled:false};
+    const [a,b]=door.threshold,cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+    const length=Math.hypot(door.normal[0],door.normal[2]);if(length<.001)return {handled:false};
+    const nx=-door.normal[0]/length,ny=-door.normal[2]/length;
+    const clear=Math.max(3.1,Math.min(6,Number(clearanceMetres)||3.4))/CELL;
+    const beyond=(pose.x-cx)*nx+(pose.y-cy)*ny;
+    const at=beyond>=clear?{...pose}:{...pose,x:cx+nx*clear,y:cy+ny*clear,
+      yaw:Math.atan2(nx,-ny),facing:((Math.round(Math.atan2(nx,-ny)/(Math.PI/2))%4)+4)%4,pitch:pose.pitch??0};
+    state={...state,edgeDoorOpen:true};edgeDoorWasOpen=true;edgeDoorMovedAt=null;edgeDoorClosesBehind=true;
+    player={...player,...at};protectMoment(3);
+    return {handled:true,event:'driven-edge-crossing',position:{...at},doorId:door.id,clearanceMetres:Math.max(clear,beyond)*CELL};
+  }
+
   // The edge refuses the body everywhere except through the open doors.
   function edgeDoorRefuses(fromX, fromY, toX, toY) {
     if (!edgeDoorPhase()) return false;
@@ -5056,10 +5116,20 @@ export function createSourceSpaceRuntime({
     outskirtsQueue.push({ id: 'edge-door-closed', cue: 'goods-door-shut', position: { x: (a[0] + b[0]) / 2, z: (a[2] + b[2]) / 2 } });
   }
 
-  // Where the walk-onward choices put him: in front of the doors, facing them.
+  // A review/return anchor. Ordinary onward choices never assign this pose.
   function edgeDoorApproach() {
     const [a, b] = edgeDoorPiece().opening.threshold;
     return { x: Math.round((a.x + b.x) / 2), y: Math.ceil(a.y) + 4, facing: 0 };
+  }
+
+  function beginEdgeDoorApproach() {
+    if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)
+      || state.finale.route || pendingContact || traversal) return { handled: false };
+    const [a] = edgeDoorPiece().opening.threshold;
+    hushFollow.beginOnward(Math.max(0, (player.y-a.y)*CELL));
+    state = { ...state, sourceHushFollow: hushFollow.snapshot() };
+    // Position, gaze, equipment and contact commitment remain untouched.
+    return { handled: true, position: { ...player }, following: hushFollowFrame() };
   }
 
   // ── THE NIGHT, PIECE BY PIECE ─────────────────────────────────────────────
@@ -5109,7 +5179,9 @@ export function createSourceSpaceRuntime({
       // rows from 13 onwards borrow the quiet logical-13 template while held.
       // Stable physical-row IDs retain lamp/look-away state across rebasing.
       projected = original.filter(piece => piece.stretch < PAYPHONE_LOOP_ROUTE.pass)
-        .map(piece => ({ ...piece, physicalRow: piece.stretch, along: piece.along - loop.shiftMetres }));
+        .map(piece => ({ ...piece, physicalRow: piece.stretch, along: piece.along - loop.shiftMetres,
+          ...(piece.bounds ? { bounds: { ...piece.bounds,
+            along0: piece.bounds.along0 - loop.shiftMetres, along1: piece.bounds.along1 - loop.shiftMetres } } : {}) }));
       const byPass = new Map();
       for (const piece of original) {
         if (!byPass.has(piece.stretch)) byPass.set(piece.stretch, []);
@@ -5120,9 +5192,12 @@ export function createSourceSpaceRuntime({
           ? PAYPHONE_LOOP_ROUTE.pass : physicalRow - loop.turns;
         if (logicalPass >= OUTSKIRT_STRETCH_COUNT) continue;
         for (const piece of byPass.get(logicalPass) || []) {
+          const displacement = (physicalRow - logicalPass) * OUTSKIRT_STRETCH_METRES - loop.shiftMetres;
           projected.push({ ...piece, id: `r${physicalRow}-${piece.key}`, physicalRow,
             repeat: physicalRow, stretch: logicalPass,
-            along: piece.along + (physicalRow - logicalPass) * OUTSKIRT_STRETCH_METRES - loop.shiftMetres });
+            along: piece.along + displacement,
+            ...(piece.bounds ? { bounds: { ...piece.bounds,
+              along0: piece.bounds.along0 + displacement, along1: piece.bounds.along1 + displacement } } : {}) });
         }
       }
       // The terminal recorder and threshold keep their original logical road
@@ -5203,7 +5278,8 @@ export function createSourceSpaceRuntime({
     return [...pieces, ...outskirtCache.remnants];
   }
   // Metres along the road from its first metre: negative on the still stretch.
-  const outskirtsAlong = (py = player.y) => (landscapeOrigin().y + edgeDoorPlaneY()) * CELL - roadStartMetres() - (py + 0.5) * CELL;
+  const outskirtsAlong = (py = player.y) => (landscapeOrigin().y + edgeDoorPlaneY()) * CELL - roadStartMetres()
+    - (streetExperience.busTransitState().interior?.active?streetExperience.busTransitState().interior.busPose.z:(py + .5) * CELL);
   function outskirtsPerceptualAlong(py = player.y) {
     const along = outskirtsAlong(py);
     // A coordinate wrap cannot restore the body's steadiness or dry the road.
@@ -5268,7 +5344,13 @@ export function createSourceSpaceRuntime({
       const away = Math.abs(Math.atan2(Math.sin(bearing - viewYaw), Math.cos(bearing - viewYaw)));
       const distance = Math.hypot(x - eye.x, z - eye.z);
       const visible = away < 0.95 && distance < 70 && outskirtsSightClear(eye, piece);
-      if (visible && distance < 40) memo.seen = true;
+      // The earlier lodge guard must first be met at his real counter. A
+      // peripheral road glimpse otherwise consumes his disappearance while
+      // the player is still walking around the canonically turned building.
+      const counterGuard=piece.key==='booth-guard'&&piece.unwatched==='vanish';
+      const counter=counterGuard?streetAnchor(piece,...(piece.interact||[0,0])):null;
+      const encountered=counterGuard?Math.hypot(counter.x-eye.x,counter.z-eye.z)<=(piece.closeReach||1.8):distance<40;
+      if (visible && encountered) memo.seen = true;
       if (memo.visible && !visible) {
         memo.epoch += 1;
         if (piece.watcher) memo.face = Math.atan2(eye.x - x, eye.z - z) + (/^bus-woman/.test(piece.key) || dogHandler ? Math.PI : 0);
@@ -5284,12 +5366,19 @@ export function createSourceSpaceRuntime({
       const stage = streetExperience.busStage();
       // A small, retained movement inside the bus, never a collision mismatch.
       const frame = streetExperience.characterFrame();
-      if (stage >= 3) z -= .18 * (reducedMotion || frame.woman.stepAt == null ? 1 : busWomanStepProgress(frame.clock - frame.woman.stepAt));
+      // The mandatory passage keeps her planted in her real empty seat bay.
+      // Only the earlier exterior encounter used the roadward root step.
+      if (stage >= 3 && !outskirtPieces().some(p=>p.busPassage&&p.stretch===piece.stretch)) z -= .18 * (reducedMotion || frame.woman.stepAt == null ? 1 : busWomanStepProgress(frame.clock - frame.woman.stepAt));
       // Her feet retain the authored heading. Head, neck and shoulders perform
       // the acknowledgement rather than rotating the entire standing mesh.
     }
-    return sourceMatrix({ x, y: outskirtsHeight() + (Number(piece.y) || 0), z, yaw,
-      scaleX:(piece.scaleX??1)*(piece.scale??1),scaleY:(piece.scaleY??1)*(piece.scale??1),scaleZ:(piece.scaleZ??1)*(piece.scale??1) });
+    const shape = { yaw, pitch: piece.pitch || 0, roll: piece.roll || 0,
+      scaleX:(piece.scaleX??1)*(piece.scale??1),scaleY:(piece.scaleY??1)*(piece.scale??1),scaleZ:(piece.scaleZ??1)*(piece.scale??1) };
+    const height = outskirtsHeight() + (Number(piece.y) || 0);
+    // One gravity for the complete return, applied after each actual model's
+    // local yaw. Rotating local roll alone breaks the van/gate/lamp contacts.
+    return piece.folded ? mul(translate(x, height, z), mul(rotZ(piece.foldRoll), sourceMatrix(shape)))
+      : sourceMatrix({ x, y: height, z, ...shape });
   }
 
   function outskirtPieceInRange(piece,eye,range=190) {
@@ -5301,8 +5390,10 @@ export function createSourceSpaceRuntime({
   function preTapeInstances(px, py, options = {}) {
     if (!inStreetRemnantView() && !recordedOutskirtsPresentation()) return [];
     const eye = outskirtsEye(px, py);
+    const foldVisibility = outskirtsFoldVisibility(outskirtsPerceptualAlong(py));
     const out = streetRenderPieces()
-      .filter((piece) => streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
+      .filter((piece) => (!piece.folded || foldVisibility > 0) && streetPieceVisible(piece) && outskirtPieceInRange(piece,eye) && !outskirtUnseen.get(piece.id)?.gone
+        && !(piece.encounter==='bus-close'&&/^bus-woman/.test(piece.key)&&streetExperience.busTransitState().openAt!=null&&streetExperience.busTransitState().clock-streetExperience.busTransitState().openAt>=.32)
         && !(piece.encounter === 'wrong-fold' && streetExperience.characterFrame().fold.phase === 'spent'))
       .flatMap((piece) => {
         let matrix = outskirtMatrix(piece, { ...options, px, py });
@@ -5330,6 +5421,7 @@ export function createSourceSpaceRuntime({
         const instance = {
           id: piece.id, mesh: piece.key === 'booth-ledger' && (streetWorld.ledgerSigned || piece.stretch >= 15) ? 'outskirts_ledger_signed' : piece.mesh, matrix,
           ...(piece.fallbackMesh?{fallbackMesh:piece.fallbackMesh}:{}),
+          ...(piece.folded ? { outskirtsFoldVisibility: foldVisibility, noShadow: foldVisibility < 1 } : {}),
           ...(piece.glow ? { emissive: [...piece.glow] } : lamp ? { emissive: [1, 0.72, 0.42,
             piece.key === 'remnant-lamp' ? 1.35 : piece.faulty ? 0.2 * level : 0.06] } : {}),
           zone: ZONE.sourceSpace, structural: !piece.character && piece.encounter !== 'wrong-fold', sourceStructure: piece.remnant ? 'street-remnant' : 'outskirts',
@@ -5339,12 +5431,13 @@ export function createSourceSpaceRuntime({
           clock: streetExperience.characterFrame().clock, woman: streetExperience.characterFrame().woman,
           stretch: piece.stretch,
           id: piece.id, aboard: piece.key === 'bus-woman-aboard', closeEncounter: piece.encounter === 'bus-close',
+          passage:piece.encounter==='bus-close'&&piece.stretch===BUS_PASSAGE.pass?streetExperience.busTransitState():null,
           reducedMotion: !!options.reducedMotion,
         })) : [instance];
       });
     // The current Ellery frontage and roofline are fixed canonical context in
     // the initial group above. No building follows the observer down the road.
-    return [...out, ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
+    return [...out, ...sourceOutskirtsGraffitiInstances(out), ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
       ? [...edgeDoorInstances(px, py, options), ...phoneBoxInstances(px, py, options), ...flurryInstances(px, py, options), ...phantomInstances()] : [])];
   }
 
@@ -5367,7 +5460,7 @@ export function createSourceSpaceRuntime({
       events.push({ id: beat.id, line: beat.line });
     }
     for (const piece of outskirtPieces()) {
-      if (!piece.lamp || piece.dark || piece.faulty || outskirtLampsOff.has(piece.id)) continue;
+      if (!piece.lamp || piece.stretch < 2 || piece.dark || piece.faulty || outskirtLampsOff.has(piece.id)) continue;
       if (along <= piece.along + OUTSKIRT_LAMP_OFF_BEHIND) continue;
       if (!reducedMotion && outskirtUnseen.get(piece.id)?.visible) continue;
       outskirtLampsOff.add(piece.id);
@@ -5496,6 +5589,9 @@ export function createSourceSpaceRuntime({
     const replayed = !!recordedCharacterPresentation;
     if (!suspended && dt > 0) recordedCharacterPresentation = null;
     if (!inOutskirtsView()) return null;
+    if(streetExperience.busTransitState().interior?.active){
+      return streetExperience.tickCharacters(dt,{pass:7,along:outskirtsAlong(),across:0,yaw:viewYaw,pitch,moving,speed,record:false,suspended}).frame;
+    }
     const eye = outskirtsEye(), along = outskirtsAlong(), pass = outskirtsPassAt(), axisX = (landscapeOrigin().x + .5) * CELL;
     const lodge = outskirtPieces().find(p => p.stretch === OUTSKIRT_FOLD_ENCOUNTER.pass && p.key === 'booth');
     const guard = outskirtPieces().find(p => p.stretch === OUTSKIRT_FOLD_ENCOUNTER.pass && p.key === OUTSKIRT_FOLD_ENCOUNTER.guardKey);
@@ -5516,7 +5612,8 @@ export function createSourceSpaceRuntime({
     let womanCue = false;
     for (const woman of women) {
       const performance = busWomanPerformance({ clock: result.frame.clock, woman: result.frame.woman, id: woman.id,
-        stretch: woman.stretch, aboard: woman.key === 'bus-woman-aboard', closeEncounter: woman.encounter === 'bus-close', reducedMotion });
+        stretch: woman.stretch, aboard: woman.key === 'bus-woman-aboard', closeEncounter: woman.encounter === 'bus-close',
+        passage:woman.encounter==='bus-close'&&woman.stretch===BUS_PASSAGE.pass?streetExperience.busTransitState():null,reducedMotion });
       const at = streetAnchor(woman), distance = Math.hypot(eye.x - at.x, eye.z - at.z);
       const bearing = Math.atan2(at.x - eye.x, -(at.z - eye.z));
       const visible = Math.abs(Math.atan2(Math.sin(bearing - viewYaw), Math.cos(bearing - viewYaw))) < .95
@@ -5529,7 +5626,8 @@ export function createSourceSpaceRuntime({
     if (passCheckpoint) characterCheckpointPass = pass;
     const foldActive = ['force', 'pain'].includes(result.frame.fold.phase);
     const womanActive = (result.frame.woman.receivedAt != null && result.frame.clock - result.frame.woman.receivedAt < 12)
-      || (result.frame.woman.acknowledgedAt != null && result.frame.clock - result.frame.woman.acknowledgedAt < 3.5);
+      || (result.frame.woman.acknowledgedAt != null && result.frame.clock - result.frame.woman.acknowledgedAt < 3.5)
+      || (result.frame.busTransit.noticeAt!=null&&!result.frame.busTransit.exited);
     const checkpoint = !suspended && dt > 0 && (womanActive || (foldActive && lodge && Math.hypot(eye.x - lodge.x, eye.z - lodge.z) < 18))
       && result.frame.clock - characterCheckpointClock >= 2;
     if (result.transition || checkpoint || passCheckpoint || womanCue) {
@@ -5539,8 +5637,17 @@ export function createSourceSpaceRuntime({
     streetReducedMotion = reducedMotion;
     return result.frame;
   }
-  function outskirtsPerformAction({ action, pass = outskirtsPassAt() } = {}) {
+  function outskirtsPerformAction({ action, pass = outskirtsPassAt(),viewYaw } = {}) {
     if (!inOutskirtsView() || pass !== outskirtsPassAt()) return { handled: false };
+    if(['bus-exit-try','bus-entry-try','bus-woman-open'].includes(action)){
+      const target=busActionFocus().find(p=>p.action===action&&p.actionLabel!=='WAIT');
+      if(!target)return{handled:false,reason:'out-of-reach-or-busy'};
+      const eye=outskirtsEye(),at={x:(target.x+.5)*CELL,z:(target.y+.5)*CELL},yaw=Math.atan2(at.x-eye.x,-(at.z-eye.z));
+      if(Number.isFinite(viewYaw)&&Math.abs(Math.atan2(Math.sin(yaw-viewYaw),Math.cos(yaw-viewYaw)))>.85)return{handled:false,reason:'look-at-action'};
+      const result=action==='bus-woman-open'?streetExperience.busWomanOpen({position:at}):streetExperience.busDoorTry({front:action==='bus-entry-try',position:at,
+        playerPose:{x:eye.x,y:geometry.floorAt(player.x,player.y)+EYE,z:eye.z,yaw:Number.isFinite(viewYaw)?viewYaw:yaw}});
+      if(result.changed)setState(state,{immediate:true});return{...result,action,transit:streetExperience.busTransitState()};
+    }
     const key = { knock: 'booth', phone: 'booth', sign: 'booth-ledger', post: 'postbox', ticket: 'bus-woman' }[action];
     const eyeAtAction = outskirtsEye();
     const piece = outskirtPieces().filter(p => p.stretch === pass && (action === 'ticket' ? p.inspect === 'woman' : p.key === key))
@@ -5571,23 +5678,34 @@ export function createSourceSpaceRuntime({
       })), events: [], encounter: null, along: outskirtsAlong(), pass: OUTSKIRT_STRETCH_COUNT - 1 };
     }
     if (!inOutskirtsView()) return { beds: [], events: [], encounter: null };
+    if(streetExperience.busTransitState().interior?.active){const eye=outskirtsEye();return{beds:[{id:'bus-organ',kind:'body',...eye,distance:0,gain:.3,pass:7}],events:streetExperience.events(),encounter:null,along:outskirtsAlong(),pass:7};}
     streetReducedMotion = reducedMotion;
     const eye = outskirtsEye(), along = outskirtsAlong(), pass = outskirtsPassAt(), axisX = (landscapeOrigin().x + .5) * CELL;
     const local = along - OUTSKIRT_STRETCH_START - OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES;
     const woman = outskirtPieces().find(p => p.stretch === OUTSKIRT_BUS_ENCOUNTER.pass && p.key === OUTSKIRT_BUS_ENCOUNTER.womanKey);
     const bus = outskirtPieces().find(p => p.stretch === OUTSKIRT_BUS_ENCOUNTER.pass && p.key === OUTSKIRT_BUS_ENCOUNTER.busKey);
-    if (woman && bus) {
+    if (woman && bus && !recordedCharacterPresentation && !streetExperience.busTransitState().interior?.active) {
       const beforeStage = streetExperience.busStage();
       const bearing = Math.atan2(woman.x - eye.x, -(woman.z - eye.z)), away = Math.atan2(Math.sin(bearing - viewYaw), Math.cos(bearing - viewYaw));
-      streetExperience.bus({ active: pass === OUTSKIRT_BUS_ENCOUNTER.pass,
-        along: local, across: eye.x - axisX,
-        visible: Math.abs(away) < .85 && Math.hypot(woman.x - eye.x, woman.z - eye.z) < 20 && outskirtsSightClear(eye, woman),
-        near: Math.hypot(eye.x - axisX - (OUTSKIRT_BUS_ENCOUNTER.laneMinAcross + OUTSKIRT_BUS_ENCOUNTER.laneMaxAcross) / 2, local - OUTSKIRT_BUS_ENCOUNTER.along) < 2.25,
-        crossed: local >= OUTSKIRT_BUS_ENCOUNTER.crossedAlong, position: { x: woman.x, z: woman.z },
+      const body=streetBusLocal(bus,eye),location=busPassageLocation(body);
+      const headBearing=Math.atan2(-(body.x-BUS_PASSAGE.woman.x),-(body.z-BUS_PASSAGE.woman.z))-BUS_PASSAGE.woman.yaw;
+      const entryTarget=streetAnchor(bus,BUS_PASSAGE.entry.hinge[0],(BUS_PASSAGE.entry.fromZ+BUS_PASSAGE.entry.toZ)/2),entryBearing=Math.atan2(entryTarget.x-eye.x,-(entryTarget.z-eye.z));
+      const beforeTransit=streetExperience.busTransitState();
+      streetExperience.busTransit({ active:pass===OUTSKIRT_BUS_ENCOUNTER.pass,
+        visible:Math.abs(Math.atan2(Math.sin(Math.atan2(bus.x-eye.x,-(bus.z-eye.z))-viewYaw),Math.cos(Math.atan2(bus.x-eye.x,-(bus.z-eye.z))-viewYaw)))<.95
+          &&Math.hypot(bus.x-eye.x,bus.z-eye.z)<28,
+        ...location,exited:false,entryPosition:streetAnchor(bus,BUS_PASSAGE.entry.hinge[0],BUS_PASSAGE.entry.hinge[2]),position:{x:woman.x,z:woman.z},
+        entryClear:location.inside&&body.x>-.35&&body.z>=-2.35,
+        escapeLook:Math.abs(Math.atan2(Math.sin(entryBearing-viewYaw),Math.cos(entryBearing-viewYaw)))<.85,
+        midAisle:location.inside&&body.z>=-1.3,
+        entryLattice:{x:player.x,y:player.y},
+        stripPositions:[-2.5,-1,1,3].map(z=>streetAnchor(bus,0,z)),
+        noticeNear:location.inside&&body.z>=-1.3,passing:location.inside&&body.z>=BUS_PASSAGE.woman.z-.45,
+        gazeYaw:Math.atan2(Math.sin(headBearing),Math.cos(headBearing)),
         acknowledgeYaw: Math.atan2(Math.sin(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw),
           Math.cos(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw)) });
-      if (streetExperience.busStage() !== beforeStage) setState(state, { immediate: true });
-      if (streetExperience.busStage() >= 2 && streetBusDoorAt == null) streetBusDoorAt = time;
+      const afterTransit=streetExperience.busTransitState();
+      if (streetExperience.busStage() !== beforeStage||['doorOpened','entered','close','exited','noticeAt','passAt'].some(key=>beforeTransit[key]!==afterTransit[key]))setState(state,{immediate:true});
     }
     // The seventh lodge's hatch moves at reaching distance, after the guard has
     // been learned. It does not spend its event while the player watches afar.
@@ -5610,7 +5728,143 @@ export function createSourceSpaceRuntime({
     return { beds: [...nearest.values()], events: streetExperience.events(),
       encounter: { id: 'bus', stage: streetExperience.busStage(), pass: OUTSKIRT_BUS_ENCOUNTER.pass }, along, pass };
   }
+  function streetBusLocal(bus,eye){
+    const dx=eye.x-bus.x,dz=eye.z-bus.z,c=Math.cos(bus.yaw),s=Math.sin(bus.yaw);
+    return{x:dx*c-dz*s,z:dx*s+dz*c};
+  }
+  function busPocketLocal(pose,origin){return streetBusLocal(origin,{x:(pose.x+.5)*CELL,z:(pose.y+.5)*CELL});}
+  function busPocketPoint(local,origin){const c=Math.cos(origin.yaw),s=Math.sin(origin.yaw);return{x:(origin.x+local.x*c+local.z*s)/CELL-.5,y:(origin.z-local.x*s+local.z*c)/CELL-.5};}
+  function busPocketFor(bus,from){
+    const c=BUS_PASSAGE.bodyPassage,lattice=streetExperience.busTransitState().entryLattice||from,
+      aligned=(local)=>{const p=busPocketPoint({x:local[0],z:local[1]},bus);return{x:lattice.x+Math.round(p.x-lattice.x),y:lattice.y+Math.round(p.y-lattice.y)};};
+    return{active:true,origin:{x:bus.x+c.pocketOffsetMetres,y:outskirtsHeight()+BUS_PASSAGE.floor,z:bus.z,yaw:bus.yaw},
+      returnPose:aligned(c.insideReturn),outsidePose:aligned(c.outside),
+      busPose:{x:bus.x,z:bus.z,yaw:bus.yaw,ground:outskirtsHeight()},enteredAt:streetExperience.busTransitState().clock,walkCheckpoint:0};
+  }
+  function busInteriorCell(x,y){
+    const t=streetExperience.busTransitState(),interior=t.interior;
+    if(!interior?.active)return null;
+    const p=busPocketLocal({x,y},interior.origin);
+    if(!busBodyCorridorContains(p,0))return null;
+    return{floor:interior.origin.y+busBodyCorridorFloorAt(p),ceil:interior.origin.y+2.6,flags:0,
+      material:MATERIAL.sourceVoid,solid:false,zone:ZONE.sourceSpace};
+  }
+  function busInteriorFrame(){
+    const t=streetExperience.busTransitState(),interior=t.interior;
+    if(!interior?.active)return null;
+    const local=busPocketLocal(player,interior.origin),progress=Math.max(0,Math.min(1,local.z/BUS_BODY_CORRIDOR.length));
+    return{active:true,local,along:local.z,progress,origin:{...interior.origin},clock:t.clock,enteredAt:interior.enteredAt,
+      entry:local.z<=.5,exit:local.z>=BUS_BODY_CORRIDOR.length-.5,floor:interior.origin.y+busBodyCorridorFloorAt(local),
+      packURLs:BUS_BODY_CORRIDOR.packURLs,lights:busBodyCorridorLights({origin:interior.origin,clock:t.clock,progress:local.z})};
+  }
+  function outskirtsBusPassageTransition(from,to){
+    if(state.phase!==CHUNK_SURF_PHASE.HORIZON)return null;
+    const t=streetExperience.busTransitState(),interior=t.interior;
+    if(interior?.active){
+      const a=busPocketLocal(from,interior.origin),b=busPocketLocal(to,interior.origin);
+      const boundary=b.z<0&&a.z>=0?'return':b.z>=BUS_BODY_CORRIDOR.length&&a.z<BUS_BODY_CORRIDOR.length?'exit':null;
+      const clipped=boundary?{x:b.x,z:boundary==='exit'?BUS_BODY_CORRIDOR.length:0}:b;
+      if(!busBodyCorridorCanStep(a,clipped,{radius:BUS_PASSAGE.bodyRadius}))return{ok:false,why:'body corridor'};
+      if(boundary){const redirect=boundary==='exit'?interior.outsidePose:interior.returnPose;return{ok:true,via:`bus-body-${boundary}`,redirect:{...redirect},floor:boundary==='exit'?interior.busPose.ground:interior.busPose.ground+BUS_PASSAGE.floor};}
+      return{ok:true,floor:interior.origin.y+busBodyCorridorFloorAt(b)};
+    }
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));if(!bus)return null;
+    const a=streetBusLocal(bus,outskirtsEye(from.x,from.y)),b=streetBusLocal(bus,outskirtsEye(to.x,to.y));
+    const options={entryAngle:busDoorAngle(bus),exitAngle:busPassageExitAngle(t),bodyReady:busPassageOpening(t).ready};
+    // Ordinary movement can finish against a tangible release bar instead of
+    // losing the entire grid step. This resolves contact before interaction;
+    // E never changes the player's position or stretches a reaching arm.
+    if(t.entered&&!t.exited&&a.z>=3.6&&a.z<=4.15&&b.z>=3.6&&b.z<=4.15&&b.x>a.x&&a.x>=.30&&a.x<1
+      &&Math.hypot(b.x-a.x,b.z-a.z)<=.72&&!sweptBusPassageRefuses(a,a,options)&&sweptBusPassageRefuses(a,b,options)){
+      let lo=0,hi=1;for(let i=0;i<16;i++){const mid=(lo+hi)/2,p={x:a.x+(b.x-a.x)*mid,z:a.z+(b.z-a.z)*mid};if(sweptBusPassageRefuses(a,p,options))hi=mid;else lo=mid;}
+      const p={x:a.x+(b.x-a.x)*Math.max(0,lo-.0001),z:a.z+(b.z-a.z)*Math.max(0,lo-.0001)};
+      if(Math.hypot(p.x-a.x,p.z-a.z)>.035)return{ok:true,via:'bus-rear-contact',redirect:busPocketPoint(p,bus),floor:outskirtsHeight()+busPassageFloorAt(p.x,p.z)};
+    }
+    if(!busPassageOpening(t).ready||t.exited)return null;
+    const crossing=busPassageBodyCrossing(a,b,{ready:true});if(!crossing)return null;
+    if(Math.abs(b.x)>BUS_PASSAGE.bodyPassage.width/2-BUS_PASSAGE.bodyRadius)return{ok:false,why:'body aperture'};
+    const stop={x:crossing.x,z:crossing.z-.00001};
+    if(sweptBusPassageRefuses(a,stop,{entryAngle:busDoorAngle(bus),exitAngle:busPassageExitAngle(t),bodyReady:true}))return{ok:false,why:'body aperture'};
+    const pocket=busPocketFor(bus,from),redirect=busPocketPoint({x:b.x,z:.35},pocket.origin);
+    return{ok:true,via:'bus-body-enter',redirect,floor:pocket.origin.y+busBodyCorridorFloorAt({x:b.x,z:.35})};
+  }
+  function consumeBusPassageCrossing(from,to){
+    if(state.phase!==CHUNK_SURF_PHASE.HORIZON)return null;
+    const t=streetExperience.busTransitState(),interior=t.interior,same=(a,b)=>a&&Math.hypot(a.x-b.x,a.y-b.y)<.00001;
+    if(interior?.active){
+      const at=busPocketLocal(from,interior.origin);
+      if(same(to,interior.returnPose)&&at.z>=-.5&&at.z<=.75){
+        streetExperience.busSetInterior({...interior,active:false});player={...player,...to};setState(state,{immediate:true});return{handled:true,event:'bus-body-return',position:{...player}};
+      }
+      if(same(to,interior.outsidePose)&&at.z>=BUS_BODY_CORRIDOR.length-.75){
+        streetExperience.busCompleteCrossing({x:(to.x+.5)*CELL,z:(to.y+.5)*CELL});player={...player,...to};setState(state,{immediate:true});return{handled:true,event:'bus-body-exit',position:{...player}};
+      }
+      return null;
+    }
+    if(!busPassageOpening(t).ready||t.exited)return null;
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));if(!bus)return null;
+    const before=streetBusLocal(bus,outskirtsEye(from.x,from.y)),pocket=busPocketFor(bus,from),after=busPocketLocal(to,pocket.origin);
+    if(before.z<BUS_PASSAGE.bodyPassage.planeZ-.76||before.z>=BUS_PASSAGE.bodyPassage.planeZ||Math.abs(after.z-.35)>.00001
+      ||Math.abs(after.x)>BUS_PASSAGE.bodyPassage.width/2-BUS_PASSAGE.bodyRadius)return null;
+    streetExperience.busSetInterior(pocket);player={...player,...to};setState(state,{immediate:true});return{handled:true,event:'bus-body-enter',position:{...player},interior:busInteriorFrame()};
+  }
+  function busAttemptFrame(bus,t){
+    const front=t.frontTryAt!=null&&(t.tryAt==null||t.frontTryAt>t.tryAt),at=front?t.frontTryAt:t.tryAt;
+    if(at==null||t.clock-at>1.85)return null;
+    const angle=front?busDoorAngle(bus):busPassageExitAngle(t),door=front?BUS_PASSAGE.entry:BUS_PASSAGE.exit;
+    const x=front?.07:-.07,z=front?.91:.86,c=Math.cos(angle),s=Math.sin(angle);
+    const handle=streetAnchor(bus,door.hinge[0]+x*c+z*s,door.hinge[2]-x*s+z*c);
+    return{kind:front?'entry':'exit',startedAt:at,elapsed:Math.max(0,t.clock-at),angle,busYaw:bus.yaw,
+      handle:[handle.x,outskirtsHeight()+1.53,handle.z],playerPose:t.attemptPose};
+  }
+  function busActionFocus(){
+    if(!inOutskirtsView()||streetExperience.busTransitState().interior?.active)return[];
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));if(!bus)return[];
+    const t=streetExperience.busTransitState(),eye=outskirtsEye(),body=streetBusLocal(bus,eye);
+    if(!busPassageLocation(body).inside||t.exited)return[];
+    const result=[],add=(action,label,at,reach)=>{if(Math.hypot(eye.x-at.x,eye.z-at.z)<=reach)result.push({kind:'bus-action',id:`r7:${action}`,action,actionLabel:label,stretch:7,
+      x:at.x/CELL-.5,y:at.z/CELL-.5,focusPriority:20,focusRadius:reach/CELL});};
+    for(const [front,action]of[[true,'bus-entry-try'],[false,'bus-exit-try']]){
+      if(front&&t.trapAt==null)continue;
+      const at=streetAnchor(bus,front?-1.175:1.175,front?-2.79:4.16),yaw=Math.atan2(at.x-eye.x,-(at.z-eye.z));
+      const shoulder={x:eye.x+Math.cos(yaw)*.18,y:geometry.floorAt(player.x,player.y)+EYE-.22,z:eye.z+Math.sin(yaw)*.18};
+      if(Math.hypot(at.x-shoulder.x,outskirtsHeight()+1.53-shoulder.y,at.z-shoulder.z)<=.66)add(action,'TRY',at,1);
+    }
+    if(t.tryAt!=null&&t.clock-t.tryAt>=1.65&&t.openAt==null&&body.z<=BUS_PASSAGE.bodyPassage.frontZ-.1){
+      const woman=streetExperience.characterFrame().woman,since=woman.receivedAt==null?Infinity:t.clock-woman.receivedAt;
+      add('bus-woman-open',since<4||since>=9&&since<11?'WAIT':'OPEN',streetAnchor(bus,BUS_PASSAGE.woman.x,BUS_PASSAGE.woman.z),2.1);
+    }
+    return result;
+  }
+  function outskirtsBusPassageFrame(){
+    if(!inOutskirtsView())return null;
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));
+    if(!bus)return null;
+    const transit=streetExperience.busTransitState(),interior=busInteriorFrame();
+    const local=interior?{x:0,z:BUS_PASSAGE.bodyPassage.planeZ}:streetBusLocal(bus,outskirtsEye()),location=busPassageLocation(local);
+    const front=streetAnchor(bus,-.81,-1.7),power=busPassageLampPower(streetExperience.busTransitState());
+    const practical=BUS_PASSAGE.facePractical,face=streetAnchor(bus,practical.light[0],practical.light[2]);
+    const c=Math.cos(bus.yaw),s=Math.sin(bus.yaw),d=practical.direction;
+    return{active:outskirtsPassAt()===BUS_PASSAGE.pass,...location,local,
+      rainShelter:interior?null:{x:bus.x,y:outskirtsHeight(),z:bus.z,yaw:bus.yaw},interior,
+      lighting:{origin:{x:bus.x,y:outskirtsHeight(),z:bus.z,yaw:bus.yaw},front:[front.x,outskirtsHeight()+2.78,front.z],
+        face:{position:[face.x,outskirtsHeight()+practical.light[1],face.z],direction:[d[0]*c+d[2]*s,d[1],-d[0]*s+d[2]*c],
+          colour:practical.colour,reach:practical.reach,strength:practical.strength,coneInnerCos:practical.coneInner,coneOuterCos:practical.coneOuter},power},
+      floorOffset:busPassageFloorAt(local.x,local.z),stage:streetExperience.busStage(),
+      entryAngle:busDoorAngle(bus),exitAngle:busPassageExitAngle(transit),transit,
+      exitTried:transit.tryAt!=null,bodyOpening:{...busPassageOpening(transit),elapsed:transit.openAt==null?0:transit.clock-transit.openAt,
+        paperReady:streetExperience.characterFrame().woman.ticketReturned&&(streetExperience.characterFrame().woman.receivedAt==null||transit.clock-streetExperience.characterFrame().woman.receivedAt>=11)},
+      attempt:busAttemptFrame(bus,transit)};
+  }
   function busDoorAngle(piece, time = edgeDoorClock()) {
+    if(piece.busPassage){
+      const transit=streetExperience.busTransitState();
+      if(!transit.doorOpened)return 0;
+      if(transit.trapAt!=null){const remaining=1-smoothstep(0,.65,transit.clock-transit.trapAt);return remaining===0?0:BUS_PASSAGE.entry.openYaw*remaining;}
+      // Persisted encounter time owns the leaf. Old acknowledged saves without
+      // a time retain a fully open leaf instead of replaying through the body.
+      return transit.doorAt==null?BUS_PASSAGE.entry.openYaw:BUS_PASSAGE.entry.openYaw*smoothstep(0,BUS_PASSAGE.entry.seconds,transit.clock-transit.doorAt);
+    }
     if (piece.stretch !== OUTSKIRT_BUS_ENCOUNTER.pass) return 1.3;
     if (streetExperience.busStage() < 2) return 0;
     return streetReducedMotion ? 1.3 : 1.3 * smoothstep(0, .65, streetBusDoorAt == null ? 1 : time - streetBusDoorAt);
@@ -5630,6 +5884,17 @@ export function createSourceSpaceRuntime({
       if (!streetPieceVisible(p) || p.unfinished || Math.hypot(p.x - eye.x, p.z - eye.z) > 65) continue;
       if (p.key === 'bus' && p.mesh === 'outskirts_bus') {
         part(p, 'door', 'outskirts_bus_door', -1.245, .5, -3.7, { yaw: -busDoorAngle(p, time) });
+      }
+      if(p.busPassage){
+        part(p,'entry-leaf',BUS_PASSAGE.entryMesh,...BUS_PASSAGE.entry.hinge,{yaw:busDoorAngle(p,time)});
+        part(p,'exit-leaf',BUS_PASSAGE.exitMesh,...BUS_PASSAGE.exit.hinge,{yaw:busPassageExitAngle(streetExperience.busTransitState())});
+        const power=busPassageLampPower(streetExperience.busTransitState());
+        // Only the fluorescent surfaces dim; paint and upholstery keep the
+        // approved material response. The rear tube remains a readable exit.
+        for(const[id,mesh,level]of[['front-lamps',BUS_PASSAGE.frontLampMesh,power.front],['rear-lamps',BUS_PASSAGE.rearLampMesh,power.rear]]){
+          part(p,id,mesh,0,0,0);out[out.length-1].fixturePower=level;
+        }
+        for(const[i,mesh]of BUS_PASSAGE.stripMeshes.entries()){part(p,`strip-${i}`,mesh,0,0,0);out[out.length-1].fixturePower=power.strips[i];}
       }
       if (p.key === 'booth') {
         if (p.stretch < 12) {
@@ -6017,7 +6282,7 @@ export function createSourceSpaceRuntime({
     outskirtCache.solids = buckets;
     return buckets;
   }
-  function outskirtPieceRefuses(toX, toY) {
+  function outskirtPieceRefuses(toX, toY,fromX=player.x,fromY=player.y) {
     if (state.phase !== CHUNK_SURF_PHASE.HORIZON) return false;
     const local = toY - landscapeOrigin().y;
     if (local > SOURCE_PRE_TAPE.from || local <= SOURCE_PRE_TAPE.to) return false;
@@ -6027,6 +6292,12 @@ export function createSourceSpaceRuntime({
     if (along >= 0 && along < OUTSKIRT_STRETCH_START + (OUTSKIRT_CORRIDOR.boundaryThroughPass + 1) * OUTSKIRT_STRETCH_METRES
       && Math.abs(wx - axis) > OUTSKIRT_CORRIDOR.halfWidth - m) return true;
     for (const piece of outskirtPieces()) {
+      if(piece.busPassage&&streetPieceVisible(piece)){
+        const from=streetBusLocal(piece,outskirtsEye(fromX,fromY)),to=streetBusLocal(piece,{x:wx,z:wz});
+        const t=streetExperience.busTransitState();
+        if(sweptBusPassageRefuses(from,to,{entryAngle:busDoorAngle(piece),exitAngle:busPassageExitAngle(t),bodyReady:busPassageOpening(t).ready}))return true;
+        continue;
+      }
       if (!streetPieceVisible(piece) || piece.key !== 'bus' || piece.unfinished || piece.mesh !== 'outskirts_bus' || Math.abs(piece.z - wz) > 7) continue;
       const hinge = streetAnchor(piece, -1.245, -3.7), yaw = piece.yaw - busDoorAngle(piece), c = Math.cos(yaw), s = Math.sin(yaw);
       const dx = wx - hinge.x, dz = wz - hinge.z, lx = dx * c - dz * s, lz = dx * s + dz * c;
@@ -6034,6 +6305,7 @@ export function createSourceSpaceRuntime({
     }
     for (const solid of outskirtSolids().get(Math.floor(wz / OUTSKIRT_BUCKET_M)) || []) {
       if (!streetPieceVisible(solid.piece) || outskirtUnseen.get(solid.piece.id)?.gone) continue;
+      if(solid.piece.busPassage)continue;
       if (solid.post) {
         if (Math.hypot(wx - solid.post.x, wz - solid.post.z) < solid.radius + m) return true;
         continue;
@@ -6053,6 +6325,7 @@ export function createSourceSpaceRuntime({
       if (!streetPieceVisible(p)) continue;
       const dx = wx - p.x, dz = wz - p.z;
       const lx = dx * p.cos - dz * p.sin, lz = dx * p.sin + dz * p.cos;
+      if(p.busPassage){const floor=busPassageFloorAt(lx,lz);if(floor>0)return floor;continue;}
       if (p.key === 'bus' && lz > -3.70 && lz < -2.60 && lx > -1.30 && lx < -.475) return lx < -.865 ? .25 : .40;
       if (p.key === 'bus' && Math.abs(lx) < 1.12 && Math.abs(lz) < 4.5) return .5;
       if (p.key === 'van' && Math.abs(lx) < .94 && lz >= 2.35 && lz < 2.95) return .335;
@@ -6112,9 +6385,15 @@ export function createSourceSpaceRuntime({
       strength: Math.min(1, phoneBoxLampStrength(box) * 1.1), open: true, pool: true, variant: -1, key: false,
       lightAt: [box.x, height + 2.1, box.z], distanceM: Math.hypot(box.x - eye.x, box.z - eye.z),
     }));
-    return [...lamps, ...boxes]
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));
+    const cabin=bus?streetBusLocal(bus,eye):null,occupied=cabin&&busPassageLocation(cabin).inside;
+    const rear=bus?streetAnchor(bus,-.72,2.6):null;
+    const busPools=rear?[{id:`${bus.id}:saloon-light`,x:rear.x,y:height,z:rear.z,forward:[0,1],width:2.1,
+      colour:[1,.80,.58],strength:.72,open:true,pool:true,variant:-1,key:false,
+      lightAt:[rear.x,height+2.78,rear.z],distanceM:Math.hypot(rear.x-eye.x,rear.z-eye.z),interior:!!occupied}]:[];
+    return [...lamps, ...boxes, ...busPools]
       .filter((pool) => pool.distanceM <= 45)
-      .sort((p, q) => p.distanceM - q.distanceM)
+      .sort((p, q) => (p.interior?-100:p.distanceM) - (q.interior?-100:q.distanceM))
       .slice(0, 3);
   }
 
@@ -7530,6 +7809,8 @@ export function createSourceSpaceRuntime({
   }
 
   function propInstances(px = player.x, py = player.y, options = {}) {
+    const bodyInterior=busInteriorFrame();
+    if(bodyInterior?.active)return busBodyCorridorProps({origin:bodyInterior.origin,clock:bodyInterior.clock,reducedMotion:!!options.reducedMotion,progress:bodyInterior.along});
     // Standing in a land, the passage he came from is not there: no bells hanging
     // over the school hall, no door field beside it.
     if (state.phase === CHUNK_SURF_PHASE.BELLS && towerLandState()) return towerLandInstances(px, py, options);
@@ -8064,6 +8345,7 @@ export function createSourceSpaceRuntime({
   }
 
   function localLights({ time = phaseElapsed, reducedMotion = false, flashMode = 'full', liveCircuits = null, torchOn = true, torchBattery = 1 } = {}) {
+    const bodyInterior=busInteriorFrame();if(bodyInterior?.active)return bodyInterior.lights.map(p=>({...p,kind:LIGHT_KIND.FITTING}));
     const demolitionLighting=sourceShoreFrame().outside?sourceDemolitionLights(demolitionWorldFrame()):[];
     if ([CHUNK_SURF_PHASE.HALL, CHUNK_SURF_PHASE.HAYSTACK].includes(state.phase)) return sourceHallLightPlacements(-player.y * CELL);
     if(divideActiveAt()){
@@ -8311,9 +8593,11 @@ export function createSourceSpaceRuntime({
     edgeDoorField,
     edgeDoorOpenings,
     openEdgeDoor,
+    completeDrivenDoorCrossing,
     edgeDoorApproach,
+    beginEdgeDoorApproach,
     outskirtsBeatFrame,
-    outskirtsStreetFrame, outskirtsPerformAction, setOutskirtsWorldState,
+    outskirtsStreetFrame, outskirtsBusPassageFrame,busInteriorFrame,outskirtsBusPassageTransition,consumeBusPassageCrossing, outskirtsPerformAction, setOutskirtsWorldState,
     tickOutskirtsCharacters, outskirtsCharacterFrame, applyOutskirtsCharacterFrame,
     outskirtsWeather,
     outskirtPieceRefuses,

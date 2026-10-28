@@ -138,6 +138,44 @@ function move(controller, x, y, movementX, movementY) {
   return controller.handlePointerMove(event);
 }
 
+test('native WebKit zero-relative events apply only measured point changes and ignore the duplicate mouse channel', async()=>{
+  await withTauriWindow(async()=>{
+    const input=new InputManager(),timers=manualTimers();
+    const {controller,native,clock}=await nativeCaptured({input,timers});
+    const landing=native.landingFor(native.calls.positions[0]);
+    move(controller,landing.x,landing.y,0,0);clock.advance(100);input.clearPointerDeltas();
+    move(controller,605,367,0,0);input.clearPointerDeltas();
+    const before=controller.status().nativeBackend.absoluteFallbackEvents;
+    move(controller,630,378,0,0);
+    assert.equal(input.pointerDx,25);assert.equal(input.pointerDy,11);
+    assert.equal(controller.status().nativeBackend.absoluteFallbackEvents,before+1);
+    assert.equal(controller.status().nativeBackend.lastDeltaReason,'tauri-native-event-delta');
+    assert.equal(controller.handleMouseMove({clientX:630,clientY:378,movementX:0,movementY:0}),false);
+    assert.equal(input.pointerDx,25);assert.equal(input.pointerDy,11,'the mouse duplicate must not double the native pointer delta');
+    input.clearPointerDeltas();move(controller,630,378,0,0);
+    assert.equal(input.pointerDx,0);assert.equal(input.pointerDy,0,'zero relative plus unchanged client point is still no motion');
+    controller.dispose();
+  });
+});
+
+test('zero-relative native warp echoes remain transport and the following hand movement remains live',async()=>{
+  await withTauriWindow(async()=>{
+    const input=new InputManager(),timers=manualTimers();
+    const {controller,native,clock}=await nativeCaptured({input,timers});
+    const landing=native.landingFor(native.calls.positions[0]);
+    move(controller,landing.x,landing.y,0,0);clock.advance(100);
+    move(controller,1100,landing.y,0,0);await settle(60);
+    assert.ok(native.calls.positions.length>=2,'edge motion requests a native recenter');
+    input.clearPointerDeltas();const ignored=controller.status().nativeBackend.ignoredRecenters;
+    const warped=native.landingFor(native.calls.positions.at(-1));move(controller,warped.x,warped.y,0,0);
+    assert.equal(input.pointerDx,0);assert.equal(input.pointerDy,0,'the measured jump back to the anchor cannot turn the camera');
+    assert.equal(controller.status().nativeBackend.ignoredRecenters,ignored+1);
+    move(controller,warped.x+7,warped.y+4,0,0);
+    assert.equal(input.pointerDx,7);assert.equal(input.pointerDy,4,'real hand motion after the warp is not time-suppressed');
+    controller.dispose();
+  });
+});
+
 test('native cursor capture ignores its absolute title-bar offset', async () => {
   await withTauriWindow(async () => {
     const input = new InputManager();
@@ -170,10 +208,13 @@ test('a still hand produces no look drift in windowed or fullscreen coordinates'
     clock.advance(100);
 
     for (let i = 0; i < 40; i += 1) move(controller, landing.x, landing.y, 0, 0);
-    for (let i = 0; i < 40; i += 1) move(controller, 640, 400, 0, 0);
-
     assert.equal(input.pointerDy, 0, 'stationary cursor must not pitch the camera');
     assert.equal(input.pointerDx, 0);
+    // A changed measured point can be real motion on zero-relative WebKit.
+    // Test the stationary hand after the new coordinate basis is established.
+    move(controller,640,400,0,0);input.clearPointerDeltas();
+    for (let i = 0; i < 40; i += 1) move(controller, 640, 400, 0, 0);
+    assert.equal(input.pointerDy,0);assert.equal(input.pointerDx,0);
   });
 });
 
@@ -220,7 +261,7 @@ test('a hand that returns to where it started leaves the camera where it started
   });
 });
 
-test('absolute-coordinate changes cannot move a relative native camera', async () => {
+test('valid nonzero relative movement takes precedence over changed absolute native coordinates', async () => {
   await withTauriWindow(async () => {
     const input = new InputManager();
     const timers = manualTimers();
@@ -228,11 +269,11 @@ test('absolute-coordinate changes cannot move a relative native camera', async (
     const landing = native.landingFor(native.calls.positions[0]);
     move(controller, landing.x, landing.y, 0, -TITLE_BAR_PX);
     clock.advance(100);
-    move(controller, 320, 200, 0, 0);
+    move(controller, 320, 200, 7, -3);
 
     assert.equal(controller.isNativeCaptured(), true);
-    assert.equal(input.pointerDx, 0);
-    assert.equal(input.pointerDy, 0);
+    assert.equal(input.pointerDx, 7);
+    assert.equal(input.pointerDy, -3);
   });
 });
 

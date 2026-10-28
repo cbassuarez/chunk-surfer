@@ -148,6 +148,8 @@ export function makeThoughtScene({
     update(dt) { convo.update(dt); },
     worldView:typeof worldView==='function'?worldView:undefined,
     view() { return convo.view(); },        // for the headless suites
+    textReviewSuspend() { convo.textReviewSuspend(); },
+    textReviewResume() { convo.textReviewResume(); },
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (e.key === 'Escape') {

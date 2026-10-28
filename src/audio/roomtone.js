@@ -105,7 +105,7 @@ export function loadFootsteps() {
  * footfall with its top gone and its room gone reads as a step onto something
  * that is not a surface, which is exactly the intended feeling.
  */
-export function footstep(level = 0.22, { muffle = 0 } = {}) {
+export function footstep(level = 0.22, { muffle = 0, pan: position = null } = {}) {
   if (!ctx || !bus || level <= 0.001) return;
   if (!stepsBuf) { loadFootsteps(); return; }       // the first step of a run is silent
   const now = ctx.currentTime;
@@ -143,7 +143,8 @@ export function footstep(level = 0.22, { muffle = 0 } = {}) {
     pan = ctx.createStereoPanner();
     // The scatter narrows as the ground goes: a step with no room around it has
     // nowhere to be.
-    pan.pan.setValueAtTime((Math.random() * 2 - 1) * 0.22 * (1 - dull * 0.7), now);
+    pan.pan.setValueAtTime(Number.isFinite(position) ? Math.max(-1,Math.min(1,position))
+      : (Math.random() * 2 - 1) * 0.22 * (1 - dull * 0.7), now);
     out.connect(pan);
     out = pan;
   }

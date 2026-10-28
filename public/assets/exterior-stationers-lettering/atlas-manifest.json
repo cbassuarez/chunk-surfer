@@ -1,7 +1,7 @@
 {
   "version": 1,
   "inputSha256": "5a669f6cfb3298253f8a16b4805c04c4696a4853f75113e9c94c19f53a451504",
-  "generatorSha256": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
+  "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
     {
@@ -451,6 +451,6 @@
   "alphaMode": "OPAQUE",
   "rgbPremultiplied": false,
   "gutterPx": 16,
-  "packing": "MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling",
+  "packing": "MaxRects BSSF; four stable orders; 8px bin-width and bounded 16px bin-height search; tight NPOT envelope; no rotation/resampling",
   "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake."
 }

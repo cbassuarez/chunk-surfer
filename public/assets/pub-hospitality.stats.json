@@ -5,7 +5,7 @@
     "y": 0,
     "z": -24
   },
-  "retainedTriangles": 9634,
+  "retainedTriangles": 11754,
   "removedStoveTriangles": 14,
   "addedTriangles": 4216,
   "dressing": [
@@ -394,12 +394,12 @@
     }
   ],
   "sourceSha256": {
-    "public/assets/conservatory-props.glb": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
-    "public/assets/pub-characters.glb": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4",
-    "public/assets/pub-quest-props.glb": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8"
+    "public/assets/conservatory-props.glb": "500fab6a1bb8f555026281715da5436430230e3225130c7bf2fd0e480f2b5200",
+    "public/assets/pub-characters.glb": "5bd1a491fa9b826f3f45cafe570bbbdec1bd171452889ad5453e0b1b19254a4d",
+    "public/assets/pub-quest-props.glb": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa"
   },
-  "bytes": 619116,
-  "sha256": "516e8420df868bbe6cf5f6da3bc6ead638e9c840378437d142afb63e1c1ba773",
+  "bytes": 734792,
+  "sha256": "a87325c93e16c055ba184b94c6e3fe32722b152870571c7fa0baa99461c1aa27",
   "materials": [
     "pub warmth / worn wood",
     "pub warmth / dark wood",
@@ -408,9 +408,9 @@
     "pub warmth / pub green upholstery",
     "pub warmth / brass",
     "pub warmth / black lacquer",
-    "pub warmth / pub green bottle glass",
-    "pub warmth / ivory",
     "pub warmth / pub brown bottle glass",
+    "pub warmth / ivory",
+    "pub warmth / pub green bottle glass",
     "pub warmth / oxidised bronze",
     "pub warmth / pub warm lamp glass",
     "pub warmth / dull terracotta",

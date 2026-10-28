@@ -5,7 +5,7 @@ import { buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { outskirtsArrivalLayout } from '../src/data/source-outskirts-arrival.js';
-import { OUTSKIRT_BUS_ENCOUNTER } from '../src/data/source-outskirts-arrival.js';
+import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
 import { BUS_WOMAN_WRONG_ORIGIN_RETURNS, BUS_WOMAN_WRONG_ORIGIN_MESHES } from '../src/data/bus-woman-wrong-origin.js';
 import { parseCharacterAsset, sampleCharacterPose } from '../src/render/character-asset.js';
 import { busWomanWrongOriginDescriptor } from '../src/render/bus-woman-wrong-origin-performance.js';
@@ -23,7 +23,8 @@ const runtime = () => {
   result.setPlayerPosition(built.position); return result;
 };
 const frameAt = (rt, piece, reducedMotion = false) => {
-  rt.setPlayerPosition({ x: (piece.x - 1) / CELL - .5, y: piece.z / CELL - .5 });
+  rt.setPlayerPosition({ x: (piece.x - Math.sin(piece.yaw)) / CELL - .5,
+    y: (piece.z - Math.cos(piece.yaw)) / CELL - .5 });
   return rt.propInstances(undefined, undefined, { reducedMotion });
 };
 
@@ -99,8 +100,11 @@ test('an altered final return survives actual tape packing and recorded presenta
 test('a close visible traction cue is saved once while distant, paused and unseen samples stay silent', () => {
   const listen = ({ distance = 1, away = false, suspended = false } = {}) => {
     const rt = runtime(), piece = rt.outskirtsPiece('r2-bus-woman');
-    rt.setPlayerPosition({ x: (piece.x - distance) / CELL - .5, y: piece.z / CELL - .5 });
-    const viewYaw = Math.PI / 2 + (away ? Math.PI : 0);
+    const position = { x: (piece.x + distance) / CELL - .5, y: piece.z / CELL - .5 };
+    rt.setPlayerPosition(position);
+    if (distance === 1) assert.equal(rt.geometry.canStep(position.x, position.y, position.x, position.y).ok, true,
+      'the close listener stands on the visible east side of the shelter');
+    const viewYaw = -Math.PI / 2 + (away ? Math.PI : 0);
     for (let n = 0; n < 16; n++) rt.tickOutskirtsCharacters(.05, { viewYaw, suspended });
     const events = rt.outskirtsStreetFrame({ viewYaw }).events.filter(event => event.cue === 'woman-traction');
     return { rt, piece, viewYaw, events };
@@ -117,25 +121,32 @@ test('a close visible traction cue is saved once while distant, paused and unsee
   assert.equal(listen({ suspended: true }).events.length, 0);
 });
 
-test('P8 receive and its saved crossing step share supported feet and complete real ticket retrieval', () => {
-  const rt = runtime(), piece = rt.outskirtsPiece('r7-bus-woman');
-  const stand = z => rt.setPlayerPosition({ x: (piece.x + 1.33) / CELL - .5, y: z / CELL - .5 });
-  let viewYaw = Math.atan2(-1.33, 1);
-  stand(piece.z + 1); rt.outskirtsStreetFrame({ viewYaw });
+test('P8 receipt stays supported in the rear bay after the player exits and completes real ticket retrieval', () => {
+  const rt = runtime(), piece = rt.outskirtsPiece('r7-bus-woman'), bus = rt.outskirtsPiece('r7-bus');
+  const stand = (x, z) => {
+    const eye = { x: bus.x + x * Math.cos(bus.yaw) + z * Math.sin(bus.yaw),
+      z: bus.z - x * Math.sin(bus.yaw) + z * Math.cos(bus.yaw) };
+    rt.setPlayerPosition({ x: eye.x / CELL - .5, y: eye.z / CELL - .5 });
+    return Math.atan2(piece.x - eye.x, -(piece.z - eye.z));
+  };
+  let viewYaw = stand(.5, 2.8);
+  rt.outskirtsStreetFrame({ viewYaw });
   rt.setOutskirtsWorldState({ ticketAsked: true, ticketFound: true, ticketReturned: false });
   assert.equal(rt.outskirtsPerformAction({ action: 'ticket', pass: 7 }).handled, true);
   rt.setOutskirtsWorldState({ ticketReturned: true });
   for (let n = 0; n < 4; n++) rt.tickOutskirtsCharacters(.05, { viewYaw });
-  stand(piece.z - 3); viewYaw = Math.atan2(-1.33, -3); rt.outskirtsStreetFrame({ viewYaw });
-  const started = rt.outskirtsCharacterFrame().woman.stepAt;
-  assert.equal(started, .2);
+  viewYaw = stand(...OUTSKIRTS_BUS_PASSAGE.exit.outside); rt.outskirtsStreetFrame({ viewYaw });
+  const started = rt.outskirtsCharacterFrame().woman.receivedAt;
+  assert.equal(rt.outskirtsCharacterFrame().woman.stepAt, null, 'the rear exit starts the obsolete exterior root step');
+  assert.equal(started, 0);
   const asset = parseCharacterAsset(buffer(altered)), entry = asset.entries.find(entry => entry.name === 'outskirts_bus_woman_wrong_origin_3');
   const scene = () => rt.propInstances(undefined, undefined, { viewYaw });
   for (const elapsed of [0, .2, .4, .6, .8]) {
     while (rt.outskirtsCharacterFrame().clock < started + elapsed - 1e-7) rt.tickOutskirtsCharacters(.05, { viewYaw });
     const body = scene().find(instance => instance.id === piece.id);
-    assert.equal(body.character.clip, 'bus_woman_receive', 'crossing discarded her receive action');
-    const sampled = sampleCharacterPose(asset, entry, body.character), supported = busWomanPose('step', elapsed);
+    assert.equal(body.character.clip, 'bus_woman_receive', 'leaving the rear door discarded her receive action');
+    assert.ok(Math.abs(body.matrix[12] - piece.x) < .0001 && Math.abs(body.matrix[14] - piece.z) < .0001, 'receipt moves the planted rear-bay root');
+    const sampled = sampleCharacterPose(asset, entry, body.character), supported = busWomanPose('wait', 0);
     for (const side of ['L', 'R']) {
       const name = 'foot_' + side, rest = BUS_WOMAN_RIG.find(bone => bone.name === name);
       const joint = entry.skin.joints.findIndex(index => asset.nodes[index].name === 'bus_woman_' + name), m = sampled.bones.subarray(joint * 16, joint * 16 + 16);
@@ -153,11 +164,12 @@ test('P8 receive and its saved crossing step share supported feet and complete r
   assert.equal(scene().filter(instance => instance.id === `${piece.id}:return-half`).length, 1);
 });
 
-test('the posed stage-three body, cloth and attachments never enter the actual east bus passage', () => {
+test('the posed stage-three body, cloth and attachments fit the shared rear-bay envelope', () => {
   const bodyAsset = parseCharacterAsset(buffer(altered)), accessoryAsset = parseCharacterAsset(buffer(canonical));
   const entries = [[bodyAsset, bodyAsset.entries.find(entry => entry.name === 'outskirts_bus_woman_wrong_origin_3')],
     ...['bus_woman_bag', 'bus_woman_ticket'].map(name => [accessoryAsset, accessoryAsset.entries.find(entry => entry.name === name)])];
-  let farthestEast = -Infinity;
+  const woman = OUTSKIRTS_BUS_PASSAGE.woman, c = Math.cos(woman.yaw), s = Math.sin(woman.yaw);
+  const bounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
   for (const [mode, duration] of Object.entries(BUS_WOMAN_CLIPS)) for (const fraction of [0, .25, .5, .75, 1]) {
     const descriptor = busWomanWrongOriginDescriptor(mode, duration * fraction, { stretch: 7 });
     for (const [asset, entry] of entries) {
@@ -165,17 +177,24 @@ test('the posed stage-three body, cloth and attachments never enter the actual e
       for (const primitive of entry.primitives) for (let vertex = 0; vertex < primitive.vertexCount; vertex++) {
         const position = Array.from(primitive.positions.subarray(vertex * 3, vertex * 3 + 3));
         for (let morph = 0; morph < primitive.targets.length; morph++) for (let axis = 0; axis < 3; axis++) position[axis] += primitive.targets[morph].positions[vertex * 3 + axis] * pose.morphs[morph];
-        let z = 0;
+        let x = 0, z = 0;
         for (let influence = 0; influence < 4; influence++) {
           const at = vertex * 4 + influence, joint = primitive.joints[at] * 16, weight = primitive.weights[at];
+          x += weight * (pose.bones[joint] * position[0] + pose.bones[joint + 4] * position[1] + pose.bones[joint + 8] * position[2] + pose.bones[joint + 12]);
           z += weight * (pose.bones[joint + 2] * position[0] + pose.bones[joint + 6] * position[1] + pose.bones[joint + 10] * position[2] + pose.bones[joint + 14]);
         }
-        // Pass eight has yaw +PI/2: character +Z is road +X.
-        farthestEast = Math.max(farthestEast, OUTSKIRT_BUS_ENCOUNTER.womanAcross + z);
+        // The rear-bay actor has an authored yaw relative to the bus; envelope
+        // offsets are already in bus-local axes and must include that turn.
+        const localX = x * c + z * s, localZ = -x * s + z * c;
+        bounds.minX = Math.min(bounds.minX, localX); bounds.maxX = Math.max(bounds.maxX, localX);
+        bounds.minZ = Math.min(bounds.minZ, localZ); bounds.maxZ = Math.max(bounds.maxZ, localZ);
       }
     }
   }
-  assert.ok(farthestEast < OUTSKIRT_BUS_ENCOUNTER.laneMinAcross, `the altered figure intrudes into the 1.70m opening at across ${farthestEast}`);
+  assert.ok(bounds.minX >= woman.envelope.minX && bounds.maxX <= woman.envelope.maxX,
+    `posed body/attachments escape the rear-bay X envelope: ${JSON.stringify(bounds)}`);
+  assert.ok(bounds.minZ >= woman.envelope.minZ && bounds.maxZ <= woman.envelope.maxZ,
+    `posed body/attachments escape the rear-bay Z envelope: ${JSON.stringify(bounds)}`);
 });
 
 function rendererStub() {

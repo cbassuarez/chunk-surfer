@@ -3,7 +3,7 @@ import { withMachinePanel, drawLampButton } from '../render/presentation.js';
 import { inputPrompt } from './bindings.js';
 
 // A real input hold, not an escapable conversation and not an automatic Bag.
-export function makeSetupHandoffScene({onOpen=()=>{},cables=0,returning=false}={}) {
+export function makeSetupHandoffScene({onOpen=()=>{},cables=0,returning=false,mode='recording'}={}) {
   let button=null,opened=false;
   const open=()=>{if(opened)return;opened=true;onOpen();};
   return {
@@ -20,10 +20,14 @@ export function makeSetupHandoffScene({onOpen=()=>{},cables=0,returning=false}={
     render(){
       const {cols,rows}=uiSize(),w=Math.min(80,cols-4),h=Math.min(13,rows-2),x=(cols-w)/2,y=Math.max(1,rows-h-2);
       uiScrim(.35);
-      withMachinePanel(x,y,w,h,{label:'BEFORE YOU LEAVE',source:'FIELD KIT',meter:false,footer:''},(body)=>{
-      const lines=uiWrap(returning?'Finish setting up the case. Then follow your bearing to Studio B3.'
-        :cables>0?`Rehearsal finished. ${cables} spare ${cables===1?'lead':'leads'} in the case. Patch your kit, then mark Studio B3.`
-          :'Rehearsal finished. This shift starts without spare leads. Check the patch bay, then mark Studio B3.',Math.max(12,body.w));
+      withMachinePanel(x,y,w,h,{label:mode==='skills'?'CHECK YOUR PATCH BAY':'BEFORE YOU LEAVE',source:'FIELD KIT',meter:false,footer:''},(body)=>{
+      const copy=mode==='skills'
+        ?returning?'Finish checking the patch bay. Your route and recordings are already saved.'
+          :cables>0?`Rehearsal finished. ${cables} spare ${cables===1?'lead':'leads'} in the case. Patch your kit before the encounter.`
+            :'Rehearsal finished. This shift starts without spare leads. Check the patch bay before the encounter.'
+        :returning?'Finish marking Studio B3. Then close the case and follow your bearing.'
+          :'Levels set. Open the plan, mark Studio B3, and go down to make the first recording.';
+      const lines=uiWrap(copy,Math.max(12,body.w));
       lines.slice(0,3).forEach((line,i)=>uiText(body.x,body.y+i,line,'ui-primary',.95));
       uiText(body.x,body.y+3,`${inputPrompt('bag')} OPEN THE FIELD CASE`,'ui-amber',1);
       button={x:body.x,y:body.y+4.5,w:Math.min(30,body.w),h:2.5};

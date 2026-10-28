@@ -1,6 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {readFile,stat} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {RADIO_SCRATCH_CLIPS,programmeFrame,programmeCues,renderScratchProgramme} from '../src/game/source-drive/radio-programmes.js';
+import {SourceDriveAcoustics} from '../src/game/source-drive/acoustics.js';
+import {SourceDriveAcoustics as StudySourceDriveAcoustics} from '../artifacts/source-drive-study/acoustics.js';
 const context={createBuffer(channels,length,sampleRate){const data=Array.from({length:channels},()=>new Float32Array(length));return{length,sampleRate,numberOfChannels:channels,duration:length/sampleRate,getChannelData:c=>data[c]};}};
 const hash=b=>createHash('sha256').update(Buffer.from(b.getChannelData(0).buffer)).digest('hex');
 const state={station:'service',programTime:3,phase:0,phaseStarted:900,radioOn:true,volume:.65,paused:false,furthest:0,z:0};
@@ -23,4 +25,7 @@ test('scratch manifest is explicit and every source is a real local WAV matching
  const manifest=JSON.parse(await readFile('public/assets/source-drive/radio/scratch-manifest.json','utf8'));assert.equal(manifest.temporary,true);assert.equal(manifest.clips.length,9);
  for(const row of manifest.clips){const source=RADIO_SCRATCH_CLIPS[row.id];assert.equal(row.text,source.text);assert.equal(row.durationSeconds,source.durationSeconds);assert.equal(row.url,source.url);const file='public'+row.url,data=await readFile(file);assert.equal(data.subarray(0,4).toString(),'RIFF');assert((await stat(file)).size>10000);assert.match(row.source,/stock system voice/);}
 });
-test('production and study acoustic/programme owners stay identical',async()=>{for(const name of ['acoustics.js','radio-programmes.js'])assert.equal(await readFile('src/game/source-drive/'+name,'utf8'),await readFile('artifacts/source-drive-study/'+name,'utf8'));});
+test('production and study retain identical radio transport and programme owners',async()=>{
+ assert.equal(SourceDriveAcoustics.toString(),StudySourceDriveAcoustics.toString(),'the shared radio graph, loading and transport stay identical');
+ assert.equal(await readFile('src/game/source-drive/radio-programmes.js','utf8'),await readFile('artifacts/source-drive-study/radio-programmes.js','utf8'));
+});

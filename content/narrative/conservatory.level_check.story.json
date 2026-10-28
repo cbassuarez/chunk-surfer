@@ -63,7 +63,7 @@
         },
         {
           "who": "you",
-          "text": "Not silence; there really is no such thing. They cut in this room noise under dialogue so a scene doesn't go dead between lines. Every room has one, and every one is different; nobody has ever noticed a good one.",
+          "text": "Not silence; there really is no such thing. They cut in this room noise under dialogue so a scene doesn't go dead between lines. Every room has one, and every one is different; nobody has ever really noticed a good one.",
           "id": "what.line.2"
         },
         {
@@ -78,7 +78,7 @@
         },
         {
           "who": "you",
-          "text": "Five recordings of a building that comes down Thursday. Better get to work. ",
+          "text": "Why are these rooms so important? You're really telling me the last guy's files weren't up to snuff? Must be some proper bourgeoisie blokes running this place if they're paying for exit interviews with the walls.",
           "id": "what.line.4"
         }
       ],
@@ -177,12 +177,12 @@
         },
         {
           "who": "you",
-          "text": "That is the level. Roll, say the room, take number and date out loud, then fall quiet. With no microphone, I will say it for you.",
+          "text": "That is the level. Roll and hold still for six clean seconds. This is a check of the kit, not one of the rooms on the order.",
           "id": "roll.line.2"
         },
         {
           "who": "direction",
-          "text": "The headphones are on and the monitor is open. Press [r] to roll. Slate first, then hold still. Aim for a minute; after forty-five clean seconds, STOP saves a usable take.",
+          "text": "The headphones are on and the monitor is open. Press [r] to roll. Feet still, hands off the light. The check stops when six clean seconds are held; then mark Studio B3 in the plan.",
           "id": "roll.line.3"
         }
       ],

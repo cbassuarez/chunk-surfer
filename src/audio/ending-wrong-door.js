@@ -14,7 +14,7 @@ export function endingWrongDoorAudioFrame(value, presentation = {}) {
     z: -6 - Math.min(24, Math.max(0, physical.elapsed - ENDING_WRONG_DOOR_OMEN.releaseAt) * 7) };
   return { ...physical, sequenceId, endingOmen: omen,
     anchors: { ...physical.anchors, front },
-    events: physical.events.map(event => ({ ...event,
+    events: physical.events.filter(event=>!event.type.startsWith('stratum-')).map(event => ({ ...event,
       id: `${sequenceId}:${physical.runId}:${event.type}` })),
   };
 }
@@ -59,7 +59,9 @@ export function createEndingWrongDoorAudio({ getAudio = () => null, createAudio 
       if (gain.gain.setTargetAtTime) gain.gain.setTargetAtTime(level, ctx.currentTime, .08); else gain.gain.value = level;
       if (filter.frequency.setTargetAtTime) filter.frequency.setTargetAtTime(cutoff, ctx.currentTime, .08); else filter.frequency.value = cutoff;
     }
-    audio.update(frame, presentation);
+    // Keep this ending's accepted contact score while ordinary Earthfall
+    // gains a harder landing and its three newly exposed construction layers.
+    audio.update(frame,{...presentation,earthfallImpactGain:.30,earthfallSettleGain:.42});
     return snapshot();
   }
   function snapshot() {

@@ -7,7 +7,7 @@ const source=readFileSync(new URL('../src/game/source-drive-renderer.js',import.
 const staticMeshes={
  'drive.glb':['drive_cabin','drive_radio','drive_road','drive_recorder_body'],
  'cut-static.glb':['cut_geology','cut_retaining'],
- 'cut-roadside.glb':['cut_guardrail','drive_plain_paving'],
+ 'cut-roadside.glb':['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges'],
  'drive-predicaments.glb':['dp_wreck_saloon','dp_road_fold','dp_whiteout_pylon'],
  'coastal-memory.glb':['cm_limestone_coast','cm_seabed','cm_distant_pier','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3'],
 };
@@ -109,3 +109,12 @@ test('the production drive renderer refuses unavailable, lost or unacquired fram
 });
 
 test('opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh',async()=>{const h=fixture();for(const name of ['cm_limestone_coast','cm_seabed','cm_distant_pier'])h.catalog.add(name);await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,8);for(let i=0;i<4;i++)assert.ok(h.catalog.has('cm_limestone_outcrop_'+i));h.catalog.delete('cm_limestone_outcrop_2');await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,9);assert.ok(h.loads.at(-1).url.endsWith('coastal-memory.glb'));assert.ok(h.catalog.has('cm_limestone_outcrop_2'));assert.deepEqual(h.world,[]);});
+
+test('missing UK paint invalidates the roadside cache rather than silently leaving the road unmarked',async()=>{
+ for(const name of ['drive_uk_edge_markings','drive_uk_centre_and_edges']){
+  const h=fixture();await h.preloadSourceDriveAssets();h.catalog.delete(name);
+  await h.preloadSourceDriveAssets();assert.equal(h.loads.length,8,name);
+  assert.ok(h.loads.at(-1).url.endsWith('cut-roadside.glb'));assert.ok(h.catalog.has(name));
+  assert.deepEqual(h.world,[],'repairing assets does not seize the world renderer');
+ }
+});

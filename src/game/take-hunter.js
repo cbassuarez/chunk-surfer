@@ -66,12 +66,13 @@ export const TAKE_HUNTER = Object.freeze({
   // It does not arrive instantly at arm time; there is a beat where you know
   // and it is not there yet.
   graceSeconds: 1.2,
-  // THE STOP KEY STOPS WORKING.
+  // THE TRANSPORT DRAGS BEFORE IT SEIZES.
   //
-  // Ending the take yourself is the clean escape, and while this thing is
-  // coming the machine will not take the instruction. You press stop and
-  // nothing happens; you press it again and nothing happens. Somewhere in here
-  // it finally lets go.
+  // The machine must warn physically before it can resist STOP. Distance alone
+  // cannot establish that warning: repeated noises can bring it close between
+  // frames. Only active simulation time spent in the warning range counts.
+  dragCells: 10,
+  dragWarningSeconds: 2.4,
   //
   // A RANGE, drawn per arming, so it is never a counted number the player can
   // learn. Six presses is a fumble; eight is a man hammering a dead key.
@@ -84,15 +85,28 @@ export const TAKE_HUNTER = Object.freeze({
   // was punished for it. The clean exit should stay clean. It is the LATE exit,
   // the one taken when the thing is nearly on you, that must not be reliable.
   seizeCells: 7,
+  // Silence can free the transport before the hunter has given back all its
+  // ground. This is the same counterplay as the hunt, with an earlier payoff.
+  seizeQuietSeconds: 1.8,
+  // A seized transport still has to offer time to force its bounded number of
+  // presses. The window starts once, when seizure is actually presented; later
+  // noises, STOP instructions and quiet recovery cannot replenish it.
+  contactWindowSeconds: 4,
 });
 
 export function freshTakeHunter() {
-  return { active: false, cells: 0, seconds: 0, cause: '', startles: 0, quiet: 0, cancelNeeds: 0, cancelTries: 0 };
+  return { active: false, cells: 0, seconds: 0, cause: '', startles: 0, quiet: 0,
+    warningSeconds: 0, contactWindowElapsed: null, cancelNeeds: 0, cancelTries: 0 };
 }
+
+const nonnegative = (value) => Math.max(0, Number(value) || 0);
+const hunterState = (state) => ({ ...freshTakeHunter(), ...state });
+const cancelNeeds = (state) => Math.max(TAKE_HUNTER.cancelMin,
+  Math.min(TAKE_HUNTER.cancelMax, Math.floor(Number(state.cancelNeeds) || TAKE_HUNTER.cancelMax)));
 
 // Arm it. `cause` is only for the line he says and the diagnostics.
 export function armTakeHunter(state, { cause = 'noise', roll = Math.random() } = {}) {
-  const previous = state || freshTakeHunter();
+  const previous = hunterState(state);
   // Already coming: a second sound does not summon a second one, it brings the
   // one you have closer. See startleCells.
   if (previous.active) {
@@ -104,11 +118,12 @@ export function armTakeHunter(state, { cause = 'noise', roll = Math.random() } =
   }
   return {
     active: true, cells: TAKE_HUNTER.startCells, seconds: 0,
-    cause: String(cause || 'noise'), startles: 0, quiet: 0,
+    cause: String(cause || 'noise'), startles: 0, quiet: 0, warningSeconds: 0,
+    contactWindowElapsed: null,
     // Drawn now rather than compared later, so one arming has one answer and
     // the player cannot re-roll it by letting go of the key.
-    cancelNeeds: TAKE_HUNTER.cancelMin
-      + Math.floor(clamp01(Number(roll)) * (TAKE_HUNTER.cancelMax - TAKE_HUNTER.cancelMin + 1)),
+    cancelNeeds: Math.min(TAKE_HUNTER.cancelMax, TAKE_HUNTER.cancelMin
+      + Math.floor(clamp01(Number(roll)) * (TAKE_HUNTER.cancelMax - TAKE_HUNTER.cancelMin + 1))),
     cancelTries: 0,
   };
 }
@@ -122,7 +137,7 @@ export function armTakeHunter(state, { cause = 'noise', roll = Math.random() } =
 // always true — movement spoils the take anyway — so the parameter was dead and
 // the hunter closed relentlessly no matter what the player did.
 export function stepTakeHunter(state, dt = 0, { recording = false, heard = 1 } = {}) {
-  const previous = state || freshTakeHunter();
+  const previous = hunterState(state);
   if (!recording) return { state: freshTakeHunter(), contact: false, ended: previous.active, closing: false };
   if (!previous.active) return { state: previous, contact: false, ended: false, closing: false };
 
@@ -151,25 +166,71 @@ export function stepTakeHunter(state, dt = 0, { recording = false, heard = 1 } =
     }
   }
 
-  const contact = next.cells <= TAKE_HUNTER.contactCells;
+  // Count only warning time that was already visible at the start of this
+  // frame and remains visible at its end. A startle, a long frame, or a legacy
+  // state placed close to the player therefore cannot skip the warning.
+  if (previous.cells <= TAKE_HUNTER.dragCells && next.cells <= TAKE_HUNTER.dragCells) {
+    next.warningSeconds = Math.min(TAKE_HUNTER.dragWarningSeconds,
+      nonnegative(previous.warningSeconds) + seconds);
+  }
+
+  if (previous.contactWindowElapsed != null) {
+    next.contactWindowElapsed = Math.min(TAKE_HUNTER.contactWindowSeconds,
+      nonnegative(previous.contactWindowElapsed) + seconds);
+  } else if (takeHunterTransport(next).phase === 'seized') {
+    // Do not charge the entry frame: this is the first state the presentation
+    // can show as seized. A startle that already reached contact still waits.
+    next.contactWindowElapsed = 0;
+  }
+  const contact = next.cells <= TAKE_HUNTER.contactCells
+    && next.warningSeconds + 1e-9 >= TAKE_HUNTER.dragWarningSeconds
+    && next.contactWindowElapsed != null
+    && next.contactWindowElapsed + 1e-9 >= TAKE_HUNTER.contactWindowSeconds;
   return { state: next, contact, ended: false, closing: audible };
 }
 
 // TRY TO STOP THE TAKE.
 //
-// Returns the state and whether the machine actually let go. While this thing is
-// coming, the stop key is not a stop key — it is a thing you press.
+// Read-only presentation shared by the transport and the STOP decision. Legacy
+// states have no warning history, so they begin with a working STOP.
+export function takeHunterTransport(state) {
+  const previous = hunterState(state);
+  const active = !!previous.active;
+  const needs = active ? cancelNeeds(previous) : 0;
+  const tries = active ? Math.min(needs, Math.floor(nonnegative(previous.cancelTries))) : 0;
+  const warningSeconds = active ? Math.min(TAKE_HUNTER.dragWarningSeconds,
+    nonnegative(previous.warningSeconds)) : 0;
+  const warned = warningSeconds + 1e-9 >= TAKE_HUNTER.dragWarningSeconds;
+  const quietReleased = active && nonnegative(previous.quiet) + 1e-9 >= TAKE_HUNTER.seizeQuietSeconds;
+  const dragging = active && previous.cells <= TAKE_HUNTER.dragCells;
+  const seized = dragging && previous.cells <= TAKE_HUNTER.seizeCells
+    && warned && !quietReleased && tries < needs;
+  const contactWindowElapsed = active && previous.contactWindowElapsed != null
+    ? Math.min(TAKE_HUNTER.contactWindowSeconds, nonnegative(previous.contactWindowElapsed)) : null;
+  return {
+    phase: seized ? 'seized' : dragging ? 'drag' : 'normal',
+    tries, needs, remaining: seized ? needs - tries : 0,
+    warningSeconds, warningProgress: warningSeconds / TAKE_HUNTER.dragWarningSeconds,
+    warned, quietReleased, contactWindowElapsed,
+    contactWindowRemaining: contactWindowElapsed == null ? null
+      : TAKE_HUNTER.contactWindowSeconds - contactWindowElapsed,
+  };
+}
+
+// Returns the state and whether the transport let go. Each resisted instruction
+// counts; it never re-rolls the bounded number of presses required to force it.
 export function tryCancelTake(state) {
-  const previous = state || freshTakeHunter();
+  const previous = hunterState(state);
   if (!previous.active) return { state: previous, released: true, tries: 0, resisted: false };
   // Far off, the machine still belongs to you. Stop it now and you lose the
   // minute and nothing else — which is exactly the deal, and it should be
   // available to anyone who reads the meter and acts on it.
-  if (previous.cells > TAKE_HUNTER.seizeCells) {
+  const transport = takeHunterTransport(previous);
+  if (transport.phase !== 'seized') {
     return { state: previous, released: true, tries: previous.cancelTries, resisted: false, early: true };
   }
-  const tries = previous.cancelTries + 1;
-  const released = tries >= (previous.cancelNeeds || TAKE_HUNTER.cancelMax);
+  const tries = transport.tries + 1;
+  const released = tries >= transport.needs;
   return {
     state: { ...previous, cancelTries: tries },
     released,

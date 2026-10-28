@@ -76,11 +76,18 @@ test('protection, focus, context suspension, exit and disposal cut the ending ou
   for (const presentation of [{ protected: true }, { suspended: true }, { hidden: true }, { focused: false }]) {
     const f = fixture(); f.owner.update(physical()); const muted = f.owner.update(physical(5.3), presentation);
     assert.equal(muted.outputGain, 0); assert.equal(f.gains[0].gain.calls.at(-1)[0], 'set');
-    assert.equal(f.calls.at(-1).presentation, presentation, 'normal material controller receives all receipt/protection gates');
+    assert.deepEqual(f.calls.at(-1).presentation,{...presentation,earthfallImpactGain:.30,earthfallSettleGain:.42},'all protection gates and the existing ending contact contact gain profile reach the shared controller');
   }
   const f = fixture(); f.owner.update(physical()); f.ctx.state = 'interrupted'; assert.equal(f.owner.update(physical()).outputGain, 0);
   f.ctx.state = 'running'; f.owner.update(physical()); f.owner.stop(); assert.equal(f.owner.snapshot().outputGain, 0);
   f.owner.destroy(); assert.equal(f.owner.snapshot().disposed, true); assert.ok(f.gains[0].disconnected && f.filters[0].disconnected);
   const before = f.calls.length; f.owner.update(physical()); assert.equal(f.calls.length, before);
   assert.deepEqual(f.lifecycle, ['stop', 'stop', 'destroy']);
+});
+
+
+test('ordinary Earthfall strata do not add new layer cues to the established SourceIV ending score',()=>{
+ const raw=physical(6,{receipts:[{id:'x',type:'strain',at:0,position:{x:0,y:100,z:-14},gain:.52},...['stratum-0','stratum-1','stratum-2'].map((type,i)=>({id:type,type,at:4+i*.5,position:{x:0,y:74-i*24,z:-3},gain:.4}))]});
+ const adapted=endingWrongDoorAudioFrame(raw);assert.deepEqual(adapted.events.map(e=>e.type),['strain']);assert.equal(raw.receipts.length,4);
+ const f=fixture();f.owner.update(raw);assert.equal(f.calls[0].presentation.earthfallImpactGain,.30);assert.equal(f.calls[0].presentation.earthfallSettleGain,.42);
 });

@@ -2,12 +2,9 @@
 // import so it stays testable under plain Node. The document itself arrives
 // from eula-text.js, which is the only place that knows how the text is loaded.
 //
-// Why this gate exists at all: the bundled model stack (Stable Diffusion 1.5,
-// its depth ControlNet, and the Hyper-SD LoRA) ships under CreativeML Open
-// RAIL-M. That licence is not a file you are allowed to merely include — its
-// use restrictions have to be passed on to whoever ends up running the weights.
-// Shipping EULA.md inside the app bundle satisfies distribution. It does not
-// satisfy notice.
+// Standard builds have no startup licence gate. The agreement remains readable
+// in Settings; explicitly enabled development model components retain their
+// separate consent path before local model execution.
 
 function normalizeEulaText(text) {
   return String(text || '').replace(/\r\n?/g, '\n');
@@ -18,7 +15,7 @@ function eulaLines(text) {
 }
 
 const EULA_GATE_SECTION_TITLES = Object.freeze([
-  /bundled local ai model resources/i,
+  /optional local ai model resources/i,
   /mandatory model-use restrictions/i,
   /generated outputs/i,
 ]);
@@ -57,9 +54,8 @@ export function eulaSections(text) {
   return sections;
 }
 
-// The sections a player actually has to read before the model runs: what is
-// bundled, and what they may not do with it. The rest of the agreement stays
-// one keystroke away in the settings.
+// Keep model-specific clauses discoverable for developers who explicitly opt
+// into SD; regular players can review the full general agreement in settings.
 export function eulaGateSections(text) {
   const sections = eulaSections(text);
   return EULA_GATE_SECTION_TITLES

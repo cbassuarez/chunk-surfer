@@ -169,6 +169,14 @@ export function makeCreditsScene({
   let done = false;
   let quoteElapsed = null;    // null until the closing quote starts
   let blackFired = false;
+  let quoteFired = false;
+  const heldActions = new Set();
+
+  function fireQuote() {
+    if (quoteFired || presentationContext !== 'ending') return;
+    quoteFired = true;
+    onQuote?.();
+  }
 
   function refreshLayout(cols, rows) {
     layout = creditRollLayout({ cols, rows, credits });
@@ -186,6 +194,9 @@ export function makeCreditsScene({
   function finish() {
     if (done) return true;
     done = true;
+    // A skip shares the same sound-owner release as the natural quote. It does
+    // not force the player to watch the quote they deliberately skipped.
+    fireQuote();
     // Skipping still hands over a silent room: whoever asked for the summary
     // early should not get the credits music playing under it.
     if (!blackFired) { blackFired = true; onBlack?.(); }
@@ -197,7 +208,7 @@ export function makeCreditsScene({
     if (quoteElapsed != null) return;
     quoteElapsed = 0;
     paused = false;
-    onQuote?.();
+    fireQuote();
   }
 
   function enterRoll() {
@@ -223,6 +234,7 @@ export function makeCreditsScene({
     // on the way is what stops the ending from cutting to silence mid-bar.
     enter() { AUDIO.startSoundtrack({ track: 'credits', fade: 2.2 }); },
     exit() { AUDIO.fadeSoundtrack({ fade: 3.2 }); },
+    resume() { heldActions.clear(); },
 
     update(dt = 0) {
       if (done) return;
@@ -253,9 +265,19 @@ export function makeCreditsScene({
     },
 
     key(e = {}) {
+      if (done) return true;
       const raw = e.key || '';
       const code = e.code || '';
       const k = raw.toLowerCase();
+      const action = code || raw;
+      const discrete = raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space'
+        || raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace';
+      // A narrative advance still held at entry cannot open a website, skip,
+      // pause or confirm. Arrow/page scrolling remains intentionally repeatable.
+      if (discrete) {
+        if (e.repeat || heldActions.has(action)) return true;
+        heldActions.add(action);
+      }
 
       if (raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace') return finish();
       // The closing quote is not scrollable and cannot be paused. The only thing
@@ -289,6 +311,8 @@ export function makeCreditsScene({
       }
       return true;
     },
+
+    keyup(e = {}) { heldActions.delete(e.code || e.key || ''); return true; },
 
     resize(cols, rows) { return refreshLayout(cols, rows); },
 

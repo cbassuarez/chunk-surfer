@@ -15,3 +15,10 @@ export const PLAZA_SHOPFRONTS=freeze([
   {deed:7,id:'printer',name:'PRINT & COPY',display:'print',lit:false,closedForVigil:false},
 ]);
 export const PLAZA_SHOP_CLOSURE=freeze({lines:['CLOSED EARLY','FOR THE VIGIL'],reason:'Existing district vigil; commerce closed, upstairs occupation independent.'});
+// Physical ownership of the six closed shops beside the Lyric. The first two
+// deeds are the pub; keep the Bindery and instrument repairer in the next two
+// real bays instead of leaving their names on the replaced frontage/map.
+// The full eight-use roster above also supplies Source's remembered town.
+export const SOUTH_ROW_SHOPS=freeze([0,1,4,5,6,7].map((useIndex,index)=>({
+  rowId:'district-south-row-a',deed:index+2,useIndex,useId:PLAZA_SHOPFRONTS[useIndex].id,
+})));

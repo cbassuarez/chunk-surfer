@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "source": "tools/chunk_surfer/build-glass-court.mjs",
+  "license": "Project source",
+  "origin": "Project-authored closed geometry, deterministic broadleaf/fern/vine forms and embedded code-native textures.",
+  "research": "artifacts/greenhouse-study/README.md; four user references inspected for tall glazed bays, fluorescent fixtures, pots and plant density. No photographic pixels, logos, lettering or watermarks copied.",
+  "glass": "Sparse alpha-MASK surface evidence in the existing opaque/MASK renderer. No BLEND, refraction, translucent tint or renderer modification claimed.",
+  "scope": "Existing dry north pool approach, indoor greenhouse and changing vestibule. Rehosts the original admission fittings without changing their instance. No new exterior connection, actors, triggers, rewards or mechanics.",
+  "sourceSha256": {
+    "tools/chunk_surfer/build-glass-court.mjs": "a5abae7566bedcb3105198efb44a4bde683a08b1547acf6061191a5ba1c78ec1",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "3f1516cafd99181d242e8ac94f558ce7d9c739cbf7ff24e54eb3dcfd8e9d62af",
+    "src/data/glass-court.js": "186d83caa84332b2af407ebc63975d61fc79d3b817755ac1c52094ec2cf8788d",
+    "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
+    "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
+    "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+    "tools/chunk_surfer/lettering/finish-profiles.mjs": "19a61bb88d5a81ecb92541baad1683eeae38c0696f9aab880f7392ca866b1c8a",
+    "tools/chunk_surfer/lettering/fonts/NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
+  },
+  "pack": {
+    "file": "public/assets/glass-court.glb",
+    "bytes": 3660444,
+    "sha256": "1da091a9acf14e71300addcdf35e30b82c8b2f887613cf4a3a43be033969dc5d"
+  },
+  "meshes": [
+    {
+      "name": "glass_court_frame",
+      "triangles": 6412,
+      "bounds": {
+        "min": [
+          -0.017500000074505806,
+          -0.0860000029206276,
+          -0.029999999329447746
+        ],
+        "max": [
+          25,
+          5.199999809265137,
+          4.059999942779541
+        ]
+      }
+    },
+    {
+      "name": "glass_court_glass",
+      "triangles": 672,
+      "bounds": {
+        "min": [
+          0.006000000052154064,
+          0.20000000298023224,
+          -0.004000000189989805
+        ],
+        "max": [
+          20.993999481201172,
+          5.1892876625061035,
+          4.004000186920166
+        ]
+      }
+    },
+    {
+      "name": "glass_court_beds",
+      "triangles": 144,
+      "bounds": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          21,
+          1.100000023841858,
+          1.100000023841858
+        ]
+      }
+    },
+    {
+      "name": "glass_court_nursery",
+      "triangles": 1560,
+      "bounds": {
+        "min": [
+          0.15000000596046448,
+          0.6825000047683716,
+          0.019999999552965164
+        ],
+        "max": [
+          20.850000381469727,
+          1.3385000228881836,
+          0.3400000035762787
+        ]
+      }
+    },
+    {
+      "name": "glass_court_plants",
+      "triangles": 23376,
+      "bounds": {
+        "min": [
+          0.014999999664723873,
+          1.0700000524520874,
+          0.014999999664723873
+        ],
+        "max": [
+          20.985000610351562,
+          3.7018017768859863,
+          1.0850000381469727
+        ]
+      }
+    },
+    {
+      "name": "glass_court_vestibule",
+      "triangles": 864,
+      "bounds": {
+        "min": [
+          11.087499618530273,
+          0,
+          -1.028499960899353
+        ],
+        "max": [
+          25,
+          3.9000000953674316,
+          4.059999942779541
+        ]
+      }
+    },
+    {
+      "name": "natatorium_entrance_fixtures",
+      "triangles": 1096,
+      "bounds": {
+        "min": [
+          -12.725000381469727,
+          0,
+          -2.450000047683716
+        ],
+        "max": [
+          12,
+          3.930000066757202,
+          1.6572215557098389
+        ]
+      }
+    }
+  ]
+}

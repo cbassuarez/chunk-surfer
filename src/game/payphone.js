@@ -234,6 +234,10 @@ export function payphoneOutcome({ digits = '', flags = {}, hasChapelKey = false,
 export function payphoneIncoming({ pass = 0, flags = {}, hasChapelKey = false, hasPhoneSheet = false, lifting = false, micLive = false } = {}) {
   const has = (flag) => !!(typeof flags === 'function' ? flags(flag) : flags?.[flag]);
   if (pass === PAYPHONE_PASS.loop && !has('phone.loop.broken')) return freeze({ id: 'loop', node: 'loop-answer', rings: Infinity, forced: true });
+  // Leave the personal interruption its own place. Answering releases the
+  // road immediately; this kiosk does not instantly become a delivery counter.
+  // Unclaimed practical calls remain available at the next ordinary kiosk.
+  if (pass === PAYPHONE_PASS.loop && has('phone.loop.broken')) return null;
   const needsKey = !hasChapelKey && !has('phone.key.granted');
   const needsSheet = hasChapelKey && !hasPhoneSheet && !has('phone.sheet.granted');
   if (needsKey || needsSheet) {

@@ -1,3 +1,4 @@
+import {uiDraw} from '../render/ui.js';
 import {normalizeSourceEarthfall,stepSourceEarthfall,sourceEarthfallFrame,sourceEarthfallFocus} from './source-earthfall.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -7,7 +8,7 @@ const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
 // The borrowed view owns the entire descent in metres. The original Source
 // body and the next room's checkpoint remain with their existing controllers.
 export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
-  presentation=()=>({}),onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},
+  presentation=()=>({}),onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},
   onExit=()=>{},onError=()=>{},onTrace=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The descending Source needs its physical renderer.');
   let state=normalizeSourceEarthfall(checkpoint),ready=false,closed=false,paused=false,
@@ -32,6 +33,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     const result=stepSourceEarthfall(state,{...input,paused,protected:!!p.protected,assetsReady:live()});
     state=result.state;
     const events=result.events||(result.event?[result.event]:[]);
+    if(events.some(event=>event.type==='catch'))clear();
     for(const event of events)onTrace({type:'event',event:copy(event),elapsed:state.elapsed});
     if(events.some(e=>e.type==='enter-source-II'||e.type==='complete'))finish('complete');
     else if(events.some(e=>e.type==='return'))finish('return');
@@ -39,7 +41,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
   }
   const scene={
     id:'source-earthfall',blocksWorld:true,blocksInput:true,suppressesHud:true,
-    allowsLook:false,handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
+    get allowsLook(){return live()&&!paused&&state.phase!=='catching';},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(initializing)return initializing;
       save('loading');
@@ -56,6 +58,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     update(dt){
       if(closed||paused||leaving)return;
       if(!live()){clear();audio?.stop?.();return;}
+      onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
       if(closed||leaving)return;
@@ -64,13 +67,15 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       saveClock+=Math.min(.25,Math.max(0,Number(dt)||0));traceClock+=Math.min(.25,Math.max(0,Number(dt)||0));
       if(saveClock>=.5){saveClock=0;save('position');}
       if(traceClock>=.1){traceClock=0;onTrace({type:'pose',elapsed:state.elapsed,x:state.x,z:state.z,
-        feet:state.feet,yaw:state.yaw,pitch:state.pitch,phase:frame.phase,catchSurfaceY:frame.catchSurfaceY});}
+        feet:state.feet,yaw:state.yaw,pitch:state.pitch,phase:frame.phase,catchSurfaceY:frame.catchSurfaceY,blackoutAlpha:frame.blackoutAlpha});}
     },
     view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,frame:sourceEarthfallFrame(state),focus:live()?sourceEarthfallFocus(state):null}),
     serialize:snapshot,checkpoint:()=>save('requested'),
     pause(){if(closed)return false;paused=true;clear();audio?.stop?.();save('pause');return true;},
     resume(){if(closed)return false;paused=false;clear();return true;},
-    setLook(look){if(!live()||paused)return false;apply({dt:0,look});return true;},
+    lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),
+    lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
+    setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look});return true;},
     key(e={}){
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
@@ -79,6 +84,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       if(!live()){
         clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish(key==='e'&&failedFinish?failedFinish:'return');return true;
       }
+      if(!e.repeat&&(key==='f'||e.controllerAction==='torch')){onTorch();return true;}
       if(movement.has(key)){if(!e.repeat)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});
       return true;
@@ -94,6 +100,8 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     },
     render(){
       if(ready&&!closed){try{if(renderer.render(state,presentation())===false)throw Error('The descending path is unavailable.');}catch(reason){ready=false;report(reason);}}
+      const blackout=sourceEarthfallFrame(state).blackoutAlpha;
+      if(blackout>0)uiDraw(({ctx})=>{ctx.save();ctx.fillStyle=`rgba(0,0,0,${blackout})`;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();});
       // Preserve the last valid production frame during preparation/faults.
       // Physical doors, their handles and the falling earth carry this beat;
       // it does not reintroduce HUD instructions between the textless Sources.

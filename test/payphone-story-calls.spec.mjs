@@ -50,6 +50,19 @@ test('the loop incoming call has no speech requirement and holds only until answ
   assert.equal(story.nodes['loop-answer'].choices,undefined);assert.equal(story.nodes['loop-answer'].listen,undefined);
 });
 
+test('the personal loop call has a quiet aftermath while practical calls remain at the next kiosk',()=>{
+ const flags={'phone.loop.broken':true};
+ for(const hasChapelKey of[false,true]){
+  assert.equal(payphoneIncoming({pass:PAYPHONE_PASS.loop,flags,hasChapelKey,lifting:true}),null,'the same released box started a practical incoming call');
+  const next=payphoneIncoming({pass:PAYPHONE_PASS.loop+1,flags,hasChapelKey});
+  assert.ok(next?.grants.includes(hasChapelKey?'sheet':'chapel-key'),'the next kiosk lost the existing delivery');
+  assert.equal(next.pays,false);assert.equal(next.forced,false);
+ }
+ assert.equal(payphoneLoopHolds({pass:PAYPHONE_PASS.loop,flags}),false);
+ const optional=payphoneOutcome({digits:PAYPHONE_NUMBERS.office.digits,pass:PAYPHONE_PASS.loop,flags});
+ assert.ok(optional.grants.includes('chapel-key'),'voluntary outgoing calls remain available');
+});
+
 test('main releases the loop when pickup connects, before its conversation finishes',()=>{
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   const open=main.indexOf('function openPayphone('),begin=main.indexOf('    onCall:(outcome,',open),end=main.indexOf('\n    onClose:',begin);

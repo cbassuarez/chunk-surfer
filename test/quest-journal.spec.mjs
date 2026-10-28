@@ -227,8 +227,12 @@ test('Ren’s later consent or refusal does not rewrite the cassette closure or 
 
 test('records do not invent identification or erase listening shared with Ren', () => {
   const left = find({ marble: { phase: 'declined' } }, 'marble-eyes');
-  assert.match(left.summary, /left the shapes/);
+  assert.equal(left.title, 'The fountain'); assert.equal(left.area, 'Park');
+  assert.match(left.summary, /left the objects/);
   assert.doesNotMatch(text(left), /understood what/);
+  const visible = [left.title, left.area, left.summary, left.next, left.location?.label,
+    ...left.records.map(r => `${r.label}: ${r.text}`), left.closure?.text].filter(Boolean).join(' ');
+  assert.doesNotMatch(visible, /eyes|gallery|bust|sockets/i);
   const returned = find({ roofRen: { schema: 3, met: true, stage: 'returned', tapeHonesty: 'respected' } }, 'ren');
   assert.match(returned.records.find(r => r.id === 'memory-returned').text, /without listening on your own/);
   assert.doesNotMatch(text(returned), /without playing it/);
@@ -241,7 +245,19 @@ test('respecting Ren’s warning fulfils the conditional investigation while pre
   assert.equal(entry.commitment, 'fulfilled'); assert.equal(entry.state, 'resolved');
   assert.equal(entry.hasOpenCommitment, false); assert.equal(entry.trackable, true);
   assert.equal(entry.nextLabel, 'OPTIONAL'); assert.match(entry.next, /Tell Ren.*reconsider/);
-  assert.equal(entry.followUp, null); assert.match(entry.closure.text, /not to overrule/);
+  assert.equal(entry.followUp, null); assert.match(entry.closure.text, /left the cassette in its drawer/);
+  assert.equal(entry.status.label, 'LEFT IN DRAWER');
+  assert.doesNotMatch(prose(entry), /warning respected|overrule/i);
+});
+
+test('the office index does not reveal the drawer or recovered refusal before the carbon trace is read', () => {
+  const base = { schema: 3, met: true, stage: 'accepted', indexRead: true };
+  const indexed = find({ roofRen: base }, 'ren');
+  assert.match(indexed.records.find(r => r.id === 'effects-index').text, /carbon intake pad.*reception filing bank/);
+  assert.doesNotMatch(prose(indexed), /drawer|seventeen|not to be released/i);
+  assert.equal(indexed.records.some(r => r.id === 'effects-trace'), false);
+  const traced = find({ roofRen: { ...base, traceRead: true } }, 'ren');
+  assert.match(traced.records.find(r => r.id === 'effects-trace').text, /drawer seventeen.*not to be released to R/);
 });
 
 test('admission shows learned cue text only from current authoritative clue receipts', () => {
@@ -280,7 +296,10 @@ test('admission, voice permission, eyes and telephone records do not become unch
   const lucien = find({ society: { topics: { lucien: ['emile'] } } }, 'borrowed-voice');
   assert.doesNotMatch(prose(lucien.records), /withdraw|downstairs|let it end|through him or Lucien/i);
   const emile = find({ society: { topics: { emile: ['need'] } } }, 'borrowed-voice');
-  assert.match(prose(emile.records), /withdraw through him or Lucien/);
+  assert.match(prose(emile.records), /ask him or Lucien for it back.*downstairs.*let it end/);
+  const expired = find({ society: { topics: { emile: ['need'] }, consent: 'expired' } }, 'borrowed-voice');
+  assert.doesNotMatch(prose(expired.records), /You can ask|go downstairs|let it end/);
+  assert.equal(expired.next, null);
   const eyes = find({ marble: { phase: 'carried' } }, 'marble-eyes');
   assert.equal(eyes.nature, 'lead'); assert.equal(eyes.commitment, 'none'); assert.equal(eyes.hasOpenCommitment, false);
   const call = find({ save: { flags: { 'phone.called.flat': true } } }, 'source-telephone');
@@ -295,6 +314,9 @@ test('the jail invitation remains hidden before a committed answer and reports a
   assert.match(carrying.next, /room by the others/); assert.equal(carrying.location.spaceId, undefined);
   const abandoned = find(saveFor({ status: 'declined', declinedReason: 'abandoned' }), 'last-reception');
   assert.equal(abandoned.state, 'declined'); assert.equal(abandoned.next, null);
+  assert.equal(abandoned.commitment, 'withdrawn');
+  assert.match(abandoned.summary, /left the message with the person who asked/);
+  assert.doesNotMatch(abandoned.summary, /chose not to carry/);
   const delivered = find(saveFor({ status: 'delivered', settled: false }), 'last-reception');
   assert.equal(delivered.state, 'resolved'); assert.doesNotMatch(text(delivered), /joined the others/);
   assert.equal(delivered.commitment, 'fulfilled'); assert.equal(delivered.next, null);
@@ -306,11 +328,24 @@ test('the jail invitation remains hidden before a committed answer and reports a
 
 test('fountain eyes reflect the irreversible decision and never reveal the unspoken key location', () => {
   assert.equal(find({ marble: { phase: 'in-the-water', toldWhereTheKeyIs: true } }, 'marble-eyes'), undefined);
-  assert.match(find({ marble: { phase: 'carried' } }, 'marble-eyes').next, /empty sockets/);
+  assert.match(find({ marble: { phase: 'carried' } }, 'marble-eyes').next, /a face these might fit/);
   const returned = find({ marble: { phase: 'returned', toldWhereTheKeyIs: true } }, 'marble-eyes');
   assert.equal(returned.state, 'resolved'); assert.doesNotMatch(prose(returned), /felt|key|four along|services/i);
   const declined = find({ marble: { phase: 'declined' } }, 'marble-eyes');
   assert.equal(declined.state, 'declined'); assert.equal(declined.next, null);
+});
+
+test('carried eyes gain a gallery destination only from the damaged face’s existing examination receipt', () => {
+  const unknown = find({ marble: { phase: 'carried' } }, 'marble-eyes');
+  assert.equal(unknown.location, null); assert.equal(unknown.area, 'Park');
+  assert.doesNotMatch(prose(unknown), /gallery|empty sockets/i);
+  const otherBust = find({ marble: { phase: 'carried', gallery: { spoken: ['academic-bust-2'] } } }, 'marble-eyes');
+  assert.equal(otherBust.location, null);
+  const known = find({ marble: { phase: 'carried', gallery: { spoken: ['academic-bust-fragment-3'] } } }, 'marble-eyes');
+  assert.equal(known.location.spaceId, 'space:academic-gallery');
+  assert.match(known.next, /gallery face.*empty sockets/);
+  const restored = find({ marble: { phase: 'returned' } }, 'marble-eyes');
+  assert.equal(restored.location.spaceId, 'space:academic-gallery');
 });
 
 test('telephone receipts describe calls and actual delivered items without inventing a dialing assignment', () => {

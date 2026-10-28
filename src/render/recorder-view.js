@@ -7,6 +7,7 @@ import { layoutTranscript, layoutTranscriptChoices } from './transcript.js';
 import { obscuredGlyphAt, obscuredShape } from '../narrative/obscured-name.js';
 import { visualEffectsEnabled } from '../game/access.js';
 import { drawRecorderInstrument, recorderFaceLayout, drawRecorderDisplayText, drawRecorderCheckMeter } from './recorder-instrument.js';
+import { registerReviewRegion } from '../game/local-text-review.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 export const TRANSPORT = Object.freeze({
@@ -25,12 +26,28 @@ export const RECORDER_PANEL = Object.freeze({ width: 736, height: 405, lift: 1 }
 export function recorderPanelRect({ cols, rows, progress = 0, clearBottom = 0 }) {
   const { cellW, cellH } = uiCellMetrics(), scale = uiCurrentScale();
   const bar = 2 + Math.round(clamp01(progress) * 3);
-  const top = bar + .5, bottom = Math.max(bar, clearBottom) + RECORDER_PANEL.lift;
+  // Size the physical chassis against a viewport-owned envelope. A later
+  // sentence, status or take-progress update can move its placement but must
+  // not re-machine the display, keys and number artwork every frame.
+  const top = 5.5, reservedBottom = 5 + RECORDER_PANEL.lift;
+  const bottom = Math.max(5, clearBottom) + RECORDER_PANEL.lift;
   const availableW = Math.max(1, (cols - 2) * cellW);
-  const availableH = Math.max(1, (rows - top - bottom) * cellH);
+  const availableH = Math.max(1, (rows - top - reservedBottom) * cellH);
   const unit = Math.min(scale, availableW / RECORDER_PANEL.width, availableH / RECORDER_PANEL.height);
   const w = RECORDER_PANEL.width * unit / cellW, h = RECORDER_PANEL.height * unit / cellH;
   return { x: (cols - w) / 2, y: Math.max(top, rows - bottom - h), w, h, bar, compact: false };
+}
+
+// The live machine stays below the sightline in slate, hold and rolling states.
+// Raising it for inspection is a separate presenter; changing a live status
+// must not resize the same instrument. Narrow viewports retain the full face.
+export function liveTakePanelRect({cols,rows,progress=0,clearBottom=0,expanded=false}={}) {
+  const normal=recorderPanelRect({cols,rows,progress,clearBottom});
+  const {cellW,cellH}=uiCellMetrics();
+  if(cols*cellW<960)return normal;
+  const scale=Math.min(.72,cols*.49/normal.w);
+  const w=normal.w*scale,h=normal.h*scale;
+  return {...normal,x:1.5,y:Math.max(5.5,rows-Math.max(5,clearBottom)-RECORDER_PANEL.lift-h),w,h};
 }
 
 export function recorderButtons(rect, buttons) { return buttons ? { ...buttons, w: 0 } : null; }
@@ -130,6 +147,8 @@ function drawGuide(body, view) {
         (_, i) => obscuredGlyphAt(shape, i, row.reveal ?? 1) || ' ').join('');
       prose(x + row.x, y, value + (row.typing ? ' ▏' : ''), block.lane.w - row.x,
         block.role.side === 'center' ? '#8fcd87' : color, block.active ? 1 : .65); used++;
+      if(value.trim())registerReviewRegion(row.reviewTarget,
+        {x:x+row.x,y,w:Math.min(value.length,block.lane.w-row.x),h:step,active:row.active});
       y += step;
     }
     if (used < maxRows) { y += step; used++; }
@@ -137,6 +156,8 @@ function drawGuide(body, view) {
   choices.rows.forEach((row, i) => {
     const selected = row.choiceIndex === guide.pending?.index;
     prose(body.x + choices.lane.x, choiceY + i * step, row.text, choices.lane.w, selected ? '#e4bd78' : '#8fcd87');
+    if(row.kind==='choice'&&row.text.trim())registerReviewRegion(row.reviewTarget,
+      {x:body.x+choices.lane.x,y:choiceY+i*step,w:Math.min(row.text.length,choices.lane.w),h:step,selected});
   });
 }
 function drawCheck(body, view) {

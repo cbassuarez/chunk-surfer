@@ -90,6 +90,12 @@ for (const ch of ['A', '0', '─', '│', '▌', '▲', '■', 'Ⅱ', '◆', '�
 assert.equal(vfdGlyphMissing('\u{1F600}'), true, 'an emoji has no glyph and says so');
 assert.equal(vfdGlyphMissing(' '), false, 'a space is a space, not a hole');
 assert.equal(vfdGlyphMissing('é'), false, 'accented lower case folds to its capital');
+for (const [lower, upper, plain] of [['ö', 'Ö', 'O'], ['ç', 'Ç', 'C']]) {
+  assert.equal(vfdGlyphMissing(lower), false, `${lower} must have a drawable glyph`);
+  assert.equal(vfdGlyphMissing(upper), false, `${upper} must have a drawable glyph`);
+  assert.deepEqual(vfdGlyph(lower), vfdGlyph(upper), `${lower} keeps its accent when uppercased`);
+  assert.notDeepEqual(vfdGlyph(lower), vfdGlyph(plain), `${lower} must not silently lose its accent`);
+}
 
 // ── TEXT FITS THE BOX IT IS DRAWN IN ─────────────────────────────────────────
 //

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
   "id": "chunk-surf.source-atlas",
-  "corpusHash": 1982059284,
+  "corpusHash": 2200555876,
   "generatedFrom": [
     "src/game/chunk-surf-state.js",
     "src/game/presence.js",
@@ -7386,12 +7386,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:185:1589734998",
+          "id": "src/game/playback.js:187:1589734998",
           "file": "src/game/playback.js",
-          "line": 185,
+          "line": 187,
           "text": "  return Number.isFinite(seconds) && seconds > 0 ? Math.max(.01, Math.min(3600, seconds)) : PLAYBACK.sourceSeconds;",
           "hash": 1589734998,
-          "referenceHash": 4073709144,
+          "referenceHash": 152434658,
           "language": "javascript",
           "tokens": [
             {
@@ -7589,12 +7589,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:186:240533353",
+          "id": "src/game/playback.js:188:240533353",
           "file": "src/game/playback.js",
-          "line": 186,
+          "line": 188,
           "text": "};",
           "hash": 240533353,
-          "referenceHash": 4051384840,
+          "referenceHash": 650850274,
           "language": "javascript",
           "tokens": [
             {
@@ -7612,12 +7612,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:187:850890321",
+          "id": "src/game/playback.js:189:850890321",
           "file": "src/game/playback.js",
-          "line": 187,
+          "line": 189,
           "text": "const sourcePosition = (atSec, durationSeconds) => {",
           "hash": 850890321,
-          "referenceHash": 1231630133,
+          "referenceHash": 1780694091,
           "language": "javascript",
           "tokens": [
             {
@@ -7683,12 +7683,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:188:3997879545",
+          "id": "src/game/playback.js:190:3997879545",
           "file": "src/game/playback.js",
-          "line": 188,
+          "line": 190,
           "text": "  const seconds = Number(atSec);",
           "hash": 3997879545,
-          "referenceHash": 2602551366,
+          "referenceHash": 3026012201,
           "language": "javascript",
           "tokens": [
             {
@@ -7742,12 +7742,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:189:2480068544",
+          "id": "src/game/playback.js:191:2480068544",
           "file": "src/game/playback.js",
-          "line": 189,
+          "line": 191,
           "text": "  return Math.max(0, Math.min(1, (Number.isFinite(seconds) ? seconds : 0) / sourceDuration(durationSeconds)));",
           "hash": 2480068544,
-          "referenceHash": 982165978,
+          "referenceHash": 1966733453,
           "language": "javascript",
           "tokens": [
             {
@@ -7951,12 +7951,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:190:240533353",
+          "id": "src/game/playback.js:192:240533353",
           "file": "src/game/playback.js",
-          "line": 190,
+          "line": 192,
           "text": "};",
           "hash": 240533353,
-          "referenceHash": 2864237017,
+          "referenceHash": 332110191,
           "language": "javascript",
           "tokens": [
             {
@@ -7974,12 +7974,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:192:3853152957",
+          "id": "src/game/playback.js:194:3853152957",
           "file": "src/game/playback.js",
-          "line": 192,
+          "line": 194,
           "text": "export function beginTake(roomId, cell, { durationSeconds = PLAYBACK.sourceSeconds } = {}) {",
           "hash": 3853152957,
-          "referenceHash": 1648302355,
+          "referenceHash": 1147044401,
           "language": "javascript",
           "tokens": [
             {
@@ -8105,12 +8105,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:193:1269381445",
+          "id": "src/game/playback.js:195:1269381445",
           "file": "src/game/playback.js",
-          "line": 193,
+          "line": 195,
           "text": "  const previous=state.takes.get(roomId);",
           "hash": 1269381445,
-          "referenceHash": 519756096,
+          "referenceHash": 4204084198,
           "language": "javascript",
           "tokens": [
             {
@@ -8188,12 +8188,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:194:2206457085",
+          "id": "src/game/playback.js:196:2206457085",
           "file": "src/game/playback.js",
-          "line": 194,
+          "line": 196,
           "text": "  state.takes.set(roomId, {",
           "hash": 2206457085,
-          "referenceHash": 1038040993,
+          "referenceHash": 3610252191,
           "language": "javascript",
           "tokens": [
             {
@@ -8253,12 +8253,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:195:26264984",
+          "id": "src/game/playback.js:197:26264984",
           "file": "src/game/playback.js",
-          "line": 195,
+          "line": 197,
           "text": "    previous:previous?.sealed?previous:previous?.previous||null,",
           "hash": 26264984,
-          "referenceHash": 1729863073,
+          "referenceHash": 1472301991,
           "language": "javascript",
           "tokens": [
             {
@@ -8348,12 +8348,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:196:2871208532",
+          "id": "src/game/playback.js:198:2871208532",
           "file": "src/game/playback.js",
-          "line": 196,
+          "line": 198,
           "text": "    roomId, cell: { ...cell }, levels: new Map(), discrete: [],",
           "hash": 2871208532,
-          "referenceHash": 325077342,
+          "referenceHash": 126031212,
           "language": "javascript",
           "tokens": [
             {
@@ -8485,12 +8485,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:197:1593878557",
+          "id": "src/game/playback.js:199:1593878557",
           "file": "src/game/playback.js",
-          "line": 197,
+          "line": 199,
           "text": "    durationSeconds: sourceDuration(durationSeconds),",
           "hash": 1593878557,
-          "referenceHash": 3923008488,
+          "referenceHash": 1367280590,
           "language": "javascript",
           "tokens": [
             {
@@ -8538,12 +8538,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:198:2042443919",
+          "id": "src/game/playback.js:200:2042443919",
           "file": "src/game/playback.js",
-          "line": 198,
+          "line": 200,
           "text": "    presence: { peak: 0, atSec: 0 }, sealed: false, at: 0,",
           "hash": 2042443919,
-          "referenceHash": 3457729463,
+          "referenceHash": 1192712927,
           "language": "javascript",
           "tokens": [
             {
@@ -8669,12 +8669,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:199:1581901516",
+          "id": "src/game/playback.js:201:1581901516",
           "file": "src/game/playback.js",
-          "line": 199,
+          "line": 201,
           "text": "    // Was the room humming when this was rolled, and where in it did he stand.",
           "hash": 1581901516,
-          "referenceHash": 2404790111,
+          "referenceHash": 183655527,
           "language": "javascript",
           "tokens": [
             {
@@ -8686,12 +8686,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:233:2731697891",
+          "id": "src/game/playback.js:235:2731697891",
           "file": "src/game/playback.js",
-          "line": 233,
+          "line": 235,
           "text": "//",
           "hash": 2731697891,
-          "referenceHash": 1436948777,
+          "referenceHash": 2421942299,
           "language": "javascript",
           "tokens": [
             {
@@ -8703,12 +8703,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:234:256231350",
+          "id": "src/game/playback.js:236:256231350",
           "file": "src/game/playback.js",
-          "line": 234,
+          "line": 236,
           "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
           "hash": 256231350,
-          "referenceHash": 3557961787,
+          "referenceHash": 2920901609,
           "language": "javascript",
           "tokens": [
             {
@@ -8720,12 +8720,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:235:3582701097",
+          "id": "src/game/playback.js:237:3582701097",
           "file": "src/game/playback.js",
-          "line": 235,
+          "line": 237,
           "text": "// and it means a single close pass is on the recording forever.",
           "hash": 3582701097,
-          "referenceHash": 3253379841,
+          "referenceHash": 4070436123,
           "language": "javascript",
           "tokens": [
             {
@@ -8737,12 +8737,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:236:3713278231",
+          "id": "src/game/playback.js:238:3713278231",
           "file": "src/game/playback.js",
-          "line": 236,
+          "line": 238,
           "text": "export function notePresence(roomId, level, atSec = 0) {",
           "hash": 3713278231,
-          "referenceHash": 2916319016,
+          "referenceHash": 3132234906,
           "language": "javascript",
           "tokens": [
             {
@@ -8826,12 +8826,12 @@
           ]
         },
         {
-          "id": "src/game/playback.js:237:3373171060",
+          "id": "src/game/playback.js:239:3373171060",
           "file": "src/game/playback.js",
-          "line": 237,
+          "line": 239,
           "text": "  const t = state.takes.get(roomId);",
           "hash": 3373171060,
-          "referenceHash": 4138086454,
+          "referenceHash": 1044329176,
           "language": "javascript",
           "tokens": [
             {
@@ -101097,13 +101097,13 @@
         }
       ]
     },
-    "src/game/playback.js:185:1589734998": {
-      "id": "src/game/playback.js:185:1589734998",
+    "src/game/playback.js:187:1589734998": {
+      "id": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "text": "  return Number.isFinite(seconds) && seconds > 0 ? Math.max(.01, Math.min(3600, seconds)) : PLAYBACK.sourceSeconds;",
       "hash": 1589734998,
-      "referenceHash": 4073709144,
+      "referenceHash": 152434658,
       "language": "javascript",
       "tokens": [
         {
@@ -101300,13 +101300,13 @@
         }
       ]
     },
-    "src/game/playback.js:186:240533353": {
-      "id": "src/game/playback.js:186:240533353",
+    "src/game/playback.js:188:240533353": {
+      "id": "src/game/playback.js:188:240533353",
       "file": "src/game/playback.js",
-      "line": 186,
+      "line": 188,
       "text": "};",
       "hash": 240533353,
-      "referenceHash": 4051384840,
+      "referenceHash": 650850274,
       "language": "javascript",
       "tokens": [
         {
@@ -101323,13 +101323,13 @@
         }
       ]
     },
-    "src/game/playback.js:187:850890321": {
-      "id": "src/game/playback.js:187:850890321",
+    "src/game/playback.js:189:850890321": {
+      "id": "src/game/playback.js:189:850890321",
       "file": "src/game/playback.js",
-      "line": 187,
+      "line": 189,
       "text": "const sourcePosition = (atSec, durationSeconds) => {",
       "hash": 850890321,
-      "referenceHash": 1231630133,
+      "referenceHash": 1780694091,
       "language": "javascript",
       "tokens": [
         {
@@ -101394,13 +101394,13 @@
         }
       ]
     },
-    "src/game/playback.js:188:3997879545": {
-      "id": "src/game/playback.js:188:3997879545",
+    "src/game/playback.js:190:3997879545": {
+      "id": "src/game/playback.js:190:3997879545",
       "file": "src/game/playback.js",
-      "line": 188,
+      "line": 190,
       "text": "  const seconds = Number(atSec);",
       "hash": 3997879545,
-      "referenceHash": 2602551366,
+      "referenceHash": 3026012201,
       "language": "javascript",
       "tokens": [
         {
@@ -101453,13 +101453,13 @@
         }
       ]
     },
-    "src/game/playback.js:189:2480068544": {
-      "id": "src/game/playback.js:189:2480068544",
+    "src/game/playback.js:191:2480068544": {
+      "id": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "text": "  return Math.max(0, Math.min(1, (Number.isFinite(seconds) ? seconds : 0) / sourceDuration(durationSeconds)));",
       "hash": 2480068544,
-      "referenceHash": 982165978,
+      "referenceHash": 1966733453,
       "language": "javascript",
       "tokens": [
         {
@@ -101662,13 +101662,13 @@
         }
       ]
     },
-    "src/game/playback.js:190:240533353": {
-      "id": "src/game/playback.js:190:240533353",
+    "src/game/playback.js:192:240533353": {
+      "id": "src/game/playback.js:192:240533353",
       "file": "src/game/playback.js",
-      "line": 190,
+      "line": 192,
       "text": "};",
       "hash": 240533353,
-      "referenceHash": 2864237017,
+      "referenceHash": 332110191,
       "language": "javascript",
       "tokens": [
         {
@@ -101685,13 +101685,13 @@
         }
       ]
     },
-    "src/game/playback.js:192:3853152957": {
-      "id": "src/game/playback.js:192:3853152957",
+    "src/game/playback.js:194:3853152957": {
+      "id": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "text": "export function beginTake(roomId, cell, { durationSeconds = PLAYBACK.sourceSeconds } = {}) {",
       "hash": 3853152957,
-      "referenceHash": 1648302355,
+      "referenceHash": 1147044401,
       "language": "javascript",
       "tokens": [
         {
@@ -101816,13 +101816,13 @@
         }
       ]
     },
-    "src/game/playback.js:193:1269381445": {
-      "id": "src/game/playback.js:193:1269381445",
+    "src/game/playback.js:195:1269381445": {
+      "id": "src/game/playback.js:195:1269381445",
       "file": "src/game/playback.js",
-      "line": 193,
+      "line": 195,
       "text": "  const previous=state.takes.get(roomId);",
       "hash": 1269381445,
-      "referenceHash": 519756096,
+      "referenceHash": 4204084198,
       "language": "javascript",
       "tokens": [
         {
@@ -101899,13 +101899,13 @@
         }
       ]
     },
-    "src/game/playback.js:194:2206457085": {
-      "id": "src/game/playback.js:194:2206457085",
+    "src/game/playback.js:196:2206457085": {
+      "id": "src/game/playback.js:196:2206457085",
       "file": "src/game/playback.js",
-      "line": 194,
+      "line": 196,
       "text": "  state.takes.set(roomId, {",
       "hash": 2206457085,
-      "referenceHash": 1038040993,
+      "referenceHash": 3610252191,
       "language": "javascript",
       "tokens": [
         {
@@ -101964,13 +101964,13 @@
         }
       ]
     },
-    "src/game/playback.js:195:26264984": {
-      "id": "src/game/playback.js:195:26264984",
+    "src/game/playback.js:197:26264984": {
+      "id": "src/game/playback.js:197:26264984",
       "file": "src/game/playback.js",
-      "line": 195,
+      "line": 197,
       "text": "    previous:previous?.sealed?previous:previous?.previous||null,",
       "hash": 26264984,
-      "referenceHash": 1729863073,
+      "referenceHash": 1472301991,
       "language": "javascript",
       "tokens": [
         {
@@ -102059,13 +102059,13 @@
         }
       ]
     },
-    "src/game/playback.js:196:2871208532": {
-      "id": "src/game/playback.js:196:2871208532",
+    "src/game/playback.js:198:2871208532": {
+      "id": "src/game/playback.js:198:2871208532",
       "file": "src/game/playback.js",
-      "line": 196,
+      "line": 198,
       "text": "    roomId, cell: { ...cell }, levels: new Map(), discrete: [],",
       "hash": 2871208532,
-      "referenceHash": 325077342,
+      "referenceHash": 126031212,
       "language": "javascript",
       "tokens": [
         {
@@ -102196,13 +102196,13 @@
         }
       ]
     },
-    "src/game/playback.js:197:1593878557": {
-      "id": "src/game/playback.js:197:1593878557",
+    "src/game/playback.js:199:1593878557": {
+      "id": "src/game/playback.js:199:1593878557",
       "file": "src/game/playback.js",
-      "line": 197,
+      "line": 199,
       "text": "    durationSeconds: sourceDuration(durationSeconds),",
       "hash": 1593878557,
-      "referenceHash": 3923008488,
+      "referenceHash": 1367280590,
       "language": "javascript",
       "tokens": [
         {
@@ -102249,13 +102249,13 @@
         }
       ]
     },
-    "src/game/playback.js:198:2042443919": {
-      "id": "src/game/playback.js:198:2042443919",
+    "src/game/playback.js:200:2042443919": {
+      "id": "src/game/playback.js:200:2042443919",
       "file": "src/game/playback.js",
-      "line": 198,
+      "line": 200,
       "text": "    presence: { peak: 0, atSec: 0 }, sealed: false, at: 0,",
       "hash": 2042443919,
-      "referenceHash": 3457729463,
+      "referenceHash": 1192712927,
       "language": "javascript",
       "tokens": [
         {
@@ -102380,13 +102380,13 @@
         }
       ]
     },
-    "src/game/playback.js:199:1581901516": {
-      "id": "src/game/playback.js:199:1581901516",
+    "src/game/playback.js:201:1581901516": {
+      "id": "src/game/playback.js:201:1581901516",
       "file": "src/game/playback.js",
-      "line": 199,
+      "line": 201,
       "text": "    // Was the room humming when this was rolled, and where in it did he stand.",
       "hash": 1581901516,
-      "referenceHash": 2404790111,
+      "referenceHash": 183655527,
       "language": "javascript",
       "tokens": [
         {
@@ -102397,13 +102397,13 @@
         }
       ]
     },
-    "src/game/playback.js:233:2731697891": {
-      "id": "src/game/playback.js:233:2731697891",
+    "src/game/playback.js:235:2731697891": {
+      "id": "src/game/playback.js:235:2731697891",
       "file": "src/game/playback.js",
-      "line": 233,
+      "line": 235,
       "text": "//",
       "hash": 2731697891,
-      "referenceHash": 1436948777,
+      "referenceHash": 2421942299,
       "language": "javascript",
       "tokens": [
         {
@@ -102414,13 +102414,13 @@
         }
       ]
     },
-    "src/game/playback.js:234:256231350": {
-      "id": "src/game/playback.js:234:256231350",
+    "src/game/playback.js:236:256231350": {
+      "id": "src/game/playback.js:236:256231350",
       "file": "src/game/playback.js",
-      "line": 234,
+      "line": 236,
       "text": "// Peak-hold, like every other level on this tape: it is what a microphone does,",
       "hash": 256231350,
-      "referenceHash": 3557961787,
+      "referenceHash": 2920901609,
       "language": "javascript",
       "tokens": [
         {
@@ -102431,13 +102431,13 @@
         }
       ]
     },
-    "src/game/playback.js:235:3582701097": {
-      "id": "src/game/playback.js:235:3582701097",
+    "src/game/playback.js:237:3582701097": {
+      "id": "src/game/playback.js:237:3582701097",
       "file": "src/game/playback.js",
-      "line": 235,
+      "line": 237,
       "text": "// and it means a single close pass is on the recording forever.",
       "hash": 3582701097,
-      "referenceHash": 3253379841,
+      "referenceHash": 4070436123,
       "language": "javascript",
       "tokens": [
         {
@@ -102448,13 +102448,13 @@
         }
       ]
     },
-    "src/game/playback.js:236:3713278231": {
-      "id": "src/game/playback.js:236:3713278231",
+    "src/game/playback.js:238:3713278231": {
+      "id": "src/game/playback.js:238:3713278231",
       "file": "src/game/playback.js",
-      "line": 236,
+      "line": 238,
       "text": "export function notePresence(roomId, level, atSec = 0) {",
       "hash": 3713278231,
-      "referenceHash": 2916319016,
+      "referenceHash": 3132234906,
       "language": "javascript",
       "tokens": [
         {
@@ -102537,13 +102537,13 @@
         }
       ]
     },
-    "src/game/playback.js:237:3373171060": {
-      "id": "src/game/playback.js:237:3373171060",
+    "src/game/playback.js:239:3373171060": {
+      "id": "src/game/playback.js:239:3373171060",
       "file": "src/game/playback.js",
-      "line": 237,
+      "line": 239,
       "text": "  const t = state.takes.get(roomId);",
       "hash": 3373171060,
-      "referenceHash": 4138086454,
+      "referenceHash": 1044329176,
       "language": "javascript",
       "tokens": [
         {
@@ -116431,9 +116431,9 @@
     "atSec": {
       "id": "atSec",
       "occurrence": {
-        "entryId": "src/game/playback.js:187:850890321",
+        "entryId": "src/game/playback.js:189:850890321",
         "file": "src/game/playback.js",
-        "line": 187,
+        "line": 189,
         "start": 24,
         "end": 29,
         "hash": 850890321
@@ -116530,9 +116530,9 @@
     "beginTake": {
       "id": "beginTake",
       "occurrence": {
-        "entryId": "src/game/playback.js:192:3853152957",
+        "entryId": "src/game/playback.js:194:3853152957",
         "file": "src/game/playback.js",
-        "line": 192,
+        "line": 194,
         "start": 16,
         "end": 25,
         "hash": 3853152957
@@ -116717,9 +116717,9 @@
     "cell": {
       "id": "cell",
       "occurrence": {
-        "entryId": "src/game/playback.js:192:3853152957",
+        "entryId": "src/game/playback.js:194:3853152957",
         "file": "src/game/playback.js",
-        "line": 192,
+        "line": 194,
         "start": 34,
         "end": 38,
         "hash": 3853152957
@@ -117179,9 +117179,9 @@
     "discrete": {
       "id": "discrete",
       "occurrence": {
-        "entryId": "src/game/playback.js:196:2871208532",
+        "entryId": "src/game/playback.js:198:2871208532",
         "file": "src/game/playback.js",
-        "line": 196,
+        "line": 198,
         "start": 50,
         "end": 58,
         "hash": 2871208532
@@ -117234,9 +117234,9 @@
     "durationSeconds": {
       "id": "durationSeconds",
       "occurrence": {
-        "entryId": "src/game/playback.js:187:850890321",
+        "entryId": "src/game/playback.js:189:850890321",
         "file": "src/game/playback.js",
-        "line": 187,
+        "line": 189,
         "start": 31,
         "end": 46,
         "hash": 850890321
@@ -118422,9 +118422,9 @@
     "level": {
       "id": "level",
       "occurrence": {
-        "entryId": "src/game/playback.js:236:3713278231",
+        "entryId": "src/game/playback.js:238:3713278231",
         "file": "src/game/playback.js",
-        "line": 236,
+        "line": 238,
         "start": 37,
         "end": 42,
         "hash": 3713278231
@@ -118433,9 +118433,9 @@
     "levels": {
       "id": "levels",
       "occurrence": {
-        "entryId": "src/game/playback.js:196:2871208532",
+        "entryId": "src/game/playback.js:198:2871208532",
         "file": "src/game/playback.js",
-        "line": 196,
+        "line": 198,
         "start": 31,
         "end": 37,
         "hash": 2871208532
@@ -118554,9 +118554,9 @@
     "Map": {
       "id": "Map",
       "occurrence": {
-        "entryId": "src/game/playback.js:196:2871208532",
+        "entryId": "src/game/playback.js:198:2871208532",
         "file": "src/game/playback.js",
-        "line": 196,
+        "line": 198,
         "start": 43,
         "end": 46,
         "hash": 2871208532
@@ -118851,9 +118851,9 @@
     "notePresence": {
       "id": "notePresence",
       "occurrence": {
-        "entryId": "src/game/playback.js:236:3713278231",
+        "entryId": "src/game/playback.js:238:3713278231",
         "file": "src/game/playback.js",
-        "line": 236,
+        "line": 238,
         "start": 16,
         "end": 28,
         "hash": 3713278231
@@ -119060,9 +119060,9 @@
     "peak": {
       "id": "peak",
       "occurrence": {
-        "entryId": "src/game/playback.js:198:2042443919",
+        "entryId": "src/game/playback.js:200:2042443919",
         "file": "src/game/playback.js",
-        "line": 198,
+        "line": 200,
         "start": 16,
         "end": 20,
         "hash": 2042443919
@@ -119148,9 +119148,9 @@
     "PLAYBACK": {
       "id": "PLAYBACK",
       "occurrence": {
-        "entryId": "src/game/playback.js:185:1589734998",
+        "entryId": "src/game/playback.js:187:1589734998",
         "file": "src/game/playback.js",
-        "line": 185,
+        "line": 187,
         "start": 92,
         "end": 100,
         "hash": 1589734998
@@ -119203,9 +119203,9 @@
     "presence": {
       "id": "presence",
       "occurrence": {
-        "entryId": "src/game/playback.js:198:2042443919",
+        "entryId": "src/game/playback.js:200:2042443919",
         "file": "src/game/playback.js",
-        "line": 198,
+        "line": 200,
         "start": 4,
         "end": 12,
         "hash": 2042443919
@@ -119269,9 +119269,9 @@
     "previous": {
       "id": "previous",
       "occurrence": {
-        "entryId": "src/game/playback.js:193:1269381445",
+        "entryId": "src/game/playback.js:195:1269381445",
         "file": "src/game/playback.js",
-        "line": 193,
+        "line": 195,
         "start": 8,
         "end": 16,
         "hash": 1269381445
@@ -119808,9 +119808,9 @@
     "sealed": {
       "id": "sealed",
       "occurrence": {
-        "entryId": "src/game/playback.js:195:26264984",
+        "entryId": "src/game/playback.js:197:26264984",
         "file": "src/game/playback.js",
-        "line": 195,
+        "line": 197,
         "start": 23,
         "end": 29,
         "hash": 26264984
@@ -120050,9 +120050,9 @@
     "sourceDuration": {
       "id": "sourceDuration",
       "occurrence": {
-        "entryId": "src/game/playback.js:189:2480068544",
+        "entryId": "src/game/playback.js:191:2480068544",
         "file": "src/game/playback.js",
-        "line": 189,
+        "line": 191,
         "start": 76,
         "end": 90,
         "hash": 2480068544
@@ -120105,9 +120105,9 @@
     "sourcePosition": {
       "id": "sourcePosition",
       "occurrence": {
-        "entryId": "src/game/playback.js:187:850890321",
+        "entryId": "src/game/playback.js:189:850890321",
         "file": "src/game/playback.js",
-        "line": 187,
+        "line": 189,
         "start": 6,
         "end": 20,
         "hash": 850890321
@@ -120116,9 +120116,9 @@
     "sourceSeconds": {
       "id": "sourceSeconds",
       "occurrence": {
-        "entryId": "src/game/playback.js:185:1589734998",
+        "entryId": "src/game/playback.js:187:1589734998",
         "file": "src/game/playback.js",
-        "line": 185,
+        "line": 187,
         "start": 101,
         "end": 114,
         "hash": 1589734998
@@ -120347,9 +120347,9 @@
     "t": {
       "id": "t",
       "occurrence": {
-        "entryId": "src/game/playback.js:237:3373171060",
+        "entryId": "src/game/playback.js:239:3373171060",
         "file": "src/game/playback.js",
-        "line": 237,
+        "line": 239,
         "start": 8,
         "end": 9,
         "hash": 3373171060
@@ -120424,9 +120424,9 @@
     "takes": {
       "id": "takes",
       "occurrence": {
-        "entryId": "src/game/playback.js:193:1269381445",
+        "entryId": "src/game/playback.js:195:1269381445",
         "file": "src/game/playback.js",
-        "line": 193,
+        "line": 195,
         "start": 23,
         "end": 28,
         "hash": 1269381445
@@ -122621,443 +122621,443 @@
       "hash": 2220420749
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:isFinite",
+      "id": "src/game/playback.js:187:1589734998:Number:isFinite",
       "from": "Number",
       "to": "isFinite",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:seconds",
+      "id": "src/game/playback.js:187:1589734998:Number:seconds",
       "from": "Number",
       "to": "seconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:Math",
+      "id": "src/game/playback.js:187:1589734998:Number:Math",
       "from": "Number",
       "to": "Math",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:max",
+      "id": "src/game/playback.js:187:1589734998:Number:max",
       "from": "Number",
       "to": "max",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:min",
+      "id": "src/game/playback.js:187:1589734998:Number:min",
       "from": "Number",
       "to": "min",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:PLAYBACK",
+      "id": "src/game/playback.js:187:1589734998:Number:PLAYBACK",
       "from": "Number",
       "to": "PLAYBACK",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:185:1589734998:Number:sourceSeconds",
+      "id": "src/game/playback.js:187:1589734998:Number:sourceSeconds",
       "from": "Number",
       "to": "sourceSeconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:185:1589734998",
+      "entryId": "src/game/playback.js:187:1589734998",
       "file": "src/game/playback.js",
-      "line": 185,
+      "line": 187,
       "hash": 1589734998
     },
     {
-      "id": "src/game/playback.js:187:850890321:sourcePosition:atSec",
+      "id": "src/game/playback.js:189:850890321:sourcePosition:atSec",
       "from": "sourcePosition",
       "to": "atSec",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:187:850890321",
+      "entryId": "src/game/playback.js:189:850890321",
       "file": "src/game/playback.js",
-      "line": 187,
+      "line": 189,
       "hash": 850890321
     },
     {
-      "id": "src/game/playback.js:187:850890321:sourcePosition:durationSeconds",
+      "id": "src/game/playback.js:189:850890321:sourcePosition:durationSeconds",
       "from": "sourcePosition",
       "to": "durationSeconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:187:850890321",
+      "entryId": "src/game/playback.js:189:850890321",
       "file": "src/game/playback.js",
-      "line": 187,
+      "line": 189,
       "hash": 850890321
     },
     {
-      "id": "src/game/playback.js:188:3997879545:seconds:Number",
+      "id": "src/game/playback.js:190:3997879545:seconds:Number",
       "from": "seconds",
       "to": "Number",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:188:3997879545",
+      "entryId": "src/game/playback.js:190:3997879545",
       "file": "src/game/playback.js",
-      "line": 188,
+      "line": 190,
       "hash": 3997879545
     },
     {
-      "id": "src/game/playback.js:188:3997879545:seconds:atSec",
+      "id": "src/game/playback.js:190:3997879545:seconds:atSec",
       "from": "seconds",
       "to": "atSec",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:188:3997879545",
+      "entryId": "src/game/playback.js:190:3997879545",
       "file": "src/game/playback.js",
-      "line": 188,
+      "line": 190,
       "hash": 3997879545
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:max",
+      "id": "src/game/playback.js:191:2480068544:Math:max",
       "from": "Math",
       "to": "max",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:min",
+      "id": "src/game/playback.js:191:2480068544:Math:min",
       "from": "Math",
       "to": "min",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:Number",
+      "id": "src/game/playback.js:191:2480068544:Math:Number",
       "from": "Math",
       "to": "Number",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:isFinite",
+      "id": "src/game/playback.js:191:2480068544:Math:isFinite",
       "from": "Math",
       "to": "isFinite",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:seconds",
+      "id": "src/game/playback.js:191:2480068544:Math:seconds",
       "from": "Math",
       "to": "seconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:sourceDuration",
+      "id": "src/game/playback.js:191:2480068544:Math:sourceDuration",
       "from": "Math",
       "to": "sourceDuration",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:189:2480068544:Math:durationSeconds",
+      "id": "src/game/playback.js:191:2480068544:Math:durationSeconds",
       "from": "Math",
       "to": "durationSeconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:189:2480068544",
+      "entryId": "src/game/playback.js:191:2480068544",
       "file": "src/game/playback.js",
-      "line": 189,
+      "line": 191,
       "hash": 2480068544
     },
     {
-      "id": "src/game/playback.js:192:3853152957:beginTake:roomId",
+      "id": "src/game/playback.js:194:3853152957:beginTake:roomId",
       "from": "beginTake",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:192:3853152957",
+      "entryId": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "hash": 3853152957
     },
     {
-      "id": "src/game/playback.js:192:3853152957:beginTake:cell",
+      "id": "src/game/playback.js:194:3853152957:beginTake:cell",
       "from": "beginTake",
       "to": "cell",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:192:3853152957",
+      "entryId": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "hash": 3853152957
     },
     {
-      "id": "src/game/playback.js:192:3853152957:beginTake:durationSeconds",
+      "id": "src/game/playback.js:194:3853152957:beginTake:durationSeconds",
       "from": "beginTake",
       "to": "durationSeconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:192:3853152957",
+      "entryId": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "hash": 3853152957
     },
     {
-      "id": "src/game/playback.js:192:3853152957:beginTake:PLAYBACK",
+      "id": "src/game/playback.js:194:3853152957:beginTake:PLAYBACK",
       "from": "beginTake",
       "to": "PLAYBACK",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:192:3853152957",
+      "entryId": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "hash": 3853152957
     },
     {
-      "id": "src/game/playback.js:192:3853152957:beginTake:sourceSeconds",
+      "id": "src/game/playback.js:194:3853152957:beginTake:sourceSeconds",
       "from": "beginTake",
       "to": "sourceSeconds",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:192:3853152957",
+      "entryId": "src/game/playback.js:194:3853152957",
       "file": "src/game/playback.js",
-      "line": 192,
+      "line": 194,
       "hash": 3853152957
     },
     {
-      "id": "src/game/playback.js:193:1269381445:previous:state",
+      "id": "src/game/playback.js:195:1269381445:previous:state",
       "from": "previous",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:193:1269381445",
+      "entryId": "src/game/playback.js:195:1269381445",
       "file": "src/game/playback.js",
-      "line": 193,
+      "line": 195,
       "hash": 1269381445
     },
     {
-      "id": "src/game/playback.js:193:1269381445:previous:takes",
+      "id": "src/game/playback.js:195:1269381445:previous:takes",
       "from": "previous",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:193:1269381445",
+      "entryId": "src/game/playback.js:195:1269381445",
       "file": "src/game/playback.js",
-      "line": 193,
+      "line": 195,
       "hash": 1269381445
     },
     {
-      "id": "src/game/playback.js:193:1269381445:previous:roomId",
+      "id": "src/game/playback.js:195:1269381445:previous:roomId",
       "from": "previous",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:193:1269381445",
+      "entryId": "src/game/playback.js:195:1269381445",
       "file": "src/game/playback.js",
-      "line": 193,
+      "line": 195,
       "hash": 1269381445
     },
     {
-      "id": "src/game/playback.js:194:2206457085:state:takes",
+      "id": "src/game/playback.js:196:2206457085:state:takes",
       "from": "state",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:194:2206457085",
+      "entryId": "src/game/playback.js:196:2206457085",
       "file": "src/game/playback.js",
-      "line": 194,
+      "line": 196,
       "hash": 2206457085
     },
     {
-      "id": "src/game/playback.js:194:2206457085:state:roomId",
+      "id": "src/game/playback.js:196:2206457085:state:roomId",
       "from": "state",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:194:2206457085",
+      "entryId": "src/game/playback.js:196:2206457085",
       "file": "src/game/playback.js",
-      "line": 194,
+      "line": 196,
       "hash": 2206457085
     },
     {
-      "id": "src/game/playback.js:195:26264984:previous:sealed",
+      "id": "src/game/playback.js:197:26264984:previous:sealed",
       "from": "previous",
       "to": "sealed",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:195:26264984",
+      "entryId": "src/game/playback.js:197:26264984",
       "file": "src/game/playback.js",
-      "line": 195,
+      "line": 197,
       "hash": 26264984
     },
     {
-      "id": "src/game/playback.js:196:2871208532:roomId:cell",
+      "id": "src/game/playback.js:198:2871208532:roomId:cell",
       "from": "roomId",
       "to": "cell",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:196:2871208532",
+      "entryId": "src/game/playback.js:198:2871208532",
       "file": "src/game/playback.js",
-      "line": 196,
+      "line": 198,
       "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:196:2871208532:roomId:levels",
+      "id": "src/game/playback.js:198:2871208532:roomId:levels",
       "from": "roomId",
       "to": "levels",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:196:2871208532",
+      "entryId": "src/game/playback.js:198:2871208532",
       "file": "src/game/playback.js",
-      "line": 196,
+      "line": 198,
       "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:196:2871208532:roomId:Map",
+      "id": "src/game/playback.js:198:2871208532:roomId:Map",
       "from": "roomId",
       "to": "Map",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:196:2871208532",
+      "entryId": "src/game/playback.js:198:2871208532",
       "file": "src/game/playback.js",
-      "line": 196,
+      "line": 198,
       "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:196:2871208532:roomId:discrete",
+      "id": "src/game/playback.js:198:2871208532:roomId:discrete",
       "from": "roomId",
       "to": "discrete",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:196:2871208532",
+      "entryId": "src/game/playback.js:198:2871208532",
       "file": "src/game/playback.js",
-      "line": 196,
+      "line": 198,
       "hash": 2871208532
     },
     {
-      "id": "src/game/playback.js:197:1593878557:durationSeconds:sourceDuration",
+      "id": "src/game/playback.js:199:1593878557:durationSeconds:sourceDuration",
       "from": "durationSeconds",
       "to": "sourceDuration",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:197:1593878557",
+      "entryId": "src/game/playback.js:199:1593878557",
       "file": "src/game/playback.js",
-      "line": 197,
+      "line": 199,
       "hash": 1593878557
     },
     {
-      "id": "src/game/playback.js:198:2042443919:presence:peak",
+      "id": "src/game/playback.js:200:2042443919:presence:peak",
       "from": "presence",
       "to": "peak",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:198:2042443919",
+      "entryId": "src/game/playback.js:200:2042443919",
       "file": "src/game/playback.js",
-      "line": 198,
+      "line": 200,
       "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:198:2042443919:presence:atSec",
+      "id": "src/game/playback.js:200:2042443919:presence:atSec",
       "from": "presence",
       "to": "atSec",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:198:2042443919",
+      "entryId": "src/game/playback.js:200:2042443919",
       "file": "src/game/playback.js",
-      "line": 198,
+      "line": 200,
       "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:198:2042443919:presence:sealed",
+      "id": "src/game/playback.js:200:2042443919:presence:sealed",
       "from": "presence",
       "to": "sealed",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:198:2042443919",
+      "entryId": "src/game/playback.js:200:2042443919",
       "file": "src/game/playback.js",
-      "line": 198,
+      "line": 200,
       "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:198:2042443919:presence:at",
+      "id": "src/game/playback.js:200:2042443919:presence:at",
       "from": "presence",
       "to": "at",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:198:2042443919",
+      "entryId": "src/game/playback.js:200:2042443919",
       "file": "src/game/playback.js",
-      "line": 198,
+      "line": 200,
       "hash": 2042443919
     },
     {
-      "id": "src/game/playback.js:236:3713278231:notePresence:roomId",
+      "id": "src/game/playback.js:238:3713278231:notePresence:roomId",
       "from": "notePresence",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:236:3713278231",
+      "entryId": "src/game/playback.js:238:3713278231",
       "file": "src/game/playback.js",
-      "line": 236,
+      "line": 238,
       "hash": 3713278231
     },
     {
-      "id": "src/game/playback.js:236:3713278231:notePresence:level",
+      "id": "src/game/playback.js:238:3713278231:notePresence:level",
       "from": "notePresence",
       "to": "level",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:236:3713278231",
+      "entryId": "src/game/playback.js:238:3713278231",
       "file": "src/game/playback.js",
-      "line": 236,
+      "line": 238,
       "hash": 3713278231
     },
     {
-      "id": "src/game/playback.js:236:3713278231:notePresence:atSec",
+      "id": "src/game/playback.js:238:3713278231:notePresence:atSec",
       "from": "notePresence",
       "to": "atSec",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:236:3713278231",
+      "entryId": "src/game/playback.js:238:3713278231",
       "file": "src/game/playback.js",
-      "line": 236,
+      "line": 238,
       "hash": 3713278231
     },
     {
-      "id": "src/game/playback.js:237:3373171060:t:state",
+      "id": "src/game/playback.js:239:3373171060:t:state",
       "from": "t",
       "to": "state",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:237:3373171060",
+      "entryId": "src/game/playback.js:239:3373171060",
       "file": "src/game/playback.js",
-      "line": 237,
+      "line": 239,
       "hash": 3373171060
     },
     {
-      "id": "src/game/playback.js:237:3373171060:t:takes",
+      "id": "src/game/playback.js:239:3373171060:t:takes",
       "from": "t",
       "to": "takes",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:237:3373171060",
+      "entryId": "src/game/playback.js:239:3373171060",
       "file": "src/game/playback.js",
-      "line": 237,
+      "line": 239,
       "hash": 3373171060
     },
     {
-      "id": "src/game/playback.js:237:3373171060:t:roomId",
+      "id": "src/game/playback.js:239:3373171060:t:roomId",
       "from": "t",
       "to": "roomId",
       "kind": "same-line-reference",
-      "entryId": "src/game/playback.js:237:3373171060",
+      "entryId": "src/game/playback.js:239:3373171060",
       "file": "src/game/playback.js",
-      "line": 237,
+      "line": 239,
       "hash": 3373171060
     },
     {

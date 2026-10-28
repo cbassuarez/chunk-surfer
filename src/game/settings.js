@@ -23,6 +23,7 @@ import {
   normalizeDisplaySettings,
 } from '../platform/display-policy.js';
 import { formatFps } from '../platform/about-system.js';
+import { playDurationLine, playDurationReadout } from './play-duration.js';
 import {
   PSYCH_PROFILE_MODULE_KEYS,
   normalizePsychProfileSettings,
@@ -55,13 +56,6 @@ function bar(v, n = 10) {
   return s + '▶';
 }
 
-function fmtTime(seconds = 0) {
-  const t = Math.max(0, Math.floor(Number(seconds) || 0));
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const s = t % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
 
 export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {} } = {}) {
   const s = () => getSave().settings || {};
@@ -70,6 +64,7 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   let armed = null; // { key, until }
+  let eraseState = '';
   let pendingChallenge = null; // { key, change, until }
   const hits = createHitRegions();
   const now = () => (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -621,7 +616,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         id: 'memory', name: 'MEMORY',
         rows: [
           { id: 'autosave', label: 'AUTOSAVE', value: () => 'ON' },
-          { id: 'playTime', label: 'PLAY TIME', value: () => fmtTime(getSave().playSeconds) },
+          { id: 'playTime', label: 'CURRENT RUN PLAY TIME', value: () => playDurationReadout(getSave()).value },
+          ...(playDurationReadout(getSave()).qualifier ? [{ id: 'playTimeScope', label: 'MEASURED', value: () => 'SINCE UPDATE', selectable: false }] : []),
           { id: 'steps', label: 'STEPS', value: () => String(getSave().steps || 0).padStart(6, '0') },
           { id: 'area', label: 'CURRENT AREA',
             value: () => String(hooks.currentArea?.() || getSave().area || 'PROLOGUE').toUpperCase().slice(0, 22) },
@@ -635,6 +631,12 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
           { id: 'clearMemory', label: 'CLEAR MEMORY',
             value: () => armedValue('clearAll'),
             activate: () => arm('clearAll', () => { clearAllData(); returnToTitle(); }) },
+          ...(!inGame && hooks.eraseAllForUninstall ? [{ id: 'eraseForUninstall', label: 'ERASE ALL DATA & RESTART',
+            value: () => eraseState === 'ERASING' ? eraseState : (armed?.key === 'eraseForUninstall' ? armedValue('eraseForUninstall') : (eraseState || armedValue('eraseForUninstall'))),
+            activate: () => { if (eraseState !== 'ERASING') arm('eraseForUninstall', async () => {
+              eraseState = 'ERASING';
+              try { await hooks.eraseAllForUninstall(); } catch (_) { eraseState = 'FAILED — RETRY'; }
+            }); } }] : []),
         ],
       },
       {
@@ -808,6 +810,8 @@ export function makeSettingsScene({ inGame = false, initialTab = null, hooks = {
         }
         tx += label.length + 1;
       });
+
+      uiText(ix, iy + 1.25, playDurationLine(getSave(), body.w).slice(0, body.w), 'ui-label', .78);
 
       clampSel();
 

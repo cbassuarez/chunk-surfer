@@ -12,6 +12,7 @@ import {ACADEMIC_BOUNCER_SOCIAL_BEATS,ACADEMIC_BOUNCER_SOCIAL_TIMING} from '../s
 import {ACADEMIC_FLOOR_GUESTS,ACADEMIC_FLOOR_POPULATION} from '../src/data/academic-floor-population.js';
 import {createAcademicBouncers} from '../src/game/academic-bouncers.js';
 import {makeAcademicBouncerScene,renderAcademicBouncerSocialScene} from '../src/game/academic-bouncer-scene.js';
+import {freshChapelTapeDemand,chapelTapeDemandBlocksProgress} from '../src/game/chapel-tape-demand.js';
 import {academicBouncerAccessForMove,academicBouncerPhysicalFocus} from '../src/game/academic-bouncer-access.js';
 import {academicBouncerSocialAudible as bouncerSocialAudible,academicBouncerSegmentClear} from '../src/game/academic-bouncer-audibility.js';
 import {academicBouncerInstances} from '../src/render/academic-bouncers.js';
@@ -39,7 +40,17 @@ function functionSource(name){return name==='converse'?island(`function ${name}(
 const helpers=island('function academicBouncerActors(){','function inAcademicSociety(){');
 const interactPrefix=island('function interact(){','  if(PB.isPlaying())')+'\n}';
 const stepStart=main.indexOf('function step(dx,dy){');
-const gateBody=island('      const move=geometry.canStep(px, py, px+dx, py+dy, { keys: playerKeys });','      // Source traversal is a committed world action.',stepStart);
+// Locate the actual step's admission guard, rather than relying on byte-exact
+// spacing and an old canStep invocation. Keep the production gate itself.
+const accessAt=main.indexOf('academicBouncerAccessForMove({admitted:',stepStart);
+assert.ok(stepStart>=0&&accessAt>stepStart,'production step retains the admission check');
+const movementPrelude=main.slice(stepStart,accessAt);
+const stepMoves=[...movementPrelude.matchAll(/\b(?:const|let)\s+move\s*=\s*geometry\.canStep\s*\(/g)];
+assert.ok(stepMoves.length,'actual movement decision precedes the admission check');
+const gateBegin=stepStart+stepMoves.at(-1).index;
+const gateEnd=main.indexOf('// Source traversal is a committed world action.',accessAt);
+assert.ok(gateEnd>accessAt,'actual Source-traversal boundary follows the admission gate');
+const gateBody=main.slice(gateBegin,gateEnd);
 const stageBody=island("  if(group==='academic'&&storyMode&&planName==='conservatory'&&!usingSpecialSpace()&&!suppressActors){","  if(group==='academic'){",main.indexOf('const recorded=yardBusWomanReplayTime'));
 const hudBody=island('  } else if(focusedAcademicBouncer()){','  } else if(doorHud){').replace('  } else if(','  if(')+'\n  }';
 
@@ -109,6 +120,11 @@ async function adapter(run,{saved=freshSave()}={}){
       R3:{r3dWorldYaw:()=>yaw,r3dLookAngles:()=>({yaw,pitch:0}),r3dFacing:()=>0},
       scenes,shakeMode:()=>getSave().settings?.shake||'full',getSave,saveCommit,flagTest,furnitureRecognitionLine,emitProgress,EVENT_TYPES,
       ensureCtx(){},academicGhostSpeechDestination:()=>null,
+      // Academic admission takes place without an active Chapel tape-demand.
+      chapelTapeDemandBlocksProgress,
+      chapelTapeDemandState:()=>freshChapelTapeDemand(getSave().run?.id),
+      // This academic encounter has no pending Tower-warning overlay.
+      interactTowerWarning:()=>false,
       SPEECH:speech.api,academicAdversaryClaimsQuiet:()=>false,makeThoughtScene,renderAcademicBouncerSocialScene,NO_THINK:false,STORY:{},CR:{fx:{}},RENDERER:'3d',
       createReplayService:()=>null,applyStoryChoice(){},fireCue(){},
       makeAcademicBouncerScene:options=>makeAcademicBouncerScene({...options,createVoice:()=>voice}),

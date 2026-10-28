@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "title": "Outskirts bus passage",
+  "author": "Chunk Surfer original procedural geometry",
+  "license": "project source",
+  "pack": {
+    "sha256": "0fde41e46a05f4b7a2b3c7e1cb78ae795b0815a2a5e28908249931e6872ecea8",
+    "bytes": 931104,
+    "triangles": 7188
+  },
+  "sources": [
+    {
+      "url": "https://archive.commercialmotor.com/article/17th-may-1968/57/bristol-reecw-45-seat-coach",
+      "use": "Contemporary front entrance/offside rear emergency-exit circulation precedent; not an exact vehicle identification"
+    },
+    {
+      "url": "https://www.ampyx.org.uk/lcountry/bph/bph_preservation_2015a.html",
+      "use": "Firsthand coachwork/stepwell/rubber-nosing/door-frame restoration evidence"
+    }
+  ],
+  "productionReuse": {
+    "factory": "tools/chunk_surfer/build-props.mjs:outskirts_bus",
+    "sourceMeshFingerprint": "29c498f06cd8336a3141052a6ff48cdb10c3694de9a206f6b9d6296bcd0d82af",
+    "physicalPrint": "Original ELLERY and J 063 albedo/normal/ORM bytes and UVs retained"
+  },
+  "validation": "CPU geometry and asset tests; native final-dither inspection remains separate"
+}

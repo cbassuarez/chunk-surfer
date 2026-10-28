@@ -117,7 +117,11 @@ test('tab buttons are momentary through pointer, digit, and controller selection
   assert.equal(sampleControl('bag:tab:map').travel,0);
   bag.key({key:'4',code:'Digit4'});now=350;assert.equal(sampleControl('bag:tab:skills').travel,1);
   bag.keyup({key:'4',code:'Digit4'});now=500;assert.equal(sampleControl('bag:tab:skills').travel,0);
-  bag.key({controllerAction:'tabNext',controller:true});now=600;assert.equal(state(bag).nav.sectionId,'kit');
+  // JOURNAL now follows SKILLS; cycling once more wraps to INVENTORY.
+  bag.key({controllerAction:'tabNext',controller:true});now=600;assert.equal(state(bag).nav.sectionId,'journal');
+  assert.equal(sampleControl('bag:tab:journal').travel,1);
+  bag.keyup({controllerAction:'tabNext',controller:true});now=750;assert.equal(sampleControl('bag:tab:journal').travel,0);
+  bag.key({controllerAction:'tabNext',controller:true});now=850;assert.equal(state(bag).nav.sectionId,'kit');
   assert.equal(sampleControl('bag:tab:kit').travel,1);
-  bag.keyup({controllerAction:'tabNext',controller:true});now=750;assert.equal(sampleControl('bag:tab:kit').travel,0);bag.exit();
+  bag.keyup({controllerAction:'tabNext',controller:true});now=1000;assert.equal(sampleControl('bag:tab:kit').travel,0);bag.exit();
 });

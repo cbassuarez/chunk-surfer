@@ -4,6 +4,29 @@ const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(
 const clamp = (value, low, high) => Math.max(low, Math.min(high, finite(value)));
 const lineKey = line => `${line?.voice || 'tower ghost'}\n${String(line?.text || '').trim()}`;
 
+export const TOWER_WARNING_ENVELOPE_WINDOW_SECONDS = .024;
+
+// Read the actual selected voice PCM at its retained transport offset. There
+// is no analyser on another bus, invented syllable clock or render-time sine.
+// heldValue is the same frozen PCM sample for a paused body's pose; active
+// value remains zero when that source is not actually running.
+export function towerWarningPcmEnvelope(pcm, offset = 0, { active = false, lineId = null } = {}) {
+  const available = !!pcm?.samples?.length && Number.isFinite(pcm.sampleRate) && pcm.sampleRate > 0;
+  const duration = available ? pcm.samples.length / pcm.sampleRate : 0;
+  const seconds = clamp(offset, 0, duration), end = available ? Math.min(pcm.samples.length, Math.floor(seconds * pcm.sampleRate)) : 0;
+  const start = available ? Math.max(0, end - Math.ceil(pcm.sampleRate * TOWER_WARNING_ENVELOPE_WINDOW_SECONDS)) : 0;
+  let power = 0, peak = 0;
+  for (let i = start; i < end; i++) {
+    const sample = finite(pcm.samples[i]); power += sample * sample; peak = Math.max(peak, Math.abs(sample));
+  }
+  const rms = end > start ? Math.sqrt(power / (end - start)) : 0;
+  const heldValue = clamp(rms * 4, 0, 1), running = available && active === true && seconds < duration;
+  return { available, active: running, source: 'pcm', lineId, offset: seconds,
+    windowSeconds: TOWER_WARNING_ENVELOPE_WINDOW_SECONDS,
+    rms: running ? rms : 0, peak: running ? peak : 0, value: running ? heldValue : 0,
+    heldValue, sampledRms: rms, sampledPeak: peak };
+}
+
 // One physical speaker in the street. Speech is PCM routed through the existing
 // SFX destination, without the dialog scene, subtitle band, recorder or input
 // ownership. The world runtime alone selects the current line.
@@ -145,7 +168,12 @@ export function createTowerWarningAudio({ getAudio = () => null, renderVoice = r
     return snapshot();
   }
   function snapshot() {
-    return { lineId: current?.id ?? null, ready: !!current?.pcm, done: !!current?.done, offset: cursor(), provider: current?.pcm?.provider ?? null,
+    const offset = cursor();
+    const envelope = towerWarningPcmEnvelope(current?.pcm, offset, {
+      active: !!voice && !control.paused && control.enabled && !current?.done && !current?.error,
+      lineId: current?.id ?? null,
+    });
+    return { lineId: current?.id ?? null, ready: !!current?.pcm, done: !!current?.done, offset, provider: current?.pcm?.provider ?? null, envelope,
       error: current?.error ?? null, active: !!voice, paused: !!control.paused, enabled: !!control.enabled, destroyed,
       source: voice?.position || null, relativeXYZ: voice?.relativeXYZ || null, spatialisation: voice?.spatialisation || null };
   }

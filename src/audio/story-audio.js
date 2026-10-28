@@ -113,6 +113,7 @@ const pending = new Map();
 
 let soundtrack = null; // { src, gain, startedAt, stopping, track }
 let openingBed = null; // { src, hp, lp, gain, startedAt, downbeatAt, stopping, target }
+let openingBedWanted = false, openingBedGeneration = 0;
 let typing = null;     // { gain, hp, lp, active, timer, targetGain }
 let menuHiss = null;
 
@@ -255,10 +256,17 @@ export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at =
 
 export function startOpeningSceneBed({ gain = OPENING_BED_GAIN, fade = 1.8 } = {}) {
   if (!ctx || !bus || openingBed) return openingBed;
+  openingBedWanted = true;
+  const generation = openingBedGeneration;
   const url = STORY_AUDIO.openingBed;
   const buf = buffers.get(url);
   if (!buf) {
-    preload(url).then(() => { if (!openingBed) startOpeningSceneBed({ gain, fade }); });
+    // Decoding may finish on the far side of the lodge or a stopped run. A
+    // later explicit start can reuse the buffer, but an older request cannot.
+    preload(url).then((loaded) => {
+      if (loaded && openingBedWanted && generation === openingBedGeneration && !openingBed)
+        startOpeningSceneBed({ gain, fade });
+    });
     preload(STORY_AUDIO.title);
     return null;
   }
@@ -331,6 +339,8 @@ export function setOpeningSceneBedProximity(profile = {}, { fade = 0.16 } = {}) 
 }
 
 export function stopOpeningSceneBed({ fade = 0.2 } = {}) {
+  openingBedWanted = false;
+  openingBedGeneration++;
   if (!openingBed) return;
   const b = openingBed;
   openingBed = null;
@@ -345,6 +355,8 @@ export function stopOpeningSceneBed({ fade = 0.2 } = {}) {
 }
 
 function hardStopOpeningSceneBedAt(at) {
+  openingBedWanted = false;
+  openingBedGeneration++;
   if (!ctx || !openingBed) return false;
   const b = openingBed;
   openingBed = null;

@@ -20,6 +20,7 @@ function section(from, to) {
   return main.slice(begin, end);
 }
 const production = [
+  section('function cancelRecordingPressureAudio(){','\nfunction recordingPressureFrame('),
   section('function clearSourceRuntime(', '\nfunction usingStairAnomaly('),
   section('let elsewhereBeds=null;', '\n// PUT BACK WRONG.'),
   section('var stationEdgeBed=null;', '\n// A DOOR, LOOKED AT'),
@@ -85,7 +86,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
   const line = createPayphoneLine({ context: audio.context, destination: { name: 'dialog' }, box: destination });
   const stationNodeStart = audio.nodes.length;
   const timers = new Map(), render = {}, rings = [], thoughts = [], commits = [], speech = [], events = [], steps = [], realmMoves = [], cueCalls = [];
-  let serial = 0, releases = 0, composure = 4, savedWalk = copy(walk), currentFrame = copy(frame), blocksWorld = false, blocksInput = false;
+  let serial = 0, releases = 0, coastalHandoffs=0, composure = 4, savedWalk = copy(walk), currentFrame = copy(frame), blocksWorld = false, blocksInput = false;
   let localRealm = realm ? normalizeStationRealm(realm) : null, lastReturn = null;
   let look = { yaw: 0, pitch: 0 }, compositorRestores = 0;
   const receipts = [...earned];
@@ -140,8 +141,16 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
   });
   const sandbox = {
     chunkSurfRuntime: runtime, actx: audio.context, sfxGain: destination, master: null,
+    sourceDemolitionAudio: null, sourceEarthfallAudio:null,
+    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    chapelChoirAudio:null,chapelChoirAudioFrame:null,chapelChoirOcclusionKey:'',chapelChoirOcclusion:new Map(),
+    chapelServiceAudio:null,chapelServiceAudioFrame:null,chapelMurmurAudio:null,chapelServiceOcclusionKey:'',chapelServiceOcclusion:new Map(),
+    brendanBellAudio:null,brendanSoundFrame:null,brendanSoundOcclusionKey:'',brendanSoundOcclusion:new Map(),
+    renderMove: null,
+    controllerGameplayAxes: () => ({ moveX: 0, moveY: 0, turnX: 0, lookY: 0 }),
     R3: renderer, px: 0, py: 0, CELL: 1, SOURCE_CHAPEL_OUTSKIRTS,
     RENDERER: '3d', keysDown: new Set(), keyboardMotionAxes,
+    beginCoastalMemoryJourney:()=>{coastalHandoffs++;return true;},
     CONTROLLER: { controllerMotionAxes: () => ({ moveX: 0, moveY: 0 }) },
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     CHUNK_SURF_PHASE: { CHAPEL_OUTSKIRTS: 'chapel-outskirts' }, createElsewhereBeds, advanceStationWalk,
@@ -172,6 +181,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     metronomeFieldRuntime: null, plantPipeRuntime: null, stopListeningGut: null, stopListeningAudioFrame: null, personalWindowEffects: { end: noOp },
     RT: { footstep: (...args) => steps.push(args), setBed: noOp }, STORY: { stopAll: noOp }, STAB: { reportThreat: noOp },
     mischiefNextAtMs: 0, mischiefQuietUntilMs: 0,
+    recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>events.push('recording-pressure-reset')},
     setupHandoffBlocksMovement: () => false, sourceDoorArrival: null, storyMode: false,
     stairTriggerCrossed: () => false, performance: { now: () => time * 1000 },
     sourceCameraPatch: () => ({}), lastMoveAtMs: 0, stepCount: 0,
@@ -193,7 +203,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
   { filename: 'src/main.js' });
   return { api: sandbox.api, sandbox, audio, stationNodeStart, runtime, render, rings, thoughts, commits, speech, timers, save, events, steps, realmMoves, cueCalls,
     get time() { return time; }, get releases() { return releases; }, get walk() { return savedWalk; }, get composure() { return composure; },
-    get restores() { return compositorRestores; }, get realm() { return localRealm; },
+    get restores() { return compositorRestores; }, get coastalHandoffs() { return coastalHandoffs; }, get realm() { return localRealm; },
     setLook(value) { look = { ...look, ...value }; },
     blockWorld(value) { blocksWorld = value; }, blockInput(value) { blocksInput = value; }, line };
 }
@@ -230,7 +240,10 @@ test('a run reset immediately stops station beds already fading from a route exi
   h.api.syncStationEdgeSound(null);
   assert.ok(h.timers.size > 0, 'the route exit should first have scheduled its normal tail');
   assert.ok(h.audio.nodes.slice(h.stationNodeStart).some((node) => node.starts && !node.disconnected));
+  let pressureStops=0;for(let i=0;i<2;i++)h.sandbox.recordingPressureVoices.add({stop:()=>pressureStops++});
   h.api.resetRunAudio('test-new-run');
+  assert.equal(pressureStops,2);assert.equal(h.sandbox.recordingPressureVoices.size,0);
+  assert.equal(h.events.filter(e=>e==='recording-pressure-reset').length,1,'new run resets the separate recorder-pressure performance');
   assert.equal(h.timers.size, 0, 'new run must cancel the old cleanup timer');
   assert.ok(h.audio.nodes.slice(h.stationNodeStart).every((node) => node.disconnected), 'the old tail still reaches the new run');
   h.api.resetRunAudio('test-repeat'); h.line.destroy();
@@ -578,14 +591,17 @@ test('local attention reaches the real audio mix and pause, hidden and blocked s
   h.line.destroy();
 });
 
-test('the older tower lock-in still finishes its virtual walk into the school hall', () => {
+test('the old tower lock-in now hands off to coastal memory before the unfinished personal route', () => {
   const h = harness({ walk: { kind: 'lock-in', progress: .999, windowAt: null, done: false, forward: [0, -1] },
     frame: { id: 'tower-lock-in', lockIn: true, forward: [0, -1] } });
   h.api.syncStationErrand(h.runtime.doorCrossingFrame());
   h.api.step(0, -1); h.api.tickHomeWalk();
-  assert.equal(h.runtime.enteredLand, 'school-hall');
-  assert.equal(h.save.flags['station.lockIn.seen'], true);
-  assert.equal(h.walk, null);
-  assert.equal(h.sandbox.px, 5); assert.equal(h.sandbox.py, 6);
+  assert.equal(h.coastalHandoffs,1,'the coast handoff is requested exactly once');
+  assert.equal(h.runtime.enteredLand,undefined,'the unfinished personal route cannot teleport directly to the school hall');
+  assert.equal(h.save.flags['station.lockIn.seen'],true);
+  assert.equal(h.walk,null);
+  assert.equal(h.sandbox.px,0);assert.equal(h.sandbox.py,0,'a scene owns the transition, not the old coordinate setter');
+  h.api.syncStationErrand(h.runtime.doorCrossingFrame());
+  assert.equal(h.coastalHandoffs,1,'ordinary station synchronization cannot replay the coast handoff');
   h.line.destroy();
 });

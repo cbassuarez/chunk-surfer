@@ -1,3 +1,5 @@
+import {playRecordingPressure,recordingPressureCue} from '../audio/recording-pressure.js';
+import {makeTapeDamage,normalizeTapeDamage,tapeDamageEnvelope,tapeDamageGainAt,takeHasUsableWork} from './tape-damage.js';
 import { TOWER_PERSONAL_CUE, playTowerPersonalRecording } from '../audio/tower-personal-recording.js';
 import { COASTAL_MEMORY_CUE, playCoastalMemoryRecording } from '../audio/coastal-memory.js';
 import { decodeSourceDriveMedia, normalizeSourceDriveMedia, SOURCE_DRIVE_CAPTURE_KIND, sourceDriveAudioKey } from '../audio/source-drive-recording.js';
@@ -463,6 +465,25 @@ export function forgetTake(roomId) {
   return state.takes.delete(roomId);
 }
 
+// A spill invalidates one physical interval. Its original voices, slate and
+// place on the reel remain available for inspection; this is not the phone's
+// whole-room overwrite and does not erase earlier usable backups.
+export function damageTake(takeId,{damageId,cause='chapel-spill'}={}){
+  const take=state.history.find(t=>t.id===takeId);
+  if(!take)return{ok:false,changed:false,reason:'UNKNOWN_TAKE'};
+  if(normalizeTapeDamage(take.damage,take))return{ok:true,changed:false,takeId:take.id,roomId:take.roomId,damage:{...take.damage},hasBackup:state.history.some(other=>other!==take&&other.roomId===take.roomId&&takeHasUsableWork(other))};
+  if(hasOpenTake())return{ok:false,changed:false,reason:'RECORDER_RUNNING'};
+  if(!takeHasUsableWork(take)||take.continuous||take.authored||take.debug)return{ok:false,changed:false,reason:'NOT_USABLE_ROOM_TAKE'};
+  const damage=makeTapeDamage(take,{damageId,cause});
+  if(!damage)return{ok:false,changed:false,reason:'INVALID_DAMAGE'};
+  if(state.history.some(other=>other!==take&&other.damage?.id===damage.id))return{ok:false,changed:false,reason:'DAMAGE_ID_ALREADY_USED'};
+  if(isPlaying())stopPlayback();
+  take.damage=damage;take.counted=false;
+  const backup=[...state.history].reverse().find(other=>other!==take&&other.roomId===take.roomId&&takeHasUsableWork(other));
+  if(backup)state.takes.set(take.roomId,backup);else state.takes.delete(take.roomId);
+  return{ok:true,changed:true,takeId:take.id,roomId:take.roomId,damage:{...damage},hasBackup:!!backup};
+}
+
 // ── the store, written to disk ───────────────────────────────────────────────
 //
 // `levels` is deliberately dropped: it is the running peak-hold used to compute
@@ -474,13 +495,14 @@ export function serializeTakes() {
     id:t.id,ordinal:t.ordinal,startSeconds:t.startSeconds,endSeconds:t.endSeconds,
     status:t.status||(t.id&&!t.sealed?'abandoned':'accepted'),cleanSeconds:Number(t.cleanSeconds)||0,slate:t.slate?{...t.slate}:null,
     voided:!!t.voided,
+    ...(normalizeTapeDamage(t.damage,t)?{damage:{...normalizeTapeDamage(t.damage,t)}}:{}),
     ...(t.authored ? { authored: true } : {}),
     ...(t.debug ? { debug: true } : {}),
     ...(t.continuous ? { continuous: {...t.continuous}, fieldMetadata:{...(t.fieldMetadata||{})}, fieldEndReason:t.fieldEndReason||null, mediaUnavailable:!!t.mediaUnavailable } : {}),
     roomId: t.roomId,
     at: t.at,
     durationSeconds: t.continuous?Math.max(.01,t.endSeconds-t.startSeconds):t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
-    counted: t.status? t.status==='accepted'&&!t.voided : !t.id||!!t.sealed,
+    counted: t.status? t.status==='accepted'&&!t.voided&&!normalizeTapeDamage(t.damage,t) : !t.id||!!t.sealed,
     migrated: !!t.migrated,
     cell: t.cell ? { x: Number(t.cell.x)||0, y: Number(t.cell.y)||0 } : null,
     contaminated: !!t.contaminated,
@@ -533,8 +555,10 @@ export function loadTakes(saved = []) {
       at: row.at || 0,
       migrated: !!row.migrated,
     };
+    const damage=normalizeTapeDamage(row.damage,take);
+    if(damage){take.damage=damage;take.counted=false;}
     state.history.push(take);state.head=state.end=take.endSeconds;
-    if(['accepted','archived'].includes(take.status)&&!take.voided)state.takes.set(row.roomId,take);
+    if(['accepted','archived'].includes(take.status)&&!take.voided&&!damage)state.takes.set(row.roomId,take);
   }
   return state.takes.size;
 }
@@ -623,7 +647,12 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
   out.gain.linearRampToValueAtTime(1, t0 + Math.min(.8,playbackSeconds*.1));
   out.gain.setValueAtTime(1, t0 + Math.max(playbackSeconds*.5,playbackSeconds-1.2));
   out.gain.linearRampToValueAtTime(0, t0 + playbackSeconds);
-  out.connect(state.bus);
+  if(normalizeTapeDamage(t.damage,t)){
+    const damaged=ctx.createGain(),envelope=tapeDamageEnvelope(t);
+    damaged.gain.setValueAtTime(1,t0);
+    for(const point of envelope)damaged.gain.linearRampToValueAtTime(point.gain,t0+point.at);
+    out.connect(damaged);damaged.connect(state.bus);nodes.push(damaged);
+  }else out.connect(state.bus);
   nodes.push(out);
   const slateAt=t.slate?t0+Math.max(0,t.slate.atSeconds||0):null;
 
@@ -702,6 +731,11 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
     if(event.cueId===TOWER_PERSONAL_CUE){
       const recording=playTowerPersonalRecording({context:ctx,destination:out,when:playbackAt,gain:event.gain});
       if(recording)nodes.push(recording);
+      continue;
+    }
+    if(recordingPressureCue(event.cueId)){
+      const voice=playRecordingPressure({context:ctx,destination:out,cueId:event.cueId,when:playbackAt,gain:event.gain,pan:event.pan});
+      if(voice)nodes.push(voice);
       continue;
     }
     if(state.scheduleDiscrete){state.scheduleDiscrete(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes});continue;}
@@ -830,8 +864,9 @@ export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYB
   const lateChange = take.guest
     ? clamp01((elapsedSec - PLAYBACK.guestDelaySec) / Math.max(.01, PLAYBACK.guestRiseSec))
     : 0;
-  const signalLeft = clamp01(signalBase * (.68 + .23 * Math.sin(phase)) + lateChange * .19);
-  const signalRight = clamp01(signalBase * (.70 + .21 * Math.sin(phase * .83 + 1.17)) + lateChange * .22);
+  const damageGain=tapeDamageGainAt(take,elapsedSec);
+  const signalLeft = clamp01(signalBase * (.68 + .23 * Math.sin(phase)) + lateChange * .19)*damageGain;
+  const signalRight = clamp01(signalBase * (.70 + .21 * Math.sin(phase * .83 + 1.17)) + lateChange * .22)*damageGain;
   return {
     roomId: String(take.roomId || ''),
     recordedAt: Math.max(0, Number(take.at) || 0),

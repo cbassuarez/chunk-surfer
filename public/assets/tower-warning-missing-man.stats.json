@@ -1,0 +1,260 @@
+{
+  "source": "tools/chunk_surfer/characters/build-tower-warning-missing-man.py",
+  "sourceAsset": "public/assets/outskirts-characters.glb",
+  "sourceSha256": "80bfb9ca094946ce6f5d6496caf78a0d99846fd3e8477d09a3363c0bfa6ea114",
+  "bytes": 8511152,
+  "sha256": "fdf0a81604693db19298977a37956b690232b272038c62ae65ae5a010ac5a8c4",
+  "blender": "4.5.3 LTS",
+  "units": "metres",
+  "forward": "-Z",
+  "heightM": 1.83872569183708,
+  "heightFitBaked": 0.9737891028085051,
+  "mesh": "tower_warning_missing_man",
+  "bones": [
+    "pelvis",
+    "spine_lower",
+    "spine_mid",
+    "spine_upper",
+    "chest",
+    "neck",
+    "head",
+    "jaw",
+    "clavicle_L",
+    "upperarm_L",
+    "forearm_L",
+    "hand_L",
+    "thumb_L",
+    "index_L",
+    "middle_L",
+    "ring_L",
+    "little_L",
+    "clavicle_R",
+    "upperarm_R",
+    "forearm_R",
+    "hand_R",
+    "thumb_R",
+    "index_R",
+    "middle_R",
+    "ring_R",
+    "little_R",
+    "thigh_L",
+    "shin_L",
+    "foot_L",
+    "toe_L",
+    "thigh_R",
+    "shin_R",
+    "foot_R",
+    "toe_R"
+  ],
+  "materials": [
+    "warning_negative_core",
+    "warning_hand_skin",
+    "warning_boot_leather",
+    "warning_coat_wool",
+    "warning_lining",
+    "warning_felt_trilby",
+    "warning_ribbon",
+    "warning_cigarette_filter",
+    "warning_cigarette_paper",
+    "warning_ash",
+    "warning_ember"
+  ],
+  "clips": {
+    "hold": "warning_hold",
+    "smoke": "warning_smoke",
+    "walk": "warning_walk",
+    "depart": "warning_depart"
+  },
+  "durations": {
+    "hold": 1.1,
+    "smoke": 2.8,
+    "walk": 1.1,
+    "depart": 1.05
+  },
+  "gait": {
+    "strideMetres": 1.168546923370206,
+    "qualification": "Retained authored1.2m full-cycle source stride, uniformly height-fitted; actual planted-foot sampling must validate before visual acceptance."
+  },
+  "rig": {
+    "head": {
+      "bone": "head",
+      "yawAxis": [
+        1.3991210412456212e-09,
+        0.9997287392616272,
+        0.023292304947972298
+      ]
+    },
+    "neck": {
+      "bone": "neck",
+      "yawAxis": [
+        4.986841517506946e-08,
+        0.9504997730255127,
+        0.31072521209716797
+      ]
+    },
+    "chest": {
+      "bone": "chest",
+      "yawAxis": [
+        9.274901735523144e-09,
+        0.9503397941589355,
+        0.31121423840522766
+      ]
+    }
+  },
+  "cigarette": {
+    "baseBindMeshGame": [
+      0.5104107592028219,
+      1.0479740796546875,
+      -0.3022016057911056
+    ],
+    "emberBindMeshGame": [
+      0.5746939427012451,
+      1.087653573818259,
+      -0.338348177978245
+    ],
+    "axisBindMeshGame": [
+      0.767598569393158,
+      0.47380855679512024,
+      -0.4316222667694092
+    ],
+    "gripBindMeshGame": [
+      0.5208754472953968,
+      1.0544334970975666,
+      -0.3080859395949218
+    ],
+    "handLocalBlender": [
+      0.040236152708530426,
+      0.16295726597309113,
+      0.04608801379799843
+    ],
+    "joint": "hand_R",
+    "socketQualification": "Rigid hand-weighted prop fitted between actual source index/middle chains; arm motion baked, no runtime hand Euler override."
+  },
+  "missingMan": {
+    "version": 1,
+    "holdClip": "warning_hold",
+    "gestureClip": "warning_smoke",
+    "walkClip": "warning_walk",
+    "walkDurationSec": 1.1,
+    "strideM": 1.168546923370206,
+    "gestureDurationSec": 2.8,
+    "departureClip": "warning_depart",
+    "departureDurationSec": 1.05,
+    "anchors": {
+      "ember": {
+        "joint": "hand_R",
+        "position": [
+          0.5746939427012451,
+          1.087653573818259,
+          -0.338348177978245
+        ]
+      },
+      "cigaretteBase": {
+        "joint": "hand_R",
+        "position": [
+          0.5104107592028219,
+          1.0479740796546875,
+          -0.3022016057911056
+        ]
+      },
+      "face": {
+        "joint": "head",
+        "position": [
+          0.0,
+          1.6603104202885013,
+          -0.17041309299148838
+        ]
+      }
+    },
+    "gazeAxes": {
+      "head": [
+        1.3991210412456212e-09,
+        0.9997287392616272,
+        0.023292304947972298
+      ],
+      "neck": [
+        4.986841517506946e-08,
+        0.9504997730255127,
+        0.31072521209716797
+      ],
+      "chest": [
+        9.274901735523144e-09,
+        0.9503397941589355,
+        0.31121423840522766
+      ]
+    },
+    "morphs": {
+      "coatSettle": "coat_settle",
+      "collarSettle": "collar_settle"
+    },
+    "anchorSpace": "bind-mesh game coordinates; transform by sampled world*inverseBind bone palette",
+    "heightM": 1.83872569183708,
+    "heightFitBaked": 0.9737891028085051,
+    "rootTransform": "identity; scale baked in vertices/rest joints/animation translations"
+  },
+  "meshes": {
+    "tower_warning_missing_man": {
+      "vertices": 40283,
+      "triangles": 73668,
+      "primitives": 11
+    }
+  },
+  "qualityLimits": [
+    "No actor mocap; authored FK/IK performance from retained anatomical source.",
+    "Actual game final dither, costume clipping, cigarette contact, stride and negative-core validation pending.",
+    "Negative hull keeps original concealed outfit geometry black; only bespoke outercoat/hat/hand/boots/prop materials receive light."
+  ],
+  "embeddedTextureInspection": {
+    "warning_coat_wool": {
+      "imageSize": [
+        512,
+        512
+      ],
+      "encodedSrgbMean": [
+        0.4234911301556756,
+        0.41947420905618105,
+        0.40290397195255057
+      ],
+      "decodedLinearReflectanceMean": [
+        0.14993099970275045,
+        0.14692793068655247,
+        0.13491265299328076
+      ],
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "warning_felt_trilby": {
+      "imageSize": [
+        512,
+        512
+      ],
+      "encodedSrgbMean": [
+        0.3572697209376915,
+        0.3523054235121783,
+        0.33509822172277115
+      ],
+      "decodedLinearReflectanceMean": [
+        0.10486475613228541,
+        0.10185973925314025,
+        0.09183571809587508
+      ],
+      "baseColorFactor": [
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "boundedFinish": {
+    "hat": "Front centre dent25mm and paired crown pinches20mm, inward only.",
+    "coat": "Six broad inward drape valleys up to9mm with causal skirt falloff; outer silhouette never expanded.",
+    "lapels": "Four physical roll rings inside original unchanged border/fan envelope.",
+    "grip": "Only ring/little MCPs flex35degrees about validated palm frame; index/middle/thumb/cigarette/hand socket unchanged.",
+    "scale": "Fixed validated .9737891028085051 so crown lowering cannot rescale contacts/gait."
+  }
+}

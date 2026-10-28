@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { access } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
@@ -52,7 +52,8 @@ const devConfig=JSON.stringify({
 });
 
 console.log(withStableDiffusion ? 'Starting the current game with the local critical lens.' : 'Starting the current game with Stable Diffusion off by default.');
-console.log(`Build: 0.2.0 · frontend: http://127.0.0.1:${frontendPort}`);
+const {version}=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
+console.log(`Build: ${version} · frontend: http://127.0.0.1:${frontendPort}`);
 if (withStableDiffusion) console.log('The first 10 material textures load before the 22-second opening; the remaining banks continue in the background.');
 
 const lensChild = withStableDiffusion ? spawn(lens, [], {

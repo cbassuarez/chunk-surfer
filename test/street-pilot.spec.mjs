@@ -10,6 +10,7 @@ import {CELL,ZONE} from '../src/data/floorplan/legend.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
 import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
 import {exteriorAmbientInstances,exteriorAmbientSnapshot,exteriorHeadlightLights} from '../src/game/exterior-ambient.js';
+import {busGraffitiInstance} from '../src/render/bus-graffiti.js';
 import {
   createStreetPilotClock,streetPilotSignalFrame,streetPilotVehicleSchedule,
   streetPilotVehicleFrame,streetPilotSafetyFrame,streetPilotVehicleInstances,
@@ -114,14 +115,14 @@ test('matrix wheel centres are fixed to the body and rotation follows travelled 
 });
 
 test('blackout submits no pedestrian lamp; red+amber submits both vehicle lamps',()=>{
-  assert.equal(streetPilotStaticInstances().length,7);
+  assert.equal(streetPilotStaticInstances().length,9);
   assert.equal(streetPilotSignalInstances({timeSec:8}).filter(i=>i.signalKind==='pedestrian').length,0);
   const redAmber=streetPilotSignalInstances({timeSec:18}).filter(i=>i.signalKind==='vehicle');
   assert.equal(redAmber.length,8);
   assert.deepEqual([...new Set(redAmber.map(i=>i.signalAspect))].sort(),['amber','red']);
   const green=streetPilotSignalInstances({timeSec:1});
   assert.equal(green.filter(i=>i.signalKind==='pedestrian'&&i.signalAspect==='green').length,2);
-  assert.equal(new Set([...streetPilotStaticInstances(),...green].map(i=>i.id)).size,13);
+  assert.equal(new Set([...streetPilotStaticInstances(),...green].map(i=>i.id)).size,15);
   for(const time of[1,18,20,49])for(const lamp of streetPilotSignalInstances({timeSec:time})){
     assert.equal(lamp.emissive.length,4);assert.ok(lamp.emissive.every(Number.isFinite));
     near(lamp.emissive[3],{red:.65,green:.48,amber:.58}[lamp.signalAspect]);
@@ -301,7 +302,7 @@ test('production main advances the protected clock and submits bodies, aspects a
     PROPS:{setColliderGroupEnabled:(group,on)=>calls.colliders.push([group,on])},
     exteriorAmbientInstances:args=>{calls.props.push(args);return exteriorAmbientInstances(args);},
     exteriorHeadlightLights:args=>{calls.lights.push(args);return exteriorHeadlightLights(args);},
-    streetPilotStaticInstances,streetPilotSignalInstances};
+    streetPilotStaticInstances,streetPilotSignalInstances,busGraffitiInstance};
   runInNewContext(advance,context);near(clock.time(),21.1);
   runInNewContext(`${timeHelperSource()};${collider};let count=0;const doorDynamicCombined=[];let submittedLights=[];
     {${submissionSource()}}{${lightingSource()};submittedLights=trafficLights;}
@@ -312,6 +313,9 @@ test('production main advances the protected clock and submits bodies, aspects a
   assert.equal(context.result.lights.length,4);
   const body=context.result.instances.find(i=>i.id==='exterior-ambient:north-night-car');
   near(body.x,streetPilotVehicleFrame('north-night-car',clock.time()).x);
+  const bus=context.result.instances.find(i=>i.mesh==='ambient_late_bus');
+  const paint=context.result.instances.find(i=>i.paintOf===bus.id);
+  assert.ok(paint);near(paint.x,bus.x);near(paint.z,bus.z);near(paint.yaw,bus.yaw);
   for(const lamp of streetPilotSignalInstances({timeSec:clock.time()}))
     assert.ok(context.result.instances.some(i=>i.id===lamp.id),'aspects use the body clock');
 });
@@ -333,12 +337,13 @@ test('actual optional-pack loader rejection and main readiness gate retain legac
     exteriorPeopleClock:71,crowdReady:false,exteriorAmbientPeopleInstances:v=>[v],
     R3:{r3dStreetPilotReady:()=>false},ZONE,zone:ZONE.street,logicalY:0,timeSec:71,
     getSave:()=>({settings:{shake:'full'}}),exteriorAmbientInstances,
-    streetPilotStaticInstances,streetPilotSignalInstances,
+    streetPilotStaticInstances,streetPilotSignalInstances,busGraffitiInstance,
     PROPS:{setColliderGroupEnabled:(_group,on)=>enabled.push(on)}};
   const collider=mainSource.match(/PROPS\.setColliderGroupEnabled\('street-pilot',streetPilotTime\(\)!==null\);/)?.[0];
   runInNewContext(`${timeHelperSource()};${collider};let count=0;const doorDynamicCombined=[];
     ${submissionSource()};globalThis.result=doorDynamicCombined;`,context);
   assert.deepEqual(enabled,[false]);
   assert.ok(context.result.some(i=>i.mesh==='city_moving_car'&&i.id==='exterior-ambient:north-night-car'));
+  assert.ok(context.result.some(i=>i.mesh==='ambient_bus_graffiti'));
   assert.ok(!context.result.some(i=>i.mesh.startsWith('street_pilot_')));
 });

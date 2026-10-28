@@ -202,6 +202,9 @@ const G = {
   'Ø': [0b01111, 0b10011, 0b10011, 0b10101, 0b11001, 0b11001, 0b11110],
   'É': [0b00100, 0b11111, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
   'Á': [0b00100, 0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001],
+  // Names and licensed music attributions: retain marks in the 5×7 cell.
+  'Ö': [0b01010, 0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+  'Ç': [0b01110, 0b10001, 0b10000, 0b10000, 0b10001, 0b01110, 0b00110],
   // Roman two: the transport's HELD marker.
   'Ⅱ': [0b11011, 0b01010, 0b01010, 0b01010, 0b01010, 0b01010, 0b11011],
   // Astrological/alchemical marks used as institutional stamps.
@@ -221,7 +224,7 @@ const FALLBACK = {
   '\u00B4': "'", '\u0060': "'",                                     // accents as apostrophes
   // The ROM is upper-case only, so accented lower-case folds to its capital
   // rather than to a bare vowel: the mark is the point of the name.
-  '\u00E9': '\u00C9', '\u00E1': '\u00C1',
+  '\u00E9': '\u00C9', '\u00E1': '\u00C1', '\u00F6': '\u00D6', '\u00E7': '\u00C7',
   '\u00F8': '\u00D8', '\u2212': '-', '\u203A': '\u203A',
 };
 

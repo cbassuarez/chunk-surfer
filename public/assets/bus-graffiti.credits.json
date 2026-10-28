@@ -1,0 +1,7 @@
+{
+  "pack": "bus-graffiti.glb",
+  "author": "Chunk Surfer project",
+  "license": "Original project artwork",
+  "sha256": "2cc6640a31120564abf762b88ac78c7c747b32aa0ce454a1d2cd8f7fcf107442",
+  "source": "tools/chunk_surfer/build-bus-graffiti.mjs"
+}

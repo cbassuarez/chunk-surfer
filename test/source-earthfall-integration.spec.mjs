@@ -6,8 +6,10 @@ import {createSourceSpaceRuntime} from '../src/game/source-space-runtime.js';
 import {buildChunkSurfGodPreset,CHUNK_SURF_GOD_PRESET} from '../src/game/chunk-surf-god.js';
 import {normalizeChunkSurfState} from '../src/game/chunk-surf-state.js';
 import {freshSourceEarthfall,normalizeSourceEarthfall} from '../src/game/source-earthfall.js';
+import {SOURCE_EARTHFALL as C} from '../src/data/source-earthfall.js';
 import {sourceEarthfallNeeded} from '../src/game/source-earthfall-entry.js';
 import {createSourceEarthfallScene} from '../src/game/source-earthfall-scene.js';
+import {continuationFromEarthfall,sourceContinuationEntranceOffset} from '../src/game/source-continuation-entry.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const initial=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL,{seed:4417}).state;
@@ -25,9 +27,10 @@ function host(){
  const h={chunkSurfRuntime:runtime,sourceContinuationScene:null,sourceContinuationRenderer:null,
   sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:trace,
   sourceDriveSession:null,sourcePubScene:null,hushRunActive:false,paused:false,
-  REC:{isRecording:()=>false,isListening:()=>false},PB:{isPlaying:()=>false},
+  REC:{isRecording:()=>false,isListening:()=>false,saveRecState:()=>copy(data.rec||{}),lightOn:()=>true,batteryLevel:()=>1,drainLight:()=>false,toggleLight:()=>false},PB:{isPlaying:()=>false},
+  sourcePresentationTorch:()=>({on:true,look:{power:.5,reach:.5}}),flagTest:()=>false,itemLost:()=>false,CUES:{CUE:{light:'light'},playCue(){}},
   document:{hidden:false,hasFocus:()=>true},r3dCache:{},px:0,py:0,renderMove:null,motionRig:null,trail:[],
-  freshSourceEarthfall,normalizeSourceEarthfall,sourceEarthfallNeeded,createSourceEarthfallScene,
+  freshSourceEarthfall,normalizeSourceEarthfall,sourceEarthfallNeeded,createSourceEarthfallScene,continuationFromEarthfall,
   createSourceEarthfallRenderer:()=>({initialize:async()=>true,ready:()=>true,
     render:s=>{rendered.push(copy(s));return true;},dispose:()=>{if(disposed)return false;disposed=true;disposals++;return true;}}),
   createSourceEarthfallAudio:()=>audio,
@@ -87,14 +90,18 @@ test('actual main callback pauses, resumes and walks the full physical fall into
  assert.equal(scene.serialize().feet,0);assert.ok(heights.some(y=>y>45&&y<55),'the actual body traversed the middle of100m');
  assert.ok(heights.every((y,i)=>!i||y<=heights[i-1]+1e-8));
  assert.equal(x.continued(),0);assert.deepEqual(x.runtime.state().sourceContinuation,original);
- scene.key({key:'w'});for(let i=0;i<900&&scene.serialize().z>-40.2;i++)scene.update(1/60);scene.keyup({key:'w'});
- scene.key({key:'e'});assert.equal(x.continued(),0,'opening does not transfer');
+ scene.key({key:'w'});for(let i=0;i<1500&&scene.serialize().z>C.passage.exitZ+1.8;i++)scene.update(1/60);scene.keyup({key:'w'});
+ assert.equal(scene.serialize().exitDoor.open,true,'the ordinary walk opens the lower leaves without interaction');
+ assert.equal(x.continued(),0,'an opened door still requires physical crossing');
  for(let i=0;i<60;i++)scene.update(1/60);
  scene.key({key:'w'});for(let i=0;i<90&&!scene.view().leaving;i++)scene.update(1/60);scene.keyup({key:'w'});
  await Promise.resolve();await Promise.resolve();await Promise.resolve();
  assert.equal(x.continued(),1);assert.equal(x.runtime.state().sourceEarthfall.status,'completed');
  assert.equal(x.runtime.state().sourceEarthfall.exitReceipt.delivered,true);
- assert.deepEqual(x.runtime.state().sourceContinuation,original,'the next controller owns its own meters and progress');
+ const transferred=x.runtime.state().sourceContinuation,fallen=scene.serialize();
+ assert.equal(transferred.z,fallen.z+sourceContinuationEntranceOffset().z,'the real body clearance continues through the same doorway instead of snapping to spawn');
+ assert.equal(transferred.x,fallen.x);assert.equal(transferred.feet,fallen.feet);assert.equal(transferred.yaw,fallen.yaw);assert.equal(transferred.pitch,fallen.pitch);
+ assert.equal(transferred.doorOpen['wrong-entry-return'],true);assert.deepEqual(transferred.knowledge,original.knowledge);
  assert.equal(x.disposals(),1);assert.ok(x.rendered.length>100);assert.ok(x.audio.stops>0);
  scene.update(1);assert.equal(x.continued(),1);
 });
@@ -108,4 +115,12 @@ test('the actual entry preserves recording and permits a physical retreat before
  await Promise.resolve();assert.equal(x.returned(),1);assert.equal(x.continued(),0);
  assert.equal(x.runtime.state().sourceEarthfall.status,'returned');assert.equal(x.runtime.state().sourceContinuation.status,'returned');
  assert.equal(x.runtime.state().horizon.entered,false);
+});
+
+test('Earthfall owns ordinary relative look while lowering and has a bounded impact-only control hold',async()=>{
+ const renderer={initialize:async()=>true,render(){return true;},ready:()=>true,dispose(){}},scene=createSourceEarthfallScene({checkpoint:freshSourceEarthfall({runId:'look'}),renderer});
+ assert.equal(scene.allowsLook,false);await scene.initialize();assert.equal(scene.allowsLook,true);assert.equal(scene.lookBy(.3,-.2),true);const before=scene.lookAngles();scene.pause();assert.equal(scene.lookBy(.2,.2),false);assert.deepEqual(scene.lookAngles(),before);scene.resume();assert.equal(scene.lookBy(.2,.2),true);
+ scene.setLook({yaw:0,pitch:0});scene.key({key:'w'});for(let i=0;i<65;i++)scene.update(1/120);scene.keyup({key:'w'});assert.ok(scene.serialize().committed);
+ let sawHold=false;for(let i=0;i<1400&&scene.serialize().phase!=='landed';i++){scene.update(1/120);if(scene.serialize().phase==='fracturing'){assert.equal(scene.allowsLook,true);scene.lookBy(.001,0);}if(scene.serialize().phase==='catching'){sawHold=true;assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.2,.2),false);}}
+ assert.ok(sawHold);assert.equal(scene.serialize().phase,'landed');assert.equal(scene.allowsLook,true);assert.equal(scene.lookBy(.2,.1),true);scene.exit();
 });

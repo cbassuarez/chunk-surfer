@@ -24,6 +24,9 @@ function harness(){
   const context={
     scenes,makeCostumeInspectionScene,CONSERVATORY_ADVERSARY_FLAGS,cancelCostumeInspection,costumeInspectionEligible,freshConservatoryAdversaries,stepConservatoryAdversaries,
     costumeInspectionScene:null,costumeInspectionOrigin:null,costumeInspectionLastExit:null,conservatoryAdversaries:costume,conservatoryAdversaryAudio:null,
+    // Unrelated scene owners are absent in the isolated ordinary autosave.
+    standingTearScene:null,pubRoomAudio:null,sourcePubAudio:null,sourceContinuationAudio:null,
+    sourceContinuationScene:null,coastalMemoryScene:null,getInDriveTeaserOrigin:null,
     storyMode:true,inRogue:true,RENDERER:'3d',paused:false,activeBattleId:null,usingPlan:()=>true,usingSpecialSpace:()=>false,usingStairAnomaly:()=>false,px:origin.x,py:origin.y,stepCount:17,
     basementWatcher:{roomId:'b1',resolved:false},FP:{logicalToPhysical:()=>({renderGroup:'basement'}),toAuthoredCoord:v=>v/2,toRuntimePoint:p=>({x:p.x*2,y:p.y*2})},
     REC:{isRecording:()=>false},R3:{r3dCostumeExchangeStatus:()=>({ready:true}),r3dLookAngles:()=>({...look}),r3dFacing:()=>((Math.round(look.yaw/(Math.PI/2))%4)+4)%4,
@@ -32,6 +35,8 @@ function harness(){
     flagSet:(key,value=true)=>{data.flags[key]=value;},flagGet:key=>data.flags[key],inspectPropTracked:id=>calls.inspections.push(id),PROPS:{savePropState:()=>({inspected:[...calls.inspections]})},
     ensureCtx(){},resetMotionInput:reason=>calls.order.push(reason),ensureInteractionFocus(){},mapHeading:()=>look.yaw,costumeInspectionWorldView:()=>({x:8,y:38,yaw:2.4,pitch:-.8}),
     document:{hidden:false,hasFocus:()=>true},tickRoomMicAcoustics(){},actx:null,sfxGain:null,sightCrossesClosedDoor:()=>false,pushEvent(){},createConservatoryAdversaryAudio:()=>({play(){},dispose(){}}),
+    // The title cleanup covers unrelated worlds with no active owners in this fixture.
+    rememberChapelTapeDemandDeparture(){},retireStandingTear(){},
     saveAcc:0,sourceReturnFlashbackScene:null,sourceDriveSession:null,sourcePubScene:null,saveAcademicGhostClub(){},escape:null,chapelTowerState:()=>({phase:'idle'}),CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'active'},bellTowerRuntime:null,towerBellDirector:null,chunkSurfRuntime:null,sourceRepriseWorldLease:null,hushAudioRuntime:null,
     RADIO:{saveRadioState:()=>({})},saveSourceView:()=>calls.order.push('source-view'),
   };

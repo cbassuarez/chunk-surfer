@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {planPayphoneRoadLoop,PAYPHONE_LOOP_ROUTE} from '../src/game/payphone-road-loop.js';
 import {payphoneLoopHolds,PAYPHONE_PASS,SARAH_PAGE} from '../src/game/payphone.js';
 import {CELL} from '../src/data/floorplan/legend.js';
+import {outskirtsBusInteriorLightMix} from '../src/render/outskirts-bus-weather.js';
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 const copy=x=>JSON.parse(JSON.stringify(x));
 function production(source,name){const a=source.indexOf(`function ${name}(`),b=source.indexOf('\n}',a);assert.ok(a>=0&&b>a,name);return source.slice(a,b+2);}
@@ -72,4 +73,60 @@ test('the host resolves a seam before character capture and preserves occupied g
  assert.ok(branch.indexOf('preparePayphoneRoadLoop();')<branch.indexOf('tickOutskirtsCharacters?.'));
  assert.match(production(main,'syncOutskirtsNight'),/payphoneScene\s*\?\{slate:rain\*\.15,glass:rain/);
  assert.doesNotMatch(production(main,'syncPayphoneRoad'),/Math\.round\(start\.y\)|motionRig=null|trail=\[\]/);
+});
+
+test('actual physical, mirrored and shadow submissions share a stable pattern origin, with ordinary defaults unchanged',()=>{
+ const draw=production(renderer,'drawSourceVoidPhysical');
+ const run=state=>{
+  const calls=[],done={};
+  const array=()=>new Float32Array(16);
+  const env={Math,Number,CELL,outskirtsBusInteriorLightMix,sourceBusLighting:null,camX:3,camY:4,camZ:-900,pitch:0,
+   coastalWaterUniforms:()=>({active:false}),sourceDoorLights:[],sourceVoidPhysicalLightPositions:array(),sourceVoidPhysicalLightColours:array(),sourceVoidPhysicalLightPenetration:array(),sourceVoidPhysicalLightEmergency:array(),sourceVoidPhysicalLightDirections:array(),sourceVoidPhysicalLightConeInner:array(),
+   horizonState:{active:true},unravellingTorchTransmission:()=>1,sourceTowerViewInside:()=>false,stormFlash:0,
+   sourceReflection:{groundY:0},visualEffectsEnabled:()=>true,pixelMeshSettings:{reduceMotion:false},localShadowLight:null,
+   fogTexture:null,fogOrigin:[0,0],FOG_TEX:256,ZONE_TINTS:[],
+   resolveTorchFrame:()=>({}),sourcePortals:[],sourceOpenings:[],sourceTowerView:null,
+   gl:{disable:()=>{},depthMask:()=>{},depthFunc:()=>{}},
+   P3:{prepareCharacterFrame:()=>{},preparePropShadowPass:value=>calls.push(['shadow',value]),renderPropPass:value=>calls.push(['prop',value]),reflectionTargets:()=>({}),propTargets:()=>{throw done;}},
+  };
+  const ctx=vm.createContext(env);vm.runInContext(draw,ctx);
+  try{ctx.drawSourceVoidPhysical(1,{voidState:state,worldYaw:0,torchPower:1,torchReach:10,torchConeInner:.95,torchConeOuter:.8,torchSpill:.05});assert.fail('expected target boundary');}catch(error){if(error!==done)throw error;}
+  assert.equal(calls.length,3,'shared shadow, mirrored material and main material passes are evaluated');
+  return calls;
+ };
+ for(const [state,expected] of [[{},[0,0,0]],[{recordingOriginOffset:{z:-34.4}},[0,0,-34.4]],[{recordingOriginOffset:{x:NaN,y:Infinity,z:-68.8}},[0,0,-68.8]]]){
+  const calls=run(state);for(const [,pass] of calls)assert.deepEqual(copy(pass.patternOriginOffsetMetres),expected);
+  assert.equal(calls[0][1].camZ,-450,'physical shadow origin must not use texture coordinates');
+  assert.equal(calls[1][1].camZ,-450,'physical mirror origin must not use texture coordinates');
+  assert.equal(calls[2][1].camZ,-450,'physical geometry origin must not use texture coordinates');
+ }
+ assert.match(draw,/uniform3fv\(sourceVoidPhysicalU\('uWorldPatternOffset'\),patternOriginOffsetMetres\)/);
+});
+
+test('wet-ground and rain sampling preserve their pre-rebase phase while physical pools remain attached',()=>{
+ const shader=renderer.slice(renderer.indexOf('const SOURCE_VOID_PHYSICAL_FRAG ='),renderer.indexOf('export function r3dSourceVoidPhysicalShader'));
+ assert.match(shader,/patternP=p\+uWorldPatternOffset\.xz/);
+ assert.match(shader,/vnoise\(patternP\*\.32\)/);
+ assert.match(shader,/patternHit=hit\+uWorldPatternOffset\.xz/);
+ assert.match(shader,/rainVolume\(uEyeCells\+uWorldPatternOffset\/\.5,wd,distanceM\)/);
+ assert.match(shader,/length\(p-uPuddle\.xy\)/,'the local lamp pool retains its physical anchor');
+ assert.match(shader,/rel=hit-uDoorA\[k\]\.xy/,'door pools remain relative to actual doors');
+ const delta=PAYPHONE_LOOP_ROUTE.period,before={groundZ:-485.17,rainEyeZ:-970.34,offset:0},after={groundZ:before.groundZ+delta,rainEyeZ:before.rainEyeZ+delta/CELL,offset:-delta};
+ assert.ok(Math.abs((after.groundZ+after.offset)-(before.groundZ+before.offset))<1e-10);
+ assert.ok(Math.abs((after.rainEyeZ+after.offset/CELL)-(before.rainEyeZ+before.offset/CELL))<1e-10);
+ assert.notEqual(after.groundZ,before.groundZ,'the test crosses the old material jump');
+});
+
+test('the road pattern origin survives the uncovered tape-head transition and resets after leaving that continuous world',()=>{
+ const match=main.match(/recordingOriginOffset:(usingSourceSpace\(\)[^\n]+)\n\s*\?([^\n]+),/);
+ assert.ok(match,'the actual frame submission exposes its pattern origin');
+ const origin=new Function('usingSourceSpace','worldView','chunkSurfRuntime',`return ${match[1]}?${match[2]};`);
+ const frame=(active,preTape,turns)=>({horizonFrame:()=>({active,preTape}),payphoneRoadLoopFrame:()=>({shiftMetres:turns*PAYPHONE_LOOP_ROUTE.period})});
+ for(const turns of[1,2,7]){
+  assert.deepEqual(origin(()=>true,null,frame(true,true,turns)),{z:-turns*PAYPHONE_LOOP_ROUTE.period});
+  assert.deepEqual(origin(()=>true,null,frame(true,false,turns)),{z:-turns*PAYPHONE_LOOP_ROUTE.period},'on-tape remnants still belong to the same world');
+ }
+ assert.equal(origin(()=>true,null,frame(false,false,2)),undefined);
+ assert.equal(origin(()=>false,null,frame(true,true,2)),undefined);
+ assert.equal(origin(()=>true,{},frame(true,true,2)),undefined,'an independently owned presentation keeps its own origin');
 });

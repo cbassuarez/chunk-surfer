@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import * as FP from '../src/world/floorplan.js';
+import {conservatory} from '../src/data/floorplan/conservatory.js';
+import {runtimeTree} from '../src/narrative/runtime-content.js';
 
 test('the Scene Dock crossing owns the title but does not spend the missing-door interaction', () => {
   const main = readFileSync('src/main.js', 'utf8');
@@ -223,4 +226,22 @@ test('each trunk offers about a minute of its own before the keys change hands',
     const pass=nodeSeconds(nodes,goto,flags)+nodeSeconds(nodes,vein,flags)+answer+board[0]+board[1];
     assert.ok(pass<=60,`${trunk}: greeting, vein and two topics run ${pass.toFixed(0)}s (budget 60s)`);
   }
+});
+
+
+test('the guard directs the player to the door their real issued key can open',()=>{
+  FP.compile(conservatory.levels,conservatory);FP.resetDoors();
+  const doors=FP.doorState(),front=doors.find(door=>door.id==='front-main'),goods=doors.find(door=>door.id==='dock-grey-exterior');
+  const issued=new Set(['master']);
+  const tryDoor=door=>door.widthAxis==='x'
+    ?FP.interactDoor(door.cx,door.cy+1,[0,-1],issued)
+    :FP.interactDoor(door.cx+1,door.cy,[-1,0],issued);
+  assert.equal(front.keyId,'closure-order');assert.equal(tryDoor(front).why,'locked','the issued master key does not open the closure lock');
+  assert.equal(goods.keyId,'master');assert.equal(tryDoor(goods).ok,true,'the canonical goods pair accepts the key the guard actually handed over');
+  const authored=JSON.parse(readFileSync('content/narrative/conservatory.cold_open_dialogue.story.json','utf8'));
+  const line=authored.nodes.threshold.lines.find(line=>line.id==='threshold.line.foyer');
+  assert.match(line.text,/grey pair/i);assert.match(line.text,/main doors are locked/i);
+  assert.doesNotMatch(line.text,/through the front foyer|longer walk, same yard/i,'a locked alternative cannot be advertised as an available route');
+  const rendered=runtimeTree('conservatory.cold_open_dialogue').threshold.lines.find(entry=>entry.sourceId==='threshold.line.foyer');
+  assert.equal(rendered.text,line.text,'the canonical correction reaches production without an adapter override');
 });

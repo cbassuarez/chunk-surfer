@@ -504,6 +504,140 @@
         "silent transcode",
         "color processed"
       ]
+    },
+    {
+      "id": "mimosa-response",
+      "kind": "video",
+      "path": "window-media/mimosa-response.webm",
+      "aspectRatio": 1.5,
+      "width": 480,
+      "height": 320,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 8,
+        "durationSeconds": 4,
+        "loopDissolveSeconds": 0
+      },
+      "crop": {
+        "x": 80,
+        "y": 40,
+        "width": 480,
+        "height": 320
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "mimosa-original.ogv",
+        "sha256": "097e5de6dae756418ca121e6b8b34475c8c5b37f852aeafad57649516ff5c229",
+        "title": "Mimosa pudica leaves folding when touched 1",
+        "creator": "Brandizzi",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5/",
+        "url": "https://commons.wikimedia.org/wiki/File:Mimosa_pudica_leaves_folding_when_touched_1.ogv",
+        "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Mimosa_pudica_leaves_folding_when_touched_1.ogv",
+        "evidenceFile": "artifacts/window-media-revisit/source-media/mimosa-page.html",
+        "evidenceSha256": "5915853531a7807abd5c71dd5ec0b58f1050af693cfcfa0244323d214632e76e",
+        "delivery": "Original uploader’s Ogg Theora/Vorbis file; production is silent."
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/mimosa-response.webm",
+          "codec": "vp9",
+          "sha256": "97a568969f37b07e8d1b71f58b5db819927946ae5ddb915d8da27f93a12b8580",
+          "bytes": 386272
+        },
+        "mp4": {
+          "path": "window-media/mimosa-response.mp4",
+          "codec": "h264",
+          "sha256": "8bc103b735832d12af91c380ec24b7c09af53505232f639fcb727afd935d552d",
+          "bytes": 464648
+        },
+        "poster": {
+          "path": "window-media/mimosa-response.png",
+          "codec": "png",
+          "sha256": "c4f4ddfecd81a56e17bdff7e61e955fc791ddbd0832461a4dd0bf898e7a610cf",
+          "bytes": 184780
+        }
+      },
+      "modifications": [
+        "single performed gesture excerpt",
+        "spatial crop retaining hand/leaf relationship",
+        "15fps silent transcode",
+        "no loop dissolve or synthetic interpolation"
+      ],
+      "eventNotes": "Inspected source8–12s: hand approach, contact, leaf folding and withdrawal. Relative clip times are approximate visual staging references: approach about1s, contact1.5–2s, folded state about3s. No claim that sound causes this plant response.",
+      "loopPolicy": "Hard source boundary; choreography must obscure or deliberately author the return to the initial state. No baked ghost/dissolved contact."
+    },
+    {
+      "id": "performance-capture",
+      "kind": "video",
+      "path": "window-media/performance-capture.webm",
+      "aspectRatio": 1.3333333333333333,
+      "width": 480,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 66,
+        "durationSeconds": 12,
+        "loopDissolveSeconds": 0
+      },
+      "crop": {
+        "x": 68,
+        "y": 0,
+        "width": 480,
+        "height": 360
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "dickson-original-deposit.mov",
+        "sha256": "1165de13948beb4692bc63430e0a7a0260fe40621d40a8c86f6b538d1e123bf8",
+        "title": "Dickson Experimental Sound Film",
+        "creator": "William Kennedy-Laurie Dickson / William Heise; restoration supplied by Walter Murch and Sean Cullen",
+        "license": "Public domain dedication",
+        "licenseUrl": "https://creativecommons.org/licenses/publicdomain/",
+        "url": "https://archive.org/details/dicksonfilmtwo",
+        "downloadUrl": "https://archive.org/download/dicksonfilmtwo/DicksonFilm_High.mov",
+        "evidenceFile": "artifacts/window-media-revisit/source-media/dickson-archive-metadata.json",
+        "evidenceSha256": "9f4e8a65b377efa37f826fa5ebc95c936d8eb50ae0ffd620bdfb359ecbfed331",
+        "delivery": "Original2006 archive-depositor MOV containing restored historical footage. This is not the unavailable LOC silent master. All sound and explanatory restoration cards removed from production excerpt."
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/performance-capture.webm",
+          "codec": "vp9",
+          "sha256": "61f183abcc8f5139c31726d4ba17dfe785671fcc8bc789c49e73f647afbe32ad",
+          "bytes": 2503193
+        },
+        "mp4": {
+          "path": "window-media/performance-capture.mp4",
+          "codec": "h264",
+          "sha256": "da14c5e9ea5735c20529f2cca399225aaecf682f93317bf62f6035c03d8f9ac7",
+          "bytes": 2600976
+        },
+        "poster": {
+          "path": "window-media/performance-capture.png",
+          "codec": "png",
+          "sha256": "4581f883ee0a2c18a9bcc3974a883a999ce0fe7e09525851b59dabaaac5a9851",
+          "bytes": 144375
+        }
+      },
+      "modifications": [
+        "single coherent historical performance excerpt",
+        "removed delivery side borders by crop",
+        "15fps silent transcode",
+        "no loop dissolve or synthetic interpolation"
+      ],
+      "eventNotes": "Inspected source66–78s is one coherent violin/horn/dance pass; excludes title cards, textual explanations and later repeated restoration pass. Horn is in left half, bow/player at center, dancers at right. No invented synchronized performance or offscreen reel transport.",
+      "loopPolicy": "Hard source boundary; choreography must obscure or deliberately author the return to the initial state. No baked ghost/dissolved contact."
     }
-  ]
+  ],
+  "extensions": {
+    "pressure-performances": {
+      "generatedBy": "scripts/build-window-media-extension.mjs",
+      "sourceDirectory": "artifacts/window-media-revisit/source-media",
+      "assetIds": [
+        "mimosa-response",
+        "performance-capture"
+      ]
+    }
+  }
 }

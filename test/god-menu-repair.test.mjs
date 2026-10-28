@@ -24,6 +24,7 @@ import { CELL } from '../src/data/floorplan/legend.js';
 import { godActionRow, godStopRows, godRowSelectable, validateGodTabs } from '../src/game/god-menu-actions.js';
 import { createGodWarpController, resolveGodHook, godLocationValue } from '../src/game/god-warp.js';
 import { createGodInventory } from '../src/game/god-inventory.js';
+import { authoredCameraFrame } from '../src/render/authored-camera.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
@@ -55,7 +56,7 @@ const contactURL = moduleURL('../src/game/source-contact.js', {
   '../narrative/generated-content.js': 'export const authoringDocumentsById={};',
 });
 const stateURL = moduleURL('../src/game/chunk-surf-state.js', { './source-contact.js': {url:contactURL} });
-const { normalizeChunkSurfState } = await import(stateURL);
+const { normalizeChunkSurfState, CHUNK_SURF_PHASE } = await import(stateURL);
 const PRESETS = await isolatedModule('../src/game/chunk-surf-god.js', { './chunk-surf-state.js': {url:stateURL} });
 const MENU = await isolatedModule('../src/game/god-menu.js', {
   '../render/ui.js': 'export const uiSize=()=>({cols:120,rows:50}),uiText=()=>{},uiScrim=()=>{};',
@@ -138,13 +139,17 @@ function sourceFixture() {
   let saved = { flags: {}, chunkSurf: null }, calls = 0, snaps = 0, prepared = 0, releases = 0;
   const functions = ['godEnterSourceReview', 'godEnterPreTape', 'godEnterBells', 'godEnterChapelOutskirts', 'godEnterHorizon'];
   const ctx = context(functions, {
-    ...PRESETS, normalizeChunkSurfState, REC, PB, godSourceReviewPending: false, godWarpController: null, CHAPEL_OUTER_CHECKPOINT: { x: 3, y: 4, facing: 0 },
+    ...PRESETS, normalizeChunkSurfState, CHUNK_SURF_PHASE, REC, PB, godSourceReviewPending: false, godWarpController: null, CHAPEL_OUTER_CHECKPOINT: { x: 3, y: 4, facing: 0 },
+    CELL,px:0,py:0,trail:[],renderMove:null,motionRig:null,chunkSurfRuntime:null,
     godEnsureTestRun: async () => { prepared++; return true; },
     godReleaseViewForWarp: () => { releases++; },
     flagTest: flag => !!saved.flags[flag], getSave: () => saved,
     saveCommit: patch => { saved = { ...saved, ...patch }; },
-    activateSourceSpace: () => { calls++; }, syncSourceRender: noop, pushEvent: noop, placeHorizonBust: noop,
-    R3: { r3dSnapCameraOnNextFrame: () => snaps++, r3dLoadHorizon: noop },
+    activateSourceSpace: (state,{position}={}) => {
+      calls++;ctx.chunkSurfRuntime={state:()=>state,setPlayerPosition:noop};
+      if(position){ctx.px=position.x;ctx.py=position.y;}
+    }, syncSourceRender: noop, pushEvent: noop, placeHorizonBust: noop,
+    R3: { r3dSnapCameraOnNextFrame: () => snaps++, r3dLoadHorizon: noop, r3dSetLookAngles:noop, r3dFacing:()=>0 },
   });
   return { ctx, saved: () => saved, counts: () => ({ calls, snaps, prepared, releases }) };
 }
@@ -163,11 +168,16 @@ for (const [stops, name, builder] of families) for (const stop of stops) {
       onClose: () => closes++, onError: error => errors.push(error) });
     assert.equal(row.id, stop.id); scene.key({ key: 'Enter' }); scene.key({ key: 'Enter' }); await turn();
     assert.deepEqual(errors, []); assert.equal(closes, 1);
-    assert.deepEqual(f.counts(), { calls: 1, snaps: 1, prepared: 1, releases: 1 });
+    assert.deepEqual(f.counts(), { calls: 1, snaps: stop.across == null ? 1 : 2, prepared: 1, releases: 1 },
+      'lateral pre-tape positioning needs a second final camera snap, other stops remain single-snap');
     const expected = builder(stop.depth, { drankCoffee: false, hasRig: false, marbleEyes: 'returned',
       seed: normalizeChunkSurfState(null).seed || 4417, returnPoint: { x: 3, y: 4, facing: 0 } });
     assert.deepEqual(clone(f.saved().chunkSurf), clone(expected.state));
-    assert.equal(f.saved().px, expected.position.x); assert.equal(f.saved().py, expected.position.y);
+    // Three pre-tape camera review stops deliberately move laterally from
+    // the base fixture; their final saved location is not the initial preset.
+    const finalX=expected.position.x+(stop.across==null?0:stop.across/CELL);
+    assert.equal(f.saved().px, finalX); assert.equal(f.saved().py, expected.position.y);
+    assert.equal(f.ctx.px, finalX);
     assert.equal(f.saved().area, 'source-space');
   });
 }
@@ -412,9 +422,10 @@ test('restoring a pickup preserves its authored contact and does not reinitializ
 test('actual renderer consumes one warp snap; ordinary floor movement stays eased', () => {
   const sentinel = new Error('camera complete'); let time = 1000, resets = 0;
   const ctx = context(['r3dFrame'], {
-    gl: {}, cameraSnapPending: true, lastBeacons: null, lastT: .95,
+    gl: {}, P3:{setDriveStudyFrame:noop},authoredCameraFrame, cameraSnapPending: true, lastBeacons: null, lastT: .95,
     performance: { now: () => time }, drainMarkQueue: noop, horizonState: { active: false },
     vfdPreviousX: 0, vfdPreviousZ: 0, vfdMovement: 0, camX: 0, camZ: 0, camY: -10,
+    towerCaptureInProgress:false,
     yaw: 0, yawTarget: 1, planYaw: 0, planYawTarget: 0, leanEase: .9, pitch: 0, pitchTarget: .1,
     EYE_METERS: 1.65, CELL, r3dResetVfdMemory: () => resets++,
   }, renderer);
@@ -500,7 +511,7 @@ test('production take row grants both single rooms and the work order through th
 
 function mainWarpFixture() {
   let special = true, saved = { area:'source-space', chunkSurf:{active:true}, flags:{} };
-  const events = [];
+  const events = [],notices=[];
   SCENES.clear(); SCENES.push({id:'old-view',worldView:()=>({floorH:-999})});
   const badBelfry = { ...GOD_LOCATION_HOOKS['cathedral-belfry'], at:{x:185,y:241} };
   const ctx = context(['godHookPoint','godReleaseViewForWarp','godWarpToHook'], {
@@ -510,14 +521,15 @@ function mainWarpFixture() {
     px:3000,py:4000,trail:[1],renderMove:{old:true},motionRig:{old:true},
     frontEndSession:{markLive:()=>events.push('live')},frontEndPromotionPending:true,frontEndMismatchPending:true,frontEndPlateOverride:'old',
     activeBattleId:'old-battle',godBattleOpen:true,finaleActive:true,escape:{},endingTimeline:{},activeEndingCutscene:{},pendingContactEndingReturn:{},
+    towerEndingPlayback:null,
     R3:{r3dSetFrontEndPlate:()=>events.push('plate'),r3dSetFacing:()=>events.push('facing'),r3dSnapCameraOnNextFrame:()=>events.push('snap')},
     endBootWeather:noop,SPEECH:{clearSpeech:noop},STORY:{stopTapeHiss:noop},resetMotionInput:noop,setGameplayPaused:noop,
     godRestoreBuildingWorld:()=>{events.push('restore');special=false;saved.chunkSurf.active=false;},
-    godSyncBuildingRender:()=>events.push('render'),syncDoorDynamicProps:noop,pushEvent:noop,
+    godSyncBuildingRender:()=>events.push('render'),syncDoorDynamicProps:noop,pushEvent:message=>notices.push(message),
     saveCommit:patch=>{saved={...saved,...patch};},
     godEnsureTestRun:async()=>true,
   });
-  return {ctx,events,saved:()=>saved,special:()=>special};
+  return {ctx,events,notices,saved:()=>saved,special:()=>special};
 }
 
 test('production warp rejects the old colliding belfry without destroying Source or its scene', async () => {
@@ -527,7 +539,7 @@ test('production warp rejects the old colliding belfry without destroying Source
 });
 
 test('production warp hands off scene, runtime, saved pose and camera only after a valid destination', async () => {
-  const f = mainWarpFixture(); assert.equal(await f.ctx.godWarpToHook('academic-gallery'), true);
+  const f = mainWarpFixture(); assert.equal(await f.ctx.godWarpToHook('academic-gallery'), true, f.notices.join(' | '));
   const expected = FP.toRuntimePoint(GOD_LOCATION_HOOKS['academic-gallery'].at);
   assert.equal(f.ctx.px, expected.x); assert.equal(f.ctx.py, expected.y); assert.equal(f.special(), false);
   assert.equal(SCENES.worldView(), null); assert.equal(SCENES.depth(), 0); assert.equal(f.ctx.finaleActive, false);
@@ -540,7 +552,7 @@ test('production cold warp awaits readiness, then commits the requested pose', a
   const f = mainWarpFixture(); f.ctx.storyMode = false; f.ctx.inRogue = false; let release;
   f.ctx.godEnsureTestRun = () => new Promise(resolve => { release=()=>{f.ctx.storyMode=true;f.ctx.inRogue=true;resolve(true);}; });
   const request=f.ctx.godWarpToHook('studio-b3'); assert.deepEqual(f.events, []); release();
-  assert.equal(await request,true); assert.equal(f.ctx.px,FP.toRuntimePoint(ROOM_CELLS.main_b3).x);
+  assert.equal(await request,true, f.notices.join(' | ')); assert.equal(f.ctx.px,FP.toRuntimePoint(ROOM_CELLS.main_b3).x);
 });
 
 test('building load barrier waits for older builds even when the latest build finishes first', async () => {
@@ -575,6 +587,7 @@ test('actual bag lists granted hardware, tools, keys, named sheets and radio dep
     PLANT,HEAD,REC,RADIO,resolveBagOwnership,resolveBagItemAction,BAG_AUTOMATIC_USE,bagKeyFacts,fieldKitInspection,
     flagTest:id=>!!f.saved().flags[id],getSave:f.saved,CHUNK_SURF_FLAGS:{fork:'source.fork'},playerKeys:f.keys,
     itemLost:()=>false,chapelKeyIsIdentified:()=>false,activeBattleId:null,scenes:{top:()=>null},usingSpecialSpace:()=>false,
+    stationRelics:()=>[],
     SPEECH:{isSpeaking:()=>false},sheetMusicById:id=>SHEET_MUSIC.find(sheet=>sheet.id===id),
   });
   let bag=ctx.bagEquipment();let ids=bag.map(item=>item.id);

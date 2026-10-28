@@ -195,6 +195,14 @@ const closedParent={...entry,nature:'undertaking',commitment:'fulfilled',state:'
   milestones:[{id:'waters',label:'Waters served',state:'done'},{id:'tray',label:'Tray returned',state:'done'}],
   records:[{id:'accepted',label:'Agreement',text:'You agreed to help Iona.'},{id:'returned',label:'Return',text:'Iona took back the tray.'}]};
 
+test('follow-up state does not print the same commitment and stage twice',()=>{
+  const value={...closedParent,followUp:{id:'opener',label:'Bottle opener',commitment:'declined',stage:{id:'declined',label:'Declined'},next:null,outcome:'You declined the errand.'}};
+  const text=prose(value);
+  assert.doesNotMatch(text.toUpperCase(),/DECLINED · DECLINED/);
+  assert.match(text,/FOLLOW-UP: Bottle opener/);
+  assert.match(text,/OUTCOME: You declined the errand/);
+});
+
 test('nature is a factual classification and never inferred from acceptance or completion',()=>{
   for(const [nature,label] of [['undertaking','WORK'],['lead','LEAD'],['record','RECORD']])for(const commitment of ['none','accepted','fulfilled','declined']){
     const value={...entry,nature,commitment};assert.equal(journalPresentation(value).classification,label);

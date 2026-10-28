@@ -37,7 +37,7 @@ export function chapelDressingWorldPlacements(plan, bounds = {}) {
       yaw, scale: p.scale || 1, zone: plan.zoneAt(rx, ry),
       structural: false, noShadow: true,
       kind: p.kind, role: p.role || null, posture: p.posture || null, figure: p.figure || null,
-      row: p.row, bank: p.bank, seat: p.seat, ceilingY: plan.ceilAt(rx, ry),
+      row: p.row, bank: p.bank, seat: p.seat, watchful: !!p.watchful, rapture: p.rapture || null, ceilingY: plan.ceilAt(rx, ry),
       blocks: false, interactive: false,
     });
   }
@@ -85,13 +85,18 @@ export function chapelDressingRenderInstances(placements, {
     if (hidden || !near(p)) continue;
     if (apparitions) { bodies.push(p); continue; }
     const state = stateOf(p);
-    result.push({ ...p, apparitionVariant: APPARITION_RENDER_VARIANT[state], emissive: charge(state) });
+    result.push({ ...p, apparitionVariant: 0, emissive: [0, 0, 0, 0] });
   }
   if (apparitions && !hidden) {
     const frame = apparitions.frame({
       congregation: bodies, ceiling: (ceiling || []).filter(near), eye, timeSec, moving, recording,
       takeProgress, effectsMode, canSee, choir, reducedMotion,
-      variantFor: (p) => APPARITION_RENDER_VARIANT[stateOf(p)], emissiveFor: (p) => charge(stateOf(p)),
+      // Congregants carry actual clothing and skin materials through normal world
+      // lighting. The legacy pressure variants flatten every surface before
+      // material shading, which turned the whole service into uniform dummies.
+      // Ceiling apparitions retain their established spectral treatment.
+      variantFor: (p) => p.role === 'ceiling' ? APPARITION_RENDER_VARIANT[stateOf(p)] : 0,
+      emissiveFor: (p) => p.role === 'ceiling' ? charge(stateOf(p)) : [0, 0, 0, 0],
     });
     for (const instance of frame.instances) result.push(instance);
     onFrame?.(frame);

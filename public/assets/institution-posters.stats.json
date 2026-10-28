@@ -298,7 +298,7 @@
     "src/data/institution-posters.js": "b503806c7fa332b579dada82192ce03b4f9ac81a540476ec24ca4d4764a7bca3",
     "tools/chunk_surfer/build-institution-posters.mjs": "e1eb0b603e7210706324f23d803956c661610d252d89ed1e75157ae1bc9337ca",
     "tools/chunk_surfer/build-institution-posters.py": "b6476a3c1cdd832dd13b322438d9d2cf7035dbe0a67746bd5ea5492ac0b8d003",
-    "tools/chunk_surfer/lettering/rasterize.py": "25049dfe0566d8a05d1e575338cf4497750f01386896c7d215bacb7ea06cbb2b",
+    "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
     "tools/chunk_surfer/lettering/finish-profiles.mjs": "19a61bb88d5a81ecb92541baad1683eeae38c0696f9aab880f7392ca866b1c8a"
   },

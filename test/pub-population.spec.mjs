@@ -90,7 +90,7 @@ test('both exits, the complete public aisle, WC and staff return stay navigable 
   for(const spec of[...EXTERIOR_PUB.doors,EXTERIOR_PUB.wc.door])FP.setDoorOpen(spec.id,true);
   const seen=flood(runtimeAt(EXTERIOR_PUB.doors[0].x,EXTERIOR_PUB.frontWorldZ-.5));
   for(const spec of EXTERIOR_PUB.doors){
-    assert.ok(seen.has(key(runtimeAt(spec.x,EXTERIOR_PUB.frontWorldZ-.5))),`${spec.id} reaches courtyard`);
+    assert.ok(seen.has(key(runtimeAt(spec.x,EXTERIOR_PUB.frontWorldZ-.5))),`${spec.id} reaches street`);
     assert.ok(seen.has(key(runtimeAt(spec.x,EXTERIOR_PUB.frontWorldZ+1))),`${spec.id} reaches room`);
   }
   // Test actual half-metre movement with the player's same .25m body phase;
@@ -100,7 +100,7 @@ test('both exits, the complete public aisle, WC and staff return stay navigable 
     const at=pubWorldFromLocal({x:-1.25,z:rowZ});
     assert.ok(reachableBodies.some(body=>Math.hypot(body.x-at.x,body.z-at.z)<.4),`public aisle rowZ=${rowZ}`);
   }
-  for(const world of[{x:39.75,z:88.45},{x:31.75,z:89.25},{x:31.75,z:88.25}]){
+  for(const world of[{x:-3.4,z:-17.25},{x:-4.2,z:-25.25},{x:-3.2,z:-25.25}].map(pubWorldFromLocal)){
     assert.ok(seen.has(key(runtimeAt(world.x,world.z))),`WC / staff return ${world.x},${world.z}`);
   }
   for(const actor of PUB_ACTORS){

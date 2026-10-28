@@ -210,6 +210,39 @@ test('only presenting a changed journal file acknowledges it; inventory, covered
   scenes.replace({id:'cleanup'});
 });
 
+test('explicit empty run memory starts quietly without inheriting prior-run receipts or tracking',()=>{
+  let entries=[{...lead,commitment:'accepted',stage:{id:'old',label:'Old run'},trackable:true,hasOpenCommitment:true}];
+  const old=makeBagScene({getJournal:()=>entries,map,memory:{},focus:{sectionId:'journal'}});
+  scenes.replace(old);old.render();old.key(key('Enter','Enter'));
+  assert.equal(old.debugState().nav.journalPinnedId,lead.id);
+  old.key(key('Escape','Escape'));
+
+  let memory=null;
+  entries=[{...lead,commitment:'none',stage:{id:'new',label:'New run'},trackable:true,hasOpenCommitment:false}];
+  const options={getJournal:()=>entries,map,onRemember:value=>memory=JSON.parse(JSON.stringify(value))};
+  let fresh=makeBagScene({...options,memory:null,focus:{sectionId:'journal'}});
+  scenes.replace(fresh);fresh.render();
+  assert.equal(fresh.debugState().nav.journalPinnedId,null,'an explicit absent save cannot adopt another run’s pin');
+  assert.equal(fresh.debugState().selected.updated,false,'first presentation establishes a quiet baseline for this run');
+  assert.equal(fresh.debugState().selected.unseen,false);
+  fresh.key(key('Escape','Escape'));
+
+  entries=[{...entries[0],commitment:'accepted',stage:{id:'accepted',label:'A new agreement'},hasOpenCommitment:true}];
+  fresh=makeBagScene({...options,memory,focus:{sectionId:'kit'}});
+  scenes.replace(fresh);fresh.render();
+  assert.equal(fresh.debugState().model.sections.find(s=>s.id==='journal').entries[0].unseen,true,'later owner changes still become unread');
+  fresh.key(key('5','Digit5'));fresh.render();
+  assert.equal(fresh.debugState().selected.updated,true);
+  assert.equal(fresh.debugState().selected.unseen,false);
+  fresh.key(key('Enter','Enter'));fresh.key(key('Escape','Escape'));
+
+  const reopened=makeBagScene({...options,focus:{sectionId:'journal'}});
+  scenes.replace(reopened);reopened.render();
+  assert.equal(reopened.debugState().selected.updated,false,'omitting memory retains the existing same-session receipt fallback');
+  assert.equal(reopened.debugState().nav.journalPinnedId,lead.id);
+  scenes.replace({id:'cleanup'});
+});
+
 test('a new accepted follow-up leaves its parent fulfilled and needs its own tracking choice',()=>{
   const original={...lead,trackable:true,trackingKey:'quest:known:service',hasOpenCommitment:true,commitment:'accepted'};
   const first=buildBagModel({journal:[original],map});

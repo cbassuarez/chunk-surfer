@@ -11,7 +11,7 @@ import {pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
 import {buildArrivalCourt} from '../tools/chunk_surfer/arrival-court-geometry.mjs';
 import {parseGlb} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 import {readExteriorAccessor} from '../tools/chunk_surfer/build-exterior-collision.mjs';
-import {courtyardWalk} from './helpers/exterior-pub-route.mjs';
+import {courtyardWalk,districtPubWalk} from './helpers/exterior-pub-route.mjs';
 FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
 const body=(x,z)=>({x:(50+x)*2-.5,y:(200+z)*2-.5});
 const vec=({x,y})=>[x,y];
@@ -62,7 +62,7 @@ test('ordinary accepted movement still reaches the lodge, both bay stair approac
   const start=[conservatory.spawn.x*2,conservatory.spawn.y*2],window=vec(body(25.75,14.25));
   assert.ok(courtyardWalk(FP,PROPS,start,window),'van-side start reaches unchanged public window');
   for(const target of[body(45.75,4.75),body(45.75,10.75)])assert.ok(courtyardWalk(FP,PROPS,window,vec(target)),'public window reaches real bay stair approach through the actual open gate');
-  for(const id of['pub-west-entry','pub-east-entry']){const p=pubExteriorLogicalAt(id),goal=[Math.floor(p.x*2),Math.floor(p.y*2)];assert.ok(courtyardWalk(FP,PROPS,start,goal),id);}
+  for(const id of['pub-west-entry','pub-east-entry']){const p=pubExteriorLogicalAt(id),goal=[Math.floor(p.x*2),Math.floor(p.y*2)];assert.ok(districtPubWalk(FP,PROPS,start,goal),id);}
   const lodge=CONSERVATORY_PROPS.find(p=>p.id==='yard-booth');
   assert.deepEqual([lodge.x,lodge.y,lodge.yaw],[74,214,-Math.PI/2]);assert.deepEqual(lodge.inspectAt,{x:75.7,y:214});assert.equal(lodge.action,'gate-lodge');
   for(const id of['yard-booth-interior','yard-booth-practicals','yard-booth-glazing','yard-booth-guard-idle','yard-booth-guard-ledger','yard-booth-guard-handoff','yard-booth-handoff']){

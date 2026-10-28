@@ -23,7 +23,7 @@ function layout() {
     bounds:{minX:-6,maxX:11.5,minZ:-4,maxZ:13.5},spawn:{x:2,z:8,feet:4.8,yaw:-Math.PI/2,pitch:0},lightingContext:{ambientColor:[.66,.51,.35],ambientIntensity:.027,captureExposure:1,whitePointScale:1} };
 }
 const state = (extra={}) => ({x:2,z:8,feet:4.8,yaw:-Math.PI/2,pitch:-.2,elapsed:0,opened:[],sourceDoors:[],doorMotion:{},doorOpen:{},...extra});
-function fixture({gate=null,missing=[],packFailure=false,configure=()=>{},getTorch}={}) {
+function fixture({gate=null,authoredGate=null,missing=[],packFailure=false,configure=()=>{},getTorch}={}) {
   const l=layout(),calls=[],catalog=new Set(l.props.map(p=>p.mesh));
   configure(l);
   for(const p of l.props||[])if(p.mesh)catalog.add(p.mesh);
@@ -31,6 +31,7 @@ function fixture({gate=null,missing=[],packFailure=false,configure=()=>{},getTor
   let releases=0;
   const renderer=Object.fromEntries(Object.keys(R3).filter(k=>typeof R3[k]==='function').map(k=>[k,(...args)=>{calls.push({name:k,args});return k==='r3dFrame'?true:undefined;} ]));
   renderer.r3dBasePropsReady=async()=>{calls.push({name:'base',args:[]});return gate?await gate:true;};
+  renderer.r3dAuthoredPropsReady=async()=>{calls.push({name:'authored',args:[]});return authoredGate?await authoredGate:renderer.r3dBasePropsReady();};
   const props={propMeshCatalog:()=>[...catalog],setPressureInstances:value=>calls.push({name:'pressure',args:[value]}),async addPropPack(url){calls.push({name:'pack',args:[url]});if(packFailure)throw Error('door bank unavailable');for(const d of l.doors)for(const m of[d.frameMesh,d.headMesh,d.mesh])if(m)catalog.add(m);}};
   const owner=createSourceFalseReturnRenderer({layout:l,renderer,props,getTorch,resolveAsset:url=>'fixture:'+url,onRelease(){releases++;calls.push({name:'release',args:[]});}});
   return {owner,l,calls,catalog,releases:()=>releases};
@@ -107,6 +108,29 @@ test('late asset readiness cannot acquire a view after disposal and missing orig
   const other=fixture({missing:['door_leaf_practice'],packFailure:true});
   // Use an actual required name so this remains a real asset dependency test.
   other.catalog.delete(other.l.doors[0].mesh);await assert.rejects(other.owner.initialize(),/door bank unavailable/);assert.equal(other.owner.ready(),false);other.owner.dispose();
+});
+
+test('a borrowed structural mesh arriving after base readiness is awaited before acquiring Ellery',async()=>{
+  let resolve;const authoredGate=new Promise(r=>resolve=r);
+  const h=fixture({authoredGate,configure(l){l.props.push({id:'retained-real-stair',mesh:'main_open_well_stair',structural:true,x:2,y:4.8,z:8});}});
+  h.catalog.delete('main_open_well_stair');let complete=false;
+  const pending=h.owner.initialize().then(value=>{complete=true;return value;});
+  await Promise.resolve();await Promise.resolve();
+  assert.equal(complete,false,'base readiness is insufficient for borrowed authored architecture');
+  assert.equal(h.calls.some(c=>c.name==='r3dSetPlan'),false,'incomplete architecture cannot acquire the shared renderer');
+  h.catalog.add('main_open_well_stair');resolve(true);
+  assert.equal(await pending,true);assert.equal(h.owner.ready(),true);h.owner.render(state());
+  assert.ok(h.calls.findLast(c=>c.name==='r3dSetProps').args[0].some(p=>p.mesh==='main_open_well_stair'));
+  assert.equal(h.calls.filter(c=>c.name==='authored').length,1);h.owner.dispose();
+});
+
+test('missing optional decoration is reported and omitted without hiding a colliding obstacle',async()=>{
+  const h=fixture();h.catalog.delete('chair');await h.owner.initialize();assert.equal(h.owner.ready(),true);
+  h.owner.render(state());assert.deepEqual(h.owner.diagnostics().omittedMeshes,['chair']);
+  assert.equal(h.calls.findLast(c=>c.name==='r3dSetProps').args[0].some(p=>p.mesh==='chair'),false);h.owner.dispose();
+  const colliding=fixture({configure(l){l.colliders=[{id:'corridor-chair'}];}});colliding.catalog.delete('chair');
+  await assert.rejects(colliding.owner.initialize(),/original meshes missing: chair/);
+  colliding.catalog.add('chair');assert.equal(await colliding.owner.retry(),true);assert.equal(colliding.owner.ready(),true);colliding.owner.dispose();
 });
 
 test('door pack loading is bounded to actual missing joinery and an invalid layout is rejected before acquisition',async()=>{

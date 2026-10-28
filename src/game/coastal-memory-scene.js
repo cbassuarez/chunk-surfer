@@ -141,7 +141,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   }
   const scene = {
     id: 'coastal-memory', blocksWorld: true, blocksInput: true, suppressesHud: true,
-    allowsLook: false, handlesEscape: false, worldPresentation: 'hidden', lookProfile: 'explore',
+    get allowsLook() { return live() && !noteOpen && state.status === 'active'; }, handlesEscape: false, worldPresentation: 'hidden', lookProfile: 'explore',
     initialize() {
       if (initializing) return initializing;
       save('loading');
@@ -190,6 +190,8 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
         recorderHeld, noteOpen, wreckNoticed: state.wreckNoticed, wreckLightsElapsed: state.wreckLightsElapsed }); }
     },
     view: frame, serialize: snapshot, snapshot, checkpoint: () => save('requested'),
+    lookAngles: () => ({ yaw: state.pose.yaw, pitch: state.pose.pitch }),
+    lookBy(yawDelta = 0, pitchDelta = 0) { return look({ yaw: state.pose.yaw + finite(yawDelta), pitch: state.pose.pitch + finite(pitchDelta) }); },
     setLook: look,
     // Explicit technical placement; ordinary controls never call this seam.
     // It still requires the same visible support, occupancy and height tests.

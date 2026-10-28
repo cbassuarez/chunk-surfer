@@ -1,0 +1,816 @@
+{
+  "version": 1,
+  "inputSha256": "f168ec4f1fef677cc8ff2b0a15bf88f4ee92bfe08553780ba1bc07e4d1550d36",
+  "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
+  "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
+  "pages": [
+    {
+      "name": "lettering-00",
+      "width": 416,
+      "height": 472,
+      "normalWidth": 104,
+      "normalHeight": 118,
+      "ormWidth": 208,
+      "ormHeight": 236,
+      "albedo": "lettering-00-albedo.png",
+      "normal": "lettering-00-normal.png",
+      "orm": "lettering-00-orm.png",
+      "category": "shared compatible print",
+      "process": "per-material fabrication; see entries",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
+      "sharedTiles": 3,
+      "preservesSampledStockChannels": false,
+      "rgbaBaseLevelBytes": 1030848
+    }
+  ],
+  "entries": [
+    {
+      "id": "ellery-public-closure",
+      "page": 0,
+      "uvRect": [
+        0.038461538461538464,
+        0.03389830508474576,
+        0.9615384615384616,
+        0.5169491525423728
+      ],
+      "copy": "PUBLIC ENTRANCE CLOSED\nDELIVERIES & STAFF\nUSE THE WEST SERVICE YARD",
+      "lines": [
+        "PUBLIC ENTRANCE CLOSED",
+        "DELIVERIES & STAFF",
+        "USE THE WEST SERVICE YARD"
+      ],
+      "widthM": 1.18,
+      "heightM": 0.7,
+      "metrics": {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+        "capHeightM": 0.055312499999999994,
+        "stemWidthM": 0.00921875,
+        "coverage": 0.06735425804093567,
+        "boundsPx": [
+          19,
+          37,
+          366,
+          189
+        ],
+        "glyphs": [
+          {
+            "character": "P",
+            "line": 0,
+            "xPx": 17.0,
+            "advancePx": 17.0
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 34.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 52.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 70.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 85.0,
+            "advancePx": 7.0
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 92.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 117.0,
+            "advancePx": 17.0
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 134.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 152.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 167.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 185.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 203.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 221.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 239.0,
+            "advancePx": 17.0
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 263.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 281.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 296.0,
+            "advancePx": 19.0
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 315.0,
+            "advancePx": 17.0
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 332.0,
+            "advancePx": 17.0
+          },
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 349.0,
+            "advancePx": 18.0
+          },
+          {
+            "character": "D",
+            "line": 1,
+            "xPx": 82.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 97.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "L",
+            "line": 1,
+            "xPx": 111.0,
+            "advancePx": 13.0
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 124.0,
+            "advancePx": 6.0
+          },
+          {
+            "character": "V",
+            "line": 1,
+            "xPx": 130.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 144.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "R",
+            "line": 1,
+            "xPx": 158.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 173.0,
+            "advancePx": 6.0
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 179.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 193.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "&",
+            "line": 1,
+            "xPx": 213.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 234.0,
+            "advancePx": 14.0
+          },
+          {
+            "character": "T",
+            "line": 1,
+            "xPx": 248.0,
+            "advancePx": 13.0
+          },
+          {
+            "character": "A",
+            "line": 1,
+            "xPx": 261.0,
+            "advancePx": 15.0
+          },
+          {
+            "character": "F",
+            "line": 1,
+            "xPx": 276.0,
+            "advancePx": 13.0
+          },
+          {
+            "character": "F",
+            "line": 1,
+            "xPx": 289.0,
+            "advancePx": 13.0
+          },
+          {
+            "character": "U",
+            "line": 2,
+            "xPx": 54.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "S",
+            "line": 2,
+            "xPx": 67.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "E",
+            "line": 2,
+            "xPx": 79.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "T",
+            "line": 2,
+            "xPx": 96.5,
+            "advancePx": 11.0
+          },
+          {
+            "character": "H",
+            "line": 2,
+            "xPx": 107.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "E",
+            "line": 2,
+            "xPx": 120.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "W",
+            "line": 2,
+            "xPx": 137.5,
+            "advancePx": 17.0
+          },
+          {
+            "character": "E",
+            "line": 2,
+            "xPx": 154.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "S",
+            "line": 2,
+            "xPx": 166.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "T",
+            "line": 2,
+            "xPx": 178.5,
+            "advancePx": 11.0
+          },
+          {
+            "character": "S",
+            "line": 2,
+            "xPx": 194.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "E",
+            "line": 2,
+            "xPx": 206.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "R",
+            "line": 2,
+            "xPx": 218.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "V",
+            "line": 2,
+            "xPx": 231.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "I",
+            "line": 2,
+            "xPx": 243.5,
+            "advancePx": 5.0
+          },
+          {
+            "character": "C",
+            "line": 2,
+            "xPx": 248.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "E",
+            "line": 2,
+            "xPx": 261.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "Y",
+            "line": 2,
+            "xPx": 278.5,
+            "advancePx": 12.0
+          },
+          {
+            "character": "A",
+            "line": 2,
+            "xPx": 290.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "R",
+            "line": 2,
+            "xPx": 303.5,
+            "advancePx": 13.0
+          },
+          {
+            "character": "D",
+            "line": 2,
+            "xPx": 316.5,
+            "advancePx": 13.0
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "c2414aa86b9c2ecb7b4d96c105ffe44fe558e665e202ff61ef29644b728c3654"
+      },
+      "category": "record",
+      "process": "municipal closure paper in glazed notice case",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 4e-06,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "c2414aa86b9c2ecb7b4d96c105ffe44fe558e665e202ff61ef29644b728c3654",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.095,
+          "minimumNormalPeriod": 0.00921875,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.019621710526315835
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8086249999999999,
+            0.9058529411764705
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "ellery-public-date",
+      "page": 0,
+      "uvRect": [
+        0.038461538461538464,
+        0.5847457627118644,
+        0.9615384615384616,
+        0.7817796610169492
+      ],
+      "copy": "1888",
+      "lines": [
+        "1888"
+      ],
+      "widthM": 1.03,
+      "heightM": 0.25,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.15825520833333334,
+        "stemWidthM": 0.03755208333333333,
+        "coverage": 0.1387208781362007,
+        "boundsPx": [
+          109,
+          15,
+          279,
+          77
+        ],
+        "glyphs": [
+          {
+            "character": "1",
+            "line": 0,
+            "xPx": 102.938,
+            "advancePx": 44.708
+          },
+          {
+            "character": "8",
+            "line": 0,
+            "xPx": 147.64600000000002,
+            "advancePx": 44.708
+          },
+          {
+            "character": "8",
+            "line": 0,
+            "xPx": 192.354,
+            "advancePx": 44.708
+          },
+          {
+            "character": "8",
+            "line": 0,
+            "xPx": 237.062,
+            "advancePx": 44.708
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "8b65e1ede04b1daa37ae66295f4a2e88cc5f162266fd9dd1de9602e511841932"
+      },
+      "category": "institution",
+      "process": "cut civic foundation date",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": -0.0006,
+      "finish": {
+        "substrate": "existing mineral inscription face",
+        "coating": "dark inset cut lettering",
+        "roughness": 0.84,
+        "inkRoughness": 0.89,
+        "fieldM": 0.23,
+        "variation": 0.035,
+        "roughnessVariation": 0.05,
+        "microReliefM": 1e-05,
+        "deposit": 0.045,
+        "edgeLoss": 0,
+        "sequence": [
+          "mineral face stays largely intact",
+          "thin sheltered deposits vary at the assembly scale",
+          "existing cut depth is retained"
+        ],
+        "limits": [
+          "no invented stone species, gypsum crust, leak, missing corner or geometry crack"
+        ],
+        "version": 1,
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": -0.0006,
+        "fabricationReliefAssumption": "Negative 0.35\u20130.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "8b65e1ede04b1daa37ae66295f4a2e88cc5f162266fd9dd1de9602e511841932",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.23,
+          "minimumNormalPeriod": 0.008064516129032258,
+          "inkRelief": -0.0006
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Negative 0.35\u20130.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.03566129032258075
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.815392156862745,
+            0.9040833333333333
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "ellery-public-name",
+      "page": 0,
+      "uvRect": [
+        0.038461538461538464,
+        0.8495762711864406,
+        0.9615384615384616,
+        0.951271186440678
+      ],
+      "copy": "ELLERY",
+      "lines": [
+        "ELLERY"
+      ],
+      "widthM": 2.8,
+      "heightM": 0.25,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.17499999999999996,
+        "stemWidthM": 0.04374999999999999,
+        "coverage": 0.07313368055555555,
+        "boundsPx": [
+          118,
+          12,
+          266,
+          36
+        ],
+        "glyphs": [
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 117.28,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 141.568,
+            "advancePx": 24.288
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 165.85600000000002,
+            "advancePx": 24.288
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 190.14400000000003,
+            "advancePx": 24.288
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 214.43200000000004,
+            "advancePx": 26.288
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 240.72000000000006,
+            "advancePx": 26.288
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "6853c99165a23b5304936da13c0182c5f70b3c4775cecf9b27799fe1d7735a5e"
+      },
+      "category": "institution",
+      "process": "cut civic public entrance frieze",
+      "polarity": "dark-on-light",
+      "emission": "none",
+      "reliefM": -0.0006,
+      "finish": {
+        "substrate": "existing mineral inscription face",
+        "coating": "dark inset cut lettering",
+        "roughness": 0.84,
+        "inkRoughness": 0.89,
+        "fieldM": 0.23,
+        "variation": 0.035,
+        "roughnessVariation": 0.05,
+        "microReliefM": 1e-05,
+        "deposit": 0.045,
+        "edgeLoss": 0,
+        "sequence": [
+          "mineral face stays largely intact",
+          "thin sheltered deposits vary at the assembly scale",
+          "existing cut depth is retained"
+        ],
+        "limits": [
+          "no invented stone species, gypsum crust, leak, missing corner or geometry crack"
+        ],
+        "version": 1,
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": -0.0006,
+        "fabricationReliefAssumption": "Negative 0.35\u20130.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "cut-mineral",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "6853c99165a23b5304936da13c0182c5f70b3c4775cecf9b27799fe1d7735a5e",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.23,
+          "minimumNormalPeriod": 0.021875,
+          "inkRelief": -0.0006
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Negative 0.35\u20130.8 mm cut-face normal relief; conservative authoring assumption, not measured or silhouette geometry",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.031125
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.815,
+            0.902171568627451
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    }
+  ],
+  "coverageChannel": "baseColorAlpha",
+  "alphaMode": "OPAQUE",
+  "rgbPremultiplied": false,
+  "gutterPx": 16,
+  "packing": "MaxRects BSSF; four stable orders; 8px bin-width and bounded 16px bin-height search; tight NPOT envelope; no rotation/resampling",
+  "note": "Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake."
+}

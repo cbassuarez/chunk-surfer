@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { machinePanelBody } from '../src/render/presentation.js';
+import { TORCH_OPTICS_GLSL, torchAngularSample } from '../src/render/torch-optics.js';
 
 const canvasSource = readFileSync('src/render/canvas.js', 'utf8');
 const fearSource = readFileSync('src/game/fear-overlay.js', 'utf8');
@@ -33,7 +34,21 @@ test('fear polish stays peripheral and preserves the existing frame contract', (
 
 test('torch optical polish remains cone-local and adds no fog or HUSH figure', () => {
   assert.match(shaderSource, /mote.*smoothstep\(\.22,\.82,beam\)/s);
-  assert.match(shaderSource, /rimMask.*uOpticalEffects/);
+  assert.match(shaderSource, /const MARCH_FRAG = COMMON_GLSL \+ TORCH_OPTICS_GLSL \+/, 'the world shader composes the shared torch optics');
+  assert.match(shaderSource, /float beam=torchAngular\(-toLamp,uTorchForward,uTorchRight,uTorchUp,uTorchCone,uTorchSpill\)\*uLight;/,
+    'the actual surface light is the carried reflector beam, not an ungated screen effect');
+  assert.match(TORCH_OPTICS_GLSL, /float irregular=1\.0\+\.022\*trefoil\*smoothstep\(\.18,\.85,radius\)\*\(1\.0-smoothstep\(1\.05,1\.4,radius\)\);/,
+    'the physical reflector retains its bounded radial irregularity');
+  assert.match(TORCH_OPTICS_GLSL, /return \(core\+corona\+surround\)\*irregular;/,
+    'the radial variation only multiplies the physical cone, not an independent figure');
+  assert.doesNotMatch(TORCH_OPTICS_GLSL, /gl_FragCoord|uTime|uRD|lensDirt|rimMask/,
+    'the reflector is deterministic spatial optics, not animated per-pixel lens dirt');
+  const near=torchAngularSample({axis:.98,azimuth:.33});
+  assert.ok(near>0 && Number.isFinite(near));
+  assert.equal(torchAngularSample({axis:-.5,azimuth:.33}),0,'outside the real cone receives no polish');
+  assert.equal(torchAngularSample({axis:.98,azimuth:.33}),near,'unchanged aiming yields the same physical beam');
+  assert.match(shaderSource, /float mote=step\(\.9991,moteHash\)\*smoothstep\(\.22,\.82,beam\)\*uOpticalEffects;/,
+    'optional dust stays inside the lit cone and remains gated by optical-effects access');
   assert.match(shaderSource, /pulledChurn/);
   assert.match(shaderSource, /No exploration fog and no distance haze/);
   assert.doesNotMatch(shaderSource, /drawHushFigure|hushSprite|hushSilhouette/);

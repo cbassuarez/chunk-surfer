@@ -5,7 +5,7 @@ import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {leavesPropOverlap,slideBlockedPropStep} from '../src/world/prop-body-contact.js';
 import {EXTERIOR_PUB,pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
-import {courtyardWalk} from './helpers/exterior-pub-route.mjs';
+import {courtyardWalk,districtPubWalk} from './helpers/exterior-pub-route.mjs';
 
 FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
 PROPS.setColliderGroupEnabled('opening-street',true);
@@ -92,9 +92,10 @@ test('ordinary loaded-pack routes connect the van, vigil, park, both dock stairs
     ['pub',Object.values(pubExteriorLogicalAt(EXTERIOR_PUB.doors[0].id)).map(v=>Math.floor(v*2))],
   ];
   for(const[label,target] of targets){
-    const route=courtyardWalk(FP,PROPS,start,target);
+    const walk=label==='pub'?districtPubWalk:courtyardWalk;
+    const route=walk(FP,PROPS,start,target);
     assert.ok(route,`${label} can be reached through current source surfaces`);
-    const back=courtyardWalk(FP,PROPS,target,start);
+    const back=walk(FP,PROPS,target,start);
     assert.ok(back,`${label} has an ordinary route back to arrival`);
   }
 });

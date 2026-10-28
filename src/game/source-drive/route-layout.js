@@ -7,7 +7,7 @@ const freezeRows=rows=>Object.freeze(rows.map(row=>Object.freeze(row)));
 export const ROUTE=Object.freeze({id:'source-cut-service-approach',length:1200,bridgeDistance:540,halfWidth:3.25,shoulderWidth:1.6,
   departure:{start:-32,fullEnd:20,end:85,extraWidth:4},pullIn:{start:816,end:906,fullStart:839,fullEnd:883,side:'left',extraWidth:2.7},
   arrival:{start:1110,stopStart:1194,stopEnd:1226,apronEnd:1244,extraLeftWidth:1.55,extraRightWidth:1.55},
-  continuation:'Park and explicitly leave; host restores the captured grey-door exterior pose before the still ground and repeating outskirts walk.'});
+  continuation:'Drive through the opening grey goods pair; the host carries the crossing into the next Source section without a stop or dismount prompt.'});
 // Position and slope are evaluated as a C2 quintic profile in road.js. These
 // changes include the cliff switchbacks; the bridge and final apron stay fixed.
 export const ALIGNMENT=freezeRows([
@@ -28,7 +28,7 @@ export const ROUTE_SECTIONS=freezeRows([
  {id:'bridge-approach',start:420,end:600,title:'The crossing',role:'The road levels beneath one recognisable overpass. Unequal joint spacing stays fixed at 540 m.'},
  {id:'open-flank',start:600,end:816,title:'The open flank',role:'The bridge recedes on the correct side; drainage and the low valley become readable through the side window and mirror.'},
  {id:'sheltered-pull-in',start:816,end:970,title:'A place to stop',role:'A physically paved left bay gives a deliberate opportunity to stop, tune, record and look back without blocking the lane.'},
- {id:'goods-approach',start:970,end:1244,title:'The goods apron',role:'Retaining edge and paired trees frame the existing grey goods-door assembly. Arrival is a chosen stop/dismount, not a gate collision.'},
+ {id:'goods-approach',start:970,end:1244,title:'The goods apron',role:'Retaining edge and paired trees frame the grey goods pair. Its leaves open before the moving van crosses the threshold.'},
 ]);
 // Each placement has a reason and a finite range. mesh geometry uses local -Z
 // longitudinal axes. Root consumes worldAt(d,lateral,lift), then yaw/pitch/scale.
@@ -60,8 +60,8 @@ export const ROUTE_DRAIN_RANGES=freezeRows([{start:150,end:414,lateral:-4.12,ada
 export const ORDINARY_BRIDGE=Object.freeze({id:'ordinary-bridge',mesh:'drive_bridge',d:540,lateral:0,
   joints:[-1.8,0,2.7],spanStart:532,spanEnd:548,outerPierLateral:4.45,type:'overpass',clearance:4.7,upperDeckTop:5.3,
   requirements:['Keep the 540 m audio/physical identity and unequal joint offsets fixed.','The driven road is level beneath the overpass from 520 to 560 m; the deck is overhead, not a surface the van drives on.','Keep the lower carriageway and 4.7 m headroom open; the narrow roadside drain passes inside the left pier.','Retaining/terrain masses support each abutment and remain outside the carriageway.']});
-export const ORDINARY_DESTINATION=Object.freeze({id:'grey-goods-service-apron',d:1228,lateral:0,
+export const ORDINARY_DESTINATION=Object.freeze({id:'grey-goods-service-apron',d:1228,lateral:-1.35,
   archetype:'bay-goods-pair',assemblyMeshes:['door_leaf_bay_goods','door_frame_goods','door_threshold_slab'],unsupportedMasonryHeadOmitted:true,
   stoppingRange:[1194,1226],apronEnd:1244,
-  requirements:['Do not use the study gate mesh or automatic collision-stop as arrival.','A deliberate stop and dismount may precede the authored discontinuity.','This is an isolated ordinary approach; the suspended grey pair and empty 35 m ground stay unchanged in production.','No lodge, phone, bus, new person or active side encounter is added.']});
+  requirements:['Use the canonical goods pair, opening into the driven lane.','The whole van passes the threshold at speed; no stop or Enter interaction is required.','A physical threshold impulse accompanies the crossing without stopping or reversing the vehicle.','No lodge, phone, bus, new person or active side encounter is added.']});
 export function routeLayoutBetween(from=-120,to=1400){return ROUTE_PLACEMENTS.filter(p=>(p.layer==='back'||p.d>=from&&p.d<=to)&&!p.id.startsWith('cutting-bank')&&!p.id.startsWith('outside-fence')&&!p.id.startsWith('goods-approach-drain')).map(p=>p.id.startsWith('cutting-drain')?{...p,lateral:-(roadTreatmentAt(p.d).halfWidth+.12)}:p);}

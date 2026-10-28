@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   micActive,
@@ -127,6 +128,58 @@ test('mic denied permission is separate from no-input state', async () => {
   const snap = await micInit(fakeAudioContext(), { force: true });
   assert.equal(snap.state, 'denied');
   assert.equal(snap.reason, 'permission-denied');
+});
+
+test('a late OS grant is stopped after consent is revoked', async () => {
+  let resolveRequest;
+  const stream = fakeStream();
+  installMediaDevices({ getUserMedia: () => new Promise(resolve => { resolveRequest = resolve; }) });
+  const pending = micInit(fakeAudioContext(), { force: true });
+  assert.equal(micState(), 'asking');
+  micStop();
+  resolveRequest(stream);
+  await pending;
+  assert.equal(stream.track.stopCalled, true);
+  assert.equal(micState(), 'idle');
+  assert.equal(micActive(), false);
+});
+
+test('a stale denial cannot turn off a later microphone request', async () => {
+  let rejectOld, resolveNew;
+  installMediaDevices({ getUserMedia: (() => {
+    let count = 0;
+    return () => ++count === 1
+      ? new Promise((_resolve, reject) => { rejectOld = reject; })
+      : new Promise(resolve => { resolveNew = resolve; });
+  })() });
+  const old = micInit(fakeAudioContext(), { force: true });
+  micStop();
+  const next = micInit(fakeAudioContext(), { force: true });
+  rejectOld(Object.assign(new Error('denied'), { name: 'NotAllowedError' }));
+  await old;
+  assert.equal(micState(), 'asking');
+  resolveNew(fakeStream());
+  await next;
+  assert.equal(micState(), 'on');
+});
+
+test('production entry paths require a run decision before opening the mic', () => {
+  const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+  const part = (from, to) => main.slice(main.indexOf(from), main.indexOf(to, main.indexOf(from)));
+  const start = part('function startRoomMic(', 'function applyStoryChoice(');
+  assert.match(start, /roomMicRunConsent !== true/);
+  assert.ok(start.indexOf('roomMicRunConsent !== true') < start.indexOf('MIC.micInit('));
+  const profile = part('function applyPsychProfileConsent(', 'function chooseRoomMicForRun(');
+  assert.doesNotMatch(profile, /startRoomMic\(/, 'profile consent alone cannot open the mic');
+  const newRun = part('function beginNewGameFlow(', 'function enterSelectedRun(');
+  assert.match(newRun, /roomMicRunConsent=null;\s*MIC\.micStop\(\)/);
+  const selected = part('function enterSelectedRun(', 'function setGameChrome(');
+  assert.match(selected, /askMic:true/);
+  assert.match(selected, /onMicAllow:.*chooseRoomMicForRun\(true\)/);
+  assert.match(selected, /onMicDeny:.*chooseRoomMicForRun\(false\)/);
+  const resume = part('function requestFrontEndContinue(', 'function requestFrontEndNewRun(');
+  assert.match(resume, /roomMicRunConsent===null/);
+  assert.match(resume, /askMic:true/);
 });
 
 test('mic passes selected device constraints and analyzes selected stereo channel', async () => {

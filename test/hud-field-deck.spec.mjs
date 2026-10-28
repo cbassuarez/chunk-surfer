@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { machinePanelAperture } from '../src/render/presentation.js';
 import { navigatorDisplayLayout } from '../src/render/navigator-layout.js';
 import { takeSlotState } from '../src/render/field-deck.js';
+import { mapAvailable } from '../src/game/map-ownership.js';
 import {
   controlHudPresentation,
   fieldDeckLayout,
@@ -28,6 +31,44 @@ test('field deck composes within a compact viewport instead of clipping', () => 
   assert.ok(deck.navigator.x+deck.navigator.w<=62);
   assert.ok(deck.navigator.y+deck.navigator.h<deck.prompt.y);
   assert.equal(deck.prompt.y,28);
+});
+
+test('production HUD paints one objective line before map acquisition and yields to the navigator afterwards', () => {
+  const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  const start=source.indexOf('function drawStoryHud('),end=source.indexOf('\nfunction ',start+1);
+  assert.ok(start>=0&&end>start,'production HUD function is available');
+  const hudSource=source.slice(start,end);
+  const size={cols:128,rows:50},objective=fieldDeckLayout(size).objective;
+  const target={id:'story:yard-van',label:'GET THE KIT FROM THE VAN'};
+  function paint({mapTaken=false,showRoom=true,bearing=true}={}){
+    const calls=[],maps=[];
+    const save={flags:{'van.preparation.v1':true,...(mapTaken?{'bag.taken':true,'map.taken':true}:{})},run:{ledger:{}}};
+    runInNewContext(`${hudSource}\ndrawStoryHud();`,{
+      storyMode:true,paused:false,towerPersonalHud:null,usingSourceSpace:()=>false,
+      scenes:{blocksWorld:()=>false,suppressesHud:()=>false},towerWarningOwnsMoment:()=>false,
+      uiSize:()=>size,fieldDeckLayout,REC:{recState:()=>({takes:[],injuries:0}),isRecording:()=>false,batteryLevel:()=>1,isListening:()=>true},
+      usingPlan:()=>false,currentStoryGuidanceFrame:()=>({target}),
+      activeDifficulty:{navigation:{showMap:true,showBearing:true,showDistance:true,showRoom}},
+      mapAvailable,getSave:()=>save,itemLost:()=>false,drawMinimap:(...args)=>maps.push(args),
+      currentFacilityMapModel:()=>({}),performance:{now:()=>1000},recentMischief:()=>[],recentApparitions:()=>[],
+      workOrderAccepted:()=>false,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
+      storyGuidanceBearing:()=>bearing?{bearing:'SOUTHEAST',far:'VERY CLOSE'}:null,
+      uiText:(x,y,text)=>calls.push({x,y,text}),chapelTowerState:()=>({phase:'recording'}),
+      normalizeChunkSurfState:()=>({finale:{route:null}}),SOURCE_FINALE_ROUTE:{TOWER:'tower'},CHAPEL_TOWER_PHASE:{},KEY_DEBUG:false,
+    });
+    return{lines:calls.filter(call=>call.x===objective.x&&call.y===objective.y),maps};
+  }
+  for(const showRoom of[true,false]){
+    const frame=paint({showRoom});
+    assert.equal(frame.lines.length,1,'missing map must not overprint compass and required objective');
+    assert.equal(frame.lines[0].text,'TARGET / GET THE KIT FROM THE VAN / SOUTHEAST / VERY CLOSE');
+    assert.equal(frame.maps.length,0);
+  }
+  const withoutBearing=paint({bearing:false});
+  assert.deepEqual(withoutBearing.lines.map(call=>call.text),[target.label],'required label survives without a bearing');
+  const withNavigator=paint({mapTaken:true});
+  assert.equal(withNavigator.maps.length,1,'acquired plan keeps its normal navigator');
+  assert.equal(withNavigator.lines.length,0,'the navigator owns guidance when visible');
 });
 
 test('ordinary control legend returns only after input has gone idle', () => {

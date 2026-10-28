@@ -105,7 +105,9 @@ test('void optics are scoped outside and boundary geometry can persist independe
   assert.equal(SOURCE_SHORE_AIR.length,3);
   assert.doesNotMatch(SOURCE_SHORE_COMPOSITE_FRAG.replace(/\/\/[^\n]*/g,''),/uTorch|uRain|uPitch|rayY|horizon|sin\(/,'empty pixels have no directional or torch-dependent treatment');
   assert.match(SOURCE_SHORE_COMPOSITE_FRAG,/mix\(uAir,material,coverage\)/);
-  assert.match(SOURCE_SHORE_MATERIAL_FRAG,/1\.0-smoothstep\(reach\*\.62,reach,distanceM\)/,'the actual surface beam has a finite range');
+  assert.match(SOURCE_SHORE_MATERIAL_FRAG,/vec3 toLamp=uTorchOrigin-vWorld;float lampDistance=length\(toLamp\)/,
+    'the surface beam measures from the actual lamp origin');
+  assert.match(SOURCE_SHORE_MATERIAL_FRAG,/1\.0-smoothstep\(reach\*\.62,reach,lampDistance\)/,'the actual surface beam has a finite range');
 });
 
 test('the walk is printed by the shared acquisition and post, like the room it leaves',()=>{

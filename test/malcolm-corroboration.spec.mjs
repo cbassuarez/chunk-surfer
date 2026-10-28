@@ -15,9 +15,14 @@ import { choiceContentId, createReplayService } from '../src/progression/knowled
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const id = 'vigil-malcolm-vey';
 function productionFunction(name, endMarker, environment) {
-  const start = main.indexOf(`function ${name}(`), end = main.indexOf(endMarker, start);
+  const start = main.indexOf(`function ${name}(`);
+  // A narrative comment is not a function boundary: code inserted before
+  // that comment can make the generated function expression invalid.
+  // Column-zero `}` followed by newline closes these top-level declarations.
+  const end = start < 0 ? -1 : main.indexOf('\n}\n', start);
   assert.ok(start >= 0 && end > start, `production ${name} extraction boundary`);
-  return new Function('environment', `with (environment) { return (${main.slice(start, end).trim()}); }`)(environment);
+  const declaration = main.slice(start, end + 2);
+  return new Function('environment', `with (environment) { return (${declaration}); }`)(environment);
 }
 function talkHarness({ replay = false } = {}) {
   scenes.clear();
@@ -30,6 +35,9 @@ function talkHarness({ replay = false } = {}) {
     inspectPropTracked: propId => inspected.add(propId),
     flagTest, flagApply, saveCommit, getSave,
     vigilAmbient: { cancel() {} }, vigilConversationActorId: null,
+    // Malcolm's optional dialogue occurs without exterior arrival audio; do
+    // not synthesize an unrelated world-sound event in this dialogue harness.
+    noteExteriorConversation() {},
     STORY: null, actx: null, dialogGain: null, master: null, CR: { fx: null }, fireCue() {},
     createReplayService: replay ? createReplayService : () => null,
     makeThoughtScene(options) {
@@ -72,7 +80,7 @@ function hearMapClaim() {
     && /It may be nothing\./.test(view.line.text));
 }
 function belfryArrival(linked) {
-  const commits = [], speech = [];
+  const commits = [], speech = [], flashbacks = [];
   const environment = {
     GOD_LOCATION_HOOKS: { 'cathedral-belfry': { facing: 1 } }, godHookPoint: () => ({ x: 1, y: 2 }),
     ensureTowerBellDirector: () => ({ setTransitionProgress() {} }),
@@ -80,6 +88,10 @@ function belfryArrival(linked) {
     normalizeChunkSurfState: value => value,
     R3: { r3dSetIndoorRain() {}, r3dClearTowerView() {}, r3dSetSourceScene() {}, r3dSetFacing() {} },
     stopSourceCorridorRain() {}, chuteRide: null, clearSourceRuntime() {}, PRES: { despawn() {} },
+    sourceReturnFlashbackScene:null, // Belfry arrival does not own the prior Source flashback.
+    // The actual handoff begins a flashback. Its narration is delayed until
+    // the flashback's onDone callback, never spoken over its first image.
+    beginSourceReturnFlashback:destination=>{flashbacks.push(destination);return true;},
     px: 0, py: 0, renderMove: null, motionRig: null, trail: [], r3dCache: {},
     getSave: () => ({ chunkSurf: {} }), saveCommit: patch => commits.push(patch),
     applySourceDoorCarry() {}, godSyncBuildingRender() {}, syncDoorDynamicProps() {},
@@ -90,6 +102,16 @@ function belfryArrival(linked) {
     flagTest: flag => flag === vigil.VIGIL_LINKED_CHAPELS_FLAG && linked,
   };
   assert.equal(productionFunction('beginSourceTowerTransition', '\n// THE TAPE LET HIM OFF', environment)(), true);
+  assert.deepEqual(flashbacks,['tower'], 'the real Tower transition must begin exactly one Source-return flashback');
+  assert.equal(speech.length,0,'the belfry lines must not play over the unfinished flashback');
+  // Inspect the actual onDone wiring, then execute the production arrival
+  // speech function at the handoff point. This retains the pencil-line test.
+  const flashbackBegin=main.indexOf('function beginSourceReturnFlashback(');
+  const flashbackEnd=main.indexOf('function resumeSourceReturnFlashbackFromSave(',flashbackBegin);
+  assert.ok(flashbackBegin>=0&&flashbackEnd>flashbackBegin,'production flashback owns the arrival callback');
+  assert.match(main.slice(flashbackBegin,flashbackEnd),/onDone\s*:\s*\(\)\s*=>[\s\S]*?sourceReturnArrivalSpeech\(destination\)/,
+    'the flashback completes before the actual arrival speech');
+  productionFunction('sourceReturnArrivalSpeech','\nfunction commitSourceReturnFlashback(',environment)(flashbacks[0]);
   return { commits, speech };
 }
 

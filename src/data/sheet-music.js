@@ -77,7 +77,7 @@ export const SHEET_MUSIC = Object.freeze([
   }),
   Object.freeze({
     id: 'sheet-lamento-ninfa',
-    at: { x: 92, y: 30 }, room: 'the_tub',
+    at: { x: 94, y: 34 }, room: 'the_tub',
     composer: 'C. MONTEVERDI', title: 'LAMENTO DELLA NINFA', work: 'MADRIGALS BOOK VIII, 1638',
     audio: 'sheet-lamento-ninfa', performer: null,
     licence: 'CC BY 2.5',

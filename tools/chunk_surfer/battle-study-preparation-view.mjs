@@ -106,14 +106,30 @@ export function mountPreparationStudy({host=document.getElementById('map'),mode=
   model=newModel();
   view=createBattlePreparationView({host,onActivate:command});
   view.root.id='battle-preparation-study';
+  // The production scene router consumes window-level pointer events before
+  // they reach shadow DOM. A native comparison borrows that same router for
+  // its own visible controls, then restores it when the adapter is disposed.
+  const scene=native?globalThis.__scenes?.top?.():null;
+  const previousPointer=scene?.pointer;
+  const studyPointer=event=>{
+    if(event.originalEvent?.composedPath?.().includes(view.root)){
+      if(event.type==='pointerdown'&&(event.button??0)===0){
+        const value=view.hit(event.clientX,event.clientY);
+        if(value){view.focusButton(value,false);command(value);}
+      }
+      return true;
+    }
+    return previousPointer?.call(scene,event)??false;
+  };
+  if(scene)scene.pointer=studyPointer;
   view.root.shadowRoot.addEventListener('pointerdown',e=>{
     const button=e.target.closest?.('[data-command]');if(!button||button.disabled)return;
     e.preventDefault();e.stopImmediatePropagation();view.focusButton(button.dataset.command,false);command(button.dataset.command);
   },true);
   const key=e=>{
-    if(disposed||e.repeat||(!native&&!view.root.contains(e.target)))return;
+    if(disposed||e.repeat||(!native&&!view.root.contains(e.target)))return false;
     const k=e.key.toLowerCase();
-    if(!['escape','enter',' ','tab','arrowup','arrowdown','arrowleft','arrowright','q','e'].includes(k))return;
+    if(!['escape','enter',' ','tab','arrowup','arrowdown','arrowleft','arrowright','q','e'].includes(k))return false;
     e.preventDefault();e.stopImmediatePropagation();
     if(k==='escape'){
       if(inspection)inspection=null;
@@ -124,14 +140,15 @@ export function mountPreparationStudy({host=document.getElementById('map'),mode=
     else if(k==='tab')view.moveFocus(e.shiftKey?'prev':'next');
     else if(k==='q'||k==='e')command(`tab:${model.snapshot().page==='equipment'?'skills':'equipment'}`);
     else view.moveFocus(k.slice(5));
+    return true;
   };
   window.addEventListener('keydown',key,true);
   render();log('open',{mode,starting:snapshot()});
-  const api={snapshot,events,command,
+  const api={snapshot,events,command,handleKey:key,
     reset(){model=newModel();editOpen=false;inspectOpen=false;inspection=null;ready=false;message='';render();log('reset');},
     setMode(value){mode=value==='before'?'before':'after';render();log('mode',{mode});},
     simulateSaveFailure(value=true){failSave=!!value;log('save-fixture',{failSave});},
-    dispose(){disposed=true;window.removeEventListener('keydown',key,true);view.dispose();if(original)original.style.display=priorDisplay;log('close');},
+    dispose(){disposed=true;window.removeEventListener('keydown',key,true);if(scene?.pointer===studyPointer)scene.pointer=previousPointer;view.dispose();if(original)original.style.display=priorDisplay;log('close');},
   };
   return api;
 }

@@ -1,7 +1,5 @@
-// The gate itself. It stands ahead of lens calibration, because calibration is
-// the moment the model weights are first asked to do work. Declining is a real
-// option and it closes the game: the EULA says do not use the Game if you do
-// not agree, so the button has to mean that.
+// The agreement is available for review in Settings. Only explicit --sd
+// development sessions request acceptance before optional model execution.
 import * as scenes from './scenes.js';
 import { uiCenter, uiFill, uiSize, uiText, uiWrap, uiStrokeRect } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
@@ -10,7 +8,7 @@ import { eulaPreamble, eulaSections, eulaVersion } from './eula.js';
 import { EULA_TEXT } from './eula-text.js';
 
 const AGREEMENT_TITLE = 'END USER LICENCE AGREEMENT';
-const FIRST_RUN_NOTICE = 'This game generates its materials locally with bundled AI models. Their licence requires you to read and accept these terms first.';
+const FIRST_RUN_NOTICE = 'Read and accept the game terms to continue. Stable Diffusion is optional developer tooling and is not included in this build.';
 
 export function makeEulaScene({
   onAccept = () => {},

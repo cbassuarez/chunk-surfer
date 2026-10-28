@@ -12,8 +12,10 @@ const doc=await new NodeIO().read(new URL('../public/assets/pub-hospitality.glb'
 assert.deepEqual(doc.getRoot().listMeshes().map(m=>m.getName()),[PUB_HOSPITALITY_MESH]);assert.ok(doc.getRoot().listMaterials().every(m=>m.getName().startsWith('pub warmth / ')));
 assert.ok(doc.getRoot().listMaterials().some(m=>m.getName().includes('upholstery')&&m.getBaseColorFactor()[0]>.20));
 assert.ok(doc.getRoot().listMaterials().filter(m=>m.getEmissiveFactor().some(n=>n>0)).length>=3,'stove embers and visible practical glass emit light');
-assert.ok(stats.bytes<CONFIG.maximumBytes);assert.ok(stats.addedTriangles<=CONFIG.maximumAddedTriangles);assert.equal(stats.removedStoveTriangles,14,'only the opaque stove pane/front face are opened');assert.equal(stats.retainedTriangles+stats.removedStoveTriangles,9648);
+assert.ok(stats.bytes<CONFIG.maximumBytes);assert.ok(stats.addedTriangles<=CONFIG.maximumAddedTriangles);assert.equal(stats.removedStoveTriangles,14,'only the opaque stove pane/front face are opened');
 const oldBytes=read(CONFIG.sourceAsset),old=JSON.parse(oldBytes.subarray(20,20+oldBytes.readUInt32LE(12))),base=old.meshes.find(m=>m.name===CONFIG.baseMesh),oldBin=oldBytes.subarray(28+oldBytes.readUInt32LE(12));
+const baseTriangles=base.primitives.reduce((sum,p)=>sum+old.accessors[p.indices].count/3,0);
+assert.equal(stats.retainedTriangles+stats.removedStoveTriangles,baseTriangles,'hospitality retains every current canonical triangle except the stove aperture');
 for(const p of base.primitives){const material=old.materials[p.material].name,now=doc.getRoot().listMeshes()[0].listPrimitives().find(p=>p.getMaterial().getName()==='pub warmth / '+material),a=old.accessors[p.attributes.POSITION],v=old.bufferViews[a.bufferView],raw=new Float32Array(oldBin.buffer,oldBin.byteOffset+v.byteOffset+(a.byteOffset||0),a.count*3),actual=now.getAttribute('POSITION').getArray();assert.deepEqual(Array.from(actual.subarray(0,raw.length)),Array.from(raw),'retained geometry/origin/furniture vertices stay exact: '+material);}
 for(const d of stats.dressing){
   const support=PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===d.support);assert.ok(support);

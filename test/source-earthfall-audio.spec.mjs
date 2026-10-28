@@ -205,7 +205,7 @@ test('a newly observed committed save treats even zero-age receipts as baseline;
   assert.ok(f.runtime.snapshot().history.some(item => item.type === 'strain' && item.reason === 'played'));
   assert.ok(f.runtime.snapshot().history.some(item => item.type === 'fracture' && item.reason === 'played'));
   assert.equal(state.phase, 'landed', 'the same pure physics fixture must descend, contact the catch and reach the lower floor');
-  for (const type of ['strain', 'fracture', 'footing-loss', 'catch', 'land']) {
+  for (const type of ['strain', 'fracture', 'footing-loss','stratum-0','stratum-1','stratum-2', 'catch', 'land']) {
     const receipts = f.runtime.snapshot().history.filter(item => item.type === type);
     assert.equal(receipts.length, 1, type); assert.equal(receipts[0].reason, 'played', type);
   }

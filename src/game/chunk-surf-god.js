@@ -1,5 +1,5 @@
 import { CELL } from '../data/floorplan/legend.js';
-import { OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_LAST_MARK, OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES } from '../data/source-outskirts-arrival.js';
+import { OUTSKIRT_BUS_ENCOUNTER, OUTSKIRT_FOLD_ENCOUNTER, OUTSKIRT_LAST_MARK, OUTSKIRT_STRETCH_START, OUTSKIRT_STRETCH_METRES, outskirtsPassLayout } from '../data/source-outskirts-arrival.js';
 import { SOURCE_APPROACH_CELLS, SOURCE_BELLS, SOURCE_CHAPEL_OUTSKIRTS, SOURCE_HORIZON, SOURCE_PRE_TAPE, SOURCE_TIER_BY_ID } from '../data/source-level.js';
 import { SOURCE_HANGING_SHORE } from '../data/source-hanging-shore.js';
 import { SOURCE_LAST_RECEPTION } from '../data/source-last-reception.js';
@@ -233,17 +233,31 @@ export function buildPreTapeGodPreset(depth = 0, options = {}) {
   };
 }
 
+// Derive the frontal inspection from the actual moved lodge and chair. The
+// eye starts outside personal space; one ordinary step toward the face crosses
+// the existing trigger without reaching the visible feet or the counter.
+function foldApproachReviewStop(){
+  const guard=outskirtsPassLayout(OUTSKIRT_FOLD_ENCOUNTER.pass)
+    .find(piece=>piece.id===OUTSKIRT_FOLD_ENCOUNTER.guardKey);
+  const distance=OUTSKIRT_FOLD_ENCOUNTER.reach+.2;
+  const along=OUTSKIRT_STRETCH_START+OUTSKIRT_FOLD_ENCOUNTER.pass*OUTSKIRT_STRETCH_METRES
+    +guard.along+Math.cos(guard.yaw)*distance;
+  return {id:'pre-tape-fold-approach',label:'OUT — WRONG FOLD APPROACH',
+    depth:SOURCE_PRE_TAPE.stillLength+(along-CELL*.5)/CELL,
+    across:guard.across-Math.sin(guard.yaw)*distance,
+    yaw:Math.atan2(Math.sin(Math.PI-guard.yaw),Math.cos(Math.PI-guard.yaw)),pitch:-.26};
+}
+
 // Still first, then the road; depths are cells out from the grey doors.
 export const PRE_TAPE_GOD_STOPS = Object.freeze([
   { id: 'pre-tape-edge', label: 'OUT — THE FIELD ENDS', depth: SOURCE_PRE_TAPE.entryStandoff },
   { id: 'pre-tape-still', label: 'OUT — STILL', depth: Math.round(SOURCE_PRE_TAPE.stillLength / 2) },
   { id: 'pre-tape-road', label: 'OUT — THE ROAD', depth: SOURCE_PRE_TAPE.stillLength + 12 },
   { id: 'pre-tape-lodge', label: 'OUT — THE LODGE HATCH', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + 6 * OUTSKIRT_STRETCH_METRES + 11.55) / CELL, across: -5.9, yaw: -Math.PI / 2, pitch: -.07 },
-  // The cell eye offset aligns the approach with the seated face. One ordinary
-  // westward step reaches personal space without reaching the feet or chair.
-  { id: 'pre-tape-fold-approach', label: 'OUT — WRONG FOLD APPROACH', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_FOLD_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 12 - OUTSKIRT_FOLD_ENCOUNTER.root[0] - CELL * .5) / CELL, across: -4.35, yaw: -Math.PI / 2, pitch: -.26 },
+  foldApproachReviewStop(),
   { id: 'pre-tape-bus', label: 'OUT — THE BUS PASSAGE', depth: SOURCE_PRE_TAPE.stillLength + Math.round((OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 16) / CELL) },
-  { id: 'pre-tape-bus-close', label: 'OUT — BESIDE THE BUS', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 24.3) / CELL, across: 5.45, yaw: -Math.PI / 2, pitch: .04 },
+  { id: 'pre-tape-bus-close', label: 'OUT — BUS FRONT STEPS', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 21.7) / CELL, across: -3.15, yaw: 0, pitch: .04 },
+  { id: 'pre-tape-bus-aisle', label: 'OUT — INSIDE THE BUS', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_STRETCH_START + OUTSKIRT_BUS_ENCOUNTER.pass * OUTSKIRT_STRETCH_METRES + 24.5) / CELL, across: -2.6, yaw: Math.PI / 2, pitch: 0 },
   { id: 'pre-tape-road-mid', label: 'OUT — HALFWAY DOWN THE ROAD', depth: SOURCE_PRE_TAPE.stillLength + Math.round(SOURCE_PRE_TAPE.roadLength / 2) },
   { id: 'pre-tape-road-late', label: 'OUT — THE LAST OF THE ROAD', depth: SOURCE_PRE_TAPE.length - 90 },
   { id: 'pre-tape-last-light', label: 'OUT — THE LAST LIGHT', depth: SOURCE_PRE_TAPE.stillLength + (OUTSKIRT_LAST_MARK.along - 5) / CELL },

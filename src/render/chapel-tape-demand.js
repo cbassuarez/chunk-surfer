@@ -78,26 +78,85 @@ function segmentMatrix(a,b,width=1){
   const z=[x[1]*y[2]-x[2]*y[1],x[2]*y[0]-x[0]*y[2],x[0]*y[1]-x[1]*y[0]];
   return new Float32Array([...x,0,...y.map(v=>v*length),0,...z,0,a.x,a.y,a.z,1]);
 }
-export function chapelTapeDemandInstances(state,{plan,context,group,listener,timeSec=0,reducedMotion=false}={}){
+const finitePoint=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+function floorSupportsSpill(plan,x,z,floor,group,radius){
+  const cells=plan.physicalSpanData?.()?.cells;
+  if(!(cells instanceof Map))return true;
+  return[[0,0],[-radius,0],[radius,0],[0,-radius],[0,radius]].every(([dx,dz])=>
+    cells.get(`${Math.floor((x+dx)/CELL)},${Math.floor((z+dz)/CELL)}`)?.some(span=>span.renderGroup===group&&Math.abs(span.floor-floor)<.06));
+}
+// A torn section is ordinary world geometry, placed on the support where it
+// actually fell. It stays there after the case is reclaimed and across reload;
+// the camera never becomes its parent, and it cannot leak to another floor.
+export function chapelTapeSpillInstances(state,{plan,group}={}){
+  const spill=state?.spill;
+  if(!state?.route||!spill||spill.group!==group||!['departing','caught','released'].includes(state.status)
+    ||!Number.isFinite(spill.position?.x)||!Number.isFinite(spill.position?.y)||!finitePoint(spill.anchor)||!plan?.isLoaded?.())return[];
+  const at=plan.logicalToPhysical(spill.position.x,spill.position.y);
+  if(at?.renderGroup!==group||!Number.isFinite(at.y))return[];
+  const floor=at.y,base={x:(at.x+.5)*CELL,y:floor+.006,z:(at.z+.5)*CELL},seed=hash(String(spill.damageId||spill.id||'spill'));
+  const zone=plan.zoneAt(spill.position.x,spill.position.y),out=[];
+  // Vary the lay of the loops, never the physical tape width.
+  const poses=[{dx:0,dz:0,scale:1},{dx:.15,dz:.10,scale:1},{dx:-.10,dz:.16,scale:1}];
+  for(const[index,p]of poses.entries()){
+    const x=base.x+p.dx,z=base.z+p.dz;
+    if(!floorSupportsSpill(plan,x,z,floor,group,.27*p.scale))continue;
+    out.push({id:`chapel-tape-demand:spill-coils-${index}`,mesh:'tape_demand_tape_coils',x,y:base.y+index*.002,z,
+      yaw:(seed%628)/100+index*1.97,scale:p.scale,zone,structural:false,noShadow:true,blocks:false,spillId:spill.damageId||spill.id||null});
+  }
+  if(!out.length)return out;
+  // Once the player takes the case back these are cut/creased scraps. Keeping
+  // an invisible line attached to a carried recorder would invent a new grip.
+  if(state.status==='caught'&&state.catch?.holder==='anchor'&&state.catch.group===group){
+    const top={...spill.anchor,y:spill.anchor.y-.12};
+    const fall={x:(top.x+base.x)/2+.045,y:floor+.40,z:(top.z+base.z)/2};
+    const points=[top,fall,{x:base.x,y:floor+.018,z:base.z}];
+    for(let i=0;i<points.length-1;i++)out.push({id:`chapel-tape-demand:spill-falling-${i}`,mesh:'tape_demand_tape_strip',matrix:segmentMatrix(points[i],points[i+1]),zone,structural:false,noShadow:true,blocks:false});
+  }
+  return out;
+}
+export function chapelTapeDemandInstances(state,{plan,context,group,listener,timeSec=0,reducedMotion=false,warning=null}={}){
   if(!chapelTapeDemandVisible(state,context)||!listener||!plan?.isLoaded?.())return[];
   const key=plan.physicalSpanData?.()||plan;if(key!==planKey){planKey=key;placements=buildChapelTapeDemandWalls(plan);}
   const out=placements.filter(p=>p.group===group&&Math.hypot(p.x-listener.x,p.z-listener.z)<32)
     .sort((a,b)=>Math.hypot(a.x-listener.x,a.z-listener.z)-Math.hypot(b.x-listener.x,b.z-listener.z)).slice(0,112);
-  if(state.status!=='caught'||state.catch?.group!==group)return out;
-  const yaw=Number(listener.yaw)||0,right=[Math.cos(yaw),Math.sin(yaw)],forward=[Math.sin(yaw),-Math.cos(yaw)],p=state.progress;
-  const strain=reducedMotion?0:Math.sin(timeSec*11)*.006*Math.sin(Math.PI*p);
+  out.push(...chapelTapeSpillInstances(state,{plan,group}));
+  const caught=state.status==='caught',held=caught&&state.catch?.holder==='anchor';
+  if(!state.route||caught&&state.catch?.group!==group)return out;
+  const spatial=state.catch?.mode==='spatial';
+  const yaw=Number(listener.yaw)||0,right=[Math.cos(yaw),Math.sin(yaw)],forward=[Math.sin(yaw),-Math.cos(yaw)],p=caught?(spatial?state.catch.strainSeconds||0:state.progress):0;
+  const strain=reducedMotion?0:caught?Math.sin(timeSec*11)*.006*Math.sin(Math.PI*p):warning?Math.min(.025,warning.seconds*.018):0;
   // The carried case is below the rendered eye, not below the logical cell's
   // corner. It follows the eased physical yaw while the snag remains fixed in
   // the room. Pitch still lets the player look away from the physical object.
   const eye=listener.eye||{x:listener.x,y:listener.y+EYE,z:listener.z};
-  const bag={x:eye.x+forward[0]*(.76-p*.05)+right[0]*(.24+strain),y:eye.y-.43+p*.05,z:eye.z+forward[1]*(.76-p*.05)+right[1]*(.24+strain)};
-  const caseYaw=yaw+.12-p*.16;
-  out.push({id:'chapel-tape-demand:caught-case',mesh:'tape_demand_field_case',...bag,yaw:caseYaw,zone:listener.zone,structural:false});
+  let bag={x:eye.x+forward[0]*(.76-p*.05)+right[0]*(.24+strain),y:eye.y-.43+p*.05,z:eye.z+forward[1]*(.76-p*.05)+right[1]*(.24+strain)};
+  let caseYaw=yaw+.12-p*.16;
+  if(held){
+    const anchor=state.catch.anchor,at=plan.logicalToPhysical(state.catch.position.x,state.catch.position.y);
+    const dx=at.x*CELL-anchor.x,dz=at.z*CELL-anchor.z,length=Math.hypot(dx,dz)||1;
+    bag={x:anchor.x+dx/length*.20,y:anchor.y-.16,z:anchor.z+dz/length*.20};caseYaw=state.catch.wallYaw;
+  }
+  const damaged=state.caseDamaged||state.failures>=1;
+  out.push({id:'chapel-tape-demand:'+(held?'held-case':caught?'caught-case':'carried-case'),mesh:damaged?'tape_demand_field_case_broken':'tape_demand_field_case',...bag,yaw:caseYaw,zone:listener.zone,structural:false});
+  if(damaged)out.push({id:'chapel-tape-demand:loose-tape-leader',mesh:'tape_demand_tape_leader',...bag,yaw:caseYaw,zone:listener.zone,structural:false,noShadow:true});
+  if(!caught)return out;
   const ring={x:bag.x-Math.cos(caseYaw)*.145,y:bag.y+.17,z:bag.z-Math.sin(caseYaw)*.145},anchor=state.catch.anchor;
   // Slightly dog-legged slack before tension becomes a direct, taut strap.
-  const middle={x:(anchor.x+ring.x)/2,y:(anchor.y+ring.y)/2-.055*(1-p),z:(anchor.z+ring.z)/2};
+  const reach=Math.hypot(listener.x-anchor.x,listener.z-anchor.z),slack=spatial?Math.max(0,Math.min(1,(state.catch.initialDistance-reach)/.65)):1-p;
+  const middle={x:(anchor.x+ring.x)/2,y:(anchor.y+ring.y)/2-(held?.025:.055+.18*slack),z:(anchor.z+ring.z)/2};
   out.push({id:'chapel-tape-demand:strap-a',mesh:'tape_demand_strap',matrix:segmentMatrix(anchor,middle),structural:false,zone:listener.zone},
-    {id:'chapel-tape-demand:strap-b',mesh:'tape_demand_strap',matrix:segmentMatrix(middle,ring),structural:false,zone:listener.zone},
-    {id:'chapel-tape-demand:wall-catch',mesh:'tape_demand_wall_catch',x:anchor.x,y:anchor.y,z:anchor.z,yaw:state.catch.wallYaw,structural:false,zone:listener.zone});
+    {id:'chapel-tape-demand:strap-b',mesh:'tape_demand_strap',matrix:segmentMatrix(middle,ring),structural:false,zone:listener.zone});
+  if(state.catch.kind!=='congregation')out.push({id:'chapel-tape-demand:wall-catch',mesh:'tape_demand_wall_catch',x:anchor.x,y:anchor.y,z:anchor.z,yaw:state.catch.wallYaw,structural:false,zone:listener.zone});
+  if(damaged&&!held){
+    // The sprung lid exposes the medium before a second failure. More outward
+    // strain draws a longer visible loop; reduced motion retains that causal
+    // change while removing the incidental tremor above.
+    const t=Math.max(0,Math.min(1,(state.catch.strainSeconds||0)/1.8));
+    const mouth={x:bag.x-Math.sin(caseYaw)*.07,y:bag.y+.07,z:bag.z+Math.cos(caseYaw)*.07};
+    const loop={x:(mouth.x+anchor.x)/2,y:Math.min(mouth.y,anchor.y)-.10-.23*t,z:(mouth.z+anchor.z)/2};
+    out.push({id:'chapel-tape-demand:unreeling-a',mesh:'tape_demand_tape_strip',matrix:segmentMatrix(mouth,loop),zone:listener.zone,structural:false,noShadow:true},
+      {id:'chapel-tape-demand:unreeling-b',mesh:'tape_demand_tape_strip',matrix:segmentMatrix(loop,anchor),zone:listener.zone,structural:false,noShadow:true});
+  }
   return out;
 }

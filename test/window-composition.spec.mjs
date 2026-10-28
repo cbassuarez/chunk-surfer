@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { endingManifest } from '../src/data/endings.js';
 import {
   MAX_MEDIA_SURFACES,
@@ -23,6 +24,8 @@ import {
   windowMediaContentId,
   windowMediaManifest,
 } from '../src/platform/window-composition.js';
+
+const GENERIC_ENDINGS=['sacrifice','helped','drugged','surfaced','contact-won','contact-lost','tower-won','tower-lost'];
 
 test('media compositions use a separate eight-pane pool while fireballs stay at four',()=>{
   assert.equal(MAX_MEDIA_SURFACES,8);
@@ -181,8 +184,8 @@ test('The Aperture requires the exact eye-and-path topology for 650ms',()=>{
   assert.equal(evaluateCompositionConstraints(plan,targetState).ok,true,'monitor-relative auto assembly lands on the exact authored graph');
 });
 
-test('every ending has authored media and credits restore owns cleanup',()=>{
-  for(const id of ['sacrifice','helped','inversion','drugged','surfaced','contact-won','contact-lost','tower-won','tower-lost']){
+test('every generic ending has authored media and credits restore owns cleanup',()=>{
+  for(const id of GENERIC_ENDINGS){
     const plan=endingCompositionPlan(id);
     assert.equal(plan.purpose,'ending',id);
     assert.ok(plan.surfaces.length>=2,id);
@@ -207,8 +210,8 @@ test('every ending has authored media and credits restore owns cleanup',()=>{
     'the return has its own composition entry point');
 });
 
-test('every event-driven ending cue names a stable authored cutscene beat or the shared final hold',()=>{
-  for(const id of ['sacrifice','helped','inversion','drugged','surfaced','contact-won','contact-lost','tower-won','tower-lost']){
+test('every event-driven generic ending cue names a stable authored cutscene beat or the shared final hold',()=>{
+  for(const id of GENERIC_ENDINGS){
     const beats=new Set((endingManifest(id)?.cutscene?.beats||[]).map((beat)=>beat.id));
     const events=endingCompositionPlan(id).score.cues.map((cue)=>cue.event).filter(Boolean);
     assert.ok(events.length>0,id);
@@ -219,6 +222,26 @@ test('every event-driven ending cue names a stable authored cutscene beat or the
       assert.ok(beats.has(event.slice('ending:beat:'.length)),`${id}: ${event}`);
     }
   }
+});
+
+test('physical inversion enters its own host before generic media or cutscene dispatch',()=>{
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  const start=main.indexOf('function playEnding(endingId,arrival,'),end=main.indexOf('\nfunction resumeEndingCutsceneFromSave()',start);
+  assert.ok(start>=0&&end>start,'execute the actual complete ending dispatcher');
+  const calls=[],result={physical:true};
+  const forbidden=()=>assert.fail('physical inversion must not dispatch generic ending media or a cutscene');
+  const returned=runInNewContext(main.slice(start,end)+'\nplayEnding("inversion","escaped");',{
+    finishChapelTapeDemand:()=>calls.push('finish-tape-demand'),
+    ENDING_ARRIVAL:{ESCAPED:'escaped'},
+    beginWrongDoorEnding:arrival=>{calls.push(arrival);return result;},
+    windowChoreography:{beginEnding:forbidden,restore:forbidden},
+    endingManifest:forbidden,startActiveEndingCutscene:forbidden,
+  });
+  assert.equal(returned,result);assert.deepEqual(calls,['finish-tape-demand','escaped']);
+  const silenceStart=main.indexOf('function silenceEndingSource(){'),silenceEnd=main.indexOf('\nfunction ownEndingSourceScene(',silenceStart);
+  assert.ok(silenceStart>=0&&silenceEnd>silenceStart);
+  assert.match(main.slice(silenceStart,silenceEnd),/windowChoreography\?\.leaveSource\?\.\('ending-source'\)/,
+    'the physical host retires an earlier Source composition on entry');
 });
 
 test('Tower media leaves the central physical scene clear from entry through every placement',()=>{

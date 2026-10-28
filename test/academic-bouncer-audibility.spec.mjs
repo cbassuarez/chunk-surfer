@@ -53,12 +53,13 @@ test('compiled incoming stair pose302,132 hears both actual guard bodies across 
   assert.equal(audible({lines:ACADEMIC_BOUNCER_EXCHANGE},{listener:body,actors,clearSegment}),true);
   assert.equal(audible({lines:ACADEMIC_BOUNCER_EXCHANGE},{listener:{...body,y:7.4},actors,clearSegment}),false);
 });
-test('aside Hugh can exchange locally with Odette and Agathe across the open stairwell; Vera cannot join Agathe',()=>{
+test('aside Hugh can exchange locally with Odette and Agathe across the open stairwell; Vera is beyond both peer ranges',()=>{
   const body={x:60.5,y:10,z:39};
   assert.equal(audible(event(dry,'odette','agathe'),{listener:body,actors:aside,clearSegment}),true);
-  assert.equal(audible(event(formal,'odette'),{listener:body,actors:aside,clearSegment}),true);
+  assert.equal(audible(event(formal,'odette'),{listener:body,actors:aside,clearSegment}),false);
   assert.equal(audible(event(formal,'agathe'),{listener:body,actors:aside,clearSegment}),false);
   const a=aside.find(a=>a.id===formal),b=byId('odette');
+  assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>8,'the stair-safe reception anchor is beyond Vera\'s strict 8m peer limit');
   assert.equal(segment(FP,a,b,{cellSize:CELL}),false,'synthetic negative well spans cannot masquerade as known clear geometry');
   assert.equal(clearSegment(a,b),true,'exact academic anchor metadata resolves the collision-only open well');
 });

@@ -9,6 +9,7 @@ import { makeRecorderScene } from '../src/game/recorder-scene.js';
 import { makeVanWorkbenchScene } from '../src/game/van-workbench.js';
 import { makeBattlePreparation } from '../src/game/battle-preparation.js';
 import { freshFieldKit } from '../src/game/field-kit.js';
+import { fixture as vanFixture } from './helpers/van-bench-fixture.mjs';
 import * as scenes from '../src/game/scenes.js';
 import * as STORY from '../src/audio/story-audio.js';
 
@@ -129,15 +130,45 @@ test('preparation reports a failed READY as refused and confirms only a successf
   assert.equal(uiCueSnapshot().history.at(-1).name,'toggle');prep.dispose();
 });
 
-test('the van gives the same accepted equipment feedback to keyboard, controller and pointer',()=>{
+test('the filled van case gives the same accepted departure feedback to keyboard, controller and pointer',()=>{
   for(const mode of ['keyboard','controller','pointer']){
-    fixture();let taken=false;
-    const scene=makeVanWorkbenchScene({getState:()=>({bagTaken:taken,fieldKit:freshFieldKit()}),onTakeCase:()=>{taken=true;}});
+    fixture();let continued=0;
+    const scene=makeVanWorkbenchScene({getState:()=>({bagTaken:true,fieldKit:freshFieldKit()}),onContinue:()=>{continued++;return true;}});
     scene.enter();scene.render({cols:75,rows:20});
+    assert.equal(continued,0,'entry does not commit the offered case');
+    assert.equal(scene.debugState().focusId,'van:continue');
     if(mode==='pointer'){
-      const hit=scene.debugState().hitRegions.find(h=>h.id==='van:case');
+      const hit=scene.debugState().hitRegions.find(h=>h.id==='van:continue');assert.ok(hit);
       scene.pointer({type:'pointerdown',pointerId:1,button:0,cellX:hit.x+hit.w/2,cellY:hit.y+hit.h/2});
     }else scene.key(mode==='keyboard'?{key:'Enter',code:'Enter'}:{controllerAction:'confirm'});
-    assert.equal(taken,true,mode);assert.deepEqual(uiCueSnapshot().history.map(e=>e.name),['fit'],mode);scene.exit();
+    assert.equal(continued,1,mode);assert.deepEqual(uiCueSnapshot().history.map(e=>e.name),['fit'],mode);scene.exit();
+  }
+});
+
+test('all three input paths sound an equipment fit only after the current swap is acknowledged',async()=>{
+  for(const mode of ['keyboard','controller','pointer']){
+    const audio=fixture();let acknowledge;
+    const f=vanFixture({}, {kit:()=>new Promise(resolve=>{acknowledge=resolve;})});
+    const objectId='van:object:variant:headphones:closed';
+    if(mode==='pointer')f.point(objectId);
+    else {
+      const maximum=f.scene.debugState().layout.keyboardRegions.length;
+      for(let n=0;n<=maximum&&f.scene.debugState().focusId!==objectId;n++)
+        f.scene.key(mode==='keyboard'?{key:'Tab'}:{controllerAction:'tabNext'});
+      assert.equal(f.scene.debugState().focusId,objectId,mode);
+      f.scene.key(mode==='keyboard'?{key:'Enter',code:'Enter'}:{controllerAction:'confirm'});
+    }
+    assert.equal(f.scene.debugState().selection.optionId,'closed');assert.equal(f.count('kit'),0);
+    assert.equal(uiCueSnapshot().history.filter(e=>e.name==='fit').length,0,'selection is not a successful fit');
+    audio.advance();
+    if(mode==='pointer')f.point('van:apply');
+    else f.scene.key(mode==='keyboard'?{key:'Enter',code:'Enter'}:{controllerAction:'confirm'});
+    assert.equal(f.count('kit'),1,mode);assert.equal(f.scene.debugState().pending,true);
+    assert.equal(uiCueSnapshot().history.filter(e=>e.name==='fit').length,0,'pending persistence cannot sound accepted');
+    f.scene.key({key:'Enter',repeat:true});assert.equal(f.count('kit'),1,'a held button cannot submit another swap');
+    audio.advance();acknowledge({ok:true});await f.scene.whenSettled();
+    assert.equal(f.scene.debugState().pending,false);assert.equal(f.state().fieldKit.headphones,'closed');
+    assert.equal(uiCueSnapshot().history.filter(e=>e.name==='fit').length,1,mode);
+    f.point('van:apply');assert.equal(f.count('kit'),1,'the already carried item cannot fit twice');f.scene.exit();
   }
 });

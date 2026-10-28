@@ -241,13 +241,14 @@ def pack_tiles(tiles,size,gutter):
  The former single-width guillotine split stranded thin sampled stamps around
  a nearly full square. Those maps need all three channels at native size, so
  their unused bounding rectangle is especially expensive. Search four stable
- orders and every legal 8px bin width, then minimize actual cropped page area.
+ orders, every legal 8px bin width, and bounded 16px bin-height candidates,
+ then minimize actual cropped page area. A full-height bin remains a candidate.
  """
  align=lambda n:min(size,max(64,math.ceil(n/8)*8))
  items=[dict(tile=t,width=t['width']+gutter*2,height=t['height']+gutter*2) for t in tiles]
  for t in items:
   if t['width']>size or t['height']>size:raise ValueError('Atlas tile exceeds page '+t['tile']['job']['id'])
- def place(ordered,width):
+ def place(ordered,width,height):
   bins=[]
   for t in ordered:
    candidates=[];tw=t['width'];th=t['height']
@@ -257,7 +258,7 @@ def pack_tiles(tiles,size,gutter):
    if candidates:
     _,_,bi,fy,fx=min(candidates)
    else:
-    bins.append(dict(free=[(0,0,width,size)],tiles=[]));bi=len(bins)-1;fx=fy=0
+    bins.append(dict(free=[(0,0,width,height)],tiles=[]));bi=len(bins)-1;fx=fy=0
    bin=bins[bi];free=[]
    for x,y,w,h in bin['free']:
     if fx>=x+w or fx+tw<=x or fy>=y+h or fy+th<=y:
@@ -281,12 +282,17 @@ def pack_tiles(tiles,size,gutter):
  orders=[lambda t:t['width']*t['height'],lambda t:t['height'],lambda t:t['width'],lambda t:max(t['width'],t['height'])]
  widths=list(range(align(max(t['width'] for t in items)),size+1,8))
  if not widths or widths[-1]!=size:widths.append(size)
+ # Restricting a bin's height can keep short stamps together instead of
+ # stranding them beside tall carriers. Include the original full-height
+ # search so the added candidates can never increase cropped atlas area.
+ heights=sorted(set([size]+list(range(align(max(t['height'] for t in items)),size+1,16))))
  best=None;bestBins=None
  for oi,order in enumerate(orders):
   ordered=sorted(items,key=lambda t:(-order(t),-t['width']*t['height'],t['tile']['job']['id']))
   for width in widths:
-   bins=place(ordered,width);score=(sum(b['width']*b['height'] for b in bins),len(bins),oi,width)
-   if best is None or score<best:best=score;bestBins=bins
+   for height in heights:
+    bins=place(ordered,width,height);score=(sum(b['width']*b['height'] for b in bins),len(bins),oi,width,height)
+    if best is None or score<best:best=score;bestBins=bins
  for bin in bestBins:
   # Independently check the selected candidate, including every full gutter.
   for i,p in enumerate(bin['tiles']):
@@ -340,7 +346,7 @@ def main():
    pageTiles=[];x=y=rowH=0
   for packed in pack_tiles(group,size,gutter):pageTiles=packed;finish()
 
- manifest=dict(version=1,inputSha256=sha(source.read_bytes()),generatorSha256=sha(Path(__file__).read_bytes()),finishAuthoringSha256=sha((HERE/'finish.py').read_bytes()),pages=pages,entries=entries,coverageChannel='baseColorAlpha',alphaMode='OPAQUE',rgbPremultiplied=False,gutterPx=gutter,packing='MaxRects BSSF; four stable orders; 8px bin-width search and tight NPOT envelope; no rotation/resampling',
+ manifest=dict(version=1,inputSha256=sha(source.read_bytes()),generatorSha256=sha(Path(__file__).read_bytes()),finishAuthoringSha256=sha((HERE/'finish.py').read_bytes()),pages=pages,entries=entries,coverageChannel='baseColorAlpha',alphaMode='OPAQUE',rgbPremultiplied=False,gutterPx=gutter,packing='MaxRects BSSF; four stable orders; 8px bin-width and bounded 16px bin-height search; tight NPOT envelope; no rotation/resampling',
   note='Atlas RGB remains authored substrate color when alpha pigment coverage is zero. Normal and ORM are filtered independently. Empty or missing authored glyphs fail the bake.')
  (out/'atlas-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');print(json.dumps(dict(jobs=len(jobs),pages=len(pages),baseLevelBytes=sum(p['rgbaBaseLevelBytes'] for p in pages))))
 if __name__=='__main__':main()

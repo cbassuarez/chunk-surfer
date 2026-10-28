@@ -7,7 +7,7 @@ import {
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { SOURCE_LANDMARK_OFFSETS, createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
-import { SOURCE_BRAIDED_REVIEW_WALK, SOURCE_DIVIDE_GAP_FLOOR } from '../src/data/source-braided-divide.js';
+import { SOURCE_BRAIDED_REVIEW_WALK, SOURCE_DIVIDE_GAP_FLOOR, sourceDivideSupportAt } from '../src/data/source-braided-divide.js';
 
 const ORIGIN={x:0,y:-252};
 // Derived from the real landmark table rather than re-hardcoded. These were
@@ -54,7 +54,7 @@ function closeOn(runtime){
   assert.equal(runtime.hushMode().contactAvailable,true,'walking at him never brought him into reach');
 }
 
-function walk(runtime,points){
+function walk(runtime,points,{verifyFollowerSupport=false}={}){
   const origin=runtime.state().landscapeOrigin;
   const world=(point)=>({x:origin.x+point.x/.5,y:origin.y+point.z/.5,facing:0});
   let from=world(points[0]);
@@ -70,6 +70,12 @@ function walk(runtime,points){
       assert.equal(result.via,undefined,'ordinary Source ground never starts a ride');
       runtime.onStep(from,to);
       runtime.tick(.1,{px:to.x,py:to.y,facing:0});
+      if(verifyFollowerSupport){
+        const him=runtime.hushFollowFrame(),x=(him.x-origin.x)*.5,z=(him.y-origin.y)*.5;
+        const support=sourceDivideSupportAt(x,z,{feet:him.floorH});
+        assert.ok(support&&Math.abs(him.floorH-support.floor)<=.45+1e-6,
+          `HUSH left his physical support: ${JSON.stringify({x,z,feet:him.floorH,support})}`);
+      }
       from=to;
     }
     // Descending belongs to the vertical clock. Never assign the target floor
@@ -176,10 +182,27 @@ function walk(runtime,points){
   }
   // Battle is available without a talk count; only warned confirmation commits it.
   state=apply(state,'PURSUIT_STARTED',{id:SOURCE_PURSUIT_BEAT.FINAL_RUN});
-  state={...state,sourceDivide:{version:1,feet:15.2,fallVelocity:0,falling:false}};
   const runtime=createSourceSpaceRuntime({initialState:state});
   const finalX=(POINTS.final.x-ORIGIN.x)*.5,finalZ=(POINTS.final.y-ORIGIN.y)*.5;
-  walk(runtime,[{id:'upper-final-approach',x:finalX-10,z:finalZ,floor:15.2},{id:'final-page',x:finalX,z:finalZ,floor:15.2}]);
+  // Lay the actual ascent trail. Placing only the player on the upper field
+  // leaves him at the forecourt with no supported route around the lane gap.
+  // Each ramp step also checks that a remote shortcut has not raised him to
+  // its target floor before his body reaches the ramp.
+  walk(runtime,[
+    {id:'reveal',x:4,z:-399,floor:4.2},
+    {id:'west-ramp-foot',x:-34,z:-412,floor:4.2},
+    {id:'west-ramp-head',x:-34,z:-432,floor:9},
+    {id:'west-middle-street',x:-50,z:-436,floor:9},
+    {id:'reception-near-bypass',x:-43,z:-440,floor:9},
+    {id:'reception-far-bypass',x:-43,z:-468,floor:9},
+    {id:'west-upper-ramp-foot',x:-50,z:-470,floor:9},
+    {id:'west-upper-ramp-head',x:-50,z:-496,floor:15.2},
+    {id:'upper-west-approach',x:-40,z:-498,floor:15.2},
+    {id:'upper-west-strip',x:-40,z:-537,floor:15.2},
+    {id:'upper-bank-approach',x:40,z:-537,floor:15.2},
+    {id:'final-page',x:finalX,z:finalZ,floor:15.2},
+  ],{verifyFollowerSupport:true});
+  assert.ok(runtime.hushFollowFrame().y<ORIGIN.y-496/.5,'HUSH stranded below the walked upper ramp');
   assert.equal(runtime.state().phase,'final');
   assert.equal(runtime.hushMode().colliding,false,'the final endpoint suspends HUSH collision');
   assert.deepEqual(runtime.state().sourceContacts.insights,[],'no contact answers were collected en route');
@@ -198,6 +221,7 @@ function walk(runtime,points){
     {id:'service-court-return',x:-12,z:-465,floor:4.2},
   ]);
   // He followed you back down. Contact is walking at him until he meets you.
+  assert.equal(runtime.hushMode().contactAvailable,false,'returning to the court does not force a meeting');
   closeOn(runtime);
   assert.ok(runtime.beginHushContact());
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);

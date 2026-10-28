@@ -14,6 +14,8 @@ import {
 } from '../src/data/exterior-roofline.js';
 import { shouldHideCrossEnvelopeProp, worldPropVisibilityKey } from '../src/game/prop-visibility.js';
 import { propInstanceVisible } from '../src/render/props3d.js';
+import { applyInstitutionPosters } from '../src/data/institution-poster-sites.js';
+import { hallChandelierInstances, HALL_CHANDELIER_TREATMENT } from '../src/data/hall-chandelier-treatment.js';
 import { parseGlb } from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 
 FP.compile(conservatory.levels, conservatory);
@@ -44,7 +46,8 @@ function worldFor(zone, group = 'ground') {
     CHAPEL_TOWER_PHASE: { TOWER_CLEARED: 'cleared', CHAPEL_FINAL: 'final', TOWER_ACTIVE: 'active' },
     currentNatatoriumWaterRun: () => null,
     FP: { ...FP, zoneAt: () => zone, logicalToPhysical: () => ({ x: 0, z: 0, y: 0 }) },
-    px: 0, py: 0, CELL, PROPS, isOutdoorZone,
+    px: 0, py: 0, CELL, PROPS, isOutdoorZone, applyInstitutionPosters,
+    hallChandelierInstances, hallChandelierRendered: [{ id: 'stale-hall-fixture' }],
     exteriorRoofArchitectureInstances, exteriorRooflineInstance, worldPropVisibilityKey,
     renderedWorldPropVisibilityKey: '',
     PUB_NEW_ACTORS: [], streetCrowdRenderReady: false,
@@ -66,8 +69,20 @@ function worldFor(zone, group = 'ground') {
   const result = new Function('scope', `with(scope){return (${functionSource});}`)(scope)(group);
   assert.equal(scope.renderedWorldPropVisibilityKey, worldPropVisibilityKey({ group, zone }),
     'production submission records the context consumed by the frame cache');
+  assert.deepEqual(scope.hallChandelierRendered, group === 'hall' ? result.filter(instance => instance.practicalFixture) : [],
+    'only an actual Hall submission retains practical fixtures for the Hall light owner');
   return result;
 }
+
+test('production Hall submission fits both real chandeliers and their supports through the shared adapter', () => {
+  const world = worldFor(ZONE.hall, 'hall');
+  assert.deepEqual(world.filter(instance => instance.practicalFixture).map(instance => instance.id).sort(),
+    [...HALL_CHANDELIER_TREATMENT.fixtureIds].sort());
+  for (const id of HALL_CHANDELIER_TREATMENT.fixtureIds) {
+    assert.equal(world.filter(instance => instance.id === `${id}:support`).length, 1);
+    assert.equal(world.find(instance => instance.id === id).practicalEmissiveScale, 0, 'static submission cannot invent a lit episode');
+  }
+});
 
 test('production ground composition retains exactly the three static roof constructions in every outdoor zone', () => {
   const ground = PROPS.renderInstances({ group: 'ground', inscriptions: false });

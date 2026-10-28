@@ -4,6 +4,7 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { buildBellsGodPreset } from '../src/game/chunk-surf-god.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { TOWER_PERSONAL_JOURNEY as PLAN, towerPersonalWorld } from '../src/data/tower-personal-journey.js';
+import { COASTAL_MEMORY_LAYOUT } from '../src/data/coastal-memory.js';
 import { towerPersonalWorldPieces } from '../src/render/tower-personal-worlds.js';
 import { towerPersonalPiecePresent } from '../src/game/tower-personal-visibility.js';
 import { runtimeTree } from '../src/narrative/runtime-content.js';
@@ -42,8 +43,8 @@ function reachReturn() {
   return rt;
 }
 
-test('portal crossings own actual destination ground and atomically reload there', () => {
-  let rt = make();
+test('legacy crossings own destination ground and reload migrates atomically to coastal memory', () => {
+  const rt = make();
   assert.equal(rt.leaveTowerLand(), null, 'entry commits before the original exit becomes available');
   const loop = cross(rt, 'entrance');
   assert.equal(loop.event, 'personal-transition');
@@ -54,10 +55,17 @@ test('portal crossings own actual destination ground and atomically reload there
     assert.equal(event.event, 'personal-transition');
     assert.equal(rt.towerLandState(), stage);
     const saved = JSON.parse(JSON.stringify(rt.state())), pose = rt.towerLandFrame().pose;
-    rt = createSourceSpaceRuntime({ initialState: saved });
-    assert.deepEqual(rt.towerLandFrame().pose, pose);
     assert.ok(rt.geometry.cellAt(pose.x, pose.y), `${stage} arrival support`);
     assert.equal(rt.sourceObjective().label, '');
+    const resumed = createSourceSpaceRuntime({ initialState: saved }), coast = resumed.coastalMemoryState();
+    assert.equal(resumed.towerLandState(), null, 'the retired active pocket cannot resume over the new visit');
+    assert.equal(coast.active, true);
+    assert.deepEqual(coast.pose, COASTAL_MEMORY_LAYOUT.spawn);
+    assert.deepEqual(coast.returnPose, back, 'migration loses the exact borrowed Source pose');
+    assert.deepEqual(resumed.state().station.personal, { ...saved.station.personal, active: false },
+      'migration rewrites earned legacy stage or recording evidence');
+    const reloaded = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(resumed.state())) });
+    assert.deepEqual(reloaded.coastalMemoryState(), coast, 'a second reload restarted the new visit');
   }
   cross(rt, 'back');
   assert.equal(rt.towerLandState(), 'dead-broadcast');

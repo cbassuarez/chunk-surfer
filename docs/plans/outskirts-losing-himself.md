@@ -101,6 +101,31 @@ Decided with Seb, 2026-09-14, iterating on the repeating arrival road
 
 ## Build stages and task tracking
 
+### Recognizable arrival, incompatible gravities (October 2026)
+
+- Passes 1–2 retain the canonical arrival poses and working street lamps. The
+  remembered town includes the relocated Lyric and its actual adjacent shops.
+- During pass 3 the distance veil begins to disclose the first fixed return.
+  The lamps can now fail behind the player. Nothing follows the camera.
+- Pass 4 mirrors the ground arrangement and places a coherent copy of the
+  arrival street on the west wall; pass 5 turns the ground witnesses and places
+  the return on the east wall. From pass 6 an inverted street continues overhead,
+  with intermittent perpendicular returns. These use the actual road, civic
+  gate, lodge, shelter, lamps, stables and open van, with their real materials.
+- Each return has one rigid frame. It has no second set of working phones,
+  inspection prompts, people, sound emitters or lamp pools. The real K6, wrong
+  fold, bus passage and phone-13 hold retain their existing interaction rules.
+- The upper street has at least 3.2m headroom. Side returns lie beyond the full
+  walking band. Full transformed packed-triangle tests check that separation;
+  yaw-only scenery checks are insufficient. Phone-loop translation carries the
+  return's culling bounds as well as its geometry.
+- The returns extinguish into distance through a dedicated material batch in
+  both the main and wet-reflection pass. The existing material channels, depth,
+  lighting and final dither remain in use. The actual ground materials are not
+  subjected to this additional extinction.
+- Returns stop after pass 20, preserving the existing loss of architecture,
+  dog encounter, lamps in black, last-light recording and onward walk.
+
 Built in stages. After each stage Seb gets a look, and what's left is reported.
 
 **Stage 1: the road goes, the new breaks, the last light**

@@ -165,7 +165,8 @@ export function createChapelServiceRuntime({ context, destination, urlFor,
     }
     audible = active && loaded && !input.muted && audible;
     const target = audible ? CHAPEL_SERVICE.gain * (input.dialogue ? CHAPEL_SERVICE.dialogueGain : 1) : 0;
-    master.gain.setTargetAtTime(target, now, audible ? CHAPEL_SERVICE.fadeInSeconds : CHAPEL_SERVICE.fadeOutSeconds);
+    const fadeIn=Number.isFinite(input.fadeInSeconds)?Math.max(.025,Math.min(15,input.fadeInSeconds)):CHAPEL_SERVICE.fadeInSeconds;
+    master.gain.setTargetAtTime(target, now, audible ? fadeIn : CHAPEL_SERVICE.fadeOutSeconds);
     if (!audible) {
       if (wasAudible || playing.size) endSources(now, { forget: true });
     } else {

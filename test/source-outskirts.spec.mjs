@@ -15,6 +15,7 @@ import {
   outskirtsArrivalLayout,
 } from '../src/data/source-outskirts-arrival.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import { SOURCE_OUTSKIRTS_TOWN } from '../src/data/source-outskirts-town.js';
 import { createSourceSpaceRuntime, torchFlickerAt } from '../src/game/source-space-runtime.js';
 import { applySourceEmergencyTorch, resolveTorchLook } from '../src/render/lighting-model.js';
 import { sourceFocusActionLabel } from '../src/game/source-haystack.js';
@@ -22,6 +23,7 @@ import { sourceShoreOutside } from '../src/game/source-sensory.js';
 import { buildChapelOutskirtsGodPreset, buildHorizonGodPreset, buildPreTapeGodPreset } from '../src/game/chunk-surf-god.js';
 import { DOOR_ARCHETYPES } from '../src/data/conservatory-doors.js';
 import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/source-door-fields.js';
+import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
 
 // ── STILL GROUND, THEN ONE ROAD THAT DOES NOT END ──────────────────────────
 {
@@ -36,13 +38,17 @@ import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/sou
       assert.ok(piece.collision?.length, 'the character has no explicit footprint');
     } else if (['outskirts_overprint_body', 'outskirts_dog_handler', 'outskirts_vacant_dog'].includes(piece.mesh)) {
       assert.ok(piece.collision?.length, `${piece.id} has no authored foot and lower-leg clearance`);
+    } else if (piece.mesh === OUTSKIRTS_BUS_PASSAGE.mesh) {
+      const installed=JSON.parse(readFileSync(new URL('../public/assets/outskirts-bus-passage.stats.json',import.meta.url),'utf8'));
+      assert.ok(installed.meshes[piece.mesh], 'the required passage is absent from its dedicated pack');
+      assert.ok(piece.busPassage&&piece.collision?.length, 'the hollow variant requires explicit panels');
     } else if (piece.mesh === 'outskirts_slack_lead') {
       assert.equal(piece.collision, 'none', 'the loose lead blocks the road');
     } else assert.ok(PROP_BOUNDS[piece.mesh], `${piece.id} names ${piece.mesh}, which the prop pack does not build`);
   }
   assert.equal(new Set(layout.map((piece) => piece.id)).size, layout.length, 'a piece stands twice');
   // One road section per pass — except on a pass that breaks by losing it.
-  const roads = layout.filter((piece) => piece.mesh === 'outskirts_road');
+  const roads = layout.filter((piece) => piece.mesh === 'outskirts_road' && !piece.folded);
   const roadless = OUTSKIRT_PASSES.filter((pass) => pass.break === 'no-road').length;
   // The road itself goes late on (losing himself), so there is at most one section per pass.
   assert.ok(roads.length <= OUTSKIRT_REPEAT_COUNT - roadless && roads.length >= 12, `the road is ${roads.length} sections`);
@@ -101,14 +107,20 @@ import { DOOR_FRAME_OPENINGS, DOOR_FIELD_PLANTING_MESHES } from '../src/data/sou
   assert.ok(OUTSKIRT_PASSES.filter((pass) => pass.wear < 0.75 && pass.break !== 'emptied').every((pass) => boxPasses.has(pass.k)), 'a phone box is missing before the road goes');
   assert.ok(!boxPasses.has(OUTSKIRT_REPEAT_COUNT - 1), 'the last pass still has its phone box');
   assert.ok(OUTSKIRT_STRETCH.filter((piece) => piece.lamp).length >= 4, 'the road is not lit at a regular spacing');
-  // Nothing broken, fallen, giant or floating: the uncanny is in the order of things.
-  assert.ok(layout.every((piece) => !piece.roll && !piece.pitch && !piece.scale), 'a piece is posed, scaled or knocked over');
+  // The walked street keeps its datum and original dimensions. Other gravities
+  // belong to complete rigid returns, not randomly distorted ordinary props.
+  assert.ok(layout.every((piece) => !piece.roll && !piece.pitch && !piece.scale), 'an ordinary piece is posed or stretched');
+  assert.ok(layout.filter(piece => piece.folded).every(piece => piece.foldFrame && piece.foldRoll), 'a return lost its shared road frame');
   assert.equal(new Set(OUTSKIRT_BEATS.map((beat) => beat.id)).size, OUTSKIRT_BEATS.length);
   assert.ok(OUTSKIRT_BEATS.every((beat) => ['reach', 'lookBack', 'unseen'].includes(beat.trigger)));
 }
 
-const packMeshes = new Set(['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters', 'outskirts-dog-handler', 'bus-woman-character', 'outskirts-bus-woman-wrong-origin', 'outskirts-vacant-dog'].flatMap((name) => {
-  const bytes = readFileSync(new URL(`../public/assets/${name}.glb`, import.meta.url));
+const loadedPacks = new Set([
+  ...['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters', 'outskirts-dog-handler', 'bus-woman-character', 'outskirts-bus-woman-wrong-origin', 'outskirts-vacant-dog'].map(name=>`/assets/${name}.glb`),
+  ...SOURCE_OUTSKIRTS_TOWN.packs,
+]);
+const packMeshes = new Set([...loadedPacks].flatMap((path) => {
+  const bytes = readFileSync(new URL(`../public${path}`, import.meta.url));
   return JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString('utf8')).meshes.map((mesh) => mesh.name);
 }));
 const FURNITURE_OR_ROOM = /^(hall_|chapel_|pew$|organ_|tower_|upright_piano|grand_piano|marimba|timpani|altar_|lectern|hymn_board|portrait_frame|green_chair|arm_chair|sofa_|classic_console|gothic_cabinet|wooden_chair|chandelier|lantern_chandelier)/;
@@ -347,9 +359,9 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   assert.ok(pass >= 0 && pass < portals && portals < targets, 'openings are not drawn into the physical void’s own prop targets');
   assert.match(draw, /light:voidTorch/, 'the torch is no stronger out where there is nothing to light');
   assert.match(r3d, /uniform vec4 uTorch;[\s\S]*pool/, 'the void shader draws no torch pool');
-  assert.match(r3d, /const RAIN_GLSL = `[\s\S]*float rainVolume\(/, 'the rain is not one piece of GLSL');
+  assert.match(r3d, /const RAIN_GLSL = GLASS_COURT_RAIN_GLSL\+OUTSKIRTS_BUS_RAIN_GLSL\+`[\s\S]*float rainVolume\(/, 'the shared rain composition lost its ordinary volume');
   assert.equal((r3d.match(/`\+RAIN_GLSL\+/g) || []).length, 2, 'the building and the corridors do not fall through the same rain');
-  assert.match(r3d, /uniform float uRain;[\s\S]*rainVolume\(uEyeCells,wd,distanceM\)/, 'the void shader draws no rain');
+  assert.match(r3d, /uniform float uRain;[\s\S]*rainVolume\(uEyeCells\+uWorldPatternOffset\/\.5,wd,distanceM\)/, 'the void shader must retain world-anchored rain across the loop rebase');
   assert.doesNotMatch(r3d, /streak\*clamp\(uRain/, 'the painted rain streaks are back');
   const sync = main.slice(main.indexOf('function syncSourceRender('), main.indexOf('// ── ARRIVING IN THE BELFRY'));
   assert.match(sync, /r3dSetSourcePortals\?\.\(chunkSurfRuntime\.outskirtPortals\?\.\(x,y\)/, 'the Source render sync does not tell the renderer where the openings are');
@@ -397,8 +409,9 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   for (const beat of OUTSKIRT_BEATS.filter((entry) => entry.trigger === 'reach')) assert.ok(fired.includes(beat.id), `${beat.id} never happened`);
   assert.ok(!fired.includes('lamps-behind'), 'looking back fired without looking back');
   assert.ok(lampsOff.length >= 8, `the lamps stay on behind him (${lampsOff.length})`);
-  // Back on the first stretch, past its lodge, to look back at the dark road.
-  runtime.setPlayerPosition({ x: position.x, y: position.y - (SOURCE_PRE_TAPE.stillLength + Math.round(40 / CELL)), facing: 0 });
+  assert.ok(lampsOff.every(id => !/^lamp-off:r[01]-/.test(id)), 'the ordinary first two passes lost their lamps');
+  // Back on the third stretch, after the ordinary learning passes, to look back.
+  runtime.setPlayerPosition({ x: position.x, y: position.y - (SOURCE_PRE_TAPE.stillLength + Math.round((OUTSKIRT_STRETCH_METRES * 2 + 40) / CELL)), facing: 0 });
   assert.ok(runtime.outskirtsBeatFrame({ viewYaw: Math.PI }).events.some((event) => event.id === 'lamps-behind'), 'looking back at the dark road says nothing');
   runtime.setPlayerPosition({ x: position.x, y, facing: 0 });
   // The pools are the lit lamps', and only near.
@@ -464,23 +477,36 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
 {
   const matrices = (runtime, position, viewYaw) => new Map(runtime.propInstances(position.x, position.y, { time: 0, viewYaw })
     .filter((entry) => entry.sourceStructure === 'outskirts').map((entry) => [entry.id, [...entry.matrix].join(',')]));
-  // Standing at the third lodge: look at it, look away, look back.
+  // A road glimpse must not spend the close counter encounter. In the actual
+  // canonical layout the counter faces along the road, so ordinary approach
+  // naturally moves him out of the forward view before the player can speak.
   const depth = SOURCE_PRE_TAPE.stillLength + Math.round((6 + 2 * OUTSKIRT_STRETCH_METRES + 4) / CELL);
-  const { runtime, position } = at(4417, (options) => buildPreTapeGodPreset(depth, options));
-  const watched = matrices(runtime, position, 0);
+  const { runtime, position:roadPosition } = at(4417, (options) => buildPreTapeGodPreset(depth, options));
+  matrices(runtime,roadPosition,0);matrices(runtime,roadPosition,Math.PI);
+  assert.ok(matrices(runtime,roadPosition,0).has('r2-booth-guard'),'a peripheral road glance consumed the guard before his counter was reachable');
+  const counterPosition=rt=>{
+    const lodge=rt.outskirtsPiece('r2-booth'),x=0,z=-2.2;
+    return {x:(lodge.x+x*Math.cos(lodge.yaw)+z*Math.sin(lodge.yaw))/CELL-.5,
+      y:(lodge.z-x*Math.sin(lodge.yaw)+z*Math.cos(lodge.yaw))/CELL-.5};
+  };
+  const position=counterPosition(runtime);runtime.setPlayerPosition(position);
+  assert.equal(runtime.geometry.canStep(position.x,position.y,position.x,position.y).ok,true,'the close counter disappearance requires a blocked body position');
+  const guard=runtime.outskirtsPiece('r2-booth-guard'),viewYaw=Math.atan2(guard.x-(position.x+.5)*CELL,-(guard.z-(position.y+.5)*CELL));
+  const watched = matrices(runtime, position, viewYaw);
   assert.ok([...watched.keys()].some((id) => /r2-booth-guard/.test(id)), 'the guard is not at the third lodge');
-  matrices(runtime, position, Math.PI);
-  const returned = matrices(runtime, position, 0);
+  matrices(runtime, position, viewYaw+Math.PI);
+  const returned = matrices(runtime, position, viewYaw);
   assert.ok(![...returned.keys()].some((id) => /r2-booth-guard/.test(id)), 'the guard is still there after you looked away');
   const moved = [...returned].filter(([id, matrix]) => watched.has(id) && watched.get(id) !== matrix).map(([id]) => id);
   assert.ok(moved.every((id) => /bus-woman/.test(id)), `something other than a watcher moved: ${moved.join(', ')}`);
-  assert.ok(runtime.outskirtsBeatFrame({ viewYaw: 0 }).events.some((event) => event.id === 'guard-gone'), 'nobody notices the guard is gone');
+  assert.ok(runtime.outskirtsBeatFrame({ viewYaw }).events.some((event) => event.id === 'guard-gone'), 'nobody notices the guard is gone');
 
   const still = at(4417, (options) => buildPreTapeGodPreset(depth, options));
-  const before = new Map(still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw: 0, reducedMotion: true })
+  still.position=counterPosition(still.runtime);still.runtime.setPlayerPosition(still.position);
+  const before = new Map(still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw, reducedMotion: true })
     .filter((entry) => entry.sourceStructure === 'outskirts').map((entry) => [entry.id, [...entry.matrix].join(',')]));
-  still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw: Math.PI, reducedMotion: true });
-  const reduced = new Map(still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw: 0, reducedMotion: true })
+  still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw:viewYaw+Math.PI, reducedMotion: true });
+  const reduced = new Map(still.runtime.propInstances(still.position.x, still.position.y, { time: 0, viewYaw, reducedMotion: true })
     .filter((entry) => entry.sourceStructure === 'outskirts').map((entry) => [entry.id, [...entry.matrix].join(',')]));
   assert.ok(!reduced.has('r2-booth-guard'), 'reduced motion loses the discrete guard disappearance');
   for (const [id, matrix] of reduced) {
@@ -560,10 +586,16 @@ const outFrom = (door, cells) => { const m = middleOf(door); return { x: m.x + d
   // Standing at the first lodge, it can be looked at, and looking says which.
   const { runtime } = at(4417, (options) => buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength + Math.round((6 + 12) / CELL), options));
   const lodge = runtime.outskirtsPiece('r0-booth');
-  // Beside it on the road, facing it (facing 3 is west, toward the lodge).
-  const stand = { x: Math.round(lodge.x / CELL - 0.5) + 5, y: Math.round(lodge.z / CELL - 0.5) };
-  runtime.setPlayerPosition({ ...stand, facing: 3 });
-  const inspected = runtime.inspectFocused(stand.x, stand.y, 3, null);
+  // The canonical lodge moved and turned with the actual yard. Stand at its
+  // real counter front, rather than the old east-side test coordinates.
+  const point=(x,z)=>({x:(lodge.x+x*Math.cos(lodge.yaw)+z*Math.sin(lodge.yaw))/CELL-.5,
+    y:(lodge.z-x*Math.sin(lodge.yaw)+z*Math.cos(lodge.yaw))/CELL-.5});
+  const before=point(-.45,-2.7),stand=point(-.45,-2.2);
+  const facing=((Math.round((Math.PI-lodge.yaw)/(Math.PI/2))%4)+4)%4;
+  runtime.setPlayerPosition({...before,facing});
+  assert.equal(runtime.geometry.canStep(before.x,before.y,stand.x,stand.y).ok,true,'the lodge inspection requires walking through the counter');
+  runtime.setPlayerPosition({ ...stand, facing });
+  const inspected = runtime.inspectFocused(stand.x, stand.y, facing, null);
   assert.equal(inspected?.event, 'outskirts-inspect', `looking at the lodge does nothing (${JSON.stringify(inspected)})`);
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /result\.event==='outskirts-inspect'\)\{ openOutskirtsInspection\(result\)/, 'main never opens what he looks at');

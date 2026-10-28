@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {localLightConeDescriptor,localLightConeWeight} from '../src/render/local-light-cone.js';
 import {coastalMemoryRenderFrame} from '../src/render/coastal-memory-renderer.js';
 import {COASTAL_MEMORY_LAYOUT as L} from '../src/data/coastal-memory.js';
@@ -22,7 +23,10 @@ test('physical cone excludes behind/sideways spill and normalizes emitter and ra
  assert.ok(Math.abs(localLightConeWeight(light,ray.map(v=>v*28))-.5)<1e-12);
 });
 test('submerged mesh illumination follows the actual pitched van lamps used by the water volume',()=>{
- const frame=coastalMemoryRenderFrame({pose:L.spawn,elapsed:8,wreckLightLevel:1});
+ const vehicleMetrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
+ const frame=coastalMemoryRenderFrame({pose:L.spawn,elapsed:8,wreckLightLevel:1},{vehicleMetrics});
+ assert.equal(frame.scene.water.realHeadlamps.length,2,'both actual van headlamps illuminate the submerged scene');
+ assert.equal(frame.coastalMemory.lights.length,2,'both headlamps reach the water renderer');
  for(const [i,lamp] of frame.scene.water.realHeadlamps.entries()){
   const water=frame.coastalMemory.lights[i],direction=water.direction;
   assert.deepEqual(lamp.direction,direction);

@@ -1,6 +1,7 @@
 // Monumental thorax and held breaking wave. Geometry supplies silhouette,
 // cavities, cut edges and differential motion; no camera-facing painted plane.
 import fs from 'node:fs';
+import {CUT_HEART_CENTER} from '../../../src/game/source-drive/cut/anatomy-layout.js';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import {CatmullRomCurve3,Vector3} from 'three';
@@ -67,7 +68,7 @@ for(const g of all){const used=[...new Set(g.ids)],map=new Map(used.map((i,j)=>[
 function delta(g,p,mask,name){if(!g.dynamic||(!g.anatomical&&mask<1e-10))return[0,0,0];const[x,y,z]=p;
  if(g.anatomical){
   if(name==='breath')return[0,0,0];
-  if(g.name==='cut_heart'||g.name==='cut_coronary_vessels'){const q=[x+2,y-7.8,z+7];if(name==='tension')return[-q[0]*.085+q[2]*.025,-q[1]*.10,q[0]*-.025-q[2]*.075];if(name==='shear')return[-.10,.22,-.08];return[.025*Math.sin(z*.3),-.035,0];}
+  if(g.name==='cut_heart'||g.name==='cut_coronary_vessels'){const q=[x,y,z].map((v,k)=>v-CUT_HEART_CENTER[k]);if(name==='tension')return[-q[0]*.085+q[2]*.025,-q[1]*.10,q[0]*-.025-q[2]*.075];if(name==='shear')return[-.10,.22,-.08];return[.025*Math.sin(z*.3),-.035,0];}
   if(g.name==='cut_lungs'){const side=Math.sign(x),hilar=1-Math.exp(-(((x-side*7.6)/1.8)**2+((y-12.0)/2.1)**2+((z+6)/9)**2));if(name==='tension')return[side*(.38+.08*Math.abs(x-side*9.6))*hilar,(y-8.8)*.095*hilar,-.35*hilar];if(name==='shear')return[side*.12*hilar,-.14*hilar,.09*hilar];return[side*.04*hilar,-.10*hilar,.07*hilar];}
   if(g.name==='cut_diaphragm'){const rim=Math.max(0,1-Math.abs(x)/13.5);if(name==='tension')return[0,-1.15*rim,.48*rim];if(name==='shear')return[0,-.08*rim,.06*rim];return[0,-.09*rim,.04*rim];}
   if(g.name==='cut_great_vessels'||g.name==='cut_airway'){const hilum=Math.max(0,1-Math.abs(y-13)/6);if(name==='tension')return[Math.sign(x)*.18*hilum,.18*hilum,-.05*hilum];if(name==='shear')return[0,-.05*hilum,0];return[0,-.025*hilum,0];}

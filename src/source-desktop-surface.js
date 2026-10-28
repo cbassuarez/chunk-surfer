@@ -1,5 +1,6 @@
 import { createSourceDesktopEnvelopeGate, createSourceDesktopView, SOURCE_DESKTOP_PROTOCOL } from './render/source-desktop-view.js';
 import './source-desktop-surface.css';
+import {createSourceDesktopPaintWitness} from './game/source-desktop-focus.js';
 
 const canvas = document.getElementById('source-desktop');
 const gate = createSourceDesktopEnvelopeGate();
@@ -7,6 +8,7 @@ const view = createSourceDesktopView({ canvas, onError: reportError });
 let pending = null, ready = false, unlisten = null, disposed = false;
 const native = !!globalThis.window?.__TAURI_INTERNALS__;
 let emit = async () => {};
+const paintWitness=createSourceDesktopPaintWitness({emit:payload=>emit('source-desktop:presented',payload)});
 
 function reportError(error) {
   document.documentElement.dataset.renderError = String(error?.message || error);
@@ -20,11 +22,12 @@ function size() {
 async function accept(envelope) {
   const snapshot = gate.accept(envelope);
   if (!snapshot || disposed) return false;
+  paintWitness.stage(snapshot);
   pending = snapshot;
   if (!ready) return false;
   size();
   const rendered = view.update(snapshot);
-  if (rendered) await emit('source-desktop:presented', { token: snapshot.token, revision: snapshot.revision });
+  if (rendered) await paintWitness.present(snapshot);
   return rendered;
 }
 const observer = new ResizeObserver(size); observer.observe(document.documentElement);
@@ -42,8 +45,8 @@ async function start() {
   await emit('source-desktop:ready', { label: 'source-desktop', protocol: SOURCE_DESKTOP_PROTOCOL });
   if (pending) {
     const rendered = view.update(pending);
-    if (rendered) await emit('source-desktop:presented', { token: pending.token, revision: pending.revision });
+    if (rendered) await paintWitness.present(pending);
   }
 }
 void start().catch(reportError);
-window.addEventListener('pagehide', () => { disposed = true; observer.disconnect(); unlisten?.(); view.dispose(); }, { once: true });
+window.addEventListener('pagehide', () => { disposed = true;paintWitness.close();observer.disconnect(); unlisten?.(); view.dispose(); }, { once: true });

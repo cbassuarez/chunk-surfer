@@ -33,7 +33,7 @@ function appender(input){
 export function elevationRecipe(source,{legacy=false}={}){
   // Execute only the selected existing recipe and primitive definitions. No
   // global asset build, lettering rasterizer, source intake or file IO runs.
-  const ranges=[['const MAT = {','\n};'],['function addBox(', '// A FLAT PLATE'],['function addCylinder(', 'function addCylinderX('],['function addBeam(', 'function addPlateBeamXY('],['function addWallArch(', 'function addSecondPerimeterWall('],['function addTriangle(', '// A closed loft:']];
+  const ranges=[['const materials = [','\nconst MAT = {'],['const MAT = {','\n};'],['function addBox(', '// A FLAT PLATE'],['function addCylinder(', 'function addCylinderX('],['function addBeam(', 'function addPlateBeamXY('],['function addWallArch(', 'function addSecondPerimeterWall('],['function addTriangle(', '// A closed loft:']];
   const fragments=ranges.map(([a,b])=>{const i=source.indexOf(a),j=source.indexOf(b,i+1);if(i<0||j<0)throw Error(`Selected recipe boundary changed: ${a}`);return source.slice(i,j)+(a==='const MAT = {'?'\n};':'');});
   const start=source.indexOf('{\n  // THE BUILDING, FROM THE YARD.'),end=source.indexOf('{\n  // THE ONE LIT WINDOW ON THE BUILDING.');
   if(start<0||end<start)throw Error('Selected elevation boundary changed');
@@ -41,12 +41,19 @@ export function elevationRecipe(source,{legacy=false}={}){
   if(!block.includes('mouthA=-4.0,mouthB=5.0'))throw Error('Apron source opening is not the reviewed revision');
   if(legacy)block=block.replace('mouthA=-4.0,mouthB=5.0','mouthA=-4.0,mouthB=3.6');
   const context={ELLERY_MASSING,BUILDING_WINDOW_HOST_ORIGINS,subtractBuildingWindowBoxes,signAssemblies:{isCarrier:()=>false}};
-  vm.runInNewContext(`const meshes=new Map();const mesh=name=>{const m={name,groups:new Map()};meshes.set(name,m);return m;};const group=(m,mat)=>{if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});return m.groups.get(mat);};${fragments.join('\n')}\n${block}\nresult=meshes.get('conservatory_west_elevation');`,context,{timeout:10000});
+  vm.runInNewContext(`const meshes=new Map();const mesh=name=>{const m={name,groups:new Map()};meshes.set(name,m);return m;};const group=(m,mat)=>{if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});return m.groups.get(mat);};${fragments.join('\n')}\n${block}\nresult=meshes.get('conservatory_west_elevation');result.materials=materials;`,context,{timeout:10000});
   return context.result;
+}
+function recipePrimitive(pack,mesh,recipe,material){
+  // Atlas merges may renumber the same material. Names pair only the selected
+  // primitive; its complete geometry/normal/UV/index bytes must still match.
+  const name=recipe.materials[material]?.name;
+  const matches=name?mesh.primitives.filter(p=>pack.json.materials[p.material]?.name===name):[];
+  return matches.length===1?matches[0]:null;
 }
 function recipeMatches(pack,mesh,recipe){
   if(mesh.primitives.length!==recipe.groups.size)return false;
-  return [...recipe.groups].every(([material,g])=>{const p=mesh.primitives.find(p=>p.material===material);if(!p)return false;
+  return [...recipe.groups].every(([material,g])=>{const p=recipePrimitive(pack,mesh,recipe,material);if(!p)return false;
     return [['POSITION',g.positions],['NORMAL',g.normals],['TEXCOORD_0',g.uvs.length?g.uvs:new Array(g.positions.length/3*2).fill(0)],['indices',g.indices]].every(([key,values])=>accessorBytes(pack,key==='indices'?p.indices:p.attributes[key]).equals(Buffer.from((key==='indices'?new Uint32Array(values):new Float32Array(values)).buffer)));
   });
 }
@@ -55,7 +62,7 @@ export function patchElevation(input,source){
   if(recipeMatches(input,current,next))return input;
   if(!recipeMatches(input,current,elevationRecipe(source,{legacy:true})))throw Error('Current elevation differs from both exact reviewed recipes; refusing to replace it');
   const out=appender(input),mesh=out.json.meshes.find(m=>m.name===current.name);
-  mesh.primitives=[...next.groups].map(([material,g])=>{const p=current.primitives.find(p=>p.material===material);return{...p,attributes:{...p.attributes,
+  mesh.primitives=[...next.groups].map(([material,g])=>{const p=recipePrimitive(input,current,next,material);return{...p,attributes:{...p.attributes,
     POSITION:out.accessor(p.attributes.POSITION,g.positions,3),NORMAL:out.accessor(p.attributes.NORMAL,g.normals,3),
     TEXCOORD_0:out.accessor(p.attributes.TEXCOORD_0,g.uvs.length?g.uvs:new Array(g.positions.length/3*2).fill(0),2)},indices:out.accessor(p.indices,g.indices,1,true)};});
   return out.finish();

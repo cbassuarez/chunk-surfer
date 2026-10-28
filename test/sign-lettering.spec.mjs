@@ -18,8 +18,7 @@ const manifest=JSON.parse(fs.readFileSync(path.join(dir,'conservatory-props.lett
 assert.equal(createHash('sha256').update(bytes).digest('hex'),manifest.packSha256);
 // A narrow atlas revision records its producer inputs separately; the original
 // full-bake input hashes remain historical provenance for the retained faces.
-for(const[file,hash]of Object.entries(manifest.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||manifest.giltRevision?.sourceHashes?.[file]||hash,'Production lettering generator changed without rebuilding: '+file);
-if(manifest.giltRevision)for(const[file,hash]of Object.entries(manifest.giltRevision.sourceHashes))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),manifest.currentAssetReconciliation?.sourceHashes?.[file]||hash,'Narrow gilt producer changed after revision: '+file);
+for(const[file,hash]of Object.entries({...manifest.sourceHashes,...manifest.giltRevision?.sourceHashes,...manifest.currentAssetReconciliation?.sourceHashes}))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),hash,'Production lettering generator changed without rebuilding: '+file);
 const expected={
  exterior_pub_frontage:['PUBLIC HOUSE','THE LYRIC'],
  yard_van:['04 / LIGHTING','01 / MONITORING','02 / MICROPHONE','03 / AMPLIFIER','SERVICE / FACEPLATES'],

@@ -101,6 +101,8 @@ export const ZONE = {
   academicRoof: 21, // the occupied glass roof, open to the city and weather
   pub: 22, // an ordinary indoor public house; civic mesh envelope, no outdoor weather
   stationers: 23, // optional working shop; no recording target or story commitment
+  glasshouse: 24, // the dry, planted route to the baths; indoor circulation, not a take target
+  poolChanging: 25, // ventilated dry/wet vestibule before the natatorium recording room
 };
 
 // Which world (audio + prompt) a zone belongs to. Corridors borrow the room
@@ -137,6 +139,8 @@ export const ZONE_WORLD = {
   [ZONE.academicRoof]: 'amplifications',
   [ZONE.pub]: 'main_b3',
   [ZONE.stationers]: 'main_b3',
+  [ZONE.glasshouse]: 'main_b3',
+  [ZONE.poolChanging]: 'main_b3',
 };
 
 // OUTDOORS IS A PROPERTY OF THE ZONE, NOT OF WHERE YOU ARE STANDING.
@@ -208,6 +212,8 @@ export function materialForZone(zone) {
     case ZONE.dock: return MATERIAL.wetTarmac;
     case ZONE.street: return MATERIAL.wetTarmac;
     case ZONE.civicCourt: return MATERIAL.wetPaving;
+    case ZONE.glasshouse: return MATERIAL.wetPaving;
+    case ZONE.poolChanging: return MATERIAL.wetTile;
     case ZONE.serviceYard: return MATERIAL.wetSetts;
     // B3 is the treated room on the dance-wing corridor: acousticFoam, under
     // the foam panels and carpet its props lay over it. (It spent a while as

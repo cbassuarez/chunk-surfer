@@ -13,7 +13,7 @@ export function chapelChoirVocalEnergy(phase) {
 // A common musical phrase, with a small front-to-back release from the pews.
 // Never use the PWM signal to animate jaws: the humans continue underneath it.
 export function chapelChoirPose({ phase = 0, presence = {}, reducedMotion = false,
-  ceilingY = presence.ceilingY, active = true, amount = 1 } = {}) {
+  ceilingY = presence.ceilingY, active = true, amount = 1, fervour = 0, elapsed = phase } = {}) {
   const quiet = { singing: false, jaw: 0, breathe: 0, lift: 0, headPitch: 0, roll: 0, activity: 0, phraseLift: 0 };
   if (!active || !Number.isFinite(phase) || phase < 0 || phase >= recording.duration) return quiet;
   const weight = clamp(Number(amount) || 0), row = clamp(Number(presence.row) || 0, 0, 8);
@@ -27,7 +27,10 @@ export function chapelChoirPose({ phase = 0, presence = {}, reducedMotion = fals
   const variation = .5 + .5 * Math.sin(phase * 2.1 + row * .7 + bank + seat * 1.2);
   const jaw = weight * voice * (.13 + .21 * activity + (reducedMotion ? 0 : .025 * variation));
   // Celebrant/servers sing, but the officiant remains the grounded datum.
-  const roleLift = presence.role === 'celebrant' ? 0 : presence.role === 'acolyte' ? .38 : 1;
+  const height = Math.max(0, Number(presence.rapture?.height) || 0);
+  const delayLift = Math.max(0, Number(presence.rapture?.delay) || 0);
+  const earned = smooth((clamp(Number(fervour) || 0) - .42) / .58) * smooth((Math.max(0, elapsed) - delayLift) / 12);
+  const roleLift = presence.role === 'congregant' && !presence.watchful ? height / 1.65 * earned : 0;
   const scale = Number(presence.scale) || 1, ground = Number(presence.y) || 0;
   // Includes the head tilted back and the small upper-body expansion.
   const bodyTop = (presence.figure === 'celebrant' ? 1.91 : 1.77) * scale;

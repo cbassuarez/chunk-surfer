@@ -1,5 +1,4 @@
 {
-  "bytes": 614556,
   "meshes": {
     "chapel_presence_seated_lower": {
       "triangles": 1048,
@@ -16,25 +15,35 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel worn charcoal wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_seated_upper": {
-      "triangles": 1336,
+      "triangles": 1524,
       "bounds": {
         "min": [
           -0.345,
-          -0.032,
+          -0.0423,
           -0.313
         ],
         "max": [
           0.345,
           0.695,
-          0.0825
+          0.139
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel worn charcoal wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_bowed_lower": {
@@ -52,25 +61,35 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel faded brown wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_bowed_upper": {
-      "triangles": 1336,
+      "triangles": 1524,
       "bounds": {
         "min": [
           -0.345,
-          -0.032,
+          -0.0423,
           -0.348
         ],
         "max": [
           0.345,
           0.695,
-          0.02
+          0.139
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel faded brown wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_kneeling_lower": {
@@ -88,25 +107,35 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel worn charcoal wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_kneeling_upper": {
-      "triangles": 1336,
+      "triangles": 1524,
       "bounds": {
         "min": [
           -0.345,
-          -0.032,
+          -0.0423,
           -0.313
         ],
         "max": [
           0.345,
           0.695,
-          0.0675
+          0.139
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel worn charcoal wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_celebrant": {
@@ -124,7 +153,12 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel aged pale vestments",
+        "chapel aged pale vestments",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_acolyte": {
@@ -142,16 +176,21 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel aged pale vestments",
+        "chapel aged pale vestments",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_head": {
-      "triangles": 232,
+      "triangles": 880,
       "bounds": {
         "min": [
           -0.142,
           -0.113,
-          -0.143
+          -0.163
         ],
         "max": [
           0.142,
@@ -160,11 +199,16 @@
         ]
       },
       "materials": [
-        "chapel anonymous pressure"
+        "chapel worn charcoal wool",
+        "chapel dark trouser cloth",
+        "chapel worn pallid skin",
+        "chapel worn leather shoe",
+        "chapel faded shirt and collar",
+        "chapel recessed eye shade"
       ]
     },
     "chapel_presence_singing_head": {
-      "triangles": 2254,
+      "triangles": 2590,
       "bounds": {
         "min": [
           -0.142,
@@ -178,7 +222,7 @@
         ]
       },
       "materials": [
-        "chapel singing ivory pressure",
+        "chapel worn pallid skin",
         "chapel singing oral cavity"
       ]
     },
@@ -197,7 +241,7 @@
         ]
       },
       "materials": [
-        "chapel singing ivory pressure",
+        "chapel worn pallid skin",
         "chapel singing oral cavity"
       ]
     },
@@ -217,6 +261,24 @@
       },
       "materials": [
         "chapel anonymous pressure"
+      ]
+    },
+    "chapel_presence_cherub": {
+      "triangles": 3172,
+      "bounds": {
+        "min": [
+          -0.8467,
+          0.0123,
+          -0.491
+        ],
+        "max": [
+          0.7773,
+          0.2702,
+          0.6504
+        ]
+      },
+      "materials": [
+        "chapel worn pallid skin"
       ]
     },
     "chapel_writing_stop": {
@@ -327,24 +389,6 @@
         "chapel cold tallow",
         "chapel embedded char and hair"
       ]
-    },
-    "chapel_presence_cherub": {
-      "triangles": 3172,
-      "bounds": {
-        "min": [
-          -0.8467,
-          0.0123,
-          -0.491
-        ],
-        "max": [
-          0.7773,
-          0.2702,
-          0.6504
-        ]
-      },
-      "materials": [
-        "chapel singing ivory pressure"
-      ]
     }
   },
   "singingFace": {
@@ -386,7 +430,7 @@
     "closedChinMinY": -0.11899998515844346,
     "openChinMinY": -0.14554390358962174
   },
-  "triangles": 26226,
+  "triangles": 27774,
   "pivots": {
     "seated": {
       "upper": [
@@ -568,9 +612,5 @@
       ]
     }
   },
-  "preservedPack": {
-    "sha256": "d94bd6d9ffcc511ac47cf8762e95e1d6008e489c51324e5ba725f6f806fbba49",
-    "meshes": 18,
-    "exactBinaryPrefixBytes": 538044
-  }
+  "bytes": 672532
 }

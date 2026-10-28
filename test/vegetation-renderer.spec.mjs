@@ -34,7 +34,7 @@ const renderer=fs.readFileSync(new URL('../src/render/props3d.js',import.meta.ur
 const world=fs.readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 const props=fs.readFileSync(new URL('../src/game/props.js',import.meta.url),'utf8');
 assert.match(renderer,/instance\.fallbackMesh&&pack\.catalog\.has\(instance\.fallbackMesh\)/);
-assert.match(renderer,/renderShadowPass\(eye,yaw,pitch,light,shadowLight,\{timeSec,reducedMotion,lodEye:eye\}\)/);
+assert.match(renderer,/renderShadowPass\(eye,yaw,pitch,light,shadowLight,\{[^}]*timeSec[^}]*reducedMotion[^}]*lodEye:eye[^}]*torchFrame[^}]*torch[^}]*patternOriginOffsetMetres[^}]*\}\)/,'automatic shadows receive the actual lamp and the same vegetation pattern origin');
 assert.match(props,/fallbackMesh:p\.fallbackMesh\|\|null/);
 assert.match(world,/opening-street\.glb'[\s\S]*vegetation\.glb'[\s\S]*source-structures\.glb'/,'vegetation loads after the exterior fallback and before later structural packs');
 assert.equal((world.match(/timeSec:now,reducedMotion:pixelMeshSettings\.reduceMotion/g)||[]).length,

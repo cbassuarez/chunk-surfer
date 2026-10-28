@@ -3,6 +3,7 @@ import { logWarn } from './diagnostics/diagnostics.js';
 import { sectorErrorPhases } from '../render/sector-error.js';
 import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
+import {createWindowMediaSimulation} from './window-media-simulation.js';
 import { ensureWorldLetteringFonts } from '../render/world-lettering-fonts.js';
 import {
   apertureCompositionPlan,
@@ -78,7 +79,7 @@ export function endingChoreographyProfile(endingId=''){
 export function windowChoreographyPolicy(sceneId=''){
   const id=String(sceneId||'');
   if(BATTLE_PROFILES[id]||id.startsWith('battle:'))return 'battle-only';
-  if(id==='source:white-crossing'||id==='source:proper'||id==='source-final')return 'source-leakage';
+  if(id==='source:white-crossing'||id==='source:proper'||id==='source-final'||id==='source:standing-tear'||id==='source:continuation')return 'source-leakage';
   if(id.startsWith('ending:')||ENDING_PROFILES[id])return 'ending-resolution';
   if(id==='credits')return 'credits-restoration';
   // THE ONE PUZZLE THAT REACHES OUTSIDE THE WINDOW, AND IT ONLY EVER SHOWS.
@@ -297,6 +298,7 @@ function endingPlan(profile,sequence=0,reducedMotion=false){
 }
 
 function createSimulation(documentApi,effects){
+  const media=createWindowMediaSimulation({documentApi,effects});
   let root=null;
   const panes=new Map();
   const formationTimers=new Set();
@@ -389,6 +391,8 @@ function createSimulation(documentApi,effects){
     runCycle();
   }
   function show(plan){
+    if(plan.kind==='composition'){clear();root?.classList?.remove('active');return media.show(plan);}
+    media.hide();
     const host=ensure();if(!host)return false;
     clear();activePlan=plan;host.dataset.cue=plan.cueId;host.classList.add('active');
     host.classList.toggle('composition',plan.kind==='composition');
@@ -441,6 +445,7 @@ function createSimulation(documentApi,effects){
     return true;
   }
   function snap(plan,{coherent=false}={}){
+    if(plan.kind==='composition')return media.snap(plan,{coherent});
     const host=ensure();if(!host)return false;
     const bounds=host.getBoundingClientRect();
     for(const surface of plan.surfaces){const pane=panes.get(surface.id);if(!pane||!surface.target)continue;
@@ -448,9 +453,10 @@ function createSimulation(documentApi,effects){
       pane.style.top=`${surface.target.anchorY*bounds.height+surface.target.offsetY}px`;
       pane.classList.toggle('coherent',!!coherent);report(plan,surface,pane);}return true;
   }
-  function coherence(value=true){for(const pane of panes.values())pane.classList.toggle('coherent',!!value);}
-  function freeze(value=true){for(const pane of panes.values())for(const video of pane.querySelectorAll?.('video')||[]){if(value)video.pause?.();else void video.play?.().catch?.(()=>{});}}
-  function trigger(plan,eventName){
+  function coherence(value=true){media.coherence(value);for(const pane of panes.values())pane.classList.toggle('coherent',!!value);}
+  function freeze(value=true){media.freeze(value);for(const pane of panes.values())for(const video of pane.querySelectorAll?.('video')||[]){if(value)video.pause?.();else void video.play?.().catch?.(()=>{});}}
+  function trigger(plan,eventName,options={}){
+    if(plan.kind==='composition')return media.trigger(plan,eventName,options);
     if(activePlan!==plan)return false;
     let matched=false;
     for(const surface of plan.surfaces){
@@ -462,8 +468,8 @@ function createSimulation(documentApi,effects){
     }
     return matched;
   }
-  function hide(){if(root){root.classList.remove('active');clear();}}
-  return{show,snap,coherence,freeze,trigger,hide,active:()=>!!root?.classList?.contains('active')};
+  function hide(){media.hide();if(root){root.classList.remove('active');clear();}}
+  return{show,snap,coherence,freeze,trigger,hold:(value,options)=>media.hold(value,options),hide,active:()=>media.active()||!!root?.classList?.contains('active'),debug:()=>media.debug()};
 }
 
 // ── THE BOX OFFICE KEY TAGS ─────────────────────────────────────────────────
@@ -634,11 +640,13 @@ export function createWindowChoreographyDirector({
   let decayTokens=null;
   let ending=null;
   let composition=null;
+  let presentationHeld=false;
   let sequence=0;
   let epoch=0;
   let planTail=Promise.resolve();
   let lastEscapeAt=-Infinity;
   let titleGeneration=0;
+  let returnGeneration=0,returnPending=null;
   let frontEndLease=null;
   let frontEndReady=Promise.resolve(null);
   let sourceDesktop=null;
@@ -757,17 +765,23 @@ export function createWindowChoreographyDirector({
     return transaction;
   }
 
-  async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260}={}){
-    if(sourceDesktop)return null;
+  async function performPlan(plan,{forceSimulate=false,compositionMode='cold',handoffDurationMs=260,isCurrent=()=>true,startOnPresent=false,onPresentationPlan=()=>{}}={}){
+    if(sourceDesktop||!isCurrent())return null;
     const active=await beginTransaction(plan.sceneId,{forceSimulate});
-    if(!active)return null;
+    if(!active||!isCurrent())return null;
     const useNative=active.native&&!forceSimulate;
     let nativeMoved=false,nativePanes=false;
     if(plan.kind==='composition'){
+      // A fullscreen notice or a queued transaction may take arbitrary time.
+      // Study time begins after those waits, immediately before assignment.
+      const startScore=()=>{if(startOnPresent){plan=Object.freeze({...plan,epochMs:Date.now()});onPresentationPlan(plan);}};
+      startScore();
       if(useNative)nativePanes=!!await safe(()=>effects?.showComposition?.(plan,{
-        token:effects?.sessionToken?.(),mode:compositionMode,handoffDurationMs,
+        token:effects?.sessionToken?.(),mode:compositionMode,handoffDurationMs,isCurrent,
       }));
+      if(!isCurrent())return null;
       const simulated=forceSimulate||!useNative||!nativePanes;
+      if(simulated&&useNative)startScore();
       if(simulated)simulation.show(plan);else simulation.hide();
       onState({type:'composition',plan,native:useNative&&!simulated,simulated});
       return{plan,native:useNative&&!simulated,simulated};
@@ -931,7 +945,7 @@ export function createWindowChoreographyDirector({
     if(!plan||!event||!plan.score?.cues?.some((cue)=>cue.event===event))return false;
     if(!composition.presented){composition.pendingEvents?.add(event);onState({type:'composition-event-queued',plan,event});return true;}
     const effectiveAtMs=Math.max(Date.now()+32,Number(payload?.effectiveAtMs)||Date.now()+64);
-    simulation.trigger(plan,event);
+    simulation.trigger(plan,event,{effectiveAtMs});
     void safe(()=>effects?.triggerComposition?.(plan,event,{effectiveAtMs}));
     onState({type:'composition-event',plan,event});
     return true;
@@ -944,6 +958,36 @@ export function createWindowChoreographyDirector({
     return true;
   }
 
+  async function beginStudy(plan,{key=null,isCurrent=()=>true}={}){
+    if(plan?.purpose!=='source-study'||sourceDesktop||!isCurrent())return null;
+    const active={plan,purpose:'source-study',key,presented:false,pendingEvents:new Set(),completed:false,held:presentationHeld};
+    composition=active;
+    const current=()=>composition===active&&isCurrent();
+    const desktop=nativeDesired()&&!!compositionContext().introduced;
+    if(desktop){effects?.ensure?.({intensity:'standard',fullscreen:false,reducedMotion:reduced()});await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));}
+    if(!current())return null;
+    const result=await runPlan(active.plan,{forceSimulate:!desktop,isCurrent:current,startOnPresent:true,
+      onPresentationPlan:value=>{if(current())active.plan=value;}});
+    if(!current())return null;
+    if(result){
+      markCompositionPresented(active);
+      if(presentationHeld){simulation.hold(true);await safe(()=>effects?.holdComposition?.(true));}
+    }
+    return result;
+  }
+  async function endStudy(key=null){
+    if(composition?.purpose!=='source-study'||key!==null&&composition.key!==key)return false;
+    return restore('source-study-end',{preserveSnapshots:true});
+  }
+  function holdComposition(value=true){
+    const held=!!value;presentationHeld=held;
+    if(!composition||composition.plan.cueId.includes(':last-exposure')||composition.held===held)return false;
+    composition.held=held;
+    const effectiveAtMs=Date.now();simulation.hold(held,{effectiveAtMs});
+    void safe(()=>effects?.holdComposition?.(held,{effectiveAtMs}));
+    return true;
+  }
+
   function clearCompositionTimers(){
     if(composition?.holdTimer)clearTimeout(composition.holdTimer);
     if(composition?.hintTimer)clearTimeout(composition.hintTimer);
@@ -951,7 +995,8 @@ export function createWindowChoreographyDirector({
     if(composition?.warningTokens)effects?.releaseSnapshots?.(composition.warningTokens);
     composition=null;
   }
-  async function restore(reason='restore',{closePool=false,preserveComposition=false}={}){
+  async function restore(reason='restore',{closePool=false,preserveComposition=false,preserveSnapshots=false}={}){
+    returnGeneration+=1;returnPending=null;
     const desktop=sourceDesktop;sourceDesktop=null;sourceDesktopGeneration+=1;
     sourceDesktopLastReason=reason;
     let restored=true;
@@ -975,7 +1020,7 @@ export function createWindowChoreographyDirector({
       try{await api.invoke('chunk_source_desktop_end',{token:desktop.token});}
       catch(error){restored=false;onState({type:'source-desktop-restore-error',reason:String(error?.message||error),token:desktop.token});}
     }
-    if(!preserveComposition){clearCompositionTimers();simulation.hide();await safe(()=>effects?.hideComposition?.());if(puzzleWasActive)onPuzzleState(false);}
+    if(!preserveComposition){clearCompositionTimers();simulation.hide();await safe(()=>effects?.hideComposition?.({releaseSnapshots:!preserveSnapshots}));if(puzzleWasActive)onPuzzleState(false);}
     onGeometryMotion(false);
     await safe(()=>effects?.hidePanes?.());
     if(openingWasNative&&api?.invoke)await safe(()=>api.invoke('chunk_window_choreography_restore',{token:opening.token}));
@@ -1110,17 +1155,18 @@ export function createWindowChoreographyDirector({
     return runPlan(battleDamagePlan(profile,{grade,origin,sequence:sequence++,reducedMotion:reduced()}));
   }
 
-  async function result({battleId='',result='abort'}={}){
+  async function result({battleId='',result='abort',snapshotToken:retainedSnapshot=''}={}){
     if(sourceDesktop)return null;
     if(result!=='lose')return null;
     const profile=battle?.profile||battleChoreographyProfile(battleId);
     if(!profile)return null;
     const context=compositionContext();
-    const snapshotToken=effects?.captureSnapshot?.()||'snapshot-unavailable';
-    const plan=deathCompositionPlan({battleId:profile.battleId,snapshotToken,reduceDread:!!context.reduceDread,reducedMotion:reduced(),flashMode:context.flashMode,epochMs:Date.now()});
+    const snapshotToken=retainedSnapshot||effects?.captureSnapshot?.();
+    if(!snapshotToken)return null;
+    const plan=deathCompositionPlan({battleId:profile.battleId,snapshotToken,lastExposure:true,reduceDread:!!context.reduceDread,reducedMotion:reduced(),flashMode:context.flashMode,epochMs:Date.now()});
     const active={plan,purpose:'death',state:{},completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
-    void runPlan(plan).then(()=>markCompositionPresented(active)).catch(()=>null);
+    void runPlan(plan,{isCurrent:()=>composition===active}).then(()=>markCompositionPresented(active)).catch(()=>null);
     // The result dialogue owns retry timing. A native decoder or surface that
     // is late is allowed to fall back, never to hold this promise open.
     return{plan,scheduled:true};
@@ -1188,7 +1234,7 @@ export function createWindowChoreographyDirector({
     return true;
   }
   function noteCompositionMove(detail={}){
-    if(!composition||String(detail.cueId||'')!==composition.plan.cueId)return false;
+    if(!composition||composition.purpose!=='puzzle'||String(detail.cueId||'')!==composition.plan.cueId)return false;
     const next=placementState(detail);if(!next)return false;
     composition.state[detail.paneId]=next;evaluatePuzzle();return true;
   }
@@ -1332,26 +1378,36 @@ export function createWindowChoreographyDirector({
   // rendered by the caller because a text pane has no shader path and would come
   // up black out here. They are registered as snapshots and handed to the panes,
   // which is the same road the death composition's quartered frame travels.
-  async function beginReturn(sections=[]){
-    const pages=(Array.isArray(sections)?sections:[]).filter((entry)=>String(entry?.image||'').startsWith('data:'));
-    if(pages.length<2)return null;
+  async function beginReturn(sections=[],{lastExposure=false,snapshotToken='',snapshotImage=''}={}){
+    const generation=++returnGeneration,owner=epoch;
+    const pending={generation,owner};returnPending=pending;
+    const current=()=>generation===returnGeneration&&owner===epoch&&returnPending===pending;
+    const pages=lastExposure
+      ?(!snapshotToken&&String(snapshotImage).startsWith('data:image/')?[{image:snapshotImage,label:'Final world exposure'}]:[])
+      :(Array.isArray(sections)?sections:[]).filter((entry)=>String(entry?.image||'').startsWith('data:'));
+    if(lastExposure?!snapshotToken&&!pages.length:pages.length<2){if(current())returnPending=null;return null;}
     if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
-    const tokens=[];
+    const tokens=snapshotToken&&lastExposure?[snapshotToken]:[];
+    const registered=[];
+    const abandon=()=>{if(registered.length)effects?.releaseSnapshots?.(registered);return null;};
     for(const page of pages){
       const token=await safe(()=>effects?.registerSnapshot?.(page.image));
-      if(token)tokens.push(token);
+      if(token){tokens.push(token);registered.push(token);}
+      if(!current())return abandon();
     }
-    if(tokens.length<2)return null;
+    if(tokens.length<(lastExposure?1:2)){if(current())returnPending=null;return abandon();}
     const context=compositionContext();
     const plan=returnCompositionPlan({
       sections:pages.map((page)=>page.label||''),
-      snapshotTokens:tokens,
+      snapshotTokens:tokens,lastExposure,
       epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode,
     });
     if(nativeDesired())await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
+    if(!current())return abandon();
     const active={plan,purpose:'return',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
     composition=active;
-    await runPlan(plan);
+    await runPlan(plan,{isCurrent:current});
+    if(!current()||composition!==active)return abandon();
     markCompositionPresented(active);
     return {plan,scheduled:true};
   }
@@ -1459,7 +1515,9 @@ export function createWindowChoreographyDirector({
   // over the stages that follow the report, which is what a composition with no
   // end does.
   async function finishReturn(){
-    if(composition?.purpose!=='return')return false;
+    const pending=!!returnPending;
+    returnGeneration+=1;returnPending=null;
+    if(composition?.purpose!=='return')return pending;
     await restore('return-complete');
     return true;
   }
@@ -1589,6 +1647,12 @@ export function createWindowChoreographyDirector({
     onPuzzleState(true);return performPlan(puzzle.plan,{forceSimulate:true});
   }
   function suspend(){
+    if(returnPending||composition?.plan?.cueId?.includes(':last-exposure')){
+      // The main presenter owns the pause/focus clock. Optional images retire;
+      // resuming must not replay their wall-clock score or install a late pane.
+      void restore('last-exposure-suspend');return true;
+    }
+    if(composition?.purpose==='source-study'){holdComposition(true);return true;}
     if(sourceDesktop?.mode==='native'){
       sourceDesktop.suspended=true;
       void safe(()=>api.invoke('chunk_source_desktop_suspend',{token:sourceDesktop.token,suspended:true}));
@@ -1619,7 +1683,7 @@ export function createWindowChoreographyDirector({
 
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
-    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,
+    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,
     beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take

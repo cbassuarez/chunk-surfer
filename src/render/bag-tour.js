@@ -25,9 +25,10 @@ export function bagGuideFrame({size={},outer=null,guide=null}={}){
 
 function tourContent(guide,hasOutput,controller){
   const step=String(guide.step||''),kind=guide.kind||'action',section=guide.sectionId||guide.section;
+  const recording=guide.mode==='recording',deferred=guide.mode==='skills';
   if(kind==='section')return section==='skills'
-    ?{number:1,title:'Open Skills',body:'Press the green SKILLS selector. Check your patch leads before heading downstairs.',key:controller?inputPromptLabel('tabNext'):'4',verb:'OPEN SKILLS',color:'#acd88c'}
-    :{number:3,title:'Open the map',body:'Press the blue MAP selector. Give the location indicator a destination.',key:controller?inputPromptLabel('tabNext'):'2',verb:'OPEN MAP',color:'#8bbfdf'};
+    ?{number:1,title:'Open Skills',body:deferred?'Press the green SKILLS selector. Check your patch leads before returning to the encounter.':'Press the green SKILLS selector. Check your patch leads before heading downstairs.',key:controller?inputPromptLabel('tabNext'):'4',verb:'OPEN SKILLS',color:'#acd88c'}
+    :{number:recording?1:3,title:'Open the map',body:'Press the blue MAP selector. Give the location indicator a destination.',key:controller?inputPromptLabel('tabNext'):'2',verb:'OPEN MAP',color:'#8bbfdf'};
   if(kind==='skills'){
     const zero=guide.continueEnabled!==false&&!hasOutput;
     return{number:2,title:zero?'Check the patch bay':hasOutput?'Your patch is live':'Patch your kit',
@@ -37,8 +38,9 @@ function tourContent(guide,hasOutput,controller){
             :'Drag a lead from SEND into a matching colored IN socket. Start with any available first-row skill.',
       key:controller?inputPromptLabel('confirm'):'ENTER',verb:controller?'PATCH / PULL':'PATCH · SPACE PULL',color:'#e5bc68'};
   }
-  if(kind==='close')return{number:5,title:'Follow your bearing',body:'B3 is marked. Close the case, take the inner door, and follow the HUD route down the basement stair.',key:inputPromptLabel('bag'),verb:'CLOSE CASE',color:'#8bbfdf'};
-  if(guide.action==='mark')return{number:4,title:'Mark Studio B3',body:'Studio B3 is selected on the basement floor. Press SET TARGET to mark it. Then follow your HUD bearing downstairs.',key:controller?inputPromptLabel('confirm'):'ENTER',verb:'SET B3 TARGET',color:'#8bbfdf'};
+  if(kind==='close'&&deferred)return{number:3,title:'Close the case',body:'Your patch leads are checked. Close the case to return to the room and the waiting encounter.',key:inputPromptLabel('bag'),verb:'CLOSE CASE',color:'#acd88c'};
+  if(kind==='close')return{number:recording?3:5,title:'Follow your bearing',body:'B3 is marked. Close the case, take the inner door, and follow the HUD route down the basement stair.',key:inputPromptLabel('bag'),verb:'CLOSE CASE',color:'#8bbfdf'};
+  if(guide.action==='mark')return{number:recording?2:4,title:'Mark Studio B3',body:'Studio B3 is selected on the basement floor. Press SET TARGET to mark it. Then follow your HUD bearing downstairs.',key:controller?inputPromptLabel('confirm'):'ENTER',verb:'SET B3 TARGET',color:'#8bbfdf'};
   return{number:null,title:guide.title||'Check the case',body:guide.why||'',key:inputPromptLabel(guide.action||'confirm'),verb:'CONTINUE',color:'#e5bc68',step};
 }
 

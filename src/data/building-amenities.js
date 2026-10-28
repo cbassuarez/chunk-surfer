@@ -31,8 +31,8 @@ export const PUBLIC_SANITARY_PARTITIONS = freeze([
 ]);
 
 export const POOL_WASH_PARTITIONS = freeze([
-  partition('pool-shower-fin-1', 72.25, 29.5, 2.5, .5, 2.2),
-  partition('pool-shower-fin-2', 72.25, 31.0, 2.5, .5, 2.2),
+  partition('pool-shower-fin-1', 73.55, 38.0, 2.5, .5, 2.2),
+  partition('pool-shower-fin-2', 73.55, 39.5, 2.5, .5, 2.2),
 ]);
 
 const coreProfile = () => ({ floor: 0, ceil: 3.5, zone: ZONE.foyer, material: MATERIAL.wetTile });
@@ -113,7 +113,7 @@ export const BUILDING_AMENITY_PROPS = freeze([
   ...[['wash',80.70,24.40],['large',76.75,25.0]].map(([room,x,y]) =>
     prop(`amenity-public-${room}-smoke-detector`, 'arch_smoke_detector', x, y,
       { elevation: 3.3365, mount: 'ceiling', structural: true, power: 'isolated', renderGroups: ['ground'] })),
-  prop('amenity-pool-wash-screens', 'amenity_pool_wash_screens', 72.25, 30.25, { structural: true, renderGroups: ['ground'] }),
+  prop('amenity-pool-wash-screens', 'amenity_pool_wash_screens', 73.55, 38.75, { structural: true, renderGroups: ['ground'] }),
   prop('amenity-large-wc', 'amenity_toilet', 76.25, 26.29, { yaw: Math.PI, blocks: true, inspectAt: { x: 76.75, y: 25.25 } }),
   prop('amenity-large-wc-basin', 'amenity_washbasin', 77.95, 24.65, { yaw: Math.PI / 2, blocks: true }),
   prop('amenity-large-wc-mirror-soap', 'amenity_mirror_soap', 78.16, 24.65, { yaw: Math.PI / 2, elevation: 1.07 }),
@@ -128,13 +128,17 @@ export const BUILDING_AMENITY_PROPS = freeze([
   prop('amenity-public-mirror-soap', 'amenity_mirror_soap', 81.66, 24.75, { yaw: Math.PI / 2, elevation: 1.07 }),
   prop('amenity-public-drain', 'amenity_floor_drain', 80.75, 25.35),
   prop('amenity-cleaner-cupboard', 'amenity_cleaner_cupboard', 80.9, 26.35, { yaw: Math.PI, blocks: true }),
-  prop('amenity-pool-shower-1', 'amenity_shower_column', 71.04, 28.7, { yaw: -Math.PI / 2 }),
-  prop('amenity-pool-shower-2', 'amenity_shower_column', 71.04, 30.2, { yaw: -Math.PI / 2 }),
-  prop('amenity-pool-drain-1', 'amenity_floor_drain', 72.0, 28.7),
-  prop('amenity-pool-drain-2', 'amenity_floor_drain', 72.0, 30.2),
-  prop('amenity-pool-washbasin', 'amenity_washbasin', 73.7, 28.23, { blocks: true }),
-  prop('amenity-pool-mirror-soap', 'amenity_mirror_soap', 73.7, 28.02, { elevation: 1.07 }),
-  prop('amenity-pool-hooks', 'amenity_hook_rail', 71.8, 28.02, { elevation: 1.7 }),
+  // The existing 140mm screens now provide the actual mounting surfaces.
+  // Both shower columns face into their bay; the basin, mirror and hooks face
+  // its dry north approach. Repositioning the old north-wall fixtures as one
+  // translated group would leave them hanging in the middle of the deck.
+  prop('amenity-pool-shower-1', 'amenity_shower_column', 72.8, 38.0875),
+  prop('amenity-pool-shower-2', 'amenity_shower_column', 72.8, 39.4125, { yaw: Math.PI }),
+  prop('amenity-pool-drain-1', 'amenity_floor_drain', 73.3, 38.5),
+  prop('amenity-pool-drain-2', 'amenity_floor_drain', 74.0, 39.0),
+  prop('amenity-pool-washbasin', 'amenity_washbasin', 74.35, 37.712, { yaw: Math.PI, blocks: true }),
+  prop('amenity-pool-mirror-soap', 'amenity_mirror_soap', 74.35, 37.916, { yaw: Math.PI, elevation: 1.07 }),
+  prop('amenity-pool-hooks', 'amenity_hook_rail', 73.1, 37.9175, { yaw: Math.PI, elevation: 1.7 }),
   prop('amenity-staff-tea-counter', 'amenity_staff_counter', 18.3, 271.4, { yaw: Math.PI / 2, floorOverride: 10, blocks: true, renderGroups: ['academic'] }),
   prop('amenity-staff-service-connections', 'amenity_staff_service_connections', 18.5, 271.0, { floorOverride: 10, renderGroups: ['academic'] }),
   // Asymmetric wall-mounted meshes keep their logical anchors in open air;
@@ -146,7 +150,7 @@ export const BUILDING_AMENITY_PROPS = freeze([
 ]);
 
 export const BUILDING_AMENITY_RELOCATIONS = freeze([
-  freeze({ id: 'pool-entry-rules', x: 78, y: 28, note: 'Outside the shower fins, on the existing north wall.' }),
+  freeze({ id: 'pool-entry-rules', x: 95, y: 28, note: 'On the changing vestibule north wall above the attendant counter.' }),
 ]);
 
 export const BUILDING_AMENITY_SURVEY_NODES = freeze([
@@ -155,8 +159,8 @@ export const BUILDING_AMENITY_SURVEY_NODES = freeze([
   freeze({ id: 'public-wc-large-interior', x: 76.75, y: 25.0, facing: 'south' }),
   freeze({ id: 'public-wc-main-wash', x: 80.75, y: 24.25, facing: 'east' }),
   freeze({ id: 'public-wc-standard-threshold', x: 79.25, y: 24.25, facing: 'south', doorId: 'public-wc-standard' }),
-  freeze({ id: 'pool-wash-approach', x: 74.25, y: 31.75, facing: 'northwest' }),
-  freeze({ id: 'pool-shower-interior', x: 72.75, y: 30.25, facing: 'west' }),
+  freeze({ id: 'pool-wash-approach', x: 74.55, y: 37.0, facing: 'south' }),
+  freeze({ id: 'pool-shower-interior', x: 74.05, y: 38.75, facing: 'west' }),
   freeze({ id: 'staff-counter-approach', x: 17.25, y: 271.25, facing: 'east', floor: 10 }),
   freeze({ id: 'public-drinking-fountain', x: 95.75, y: 16.65, facing: 'east' }),
   freeze({ id: 'staff-lockers-approach', x: 17.75, y: 275.25, facing: 'east', floor: 10 }),

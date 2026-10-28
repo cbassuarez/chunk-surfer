@@ -11,6 +11,7 @@ import { UI_CELL_W, UI_CELL_H } from '../src/render/atlas.js';
 import { buildBagModel } from '../src/game/bag-model.js';
 import { learnCombatTechnique, normalizeCombatBuild } from '../src/game/combat-progression.js';
 import { TECHNIQUE } from '../src/game/combat-state.js';
+import { SETUP_HANDOFF as F, setupHandoffGuide } from '../src/game/setup-handoff.js';
 import { setActiveInputDevice, inputPromptLabel } from '../src/game/bindings.js';
 
 const copyBox=({x,y,w,h})=>({x,y,w,h});
@@ -189,13 +190,36 @@ test('controller-only tours never advertise an Enter key for the map confirmatio
 test('live Bag registers module hits before the external guide and never resurrects an internal bottom band',()=>{
   const source=readFileSync(new URL('../src/game/bag.js',import.meta.url),'utf8');
   assert.match(source,/const frame = bagGuideFrame\(\{size,outer:bagPanelBounds\(\{\.\.\.size,sectionId:nav\.sectionId\}\),guide:guided\}\)/);
-  assert.match(source,/body:mapHardware\?\{x:outer\.x\+3,y:outer\.y\+2\.6,w:outer\.w-6,h:outer\.h-3\.6\}:body/,
+  assert.match(source,/body:mapHardware\|\|journalHardware\?\{x:outer\.x\+3,y:outer\.y\+2\.6,w:outer\.w-6,h:outer\.h-3\.6\}:body/,
     'the map uses the approved larger exposed console body, not the inherited glass aperture');
-  assert.match(source,/sectionId:mapHardware\?'map':null/,'the map body receives its own tab and content geometry');
+  assert.match(source,/sectionId:mapHardware\?'map':journalHardware\?'journal':null/,'the map body receives its own tab and content geometry');
+  assert.match(source,/glass: skills && !subview \|\| mapHardware \|\| journalHardware \? false : \{\}/,
+    'the exposed map and journal consoles cannot have a glass cover');
+  assert.match(source,/aperture: !\(mapHardware \|\| journalHardware\)/,
+    'the exposed consoles do not inherit the inset glass aperture');
   assert.doesNotMatch(source,/guideRows:\s*bagGuideRows/);
   const render=source.slice(source.indexOf('const frame = bagGuideFrame'));
   const registration=render.indexOf('registerRootHits(layout);'),guideDraw=render.indexOf('guidePresentation = drawBagGuideCallouts(');
   assert.ok(registration>=0&&guideDraw>registration,'registered pointer geometry exists before guide leaders resolve');
   assert.match(source,/regions:hits\.view\(\),patchLayout/);
   assert.match(source,/kind:'bag-guide-continue',\.\.\.continuation/,'the exterior button is its actual pointer hit target');
+});
+
+// Exercise the actual persisted guide through its final renderer. A Skills-only
+// close must not inherit the old renderer's instruction to return to B3.
+test('recording and deferred Skills cards describe their own route and count their own steps',()=>{
+  const flags={'setup.levels':true,'bag.taken':true,[F.started]:true,[F.mode]:'recording',[F.opened]:true};
+  const map=bagGuideCalloutLayout(fixture({guide:setupHandoffGuide(flags)})).callouts[0];
+  assert.equal(map.number,1);
+  flags[F.mapOpened]=true;
+  const mark=bagGuideCalloutLayout(fixture({guide:setupHandoffGuide(flags)})).callouts[0];
+  assert.equal(mark.number,2);
+  flags['setup.waypoint']=true;
+  const close=bagGuideCalloutLayout(fixture({guide:setupHandoffGuide(flags,{markedRoom:'main_b3'})})).callouts[0];
+  assert.equal(close.number,3);assert.match(close.body,/B3/);
+  Object.assign(flags,{'combat.trained':true,[F.mode]:'skills',[F.closed]:true,[F.arrived]:true,[F.skillsCaseOpened]:true,[F.skillsOpened]:true,[F.skillsDone]:true});
+  const skillsClose=bagGuideCalloutLayout(fixture({guide:setupHandoffGuide(flags)})).callouts[0];
+  assert.equal(skillsClose.number,3);assert.match(skillsClose.body,/waiting encounter/);
+  assert.doesNotMatch(skillsClose.body,/B3|downstairs|basement|bearing/i);
+  assert.equal(skillsClose.targets?.[0]?.id??skillsClose.targetId,'bag:close');
 });

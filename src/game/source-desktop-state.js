@@ -3,6 +3,21 @@
 export const SOURCE_DESKTOP_VERSION = 1;
 export const SOURCE_SHELTER_PLATES = 3;
 export const SOURCE_EXPOSE_COVER_DAMAGE = 5;
+export const SOURCE_DESKTOP_BREACH_SECONDS = 2.4;
+
+// One owner clock drives both the passive native surface and its contained
+// fallback. The failure is a held presentation, never a second combat turn.
+export function sourceDesktopFailureBeat(elapsed = 0) {
+  const time = Math.max(0, Math.min(SOURCE_DESKTOP_BREACH_SECONDS, Number(elapsed) || 0));
+  const clamp01 = value => Math.max(0, Math.min(1, value));
+  const fade = clamp01((time - 1.15) / .5);
+  return {
+    time,
+    stage: time < .35 ? 'held' : time < 1.15 ? 'diagnostic' : time < SOURCE_DESKTOP_BREACH_SECONDS ? 'peeling' : 'exposed',
+    peel: clamp01((time - 1.15) / (SOURCE_DESKTOP_BREACH_SECONDS - 1.15)),
+    diagnostic: time < .35 || time >= 1.65 ? 0 : time < 1.15 ? 1 : 1 - fade * fade * (3 - 2 * fade),
+  };
+}
 
 const count = (value, fallback = 0) => Number.isFinite(Number(value)) ? Math.floor(Number(value)) : fallback;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));

@@ -17,8 +17,8 @@ import { CHAPEL_CHOIR_SCORE } from '../src/data/chapel-choir.js';
 import { controlAt } from '../src/audio/chapel-choir-score.js';
 
 const singer = { id: 'test-singer', role: 'congregant', figure: 'kneeling', row: 8,
-  bank: 0, seat: 0, x: 0, y: 4.8, z: 0, scale: 1 };
-const pose = (phase, options = {}) => chapelChoirPose({ phase, presence: singer, ...options });
+  bank: 0, seat: 0, x: 0, y: 4.8, z: 0, scale: 1,rapture:{height:1.65,delay:0} };
+const pose = (phase, options = {}) => chapelChoirPose({ phase, presence: singer, fervour:1,elapsed:phase,...options });
 const near = (a, b, tolerance = 1e-9) => assert.ok(Math.abs(a - b) <= tolerance, `${a} ~= ${b}`);
 const quiet = { singing: false, jaw: 0, breathe: 0, lift: 0, headPitch: 0, roll: 0,
   activity: 0, phraseLift: 0 };
@@ -117,7 +117,7 @@ test('row release, grounded celebrant, smaller server ascent and motion preferen
   assert.equal(reduced.roll, 0);
   const celebrant = pose(52, { presence: { ...singer, role: 'celebrant', figure: 'celebrant' } });
   assert.equal(celebrant.lift, 0); assert.equal(celebrant.singing, true);
-  near(pose(52, { presence: { ...singer, role: 'acolyte', figure: 'acolyte' } }).lift, full.lift * .38);
+  assert.equal(pose(52, { presence: { ...singer, role: 'acolyte', figure: 'acolyte' } }).lift,0);
 });
 
 test('a low ceiling limits ascent, with explicit clearance, including actor scale and ground datum', () => {
@@ -146,7 +146,7 @@ const ceiling = chapelCeilingPlacements(FP, CHAPEL_CEILING);
 const spans = FP.physicalSpanData().cells;
 const eye = { x: 92.25, y: 6.42, z: 72.75 };
 const canSee = (a, b) => chapelLineOfSight(spans, a, b);
-const choirAt = phase => ({ audible: true, loaded: true, phase });
+const choirAt = phase => ({ audible: true, loaded: true, phase,elapsed:phase,fervour:1,arrivalEnvelope:1 });
 const apply = (m, p) => [0, 1, 2].map(r => m[r] * p[0] + m[4 + r] * p[1] + m[8 + r] * p[2] + m[12 + r]);
 function transformedBounds(instance) {
   const b = BOUNDS[instance.mesh]; assert.ok(b, `packed bounds for ${instance.mesh}`);
@@ -218,9 +218,9 @@ test('the complete transformed body, head and hinged jaw fit under the actual ch
   assert.equal(frame.singing.length, 48);
   for (const p of congregation.filter(p => p.role === 'congregant')) {
     const performed = frame.singing.find(v => v.id === p.id);
-    const target = chapelChoirPose({ phase: 57, presence: p });
+    const target = chapelChoirPose({ phase: 57, presence: p,fervour:1,elapsed:57 });
     near(performed.lift, target.lift, 1e-5);
-    assert.ok(performed.lift > 0, `${p.id} rises as far as its own ceiling allows`);
+    assert.equal(performed.lift>0,!!p.rapture, `${p.id} has an individual, explicit ascent assignment`);
   }
   for (const p of congregation) {
     const head = frame.instances.find(i => i.id === `${p.id}:head`);
@@ -237,10 +237,12 @@ test('the complete transformed body, head and hinged jaw fit under the actual ch
 
 test('pause or focus protection freezes the musical pose, then recovers smoothly and retires the singing rig', () => {
   const rt = createChapelApparitions(), p = congregation.filter(p => p.role === 'congregant')
-    .sort((a, b) => chapelChoirPose({ phase: 52, presence: b }).lift - chapelChoirPose({ phase: 52, presence: a }).lift)[0];
+    .sort((a, b) => chapelChoirPose({ phase: 52, presence: b,fervour:1,elapsed:52 }).lift - chapelChoirPose({ phase: 52, presence: a,fervour:1,elapsed:52 }).lift)[0];
   const input = { congregation: [p], eye: null, timeSec: 100, choir: choirAt(52) };
+  assert.equal(rt.frame({...input,timeSec:90}).singing[0].lift,0,'a fresh runtime never pops bodies into the air');
+  for(let t=90.05;t<100;t+=.05)rt.frame({...input,timeSec:t});
   const initial = rt.frame(input), first = initial.singing[0];
-  near(first.lift, chapelChoirPose({ phase: 52, presence: p }).lift);
+  near(first.lift, chapelChoirPose({ phase: 52, presence: p,fervour:1,elapsed:52 }).lift,1e-5);
   assert.ok(first.lift > 0 && first.jaw > .2);
   const upwardHead = initial.instances.find(i => i.id === `${p.id}:head`);
   assert.ok(-upwardHead.matrix[9] > .1, 'the singing face intentionally tips up, rather than looking from an obsolete floor-height neck');
@@ -262,6 +264,7 @@ test('pause or focus protection freezes the musical pose, then recovers smoothly
 test('the presentation reaches the normal dressing path and respects actor suppression and motion settings', () => {
   const rt = createChapelApparitions();
   let captured;
+  for(let t=90;t<100;t+=.05)chapelDressingRenderInstances(placements,{group:'upper',apparitions:rt,listener:eye,eye,timeSec:t,choir:choirAt(52),reducedMotion:true});
   const props = chapelDressingRenderInstances(placements, { group: 'upper', apparitions: rt,
     listener: eye, eye, timeSec: 100, choir: choirAt(52), reducedMotion: true,
     onFrame: f => captured = f });

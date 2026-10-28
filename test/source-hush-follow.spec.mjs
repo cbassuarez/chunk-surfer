@@ -6,6 +6,7 @@ import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET as P } from '../src/game
 import { reduceChunkSurf, normalizeChunkSurfState } from '../src/game/chunk-surf-state.js';
 import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
 import { SOURCE_DIVIDE_ARRIVAL } from '../src/data/source-braided-divide.js';
+import { readFileSync } from 'node:fs';
 
 const DT = 1 / 60;
 function follower(seed = 7) {
@@ -110,6 +111,113 @@ test('his state saves and restores, and nonsense does not', () => {
   assert.deepEqual(back.snapshot(), f.snapshot());
 });
 
+test('the real Source controller pace cannot leave him hundreds of metres behind', () => {
+  for (const pace of [2.1, 4.8, .5/.045, Math.SQRT2*.5/.045]) for (let seed=1;seed<=32;seed++) {
+    const f=createSourceHushFollow(null,{seed,lineClear:()=>true});
+    const p={x:0,z:-20,floor:15.2};f.begin({x:0,z:0,floor:15.2,player:p});
+    let settledDistance=0,settledFrames=0;
+    for(let i=0;i<45/DT;i++){
+      p.z-=pace*DT;f.record(p);const before=f.frame(p);
+      f.tick(DT,{player:p,proper:true});const after=f.frame(p);
+      assert.ok(Math.hypot(after.x-before.x,after.z-before.z)<=Math.max(F.pace.max,F.properPace.max+F.properPace.catchup)*DT+1e-8,'root jumped');
+      assert.equal(after.withinContact,false,'ordinary forward travel forced contact');
+      if(i>=30/DT){settledDistance+=after.distance;settledFrames++;}
+    }
+    assert.ok(settledDistance/settledFrames<32,`${pace}m/s seed ${seed}: left at ${settledDistance/settledFrames}m mean`);
+  }
+});
+
+test('onward gains are finite, physical, saved, and stop outside involuntary contact', () => {
+  for(let seed=1;seed<=16;seed++){
+    const f=createSourceHushFollow(null,{seed,lineClear:()=>true});
+    const p={x:0,z:-20,floor:0};f.begin({x:0,z:0,floor:0,player:p});f.beginOnward(80);
+    const run=(seconds,moving)=>{for(let i=0;i<seconds/DT;i++){
+      if(moving)p.z-=11.11*DT;f.record(p);f.tick(DT,{player:p,proper:true,exitDistance:80-(-p.z-20)});
+      assert.equal(f.frame(p).withinContact,false);
+    }};
+    run(3,true);
+    assert.equal(f.frame(p).gap,14,'did not spend the two3m gains');
+    assert.equal(f.beginOnward(80),false,'re-entering replayed the gains');
+    run(12,false);
+    assert.ok(f.frame(p).distance>=13.5-1e-8,'a stop spent more than the finite gain');
+    const snapshot=JSON.parse(JSON.stringify(f.snapshot()));
+    const restored=createSourceHushFollow(snapshot,{seed,lineClear:()=>true});
+    assert.deepEqual(restored.snapshot(),snapshot);
+    assert.equal(restored.beginOnward(80),false,'reload replayed the gains');
+    const before=restored.snapshot();
+    for(let i=0;i<600;i++)restored.tick(DT,{player:p,proper:true,busy:true,exitDistance:0});
+    assert.deepEqual(restored.snapshot(),before,'blocked presentation moved the body or spent a gain');
+  }
+});
+
+test('wrong-door sidesteps and waiting do not become an unannounced attack', () => {
+  const f=createSourceHushFollow(null,{seed:11,lineClear:()=>true});
+  const p={x:0,z:-20,floor:0};f.begin({x:0,z:0,floor:0,player:p});f.beginOnward(40);
+  for(let i=0;i<12/DT;i++){
+    const t=i*DT;if(t<2)p.z-=10*DT;else if(t<3)p.x+=10.4*DT;else if(t>=6&&t<7)p.x-=10.4*DT;
+    f.record(p);f.tick(DT,{player:p,proper:true,exitDistance:40-(-p.z-20)});
+    assert.equal(f.frame(p).withinContact,false);
+    assert.ok(f.frame(p).distance>=F.onward.floor-1e-8);
+  }
+  assert.ok(Math.abs(f.frame(p).onward.progress-40.8)<.2,'the real lateral walk was omitted or waiting spent a gain');
+  assert.equal(f.frame(p).gap,14,'wrong-door searching exceeded the six-metre budget');
+  // Deliberately turning back and approaching retains the warned meeting.
+  for(let i=0;i<10/DT&&!f.frame(p).withinContact;i++){
+    const h=f.frame(p),d=h.distance,step=Math.min(Math.max(0,d-2.6),4.8*DT);
+    p.x+=(h.x-p.x)/d*step;p.z+=(h.z-p.z)/d*step;
+    f.record(p);f.tick(DT,{player:p,proper:true,exitDistance:40-(-p.z-20)});
+  }
+  assert.equal(f.frame(p).withinContact,true,'voluntary meeting was removed');
+});
+
+test('reload preserves the walked corner instead of cutting a straight line through it', () => {
+  const f=createSourceHushFollow(null,{seed:8,lineClear:()=>false});
+  const p={x:0,z:-20,floor:0};f.begin({x:0,z:0,floor:0,player:p});
+  // A real trail around a corner; the legacy single-point start cannot imply it.
+  for(let z=0;z>=-20;z-=.5)f.record({x:0,z,floor:0});
+  for(let x=.5;x<=12;x+=.5)f.record({x,z:-20,floor:0});p.x=12;
+  const restored=createSourceHushFollow(JSON.parse(JSON.stringify(f.snapshot())),{seed:8,lineClear:()=>false});
+  for(let i=0;i<20/DT;i++){
+    restored.record(p);restored.tick(DT,{player:p,proper:true});const h=restored.frame(p);
+    assert.ok(Math.abs(h.x)<.01||Math.abs(h.z+20)<.36,'saved follower cut diagonally through the wall');
+  }
+  const legacy=createSourceHushFollow({active:true,x:0,z:0,floor:0},{lineClear:()=>false});
+  legacy.record(p);for(let i=0;i<600;i++)legacy.tick(DT,{player:p,proper:true});
+  assert.equal(legacy.frame(p).x,0);assert.equal(legacy.frame(p).z,0,'legacy missing route invented a shortcut');
+});
+
+test('choosing onward preserves the physical body, gaze, doors and contact consent', () => {
+  const built=buildChunkSurfGodPreset(P.FINAL,{seed:4417});
+  const o=built.state.landscapeOrigin;
+  const runtime=createSourceSpaceRuntime({initialState:{...built.state,sourceHushFollow:{active:true,x:37.5,z:-507,floor:15.2}}});
+  const at={x:o.x+75,y:o.y-1054,facing:3};runtime.setPlayerPosition(at);
+  const before=runtime.state(),door=runtime.edgeDoorFrame();
+  const result=runtime.beginEdgeDoorApproach();assert.equal(result.handled,true);
+  assert.equal(result.position.x,at.x);assert.equal(result.position.y,at.y);assert.equal(result.position.facing,3);
+  assert.deepEqual(runtime.edgeDoorFrame(),door);
+  assert.deepEqual(runtime.state().sourceContacts,before.sourceContacts);
+  assert.equal(runtime.state().finale.route,before.finale.route);
+  assert.equal(runtime.hushMode().colliding,false);
+  assert.notEqual(at.x,runtime.edgeDoorApproach().x,'fixture accidentally started at the true pair');
+  const suspended=runtime.state().sourceHushFollow;
+  for(let i=0;i<300;i++)runtime.tick(DT,{px:at.x,py:at.y,facing:3,followerSuspended:true});
+  assert.deepEqual(runtime.state().sourceHushFollow,suspended,'background time spent the follower approach');
+  // The final landmark's long damage grace is not a freeze of the physical
+  // follower. Pauses/dialogue freeze the world owner instead.
+  runtime.protectMoment(30);
+  const rear=runtime.hushFollowFrame();
+  for(let i=1;i<=80;i++){
+    const next={...at,y:at.y-i*.16};runtime.setPlayerPosition(next);
+    runtime.tick(DT,{px:next.x,py:next.y,facing:3});
+  }
+  for(let i=0;i<240;i++)runtime.tick(DT,{px:at.x,py:at.y-12.8,facing:3});
+  assert.ok(Math.hypot(runtime.hushFollowFrame().x-rear.x,runtime.hushFollowFrame().y-rear.y)>.2,'landmark damage grace froze the entire approach');
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.match(main,/followerSuspended:paused\|\|document.hidden\|\|!gameplayInputLifecycleActive\(\)/,'native focus does not suspend the physical follower');
+  const onward=main.slice(main.indexOf('function walkToEdgeDoor(){'),main.indexOf('// ── THE PHONE BOX'));
+  assert.doesNotMatch(onward,/px\s*=|py\s*=|r3dSetFacing|r3dSetLookAngles/,'onward still chooses position or gaze');
+});
+
 // ── Runtime: the room is taken back and he takes the door's place ──────────
 
 function landing() {
@@ -164,7 +272,13 @@ test('walking out of the open door, the Scene Dock is taken back and HUSH stands
 
 test('in Source proper, closing on him opens contact; a fall through the floor is cut to the forecourt', () => {
   const built = buildChunkSurfGodPreset(P.FIRST_CONTACT, { seed: 4417, injuries: 0, hasRig: false });
-  const runtime = createSourceSpaceRuntime({ initialState: built.state });
+  // This traversal starts at the forecourt, so use its actual entry trail.
+  // FIRST_CONTACT's review body is sixty metres ahead at the separate court;
+  // silently shortcutting the gaps between those two places is not following.
+  const runtime = createSourceSpaceRuntime({ initialState: {...built.state,sourceHushFollow:{
+    active:true,x:10,z:-392,floor:4.2,gap:14,
+    trail:[{x:10,z:-392,floor:4.2},{x:4,z:-396,floor:4.2},{x:4,z:-399,floor:4.2}],
+  }} });
   const o = built.state.landscapeOrigin;
   let at = { x: o.x + SOURCE_DIVIDE_ARRIVAL.x / .5, y: o.y + SOURCE_DIVIDE_ARRIVAL.z / .5, facing: 0 };
   runtime.setPlayerPosition(at);

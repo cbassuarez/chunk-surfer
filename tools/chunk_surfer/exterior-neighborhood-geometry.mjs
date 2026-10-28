@@ -2,7 +2,7 @@
 // A window is a masonry aperture, a reveal, a timber sash and an interior bay;
 // its sparse practical is behind that construction. No transparency or glow
 // card hides a solid wall. All parts use the ordinary opaque prop pipeline.
-import {EXTERIOR_NEIGHBOURHOOD as C,exteriorDeedWindowLit,exteriorDeedClosedEarly} from '../../src/data/exterior-frontages.js';
+import {EXTERIOR_NEIGHBOURHOOD as C,EXTERIOR_TRADE_DEEDS,EXTERIOR_FRONTAGE_DRESSING,exteriorDeedWindowLit,exteriorDeedClosedEarly} from '../../src/data/exterior-frontages.js';
 const material=(name,rgb,metallicFactor=0,roughnessFactor=.9,extra={})=>({name,pbrMetallicRoughness:{baseColorFactor:[...rgb,1],metallicFactor,roughnessFactor},...extra});
 export const NEIGHBOURHOOD_MATERIALS={
   brick:material('ellery red brick',[.25,.095,.052],0,.94),
@@ -20,13 +20,16 @@ export const NEIGHBOURHOOD_MATERIALS={
   litRoom:material('neighbourhood reflected lamplight',[.28,.205,.12],0,.95,{emissiveFactor:[.42,.255,.10]}),
   bulb:material('neighbourhood domestic bulb',[.70,.54,.28],0,.48,{emissiveFactor:[.9,.57,.22]}),
   paper:material('neighbourhood closure paper',[.66,.64,.54],0,.91),
+  canvas:material('faded canvas blind',[.24,.235,.17],0,.96),
+  stock:material('shop reflected ivory stock',[.62,.58,.44],0,.83,{emissiveFactor:[.055,.045,.027]}),
+  shopInterior:material('old shop interior plaster',[.14,.115,.08],0,.94,{emissiveFactor:[.014,.010,.005]}),
 };
 const midpoint=(a,b)=>a.map((n,k)=>(n+b[k])/2);
 export function buildExteriorNeighbourhood(api){
   for(const k of['mesh','addBox','addBeam','addCylinder','addQuad'])if(typeof api[k]!=='function')throw Error(`Neighbourhood needs ${k}`);
   const ids={};for(const[key,m]of Object.entries(NEIGHBOURHOOD_MATERIALS)){let i=api.materials.findIndex(p=>p.name===m.name);if(i<0){i=api.materials.length;api.materials.push(structuredClone(m));}ids[key]=i;}
   const reports=[];
-  const owner=(mesh)=>{const m=api.mesh(mesh),r={mesh,parts:[],windows:[],notices:[],deeds:[],triangles:0};reports.push(r);return{m,r};};
+  const owner=(mesh)=>{const m=api.mesh(mesh),r={mesh,parts:[],windows:[],notices:[],prints:[],trades:[],deeds:[],triangles:0};reports.push(r);return{m,r};};
   function context({m,r},prefix='',map=p=>p){
     const box=(id,c,s,key)=>{api.addBox(m,map(c),s,ids[key]);r.parts.push({id:prefix+id,kind:'box',center:map(c),size:s,material:key});r.triangles+=12;};
     const beam=(id,a,b,w,key)=>{api.addBeam(m,map(a),map(b),w,ids[key]);r.parts.push({id:prefix+id,kind:'beam',a:map(a),b:map(b),width:w,material:key});r.triangles+=12;};
@@ -79,6 +82,90 @@ export function buildExteriorNeighbourhood(api){
     }
     return aperture;
   }
+  function tradeWindow(b,r,slot,{closed}){
+    const id=closed?'closed-shop-display':'shop-display',z=-.14,y=1.94,w=4.30,h=1.76,lit=!closed&&slot.deed%3!==1;
+    const aperture={id,z0:z-w/2,z1:z+w/2,y0:y-h/2,y1:y+h/2};
+    r.windows.push({...aperture,id:b.id(id),center:b.point([0,y,z]),normal:[1,0,0],width:w,height:h,lit,backDepth:C.roomDepth,frameDepth:.11,trade:slot.display});
+    b.box(id+'-room-back',[-.815,y,z],[.07,h,w],lit?'shopInterior':'black');
+    for(const side of[-1,1]){
+      b.box(id+'-room-return-'+side,[-.41,y,z+side*(w/2+.027)],[.78,h,.054],'plaster');
+      b.box(id+'-reveal-'+side,[-.16,y,z+side*(w/2+.027)],[.32,h,.054],'stone');
+      b.box(id+'-jamb-'+side,[.035,y,z+side*(w/2-.035)],[.11,h,.075],slot.paint);
+      b.box(id+'-room-floor-ceiling-'+side,[-.41,y+side*(h/2+.03),z],[.78,.06,w],'wood');
+      b.box(id+'-frame-head-foot-'+side,[.035,y+side*(h/2-.035),z],[.11,.075,w],slot.paint);
+    }
+    b.box(id+'-sill',[.075,1.01,z],[.44,.11,w+.30],'stone');
+    b.box(id+'-lintel',[.025,2.93,z],[.34,.16,w+.29],'stone');
+    b.box(id+'-mullion',[.055,y,z],[.09,h-.10,.065],slot.paint);
+    b.box(id+'-meeting-rail',[.075,2.46,z],[.11,.075,w-.10],slot.paint);
+    b.box(id+'-room-shelf',[-.49,1.12,z],[.45,.08,w-.30],'wood');
+    if(lit)b.box(id+'-lamp-shade',[-.51,2.71,z],[.22,.10,.62],'bulb');
+    const stock=lit?'stock':'paper',put=(name,cy,dz,sy,sz,key=stock,x=-.47)=>b.box(`shop-stock-${slot.display}-${name}`,[x,cy,z+dz],[.24,sy,sz],key);
+    if(closed){
+      // A folded internal blind still leaves a strip of the display observable.
+      for(let j=0;j<5;j++)b.box('shop-closed-blind-'+j,[-.22,1.58+j*.244,z],[.035,.23,w-.12],j%3===0?'black':'canvas');
+    }else if(slot.display==='books'){
+      for(let j=0;j<5;j++)put('volume-'+j,1.49,-1.55+j*.68,.58+(j%2)*.12,.26,j%2?'green':stock);
+    }else if(slot.display==='print'){
+      for(let j=0;j<4;j++)put('paper-ream-'+j,1.19+j*.075,.95,.065,.74);
+      put('press-bed',1.29,-.83,.08,1.02,'steel');
+      for(const side of[-1,1])put('press-upright-'+side,1.68,-.83+side*.38,.79,.065,'steel');
+      put('press-crown',2.08,-.83,.10,1.04,'steel');put('press-platen',1.55,-.83,.065,.75,'wood');
+      put('press-spindle',1.84,-.83,.42,.06,'brass');
+      b.beam('shop-stock-print-press-handle',[-.43,1.98,z-1.14],[-.43,1.98,z-.52],.035,'wood');
+    }else if(slot.display==='cloth'){
+      for(let j=0;j<5;j++){put('folded-length-'+j,1.18+j*.11,-.75,.10,1.55,j%2?'canvas':stock);put('roll-'+j,1.67,.55+j*.23,.98,.19,j%2?'green':'canvas');}
+    }else if(slot.display==='bottles'||slot.display==='flowers'){
+      for(let j=0;j<5;j++){
+        b.cylinder(`shop-stock-${slot.display}-vessel-${j}`,[-.47,1.48,z-1.47+j*.71],.12,.55,j%2?'green':'terracotta',6);
+        if(slot.display==='flowers')b.beam(`shop-stock-flowers-stem-${j}`,[-.47,1.7,z-1.47+j*.71],[-.47,2.12,z-1.34+j*.71],.025,'wood');
+        else put('bottle-neck-'+j,1.82,-1.47+j*.71,.19,.09,'green');
+      }
+      b.box('shop-stock-'+slot.display+'-back-shelf',[-.58,2.11,z],[.26,.055,w-.34],'wood');
+    }else if(slot.display==='vessels'){
+      for(let j=0;j<5;j++){b.cylinder('shop-stock-vessels-cup-'+j,[-.46,1.43,z-1.48+j*.72],.14,.22,stock,6);b.box('shop-stock-vessels-saucer-'+j,[-.46,1.29,z-1.48+j*.72],[.32,.035,.36],stock);}
+      put('stepped-plinth',1.18,0,.10,3.8,'wood');
+    }else if(slot.display==='clocks'){
+      for(let j=0;j<3;j++){put('clock-case-'+j,1.75,-1.2+j*1.20,.87,.72,'wood');put('clock-face-'+j,1.93,-1.2+j*1.20,.39,.45,stock,-.445);b.beam('shop-stock-clocks-hand-'+j,[-.30,1.93,z-1.2+j*1.2],[-.30,2.07,z-1.31+j*1.2],.025,'black');}
+    }else if(slot.display==='tools'){
+      for(let j=0;j<4;j++){b.beam('shop-stock-tools-shaft-'+j,[-.43,1.28,z-1.4+j*.83],[-.43,2.12,z-1.4+j*.83],.055,'wood');put('tool-head-'+j,2.11,-1.4+j*.83,.13,.39,'steel');}
+      put('wooden-bins',1.25,0,.23,3.8,'wood');
+    }else if(slot.display==='frames'){
+      for(let j=0;j<2;j++)for(const side of[-1,1]){put(`frame-${j}-upright-${side}`,1.89,-.94+j*1.87+side*.46,.96,.09,'wood');put(`frame-${j}-rail-${side}`,1.89+side*.45,-.94+j*1.87,.09,1.01,'wood');}
+    }else{
+      for(let j=0;j<6;j++)put('wrapped-stock-'+j,1.36+(j%2)*.13,-1.56+j*.61,.30,.44,j%2?'terracotta':stock);
+      put('counter',1.15,0,.09,3.85,'wood');
+    }
+    return aperture;
+  }
+  function shopOrder(b,r,slot,{closed}){
+    const paint=slot.paint,z=-.14;
+    b.box('shop-stall-riser',[.045,.50,z],[.17,.88,4.48],paint);
+    b.box('shop-riser-repaired-board',[.139,.48,z+.84],[.018,.28,1.08],slot.deed%2?'wood':'green');
+    for(const dz of[-2.46,2.21]){b.box('shop-pilaster-'+dz,[.10,1.91,dz],[.22,2.93,.18],paint);b.box('shop-capital-'+dz,[.14,3.025,dz],[.29,.12,.32],'stone');}
+    b.box('shop-fascia',[.08,3.40,0],[.22,.64,7.54],paint);
+    b.box('shop-fascia-cornice',[.14,3.76,0],[.36,.105,7.69],'stone');
+    b.box('shop-fascia-shadow',[.12,3.705,0],[.24,.035,7.65],'black');
+    // A closed shop door and a separate narrower stair door retain ordinary
+    // trade/household access without suggesting another playable interior.
+    for(const[role,dz,width]of[['flat',-3.20,.81],['shop',2.98,.93]]){
+      b.box(role+'-closed-door',[-.11,1.48,dz],[.12,2.82,width],paint);
+      for(const side of[-1,1])b.box(role+'-door-jamb-'+side,[.035,1.49,dz+side*(width/2+.05)],[.16,2.98,.10],paint);
+      b.box(role+'-door-upper-glass',[-.035,2.17,dz],[.025,.76,width-.20],'black');
+      b.box(role+'-door-panel',[-.02,.73,dz],[.045,.80,width-.20],paint);
+      b.beam(role+'-door-pull',[.08,1.13,dz+.26],[.08,1.40,dz+.26],.035,'brass');
+      b.box(role+'-door-step',[.04,.065,dz],[.42,.09,width+.20],'stone');
+    }
+    const deployed=slot.awning==='deployed'&&!closed;
+    b.box('awning-roller-box',[.12,3.015,z],[.25,.18,4.50],paint);
+    if(deployed){
+      b.quad('awning-canvas-top',[.14,3.10,z-2.25],[.14,3.10,z+2.25],[.97,2.71,z+2.25],[.97,2.71,z-2.25],'canvas');
+      b.quad('awning-canvas-under',[.14,3.084,z+2.25],[.14,3.084,z-2.25],[.97,2.694,z-2.25],[.97,2.694,z+2.25],'canvas');
+      b.box('awning-front-valance',[.97,2.625,z],[.035,.15,4.50],'canvas');
+      for(const side of[-1,1])b.beam('awning-fixing-arm-'+side,[.15,2.78,z+side*2.16],[.96,2.70,z+side*2.16],.045,'steel');
+    }else b.box('awning-rolled-canvas',[.145,2.985,z],[.22,.125,4.38],'canvas');
+    r.trades.push({deed:slot.deed,display:slot.display,trade:slot.trade,paint:slot.paint,closed,awning:deployed?'deployed':'rolled',awningClearance:deployed?2.55:2.9225});
+  }
   for(const row of C.rows){
     const out=owner(row.mesh),{m,r}=out;
     for(let i=0;i<C.count;i++){
@@ -94,12 +181,15 @@ export function buildExteriorNeighbourhood(api){
         r.deeds.push({deed:i,kind:'open-court',z,height:8.7,windows:1,clearHeight:6.33,closedEarly:false});continue;
       }
       const industrial=row.kind==='workshop'&&h<9,holes=[],floors=industrial?1:Math.max(2,Math.floor((h-1.5)/3.1));
+      const trade=EXTERIOR_TRADE_DEEDS[row.kind].find(slot=>slot.deed===i);
       const doorZ=-2.75,doorWidth=industrial?4.8:1.05;
-      holes.push({id:'door',z0:industrial?-2.4:doorZ-.59,z1:industrial?2.4:doorZ+.59,y0:.08,y1:industrial?3.64:2.89});
+      if(trade)for(const[id,dz,width]of[['flat-door',-3.20,.81],['shop-door',2.98,.93]])holes.push({id,z0:dz-width/2-.06,z1:dz+width/2+.06,y0:.08,y1:2.89});
+      else holes.push({id:'door',z0:industrial?-2.4:doorZ-.59,z1:industrial?2.4:doorZ+.59,y0:.08,y1:industrial?3.64:2.89});
       if(industrial){
         for(const[bay,dz]of[-1.55,1.55].entries())holes.push(window(b,r,{id:`industrial-${bay}`,z:dz,y:5.0,w:2.0,h:1.18,lit:exteriorDeedWindowLit(row.kind,i,1,bay),seed:i+bay,casement:true}));
       }else for(let floor=0;floor<floors;floor++){
-        if(closed&&floor===0){
+        if(trade&&floor===0){holes.push(tradeWindow(b,r,trade,{closed}));}
+        else if(closed&&floor===0){
           holes.push(window(b,r,{id:'closed-shop-display',z:.75,y:1.98,w:4.35,h:1.85,lit:false,seed:i}));
           // The shop closed for the gathering while its flat above remained
           // lived in. A lowered, folded internal blind carries that distinction.
@@ -115,7 +205,7 @@ export function buildExteriorNeighbourhood(api){
       for(const side of[-1,1])b.box('party-return-'+side,[-row.depth/2,h/2,side*3.94],[row.depth,h,.12],brick);
       b.box('rear-wall',[-row.depth+.08,h/2,0],[.16,h,7.84],brick);
       const doorLo=industrial?-2.4:doorZ-.59,doorHi=industrial?2.4:doorZ+.59;
-      for(const[index,[a,c]]of [[-3.92,doorLo],[doorHi,3.92]].entries())if(c>a)b.box('plinth-'+index,[.04,.25,(a+c)/2],[.16,.50,c-a],'stone');
+      if(!trade)for(const[index,[a,c]]of [[-3.92,doorLo],[doorHi,3.92]].entries())if(c>a)b.box('plinth-'+index,[.04,.25,(a+c)/2],[.16,.50,c-a],'stone');
       b.box('string-course',[.04,3.45,0],[.18,.16,7.84],'stone');
       b.box('cornice-lower',[.06,h-.57,0],[.20,.12,7.92],'stone');
       b.box('cornice-upper',[.10,h-.39,0],[.28,.18,7.98],'stone');
@@ -131,6 +221,13 @@ export function buildExteriorNeighbourhood(api){
           const notice=C.notices[0];b.box('early-closure-paper',[.013,1.60,0],[.004,notice.heightM,notice.widthM],'paper');
           r.notices.push({...notice,center:[.017,1.60,z],readerRight:[0,0,-1],up:[0,1,0],deed:i});
           for(const dz of[-.10,.10])b.box('closure-tape-'+dz,[.018,1.60+notice.heightM/2-.015,dz],[.002,.045,.045],'white');
+        }
+      }else if(trade){
+        shopOrder(b,r,trade,{closed});
+        if(closed){
+          const notice=C.notices[0],center=[-.043,1.52,z+2.98];
+          b.box('early-closure-paper',[-.047,1.52,2.98],[.004,notice.heightM,notice.widthM],'paper');
+          r.notices.push({...notice,center,readerRight:[0,0,-1],up:[0,1,0],deed:i});
         }
       }else{
         const paint=i%2?'green':'wood';
@@ -156,10 +253,11 @@ export function buildExteriorNeighbourhood(api){
       if(i%2===0){b.box('chimney',[-row.depth*.58,h+rise+.75,2.25],[.85,1.5,1.15],'brick');for(const dz of[-.28,.28])b.cylinder('chimney-pot-'+dz,[-row.depth*.58,h+rise+1.7,2.25+dz],.11,.42,'terracotta');}
       b.cylinder('downpipe',[.20,h/2,3.75],.065,h-.35,'steel');
       for(const y of[1,4,7,10].filter(y=>y<h-.5))b.box('pipe-collar-'+y,[.20,y,3.75],[.18,.05,.18],'steel');
-      r.deeds.push({deed:i,kind:industrial?'workshop':closed?'closed-shop-with-flat':'house',z,height:h,windows:industrial?2:floors*2-(closed?1:0),closedEarly:closed});
+      r.deeds.push({deed:i,kind:industrial?'workshop':closed?'closed-shop-with-flat':trade?'shop-with-flat':'house',z,height:h,windows:industrial?2:floors*2-((closed||trade)?1:0),closedEarly:closed});
     }
-    // These existing road-owned columns retain their geometry and locations.
-    const b=context(out,'street-');for(const z of[-25,-9,9,25]){b.cylinder('lamp-post-'+z,[1.75,3,z],.08,5.8,'steel');b.beam('lamp-arm-'+z,[1.75,5.8,z],[2.5,6.25,z],.08,'steel');b.box('lamp-head-'+z,[2.75,6.25,z],[.65,.18,.28],'bulb');}
+    // Wall brackets free the existing footway from the former column feet.
+    // Their exact lamp centres also author the street-fabric runtime lights.
+    const b=context(out,'street-');for(const z of[-25,-9,9,25]){b.box('lamp-wall-plate-'+z,[.15,5.24,z],[.20,.44,.18],'steel');b.beam('lamp-arm-'+z,[.22,5.18,z],[1.10,5.72,z],.075,'steel');b.box('lamp-head-'+z,[1.10,5.80,z],[.46,.16,.28],'bulb');}
   }
   {
     const out=owner(C.court.mesh),{r}=out;
@@ -187,6 +285,24 @@ export function buildExteriorNeighbourhood(api){
     for(const x of[-2.8,0,2.8]){b.box('closed-threshold-'+x,[x,1.9,15.98],[2.2,3.25,.18],'steel');for(let y=.55;y<3.25;y+=.32)b.box('threshold-slat-'+x+'-'+y,[x,y,15.87],[1.95,.07,.08],'black');}
     b.box('end-cornice',[0,7.55,15.96],[8.6,.28,.18],'stone');
     r.deeds.push({kind:'occupied-court',windows:r.windows.length,closedEarly:false});
+  }
+  for(const placed of EXTERIOR_FRONTAGE_DRESSING){
+    const out=owner(placed.mesh),{r}=out;
+    for(const slot of placed.shops){
+      const z=-28+slot.deed*8;
+      r.prints.push({id:`${placed.id}-fascia-${slot.deed}`,lines:[slot.name,slot.trade],
+        center:[.194,3.40,z],readerRight:[0,0,-1],up:[0,1,0],widthM:6.95,heightM:.55,
+        capHeightM:.21,lineScale:[1,.52],lineCentres:[.32,.77],font:'NimbusRoman-Bold.otf',
+        process:'solid painted timber shop fascia',palette:{ground:slot.paint==='green'?[.075,.18,.12]:[.16,.095,.052],ink:[.70,.65,.49]},deed:slot.deed});
+    }
+    if(placed.workshops.length){
+      const b=context(out,'trade-');
+      for(const[index,deed]of[0,1,2,5,6].entries()){
+        const z=-28+deed*8;
+        b.box('workshop-board-'+deed,[.08,4.12,z],[.20,.40,5.60],'steel');
+        r.prints.push({id:`${placed.id}-workshop-${deed}`,lines:[placed.workshops[index]],center:[.183,4.12,z],readerRight:[0,0,-1],up:[0,1,0],widthM:5.42,heightM:.29,capHeightM:.19,font:'NimbusSans-Bold.otf',process:'solid painted workshop trade board',palette:{ground:[.22,.24,.23],ink:[.70,.68,.54]},deed});
+      }
+    }
   }
   return reports;
 }

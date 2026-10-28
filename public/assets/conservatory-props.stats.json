@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-25T17:40:12.065Z",
-  "bytes": 64409288,
-  "totalTriangles": 893349,
+  "generatedAt": "2026-10-28T17:14:45.310Z",
+  "bytes": 71439100,
+  "totalTriangles": 909029,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1268,8 +1268,8 @@
       "vertices": 6680
     },
     "district_civic_frontage": {
-      "triangles": 24104,
-      "vertices": 52726
+      "triangles": 17628,
+      "vertices": 37678
     },
     "district_workshop_frontage": {
       "triangles": 2724,
@@ -1284,8 +1284,8 @@
       "vertices": 16000
     },
     "exterior_pub_interior": {
-      "triangles": 9648,
-      "vertices": 14656
+      "triangles": 11768,
+      "vertices": 18416
     },
     "district_court_walls": {
       "triangles": 712,
@@ -1572,8 +1572,8 @@
       "vertices": 2032
     },
     "demolition_excavator": {
-      "triangles": 840,
-      "vertices": 1152
+      "triangles": 7708,
+      "vertices": 13508
     },
     "demolition_heras_fence": {
       "triangles": 148,
@@ -1592,12 +1592,12 @@
       "vertices": 744
     },
     "yard_sign": {
-      "triangles": 312,
-      "vertices": 648
+      "triangles": 360,
+      "vertices": 756
     },
     "yard_road": {
-      "triangles": 340,
-      "vertices": 628
+      "triangles": 280,
+      "vertices": 508
     },
     "yard_gate_piers": {
       "triangles": 624,
@@ -1968,8 +1968,8 @@
       "vertices": 1168
     },
     "outskirts_road": {
-      "triangles": 2992,
-      "vertices": 5984
+      "triangles": 2860,
+      "vertices": 5720
     },
     "outskirts_boundary_wall_6": {
       "triangles": 420,
@@ -2084,8 +2084,8 @@
       "vertices": 1419
     },
     "baseboard_ground": {
-      "triangles": 3216,
-      "vertices": 6432
+      "triangles": 3300,
+      "vertices": 6600
     },
     "baseboard_hall": {
       "triangles": 1752,
@@ -2100,8 +2100,8 @@
       "vertices": 2592
     },
     "baseboard_academic": {
-      "triangles": 1296,
-      "vertices": 2592
+      "triangles": 1272,
+      "vertices": 2544
     },
     "baseboard_tower": {
       "triangles": 4392,
@@ -2376,8 +2376,8 @@
       "vertices": 39755
     },
     "building_dressing_batch_ground": {
-      "triangles": 32428,
-      "vertices": 49352
+      "triangles": 38860,
+      "vertices": 57068
     },
     "building_dressing_batch_academic": {
       "triangles": 65792,
@@ -2390,6 +2390,46 @@
     "building_dressing_batch_hall": {
       "triangles": 6588,
       "vertices": 10358
+    },
+    "scene_dock_room_fabric": {
+      "triangles": 2352,
+      "vertices": 4704
+    },
+    "scene_dock_dispatch_desk": {
+      "triangles": 384,
+      "vertices": 768
+    },
+    "scene_dock_hand_truck": {
+      "triangles": 412,
+      "vertices": 640
+    },
+    "scene_dock_freight_crates": {
+      "triangles": 708,
+      "vertices": 1416
+    },
+    "scene_dock_crate_low": {
+      "triangles": 264,
+      "vertices": 528
+    },
+    "scene_dock_road_case_open": {
+      "triangles": 752,
+      "vertices": 1136
+    },
+    "scene_dock_cable_reel": {
+      "triangles": 732,
+      "vertices": 1020
+    },
+    "scene_dock_shutter_bar": {
+      "triangles": 236,
+      "vertices": 368
+    },
+    "scene_dock_chandelier_cage": {
+      "triangles": 908,
+      "vertices": 1448
+    },
+    "scene_dock_check_position": {
+      "triangles": 72,
+      "vertices": 144
     }
   },
   "bounds": {
@@ -6189,7 +6229,7 @@
       "min": [
         -5.4,
         0,
-        -32
+        -25.14
       ],
       "max": [
         3.075,
@@ -7099,14 +7139,14 @@
     },
     "demolition_excavator": {
       "min": [
-        -1.05,
-        0.04,
-        -4.025
+        -1.145,
+        0.004,
+        -4.04
       ],
       "max": [
-        1.08,
-        3.281,
-        1.7
+        1.033,
+        3.1,
+        1.374
       ]
     },
     "demolition_heras_fence": {
@@ -7161,12 +7201,12 @@
       "min": [
         -0.93,
         0,
-        -0.126
+        -0.045
       ],
       "max": [
         0.93,
         2.44,
-        0.226
+        0.105
       ]
     },
     "yard_road": {
@@ -8636,13 +8676,13 @@
     "baseboard_ground": {
       "min": [
         -114,
-        -3.05,
-        -31
+        -2.12,
+        -30.5
       ],
       "max": [
         80,
-        0.115,
-        121
+        1.045,
+        121.5
       ]
     },
     "baseboard_hall": {
@@ -9511,14 +9551,14 @@
     },
     "building_dressing_batch_ground": {
       "min": [
-        -79.1,
+        -101.825,
         -0.949,
         -19.835
       ],
       "max": [
         8.9,
         16.051,
-        83.335
+        105.335
       ]
     },
     "building_dressing_batch_academic": {
@@ -9556,16 +9596,136 @@
         17,
         36
       ]
+    },
+    "scene_dock_room_fabric": {
+      "min": [
+        4.25,
+        -0.002,
+        -4.25
+      ],
+      "max": [
+        21.15,
+        5.41,
+        8.15
+      ]
+    },
+    "scene_dock_dispatch_desk": {
+      "min": [
+        -0.775,
+        0,
+        -0.37
+      ],
+      "max": [
+        0.775,
+        1.042,
+        0.37
+      ]
+    },
+    "scene_dock_hand_truck": {
+      "min": [
+        -0.311,
+        0.005,
+        -0.305
+      ],
+      "max": [
+        0.311,
+        1.278,
+        0.297
+      ]
+    },
+    "scene_dock_freight_crates": {
+      "min": [
+        -0.43,
+        0,
+        -0.362
+      ],
+      "max": [
+        0.43,
+        1.6,
+        0.363
+      ]
+    },
+    "scene_dock_crate_low": {
+      "min": [
+        -0.609,
+        0,
+        -0.247
+      ],
+      "max": [
+        0.609,
+        0.456,
+        0.247
+      ]
+    },
+    "scene_dock_road_case_open": {
+      "min": [
+        -0.6,
+        0.005,
+        -0.281
+      ],
+      "max": [
+        0.6,
+        0.807,
+        0.325
+      ]
+    },
+    "scene_dock_cable_reel": {
+      "min": [
+        -0.323,
+        0,
+        -0.396
+      ],
+      "max": [
+        0.45,
+        0.96,
+        0.42
+      ]
+    },
+    "scene_dock_shutter_bar": {
+      "min": [
+        -1.18,
+        1.185,
+        -0.17
+      ],
+      "max": [
+        1.18,
+        1.475,
+        0.142
+      ]
+    },
+    "scene_dock_chandelier_cage": {
+      "min": [
+        -1.073,
+        0.01,
+        -0.84
+      ],
+      "max": [
+        1.073,
+        2.713,
+        0.84
+      ]
+    },
+    "scene_dock_check_position": {
+      "min": [
+        -0.8,
+        0,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        0.012,
+        0.8
+      ]
     }
   },
   "baseboards": {
-    "planHash": "c18653ecd641f3b82300dd42e2d8665c5184b113da5f01a003e5a5c7f7297050",
+    "planHash": "49ecb44482ac3c9d1748011a0dc6ea3cb9a02cbdaa0b222879cb23b4384291ae",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
         "anchor": {
           "x": 168,
-          "y": 6
+          "y": 5
         }
       },
       "hall": {
@@ -9743,20 +9903,20 @@
           0.949,
           4.5
         ],
-        "count": 178,
-        "poseDigest": "32143750",
+        "count": 204,
+        "poseDigest": "30e82922",
         "materialCount": 38,
-        "triangles": 32428,
+        "triangles": 38860,
         "bounds": {
           "min": [
-            -79.1,
+            -101.82499999999999,
             -0.949,
             -19.835
           ],
           "max": [
             8.900000000000006,
             16.051,
-            83.335
+            105.335
           ]
         },
         "sources": {
@@ -9801,7 +9961,7 @@
             "trianglesPerInstance": 1296
           },
           "arch_smoke_detector": {
-            "count": 6,
+            "count": 8,
             "trianglesPerInstance": 348
           },
           "amenity_pool_wash_screens": {
@@ -9877,11 +10037,11 @@
             "trianglesPerInstance": 48
           },
           "arch_dado_staff": {
-            "count": 24,
+            "count": 29,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 24,
+            "count": 29,
             "trianglesPerInstance": 24
           },
           "arch_dado_public_fountain_clearance": {
@@ -9897,7 +10057,7 @@
             "trianglesPerInstance": 228
           },
           "arch_vent_grille": {
-            "count": 5,
+            "count": 7,
             "trianglesPerInstance": 468
           },
           "arch_access_hatch": {
@@ -9933,23 +10093,23 @@
             "trianglesPerInstance": 60
           },
           "arch_switch_staff": {
-            "count": 2,
+            "count": 4,
             "trianglesPerInstance": 156
           },
           "arch_socket_staff": {
-            "count": 3,
+            "count": 7,
             "trianglesPerInstance": 228
           },
           "arch_radiator_staff": {
-            "count": 1,
+            "count": 3,
             "trianglesPerInstance": 1572
           },
           "arch_wall_wear_staff": {
-            "count": 2,
+            "count": 4,
             "trianglesPerInstance": 60
           },
           "arch_threshold_public": {
-            "count": 6,
+            "count": 8,
             "trianglesPerInstance": 36
           },
           "arch_threshold_service": {
@@ -10565,7 +10725,7 @@
     "yard_skip": 0.12,
     "yard_clutter": 1.05,
     "demolition_scaffold_run": 2.17,
-    "demolition_excavator": 0.86,
+    "demolition_excavator": 1.08,
     "demolition_heras_fence": 0.2,
     "demolition_generator": 1.04,
     "demolition_light_tower": 0.68,
@@ -10653,13 +10813,23 @@
     "baseboard_tower": 3.92,
     "baseboard_cathedral": -5.48,
     "baseboard_academicRoof": 0.12,
-    "textile_stair_runner_fitted": 2.06
+    "textile_stair_runner_fitted": 2.06,
+    "scene_dock_room_fabric": 0.01,
+    "scene_dock_dispatch_desk": 0.72,
+    "scene_dock_hand_truck": 0.08,
+    "scene_dock_freight_crates": 0.06,
+    "scene_dock_crate_low": 0.06,
+    "scene_dock_road_case_open": 0.12,
+    "scene_dock_cable_reel": 0.05,
+    "scene_dock_shutter_bar": 1.31,
+    "scene_dock_chandelier_cage": 0.33,
+    "scene_dock_check_position": 0.01
   },
   "lettering": {
     "surfaces": 117,
-    "pages": 10,
-    "textureBaseLevelBytes": 42864576,
-    "atlasInputSha256": "eb998f83c50e19cd687bf437000d8b18d7b304f72267bacf2822e9278a25f079",
+    "pages": 15,
+    "textureBaseLevelBytes": 41595312,
+    "atlasInputSha256": "c89471f85fccb69e7f8bdc02d94c9d400f0078334de9e54be9dfb5ce1c42c494",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 127,

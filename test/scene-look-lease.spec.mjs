@@ -112,15 +112,16 @@ test('actual hide/show and page lifecycle handlers release stale native ownershi
     addEventListener: (name, fn) => callbacks.set(name, fn) };
   const context = {
     document, window: { addEventListener: (name, fn) => callbacks.set(name, fn) },
+    runPlayDurationClock: { suspend() {} },
     pointerMode: { release: reason => releases.push(reason), attemptCapture: reason => attempts.push(reason) },
     scenes: { top: () => null, pointer() {} },
-    setUiCueFocused() {}, cancelApparitionApplause() {}, cancelOutskirtDoorAnswer() {}, stopTowerPersonalWorldSignal() {},
+    setUiCueFocused() {}, cancelLastExposure() {}, cancelApparitionApplause() {}, cancelOutskirtDoorAnswer() {}, stopTowerPersonalWorldSignal() {},
     lowerTowerPersonalRecorder() {}, cancelControlScope() {}, saveSourceView() {},
     resetMotionInput: reason => resets.push(reason), recoverInteractionFocus: reason => recoveries.push(reason),
     recoverInteractionAudio() {}, gameplayWantsPointerCapture: () => true,
     outskirtDoorAnswer: { cancel() {} }, cancelOutskirtDoorAnswer() {},
     towerPersonalHud: null, sourceShoreAudio: null, activeRecordingSlate: null, bellPealPerformance: null,
-    pubRoomAudio: null, sourcePubAudio: null, sourceContinuationAudio: null,
+    pubRoomAudio: null, sourcePubAudio: null, sourceContinuationAudio: null, architectureDoorAudio: null,
   };
   vm.runInNewContext(main.slice(start, end), context);
   document.hidden = true;

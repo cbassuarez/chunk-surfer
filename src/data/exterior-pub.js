@@ -1,6 +1,6 @@
-// The Lyric occupies the existing courtyard south/east of St Brendan's.
-// Its room, door ids and logical/save addresses are retained; only the physical
-// placement moves from the unreachable far side of the south street.
+// The Lyric occupies the first two deeds of the south shop row, perpendicular
+// to St Brendan's. Keep its room, door ids and original logical/save addresses;
+// the ordinary district streets provide the approach from the arrival yard.
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 import {districtLogicalAt} from './exterior-district.js';
 const freeze=value=>{
@@ -9,24 +9,26 @@ const freeze=value=>{
   }
   return value;
 };
-export const PUB_RELOCATION=freeze({x:39,z:-22});
+export const PUB_RELOCATION=freeze({x:0,z:0});
 const moved=(x,z)=>({x:x+PUB_RELOCATION.x,z:z+PUB_RELOCATION.z});
 export const EXTERIOR_PUB=freeze({
-  id:'exterior-pub',name:'The Lyric',floor:.12,ceiling:3.52,renderUnderlayDrop:.0625,frontWorldZ:85.25,
-  rowAnchor:{x:57,z:85.05},facadeAnchor:{x:33,z:85.05},interiorOriginLocal:{x:-2.7,z:-24},interiorAnchor:{x:33,z:87.75},
-  doorCentresLocalZ:[-30.75,-22.75],bounds:{x0:25,x1:41,z0:85.05,z1:90.45},
+  id:'exterior-pub',name:'The Lyric',floor:.12,ceiling:3.52,renderUnderlayDrop:.0625,frontWorldZ:107.25,
+  row:{id:'district-south-row-a',deeds:[0,1],yaw:-Math.PI/2},
+  servicePassage:{westFrontageSetback:.25,centreX:-14.6},
+  rowAnchor:{x:18,z:107.05},facadeAnchor:{x:-6,z:107.05},interiorOriginLocal:{x:-2.7,z:-24},interiorAnchor:{x:-6,z:109.75},
+  doorCentresLocalZ:[-30.75,-22.75],bounds:{x0:-14,x1:2,z0:107.05,z1:112.45},
   doors:[
     {id:'pub-west-entry',...moved(-12.75,107.25),width:1.95,throat:{...moved(-13.5,107),width:2}},
     {id:'pub-east-entry',...moved(-4.75,107.25),width:1.95,throat:{...moved(-5.5,107),width:2}},
   ],
   windows:[
-    {id:'pub-west-window-west',x:28.35,width:1.55},
-    {id:'pub-west-window-east',x:31.05,width:2.15},
-    {id:'pub-east-window-west',x:36.35,width:1.55},
-    {id:'pub-east-window-east',x:39.05,width:2.15},
+    {id:'pub-west-window-west',x:-10.65,width:1.55},
+    {id:'pub-west-window-east',x:-7.95,width:2.15},
+    {id:'pub-east-window-west',x:-2.65,width:1.55},
+    {id:'pub-east-window-east',x:.05,width:2.15},
   ],
   windowOpening:{bottom:1.10,top:3.02,sillCollisionHeight:1.08},
-  wc:{bounds:{x0:39,x1:40.7,z0:87.75,z1:90.3},wallThickness:.12,
+  wc:{bounds:{x0:0,x1:1.7,z0:109.75,z1:112.3},wallThickness:.12,
     door:{id:'pub-wc',...moved(.75,109.75),width:1,throat:{...moved(.5,109.5),width:1}}},
   // A .20m body plus .05m sampling guard keeps a closed door from being
   // bypassed between the metre throat raster and the thin authored piers.
@@ -40,10 +42,10 @@ export const pubExteriorAt=id=>{
 };
 export const pubYardLogicalAt=(x,z)=>({x:50+x,y:200+z});
 export const pubExteriorLogicalAt=id=>{const p=pubExteriorAt(id);return pubLogicalAt(p.x,p.z);};
-export const pubYardCellClaimed=(x,z)=>x>=25&&x<41&&z>=84&&z<91;
-export const PUB_YARD_CONNECTORS=freeze(EXTERIOR_PUB.doors.map(d=>({
-  from:pubYardLogicalAt(d.x,83.5),to:pubLogicalAt(d.x,84),span:{x:.5},
-})));
+// The old courtyard room no longer masks yard paving or creates a hidden seam.
+// The pub and its street already share the same district logical coordinates.
+export const pubYardCellClaimed=()=>false;
+export const PUB_YARD_CONNECTORS=freeze([]);
 export const pubWorldFromLocal=({x,z})=>({x:EXTERIOR_PUB.rowAnchor.x+z,z:EXTERIOR_PUB.rowAnchor.z-x});
 export const pubLocalFromWorld=({x,z})=>({x:EXTERIOR_PUB.rowAnchor.z-z,z:x-EXTERIOR_PUB.rowAnchor.x});
 // A mesh envelope is independent of rain/sky classification. The renderer may
@@ -55,7 +57,7 @@ const profile=(_x,_y,cell)=>({floor:EXTERIOR_PUB.floor,ceil:EXTERIOR_PUB.ceiling
 const level=(id,x,z,rows)=>freeze({id,replace:true,physicalReplace:true,layer:'ground',
   space:'exterior_pub',renderGroup:'ground',origin:pubLogicalAt(x+PUB_RELOCATION.x,z+PUB_RELOCATION.z),physicalOrigin:{x:x+PUB_RELOCATION.x,y:z+PUB_RELOCATION.z},base:0,rows,profile});
 export const PUB_LEVELS=freeze([
-  {...level('pub-courtyard-apron',-14,106,['Y'.repeat(16)]),profile:()=>({floor:0,ceil:24,zone:ZONE.dock,material:MATERIAL.wetPaving,flags:F.SKY|F.WALLED})},
+  {...level('pub-street-apron',-14,106,['Y'.repeat(16)]),profile:()=>({floor:0,ceil:24,zone:ZONE.civicCourt,material:MATERIAL.wetPaving,flags:F.SKY|F.WALLED})},
   level('exterior-pub-main-floor',-14,107,Array(5).fill('Y'.repeat(16))),
   // A half-grid rear strip stops at112.5, only50mm beyond the shell bounds.
   // The real padded back-wall collider makes that residual strip inaccessible.

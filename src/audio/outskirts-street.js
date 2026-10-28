@@ -4,8 +4,8 @@
 import { assetUrl } from '../platform/paths.js';
 
 const clamp=(value,low,high)=>Math.max(low,Math.min(high,Number(value)||0));
-const BED_KINDS=new Set(['bus','lodge','car']);
-const EVENT_KINDS=new Set(['bus-air','coat-rustle','footstep','hatch-impact','glass-knock','phone-ring','paper','pen','post-letter','ticket','fold-cloth','fold-pressure','fold-contact','fold-strain','fold-effort','woman-traction']);
+const BED_KINDS=new Set(['bus','lodge','car','body']);
+const EVENT_KINDS=new Set(['bus-air','bus-door','bus-load','bus-exit','bus-woman-notice','bus-woman-pass','bus-entry-shut','bus-strip','bus-door-stuck','bus-body-open','bus-body-step','bus-body-expel','coat-rustle','footstep','hatch-impact','glass-knock','phone-ring','paper','pen','post-letter','ticket','fold-cloth','fold-pressure','fold-contact','fold-strain','fold-effort','woman-traction']);
 export const FOLD_SAMPLE_IDS=Object.freeze(['fold-effort-a','fold-effort-b','fold-effort-c','fold-effort-d','fold-catch','fold-cloth-a','fold-cloth-b','fold-cloth-c']);
 async function loadFoldSample(id,context){
   const response=await fetch(assetUrl(`assets/audio/outskirts/${id}.wav`));
@@ -107,6 +107,9 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     if(spec.kind==='lodge'){
       layer(record,{tone:100,frequency:550,level:.22});
       layer(record,{frequency:340,level:.12});
+    }else if(spec.kind==='body'){
+      layer(record,{frequency:120,level:.12});
+      layer(record,{frequency:480,level:.035});
     }else if(spec.kind==='bus'){
       // Its engine is off: air settling in the body, not an idling motor.
       layer(record,{frequency:175,level:.16});
@@ -168,6 +171,26 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
     let parts;
     switch(spec.cue){
       case 'bus-air':parts=[burst(1400,.8,.55),burst(320,.3,.28)];break;
+      case 'bus-door':parts=[burst(1180,.64,.36),burst(190,.18,.42,.38),tone(82,.16,.12,.40)];break;
+      case 'bus-load':parts=[burst(260,.46,.30),tone(104,.58,.11),burst(930,.28,.14,.19)];break;
+      case 'bus-exit':parts=[burst(180,.22,.34),burst(1400,.09,.13,.07)];break;
+      case 'bus-entry-shut':parts=[burst(1200,.37,.24),burst(140,.22,.64,.30),burst(2300,.045,.20,.47)];break;
+      case 'bus-strip':parts=[burst(2600,.055,.13),burst(470,.075,.07,.05)];break;
+      case 'bus-door-stuck':
+        parts=[burst(870,.18,.19,.30),... [.46,.78,1.08].flatMap(delay=>[burst(210,.12,.40,delay),burst(1600,.045,.24,delay+.035)])];break;
+      case 'bus-body-open':
+        recorded(spec,level*.72,'fold-cloth-c',{rate:.55,lowpass:2300});
+        parts=[burst(240,.70,.20,.25),burst(490,.68,.24,.95),burst(170,.48,.30,1.78),burst(1100,.28,.14,2.45)];break;
+      case 'bus-body-step':parts=[burst(280,.18,.22),burst(1260,.11,.09,.04)];break;
+      case 'bus-body-expel':
+        recorded(spec,level*.54,'fold-cloth-b',{rate:.70,lowpass:2100});
+        parts=[burst(530,.46,.39),burst(170,.22,.48,.24),burst(1600,.13,.15,.31)];break;
+      case 'bus-woman-notice':
+        recorded(spec,level*.64,'fold-cloth-b',{rate:.82,lowpass:2900});
+        parts=[burst(720,.42,.15),burst(170,.17,.10,.24)];break;
+      case 'bus-woman-pass':
+        recorded(spec,level*.78,'fold-cloth-c',{rate:.72,lowpass:2700});
+        parts=[burst(310,.31,.27),burst(1320,.08,.16,.09)];break;
       case 'coat-rustle':parts=[burst(900,.32,.45),burst(1800,.2,.18,.12)];break;
       case 'footstep':parts=[burst(210,.17,.65),burst(1350,.09,.2,.035)];break;
       case 'hatch-impact':parts=[burst(160,.26,.8),tone(87,.22,.3),burst(1300,.035,.32)];break;

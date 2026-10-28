@@ -6,6 +6,7 @@ import { CONSERVATORY_PROPS, PROCUREMENT_COHORTS, PROP_MESH } from '../src/data/
 import * as PROPS from '../src/game/props.js';
 import * as FP from '../src/world/floorplan.js';
 import { propInstanceVisible } from '../src/render/props3d.js';
+import { normalizeTorchOptics } from '../src/render/torch-optics.js';
 
 const manifest = JSON.parse(fs.readFileSync('tools/chunk_surfer/acquisition-sources.json', 'utf8'));
 const stats = JSON.parse(fs.readFileSync('public/assets/conservatory-acquisitions.stats.json', 'utf8'));
@@ -180,7 +181,27 @@ assert.equal(PROPS.pickProp(188, 11, 0, 2.5)?.id, 'acq-foyer-marble-bust');
 
 const propRenderer = fs.readFileSync('src/render/props3d.js', 'utf8');
 const worldRenderer = fs.readFileSync('src/render/r3d.js', 'utf8');
-assert.match(propRenderer, /66\*Math\.PI\/180/);
+// The shadow camera follows the current reflector rather than a fixed 66°
+// projection. Exercise the renderer's actual expression and keep both its
+// practical-light aperture and the carried-torch coverage/clamps protected.
+assert.match(propRenderer, /const optics=normalizeTorchOptics\(torch\)/);
+const shadowFovExpression = propRenderer.match(/const shadowFov=([^;\n]+);/);
+assert.ok(shadowFovExpression, 'the prop shadow projection declares its aperture');
+const shadowFov = new Function('practical', 'optics', `return ${shadowFovExpression[1]};`);
+const degrees = Math.PI / 180;
+for (const [practical, torch, expectedDegrees] of [
+  [true, {}, 104],
+  [false, { coneInner: Math.cos(30 * degrees) + .045 }, 60],
+  [false, { coneInner: .9997 }, 40],
+  [false, { coneInner: -.99 }, 140],
+]) {
+  assert.ok(Math.abs(shadowFov(practical, normalizeTorchOptics(torch)) - expectedDegrees * degrees) < 1e-12,
+    `${practical ? 'practical' : 'carried'} shadow aperture retains its physical beam coverage`);
+}
+assert.match(propRenderer, /shadowMatrix=multiply\(perspectiveFov\(shadowFov,1,\.05,64\)/,
+  'the depth projection uses the guarded beam aperture');
+assert.match(propRenderer, /frustum:viewFrustum\([^\n]+perspectiveFov\(shadowFov,1,\.05,64\)/,
+  'shadow caster culling uses the same aperture as its depth projection');
 assert.match(propRenderer, /DEPTH_COMPONENT24/);
 assert.match(propRenderer, /uShadowTexel/);
 assert.match(propRenderer, /sampledAlpha<uAlphaCut-coverageWidth/);

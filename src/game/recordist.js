@@ -16,6 +16,7 @@
 
 import { ROOM_TONE, NOISE } from '../config.js';
 import { inferAcousticKind } from '../audio/acoustic-catalogue.js';
+import { normalizeTapeDamage } from './tape-damage.js';
 
 let acousticEmitter = null;
 
@@ -309,10 +310,12 @@ export function readSheet(amount = 3 * COMPOSURE_GRID) {
 // Reaching for the light mid-take is allowed, and it ruins the take. Every
 // rule in this game is a price, never a locked door — except a flat battery,
 // which is not a rule and does not care what you have decided.
-export function toggleLight() {
+// A world-owning imagined rehearsal may suspend an actual take; only that
+// owner uses protectTake, and power eligibility remains identical.
+export function toggleLight({protectTake=false}={}) {
   if (!state.light && state.battery <= 0) return false;      // nothing to turn on
   state.light = !state.light;
-  if (state.phase === 'recording' && state.light) spoil('you reached for the light', {
+  if (!protectTake && state.phase === 'recording' && state.light) spoil('you reached for the light', {
     sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
   });
   return state.light;
@@ -680,7 +683,7 @@ export function loadRecState(saved = {}) {
   const tapes = Array.isArray(saved.tapes) ? saved.tapes : null;
   // A save written since the stores were merged carries tapes and nothing else;
   // anything older carries the three lists. Read whichever is there.
-  const accepted=tapes?.filter(t=>!t.voided&&(!t.status||t.status==='accepted'));
+  const accepted=tapes?.filter(t=>t&&!t.voided&&!normalizeTapeDamage(t.damage,t)&&(!t.status||t.status==='accepted'));
   const rooms = accepted ? [...new Set(accepted.map((t) => t?.roomId).filter(Boolean))] : (saved.takes || []);
   const dirty = tapes
     ? accepted.filter((t) => t?.contaminated).map((t) => t.roomId)

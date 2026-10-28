@@ -2,6 +2,7 @@ import { uiSize, uiText, uiWrap, uiFill, uiScrim } from './ui.js';
 import { withMachinePanel, machinePanelAperture, drawLampButton } from './presentation.js';
 import { drawItemPortrait } from './item-portraits.js';
 import { fitText } from './fit-text.js';
+import { registerReviewRegion } from '../game/local-text-review.js';
 
 // The field case's faceplate, glass, portrait and controls, with conversation
 // inside its display. There is no separate illustration of the radio.
@@ -42,14 +43,21 @@ export function drawRadioScene(view) {
     const dead=radio.dead||radio.stage==='break'||radio.stage==='after';
     uiText(layout.x,layout.textY-1.4,source|| (dead?'NO CARRIER':'RADIO'),'ui-label',.8);
     const shown=String(view.line?.text||'').slice(0,view.typed??Infinity);
-    uiWrap(shown,layout.w).slice(-layout.textRows).forEach((line,index)=>
-      uiText(layout.x,layout.textY+index,line,source?'ui-primary':'ui-secondary',1));
+    uiWrap(shown,layout.w).slice(-layout.textRows).forEach((line,index)=>{
+      uiText(layout.x,layout.textY+index,line,source?'ui-primary':'ui-secondary',1);
+      if(line.trim())registerReviewRegion(view.line?.reviewTarget,
+        {x:layout.x,y:layout.textY+index,w:Math.min(line.length,layout.w),h:1,active:view.pending?.kind!=='branch'});
+    });
     layout.choices.forEach((r,index)=>{
       const selected=view.pending.index===index;
       drawLampButton(r.x,r.y,6,r.h,{legend:String(index+1),color:'amber',lit:selected,
         selected,controlId:radio.controlPrefix?`${radio.controlPrefix}${index}`:null});
-      uiWrap(r.choice.text,r.w-8).slice(0,2).forEach((text,line)=>
-        uiText(r.x+8,r.y+.15+line*.9,fitText(text,r.w-8),selected?'ui-primary':'ui-secondary',selected?1:.8));
+      uiWrap(r.choice.text,r.w-8).slice(0,2).forEach((text,line)=>{
+        const painted=fitText(text,r.w-8),y=r.y+.15+line*.9;
+        uiText(r.x+8,y,painted,selected?'ui-primary':'ui-secondary',selected?1:.8);
+        if(painted.trim())registerReviewRegion(r.choice.reviewTarget,
+          {x:r.x+8,y,w:Math.min(painted.length,r.w-8),h:1,selected});
+      });
       if(selected&&radio.hold>0)uiFill(r.x+8,r.y+r.h-.15,(r.w-8)*Math.min(1,radio.hold/.65),.1,'#d8b36c');
     });
   });

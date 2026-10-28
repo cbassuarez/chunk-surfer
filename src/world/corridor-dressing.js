@@ -36,6 +36,7 @@ import { F, ZONE } from '../data/floorplan/legend.js';
 import { wallFaces, yawFromNormal } from './wall-contact.js';
 import { physicalWallFaceHasHost } from './baseboard-hosting.js';
 import { CORRIDOR_SPACE_BY_DOOR_ID, LANDING_FITTINGS } from '../data/corridor-lettering.js';
+import { stairLandingSignPlacement } from '../data/stair-landing-dressing.js';
 
 // Runtime cells per authored metre. Props are authored in metres; the plan and
 // its wall runs are in cells. Matches PLAN_SCALE in floorplan/legend.js.
@@ -450,6 +451,10 @@ export function landingFittings(plan, landings = []) {
   for (const landing of landings) {
     const spec = LANDING_FITTINGS[landing.key];
     if (!spec) continue;
+    // These four storeys have measured physical masonry. A logical landing
+    // edge can be an open well or a different room in the observer's slice.
+    const fixed=stairLandingSignPlacement(landing.key,spec);
+    if(fixed){out.push(fixed);continue;}
     const at = { x: Math.round(landing.at.x * CELLS_PER_METRE), y: Math.round(landing.at.y * CELLS_PER_METRE) };
     const size = {
       x: Math.max(1, Math.round((landing.size?.x ?? 1) * CELLS_PER_METRE)),

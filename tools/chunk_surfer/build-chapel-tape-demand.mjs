@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {Document,NodeIO} from '@gltf-transform/core';
-import {BoxGeometry,CylinderGeometry,TorusGeometry,BufferGeometry,Float32BufferAttribute,Vector3,Quaternion,Matrix4} from 'three';
+import {BoxGeometry,CylinderGeometry,TorusGeometry,SphereGeometry,BufferGeometry,Float32BufferAttribute,Vector3,Quaternion,Matrix4} from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene('The building asks for the physical tape'),groups=new Map();
 const material=(name,rgb,roughness,metallic=0,extras={})=>doc.createMaterial(name).setBaseColorFactor([...rgb,1]).setRoughnessFactor(roughness).setMetallicFactor(metallic).setExtras({materialFactors:'gltf',...extras});
@@ -12,7 +12,12 @@ const mats=[material('tape demand solid oxblood pigment',[.22,.045,.025],.56,0,p
   material('tape demand old cream pigment',[.47,.35,.23],.61,0,paint('light-on-dark')),
   material('field case dark woven canvas',[.078,.068,.047],.88),material('field case black leather edging',[.029,.024,.018],.62),
   material('case hardware dull nickel',[.30,.31,.29],.33,.84,{letteringFinish:{version:1,profile:'bare-metal',localSpecular:true}}),
-  material('case coarse cotton webbing',[.22,.18,.115],.93),material('case seam cotton',[.37,.29,.17],.91),material('wall fissure',[.012,.009,.007],1),material('wall crushed lime edge',[.23,.205,.17],.98)];
+  material('case coarse cotton webbing',[.22,.18,.115],.93),material('case seam cotton',[.37,.29,.17],.91),material('wall fissure',[.012,.009,.007],1),material('wall crushed lime edge',[.23,.205,.17],.98),
+  material('congregation receiving sleeves',[.22,.255,.235],.95),
+  material('congregation receiving bare palms',[.51,.56,.51],.82),
+  material('spilled magnetic tape oxide',[.14,.067,.029],.52),
+  material('spilled magnetic tape backing',[.034,.026,.018],.64),
+  material('spilled tape worn substrate edge',[.48,.405,.27],.68)];
 function geometry(g,mat,at=[0,0,0],scale=[1,1,1],q=new Quaternion()){
   g.applyMatrix4(new Matrix4().compose(new Vector3(...at),q,new Vector3(...scale)));
   const p=groups.get(mat)||{positions:[],normals:[],uvs:[],indices:[]},base=p.positions.length/3;
@@ -68,6 +73,94 @@ box([.126,.040,.008],[0,0,0],7,.009);
 for(const y of[-.024,.024])beam([-.071,y,.007],[.071,y,.007],.008,8);
 for(const x of[-.07,.07])beam([x,-.018,.007],[x,.018,.007],.005,8);
 finish('tape_demand_wall_catch');
+
+// Replace folded arms with two attached articulated arms, retaining the
+// original lower body at its pew. Origin is the original upper-body pivot.
+geometry(new SphereGeometry(1,12,8),9,[0,.28,-.055],[.235,.32,.13]);
+geometry(new SphereGeometry(1,10,6),9,[0,.59,-.065],[.073,.105,.074]);
+finish('tape_demand_receiver_torso');
+// One metre along +Y, shoulder/elbow to elbow/wrist.
+geometry(new CylinderGeometry(.045,.082,1,10,1),9,[0,.5,0]);
+finish('tape_demand_receiver_sleeve');
+// Open palm and separate fingers, along local +Y, palm facing local +Z.
+geometry(new BoxGeometry(.092,.086,.031),10,[0,.043,0]);
+for(const[i,length]of [.072,.087,.082,.061].entries()){
+  const x=(i-1.5)*.022;
+  beam([x,.078,0],[x,.078+length,-.006],.0105,10,6);
+  beam([x,.078+length,-.006],[x-.003,.091+length,-.019],.008,10,6);
+}
+beam([-.043,.035,0],[-.078,.069,.003],.012,10,6);
+beam([-.078,.069,.003],[-.081,.097,-.009],.009,10,6);
+finish('tape_demand_receiver_hand');
+
+// The broken case is genuinely open. A compact panel construction leaves the
+// recorder/spools visible inside; the latch is sprung rather than a new decal
+// placed over the intact lid. It keeps the original strap-ring datum.
+const panel=(size,at,mat=2,q=new Quaternion())=>geometry(new BoxGeometry(...size),mat,at,[1,1,1],q);
+panel([.334,.026,.150],[0,-.101,0],3);
+for(const x of[-.158,.158])panel([.018,.19,.150],[x,-.002,0]);
+panel([.316,.18,.014],[0,-.006,-.068],3);
+panel([.316,.16,.014],[0,-.016,.068]);
+panel([.269,.030,.111],[0,-.066,0],4);
+for(const x of[-.067,.067]){
+  geometry(new CylinderGeometry(.044,.044,.013,16),12,[x,-.040,0]);
+  geometry(new CylinderGeometry(.033,.033,.016,12),4,[x,-.030,0]);
+  geometry(new CylinderGeometry(.010,.010,.019,10),3,[x,-.019,0]);
+}
+panel([.150,.006,.006],[0,-.018,.039],11);
+const lidAngle=-.86,lidQ=new Quaternion().setFromAxisAngle(new Vector3(1,0,0),lidAngle);
+const lidAt=[0,.101+Math.sin(-lidAngle)*.075,-.070+Math.cos(lidAngle)*.075];
+panel([.319,.024,.150],lidAt,3,lidQ);
+panel([.281,.010,.117],[lidAt[0],lidAt[1]+.009,lidAt[2]],2,lidQ);
+for(const x of[-.112,.112]){
+  panel([.028,.049,.012],[x,.043,.087],4,new Quaternion().setFromAxisAngle(new Vector3(0,0,1),x<0?-.48:.27));
+  panel([.013,.025,.007],[x-.010,.004,.094],3);
+}
+for(const x of[-.145,.145]){
+  panel([.026,.060,.022],[x,.123,0],3);
+  geometry(new TorusGeometry(.021,.0045,6,14),4,[x,.17,0]);
+}
+for(const x of[-.068,.068])panel([.020,.029,.024],[x,.124,-.045],4);
+beam([-.068,.133,-.045],[-.055,.168,-.045],.008,3);
+beam([-.055,.168,-.045],[.055,.168,-.045],.008,3);
+beam([.055,.168,-.045],[.068,.133,-.045],.008,3);
+finish('tape_demand_field_case_broken');
+
+// Thin opaque ribbon with actual front/back faces and narrow worn edges.
+// The substrate catches existing torch/room light; it emits no light and is
+// not a transparent line or a screen-space effect.
+function tapeRibbon(points,{floor=false,width=.00635}={}){
+  const band=(lo,hi,mat,back=false,lift=0)=>{
+    const positions=[],normals=[],indices=[];
+    for(let i=0;i<points.length;i++){
+      const prev=points[Math.max(0,i-1)],next=points[Math.min(points.length-1,i+1)];
+      const tangent=new Vector3(...next).sub(new Vector3(...prev)).normalize();
+      const side=floor?new Vector3(-tangent.z,0,tangent.x).normalize():new Vector3(1,0,0);
+      const normal=new Vector3().crossVectors(side,tangent).normalize();
+      for(const offset of[lo,hi]){
+        positions.push(...points[i].map((v,k)=>v+side.getComponent(k)*offset+normal.getComponent(k)*lift));
+        normals.push(...normal.toArray().map(v=>back?-v:v));
+      }
+      if(i<points.length-1){const a=i*2;indices.push(...(back?[a,a+2,a+1,a+1,a+2,a+3]:[a,a+1,a+2,a+1,a+3,a+2]));}
+    }
+    const g=new BufferGeometry();g.setAttribute('position',new Float32BufferAttribute(positions,3));g.setAttribute('normal',new Float32BufferAttribute(normals,3));g.setIndex(indices);geometry(g,mat);
+  };
+  band(-width/2,width/2,11);band(-width/2,width/2,12,true);
+  band(-width/2,-width/2+.0009,13,false,.00018);band(width/2-.0009,width/2,13,false,.00018);
+  band(-width/2,-width/2+.0009,13,true,-.00018);band(width/2-.0009,width/2,13,true,-.00018);
+}
+tapeRibbon([[-.055,.080,.070],[-.071,.026,.127],[-.075,-.054,.153],[-.018,-.108,.160],[.047,-.060,.139],[.036,.016,.105],[.006,.071,.069]]);
+finish('tape_demand_tape_leader');
+tapeRibbon([[0,0,0],[0,1,0]]);
+finish('tape_demand_tape_strip');
+for(let loop=0;loop<2;loop++){
+  const points=Array.from({length:33},(_,i)=>{
+    const t=i/32*Math.PI*2,rx=.15+loop*.067,rz=.13+loop*.046,wobble=1+.13*Math.sin(t*3+loop*.9)+.07*Math.sin(t*5);
+    return[Math.cos(t)*rx*wobble,.009+loop*.004+.003*Math.sin(t*4),Math.sin(t)*rz*wobble];
+  });
+  tapeRibbon(points,{floor:true});
+}
+finish('tape_demand_tape_coils');
 
 const root=new URL('../../',import.meta.url),sha=b=>crypto.createHash('sha256').update(b).digest('hex'),bytes=Buffer.from(await new NodeIO().writeBinary(doc));
 const triangles=doc.getRoot().listMeshes().reduce((n,m)=>n+m.listPrimitives().reduce((sum,p)=>sum+p.getIndices().getCount()/3,0),0),file='public/assets/chapel-tape-demand.glb';

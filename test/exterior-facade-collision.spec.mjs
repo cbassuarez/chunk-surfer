@@ -59,7 +59,9 @@ function originalTriangleCrossing(from,to,placed){
 }
 
 test('collision freshness follows exact selected mesh bytes, independently of unrelated props',()=>{
-  assert.equal(EXTERIOR_COLLISION_SOURCE.meshCount,10);
+  assert.equal(EXTERIOR_COLLISION_SOURCE.meshCount,EXTERIOR_COLLISION_ASSETS.reduce((count,asset)=>count+asset.meshes.length,0));
+  assert.ok(EXTERIOR_COLLISION_GEOMETRY.ellery_public_front,'the approached public frontage has its actual surface owner');
+  assert.ok(EXTERIOR_COLLISION_GEOMETRY.demolition_excavator,'the real attachment has a generated surface owner');
   for(const[name,data]of Object.entries(EXTERIOR_COLLISION_GEOMETRY)){
     const source=sourceFor(name);
     assert.equal(data.sha256,meshFingerprint(source,source.json.meshes.find(m=>m.name===name)),`${name}: rebuild exterior collision after changing this actual mesh`);

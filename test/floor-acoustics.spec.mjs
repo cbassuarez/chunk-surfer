@@ -25,8 +25,16 @@ const surface = (sprung, soft) => (soft > 0 ? sprung * (1 - soft * (1 - NOISE.ca
 
 const TEXTILES = [
   'atrium-waiting-rug', 'b2-drugget-run', 'hall-stage-drugget', 'main-stair-runner',
-  'academic-corridor-runner', 'chapel-nave-runner', 'store-rolled-rug',
+  'academic-corridor-runner', 'chapel-nave-runner', 'store-rolled-rug', 'occupation-arrival-mat',
 ];
+const PROJECT_TEXTILE_MESHES = new Set(['textile_stair_runner_fitted', 'occupation_entry_mat']);
+function packedMeshes(filename) {
+  const bytes = readFileSync(new URL(`../public/assets/${filename}`, import.meta.url));
+  assert.equal(bytes.readUInt32LE(0), 0x46546c67, `${filename} is a GLB`);
+  assert.equal(bytes.readUInt32LE(16), 0x4e4f534a, `${filename} has a JSON chunk`);
+  const gltf = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)));
+  return new Set(gltf.meshes.filter(mesh => mesh.primitives?.length > 0).map(mesh => mesh.name));
+}
 
 test('the ladder is the right way up, and a covered sprung floor is never an amnesty', () => {
   const bare = surface(1, 0);
@@ -101,10 +109,19 @@ test('softFloor lives on the mesh, and only textiles have it', () => {
   const soft = Object.entries(PROP_MESH).filter(([, mesh]) => Number(mesh.softFloor) > 0);
   assert.ok(soft.length >= 5, 'the textiles declare it');
   for (const [name, mesh] of soft) {
-    assert.ok(/rug|textile/.test(name), `${name} is a textile`);
+    assert.ok(/rug|textile/.test(name) || name === 'occupation_entry_mat', `${name} is a textile`);
     assert.ok(mesh.softFloor > 0 && mesh.softFloor <= 1, `${name}: softFloor is 0..1`);
     assert.equal(mesh.blocks, false, `${name} does not block: you walk on it`);
   }
+});
+
+test('project-native fitted wool and the cloth entry mat exist in the actual base prop pack', () => {
+  const built = packedMeshes('conservatory-props.glb');
+  for (const mesh of PROJECT_TEXTILE_MESHES) {
+    assert.ok(built.has(mesh), `${mesh} has actual packed geometry`);
+    assert.ok(TEXTILES.some(id => PROPS.propById(id)?.mesh === mesh), `${mesh} has a live placement`);
+  }
+  assert.equal(PROP_MESH.occupation_entry_mat.softFloor, .65);
 });
 
 test('the textile pack is CC0, credited, and inside its budget', () => {
@@ -126,12 +143,15 @@ test('the textile pack is CC0, credited, and inside its budget', () => {
   assert.ok(credits.pack.triangles <= manifest.limits.triangles, `and its triangle budget (${credits.pack.triangles})`);
   assert.match(credits.pack.license, /CC0-1\.0/, 'and the pack records the surface licence');
 
-  // Every mesh the placements name has to exist in the pack, or the rug renders
-  // as whatever the procedural fallback happens to be — which for six of these
-  // is nothing at all.
+  // Fitted stair wool and the cloth entry mat belong to the base prop pack.
+  // Every remaining placement still requires both its optional pack credit
+  // and actual geometry; a credit alone cannot make a missing rug render.
   const built = new Set(credits.meshes.map((entry) => entry.name));
+  const packed = packedMeshes('conservatory-textiles.glb');
   for (const id of TEXTILES) {
     const mesh = PROPS.propById(id).mesh;
+    if (PROJECT_TEXTILE_MESHES.has(mesh)) continue;
     assert.ok(built.has(mesh), `${mesh} is in the built pack`);
+    assert.ok(packed.has(mesh), `${mesh} has actual geometry in the textile pack`);
   }
 });

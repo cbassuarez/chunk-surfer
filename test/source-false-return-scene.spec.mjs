@@ -48,6 +48,29 @@ test('render preparation failure exposes no live movement and permits a fault-on
   scene.key({key:'x'});assert.equal(returned,1);scene.exit();
 });
 
+test('loading and preparation failure expose real return/retry actions rather than an inert view',async()=>{
+  let complete,returned=0,retries=0;
+  const gate=new Promise(resolve=>{complete=resolve;});
+  const loading=make({renderer:{initialize:()=>gate,render:()=>true},onFaultReturn:()=>returned++});
+  const pending=loading.scene.initialize();assert.equal(loading.scene.view().fallback.title,'PLEASE WAIT');
+  assert.equal(loading.scene.allowsLook,false);loading.scene.key({key:'x'});assert.equal(returned,1);
+  loading.scene.exit();complete(true);assert.equal(await pending,false);
+  const failed=make({renderer:{initialize:async()=>false,retry:async()=>{retries++;return true;},render:()=>true}});
+  assert.equal(await failed.scene.initialize(),false);
+  assert.deepEqual(failed.scene.view().fallback.actions,['R  TRY AGAIN','X  GO BACK']);
+  failed.scene.key({key:'r'});assert.equal(await failed.scene.initialize(),true);
+  assert.equal(retries,1);assert.equal(failed.scene.view().fallback,null);assert.equal(failed.scene.allowsLook,true);failed.scene.exit();
+});
+
+test('ordinary mouse/controller look belongs to the ready local body and respects pause',async()=>{
+  const {scene}=make();assert.equal(scene.allowsLook,false);await scene.initialize();assert.equal(scene.allowsLook,true);
+  const before=scene.serialize();assert.equal(scene.lookBy(.4,-.25),true);
+  assert.deepEqual(scene.lookAngles(),{yaw:.4,pitch:-.25});
+  const looked=scene.serialize();assert.equal(looked.x,before.x);assert.equal(looked.z,before.z);
+  scene.pause();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(1,.1),false);assert.deepEqual(scene.lookAngles(),{yaw:.4,pitch:-.25});
+  scene.resume();assert.equal(scene.allowsLook,true);assert.equal(scene.lookBy(NaN,0),false);scene.exit();assert.equal(scene.allowsLook,false);
+});
+
 test('the existing F torch action survives borrowing Ellery and cannot repeat or fire while paused',async()=>{
   let switches=0;const {scene}=make({onTorch:()=>{switches++;return true;}});await scene.initialize();
   scene.key({key:'f'});scene.key({key:'f',repeat:true});assert.equal(switches,1);

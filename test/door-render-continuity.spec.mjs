@@ -18,7 +18,10 @@ assert.doesNotMatch(thresholds,/renderGroup|renderGroups/,'structural thresholds
 
 assert.match(props3d,/if\(!propInstanceVisible\(i,eye,maxDistance\)\)continue;/,
   'the shared prop pass still distance-culls submitted thresholds');
-assert.match(r3d,/if\(propView < archView \+ 0\.015[^)]*\)\{\s*col = [^;]+;\s*zView = propView;/,
-  'ray-marched architecture still depth-occludes submitted thresholds');
+const propWinner=r3d.match(/if\(propView\s*<\s*archView\s*\+\s*0\.015[^)]*\)\{([\s\S]*?)\n\s*\}/)?.[1]||'';
+assert.match(propWinner,/col\s*=\s*texture\(uPropColor,propUv\)\.rgb;\s*zView\s*=\s*propView;/,
+  'the winning nearer prop still replaces the architectural colour and depth');
+assert.match(r3d,/!paneTop/,'coplanar roof panes do not inherit an opaque depth claim');
+assert.match(r3d,/litBody\s*<\s*\.5/,'hollow body transmission retains its independent material ownership');
 
 console.log('door render continuity contracts passed');

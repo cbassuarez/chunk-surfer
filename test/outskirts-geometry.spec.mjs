@@ -6,6 +6,7 @@ import {
 } from '../src/data/source-outskirts-arrival.js';
 import { outskirtsCollisionBoxes, outskirtsPointBlocked } from '../src/game/outskirts-geometry.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
+import { OUTSKIRTS_BUS_PASSAGE, busPassageLocal } from '../src/data/outskirts-bus-passage.js';
 
 const layout = outskirtsArrivalLayout();
 const passStart = (k) => OUTSKIRT_STRETCH_START + k * OUTSKIRT_STRETCH_METRES;
@@ -37,7 +38,12 @@ function route(pieces, k, closeGap = false) {
       if (ii < 0 || ii >= nx || jj < 0 || jj >= nz || seen.has(next)) continue;
       const p = at(ii, jj);
       if (blocked(pieces, p.x, p.along)) continue;
-      if (closeGap && p.x >= 4.35 && p.x <= 6.55 && Math.abs(p.along - (passStart(k) + 24.5)) < 0.4) continue;
+      if (closeGap) {
+        if (k === OUTSKIRT_BUS_ENCOUNTER.pass) {
+          const local = busPassageLocal({ across: p.x, along: p.along - passStart(k) });
+          if (Math.abs(local.x) < .8 && Math.abs(local.z) < .4) continue;
+        } else if (p.x >= 4.35 && p.x <= 6.55 && Math.abs(p.along - (passStart(k) + 24.5)) < 0.4) continue;
+      }
       seen.add(next); parent.set(next, key); queue.push([ii, jj]);
     }
   }
@@ -47,9 +53,9 @@ function route(pieces, k, closeGap = false) {
   return path;
 }
 
-test('the learned road has stable coordinates and keeps the phone contracts', () => {
+test('the learned road keeps stable coordinates outside authored rearrangements and keeps the phone contracts', () => {
   assert.equal(OUTSKIRT_PASSES.length, 29);
-  for (const k of [0, 1, 2, 3, 4, 5, 6, 8, 9, 11, 12, 13]) {
+  for (const k of [0, 1, 2, 5, 6, 8, 9, 11, 12, 13]) {
     const pieces = onPass(k), first = onPass(0);
     for (const key of ['booth', 'shelter', 'van', 'phone-box', 'lamp-0']) {
       const p = pieces.find((v) => v.key === key), b = first.find((v) => v.key === key);
@@ -59,6 +65,9 @@ test('the learned road has stable coordinates and keeps the phone contracts', ()
       assert.equal(p.yaw, b.yaw);
     }
   }
+  assert.equal(OUTSKIRT_PASSES[3].break, 'mirrored');
+  assert.equal(onPass(3).find(p => p.key === 'booth').across, -onPass(0).find(p => p.key === 'booth').across);
+  assert.equal(OUTSKIRT_PASSES[4].break, 'turned');
   assert.equal(OUTSKIRT_PASSES[13].break, null);
   assert.ok(onPass(13).some((p) => p.payphone && p.across === 8.6));
   assert.ok(onPass(21).some((p) => p.payphone));
@@ -84,20 +93,40 @@ test('final-filtered physical changes survive and the late self-recognition has 
   assert.ok(!onPass(26).some((p) => p.key.startsWith('van')));
 });
 
-test('the early bus forces a measured close passage without blocking progression', () => {
+test('the early bus requires its front entrance, aisle and rear exit without blocking progression', () => {
   const k = OUTSKIRT_BUS_ENCOUNTER.pass, pieces = onPass(k), start = passStart(k);
   assert.ok(pieces.some((p) => p.key === OUTSKIRT_BUS_ENCOUNTER.womanKey && p.encounter === 'bus-close'));
+  const bus = pieces.find(p => p.key === 'bus');
+  assert.equal(bus.mesh, OUTSKIRTS_BUS_PASSAGE.mesh);
+  assert.equal(bus.busPassage, true);
+  assert.ok(bus.collision.length, 'the separate passage model has no explicit physical panels');
   assert.ok(blocked(pieces, 0, start + 23.275), 'straight through the bus side is allowed');
-  assert.ok(!blocked(pieces, 5.45, start + 24.5), 'the advertised gap is shut');
-  assert.ok(blocked(pieces, 4.8, start + 24.5), 'nose collision loses the body radius');
-  assert.ok(blocked(pieces, 6.1, start + 24.5), 'rail collision loses the body radius');
-  assert.equal(OUTSKIRT_BUS_ENCOUNTER.bodyClearance, 1.2);
+  assert.ok(blocked(pieces, 5.45, start + 24.5), 'the obsolete exterior nose gap bypasses the aisle');
+  assert.ok(!blocked(pieces, -3.15, start + 23.25), 'the front doorway has no physical opening');
   const path = route(pieces, k);
   assert.ok(path, 'the encounter dead-ends');
-  const crossing = path.filter((p) => Math.abs(p.along - (start + 24.5)) < 0.13);
-  assert.ok(crossing.length && crossing.every((p) => p.x > 4.85 && p.x < 6.05), 'a route bypasses the close passage');
-  assert.equal(route(pieces, k, true), null, 'blocking the nose gap still leaves an alternate route');
+  const local = path.reverse().map(p => busPassageLocal({ across: p.x, along: p.along - start }));
+  const entry = local.findIndex(p => p.x > -1.1 && p.x < -.4 && p.z > -3.7 && p.z < -2.6);
+  const aisle = local.findIndex((p, i) => i > entry && Math.abs(p.x) <= .31 && Math.abs(p.z) < .5);
+  const exit = local.findIndex((p, i) => i > aisle && p.x > .4 && p.x < 1.1 && p.z > 3.3 && p.z < 4.4);
+  assert.ok(entry >= 0 && aisle > entry && exit > aisle, 'a route misses the interior crossing');
+  assert.equal(route(pieces, k, true), null, 'blocking the aisle still leaves an alternate route');
   for (const kk of [0, 1, 6, 8, 18, 19]) assert.ok(route(onPass(kk), kk), `pass ${kk} has no forward route`);
+});
+
+test('later blocked bus variants retain their measured exterior nose gap', () => {
+  for (const k of [18, 19]) {
+    const pieces = onPass(k), start = passStart(k);
+    assert.equal(pieces.find(p => p.key === 'bus').mesh, 'outskirts_bus');
+    assert.ok(!blocked(pieces, 5.45, start + 24.5), `pass ${k}: legacy nose gap is shut`);
+    assert.ok(blocked(pieces, 4.8, start + 24.5), `pass ${k}: nose collision loses body radius`);
+    assert.ok(blocked(pieces, 6.1, start + 24.5), `pass ${k}: rail collision loses body radius`);
+    const path = route(pieces, k);
+    assert.ok(path);
+    const crossing = path.filter(p => Math.abs(p.along - (start + 24.5)) < .13);
+    assert.ok(crossing.length && crossing.every(p => p.x > 4.85 && p.x < 6.05));
+    assert.equal(route(pieces, k, true), null, `pass ${k}: blocking the nose gap leaves a bypass`);
+  }
 });
 
 test('shell openings and unfinished frames agree with physical affordances', () => {

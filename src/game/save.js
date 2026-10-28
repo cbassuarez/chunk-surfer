@@ -37,6 +37,7 @@ import {
 } from '../platform/storage/browserStorage.js';
 import {
   initGameStorage,
+  storageWritesBlocked,
   loadGameState,
   saveSettingsQueued,
   saveProfileQueued,
@@ -68,6 +69,7 @@ import { normalizeEndingVariant } from '../data/ending-variants.js';
 import { normalizeAcademicFloorReturns } from './academic-floor-returns.js';
 import { normalizeEndingWrongDoorDemolition } from './ending-wrong-door.js';
 import { normalizeSourceIV } from './source-iv.js';
+import { freshPlayDuration, normalizePlayDuration } from './play-duration.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -95,6 +97,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   vanPreparation: freshVanPreparation(),
   doors: { schema: 2, states: {} },
   playSeconds: 0,
+  playDuration: freshPlayDuration(),
   steps: 0,
   bagNav: null,
   bagSheets: freshBagSheetState(),
@@ -258,7 +261,7 @@ function normalizeHushAudioSave(value) {
 }
 
 function migrateSaveV1ToV2(data) {
-  const next = { ...freshSave(), ...data, version: 2 };
+  const next = { ...freshSave(), ...data, version: 2, playDuration: normalizePlayDuration(data?.playDuration) };
   next.px = scaleCoord(data.px);
   next.py = scaleCoord(data.py);
   if (next.obj) {
@@ -316,6 +319,7 @@ function normalizeSaveV4(data, meta = null) {
     ...base,
     ...source,
     version: SAVE_VERSION,
+    playDuration: normalizePlayDuration(source.playDuration),
     layoutRevision:Math.max(0,Math.floor(finiteNumber(source.layoutRevision,0))),
     facing:((Math.round(finiteNumber(source.facing,0))%4)+4)%4,
     view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
@@ -423,7 +427,7 @@ function safeParse(raw) {
 }
 
 function write(key, data) {
-  writeJson(key, data);
+  if (!storageWritesBlocked()) writeJson(key, data);
 }
 
 let save = freshSave();
@@ -502,6 +506,15 @@ export async function saveLoadAsync({ gameVersion = 'LOCAL', kind = null, adapte
 }
 
 export function getSave() { return transientState()?.save || save; }
+// A rare autonomous presentation may require a successful synchronous cache
+// write before it emits. In-memory mutation alone cannot establish that.
+// This does not acknowledge completion of the queued native disk write.
+export function savedFlagMatches(name, value) {
+  if (transientState()) return false;
+  const stored = firstStored([SAVE_KEY]);
+  const cached = parseStoredJson(stored?.raw);
+  return cached?.run?.id === save.run?.id && cached?.flags?.[name] === value;
+}
 export function getMeta() { return transientState()?.meta || meta; }
 
 export function hasSave() {

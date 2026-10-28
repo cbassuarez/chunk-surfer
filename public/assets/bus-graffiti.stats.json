@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "sha256": "2cc6640a31120564abf762b88ac78c7c747b32aa0ce454a1d2cd8f7fcf107442",
+  "bytes": 16700,
+  "mesh": "ambient_bus_graffiti",
+  "triangles": 164,
+  "paths": 21,
+  "description": "Original hand-drawn matte spray marks on both lower bus side panels",
+  "bodyPlaneX": 1.225,
+  "paintPlaneAbsX": [
+    1.229,
+    1.233
+  ],
+  "source": "tools/chunk_surfer/build-bus-graffiti.mjs",
+  "pending": [
+    "native final-dither visibility and motion inspection"
+  ]
+}

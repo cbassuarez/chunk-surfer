@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { machinePanelAperture, machinePanelBody } from '../src/render/presentation.js';
+import { createHitRegions } from '../src/render/hit-regions.js';
+import { visiblePresets, normalizeRuleValues, cycleRuleValue } from '../src/progression/difficulty.js';
+import { RULE_HELP, RULE_LABELS, VALUE_LABELS } from '../src/progression/difficulty-defs.js';
+import { deriveUnlocks } from '../src/progression/unlocks.js';
+import { createLocalTextReview } from '../src/game/local-text-review.js';
 
 const gameSource = (file) => readFileSync(new URL(`../src/game/${file}.js`, import.meta.url), 'utf8');
 const consumers = {
   'achievement-notice': 1, archive: 1, 'bell-peal-scene': 1, 'beta-notice': 1,
-  coldopen: 2, 'controller-settings': 1, dialogue: 1, 'difficulty-select': 1,
+  coldopen: 2, 'controller-settings': 1, dialogue: 1, 'difficulty-select': 2,
   'eula-scene': 1, 'god-menu': 1, 'hush-audio-lab': 1, 'hush-run': 5,
   pause: 1, 'progression-lab': 1, 'return-index': 1, 'return-report': 2,
   settings: 1, 'setup-handoff-scene': 2,
@@ -79,7 +84,7 @@ function assertTextFitsWell(harness) {
   }
 }
 
-test('all 31 scoped electronic panels submit their body through the optical callback', () => {
+test('all 32 scoped electronic panel branches submit their body through the optical callback', () => {
   let count = 0;
   for (const [file, expected] of Object.entries(consumers)) {
     const source = gameSource(file);
@@ -89,15 +94,38 @@ test('all 31 scoped electronic panels submit their body through the optical call
     assert.equal(calls, expected, file);
     count += calls;
   }
-  assert.equal(count, 31);
+  assert.equal(count, 32);
   assert.doesNotMatch(gameSource('document'), /\bwithMachinePanel\s*\(/, 'physical documents remain paper rather than electronic displays');
+});
+
+test('ordinary and van-preparation difficulty paths each draw exactly one covered panel',()=>{
+  const source=gameSource('difficulty-select'),start=source.indexOf('const LOCKED_SUBTITLE'),end=source.indexOf('export function makeDifficultySelectScene');
+  const constants=runInNewContext(source.slice(start,end)+'\n({LOCKED_SUBTITLE,RULE_ORDER,CUSTOM_PRESET})');
+  for(const preparation of [false,true]){
+    const h=surfaceHarness({createHitRegions,visiblePresets,normalizeRuleValues,cycleRuleValue,deriveUnlocks,RULE_HELP,RULE_LABELS,VALUE_LABELS,...constants,
+      AUDIO:{menuMove(){},menuConfirm(){},menuBack(){},startMenuHiss(){},stopMenuHiss(){}},scenes:{pop(){},remove(){}}});
+    h.globals.drawPrintedText=h.electronic('printed');
+    h.globals.drawLocationIndicator=h.electronic('location');
+    // Preparation intentionally prints its two actuators inside this panel;
+    // setup-handoff's separate external hardware contract is tested below.
+    h.globals.drawLampButton=h.electronic('actuator');
+    const scene=factory('difficulty-select','makeDifficultySelectScene',h.globals)({meta:{},preparation});
+    scene.render();assert.equal(h.panels.length,1);
+    assert.equal(h.panels[0].options.source,preparation?'VAN':'SETUP');
+    assert.equal(h.events.filter(e=>e.kind==='back').length,1);
+    assert.equal(h.events.filter(e=>e.kind==='cover').length,1);
+    assert.equal(h.events.at(-1).kind,'cover');
+    assert.ok(h.events.some(e=>e.kind===(preparation?'printed':'text')));
+    if(preparation)assert.equal(h.events.filter(e=>e.kind==='actuator').length,2);
+    scene.exit();
+  }
 });
 
 test('setup text is covered once and the physical OPEN button retains its exact pointer target', () => {
   const h = surfaceHarness();
   const make = factory('setup-handoff-scene', 'makeSetupHandoffScene', h.globals);
   let opens = 0;
-  const scene = make({ cables: 2, onOpen: () => opens++ });
+  const scene = make({ mode:'skills', cables: 2, onOpen: () => opens++ });
   scene.render();
   assert.deepEqual(h.events.map((event) => event.kind), ['scrim', 'back', 'text', 'text', 'cover', 'lamp']);
   assert.match(h.events.find((event) => event.kind === 'text').args[2], /2 spare leads/);
@@ -204,7 +232,18 @@ test('empty Archive and empty history keep all explanatory text inside the cover
 });
 
 test('speech text and typing cursor share one covered surface with unchanged placement', () => {
-  const h = surfaceHarness({ cur: { who: 'you', text: 'Testing speech.' }, typed: 7, BAND_W: 78, WHO: { you: { tag: 'YOU', cls: 'ui-primary', alpha: 1 } } });
+  const review = createLocalTextReview({ buildAllowed: true, local: true });
+  review.setEnabled(true);
+  const target = { id: 'speech-placement', sceneId: 'speech', nodeId: 'placement', sourceId: '', speaker: 'you',
+    fields: [{ key: 'speech-placement:text', label: 'Spoken text', original: 'Testing speech.' }] };
+  // The renderer's private refresh helper is part of its real dependency graph.
+  // Execute it with the actual review service rather than a presenter-only stub.
+  const speech = gameSource('speech'), start = speech.indexOf('function refreshReviewText('), end = speech.indexOf('\n}', start);
+  assert.ok(start >= 0 && end > start);
+  const refreshReviewText = runInNewContext(`(${speech.slice(start, end + 2)})`, { reviewText: review.text });
+  const h = surfaceHarness({ cur: { who: 'you', text: 'Testing speech.', reviewTarget: target }, typed: 7,
+    refreshReviewText, registerReviewRegion: review.register,
+    BAND_W: 78, WHO: { you: { tag: 'YOU', cls: 'ui-primary', alpha: 1 } } });
   factory('speech', 'drawSpeech', h.globals)();
   assert.deepEqual(h.events.map((event) => event.kind), ['back', 'text', 'text', 'cover']);
   const body = h.panels[0].body;
@@ -212,6 +251,10 @@ test('speech text and typing cursor share one covered surface with unchanged pla
   assert.equal(h.events[2].args[2], '▌');
   assert.deepEqual(h.events[1].args.slice(0, 2), [body.x + 1, body.y - 1]);
   assert.deepEqual(h.events[2].args.slice(0, 2), [body.x + 8, body.y - 1]);
+  const [region] = review.regions();
+  assert.equal(review.regions().length, 1, 'only the painted speech row is selectable');
+  assert.equal(region.target, target);
+  assert.deepEqual([region.x, region.y, region.w, region.h], [body.x + 1, body.y - 1, 7, 1]);
 });
 
 test('opening transcript normal and side-by-side branches paint behind one cover without glazing the world', () => {

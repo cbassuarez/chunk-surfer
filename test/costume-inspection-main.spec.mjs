@@ -19,15 +19,20 @@ function fixture(){
   step(0);state=stepConservatoryAdversaries(state,{dt:0,player,group:'basement',reachForPin:true}).state;
   assert.equal(state.costume.phase,'inspect');
   const input=new InputManager(),target={id:'map'};
+  const lookAngles={yaw:0,pitch:0},arrivalLookEvents=[];
   let releases=0;
   const documentRef={pointerLockElement:target,visibilityState:'visible',hasFocus:()=>true,exitPointerLock(){this.pointerLockElement=null;releases++;}};
   const pointer=createPointerModeController({input,documentRef,getTargetElement:()=>target,getState:()=>({renderer:'3d',storyMode:true,inRogue:true,blocksInput:scenes.blocksInput(),blocksLook:scenes.blocksInput()&&!scenes.allowsLook()})});
   pointer.sync('test-start');const unsubscribe=scenes.subscribe(()=>pointer.sync('scene-change'));
-  const context={scenes,RENDERER:'3d',paused:false,costumeInspectionScene:null,motionInput:input,holdUnavailableGameplayInput:()=>false,CONTROLLER:{controllerMotionAxes:()=>({turnX:.6,lookY:.4})},R3:{r3dLook:(yaw,pitch)=>looks.push({yaw,pitch})},clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),mouseLookSensitivity:()=>1,mouseInvertY:()=>false};
+  const context={scenes,RENDERER:'3d',paused:false,costumeInspectionScene:null,motionInput:input,holdUnavailableGameplayInput:()=>false,
+    controllerGameplayAxes:()=>({turnX:.6,lookY:.4}),
+    R3:{r3dLook:(yaw,pitch)=>{looks.push({yaw,pitch});lookAngles.yaw+=yaw;lookAngles.pitch+=pitch;},r3dLookAngles:()=>({...lookAngles})},
+    noteExteriorArrivalControl:event=>arrivalLookEvents.push(event),
+    clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),mouseLookSensitivity:()=>1,mouseInvertY:()=>false};
   vm.createContext(context);vm.runInContext(production('tickIndependentLook'),context);
   const scene=makeCostumeInspectionScene({getActor:()=>state.costume,isActive:()=>active,advance:dt=>{clock+=dt;steps++;step(dt);},onDone:r=>settled.push(r),onCancel:r=>{settled.push(r);state=cancelCostumeInspection(state).state;},onExit:()=>{context.costumeInspectionScene=null;}});
   context.costumeInspectionScene=scene;scenes.push(scene);
-  return{scene,input,pointer,context,events,settled,looks,state:()=>state,clock:()=>clock,steps:()=>steps,releases:()=>releases,setActive:v=>{active=v;},close:()=>{scenes.clear();unsubscribe();}};
+  return{scene,input,pointer,context,events,settled,looks,arrivalLookEvents,state:()=>state,clock:()=>clock,steps:()=>steps,releases:()=>releases,setActive:v=>{active=v;},close:()=>{scenes.clear();unsubscribe();}};
 }
 
 test('actual independent-look adapter drains input during the insert while retaining mouse capture, then accepts fresh look',()=>{
@@ -36,10 +41,14 @@ test('actual independent-look adapter drains input during the insert while retai
     assert.equal(h.input.addPointerDelta(30,-14),true);h.context.tickIndependentLook(.1);
     assert.equal(h.input.pointerDx,0);assert.equal(h.input.pointerDy,0);assert.equal(h.looks.length,0,'controller and mouse cannot contaminate authored aim');
     assert.equal(h.input.pointerLocked,true);assert.equal(h.releases(),0,'a timer never surrenders a lease it cannot regain');
+    assert.equal(h.arrivalLookEvents.length,0,'authored inspection aim cannot register voluntary exploration look');
     h.scene.key({key:'Escape'});assert.equal(scenes.blocksInput(),false);assert.equal(scenes.blocksWorld(),false);
     assert.equal(h.context.costumeInspectionScene,null);assert.equal(h.input.pointerLocked,true);
     h.input.addPointerDelta(9,4);h.context.tickIndependentLook(.1);
     assert.ok(h.looks.some(v=>v.yaw!==0),'fresh real input reaches the ordinary renderer after release');assert.equal(h.releases(),0);
+    assert.equal(h.arrivalLookEvents.length,1,'only the released look reaches the arrival-control owner');
+    assert.equal(h.arrivalLookEvents[0].type,'look');assert.equal(h.arrivalLookEvents[0].voluntary,true);
+    assert.ok(h.arrivalLookEvents[0].yawDelta!==0,'arrival control receives the actual angular change');
   }finally{h.close();}
 });
 
@@ -76,6 +85,7 @@ function productionHarness(){
   const environment={
     scenes,makeCostumeInspectionScene,costumeInspectionEligible,cancelCostumeInspection,stepConservatoryAdversaries,freshConservatoryAdversaries,CONSERVATORY_ADVERSARY_FLAGS,
     costumeInspectionScene:null,costumeInspectionOrigin:null,costumeInspectionLastExit:null,conservatoryAdversaries:state,conservatoryAdversaryAudio:null,
+    academicAdversaryAudio:null,academicAdversaryReactionDispatch:null,academicAdversaries:{load(){},save:()=>({})},
     storyMode:true,usingPlan:()=>true,usingSpecialSpace:()=>false,paused:false,activeBattleId:null,RENDERER:'3d',px:8,py:38,
     basementWatcher:{roomId:'b1',resolved:false},FP:{logicalToPhysical:()=>({renderGroup:'basement'}),toAuthoredCoord:v=>v/2,toRuntimePoint:p=>({x:p.x*2,y:p.y*2})},
     REC:{isRecording:()=>recording},R3:{r3dCostumeExchangeStatus:()=>({ready}),r3dLookAngles:()=>look,r3dSetLookAngles:v=>{look={yaw:v.yaw,pitch:v.pitch};},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},

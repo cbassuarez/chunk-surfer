@@ -19,7 +19,8 @@
 // A cell that is `solid` is rock: no floor, no ceiling, you cannot be in it.
 // A cell that is VOID (outside the building) is also solid, but reads as sky.
 
-import { applyBuildingWindowView, buildingWindowForObserver } from './building-window-views.js';
+import { applyBuildingWindowView, buildingWindowForObserver,
+  buildingWindowForExteriorObserver, applyBuildingWindowInteriorView } from './building-window-views.js';
 import {
   F, ZONE, ZONE_WORLD, MATERIAL, CELL, cellFor, materialForZone,
   EYE, STEP_UP, HEADROOM, PLAN_SCALE, AMBIENT_PLACE_SCALE, isOutdoorZone
@@ -852,9 +853,9 @@ function compoundStair({
 // stand. Its address, its seams and its room stay as they are.
 //
 // A cell a seam lands on is kept walkable whatever lies under it: closing it
-// would leave that lane of the seam a wall you cannot see. Today that is two
-// lanes where the upper landing meets the third half-turn, whose landing cells
-// sit over that flight's first riser; re-authoring that seam is what fixes it.
+// would leave that lane of the seam a wall you cannot see. Seam declarations
+// must therefore remain on the built landing or its level first tread, before
+// a raised tread puts the body's support above the landing floor.
 function applyStairwellCollision(edgePortals=[]){
   const seamCells=new Set();
   for(const portal of edgePortals)for(const end of[portal.from,portal.to]){
@@ -1526,6 +1527,7 @@ export function physicalRenderPlanFor(x,y){
   // Keep the ordinary city slice through its real doors and window openings.
   const exteriorObserver=isOutdoorZone(observerZone)||isCivicMeshEnvelopeZone(observerZone);
   const architecturalWindow=exteriorObserver?null:buildingWindowForObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
+  const exteriorWindow=exteriorObserver?buildingWindowForExteriorObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,zone:observerZone}):null;
   const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
     &&x>=84&&x<=94&&y>=480&&y<=492;
   const band=Math.round(here.y/HEIGHT_BAND);
@@ -1543,7 +1545,7 @@ export function physicalRenderPlanFor(x,y){
   // to hand its slice to the other. That is how the pool came back solid even
   // after the retention rule was right: the cached foyer slice had no basin in
   // it. Same shape of bug as the rounded band the note above describes.
-  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}:${architecturalWindow?.id||'no-window'}`;
+  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}:${architecturalWindow?.id||'no-window'}:${exteriorWindow?.id||'no-inward-window'}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   // Cells where a church contributes its ground to an outdoor slice. Their
@@ -1741,6 +1743,8 @@ export function physicalRenderPlanFor(x,y){
     ceil[i]=yardCeilByRow[cy]||24;
   }
   if(architecturalWindow)applyBuildingWindowView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},{x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
+  if(exteriorWindow)applyBuildingWindowInteriorView({w,h,originX,originY,solid,floor,ceil,flags,zone,material},
+    {x:here.x*CELL,z:here.z*CELL,y:here.y,zone:observerZone},plan.physical.cells);
   for(let i=0;i<w*h;i++){rgba[i*4]=solid[i]?0:encodeH(floor[i]);rgba[i*4+1]=solid[i]?0:encodeH(ceil[i]);rgba[i*4+2]=solid[i]?F.SOLID:flags[i];rgba[i*4+3]=solid[i]?0:zone[i];}
   const ambient=bakeAmbientField({w,h,solid,flags,floor,ceil});
   const out={rgba,material,ambient,solid,floor,ceil,flags,zone,w,h,originX,originY,group,key:cacheKey};plan.physical.renderCache.set(cacheKey,out);return out;

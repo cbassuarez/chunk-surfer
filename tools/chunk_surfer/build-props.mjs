@@ -19,8 +19,10 @@ import { buildExteriorForeground } from './exterior-foreground-geometry.mjs';
 import { addBourgeoisPubFrontage, buildForegroundShelters } from './exterior-frontage-geometry.mjs';
 import { buildArrivalCourt } from './arrival-court-geometry.mjs';
 import { addSouthShopDeed } from './exterior-shop-massing.mjs';
+import { SOUTH_ROW_SHOPS } from '../../src/data/plaza-shopfronts.js';
 import { buildYardRangeBody, addYardRangeWestFrontage } from './yard-range-frontage-geometry.mjs';
 import { buildPubInterior } from './pub-interior-geometry.mjs';
+import { buildDemolitionExcavator } from './demolition-machinery-geometry.mjs';
 import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
 import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
 import { buildInstitutionOccupation } from './institution-occupation-geometry.mjs';
@@ -29,6 +31,7 @@ import { buildOrganConsole } from './organ-console-geometry.mjs';
 import { buildTowerShutterWinch } from './tower-shutter-linkage-geometry.mjs';
 import { buildMainStairUse } from './main-stair-use-geometry.mjs';
 import { buildLoadingBayAccess } from './loading-bay-access-geometry.mjs';
+import {buildSceneDockDressing} from './scene-dock-geometry.mjs';
 import { buildVanRearGeometry, addVanRearDoorDetails } from './van-rear-geometry.mjs';
 import { workbenchCatalog } from '../../src/data/workbench-catalog.js';
 import { vanKitModel } from '../../src/data/van-kit-models.js';
@@ -64,13 +67,15 @@ const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-prop
   'tools/chunk_surfer/lettering/rasterize.py','tools/chunk_surfer/lettering/face-geometry.mjs',
   'tools/chunk_surfer/lettering/world-inscription-substrates.mjs','tools/chunk_surfer/lettering/sample-host-substrate.py',
   'tools/chunk_surfer/lettering/sign-assemblies.mjs','tools/chunk_surfer/lettering/finish-profiles.mjs','tools/chunk_surfer/lettering/finish.py',
-  'src/data/world-inscriptions.js','src/data/corridor-lettering.js','src/data/building-map.js',
+  'src/data/world-inscriptions.js','src/data/corridor-lettering.js','src/data/stair-landing-dressing.js','src/data/glass-court.js','src/data/glass-court-presences.js','src/data/building-amenities.js','tools/chunk_surfer/building-amenities-geometry.mjs','src/data/building-map.js',
   'src/world/corridor-dressing.js','src/world/floorplan.js','src/world/wall-contact.js','src/world/baseboard-hosting.js','src/world/prop-wall-pose.js',
   'src/game/props.js','src/data/conservatory-props.js','src/data/floorplan/conservatory.js','src/data/conservatory-doors.js',
   'public/assets/conservatory-acquisitions.glb'];
 LETTERING_INPUTS.push('src/data/plaza-shopfronts.js','tools/chunk_surfer/shop-display-geometry.mjs',
   'tools/chunk_surfer/plaza-shop-lettering.mjs','tools/chunk_surfer/generated/plaza-shop-lettering.json',
   'src/data/yard-range-frontages.js','tools/chunk_surfer/yard-range-frontage-geometry.mjs');
+LETTERING_INPUTS.push('src/data/demolition-machinery.js','tools/chunk_surfer/demolition-machinery-geometry.mjs');
+LETTERING_INPUTS.push('tools/chunk_surfer/scene-dock-geometry.mjs','src/data/scene-dock-dressing.js');
 const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
 const letteringBuildInputHashes=Object.fromEntries(LETTERING_INPUTS.map(file=>[file,sourceHash(file)]));
 const OUT_DIR = process.env.CHUNK_SURFER_PROPS_OUT_DIR ? path.resolve(process.env.CHUNK_SURFER_PROPS_OUT_DIR) : path.join(ROOT, 'public/assets');
@@ -2679,6 +2684,7 @@ for(const [name,cfg] of Object.entries(SOURCES)){
 }
 // One shared metre profile owns the collision, mesh and placed origin.
 buildLoadingBayAccess({mesh,addBox,addBeam,addCylinder,MAT});
+buildSceneDockDressing({mesh,addBox,addBeam,addCylinder,addCylinderX,MAT});
 // ── THE ORDINARY CITY AROUND ELLERY ─────────────────────────────────────────
 //
 // A row is built in eight-metre deeds rather than as one extruded wall.  Every
@@ -2694,19 +2700,10 @@ function buildDistrictFrontage(name,variant){
   for(let i=0;i<count;i++){
     const z=-32+unitW*(i+.5),h=heights[i],depth=variant==='workshop'?6.8:5.4;
     if(variant==='civic'){
-      if(i>=2)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth,useIndex:i});
-      else{
-        // The Lyric has moved into the accessible courtyard. Retain two
-        // ordinary, closed street deeds here rather than a second false pub.
-        const shiftedApi={...exteriorApi,
-          addBox:(target,c,...args)=>addBox(target,[c[0],c[1],c[2]-16],...args),
-          addBeam:(target,a,b,...args)=>addBeam(target,[a[0],a[1],a[2]-16],[b[0],b[1],b[2]-16],...args),
-          addCylinder:(target,c,...args)=>addCylinder(target,[c[0],c[1],c[2]-16],...args),
-          addQuad:(target,...args)=>{const points=args.slice(0,4).map(c=>[c[0],c[1],c[2]-16]);return addQuad(target,...points,args[4]);},
-          addTriangle:(target,a,b,c,mat)=>addTriangle(target,[a[0],a[1],a[2]-16],[b[0],b[1],b[2]-16],[c[0],c[1],c[2]-16],mat),
-        };
-        addSouthShopDeed(shiftedApi,m,{deed:i+2,z:z+16,h,unitW,depth,useIndex:i});
-      }
+      const shop=SOUTH_ROW_SHOPS.find(shop=>shop.deed===i);
+      if(shop)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth,useIndex:shop.useIndex});
+      // Deeds0/1 belong to the independently placed, enterable Lyric shell.
+      // A second closed shop here would occupy the same doors and room.
       continue;
     }
 
@@ -2767,9 +2764,8 @@ buildDistrictFrontage('district_civic_frontage','civic');
 buildDistrictFrontage('district_workshop_frontage','workshop');
 buildDistrictFrontage('district_passage_frontage','passage');
 {
-  // Both original pub deeds share one independent anchor at their midpoint.
-  // The saved interior/doors remain in their old logical space; this shell is
-  // now placed at the actual courtyard instead of being baked into the town.
+  // The first two south-row deeds share an independent midpoint anchor. Their
+  // shell and interior are placed together by the exterior-pub contract.
   const m=mesh('exterior_pub_frontage');
   for(const deed of[0,1]){
     const report=addBourgeoisPubFrontage(exteriorApi,m,{z:-4+8*deed,h:12.8,unitW:8,depth:5.4,deed});
@@ -4405,32 +4401,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   for(let y=.45;y<6.55;y+=.34)addBox(m,[W/2-.37,y,D/2+.04],[.48,.035,.06],MAT.steel);
   addBox(m,[0,3.55,-D/2-.035],[W-.16,6.70,.025],MAT.roofGlass);
 }
-{
-  // A compact tracked excavator: narrow enough for the service strip between
-  // the two buildings, but with a complete undercarriage, cab, articulated boom
-  // and bucket rather than a construction-coloured block.
-  const m=mesh('demolition_excavator');
-  for(const x of[-.82,.82]){
-    addBox(m,[x,.34,.05],[.42,.60,3.30],MAT.black);
-    addBox(m,[x,.34,.05],[.30,.38,3.02],MAT.steel);
-    for(const z of[-1.12,-.55,.02,.59,1.16])addCylinderX(m,[x,.34,z],.16,.46,MAT.dark,12);
-  }
-  addBox(m,[0,.72,.10],[1.72,.28,1.70],MAT.steel);
-  addCylinder(m,[0,.94,.10],.56,.30,MAT.dark,16);
-  addBox(m,[.28,1.42,.48],[1.55,.92,1.36],MAT.safetyRed);
-  addBox(m,[.72,2.08,-.25],[.72,1.18,.92],MAT.dark);
-  addBox(m,[.72,2.16,-.72],[.66,.92,.055],MAT.roofGlass);
-  addBox(m,[.33,2.17,-.24],[.055,.92,.70],MAT.roofGlass);
-  addBox(m,[.40,2.80,-.20],[1.32,.16,1.24],MAT.safetyRed);
-  addBox(m,[-.56,1.72,.66],[.62,.30,1.08],MAT.safetyRed);
-  addCylinder(m,[-.15,2.12,-.38],.18,.56,MAT.dark,14);
-  addBeam(m,[-.10,2.22,-.38],[-.16,3.18,-1.86],.24,MAT.safetyRed);
-  addBeam(m,[-.16,3.18,-1.86],[-.12,1.42,-3.18],.19,MAT.safetyRed);
-  addBeam(m,[.08,2.32,-.46],[.02,2.84,-1.76],.075,MAT.steel);
-  addBeam(m,[.02,2.84,-1.76],[-.02,1.55,-3.02],.065,MAT.steel);
-  addBox(m,[-.12,1.05,-3.48],[1.18,.48,.76],MAT.dark,-.05,.28);
-  for(const x of[-.48,-.16,.16,.48])addBox(m,[x,.78,-3.78],[.16,.34,.40],MAT.dark,0,.34);
-}
+buildDemolitionExcavator({mesh,materials,addBox,addBeam,addCylinder,addCylinderX,addQuad,addTriangle});
 {
   // Standard temporary welded-mesh fencing in concrete feet. Separate panels
   // leave real gaps at the cathedral doors.
@@ -4458,9 +4429,8 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,.20,-1.82],[.36,.10,.28],MAT.steel);
 }
 {
-  // The site is shut for the night: a mast and four work heads, physically
-  // present but deliberately non-emissive. The lodge remains the only ordinary
-  // occupied exterior light.
+  // Four warm lit head panes match the steady, fixture-owned site practicals.
+  // The lamp housing and mast retain their physical depth and ordinary shade.
   const m=mesh('demolition_light_tower');
   addBox(m,[0,.34,0],[1.32,.68,1.12],MAT.safetyRed);
   for(const z of[-.42,.42])addCylinderX(m,[0,.30,z],.24,1.50,MAT.black,14);
@@ -4469,7 +4439,7 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,4.65,0],[1.28,.08,.08],MAT.steel);
   for(const x of[-.48,-.16,.16,.48]){
     addBox(m,[x,4.47,-.06],[.26,.30,.20],MAT.dark,-.04);
-    addBox(m,[x,4.47,-.17],[.20,.22,.025],MAT.agedWhite,-.04);
+    addBox(m,[x,4.47,-.17],[.20,.22,.025],MAT.warmWindow,-.04);
   }
   for(const [x,z] of[[-.62,-.50],[.62,-.50],[-.62,.50],[.62,.50]])addBeam(m,[0,.24,0],[x,.08,z],.055,MAT.steel);
 }
@@ -4500,7 +4470,12 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,1.86,.05],[1.86,1.16,.05],MAT.agedWhite);              // notice board
   addBox(m,[0,1.06,.05],[1.10,.44,.05],MAT.safetyRed);               // hazard plate
   addBox(m,[0,1.06,.09],[.94,.10,.03],MAT.agedWhite);
-  addBox(m,[.62,.62,.05],[.46,.46,.04],MAT.brass,Math.PI*.25);       // warning diamond
+  // UK site warning grammar: black-bordered yellow triangle, not a US road
+  // warning diamond. This is a private-yard general hazard plate (HSE L64).
+  addTriangle(m,[.36,.39,.078],[.88,.39,.078],[.62,.84,.078],MAT.black);
+  addTriangle(m,[.407,.42,.081],[.833,.42,.081],[.62,.789,.081],MAT.brass);
+  addBox(m,[.62,.624,.086],[.043,.145,.008],MAT.black);
+  addBox(m,[.62,.504,.086],[.043,.043,.008],MAT.black);
   for(const x of[-.885,.885])for(const y of[1.335,2.385])signAssemblies.fixing(m,{center:[x,y,.0752],radiusM:.0045});
 }
 
@@ -4512,7 +4487,8 @@ const addBoothGuard=(m,{x=0,z=-.15,lean=0,arm='rest'}={})=>{
   addBox(m,[0,y-.02,0],[L,.06,7.20],MAT.dark);                       // carriageway
   for(const z of[-3.70,3.70]) addBox(m,[0,y+.06,z],[L,.16,.34],MAT.stone);   // kerbs
   for(const z of[-4.60,4.60]) addBox(m,[0,y-.04,z],[L,.10,1.50],MAT.soil);   // verges
-  for(let x=-L/2+1.2;x<L/2;x+=3.4) addBox(m,[x,y,0],[2.00,.03,.12],MAT.agedWhite);  // centre dashes
+  // Diagram1008:2m white marks,4m gaps,100mm strokes on this low-speed road.
+  for(let x=Math.ceil((-L/2+1)/6)*6;x<=L/2-1;x+=6) addBox(m,[x,y,0],[2.00,.006,.10],MAT.agedWhite);
   for(const z of[-3.30,3.30]) addBox(m,[0,y,z],[L,.03,.10],MAT.agedWhite);          // edge lines
   // Two lamp columns further down it, small, to carry the perspective.
   for(const x of[-6.0,-17.0]){
@@ -5696,12 +5672,10 @@ buildStreetCar('city_moving_car',{moving:true,body:MAT.terracotta});
         addBox(m,[x,.020,z],[1.25+(i%3)*.28,.012,.12],O.rubber,.012*side);
       }
     }
-    // Worn white centre dashes belong to the road, with enough gap to read wet.
-    for(let i=0;i<8;i++){
-      const x=-H+1.1+i*4.3;
-      addBox(m,[x,.050,0],[1.20,.006,.085],MAT.agedWhite);
-      addBox(m,[x+.47,.054,0],[.09,.002,.10],MAT.slate);
-    }
+    // One finite road: diagram1008's2m marks and4m gaps,100mm stroke.
+    // Phase is fixed to the road, with unmarked end margins at its boundaries.
+    for(let x=Math.ceil((-H+1)/6)*6;x<=H-1;x+=6)
+      addBox(m,[x,.050,0],[2.00,.006,.10],MAT.agedWhite);
   }
   {
     const m=mesh('outskirts_boundary_wall_6');
@@ -6450,7 +6424,9 @@ for(const [name,parts] of createReliquaryPropGeometry()) {
 // Resolve the same generated room/landing hosts the runtime will actually
 // expose. A door named on a map but lacking a placed corridor plate is not a
 // print job. The data import remains pure and does not compile a hidden plan.
-propsInit(FP);
+// First-pass hosts include newly authored models absent from the installed
+// generated surface table. Resolve them from the geometry being built now.
+propsInit(FP,undefined,{surfaces:workSurfaces()});
 const corridorWorldInscriptions=corridorInscriptionsForHosts(renderInstances({inscriptions:false}));
 const activeWorldInscriptions=[...WORLD_INSCRIPTIONS,...corridorWorldInscriptions];
 // Per-placement inscriptions share host geometry. Their physical print meshes

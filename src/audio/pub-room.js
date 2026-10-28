@@ -14,11 +14,11 @@ export function pubRoomSpatial(listener={},anchor=PUB_ROOM_SOUND_ANCHORS.stove,{
 // company, the user’s quiet backbar music and transmitted exterior rain.
 export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
   const roomBed=createPubRoomBed({getAudio,...(fetchImpl?{fetchImpl}:{})});
-  let owner=null,bed=null,elapsed=0,nextAt=5.2,cursor=0,lastReason='idle',disposed=false;
+  let owner=null,bed=null,elapsed=0,nextAt=5.2,cursor=0,lastReason='idle',disposed=false,lastInput=null;
   const contacts=new Set(),buffers=new Map();let createdContacts=0,peakVoices=0;
   const disconnect=voice=>{if(!voice||voice.stopped)return;voice.stopped=true;try{voice.source.stop();}catch{}for(const node of voice.nodes)try{node.disconnect();}catch{}contacts.delete(voice);};
   function stop(reason='stopped'){
-    roomBed.pause(reason);disconnect(bed);bed=null;for(const voice of [...contacts])disconnect(voice);owner=null;buffers.clear();elapsed=0;nextAt=5.2;cursor=0;lastReason=reason;
+    roomBed.pause(reason);disconnect(bed);bed=null;for(const voice of [...contacts])disconnect(voice);owner=null;lastInput=null;buffers.clear();elapsed=0;nextAt=5.2;cursor=0;lastReason=reason;
   }
   function buffer(kind){
     if(buffers.has(kind))return buffers.get(kind);
@@ -31,11 +31,14 @@ export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
   }
   function voice(kind,loop=false){
     const ctx=owner.ctx,source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain(),panner=ctx.createStereoPanner?.()||ctx.createGain();
+    // Web Audio gains begin at1. A connected/startable contact must begin
+    // silent before its spatial envelope ramps up, including during dialogue.
+    gain.gain.value=0;
     source.buffer=buffer(kind);source.loop=loop;filter.type='lowpass';source.connect(filter);filter.connect(gain);gain.connect(panner);panner.connect(owner.destination);
     const v={kind,source,filter,gain,panner,nodes:[source,filter,gain,panner],stopped:false,ends:ctx.currentTime+(loop?Infinity:source.buffer.duration)};
     if(!loop){contacts.add(v);source.onended=()=>disconnect(v);createdContacts++;}source.start();peakVoices=Math.max(peakVoices,(bed?1:0)+contacts.size+roomBed.snapshot().voices);return v;
   }
-  function position(v,listener,options){const frame=pubRoomSpatial(listener,PUB_ROOM_SOUND_ANCHORS[v.kind],options),t=owner.ctx.currentTime;
+  function position(v,listener,options){const frame=pubRoomSpatial(listener,v.anchor||PUB_ROOM_SOUND_ANCHORS[v.kind],options),t=owner.ctx.currentTime;
     v.filter.frequency.setTargetAtTime(frame.cutoff,t,.04);v.gain.gain.setTargetAtTime(frame.gain*(v.kind==='stove'?.052:v.kind==='domino'?.035:.027),t,.05);v.panner.pan?.setTargetAtTime(frame.pan,t,.05);return frame;}
   const api={
     update({dt=0,listener={},inPub=false,nearPub=false,doorOpen=false,openDoorIds=null,busy=false,recording=false,paused=false,source=false,blurred=false}={}){
@@ -47,6 +50,7 @@ export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
       roomBed.update({listener,inPub,nearPub,doorOpen,openDoorIds,busy,recording,paused,source,blurred});
       peakVoices=Math.max(peakVoices,(bed?1:0)+contacts.size+roomBed.snapshot().voices);
       const options={inPub,doorOpen,busy:busy||recording};position(bed,listener,options);
+      lastInput={listener,options,recording};
       for(const v of [...contacts]){if(v.ends<=owner.ctx.currentTime)disconnect(v);else position(v,listener,options);}
       elapsed+=clamp(dt,0,.25);
       if(busy||recording||!inPub){nextAt=Math.max(nextAt,elapsed+4);return true;}
@@ -54,6 +58,15 @@ export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
         if(contacts.size<2){const kind=['glass','domino','crockery','domino'][cursor++%4];position(voice(kind),listener,options);}
         nextAt=elapsed+6.5+(cursor%3)*2.1;
       }
+      return true;
+    },
+    contact(anchor){
+      if(!owner||!lastInput?.options.inPub||lastInput.recording||owner.ctx.state!=='running'||!Number.isFinite(anchor?.x)||!Number.isFinite(anchor?.z))return false;
+      // A real handover takes precedence over an incidental room tick, without
+      // increasing the voice budget or queueing clinks beneath the next scene.
+      if(contacts.size>=2)disconnect(contacts.values().next().value);
+      const v=voice('glass');v.anchor={x:anchor.x,z:anchor.z};
+      position(v,lastInput.listener,lastInput.options);nextAt=Math.max(nextAt,elapsed+4);
       return true;
     },
     pause(){stop('paused');},stop,

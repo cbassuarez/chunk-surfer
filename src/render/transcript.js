@@ -15,6 +15,7 @@
 import { uiText, uiItalicText, uiWrap, uiGlyph } from './ui.js';
 import { obscuredGlyphAt, obscuredShape } from '../narrative/obscured-name.js';
 import { visualEffectsEnabled } from '../game/access.js';
+import { registerReviewRegion } from '../game/local-text-review.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -35,8 +36,9 @@ function drawMaskedRow(row, drawX, cy, laneW, cls, alpha) {
   const shape = obscuredShape(row.mask);
   if (!shape || !visualEffectsEnabled()) {
     const drawText = row.italic ? uiItalicText : uiText;
-    drawText(drawX, cy, row.text.slice(0, Math.max(0, laneW - row.x)), cls, alpha);
-    return;
+    const text = row.text.slice(0, Math.max(0, laneW - row.x));
+    drawText(drawX, cy, text, cls, alpha);
+    return text.trim() ? { x: drawX, w: text.length } : null;
   }
 
   const reveal = Math.max(0, Math.min(1, Number(row.reveal ?? 1)));
@@ -45,12 +47,15 @@ function drawMaskedRow(row, drawX, cy, laneW, cls, alpha) {
   const written = Math.ceil(reveal * (shape.length + 2));
   const room = Math.max(0, laneW - row.x);
 
+  let first = null, last = null;
   for (let i = 0; i < Math.min(shape.length, room); i++) {
     if (i >= written) break;
     const glyph = obscuredGlyphAt(shape, i, reveal);
     if (!glyph || glyph === ' ') continue;
     uiGlyph(drawX + i, cy, glyph, cls, alpha);
+    first ??= i; last = i;
   }
+  return first == null ? null : { x: drawX + first, w: last - first + 1 };
 }
 
 const SPEAKER_LABEL = Object.freeze({
@@ -291,6 +296,7 @@ function normalizeEntry(entry, index, active = false, view = null) {
     who,
     role: sourceLabel ? { ...role, speaker: sourceLabel } : role,
     text: String(entry?.text ?? ''),
+    reviewTarget: entry?.reviewTarget || null,
     // The mask's NAME only. The shape is resolved at draw time from the run's
     // registry, so nothing in the transcript, the history or a saved view ever
     // holds it.
@@ -338,6 +344,7 @@ export function transcriptBlocks(view, { keep = 12 } = {}) {
       sourceLabel: view.line?.sourceLabel,
       mask: view.line?.mask || null,
       serial: view.lineSerial,
+      reviewTarget: view.line?.reviewTarget,
     }, entries.length, true, view));
   }
 
@@ -394,6 +401,7 @@ function preparedRows(block, lane) {
         const centered = centerText(decorated, lane.w);
 
         rows.push({
+          reviewTarget: segment.reviewTarget,
           text: centered.text,
           x: centered.offset,
           active: segment.active,
@@ -412,6 +420,7 @@ function preparedRows(block, lane) {
         const centered = centerText(line, lane.w);
 
         rows.push({
+          reviewTarget: segment.reviewTarget,
           text: centered.text,
           x: centered.offset,
           italic: true,
@@ -430,6 +439,7 @@ function preparedRows(block, lane) {
 
     wrapped.forEach((line, i) => {
       rows.push({
+        reviewTarget: segment.reviewTarget,
         text: line,
         x: bodyInset,
         mask: segment.mask || null,
@@ -675,22 +685,23 @@ export function drawTranscript(layout, {
       }
 
       const drawX = bx + row.x;
+      let reviewSpan = null;
 
       if (row.mask) {
-        drawMaskedRow(row, drawX, cy, block.lane.w, cls, alpha);
+        reviewSpan = drawMaskedRow(row, drawX, cy, block.lane.w, cls, alpha);
       } else {
         const drawText = row.italic ? uiItalicText : uiText;
+        const text = row.text.slice(0, Math.max(0, block.lane.w - row.x));
         drawText(
           drawX,
           cy,
-          row.text.slice(
-            0,
-            Math.max(0, block.lane.w - row.x),
-          ),
+          text,
           cls,
           alpha,
         );
+        if (text.trim()) reviewSpan = { x: drawX, w: text.length };
       }
+      if (row.reviewTarget && reviewSpan) registerReviewRegion(row.reviewTarget, { ...reviewSpan, y: cy, h: 1, active: activeRow });
 
       if (row.typing) {
         const cursor =
@@ -796,6 +807,7 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
     parts.forEach((part, lineIdx) => {
       rows.push({
         kind: 'choice',
+        reviewTarget: choice.reviewTarget || null,
         choiceIndex: idx,
         text:
           `${lineIdx === 0 ? prefix : continuation}` +
@@ -868,6 +880,8 @@ export function drawTranscriptChoices(layout, {
         cls,
         alpha,
       );
+      const text = row.text.slice(0, layout.lane.w);
+      if (row.reviewTarget && text.trim()) registerReviewRegion(row.reviewTarget, { x: laneX, y: cy, w: text.length, h: 1, selected: row.selected });
     }
 
     cy++;

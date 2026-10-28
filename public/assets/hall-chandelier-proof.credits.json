@@ -1,0 +1,13 @@
+{
+  "revision": "hall-pair-construction-v1",
+  "source": "https://polyhaven.com/a/Chandelier_03",
+  "license": "CC0-1.0",
+  "originalArchive": "Chandelier_03_4k.blend.zip",
+  "originalArchiveSHA256": "455651002ca626d14825a1391b1c65bb6cd7023b893e4f71ce5158628df8389f",
+  "derivedFrom": "public/assets/conservatory-acquisitions.glb",
+  "derivedFromSHA256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
+  "retained": "Original shipped body positions, UVs, broad material maps and silhouette. Existing upper bulb triangles separated for emission; no duplicate bulbs.",
+  "authored": "Relocated original ceiling canopy and upper shackle, with complete alternating-link suspension and six heavier replacement lower links on west fitting.",
+  "materialApproximation": "Opaque glass coverage. No transmission, refraction or caustic claim.",
+  "sha256": "3f0ab525875b60e575a787d245e4bb3a504238e7f6e7f05189f944fe83a88bef"
+}

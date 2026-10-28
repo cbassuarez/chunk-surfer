@@ -1,3 +1,4 @@
+import { createChapelChoirApproach, CHAPEL_CHOIR_APPROACH } from '../game/chapel-choir-approach.js';
 import { chapelServiceImpulse, chapelServiceVoiceMix } from './chapel-service.js';
 import { renderGainChannels, segmentAt } from './chapel-choir-score.js';
 
@@ -52,6 +53,7 @@ export function createChapelChoirRuntime({ context, destination, urlFor, score,
   const buses = [], buffers = [], controls = [], playing = new Set();
   let bank = null, loading = null, failed = null, disposed = false, last = idle;
   let started = 0, wasAudible = false;
+  const approach = createChapelChoirApproach({duration:score.duration,phaseOffset});
   function bus() {
     const input = context.createGain(), low = context.createBiquadFilter();
     low.type = 'lowpass'; low.Q.value = .5;
@@ -116,8 +118,8 @@ export function createChapelChoirRuntime({ context, destination, urlFor, score,
     playing.clear();
     clearRoom();
   }
-  function start(now) {
-    const at = now + .012, offset = ((at + phaseOffset) % bank.duration + bank.duration) % bank.duration;
+  function start(now, phase) {
+    const at = now + .012, offset = ((phase + .012) % bank.duration + bank.duration) % bank.duration;
     for (let i = 0; i < buffers.length; i++) {
       const source = context.createBufferSource(), control = context.createBufferSource();
       source.buffer = buffers[i]; control.buffer = controls[i];
@@ -172,17 +174,26 @@ export function createChapelChoirRuntime({ context, destination, urlFor, score,
       reached ||= direct.gain > .001 || projection.gain > .001;
       return { id: track.id, natural: direct, projected: projection };
     });
-    const audible = !!input.active && !input.muted && !!bank && reached;
-    // Conservative headroom is global, without RMS-driven gain pumping.
-    master.gain.setTargetAtTime(audible ? .72 * (input.dialogue ? .16 : 1) : 0, now, audible ? .4 : .025);
-    if (audible && !wasAudible) start(now);
-    if (!audible && (wasAudible || playing.size)) finish(now);
-    wasAudible = audible;
-    const phase = ((now + phaseOffset) % score.duration + score.duration) % score.duration;
+    const naturalIds=new Set(bank?.tracks.map(track=>track.anchor)||['front']);
+    const distances=(input.voices||[]).filter(voice=>naturalIds.has(voice.id)&&voice.gain>0
+      &&(Number(voice.occlusionDb)||0)<CHAPEL_CHOIR_APPROACH.maxOcclusionDb)
+      .map(voice=>Math.hypot(voice.dx||0,voice.dy||0,voice.dz||0));
+    const nearby=distances.length>0&&Math.min(...distances)<=CHAPEL_CHOIR_APPROACH.triggerDistanceM;
+    const performance=approach.update({now,active:!!input.active&&!!bank&&reached,muted:!!input.muted,
+      distance:distances.length?Math.min(...distances):Infinity});
+    const running=performance.engaged&&!!input.active&&!input.muted&&!!bank&&reached;
+    const audible=running&&performance.arrivalEnvelope>.005;
+    // A long, quiet arrival exposes the human layer before fervour can lift
+    // anyone. Protection still covers both direct sound and room reflections.
+    master.gain.setTargetAtTime(running ? .72 * performance.arrivalEnvelope * (input.dialogue ? .16 : 1) : 0, now, running ? .4 : .025);
+    if (running && !wasAudible) start(now,performance.phase);
+    if (!running && (wasAudible || playing.size)) finish(now);
+    wasAudible = running;
+    const phase = performance.phase;
     last = { active: !!input.active, audible, loaded: !!bank, failed, muted: !!input.muted,
       reason: input.reason, sourceKind: bank?.sourceKind || null,
       independentParts: bank?.sourceKind === 'independent-parts' ? 6 : 0,
-      phase, segment: segmentAt(phase, score), sourceCount: playing.size * 2,
+      nearby, fallbackFadeSeconds:CHAPEL_CHOIR_APPROACH.fadeSeconds, ...performance, phase, segment: segmentAt(phase, score), sourceCount: playing.size * 2,
       started, mixes, starts: [...playing].map(v => ({ at: v.at, offset: v.offset })),
       bufferBytes: buffers.reduce((n, b) => n + b.length * 4, 0) + controls.reduce((n, b) => n + b.length * 4, 0),
     };
@@ -191,7 +202,7 @@ export function createChapelChoirRuntime({ context, destination, urlFor, score,
   function stop() {
     if (disposed) return;
     master.gain.setTargetAtTime(0, context.currentTime, .025); finish(context.currentTime);
-    wasAudible = false; last = { ...last, active: false, audible: false, sourceCount: 0 };
+    wasAudible = false; approach.reset(); last = { ...last, active: false, audible: false, sourceCount: 0, engaged:false, elapsed:0, fervour:0, arrivalEnvelope:0 };
   }
   function dispose() {
     if (disposed) return;

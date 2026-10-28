@@ -1,3 +1,4 @@
+import {PUB_HELD_PROP_MESHES} from '../src/render/pub-character-performance.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -8,10 +9,11 @@ import {sourcePubCanOccupy,stepSourcePub,freshSourcePubCheckpoint} from '../src/
 import {parseCharacterAsset,sampleCharacterPose} from '../src/render/character-asset.js';
 import {doorAssembly} from '../src/data/source-door-fields.js';
 import * as R3 from '../src/render/r3d.js';
+import {getLookProfile} from '../src/render/look-profiles.js';
 const initial=()=>({...freshSourcePubCheckpoint({returnPose:{x:1,y:2}}),status:'active',elapsed:1.25,yaw:.3});
 const b=readFileSync(new URL('../public/assets/pub-characters.glb',import.meta.url)),asset=parseCharacterAsset(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength));
 const door=doorAssembly('public-glazed-pair',{activeLeaves:'all'});
-const staticPacks={'source-pub-scenography.glb':Object.values(MESH),'conservatory-doors.glb':[door.frameMesh,door.leafMesh,door.freeStandingHeadMesh].filter(Boolean),'pub-quest-props.glb':['pub_service_tray_loaded','pub_service_tray_empty','pub_bottle_opener','pub_order_book']};
+const staticPacks={'source-pub-scenography.glb':Object.values(MESH),'conservatory-doors.glb':[door.frameMesh,door.leafMesh,door.freeStandingHeadMesh].filter(Boolean),'pub-quest-props.glb':['pub_service_tray_loaded','pub_service_tray_empty','pub_bottle_opener','pub_order_book',...PUB_HELD_PROP_MESHES]};
 function fixture({catalog=[],skinned=[],loadGate=null,baseGate=null,omit=[],rejectPack=null}={}){
  let rejectedPack=rejectPack;const calls=[],loaded=new Set(catalog),characters=new Set(skinned),renderer=Object.fromEntries(Object.keys(R3).filter(name=>typeof R3[name]==='function').map(name=>[name,(...args)=>calls.push({name,args})]));
  if(baseGate)renderer.r3dBasePropsReady=async()=>{calls.push({name:'r3dBasePropsReady',args:[]});return await baseGate;};
@@ -23,6 +25,8 @@ test('five cold rounds use selective strata and bounded cask stacks, with Iona p
  for(let stage=0;stage<SOURCE_PUB.rounds.length;stage++){
   const state={...initial(),stage,layer:SOURCE_PUB.rounds[stage].layer},frame=sourcePubRenderFrame(state);assert.equal(frame.layers,3);assert.equal(frame.copies,1);assert.equal(frame.stretch,sourcePubStretch(state));
   assert.ok(!frame.props.some(p=>p.mesh==='exterior_pub_interior'||p.mesh==='pub_warm_interior'));
+  assert.ok(frame.props.some(p=>p.pubAttachmentOf==='pub-bartender-iona'&&p.mesh==='pub_held_glass'),'Source Iona retains her physical glass');
+  assert.ok(frame.props.some(p=>p.pubAttachmentOf==='pub-bartender-iona'&&p.mesh==='pub_polishing_cloth'),'Source Iona retains her physical cloth');
   assert.equal(frame.props.filter(p=>p.pubActorId==='pub-bartender-iona').length,1);assert.equal(frame.props.filter(p=>p.pubActorId).length,stage<2?3:1);
   assert.ok(frame.casks>=80);assert.ok(frame.casks<=SET.maximumVisibleCasks);assert.ok(frame.props.filter(p=>p.cask).length<=SET.maximumVisibleCasks+2);
   assert.equal(frame.props.filter(p=>p.mesh===MESH.fittings).length,3);assert.ok(frame.props.filter(p=>p.mesh===MESH.deck).length>=3);
@@ -73,6 +77,19 @@ test('renderer reuses the supplied context, loads isolated cold scenery and rele
  assert.equal(h.owner.render(initial()),true);assert.ok(h.calls.some(c=>c.name==='r3dSetProps'&&c.args[0].some(p=>p.pubActorId==='pub-bartender-iona')));
  assert.equal(h.owner.dispose(),true);assert.equal(h.owner.dispose(),false);assert.equal(h.released(),1);assert.equal(h.calls.at(-1).name,'hostRestore');assert.equal(h.owner.render(initial()),false);
  const source=readFileSync(new URL('../src/render/source-pub-renderer.js',import.meta.url),'utf8');assert.doesNotMatch(source,/getContext\(|new\s+(?:WebGLRenderer|Worker)|requestAnimationFrame\(/);
+});
+test('Source pub acquisition separates Iona from the backbar without changing the shared profile or cold lighting',async()=>{
+ const h=fixture();await h.owner.initialize();
+ const context=h.calls.find(c=>c.name==='r3dSetLightingContext').args[0],recording=getLookProfile('explore').recording;
+ assert.deepEqual(context.ambientColor,[.46,.59,.69]);assert.equal(context.ambientIntensity,.060);assert.equal(context.screen,'stochastic');
+ // Matched actual prop-buffer witness: layer0, eye local(10.21,1.25),
+ // looking at Iona. Flat face/backbar interiors, before acquisition.
+ const tone=(luma,exposure)=>Math.pow(Math.max(0,Math.min(1,(luma-recording.blackFloor/exposure)*exposure/(1-recording.blackFloor/exposure))),recording.densityGamma);
+ const actual=R3.r3dPhysicalAcquisitionExposure({lightingExposure:context.captureExposure,physicalWeight:0});
+ const face=tone(.311,actual),backbar=tone(.169,actual);
+ assert.ok(face>.60&&face<.82,'face remains acquired without being forced to solid white');
+ assert.ok(backbar<.55&&face-backbar>.18,'background and body retain separate recorded densities');
+ assert.ok(tone(.311,4.8)>=.82&&tone(.169,4.8)>=.82,'the prior exposure reproduces the two forced-white regions');
 });
 test('actual fall state drives r3d camera floor continuously while horizontal crossing and look stay simulation-owned',async()=>{
  const h=fixture();await h.owner.initialize();

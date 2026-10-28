@@ -242,7 +242,7 @@ test('the actual six-bust interaction still selects its original trees without e
 
 test('pause immediately cancels active gallery audio even though the paused loop cannot tick it',()=>{
   const a=main.indexOf('function setGameplayPaused('),b=main.indexOf('function togglePause()',a);
-  let cancelled=0,saved=0;
+  let cancelled=0,saved=0,pressureStops=0;
   const context={paused:false,storyMode:true,inRogue:true,sourceDriveSession:null,sourcePubScene:null,pubRoomAudio:null,sourcePubAudio:null,getInDriveTeaserScene:null,
     sourceContinuationAudio:null,sourceContinuationScene:null,coastalMemoryScene:null,sourceReturnFlashbackScene:null,standingTearScene:null,towerWarningAudio:null,
     syncChapelTapeDemandTimelineHold(){},
@@ -252,11 +252,15 @@ test('pause immediately cancels active gallery audio even though the paused loop
     bellPealPerformance:null,towerBellDirector:null,personalWindowEffects:{},windowChoreography:{},
     resetMotionInput(){},syncPointerMode(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},
     setGainNode(){},dialogGain:null,sfxGain:null,sfxDirectGain:null,musicGain:null,whisperBed:null,
+    recordingPressureVoices:new Set(Array.from({length:2},()=>({stop:()=>pressureStops++}))),
   };
-  vm.createContext(context);vm.runInContext(main.slice(a,b),context);
+  const cancel=main.match(/function cancelRecordingPressureAudio\(\)\{[\s\S]*?\n\}/)?.[0];assert.ok(cancel);
+  vm.createContext(context);vm.runInContext(cancel+'\n'+main.slice(a,b),context);
   context.setGameplayPaused(true,{announce:false});
   assert.equal(cancelled,1);assert.equal(saved,1);assert.equal(context.academicGhostDispatch,null);
+  assert.equal(pressureStops,2);assert.equal(context.recordingPressureVoices.size,0,'pause separately releases the recorder-pressure voices');
   context.setGameplayPaused(true,{announce:false});assert.equal(cancelled,1,'repeated pause is idempotent');
+  assert.equal(pressureStops,2);
 });
 
 test('the regular autosave checkpoints loan time before either normal or anomaly save branches',()=>{

@@ -245,3 +245,12 @@ test('version-one saves migrate progress, completion and exact exterior pose wit
   const completed=normalizeSourcePubCheckpoint({...fresh(),version:1,stage:3,task:0,status:'returned',completed:true},{runId:'run-1'});assert.equal(completed.stage,5);assert.equal(completed.completed,true);
   const corrupt={...fresh(),fall:{elapsed:Infinity,fromLayer:0,toLayer:7,kind:'player',landing:{x:NaN,z:1}}};assert.equal(normalizeSourcePubCheckpoint(corrupt).fall,null);
 });
+
+test('ordinary look lease and relative input belong to the loaded bar camera, with modal holds respected',async()=>{
+  const scene=createSourcePubScene({checkpoint:fresh(),renderer:{initialize:async()=>true,render(){},dispose(){}}});
+  assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.4,.2),false);
+  await scene.initialize();assert.equal(scene.allowsLook,true);const before=scene.lookAngles();
+  assert.equal(scene.lookBy(.4,.2),true);assert.ok(Math.abs(scene.lookAngles().yaw-before.yaw)>.3);assert.ok(Math.abs(scene.lookAngles().pitch-before.pitch)>.1);
+  scene.pause();const frozen=scene.lookAngles();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.4,.2),false);assert.deepEqual(scene.lookAngles(),frozen);
+  scene.resume();assert.equal(scene.allowsLook,true);scene.exit();assert.equal(scene.lookBy(.4,.2),false);
+});

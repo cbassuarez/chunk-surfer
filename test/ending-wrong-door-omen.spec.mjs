@@ -77,7 +77,7 @@ test('protection and effects off suppress the extra presence while reduced motio
 });
 
 test('shared presentation is pure and its free-fall plane has the physical gravity and terminal speed', () => {
-  assert.equal(endingWrongDoorFlowHeight(3), 100); assert.equal(endingWrongDoorFlowHeight(4), 95.1);
+  assert.equal(endingWrongDoorFlowHeight(3), 92); assert.equal(endingWrongDoorFlowHeight(4), 87.1);
   assert.ok(Math.abs(endingWrongDoorFlowHeight(7) - endingWrongDoorFlowHeight(7.01) - .26) < 1e-8);
   let state = fresh(); for (let i = 0; i < 50; i++) state = stepSourceEarthfall(state, { dt: .1, forward: i < 3 ? 1 : 0 }).state;
   const original = JSON.stringify(state), result = endingWrongDoorOmenFrame(state);

@@ -185,7 +185,8 @@ test('brief away events cancel even when no animation frame runs in the backgrou
     const source = main.match(new RegExp(`function ${name}\\([^)]*\\)\\{[\\s\\S]*?\\n\\}`))?.[0] || '';
     assert.match(source, /cancelOutskirtDoorAnswer\(/, `${name} must discard the pending response and stop its active delayed voices`);
   }
-  const hidden = main.slice(main.indexOf("document.addEventListener('visibilitychange'"));
+  const hidden = main.slice(main.lastIndexOf("document.addEventListener('visibilitychange'"));
+  assert.ok(hidden.startsWith("document.addEventListener('visibilitychange'"),'the actual global visibility listener exists');
   assert.match(hidden.slice(0, 1600), /if\(document\.hidden\)\{[\s\S]*?cancelOutskirtDoorAnswer\(/);
   const pagehide = main.slice(main.indexOf("window.addEventListener('pagehide'"));
   assert.match(pagehide.slice(0, 700), /cancelOutskirtDoorAnswer\(/);

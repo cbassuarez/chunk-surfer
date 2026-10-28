@@ -4,10 +4,12 @@ import fs from 'node:fs';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
-import { OUTDOOR_ZONES, ZONE } from '../src/data/floorplan/legend.js';
+import { OUTDOOR_ZONES, ZONE,CELL } from '../src/data/floorplan/legend.js';
+import {buildingWindowForExteriorObserver} from '../src/world/building-window-views.js';
 import { districtLogicalAt } from '../src/data/exterior-district.js';
 import { worldPropVisibilityKey } from '../src/game/prop-visibility.js';
 import { exteriorRoofArchitectureInstances, exteriorRooflineInstance, EXTERIOR_ROOF_ARCHITECTURE_IDS } from '../src/data/exterior-roofline.js';
+import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
 
 FP.compile(conservatory.levels, conservatory);
 PROPS.propsInit(FP);
@@ -37,6 +39,7 @@ test('static visibility keys separate room, civic interior and outdoor roof cont
 
 function makeFrameHost(position) {
   const submissions = [], planUploads = [];
+  const chandelierContext = { runId: 'visibility-cache', eligible: false, consumedCount: 0 }, chandelierEvents = [];
   const initialSlice = FP.physicalRenderPlanFor(position.x, position.y);
   const scope = {
     FP, px: position.x, py: position.y,
@@ -52,18 +55,48 @@ function makeFrameHost(position) {
     storyGuidanceHighlightRenderKey: 'false:::0.00',
     R3: { r3dSetPlan: (...args) => planUploads.push(args), r3dSetProps: instances => submissions.push(instances) },
   };
+  scope.currentExteriorWindow=()=>{
+    const point=FP.logicalToPhysical(scope.px,scope.py);
+    return buildingWindowForExteriorObserver({x:point.x*CELL,z:point.z*CELL,y:point.y,zone:FP.zoneAt(scope.px,scope.py)});
+  };
+  scope.hallChandelierRuntime = createHallChandelierRuntime({
+    readContext: () => chandelierContext, budgetReady: () => true,
+    reserveBudget: () => { chandelierEvents.push('reserve'); return true; },
+    persistConsumed: count => { chandelierContext.consumedCount = count; chandelierEvents.push(['save', count]); return true; },
+  });
   // Only the submission callback is a test seam. The frame/cache conditions
   // above it execute directly from production. Real props and roof selectors
   // establish why the stale submission differs after an ordinary crossing.
   scope.worldRenderInstances = group => {
     const zone = FP.zoneAt(scope.px, scope.py), closure = exteriorRooflineInstance({ group, zone });
-    scope.renderedWorldPropVisibilityKey = worldPropVisibilityKey({ group, zone });
+    scope.renderedWorldPropVisibilityKey = worldPropVisibilityKey({ group, zone,exteriorWindowId:scope.currentExteriorWindow()?.id });
     return [...exteriorRoofArchitectureInstances(roofHosts, { group, zone }), ...(closure ? [closure] : [])];
   };
   submissions.push(scope.worldRenderInstances(initialSlice.group)); // normal load/resume submission
   const render = new Function('scope', `with(scope){return (${renderCacheSource});}`)(scope);
-  return { scope, submissions, planUploads, render };
+  return { scope, submissions, planUploads, render, chandelierContext, chandelierEvents };
 }
+
+test('the actual render boundary cancels a protected Hall glow without earning time or starting another episode', () => {
+  const host = makeFrameHost(bodyAt(23.75, -17.25)), runtime = host.scope.hallChandelierRuntime;
+  host.render();
+  assert.equal(runtime.view().reason, 'outside-hall');
+  assert.equal(runtime.view().eligibleSeconds, 0);
+  host.chandelierContext.eligible = true;
+  runtime.configureReview({ firstQuietSeconds: [.01, .01] });
+  runtime.tick(.02); runtime.tick(.2);
+  assert.ok(runtime.view().active && runtime.view().power > 0, 'negative control: a real emitted glow is live');
+  assert.deepEqual(host.chandelierEvents, ['reserve', ['save', 1]]);
+  host.chandelierContext.paused = true;
+  host.render();
+  assert.equal(runtime.view().active, false);
+  assert.equal(runtime.view().power, 0);
+  assert.equal(runtime.view().reason, 'paused');
+  host.chandelierContext.paused = false;
+  host.render();
+  assert.equal(runtime.view().eligibleSeconds, 0, 'render guards cannot advance the quiet clock');
+  assert.deepEqual(host.chandelierEvents, ['reserve', ['save', 1]], 'rendering cannot reserve or persist another episode');
+});
 
 test('actual frame cache repairs an indoor resume when ordinary accepted ground steps leave and return to the shop', () => {
   const start = bodyAt(23.75, -17.25), host = makeFrameHost(start);

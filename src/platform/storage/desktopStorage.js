@@ -58,7 +58,7 @@ async function tauriAdapter() {
     async mkdir(path, baseDir) { if (path) await fs.mkdir(path, { baseDir, recursive: true }); },
     async readText(path, baseDir) { return fs.readTextFile(path, { baseDir }); },
     async writeText(path, data, baseDir) { return fs.writeTextFile(path, data, { baseDir }); },
-    async remove(path, baseDir) { if (await fs.exists(path, { baseDir })) await fs.remove(path, { baseDir }); },
+    async remove(path, baseDir, recursive = false) { if (await fs.exists(path, { baseDir })) await fs.remove(path, { baseDir, recursive }); },
     async rename(oldPath, newPath, baseDir) { return fs.rename(oldPath, newPath, { oldPathBaseDir: baseDir, newPathBaseDir: baseDir }); },
   };
 }
@@ -396,12 +396,14 @@ export class DesktopStorage {
   }
 
   async deleteAllUserData() {
-    await this.adapter.remove('settings.json', this.adapter.baseConfig).catch(() => {});
-    await this.adapter.remove('settings.previous.json', this.adapter.baseConfig).catch(() => {});
-    await this.adapter.remove('profile.json', this.adapter.baseData).catch(() => {});
-    await this.adapter.remove('profile.previous.json', this.adapter.baseData).catch(() => {});
-    for (const slot of SAVE_SLOTS) await this.deleteSave(slot);
-    for (const path of Object.values(CAUSAL_PATHS)) await this.deleteCausalPath(path);
+    // Include safety copies, interrupted writes, migration records and private
+    // field returns: none may silently restore a supposedly fresh install.
+    for (const path of ['saves', 'causal', 'migration', 'field_returns'])
+      await this.adapter.remove(path, this.adapter.baseData, true);
+    for (const path of ['profile.json', 'profile.previous.json', 'profile.json.tmp'])
+      await this.adapter.remove(path, this.adapter.baseData);
+    for (const path of ['settings.json', 'settings.previous.json', 'settings.json.tmp', 'personalized-interference.key'])
+      await this.adapter.remove(path, this.adapter.baseConfig);
   }
 
   async getStorageInfo() {
@@ -419,6 +421,10 @@ export class MemoryFileAdapter {
   async mkdir() {}
   async readText(path, baseDir) { const key = this.key(path, baseDir); if (!this.files.has(key)) throw new Error('not found'); return this.files.get(key); }
   async writeText(path, data, baseDir) { this.files.set(this.key(path, baseDir), String(data)); }
-  async remove(path, baseDir) { this.files.delete(this.key(path, baseDir)); }
+  async remove(path, baseDir, recursive = false) {
+    const key = this.key(path, baseDir);
+    this.files.delete(key);
+    if (recursive) for (const child of this.files.keys()) if (child.startsWith(`${key}/`)) this.files.delete(child);
+  }
   async rename(oldPath, newPath, baseDir) { const raw = await this.readText(oldPath, baseDir); this.files.set(this.key(newPath, baseDir), raw); this.files.delete(this.key(oldPath, baseDir)); }
 }

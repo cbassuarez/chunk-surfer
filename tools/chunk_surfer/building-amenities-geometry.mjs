@@ -1,4 +1,4 @@
-import { PUBLIC_SANITARY_CORE, PUBLIC_SANITARY_PARTITIONS, POOL_WASH_PARTITIONS } from '../../src/data/building-amenities.js';
+import { PUBLIC_SANITARY_CORE, PUBLIC_SANITARY_PARTITIONS, POOL_WASH_PARTITIONS, BUILDING_AMENITY_PROPS } from '../../src/data/building-amenities.js';
 
 // Authored staff appliance, in metres; the separate flex retains its existing
 // landing. Reuse the counter's subdued materials and keep every curved part
@@ -205,7 +205,8 @@ export function buildBuildingAmenities({ mesh, materials, MAT, addBox, addBeam, 
   }
   {
     const m = mesh('amenity_pool_wash_screens');
-    for (const p of POOL_WASH_PARTITIONS) wall(m, p, 72.25, 30.25);
+    const anchor = BUILDING_AMENITY_PROPS.find(p => p.id === 'amenity-pool-wash-screens');
+    for (const p of POOL_WASH_PARTITIONS) wall(m, p, anchor.x, anchor.y);
     for (const z of [-.75, .75]) {
       addBox(m, [0, 2.215, z], [2.57, .045, .18], porcelain);
       for (const x of [-1.10, 1.10]) addCylinder(m, [x, .10, z], .04, .20, nickel, 8);

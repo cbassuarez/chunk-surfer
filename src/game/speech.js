@@ -19,6 +19,7 @@ import { withMachinePanel } from '../render/presentation.js';
 import { textCps } from './access.js';
 import { createSamDialogVoice, isVoiced } from '../audio/sam-voice.js';
 import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
+import { reviewKey, reviewTarget, reviewText, registerReviewRegion } from './local-text-review.js';
 
 const BAND_W = 78;
 
@@ -63,6 +64,23 @@ function normalize(line) {
   src.who = src.who || 'you';
   src.text = String(src.text ?? '');
   return src;
+}
+
+const originalSpeechText = line => line?.reviewTarget?.fields?.[0]?.original ?? line?.text;
+function refreshReviewText(line) {
+  const field = line?.reviewTarget?.fields?.[0];
+  if (field) line.text = reviewText(field.key, field.original);
+  return line;
+}
+function prepareReviewLine(line, state) {
+  if (!line.reviewTarget) {
+    const sceneId = 'speech', nodeId = JSON.stringify([state.reviewId || 'band', state.context, line.who]);
+    const sourceId = String(line.sourceId || line.id || '');
+    const key = reviewKey({sceneId, nodeId, sourceId, collection: 'lines'}, line.text);
+    line.reviewTarget = reviewTarget({id: key, sceneId, nodeId, sourceId, speaker: line.who,
+      fields: [{key, label: 'Spoken text', original: line.text}]});
+  }
+  return refreshReviewText(line);
 }
 
 function nowMs() {
@@ -139,7 +157,8 @@ function dispatchValid(state, at = nowMs()) {
 function enqueue(line, state, { delayMs, gapMs } = {}) {
   const next = normalize(line);
   const last = q.length ? q[q.length - 1] : cur;
-  if (last && last.who === next.who && last.text === next.text) return false;
+  if (last && last.who === next.who && originalSpeechText(last) === originalSpeechText(next)) return false;
+  prepareReviewLine(next, state);
   Object.defineProperty(next, '__dispatch', {
     value: {
       token: state.token,
@@ -167,6 +186,7 @@ function enqueue(line, state, { delayMs, gapMs } = {}) {
 export function createSpeechDispatch({
   id = 'speech', context = 'auto', maxWaitMs = SPEECH_DISPATCH.maxWaitMs,
   replace = true, interrupt = false, valid = null, escapable = true,
+  reviewId = id,
 } = {}) {
   const family = String(id || 'speech');
   if (replace) {
@@ -176,7 +196,7 @@ export function createSpeechDispatch({
   }
   const token = `${family}:${++dispatchSerial}`;
   const state = {
-    token, family, active: true, createdAt: nowMs(), started: false,
+    token, family, reviewId, active: true, createdAt: nowMs(), started: false,
     lastCompletedAt: null, accepted:0, completedLines:0, cancelled:false,
     context: context === 'auto' ? contextKey() : (context == null ? null : String(context)),
     maxWaitMs: Number.isFinite(Number(maxWaitMs)) ? Math.max(0, Number(maxWaitMs)) : Infinity,
@@ -213,9 +233,10 @@ const MAX_QUEUED = 6;
 export function say(line, options = {}) {
   const next = normalize(line);
   const last = q.length ? q[q.length - 1] : cur;
-  if (last && last.who === next.who && last.text === next.text) return;
+  if (last && last.who === next.who && originalSpeechText(last) === originalSpeechText(next)) return;
   const dispatch = createSpeechDispatch({
     id: options.id || `line:${dispatchSerial + 1}`,
+    reviewId: options.id || null,
     context: options.context !== undefined ? options.context : (transientByDefault(next) ? 'auto' : null),
     maxWaitMs: options.maxWaitMs ?? next.maxWaitMs ?? SPEECH_DISPATCH.maxWaitMs,
     replace: options.replace ?? false,
@@ -232,6 +253,7 @@ export function sayAll(lines = [], options = {}) {
   const contextual = normalized.some(transientByDefault);
   const dispatch = createSpeechDispatch({
     id: options.id || `sequence:${dispatchSerial + 1}`,
+    reviewId: options.id || null,
     context: options.context !== undefined ? options.context : (contextual ? 'auto' : null),
     maxWaitMs: options.maxWaitMs ?? SPEECH_DISPATCH.maxWaitMs,
     replace: options.replace ?? false,
@@ -260,11 +282,18 @@ export function isSpeaking() { return !!cur || q.length > 0; }
 // band grows with the length of the line being spoken.
 export function speechPanelRows() {
   if (!cur) return 0;
+  refreshReviewText(cur);
   const { cols } = uiSize();
   const w = Math.max(24, Math.min(96, cols - 10));
   return uiWrap(String(cur.text || ''), Math.max(12, w - 8)).length + 7 + 2;
 }
-export function speaking() { return cur; }
+export function speaking() { return refreshReviewText(cur); }
+// The editor holds the authored clock elsewhere. Stop the mouth without
+// clearing its line/lease, replaying its cue, or restarting speech on return.
+export function textReviewSuspend() {
+  curVoice?.stop?.(); curVoice = null;
+  typing?.stopTyping?.();
+}
 // A displayed caption can outlive its voice. Character mouths need the audio
 // handle's lifetime, while social staging may still use the visible sentence.
 export function isVoicing() { return !!curVoice && !curVoice.done(); }
@@ -301,7 +330,7 @@ export function speechDispatchSnapshot() {
 function cps() { return textCps(42); }
 
 function begin(line) {
-  cur = line;
+  cur = refreshReviewText(line);
   typed = 0; acc = 0; dwell = 0;
   if (line.cue) onCue(line.cue, line);
   curVoice?.stop?.();
@@ -323,6 +352,7 @@ function holdFor(line) {
 
 export function updateSpeech(dt) {
   const at = nowMs();
+  refreshReviewText(cur);
   if (cur) {
     const state = dispatches.get(cur.__dispatch?.token);
     if (!dispatchValid(state, at)) invalidateDispatch(cur.__dispatch?.token);
@@ -381,6 +411,7 @@ export function updateSpeech(dt) {
 // [space] fills the line in. Pressing it again lets the line go.
 export function skipSpeech() {
   if (!cur) return false;
+  refreshReviewText(cur);
   const token = cur.__dispatch?.token;
   const state = dispatches.get(token);
   if (!dispatchValid(state)) { invalidateDispatch(token); return false; }
@@ -422,6 +453,7 @@ const WHO = {
 // the screen and would otherwise end up behind the band.
 export function bandTop() {
   if (!cur) return null;
+  refreshReviewText(cur);
   const { cols, rows } = uiSize();
   const w = Math.min(BAND_W, cols - 8);
   const shown = cur.text.slice(0, typed);
@@ -431,6 +463,7 @@ export function bandTop() {
 
 export function drawSpeech() {
   if (!cur) return;
+  refreshReviewText(cur);
   const { cols, rows } = uiSize();
   const w = Math.min(BAND_W, cols - 8);
   const x = Math.floor((cols - w) / 2);
@@ -453,6 +486,7 @@ export function drawSpeech() {
     // a stage direction wears its parentheses; a thought does not announce
     // itself as one.
     uiText(textX, textY + i, l, style.cls, style.alpha);
+    if (l.trim()) registerReviewRegion(cur.reviewTarget, {x: textX, y: textY + i, w: Math.min(l.length, textW), h: 1, active: true});
   });
 
   // The cursor: a recordist's blinking level LED, borrowed.

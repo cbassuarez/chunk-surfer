@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { localLightConeDescriptor } from '../src/render/local-light-cone.js';
 import { sourceDemolitionLights } from '../src/render/source-demolition.js';
 const source=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
 function fn(name){const a=source.indexOf(`function ${name}(`),b=source.indexOf('\n}\n',a);assert.ok(a>=0&&b>a);return source.slice(a,b+3);}
@@ -9,6 +10,7 @@ function fixture(){
  const stop=new Error('actual shore mesh pass reached'),calls=[];
  const a=source.indexOf('const MAX_LOCAL_LIGHTS ='),b=source.indexOf('let renderedTorchDiagnostic=',a);
  const h={lightingAcademicAtriumLight:false,camX:8,camY:3.2,camZ:-432,CELL:.5,pitch:0,pixelMeshSettings:{reduceMotion:false},fogTexture:null,fogOrigin:[0,0],FOG_TEX:1,ZONE_TINTS:[],municipalLightPower:1,LIGHT_KIND:{EMERGENCY:'emergency'},P3:{setPracticalLightFrame(){},renderPropPass(v){calls.push({count:v.localLightCount,positions:[...v.localLightPositions],colors:[...v.localLightColors],shadow:v.localShadowIndex});throw stop;}}};
+    h.localLightConeDescriptor = localLightConeDescriptor;
  vm.createContext(h);vm.runInContext(source.slice(a,b)+'\n'+fn('r3dSetLocalLights')+'\n'+fn('drawSourceShore')+'\nglobalThis.set=r3dSetLocalLights;globalThis.draw=drawSourceShore;',h);
  return{h,calls,draw(){assert.throws(()=>h.draw(3,{worldYaw:0,torchPower:0}),e=>e===stop);return calls.at(-1);}};
 }

@@ -1,21 +1,21 @@
 import * as scenes from './scenes.js';
-import { uiCenter, uiFill, uiLine, uiSize, uiText, uiWrap } from '../render/ui.js';
+import { uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
 import {
-  drawLocationIndicator, withMachinePanel, drawVfdCounter, drawVfdText,
+  withMachinePanel, drawVfdText,
 } from '../render/presentation.js';
-import { drawTakeRail } from '../render/field-deck.js';
 import { drawVfdGlyph } from '../render/vfd-font.js';
-import { monitorSnapshotForRms } from '../audio/monitor.js';
 import { fitText } from '../render/fit-text.js';
 
 const filedCount = () => Object.keys(getMeta()?.knowledge?.documents || {}).length;
 import { UI_COLOR } from '../render/palette.js';
-import { CAUSAL_REQUIREMENT, tapeQualifies } from '../causal/tape.js';
+import { tapeQualifies } from '../causal/tape.js';
 import { achievementDefinition } from '../progression/achievements.js';
 import { consumeReturnReport } from '../progression/runtime.js';
 import { formatDuration, returnDefinition, returnUnlockDefinition } from '../progression/report.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { promptLine } from './bindings.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { drawReturnExposure, returnExposureIdentity } from '../render/outcome-return-view.js';
 import { getMeta } from './save.js';
 import { roomLabel } from '../audio/manifest-map.js';
 import {
@@ -105,25 +105,6 @@ function reportSections(summary) {
   return sections;
 }
 
-// The stamp the office puts on the bottom of the sheet.
-// WHAT THE HEADER METER READS ONCE THE NIGHT IS OVER.
-//
-// drawMachinePanel defaults to the live HUSH exposure snapshot, which measures
-// SEMANTIC PLAYER NOISE and is therefore flat zero the moment the run ends — the
-// needle on this screen has always been dead. It reads the RETURN instead: how
-// much of the job came back, so a full five-take night pins it and an empty one
-// barely moves. It is the only honest thing left for it to measure.
-function returnMeterSnapshot(summary) {
-  const done = Math.max(0, Math.min(5, Number(summary?.takes?.completed) || 0));
-  const spoiled = Math.max(0, Number(summary?.takes?.spoiled) || 0);
-  // Spoiled takes are signal that went to tape and came back unusable, so they
-  // register as peak without registering as level.
-  return monitorSnapshotForRms(done / 5, {
-    peak: Math.min(1, (done + spoiled) / 5),
-    clipped: spoiled > 0 && done === 0,
-  });
-}
-
 // ONE SECTION OF THE ACCOUNT, RASTERISED FOR A PANE.
 //
 // The window panes cannot draw text — window-media-surface.js is a WebGL shader
@@ -184,371 +165,275 @@ export function returnSectionImages(summary) {
     .filter((page) => !!page.image);
 }
 
-function reportStamp(summary) {
-  if (summary.rules?.startedPreset === 'dead-air') {
-    return summary.integrity?.deadAir?.eligible ? 'DEAD AIR' : 'NOT MET';
+export function returnAccountLines(summary, { width = 64, causalStatus = {} } = {}) {
+  const result = [];
+  const add = (text, cls = 'ui-primary') => {
+    for (const line of uiWrap(String(text), Math.max(8, width))) result.push({ text: line, cls });
+  };
+  for (const [heading, entries] of reportSections(summary)) {
+    add(heading, 'ui-amber');
+    for (const [label, value] of entries) add(`${label}  ${value}`);
+    result.push({ text: '', cls: 'ui-primary' });
   }
-  if (Number(summary.injuries) > 0) return 'FILED';
-  if (Number(summary.takes?.completed) >= 5) return 'COMPLETE';
-  return 'FILED';
+  const achievementIds = [...(summary.unlockedAchievements || [])];
+  if (causalStatus?.status === 'ready' && !achievementIds.includes('ACH_SECOND_TRACK')) achievementIds.push('ACH_SECOND_TRACK');
+  if (achievementIds.length) {
+    add(POST_RUN_STAGE_COPY.achievements.title, 'ui-amber');
+    for (const id of achievementIds) {
+      const def = achievementDefinition(id);
+      if (!def) continue;
+      add(def.name.toUpperCase(), 'ui-amber'); add(def.description);
+    }
+    result.push({ text: '', cls: 'ui-primary' });
+  }
+  if (summary.newlyUnlockedFeatures?.length) {
+    add(POST_RUN_STAGE_COPY.unlocks.title, 'ui-amber');
+    for (const id of summary.newlyUnlockedFeatures) {
+      const feature = returnUnlockDefinition(id) || FEATURE_COPY[id];
+      add(feature?.label || (id.startsWith('cosmetic:') ? `DISPLAY / ${id.slice(9).replaceAll('-', ' ').toUpperCase()}` : id.toUpperCase()), 'ui-amber');
+      const description = feature?.description;
+      if (description) for (const line of uiWrap(description, Math.max(8, width))) result.push({ text: line, cls: 'ui-primary' });
+    }
+    result.push({ text: '', cls: 'ui-primary' });
+  }
+  add('ENDING HINTS · OPTIONAL', 'ui-amber');
+  const unseen = Math.max(0, Object.keys(NEXT_ENDING_HINTS).length - Math.max(1, Number(summary.endingsAtCompletion) || 1));
+  add(unseen ? endingHintForEnding(summary.endingId) || 'Try changing a major choice near the end of the story.' : 'All endings found. You can replay with different difficulty or play THE HUSH from a qualifying completed run.');
+  add(`${unseen} ENDING${unseen === 1 ? '' : 'S'} STILL UNSEEN`, 'ui-secondary');
+  return result;
 }
 
 export function makeReturnReportScene({
   summary,
+  snapshot = null,
+  getSnapshot = () => snapshot,
+  getSaveStatus = () => 'unknown',
   onReopen = () => {},
   onTransferRoom = () => {},
   onArchive = () => {},
   onTitle = () => {},
   getCausalStatus = () => summary.causalTape || { status: tapeQualifies(summary.injuries) ? 'filing' : 'not-qualified' },
-  // True once the return composition has actually taken the sections. main.js
-  // owns that answer because it owns the director.
   sectionsOnPanes = () => false,
-  // Called once when the reader advances past the account.
+  onAccountOpen = () => {},
   onAccountRead = () => {},
 } = {}) {
-  const buildStages=()=>{
-    const achievementIds=[...(summary.unlockedAchievements||[])];
-    if(getCausalStatus()?.status==='ready'&&!achievementIds.includes('ACH_SECOND_TRACK'))achievementIds.push('ACH_SECOND_TRACK');
-    const achievementPages=chunk(achievementIds,3);
-    const unlockPages=chunk(summary.newlyUnlockedFeatures||[],4);
-    return [
-      {id:'report'},
-      ...achievementPages.map((ids,index)=>({id:'achievements',ids,page:index+1,pages:achievementPages.length})),
-      ...unlockPages.map((ids,index)=>({id:'unlocks',ids,page:index+1,pages:unlockPages.length})),
-      {id:'second-shift'},
-      {id:'actions'},
-    ];
-  };
-  let stages=getCausalStatus()?.status==='filing'?[{id:'filing'}]:buildStages();
-  let stage = 0;
-  // The file is always open, so this row no longer waits on anything being
-  // prepared; PLAY AGAIN stays the default because that is still the likelier
-  // thing to want off the back of an ending.
-  let action = 0;
-  let consumed = false;
-  // The summary arrives out of the black the closing quote left behind, with the
-  // hiss bed already up under it (see presentCredits onBlack). It fades in rather
-  // than cutting, because cutting to a stats panel is the one thing that would
-  // undo the ending.
-  let entered = 0;
+  const actions = [
+    { id: 'title', label: 'QUIT TO TITLE' },
+    { id: 'account', label: 'VIEW RUN' },
+    { id: 'replay', label: 'NEW GAME' },
+  ];
+  const hits = createHitRegions(), held = new Set();
+  let stage = getCausalStatus()?.status === 'filing' ? 'filing' : 'residue';
+  let action = 0, page = 0, entered = 0, consumed = false, exited = false, restartChoice = 0;
+  let accountOpen = false, loadedSource = null, loadedImage = null, imageGeneration = 0;
+  let detailPageCount = 1;
   const FADE_IN = 2.2;
 
+  function availableActions() {
+    const transfer = transferRoomCopy({ filed: filedCount() });
+    return [
+      ...actions,
+      ...(stage === 'details' ? [
+        { id: 'transfer-room', label: 'THE TRANSFER ROOM', disabled: !transfer.enabled },
+        { id: 'archive', label: 'ACHIEVEMENTS & RUN HISTORY' },
+      ] : []),
+    ];
+  }
+
+  function image() {
+    const source = getSnapshot?.();
+    if (source && typeof source !== 'string') return source;
+    if (source === loadedSource) return loadedImage;
+    loadedSource = source;
+    loadedImage = null;
+    const generation = ++imageGeneration;
+    if (!source || typeof Image === 'undefined') return null;
+    const pending = new Image();
+    pending.onload = () => {
+      if (!exited && generation === imageGeneration) loadedImage = pending;
+    };
+    // A failed/missing retained image is an honest black field. Never substitute
+    // a different ending or a generic HUSH portrait on a completed run.
+    pending.onerror = () => {};
+    pending.src = source;
+    return null;
+  }
+
+  function closeAccount() {
+    if (accountOpen) {
+      accountOpen = false;
+      onAccountRead();
+    }
+  }
+
   function finish(actionId) {
-    if (!consumed) { consumeReturnReport(summary.id); consumed = true; }
-    scenes.pop();
+    if (consumed || exited) return;
+    if (!POST_RUN_ACTIONS.some((entry) => entry.id === actionId)) return;
+    if (actionId === 'transfer-room' && !transferRoomCopy({ filed: filedCount() }).enabled) return;
+    consumed = true;
+    closeAccount();
+    consumeReturnReport(summary.id);
+    scenes.remove(scene);
     dispatchPostRunAction(actionId, { onReopen, onTransferRoom, onArchive, onTitle });
   }
 
-  return {
-    id: 'return-report', blocksInput: true, blocksWorld: true, lensPreset: 'calm',
-    enter() { AUDIO.startMenuHiss(); },
-    exit() { AUDIO.stopMenuHiss(); },
+  function choose(id) {
+    if (exited || consumed || stage === 'filing') return;
+    if (id === 'account') {
+      if (stage === 'details') {
+        closeAccount(); stage = 'residue'; action = 1;
+      } else {
+        stage = 'details'; page = 0; action = 0;
+        accountOpen = true;
+        onAccountOpen();
+      }
+      AUDIO.menuConfirm();
+      return;
+    }
+    if (id === 'replay') {
+      stage = 'restart-confirm'; restartChoice = 0;
+      AUDIO.menuConfirm();
+      return;
+    }
+    AUDIO.menuConfirm();
+    finish(id);
+  }
+
+
+  function drawDetails() {
+    const { cols, rows } = uiSize();
+    uiFill(0, 0, cols, rows, 'rgba(2,4,3,.97)');
+    const w = Math.min(88, cols - 2), h = Math.max(8, rows - 2);
+    const x = (cols - w) / 2, y = (rows - h) / 2;
+    // The optional account remains a physical display. No portion of the run's
+    // facts relies on desktop panes; all wrapped lines are paged here.
+    withMachinePanel(x, y, w, h, {
+      label: 'COMPLETED RUN', source: '4417-C', wordmark: '', model: '', meter: false,
+      footer: promptLine([{ action: 'select', label: 'PAGES' }, { action: 'back', label: 'BACK' }]),
+    }, (body) => {
+      const lines = returnAccountLines(summary, { width: Math.floor(body.w), causalStatus: getCausalStatus() });
+      const footerRows = body.w < 44 ? 3 : 1;
+      const capacity = Math.max(1, Math.floor(body.h - footerRows - 4));
+      const pages = chunk(lines, capacity);
+      detailPageCount = Math.max(1, pages.length);
+      page = Math.max(0, Math.min(page, detailPageCount - 1));
+      drawVfdText(body.x, body.y, `VIEW RUN ${page + 1}/${detailPageCount}`, { scale: 1, max: body.w, color: UI_COLOR.primary });
+      for (const [index, row] of (pages[page] || []).entries()) uiText(body.x, body.y + 2 + index, row.text, row.cls, 1, body.w);
+      const links = [
+        { id: 'account', label: 'BACK' },
+        { id: 'transfer-room', label: 'TRANSFER ROOM', disabled: !transferRoomCopy({ filed: filedCount() }).enabled },
+        { id: 'archive', label: 'RUN HISTORY' },
+      ];
+      let foot = body.y + body.h - footerRows - 1, cx = body.x;
+      for (const link of links) {
+        const label = `[${link.label}]`;
+        if (cx + label.length > body.x + body.w) { cx = body.x; foot++; }
+        uiText(cx, foot, label, link.disabled ? 'ui-secondary' : 'ui-amber', link.disabled ? .4 : .9);
+        hits.add({ id: link.id, x: cx, y: foot - .15, w: label.length, h: 1.1, disabled: link.disabled, label: link.label });
+        cx += label.length + 2;
+      }
+    });
+  }
+
+  function drawFiling() {
+    const { cols, rows } = uiSize();
+    const w = Math.min(66, cols - 2), h = Math.min(16, rows - 2);
+    const x = (cols - w) / 2, y = (rows - h) / 2;
+    withMachinePanel(x, y, w, h, { label: 'PREPARING HUSH PLAYBACK', source: '', wordmark: '', model: '', meter: false }, (body) => {
+      const lines = uiWrap('Preparing your completed run for THE HUSH.', body.w);
+      lines.forEach((line, index) => uiText(body.x, body.y + index, line, 'ui-primary'));
+      uiWrap('This does not start another game.', body.w).forEach((line, index) => uiText(body.x, body.y + lines.length + 2 + index, line, 'ui-secondary'));
+    });
+  }
+
+  function drawRestartConfirmation() {
+    const { cols, rows } = uiSize();
+    uiFill(0, 0, cols, rows, 'rgba(2,4,3,.95)');
+    const x = cols < 42 ? 2 : Math.floor(cols * .12), width = Math.max(12, cols - x * 2);
+    let y = rows < 16 ? 0 : Math.max(1, Math.floor(rows * .32));
+    for (const line of uiWrap('START A NEW GAME?', width)) uiText(x, y++, line, 'ui-primary');
+    y++;
+    if (rows >= 16) for (const line of uiWrap('Start again from the beginning.', width)) uiText(x, y++, line, 'ui-secondary');
+    y++;
+    for (const [index, entry] of [{ id: 'cancel-restart', label: 'CANCEL' }, { id: 'confirm-restart', label: 'START NEW GAME' }].entries()) {
+      uiText(x, y, `${index === restartChoice ? '▸' : ' '} ${entry.label}`, index === restartChoice ? 'ui-amber' : 'ui-secondary');
+      hits.add({ id: entry.id, x, y: y - .15, w: width, h: 1.1 });
+      y += 1.5;
+    }
+  }
+
+  const scene = {
+    id: 'return-report', blocksInput: true, blocksWorld: true, suppressesHud: true, worldPresentation: 'hidden', handlesEscape: true, lensPreset: 'calm',
+    enter() { exited = false; },
+    exit() { exited = true; imageGeneration++; loadedImage = null; closeAccount(); held.clear(); },
+    resume() { held.clear(); if (stage === 'restart-confirm') restartChoice = 0; },
     update(dt = 0) {
+      if (exited || consumed) return;
       entered += Math.max(0, Number(dt) || 0);
-      if(stages[0]?.id==='filing'&&getCausalStatus()?.status!=='filing'){stages=buildStages();stage=0;}
+      if (stage === 'filing' && getCausalStatus()?.status !== 'filing') stage = 'residue';
     },
-    key(e) {
-      // A key during the fade takes you to the end of it, never past it.
+    key(e = {}) {
+      if (exited || consumed) return true;
+      const key = String(e.key || e.code || '').toLowerCase();
+      if (e.repeat || held.has(key)) return true;
+      held.add(key);
+      // A fade-reveal press cannot also select NEW GAME or leave the ending.
       if (entered < FADE_IN) { entered = FADE_IN; return true; }
-      const k = String(e.key || '').toLowerCase();
-      const current = stages[stage].id;
-      if(current==='filing')return true;
-      if (current === 'actions') {
-        if (e.key === 'ArrowUp' || k === 'w') { action = (action - 1 + POST_RUN_ACTIONS.length) % POST_RUN_ACTIONS.length; AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowDown' || k === 's') { action = (action + 1) % POST_RUN_ACTIONS.length; AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowLeft' || k === 'a') { const before=action;action = action === 1 ? 0 : action === 3 ? 2 : action;if(action!==before)AUDIO.menuMove(); return true; }
-        if (e.key === 'ArrowRight' || k === 'd') { const before=action;action = action === 0 ? 1 : action === 2 ? 3 : action;if(action!==before)AUDIO.menuMove(); return true; }
-        if (e.key === 'Enter' || e.key === ' ' || k === 'z') {
-          const selectedAction = POST_RUN_ACTIONS[action];
-          AUDIO.menuConfirm(); finish(selectedAction?.id || 'title'); return true;
+      if (stage === 'filing') return true;
+      const back = key === 'escape' || key === 'backspace';
+      if (stage === 'restart-confirm') {
+        if (back) { stage = 'residue'; restartChoice = 0; AUDIO.menuBack(); }
+        else if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) { restartChoice = 1 - restartChoice; AUDIO.menuMove(); }
+        else if (key === 'enter' || key === ' ' || key === 'z') {
+          if (restartChoice === 1) finish('replay');
+          else { stage = 'residue'; restartChoice = 0; AUDIO.menuBack(); }
         }
         return true;
       }
-      if (e.key === 'Enter' || e.key === ' ' || k === 'z' || e.key === 'ArrowRight') {
-        const wasReport = stages[stage]?.id === 'report';
-        stage = Math.min(stages.length - 1, stage + 1);
-        // The account has been read; the surfaces let it go rather than sitting
-        // over every screen that follows.
-        if (wasReport && stages[stage]?.id !== 'report') onAccountRead();
-        AUDIO.menuConfirm(); return true;
+      if (stage === 'details') {
+        if (back) choose('account');
+        else if (key === 'arrowright' || key === 'd' || key === 'enter' || key === ' ' || key === 'z') { page = Math.min(detailPageCount - 1, page + 1); AUDIO.menuPage(); }
+        else if (key === 'arrowleft' || key === 'a') { page = Math.max(0, page - 1); AUDIO.menuPage(); }
+        else if (key === 'h') choose('archive');
+        else if (key === 't') choose('transfer-room');
+        return true;
       }
-      if (e.key === 'ArrowLeft' && stage > 0) { stage--; AUDIO.menuPage(); return true; }
+      if (back) { action = 0; AUDIO.menuBack(); return true; }
+      const list = availableActions();
+      if (['arrowup', 'w', 'arrowleft', 'a'].includes(key)) { action = (action + list.length - 1) % list.length; AUDIO.menuMove(); }
+      else if (['arrowdown', 's', 'arrowright', 'd'].includes(key)) { action = (action + 1) % list.length; AUDIO.menuMove(); }
+      else if (key === 'enter' || key === ' ' || key === 'z') choose(list[action]?.id || 'title');
       return true;
     },
+    keyup(e = {}) { held.delete(String(e.key || e.code || '').toLowerCase()); return true; },
+    pointer(e = {}) {
+      if (exited || consumed || e.button > 0) return true;
+      if (e.type !== 'pointerdown') return true;
+      if (entered < FADE_IN) { entered = FADE_IN; return true; }
+      if (stage === 'filing') return true;
+      const hit = hits.hit(e.cellX, e.cellY);
+      if (!hit || hit.disabled) return true;
+      if (stage === 'restart-confirm') {
+        if (hit.id === 'cancel-restart') { stage = 'residue'; restartChoice = 0; AUDIO.menuBack(); }
+        else if (hit.id === 'confirm-restart') finish('replay');
+        return true;
+      }
+      const list = availableActions(), index = list.findIndex((entry) => entry.id === hit.id);
+      if (index >= 0) action = index;
+      choose(hit.id);
+      return true;
+    },
+    view() {
+      return { id: 'return-report', system: 'last-exposure', stage, elapsed: entered, action: availableActions()[action]?.id, restartChoice: restartChoice ? 'start' : 'cancel', page, pages: detailPageCount, consumed, title: returnExposureIdentity(summary, getSaveStatus()).title, endingTitle: returnExposureIdentity(summary,getSaveStatus()).endingTitle, saveStatus: getSaveStatus(), imageReady: !!image() };
+    },
     render() {
-      this.drawReport();
-      // Up out of the black the closing quote went out on.
-      if (entered < FADE_IN) {
-        const { cols, rows } = uiSize();
-        const remaining = 1 - (entered / FADE_IN);
-        uiFill(0, 0, cols, rows, `rgba(2,2,3,${(remaining * remaining).toFixed(3)})`);
-      }
-    },
-
-    // The transport, reading the return. Everything on it is an instrument
-    // showing a real figure, not a label with a number typed beside it.
-    drawTransport(x, y, w, h, pageSource) {
-      // The header is wordmark + model + label + SOURCE + meter on one row, and
-      // at the narrow width it ran out of room and truncated mid-word. The
-      // brand is the first thing a faceplate can afford to lose.
-      const narrow = w < 70;
-      withMachinePanel(x, y, w, h, {
-        label: 'RETURN',
-        source: pageSource,
-        wordmark: narrow ? '' : 'AUDIOCORP',
-        model: 'A-1000',
-        footer: promptLine([{ action: 'continue', label: 'CONTINUE' }]),
-        // The header meter is fed the run rather than the live HUSH exposure,
-        // which is flat zero once the run is over and has always read dead here.
-        meterSnapshot: returnMeterSnapshot(summary),
-        meter: true,
-      }, (body) => {
-
-      const left = body.x;
-      const width = body.w;
-      const ret = returnDefinition(summary.endingId, summary);
-
-      // WHAT CAME BACK, on the top line, in the machine's own large type.
-      drawVfdText(left, body.y, ret?.title || String(summary.endingId || '').toUpperCase(), {
-        color: UI_COLOR.amber, max: width,
-      });
-      uiText(left, body.y + 3, ret?.variantTitle || ret?.classification || 'UNCLASSIFIED', 'ui-label', 0.72);
-      if (ret?.variantTitle) uiText(left, body.y + 4, ret.classification, 'ui-secondary', 0.62);
-
-      // TIME ON SITE — the segment counter, which is what a transport shows.
-      uiText(left, body.y + 5, 'TIME ON SITE', 'ui-label', 0.68);
-      drawVfdCounter(left, body.y + 6, formatDuration(summary.durationSeconds), { theme: 'amber' });
-
-      // TAKES and what they cost, on the rail built for exactly this pair and
-      // never once called from this screen.
-      drawTakeRail({
-        x: left, y: body.y + 9,
-        done: Number(summary.takes?.completed) || 0,
-        total: 5,
-        injuries: Number(summary.injuries) || 0,
-      });
-
-      // THE ROOMS HE ACTUALLY WALKED. The old report printed the COUNT and threw
-      // the room list away; takes.rooms has been in the summary all along.
-      const rooms = summary.takes?.rooms || [];
-      // The bar reads how much of the job came back. It was pinned at 1 — a full
-      // amber rail on a night with no takes at all, which is the opposite of the
-      // truth.
-      const filedShare = Math.max(0, Math.min(1, (Number(summary.takes?.completed) || 0) / 5));
-      drawLocationIndicator(left, body.y + 11, width, filedShare, {
-        theme: 'amber',
-        label: 'ROOMS FILED',
-        rows: 1,
-        marks: rooms.map((id, index) => ({
-          at: rooms.length > 1 ? index / (rooms.length - 1) : 0,
-          label: roomLabel(id).toUpperCase().slice(0, 10),
-        })),
-      });
-
-      // THE SECTIONS BELONG TO THE PANES, NOT TO BOTH.
-      //
-      // When the composition took, every section is already out on the surfaces
-      // (or on the in-canvas panes, which is the same plan) and repeating them
-      // here is just clutter over the instruments. They are printed in the
-      // window ONLY as the fallback — no DOM to rasterise into, fewer than two
-      // sections, a refused pool — so the account is never lost, and never shown
-      // twice.
-      if (sectionsOnPanes()) {
-        // With the account out on the surfaces the column has room for what a
-        // transport shows when it is not reading: what came back, and whether
-        // the second track took.
-        const causal = getCausalStatus() || {};
-        const foot = body.y + body.h - 5;
-        uiLine(left, foot - 1, left + width - 1, foot - 1, UI_COLOR.frame, 0.28);
-        uiText(left, foot, 'STATUS', 'ui-label', 0.62);
-        uiText(left + width - reportStamp(summary).length, foot, reportStamp(summary), 'ui-amber');
-        const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
-          : causal.status === 'not-qualified' ? 'SECOND TRACK REFUSED'
-            : 'SECOND TRACK FILING';
-        uiText(left, foot + 2, 'SECOND TRACK', 'ui-label', 0.62);
-        const tail = tape.replace('SECOND TRACK ', '');
-        uiText(left + width - tail.length, foot + 2, tail,
-          causal.status === 'ready' ? 'ui-green' : causal.status === 'not-qualified' ? 'ui-danger' : 'ui-secondary');
-        return;
-      }
-      const sections = reportSections(summary);
-      let ry = body.y + 15;
-      const colW = Math.floor((width - 2) / 2);
-      let col = 0;
-      for (const [heading, entries] of sections) {
-        if (ry + entries.length + 2 > body.y + body.h - 1) {
-          if (col === 1) break;
-          col = 1; ry = body.y + 15;
-        }
-        const cx = left + col * (colW + 2);
-        uiText(cx, ry, heading, 'ui-label', 0.62);
-        ry += 1;
-        for (const [label, value] of entries) {
-          const shown = fitText(String(value), Math.max(4, colW - label.length - 2));
-          uiText(cx, ry, label, 'ui-secondary', 0.78);
-          uiText(cx + colW - shown.length, ry, shown, 'ui-primary');
-          ry += 1;
-        }
-        ry += 1;
-      }
-      });
-    },
-
-    drawReport() {
-      const { cols, rows } = uiSize();
-      uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      // WHEN THE SECTIONS ARE OUT ON THE SURFACES, THE TRANSPORT MAKES ROOM.
-      //
-      // At full width the panes have nowhere to go and land on top of the panel,
-      // clipping its own header. Narrowing the centre column turns that into the
-      // arrangement it should be: the machine in the middle, the account around
-      // it. Native panes sit outside the frame entirely, so this only matters for
-      // the in-canvas path — which is every browser run and every session with
-      // choreography off, so it matters.
-      const currentStage = stages[stage];
-      const spread = currentStage.id === 'report' && sectionsOnPanes();
-      const w = Math.min(spread ? 56 : 88, cols - 4);
-      const h = Math.min(Math.max(30, rows - 8), rows - 4);
-      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      const current = currentStage.id;
-      const pageSource = currentStage.pages > 1 ? `${currentStage.page}/${currentStage.pages}` : '4417-C';
-      const stageCopy = POST_RUN_STAGE_COPY[current] || POST_RUN_STAGE_COPY.actions;
-
-      // THE MACHINE READS THE NIGHT BACK.
-      //
-      // A first pass drew this as a cream form on stock. It was too fake, and it
-      // was never going to be otherwise: the game owns REAL paper — 211
-      // documents rasterised offline at 2048x2896 with impact-printer
-      // morphology, in assets/paper — and a beige rectangle with a noise wash
-      // cannot stand next to that. So it stops imitating a material this game
-      // already does properly and goes back to the one it is actually made of.
-      //
-      // The A-1000 is the frame for it. The night was a recording job; the
-      // return is that tape played back. The counter runs the time on site, the
-      // location indicator walks the rooms actually taken, the take rail shows
-      // the takes and what they cost. Those instruments are all built and
-      // tested and were unused by this screen while it printed the same numbers
-      // as ASCII strings.
-      if (current === 'report') { this.drawTransport(x, y, w, h, pageSource); return; }
-
-      withMachinePanel(x, y, w, h, {
-        label: stageCopy.panel,
-        source: pageSource,
-        footer: current === 'actions'
-          ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }])
-          : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
-        meter: current !== 'actions',
-        meterSnapshot: returnMeterSnapshot(summary),
-      }, (body) => {
-
-      if (current === 'filing') {
-        drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.danger, max: body.w });
-        uiText(body.x, body.y + 4, POST_RUN_STAGE_COPY.filing.primary, 'ui-amber');
-        uiWrap(POST_RUN_STAGE_COPY.filing.secondary, body.w).slice(0, 2)
-          .forEach((line, i) => uiText(body.x, body.y + 6 + i, line, 'ui-secondary'));
-        // The status the machine will print once it settles. Held, not blank.
-        uiText(body.x, body.y + body.h - 2, `STATUS  ${reportStamp(summary)}`, 'ui-label', 0.6);
-        return;
-      }
-
-
-      if (current === 'achievements') {
-        drawVfdText(body.x, body.y, 'ACHIEVEMENTS UNLOCKED', { color: UI_COLOR.amber, max: body.w });
-        let ry = body.y + 4;
-        const maxY = body.y + body.h - 1;
-        for (const id of currentStage.ids || []) {
-          const def = achievementDefinition(id);
-          if (!def || ry > maxY) continue;
-          uiText(body.x, ry++, def.name.toUpperCase().slice(0, body.w), 'ui-amber');
-          for (const line of uiWrap(def.description, body.w - 2).slice(0, 2)) {
-            if (ry > maxY) break;
-            uiText(body.x + 2, ry++, line, 'ui-primary');
-          }
-          ry++;
-        }
-        return;
-      }
-
-      if (current === 'unlocks') {
-        drawVfdText(body.x, body.y, 'NEW OPTIONS UNLOCKED', { color: UI_COLOR.danger, max: body.w });
-        let ry = body.y + 4;
-        const maxY = body.y + body.h - 1;
-        for (const id of currentStage.ids || []) {
-          if (ry > maxY) break;
-          const authoredUnlock = returnUnlockDefinition(id);
-          const feature = authoredUnlock || FEATURE_COPY[id];
-          const text = feature?.label || (id.startsWith('cosmetic:') ? `DISPLAY / ${id.slice(9).replaceAll('-', ' ').toUpperCase()}` : id.toUpperCase());
-          uiText(body.x, ry, `▸ ${text}`.slice(0, body.w), id === 'deadAir' ? 'ui-danger' : 'ui-amber');
-          const description = feature?.description;
-          const descriptionLines = authoredUnlock ? uiWrap(description, Math.max(1, body.w - 2)).slice(0, 2)
-            : description ? [description.slice(0, Math.max(1, body.w - 2))] : [];
-          descriptionLines.forEach((line, i) => {
-            if (ry + 1 + i <= maxY) uiText(body.x + 2, ry + 1 + i, line, 'ui-secondary');
-          });
-          ry += 3;
-        }
-        return;
-      }
-
-      if (current === 'second-shift') {
-        const ending = returnDefinition(summary.endingId, summary);
-        const completed = Math.max(1, Number(summary.endingsAtCompletion) || 1);
-        const unseen = Math.max(0, Object.keys(NEXT_ENDING_HINTS).length - completed);
-        drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.danger, max: body.w });
-        if (unseen === 0) {
-          uiText(body.x, body.y + 5, 'ALL ENDINGS FOUND', 'ui-amber');
-          uiWrap('You can still replay the story, change difficulty, or play THE HUSH from a qualifying completed run.', body.w).slice(0, 5)
-            .forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-primary'));
-          return;
-        }
-        uiText(body.x, body.y + 4, 'YOU REACHED', 'ui-label');
-        uiText(body.x, body.y + 6, ending?.title || summary.endingId.toUpperCase(), 'ui-amber');
-        if (ending?.variantTitle) uiText(body.x, body.y + 7, ending.variantTitle, 'ui-secondary');
-        uiText(body.x, body.y + 9, 'HINT FOR ANOTHER ENDING', 'ui-label');
-        uiWrap(endingHintForEnding(summary.endingId) || 'Try changing a major choice near the end of the story.', body.w).slice(0, 5)
-          .forEach((line, i) => uiText(body.x, body.y + 11 + i, line, 'ui-primary'));
-        uiText(body.x, body.y + body.h - 3, `${unseen} ENDING${unseen === 1 ? '' : 'S'} STILL UNSEEN`, 'ui-danger');
-        return;
-      }
-
-      if (current === 'actions') {
-        // WHAT IS TO BE DONE WITH THE RETURN.
-        //
-        // This was two equal cards side by side, each with a bold heading, four
-        // wrapped lines of body copy and a small label, over two text links —
-        // structurally a two-column CTA landing page, and the most web-shaped
-        // thing in the build. It is a selection list on an instrument now: one
-        // row each, a caret on the live one, the reason in the right column.
-        const hushCopy = transferRoomCopy({ filed: filedCount() });
-        const causal = getCausalStatus() || {};
-        drawVfdText(body.x, body.y, stageCopy.title, { color: UI_COLOR.amber, max: body.w });
-        const notes = {
-          replay: 'NEW WORKS ORDER · TERMS TO BE SET',
-          'transfer-room': hushCopy.enabled ? (hushCopy.note || 'FILE AND COLLECT') : 'NOT AVAILABLE ON THIS RETURN',
-          archive: `${filedCount()} DOCUMENT${filedCount() === 1 ? '' : 'S'} ON FILE`,
-          title: 'CLOSE THE FILE',
-        };
-        let ry = body.y + 5;
-        POST_RUN_ACTIONS.forEach((entry, index) => {
-          const picked = index === action;
-          const available = entry.id !== 'transfer-room' || hushCopy.enabled !== false;
-          const label = String(entry.label || '').toUpperCase();
-          uiText(body.x, ry, picked ? '▸' : ' ', 'ui-amber');
-          uiText(body.x + 2, ry, label, picked ? 'ui-amber' : available ? 'ui-primary' : 'ui-secondary', available ? 1 : 0.5);
-          const note = fitText(String(notes[entry.id] || ''), Math.max(6, body.w - label.length - 6));
-          if (note) uiText(body.x + body.w - note.length, ry, note, 'ui-secondary', available ? 0.72 : 0.4);
-          uiLine(body.x, ry + 1, body.x + body.w - 1, ry + 1, picked ? UI_COLOR.amber : UI_COLOR.frame, picked ? 0.5 : 0.16);
-          ry += 3;
-        });
-        // The causal tape's own line, which only ever appeared as a spinner.
-        const tape = causal.status === 'ready' ? 'SECOND TRACK SEALED'
-          : causal.status === 'not-qualified' ? `SECOND TRACK REFUSED · ${CAUSAL_REQUIREMENT}`
-            : '';
-        if (tape) uiText(body.x, body.y + body.h - 2, tape, 'ui-label', 0.6);
-        uiText(body.x + body.w - 12, body.y + body.h - 2, `STATUS ${reportStamp(summary)}`, 'ui-label', 0.6);
-        return;
-      }
-      });
+      if (exited) return;
+      hits.reset();
+      drawReturnExposure({ summary, snapshot: image(), elapsed: entered, saveStatus: getSaveStatus(), actions: stage === 'residue' ? availableActions() : [], selected: action, hitRegions: hits });
+      if (stage === 'details') drawDetails();
+      else if (stage === 'filing' && entered >= FADE_IN) drawFiling();
+      else if (stage === 'restart-confirm') drawRestartConfirmation();
     },
   };
+  return scene;
 }

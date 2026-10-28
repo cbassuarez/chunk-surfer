@@ -84,7 +84,8 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
       if(ready&&!closed){try{if(renderer.render(state,presentation())===false)throw Error('Source IV is unavailable.');}catch(reason){ready=false;fail(reason);}}
       const {rows}=uiSize();
       if(!live()){
-        renderer.clear?.();
+        // Keep the last complete production raster while preparing or retrying.
+        // The incoming scene already owns input, so no partial world may draw.
         if(error)uiCenter(Math.floor(rows/2),state.status==='completed'?'E · TRY THE FAR DOOR':'E · TRY SOURCE IV AGAIN','ui-secondary');
       }
     },

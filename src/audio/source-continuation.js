@@ -1,16 +1,18 @@
-// Physical contact and machinery, through the shared world SFX bus. Simulation
-// events own impacts; friction and ratchets follow actual mechanical travel.
-// No score, fetch bank, wall-clock scheduler or repeating proximity alarm.
-export const SOURCE_CONTINUATION_AUDIO = Object.freeze({ maxVoices: 10, maxSources: 22, noiseSeconds: 1.93 });
+import {createContinuationMaterialAudio} from './source-continuation-materials.js';
+import {createSourceSurroundingsAudio} from './source-surroundings.js';
+
+// Physical contact and machinery, through the shared world SFX bus. Recorded
+// material follows the same physical origins; synthetic resonances supplement
+// its load and contact rather than pretending to be a large room recording.
+export const SOURCE_CONTINUATION_AUDIO = Object.freeze({ maxVoices: 10, maxSources: 22, maxCombinedVoices: 15, maxCombinedSources: 27, noiseSeconds: 1.93 });
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
 const number = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const body = state => ({ x: number(state?.x), y: number(state?.feet) + .95, z: number(state?.z) });
 const point = (v, fallback) => ({ x: number(v?.x, fallback.x), y: number(v?.y, fallback.y), z: number(v?.z, fallback.z) });
 
-// Catch keeps the body's location but uses the overhead camera's north-up
-// orientation. A stored first-person yaw cannot reverse its stereo image.
+// Both sections listen from the carried first-person body and its actual yaw.
 export function sourceContinuationPlacement(source, state = {}) {
-  const listener = body(state), at = point(source, listener), yaw = state.phase === 'catch' ? 0 : number(state.yaw);
+  const listener = body(state), at = point(source, listener), yaw = number(state.yaw);
   const dx = at.x - listener.x, dy = at.y - listener.y, dz = at.z - listener.z;
   const horizontal = Math.hypot(dx, dz), distance = Math.hypot(dx, dy, dz);
   const front = horizontal > .01 ? (Math.sin(yaw) * dx - Math.cos(yaw) * dz) / horizontal : 1;
@@ -18,7 +20,11 @@ export function sourceContinuationPlacement(source, state = {}) {
     gain: 1 / (1 + (distance / 10) ** 1.22), cutoff: clamp(6600 / (1 + distance / 19) - Math.max(0, -front) * 1500, 600, 6600) };
 }
 
-export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
+export function createSourceContinuationAudio({ getAudio = () => null, getMusicAudio = () => null, getReducedMotion = () => false, protectedAudio = () => false, fetcher, urlFor, musicFetcher, musicUrlFor } = {}) {
+  const materials=createContinuationMaterialAudio({getAudio,protectedAudio,...(fetcher?{fetcher}:{}),...(urlFor?{urlFor}:{})});
+  // Music owns a separate bounded graph. A pressure release cannot evict a
+  // warning, footstep or physical door sound from the existing SFX allocator.
+  const surroundings=createSourceSurroundingsAudio({getAudio:getMusicAudio,protectedAudio,...(musicFetcher?{fetcher:musicFetcher}:{}),...(musicUrlFor?{urlFor:musicUrlFor}:{})});
   let context = null, destination = null, noiseBuffer = null, mechanism = null, active = false, disposed = false;
   let listener = {}, lastBody = null, lastMachine = null, footTravel = 0, toothTravel = 0, lastFocus = null;
   let focusClock = -Infinity, clock = 0, eventCount = 0, played = 0, skipped = 0, footIndex = 0;
@@ -38,12 +44,14 @@ export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
     voices.delete(v);
   }
   function stop() {
+    materials.stop();
+    surroundings.stop();
     for (const v of [...voices]) release(v);
     mechanism = null; active = false; lastBody = lastMachine = lastFocus = null; footTravel = toothTravel = 0;
     diagnostic = { ...diagnostic, mode: 'silent', mechanicalGain: 0, focus: null };
   }
   function available() {
-    if (disposed) return false;
+    if (disposed || protectedAudio()) { if(!disposed)stop(); return false; }
     let pair; try { pair = getAudio(); } catch { stop(); return false; }
     if (!pair?.ctx || pair.ctx.state !== 'running' || !pair.destination) { stop(); return false; }
     if (context !== pair.ctx || destination !== pair.destination) {
@@ -110,6 +118,7 @@ export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
   }
   function mechanismAt(state) {
     if (state.phase === 'catch') return point(state.counterweight, { x: -17.6, y: 3, z: -4.5 });
+    if (Number.isFinite(state.closure?.frontX)) return { x: state.closure.frontX, y: 9.4, z: number(state.closure.frontZ, -12) };
     return { x: 6, y: 3.65, z: number(state.closure?.frontZ, -4.5) };
   }
   function startMechanism(place) {
@@ -146,11 +155,14 @@ export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
     } else if (type === 'phase') {
       gain = .023; parts = [{ frequency: 460, q: 2.8, duration: .9, attack: .07 }, { hz: 107, endHz: 93, frequency: 400, gain: .24, duration: 1.1, attack: .09 }];
     } else return false;
+    materials.event(event,listener);
     eventCount++; return strike(place, gain, parts, type);
   }
-  function update({ dt = 0, state, focus = null, paused = false, ready = false } = {}) {
+  function update({ dt = 0, state, surroundingsState = state, focus = null, paused = false, ready = false } = {}) {
     if (paused || !ready || !state || !available()) { stop(); return false; }
     active = true; listener = state;
+    materials.update(state);
+    surroundings.update({state:surroundingsState,ready:true,reducedMotion:!!getReducedMotion()});
     const delta = clamp(dt, 0, .25); clock += delta;
     for (const voice of [...voices]) if (voice !== mechanism && voice.until <= context.currentTime) release(voice);
     const place = mechanismAt(state), mode = state.phase === 'catch' ? state.counterweight?.active ? state.counterweight.mode || 'warning' : 'tension' : state.closure?.mode || 'dormant';
@@ -197,8 +209,8 @@ export function createSourceContinuationAudio({ getAudio = () => null } = {}) {
     return true;
   }
   return { event, update, pause: stop, stop,
-    dispose() { stop(); disposed = true; noiseBuffer = null; },
-    snapshot: () => ({ active, voices: voices.size, sources: sourceCount(), events: eventCount, played, skipped, kind: 'source-continuation',
-      ...diagnostic, layers: [...voices].map(v => ({ kind: v.kind, source: { ...v.place }, mix: { ...v.mix }, gain: v.gain })) }),
+    dispose() { stop(); materials.dispose(); surroundings.dispose(); disposed = true; noiseBuffer = null; },
+    snapshot: () => ({ active, voices: voices.size, sources: sourceCount(), combinedVoiceBound:voices.size+materials.snapshot().voices, combinedSourceBound:sourceCount()+materials.snapshot().voices, totalVoiceBound:voices.size+materials.snapshot().voices+surroundings.snapshot().voices, totalSourceBound:sourceCount()+materials.snapshot().voices+surroundings.snapshot().voices, events: eventCount, played, skipped, kind: 'source-continuation',
+      ...diagnostic, materials:materials.snapshot(), surroundings:surroundings.snapshot(), layers: [...voices].map(v => ({ kind: v.kind, source: { ...v.place }, mix: { ...v.mix }, gain: v.gain })) }),
   };
 }

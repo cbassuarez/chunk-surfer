@@ -124,10 +124,23 @@ export function sourceFalseReturnRenderFrame(layout, state, { planView = sourceF
 export function createSourceFalseReturnRenderer({ layout, renderer = R3, props = P3, onRelease = () => {}, resolveAsset = assetUrl,
   getTorch = () => ({ on: true, look: { power: 1 } }) } = {}) {
   if ((!layout?.plan && typeof layout?.planFor !== 'function') || !Array.isArray(layout.doors) || !layout.doors.length) throw Error('The false return needs the actual Ellery floor set.');
-  const local = copy(layout), required = new Set((local.props || []).map(p => p.mesh).filter(Boolean));
+  const local = copy(layout), allMeshes = new Set((local.props || []).map(p => p.mesh).filter(Boolean));
+  const colliding = new Set((local.colliders || []).map(p => p.id));
+  // Optional ornament may fail exactly as it does in ordinary Ellery. Floors,
+  // walls, colliding furnishings and every door must remain visibly complete.
+  const required = new Set((local.props || []).filter(p => p.mesh !== 'main_stair_wall_treatment'
+    && (p.structural || p.blocks || colliding.has(p.id))).map(p => p.mesh).filter(Boolean));
   for (const d of local.doors) for (const p of drawDoor(d, { elapsed: 0, doorOpen: {}, doorMotion: {} })) required.add(p.mesh);
-  let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null, lightingFrame = null;
+  let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null, lightingFrame = null, omittedMeshes = [];
   const resident = () => { const catalog = new Set(props.propMeshCatalog?.() || []); return [...required].every(m => catalog.has(m)); };
+  function availableProps(list) {
+    const catalog = new Set(props.propMeshCatalog?.() || []), omitted = new Set();
+    const result = list.filter(p => {
+      if (catalog.has(p.mesh) || p.fallbackMesh && catalog.has(p.fallbackMesh)) return true;
+      omitted.add(p.mesh);return false;
+    });
+    omittedMeshes = [...omitted].sort();return result;
+  }
   function clearShared() {
     renderer.r3dSetHorizon?.(null); renderer.r3dSetSourceShore?.(null); renderer.r3dSetSourceEmergency?.(0); renderer.r3dSetSourceWhiteout?.(0); renderer.r3dSetSourceFault?.(0);
     renderer.r3dSetSourcePortals?.([]); renderer.r3dSetSourceOpenings?.([]); renderer.r3dSetSourceTowerView?.(null); renderer.r3dSetSourceDoorLights?.([]); renderer.r3dSetSourceCrossing?.(null); renderer.r3dSetSourceReflection?.(null);
@@ -163,18 +176,19 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
     if (loading) return loading;
     loading = (async () => {
       if (released) return false;
-      if (await renderer.r3dBasePropsReady?.() === false) throw Error('Ellery\'s original prop catalog has not resolved.');
+      const ready = renderer.r3dAuthoredPropsReady || renderer.r3dBasePropsReady;
+      if (await ready?.call(renderer) === false) throw Error('Ellery\'s original prop catalog has not resolved.');
       if (released) return false;
       const doors = [...required].filter(mesh => /^door_/.test(mesh)), catalog = new Set(props.propMeshCatalog?.() || []);
       if (doors.some(mesh => !catalog.has(mesh))) await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));
       if (released) return false;
       // A copied stair can arrive before the host's optional wall-skin chain.
-      if (required.has('main_stair_wall_treatment') && !new Set(props.propMeshCatalog?.() || []).has('main_stair_wall_treatment')) {
+      if (allMeshes.has('main_stair_wall_treatment') && !new Set(props.propMeshCatalog?.() || []).has('main_stair_wall_treatment')) {
         try { await props.addPropPack(resolveAsset('assets/conservatory-stair-walls.glb')); }
         catch { required.delete('main_stair_wall_treatment'); }
       }
       if (released) return false;
-      const ready = new Set(props.propMeshCatalog?.() || []), missing = [...required].filter(mesh => !ready.has(mesh));
+      const loaded = new Set(props.propMeshCatalog?.() || []), missing = [...required].filter(mesh => !loaded.has(mesh));
       if (missing.length) throw Error('False return original meshes missing: ' + missing.slice(0, 12).join(', '));
       clearShared(); acquired = true; setPlan({ ...local.spawn, sourceDoors: [], opened: [] });
       renderer.r3dSetSourceScene?.({ key: 'source:false-return-ellery', corpus: [], staticInstances: [], dynamicInstances: [], look: { roomMemoryActive: false, blueprint: false, chroma: 1, paper: 0, sunrise: 0 }, weather: { rain: 0, clouds: 0, moon: 0 } });
@@ -187,6 +201,8 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
     if (error) throw Error(error);
     if (!resident()) throw Error('Ellery\'s original mesh catalog was replaced while its false return owned the view.');
     setPlan(state); last = sourceFalseReturnRenderFrame(viewLayout, state, { planView });
+    last.props = availableProps(last.props);
+    last.counts.props = last.props.length;
     const heldTorch = getTorch?.(); torchFrame = { on: !!heldTorch?.on, look: copy(heldTorch?.look || {}) };
     renderer.r3dSetProps(last.props); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetLocalLights(last.lights);
     return renderer.r3dFrame({ px: last.authoredCamera.eye[0] / CELL - .5, py: last.authoredCamera.eye[2] / CELL - .5, floorH: last.authoredCamera.eye[1] - EYE, authoredCamera: last.authoredCamera,
@@ -194,7 +210,12 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
       light: torchFrame.on ? 1 : 0, torchLook: torchFrame.look, water: {active:false}, sensoryProfile: 'story', textSpace: false, sourceVoidPhysical: false }) !== false;
   }
   function dispose() { if (released) return false; released = true; initialized = false; if (acquired) clearShared(); onRelease(); return true; }
-  return { initialize, render, ready: () => initialized && !released && !error && resident(), clear: () => renderer.r3dClearScreen?.(), dispose,
-    diagnostics: () => ({ ready: initialized && !released && !error && resident(), released, acquired, error, meshCount: required.size,
+  function retry(){
+    if(released)return Promise.resolve(false);
+    initialized=false;loading=null;error=null;last=null;planView=null;planKey=null;
+    return initialize();
+  }
+  return { initialize, retry, render, ready: () => initialized && !released && !error && resident(), clear: () => renderer.r3dClearScreen?.(), dispose,
+    diagnostics: () => ({ ready: initialized && !released && !error && resident(), released, acquired, error, meshCount: required.size, omittedMeshes: [...omittedMeshes],
       frame: last ? { camera: copy(last.authoredCamera), torch: copy(torchFrame), lighting: copy(lightingFrame), sourceDoors: [...last.sourceDoors], changedCells: last.changedCells, hiddenProps: [...last.hiddenProps], counts: {...last.counts} } : null }) };
 }

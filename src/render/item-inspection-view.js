@@ -21,7 +21,7 @@ export function drawItemInspectionView({entry,inspection,lines=[],rect,active=tr
   const rows=uiWrap(String(value||''),text.w).slice(0,Math.max(0,Math.min(max,Math.floor(text.y+text.h-y))));
   rows.forEach(line=>uiText(text.x,y++,line,role,.85));return rows.length;
  };
- if(write(entry?.description,'ui-primary'))y++;
+ if(write(entry?.description,'ui-primary',Math.floor(text.h)))y++;
  for(const line of lines){if(write(line?.text||line,line?.who==='you'?'ui-amber':'ui-secondary',4))y++;}
  if(!lines.length)for(const fact of entry?.facts||[])write(Array.isArray(fact)?fact.join(' · '):fact,'ui-secondary',2);
  const controller=activeInputPromptDevice()==='controller';

@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { isVoiced, profileFor } from '../src/audio/sam-voice.js';
-import { transcriptBlocks, transcriptSource } from '../src/render/transcript.js';
+import { transcriptBlocks, transcriptSource, layoutTranscript, layoutTranscriptChoices } from '../src/render/transcript.js';
 import { freshStoryArtShotState, resolveStoryArtShot } from '../src/game/story-art-shot.js';
 import { flagTest } from '../src/game/flags.js';
-import { makeThoughtScene } from '../src/game/thoughts.js';
+import { createConversation } from '../src/game/conversation.js';
+import { reviewText, reviewTarget, reviewKey, registerReviewRegion } from '../src/game/local-text-review.js';
 import * as scenes from '../src/game/scenes.js';
 
 // Run the actual dispatch/presenter code with a mouth spy. This verifies the
@@ -26,7 +27,8 @@ function loadGame(file, exports, extra = {}) {
       },
     }),
     isVoiced, textCps: value => value, TYPE_GAIN: 1, TYPE_LEVEL: {},
-    freshStoryArtShotState, resolveStoryArtShot, flagTest,
+    freshStoryArtShotState, resolveStoryArtShot, flagTest, layoutTranscript,
+    reviewText, reviewTarget, reviewKey, registerReviewRegion,
     uiSize: () => ({ cols: 112, rows: 48 }),
     uiWrap: text => [String(text)], uiText() {},
     withMachinePanel: (x, y, w, h, options) => panels.push(options),
@@ -143,6 +145,12 @@ test('thought monitor shows the current ghost name and keeps unsaid player choic
 
 
 test('external removal releases a dialogue once; completion and Escape keep distinct outcomes', () => {
+  // Keep the real conversation and scene stack, while supplying the same
+  // initialized viewport as the presenter tests. A zero-size uninitialized UI
+  // makes even this short caption span pages and consumes Continue as paging.
+  const { makeThoughtScene } = loadGame('thoughts', ['makeThoughtScene'], {
+    createConversation, scenes, layoutTranscriptChoices,
+  });
   for (const action of ['remove', 'clear', 'complete', 'escape']) {
     scenes.clear();
     let completed = 0, cancelled = 0, exited = 0;

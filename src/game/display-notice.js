@@ -126,22 +126,16 @@ export function makeDisplayNoticeScene({
   desktop = true,
   isFullscreen = () => false,
   getReducedMotion = () => false,
-  now = () => performance.now() / 1000,
   transition = null,
   signal = null,
   kind = 'window',
 } = {}) {
   let scene = null;
   let t = 0;
-  let enteredAt = null;
   let settledAt = null;
   let closed = false;
   let pending = false;
   let failed = false;
-  const ARMED_AFTER = 0.35;
-  // Gameplay clamps dt during expensive startup frames. A fresh click after
-  // reading the notice must not be rejected because simulation time ran slowly.
-  const armed = () => t >= ARMED_AFTER || (enteredAt != null && now() - enteredAt >= ARMED_AFTER);
 
   const cancel = () => {
     if (closed) return;
@@ -187,7 +181,6 @@ export function makeDisplayNoticeScene({
     worldPresentation: 'hidden',
 
     enter() {
-      enteredAt = now();
       if (signal?.aborted) cancel();
       else signal?.addEventListener('abort', cancel, { once: true });
     },
@@ -203,13 +196,13 @@ export function makeDisplayNoticeScene({
       if (event?.repeat || event?.metaKey || event?.ctrlKey || event?.altKey) return true;
       // OS display shortcuts must not also acknowledge the advisory.
       if (['Meta', 'Control', 'Alt', 'Shift', 'F11'].includes(event?.key)) return true;
-      if (armed() && (!transition || failed)) advance();
+      if (!transition || failed) advance();
       return true;
     },
     pointer(event) {
       const button = event?.button ?? event?.originalEvent?.button ?? 0;
       if (event?.type === 'pointerdown' && button === 0
-          && armed() && (!transition || failed)) advance();
+          && (!transition || failed)) advance();
       return true;
     },
     render() {
@@ -252,7 +245,7 @@ export function makeDisplayNoticeScene({
       // Keep the prompt readable throughout its breath, including reduced motion.
       const pulse = reduced ? .75 : .7 + .12 * Math.sin(t * 2.2);
       for (const line of promptLines) {
-        uiCenter(y, line, 'ui-primary', armed() ? pulse : .4); y++;
+        uiCenter(y, line, 'ui-primary', pulse); y++;
       }
     },
   };

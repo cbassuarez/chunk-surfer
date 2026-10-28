@@ -83,7 +83,7 @@ def body_pivots(kind):
     return {'upper': (0, hip_y+.07, .025), 'head': neck_top, 'headCentre': head, 'headRest': rest, 'jaw': SINGING_JAW_PIVOT}
 
 
-def make_body(name, kind, material, part='all'):
+def make_body(name, kind, material, part='all', wardrobe=None):
     bm = bmesh.new()
     assert part in PARTS
     pivots = body_pivots(kind)
@@ -141,13 +141,14 @@ def make_body(name, kind, material, part='all'):
         if not keep(owner):
             return
         rows=[]
+        origin=shift()
         for j,(y,rx,rz,cz) in enumerate(rings):
             row=[]
             for k in range(sides):
                 angle=k*math.tau/sides
                 wave=math.cos(angle*8+.3)*fold*(.35+.65*j/max(1,len(rings)-1))
                 hem=(.010*math.cos(angle*8+.3) if j==len(rings)-1 else 0)
-                row.append(bm.verts.new(((rx+wave)*math.cos(angle),y+hem,cz+(rz+wave*.7)*math.sin(angle))))
+                row.append(bm.verts.new(((rx+wave)*math.cos(angle)-origin[0],y+hem-origin[1],cz+(rz+wave*.7)*math.sin(angle)-origin[2])))
             rows.append(row)
         for j in range(len(rows)-1):
             for k in range(sides):
@@ -201,6 +202,13 @@ def make_body(name, kind, material, part='all'):
         # The same short charge run into the floor as the standing family.
         for direction in [-1, 1]:
             limb((ankle[0], .010, ankle[2]-.11), (ankle[0]+direction*.14, .006, ankle[2]-.18+direction*.035), .008, .0025)
+    if wardrobe and not celebrant and not acolyte:
+        # A closed wool jacket gives the torso a garment silhouette instead of
+        # exposed sphere joints. It stays inside the existing shoulder/hand
+        # extents and rotates about the unchanged pelvis pivot.
+        drape([(chest_y+.23,.105,.10,lean), (chest_y+.16,.245,.142,lean*.8),
+               (chest_y-.02,.236,.15,lean*.55), (hip_y+.035,.225,.145,.015)],
+              24,.006,owner='upper')
     if celebrant:
         # Alb to the ankles, a clear collar, and a broad Gothic chasuble hanging
         # from the shoulders over it. Its front/back fall longer than its sides.
@@ -218,7 +226,7 @@ def make_body(name, kind, material, part='all'):
         # through its bent outline rather than becoming a standing cone.
         drape([(1.20,.115,.10,-.035),(1.11,.265,.16,-.025),(.89,.255,.17,-.015),(.59,.25,.20,0),(.30,.275,.32,-.055),(.055,.315,.40,-.035)],24,.012)
         ellipsoid((0,1.20,-.035),(.12,.036,.105),10,5)
-    return finish(bm, name, material)
+    return finish(bm, name, material, wardrobe=wardrobe, kind=kind, part=part, pivots=pivots)
 
 
 def head_parts(ellipsoid, centre):
@@ -227,6 +235,10 @@ def head_parts(ellipsoid, centre):
     x, y, z = centre
     ellipsoid((x, y, z), (.142, .183, .125), 12, 8, owner='head')
     ellipsoid((x, y-.085, z-.075), (.085, .062, .068), 8, 5, owner='head')
+    ellipsoid((x, y-.006, z-.126), (.025, .044, .037), 12, 8, owner='head')
+    for side in [-1, 1]:
+        ellipsoid((x+side*.059, y+.035, z-.101), (.046,.017,.025),12,6,owner='head')
+        ellipsoid((x+side*.059, y+.014, z-.117), (.027,.012,.014),12,6,owner='head')
 
 
 def singing_face(material, cavity):
@@ -288,7 +300,8 @@ def singing_face(material, cavity):
     nose=ellipsoid_object('singing nose',(0,.056,-.126),(.025,.047,.041),material,12,10)
     lip=ellipsoid_object('upper lip',(0,.029,-.119),(.078,.009,.013),material,20,8)
     cheeks=[ellipsoid_object(f'cheek {side}',(side*.096,.016,-.078),(.025,.049,.029),material,12,10) for side in [-1,1]]
-    head=join_data('chapel_presence_singing_head',[skull,nose,lip,*cheeks])
+    eyes=[ellipsoid_object(f'eye recess {side}',(side*.058,.085,-.118),(.027,.012,.014),cavity,12,8) for side in [-1,1]]
+    head=join_data('chapel_presence_singing_head',[skull,nose,lip,*cheeks,*eyes])
 
     chin=ellipsoid_object('hinged chin',(0,-.073,-.062),(.087,.046,.077),material,24,14)
     lower_lip=ellipsoid_object('lower lip',(0,-.034,-.119),(.077,.009,.015),material,20,8)
@@ -410,14 +423,39 @@ def cherub_body(ellipsoid, limb, current, bm):
             feather((side*.13,.25,-.19+k*.055),(side*(.40+.075*k),.16,.03+k*.09),.038,k+20)
 
 
-def finish(bm, name, material):
+def finish(bm, name, material, wardrobe=None, kind=None, part='all', pivots=None):
+    if wardrobe:
+        # These are real per-face material regions. The old pressure shader
+        # erased them; the chapel now uses ordinary world material lighting.
+        palette=[wardrobe['coat'],wardrobe['trouser'],wardrobe['skin'],wardrobe['shoe'],wardrobe['shirt'],wardrobe['eye']]
+        offset=(pivots or {}).get(part,(0,0,0)) if part in ['upper','head'] else (0,0,0)
+        hip_y=.79 if kind=='celebrant' else .51 if kind in ['kneeling','acolyte'] else .57
+        chest_y=hip_y+.39
+        for face in bm.faces:
+            centre=face.calc_center_median()+Vector(offset)
+            x,y,z=centre
+            slot=1 if part=='lower' else 0
+            if part=='head':
+                slot=2
+                head=(pivots or {}).get('headCentre',(0,1.36,-.045))
+                if .032<abs(x-head[0])<.091 and head[1]+.002<y<head[1]+.028 and z<head[2]-.108:
+                    slot=5
+            elif part=='lower' and y<.115:
+                slot=3
+            elif kind=='celebrant':
+                if abs(x)>.405 and y>chest_y+.21 and z<-.18:slot=2
+            else:
+                if abs(x)<.105 and y>chest_y-.025 and z<-.205:slot=2
+                elif abs(x)<.085 and y>chest_y+.22:slot=2
+                elif abs(x)<.035+max(0,y-chest_y)*.16 and chest_y+.02<y<chest_y+.23 and z<-.12:slot=4
+            face.material_index=slot
     for v in bm.verts:
         v.co = rt(v.co)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     data = bpy.data.meshes.new(name)
     bm.to_mesh(data)
     bm.free()
-    data.materials.append(material)
+    for surface in palette if wardrobe else [material]:data.materials.append(surface)
     for p in data.polygons:
         p.use_smooth = True
     return data
@@ -529,15 +567,23 @@ def main():
     wet=mat('chapel hand residue',(.072,.014,.010,1),.17)
     wax=mat('chapel cold tallow',(.53,.44,.30,1),.46)
     char=mat('chapel embedded char and hair',(.009,.007,.005,1),.92)
-    singing=mat('chapel singing ivory pressure',(.42,.47,.45,1),.90,(.07,.09,.085))
+    singing=mat('chapel worn pallid skin',(.36,.33,.285,1),.90)
+    coat=mat('chapel worn charcoal wool',(.075,.082,.074,1),.98)
+    brown=mat('chapel faded brown wool',(.105,.080,.057,1),.98)
+    trouser=mat('chapel dark trouser cloth',(.046,.049,.044,1),.98)
+    shoe=mat('chapel worn leather shoe',(.018,.015,.012,1),.64)
+    shirt=mat('chapel faded shirt and collar',(.29,.285,.25,1),.95)
+    eye=mat('chapel recessed eye shade',(.041,.034,.029,1),.96)
+    vestment=mat('chapel aged pale vestments',(.29,.305,.265,1),.96)
+    wardrobe={'coat':coat,'trouser':trouser,'skin':singing,'shoe':shoe,'shirt':shirt,'eye':eye}
     oral=mat('chapel singing oral cavity',(.002,.003,.003,1),1.0)
     meshes={}
     for kind in ['seated','bowed','kneeling']:
         for part in ['lower','upper']:
-            meshes[f'chapel_presence_{kind}_{part}']=make_body(f'chapel_presence_{kind}_{part}',kind,black,part)
+            meshes[f'chapel_presence_{kind}_{part}']=make_body(f'chapel_presence_{kind}_{part}',kind,black,part,wardrobe={**wardrobe,'coat':brown if kind=='bowed' else coat})
     for kind in ['celebrant','acolyte']:
-        meshes[f'chapel_presence_{kind}']=make_body(f'chapel_presence_{kind}',kind,black,'body')
-    meshes['chapel_presence_head']=make_body('chapel_presence_head','seated',black,'head')
+        meshes[f'chapel_presence_{kind}']=make_body(f'chapel_presence_{kind}',kind,black,'body',wardrobe={**wardrobe,'coat':vestment,'trouser':vestment})
+    meshes['chapel_presence_head']=make_body('chapel_presence_head','seated',singing,'head',wardrobe=wardrobe)
     meshes['chapel_presence_singing_head'],meshes['chapel_presence_singing_jaw']=singing_face(singing,oral)
     face_proof=singing_face_proof(meshes['chapel_presence_singing_head'],meshes['chapel_presence_singing_jaw'])
     meshes['chapel_presence_clinging']=make_body('chapel_presence_clinging','clinging',black,'body')

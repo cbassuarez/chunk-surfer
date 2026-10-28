@@ -94,6 +94,8 @@ export function makeColdOpenScene({
     exit() { exited = true; convo.stop(); audio?.stopTyping?.(); },
     update(dt) { if (active()) convo.update(dt); },
     view() { return { ...convo.view(), presentation, transcriptBackground }; }, // for the headless suites
+    textReviewSuspend() { convo.textReviewSuspend?.(); },
+    textReviewResume() { convo.textReviewResume?.(); },
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (!active()) return true;
@@ -456,7 +458,6 @@ export function makeWorldTitleScene({
 } = {}) {
   let t = 0;
   let done = false;
-  let slammed = false;
   let entryPose = null;
   const lead = camera ? turn + iris : 0;
 
@@ -482,7 +483,8 @@ export function makeWorldTitleScene({
     get worldPresentation() { return t >= lead ? 'hidden' : 'visible'; },
     view() { return { elapsed: t, lead, duration, opaque: t >= lead }; },
 
-    // The song leaves before the title does, so the door slams into an empty mix.
+    // The song leaves before the title does. Real leaves own their close sound;
+    // the title must not add a second, disembodied slam.
     enter() {
       entryPose = camera?.pose?.() || null;
       audio?.fadeSoundtrack?.({ fade: Math.max(2, lead + duration - 2.4) });
@@ -493,10 +495,6 @@ export function makeWorldTitleScene({
       // clamps how far the head moves per call — a man looking over his
       // shoulder, not a camera being teleported.
       if (camera && t < turn) camera.turn?.(Math.min(dt, turn - (t - dt)) / turn);
-      if (!slammed && t >= turn + iris * 0.82) {
-        slammed = true;
-        cue?.('door');
-      }
       if (t >= lead + duration) finish();
     },
     // This is an authored scene, not a text line. Input is swallowed until the
@@ -535,13 +533,39 @@ export function makeWorldTitleScene({
       const out = Math.min(1, Math.max(0, (duration - tt) / 2.4));
       const up = (at, over = 1.8) => Math.min(1, Math.max(0, (tt - at) / over)) * out;
 
-      const w = Math.min(72, cols - 4), h = Math.min(17, rows - 4);
-      const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
-      withMachinePanel(x, y, w, h, { label:'PROGRAM', source:'ELLERY', meter:true }, (body) => {
-      drawVfdText(Math.max(body.x, Math.floor((cols - 12) / 2)), body.y + 2, 'CHUNK SURFER', { color:UI_COLOR.primary });
-      uiText(Math.max(body.x, Math.floor((cols - 30) / 2)), body.y + 5, 'ELLERY CONSERVATOIRE OF MUSIC', 'ui-blue', up(2.4));
-      uiText(Math.max(body.x, Math.floor((cols - 31) / 2)), body.y + 7, '5 ROOMS / 1 CLEAN MINUTE EACH', 'ui-secondary', up(3.6));
-      });
+      // A frontispiece, on the same glyph surface as the rest of the game.
+      // The name has room to stand alone; place and work arrive below it.
+      // There is no apparatus here competing with the physical door behind us.
+      const title = 'CHUNK SURFER';
+      const place = 'ELLERY CONSERVATOIRE OF MUSIC';
+      const work = '5 ROOMS / 1 CLEAN MINUTE EACH';
+      const width = Math.max(16, cols - 4);
+      const wrap = (copy) => {
+        const lines = [];
+        let line = '';
+        for (const word of copy.split(' ')) {
+          const next = line ? `${line} ${word}` : word;
+          if (line && next.length > width) { lines.push(line); line = word; }
+          else line = next;
+        }
+        if (line) lines.push(line);
+        return lines;
+      };
+      const placeLines = wrap(place), workLines = wrap(work);
+      const compact = rows < 15;
+      const scale = Math.min(compact ? 2 : 3.4, (cols - 4) / title.length);
+      const titleHeight = scale * .60;
+      const placeGap = compact ? .50 : 1.75, workGap = compact ? .25 : .85;
+      const height = titleHeight + placeGap + placeLines.length + workGap + workLines.length;
+      const y = Math.max(.15, Math.min(rows - height - .15, rows * .46 - height / 2));
+      drawVfdText((cols - title.length * scale) / 2, y, title,
+        { scale, color:UI_COLOR.paper, alpha:up(0) });
+      const placeY = y + titleHeight + placeGap;
+      for (const [index, line] of placeLines.entries())
+        uiText((cols - line.length) / 2, placeY + index, line, 'ui-secondary', up(2.4) * .90);
+      const workY = placeY + placeLines.length + workGap;
+      for (const [index, line] of workLines.entries())
+        uiText((cols - line.length) / 2, workY + index, line, 'ui-secondary', up(3.6) * .72);
     },
   };
 }

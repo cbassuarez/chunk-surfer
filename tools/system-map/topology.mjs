@@ -237,31 +237,31 @@ export const SYSTEM_NODES = Object.freeze([
       // was pinned here and every step added to `build` took the system map down
       // with it — the same brittleness as the index.html cache-buster below.
       cite('package.json', '"build": "npm run studio:validate', 'Production build pipeline'),
-      cite('vite.config.js', 'export default defineConfig({', 'Game Vite configuration'),
+      cite('vite.config.js', 'export default defineConfig(({ command }) => ({', 'Game Vite configuration and debug-only feature gate'),
     ],
   },
   {
     id: 'desktop-release', label: 'Desktop & release', district: 'delivery', archetype: 'shipyard',
     grid: { x: 50, z: 42, w: 6, d: 6, h: 7 },
-    summary: 'Bundles the web payload, native shell, offline Lens resources, and platform-specific release artifacts.',
-    responsibilities: ['Build Tauri desktop bundles', 'Package the Lens sidecar and Steamworks runtime', 'Validate and publish platform artifacts through CI'],
+    summary: 'Bundles the web payload and native shell into lean platform artifacts; excludes the optional SD service and models.',
+    responsibilities: ['Build Tauri desktop bundles', 'Exclude SD payloads and verify optional Steamworks runtime', 'Validate and publish platform artifacts through CI'],
     evidence: [
-      cite('src-tauri/tauri.lens.conf.json', '"bundle": {', 'Desktop bundle resources'),
+      cite('src-tauri/tauri.conf.json', '"bundle": {', 'Desktop bundle configuration'),
       cite('.github/workflows/release.yml', 'name: Release Desktop Builds', 'Cross-platform release workflow'),
-      cite('package.json', '"tauri:build": "npm run lens:verify && tauri build --config src-tauri/tauri.lens.conf.json",', 'Desktop build command'),
+      cite('package.json', '"tauri:build": "tauri build",', 'Desktop build command'),
       cite('package.json', '"tauri:build:steam": "npm run steamworks:verify && npm run tauri:build --",', 'Steam desktop build command'),
     ],
   },
 ]);
 
 export const SYSTEM_EDGES = Object.freeze([
-  { id: 'input-to-shell', from: 'input-control', to: 'app-shell', kind: 'control', label: 'Movement intent', payload: 'Held key set, moveX/moveY axes, pointer deltas, controller actions', evidence: [cite('src/main.js', 'const keyboard=keyboardMotionAxes(keysDown),controller=CONTROLLER.controllerMotionAxes();', 'Input aggregation')] },
+  { id: 'input-to-shell', from: 'input-control', to: 'app-shell', kind: 'control', label: 'Movement intent', payload: 'Held key set, moveX/moveY axes, pointer deltas, controller actions', evidence: [cite('src/main.js', 'const keyboard=keyboardMotionAxes(keysDown),controller=controllerGameplayAxes();', 'Input aggregation')] },
   { id: 'shell-to-scenes', from: 'app-shell', to: 'scene-orchestration', kind: 'control', label: 'Frame and input routing', payload: 'Frame delta, key/action events, pause and overlay ownership', evidence: [cite('src/main.js', 'scenes.scenesInit({ applyLookProfile, applyLensPreset });', 'Scene system wiring')] },
   { id: 'scenes-to-world', from: 'scene-orchestration', to: 'world-floorplan', kind: 'control', label: 'Movement and interaction query', payload: 'Player coordinates, step delta, door focus, current render group', evidence: [cite('src/main.js', 'else if(R3.r3dSolid(px+dx, py+dy)) return;', 'Collision gate')] },
   { id: 'world-to-render', from: 'world-floorplan', to: 'render-stack', kind: 'data', label: 'Physical render plan', payload: 'RGBA floor/ceiling/flags/zone texture, material array, origins, ambient and render group', evidence: [cite('src/main.js', 'R3.r3dSetPlan(physicalPlan.rgba,physicalPlan.w,physicalPlan.h,physicalPlan.material,{ambient:physicalPlan.ambient,originX:physicalPlan.originX,originY:physicalPlan.originY});', 'Floorplan-to-render upload')] },
   { id: 'scenes-to-render', from: 'scene-orchestration', to: 'render-stack', kind: 'control', label: 'Presentation state', payload: 'Camera pose, look profile, props, lights, fear, UI and post-effect commands', evidence: [cite('src/main.js', 'R3.r3dSetFear(pressure.visualDread);  // vignette, grain, desaturation', 'Runtime visual pressure')] },
-  { id: 'scenes-to-source', from: 'scene-orchestration', to: 'source-space', kind: 'control', label: 'Source chapter tick', payload: 'dt, player position, facing, focus and traversal requests', evidence: [cite('src/main.js', 'chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing()});', 'Source tick')] },
-  { id: 'source-to-render', from: 'source-space', to: 'render-stack', kind: 'data', label: 'Source scene frame', payload: 'Surface lines, corpus, static/dynamic structures, local lights, weather and look state', evidence: [cite('src/main.js', 'R3.r3dSetSourceScene(scene);', 'Source renderer handoff')] },
+  { id: 'scenes-to-source', from: 'scene-orchestration', to: 'source-space', kind: 'control', label: 'Source chapter tick', payload: 'dt, player position, facing, focus and traversal requests', evidence: [cite('src/main.js', 'chunkSurfRuntime.tick(dt,{px,py,facing:R3.r3dFacing(),yaw:Number(R3.r3dLookAngles?.()?.yaw),', 'Source tick')] },
+  { id: 'source-to-render', from: 'source-space', to: 'render-stack', kind: 'data', label: 'Source scene frame', payload: 'Surface lines, corpus, static/dynamic structures, local lights, weather and look state', evidence: [cite('src/main.js', 'R3.r3dSetSourceScene({...scene,look:{...scene.look,blueprint:scene.look?.roomMemoryActive===true}});', 'Source renderer handoff')] },
   { id: 'source-to-save', from: 'source-space', to: 'save-progression', kind: 'persistence', label: 'Source checkpoint', payload: 'Player position, Source phase, checkpoint, contacts, structures and traversal outcome', evidence: [cite('src/main.js', "saveCommit({px,py,chunkSurf:chunkSurfRuntime.state(),rec:REC.saveRecState(),area:'source-space'});", 'Source contact checkpoint save')] },
   { id: 'registry-to-narrative', from: 'registry-validation', to: 'narrative-runtime', kind: 'data', label: 'Runtime story registry', payload: 'NarrativeDocument map, audio project, media slots and runtime entrypoints', evidence: [cite('src/narrative/runtime-content.js', "} from './generated-content.js';", 'Generated registry import')] },
   { id: 'narrative-to-scenes', from: 'narrative-runtime', to: 'scene-orchestration', kind: 'event', label: 'Dialogue and mutations', payload: 'Visible line, choices, flags, node-enter, completion and battle profile events', evidence: [cite('src/narrative/executor.js', "events.push({ type: 'choice', nodeId, choiceId });", 'Narrative event')] },
@@ -293,7 +293,7 @@ export const SYSTEM_EDGES = Object.freeze([
   { id: 'vite-to-shell', from: 'vite-package', to: 'app-shell', kind: 'generation', label: 'Browser application bundle', payload: 'ES modules, styles, public assets and interference-monitor entrypoint', evidence: [cite('vite.config.js', "main: resolve(import.meta.dirname, 'index.html'),", 'Vite entrypoint')] },
   { id: 'vite-to-release', from: 'vite-package', to: 'desktop-release', kind: 'generation', label: 'Desktop web payload', payload: 'Compiled dist embedded in the Tauri application bundle', evidence: [cite('src-tauri/tauri.conf.json', '"frontendDist": "../dist"', 'Tauri frontend bundle')] },
   { id: 'tauri-to-release', from: 'tauri-shell', to: 'desktop-release', kind: 'generation', label: 'Native application', payload: 'Rust binary, plugins, capabilities, icons and platform bundles', evidence: [cite('.github/workflows/release.yml', 'run: npm run tauri:build -- --bundles appimage', 'Native release build')] },
-  { id: 'sidecar-to-release', from: 'lens-sidecar', to: 'desktop-release', kind: 'generation', label: 'Offline Lens payload', payload: 'Packaged Python runtime, model resources, executable sidecar and notices', evidence: [cite('.github/workflows/release.yml', 'run: python tools/chunk_surfer/diffusion_server/build_bundle.py --target ${{ matrix.target }}', 'Lens bundle build')] },
+  { id: 'sd-exclusion-to-release', from: 'lens-sidecar', to: 'desktop-release', kind: 'control', label: 'SD exclusion boundary', payload: 'Delivered bundles reject SD models, sidecars and Python runtimes; the local development service remains optional', evidence: [cite('scripts/validate-lean-bundle.mjs', 'export function findForbiddenLensFiles(root)', 'Delivered payload exclusion guard'), cite('.github/workflows/release.yml', 'npm run lean:verify -- "$app_dir"', 'Delivered macOS payload verification')] },
 ]);
 
 export const SYSTEM_TRACES = Object.freeze([
@@ -302,9 +302,9 @@ export const SYSTEM_TRACES = Object.freeze([
   { id: 'story-cue', label: 'Authored story → dialogue + cues', summary: 'Canonical JSON is generated into lookup tables, adapted to runtime events, then routed to scenes and audio.', edgeIds: ['content-to-registry', 'registry-to-narrative', 'narrative-to-scenes', 'narrative-to-audio'] },
   { id: 'acoustic-event', label: 'Acoustic event → game response', summary: 'Gameplay sound facts are broadcast independently of the audible mix and return to orchestration as perception state.', edgeIds: ['scenes-to-audio', 'audio-to-scenes'] },
   { id: 'autosave', label: 'Autosave → browser or desktop', summary: 'A gameplay patch is normalized, serialized, and written through the selected storage backend.', edgeIds: ['scenes-to-save', 'save-to-storage', 'tauri-to-storage', 'storage-to-save'] },
-  { id: 'lens-bank', label: 'Material request → GPU texture bank', summary: 'Rendered demand starts an authenticated native sidecar, sends local generation work, and commits returned images.', edgeIds: ['render-to-lens', 'lens-to-tauri', 'tauri-to-sidecar', 'lens-to-sidecar', 'sidecar-to-lens', 'lens-to-render'] },
+  { id: 'lens-bank', label: 'Material request → GPU texture bank', summary: 'In optional development mode, rendered demand starts an authenticated local sidecar and commits returned images; release bundles exclude it.', edgeIds: ['render-to-lens', 'lens-to-tauri', 'tauri-to-sidecar', 'lens-to-sidecar', 'sidecar-to-lens', 'lens-to-render'] },
   { id: 'audit-fix', label: 'Audit → studio → content', summary: 'An audit reads the authored content and the tables beside it, names what is missing, and hands the exact line back to the studio to fix.', edgeIds: ['content-to-audits', 'progression-to-audits', 'audits-to-studio', 'studio-to-content'] },
-  { id: 'authoring-release', label: 'Narrative Studio → desktop package', summary: 'Revisioned content is validated, generated, bundled for the browser, and embedded with native and Lens payloads.', edgeIds: ['studio-to-content', 'studio-to-registry', 'content-to-registry', 'registry-to-vite', 'content-to-vite', 'vite-to-release', 'tauri-to-release', 'sidecar-to-release'] },
+  { id: 'authoring-release', label: 'Narrative Studio → desktop package', summary: 'Revisioned content is validated, generated, bundled for the browser, and embedded in lean native bundles with SD payloads excluded.', edgeIds: ['studio-to-content', 'studio-to-registry', 'content-to-registry', 'registry-to-vite', 'content-to-vite', 'vite-to-release', 'tauri-to-release', 'sd-exclusion-to-release'] },
 ]);
 
 export const DEFAULT_TRACE_ID = 'input-frame';

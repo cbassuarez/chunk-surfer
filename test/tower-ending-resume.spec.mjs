@@ -55,6 +55,8 @@ function resumedEnding({ id = 'tower-won', arrival = 'carried', checkpoint = tru
       context.activeEndingCutscene.embodiment = reduceEndingEmbodiment(context.activeEndingCutscene.embodiment, { type: 'beat', beat });
     },
     expressTowerResistance: () => false, drawTowerResistancePrompt: noop,
+    // This checkpoint has no ongoing Chapel tape-demand owner.
+    finishChapelTapeDemand: noop, restoreChapelTapeDemandDeparture: noop,
     document: { documentElement: { dataset: {} } },
   };
   vm.createContext(context);

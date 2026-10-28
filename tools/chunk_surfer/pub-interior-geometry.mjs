@@ -29,12 +29,12 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
     if(i<0){i=materials.length;materials.push(structuredClone(descriptor));}ids[key]=i;
   }
   const origin=PUB_INTERIOR_LAYOUT.meshOriginInRow,local=p=>[p[0]-origin.x,p[1]-origin.y,p[2]-origin.z];
-  const m=mesh(PUB_INTERIOR_LAYOUT.mesh),stats={mesh:m.name,origin:structuredClone(origin),triangles:0,newMaterials:materials.length-materialCount,materials:ids,fixtures:[],bottles:0,
+  const m=mesh(PUB_INTERIOR_LAYOUT.mesh),stats={mesh:m.name,origin:structuredClone(origin),triangles:0,newMaterials:materials.length-materialCount,materials:ids,fixtures:[],parts:[],bottles:0,
     colliders:structuredClone(PUB_FURNITURE_COLLIDERS),
     lightAnchors:structuredClone(PUB_INTERIOR_LAYOUT.lightAnchors)};
-  let active;
-  const point=p=>{for(let i=0;i<3;i++){active.min[i]=Math.min(active.min[i],p[i]);active.max[i]=Math.max(active.max[i],p[i]);}};
-  const count=n=>{stats.triangles+=n;active.triangles+=n;};
+  let active,activePart=null,primitiveCount=0;
+  const point=p=>{for(const bounds of[active,activePart])if(bounds)for(let i=0;i<3;i++){bounds.min[i]=Math.min(bounds.min[i],p[i]);bounds.max[i]=Math.max(bounds.max[i],p[i]);}};
+  const count=n=>{stats.triangles+=n;active.triangles+=n;primitiveCount++;};
   const box=(c,s,material='timber',yaw=0)=>{
     addBox(m,local(c),s,ids[material],yaw);
     for(const x of[-s[0]/2,s[0]/2])for(const y of[-s[1]/2,s[1]/2])for(const z of[-s[2]/2,s[2]/2]){const[a,b]=rotate(x,z,yaw);point([c[0]+a,c[1]+y,c[2]+b]);}count(12);
@@ -44,13 +44,37 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
     for(let i=0;i<sides;i++)for(const y of[-h/2,h/2])point([c[0]+Math.cos(i/sides*Math.PI*2)*r,c[1]+y,c[2]+Math.sin(i/sides*Math.PI*2)*r]);count(sides*4);
   };
   const beam=(a,b,w,material='brass')=>{
-    addBeam(m,local(a),local(b),w,ids[material]);for(const p of[a,b])for(const x of[-w/Math.SQRT2,w/Math.SQRT2])for(const y of[-w/Math.SQRT2,w/Math.SQRT2])for(const z of[-w/Math.SQRT2,w/Math.SQRT2])point([p[0]+x,p[1]+y,p[2]+z]);count(12);
+    addBeam(m,local(a),local(b),w,ids[material]);
+    const u=b.map((v,i)=>v-a[i]),length=Math.hypot(...u);for(let i=0;i<3;i++)u[i]/=length;
+    const ref=Math.abs(u[1])<.9?[0,1,0]:[1,0,0],cross=(p,q)=>[p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]],s=cross(u,ref),sl=Math.hypot(...s);for(let i=0;i<3;i++)s[i]/=sl;const t=cross(s,u);
+    for(const p of[a,b])for(const ds of[-1,1])for(const dt of[-1,1])point(p.map((v,i)=>v+s[i]*ds*w/2+t[i]*dt*w/2));count(12);
   };
   const quad=(a,b,c,d,material)=>{addQuad(m,local(a),local(b),local(c),local(d),ids[material]);[a,b,c,d].forEach(point);count(2);};
+  const part=(id,kind,build,extra={})=>{
+    activePart={id,kind,fixtureId:active.id,primitiveStart:primitiveCount,min:[Infinity,Infinity,Infinity],max:[-Infinity,-Infinity,-Infinity],...extra};
+    stats.parts.push(activePart);build();activePart.primitiveCount=primitiveCount-activePart.primitiveStart;activePart=null;
+  };
+  // Closed eight-sided sections read round without a separate material or
+  // unsupported box end. Caps are convex quads, with no degenerate triangles.
+  const roundBeam=(a,b,r,material='brass')=>{
+    const u=b.map((v,i)=>v-a[i]),length=Math.hypot(...u);for(let i=0;i<3;i++)u[i]/=length;
+    const ref=Math.abs(u[1])<.9?[0,1,0]:[1,0,0],cross=(p,q)=>[p[1]*q[2]-p[2]*q[1],p[2]*q[0]-p[0]*q[2],p[0]*q[1]-p[1]*q[0]],s=cross(u,ref),sl=Math.hypot(...s);for(let i=0;i<3;i++)s[i]/=sl;const t=cross(s,u);
+    const ring=p=>Array.from({length:8},(_,i)=>p.map((v,k)=>v+r*(s[k]*Math.cos(i*Math.PI/4)+t[k]*Math.sin(i*Math.PI/4)))),lo=ring(a),hi=ring(b);
+    for(let i=0;i<8;i++){const j=(i+1)%8;quad(lo[i],hi[i],hi[j],lo[j],material);}
+    for(let i=1;i<7;i+=2){quad(lo[0],lo[i],lo[i+1],lo[i+2],material);quad(hi[0],hi[i+2],hi[i+1],hi[i],material);}
+  };
+  const taper=(x,z,y0,r0,y1,r1,material,sides=8)=>{
+    for(let i=0;i<sides;i++){
+      const a=i/sides*Math.PI*2,b=(i+1)/sides*Math.PI*2;
+      quad([x+Math.cos(a)*r0,y0,z+Math.sin(a)*r0],[x+Math.cos(a)*r1,y1,z+Math.sin(a)*r1],
+        [x+Math.cos(b)*r1,y1,z+Math.sin(b)*r1],[x+Math.cos(b)*r0,y0,z+Math.sin(b)*r0],material);
+    }
+  };
   const fixture=(id,kind,build)=>{active={id,kind,triangles:0,min:[Infinity,Infinity,Infinity],max:[-Infinity,-Infinity,-Infinity]};stats.fixtures.push(active);build();};
   const banquette=f=>{
     const at=([x,y,z])=>{const[a,b]=rotate(x,z,f.yaw);return[f.x+a,y,f.z+b];};
     const b=(c,s,mat)=>box(at(c),s,mat,f.yaw);
+    part(`${f.id}-plinth`,'banquette-plinth',()=>b([0,.032,0],[.58,.040,f.length-.12],'timber'),{supportY:PUB_INTERIOR_LAYOUT.floorFinish.topY});
     b([0,.23,0],[.66,.38,f.length],'timber');
     b([-.245,.80,0],[.15,.94,f.length],'timber');
     b([-.235,1.265,0],[.19,.07,f.length],'wood');
@@ -65,19 +89,32 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
   };
   const chair=f=>{
     box([f.x,.455,f.z],[.48,.075,.48],'wood');
-    box([f.x+.245,.78,f.z],[.075,.62,.52],'timber');
-    box([f.x+.20,.81,f.z],[.06,.37,.41],'green');
-    box([f.x+.245,1.105,f.z],[.11,.07,.56],'wood');
+    for(const dz of[-.225,.225])part(`${f.id}-stile-${dz}`,'chair-stile',()=>
+      beam([f.x+.18,.42,f.z+dz],[f.x+.245,1.105,f.z+dz],.055,'timber'));
+    box([f.x+.205,.65,f.z],[.06,.07,.47],'wood');
+    box([f.x+.233,1.01,f.z],[.055,.055,.47],'wood');
+    box([f.x+.23,.84,f.z],[.04,.31,.36],'timber');
+    box([f.x+.20,.84,f.z],[.04,.275,.325],'green');
+    part(`${f.id}-crest`,'chair-crest',()=>{
+      const p=z=>[f.x+.245,1.075+.035*(1-(z/.2525)**2),f.z+z];
+      for(let i=0;i<6;i++)beam(p(-.2525+i*.505/6),p(-.2525+(i+1)*.505/6),.055,'wood');
+    });
     for(const dx of[-.18,.18])for(const dz of[-.18,.18])box([f.x+dx,.225,f.z+dz],[.065,.45,.065],'timber');
     for(const dz of[-.18,.18])box([f.x,.20,f.z+dz],[.40,.055,.055],'timber');
   };
-  const bottle=(x,y,z,index)=>{
-    const material=index%3?'bottleGreen':'bottleBrown',r=.043+(index%3)*.006;
-    cylinder([x,y+.145,z],r,.29,material,6);
-    cylinder([x,y+.330,z],r*.43,.085,material,6);
-    cylinder([x,y+.378,z],r*.48,.022,'black',6);
-    // A blank paper band gives the bottle scale without inventing labels.
-    cylinder([x,y+.14,z],r+.002,.065,'ivory',6);stats.bottles++;
+  const bottle=(x,y,z,index,extra={})=>{
+    const material=index%3?'bottleGreen':'bottleBrown',styles=[{h:.304,r:.049,body:.61,neck:.44},{h:.354,r:.041,body:.66,neck:.42},
+      {h:.332,r:.046,body:.57,neck:.40},{h:.320,r:.044,body:.64,neck:.48}],style=styles[index%styles.length],{h,r}=style;
+    part(`pub-backbar-bottle-${stats.bottles}`,'shelf-bottle',()=>{
+      cylinder([x,y+.006,z],r*.92,.012,material,6);
+      cylinder([x,y+.010+h*style.body/2,z],r,h*style.body,material,6);
+      taper(x,z,y+.009+h*style.body,r,y+h*.77,r*style.neck,material,6);
+      cylinder([x,y+h*.865,z],r*style.neck,h*.192,material,6);
+      cylinder([x,y+h*.98,z],r*style.neck*1.20,h*.04,'black',6);
+      // A few short blank bands give scale; open glass and varied shoulders
+      // carry the rest, rather than forty-two identical pale pegs.
+      if(index%4===0)cylinder([x,y+h*.38,z],r+.001,.038,'ivory',6);
+    },{shelfTop:y,profile:index%styles.length,...extra});stats.bottles++;
   };
   fixture('pub-basketweave-parquet','floor-finish',()=>{
     const zones=[{x0:-5.25,x1:-.20,z0:-31.88,z1:-18.06},{x0:-2.64,x1:-.20,z0:-18.06,z1:-16.15}];
@@ -138,24 +175,38 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
     if(f.kind==='banquette')banquette(f);
     if(f.kind==='chair')chair(f);
     if(f.kind==='table'){
-      cylinder([f.x,.755,f.z],.47,.07,'wood',12);
+      part(`${f.id}-top`,'table-top',()=>{
+        cylinder([f.x,.755,f.z],.455,.07,'wood',24);
+        taper(f.x,f.z,.72,.455,.730,.47,'wood',24);
+        taper(f.x,f.z,.730,.47,.775,.47,'wood',24);
+        taper(f.x,f.z,.775,.47,.790,.455,'wood',24);
+      });
       cylinder([f.x,.705,f.z],.40,.045,'timber',12);
-      cylinder([f.x,.37,f.z],.085,.66,'timber',8);
+      part(`${f.id}-pedestal`,'table-pedestal',()=>{
+        cylinder([f.x,.37,f.z],.085,.66,'timber',8);
+        cylinder([f.x,.67,f.z],.115,.045,'wood',8);
+        cylinder([f.x,.12,f.z],.125,.060,'wood',8);
+      });
       for(const dz of[-.31,.31])box([f.x,.065,f.z+dz],[.72,.10,.11],'timber');
       box([f.x,.035,f.z],[.12,.07,.76],'timber');
     }
     if(f.kind==='counter'){
       box([f.x,.53,f.z],[.68,1.06,f.length-.04],'timber');
-      box([f.x,1.095,f.z],[.74,.09,f.length],'wood');
+      box([f.x-.0125,1.095,f.z],[.715,.09,f.length],'wood');
+      part('pub-counter-rounded-arris','counter-arris',()=>roundBeam(
+        [f.x+.345,1.115,f.z-f.length/2],[f.x+.345,1.115,f.z+f.length/2],.025,'wood'));
       box([f.x+0.365,1.025,f.z],[.035,.09,f.length-.08],'brass');
       for(const z of[-23.65,-21.575,-19.50]){
         box([f.x+0.353,.57,z],[.032,.68,1.80],'wood');
         for(const dz of[-.90,.90])box([f.x+0.382,.57,z+dz],[.025,.74,.045],'timber');
       }
-      beam([f.x+0.610,.23,-24.55],[f.x+0.610,.23,-18.55],.045,'brass');
-      for(const z of[-24.3,-22.3,-20.3,-18.65]){
-        beam([f.x+0.330,.12,z],[f.x+0.610,.12,z],.035,'brass');
-        beam([f.x+0.610,.12,z],[f.x+0.610,.23,z],.035,'brass');
+      part('pub-counter-footrail','footrail-run',()=>roundBeam([f.x+.610,.23,-24.55],[f.x+.610,.23,-18.55],.0225));
+      for(const z of[-24.3,-23.2,-22.1,-21.0,-19.9,-18.8]){
+        part(`pub-counter-socket-${z}`,'footrail-socket',()=>roundBeam([f.x+.328,.14,z],[f.x+.352,.14,z],.044));
+        part(`pub-counter-bracket-${z}`,'footrail-bracket',()=>{
+          beam([f.x+.340,.14,z],[f.x+.610,.14,z],.035,'brass');
+          beam([f.x+.610,.14,z],[f.x+.610,.23,z],.035,'brass');
+        });
       }
       for(const z of[-22.10,-21.65,-21.20]){
         cylinder([f.x+0.030,1.18,z],.065,.08,'brass',8);
@@ -169,12 +220,20 @@ export function buildPubInterior({mesh,materials,addBox,addBeam,addCylinder,addQ
       box([f.x,.48,f.z],[.31,.96,f.length-.02],'timber');
       box([f.x,1.015,f.z],[.32,.09,f.length],'wood');
       box([-5.265,1.87,f.z],[.025,1.68,f.length-.02],'timber');
-      for(const z of[-24.85,-22.70,-20.50,-18.35])box([-5.10,1.86,z],[.26,1.66,.065],'wood');
-      for(const y of[1.08,1.62,2.16]){
-        box([-5.105,y,f.z],[.28,.055,f.length-.08],'wood');
-        for(let i=0;i<14;i++)bottle(-5.095,y+.028,-24.55+i*.45,i+Math.round(y*10));
+      const stiles=[-24.85,-22.70,-20.50,-18.35];
+      for(const z of stiles)part(`pub-backbar-stile-${z}`,'shelf-stile',()=>box([-5.10,1.86,z],[.26,1.66,.065],'wood'));
+      for(const [row,y]of[1.08,1.62,2.16].entries()){
+        part(`pub-backbar-shelf-${row}`,'shelf-surface',()=>box([-5.105,y,f.z],[.28,.055,f.length-.08],'wood'));
+        let index=0;
+        for(let bay=0;bay<3;bay++){
+          const count=bay===1?4:5,lo=stiles[bay]+.16,hi=stiles[bay+1]-.16;
+          for(let n=0;n<count;n++){
+            const z=lo+(hi-lo)*(n+.5)/count;
+            bottle(-5.095,y+.0275,z,index++ + row*5,{row,bay});
+          }
+        }
       }
-      box([-5.115,2.62,f.z],[.29,.12,f.length],'wood');
+      part('pub-backbar-cornice','shelf-cornice',()=>box([-5.115,2.62,f.z],[.29,.12,f.length],'wood'));
       for(const z of[-23.65,-21.60,-19.55])box([-4.959,.48,z],[.018,.63,1.85],'wood');
     }
     if(f.kind==='stool'){

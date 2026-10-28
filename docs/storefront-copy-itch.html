@@ -41,17 +41,17 @@
 
 <p>Monitor each space, roll the recorder, then stay still and silent &ndash; or, rather, vulnerable &ndash; for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p>
 
-<p class="custom-index">02 / MATERIAL &mdash; offline shader diffusion over traditional PBR maps</p>
+<p class="custom-index">02 / MATERIAL &mdash; authored PBR and native distortion</p>
 
-<h2>Stable Diffusion in game shader stack.</h2>
+<h2>A building that will not stay still.</h2>
 
-<p><em>Chunk Surfer</em> is perhaps the first 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play: GPU-budgeted local Stable Diffusion designed as neural rendering shaders for video games.</p>
+<p><em>Chunk Surfer</em> builds its unstable world from authored PBR materials, native lighting, and deliberately unsettling image treatment. The experimental local Stable Diffusion lens remains development-only, outside the downloadable game.</p>
 
-<p><strong>Technical jargon:</strong> it does not redraw the camera image or replace the game&rsquo;s regular 3D texture maps. Instead, it layers machine learning hallucinations over authored PBR materials; every 5&ndash;15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6&ndash;12 seconds. This is real-time AI texture crossfading rather than full-screen frame generation. On top of traditional PBR maps sits this hallucination engine, which itself sits under an 8-bit mesh.</p>
+<p><strong>Under the hood:</strong> the game renders authored textures inside its own 3D scene and combines them with native dither, pixel-mesh, and other graphic effects. No local AI model is required to play.</p>
 
-<p>The result is a unique low-resolution look that is neither 8bit nor diffused nor traditional PBR texturing, but a mix of the three.</p>
+<p>The result is a deliberately unstable low-resolution look, with authored surfaces, native lighting and dithered graphic effects.</p>
 
-<p>Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player&rsquo;s GPU. No image is uploaded to a cloud service.</p>
+<p>Geometry, lighting, depth, movement, and UI remain native, with the rendering effects operating entirely in the game.</p>
 
 <p class="custom-index">03 / FIELD &mdash; listen. record. do not move.</p>
 
@@ -85,16 +85,16 @@
 
 <p>You can deny or revoke permission and complete the game without microphone input.</p>
 
-<p class="custom-index">07 / RELEASE &mdash; public beta</p>
+<p class="custom-index">07 / RELEASE &mdash; v0.3.0 candidate</p>
 
-<h2>Now out for public beta testing.</h2>
+<h2>Prepared for the next public beta.</h2>
 
-<p>This game is in its nascent stages. Expect some bugs. Dialog is very likely to change, story is not. Expected bugs list and feedback links incoming soon.</p>
+<p>This copy describes the v0.3.0 candidate and does not announce a published download. Confirm the version, platform checks and actual files before replacing this notice with a release announcement. Save files, settings, performance and packaging may change between beta builds.</p>
 
 <ul class="custom-spec">
   <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon</span></li>
-  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda</span></li>
-  <li><strong class="custom-label">linux</strong> <span class="custom-value">appimage / deb &mdash; x64 + nvidia cuda</span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + 3D graphics support</span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">appimage / deb &mdash; x64 + 3D graphics support</span></li>
   <li><strong class="custom-label">beta</strong> <span class="custom-value">unsigned</span></li>
 </ul>
 

@@ -1,6 +1,6 @@
 // Explicit developer review controls. Capture only this game's production
 // raster and existing output bus; never request desktop, microphone or camera.
-export function installTowerWarningReview({ stage, start, getState, getAudio, getTrace } = {}) {
+export function installTowerWarningReview({ stage, view, hold, materialProof, start, getState, getAudio, getTrace } = {}) {
   const panel = document.createElement('aside'); panel.id = 'tower-warning-review-tools';
   panel.style.cssText = 'position:fixed;right:8px;top:8px;z-index:100000;background:#111e;color:#eee;padding:7px;font:12px monospace;border:1px solid #888;max-width:295px';
   const status = document.createElement('div'), telemetry = document.createElement('pre');
@@ -51,7 +51,10 @@ export function installTowerWarningReview({ stage, start, getState, getAudio, ge
   };
   addEventListener('keydown', input, true); addEventListener('keyup', input, true);
 
-  for (const [id, label] of [['lyric', 'Stage old Lyric'], ['guard', 'Stage overworld guard'], ['source', 'Stage Source guard']]) {
+  for (const [id, label] of [['lyric', 'Stage old Lyric'], ['guard', 'Stage overworld guard'], ['source', 'Stage Source guard'],
+    ['street-door','Street: tower approach'],['street-machine','Street: excavator'],['street-masts','Street: work lights'],['telephone-road','Telephone street'],
+    ['telephone-pass-1','Street / pass 1'],['telephone-pass-4','Street / pass 4'],['telephone-pass-5','Street / pass 5'],['telephone-pass-6','Street / pass 6'],
+    ['bus-approach','Bus / approach'],['bus-entry','Bus / entry'],['bus-aisle','Bus / aisle'],['bus-notice','Bus / recognition'],['bus-passing','Bus / passing'],['bus-rear','Bus / rear bay'],['bus-exit','Bus / outside exit']]) {
     make(label, async () => {
       if (session) throw Error('Stop and save the current recording before staging.');
       await stage?.(id); telemetry.textContent = JSON.stringify(getState?.(), null, 1);
@@ -59,6 +62,10 @@ export function installTowerWarningReview({ stage, start, getState, getAudio, ge
     });
   }
   make('Begin warning', async () => { const result = await start?.(); status.textContent = result === false ? 'Warning interaction unavailable at this position.' : 'Warning requested through the ordinary interaction.'; });
+  if(hold){let held=false;make('Hold / resume figure',async()=>{held=!held;await hold(held);telemetry.textContent=JSON.stringify(getState?.(),null,1);status.textContent=held?'Developer pose hold. Camera controls remain live; encounter and voice clocks are held.':'Figure and voice resumed.';});}
+  if(view)for(const[id,label]of[['bus-woman','Look at bus woman'],['near','Near inspection'],['left','Left view'],['right','Right view'],['behind','Behind figure'],['approach','Approach view']]){
+    make(label,async()=>{await view(id);telemetry.textContent=JSON.stringify(getState?.(),null,1);status.textContent='Developer camera '+id+'. Encounter state preserved; ordinary controls remain available.';});
+  }
   make('Record + audio', async () => {
     if (session || closed) return;
     const canvas = canvasNow(), audio = getAudio?.();
@@ -109,6 +116,11 @@ export function installTowerWarningReview({ stage, start, getState, getAudio, ge
     const id = 'warning-frame-' + Date.now();
     await save(id + '.png', await new Promise(resolve => copy.toBlob(resolve, 'image/png')), 'image/png');
     await save(id + '.json', JSON.stringify(state, null, 2), 'application/json'); status.textContent = 'Saved ' + id;
+  });
+  if(materialProof)make('Save material proof',async()=>{
+    const proof=materialProof(),id='warning-material-'+Date.now();
+    await save(id+'.json',JSON.stringify({proof,state:getState?.()},null,2),'application/json');
+    telemetry.textContent=JSON.stringify(proof,null,1);status.textContent='Saved '+id;
   });
   panel.append(status, telemetry); document.body.append(panel); status.textContent = 'Developer review only. Absent from ordinary play.';
   const dispose = () => {

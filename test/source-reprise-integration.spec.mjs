@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
+import { hallChandelierInstances, hallChandelierLights } from '../src/data/hall-chandelier-treatment.js';
 
 const main=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
 const section=(start,end)=>{
@@ -20,6 +22,10 @@ const section=(start,end)=>{
   let camera={yaw:1.73,pitch:-.22};
   const sandbox={
     chunkSurfRuntime:runtime,FP:{isLoaded:()=>true},RENDERER:'3d',
+    sourceReturnFlashbackScene:null,standingTearScene:null,
+    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    saveAcademicGhostClub:()=>{},
+    getInDriveTeaserOrigin:null,costumeInspectionScene:null,costumeInspectionOrigin:null,
     usingSourceSpace:()=>sandbox.chunkSurfRuntime!==null,
     R3:{
       r3dLookAngles:()=>({...camera}),r3dFacing:()=>2,
@@ -35,6 +41,7 @@ const section=(start,end)=>{
     hushAudioRuntime:null,getSave:()=>({area:'source-space',playSeconds:0,view:{yaw:1.73,pitch:-.22}}),
     RADIO:{saveRadioState:()=>radioState},
     sourceCameraPatch:()=>({}),
+    rememberChapelTapeDemandDeparture(){}, // No pending Chapel demand in this Source lease.
     saveCommit:(value)=>calls.push(value),
   };
   const api=vm.runInNewContext(`${section('let sourceRepriseWorldLease=null;','function sourceReplayMovementInterlude')}
@@ -101,8 +108,12 @@ const section=(start,end)=>{
 {
   const submitted=[],enabled=[];
   const rig=[{id:'practical'}];
+  const chandelierContext={runId:'reprise-light-boundary',eligible:true,consumedCount:0},chandelierSaves=[];
   const sandbox={
     activeEndingCutscene:null,escape:null,storyMode:false,
+    planName:'conservatory',usingSpecialSpace:()=>false,sourceRepriseWorldLease:null,
+    pubHospitalityReady:()=>false,vanDoorOpenFraction:()=>0,vanRearCargoLight:()=>null,
+    exteriorHeadlightLights:()=>[],streetPilotTime:()=>0,
     px:0,py:0,getSave:()=>({settings:{flash:'full'}}),performance:{now:()=>0},
     FP:{logicalToPhysical:()=>({x:0,y:0,z:0}),zoneAt:()=>1},
     resolveLightingContext:()=>({zone:1,group:'basement'}),
@@ -117,14 +128,29 @@ const section=(start,end)=>{
     noteEmergencyApparitions:()=>{},lastEmergencyShadowFrame:null,syncApparitionApplause:()=>{},
     REC:{lightOn:()=>false,batteryLevel:()=>0},
     brendanLightPresentation:(lights)=>lights,
+    hallChandelierLights,
+    hallChandelierRendered:hallChandelierInstances([{id:'acq-hall-chandelier-west',x:5,y:7,z:9,zone:1}]).filter(instance=>instance.practicalFixture),
   };
+  sandbox.hallChandelierRuntime=createHallChandelierRuntime({
+    readContext:()=>chandelierContext,budgetReady:()=>true,reserveBudget:()=>true,
+    persistConsumed:count=>{chandelierContext.consumedCount=count;chandelierSaves.push(count);return true;},
+  });
+  sandbox.hallChandelierRuntime.configureReview({firstQuietSeconds:[.01,.01]});
+  sandbox.hallChandelierRuntime.tick(.02);sandbox.hallChandelierRuntime.tick(.2);
+  assert.equal(hallChandelierLights(sandbox.hallChandelierRendered,sandbox.hallChandelierRuntime.view()).length,3,
+    'negative control: the real active fixture supplies its three local sectors');
   const sync=vm.runInNewContext(`${section('function syncArchitecturalLocalLights','function liveLightCircuits')}
     syncArchitecturalLocalLights;`,sandbox);
-  sync('basement',{suppressActors:true});
+  chandelierContext.suppressActors=true;
+  sync('hall',{suppressActors:true});
   assert.equal(enabled[0],false);
   assert.equal(submitted[0].length,0);
   assert.equal(submitted[1].length,rig.length,'the reconstruction keeps only its ordinary practicals');
   assert.equal(submitted[1][0],rig[0],'the reconstruction keeps the original practical light');
+  assert.equal(sandbox.hallChandelierRuntime.view().active,false,'the suppression boundary cancels an already emitted Hall glow');
+  assert.equal(sandbox.hallChandelierRuntime.view().reason,'occupied');
+  assert.deepEqual(chandelierSaves,[1],'the render guard cannot spend another saved episode');
+  chandelierContext.eligible=false;chandelierContext.suppressActors=false;
   sync('basement');
   assert.equal(enabled[1],true,'ordinary room apparitions keep their authored behavior');
 }

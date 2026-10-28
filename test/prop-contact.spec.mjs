@@ -59,8 +59,9 @@ const plan = {
     'these asked to be mounted on a wall and no wall was found near them');
   for(const p of mounted.filter((prop)=>!prop.inspectAt)){
     const rendered=PROPS.renderInstances().find((instance)=>instance.id===p.id);
-    assert.ok(Math.abs(p.interactionX-rendered.x)<1e-9,`${p.id} implicit x interaction anchor did not follow wall snap`);
-    assert.ok(Math.abs(p.interactionY-rendered.z)<1e-9,`${p.id} implicit y interaction anchor did not follow wall snap`);
+    const interaction=p.stairLandingWall?FP.logicalToPhysical(p.interactionX/CELL,p.interactionY/CELL):{x:p.interactionX/CELL,z:p.interactionY/CELL};
+    assert.ok(Math.abs(interaction.x*CELL-rendered.x)<1e-9,`${p.id} implicit x interaction anchor did not follow wall snap`);
+    assert.ok(Math.abs(interaction.z*CELL-rendered.z)<1e-9,`${p.id} implicit y interaction anchor did not follow wall snap`);
   }
 
   const rested = instances.filter((p) => p.on);
@@ -181,6 +182,10 @@ const plan = {
   const [mounted]=PROPS.propsInit(FP,[{id:'explicit-anchor-proof',mesh:'chapel_key_cabinet',x:96.25,y:9.45,yaw:0,mount:'wall',inspectAt}]);
   assert.equal(mounted.interactionX,inspectAt.x);
   assert.equal(mounted.interactionY,inspectAt.y);
+  const landing=instances.find(p=>p.id==='landing-upper-floor-landing');
+  const [mountedLanding]=PROPS.propsInit(FP,[{...landing,inspectAt}]);
+  assert.equal(mountedLanding.interactionX,inspectAt.x,'physical stair mounting also preserves an explicit inspection override');
+  assert.equal(mountedLanding.interactionY,inspectAt.y);
   PROPS.propsInit(FP);
 }
 

@@ -4,6 +4,7 @@ import {createSourceContinuationScene} from '../src/game/source-continuation-sce
 import {createSourceFalseReturnScene} from '../src/game/source-false-return-scene.js';
 import {createSourceEarthfallScene} from '../src/game/source-earthfall-scene.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
+import {SOURCE_CONTINUATION as C, CONTINUATION_DROP_LIPS} from '../src/data/source-continuation.js';
 import {freshSourceFalseReturn} from '../src/game/source-false-return.js';
 import {freshSourceEarthfall} from '../src/game/source-earthfall.js';
 
@@ -16,8 +17,8 @@ const falseLayout={spawn:{x:0,z:1,feet:4.8,yaw:0,pitch:0},bounds:{minX:-3,maxX:3
   loops:[],supportAt:()=>({floor:4.8,ceil:8.4}),canOccupy:()=>true};
 
 test('capture and recovery release old intent, including a new movement press made while the sling owns the body',async()=>{
-  const seed={...continuation(),phase:'catch',x:-19.55,z:0,feet:3,level:0};
-  Object.assign(seed.counterweight,{active:true,mode:'walking',pathIndex:2,x:-18.55,z:0,y:3});
+  const seed={...continuation(),phase:'catch',...CONTINUATION_DROP_LIPS[0],feet:C.catch.top,level:0};
+  Object.assign(seed.counterweight,{active:true,mode:'walking',pathIndex:0,x:CONTINUATION_DROP_LIPS[0].x+.95,z:CONTINUATION_DROP_LIPS[0].z,y:C.catch.top});
   const trace=[],scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),onTrace:t=>trace.push(t)});
   await scene.initialize();scene.key({key:'w'});scene.update(1/60);
   assert.ok(scene.serialize().recovery,'a real approaching drum captures the exposed body');
@@ -35,7 +36,7 @@ test('capture and recovery release old intent, including a new movement press ma
 });
 
 test('a committed drop releases held intent and returns control on the supported landing without queued movement',async()=>{
-  const seed={...continuation(),phase:'catch',x:-19.55,z:0,feet:3,level:0},trace=[];
+  const seed={...continuation(),phase:'catch',...CONTINUATION_DROP_LIPS[0],feet:C.catch.top,level:0},trace=[];
   const scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),onTrace:t=>trace.push(t)});
   await scene.initialize();scene.key({key:'w'});scene.key({key:'e'});assert.ok(scene.serialize().fall);
   scene.key({key:'d'});scene.key({key:'w',repeat:true});
@@ -50,7 +51,7 @@ test('a committed drop releases held intent and returns control on the supported
 test('an undelivered terminal continuation checkpoint resumes its bounded handoff once and pause freezes that handoff',async()=>{
   for(const status of ['completed','returned']){
     let complete=0,returned=0;
-    const seed={...continuation(),status,completed:status==='completed',phase:'catch',x:-23.7,z:0,feet:-15,level:5,
+    const seed={...continuation(),status,completed:status==='completed',phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1,
       exitReceipt:status==='completed'?{id:'threshold:source-continuation-exit',delivered:false}:null};
     const scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),onComplete:()=>{complete++;return true;},onReturn:()=>{returned++;return true;}});
     await scene.initialize();assert.equal(scene.view().leaving,true);

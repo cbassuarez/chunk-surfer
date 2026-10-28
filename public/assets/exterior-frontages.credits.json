@@ -4,9 +4,9 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-exterior-frontages.mjs",
     "license": "project source; stock font terms below",
-    "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611",
-    "triangles": 43828,
-    "bytes": 3495580
+    "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5",
+    "triangles": 44760,
+    "bytes": 4582068
   },
   "geometry": {
     "origin": "Original project-native opaque geometry",
@@ -20,9 +20,17 @@
     "historicalBasis": "Existing authored Ellery district dates, footprints, uses and roof envelopes; no claim of measured real-world buildings."
   },
   "lettering": {
-    "process": "Existing solid-pigment paper printing and finish pipeline",
-    "font": "NimbusSans-Bold.otf",
-    "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+    "process": "Existing solid-pigment paint/paper printing and finish pipeline",
+    "fonts": [
+      {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67"
+      },
+      {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e"
+      }
+    ],
     "source": "https://github.com/ArtifexSoftware/urw-base35-fonts",
     "license": "AGPL-3.0 with the upstream stated PostScript/PDF document exception; see vendored LICENSE and COPYING",
     "manifest": "assets/fonts/manifest.json",

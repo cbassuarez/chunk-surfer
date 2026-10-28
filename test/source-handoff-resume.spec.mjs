@@ -10,9 +10,9 @@ function terminal(){
  const initial=buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL,{seed:4417}).state;
  const runtime=createSourceSpaceRuntime({initialState:initial});
  const entry=runtime.sourceContinuationEntry('forward',{runId:'resume-audit'});
- let s=normalizeSourceContinuation({...entry.checkpoint,phase:'catch',status:'active',level:5,...C.catch.finalApproach});
+ let s=normalizeSourceContinuation({...entry.checkpoint,layoutVersion:C.layoutVersion,phase:'catch',status:'active',level:C.catch.levels-1,...C.catch.finalApproach});
  s=stepSourceContinuation(s,{dt:0,interact:true,renderReady:true}).state;
- for(let i=0;i<100&&!s.completed;i++)s=stepSourceContinuation(s,{dt:1/60,side:1,renderReady:true}).state;
+ for(let i=0;i<100&&!s.completed;i++)s=stepSourceContinuation(s,{dt:1/60,forward:1,renderReady:true}).state;
  assert.equal(s.completed,true,'actual open-and-walk crossing earns the terminal checkpoint');
  runtime.setContinuationCheckpoint(s);return{runtime,checkpoint:s};
 }

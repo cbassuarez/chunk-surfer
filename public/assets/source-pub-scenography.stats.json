@@ -1,7 +1,7 @@
 {
   "meshes": {
     "source_pub_cold_fittings": {
-      "triangles": 7460,
+      "triangles": 9580,
       "bounds": {
         "min": [
           0.04999999999999999,
@@ -152,61 +152,61 @@
     }
   },
   "sourceSha256": {
-    "public/assets/conservatory-props.glb": "52bd50b152dfa68a59e2dd25f305874e140bcd9e3be7d7a603151c215273554f",
-    "public/assets/pub-characters.glb": "888f46f97fc5a2bf0f30f7d4cb214abede2e4a5903db0fe4c2bfb8518dc0eef4",
-    "public/assets/pub-quest-props.glb": "8e6f9f5e3c5ec140967c83b4bbbaadf3cbb21c0a6c67940f3277d8049c6ff3b8",
-    "public/assets/pub-hospitality.glb": "516e8420df868bbe6cf5f6da3bc6ead638e9c840378437d142afb63e1c1ba773"
+    "public/assets/conservatory-props.glb": "500fab6a1bb8f555026281715da5436430230e3225130c7bf2fd0e480f2b5200",
+    "public/assets/pub-characters.glb": "5bd1a491fa9b826f3f45cafe570bbbdec1bd171452889ad5453e0b1b19254a4d",
+    "public/assets/pub-quest-props.glb": "619365ddd8527d15fcb8772f99204be6c77e18bd584b1b0bfc339d34819c45fa",
+    "public/assets/pub-hospitality.glb": "a87325c93e16c055ba184b94c6e3fe32722b152870571c7fa0baa99461c1aa27"
   },
   "retainedFixtures": [
     {
       "id": "pub-snug-back-banquette",
       "kind": "banquette",
-      "triangles": 168
+      "triangles": 180
     },
     {
       "id": "pub-snug-return-banquette",
       "kind": "banquette",
-      "triangles": 120
+      "triangles": 132
     },
     {
       "id": "pub-snug-table-0",
       "kind": "table",
-      "triangles": 164
+      "triangles": 420
     },
     {
       "id": "pub-snug-chair-0",
       "kind": "chair",
-      "triangles": 120
+      "triangles": 228
     },
     {
       "id": "pub-snug-table-1",
       "kind": "table",
-      "triangles": 164
+      "triangles": 420
     },
     {
       "id": "pub-snug-chair-1",
       "kind": "chair",
-      "triangles": 120
+      "triangles": 228
     },
     {
       "id": "pub-snug-table-2",
       "kind": "table",
-      "triangles": 164
+      "triangles": 420
     },
     {
       "id": "pub-snug-chair-2",
       "kind": "chair",
-      "triangles": 120
+      "triangles": 228
     },
     {
       "id": "pub-counter",
       "kind": "counter",
-      "triangles": 528
+      "triangles": 788
     },
     {
       "id": "pub-backbar",
       "kind": "backbar",
-      "triangles": 4200
+      "triangles": 4944
     },
     {
       "id": "pub-bar-stool-0",
@@ -306,9 +306,9 @@
       "triangles": 72
     }
   ],
-  "triangles": 9648,
-  "bytes": 831696,
-  "sha256": "00dec933482ff502bd7c69f4eac49e6467155954630b1ce588ad34322fd4358b",
+  "triangles": 11768,
+  "bytes": 1009792,
+  "sha256": "f96aadbaf95ddd00c8bd2347e1a597eb548af24d32fbe2d16f39bcf91ed6f480",
   "materials": [
     "Source Lyric / cold stripped timber",
     "Source Lyric / exposed end grain",

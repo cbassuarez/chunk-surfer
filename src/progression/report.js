@@ -85,6 +85,8 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     id: `return:${run.id}`,
     runId: run.id,
     endingId,
+    endingArrival: ['agreed','defeated','timed-out','escaped','carried'].includes(authoritative.endingArrival)
+      ? authoritative.endingArrival : null,
     endingVariant: normalizeEndingVariant(endingId, authoritative.endingVariant, authoritative.endingArrival),
     seal: centuryStayRecord(endingId, authoritative.endingVariant, authoritative.endingArrival),
     startedAt: run.startedAt,

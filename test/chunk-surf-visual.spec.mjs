@@ -218,7 +218,8 @@ assert.match(rendererSource,/const TEXT_SPACE_FRAG = [\s\S]*?uniform float uRain
 // shared acquisition, rather than as a screen-space card.
 assert.match(rendererSource,/const pressure=P3\.pressureTargets\(\);\s*const acquired=pressure\.ready&&pressure\.draws>0\?runPixelMeshPass\(worldState,now\):null;/,'Text Space records the HUSH through Pressure acquisition');
 assert.match(rendererSource,/uSunrise/,'the text-space shader owns the deterministic sunrise look');
-assert.match(mainSource,/r3dSetSourceScene\(scene\)/,'Source rendering is submitted as one keyed static and dynamic payload');
+assert.match(mainSource,/r3dSetSourceScene\((?:scene|\{\.\.\.scene,look:\{\.\.\.scene\.look,blueprint:scene\.look\?\.roomMemoryActive===true\}\})\)/,
+  'the complete Source payload is submitted; optional room-memory blueprint is a look-only override');
 
 for (const entry of Object.values(SOURCE_ATLAS.entries)) {
   const file = await readFile(resolve(entry.file), 'utf8');

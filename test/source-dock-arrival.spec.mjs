@@ -151,6 +151,7 @@ for (const reducedMotion of [false, true]) {
   const context = vm.createContext({
     CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,
     stopOutskirtsStreetAudio() {}, resetOutskirtsLastLight() {},
+    prewarmSourceContinuationAssets:()=>Promise.resolve(),
     endSourceHaystackMosh() {}, endSourceBracketPresence() {}, sourceFearFloor: 0,
     normalizeChunkSurfState: (value) => ({ ...value }),
     reduceChunkSurf: (value) => ({ ...value, phase: CHUNK_SURF_PHASE.LANDSCAPE }),
@@ -190,13 +191,26 @@ for (const reducedMotion of [false, true]) {
 {
   const stepStart = main.indexOf('function step(dx,dy)');
   const guardStart = main.indexOf('      if(dx&&dy){', stepStart);
-  const guardEnd = main.indexOf('      const move=geometry.canStep(', guardStart);
-  const guard = main.slice(guardStart, guardEnd);
+  assert.ok(guardStart >= stepStart && stepStart >= 0, 'production diagonal step exists');
+  // Extract only the balanced diagonal guard. Newer production movement may
+  // insert an else-if chain before the final canStep; slicing to that call
+  // accidentally includes the orphaned else and is not executable JS.
+  const braceStart=main.indexOf('{',guardStart);
+  let depth=0,guardEnd=-1;
+  for(let i=braceStart;i<main.length;i++){
+    if(main[i]==='{')depth++;
+    else if(main[i]==='}'&&--depth===0){guardEnd=i+1;break;}
+  }
+  assert.ok(guardEnd>braceStart,'complete production diagonal guard');
+  const guard=main.slice(guardStart,guardEnd);
   const makeWalk = ({ wall = 'none', sceneDock = true, forward = [0, -1] } = {}) => {
     let now = 1000;
     const context = vm.createContext({
       RENDERER: '3d', keysDown: new Set(['KeyW', 'KeyD']), keyboardMotionAxes,
       CONTROLLER: { controllerMotionAxes: () => ({ moveX: 0, moveY: 0 }) },
+      controllerGameplayAxes: () => ({ moveX: 0, moveY: 0 }),
+      holdUnavailableGameplayInput: () => false, inCover: () => false,
+      mainStairRenderPose:()=>null, // The dock has no main-stair interpolation.
       clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
       R3: { r3dStepDelta: () => forward }, usingSourceSpace: () => true,
       chunkSurfRuntime: { sourceVoidFrame: () => ({ sceneDock }) }, sourceShoreOutside,

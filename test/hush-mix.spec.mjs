@@ -65,11 +65,15 @@ const main=readFileSync('src/main.js','utf8');
 const start=main.indexOf('function updateAudio(){');
 const end=main.indexOf('hushAudioMix?.setProgramMode?',start);
 assert.ok(start>=0&&end>start);
-const fittedUpdate=main.slice(start+'function updateAudio(){'.length,end);
+// The update function now has an unrelated early-exit guard for special scenes.
+// Execute only the fitted monitor block, not the whole audio lifecycle.
+const fittedStart=main.indexOf('  const fittedMonitor=',start);
+assert.ok(fittedStart>start&&fittedStart<end);
+const fittedUpdate=main.slice(fittedStart,end);
 for(const storyMode of [false,true])for(const listening of [false,true])for(const fitted of [false,true]){
   const calls=[];
   const acousticState={noise:.22,hearing:.4};
-  vm.runInNewContext(fittedUpdate,{storyMode,REC:{isListening:()=>listening},flagTest:()=>fitted,
+  vm.runInNewContext(`(()=>{${fittedUpdate}})()`,{storyMode,REC:{isListening:()=>listening},flagTest:()=>fitted,
     activeKitEffects:{monitorGainScale:1.15,surroundingGainScale:.9},acousticState,
     hushAudioMix:{setHeadphoneMix:(...values)=>calls.push(values)}});
   assert.deepEqual(calls,storyMode&&listening&&fitted?[[1.15,.9]]:[[1,1]]);

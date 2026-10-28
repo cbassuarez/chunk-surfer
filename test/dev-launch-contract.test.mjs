@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const runner=readFileSync('scripts/run-latest.mjs','utf8');
-const pkg=JSON.parse(readFileSync('package.json','utf8'));
+const packageSource=readFileSync('package.json','utf8');
+const pkg=JSON.parse(packageSource);
 
 assert.equal(pkg.scripts['tauri:dev'],'node scripts/run-latest.mjs');
 assert.match(runner,/port:\s*0/,'dev launcher asks the OS for free ports');
@@ -21,7 +22,14 @@ const launchBody = runner
   .replace('await new Promise(() => {});', 'return {stop};');
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 async function launch(args = []) {
-  const launches = [], checks = [], signals = new Map(), timers = [];
+  const launches = [], checks = [], fileReads = [], logs = [], signals = new Map(), timers = [];
+  const files = new Map([['/game/package.json', packageSource]]);
+  const readFile = async (file, encoding) => {
+    fileReads.push(file);
+    assert.equal(encoding, 'utf8');
+    assert.ok(files.has(file), `the launcher reads an available project file: ${file}`);
+    return files.get(file);
+  };
   let portRequests = 0, tokenRequests = 0;
   const process = {
     argv: ['node', 'run-latest.mjs', ...args],
@@ -39,12 +47,16 @@ async function launch(args = []) {
     const port = 42000 + ++portRequests;
     return { unref() {}, once() {}, listen(options, ready) { assert.equal(options.port, 0); ready(); }, address: () => ({ port }), close: (closed) => closed() };
   } };
-  const result = await new AsyncFunction('access', 'constants', 'spawn', 'net', 'randomBytes', 'fileURLToPath', 'path', 'process', 'console', 'setTimeout', launchBody)(
-    async (file) => checks.push(file), { X_OK: 1 }, spawn, net,
+  const result = await new AsyncFunction('access', 'readFile', 'constants', 'spawn', 'net', 'randomBytes', 'fileURLToPath', 'path', 'process', 'console', 'setTimeout', launchBody)(
+    async (file) => checks.push(file), readFile, { X_OK: 1 }, spawn, net,
     (size) => { tokenRequests++; assert.equal(size, 24); return { toString: () => 'fresh-auth-token' }; },
-    () => '/game/scripts/run-latest.mjs', path, process, { log() {}, error() {} },
+    () => '/game/scripts/run-latest.mjs', path, process, { log: (...args) => logs.push(args.join(' ')), error() {} },
     (fn) => { timers.push(fn); return { unref() {} }; },
   );
+  assert.deepEqual(fileReads, ['/game/package.json'], 'the build label reads the project package');
+  assert.deepEqual(logs.filter(line => line.startsWith('Build: ')), [
+    `Build: ${pkg.version} · frontend: http://127.0.0.1:42001`,
+  ], 'the build label uses the current package version and reserved frontend port');
   return { ...result, launches, checks, portRequests, tokenRequests, signals, timers };
 }
 

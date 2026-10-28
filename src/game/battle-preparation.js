@@ -5,14 +5,14 @@ import { pressControl, cancelControlScope } from './control-feedback.js';
 import * as scenes from './scenes.js';
 import {makeItemInspectionScene} from './item-inspection-scene.js';
 import {BATTLE_GEAR} from './combat-loadout.js';
-import {BATTLE_EQUIPMENT_COPY} from './battle-preparation-model.js';
+import {battleOperatingCopy,combatOperatingFacts} from './combat-operating-facts.js';
 
-export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasRig, getBattery, getSheets, readSheet, apply, onReady, audio, createView = createBattlePreparationView } = {}) {
+export function makeBattlePreparation({ title='', getOpeningState, getLoadout, getEquipment, getBuild, hasRig, getBattery, getSheets, readSheet, apply, onReady, audio, createView = createBattlePreparationView } = {}) {
   const model=createBattlePreparationModel({loadout:getLoadout?.(),equipment:getEquipment?.()||[],build:getBuild?.(),hasRig:!!hasRig?.()});
   let age=0,closed=false,message='',paintFor=.25;
   const keys=()=>activeInputPromptDevice()==='controller'
     ? promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'CONFIRM'},{action:'tabNext',label:'TAB'},{action:'start',label:'READY'}])
-    : 'ARROWS / TAB  SELECT · Q / E  TAB · ENTER  CONFIRM';
+    : 'ARROWS / TAB  SELECT · Q / E  TAB · ENTER  CONFIRM · ESC  BACK';
   // Sheets are not part of the draft. Reading one is spent the moment it is
   // read, and READY re-reads composure when it builds the fight.
   const sheets=()=>{
@@ -21,7 +21,8 @@ export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasR
     return {carried,composure,ceiling,top:s.top||null,
       reason:!carried?'NO SHEETS':composure>=ceiling?'ALREADY COMPOSED':''};
   };
-  const render=()=>{view?.render(model.snapshot(),{battery:getBattery?.()||0,sheets:sheets(),message,keys:keys()});paintFor=.25;};
+  const facts=()=>combatOperatingFacts(getOpeningState?.(model.snapshot()));
+  const render=()=>{view?.render(model.snapshot(),{title,facts:facts(),battery:getBattery?.()||0,sheets:sheets(),message,keys:keys()});paintFor=.25;};
   const feedback=name=>audio?.[name]?.({scope:'battle-preparation',profile:'combat'});
   const command=(value,{confirmHeld=false}={})=>{
     if(closed||age<.22||!value)return;
@@ -48,7 +49,7 @@ export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasR
     }
     else if(value==='inspect'){
       const id=before.loadout.top[before.selectedSlot];
-      if(id){view?.visible(false);scenes.push(makeItemInspectionScene({id,title:BATTLE_GEAR[id].label,description:BATTLE_EQUIPMENT_COPY[id]?.detail}));}
+      if(id){view?.visible(false);scenes.push(makeItemInspectionScene({id,title:BATTLE_GEAR[id].label,description:battleOperatingCopy(id,facts()).detail}));}
       return;
     }
     else if(value.startsWith('skill:')){model.skill(value.slice(6));if(before.selectedSkill!==model.snapshot().selectedSkill)sound='menuMove';}
@@ -69,8 +70,9 @@ export function makeBattlePreparation({ getLoadout, getEquipment, getBuild, hasR
     key(event){
       if(event.repeat||closed)return true;
       const key=String(event.key||'').toLowerCase(),action=event.controllerAction;
-      // Escape backs out of the flip first; only then does it leave the case.
-      if(key==='escape'){if(model.snapshot().replacing){command('cancel-replace');return true;}return false;}
+      // Close the named replacement, details or patchbay before the ordinary
+      // game pause can receive Escape. The untouched readiness view may pause.
+      if(key==='escape'){if(model.snapshot().replacing){command('cancel-replace');return true;}if(model.back()){feedback('menuBack');render();return true;}return false;}
       if(['tabNext','tabPrev'].includes(action)||key==='q'||key==='e')command(`tab:${model.snapshot().page==='equipment'?'skills':'equipment'}`);
       else if(action==='start')command('ready',{confirmHeld:true});
       else if(key==='enter'||key===' '||action==='confirm')command(view?.focus()||'ready',{confirmHeld:true});

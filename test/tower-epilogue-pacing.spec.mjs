@@ -40,6 +40,7 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
   let completed = 0;
   const factory = new Function('scenes', 'makeColdOpenScene', 'playTowerPersonalRecording', 'TOWER_PERSONAL_SECONDS', 'flagTest', 'context', 'draws', `
     let towerEndingPlayback=null,paused=false;
+    const recordingPressureVoices=new Set();
     const actx=context,sfxGain=context?.createGain(),master=null,dialogGain=null,sfxDirectGain=null,musicGain=null,whisperBed=null;
     const noOp=()=>{},ensureCtx=noOp,STORY={},fireCue=noOp,CR={fx:{}},createReplayService=()=>null;
     const storyMode=false,inRogue=false,syncChapelTapeDemandTimelineHold=noOp,getInDriveTeaserScene=null,sourceReturnFlashbackScene=null;
@@ -54,8 +55,9 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
     const applyAudioSettings=noOp,startAmbientDroneAt=noOp,currentAmbientTarget=noOp,updateAudio=noOp,resumeGameplayInput=noOp,stopTowerPersonalWorldSignal=noOp;
     ${block('function presentFinale(content,', 'function finaleHasFork()')}
     ${block('function noteEndingCutsceneLine(documentId,line){', 'function endingActionKeyMatches(')}
+    ${block('function cancelRecordingPressureAudio(){', 'function recordingPressureFrame(')}
     ${block('function setGameplayPaused(next,', 'function togglePause()')}
-    return {presentFinale,noteEndingCutsceneLine,towerEndingRecordingRemaining,setGameplayPaused,handle:()=>towerEndingPlayback};
+    return {presentFinale,noteEndingCutsceneLine,towerEndingRecordingRemaining,setGameplayPaused,recordingPressureVoices,handle:()=>towerEndingPlayback};
   `);
   const api = factory(scenes, makeColdOpenScene, playTowerPersonalRecording, TOWER_PERSONAL_SECONDS, flagTest, context, draws);
   // The real adapter supplies sourceId and flag conditions. Voice is disabled
@@ -108,10 +110,13 @@ test('gameplay pause preserves unheard audio and resumes the same PCM at its sav
   try {
     reach(h, 'start.line.10'); h.scene.update(.3); confirm(h);
     h.context.advance(5.5);
+    let pressureStops=0;for(let i=0;i<2;i++)h.api.recordingPressureVoices.add({stop:()=>pressureStops++});
     h.api.setGameplayPaused(true, { announce: false });
+    assert.equal(pressureStops,2);assert.equal(h.api.recordingPressureVoices.size,0,'pause cancels recorder-pressure ownership separately from the retained take');
     assert.equal(h.context.sources[0].stops, 1);
     assert.equal(h.api.towerEndingRecordingRemaining(), 8.5);
     h.api.setGameplayPaused(true, { announce: false });
+    assert.equal(pressureStops,2,'repeated pause never stops a released voice twice');
     h.context.advance(30);
     assert.equal(h.api.towerEndingRecordingRemaining(), 8.5, 'muted time must not count as listening');
     confirm(h);

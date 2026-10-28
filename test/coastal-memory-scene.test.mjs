@@ -221,3 +221,10 @@ test('actual authored spawn has a supported continuous approach to the box witho
   assert.equal(scene.view().ui.instruction, 'E · READ NOTE'); assert.deepEqual(scene.serialize().returnPose, returnPose);
   scene.exit();
 });
+
+test('ordinary look lease and relative input update the coastal camera without borrowing the saved Source view',async()=>{
+  const {scene}=await make();assert.equal(scene.allowsLook,true);const before=scene.lookAngles(),source=scene.serialize().returnPose;
+  assert.equal(scene.lookBy(.4,-.2),true);equal(scene.lookAngles().yaw,before.yaw+.4);equal(scene.lookAngles().pitch,before.pitch-.2);
+  assert.deepEqual(scene.serialize().returnPose,source);scene.pause();const frozen=scene.lookAngles();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.4,.2),false);assert.deepEqual(scene.lookAngles(),frozen);
+  scene.resume();assert.equal(scene.allowsLook,true);scene.exit();assert.equal(scene.lookBy(.4,.2),false);
+});

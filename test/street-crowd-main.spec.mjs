@@ -6,11 +6,15 @@ import {streetCrowdInstances,streetCrowdRenderInstance} from '../src/render/stre
 import {VIGIL_VOICES,vigilFigures} from '../src/data/exterior-vigil.js';
 import {vigilCharacterIdForMesh,vigilCharacterDescriptor} from '../src/render/vigil-character-performance.js';
 import {pubActor} from '../src/data/pub-population.js';
+import {pubServiceInstances,pubServiceDrinks} from '../src/render/pub-service-presentation.js';
+import {pubQuestState} from '../src/game/pub-quest.js';
 import {pubSeatedVigilDescriptor} from '../src/render/pub-character-performance.js';
 import {exteriorVigilInstances} from '../src/render/exterior-vigil-instances.js';
 import {busWomanExteriorInstances} from '../src/render/bus-woman-exterior-performance.js';
 import {isLiveExteriorPerformer} from '../src/render/exterior-performer-visibility.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
+import {applyInstitutionPosters} from '../src/data/institution-poster-sites.js';
+import {hallChandelierInstances} from '../src/data/hall-chandelier-treatment.js';
 
 // Execute the actual main render adapters with controlled world/renderer
 // boundaries. This checks their handoff, rather than repeating the readiness
@@ -24,9 +28,11 @@ const submitted={static:[],dynamic:[],groups:[],drifts:[]};
 const context={
   console,Math,Number,Set,Map,Float32Array,performance:{now:()=>12_000},ZONE,
   renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
-  isLiveExteriorPerformer,
+  isLiveExteriorPerformer,applyInstitutionPosters,
+  hallChandelierInstances,hallChandelierRendered:[{id:'stale-hall-fixture'}],
   exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:v=>v,
   pubHospitalityReady:()=>false,pubHospitalityRenderReady:false,pubHospitalityRendered:[],
+  pubServiceInstances,pubServiceDrinks,pubQuestState,pubWaterFirstSeenAt:null,
   STREET_CROWD_IDS,STREET_CROWD_DESIGNS,STREET_CROWD_ACTOR_IDS:new Set(STREET_CROWD_IDS),streetCrowdDesign,streetCrowdInstances,streetCrowdRenderInstance,
   vigilCharacterIdForMesh,vigilCharacterDescriptor,VIGIL_ACTORS:vigilFigures(),pubActor,pubSeatedVigilDescriptor,
   exteriorPeopleClock:4,exteriorConversationFrames:()=>({}),exteriorVigilInstances,busWomanExteriorInstances,
@@ -56,6 +62,7 @@ vm.createContext(context);
 vm.runInContext([productionFunction('worldRenderInstances'),productionFunction('refreshWorldProps'),productionFunction('syncDoorDynamicProps')].join('\n'),context);
 
 context.refreshWorldProps();context.syncDoorDynamicProps();
+assert.equal(context.hallChandelierRendered.length,0,'a street refresh releases the previously submitted Hall practicals');
 assert.equal(submitted.static.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'all authored silhouettes remain visible until both optional packs are ready');
 assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,0,'a partial load cannot overlap the silhouettes with anatomical bodies');
 const namedBefore=submitted.dynamic.filter(i=>named.some(n=>n.id===i.id));assert.equal(namedBefore.length,6);assert.ok(namedBefore.every(i=>i.character));

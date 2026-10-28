@@ -377,6 +377,7 @@ function mainFunction(name, globals) {
 test('the actual playback entry refuses recording and switches an explicit chosen take after stopping the old one', () => {
   const log = [], state = { recording: true, playing: true, hasTake: true, lowerCalls: 0 };
   const play = mainFunction('playTakeFrom', {
+    chapelTapeCaseAvailable: () => true,
     REC: { isRecording: () => state.recording },
     PB: { hasTake: () => state.hasTake, tapeTake: roomId => ({roomId,status:'accepted'}), isPlaying: () => state.playing,
       stopPlayback: () => { log.push('stop'); state.playing = false; },
@@ -432,6 +433,8 @@ test('the raised recorder uses the same actual noise reading and recorded event 
   const snapshot = { roomId: 'the_tub', progress: .3, elapsedSec: 27, durationSec: 90,
     signalLeft: .22, signalRight: .41, markers: [{ id: 'real-event', position: .73 }] };
   const machine = mainFunction('recorderMachineState', {
+    chapelTapeRetakeRoom:()=>null,
+    HUNTER: { takeHunterTransport: () => ({phase:'normal'}) }, takeHunter: {},
     REC: { recState: () => ({ takeElapsed: 9, spoiled: false }), isRecording: () => live.recording,
       isSlating:()=>false,usableTake:()=>false,minimumTakeDuration:()=>45,isStalled: () => false, isAssistPaused: () => false, isMonitoring: () => live.recording,
       currentNoise: () => .3, ambientNoise: () => live.ambient, takeProgress: () => .2,

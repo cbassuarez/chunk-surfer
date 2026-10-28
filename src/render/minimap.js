@@ -612,7 +612,7 @@ export function drawMinimap(model, opts = {}) {
   });
   // The LCD is physical hardware beside the VFD, outside its aperture clip and
   // after its smoked cover. Map glow and target pulses never repaint its ink.
-  if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry);
+  if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now});
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

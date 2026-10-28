@@ -24,6 +24,7 @@ import {
 import { sheetDialogueFor } from './bag-sheets.js';
 import { FIELD_KIT_OPTIONS } from './field-kit.js';
 import { journalTrackable } from './journal-review.js';
+import { BATTLE_OPERATING_COPY } from './combat-operating-facts.js';
 
 export const EMPTY_JOB = Object.freeze({
   rooms: [],
@@ -47,7 +48,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'light',
     status: ['READY', 'active'],
     description: 'Hand torch issued with the field kit.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ILLUMINATION'], ['BATTLE', 'EXPOSE · DMG · COUNTERS CONCEAL · USES BATTERY']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'ILLUMINATION'], ['BATTLE', BATTLE_OPERATING_COPY.light.detail]],
   },
   recorder: {
     title: 'RECORDER',
@@ -55,7 +56,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'recorder',
     status: ['READY', 'active'],
     description: 'Captures room tone and auditions the recorded take. The fitted microphone determines take length.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR'], ['BATTLE', 'MONITOR CAPTURES A TAKE · PLAYBACK SPENDS IT · COUNTERS BROADCAST']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'CAPTURE / MONITOR'], ['BATTLE', BATTLE_OPERATING_COPY.recorder.detail]],
   },
   headphones: {
     title: 'HEADPHONES',
@@ -79,7 +80,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'interface',
     status: ['READY', 'active'],
     description: 'A rewired return path capable of reversing a hostile signal.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK'], ['BATTLE', 'INVERT RETURNS A LOOP · SPENDS THE TAKE · COUNTERS LOOP']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'INVERT / FEEDBACK'], ['BATTLE', BATTLE_OPERATING_COPY.interface.detail]],
   },
   'tuning-fork': {
     title: 'TUNING FORK',
@@ -87,7 +88,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'tuning-fork',
     status: ['READY', 'active'],
     description: 'A stable reference tone carried into unstable rooms.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL'], ['BATTLE', 'TUNE IS FREE · REVEALS THE NEXT TWO INTENTS']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'TUNE / REVEAL'], ['BATTLE', BATTLE_OPERATING_COPY['tuning-fork'].detail]],
   },
   map: {
     title: 'SURVEY INDICATOR',
@@ -103,7 +104,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'radio',
     status: ['LIVE', 'active'],
     description: 'Portable service radio assigned with the work order.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'RADIO CHECK-IN'], ['BATTLE', 'THROW VOICE · GUARD 2 · COUNTERS BROADCAST · ONCE PER FIGHT']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'RADIO CHECK-IN'], ['BATTLE', BATTLE_OPERATING_COPY.radio.detail]],
   },
   coffee: {
     title: "THE GUARD'S COFFEE",
@@ -111,7 +112,7 @@ const KNOWN_GEAR = Object.freeze({
     icon: 'coffee',
     status: ['GETTING COLD', 'metadata'],
     description: 'Coffee from the service booth. Still technically warm.',
-    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', 'STEADY HANDS · +3 COMPOSURE · ONE CUP']],
+    facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'STIMULANT'], ['BATTLE', BATTLE_OPERATING_COPY.coffee.detail]],
   },
   'plant-spanner': {
     title: 'ADJUSTABLE SPANNER',
@@ -120,7 +121,7 @@ const KNOWN_GEAR = Object.freeze({
     status: ['READY', 'active'],
     description: 'A compact adjustable spanner set close to the heating-header gland size. Two pounds of steel, and the only thing in the case that was never meant to be heard.',
     facts: [['POSITION', 'CARRIED'], ['FUNCTION', 'PLANT ISOLATION / STRIKE'],
-      ['BATTLE', 'SWING LANDS WITHOUT A READ AND IS HEARD · ON THE STEEL GUARDS EITHER WAY']],
+      ['BATTLE', BATTLE_OPERATING_COPY['plant-spanner'].detail]],
   },
   'marble-eyes': {
     title: 'TWO MARBLE EYES',

@@ -185,7 +185,7 @@ const field = ({ open = false, legacyOnward = false } = {}) => {
 {
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   assert.match(main, /if\(sourceStep\.through==='edge-door'&&getSave\(\)\.sourceDrive\?\.status==='returned'\)\{CR\.fx\.hold\(/, 'only a returned on-foot crossing retains the old frame hold');
-  assert.match(main, /entry:movingEntry\?'moving-cut':null/, 'the fresh crossing does not install its cinematic moving entry');
+  assert.match(main, /entry:review\?'review':movingEntry\?'moving-cut':null/, 'the fresh crossing does not install its cinematic moving entry');
   assert.match(main, /R3\.r3dSetSourceOpenings\?\.\(chunkSurfRuntime\.edgeDoorOpenings\?\.\(x,y\)/, 'the door row does not submit its black cores');
   const transport = main.slice(main.indexOf('function openHorizonTransport('), main.indexOf('function openHorizonTransport(') + 4000);
   assert.doesNotMatch(transport, /completeNormalExit/, 'threading the transport still puts him over the seam');

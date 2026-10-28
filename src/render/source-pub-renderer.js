@@ -7,7 +7,7 @@ import {assetUrl} from '../platform/paths.js';
 import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubFloorHoles,sourcePubFloorHeight,sourcePubTask} from '../data/source-pub.js';
 import {SOURCE_PUB_SCENOGRAPHY as SET,SOURCE_PUB_SCENOGRAPHY_ASSET,SOURCE_PUB_SCENOGRAPHY_MESHES as MESH,sourcePubDeckRectangles} from '../data/source-pub-scenography.js';
 import {PUB_ACTORS} from '../data/pub-population.js';
-import {PUB_CHARACTER_DESIGNS,pubCharacterDescriptor,pubSeatedVigilDescriptor} from './pub-character-performance.js';
+import {PUB_CHARACTER_DESIGNS,PUB_HELD_PROP_MESHES,pubCharacterInstances,pubSeatedVigilDescriptor} from './pub-character-performance.js';
 import {vigilCharacterDescriptor} from './vigil-character-performance.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 
@@ -67,11 +67,20 @@ export function sourcePubRenderFrame(state){
   const actors=PUB_ACTORS.filter(a=>a.id==='pub-bartender-iona'||state.stage<2&&['pub-patron-mavis','pub-patron-ed'].includes(a.id));
   for(const actor of actors){
     const layer=actor.id==='pub-bartender-iona'?activeLayer:0,design=PUB_CHARACTER_DESIGNS[actor.id];
-    const pose=design?pubCharacterDescriptor(actor.id,{timeSec:time,seatY:Number.isFinite(actor.seatHeight)?actor.seatHeight-.012:undefined})
-      :actor.posture==='seated'?pubSeatedVigilDescriptor(actor.mesh,null,{seatY:actor.seatHeight-.012})
-        :vigilCharacterDescriptor(actor.mesh,{action:'photos-sort',elapsedMs:time%8*500,durationMs:4000});
     const x=(actor.local.z+32)*stretch,z=-actor.local.x,sx=design?.width||1,sy=design?design.height/(design.source==='male'?1.78:1.70):1,sz=design?.depth||1;
-    const body=add(`source-pub-0-${actor.id}`,actor.mesh,x,layerFloor(layer)+.012,z,actor.yaw,sx,sy,sz,{character:pose,pubActorId:actor.id,pubCopy:0,sourceLayer:layer});
+    let body;
+    if(design){
+      const mapped={...actor,x:origin.x+x,z:origin.z+z,floor:layerFloor(layer)+.012};
+      for(const [index,instance] of pubCharacterInstances([mapped],{timeSec:time,zone:ZONE.pub}).entries()){
+        const out={...instance,id:`source-pub-0-${instance.id}`,pubCopy:0,sourceLayer:layer};
+        if(index===0){out.pubActorId=actor.id;body=out;}else out.pubAttachmentOf=actor.id;
+        props.push(out);
+      }
+    }else{
+      const pose=actor.posture==='seated'?pubSeatedVigilDescriptor(actor.mesh,null,{seatY:actor.seatHeight-.012})
+        :vigilCharacterDescriptor(actor.mesh,{action:'photos-sort',elapsedMs:time%8*500,durationMs:4000});
+      body=add(`source-pub-0-${actor.id}`,actor.mesh,x,layerFloor(layer)+.012,z,actor.yaw,sx,sy,sz,{character:pose,pubActorId:actor.id,pubCopy:0,sourceLayer:layer});
+    }
     for(const part of actor.parts||[])props.push({...body,id:`source-pub-0-${actor.id}-${part.id}`,mesh:part.mesh});
   }
   // Tower count is bounded independently of round length and room strata. A
@@ -134,7 +143,7 @@ export function sourcePubRenderFrame(state){
 export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,resolveAsset=assetUrl}={}){
   let initialized=false,released=false,loading=null,loadError=null,lastFrameFalling=false,residencyLoad=null,residencyError=null;
   const requiredCharacters=Object.values(PUB_CHARACTER_DESIGNS).map(d=>d.mesh),requiredDoor=doorAssembly('public-glazed-pair',{activeLeaves:'all'});
-  const requiredStatics=[...Object.values(MESH),requiredDoor.frameMesh,requiredDoor.leafMesh,requiredDoor.freeStandingHeadMesh,'pub_service_tray_loaded'].filter(Boolean);
+  const requiredStatics=[...Object.values(MESH),requiredDoor.frameMesh,requiredDoor.leafMesh,requiredDoor.freeStandingHeadMesh,'pub_service_tray_loaded',...PUB_HELD_PROP_MESHES].filter(Boolean);
   const sceneryResident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return [...requiredStatics,...requiredCharacters].every(mesh=>catalog.has(mesh));};
   function clearSource(){
     renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);
@@ -160,7 +169,7 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
       await loadIfMissing(Object.values(PUB_CHARACTER_DESIGNS).map(d=>d.mesh),'assets/pub-characters.glb',true);if(released)return false;
       const door=doorAssembly('public-glazed-pair',{activeLeaves:'all'});
       await loadIfMissing([door.frameMesh,door.leafMesh,door.freeStandingHeadMesh].filter(Boolean),'assets/conservatory-doors.glb');if(released)return false;
-      await loadIfMissing(['pub_service_tray_loaded'],'assets/pub-quest-props.glb');if(released)return false;
+      await loadIfMissing(['pub_service_tray_loaded',...PUB_HELD_PROP_MESHES],'assets/pub-quest-props.glb');if(released)return false;
       clearSource();
       const width=256,height=256,rgba=new Uint8Array(width*height*4),material=new Uint8Array(width*height).fill(MATERIAL.woodVelvet);
       // The plan supplies neutral light occlusion only. The common room-memory
@@ -169,7 +178,9 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
       renderer.r3dSetPlan(rgba,width,height,material);
       renderer.r3dSetSourceScene({key:'source:the-lyric',look:{roomMemoryActive:true,chroma:.72,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});
       renderer.r3dSetLookProfile?.('explore',{transitionMs:0});
-      renderer.r3dSetLightingContext?.({ambientColor:[.46,.59,.69],ambientIntensity:.060,captureExposure:4.8,whitePointScale:1,screen:'stochastic'});
+      // The cold practicals already expose faces. At 4.8 the acquisition
+      // forced Iona and the backbar to the same white ink, erasing her body.
+      renderer.r3dSetLightingContext?.({ambientColor:[.46,.59,.69],ambientIntensity:.060,captureExposure:2.0,whitePointScale:1,screen:'stochastic'});
       renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(error=>{loadError=String(error?.message||error);throw error;});return loading;
   }
@@ -186,7 +197,7 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
           // their anatomical entries. Reinstall the actual skin palette too.
           await props.addCharacterPack(resolveAsset('assets/pub-characters.glb'));if(released)return;
           await loadIfMissing([requiredDoor.frameMesh,requiredDoor.leafMesh,requiredDoor.freeStandingHeadMesh].filter(Boolean),'assets/conservatory-doors.glb');if(released)return;
-          await loadIfMissing(['pub_service_tray_loaded'],'assets/pub-quest-props.glb');if(released)return;
+          await loadIfMissing(['pub_service_tray_loaded',...PUB_HELD_PROP_MESHES],'assets/pub-quest-props.glb');if(released)return;
           renderer.r3dSnapCameraOnNextFrame?.();
         })()
         .catch(error=>{residencyError=error;loadError=String(error?.message||error);})

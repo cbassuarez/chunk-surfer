@@ -56,17 +56,16 @@ import {
   assert.equal(done, 1, 'it closes exactly once');
 }
 
-// A key in the first moments is somebody still releasing the key that launched
-// the game, not somebody who has read this.
+// A fresh press is responsive immediately. A repeated key cannot skip through
+// multiple notices; each screen receives only a separate key-down.
 {
   let done = 0;
   const scene = makeDisplayNoticeScene({ onDone: () => { done += 1; } });
   scenes.push(scene);
+  scene.key({ key: 'Enter', repeat: true });
+  assert.equal(done, 0, 'a held key does not count');
   scene.key({ key: 'Enter' });
-  assert.equal(done, 0, 'the launch key does not count');
-  scene.update(0.4);
-  scene.key({ key: 'Enter' });
-  assert.equal(done, 1, 'a moment later it does');
+  assert.equal(done, 1, 'a fresh press works immediately');
 }
 
 // It shares no chrome with anything else. Every other screen in the game is a
@@ -217,19 +216,54 @@ import {
 
 
 
-// Slow startup frames cannot stretch the fresh-input guard beyond real reading time.
+// Even with no frame updates, a fresh click is accepted immediately.
 {
-  let time = 0, done = 0;
-  const notice = scenes.push(makeDisplayNoticeScene({ now: () => time, onDone: () => done++ }));
-  notice.update(.016);
-  time = .2;
-  notice.pointer({ type: 'pointerdown', originalEvent: { button: 0 } });
-  assert.equal(done, 0);
-  time = .8;
+  let done = 0;
+  const notice = scenes.push(makeDisplayNoticeScene({ onDone: () => done++ }));
   notice.pointer({ type: 'pointerdown', originalEvent: { button: 2 } });
   assert.equal(done, 0);
   notice.pointer({ type: 'pointerdown', originalEvent: { button: 0 } });
-  assert.equal(done, 1, 'fresh input is accepted after real reading time despite clamped dt');
+  assert.equal(done, 1, 'fresh input is accepted even during a slow frame');
+}
+
+// The photosensitivity advisory, profile choice and microphone session choice
+// are separate: a held confirmation cannot grant either later permission.
+{
+  const { makeWarningScene } = await import('../src/game/warning.js');
+  const calls = [];
+  const warning = scenes.push(makeWarningScene({ askMic: true,
+    onProfileOn: () => calls.push('profile-on'), onProfileOff: () => calls.push('profile-off'),
+    onMicAllow: () => calls.push('mic-on'), onMicDeny: () => calls.push('mic-off'),
+    onDone: () => calls.push('done'),
+  }));
+  scenes.key({ key: 'Enter' });
+  scenes.key({ key: 'Enter', repeat: true });
+  assert.deepEqual(calls, []);
+  scenes.key({ key: 'y' });
+  assert.deepEqual(calls, ['profile-on']);
+  scenes.key({ key: 'Enter', repeat: true });
+  assert.deepEqual(calls, ['profile-on']);
+  scenes.key({ key: 'Enter' });
+  assert.deepEqual(calls, ['profile-on', 'mic-off', 'done'], 'the default is no microphone');
+  assert.equal(scenes.depth(), 0);
+  warning.key({ key: 'y' });
+  assert.deepEqual(calls, ['profile-on', 'mic-off', 'done'], 'late input cannot invoke a second choice');
+}
+
+// Existing consent can start directly at the per-session microphone choice.
+{
+  const { makeWarningScene } = await import('../src/game/warning.js');
+  const calls = [];
+  scenes.push(makeWarningScene({ showWarning: false, askProfile: false, askMic: true,
+    onMicAllow: () => calls.push('allow'), onMicDeny: () => calls.push('deny'), onDone: () => calls.push('done'),
+  }));
+  scenes.key({ key: 'ArrowLeft' });
+  scenes.key({ key: ' ' });
+  assert.deepEqual(calls, ['allow', 'done']);
+  const text = readFileSync('src/game/warning.js', 'utf8');
+  const advisory = text.slice(text.indexOf('const WARNINGS'), text.indexOf('const PROFILE'));
+  assert.match(advisory, /flashing lights.*high-contrast patterns/);
+  assert.doesNotMatch(advisory, /horror|dread|jump scare/i);
 }
 
 console.log('advisory lifecycle, copy, and opening bed contracts passed');

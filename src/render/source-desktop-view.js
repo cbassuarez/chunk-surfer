@@ -8,9 +8,10 @@ import { assetUrl } from '../platform/paths.js';
 import { createSourceDesktopDither } from './source-desktop-dither.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
+import { sourceDesktopFailureBeat, SOURCE_DESKTOP_BREACH_SECONDS } from '../game/source-desktop-state.js';
 
 export const SOURCE_DESKTOP_PROTOCOL = 1;
-export const SOURCE_DESKTOP_DISSOLVE_SECONDS = 2.4;
+export const SOURCE_DESKTOP_DISSOLVE_SECONDS = SOURCE_DESKTOP_BREACH_SECONDS;
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, finite(n, min)));
 const smooth = n => { const t = clamp(n); return t * t * (3 - 2 * t); };
@@ -64,12 +65,14 @@ export function normalizeSourceDesktopSnapshot(input = {}, previous = null) {
     pressurePresentation: normalizePressurePresentation(input.pressurePresentation),
     desktop: input.desktop || null, camera: input.camera || null,
     reducedMotion: !!input.reducedMotion, reduceFlash: !!input.reduceFlash, paused: !!input.paused,
+    breach: input.breach && phase === 'dissolving' ? { elapsed: clamp(input.breach.elapsed, 0, SOURCE_DESKTOP_DISSOLVE_SECONDS) } : null,
   };
 }
 
 export function sourceDesktopRenderFrame(input = {}, previous = null) {
   const state = normalizeSourceDesktopSnapshot(input, previous);
-  const openness = state.phase === 'desktop' ? 1 : state.phase === 'dissolving' ? smooth(state.transition)
+  const failure = state.breach ? sourceDesktopFailureBeat(state.breach.elapsed) : null;
+  const openness = state.phase === 'desktop' ? 1 : state.phase === 'dissolving' ? smooth(failure ? failure.peel : state.transition)
     : state.phase === 'reforming' ? 1 - smooth(state.transition) : 0;
   const kind = state.intent.kind, p = state.intent.progress;
   const cue = kind === 'loop' ? 'double' : kind === 'overload' ? 'lean-in' : kind === 'conceal' ? 'turn' : kind === 'silence' ? 'dim' : 'lean';
@@ -88,7 +91,7 @@ export function sourceDesktopRenderFrame(input = {}, previous = null) {
   actor.performance.clip = clip; actor.performance.time = clipTime;
   const instances = pressureInstances(actor, null, { reducedMotion: state.reducedMotion, reduceFlash: state.reduceFlash });
   const body = instances[0], echo = instances[1] || null;
-  return { state, openness, body, echo, clip, clipTime,
+  return { state, openness, body, echo, clip, clipTime, failure,
     guardVisible: state.cover.count > 0 && /^(hold|spanner-guard)$/.test(state.actionId),
     rakeVisible: state.cover.exposed || state.actionId === 'expose',
     shellRetention: 1 - openness * .82,
@@ -104,6 +107,36 @@ export function sourceDesktopLayout(width, height, desktop = null) {
     // The fixed 2.18m body occupies the same projected space throughout a tier.
     body: { x: w * .5, top: stageHeight * .189, bottom: stageHeight * .814 },
     dpr: clamp(desktop?.scale || globalThis.devicePixelRatio || 1, 1, 2) };
+}
+
+// The apparent device failure belongs to the passive stage, above the command
+// island. It cannot obscure, focus or consume any live combat control.
+export function sourceDesktopDiagnosticLayout(width, height, desktop = null) {
+  const stage = sourceDesktopLayout(width, height, desktop);
+  const padding = clamp(stage.width * .05, 12, 64);
+  return { x: 0, y: 0, width: stage.width, height: stage.stageHeight, padding,
+    titleSize: clamp(stage.stageHeight * .105, 17, 48),
+    textSize: clamp(stage.stageHeight * .041, 10, 18) };
+}
+
+export function paintSourceDesktopDiagnostic(ctx, bounds, { opacity = 1 } = {}) {
+  if (!ctx || !bounds || !(opacity > 0)) return false;
+  const { width, height, padding: pad, titleSize, textSize } = bounds;
+  ctx.save();ctx.globalAlpha = opacity;ctx.beginPath();ctx.rect(0, 0, width, height);ctx.clip();
+  ctx.fillStyle = '#073463';ctx.fillRect(0, 0, width, height);ctx.fillStyle = '#e6ece1';
+  ctx.textBaseline = 'top';ctx.font = `${Math.max(9, textSize * .7)}px "World Lettering Mono", monospace`;
+  ctx.fillText('SOURCE / OUTPUT FAILURE', pad, pad, Math.max(1, width - pad * 2));
+  const top = pad + Math.min(44, height * .17);
+  ctx.font = `${titleSize}px "World Lettering Sans", sans-serif`;
+  ctx.fillText('The output is still occupied.', pad, top, Math.max(1, width - pad * 2));
+  ctx.font = `${textSize}px "World Lettering Mono", monospace`;
+  ctx.fillText('RETURN_PATH_NOT_RELEASED', pad, top + titleSize * 1.7, Math.max(1, width - pad * 2));
+  if (height > 220) {
+    ctx.fillStyle = '#b2c5cd';
+    ctx.fillText('The signal has retained its owner.', pad, top + titleSize * 1.7 + textSize * 2, Math.max(1, width - pad * 2));
+    ctx.fillText('SOURCE: THE RECORDIST   /   INPUT: RETAINED', pad, height - pad - textSize, Math.max(1, width - pad * 2));
+  }
+  ctx.restore();return true;
 }
 
 export function createSourceDesktopEnvelopeGate() {
@@ -179,6 +212,13 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
   if (!canvas && container) container.append(target);
   Object.assign(target.style, { pointerEvents:'none', display:'block', width:'100%', height:'100%' });
   target.setAttribute('aria-hidden', 'true');
+  const diagnostic = target.ownerDocument?.createElement('canvas') || null;
+  if (diagnostic) {
+    diagnostic.setAttribute('aria-hidden', 'true');
+    diagnostic.dataset.sourceDesktopDiagnostic = 'held';
+    Object.assign(diagnostic.style, { position:'absolute',left:'0',top:'0',width:'100%',height:'100%',pointerEvents:'none',display:'none' });
+    target.parentNode?.insertBefore(diagnostic, target.nextSibling);
+  }
   let THREE, renderer, dither, scene, camera, bodyRoot, echoRoot, mixer, echoMixer, clips, action, selectedClip = '', disposed = false;
   let snapshot = null, frame = null, error = null, renderCount = 0, resourceReady = false;
   let width = 1280, height = 800, dpr = 1, rendererSized = false;
@@ -191,6 +231,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     event.preventDefault();
     if (disposed) return;
     resourceReady = false; error = 'Source desktop WebGL context lost';
+    if (diagnostic) diagnostic.style.display = 'none';
     onError?.(new Error(error));
   };
   target.addEventListener('webglcontextlost', contextLost);
@@ -305,6 +346,18 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     ambient.intensity = snapshot.intent.kind === 'conceal' ? .68 : 1.1;
     renderer.info.reset();
     dither.render(scene,camera,{width,height,dpr,stageHeight:layout.stageHeight,snapshot}); renderCount++;
+    if (diagnostic) {
+      const w=Math.round(width*dpr),h=Math.round(height*dpr);
+      if(diagnostic.width!==w)diagnostic.width=w;if(diagnostic.height!==h)diagnostic.height=h;
+      const context=diagnostic.getContext('2d');
+      if(context){
+        context.setTransform(dpr,0,0,dpr,0,0);context.clearRect(0,0,width,height);
+        const visible=snapshot.active&&(frame.failure?.diagnostic||0)>0;
+        diagnostic.style.display=visible?'block':'none';
+        diagnostic.dataset.sourceDesktopDiagnostic=frame.failure?.stage||'exposed';
+        if(visible)paintSourceDesktopDiagnostic(context,sourceDesktopDiagnosticLayout(width,height,snapshot.desktop),{opacity:frame.failure.diagnostic});
+      }
+    }
     return true;
   }
   const ready = (async () => {
@@ -384,11 +437,12 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },
       plates: SOURCE_DESKTOP_PLATES.map(piece => piece.id), glyphLines: sourceDesktopGlyphLines().length,
-      frame: frame && { openness: frame.openness, clip: frame.clip, clipTime: frame.clipTime, guardVisible: frame.guardVisible,
+      frame: frame && { openness: frame.openness, clip: frame.clip, clipTime: frame.clipTime, failure:frame.failure, guardVisible: frame.guardVisible,
         rakeVisible: frame.rakeVisible, state: frame.state },
       gpu: renderer && { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures } }),
     dispose() {
       if (disposed) return; disposed = true; mixer?.stopAllAction(); echoMixer?.stopAllAction();
+      diagnostic?.remove();
       resourceReady = false; target.removeEventListener('webglcontextlost', contextLost);
       if (bodyRoot) mixer?.uncacheRoot(bodyRoot); if (echoRoot) echoMixer?.uncacheRoot(echoRoot);
       for (const value of owned) value.dispose?.(); for (const texture of textures) texture.dispose();

@@ -43,7 +43,7 @@
         },
         {
           "who": "direction",
-          "text": "You put the rig down and start unwinding the cable.",
+          "text": "You put the rig down and start unwinding cables, an almost instinctive motion engrained after years of concerts, performances, and recordings. You think about the life the cables have lived, the people, places, and things they've recorded. These walls as well have lived quite the tale, hosting galants, pedagogues, savants, just the cutest little tots-in-training you ever did see, board members, parents, audiences (in ranges of thrilled to mixed to just plain confused), and the not-as-rare-as-one-would-have-hoped performances of installations involving full-frontal nudity.  ",
           "id": "start.line.2"
         },
         {
@@ -59,7 +59,7 @@
       ],
       "choices": [
         {
-          "text": "so what? it is a floor",
+          "text": "so what? it is simply a floor",
           "goto": "floor.so",
           "id": "start.choice.1"
         },
@@ -77,12 +77,12 @@
       "lines": [
         {
           "who": "you",
-          "text": "A floor is a drum. A joist is a drumstick. Everything above it and everything under it goes into the mic as one long low nothing you cannot filter out afterwards.",
+          "text": "A floor is a kind of drum, and a joist a drumstick. Everything above it and everything under it goes into the mic as one long low nothing you cannot filter out afterwards.",
           "id": "floor.so.line.1"
         },
         {
-          "who": "you",
-          "text": "That is why the case has four gum rubber risers on it. Silicone under those. I think it cost more than the microphone.",
+          "who": "direction",
+          "text": "That is why the case has four gum rubber risers on it. Silicone under those. It cost more than the microphone.",
           "id": "floor.so.line.2"
         },
         {
@@ -265,7 +265,9 @@
         {
           "text": "take it",
           "goto": "stand.take",
-          "set": ["b3.stand.sheet"],
+          "set": [
+            "b3.stand.sheet"
+          ],
           "id": "stand.choice.1"
         },
         {

@@ -28,7 +28,11 @@ function pack(relative){
   assert.equal(bytes.readUInt32LE(8),bytes.length);
   const access=i=>{const a=g.accessors[i],v=g.bufferViews[a.bufferView],width={VEC3:3,VEC2:2,SCALAR:1}[a.type],read={5121:['readUInt8',1],5123:['readUInt16LE',2],5125:['readUInt32LE',4],5126:['readFloatLE',4]}[a.componentType];
     return Array.from({length:a.count},(_,n)=>Array.from({length:width},(_,axis)=>bin[read[0]]((v.byteOffset||0)+(a.byteOffset||0)+n*(v.byteStride||width*read[1])+axis*read[1]))).flat();};
-  const get=name=>{const mesh=g.meshes.find(m=>m.name===name);assert.ok(mesh,`missing actual packed mesh ${name}`);return mesh.primitives.map(p=>({material:p.material,positions:access(p.attributes.POSITION),normals:access(p.attributes.NORMAL),indices:access(p.indices)}));};
+  // Atlas packing can renumber materials; keep the historical fixture’s
+  // semantic slots while comparing every actual geometry/normal/index value.
+  const get=name=>{const mesh=g.meshes.find(m=>m.name===name);assert.ok(mesh,`missing actual packed mesh ${name}`);return mesh.primitives.map(p=>({material:({
+    'black lacquer':MAT.dark,'worn wood':MAT.wood,'painted steel':MAT.steel,brass:MAT.brass,
+  })[g.materials[p.material].name]??('unknown:'+g.materials[p.material].name),positions:access(p.attributes.POSITION),normals:access(p.attributes.NORMAL),indices:access(p.indices)}));};
   return{get};
 }
 // Retain the small literal accessor extraction as a regression fixture. The

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_MATERIAL_CELL,earthfallExitDoorHeight} from '../src/data/source-earthfall.js';
+import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_MATERIAL_CELL,earthfallExitDoorHeight,sourceEarthfallUpperHeight,SOURCE_EARTHFALL_STRATA} from '../src/data/source-earthfall.js';
 import {freshSourceEarthfall,sourceEarthfallFrame,sourceEarthfallSupportAt,stepSourceEarthfall} from '../src/game/source-earthfall.js';
 import {sourceEarthfallGeometry,sourceEarthfallRenderFrame,installSourceEarthfallMeshes,createSourceEarthfallRenderer,SOURCE_EARTHFALL_RENDER_BUDGET as BUDGET} from '../src/render/source-earthfall-renderer.js';
 import {sourceContinuationMeshPayload} from '../src/render/source-continuation-renderer.js';
@@ -31,8 +31,8 @@ test('the actual upper earth triangles form the exact finite controller support 
     const state={...fresh(),committed:elapsed>0,committedAt:0,clock:elapsed,elapsed,phase:elapsed?'fracturing':'intact'},frame=sourceEarthfallRenderFrame(state);
     const triangles=frame.props.filter(p=>p.earthfallRole==='earth').flatMap(p=>uploadedTriangles(pieces.get(p.mesh),p));
     let samples=0;
-    for(let x=C.earth.minX+.17;x<C.earth.maxX;x+=7.31)for(let z=C.earth.minZ+.19;z<C.earth.maxZ;z+=7.37){
-      const expected=sourceEarthfallSupportAt(x,z,state);assert.equal(expected.y,100);
+    for(let x=C.earth.minX+.17;x<C.earth.maxX;x+=1.31)for(let z=C.earth.minZ+.19;z<C.earth.maxZ;z+=1.37){
+      const expected=sourceEarthfallSupportAt(x,z,state);assert.equal(expected.y,sourceEarthfallUpperHeight(elapsed));
       assert.ok(triangles.some(points=>{const y=triangleHeight(points,x,z);return y!=null&&Math.abs(y-expected.y)<2e-5;}),`unsupported visible point ${x},${z} at ${elapsed}`);samples++;
     }
     assert.ok(samples>300);
@@ -49,23 +49,17 @@ test('every fragment face has outward winding and finite physically scaled Sourc
       assert.ok(centroid.reduce((n,v,a)=>n+v*p.normals[i+a],0)>0,'a fractured edge faces inward');triangles++;
     }
   }
-  assert.equal(triangles,BUDGET.customTriangles);assert.ok(triangles<1600);
+  assert.equal(triangles,BUDGET.customTriangles);assert.ok(triangles<1700);
 });
 
-test('falling uses actual player pose and catches on the visible12m sheet through its full settlement',()=>{
-  let state={...fresh(),committed:true,committedAt:0,clock:3,elapsed:3,phase:'falling'};let caught=false,landed=false,samples=0;
-  for(let i=0;i<1000&&!landed;i++){
-    state=stepSourceEarthfall(state,{dt:1/120}).state;const frame=sourceEarthfallRenderFrame(state),sheet=frame.props.find(p=>p.earthfallRole==='catch');
-    const triangles=uploadedTriangles(pieces.get(sheet.mesh),sheet),tops=triangles.map(p=>triangleHeight(p,state.x,state.z)).filter(y=>y!=null),top=Math.max(...tops);
-    assert.ok(Math.abs(top-frame.source.catchSurfaceY)<1e-5);
-    const path=frame.props.find(p=>p.earthfallRole==='path'),pathTriangles=uploadedTriangles(pieces.get(path.mesh),path),pathTop=Math.max(...pathTriangles.map(p=>triangleHeight(p,0,-21)).filter(y=>y!=null));
-    assert.ok(Math.abs(pathTop-(top+.004))<1e-5,'the finite paper route must remain on the visibly compressing support');
-    assert.ok(sheet.cullRadius>=128,'the expanded safety apron cannot disappear at its edges');
-    assert.deepEqual(frame.authoredCamera.eye,[state.x,state.feet+C.eyeHeight,state.z]);
-    if(state.phase==='catching'){caught=true;assert.ok(Math.abs(top-state.feet)<1e-5);samples++;}
-    if(state.phase==='landed'){landed=true;assert.equal(top,0);assert.equal(frame.props.filter(p=>p.earthfallRole==='path').length,1);}
-  }
-  assert.ok(caught&&landed&&samples>100);
+test('falling uses actual body coordinates and lands hard on a fixed finite head beside a narrow spine',()=>{
+ let state={...fresh(),committed:true,committedAt:0,clock:3,elapsed:3,phase:'falling',feet:92};let impact=false,landed=false;
+ for(let i=0;i<1200&&!landed;i++){
+  state=stepSourceEarthfall(state,{dt:1/120}).state;const frame=sourceEarthfallRenderFrame(state),head=frame.props.find(p=>p.earthfallRole==='catch'),triangles=uploadedTriangles(pieces.get(head.mesh),head),top=Math.max(...triangles.map(p=>triangleHeight(p,state.x,state.z)).filter(y=>y!=null));assert.equal(top,0);assert.equal(frame.source.catchSurfaceY,0);assert.deepEqual(frame.authoredCamera.eye,[state.x,state.feet+C.eyeHeight,state.z]);assert.ok(head.cullRadius<24);
+  const path=frame.props.find(p=>p.earthfallRole==='path'),pathTriangles=uploadedTriangles(pieces.get(path.mesh),path),pathTop=Math.max(...pathTriangles.map(p=>triangleHeight(p,0,-30)).filter(y=>y!=null));assert.equal(pathTop,0);
+  impact||=state.phase==='catching';landed=state.phase==='landed';
+ }
+ assert.ok(impact&&landed);const f=sourceEarthfallRenderFrame(state);assert.equal(f.props.filter(p=>p.earthfallRole==='path').length,1);assert.equal(f.props.filter(p=>p.earthfallRole==='landing-edge').length,5);
 });
 
 test('fractures open only after footing loss, remain deterministic, and never borrow the camera',()=>{
@@ -109,7 +103,7 @@ test('support cuts initiate in order while every supported top stays held, and m
   for(const elapsed of[.59,.65,1,1.4,1.8,2.1]){
     const f=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:elapsed,elapsed,phase:'fracturing'}),cuts=f.props.filter(p=>p.earthfallRole==='tear');
     assert.ok(cuts.length>=previousCount);previousCount=cuts.length;
-    assert.ok(cuts.every(p=>p.initiationAt<=elapsed&&Math.abs(p.y-100.002)<.00001));
+    assert.ok(cuts.every(p=>p.initiationAt<=elapsed&&Math.abs(p.y-sourceEarthfallUpperHeight(elapsed)-.002)<.00001));
     if(elapsed===.59)assert.equal(cuts.length,0);
     if(elapsed===.65){assert.ok(cuts.length>0&&cuts.length<120);assert.ok(cuts.every(p=>p.supportBand===0));}
   }
@@ -118,7 +112,7 @@ test('support cuts initiate in order while every supported top stays held, and m
   for(const p of end){
     const topLean=[p.matrix[4],p.matrix[6]],towardSpine=[-p.x,-21-p.z];
     assert.ok(topLean[0]*towardSpine[0]+topLean[1]*towardSpine[1]>0,'heavy models tip coherently inward instead of random splaying');
-    assert.equal(p.supportY,0);
+    assert.equal(p.supportY,86);
   }
 });
 
@@ -136,9 +130,9 @@ test('native model feet carry each finite inward pose without floating or penetr
 
 test('there are exactly two authored doors and surrounding original models clear the corridor',()=>{
   const frame=sourceEarthfallRenderFrame(fresh()),doors=frame.props.filter(p=>p.earthfallRole==='door'&&p.mesh===doorAssembly('bay-goods-pair',{activeLeaves:'all'}).frameMesh);
-  assert.equal(doors.length,2);assert.deepEqual(doors.map(p=>[p.y,p.z]),[[100,0],[100,-42]],'both physical doors begin on the upper corridor');
+  assert.equal(doors.length,2);assert.deepEqual(doors.map(p=>[p.y,p.z]),[[C.upperFloor,0],[C.lowerFloor,C.passage.exitZ]],'the lower destination is distinct from the preserved upper ruined threshold');
   const landed=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:10,elapsed:10,phase:'landed',feet:0});
-  assert.deepEqual(landed.props.filter(p=>p.earthfallRole==='door'&&p.mesh===doorAssembly('bay-goods-pair',{activeLeaves:'all'}).frameMesh).map(p=>[p.y,p.z]),[[100,0],[0,-42]]);
+  assert.deepEqual(landed.props.filter(p=>p.earthfallRole==='door'&&p.mesh===doorAssembly('bay-goods-pair',{activeLeaves:'all'}).frameMesh).map(p=>[p.y,p.z]),[[C.upperFloor,0],[C.lowerFloor,C.passage.exitZ]]);
   for(const elapsed of[3.2,4.5,6,8.5]){
     const moving=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:elapsed,elapsed,phase:'falling',feet:40});
     const exit=moving.props.find(p=>p.earthfallRole==='door'&&p.mesh===doorAssembly('bay-goods-pair',{activeLeaves:'all'}).frameMesh&&p.doorId==='source-earthfall-exit');
@@ -154,18 +148,34 @@ test('there are exactly two authored doors and surrounding original models clear
   for(const primitive of mesh.primitives){const a=json.accessors[primitive.attributes.POSITION];const xs=[];for(const x of[a.min[0],a.max[0]])for(const y of[a.min[1],a.max[1]])for(const z of[a.min[2],a.max[2]])xs.push(transform(instance.matrix,[x,y,z])[0]);assert.ok(Math.max(...xs)<-C.passage.halfWidth);}
 });
 
+test('extending the lower walk-up leaves the original upper doorway on its actual initial earth support',()=>{
+  const state=fresh(),frame=sourceEarthfallRenderFrame(state),upper=frame.props.find(prop=>prop.earthfallRole==='upper-ruin');
+  assert.ok(upper);assert.equal(upper.z,C.passage.upperExitZ);assert.equal(upper.z,-42);
+  assert.notEqual(upper.z,frame.source.exitDoor.z,'the lower extension must not drag its upper architectural anchor beyond the old sheet');
+  const triangles=frame.props.filter(prop=>prop.earthfallRole==='earth').flatMap(prop=>uploadedTriangles(pieces.get(prop.mesh),prop));
+  for(const x of[upper.x-C.door.width/2,upper.x+C.door.width/2])for(const z of[upper.z-.11,upper.z+.11]){
+    assert.equal(sourceEarthfallSupportAt(x,z,state)?.y,C.upperFloor,'both jamb feet must begin on real support');
+    assert.ok(triangles.some(points=>{const y=triangleHeight(points,x,z);return y!==null&&Math.abs(y-C.upperFloor)<2e-5;}),'the uploaded earth must support each initial jamb foot too');
+  }
+  for(const elapsed of[0,2.9,8,30]){
+    const after=sourceEarthfallRenderFrame({...state,committed:elapsed>0,clock:elapsed,committedAt:0,elapsed,phase:elapsed<3?'fracturing':elapsed<8?'falling':'landed',feet:elapsed<8?C.upperFloor:0});
+    const remnant=after.props.find(prop=>prop.earthfallRole==='upper-ruin');
+    assert.equal(remnant.z,upper.z);assert.equal(remnant.y,C.upperFloor,'the retained upper doorway never rides the body down or toward the new lower exit');
+  }
+});
+
 function fixture({gate=null,missingBase=false}={}){
   const calls=[],catalog=new Map((missingBase?['grand_piano']:['grand_piano','instrument_case']).map(n=>[n,{}]));let ranges=0,rangeReleases=0,releases=0;
   const renderer=new Proxy({}, {get:(_,key)=>(...args)=>{calls.push({key,args});return key==='r3dBasePropsReady'?(gate||Promise.resolve(true)):key==='r3dFrame'?true:undefined;}});
   const props={propMeshCatalog:()=>[...catalog.keys()],setPressureInstances:()=>{},installAuthoredPropMeshes(){for(const p of sourceEarthfallGeometry())catalog.set(p.name,{});return true;},
     async addPropPack(url){const names=url.includes('source-demolition')?[DEMO.staticMesh,...DEMO.parts.map(p=>p.mesh)]:url.includes('presences')?Object.values(ST_BRENDANS_PRESENCE_MESH):(()=>{const d=doorAssembly('bay-goods-pair',{activeLeaves:'all'});return[d.frameMesh,d.leafMesh,d.freeStandingHeadMesh].filter(Boolean);})();for(const n of names)catalog.set(n,{});},
-    setAuthoredPropRange(owner,far){ranges++;assert.equal(typeof owner,'symbol');assert.equal(far,240);let freed=false;return()=>{if(freed)return false;freed=true;rangeReleases++;return true;};}};
+    setAuthoredPropRange(owner,far){ranges++;assert.equal(typeof owner,'symbol');assert.equal(far,BUDGET.far);let freed=false;return()=>{if(freed)return false;freed=true;rangeReleases++;return true;};}};
   const owner=createSourceEarthfallRenderer({renderer,props,resolveAsset:u=>u,onRelease:()=>releases++});
   return{owner,calls,catalog,ranges:()=>ranges,rangeReleases:()=>rangeReleases,releases:()=>releases};
 }
 test('adapter uses normal shared3D/dither, repairs residency and releases the range exactly once',async()=>{
   const h=fixture();assert.equal(await h.owner.initialize(),true);assert.equal(h.owner.ready(),true);assert.equal(h.ranges(),1);
-  assert.equal(h.owner.render(fresh()),true);const draw=h.calls.findLast(c=>c.key==='r3dFrame').args[0];assert.equal(draw.textSpace,true);assert.equal(draw.sourceVoidPhysical,false);assert.equal(draw.authoredPropRange,240);assert.equal(draw.authoredCamera.eye[1],101.62);
+  assert.equal(h.owner.render(fresh()),true);const draw=h.calls.findLast(c=>c.key==='r3dFrame').args[0];assert.equal(draw.textSpace,true);assert.equal(draw.sourceVoidPhysical,false);assert.equal(draw.authoredPropRange,BUDGET.far);assert.equal(draw.authoredCamera.eye[1],101.62);
   const draws=h.calls.filter(c=>c.key==='r3dFrame').length;
   h.catalog.delete(DEMO.staticMesh);assert.equal(h.owner.ready(),false);h.owner.render(fresh());
   assert.equal(h.calls.filter(c=>c.key==='r3dFrame').length,draws,'no incomplete world is drawn while the local body is frozen');
@@ -183,18 +193,36 @@ test('installer uploads the tested finite triangles through the normal physical 
   const gl={ARRAY_BUFFER:34962,ELEMENT_ARRAY_BUFFER:34963,STATIC_DRAW:35044,FLOAT:5126,UNSIGNED_INT:5125,
     createBuffer:()=>{const b={};buffers.push(b);return b;},createVertexArray:()=>({}),bindVertexArray(){},bindBuffer(_target,b){current=b;},bufferData(_target,data){current.data=data.slice();},enableVertexAttribArray(){},disableVertexAttribArray(){},vertexAttribPointer(...args){attributes.push(args);},vertexAttribDivisor(){},vertexAttrib1f(){}};
   const maps={texture:{source:true},normalTexture:{normal:true},ormTexture:{orm:true},letteringFinish:{version:1}};
-  const names=installSourceEarthfallMeshes(gl,{catalog},{maps});assert.equal(names.length,124);
-  assert.equal(catalog.size,124);assert.equal(buffers.filter(b=>b.data instanceof Float32Array).length,124*3);
+  const names=installSourceEarthfallMeshes(gl,{catalog},{maps});assert.equal(names.length,138);
+  assert.equal(catalog.size,138);assert.equal(buffers.filter(b=>b.data instanceof Float32Array).length,138*3);
   assert.equal([...catalog.values()].reduce((n,m)=>n+m.primitives[0].count/3,0),BUDGET.customTriangles);
   const p=catalog.get('source-earthfall-earth-0').primitives[0];assert.equal(p.texture,maps.texture);assert.equal(p.printedSurface.process,'source-blueprint-fragments');assert.ok(attributes.some(a=>a[0]===12&&a[1]===4&&a[4]===29*4&&a[5]===100));
   const backing=catalog.get('source-earthfall-catch').primitives[0],path=catalog.get('source-earthfall-path').primitives[0];
   assert.equal(backing.texture,null,'bright repeated source stock must not fill every opened hole');assert.equal(backing.materialRole,'quiet-metal');assert.equal(backing.metallic,0);assert.equal(backing.roughness,1);
   assert.ok(backing.base.slice(0,3).every((v,i)=>v<path.base[i]/10));assert.equal(path.texture,maps.texture);assert.equal(path.printedSurface.process,'source-blueprint-fragments');
   const pathGeometry=pieces.get('source-earthfall-path'),bounds=sourceContinuationMeshPayload(pathGeometry).bounds;
-  assert.equal(bounds.max[0]-bounds.min[0],14);assert.equal(bounds.max[2]-bounds.min[2],45);
+  assert.equal(bounds.max[0]-bounds.min[0],C.passage.halfWidth*2);assert.equal(bounds.max[2]-bounds.min[2],C.catch.minZ+.5-(C.passage.exitZ-3));
+  const pathInstance=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:10,elapsed:10,phase:'landed',feet:0}).props.find(prop=>prop.earthfallRole==='path');
+  for(const x of[bounds.min[0],bounds.max[0]])for(const z of[bounds.min[2],bounds.max[2]])assert.ok(Math.hypot(x-bounds.center[0],z-bounds.center[2])<pathInstance.cullRadius,'the extended visible spine must fit its actual render culling sphere');
   const before=buffers.length;assert.deepEqual(installSourceEarthfallMeshes(gl,{catalog},{maps}),names);assert.equal(buffers.length,before,'residency checks must not duplicate immutable GPU meshes');
   const control=new Map();installSourceEarthfallMeshes(gl,{catalog:control},{maps:{...maps,blueprint:false}});
   assert.equal(control.get('source-earthfall-path').primitives[0].printedSurface.process,'source-fragments');
   assert.deepEqual(control.get('source-earthfall-catch').primitives[0].base,backing.base,'dark folio bearing remains unchanged');
   assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);
+});
+
+
+test('three distinct collapsing strata use fixed world origins and upper architecture remains100m above the landing',()=>{
+ const start=sourceEarthfallRenderFrame(fresh()),late=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:10,elapsed:10,phase:'landed',feet:0});
+ assert.equal(start.props.filter(p=>p.earthfallRole==='stratum').length,12);assert.equal(late.props.filter(p=>p.earthfallRole==='stratum').length,12);
+ const facade=f=>f.props.find(p=>p.earthfallRole==='ellery');assert.equal(facade(start).y,100);assert.deepEqual([...facade(start).matrix],[...facade(late).matrix]);assert.equal(late.props.find(p=>p.earthfallRole==='upper-ruin').y,100);assert.equal(late.props.find(p=>p.earthfallRole==='path').supportY,0);
+ for(const layer of SOURCE_EARTHFALL_STRATA){const before=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt-.01,elapsed:layer.releaseAt-.01,phase:'falling',feet:80});const after=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt+1,elapsed:layer.releaseAt+1,phase:'falling',feet:40});const a=before.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index),b=after.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index);assert.ok(a.every(p=>Math.abs(p.y-layer.y+layer.thickness/2)<1e-5));assert.ok(b.every(p=>Math.abs(p.x)>15));}
+});
+
+
+test('the three construction sections have distinct supported undersides and native models attached to their failure transforms',()=>{
+ const frame=sourceEarthfallRenderFrame(fresh());assert.deepEqual(new Set(frame.props.filter(p=>p.earthfallRole==='stratum').map(p=>p.construction)),new Set(['coffer','soundboard','binding']));
+ for(const [layer,construction]of[[0,'coffer'],[1,'soundboard'],[2,'binding']]){assert.ok(frame.props.filter(p=>p.earthfallRole==='stratum-support'&&p.layer===layer).length>=8);assert.ok(frame.props.filter(p=>p.layer===layer).every(p=>!p.construction||p.construction===construction));}
+ assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='grand_piano').length,2);assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='instrument_case').length,4);assert.ok(frame.props.length<320);
+ const time=SOURCE_EARTHFALL_STRATA[1].releaseAt+1,a=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:time,elapsed:time,phase:'falling',feet:65}),b=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:time,elapsed:time,phase:'falling',feet:65,yaw:2,pitch:-1});assert.deepEqual(a.props.map(p=>[p.id,[...p.matrix]]),b.props.map(p=>[p.id,[...p.matrix]]));
 });

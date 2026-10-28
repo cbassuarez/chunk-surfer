@@ -1,0 +1,337 @@
+{
+  "version": 1,
+  "sha256": "0fde41e46a05f4b7a2b3c7e1cb78ae795b0815a2a5e28908249931e6872ecea8",
+  "bytes": 931104,
+  "totalTriangles": 7188,
+  "totalVertices": 12924,
+  "meshes": {
+    "outskirts_bus_passage": {
+      "vertices": 11942,
+      "triangles": 6652,
+      "primitives": 14,
+      "bounds": {
+        "min": [
+          -1.66,
+          0,
+          -4.692999839782715
+        ],
+        "max": [
+          1.66,
+          3.1,
+          4.68
+        ]
+      },
+      "extras": {
+        "circulation": "front nearside entrance to rear offside emergency exit",
+        "floor": 0.5,
+        "treads": [
+          {
+            "id": "entry-lower",
+            "x0": -1.66,
+            "x1": -1.15,
+            "z0": -3.7,
+            "z1": -2.6,
+            "top": 0.125
+          },
+          {
+            "id": "entry-middle",
+            "x0": -1.15,
+            "x1": -0.8,
+            "z0": -3.7,
+            "z1": -2.6,
+            "top": 0.25
+          },
+          {
+            "id": "entry-upper",
+            "x0": -0.8,
+            "x1": -0.475,
+            "z0": -3.7,
+            "z1": -2.6,
+            "top": 0.4
+          },
+          {
+            "id": "exit-upper",
+            "x0": 0.475,
+            "x1": 0.8,
+            "z0": 3.3,
+            "z1": 4.4,
+            "top": 0.4
+          },
+          {
+            "id": "exit-middle",
+            "x0": 0.8,
+            "x1": 1.15,
+            "z0": 3.3,
+            "z1": 4.4,
+            "top": 0.25
+          },
+          {
+            "id": "exit-lower",
+            "x0": 1.15,
+            "x1": 1.66,
+            "z0": 3.3,
+            "z1": 4.4,
+            "top": 0.125
+          }
+        ],
+        "aisleClearWidth": 1.142,
+        "stanchionZ": [
+          -2.6,
+          0.1,
+          1.5
+        ],
+        "seatRows": [
+          -2.1,
+          -1.22,
+          -0.34,
+          0.54,
+          1.42
+        ],
+        "axles": {
+          "frontZ": -2,
+          "rearZ": 2.85,
+          "tyreRadius": 0.43
+        },
+        "facePractical": {
+          "lens": [
+            1.026,
+            2.32,
+            3.05
+          ],
+          "light": [
+            0.985,
+            2.3,
+            3.05
+          ],
+          "direction": [
+            -0.949,
+            -0.079,
+            0.305
+          ],
+          "colour": [
+            1,
+            0.8,
+            0.58
+          ],
+          "reach": 4.8,
+          "strength": 3.8,
+          "coneInner": 0.87,
+          "coneOuter": 0.45,
+          "mount": [
+            1.1260000000000001,
+            2.32,
+            3.05
+          ],
+          "cutoff": "folded upper hood and side cheeks",
+          "poweredBy": "rear-lamps"
+        },
+        "sourceFactory": "tools/chunk_surfer/build-props.mjs:outskirts_bus",
+        "ordinaryBusUnchanged": true
+      }
+    },
+    "outskirts_bus_passage_lamps_front": {
+      "vertices": 96,
+      "triangles": 48,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -1.005,
+          0.86,
+          -4.6875
+        ],
+        "max": [
+          1.005,
+          1.08,
+          -4.575
+        ]
+      },
+      "extras": {}
+    },
+    "outskirts_bus_passage_lamps_rear": {
+      "vertices": 150,
+      "triangles": 120,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.94,
+          0.8150000000000001,
+          2.9789999999999996
+        ],
+        "max": [
+          1.0385,
+          2.391,
+          4.665
+        ]
+      },
+      "extras": {
+        "facePractical": {
+          "lens": [
+            1.026,
+            2.32,
+            3.05
+          ],
+          "light": [
+            0.985,
+            2.3,
+            3.05
+          ],
+          "direction": [
+            -0.949,
+            -0.079,
+            0.305
+          ],
+          "colour": [
+            1,
+            0.8,
+            0.58
+          ],
+          "reach": 4.8,
+          "strength": 3.8,
+          "coneInner": 0.87,
+          "coneOuter": 0.45,
+          "mount": [
+            1.1260000000000001,
+            2.32,
+            3.05
+          ],
+          "cutoff": "folded upper hood and side cheeks",
+          "poweredBy": "rear-lamps"
+        }
+      }
+    },
+    "outskirts_bus_strip_0": {
+      "vertices": 24,
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.8500000000000001,
+          2.7824999999999998,
+          -3.9000000000000004
+        ],
+        "max": [
+          -0.77,
+          2.8175,
+          0
+        ]
+      },
+      "extras": {}
+    },
+    "outskirts_bus_strip_1": {
+      "vertices": 24,
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.77,
+          2.7824999999999998,
+          -3.9000000000000004
+        ],
+        "max": [
+          0.8500000000000001,
+          2.8175,
+          0
+        ]
+      },
+      "extras": {}
+    },
+    "outskirts_bus_strip_2": {
+      "vertices": 24,
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.8500000000000001,
+          2.7824999999999998,
+          0
+        ],
+        "max": [
+          -0.77,
+          2.8175,
+          4
+        ]
+      },
+      "extras": {}
+    },
+    "outskirts_bus_strip_3": {
+      "vertices": 24,
+      "triangles": 12,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.77,
+          2.7824999999999998,
+          0
+        ],
+        "max": [
+          0.8500000000000001,
+          2.8175,
+          4
+        ]
+      },
+      "extras": {}
+    },
+    "outskirts_bus_passage_entry_leaf": {
+      "vertices": 288,
+      "triangles": 144,
+      "primitives": 4,
+      "bounds": {
+        "min": [
+          -0.081,
+          -0.125,
+          -0.019999999999999997
+        ],
+        "max": [
+          0.081,
+          2.25,
+          1.1
+        ]
+      },
+      "extras": {
+        "hingeLocal": true,
+        "closedSpan": [
+          0,
+          1.1
+        ],
+        "leafBottom": -0.125,
+        "leafTop": 2.25,
+        "leafHeight": 2.375,
+        "operation": "outward entry leaf"
+      }
+    },
+    "outskirts_bus_passage_exit_leaf": {
+      "vertices": 352,
+      "triangles": 176,
+      "primitives": 7,
+      "bounds": {
+        "min": [
+          -0.09000000000000001,
+          -0.125,
+          -0.019999999999999997
+        ],
+        "max": [
+          0.09000000000000001,
+          2.25,
+          1.1
+        ]
+      },
+      "extras": {
+        "hingeLocal": true,
+        "closedSpan": [
+          0,
+          1.1
+        ],
+        "leafBottom": -0.125,
+        "leafTop": 2.25,
+        "leafHeight": 2.375,
+        "operation": "manual outward emergency exit"
+      }
+    }
+  },
+  "materialCount": 21,
+  "embeddedImages": 12,
+  "sourceBusFingerprint": "29c498f06cd8336a3141052a6ff48cdb10c3694de9a206f6b9d6296bcd0d82af",
+  "factorySha256": "d0299522411ca4bb4c309c88dc1c7990b84f63d29abcef2cf4d2c9b80b052462",
+  "contractSha256": "bf0fce462f431141757b86b2a1ae0171df44dd801dc709fb099cb3c9a79c9872",
+  "ordinaryBusUnchanged": true
+}

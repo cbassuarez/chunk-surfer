@@ -1,0 +1,185 @@
+{
+  "pack": "ellery-public-front.glb",
+  "author": "Chunk Surfer project",
+  "license": "Project-native geometry; copied hero/material image rights unchanged",
+  "sourceHero": {
+    "name": "conservatory_west_elevation",
+    "fingerprint": "49c48d3f681d686730b5a0a001de3321316531d426db0874b51ada0b6cc6eed6",
+    "triangles": 17784,
+    "retainedTriangles": 17269,
+    "occupiedAirClips": [
+      {
+        "physicalMin": [
+          74,
+          0,
+          0
+        ],
+        "physicalMax": [
+          98,
+          9.45,
+          28
+        ],
+        "min": [
+          24,
+          0,
+          -7.5
+        ],
+        "max": [
+          48,
+          9.45,
+          20.5
+        ]
+      },
+      {
+        "physicalMin": [
+          71,
+          0,
+          28
+        ],
+        "physicalMax": [
+          92,
+          5.5,
+          32
+        ],
+        "min": [
+          21,
+          0,
+          20.5
+        ],
+        "max": [
+          42,
+          5.5,
+          24.5
+        ]
+      }
+    ],
+    "clip": [
+      {
+        "material": "chapel stone",
+        "inputTriangles": 8576,
+        "unchangedTriangles": 8222,
+        "changedTriangles": 354,
+        "removedTriangles": 282,
+        "clippedTriangles": 108
+      },
+      {
+        "material": "painted steel",
+        "inputTriangles": 2888,
+        "unchangedTriangles": 2840,
+        "changedTriangles": 48,
+        "removedTriangles": 16,
+        "clippedTriangles": 48
+      },
+      {
+        "material": "board marked concrete",
+        "inputTriangles": 552,
+        "unchangedTriangles": 392,
+        "changedTriangles": 160,
+        "removedTriangles": 30,
+        "clippedTriangles": 208
+      },
+      {
+        "material": "black lacquer",
+        "inputTriangles": 3324,
+        "unchangedTriangles": 2900,
+        "changedTriangles": 424,
+        "removedTriangles": 344,
+        "clippedTriangles": 120
+      },
+      {
+        "material": "ellery dark brick",
+        "inputTriangles": 128,
+        "unchangedTriangles": 118,
+        "changedTriangles": 10,
+        "removedTriangles": 2,
+        "clippedTriangles": 12
+      },
+      {
+        "material": "ellery red brick",
+        "inputTriangles": 608,
+        "unchangedTriangles": 588,
+        "changedTriangles": 20,
+        "removedTriangles": 12,
+        "clippedTriangles": 17
+      },
+      {
+        "material": "municipal glazed brick",
+        "inputTriangles": 368,
+        "unchangedTriangles": 360,
+        "changedTriangles": 8,
+        "removedTriangles": 0,
+        "clippedTriangles": 17
+      },
+      {
+        "material": "wet slate",
+        "inputTriangles": 756,
+        "unchangedTriangles": 756,
+        "changedTriangles": 0,
+        "removedTriangles": 0,
+        "clippedTriangles": 0
+      },
+      {
+        "material": "aged white paint",
+        "inputTriangles": 276,
+        "unchangedTriangles": 240,
+        "changedTriangles": 36,
+        "removedTriangles": 36,
+        "clippedTriangles": 0
+      },
+      {
+        "material": "dull terracotta",
+        "inputTriangles": 4,
+        "unchangedTriangles": 4,
+        "changedTriangles": 0,
+        "removedTriangles": 0,
+        "clippedTriangles": 0
+      },
+      {
+        "material": "wired roof glass",
+        "inputTriangles": 100,
+        "unchangedTriangles": 90,
+        "changedTriangles": 10,
+        "removedTriangles": 1,
+        "clippedTriangles": 25
+      },
+      {
+        "material": "academic plaster",
+        "inputTriangles": 24,
+        "unchangedTriangles": 24,
+        "changedTriangles": 0,
+        "removedTriangles": 0,
+        "clippedTriangles": 0
+      },
+      {
+        "material": "occupied warm glass",
+        "inputTriangles": 180,
+        "unchangedTriangles": 180,
+        "changedTriangles": 0,
+        "removedTriangles": 0,
+        "clippedTriangles": 0
+      }
+    ]
+  },
+  "sourcePack": {
+    "file": "public/assets/conservatory-props.glb",
+    "sha256": "e17346732a88b44194e93f1e081a7a142a4b66fc1b95839c48b5215ac4937c4b",
+    "unchangedDuringBuild": true,
+    "meshCount": 607
+  },
+  "geometry": [
+    "src/data/ellery-public-front.js",
+    "src/data/glass-court-sightlines.js",
+    "tools/chunk_surfer/ellery-public-front-geometry.mjs",
+    "tools/chunk_surfer/build-ellery-public-front.mjs"
+  ],
+  "lettering": {
+    "fonts": [
+      "NimbusRoman-Bold.otf",
+      "NimbusSans-Bold.otf"
+    ],
+    "manifest": "assets/fonts/manifest.json",
+    "pipelineManifest": "ellery-public-front-lettering/atlas-manifest.json",
+    "license": "Existing URW Base35 font terms retained"
+  },
+  "basis": "Authored1888civic school hierarchy applied only to the existing front atrium; no claim of a surveyed real building."
+}

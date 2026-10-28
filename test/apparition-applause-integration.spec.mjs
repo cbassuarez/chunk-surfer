@@ -6,6 +6,8 @@ import { webcrypto } from 'node:crypto';
 import { APPARITION_APPLAUSE, createApparitionApplauseDirector } from '../src/game/apparition-applause.js';
 import { APPARITION_APPLAUSE_MIX, makeApparitionApplauseScore } from '../src/data/apparition-applause-score.js';
 import { createSelfAudioMask } from '../src/audio/self-audio-mask.js';
+import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
+import { eulaAccepted, eulaVersion } from '../src/game/eula.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 function source(name) {
@@ -17,7 +19,7 @@ function source(name) {
 }
 const plain = (value) => JSON.parse(JSON.stringify(value));
 function harness(condition = 'treatment') {
-  const calls = { played: [], reserves: [], saved: [], cancelled: [], updates: [], warps: [], pauses: [], visualResets: [] };
+  const calls = { played: [], reserves: [], saved: [], cancelled: [], updates: [], warps: [], pauses: [], visualResets: [], prepared: [], acceptanceReads: 0 };
   const storage = new Map();
   const context = {
     APPARITION_APPLAUSE, APPARITION_APPLAUSE_MIX, makeApparitionApplauseScore, crypto: webcrypto, TextEncoder, Uint8Array,
@@ -38,7 +40,7 @@ function harness(condition = 'treatment') {
     usingPlan: () => true, usingSpecialSpace: () => false,
     sourceShoreOutside: () => false, pointInSight: () => true, sightCrossesClosedDoor: () => false,
     acousticSpatialAt: (x, y) => ({ position: { x, y }, roomId: 'hall' }),
-    prepareApparitionApplause: async () => ({ ready: true }), ensureCtx() {}, playStab() {},
+    prepareApparitionApplause: async () => { calls.prepared.push('applause'); return { ready: true }; }, ensureCtx() {}, playStab() {},
     APPLAUSE_ASSETS: {}, EULA_TEXT: {},
   };
   context.performance = { now: () => context.now };
@@ -56,7 +58,7 @@ function harness(condition = 'treatment') {
   context.motionInput = { snapshot: () => context.motion, lastPointerDeltaAt: -Infinity, lastPointerDeltaSource: { dx: 0, dy: 0 } };
   context.getSave = () => context.save;
   context.getMeta = () => ({ accepted: context.accepted });
-  context.eulaAccepted = (meta) => meta.accepted;
+  context.eulaAccepted = (meta) => { calls.acceptanceReads++; return meta.accepted; };
   context.flagTest = (id) => !!context.save.flags[id];
   context.flagSet = (id, value) => { context.save.flags[id] = value; };
   context.saveCommit = (value) => calls.saved.push(value);
@@ -70,6 +72,19 @@ function harness(condition = 'treatment') {
     updateStabs: (dt, pressure) => calls.updates.push({ dt, pressure }),
     stabsInit: ({ onStab }) => { assert.equal(onStab, context.playStab); }, enteredRoom() {},
   };
+  context.hallChandelierRuntime = createHallChandelierRuntime({
+    readContext: () => ({
+      runId: context.save.run.id, consumedCount: context.save.flags['hall.chandelier.flicker.count'] || 0,
+      eligible: context.storyMode && context.zone === context.ZONE.hall, paused: context.paused,
+      recording: context.REC.isRecording(), listening: context.REC.isListening(),
+      effectsMode: context.save.settings.flash, reduceDread: context.save.settings.reduceDread,
+      applausePriority: !!context.apparitionApplause.inspect().pending
+        || !!context.apparitionApplauseAudio?.inspect().activeVoices || context.now < context.apparitionApplauseOpportunityUntil,
+    }),
+    budgetReady: () => context.STAB.externalScareBudgetReady(),
+    reserveBudget: () => context.STAB.reserveExternalScare(),
+    persistConsumed: count => { context.flagSet('hall.chandelier.flicker.count', count); return context.save.flags['hall.chandelier.flicker.count'] === count; },
+  });
   context.apparitionApplauseAudio = { inspect: () => ({ ready: true, activeVoices: 1 }),
     updateListener: (value) => { calls.listener = value; },
     play: (event, options) => { calls.played.push({ event, options }); return true; },
@@ -266,6 +281,23 @@ test('Hall arbitration yields one bounded opportunity and never repeatedly postp
   context.tickStabs(.016); assert.equal(calls.updates.length, 3);
 });
 
+test('the actual stab boundary advances a silent fixture without a sample pool and cancels it before a recording hold returns', () => {
+  const { context, calls } = harness();
+  context.apparitionApplauseAudio.inspect = () => ({ ready: true, activeVoices: 0 });
+  context.STAB.poolSize = () => 0;
+  context.hallChandelierRuntime.configureReview({ firstQuietSeconds: [.01, .01] });
+  context.tickStabs(.02); context.tickStabs(.2);
+  assert.ok(context.hallChandelierRuntime.view().active && context.hallChandelierRuntime.view().power > 0);
+  assert.equal(context.save.flags['hall.chandelier.flicker.count'], 1);
+  assert.equal(calls.reserves.length, 1, 'the fixture spends the existing shared scare budget once');
+  assert.equal(calls.updates.length, 0, 'no generic sample update is needed to host the silent episode');
+  context.recorder.phase = 'recording';
+  context.tickStabs(.016);
+  assert.equal(context.hallChandelierRuntime.view().active, false);
+  assert.equal(context.hallChandelierRuntime.view().reason, 'recorder');
+  assert.equal(calls.reserves.length, 1, 'the early recording return cannot reserve a second episode');
+});
+
 test('explicit cancellation releases audio and the priority window while retaining the consumed identity', () => {
   const { context, calls } = harness();
   const reference = (id, sourceId) => ({ id, emittedAt: 1000,
@@ -288,11 +320,35 @@ test('explicit cancellation releases audio and the priority window while retaini
   assert.equal(context.selfAudioMask.sample(1100).count, 1, 'an internally cleared graph still loses only its exact-source envelope');
 });
 
-test('study entry checks actual acceptance before any warp, sound preparation or exposure', async () => {
+test('standard apparition study setup does not require the retired no-SD startup acceptance', async () => {
   const { context, calls } = harness(); context.accepted = false;
-  await assert.rejects(context.startApparitionApplauseStudy({ condition: 'ordinary' }), /entry screens/);
+  const result = await context.startApparitionApplauseStudy({ condition: 'ordinary' });
+  assert.equal(result.ready, true);
+  assert.equal(calls.acceptanceReads, 0, 'study setup does not read or fabricate licence acceptance');
+  assert.equal(context.accepted, false);
+  assert.deepEqual(calls.warps, ['concert-hall']);
+  assert.deepEqual(calls.prepared, ['applause']);
+  assert.deepEqual(calls.pauses, [true, false]);
+  assert.equal(calls.visualResets.length, 1);
+});
+
+test('invalid apparition study conditions are rejected before any warp, sound preparation or exposure', async () => {
+  const { context, calls } = harness(); context.accepted = false;
+  await assert.rejects(context.startApparitionApplauseStudy({ condition: 'not-a-study-condition' }), /Unknown study condition/);
   assert.equal(calls.warps.length, 0); assert.equal(calls.visualResets.length, 0);
-  assert.equal(calls.pauses.length, 0);
+  assert.equal(calls.pauses.length, 0); assert.equal(calls.prepared.length, 0);
+});
+
+test('the explicitly used developer lens retains its separate actual licence-version gate', () => {
+  const agreement = readFileSync(new URL('../LEGAL/EULA.md', import.meta.url), 'utf8');
+  for (const [meta, blocked] of [[{}, true], [{ eulaAccepted: '1999-01-01' }, true], [{ eulaAccepted: eulaVersion(agreement) }, false]]) {
+    const before = plain(meta), context = { eulaAccepted, getMeta: () => meta, EULA_TEXT: agreement };
+    createContext(context);
+    runInContext(source('lensEulaAccepted'), context);
+    runInContext(source('lensStartBlockedByEula'), context);
+    assert.equal(context.lensStartBlockedByEula(), blocked);
+    assert.deepEqual(meta, before, 'checking optional model consent cannot alter the profile');
+  }
 });
 
 test('baseline excludes arm/identity/time and private mic labels while rejecting changed context without modifying the save', async () => {

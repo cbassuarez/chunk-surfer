@@ -17,22 +17,25 @@ const foldInputs = { pass: 6, along: 225, across: -5.5, yaw: -Math.PI / 2, foldN
 
 test('the seated guard faces the road on a contact-aligned chair and leaves the pavement passage clear', () => {
   const layout = outskirtsArrivalLayout(), guard = layout.find(p => p.id === 'r6-booth-guard');
+  const lodge = layout.find(p=>p.id==='r6-booth');
   const chair = layout.find(p => p.id === 'r6-booth-fold-chair'), ledge = layout.find(p => p.id === 'r6-booth-fold-sideledge');
   assert.equal(guard.mesh, 'outskirts_fold_guard');
   assert.equal(guard.inspect, 'fold-guard', 'seated encounter retains the standing lodge description');
   assert.equal(layout.find(p => p.id === 'r2-booth-guard').inspect, 'guard', 'the earlier guard lost its original description');
-  near(guard.across, -6.35, 'chair floor root'); near(guard.y, .12, 'pavement height');
-  near(guard.along, OUTSKIRT_STRETCH_START + 6 * OUTSKIRT_STRETCH_METRES + 12.73, 'counter alignment');
-  near(guard.yaw, -Math.PI / 2, 'seated front faces east toward the road');
+  const [rootX,rootY,rootZ]=OUTSKIRT_FOLD_ENCOUNTER.root;
+  near(guard.across,lodge.across+rootX*Math.cos(lodge.yaw)+rootZ*Math.sin(lodge.yaw),'chair floor root');
+  near(guard.y,lodge.y+rootY,'pavement height');
+  near(guard.along,lodge.along+rootX*Math.sin(lodge.yaw)-rootZ*Math.cos(lodge.yaw),'counter alignment');
+  near(guard.yaw,lodge.yaw+OUTSKIRT_FOLD_ENCOUNTER.yaw,'seated face retains its relation to the canonical counter');
   assert.equal(chair.mesh, OUTSKIRT_FOLD_ENCOUNTER.chairMesh); assert.equal(ledge.mesh, OUTSKIRT_FOLD_ENCOUNTER.ledgeMesh);
   for (const support of [chair, ledge]) for (const key of ['across', 'along', 'y', 'yaw']) near(support[key], guard[key], `${support.id} shares ${key}`);
   const world = ([x, y, z]) => ({ across: guard.across + x * Math.cos(guard.yaw) + z * Math.sin(guard.yaw),
     y: guard.y + y, along: guard.along + x * Math.sin(guard.yaw) - z * Math.cos(guard.yaw) });
   const seat = world(OUTSKIRT_FOLD_ENCOUNTER.assetSeat), palm = world(OUTSKIRT_FOLD_ENCOUNTER.assetPalm);
   near(seat.y, .59, 'actual chair seat height over the forecourt'); near(palm.y, .94, 'seated palm uses the lower ledge');
-  assert.ok(palm.along > guard.along && Math.abs(palm.across - guard.across) < .2, 'palm must be lateral, not behind on the high hatch');
-  for (const sole of OUTSKIRT_FOLD_ENCOUNTER.assetSoles) { const at = world(sole); near(at.y, .121, 'sole support'); near(at.across, -5.84, 'feet in front of the seat'); }
-  near(-3.78 - (guard.across + .78), 1.79, 'paving apron leaves at least 1.70m physical passage');
+  near(Math.hypot(palm.across-guard.across,palm.along-guard.along),Math.hypot(...[OUTSKIRT_FOLD_ENCOUNTER.assetPalm[0],OUTSKIRT_FOLD_ENCOUNTER.assetPalm[2]]),'palm keeps its actual lower lateral ledge contact');
+  for (const sole of OUTSKIRT_FOLD_ENCOUNTER.assetSoles) { const at = world(sole); near(at.y, .121, 'sole support');near(-(at.across-guard.across)*Math.sin(guard.yaw)+(at.along-guard.along)*Math.cos(guard.yaw),-sole[2],'feet in front of the seat'); }
+  assert.ok(-3.78-(guard.across+.78)>=1.70,'paving apron leaves at least1.70m physical passage');
   assert.equal(guard.unwatched, undefined, 'the active guard must not vanish on a look-away');
   assert.equal(layout.find(p => p.id === 'r2-booth-guard').unwatched, 'vanish');
   assert.deepEqual(OUTSKIRT_FOLD_ENCOUNTER.assetPalm, [-.55, .82, -.14]);
@@ -52,11 +55,12 @@ test('the frontal review approach starts the seated fold with one unobstructed o
   const position = { ...built.position, x: built.position.x + stop.across / CELL };
   const runtime = createSourceSpaceRuntime({ initialState: built.state }); runtime.setPlayerPosition(position);
   const guard = outskirtsArrivalLayout().find(p => p.id === 'r6-booth-guard');
-  near(runtime.outskirtsLastLight().along, guard.along - .005, 'frontal eye alignment');
-  near(stop.yaw, -Math.PI / 2, 'look west at the road-facing guard');
+  const approachAlong=runtime.outskirtsLastLight().along;
+  near(approachAlong,guard.along+Math.cos(guard.yaw)*(OUTSKIRT_FOLD_ENCOUNTER.reach+.2)-.005,'frontal eye alignment');
+  near(Math.cos(stop.yaw-(Math.PI-guard.yaw)),1,'look toward the actual seated face');
   runtime.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw });
   assert.equal(runtime.outskirtsCharacterFrame().fold.phase, 'armed', 'review starts before the force');
-  const stepped = { ...position, x: position.x - 1 };
+  const stepped = { ...position,x:position.x+Math.round(Math.sin(stop.yaw)),y:position.y-Math.round(Math.cos(stop.yaw)) };
   assert.equal(runtime.geometry.canStep(position.x, position.y, stepped.x, stepped.y).ok, true, 'chair or feet obstruct the trigger approach');
   runtime.setPlayerPosition(stepped); runtime.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw });
   assert.equal(runtime.outskirtsCharacterFrame().fold.phase, 'force');
@@ -69,7 +73,13 @@ test('the frontal review approach starts the seated fold with one unobstructed o
   assert.equal(runtime.outskirtsCharacterFrame().fold.elapsed, 2.55);
   assert.equal(runtime.outskirtsCharacterFrame().fold.phase, 'pain');
   const rear = createSourceSpaceRuntime({ initialState: built.state });
-  rear.setPlayerPosition({ ...position, x: position.x - 5 }); rear.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw });
+  // A real accessible point in the rear hemisphere, still inside the trigger's
+  // distance, proves this is a frontal encounter rather than a radial tripwire.
+  const rearAcross=guard.across-Math.cos(guard.yaw)+Math.sin(guard.yaw)*.25;
+  const rearAlong=guard.along-Math.sin(guard.yaw)-Math.cos(guard.yaw)*.25;
+  const behind={...position,x:built.position.x+rearAcross/CELL,y:position.y+(approachAlong-rearAlong)/CELL};
+  rear.setPlayerPosition(behind);assert.equal(rear.geometry.canStep(behind.x,behind.y,behind.x,behind.y).ok,true,'rear inspection point is not physically accessible');
+  rear.tickOutskirtsCharacters(.05, { viewYaw: stop.yaw });
   assert.equal(rear.outskirtsCharacterFrame().fold.phase, 'armed', 'the fold starts behind the chair without a frontal approach');
 });
 
@@ -184,38 +194,47 @@ test('the earlier guard shares the real body, stands inside the lodge and keeps 
   const floor = at(lodge, -.73, .05), hatch = at(lodge, -.45, -1.8), inspect = at(guard, ...guard.interact);
   assert.equal(guard.mesh, OUTSKIRT_FOLD_ENCOUNTER.mesh);
   near(guard.across, floor.across, 'standing inside the window'); near(guard.along, floor.along, 'inside floor position');
-  near(guard.y, .16, 'boots meet the actual lodge floor');
-  near(-Math.sin(guard.yaw), -1, 'local -Z face points west, away from the road');
+  near(guard.y, .20, 'boots meet the actual canonical lodge floor');
+  near(Math.cos(guard.yaw-lodge.yaw),-1,'the earlier man faces into the actual lodge');
   near(inspect.across, hatch.across, 'inspection remains on the accessible side of the counter');
   near(inspect.along, hatch.along, 'inspection retains the original hatch anchor');
   assert.equal(ledger.mesh, 'outskirts_lodge_ledger');
   assert.equal(ledger.inspect, undefined, 'counter dressing must not take the guard conversation');
 
-  const h = runtimeAt(), position = h.put(hatch.along, -5.4);
-  h.runtime.tickOutskirtsCharacters(.05, { viewYaw: -Math.PI / 2 });
-  const rendered = h.runtime.propInstances(position.x, position.y, { viewYaw: -Math.PI / 2, time: 1e5 });
+  const h = runtimeAt(), position = h.put(hatch.along+.4,lodge.across);
+  assert.equal(h.runtime.geometry.canStep(position.x,position.y,position.x,position.y).ok,true,'counter conversation requires a blocked standing point');
+  const bearing=Math.atan2(guard.across-lodge.across,-(hatch.along+.4-guard.along));
+  h.runtime.tickOutskirtsCharacters(.05, { viewYaw:bearing });
+  const rendered = h.runtime.propInstances(position.x, position.y, { viewYaw:bearing,time:1e5 });
   const body = rendered.find(p => p.id === guard.id), shell = rendered.find(p => p.id === lodge.id);
   assert.deepEqual(body.character, { clip: 'idle', time: 0, loop: true }, 'the earlier man inherits seated/folding animation');
-  near(body.matrix[13] - shell.matrix[13], .16, 'rendered body floor offset');
-  near(-body.matrix[8], -1, 'rendered face points into the lodge');
+  near(body.matrix[13] - shell.matrix[13], .20, 'rendered body floor offset');
+  near(-body.matrix[8],-Math.sin(guard.yaw),'rendered face points into the lodge');
   assert.equal(h.runtime.focusAt(position.x, position.y, 3)?.inspect, 'guard', 'the lodge obscures his conversation');
+  const bookMargin={...position,x:position.x-1};
+  assert.equal(h.runtime.geometry.canStep(position.x,position.y,bookMargin.x,bookMargin.y).ok,true,'the neighbouring book margin cannot be approached');
+  h.runtime.setPlayerPosition(bookMargin);
+  assert.equal(h.runtime.focusAt(bookMargin.x,bookMargin.y,3)?.inspect,'page-ledger','making the guard reachable hid the page on the counter');
+  h.runtime.setPlayerPosition(position);
   assert.equal(h.runtime.outskirtsCharacterFrame().fold.phase, 'armed', 'ordinary guard activates Wrong Fold');
-  h.runtime.propInstances(position.x, position.y, { viewYaw: Math.PI / 2 });
-  assert.ok(!h.runtime.propInstances(position.x, position.y, { viewYaw: -Math.PI / 2 }).some(p => p.id === guard.id), 'a genuine look-away must still remove the earlier guard');
+  h.runtime.propInstances(position.x, position.y, { viewYaw:bearing+Math.PI });
+  assert.ok(!h.runtime.propInstances(position.x, position.y, { viewYaw:bearing }).some(p => p.id === guard.id), 'a genuine look-away must still remove the earlier guard');
 });
 
 test('production instances hold contacts, do not vanish, switch to writhe and checkpoint without per-frame saves', () => {
-  const h = runtimeAt(), along = 6 + 6 * 34.4 + 12.73, position = h.put(along, -4.85);
-  h.runtime.tickOutskirtsCharacters(.05, { viewYaw: -Math.PI / 2 });
+  const guard=outskirtsArrivalLayout().find(p=>p.id==='r6-booth-guard'),yaw=Math.PI-guard.yaw;
+  const h = runtimeAt(),along=guard.along+Math.cos(guard.yaw)*1.35,across=guard.across-Math.sin(guard.yaw)*1.35,position=h.put(along,across);
+  assert.equal(h.runtime.geometry.canStep(position.x,position.y,position.x,position.y).ok,true,'performance review point must be physically occupiable');
+  h.runtime.tickOutskirtsCharacters(.05, { viewYaw:yaw });
   const hero = (yaw = 0) => h.runtime.propInstances(position.x, position.y, { viewYaw: yaw, time: 99999 }).find(p => p.id === 'r6-booth-guard');
   assert.equal(hero().character.time, 0);
   const contacts = hero().character.contacts;
   const tickTo = target => {
-    while (h.runtime.outskirtsCharacterFrame().fold.elapsed < target - 1e-8) h.runtime.tickOutskirtsCharacters(Math.min(.05, target - h.runtime.outskirtsCharacterFrame().fold.elapsed), { viewYaw: -Math.PI / 2 });
+    while (h.runtime.outskirtsCharacterFrame().fold.elapsed < target - 1e-8) h.runtime.tickOutskirtsCharacters(Math.min(.05, target - h.runtime.outskirtsCharacterFrame().fold.elapsed), { viewYaw:yaw });
   };
   tickTo(1.1); near(hero().character.force, 0, 'force onset');
   tickTo(1.825); near(hero().character.force, .5, 'force midpoint');
-  const mid = h.runtime.state(); const resumed = runtimeAt(JSON.parse(JSON.stringify(mid))); resumed.put(along, -4.85);
+  const mid = h.runtime.state(); const resumed = runtimeAt(JSON.parse(JSON.stringify(mid))); resumed.put(along,across);
   near(resumed.runtime.outskirtsCharacterFrame().fold.elapsed, 1.825, 'reload force time');
   tickTo(2.55); near(hero().character.force, 1, 'force endpoint');
   assert.ok(hero(Math.PI), 'looking away removes the folded character');

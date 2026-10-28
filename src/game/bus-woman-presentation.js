@@ -2,8 +2,9 @@
 import { busWomanDescriptor, busWomanTicketVisible, BUS_WOMAN_READY_SECONDS, BUS_WOMAN_STEP_SECONDS } from '../render/bus-woman-performance.js';
 import { busWomanWrongOriginReturn } from '../data/bus-woman-wrong-origin.js';
 import { busWomanWrongOriginDescriptor, busWomanWrongOriginFrame } from '../render/bus-woman-wrong-origin-performance.js';
+import { busWomanPassageDescriptor } from '../render/bus-woman-passage-performance.js';
 
-export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = false, closeEncounter = false, reducedMotion = false, stretch, repeat } = {}) {
+export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = false, closeEncounter = false, passage = null, reducedMotion = false, stretch, repeat } = {}) {
   const now = Math.max(0, Number(clock) || 0);
   const sinceReceipt = woman.receivedAt == null ? null : Math.max(0, now - woman.receivedAt);
   const receipt = woman.receiveId === id ? sinceReceipt : null;
@@ -29,6 +30,10 @@ export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = f
   if (receipt != null && receipt < 4) { mode = 'receive'; seconds = receipt; }
   else if (receiptPending) {
     mode = sinceReceipt >= 9 ? 'ready' : 'wait'; seconds = sinceReceipt >= 9 ? sinceReceipt - 9 : 4;
+  } else if (passage) {
+    // The bus's quiet body makes its sustained attention legible. It does not
+    // repeat the ordinary courtesy turn or steal the hand's receipt sequence.
+    mode=paperReady?'ticket-wait':'wait';seconds=4;
   } else if (supportStepSeconds != null) {
     mode = paperReady ? 'step-ticket' : 'step'; seconds = Math.max(0, now - woman.stepAt);
   } else if (acknowledgeAvailable) {
@@ -40,6 +45,7 @@ export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = f
   else { mode = 'search'; seconds = Math.min(6, now % 24); }
   if (reducedMotion) seconds = mode === 'receive' ? 4 : mode === 'ready' ? BUS_WOMAN_READY_SECONDS : mode.startsWith('acknowledge') ? 2.4 : mode.startsWith('step') ? BUS_WOMAN_STEP_SECONDS : 0;
   return { mode, seconds, acknowledgeYaw: woman.acknowledgeYaw,
+    ...(passage?{passage:{...passage,clock:now}}:{}),
     ...(stretch != null || repeat != null ? { stretch: stretch ?? repeat } : {}),
     ...(supportStepSeconds != null ? { supportStepSeconds: reducedMotion ? BUS_WOMAN_STEP_SECONDS : supportStepSeconds } : {}),
     ...(receiveFrom ? { receiveFrom } : {}),
@@ -49,13 +55,13 @@ export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = f
 
 export function busWomanInstances(instance, performance = {}) {
   if (!['exterior_bus_woman', 'outskirts_bus_woman'].includes(instance?.mesh)) return [instance];
-  const { mode = 'wait', seconds = 0, acknowledgeYaw, reducedMotion = false, supportStepSeconds, receiveFrom, aboard = false } = performance;
+  const { mode = 'wait', seconds = 0, acknowledgeYaw, reducedMotion = false, supportStepSeconds, receiveFrom, aboard = false, passage } = performance;
   const outskirts = instance.mesh === 'outskirts_bus_woman';
   const stretch = performance.stretch ?? performance.repeat ?? instance.stretch ?? instance.repeat
     ?? /^r(\d+)-/.exec(instance.id ?? '')?.[1] ?? 0;
   const remembered = busWomanWrongOriginReturn(stretch);
-  const options = { stretch, acknowledgeYaw, reducedMotion, supportStepSeconds, receiveFrom, aboard };
-  const character = outskirts ? busWomanWrongOriginDescriptor(mode, seconds, options)
+  const options = { stretch, acknowledgeYaw, reducedMotion, supportStepSeconds, receiveFrom, aboard, passage };
+  const character = outskirts ? (passage&&Number(stretch)===7?busWomanPassageDescriptor(mode,seconds,options):busWomanWrongOriginDescriptor(mode, seconds, options))
     : busWomanDescriptor(mode, seconds, { acknowledgeYaw });
   const body = { ...instance, structural: false, character,
     ...(outskirts ? { mesh: remembered.mesh,

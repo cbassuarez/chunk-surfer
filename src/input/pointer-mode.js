@@ -804,8 +804,9 @@ export function createPointerModeController({
     const previous = native.lastClient;
     const hadPrevious = native.hasLastClient;
     const point = pointFromEvent(e);
-    native.lastClient = point;
-    native.hasLastClient = true;
+    const hasPoint = Number.isFinite(Number(e.clientX)) && Number.isFinite(Number(e.clientY));
+    if(hasPoint)native.lastClient = point;
+    native.hasLastClient = hasPoint;
 
     const c = updateCenter(false);
     const landedX = point.x - c.x;
@@ -833,15 +834,21 @@ export function createPointerModeController({
     const movementX = Number(e.movementX);
     const movementY = Number(e.movementY);
     const hasRelative = Number.isFinite(movementX) && Number.isFinite(movementY);
+    // Some native WebKit PointerEvents expose finite but permanently zero
+    // relative fields. A changed, measured client point still records the
+    // hand's event-to-event motion; a stationary point must remain stationary.
+    const zeroRelativeClientMove = hasRelative && movementX === 0 && movementY === 0 && hadPrevious && hasPoint
+      && (point.x !== previous.x || point.y !== previous.y);
     let dx = 0;
     let dy = 0;
-    if (hasRelative) {
+    if (hasRelative && !zeroRelativeClientMove) {
       dx = movementX * native.gain;
       dy = movementY * native.gain;
       native.relativeEvents += 1;
       native.lastDeltaReason = 'tauri-native-relative';
     } else if (hadPrevious) {
-      // Old WebViews omit movementX/Y. Event-to-event displacement is safe:
+      // WebViews may omit movementX/Y or report zero despite a changed point.
+      // Event-to-event displacement is safe:
       // unlike centre-relative displacement, a fixed title-bar offset cancels.
       dx = (point.x - previous.x) * native.gain;
       dy = (point.y - previous.y) * native.gain;
@@ -852,8 +859,12 @@ export function createPointerModeController({
     // Timing alone would discard a real movement made during the IPC round trip.
     const echo = native.expectedEcho;
     if (echo && (dx || dy)) {
-      const near = Math.abs(dx - echo.dx) <= Math.max(24, Math.abs(echo.dx) * 0.3)
-        && Math.abs(dy - echo.dy) <= Math.max(24, Math.abs(echo.dy) * 0.3);
+      // Client displacement lands at the observed client-space anchor, which
+      // can differ from the requested native centre by a stable title bar.
+      const echoDx=echo.dx+(zeroRelativeClientMove?native.bias.x:0);
+      const echoDy=echo.dy+(zeroRelativeClientMove?native.bias.y:0);
+      const near = Math.abs(dx - echoDx) <= Math.max(24, Math.abs(echoDx) * 0.3)
+        && Math.abs(dy - echoDy) <= Math.max(24, Math.abs(echoDy) * 0.3);
       // A stale expectation must not swallow real movement, so it only lives
       // for as long as an IPC round trip could plausibly take.
       const fresh = now - echo.at < native.echoWindowMs;

@@ -1,0 +1,17 @@
+TAP version 13
+# chunk-surf 3d source-space specs passed
+# Subtest: test/chunk-surf-visual.spec.mjs
+ok 1 - test/chunk-surf-visual.spec.mjs
+  ---
+  duration_ms: 621.774458
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 625.990292

@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: captured production baseline queues repeated replies and only checks that Source still exists
+ok 1 - captured production baseline queues repeated replies and only checks that Source still exists
+  ---
+  duration_ms: 0.680042
+  type: 'test'
+  ...
+# Subtest: one actual authored reply waits on game time and preserves its source position and wording
+ok 2 - one actual authored reply waits on game time and preserves its source position and wording
+  ---
+  duration_ms: 0.668917
+  type: 'test'
+  ...
+# Subtest: held or repeated interaction neither queues nor postpones the first response
+ok 3 - held or repeated interaction neither queues nor postpones the first response
+  ---
+  duration_ms: 0.194542
+  type: 'test'
+  ...
+# Subtest: pause discards a pending response rather than saving it for return
+ok 4 - pause discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.068708
+  type: 'test'
+  ...
+# Subtest: hidden discards a pending response rather than saving it for return
+ok 5 - hidden discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.035791
+  type: 'test'
+  ...
+# Subtest: unfocused discards a pending response rather than saving it for return
+ok 6 - unfocused discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.033083
+  type: 'test'
+  ...
+# Subtest: recording discards a pending response rather than saving it for return
+ok 7 - recording discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.029
+  type: 'test'
+  ...
+# Subtest: listening discards a pending response rather than saving it for return
+ok 8 - listening discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.026542
+  type: 'test'
+  ...
+# Subtest: playback discards a pending response rather than saving it for return
+ok 9 - playback discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.18325
+  type: 'test'
+  ...
+# Subtest: blocking-scene discards a pending response rather than saving it for return
+ok 10 - blocking-scene discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.216
+  type: 'test'
+  ...
+# Subtest: left-source discards a pending response rather than saving it for return
+ok 11 - left-source discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.076708
+  type: 'test'
+  ...
+# Subtest: out-of-reach discards a pending response rather than saving it for return
+ok 12 - out-of-reach discards a pending response rather than saving it for return
+  ---
+  duration_ms: 0.029
+  type: 'test'
+  ...
+# Subtest: another door cannot inherit the old response
+ok 13 - another door cannot inherit the old response
+  ---
+  duration_ms: 0.032125
+  type: 'test'
+  ...
+# Subtest: another phase cannot inherit the old response
+ok 14 - another phase cannot inherit the old response
+  ---
+  duration_ms: 0.020042
+  type: 'test'
+  ...
+# Subtest: another runtime/run cannot inherit the old response
+ok 15 - another runtime/run cannot inherit the old response
+  ---
+  duration_ms: 0.018209
+  type: 'test'
+  ...
+# Subtest: leaving reach after an answer permits a later fresh encounter without storing a reply
+ok 16 - leaving reach after an answer permits a later fresh encounter without storing a reply
+  ---
+  duration_ms: 0.048708
+  type: 'test'
+  ...
+# Subtest: invalid elapsed values cannot consume or accelerate the response
+ok 17 - invalid elapsed values cannot consume or accelerate the response
+  ---
+  duration_ms: 0.036583
+  type: 'test'
+  ...
+# Subtest: the first unanswering try and a missing source do not spend the response
+ok 18 - the first unanswering try and a missing source do not spend the response
+  ---
+  duration_ms: 0.027458
+  type: 'test'
+  ...
+# Subtest: trying another door clears the first pending response even when the new try has no answer
+ok 19 - trying another door clears the first pending response even when the new try has no answer
+  ---
+  duration_ms: 0.023292
+  type: 'test'
+  ...
+# Subtest: production no longer owns a raw delayed door callback and ticks through blocked world frames
+ok 20 - production no longer owns a raw delayed door callback and ticks through blocked world frames
+  ---
+  duration_ms: 0.378084
+  type: 'test'
+  ...
+# Subtest: production context independently enforces presence, recording, scene and same-door reach gates
+ok 21 - production context independently enforces presence, recording, scene and same-door reach gates
+  ---
+  duration_ms: 0.48875
+  type: 'test'
+  ...
+# Subtest: production response preserves the old sensory treatment and pans from the door at emission time
+ok 22 - production response preserves the old sensory treatment and pans from the door at emission time
+  ---
+  duration_ms: 0.321167
+  type: 'test'
+  ...
+# Subtest: brief away events cancel even when no animation frame runs in the background
+ok 23 - brief away events cancel even when no animation frame runs in the background
+  ---
+  duration_ms: 1.116375
+  type: 'test'
+  ...
+# Subtest: actual cue groups stop delayed reply tails on recording, phase changes and away, without stopping the player handle
+ok 24 - actual cue groups stop delayed reply tails on recording, phase changes and away, without stopping the player handle
+  ---
+  duration_ms: 3.127833
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.9065

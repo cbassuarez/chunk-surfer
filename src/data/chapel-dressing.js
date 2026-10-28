@@ -52,18 +52,22 @@ export const CHAPEL_MASS = freeze({
   ]),
 });
 
-// Deliberate empty places and unequal shoulders keep it a service rather than
-// a picket fence. Nine people remain seated; the others kneel in the clear row
-// gaps. Hands and heads differ by a few centimetres without breaking the held
-// common prayer. Every survivor keeps the SAME world station forever.
-const seatedPlaces = freeze([1, 7, 16, 25, 30, 37, 40, 47, 50]);
+// Most of the congregation occupies the actual pew seats. A small kneeling
+// minority remains in the clear row gaps; the original service/receiver anchors
+// keep their stations. Rapture is an individual possibility, never a room lift.
+const kneelingPlaces = freeze([2, 5, 11, 17, 22, 28, 34, 44, 49]);
+export const CHAPEL_WATCHER_ID = `${CHAPEL_DRESSING_PREFIX}presence-7`;
+const rapturePlaces = new Map([
+  [5, [.24, 20]], [8, [.48, 24]], [11, [.76, 19]], [17, [1.08, 27]],
+  [20, [.35, 30]], [28, [.64, 23]], [34, [1.38, 28]], [44, [.90, 22]], [49, [1.62, 32]],
+].map(([id, [height, delay]]) => [id, freeze({height, delay})]));
 const servicePlaces = freeze([43, 48, 53]);
 export const CHAPEL_CONGREGATION = freeze(
   [...[62, 65, 68, 71, 74, 77, 80, 83, 86].flatMap((y, row) =>
     [89, 96].flatMap((x, bank) => [-.82, 0, .82].flatMap((offset, seat) => {
       const index = row * 6 + bank * 3 + seat;
       if ([4, 12, 23, 31, 42, 51, ...servicePlaces].includes(index)) return [];
-      const kneeling = !seatedPlaces.includes(index);
+      const kneeling = kneelingPlaces.includes(index);
       const figure = kneeling ? 'kneeling' : (index % 2 ? 'bowed' : 'seated');
       return [freeze({
         id: `${CHAPEL_DRESSING_PREFIX}presence-${index}`,
@@ -72,6 +76,8 @@ export const CHAPEL_CONGREGATION = freeze(
         yaw: Math.PI + ((index % 5) - 2) * .018,
         scale: .95 + (index % 4) * .025,
         kind: 'presence', role: 'congregant', posture: kneeling ? 'kneeling-prayer' : 'seated-prayer', row, bank, seat,
+        watchful: `${CHAPEL_DRESSING_PREFIX}presence-${index}` === CHAPEL_WATCHER_ID,
+        rapture: rapturePlaces.get(index) || null,
       })];
     }))),
     freeze({ id: `${CHAPEL_DRESSING_PREFIX}celebrant`, mesh: M.celebrant, figure: 'celebrant',
@@ -112,7 +118,7 @@ export const CHAPEL_CEILING = freeze([
   cherub('cherub-entry-c', 94.10, 62.75, 'flat', -2.5, .88),
   cherub('cherub-altar-a', 91.65, 85.25, 'vault', .35, 1.02),
   cherub('cherub-altar-b', 93.20, 85.85, 'vault', -1.65, .90),
-  cherub('cherub-altar-c', 92.70, 87.40, 'vault', 2.65, .83),
+  cherub('cherub-altar-c', 93.00, 87.40, 'vault', 2.65, .83),
 ]);
 // The vault is the chapel_vault prop's two pitched shells (build-props.mjs):
 // 9.5 m at the walls to 13 m at the ridge, measured from the floor under the

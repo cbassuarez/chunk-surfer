@@ -11,6 +11,7 @@ import { EXTERIOR_PUB, pubWorldFromLocal } from './exterior-pub.js';
 import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
 import {PUB_HOSPITALITY_LIGHTS} from './pub-hospitality.js';
 import { STATIONERS_LIGHTS } from './exterior-stationers.js';
+import { GLASS_COURT_LIGHTS } from './glass-court.js';
 
 export const LIGHT_KIND = Object.freeze({
   SKY: 'sky',
@@ -110,6 +111,8 @@ const AMBIENT = Object.freeze({
   [ZONE.foyer]: { color: [.66, .71, .70], intensity: .034 },
   [ZONE.studio]: { color: [.48, .57, .45], intensity: .024 },
   [ZONE.natatorium]: { color: [.43, .63, .57], intensity: .040 },
+  [ZONE.glasshouse??24]: { color: [.43, .55, .48], intensity: .052 },
+  [ZONE.poolChanging??25]: { color: [.48, .59, .56], intensity: .042 },
   [ZONE.hall]: { color: [.50, .37, .31], intensity: .020 },
   [ZONE.practice]: { color: [.66, .51, .35], intensity: .027 },
   [ZONE.chapel]: { color: [.72, .80, .88], intensity: .043 },
@@ -243,6 +246,8 @@ const L = freezeLight;
 // emitted light. The fallback coordinates keep deterministic tests and early
 // asset-load frames stable.
 export const CONSERVATORY_LIGHTS = Object.freeze([
+  ...GLASS_COURT_LIGHTS.map(a=>L(a.id,LIGHT_KIND.FITTING,a.x,a.z,a.y,a.color,a.intensity,a.radius,
+    {groups:['ground'],zones:[a.zone],powerMode:LIGHT_POWER_MODE.ALWAYS,glassCourtOnly:true})),
   ...STATIONERS_LIGHTS.map(a=>L(a.id,LIGHT_KIND.FITTING,a.x,a.z,a.y,a.color,a.intensity,a.radius,
     {groups:['ground'],zones:[ZONE.stationers,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL})),
   // The Lyric is supplied independently of the closed institution. These are
@@ -302,6 +307,17 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // rather than out of the air above the grass.
   L('yard-park-sodium', LIGHT_KIND.FITTING, 12.5, 33.0, 6.6, [1, .54, .21], .96, 19.0,
     { groups:['ground'], zones:[ZONE.dock], anchorPropId:'yard-park-lamp', anchorOffset:[0,.20,0] }),
+  // The visible portable masts run from the contractor's independent supply.
+  // One source represents each four-head cluster, keeping the ordinary eight-
+  // source budget; no house breaker or later tower phase turns them on.
+  L('construction-conservatoire-work-heads', LIGHT_KIND.FITTING, 44.4, 12.63, 4.47,
+    [1,.91,.76], 1.32, 18,
+    {groups:['ground'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.church],home:ZONE.dock,
+      powerMode:LIGHT_POWER_MODE.EXTERNAL,anchorPropId:'conservatoire-construction-light-tower',anchorOffset:[0,4.47,-.17]}),
+  L('construction-cathedral-work-heads', LIGHT_KIND.FITTING, 5.5+.17*Math.sin(-.25), 54-.17*Math.cos(-.25), 4.47,
+    [1,.91,.76], 1.32, 18,
+    {groups:['ground'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.church],home:ZONE.dock,
+      powerMode:LIGHT_POWER_MODE.EXTERNAL,anchorPropId:'cathedral-construction-light-tower',anchorOffset:[.17*Math.sin(-.25),4.47,-.17*Math.cos(-.25)]}),
   // ── ST BRENDAN'S ─────────────────────────────────────────────────────────
   //
   // Cold window light and the working tower's low service practicals share the
@@ -334,7 +350,7 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   L('district-east-lamp-south', LIGHT_KIND.FITTING, 135, 78, 6.1, [1,.57,.24], .84, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-south-pub-spill', LIGHT_KIND.FITTING, EXTERIOR_PUB.interiorAnchor.x, EXTERIOR_PUB.frontWorldZ-2, 2.4, [1,.76,.46], .72, 13,
-    {groups:['ground','academicRoof'],zones:[ZONE.dock,ZONE.pub,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
+    {groups:['ground','academicRoof'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.pub,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
   L('district-south-lamp-east', LIGHT_KIND.FITTING, 106, 99, 6.1, [1,.60,.27], .88, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   // Cold overcast relief on Ellery itself. These reveal cornices and roof depth
@@ -769,6 +785,7 @@ export function resolveLocalLights(context, {
   // circuit loses power. These zero-output entries never enter the light rig.
   includeDormantEmergency = false,
   pubHospitalityReady = false,
+  glassCourtReady = false,
 } = {}) {
   const group = typeof context === 'string' ? context : String(context?.group || '');
   const zone = typeof context === 'string' ? null : context?.zone;
@@ -779,6 +796,7 @@ export function resolveLocalLights(context, {
   const resolvedEffectsMode = effectsMode || (reducedFlash ? 'reduced' : 'full');
   const out = [];
   for (const authored of rig) {
+    if(authored.glassCourtOnly&&!glassCourtReady)continue;
     if(authored.pubHospitalityOnly&&!pubHospitalityReady)continue;
     const light=pubHospitalityReady&&authored.pubHospitalityReplacement?{...authored,...authored.pubHospitalityReplacement}:authored;
     if (Number.isFinite(zone) && light.zones.length && !light.zones.includes(zone)) continue;

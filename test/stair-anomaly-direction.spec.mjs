@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import * as FP from '../src/world/floorplan.js';
+import { slideBlockedPropStep } from '../src/world/prop-body-contact.js';
 import {
   STAIR_ANOMALY_STATUS, freshStairAnomalyLedger, normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger, reduceStairAnomaly, stairAnomalyEntryCrossed, stairAnomalyTriggerMatches,
@@ -35,6 +36,7 @@ function entryHarness() {
     setupBlocked: false, propBlocked: false, waterBlocked: false, bouncerBlocked: false,
     beginCount: 0, playerKeys: new Set(), escape: null, facing: 1, renderMove: null,
     performance: { now: () => 10_000 }, STAIR_ANOMALY_STATUS, stairAnomalyEntryCrossed, stairAnomalyTriggerMatches,
+    slideBlockedPropStep,
     mainStairMoveTouches: () => false, renderedPlayerPoint: () => ({ complete: true }),
     REC: { isRecording: () => false }, TUT: { tutorialActive: () => false },
     ZONE: { stair: 9, church: 21, chapelOuter: 22, chapel: 23 },
@@ -42,6 +44,8 @@ function entryHarness() {
     currentStairAnomalyEnvironment: () => h.environment,
     currentStairAnomalyLedger: () => h.ledger,
     setupHandoffBlocksMovement: () => h.setupBlocked,
+    hasEnteredGetIn: () => true, // The movement scenario starts after arrival.
+
     usingSourceSpace: () => h.source, usingSpecialSpace: () => h.special,
     usingPlan: () => h.planName != null, setupComplete: () => true,
     scenes: { blocksInput: () => h.blocked },
@@ -49,6 +53,9 @@ function entryHarness() {
     academicBouncers: { view: () => ({ admitted: true }) },
     academicBouncerAccessForMove: () => ({ allowed: !h.bouncerBlocked }), academicBouncerRefusalAt: 0,
     natatoriumWaterBlocksAt: () => h.waterBlocked,
+    // This climb has no active chapel demand; preserve its ordinary movement.
+    chapelTapeDemandBeforeStep:()=>false,
+    tryStandingTearCrossing:()=>false,
     PROPS: { propCanOccupy: () => !h.propBlocked },
     flagTest: () => true, pushEvent: () => {},
     beginStairAnomaly: () => { h.beginCount++; h.ledger = reduceStairAnomaly(h.ledger, { type: 'ENTER' }); },
@@ -141,6 +148,26 @@ test('accepted movement and existing scene, lifecycle, access and prop guards pr
   h.FP.canStep = (x, y, nx, ny) => ny !== y ? { ok: false, why: 'wall' } : FP.canStep(x, y, nx, ny);
   h.step(1, 1);
   assert.equal(h.beginCount, 1, 'the real movement adapter slides onto the accepted uphill component before entry');
+});
+
+test('the real prop shoulder slide enters only when its accepted component climbs the owned flight', () => {
+  const uphill = entryHarness();
+  uphill.PROPS.propCanOccupy = (x, y) => !(x === 96 && y === 47);
+  uphill.step(1, 1);
+  assert.equal(uphill.beginCount, 1, 'blocked diagonal stock permits the clear uphill component');
+
+  const sideways = entryHarness();
+  sideways.PROPS.propCanOccupy = x => x !== 96;
+  sideways.step(1, 1);
+  assert.equal(sideways.beginCount, 0, 'a clear lateral slide is not an accepted ascent');
+  assert.equal(sideways.ledger.status, 'armed');
+
+  const wetUphill = entryHarness();
+  wetUphill.PROPS.propCanOccupy = (x, y) => !(x === 96 && y === 47);
+  wetUphill.natatoriumWaterBlocksAt = x => x === 96;
+  wetUphill.step(1, 1);
+  assert.equal(wetUphill.beginCount, 0, 'the prop slide preserves water ownership of an otherwise clear uphill half');
+  assert.equal(wetUphill.ledger.status, 'armed');
 });
 
 test('active, completed and refused attempts never re-arm themselves', () => {

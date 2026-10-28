@@ -32,6 +32,7 @@ import { TYPE_GAIN, TYPE_LEVEL } from '../audio/story-audio.js';
 import { flagTest } from './flags.js';
 import { textCps } from './access.js';
 import { freshStoryArtShotState, resolveStoryArtShot } from './story-art-shot.js';
+import { reviewText, reviewTarget } from './local-text-review.js';
 const CPS = 38;
 const MIN_DWELL = 0.25;         // before [space] is heard at all
 
@@ -96,12 +97,13 @@ export function createConversation({
   let nodeEntryMode = 'normal';
 
   const node = () => (nodes && nodes[nodeId]) || null;
-  const nodeLines = () => {
+  const nodeLineRecords = () => {
     const n = node();
     if (!n) return [];
-    const list = nodeEntryMode === 'revisit' && n.revisitLines?.length ? n.revisitLines : n.lines || [];
-    return visibleList(list);
+    const collection = nodeEntryMode === 'revisit' && n.revisitLines?.length ? 'revisitLines' : 'lines';
+    return (Array.isArray(n[collection]) ? n[collection] : []).map((source, index) => ({ source, index, collection })).filter(({ source }) => visibleByFlag(source));
   };
+  const nodeLines = () => nodeLineRecords().map(record => record.source);
   // A BEAT LIST IS FILTERED THE SAME WAY A NODE IS.
   //
   // It was not, and nothing noticed for as long as no beat list carried a
@@ -110,15 +112,19 @@ export function createConversation({
   // collapsing twelve files into one that reads the run) every conditional line
   // played at once, and the ending told the player both that it never touched
   // them and that it reached them three times, in consecutive sentences.
-  const visibleBeats = () => visibleList(beats);
-  const sourceLine = () => (mode === 'nodes' ? nodeLines()[lineIdx] : visibleBeats()[beatIdx]);
+  const beatRecords = () => (Array.isArray(beats) ? beats : []).map((source, index) => ({ source, index, collection: 'beats' })).filter(({ source }) => visibleByFlag(source));
+  const visibleBeats = () => beatRecords().map(record => record.source);
+  const sourceRecord = () => mode === 'nodes' ? nodeLineRecords()[lineIdx] : beatRecords()[beatIdx];
+  const sourceLine = () => sourceRecord()?.source;
   // A resolved line is a snapshot, not a getter. The level-check count uses
   // this to quote the recorder clock at the Continue press which advanced into
   // the line; keeping that value fixed prevents the displayed text and voice
   // from changing again while the player sits on it.
   let activeLine = null;
+  let activeBaseLine = null;
   let deferredUtterance = null;
   let stopped = false;
+  let reviewSuspended = false;
   const line = () => activeLine || sourceLine();
 
   function updateStoryArtShot(l = line()) {
@@ -149,6 +155,39 @@ export function createConversation({
   const choiceKey = (c, index) => c?.contentId || c?.__choiceKey || choiceContentId(c, index);
   const branchOptions = () => node()?.choices || [];
 
+  function targetFor(source, index, collection, fields) {
+    const sourceId = String(source?.sourceId || source?.id || source?.contentId || '');
+    const currentNode = mode === 'nodes' ? nodeId : 'beats';
+    const id = ['conversation', sceneId, currentNode, collection, sourceId || String(index)].map(encodeURIComponent).join(':');
+    return reviewTarget({ id, sceneId, nodeId: currentNode, sourceId,
+      speaker: collection === 'choices' ? 'me' : source?.who || source?.sourceLabel || node()?.speaker || 'direction', collection, authoredIndex: index,
+      fields: fields.map(field => ({ ...field, key: `${id}:${field.name}` })),
+    });
+  }
+
+  function reviewLine(base) {
+    if (!base?.reviewTarget) return base;
+    const [text, prompt] = base.reviewTarget.fields;
+    return { ...base, text: reviewText(text.key, text.original),
+      ...(prompt ? { prompt: reviewText(prompt.key, prompt.original) } : {}),
+    };
+  }
+
+  function refreshReview() {
+    if (!activeBaseLine) return;
+    const next = reviewLine(activeBaseLine);
+    if (activeLine && textOf(next) !== textOf(activeLine)) {
+      // An editor refresh is presentation only. Never utter() the line again:
+      // that would repeat authored effects and physical-action callbacks.
+      stopVoice();
+      audio?.stopTyping?.();
+      if (!pending && !deferredUtterance) { typed = textOf(next).length; acc = 1e6; }
+      if (deferredUtterance) deferredUtterance = next;
+    }
+    activeLine = next;
+    if (pending?.kind === 'say') pending.line = next;
+  }
+
   function stopVoice() { handle?.stop?.(); handle = null; }
   function resetLine() {
     typed = 0; acc = 0; held = 0;
@@ -157,12 +196,13 @@ export function createConversation({
     deferredUtterance = null;
   }
 
-    function pushHistory(text, who, mask = null, sourceLabel = null) {
+    function pushHistory(text, who, mask = null, sourceLabel = null, target = null) {
       if (!text) return;
 
       history.push({
         text,
         who,
+        ...(target ? { reviewTarget: target } : {}),
         ...(sourceLabel ? { sourceLabel } : {}),
         // Carried so a line the rain took still looks taken once it has scrolled
         // up into the record. Only the mask's NAME travels; the shape itself is
@@ -224,10 +264,11 @@ export function createConversation({
 
   // Before he speaks, you decide that he speaks.
     function beginLine() {
-      const source = sourceLine();
+      const record = sourceRecord(), source = record?.source;
       const l = source && typeof source.resolveText === 'function'
         ? { ...source, text: String(source.resolveText()) }
         : source;
+      activeBaseLine = null;
       activeLine = l;
       if (!l) {
         if (mode === 'nodes') {
@@ -245,18 +286,25 @@ export function createConversation({
       }
 
       resetLine();
+      const fields = [{ name: 'text', label: 'Spoken text', original: textOf(l) }];
+      if (mode === 'nodes' && whoOf(l) === 'me' && l.say !== false) {
+        fields.push({ name: 'prompt', label: 'Picker prompt', original: sayLabel(l) });
+      }
+      activeBaseLine = { ...(l && typeof l === 'object' ? l : {}), text: textOf(l),
+        reviewTarget: targetFor(source, record.index, record.collection, fields) };
+      activeLine = reviewLine(activeBaseLine);
       lineSerial++;
       activeLineId = lineContentId(l);
       activeLineSeenBefore = replay?.lineStatus?.(activeLineId) === 'seen-before-run';
       updateStoryArtShot(l);
     if (mode === 'nodes' && whoOf(l) === 'me' && l.say !== false) {
-      pending = { kind: 'say', line: l, options: [{ text: sayLabel(l), say: true }] };
+      pending = { kind: 'say', line: activeLine, options: [{ text: activeLine.prompt, say: true }] };
       choiceIdx = 0;
       audio?.unduckSoundtrack?.();
       return;
     }
     pending = null;
-    utter(l);
+    utter(activeLine);
   }
 
   function finish() {
@@ -277,6 +325,7 @@ export function createConversation({
     mode = 'beats';
     beatIdx = 0;
     activeLine = null;
+    activeBaseLine = null;
     pending = null;
     if (!visibleBeats().length) { finish(); return; }
     beginLine();
@@ -296,6 +345,7 @@ export function createConversation({
     history.length = 0;
     pending = null;
     activeLine = null;
+    activeBaseLine = null;
     resetLine();
 
     const n = nodes[id];
@@ -327,7 +377,7 @@ export function createConversation({
   function commitLine() {
     const l = line();
     if (!l) return;
-    pushHistory(textOf(l), whoOf(l), l?.mask || null, l?.sourceLabel || null);
+    pushHistory(textOf(l), whoOf(l), l?.mask || null, l?.sourceLabel || null, l?.reviewTarget || null);
     if (activeLineId) replay?.markLine?.(activeLineId);
   }
 
@@ -385,6 +435,7 @@ export function createConversation({
     selectChoice,
     start() {
       stopped = false;
+      reviewSuspended = false;
       if (mode === 'beats') { if (!visibleBeats().length) { finish(); return; } }
       else visited.add(nodeId);
       beginLine();
@@ -396,11 +447,23 @@ export function createConversation({
       stopVoice();
       audio?.stopTyping?.();
     },
+    textReviewSuspend() {
+      reviewSuspended = true;
+      stopVoice();
+      clearTimeout(maskChoke);
+      audio?.stopTyping?.();
+      if (!pending && activeLine && !deferredUtterance) { typed = textOf(activeLine).length; acc = 1e6; }
+    },
+    textReviewResume() {
+      reviewSuspended = false;
+      refreshReview();
+    },
 
     // ── the frame loop ───────────────────────────────────────────────────────
     // Nothing here advances anything. It only reveals letters.
     update(dt) {
-      if (pending || finished || stopped || !isActive()) return;
+      refreshReview();
+      if (pending || finished || stopped || reviewSuspended || !isActive()) return;
       if (deferredUtterance) {
         const ready = deferredUtterance;
         deferredUtterance = null;
@@ -437,7 +500,8 @@ export function createConversation({
 
     // ── input ────────────────────────────────────────────────────────────────
     key(e) {
-      if (finished || stopped || !isActive() || deferredUtterance) return true;
+      refreshReview();
+      if (finished || stopped || reviewSuspended || !isActive() || deferredUtterance) return true;
 
       if (pending) {
         const cs = visibleOptions();
@@ -486,7 +550,8 @@ export function createConversation({
     },
 
     keyup(e) {
-      if (finished || stopped || !isActive()) return false;
+      refreshReview();
+      if (finished || stopped || reviewSuspended || !isActive()) return false;
       if (!(e.key === ' ' || e.key === 'Enter' || e.key === 'z')) return false;
       if (!accelerateHeld) return false;
       const heldMs = performance.now() - accelerateStartedAt;
@@ -505,11 +570,15 @@ export function createConversation({
 
     // ── what a presenter needs to draw ───────────────────────────────────────
     view() {
+      refreshReview();
       const l = line();
       return {
         mode, nodeId, finished,
         speaker: mode === 'nodes' ? (node()?.speaker || '') : '',
-        history: history.slice(),
+        history: history.map(entry => {
+          const field = entry.reviewTarget?.fields[0];
+          return field ? { ...entry, text: reviewText(field.key, field.original) } : { ...entry };
+        }),
         line: l || null,
         who: whoOf(l),
           typed,
@@ -531,14 +600,19 @@ export function createConversation({
 
   function visibleOptions() {
     if (!pending) return [];
-    if (pending.kind === 'say') return pending.options;
+    if (pending.kind === 'say') return pending.options.map(option => ({ ...option,
+      text: activeLine.prompt, reviewTarget: activeLine.reviewTarget,
+    }));
     return pending.options
       .map((c, index) => ({ choice: c, index, id: choiceKey(c, index) }))
       .filter(({ choice }) => visibleByFlag(choice))
       .filter(({ choice, id }) => !(choice.hideWhenAsked && asked.has(id)))
-      .map(({ choice, id }) => {
+      .map(({ choice, id, index }) => {
+        const target = targetFor(choice, index, 'choices', [{ name: 'text', label: 'Choice text', original: String(choice.text || '') }]);
         return {
           ...choice,
+          text: reviewText(target.fields[0].key, target.fields[0].original),
+          reviewTarget: target,
           contentId: id,
           __choiceKey: id,
           replayState: replay?.choiceStatus?.(id) || 'unseen',

@@ -1,4 +1,5 @@
 import { assetUrl } from '../platform/paths.js';
+import { createContactExposurePlayer } from './contact-exposure.js';
 // Fear: the heartbeat you cannot slow, and the hush you keep almost hearing.
 //
 // One 0..1 level drives both. The heartbeat is a real loop whose RATE and gain
@@ -17,26 +18,48 @@ const FILES = {
 
 let ctx = null, bus = null;
 const buffers = new Map();          // url → AudioBuffer
+const pendingLoads = new Map();     // one in-flight decode per current context/url
 let hushRev = null;                 // the hush, backwards (built once)
 let heart = null;                   // { src, gain, rate }
+const contactExposure = createContactExposurePlayer({
+  getContext: () => ctx,
+  getDestination: () => bus,
+  getBuffer: () => buffers.get(FILES.hush),
+  loadBuffer: () => load(FILES.hush),
+});
 
 export function fearAudioInit(audioCtx, destination) {
+  contactExposure.cancel({ fade: 0 });
   ctx = audioCtx; bus = destination;
   preloadAll();
 }
 
 async function load(url) {
   if (!ctx || buffers.has(url)) return buffers.get(url) || null;
-  try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`${r.status} ${url}`);
-    const buf = await ctx.decodeAudioData(await r.arrayBuffer());
-    buffers.set(url, buf);
-    if (url === FILES.hush) hushRev = reversed(buf);
-    return buf;
-  } catch (err) { console.warn('fear audio load failed', url, err); return null; }
+  const context = ctx, pending = pendingLoads.get(url);
+  if (pending?.context === context) return pending.promise;
+  const entry = { context, promise: null };
+  pendingLoads.set(url, entry);
+  entry.promise = (async () => {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${r.status} ${url}`);
+      const buf = await context.decodeAudioData(await r.arrayBuffer());
+      if (ctx !== context) return null;
+      buffers.set(url, buf);
+      if (url === FILES.hush) hushRev = reversed(buf);
+      return buf;
+    } catch (err) { console.warn('fear audio load failed', url, err); return null; }
+    finally { if (pendingLoads.get(url) === entry) pendingLoads.delete(url); }
+  })();
+  return entry.promise;
 }
 export function preloadAll() { return Promise.all(Object.values(FILES).map(load)); }
+
+// Physical Last Exposure contacts have a specific source and event lifetime.
+// Other authored fear cues retain hushStinger's legacy variation below.
+export function playContactExposure(options) { return contactExposure.play(options); }
+export function cancelContactExposure(options) { contactExposure.cancel(options); }
 
 // A backwards copy, made once. Reversal is the cheapest way to make a familiar
 // sound unfamiliar: the envelope runs the wrong way and the ear refuses it.

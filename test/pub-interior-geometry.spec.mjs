@@ -42,6 +42,10 @@ function localPoints({kind,args}){
 }
 const rowPoints=s=>localPoints(s).map(p=>p.map((v,i)=>v+[layout.meshOriginInRow.x,layout.meshOriginInRow.y,layout.meshOriginInRow.z][i]));
 function bounds(s){const p=rowPoints(s);return{min:[0,1,2].map(i=>Math.min(...p.map(v=>v[i]))),max:[0,1,2].map(i=>Math.max(...p.map(v=>v[i])))};}
+const parts=(out,kind)=>out.report.parts.filter(part=>part.kind===kind);
+const partShapes=(out,part)=>out.shapes.slice(part.primitiveStart,part.primitiveStart+part.primitiveCount);
+function partBounds(out,part){const points=partShapes(out,part).flatMap(rowPoints);return{min:[0,1,2].map(i=>Math.min(...points.map(p=>p[i]))),max:[0,1,2].map(i=>Math.max(...points.map(p=>p[i])))};}
+const boxesIntersect=(a,b)=>a.min.every((value,i)=>value<b.max[i]-EPS&&a.max[i]>b.min[i]+EPS);
 const overlap=(s,r,y0=.035,y1=2.2)=>{
   const b=bounds(s);return b.min[0]<r.x1-EPS&&b.max[0]>r.x0+EPS&&b.min[2]<r.z1-EPS&&b.max[2]>r.z0+EPS&&b.min[1]<y1-EPS&&b.max[1]>y0+EPS;
 };
@@ -98,6 +102,74 @@ test('collision envelopes contain the real furniture rather than descriptive pla
     const shapes=out.byFixture.get(collider.id);assert.ok(shapes?.length);
     for(const s of shapes)for(const p of rowPoints(s))for(let i=0;i<3;i++)assert.ok(p[i]>=collider.min[i]-EPS&&p[i]<=collider.max[i]+EPS,`${collider.id} axis${i}: ${p[i]} within collision envelope`);
   }
+});
+
+test('joinery part receipts describe the actual emitted primitive bounds',()=>{
+  const out=record();assert.ok(out.report.parts.length>80);
+  for(const part of out.report.parts){
+    assert.ok(part.primitiveCount>0,part.id);
+    assert.ok(out.byFixture.has(part.fixtureId),part.id);
+    const actual=partBounds(out,part);
+    for(const key of['min','max'])for(let i=0;i<3;i++)assert.ok(Math.abs(actual[key][i]-part[key][i])<EPS,`${part.id} ${key}${i}`);
+  }
+});
+
+test('all shelf bottles stand on real shelves in clear bays beneath the cornice',()=>{
+  const out=record(),bottles=parts(out,'shelf-bottle'),stiles=parts(out,'shelf-stile').map(p=>partBounds(out,p)).sort((a,b)=>a.min[2]-b.min[2]);
+  const shelves=parts(out,'shelf-surface').map(p=>partBounds(out,p)),cornice=partBounds(out,parts(out,'shelf-cornice')[0]);
+  assert.equal(bottles.length,42);assert.equal(stiles.length,4);assert.equal(shelves.length,3);
+  const heights=new Set();let labels=0;
+  for(const part of bottles){
+    const b=partBounds(out,part),shelf=shelves[part.row],shapes=partShapes(out,part),cylinders=shapes.filter(s=>s.kind==='cylinder');
+    heights.add((b.max[1]-b.min[1]).toFixed(5));
+    assert.ok(Math.abs(b.min[1]-shelf.max[1])<EPS,`${part.id} foot meets the actual shelf`);
+    assert.ok(b.min[0]>=shelf.min[0]&&b.max[0]<=shelf.max[0],`${part.id} is supported across its full foot`);
+    assert.ok(b.min[2]>stiles[part.bay].max[2]+.10&&b.max[2]<stiles[part.bay+1].min[2]-.10,`${part.id} retains visible bay clearance`);
+    for(const stile of stiles)assert.equal(boxesIntersect(b,stile),false,`${part.id} cannot pierce an upright`);
+    assert.ok(b.max[1]<=cornice.min[1]-.015,`${part.id} cap clears the cornice`);
+    assert.ok(cylinders.length>=4,`${part.id} has a distinct foot, body, neck and cap`);
+    const cap=cylinders.find(s=>s.args[3]===out.report.materials.black),glass=cylinders.filter(s=>[out.report.materials.bottleGreen,out.report.materials.bottleBrown].includes(s.args[3]));
+    assert.ok(cap&&glass.length>=3);assert.ok(bounds(cap).min[1]<=Math.max(...glass.map(s=>bounds(s).max[1]))+EPS,`${part.id} cap meets its neck`);
+    labels+=cylinders.filter(s=>s.args[3]===out.report.materials.ivory).length;
+  }
+  assert.equal(heights.size,4,'four legible bottle proportions replace the uniform peg row');
+  assert.ok(labels>0&&labels<=14,'sparse blank bands leave most bottle shoulders and bodies visible');
+});
+
+test('banquette plinths meet parquet and chairs keep their real seats beneath framed backs',()=>{
+  const out=record(),floor=layout.floorFinish.topY;
+  assert.equal(parts(out,'banquette-plinth').length,2);
+  for(const p of parts(out,'banquette-plinth')){
+    const b=partBounds(out,p);assert.ok(Math.abs(b.min[1]-floor)<EPS);assert.ok(b.max[1]>=.04+EPS,'plinth joins the bench base');
+  }
+  for(const f of layout.furniture.filter(f=>f.kind==='chair')){
+    const shapes=out.byFixture.get(f.id),seat=bounds(shapes[0]),stiles=parts(out,'chair-stile').filter(p=>p.fixtureId===f.id),crest=parts(out,'chair-crest').find(p=>p.fixtureId===f.id);
+    assert.ok(Math.abs(seat.max[1]-.4925)<EPS,'the fitted patron seat stays exact');assert.equal(stiles.length,2);assert.ok(crest);
+    const c=partBounds(out,crest);assert.ok(c.max[1]<=1.14+EPS);assert.ok(c.max[1]-c.min[1]>.075,'the crest has an actual curved silhouette');
+    for(const p of stiles){const b=partBounds(out,p);assert.ok(b.min[1]<seat.max[1]&&b.max[1]>c.min[1],'rear stiles join seat and crest');}
+    assert.equal(shapes.some(s=>s.kind==='box'&&s.args[1][1]>.5&&s.args[1][2]>.45),false,'no full-height rectangular back slab remains');
+  }
+});
+
+test('table collars and rounded bar fittings join their actual supports without changing service heights',()=>{
+  const out=record();
+  for(const p of parts(out,'table-top')){
+    const b=partBounds(out,p),pedestal=partBounds(out,parts(out,'table-pedestal').find(q=>q.fixtureId===p.fixtureId));
+    assert.ok(Math.abs(b.max[1]-.790)<EPS,'table dressing and seated hand contacts stay at their original height');
+    const collar=out.byFixture.get(p.fixtureId).find(s=>s.kind==='cylinder'&&Math.abs(s.args[1]-.40)<EPS),cb=bounds(collar);
+    assert.ok(pedestal.max[1]>cb.min[1]&&cb.max[1]>b.min[1],'turned pedestal and underside collar remain joined');
+    assert.ok(partShapes(out,p).some(s=>s.kind==='quad'),'the tabletop perimeter has a modeled bevel');
+  }
+  const run=parts(out,'footrail-run')[0],r=partBounds(out,run),sockets=parts(out,'footrail-socket'),brackets=parts(out,'footrail-bracket');
+  assert.equal(sockets.length,6);assert.equal(brackets.length,6);assert.ok(partShapes(out,run).every(s=>s.kind==='quad'),'the footrail has a closed round section');
+  const body=bounds(out.byFixture.get('pub-counter')[0]);
+  for(let i=0;i<brackets.length;i++){
+    const socket=partBounds(out,sockets[i]),bracket=partBounds(out,brackets[i]);
+    assert.equal(boxesIntersect(socket,body),true,'socket is seated in the cabinet face');
+    assert.equal(boxesIntersect(socket,bracket),true,'bracket enters its socket');assert.equal(boxesIntersect(bracket,r),true,'bracket reaches the round rail');
+    if(i)assert.ok(Math.abs(socket.min[2]-partBounds(out,sockets[i-1]).min[2])<=1.11,'no two-metre unsupported visual spans remain');
+  }
+  assert.ok(Math.abs(partBounds(out,parts(out,'counter-arris')[0]).max[1]-1.140)<EPS,'bar tray and lamp support stay exact');
 });
 
 test('WC planes fit the runtime contract and leave the entire standard dynamic door opening and swing clear',()=>{

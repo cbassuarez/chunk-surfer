@@ -173,7 +173,6 @@ function recorder(group, cosmetics) {
         ink('DA–1000', 368, 48, 180, 11, 'center');
         ink('FIELD RECORDER', 700, 48, 180, 11, 'right');
         ink('RECORD / MONITOR', 35, 350, 300, 10);
-        ink('VACUUM FLUORESCENT', 35, 366, 300, 10);
       }
       ctx.restore();
       // The map exists by the time a deferred font load resolves.

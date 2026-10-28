@@ -4,6 +4,8 @@ import mediaManifest from '../content/media/window-media.media.json' with { type
 import { WINDOW_SURFACE_LOOK_GLSL } from './render/window-surface-look.js';
 import {
   WINDOW_MEDIA_PROTOCOL,
+  createWindowMediaClock,
+  createWindowVideoClock,
   scoreTimeAt,
   validatePaneScoreEnvelope,
   windowMediaContentId,
@@ -18,8 +20,11 @@ let envelope=null,assignment=null,source=null,video=null,poster=null;
 let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,raf=0;
 let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
+let pendingPlay=null,failedMedia=null;
+let scoreClock=createWindowMediaClock(),videoClock=null;
 let transition={mode:'cut',startedAt:0,endsAt:0},scoreCycle=-1,executedTimed=new Set(),currentRevision=0,currentSession='';
 const eventTimers=new Set();
+const pendingScoreEvents=[];
 
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
@@ -93,28 +98,46 @@ function initGl(){
   gl.useProgram(program);const p=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
   texture=makeMediaTexture();staleTexture=makeMediaTexture();outgoingTexture=makeMediaTexture();blueNoiseTexture=makeBlueNoiseTexture();return true;
 }
-function assetUrl(path){return new URL(`./${String(path||'').replace(/^\/+/, '')}`,location.href).href;}
-function clearEventTimers(){for(const timer of eventTimers)clearTimeout(timer);eventTimers.clear();}
-function destroySource(){if(video){video.pause();video.removeAttribute('src');video.load();}video=null;poster=null;source=null;staleReady=false;lastStaleAt=0;assignmentSerial+=1;}
+function assetUrl(path){return new URL(`./${String(path||'').replace(/^\/+/, '')}`,document.baseURI||location.href).href;}
+function clearEventTimers(){for(const timer of eventTimers)clearTimeout(timer);eventTimers.clear();pendingScoreEvents.length=0;}
+function destroySource(){if(video){video.pause();video.removeAttribute('src');for(const item of video.querySelectorAll?.('source')||[])item.removeAttribute('src');video.load();}video=null;pendingPlay=null;failedMedia=null;poster=null;source=null;staleReady=false;lastStaleAt=0;assignmentSerial+=1;}
 function desiredSeconds(){
   const score=envelope?.score||{epochMs:Date.now(),durationMs:12000,loop:true};
-  const loopMs=Math.max(500,Number(score.durationMs)||12000);
-  const elapsed=((Date.now()-(Number(score.epochMs)||Date.now())+(Number(assignment?.phaseOffsetMs)||0))%loopMs+loopMs)%loopMs;
   const asset=assetById.get(assignment?.content?.assetId);
-  const mediaSeconds=Math.max(.1,Number(video?.duration)||Number(asset?.trim?.durationSeconds)||loopMs/1000);
-  const at=(elapsed/loopMs)*mediaSeconds;
-  return assignment?.content?.playback==='reverse'?Math.max(0,mediaSeconds-at):at;
+  const durationSeconds=Math.max(.1,Number(video?.duration)||Number(asset?.trim?.durationSeconds)||Number(score.durationMs)/1000||12);
+  return videoClock?.time(Date.now(),{durationSeconds})||0;
+}
+function currentVideoPosition(){return video&&video.readyState>=2&&Number.isFinite(video.duration)
+  ?{currentTimeSeconds:Number(video.currentTime)||0,durationSeconds:video.duration}:{};}
+function mayPlayVideo(){return !!video&&video!==failedMedia&&!frozen&&!scoreSuspended&&!envelope?.reducedMotion&&assignment?.content?.playback!=='reverse';}
+function syncVideoPlayback(){
+  if(!video)return;
+  if(!mayPlayVideo()){pendingPlay=null;video.pause();return;}
+  const media=video,serial=assignmentSerial;
+  // Let a decoder finish its selected phase. Replacing the target on every
+  // frame can keep a locally buffered video forever at HAVE_METADATA.
+  if(!media.seeking&&media.readyState>=1){
+    const desired=Math.min(Math.max(0,desiredSeconds()),Math.max(0,(Number(media.duration)||0)-.04));
+    try{if(Math.abs((Number(media.currentTime)||0)-desired)>.08)media.currentTime=desired;}catch(_){}
+  }
+  if(pendingPlay?.media===media)return;
+  const request={media};pendingPlay=request;
+  try{Promise.resolve(media.play()).then(()=>{
+    if(pendingPlay===request)pendingPlay=null;
+    if(video!==media||serial!==assignmentSerial||!mayPlayVideo())media.pause();
+  },()=>{if(pendingPlay===request)pendingPlay=null;});}catch(_){if(pendingPlay===request)pendingPlay=null;}
 }
 function loadImage(url,serial){const image=new Image();image.decoding='async';image.onload=()=>{if(serial!==assignmentSerial)return;if(!video||video.readyState<2)source=image;fallback.src=url;};image.onerror=()=>{};image.src=url;return image;}
 function captureOutgoing(){if(!gl||!outgoingTexture||!canvas.width||!canvas.height)return false;try{gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);return true;}catch(_){return false;}}
 function beginTransition(mode='cut',durationMs=0){
   const duration=Math.max(0,Math.min(300,Number(durationMs)||0));
   if(mode==='cut'||!duration||!captureOutgoing()){transition={mode:'cut',startedAt:0,endsAt:0};return;}
-  const now=performance.now();transition={mode,startedAt:now,endsAt:now+duration};
+  const now=scoreClock.now(Date.now());transition={mode,startedAt:now,endsAt:now+duration};
 }
 function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   if(!next?.content)return;
   beginTransition(mode,durationMs);destroySource();assignment=next;
+  videoClock?.assign(next,Date.now());
   const serial=assignmentSerial,content=assignment.content||{};
   document.documentElement.dataset.contentId=windowMediaContentId(content);
   if(content.kind==='snapshot'){
@@ -139,18 +162,33 @@ function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   const asset=assetById.get(content.assetId);if(!asset)return;
   poster=loadImage(assetUrl(asset.derivatives?.poster?.path),serial);
   const media=document.createElement('video'),owner=serial;video=media;
-  media.muted=true;media.defaultMuted=true;media.volume=0;media.playsInline=true;media.preload='auto';media.loop=true;media.disablePictureInPicture=true;
+  const candidates=['webm','mp4'].map(kind=>asset.derivatives?.[kind]?.path).filter(Boolean).map(assetUrl),attempted=new Set();
+  media.muted=true;media.defaultMuted=true;media.volume=0;media.playsInline=true;media.preload='auto';media.loop=assignment.clockMode==='source'||!!envelope?.score?.loop;media.disablePictureInPicture=true;
   for(const kind of ['webm','mp4']){const derivative=asset.derivatives?.[kind];if(!derivative)continue;const item=document.createElement('source');item.src=assetUrl(derivative.path);item.type=kind==='webm'?'video/webm':'video/mp4';media.append(item);}
   media.addEventListener('loadeddata',()=>{
     if(video!==media||owner!==assignmentSerial)return;
     const mediaSeconds=Number.isFinite(media.duration)&&media.duration>0?media.duration:Number(asset.trim?.durationSeconds)||12;
-    source=media;media.currentTime=Math.min(Math.max(0,desiredSeconds()),Math.max(0,mediaSeconds-.04));
-    if(content.playback!=='reverse'&&!frozen){
-      const loopSeconds=Math.max(.5,(Number(envelope?.score?.durationMs)||12000)/1000);
-      media.playbackRate=Math.max(.25,Math.min(4,mediaSeconds/loopSeconds));void media.play().catch(()=>{});
+    const target=Math.min(Math.max(0,desiredSeconds()),Math.max(0,mediaSeconds-.04));
+    // A reduced still at a nonzero phase must not briefly display frame zero
+    // while its decoder seeks. Its poster owns that loading interval.
+    const waitingForStill=envelope?.reducedMotion&&Math.abs((Number(media.currentTime)||0)-target)>.001;
+    source=waitingForStill?poster:media;media.currentTime=target;
+    if(content.playback!=='reverse'){
+      try{media.playbackRate=Math.max(.0625,Math.min(16,videoClock?.playbackRate({durationSeconds:mediaSeconds})||1));}catch(_){media.playbackRate=1;}
     }
-  },{once:true});
-  media.addEventListener('error',()=>{if(video===media&&owner===assignmentSerial)source=poster;});media.load();
+    syncVideoPlayback();
+  });
+  media.addEventListener('seeked',()=>{if(video===media&&owner===assignmentSerial&&media.readyState>=2)source=media;});
+  media.addEventListener('error',()=>{
+    if(video!==media||owner!==assignmentSerial)return;
+    source=poster;
+    // Source-list negotiation does not recover a codec that fails *after*
+    // metadata/first-frame acceptance. Retry each packaged format at most once.
+    attempted.add(media.currentSrc||media.src||candidates[0]);
+    const next=candidates.find(path=>!attempted.has(path));
+    if(!next){failedMedia=media;pendingPlay=null;media.pause();return;}
+    attempted.add(next);pendingPlay=null;media.pause();media.src=next;media.load();
+  });media.load();
 }
 function uploadTo(target){if(!source||!gl||!target)return false;try{gl.bindTexture(gl.TEXTURE_2D,target);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);return true;}catch(_){source=poster;return false;}}
 function reportScoreAction(action,cueId){
@@ -161,9 +199,10 @@ function executeAction(action,cueId=''){
   document.documentElement.dataset.lastEvent=cueId;
   if(action.type==='assignment')loadAssignment(action.assignment,{transition:action.transition,durationMs:action.durationMs});
   else if(action.type==='frozen'){
-    frozen=!!action.frozen;if(frozen)video?.pause();else if(video&&assignment?.content?.playback!=='reverse')void video.play().catch(()=>{});
+    videoClock?.freeze(!!action.frozen,Date.now(),currentVideoPosition());frozen=!!action.frozen;syncVideoPlayback();
   }else if(action.type==='seek'){
-    if(video){const seconds=Math.max(0,Number(action.seekMs)||0)/1000;try{video.currentTime=Math.min(seconds,Math.max(0,(Number(video.duration)||seconds+.04)-.04));}catch(_){}}
+    videoClock?.seek(action.seekMs,Date.now(),{durationSeconds:Number(video?.duration)||Number(assetById.get(assignment?.content?.assetId)?.trim?.durationSeconds)||12});
+    if(video){try{video.currentTime=Math.min(desiredSeconds(),Math.max(0,(Number(video.duration)||0)-.04));}catch(_){}}
   }else if(action.type==='shader'){
     if(action.coherent!==null)envelope={...envelope,coherent:!!action.coherent};
     if(action.intensity!==null)envelope={...envelope,fault:{...envelope.fault,intensity:Math.max(0,Math.min(1,Number(action.intensity)||0))}};
@@ -173,19 +212,25 @@ function executeAction(action,cueId=''){
 }
 function resetScoreCycle(cycle){
   scoreCycle=cycle;executedTimed=new Set();document.documentElement.style.visibility='visible';frozen=false;
+  videoClock?.freeze(false,Date.now());
   loadAssignment(envelope.score.initial,{transition:'cut',durationMs:0});
 }
 function advanceScore(){
   if(scoreSuspended)return;
   const score=envelope?.score;if(!score)return;
-  const raw=Math.max(0,Date.now()-Number(score.epochMs||0)),duration=Math.max(1,Number(score.durationMs)||1);
+  const now=scoreClock.now(Date.now()),raw=Math.max(0,now-Number(score.epochMs||0)),duration=Math.max(1,Number(score.durationMs)||1);
   const cycle=score.loop?Math.floor(raw/duration):0;
   if(cycle!==scoreCycle)resetScoreCycle(cycle);
-  const elapsed=scoreTimeAt(score,Date.now());
+  const elapsed=scoreTimeAt(score,now);
   document.documentElement.dataset.scoreTime=String(Math.round(elapsed));
   for(const cue of score.cues||[]){
     if(!Object.hasOwn(cue,'atMs')||executedTimed.has(cue.id)||cue.atMs+cue.delayMs>elapsed)continue;
     executedTimed.add(cue.id);executeAction(cue.action,cue.id);
+  }
+  for(let index=0;index<pendingScoreEvents.length;){
+    const event=pendingScoreEvents[index];
+    if(event.atMs>now){index++;continue;}
+    pendingScoreEvents.splice(index,1);executeAction(event.action,event.cueId);
   }
 }
 function transitionUniform(at){
@@ -197,16 +242,17 @@ function draw(at){
   advanceScore();
   const dpr=Math.max(1,devicePixelRatio||1),w=Math.max(1,Math.round(innerWidth*dpr)),h=Math.max(1,Math.round(innerHeight*dpr));
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl?.viewport(0,0,w,h);}
-  if(video&&!frozen){
+  if(video&&video!==failedMedia&&!video.seeking&&video.readyState>=2&&!frozen&&!scoreSuspended&&!envelope?.reducedMotion){
     const desired=desiredSeconds(),drift=Math.abs((Number(video.currentTime)||0)-desired);
     if((assignment?.content?.playback==='reverse'||drift>.08)&&at-lastSeekAt>(assignment?.content?.playback==='reverse'?55:180)){lastSeekAt=at;try{video.currentTime=Math.min(desired,Math.max(0,video.duration-.04));}catch(_){}}
   }
   if(gl&&program){
-    uploadTo(texture);const cadence=Math.max(90,Number(envelope?.fault?.cadenceMs)||420);if(!staleReady||at-lastStaleAt>=cadence){staleReady=uploadTo(staleTexture);lastStaleAt=at;}
-    const transitionState=transitionUniform(at);
+    const clockNow=scoreClock.now(Date.now());
+    uploadTo(texture);const cadence=Math.max(90,Number(envelope?.fault?.cadenceMs)||420);if(!staleReady||clockNow-lastStaleAt>=cadence){staleReady=uploadTo(staleTexture);lastStaleAt=clockNow;}
+    const transitionState=transitionUniform(clockNow);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
     gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
-    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor(Date.now()/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
+    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);
 }
@@ -217,6 +263,8 @@ async function acceptEnvelope(payload){
   const label=currentLabel(),validation=validatePaneScoreEnvelope(payload,{targetLabel:label,currentSession,currentRevision});
   if(!validation.ok)return false;
   clearEventTimers();scoreSuspended=false;envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
+  scoreClock=createWindowMediaClock({epochMs:payload.score.epochMs,nowMs:Date.now()});
+  videoClock=createWindowVideoClock({score:payload.score,assignment:payload.score.initial,nowMs:Date.now(),reducedMotion:!!payload.reducedMotion});
   scoreCycle=-1;executedTimed.clear();document.documentElement.dataset.windowLabel=label;document.documentElement.dataset.revision=String(currentRevision);document.body.setAttribute('aria-label',String(payload.description||'Game-owned media fragment'));
   resetScoreCycle(0);document.documentElement.dataset.scoreHeld='false';
   try{await emit('window-media-accepted',{protocol:WINDOW_MEDIA_PROTOCOL,label,targetLabel:payload.targetLabel,sessionToken:payload.sessionToken,revision:payload.revision,cueId:payload.cueId,paneId:payload.paneId,contentId:windowMediaContentId(payload.score.initial)});}catch(_){}
@@ -234,6 +282,7 @@ function matchesActiveScore(payload){
 function clearMediaScore(payload){
   if(String(payload?.sessionToken)!==currentSession||Number(payload?.revision)!==currentRevision)return false;
   clearEventTimers();destroySource();envelope=null;assignment=null;scoreSuspended=true;executedTimed.clear();
+  videoClock=null;
   fallback.removeAttribute('src');document.documentElement.style.visibility='hidden';
   if(gl)for(const tex of [texture,staleTexture,outgoingTexture])if(tex){
     gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,255]));
@@ -242,15 +291,17 @@ function clearMediaScore(payload){
 }
 function holdScore(payload){
   if(!matchesActiveScore(payload))return false;
-  scoreSuspended=true;clearEventTimers();document.documentElement.dataset.scoreHeld='true';
+  const held=payload.held!==false,now=Date.now();
+  videoClock?.hold(held,now,currentVideoPosition());scoreClock.hold(held,now);scoreSuspended=held;
+  document.documentElement.dataset.scoreHeld=String(held);syncVideoPlayback();
   return true;
 }
 function triggerEvent(payload){
   if(!matchesActiveScore(payload))return false;
-  const event=String(payload.event||''),lead=Math.max(0,Number(payload.effectiveAtMs)||Date.now())-Date.now();
+  const raw=Date.now(),event=String(payload.event||''),lead=Math.max(0,(Number(payload.effectiveAtMs)||raw)-raw);
   for(const cue of envelope.score?.cues||[]){
     if(cue.event!==event)continue;
-    const timer=setTimeout(()=>{eventTimers.delete(timer);executeAction(cue.action,cue.id);},Math.max(0,lead+Number(cue.delayMs||0)));eventTimers.add(timer);
+    pendingScoreEvents.push({atMs:scoreClock.now(raw)+lead+Math.max(0,Number(cue.delayMs)||0),action:cue.action,cueId:cue.id});
   }
   try{void emit('window-media-triggered',{protocol:WINDOW_MEDIA_PROTOCOL,label:currentLabel(),sessionToken:currentSession,revision:currentRevision,cueId:envelope.cueId,paneId:envelope.paneId,event});}catch(_){}
   return true;
@@ -291,6 +342,8 @@ async function boot(){
     frontEndNegative=Math.max(0,Math.min(1,Number(params.get('negative'))||0));
     if(assetById.has(preview)){
       envelope={cueId:'dev:preview',paneId:'dev:preview',score:{epochMs:Date.now(),durationMs:12000,loop:true,cues:[],initial:{content:{kind:'video',assetId:preview},crop:{x:0,y:0,w:1,h:1},phaseOffsetMs:0}},fault:{},desktopOrigin:{x:originX,y:originY},coherent:true,shader:'violet-dither'};
+      scoreClock=createWindowMediaClock({epochMs:envelope.score.epochMs,nowMs:Date.now()});
+      videoClock=createWindowVideoClock({score:envelope.score,assignment:envelope.score.initial,nowMs:Date.now()});
       resetScoreCycle(0);
     }
   }

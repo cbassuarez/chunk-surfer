@@ -21,6 +21,7 @@ import { F, ZONE, MATERIAL } from './legend.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
 import { BUILDING_AMENITY_LEVELS } from '../building-amenities.js';
 import { BUILDING_WINDOW_LEVELS } from '../building-windows.js';
+import {ELLERY_PUBLIC_FORECOURT_LEVEL} from '../ellery-public-front.js';
 import {
   CHURCH_BOUNDS, CHURCH_LEVELS, CHURCH_BELFRY, CHURCH_TURRETS, churchGroundRows,
   churchDoorAt, churchRoomAt, churchVolumeAt, churchWallAt,
@@ -240,6 +241,41 @@ function natatoriumProfile(_x,_y,cell){
   // its walls and models, producing the nested room visible from the deck.
   return{floor:cell.floor,ceil:9.5,flags:cell.flags};
 }
+
+// The old five-metre dry lead-in becomes the planted approach and changing
+// vestibule. Their glass partitions are real mesh panels with matching thin
+// prop colliders, as in the civic interiors. Keep the continuous 9.5m pool
+// envelope: an opaque grid wall or low DDA ceiling would hide the hall through
+// the new glazing. The basin, deck, access stair and outer shell stay authored
+// by natatoriumRows/natatoriumProfile above.
+const bathsApproachProfile=zone=>()=>({floor:0,ceil:9.5,zone,
+  material:zone===ZONE.glasshouse?MATERIAL.wetPaving:MATERIAL.wetTile,flags:0});
+
+// A normal one-metre glyph puts its frame at a quarter-metre centre. Overlap
+// half-metre-offset air glyphs to centre these two real frames exactly on the
+// thin partition planes. This is a shallow 1.5m x 2.5m door detector, not a
+// widened physical opening: the schedule owns its 2m pair, and the matching
+// glass/jamb colliders own the actual clear aperture. No opaque wall is baked.
+function bathsApproachThreshold(id,x,z,widthAxis,zone){
+  const baseX=x-(widthAxis==='x'?1:.5),baseZ=z-(widthAxis==='x'?.5:1);
+  const rows=widthAxis==='x'?['++']:['+','+'];
+  return[0,.5].flatMap(dx=>[0,.5].map(dz=>({
+    id:`${id}-${dx}-${dz}`,replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',
+    origin:{x:baseX+dx,y:baseZ+dz},physicalOrigin:{x:baseX+dx,y:baseZ+dz},base:0,rows,
+    profile:()=>({floor:0,ceil:9.5,zone,material:MATERIAL.wetTile,flags:F.DOOR}),
+  })));
+}
+
+const BATHS_APPROACH_LEVELS=[
+  {id:'natatorium_glasshouse',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',
+   origin:{x:71,y:28},physicalOrigin:{x:71,y:28},base:0,
+   rows:Array.from({length:4},()=> 'T'.repeat(21)),profile:bathsApproachProfile(ZONE.glasshouse)},
+  {id:'natatorium_changing',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',
+   origin:{x:92,y:28},physicalOrigin:{x:92,y:28},base:0,
+   rows:Array.from({length:4},()=> 'T'.repeat(4)),profile:bathsApproachProfile(ZONE.poolChanging)},
+  ...bathsApproachThreshold('glasshouse-changing-throat',92,30,'y',ZONE.poolChanging),
+  ...bathsApproachThreshold('changing-pool-throat',94,32,'x',ZONE.poolChanging),
+];
 function frontAtriumRows(){
   const w=24,h=25,out=[];
   for(let y=0;y<h;y++){let row='';for(let x=0;x<w;x++){
@@ -873,6 +909,7 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'exterior_civic_block',layer:'ground',space:'exterior_civic_block',renderGroup:'ground',
    origin:DISTRICT_LOGICAL_ORIGIN,physicalOrigin:{x:DISTRICT_BOUNDS.x0,y:DISTRICT_BOUNDS.y0},base:0,
    rows:buildExteriorDistrictRows(),profile:exteriorDistrictProfile},
+  ELLERY_PUBLIC_FORECOURT_LEVEL,
   ...PUB_LEVELS,
   ...STATIONERS_LEVELS,
   ...TOWER_WARNING_LEVELS,
@@ -929,6 +966,7 @@ const EUCLIDEAN_ADDITIONS=[
      from:{x:78,y:33},to:{x:78,y:37.5},fromH:0,toH:-2,width:2,ceil:9.5,
      zone:'natatorium',material:'wetTile',layer:'ground',space:'natatorium',renderGroup:'ground',
    }]},
+  ...BATHS_APPROACH_LEVELS,
   {id:'hall_box_office_link',replace:true,layer:'ground',space:'front_atrium',renderGroup:'hall',origin:{x:94,y:24},physicalOrigin:{x:94,y:24},base:0,rows:['FFFFHH','FFFFHH','FFFFHH']},
   {id:'hall_orchestra',replace:true,layer:'ground',space:'hall',renderGroup:'hall',origin:{x:98,y:4},physicalOrigin:{x:98,y:4},base:0,rows:hallGroundRows(),profile:hallGroundProfile},
   // Declared AFTER the orchestra and with the same origin and physicalOrigin, so
@@ -1074,6 +1112,9 @@ export const conservatory = {
   ],
   widenCorridors: true,
   edgePortals:[
+    {id:'north-footway-to-public-forecourt',width:24,
+     from:{at:districtLogicalAt(74,-.5),along:{x:1,y:0},exit:{x:0,y:1}},
+     to:{at:{x:74,y:0},along:{x:1,y:0},exit:{x:0,y:-1}}},
     ...ACADEMIC_ROOF_PORTALS,
     // The yard and apron are two stable logical components occupying adjacent
     // physical cells. These directional seams own the COMPLETE stair heads,
@@ -1098,8 +1139,10 @@ export const conservatory = {
     {id:'upper-floor-landing-to-hall',width:4,tolerance:1.42,
      from:{at:{x:155.5,y:50},along:{x:0,y:1},exit:{x:1,y:0}},
      to:{at:{x:154,y:70},along:{x:0,y:1},exit:{x:-1,y:0}}},
+    // Cross while every lane still stands on the level landing/first tread.
+    // The next row puts the inner lanes over the first raised 4.973m tread.
     {id:'upper-floor-landing-to-academic-flight',width:2,
-     from:{at:{x:151,y:53.5},along:{x:1,y:0},exit:{x:0,y:1}},
+     from:{at:{x:151,y:53},along:{x:1,y:0},exit:{x:0,y:1}},
      to:{at:{x:134,y:65},along:{x:1,y:0},exit:{x:0,y:1}},tolerance:1.2},
     {id:'upper-landing-to-practice',width:6,
      from:{at:{x:146,y:78.5},along:{x:1,y:0},exit:{x:0,y:1}},

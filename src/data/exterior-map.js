@@ -1,12 +1,13 @@
 // Public street survey, not a second interior plan. Existing street contracts
 // own the parcels; no closed frontage gains an invented room or entrance.
-import {DISTRICT_STREETS,DISTRICT_COURTS,YARD_SERVICE_RANGES} from './exterior-district.js';
+import {DISTRICT_STREETS,DISTRICT_COURTS,YARD_SERVICE_RANGES,districtLogicalAt} from './exterior-district.js';
 import {EXTERIOR_PUB,pubExteriorAt,pubExteriorLogicalAt} from './exterior-pub.js';
 import {CHURCH} from './st-brendans.js';
 import {CONSERVATORY_PROPS} from './conservatory-props.js';
 import {EXTERIOR_MAP_SHELL} from './generated/exterior-map-shell.js';
 import {ZONE} from './floorplan/legend.js';
 import {EXTERIOR_STATIONERS,STATIONERS_DOORS} from './exterior-stationers.js';
+import {SOUTH_ROW_SHOPS,PLAZA_SHOPFRONTS} from './plaza-shopfronts.js';
 export const EXTERIOR_MAP_FLOOR='district';
 export const EXTERIOR_MAP_ZONES=Object.freeze([ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.serviceYard,ZONE.pub,ZONE.stationers]);
 export const EXTERIOR_MAP_DEFINITION=Object.freeze({version:1,id:'ellery-district',topologyStride:2,
@@ -14,6 +15,17 @@ export const EXTERIOR_MAP_DEFINITION=Object.freeze({version:1,id:'ellery-distric
   targets:[],spaces:[],landmarks:[]});
 const rectangle=(x0,y0,x1,y1)=>[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
 const yardLogical=(x,y)=>({x:50+x,y:200+y});
+// A closed shop is marked at its public pavement, not given a false entrance.
+// Use the same row/deed ownership and physical transform as the placed fascia.
+function binderyPlacement(){
+  const deed=SOUTH_ROW_SHOPS.find(shop=>shop.useId==='bindery');
+  const row=CONSERVATORY_PROPS.find(prop=>prop.id===deed?.rowId);
+  if(!row||!deed)return null;
+  const c=Math.cos(row.yaw||0),s=Math.sin(row.yaw||0),z=-32+(deed.deed+.5)*8;
+  const origin={x:row.x-48+(Number(row.renderOffsetX)||0),y:row.y-338+(Number(row.renderOffsetZ)||0)};
+  return {rowId:row.id,deed:deed.deed,name:PLAZA_SHOPFRONTS[deed.useIndex].name,
+    position:{x:origin.x+c*1.25-s*z,y:origin.y+s*1.25+c*z}};
+}
 export function exteriorInstitutionCells({renderedInstances=[]}={}){
   const authored=CONSERVATORY_PROPS.find(p=>p.id===EXTERIOR_MAP_SHELL.propId);
   // Runtime capture supplies the exact rendered matrix. The fallback is the
@@ -39,8 +51,10 @@ export function exteriorMapFootprints(){
     const project=({x,y})=>({x:origin.x+c*x-s*y,y:origin.y+s*x+c*y});
     for(let deed=0;deed<8;deed++){
       if(prop.mesh.includes('passage')&&deed===4)continue;
+      if(prop.id===EXTERIOR_PUB.row.id&&EXTERIOR_PUB.row.deeds.includes(deed))continue;
       const stationers=prop.id===EXTERIOR_STATIONERS.row.id&&deed===EXTERIOR_STATIONERS.row.deed;
-      result.push({id:`${prop.id}:${deed}`,role:stationers?'stationers':'frontage',label:stationers?'STATIONERS':null,
+      const shop=SOUTH_ROW_SHOPS.find(shop=>shop.rowId===prop.id&&shop.deed===deed),bindery=shop?.useId==='bindery';
+      result.push({id:`${prop.id}:${deed}`,role:stationers?'stationers':bindery?'bindery':'frontage',label:stationers?'STATIONERS':bindery?PLAZA_SHOPFRONTS[shop.useIndex].name:null,
         points:rectangle(-depth,-32+deed*8,0,-24+deed*8).map(project)});
     }
   }
@@ -53,12 +67,13 @@ export function exteriorMapFootprints(){
   return result;
 }
 export function exteriorMapTargets(){
-  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubExteriorAt(pubDoor.id);
+  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubExteriorAt(pubDoor.id),bindery=binderyPlacement();
   return [
     {id:'outside:van',label:'VAN / EQUIPMENT',shortLabel:'VAN',logical:{x:61,y:208},currentRadius:4},
     {id:'outside:shelter',label:'ARRIVAL SHELTER',shortLabel:'BUS',logical:{x:54.5,y:205},currentRadius:3},
     {id:'outside:loading-bay',label:'ELLERY / LOADING BAY',shortLabel:'BAY',logical:{x:56,y:10},doorIds:['dock-grey-exterior'],currentRadius:5},
-    {id:'outside:lyric',label:'THE LYRIC / ENTRANCE',shortLabel:'PUB',logical:pubExteriorLogicalAt(pubDoor.id),physical:{x:pub.x,y:pub.z},doorIds:[pubDoor.id],currentRadius:4},
+    {id:'outside:lyric',label:'THE LYRIC / ENTRANCE',shortLabel:'THE LYRIC',logical:pubExteriorLogicalAt(pubDoor.id),physical:{x:pub.x,y:pub.z},doorIds:[pubDoor.id],currentRadius:4},
+    ...(bindery?[{id:'outside:bindery',label:bindery.name+' / SHOPFRONT',shortLabel:'BINDERY',logical:districtLogicalAt(bindery.position.x,bindery.position.y),physical:bindery.position,currentRadius:3,access:'shopfront'}]:[]),
     {id:'outside:stationers',label:'STATIONERS / ENTRANCE',shortLabel:'SHOP',
       logical:{x:STATIONERS_DOORS[0].at.x+.25,y:STATIONERS_DOORS[0].at.y+1.5},
       physical:{x:EXTERIOR_STATIONERS.door.x,y:EXTERIOR_STATIONERS.door.z+1.25},doorIds:[EXTERIOR_STATIONERS.door.id],currentRadius:3},

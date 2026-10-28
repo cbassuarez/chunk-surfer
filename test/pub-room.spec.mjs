@@ -7,10 +7,10 @@ import {PUB_INTERIOR_LAYOUT} from '../src/data/exterior-pub-furnishings.js';
 class Param{constructor(){this.value=0;}setTargetAtTime(v){this.value=v;}}
 class Context{
   constructor(){this.currentTime=0;this.sampleRate=8000;this.state='running';this.nodes=[];this.sources=[];this.destination=this.node('destination');}
-  node(kind){const node={kind,connected:false,connections:[],gain:new Param(),frequency:new Param(),pan:new Param(),connect(other){this.connected=true;this.connections.push(other);},disconnect(){this.connected=false;this.connections=[];}};this.nodes.push(node);return node;}
+  node(kind){const node={kind,connected:false,connections:[],gain:new Param(),frequency:new Param(),pan:new Param(),connect(other){this.connected=true;this.connections.push(other);},disconnect(){this.connected=false;this.connections=[];}};if(kind==='gain')node.gain.value=1;this.nodes.push(node);return node;}
   createGain(){return this.node('gain');}createBiquadFilter(){return this.node('filter');}createStereoPanner(){return this.node('panner');}
   createBuffer(_channels,length,rate){const values=new Float32Array(length);return{duration:length/rate,getChannelData:()=>values};}
-  createBufferSource(){const node=this.node('source');node.start=()=>{node.started=true;node.end=this.currentTime+node.buffer.duration;};node.stop=()=>{if(node.stopped)return;node.stopped=true;node.onended?.();};this.sources.push(node);return node;}
+  createBufferSource(){const node=this.node('source');node.start=()=>{node.startGain=node.connections[0]?.connections[0]?.gain?.value;node.started=true;node.end=this.currentTime+node.buffer.duration;};node.stop=()=>{if(node.stopped)return;node.stopped=true;node.onended?.();};this.sources.push(node);return node;}
   advance(dt){this.currentTime+=dt;for(const node of this.sources)if(node.started&&!node.stopped&&!node.loop&&node.end<=this.currentTime)node.stop();}
 }
 function fixture(){let ctx=new Context(),destination=ctx.destination;const audio=createPubRoomAudio({getAudio:()=>({ctx,destination})}),listener={x:-8,z:109,yaw:0};
@@ -50,4 +50,26 @@ test('context or destination replacement revokes the old graph and resets schedu
 });
 test('the module has no gameplay, speech, lighting or external scheduler authority',()=>{
   const source=readFileSync(new URL('../src/audio/pub-room.js',import.meta.url),'utf8');assert.doesNotMatch(source,/REC\.|PRES\.|emissive|setInterval\(|setTimeout\(|requestAnimationFrame|SpeechSynthesis|SPEECH\./);
+});
+
+test('performed service contacts follow their real table, stay bounded and cannot queue through pause or Source',()=>{
+  const h=fixture(),at={x:h.listener.x+1,z:h.listener.z};
+  assert.equal(h.audio.contact(at),false);h.tick(1);
+  assert.equal(h.audio.contact(at),true);
+  assert.ok(h.ctx().nodes.filter(n=>n.kind==='panner').at(-1).pan.value>0);
+  for(let i=0;i<20;i++)assert.equal(h.audio.contact(at),true);
+  assert.ok(h.audio.snapshot().contacts<=2);assert.ok(h.ctx().nodes.filter(n=>n.connected).length<=12);
+  h.tick(1,{recording:true});assert.equal(h.audio.contact(at),false,'service cannot make unscheduled noise on a live tape');
+  for(const mode of[{paused:true},{source:true},{inPub:false,nearPub:true}]){
+    h.tick(1,mode);assert.equal(h.audio.contact(at),false);h.tick(1);
+  }
+  assert.equal(h.audio.contact({x:NaN,z:0}),false);h.audio.dispose();assert.equal(h.audio.contact(at),false);
+});
+
+test('real default unity gains are silenced before any source starts',()=>{
+  const h=fixture();h.tick(1,{busy:true});
+  assert.equal(h.audio.contact({x:h.listener.x,z:h.listener.z}),true);
+  assert.ok(h.ctx().sources.length>=2);
+  assert.ok(h.ctx().sources.every(source=>source.startGain===0),'spatial targets cannot hide a full-volume start transient');
+  h.audio.stop();
 });

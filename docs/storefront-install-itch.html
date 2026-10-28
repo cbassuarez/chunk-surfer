@@ -20,20 +20,20 @@
 <p class="custom-lede"><strong>Unsigned beta. Your operating system will complain once. Here is how to get past it.</strong></p>
 
 <ul class="custom-spec">
-  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon &mdash; <code>chunk-surfer-macos-arm64.zip</code></span></li>
-  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-windows-x64.zip</code></span></li>
-  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 + nvidia cuda &mdash; <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
-  <li><strong class="custom-label">gpu</strong> <span class="custom-value">the diffusion material lens needs NVIDIA CUDA on Windows and Linux, and runs on the integrated GPU on Apple Silicon</span></li>
-  <li><strong class="custom-label">disk</strong> <span class="custom-value">large. the model weights ship inside the download so the lens runs offline &mdash; exact sizes are on the file list above</span></li>
+  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon &mdash; DMG</span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + 3D graphics support &mdash; <code>chunk-surfer-windows-x64.zip</code></span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 + 3D graphics support &mdash; <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
+  <li><strong class="custom-label">gpu</strong> <span class="custom-value">a 3D-capable GPU is required; integrated/edge device performance is under test</span></li>
+  <li><strong class="custom-label">disk</strong> <span class="custom-value">no Stable Diffusion weights are included; verify size from the release artifact</span></li>
   <li><strong class="custom-label">audio</strong> <span class="custom-value">headphones strongly recommended. the game is a listening test</span></li>
 </ul>
 
-<p class="custom-notice">Nothing is downloaded on first launch. The visual lens and its model resources are bundled, which is why the builds are unusually large. Once installed, the game never contacts a server and never uploads an image.</p>
+<p class="custom-notice">No Stable Diffusion model or Python runtime is bundled or downloaded on first launch. The game uses authored materials.</p>
 
 <h2>macOS</h2>
 
 <ol class="custom-steps">
-  <li>Unzip <code>chunk-surfer-macos-arm64.zip</code> and drag <strong>Chunk Surfer</strong> into <code>/Applications</code>.</li>
+  <li>Open the downloaded macOS Apple Silicon <code>.dmg</code> and drag <strong>Chunk Surfer</strong> into <code>/Applications</code>. If the download is instead a ZIP of the app, extract it completely first.</li>
   <li><strong>Right-click the app and choose Open</strong> &mdash; do not double-click it the first time. Confirm <strong>Open</strong> in the dialog.</li>
   <li>If macOS refuses anyway, open <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll to the blocked-app notice, and press <strong>Open Anyway</strong>.</li>
   <li>Still blocked? Clear the download quarantine flag in Terminal:<br>
@@ -44,9 +44,9 @@
 
 <ol class="custom-steps">
   <li>Unzip <code>chunk-surfer-windows-x64.zip</code> somewhere you can write to &mdash; not inside the zip, and not <code>Program Files</code>.</li>
-  <li>Run <code>chunk-surfer.exe</code>.</li>
+  <li>Keep all extracted files together and run <code>chunk-surfer.exe</code>. The Microsoft Edge WebView2 Runtime must be installed.</li>
   <li>SmartScreen will say <em>Windows protected your PC</em>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
-  <li>If the game starts and the world renders flat, your GPU driver is not exposing CUDA. Update your NVIDIA driver; the game remains playable without the lens.</li>
+  <li>If the world renders incorrectly, check that your graphics driver supports the required 3D/WebGL features.</li>
 </ol>
 
 <h2>Linux</h2>
@@ -56,7 +56,7 @@
     <code>chmod +x chunk-surfer-linux-x64.AppImage</code><br>
     <code>./chunk-surfer-linux-x64.AppImage</code></li>
   <li><strong>Debian / Ubuntu:</strong> <code>sudo apt install ./chunk-surfer-linux-x64.deb</code>, then launch <strong>Chunk Surfer</strong> from your applications menu.</li>
-  <li>The proprietary NVIDIA driver is required for the diffusion lens. Nouveau will run the game without it.</li>
+  <li>No NVIDIA CUDA driver is required for the normal authored-material game. Verify your OpenGL/WebGL support.</li>
 </ol>
 
 <h2>Microphone</h2>
@@ -79,7 +79,7 @@
 
 <h2>Something went wrong</h2>
 
-<p>This is a public beta and it is early. Expect some bugs. Dialog is very likely to change, story is not.</p>
+<p>This is candidate installation copy for v0.3.0. Package availability and platform acceptance must be confirmed before publication. Include the app version, operating system and a description of the problem in any report.</p>
 
 <ul class="custom-spec">
   <li><strong class="custom-label">report</strong> <span class="custom-value"><a href="https://cbassuarez.com/contact">cbassuarez.com/contact</a></span></li>

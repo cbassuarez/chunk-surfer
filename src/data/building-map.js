@@ -50,6 +50,10 @@ export const FACILITY_SPACES = Object.freeze([
   S('atrium','ATRIUM / FRONT OF HOUSE',{x:81,y:10},{shortLabel:'FOH',doorIds:['dock-foyer-service','foh-office','hall-vestibule']}),
   S('box-office','BOX OFFICE',{x:93,y:10},{shortLabel:'BOX',doorIds:['foh-office']}),
   S('public-sanitary-core','PUBLIC TOILETS',{x:80.75,y:24.25},{shortLabel:'WC',doorIds:['public-wc-large','public-wc-standard']}),
+  S('glasshouse','GLASSHOUSE',{x:84,y:30},{shortLabel:'GLASS',doorIds:['pool-lobby','glasshouse-changing'],
+    mapPosition:freezePoint({x:84,y:30}),currentRadius:4}),
+  S('pool-changing','CHANGING ROOM',{x:94,y:30},{shortLabel:'CHANGE',doorIds:['glasshouse-changing','changing-pool'],
+    mapPosition:freezePoint({x:94,y:30}),currentRadius:2}),
   S('ground-spine','GROUND SPINE',{x:68,y:23},{shortLabel:'SPINE'}),
   S('main-stair-ground','MAIN STAIR / GROUND',MAIN_STAIR_LAYOUT.groundHall,{shortLabel:'STAIR'}),
 
@@ -89,7 +93,7 @@ export const FACILITY_SPACES = Object.freeze([
 
 const TARGET_DOORS = Object.freeze({
   main_b3: Object.freeze(['b3-b2-service']),
-  the_tub: Object.freeze(['pool-lobby']),
+  the_tub: Object.freeze(['pool-lobby','glasshouse-changing','changing-pool']),
   amplifications: Object.freeze(['hall-vestibule','hall-rear-service','hall-stage-service']),
   soundnoisemusic: Object.freeze(['practice-west-1','practice-east-1','practice-west-2','practice-east-2','practice-side','practice-west-3','practice-east-3','practice-west-4','practice-east-4']),
   lux_nova: Object.freeze(['chapel-c17']),

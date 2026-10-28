@@ -5,7 +5,8 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { buildBellsGodPreset } from '../src/game/chunk-surf-god.js';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { towerPersonalWorldPieces } from '../src/render/tower-personal-worlds.js';
-import { normalizeTowerPersonalJourney } from '../src/game/tower-personal-journey.js';
+import { towerPersonalWorld } from '../src/data/tower-personal-journey.js';
+import { CELL } from '../src/data/floorplan/legend.js';
 import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from '../src/render/prop-instance-layout.js';
 
 test('the recordist circuit has finite grounded geometry with complete surface attributes', () => {
@@ -80,11 +81,25 @@ test('the tape field has immense upright reels and physically slack overhead str
   assert.ok(strand.bounds.max[1]-strand.bounds.min[1]>1.3,'suspended tape is a rigid straight beam');
 });
 
-test('the physical level bar moves on the actual recorder panel, including the shared LED origin offset', () => {
+test('the retained legacy level bar moves on the actual recorder panel, including the shared LED origin offset', () => {
   const preset=buildBellsGodPreset(440,{seed:4417}).state;
-  const personal=normalizeTowerPersonalJourney({version:2,active:true,stage:'ash-room',
-    returnPose:{x:0,y:-4200,yaw:0,pitch:0},pose:{x:5,z:-48,yaw:0,pitch:0}});
-  const runtime=createSourceSpaceRuntime({initialState:{...preset,station:{...preset.station,personal}}});
+  const runtime=createSourceSpaceRuntime({initialState:preset});
+  // Loaded active legacy visits now migrate to coastal memory. Exercise the
+  // retained meter through its explicit API and actual supported thresholds.
+  runtime.enterTowerLand('school-hall',{returnPose:{x:0,y:-4200,yaw:0,pitch:0}});
+  const world=point=>{
+    const origin=runtime.state().landscapeOrigin,placement=runtime.towerLandFrame().placement;
+    return{x:origin.x+placement.across+point.x/CELL,y:origin.y+placement.along+point.z/CELL};
+  };
+  for(const stage of ['tape-field','dead-broadcast','ash-room']){
+    const door=towerPersonalWorld(runtime.towerLandState()).doors.find(door=>door.id==='onward');
+    const from=world({x:door.center.x-door.normal.x,z:door.center.z-door.normal.z});
+    const to=world({x:door.center.x+door.normal.x*.45,z:door.center.z+door.normal.z*.45});
+    runtime.setPlayerPosition(from);
+    assert.equal(runtime.geometry.canStep(from.x,from.y,to.x,to.y).ok,true,'the legacy fixture crosses a supported aperture');
+    assert.equal(runtime.onStep(from,to).event,'personal-transition');
+    assert.equal(runtime.towerLandState(),stage);
+  }
   const frame=runtime.towerLandFrame(),floor=runtime.geometry.floorAt(frame.pose.x,frame.pose.y);
   const target=frame.targets.recordist,bounds=PROP_BOUNDS.radio_carrier_led;
   const extents=time=>{

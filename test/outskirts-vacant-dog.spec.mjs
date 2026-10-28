@@ -52,6 +52,9 @@ const axis = built.position.x;
 runtime.setPlayerPosition(built.position);
 const initialAlong = runtime.outskirtsLastLight().along;
 const passStart = OUTSKIRT_STRETCH_START + selected.pass * OUTSKIRT_STRETCH_METRES;
+// The canonical van occupies the old centre line. The pair leaves this real
+// walking lane clear between the handler and dog, including their loose lead.
+const walkingAcross = 2;
 const put = (along, across) => {
   const position = { ...built.position, x: axis + across / CELL,
     y: built.position.y - (along - initialAlong) / CELL };
@@ -60,7 +63,7 @@ const put = (along, across) => {
 };
 const sample = (position, yaw) => runtime.propInstances(position.x, position.y,
   { viewYaw: yaw, reducedMotion: true, time: 314.15 });
-const front = put(passStart + selected.along - 6, 0);
+const front = put(passStart + selected.along - 6, walkingAcross);
 const handlerPiece = runtime.outskirtsPiece(`r${selected.pass}-${selected.handlerKey}`);
 const eye = { x: (front.x + .5) * CELL, z: (front.y + .5) * CELL };
 const bearing = Math.atan2(handlerPiece.x - eye.x, -(handlerPiece.z - eye.z));
@@ -78,15 +81,15 @@ assert.equal(lead.mesh, 'outskirts_slack_lead');
 assert.equal(dog.character, undefined);
 assert.equal(lead.character, undefined);
 assert.ok(runtime.geometry.canStep(front.x, front.y, front.x, front.y - 1).ok,
-  'the pair blocks the central walking lane');
+  'the pair blocks the supported walking lane beside them');
 for (let metre = selected.along - 6; metre < selected.along + 6; metre += CELL) {
-  const from = put(passStart + metre, 0);
+  const from = put(passStart + metre, walkingAcross);
   const to = { x: from.x, y: from.y - 1 };
   assert.ok(runtime.geometry.canStep(from.x, from.y, to.x, to.y).ok,
-    `the pair blocks the central route at ${metre.toFixed(1)}m`);
+    `the pair blocks the walking lane at ${metre.toFixed(1)}m`);
 }
 
-const past = put(passStart + selected.along + 6, 0);
+const past = put(passStart + selected.along + 6, walkingAcross);
 sample(past, 0); // Truly leave the seen pair behind the view.
 const after = sample(past, Math.PI);
 const changed = after.find(instance => instance.id === handlerPiece.id);

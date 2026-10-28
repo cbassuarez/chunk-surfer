@@ -30,7 +30,7 @@ function physicalPaperRuntimeAssets() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [physicalPaperRuntimeAssets(), lensDevControl()],
   base: './',
   clearScreen: false,
@@ -44,6 +44,9 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    // Release builds cannot enable the editor through storage, a query or the
+    // god menu. Tauri's explicit debug build also uses `vite build`.
+    __LOCAL_TEXT_REVIEW__: command === 'serve' || process.env.TAURI_ENV_DEBUG === 'true',
   },
   build: {
     target: 'es2020',
@@ -58,4 +61,4 @@ export default defineConfig({
       },
     },
   }
-});
+}));

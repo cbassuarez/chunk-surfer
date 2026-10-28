@@ -2,6 +2,7 @@ import {createServer} from 'vite';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 const output=resolve('artifacts/battle-experience-study/live');await mkdir(output,{recursive:true});
+const studyRevision=Date.now();
 const hook=String.raw`
 if(import.meta.env.DEV&&params().has('battleStudy')){
  const {installBattleStudy}=await import('/tools/chunk_surfer/battle-study-live.mjs');
@@ -10,7 +11,8 @@ if(import.meta.env.DEV&&params().has('battleStudy')){
   state:()=>({scene:scenes.top()?.id||null,battle:scenes.top()?.battleView?.()||null,
    rec:REC.saveRecState(),loadout:getSave().bagLoadout,build:combatBuild(),difficulty:currentDifficulty(),
    position:{x:px,y:py},source:chunkSurfRuntime?{phase:chunkSurfRuntime.state().phase,hush:chunkSurfRuntime.hushMode(),follow:chunkSurfRuntime.hushFollowFrame(),door:chunkSurfRuntime.edgeDoorFrame(),approach:chunkSurfRuntime.edgeDoorApproach()}:null,
-   hands:battleHandsDiagnostics(),shader:window.__chunkSurferPixelMesh?.status?.(),paused,focused:document.hasFocus(),hidden:document.hidden}),
+   hands:battleHandsDiagnostics(),preparationStudy:window.__battlePreparationStudy?{snapshot:window.__battlePreparationStudy.snapshot(),events:window.__battlePreparationStudy.events}:null,
+   shader:window.__chunkSurferPixelMesh?.status?.(),paused,focused:document.hasFocus(),hidden:document.hidden}),
   audio:()=>({ctx:actx,output:outGain||master}),
   stage:async id=>{
    await godEnsureTestRun();while(buildingLoadPromise)await buildingLoadPromise;
@@ -18,11 +20,12 @@ if(import.meta.env.DEV&&params().has('battleStudy')){
    if(id==='source-approach'){
     godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL,{apertureComplete:true});
    }else{
-    flagApply(['bag.taken','kit.taken','kit.fitted','combat.trained',...(id==='source'?['has.interface','has.fork']:[])]);
+    flagApply(['bag.taken','kit.taken','kit.fitted','combat.trained',...(id==='source'||id==='prep'?['has.interface','has.fork']:[])]);
     saveCommit({bagLoadout:{schema:1,capacity:4,top:id==='source'?['light','recorder','interface','tuning-fork']:['light','recorder','radio']},flags:getSave().flags});
-    const battle=id==='hall'?hallBattle(false,'recording-2'):sourceCombatBattle();
+    let battle=id==='hall'||id==='prep'?hallBattle(false,'recording-2'):sourceCombatBattle();
+    if(id==='prep')battle={...battle,intro:[],combat:{...battle.combat,movements:battle.combat.movements.map(m=>({...m,before:[]}))}};
     openBattle(battle,{encounterId:id==='hall'?'recording-2':'source-final',
-      onWin:()=>{},onLose:()=>{}});
+      ...(id==='prep'?{skipEncounterStart:true,skipOpening:true,encounterIntro:true}:{}),onWin:()=>{},onLose:()=>{}});
    }
    resetMotionInput('battle-study-fixture',{stopRenderMove:true});
   }
@@ -31,9 +34,11 @@ if(import.meta.env.DEV&&params().has('battleStudy')){
 const server=await createServer({server:{host:'127.0.0.1',port:5361,strictPort:true,hmr:false,watch:null},
  optimizeDeps:{include:['three','three/addons/environments/RoomEnvironment.js','three/addons/geometries/RoundedBoxGeometry.js']},
  cacheDir:'node_modules/.vite-battle-study',plugins:[{name:'battle-experience-evidence',enforce:'pre',
+ transformIndexHtml:html=>html.replace('src/main.js?v=',`src/main.js?battleRevision=${studyRevision}&v=`),
  transform(code,id){if(id.split('?')[0]!==resolve('src/main.js'))return null;
   if(!code.includes('  installProbe();'))throw Error('Study hook location changed');
-  return code.replace('  installProbe();','  installProbe();\n'+hook);},
+  return code.replace('  installProbe();','  installProbe();\n'+hook)
+   .replace('function onKey(e){','function onKey(e){\n  if(window.__battlePreparationStudy?.handleKey?.(e))return;');},
  configureServer(vite){vite.middlewares.use('/__battle-study/',async(req,res)=>{
   const name=(req.url||'').split('?')[0].replace(/^\/+/, '');
   if(req.method!=='POST'||!/^battle-[a-z0-9-]+\.(json|png|webm)$/.test(name)){res.statusCode=400;res.end();return;}

@@ -18,6 +18,7 @@ import { makeBagScene } from '../src/game/bag.js';
 import { isBattleGear } from '../src/game/combat-loadout.js';
 import { bagKitDetailAction } from '../src/render/bag-view.js';
 import { PAGES } from '../src/data/conservatory-script.js';
+import { ROOF_PASSWORD_PAGE_ID } from '../src/data/roof-password.js';
 import { SOURCE_PAGES } from '../src/data/source-pages.js';
 
 const ALLOWED_DESTINATIONS = new Set([
@@ -34,8 +35,10 @@ test('every collected-object family has exactly one audited destination', () => 
   }
   assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'plant-stillson').destination, 'external-load');
   assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'source-sheets').destination, 'transient-source-document');
-  assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'building-pages:1-15').destination, 'file');
-  assert.equal(PAGES.length, 15, 'the complete bounded building-page family is represented');
+  assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'building-pages:1-16').destination, 'file');
+  assert.equal(PAGES.length, 16, 'the complete bounded building-page family is represented');
+  assert.equal(new Set(PAGES.map(page => page.id)).size, PAGES.length, 'all building pages have distinct identities');
+  assert.ok(PAGES.some(page => page.id === ROOF_PASSWORD_PAGE_ID), 'the hosted north-gallery service slip belongs to the audited file family');
   assert.ok(SOURCE_PAGES.length > 0, 'Source has read-in-place documents covered by the transient family');
 });
 

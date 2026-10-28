@@ -12,7 +12,7 @@ const DRIVE_ASSET_PACKS=Object.freeze([
  {key:'hands',path:'assets/source-drive/geometry/wheel-hands.glb',kind:'character'},
  {key:'cutStatic',path:'assets/source-drive/cut/cut-static.glb',kind:'prop',meshes:['cut_geology','cut_retaining']},
  {key:'cutLiving',path:'assets/source-drive/cut/cut-living.glb',kind:'character'},
- {key:'cutRoadside',path:'assets/source-drive/cut/cut-roadside.glb',kind:'prop',meshes:['cut_guardrail','drive_plain_paving']},
+ {key:'cutRoadside',path:'assets/source-drive/cut/cut-roadside.glb',kind:'prop',meshes:['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges']},
  {key:'cutLandscape',path:'assets/source-drive/cut/cut-landscape.glb',kind:'character'},
  {key:'predicaments',path:'assets/source-drive/predicaments/drive-predicaments.glb',kind:'prop',meshes:['dp_wreck_saloon','dp_road_fold','dp_whiteout_pylon']},
 ]);

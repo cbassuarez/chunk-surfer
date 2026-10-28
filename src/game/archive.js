@@ -8,6 +8,8 @@ import { promptLine } from './bindings.js';
 import { returnFileEntries } from './second-shift.js';
 import { returnDefinition } from '../progression/report.js';
 import { endingHintForEnding } from './post-run-copy.js';
+import { getSave } from './save.js';
+import { playDurationLine } from './play-duration.js';
 
 const CATEGORY_ORDER = ['work', 'disclosures', 'returns', 'method'];
 const CATEGORY_LABEL = { work: 'STORY', disclosures: 'SECRETS', returns: 'ENDINGS', method: 'CHALLENGES' };
@@ -31,7 +33,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
   };
 
   return {
-    id: 'archive', blocksInput: true, blocksWorld: true, lensPreset: 'calm',
+    id: 'archive', blocksInput: true, blocksWorld: true, handlesEscape: true, lensPreset: 'calm',
     enter() { AUDIO.startMenuHiss(); },
     exit() { AUDIO.stopMenuHiss(); onClose(); },
     key(e) {
@@ -66,6 +68,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       }, (body) => {
       drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RUN HISTORY', { color: UI_COLOR.amber, max: body.w });
       uiText(body.x + Math.max(20, body.w - 38), body.y, tab === 0 ? '[ACHIEVEMENTS]  RUN HISTORY' : ' ACHIEVEMENTS  [RUN HISTORY]', 'ui-label');
+      uiText(body.x, body.y + 1, playDurationLine(getSave(), body.w).slice(0, body.w), 'ui-label', .78);
       let tx = body.x;
       if (tab === 0) CATEGORY_ORDER.forEach((id, i) => {
         const on = i === category;

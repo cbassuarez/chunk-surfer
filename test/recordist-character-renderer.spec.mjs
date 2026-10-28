@@ -2,51 +2,49 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildBellsGodPreset } from '../src/game/chunk-surf-god.js';
-import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
-import { normalizeTowerPersonalJourney } from '../src/game/tower-personal-journey.js';
+import { normalizeTowerPersonalJourney, tickTowerPersonalJourney, towerPersonalJourneyFrame } from '../src/game/tower-personal-journey.js';
 import { TOWER_PERSONAL_STAGE_IDS } from '../src/data/tower-personal-journey.js';
+import { towerPersonalWorldPieces, towerPersonalHandoverPieces } from '../src/render/tower-personal-worlds.js';
 import * as P from '../src/render/props3d.js';
 
 function fixture(stage, progress = 0, time = 23.25) {
   const built = buildBellsGodPreset(440, { seed: 4417 });
-  const personal = normalizeTowerPersonalJourney({ version: 2, active: true, stage, time,
+  return normalizeTowerPersonalJourney({ version: 2, active: true, stage, time,
     returnPose: { ...built.position, yaw: 0, pitch: 0 },
     visited: Object.fromEntries(TOWER_PERSONAL_STAGE_IDS.map(id => [id, true])),
     recordingHeard: true, handoverSeconds: progress * 4, collapseSeconds: 0,
     pose: stage === 'ash-room' ? { x: 6.2, z: -48.5 } : { x: 0, z: 6.6 },
   });
-  const state = { ...built.state, station: { ...built.state.station, personal } };
-  const runtime = createSourceSpaceRuntime({ initialState: state });
-  runtime.setPlayerPosition(runtime.towerLandFrame().pose);
-  const instances = (time = 0, reducedMotion = false) => runtime.propInstances(undefined, undefined, { time, reducedMotion });
-  return { runtime, instances };
 }
 
 const actors = instances => instances.filter(p => /^recordist_(boy|contractor)$/.test(p.mesh));
-const characterState = instances => actors(instances).map(p => ({ id: p.id, mesh: p.mesh,
-  matrix: Array.from(p.matrix), character: structuredClone(p.character) }));
+const origin = piece => [piece.localX, piece.height, piece.localZ, piece.yaw];
 
-test('school and workroom use distinct ordinary physical characters with persisted, pause-safe performances', () => {
+// The live invitation now opens coastal memory. Retain coverage of the legacy
+// authored assets and saved performance helpers without re-entering that visit.
+test('retained school and workroom assets have distinct ordinary characters and a saved pause-safe clock', () => {
   for (const [stage, mesh, clip] of [['school-hall', 'recordist_boy', 'boy_wait'], ['ash-room', 'recordist_contractor', 'contractor_work']]) {
-    const h = fixture(stage), before = characterState(h.instances(5));
+    const before = actors(towerPersonalWorldPieces(stage));
     assert.equal(before.length, 1, `${stage} has one physical actor`);
     assert.equal(before[0].mesh, mesh); assert.equal(before[0].character.clip, clip);
-    assert.ok(actors(h.instances()).every(p => !p.pressure && !p.reflectionOnly && !p.noShadow), 'human characters left the ordinary material/shadow path');
-    assert.deepEqual(characterState(h.instances(5e5)), before, 'wall-clock rendering advanced a saved performance');
-    h.runtime.tickTowerLand(.25, { paused: true });
-    assert.deepEqual(characterState(h.instances(8e5)), before, 'pause advanced the character');
-    h.runtime.tickTowerLand(.25);
-    assert.notEqual(characterState(h.instances())[0].character.time, before[0].character.time, 'the saved performance clock never advances');
-    const restored = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(h.runtime.state())) });
-    restored.setPlayerPosition(restored.towerLandFrame().pose);
-    assert.deepEqual(characterState(restored.propInstances()), characterState(h.instances()), 'reload lost the actor pose');
+    assert.equal(before[0].character.loop, true);
+    assert.ok(before.every(p => !p.pressure && !p.reflectionOnly && !p.noShadow), 'human characters left the ordinary material/shadow path');
+    const saved = fixture(stage);
+    const paused = tickTowerPersonalJourney(saved, .25, { paused: true }).journey;
+    assert.deepEqual(paused, saved, 'pause advanced the saved performance');
+    const advanced = tickTowerPersonalJourney(saved, .25).journey;
+    assert.equal(advanced.time, saved.time + .25, 'the saved performance clock never advances');
+    assert.deepEqual(normalizeTowerPersonalJourney(JSON.parse(JSON.stringify(advanced))), advanced,
+      'serialization lost the saved performance clock');
+    assert.deepEqual(actors(towerPersonalWorldPieces(stage)), before, 'sampling mutated the authored characters');
   }
 });
 
 test('both transfer actors follow one four-second saved timeline and one recorder at every quarter', () => {
-  const school = actors(fixture('school-hall').instances()).find(p => p.mesh === 'recordist_boy');
+  const school = actors(towerPersonalWorldPieces('school-hall')).find(p => p.mesh === 'recordist_boy');
   for (const progress of [0, .25, .5, .75, 1]) {
-    const h = fixture('return-hall', progress), pieces = h.instances(1000), bodies = actors(pieces);
+    const saved = fixture('return-hall', progress), frame = towerPersonalJourneyFrame(saved);
+    const pieces = towerPersonalHandoverPieces(frame.handover), bodies = actors(pieces);
     assert.equal(bodies.length, 2, `transfer ${progress}: body count`);
     assert.deepEqual(bodies.map(p => p.mesh).sort(), ['recordist_boy', 'recordist_contractor']);
     for (const p of bodies) {
@@ -55,13 +53,12 @@ test('both transfer actors follow one four-second saved timeline and one recorde
       assert.equal(p.character.loop, false, 'a completed handover restarts');
     }
     const boy = bodies.find(p => p.mesh === 'recordist_boy');
-    assert.deepEqual(Array.from(boy.matrix), Array.from(school.matrix), 'the returning boy/chair changes its established origin');
+    assert.deepEqual(origin(boy), origin(school), 'the returning boy/chair changes its established origin');
     assert.equal(pieces.filter(p => p.id === 'land-handover-machine').length, 1, 'recorder duplicated or omitted during transfer');
     assert.ok(!pieces.some(p => /^tower_personal_(upper_arm|forearm|hand_support|hand_open)$/.test(p.mesh)), 'primitive substitute limbs still overlap the real bodies');
-    const before = characterState(pieces);
-    h.runtime.tickTowerLand(.25, { paused: true });
-    assert.deepEqual(characterState(h.instances(1e6)), before, 'paused handover changed either actor');
-    const reduced = actors(h.instances(0, true));
+    const paused = tickTowerPersonalJourney(saved, .25, { paused: true }).frame;
+    assert.deepEqual(towerPersonalHandoverPieces(paused.handover), pieces, 'paused handover changed either actor');
+    const reduced = actors(towerPersonalHandoverPieces(frame.handover, { reducedMotion: true }));
     assert.equal(reduced.length, 2, 'reduced motion removes an essential transfer actor');
     assert.ok(reduced.every(p => Number.isFinite(p.character.time)), 'reduced-motion pose is invalid');
   }
@@ -101,7 +98,7 @@ test('the production GLB submits independent frozen body palettes to material, t
     const loaded = await P.addCharacterPack('/recordist-characters.glb');
     assert.deepEqual(loaded.meshes.sort(), ['recordist_boy', 'recordist_contractor']);
     assert.ok(integerJoints >= 2, 'joint indices were not bound as integers');
-    const submitted = actors(fixture('return-hall', .5).instances()).map((p, i) => ({
+    const submitted = actors(towerPersonalHandoverPieces(.5)).map((p, i) => ({
       ...p, character: { ...p.character }, matrix: undefined, x: i * .8 - .4, y: 0, z: -3,
     }));
     P.setPropInstances([]); P.setDynamicPropInstances(submitted); P.prepareCharacterFrame(40);

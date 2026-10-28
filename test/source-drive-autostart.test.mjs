@@ -124,6 +124,7 @@ test('an explicit review placement may stay physically parked, while Enter has n
  await h.tick();await h.tick();assert.equal(h.session.status().paused,false);
  await h.session.pause();h.session.key({key:'Enter'});await flush();assert.equal(h.session.status().paused,true);
  assert.doesNotMatch(journey,/ENTER(?:\s*·| TO)\s*(?:DRIVE|START|RESUME|RETRY)/);
- assert.match(journey,/ENTER · LEAVE VAN/,'parked dismount remains a deliberate interaction');
+ assert.doesNotMatch(journey,/ENTER · LEAVE VAN/,'the normal route continues by driving through the doors');
+ assert.match(journey,/DRIVE THROUGH THE DOORS/);
  await h.session.dispose();
 });

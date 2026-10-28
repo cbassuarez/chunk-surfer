@@ -8,8 +8,10 @@ export const ENDING_WRONG_DOOR_OMEN = Object.freeze({
   occupationFrom: 4.55,
   occupationTo: 5.25,
   origin: Object.freeze({ x: -19.1, z: 15.7 }),
-  min: Object.freeze([EARTH.catch.minX - 1, -.6, EARTH.catch.minZ - 1]),
-  max: Object.freeze([EARTH.catch.maxX + 1, EARTH.upperFloor + 42, EARTH.catch.maxZ + 1]),
+  // This ending's occupation volume retains its established limits; the
+  // ordinary Earthfall landing head is a separate physical design.
+  min: Object.freeze([-97, -.6, -117]),
+  max: Object.freeze([97, EARTH.upperFloor + 42, 47]),
 });
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
@@ -25,7 +27,7 @@ export function endingWrongDoorFlowHeight(elapsed) {
   const accelerationSeconds = Math.min(age, EARTH.terminalSpeed / EARTH.gravity);
   const distance = EARTH.gravity * accelerationSeconds ** 2 / 2
     + EARTH.terminalSpeed * Math.max(0, age - accelerationSeconds);
-  return Math.max(EARTH.lowerFloor, EARTH.upperFloor - distance);
+  return Math.max(EARTH.lowerFloor, EARTH.upperFloor - EARTH.lowering.drop - distance);
 }
 
 export function endingWrongDoorOmenFrame(value = {}, presentation = {}) {

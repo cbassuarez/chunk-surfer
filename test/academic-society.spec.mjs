@@ -220,7 +220,9 @@ test('an ambient greeting turns its real speaker toward the visitor before an E 
     speakingLine:{actorId:'odette',toPlayer:true}}).find(a=>a.id==='odette');
   assert.equal(greeted.gazeKey,'player');assert.equal(greeted.speaking,true);
   assert.deepEqual(greeted.gazeAt,visitor);assert.equal(greeted.talkingToPlayer,false);
-  assert.ok(Math.cos(greeted.yaw)<-.99,'Odette faces the arriving visitor south of her, rather than showing her back');
+  const dx=visitor.x-greeted.x,dy=visitor.y-greeted.y,distance=Math.hypot(dx,dy);
+  assert.ok((Math.sin(greeted.yaw)*dx-Math.cos(greeted.yaw)*dy)/distance>.999,
+    'Odette faces the actual visitor from her stair-safe reception anchor');
 });
 
 test('ambient addressees are local actual people and do not override an active player conversation',()=>{
@@ -366,8 +368,8 @@ test('all authored body cues use the supported local performance vocabulary',()=
   }
 });
 
-test('the larger society keeps the original anchors and gives each new local partner a distinct remembered subject',()=>{
-  for(const [id,x,y]of[['odette',14.5,274.5],['emile',8.6,250.5],['celeste',12.2,246.6],['lucien',25.6,246.2]]){
+test('the larger society keeps the verified reception and room anchors and gives each new local partner a distinct remembered subject',()=>{
+  for(const [id,x,y]of[['odette',16.6,276],['agathe',16.4,274.3],['emile',8.6,250.5],['celeste',12.2,246.6],['lucien',25.6,246.2]]){
     assert.equal(byId[id].x,x);assert.equal(byId[id].y,y);
   }
   const examples=[['agathe','mistake',/same number of people/],['noe','lucien',/useful sort of friend/],['sabine','reviews',/precise sentence/]];

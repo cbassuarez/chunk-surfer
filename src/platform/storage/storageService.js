@@ -1,5 +1,7 @@
 import { detectStorageBackendKind } from '../detect.js';
-import { clearSlateAudio } from '../../audio/take-slate.js';
+import { eraseGameWebData } from './eraseUserData.js';
+import { invalidateSlateAudio } from '../../audio/take-slate.js';
+import { invalidateSourceDriveAudio } from '../../audio/source-drive-recording.js';
 import { BrowserStorage } from './browserStorage.js';
 import { DesktopStorage } from './desktopStorage.js';
 import { defaultSettings, defaultProfile } from './defaults.js';
@@ -10,6 +12,8 @@ import { initDiagnostics, logWarn, collectDiagnostics } from '../diagnostics/dia
 let storage = null;
 let initialized = false;
 let pending = Promise.resolve();
+let erasing = false;
+export function storageWritesBlocked() { return erasing; }
 
 export function createGameStorage({ kind = detectStorageBackendKind(), gameVersion = 'LOCAL', adapter = null } = {}) {
   if (kind === 'desktop') return new DesktopStorage({ gameVersion, adapter });
@@ -43,6 +47,7 @@ export async function loadGameState({ gameVersion = 'LOCAL' } = {}) {
 }
 
 function enqueue(task) {
+  if (erasing) return Promise.resolve(false);
   pending = pending.then(task, task).catch((error) => logWarn('storage write failed', error?.message || error));
   return pending;
 }
@@ -105,8 +110,20 @@ export async function exportAllData() {
 }
 
 export async function deleteAllUserData() {
-  await clearSlateAudio();
-  return storage?.deleteAllUserData?.();
+  if (!storage) throw new Error('Storage is not ready');
+  erasing = true;
+  try {
+    await pending;
+    invalidateSlateAudio();
+    invalidateSourceDriveAudio();
+    // Remove web data before desktop files so legacy imports cannot revive them.
+    await eraseGameWebData();
+    await storage.deleteAllUserData();
+    return true;
+  } catch (error) {
+    erasing = false;
+    throw error;
+  }
 }
 
 export async function revealSaveFolder() {

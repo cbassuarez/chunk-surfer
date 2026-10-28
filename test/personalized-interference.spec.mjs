@@ -325,7 +325,7 @@ assert.equal(emergencyCount, 1);
 const identityRust = readFileSync(new URL('../src-tauri/src/identity.rs', import.meta.url), 'utf8');
 assert.match(identityRust, /SteamAPI_ISteamFriends_GetPersonaName/);
 assert.doesNotMatch(identityRust, /GetSteamID|GetFriend|Enumerate|PersonaState/);
-const tauriBundle = readFileSync(new URL('../src-tauri/tauri.lens.conf.json', import.meta.url), 'utf8');
+const tauriBundle = readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8');
 assert.match(tauriBundle, /steamworks-runtime\/.*steamworks\//s);
 const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');
 assert.match(gitignore, /^steam_appid\.txt$/m);

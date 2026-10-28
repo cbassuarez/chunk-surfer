@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
-const expectedTag = process.argv[2] || 'v0.2.0';
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+const expectedTag = process.argv[2] || `v${pkg.version}`;
 // Every release up to 0.1.2 was a beta, and the guard only knew that shape.
 // A plain vX.Y.Z is now a valid tag too; the beta suffix stays legal so a
 // v0.2.1-beta.1 can still go out between releases.
@@ -12,9 +13,7 @@ if (!/^v\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(expectedTag)) {
 }
 export const IS_PRERELEASE = /-beta\./.test(expectedTag);
 const expectedVersion = expectedTag.slice(1);
-const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(readFileSync('src-tauri/tauri.conf.json', 'utf8'));
-const lensTauri = JSON.parse(readFileSync('src-tauri/tauri.lens.conf.json', 'utf8'));
 const windowsTauri = JSON.parse(readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
 const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8');
 const cargoVersion = cargo.match(/^version = "([^"]+)"/m)?.[1];
@@ -24,32 +23,48 @@ const portablePackager = readFileSync('scripts/package-windows-portable.mjs', 'u
 const portableValidator = readFileSync('scripts/validate-windows-portable.mjs', 'utf8');
 const vite = readFileSync('vite.config.js', 'utf8');
 const eula = readFileSync('LEGAL/EULA.md', 'utf8');
-const lensNotices = readFileSync('THIRD_PARTY_LENS_NOTICES.md', 'utf8');
-const buildBundle = readFileSync('tools/chunk_surfer/diffusion_server/build_bundle.py', 'utf8');
-const taesdMit = readFileSync('third_party/licenses/TAESD-MIT.txt', 'utf8');
 const surfacesManifest = JSON.parse(readFileSync('public/assets/surfaces/surfaces.json', 'utf8'));
 
-const versions = { package: pkg.version, tauri: tauri.version, cargo: cargoVersion };
+const packageLock=JSON.parse(readFileSync('package-lock.json','utf8'));
+const cargoLock=readFileSync('src-tauri/Cargo.lock','utf8');
+const cargoLockVersion=cargoLock.match(/\[\[package\]\]\nname = "chunk-surfer"\nversion = "([^"]+)"/)?.[1];
+const versions = { package: pkg.version, packageLock: packageLock.version, packageLockRoot: packageLock.packages?.['']?.version, tauri: tauri.version, cargo: cargoVersion, cargoLock: cargoLockVersion };
 for (const [source, version] of Object.entries(versions)) {
   if (version !== expectedVersion) {
     throw new Error(`${source} version is ${version}; ${expectedTag} requires ${expectedVersion}`);
   }
 }
-if (!pkg.scripts?.['tauri:build']?.includes('src-tauri/tauri.lens.conf.json')) {
-  throw new Error('tauri:build does not merge the mandatory lens bundle config');
+// Ordinary releases must stay independent of the local development lens, even
+// if a developer has staged model resources or exported VITE_STABLE_DIFFUSION=1.
+// Tauri embeds frontend assets into the executable. Inspecting only the outer
+// .app/portable tree cannot detect a model accidentally copied into public/.
+if (!/vite build\s*&&\s*npm run lean:verify -- dist$/.test(pkg.scripts?.build || '')) {
+  throw new Error('production frontend build must reject SD payloads before Tauri embeds dist');
 }
-if (!workflow.includes('build_bundle.py --target')) {
-  throw new Error('release workflow does not build target-specific lens sidecars');
+if (pkg.scripts?.['tauri:build'] !== 'tauri build') {
+  throw new Error('tauri:build must use the lean base Tauri config without a lens overlay');
 }
-if (!workflow.includes('npm run tauri:build --')) {
-  throw new Error('release workflow does not call the mandatory bundled Tauri build script');
+if (pkg.scripts?.['beta:build:mac']?.includes('lens:bundle') ||
+    pkg.scripts?.['tauri:build:steam']?.includes('tauri.lens.conf.json')) {
+  throw new Error('release build scripts must never package model resources');
+}
+if (existsSync('src-tauri/tauri.lens.conf.json') ||
+    tauri.bundle?.externalBin?.length ||
+    Object.keys(tauri.bundle?.resources || {}).some((key) => /lens-resources|models|chunk-lens/i.test(key))) {
+  throw new Error('Tauri production bundle still contains a Stable Diffusion payload');
+}
+if (/build_bundle\.py|install_torch\.py|lens-bundle-v2|tauri\.lens\.conf\.json/.test(workflow)) {
+  throw new Error('release workflow still installs or bundles Stable Diffusion');
+}
+if (!workflow.includes('npm run tauri:build --') || !workflow.includes('npm run lean:verify --')) {
+  throw new Error('release workflow must build and validate lean Tauri artifacts');
 }
 const windowsJob = releaseMatrix.match(/windows: \{[\s\S]*?(?=\n  linux: \{)/)?.[0] || '';
 if (!windowsJob.includes("args: '--no-bundle'")) {
   throw new Error('Windows release workflow must skip installer bundling and package the portable zip');
 }
 if (windowsJob.includes('nsis') || windowsJob.includes('msi')) {
-  throw new Error('Windows release workflow must not build NSIS or MSI installers for the current offline lens payload');
+  throw new Error('Windows portable release must continue to avoid untested NSIS or MSI targets');
 }
 if (!workflow.includes('scripts/package-windows-portable.mjs') || !workflow.includes('*windows-x64.zip')) {
   throw new Error('Windows release workflow must upload and verify the portable zip artifact');
@@ -57,14 +72,16 @@ if (!workflow.includes('scripts/package-windows-portable.mjs') || !workflow.incl
 if (!pkg.scripts?.['windows:validate']?.includes('validate-windows-portable.mjs')) {
   throw new Error('Windows portable payload validator script is missing');
 }
-if (!portablePackager.includes('validateWindowsPortable(appDir)') || !portableValidator.includes('weightsSha256')) {
-  throw new Error('Windows portable packaging must validate the staged payload and model manifest');
+if (!portablePackager.includes('validateWindowsPortable(appDir)') ||
+    !portableValidator.includes('findForbiddenLensFiles') ||
+    !portablePackager.includes("cpSync(eula, path.join(appDir, 'EULA.md'))")) {
+  throw new Error('Windows portable packaging must ship the general EULA and reject SD payloads');
 }
 if (workflow.includes('Compress-Archive')) {
-  throw new Error('Windows portable zip creation must use 7-Zip, not PowerShell Compress-Archive, for the oversized offline lens payload');
+  throw new Error('Windows portable zip creation must use the verified 7-Zip packaging path');
 }
 if (!workflow.includes('Get-Command 7z') || !workflow.includes('& $sevenZip a -tzip') || !workflow.includes('& $sevenZip t')) {
-  throw new Error('Windows release workflow must create and verify the oversized portable zip with 7-Zip');
+  throw new Error('Windows release workflow must create and verify the portable zip with 7-Zip');
 }
 if (!workflow.includes('Expand-Archive') || !workflow.includes('$verifyRoot/Chunk Surfer')) {
   throw new Error('Windows release workflow must validate a clean extraction of the portable zip');
@@ -75,17 +92,10 @@ if (!workflow.includes('Prepare release upload assets') || !workflow.includes('s
 if (!workflow.includes('gh release delete-asset')) {
   throw new Error('release workflow must clear stale prerelease assets before uploading the current set');
 }
-if (!workflow.includes('third_party/licenses/*')) {
-  throw new Error('release workflow lens cache key must include tracked third-party license files');
-}
 const defaultTargets = tauri.bundle?.targets || [];
-const lensTargets = lensTauri.bundle?.targets || [];
 const windowsTargets = windowsTauri.bundle?.targets || [];
 if (defaultTargets.includes('nsis')) {
   throw new Error('Default Tauri bundle targets must exclude NSIS');
-}
-if (lensTargets.includes('nsis')) {
-  throw new Error('Lens Tauri bundle overlay must exclude NSIS');
 }
 if (windowsTargets.length !== 1 || windowsTargets[0] !== 'app') {
   throw new Error('Windows Tauri config must use the app target; release CI packages the portable zip itself');
@@ -93,44 +103,27 @@ if (windowsTargets.length !== 1 || windowsTargets[0] !== 'app') {
 if (!vite.includes('__APP_VERSION__') || !vite.includes('package.json')) {
   throw new Error('runtime About/version display is not sourced from the package release version');
 }
-const lensResources = lensTauri.bundle?.resources || {};
-if (lensResources['../LEGAL/EULA.md'] !== 'EULA.md') {
-  throw new Error('bundled Tauri resources must ship LEGAL/EULA.md as EULA.md');
-}
-if (!eula.includes('Mandatory model-use restrictions') || !eula.includes('Stable Diffusion 1.5') || !eula.includes('TAESD')) {
-  throw new Error('EULA must carry bundled model stack restrictions and identify the local model resources');
+const bundledResources = tauri.bundle?.resources || {};
+if (bundledResources['../LEGAL/EULA.md'] !== 'EULA.md' ||
+    bundledResources['steamworks-runtime/'] !== 'steamworks/') {
+  throw new Error('base Tauri resources must retain the general EULA and optional Steamworks runtime');
 }
 if (!/^Version:\s*\S+/m.test(eula)) {
   throw new Error('EULA must carry a Version: line; acceptance is recorded against it');
 }
-// Bundling the agreement is distribution. OpenRAIL-M also requires notice, so
-// the build must ship a gate that presents it before the model does any work.
 {
   const mainSource = readFileSync('src/main.js', 'utf8');
+  const policy = readFileSync('src/platform/stable-diffusion-policy.js', 'utf8');
   const eulaText = readFileSync('src/game/eula-text.js', 'utf8');
-  if (!eulaText.includes('LEGAL/EULA.md?raw')) {
-    throw new Error('the licence screen must render the bundled LEGAL/EULA.md, not a copy');
+  if (!eulaText.includes('LEGAL/EULA.md?raw') ||
+      !mainSource.includes('eulaAccepted(getMeta(),EULA_TEXT)')) {
+    throw new Error('game EULA gate must use the shipped agreement');
   }
-  if (!mainSource.includes('eulaAccepted(getMeta(),EULA_TEXT)') || !mainSource.includes('makeEulaScene')) {
-    throw new Error('boot must gate lens calibration behind EULA acceptance');
-  }
-  if (mainSource.indexOf('makeEulaScene') > mainSource.indexOf('pushCalibration()')) {
-    throw new Error('the EULA gate must be presented before lens calibration runs');
-  }
-}
-if (!buildBundle.includes('TAESD-MIT.txt') || !taesdMit.includes('Copyright (c) 2023 Ollin Boer Bohan')) {
-  throw new Error('lens bundle must distribute the full TAESD MIT notice');
-}
-for (const required of [
-  '451f4fe16113bff5a5d2269ed5ad43b0592e9a14',
-  'bc08d970a87c74c71209491d64e3525845698863',
-  '539f99181d33db39cf1af2e517cd8056785f0a87',
-  '614f76814bbe30edbe2e627ace1c2234c81a2c0e',
-  'lens/CREATIVEML_OPEN_RAIL_M.txt',
-  'lens/TAESD-MIT.txt',
-]) {
-  if (!lensNotices.includes(required)) {
-    throw new Error(`third-party lens notices are missing ${required}`);
+  if (!mainSource.includes('const SD_DEV_ENABLED=import.meta.env.DEV') ||
+      !/if\(stableDiffusionOff\(\)\)\{afterCalibration\(\);return;\}/.test(mainSource) ||
+      !mainSource.includes('if(!SD_DEV_ENABLED)return null') ||
+      !policy.includes('if (!available')) {
+    throw new Error('production startup must forbid lens services and bypass SD calibration');
   }
 }
 const surfaceEntries = Object.values(surfacesManifest.surfaces || {});

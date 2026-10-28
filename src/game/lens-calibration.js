@@ -66,8 +66,8 @@ export function makeLensCalibrationScene({
         }
       }
     } catch (_) {
-      // The screen remains in place with explicit recovery actions. A run
-      // cannot begin without its authored material bank.
+      // In an explicitly opted-in SD development session, a failed calibration
+      // remains recoverable. Normal game launches never enter this scene.
     } finally {
       pending = false;
     }
@@ -189,7 +189,7 @@ export function makeLensCalibrationScene({
       } else {
         const message = String(error).slice(0, Math.max(12, cols - 8));
         uiCenter(cursor + 2, message, 'ui-danger');
-        uiCenter(cursor + 4, 'THE RUNTIME IS REQUIRED; THE GAME WILL NOT START WITHOUT IT.', 'ui-secondary');
+        uiCenter(cursor + 4, 'RESTART WITHOUT --SD TO PLAY WITH AUTHORED MATERIALS.', 'ui-secondary');
         uiCenter(cursor + 7, `${selected === 0 ? '▸' : ' '} RETRY SETUP`, selected === 0 ? 'ui-primary' : 'ui-secondary');
         uiCenter(cursor + 9, `${selected === 1 ? '▸' : ' '} QUIT`, selected === 1 ? 'ui-primary' : 'ui-secondary');
       }

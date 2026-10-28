@@ -35,13 +35,13 @@ test('both actual printed fascia faces receive the missing outdoor incident ligh
 });
 
 test('the two pub deeds retain exposed front, return and roof planes while the adjacent shops stay unchanged', () => {
-  assert.equal(pubFrontSkySurface({ x: 29, y: 1.74, z: 85.1 }, outward), true);
-  assert.equal(pubFrontSkySurface({ x: 25, y: 2, z: 87.8 }, { x: -1, y: 0, z: 0 }), true);
-  assert.equal(pubFrontSkySurface({ x: 29, y: 14, z: 88 }, { x: 0, y: 1, z: 0 }), true);
+  assert.equal(pubFrontSkySurface({ x: -10, y: 1.74, z: 107.1 }, outward), true);
+  assert.equal(pubFrontSkySurface({ x: -14, y: 2, z: 109.8 }, { x: -1, y: 0, z: 0 }), true);
+  assert.equal(pubFrontSkySurface({ x: -10, y: 14, z: 110 }, { x: 0, y: 1, z: 0 }), true);
   for (const point of [{ x: 10, y: 3.77, z: 106.74 }, { x: 30, y: 6, z: 106.7 }, { x: -10, y: 2, z: 99 }, { x: -10, y: 20, z: 107 }])
     assert.equal(pubFrontSkySurface(point, outward), false);
-  assert.equal(pubFrontSkySurface({ x: 29, y: 3.52, z: 87.8 }, { x: 0, y: -1, z: 0 }), false, 'ordinary interior ceiling remains unlit by this helper');
-  assert.equal(pubFrontSkySurface({ x: 29, y: .12, z: 87.8 }, { x: 0, y: 1, z: 0 }), false, 'ordinary interior floor remains unlit by this helper');
+  assert.equal(pubFrontSkySurface({ x: -10, y: 3.52, z: 109.8 }, { x: 0, y: -1, z: 0 }), false, 'ordinary interior ceiling remains unlit by this helper');
+  assert.equal(pubFrontSkySurface({ x: -10, y: .12, z: 109.8 }, { x: 0, y: 1, z: 0 }), false, 'ordinary interior floor remains unlit by this helper');
 });
 
 test('the real prop fragment pass uses the bounded surface test inside its existing sky term', () => {

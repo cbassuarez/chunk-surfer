@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to publish, for example v0.2.0 or v0.2.1-beta.1'
+        description: 'Release tag to validate or publish, for example v0.3.0'
         required: true
         type: string
       publish:
@@ -103,9 +103,26 @@ jobs:
           node-version: lts/*
           cache: npm
 
+      # Build-only rasterisers are independent of the optional SD service.
+      # They generate/check authored lettering and are never bundle resources.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Install authored rasteriser test dependencies
+        shell: bash
+        run: |
+          python -m venv .paper-venv
+          python - <<'PYTHON'
+          import os
+          import pathlib
+          import subprocess
+          interpreter = (pathlib.Path('.paper-venv') / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')).resolve()
+          subprocess.check_call([str(interpreter), '-m', 'pip', 'install', 'Pillow==12.3.0', 'numpy==2.3.5'])
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as env_file:
+              env_file.write(f'PAPER_PYTHON={interpreter}\n')
+              env_file.write(f'CHUNK_SURFER_LETTERING_PYTHON={interpreter}\n')
+          PYTHON
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -123,44 +140,6 @@ jobs:
           RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
-      - name: Restore packaged lens bundle
-        id: lens-bundle-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
-            src-tauri/lens-resources/lens
-          key: lens-bundle-v2-cu128-${{ matrix.target }}-py312-${{ hashFiles('tools/chunk_surfer/diffusion_server/*.py', 'tools/chunk_surfer/diffusion_server/requirements-local.txt', 'THIRD_PARTY_LENS_NOTICES.md', 'third_party/licenses/*') }}
-
-      - name: Install GPU-correct PyTorch for this platform
-        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
-        run: python tools/chunk_surfer/diffusion_server/install_torch.py
-
-      - name: Install pinned lens bundler dependencies
-        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
-        run: python -m pip install --no-cache-dir -r tools/chunk_surfer/diffusion_server/requirements-local.txt pyinstaller==6.16.0
-
-      - name: Build offline lens sidecar and pinned resources
-        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
-        run: python tools/chunk_surfer/diffusion_server/build_bundle.py --target ${{ matrix.target }}
-
-      - name: Cache packaged lens bundle
-        if: steps.lens-bundle-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            src-tauri/binaries/chunk-lens-${{ matrix.target }}*
-            src-tauri/lens-resources/lens
-          key: ${{ steps.lens-bundle-cache.outputs.cache-primary-key }}
-
-      - name: Trim Linux lens build scratch space
-        if: matrix.platform == 'ubuntu-22.04'
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .lens-build ~/.cache/huggingface ~/.cache/pip
-          df -h
-
       - name: Run frontend tests
         run: npm test
 
@@ -176,7 +155,6 @@ jobs:
           FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '540000' || '300000' }}
           FEATURE_SMOKE_FRAME_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '60000' || matrix.platform == 'windows-latest' && '30000' || '10000' }}
         run: npm run test:feature-smoke
-        continue-on-error: true
 
       - name: Upload visual parity captures
         if: always()
@@ -189,7 +167,7 @@ jobs:
       - name: Check Tauri Rust
         run: npm run tauri:check
 
-      - name: Run Windows sidecar process tests
+      - name: Run Windows native process tests
         if: matrix.platform == 'windows-latest'
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 
@@ -197,12 +175,46 @@ jobs:
         if: matrix.platform != 'ubuntu-22.04'
         run: npm run tauri:build -- ${{ matrix.args }}
 
-      # The offline lens makes each Linux bundle several gigabytes while Tauri is
-      # staging it. Upload and remove the AppImage tree before staging the deb so
-      # both expanded package trees never compete for hosted-runner disk space.
+      - name: Verify delivered macOS DMG contents
+        if: matrix.platform == 'macos-14'
+        shell: bash
+        run: |
+          set -euo pipefail
+          dmgs=(src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg)
+          test -f "${dmgs[0]}"
+          for dmg in "${dmgs[@]}"; do
+            unpack="$(mktemp -d)"
+            trap 'hdiutil detach "$unpack" >/dev/null 2>&1 || true; rmdir "$unpack" 2>/dev/null || true' EXIT
+            hdiutil attach "$dmg" -readonly -nobrowse -mountpoint "$unpack" >/dev/null
+            app_dir="$(find "$unpack" -maxdepth 1 -type d -name '*.app' -print -quit)"
+            test -n "$app_dir"
+            npm run lean:verify -- "$app_dir"
+            hdiutil detach "$unpack" >/dev/null
+            rmdir "$unpack" 2>/dev/null || true
+            trap - EXIT
+          done
+
+      # Build one Linux package at a time to reduce hosted-runner disk pressure;
+      # neither package includes a model runtime or model weights.
       - name: Build Linux AppImage
         if: matrix.platform == 'ubuntu-22.04'
         run: npm run tauri:build -- --bundles appimage
+
+      - name: Verify lean Linux AppImage contents
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          images=(src-tauri/target/release/bundle/appimage/*.AppImage)
+          test -f "${images[0]}"
+          for image in "${images[@]}"; do
+            unpack="$(mktemp -d)"
+            trap 'rm -rf "$unpack"' EXIT
+            (cd "$unpack" && "$GITHUB_WORKSPACE/$image" --appimage-extract >/dev/null)
+            npm run lean:verify -- "$unpack/squashfs-root"
+            rm -rf "$unpack"
+            trap - EXIT
+          done
 
       - name: Upload Linux AppImage
         if: matrix.platform == 'ubuntu-22.04'
@@ -223,6 +235,22 @@ jobs:
       - name: Build Linux deb
         if: matrix.platform == 'ubuntu-22.04'
         run: npm run tauri:build -- --bundles deb
+
+      - name: Verify lean Linux deb contents
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          debs=(src-tauri/target/release/bundle/deb/*.deb)
+          test -f "${debs[0]}"
+          for deb in "${debs[@]}"; do
+            unpack="$(mktemp -d)"
+            trap 'rm -rf "$unpack"' EXIT
+            dpkg-deb -x "$deb" "$unpack"
+            npm run lean:verify -- "$unpack"
+            rm -rf "$unpack"
+            trap - EXIT
+          done
 
       - name: Upload Linux deb
         if: matrix.platform == 'ubuntu-22.04'
@@ -254,7 +282,7 @@ jobs:
           }
           $sevenZip = $sevenZipCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
           if (-not $sevenZip) {
-            throw "7-Zip is required to package the oversized Windows portable zip"
+            throw "7-Zip is required for the Windows portable archive verification"
           }
 
           Remove-Item $zip -Force -ErrorAction SilentlyContinue

@@ -6,6 +6,7 @@ import { DISTRICT_BOUNDS, DISTRICT_LOGICAL_ORIGIN, buildExteriorDistrictRows } f
 import { EXTERIOR_FOREGROUND, foregroundArrivalGlyphAt } from './exterior-foreground.js';
 import { EXTERIOR_ROOFLINE } from './exterior-roofline.js';
 import { PLAZA_SHOPFRONTS } from './plaza-shopfronts.js';
+import { EXTERIOR_PUB, PUB_RELOCATION } from './exterior-pub.js';
 import { PROP_BOUNDS } from './generated/prop-geometry.js';
 import { GLYPHS } from './floorplan/legend.js';
 import { streetPilotFloorAt } from './street-pilot.js';
@@ -19,6 +20,16 @@ const freeze=value=>{
 const props=new Map(CONSERVATORY_PROPS.map(p=>[p.id,p]));
 const districtRows=buildExteriorDistrictRows();
 const snap=n=>Math.round(n*2)/2;
+
+// The remembered district is scenery beside this road, never a second street
+// grid laid across it. These two 64m skins run transversely through the entire
+// 23m walking band when the ordinary town is repeated every137.6m. Their court
+// mouths fall outside that band, so there is no physical passage to reproduce.
+// Keep their canonical ordinary-world poses available; omit only these Source
+// backdrop instances rather than drawing walls the player must walk through.
+export const SOURCE_OUTSKIRTS_CONTEXT_EXCLUSIONS=freeze([
+  'district-west-row-a','district-east-row-a',
+]);
 
 export const SOURCE_OUTSKIRTS_TOWN=freeze({
   revision:1,coordinateSpace:'source-road-metres',periodMetres:34.4,
@@ -40,20 +51,23 @@ export function exteriorToOutskirts({x,z,y=0,yaw=0}){
 }
 
 // These are the ordinary renderer's actual poses, including its half-metre
-// projection and explicit sub-cell corrections. The three coordinate islands
+// projection and explicit sub-cell corrections. The coordinate islands
 // below are established exterior contracts, rather than a second town plan.
 export function canonicalOutskirtsExteriorPose(id){
   const p=props.get(id);
   if(!p)throw new Error(`Unknown canonical exterior prop: ${id}`);
   const district=id.startsWith('district-')||id==='stationers-complete-room';
+  // The movable pub retains original district/save addresses. It is neither
+  // a yard prop nor a new logical destination when its physical anchor moves.
+  const pub=id==='pub-complete-frontage'||id==='pub-complete-interior';
   const direct=id==='opening-street-frontage';
-  const x=snap(p.x)+(p.renderOffsetX||0)-(district?DISTRICT_LOGICAL_ORIGIN.x-DISTRICT_BOUNDS.x0:direct?0:EXTERIOR_FOREGROUND.yardOrigin.x);
-  const z=snap(p.y)+(p.renderOffsetZ||0)-(district?DISTRICT_LOGICAL_ORIGIN.y-DISTRICT_BOUNDS.y0:direct?0:EXTERIOR_FOREGROUND.yardOrigin.y);
+  const x=snap(p.x)+(p.renderOffsetX||0)-((district||pub)?DISTRICT_LOGICAL_ORIGIN.x-DISTRICT_BOUNDS.x0:direct?0:EXTERIOR_FOREGROUND.yardOrigin.x)+(pub?PUB_RELOCATION.x:0);
+  const z=snap(p.y)+(p.renderOffsetZ||0)-((district||pub)?DISTRICT_LOGICAL_ORIGIN.y-DISTRICT_BOUNDS.y0:direct?0:EXTERIOR_FOREGROUND.yardOrigin.y)+(pub?PUB_RELOCATION.z:0);
   const districtX=snap(p.x)-DISTRICT_LOGICAL_ORIGIN.x+DISTRICT_BOUNDS.x0;
   const districtZ=snap(p.y)-DISTRICT_LOGICAL_ORIGIN.y+DISTRICT_BOUNDS.y0;
   const glyph=districtRows[Math.floor(districtZ-DISTRICT_BOUNDS.y0)]?.[Math.floor(districtX-DISTRICT_BOUNDS.x0)];
   const districtFloor=streetPilotFloorAt(districtX,districtZ)??GLYPHS[glyph]?.floor??0;
-  const floor=p.floorOverride??(district?districtFloor:foregroundArrivalGlyphAt(x,z)==='g'?.02:0);
+  const floor=p.floorOverride??(pub?EXTERIOR_PUB.floor:district?districtFloor:foregroundArrivalGlyphAt(x,z)==='g'?.02:0);
   return {x,z,y:floor+(p.elevation||0)+(p.renderOffsetY||0),yaw:p.yaw||0};
 }
 
@@ -91,7 +105,7 @@ const contextIds=[
   'district-north-row-a','district-north-row-b','district-north-row-c',
   'district-south-row-a','district-south-row-b','district-south-row-c',
   'district-north-court-walls','district-south-court-walls','district-west-court-walls','district-east-court-walls',
-  'stationers-complete-room',
+  'stationers-complete-room','pub-complete-frontage','pub-complete-interior',
 ];
 const benchBody={minX:-ARRIVAL_COURT.bench.width/2,maxX:ARRIVAL_COURT.bench.width/2,
   minZ:-ARRIVAL_COURT.bench.depth/2,maxZ:ARRIVAL_COURT.bench.depth/2};
@@ -135,7 +149,8 @@ const roof={id:'town-ellery-west-roofline-closure',canonicalId:'ellery-west-roof
   mesh:'ellery_west_roofline_closure',...roofPose,initialOnly:true,context:true,collision:'none',
   lastPass:SOURCE_OUTSKIRTS_TOWN.initialLastPass};
 const set=freeze([
-  ...contextIds.map(id=>context(id)),initial,freeze({...roof,bounds:contextBounds(roof)}),
+  ...contextIds.filter(id=>!SOURCE_OUTSKIRTS_CONTEXT_EXCLUSIONS.includes(id)).map(id=>context(id)),
+  initial,freeze({...roof,bounds:contextBounds(roof)}),
 ]);
 
 // Pass-local fixed origins. The runtime selects context groups every four

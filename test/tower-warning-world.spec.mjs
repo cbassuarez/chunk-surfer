@@ -10,11 +10,12 @@ import {EXTERIOR_COLLISION_GEOMETRY} from '../src/data/generated/exterior-collis
 import {exteriorFacadeCanStep} from '../src/world/exterior-facade-collision.js';
 import {parseCharacterAsset,sampleCharacterPose} from '../src/render/character-asset.js';
 import {installTowerWarningFigure,towerWarningInstances,TOWER_WARNING_SOURCE_MESH,TOWER_WARNING_MESH} from '../src/render/tower-warning.js';
+import {towerWarningOccluded} from '../src/game/tower-warning.js';
 
 FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
 const placed=PROPS.renderInstances({inscriptions:false});
 const at=p=>FP.logicalAtPhysical(p.x*2-.5,p.z*2-.5,{group:'ground',floor:p.y});
-const bytes=fs.readFileSync(new URL('../public/assets/outskirts-characters.glb',import.meta.url));
+const bytes=fs.readFileSync(new URL('../public/assets/tower-warning-missing-man.glb',import.meta.url));
 const asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
 
 test('the warning stands on the old Lyric pavement and turns through actual clear masonry, on real paving',()=>{
@@ -43,38 +44,52 @@ test('the warning stands on the old Lyric pavement and turns through actual clea
     height:W.bodyHeight,radius:W.bodyRadius,stepUp:.05},placed).ok,false);
 });
 
-test('the hide authority corresponds to the actual full-height old Lyric party return, without sealing the alley',()=>{
-  const p=placed.find(p=>p.id==='district-south-row-a'),o=W.occluders[0];
+test('the hide authority follows the actual pub return masonry without sealing its side window or public room',()=>{
+  const p=placed.find(p=>p.id==='pub-complete-frontage');
   const walls=EXTERIOR_COLLISION_GEOMETRY[p.mesh].walls;
   const c=Math.cos(p.yaw),s=Math.sin(p.yaw),world=(x,z)=>[p.x+x*c-z*s,p.z+x*s+z*c];
-  assert.ok(walls.some(w=>{
+  for(const o of W.occluders.filter(o=>o.mesh===p.mesh))assert.ok(walls.some(w=>{
     const a=world(w[0],w[1]),b=world(w[2],w[3]);
     return Math.abs(a[0]-o.minX)<1e-6&&Math.abs(b[0]-o.minX)<1e-6&&
       Math.abs(Math.min(a[1],b[1])-o.minZ)<1e-6&&Math.abs(Math.max(a[1],b[1])-o.maxZ)<1e-6&&
       Math.abs(p.y+w[4]-o.minY)<1e-6&&Math.abs(p.y+w[5]-o.maxY)<1e-6;
-  }),'an inferred facade box cannot stand in for this actual opaque end wall');
+  }),`${o.id}: an inferred occupied room cannot stand in for an actual opaque shell part`);
+  assert.equal(towerWarningOccluded({x:-12,y:1.8,z:110.05},{x:-14.4,y:.12,z:110.05}),false,
+    'the real side window preserves a view from the public room into the alley');
   for(const p of W.route)assert.ok(!W.occluders.some(o=>p.x>o.minX&&p.x<o.maxX&&p.z>o.minZ&&p.z<o.maxZ));
 });
 
-test('the ghost reuses the shipped anatomical walk with local dark material copies and ordinary shadows',()=>{
+test('the dedicated Missing Man keeps real skinned garments, isolated opaque core materials and distance-owned gait',()=>{
   const entry=asset.entries.find(e=>e.name===TOWER_WARNING_SOURCE_MESH);
-  assert.ok(entry&&asset.clips.has('walk')&&asset.clips.has('idle'));
-  const primitives=entry.primitives.map((p,index)=>({vao:{index},base:[1,1,1,1],
-    materialName:asset.json.materials[p.material].name,emissive:[.1,.1,.1],roughness:.5}));
+  assert.ok(entry&&asset.clips.has('warning_walk')&&asset.clips.has('warning_hold')&&asset.clips.has('warning_smoke'));
+  assert.equal(entry.skin.joints.length,34);
+  const primitives=entry.primitives.map((p,index)=>{
+    const material=asset.json.materials[p.material],pbr=material.pbrMetallicRoughness||{};
+    return{vao:{index},base:pbr.baseColorFactor||[1,1,1,1],materialName:material.name,
+      materialRole:material.extras?.characterRole,emissive:material.emissiveFactor||[0,0,0],
+      roughness:pbr.roughnessFactor??1};
+  });
   const source={name:entry.name,characterAsset:asset,characterEntry:entry,primitives,instanceBuffer:{}};
-  const pack={catalog:new Map([[source.name,source]])};
+  const overprint={name:'outskirts_overprint_body',primitives:[{base:[.3,.3,.3,1]}]};
+  const pack={catalog:new Map([[source.name,source],[overprint.name,overprint]])};
   const original=structuredClone(primitives);
   assert.equal(installTowerWarningFigure(null,pack),true);
   const ghost=pack.catalog.get(TOWER_WARNING_MESH);
   assert.equal(ghost.characterAsset,asset);assert.equal(ghost.characterEntry,entry);
-  assert.deepEqual(source.primitives,original,'darkening this figure cannot change the original Source actor');
-  assert.ok(ghost.primitives.every((p,i)=>p!==source.primitives[i]&&p.vao===source.primitives[i].vao&&p.base[3]===1&&p.emissive.every(v=>v===0)));
-  const frame={phase:'departing',position:W.route[1],yaw:Math.PI,elapsed:20,walkSeconds:.15,walking:true};
-  const a=towerWarningInstances(frame)[0],b=towerWarningInstances({...frame,walkSeconds:.7})[0];
+  assert.deepEqual(source.primitives,original,'the runtime alias cannot mutate its asset materials');
+  assert.equal(pack.catalog.get(overprint.name),overprint,'the Source performer retains its own asset');
+  assert.ok(ghost.primitives.every((p,i)=>p!==source.primitives[i]&&p.vao===source.primitives[i].vao&&p.base[3]===1));
+  const core=ghost.primitives.filter(p=>p.materialRole==='missing-man-core');
+  assert.equal(core.length,1);assert.deepEqual(core[0].base,[0,0,0,1]);assert.deepEqual(core[0].emissive,[0,0,0]);
+  assert.ok(ghost.primitives.some(p=>p.materialName==='warning_coat_wool'&&p.materialRole!=='missing-man-core'));
+  const frame={phase:'leaving',position:W.route[1],yaw:Math.PI,elapsed:20,phaseSeconds:3,distance:.15,walkSeconds:.15,walking:true};
+  const a=towerWarningInstances(frame)[0],b=towerWarningInstances({...frame,distance:.7,walkSeconds:.7})[0];
   assert.equal(a.noShadow,false);assert.equal(a.noReflection,false);assert.equal(a.apparitionVariant,undefined);
-  assert.equal(a.character.clip,'walk');assert.equal(a.mesh,TOWER_WARNING_MESH);
+  assert.equal(a.character.clip,'warning_walk');assert.equal(a.mesh,TOWER_WARNING_MESH);
   assert.notDeepEqual(sampleCharacterPose(asset,entry,a.character).bones,sampleCharacterPose(asset,entry,b.character).bones,'walk must move the real legs, rather than slide a held silhouette');
-  assert.equal(towerWarningInstances({...frame,walking:false})[0].character.clip,'idle','an obstruction cannot leave the legs marching in place');
-  assert.deepEqual(towerWarningInstances({...frame,phase:'gone'}),[]);
+  const stopped=towerWarningInstances({...frame,walking:false,blocked:true})[0];
+  assert.equal(stopped.character.clip,'warning_walk','obstruction holds the existing stride instead of snapping to a standing pose');
+  assert.equal(stopped.character.time,a.character.time);
+  assert.deepEqual(towerWarningInstances({...frame,phase:'departed',visible:false}),[]);
   assert.equal(installTowerWarningFigure(null,pack),true);assert.equal(pack.catalog.get(TOWER_WARNING_MESH),ghost,'catalog aliases remain stable');
 });

@@ -3,15 +3,15 @@
     "filename": "exterior-stationers.glb",
     "author": "Chunk Surfer project",
     "license": "project geometry; existing stock font terms retained",
-    "sha256": "7f01303d881f0724f8071850b120aacd3d78bf371fc5161f08cc8aea99128879",
-    "triangles": 17478,
-    "bytes": 4916596
+    "sha256": "03521f55df000b4cccba0151c9d56c28fee3183c5d3639a67bb0bfdb80d3a4bf",
+    "triangles": 17998,
+    "bytes": 6018932
   },
   "sourceFacade": {
     "file": "public/assets/exterior-frontages.glb",
-    "sha256": "6df5180943f4b7ed451f6fc12cd5556fd4de78ac54900f38f8839a78bb136611",
-    "originalMaterialCount": 16,
-    "originalImageCount": 3,
+    "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5",
+    "originalMaterialCount": 22,
+    "originalImageCount": 12,
     "materialDefinitionsUnchanged": true,
     "imageDefinitionsUnchanged": true
   },

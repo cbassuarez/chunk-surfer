@@ -3,6 +3,7 @@
 // alpha stores excitation memory, never scene colour or depth.
 import { CAMERA_FORWARD_GLSL } from '../camera-basis.js';
 import { FIRE_ESCAPE_INK_GLSL } from '../fire-escape-ink.js';
+import { MISSING_MAN_MATERIAL_GLSL } from '../missing-man-material.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
@@ -459,6 +460,7 @@ vec3 hushColorDodge(vec3 base,vec3 layer){
 }
 
 ${FIRE_ESCAPE_INK_GLSL}
+${MISSING_MAN_MATERIAL_GLSL}
 ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
@@ -577,6 +579,12 @@ void main(){
   float roofSurface=roofSurfaceTexel(ivec2(frag));
   float roofGlass=roofGlassTexel(ivec2(frag));
   float printedOccluded=0.0;
+  // Material identity comes from the exact depth-winning full-resolution
+  // texel. Adjacent wool, fingers and architecture retain their own screen.
+  float missingCore=missingManCoreTag(texelFetch(uMarks,
+    clamp(ivec2(frag),ivec2(0),textureSize(uMarks,0)-1),0).a);
+  float missingSmoke=missingManSmokeTag(texelFetch(uMarks,
+    clamp(ivec2(frag),ivec2(0),textureSize(uMarks,0)-1),0).a);
 #ifndef SOURCE_DESKTOP_TRANSPARENT
   if(uRecordedPressureReady>.5){
     vec4 pressureGeometry=texture(uRecordedPressureGeometry,fullUv);
@@ -590,6 +598,8 @@ void main(){
     if(pressureGeometry.a*pressureCore>.018&&abs(pressurePackedDepth-packedDepth)<max(.00006,pressurePackedDepth*.00075)){
       markSample=vec4(0.0);quietMetal=0.0;roofSurface=0.0;roofGlass=0.0;
       printedOccluded=1.0;
+      missingCore=0.0;
+      missingSmoke=0.0;
     }
   }
 #endif
@@ -610,6 +620,10 @@ void main(){
 
   vec4 srcFull = texture(uSrc, fullUv);
   vec4 srcCell = texture(uSrc, cellUv);
+  // The plume is narrower than a display cell. Its own physically visible
+  // full-resolution sample must reach the same dither instead of borrowing
+  // the black torso under an adjacent cell centre.
+  if(missingSmoke>.5)srcCell=srcFull;
   vec3 c = srcFull.rgb;
   float y = luma(srcCell.rgb);
   vec2 printed=printedSurfaceTexel(ivec2(frag))*(1.0-printedOccluded);
@@ -1058,7 +1072,7 @@ void main(){
     *(1.0-quietMetalEdge*(1.0-quietMetal));
   float darkCrease = step(0.52, crease * lightSide);
   darkCrease*=1.0-printedCrease;
-  captureBit = max(captureBit, brightContour);
+  captureBit = max(captureBit, brightContour*(1.0-missingSmoke));
   captureBit *= 1.0 - darkCrease;
 
   // Colour is a property of the light ink, never a third tonal value. Sample a
@@ -1228,6 +1242,9 @@ void main(){
   if(uDebugSource == 6.0) finalColor = vec3(stippleThreshold);
   if(uDebugSource == 7.0) finalColor = vec3(recordedSignal);
   if(uDebugSource == 8.0) finalColor = vec3(instability * 4.0 + 0.5);
+  // The absence is the zero-light endpoint of this acquisition, not a glow
+  // or transparent hole. No generated contour/excitation memory belongs in it.
+  if(uDebugSource<.5){finalColor*=1.0-missingCore;mem*=1.0-missingCore;}
 
 #ifdef SOURCE_DESKTOP_TRANSPARENT
   // The WebView surface expects premultiplied display colour. Excitation must

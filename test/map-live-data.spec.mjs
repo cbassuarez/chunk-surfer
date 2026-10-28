@@ -40,8 +40,15 @@ assert.ok(source.connectors.some((connector) => connector.label === 'MAIN BASEME
 assert.equal(source.spaces.length, BUILDING_MAP.spaces.length, 'every authored facility space resolves into the live map');
 assert.equal(source.spaces.some((space) => !space.floorId), false, 'no named facility space is left without a structural floor');
 assert.equal(source.spaces.find((space) => space.id === 'space:ensemble-room')?.floorId, 'u1');
-assert.equal(source.spaces.filter((space) => space.floorId === 'academic').length, 15,
-  'the third-floor plan retains the loggia, gallery, circulation, classrooms and offices');
+assert.deepEqual(source.spaces.filter((space) => space.floorId === 'academic').map((space) => space.id).sort(), [
+  'academic-loggia', 'academic-gallery', 'academic-lobby', 'academic-core',
+  'classroom-west-1', 'classroom-west-2', 'classroom-east-2', 'classroom-west-3',
+  'classroom-east-3', 'classroom-west-4', 'vocal-studio-4', 'classroom-east-4',
+  'faculty-office-west', 'faculty-office-east', 'academic-reception', 'stripped-office',
+].map((id) => `space:${id}`).sort(),
+  'the third-floor plan retains every authored circulation, teaching and office space');
+assert.equal(source.spaces.find((space) => space.id === 'space:stripped-office')?.label, 'STRIPPED OFFICE',
+  'the newly authored office is named on the issued plan');
 
 const opening = project(conservatory.spawn);
 const openingFloor = source.floors.find((floor) => floor.id === 'g');

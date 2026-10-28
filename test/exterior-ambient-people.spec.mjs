@@ -2,10 +2,47 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {exteriorAmbientPeoplePose as pose,exteriorAmbientPeopleInstances as instances,exteriorCyclePedals} from '../src/render/exterior-ambient-people.js';
 import {exteriorAmbientInstances} from '../src/game/exterior-ambient.js';
+import {busGraffitiInstance} from '../src/render/bus-graffiti.js';
+import {readFileSync} from 'node:fs';
+import {NodeIO} from '@gltf-transform/core';
 
 const near=(a,b,tolerance=1e-6)=>assert.ok(Math.hypot(...a.map((v,i)=>v-b[i]))<tolerance,`${a} should match ${b}`);
 const point=(m,p)=>[0,1,2].map(row=>m[12+row]+p.reduce((sum,v,col)=>sum+v*m[col*4+row],0));
 const basePoint=(instance,p)=>{const c=Math.cos(instance.yaw),s=Math.sin(instance.yaw);return[instance.x+c*p[0]-s*p[2],(instance.y||0)+p[1],instance.z+s*p[0]+c*p[2]];};
+
+test('bus graffiti rides the real moving bus without becoming traffic or a light',()=>{
+  for(const reducedMotion of [false,true])for(const timeSec of [0,12,25,38,59])
+    for(const pilotTimeSec of [null,0,20,25,35]){
+      const actors=exteriorAmbientInstances({timeSec,reducedMotion,pilotTimeSec});
+      const buses=actors.filter(actor=>actor.mesh==='ambient_late_bus');
+      for(const bus of buses){
+        const paint=busGraffitiInstance(bus);
+        for(const key of ['x','y','z','yaw','scale','zone'])assert.equal(paint[key],bus[key]);
+        assert.equal(paint.paintOf,bus.id);
+        assert.equal(paint.structural,false);assert.equal(paint.noShadow,true);
+        assert.ok(!paint.headlights&&!paint.kind&&!paint.sourceId);
+      }
+      assert.ok(actors.filter(actor=>actor.mesh!=='ambient_late_bus').every(actor=>busGraffitiInstance(actor)===null));
+    }
+});
+
+test('bus paint asset has two real painted panel faces away from bus windows, wheels and lights',async()=>{
+  const bytes=readFileSync(new URL('../public/assets/bus-graffiti.glb',import.meta.url));
+  const doc=await new NodeIO().readBinary(bytes),mesh=doc.getRoot().listMeshes().find(m=>m.getName()==='ambient_bus_graffiti');
+  assert.ok(mesh);assert.equal(mesh.getExtras().busLocal,true);
+  const sides=new Set();let vertices=0;
+  for(const primitive of mesh.listPrimitives()){
+    const positions=primitive.getAttribute('POSITION').getArray();
+    for(let i=0;i<positions.length;i+=3){
+      const [x,y,z]=positions.slice(i,i+3);vertices++;
+      assert.ok(Math.abs(x)>1.225&&Math.abs(x)<1.235,'paint lies on the bus skin');
+      assert.ok(y>.70&&y<1.48,'paint stays below the windows');
+      assert.ok(z>-1.75&&z<.60,'paint stays between the wheel arches and away from front/rear lamps');
+      sides.add(Math.sign(x));
+    }
+  }
+  assert.deepEqual([...sides].sort(),[-1,1]);assert.ok(vertices>100);
+});
 
 test('ambient replacement is gated and preserves routes, identity and equipment ownership',()=>{
   const original={id:'exterior-ambient:cyclist',mesh:'ambient_cyclist',x:9,y:.12,z:7,yaw:.7,scale:1,travelMetres:8.2,speedMps:2.1,zone:23};

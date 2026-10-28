@@ -1,0 +1,209 @@
+{
+  "pack": "exterior-graffiti.glb",
+  "source": "tools/chunk_surfer/build-exterior-graffiti.mjs",
+  "meshes": {
+    "exterior_graffiti_north": {
+      "triangles": 138
+    },
+    "exterior_graffiti_south": {
+      "triangles": 214
+    },
+    "exterior_graffiti_west": {
+      "triangles": 166
+    },
+    "exterior_graffiti_east": {
+      "triangles": 176
+    }
+  },
+  "marks": {
+    "north": [
+      {
+        "side": -1,
+        "center": 4.5,
+        "y": 1.2,
+        "text": "MOTH",
+        "minZ": 3.6938,
+        "maxZ": 5.2962,
+        "minY": 1.03,
+        "maxY": 1.7,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 7.15,
+        "y": 1.28,
+        "text": "LARK",
+        "minZ": 6.310250000000001,
+        "maxZ": 7.97975,
+        "minY": 1.11,
+        "maxY": 1.8150000000000002,
+        "plane": 4.442
+      },
+      {
+        "side": -1,
+        "center": 8.75,
+        "y": 1.22,
+        "text": "VEX",
+        "minZ": 8.0352,
+        "maxZ": 9.4548,
+        "minY": 1.05,
+        "maxY": 1.79,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 11.42,
+        "y": 1.15,
+        "text": "NIX",
+        "minZ": 10.8105,
+        "maxZ": 12.0195,
+        "minY": 0.9799999999999999,
+        "maxY": 1.755,
+        "plane": 4.442
+      }
+    ],
+    "south": [
+      {
+        "side": -1,
+        "center": 4.48,
+        "y": 1.25,
+        "text": "ROOK",
+        "minZ": 3.6272,
+        "maxZ": 5.3228,
+        "minY": 1.08,
+        "maxY": 1.75,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 7.12,
+        "y": 1.22,
+        "text": "KITE",
+        "minZ": 6.233650000000001,
+        "maxZ": 7.9963500000000005,
+        "minY": 1.05,
+        "maxY": 1.7550000000000001,
+        "plane": 4.442
+      },
+      {
+        "side": -1,
+        "center": 8.73,
+        "y": 1.2,
+        "text": "DUST",
+        "minZ": 7.9034,
+        "maxZ": 9.546600000000002,
+        "minY": 1.03,
+        "maxY": 1.77,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 11.4,
+        "y": 1.24,
+        "text": "MOTH",
+        "minZ": 10.5639,
+        "maxZ": 12.2261,
+        "minY": 1.07,
+        "maxY": 1.845,
+        "plane": 4.442
+      }
+    ],
+    "west": [
+      {
+        "side": -1,
+        "center": 4.52,
+        "y": 1.24,
+        "text": "NIX",
+        "minZ": 3.8255999999999992,
+        "maxZ": 5.204399999999999,
+        "minY": 1.07,
+        "maxY": 1.74,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 7.16,
+        "y": 1.2,
+        "text": "VEX",
+        "minZ": 6.54685,
+        "maxZ": 7.7631499999999996,
+        "minY": 1.03,
+        "maxY": 1.735,
+        "plane": 4.442
+      },
+      {
+        "side": -1,
+        "center": 8.76,
+        "y": 1.28,
+        "text": "REEL",
+        "minZ": 7.8868,
+        "maxZ": 9.6232,
+        "minY": 1.11,
+        "maxY": 1.85,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 11.43,
+        "y": 1.18,
+        "text": "ROOK",
+        "minZ": 10.5473,
+        "maxZ": 12.302700000000002,
+        "minY": 1.01,
+        "maxY": 1.785,
+        "plane": 4.442
+      }
+    ],
+    "east": [
+      {
+        "side": -1,
+        "center": 4.49,
+        "y": 1.19,
+        "text": "KITE",
+        "minZ": 3.6838,
+        "maxZ": 5.2862,
+        "minY": 1.02,
+        "maxY": 1.69,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 7.14,
+        "y": 1.26,
+        "text": "DUST",
+        "minZ": 6.30025,
+        "maxZ": 7.9697499999999994,
+        "minY": 1.09,
+        "maxY": 1.7950000000000002,
+        "plane": 4.442
+      },
+      {
+        "side": -1,
+        "center": 8.72,
+        "y": 1.2,
+        "text": "LARK",
+        "minZ": 7.800200000000001,
+        "maxZ": 9.629800000000001,
+        "minY": 1.03,
+        "maxY": 1.77,
+        "plane": -4.442
+      },
+      {
+        "side": 1,
+        "center": 11.39,
+        "y": 1.25,
+        "text": "REEL",
+        "minZ": 10.6005,
+        "maxZ": 12.169500000000001,
+        "minY": 1.08,
+        "maxY": 1.855,
+        "plane": 4.442
+      }
+    ]
+  },
+  "pending": [
+    "native final-dither inspection"
+  ],
+  "bytes": 63232,
+  "sha256": "ecb3c06ef949e69ef97b3f6aa38913ebdb825b2cceba1ad498cd75f5be767eea"
+}

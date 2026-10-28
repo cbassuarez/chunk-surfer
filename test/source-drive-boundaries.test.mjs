@@ -63,7 +63,7 @@ test('swept full-body contact closes both sides, including across bends and at t
 
 test('visible end returns block reverse escape and both goods-door bypasses without forced yaw',()=>{
  for(const[d,lateral,yaw,target]of[[-20,-2,Math.PI,-60],[1210,-3.5,0,1270],[1210,3.5,0,1270]]){
-  const start=pose(d,lateral,yaw),end=pose(target,lateral,yaw),{s,result}=attemptedSweep(start,end,driveColliders(start));assert.equal(result.collided,true);assert.ok(result.contacts[0].id.startsWith('route-end-'));assert.equal(containsDrivePose(s),true);close(s.heading,start.heading);
+  const start=pose(d,lateral,yaw),end=pose(target,lateral,yaw),{s,result}=attemptedSweep(start,end,driveColliders(start));assert.equal(result.collided,true);assert.match(result.contacts[0].id,/^(?:route-end-|goods-frame-post-)/);assert.equal(containsDrivePose(s),true);close(s.heading,start.heading);
  }
  assert.ok(roadBoundaryColliders(1205,50).some(c=>c.id==='route-end-service-court-return'),'caps are queried by their covered interval');
 });
@@ -93,6 +93,6 @@ test('static body, head and headlamp grade respect forward, reversed and crosswi
 });
 
 test('study and production geometry/contact sources stay synchronized',()=>{
- for(const name of['route-layout.js','road.js','route-boundaries.js','vehicle-contacts.js','scene.js','cut/scene.js']){const production=readFileSync(new URL('../src/game/source-drive/'+name,import.meta.url),'utf8'),study=readFileSync(new URL('../artifacts/source-drive-study/'+name,import.meta.url),'utf8');assert.equal(study,production.replace("from'../../data/source-door-fields.js'","from'/src/data/source-door-fields.js'"),name);}
+ for(const name of['route-layout.js','road.js','route-boundaries.js','vehicle-contacts.js','scene.js','cut/scene.js']){const production=readFileSync(new URL('../src/game/source-drive/'+name,import.meta.url),'utf8'),study=readFileSync(new URL('../artifacts/source-drive-study/'+name,import.meta.url),'utf8');assert.equal(study,production.replace("from'../../data/source-door-fields.js'","from'/src/data/source-door-fields.js'").replace("from'../../data/uk-road-markings.js'","from'/src/data/uk-road-markings.js'"),name);}
  const m=JSON.parse(readFileSync(new URL('../artifacts/source-drive-study/cut/roadside-metrics.json',import.meta.url)));assert.equal(m.sha256,createHash('sha256').update(roadside.bytes).digest('hex'));
 });

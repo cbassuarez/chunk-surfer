@@ -14,9 +14,14 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
+import {GLASS_COURT_RAIN_GLSL} from './glass-court-weather.js';
+import {OUTSKIRTS_BUS_RAIN_GLSL,outskirtsBusRainUniforms,outskirtsBusInteriorLightMix} from './outskirts-bus-weather.js';
+import {GLASS_COURT} from '../data/glass-court.js';
 import {SOURCE_BLUEPRINT_ACQUISITION_GLSL,sourceBlueprintEnabled} from './source-blueprint-contract.js';
 import { MAIN_STAIR_WALL_PACK } from '../data/main-stair-wall-dressing.js';
 import { EXTERIOR_FRONTAGE_PACK } from '../data/exterior-frontages.js';
+import {EXTERIOR_STREET_FABRIC} from '../data/exterior-street-fabric.js';
+import {ELLERY_PUBLIC_FRONT_PACK,ELLERY_PUBLIC_FRONT_MESHES} from '../data/ellery-public-front.js';
 import { EXTERIOR_ROOFLINE_PACK } from '../data/exterior-roofline.js';
 import { EXTERIOR_STATIONERS_PACK } from '../data/exterior-stationers.js';
 import { ACADEMIC_CHARACTER_PACK_MESHES } from '../data/academic-society-character-design.js';
@@ -36,6 +41,7 @@ import { cameraBasis, DOWNWARD_LOOK_LIMIT, CAMERA_FORWARD_GLSL } from './camera-
 import { authoredCameraFrame } from './authored-camera.js';
 import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './torch-optics.js';
 import { FIRE_ESCAPE_INK_GLSL } from './fire-escape-ink.js';
+import { MISSING_MAN_MATERIAL_GLSL, MISSING_MAN_CORE_BYTE, MISSING_MAN_SMOKE_BYTE } from './missing-man-material.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from './roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from './printed-surface.js';
 import { ST_BRENDANS_STONE_GLSL } from './st-brendans-surface.js';
@@ -50,6 +56,7 @@ import { PAPER_PIGMENT_PATH } from '../data/paper-pigment.js';
 import { PAPER_WORLD_MATERIAL } from '../data/paper-world-material.js';
 import { hushPoseAt, isHushBodyCue } from './hush-pose.js';
 import { pressureInstances } from './pressure-volume.js';
+import { createOutcomeExposureController, sampleOutcomeExposure } from './outcome-exposure.js';
 import { PRESSURE_FINISH_FRAG, PRESSURE_SCENE_GLSL, PRESSURE_IDENTITY_GLSL, PRESSURE_INK_GLSL } from './pressure-composite.js';
 
 const MAX_CHUNKS = 48;
@@ -169,6 +176,8 @@ const ZONE_TINTS = new Float32Array([
   0.64, 0.77, 0.80,   // roof: wet zinc and supported glass under the same city sky
   0.86, 0.73, 0.54,   // the occupied pub: timber, gilt and ordinary warm practicals
   0.78, 0.75, 0.66,   // the stationer's: paper stock and ordinary task lighting
+  0.62, 0.75, 0.59,   // glasshouse: leaves, glazed iron and maintained growing lamps
+  0.70, 0.76, 0.71,   // baths changing lobby: old mineral tile and dry painted plaster
 ]);
 
 const WORLD_RGB = {
@@ -254,7 +263,7 @@ void main(){
 // The rain, as one piece of GLSL: the march draws it over the building, and
 // the physical void draws the same drops over the corridors of doors. Needs
 // hash01(), uTime and uReduceMotionOptical declared before it.
-const RAIN_GLSL = `
+const RAIN_GLSL = GLASS_COURT_RAIN_GLSL+OUTSKIRTS_BUS_RAIN_GLSL+`
 // RAIN. Actual drops, in the world, with positions.
 //
 // What was here before was not rain. It was the angular field the rolling sky
@@ -329,10 +338,15 @@ float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, fl
   vec3 a = vec3(cell.x*RAIN_CELL_M + jitterX*RAIN_CELL_M, topY,
                 cell.y*RAIN_CELL_M + jitterZ*RAIN_CELL_M);
   vec3 b = a - vec3(0.29*streak, streak, 0.10*streak);
+  if(!glassCourtTrimRain(a,b))return 0.0;
 
   // Thin in METRES, so perspective alone decides how wide it lands on screen.
   float radius = 0.016 + 0.008 * jitterZ;
-  float d = rayToSegment(ro, rd, a, b);
+  vec3 a0,b0,a1,b1;
+  int pieces=outskirtsBusTrimRain(a,b,a0,b0,a1,b1);
+  if(pieces==0)return 0.0;
+  float d = rayToSegment(ro, rd, a0, b0);
+  if(pieces>1)d=min(d,rayToSegment(ro,rd,a1,b1));
   return 1.0 - smoothstep(radius * 0.30, radius, d);
 }
 
@@ -1168,6 +1182,7 @@ float propFlashShadow(vec3 world,vec3 normal,vec3 lightDir){
   return mix(.20,1.0,visible*.25);
 }
 ${FIRE_ESCAPE_INK_GLSL}
+${MISSING_MAN_MATERIAL_GLSL}
 ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
@@ -2414,6 +2429,8 @@ void main(){
         gMarkPlane=fireEscapeInkTag(prop.a)>.5?FIRE_ESCAPE_INK_TAG:
           roofSurfaceInkTag(prop.a)>.5?ROOF_SURFACE_INK_TAG:0.0;
         if(printedSurfaceKind(propData.a)>.5)gMarkPlane=propData.a;
+        if(missingManCoreTag(prop.a)>.5)gMarkPlane=MISSING_MAN_CORE_TAG;
+        if(missingManSmokeTag(prop.a)>.5)gMarkPlane=MISSING_MAN_SMOKE_TAG;
       }
     }
     // Feather the BLACK mesh silhouette itself, on BOTH sides of its edge.
@@ -2665,6 +2682,8 @@ float correlatedGrain(vec2 p, float clock, float temporalSmear){
 
 const POST_FRAG = COMMON_GLSL + GRAIN_GLSL + `
 uniform sampler2D uSrc;
+uniform sampler2D uMissingManMarks;
+uniform float uMissingManMarksReady;
 uniform sampler2D uUnravellingScene;
 uniform float uUnravellingColour;
 uniform vec2 uRes;
@@ -2696,6 +2715,7 @@ ${PRESSURE_IDENTITY_GLSL}
 uniform sampler2D uPressureInk;
 uniform float uPressureInkReady;
 ${PRESSURE_INK_GLSL}
+${MISSING_MAN_MATERIAL_GLSL}
 void main(){
   vec2 uv = gl_FragCoord.xy / uRes;
   float f = clamp(uFear, 0.0, 1.0);
@@ -2826,6 +2846,14 @@ void main(){
   // Preserve the acquired marks, with a sealed black core and neutral white
   // radiance. Glass, emergency red and the negative plate cannot relight it.
   if(uPressureInkReady>.5)c=pressureRecordedInk(c,texture(uPressureInk,uv).rg);
+  // The informant's negative interior is an opaque world material. Exact
+  // depth-winning marks keep optical glass from drawing a reflection on it;
+  // nearer Pressure geometry keeps its existing physical priority.
+  if(uMissingManMarksReady>.5){
+    ivec2 missingPixel=clamp(ivec2(uv*vec2(textureSize(uMissingManMarks,0))),ivec2(0),textureSize(uMissingManMarks,0)-1);
+    float missingCore=missingManCoreTag(texelFetch(uMissingManMarks,missingPixel,0).a);
+    c*=1.0-missingCore*(1.0-pressureIdentityMask(uv));
+  }
   o=vec4(c,1.0);
 }`;
 
@@ -3080,6 +3108,9 @@ uniform vec3 uUnravelOrigin; // physical seam x, ground y, seam z
 uniform float uRain;
 uniform float uTime, uReduceMotionOptical, uOpticalEffects, uFlash, uOvercast;
 uniform vec3 uEyeCells;
+// Stable material/weather coordinates across a floating-origin road rebase.
+// Geometry, depth, lamps and door pools continue to use the physical eye.
+uniform vec3 uWorldPatternOffset;
 uniform vec4 uDoorA[3]; // threshold x, z (m); facing x, z
 uniform vec4 uDoorB[3]; // colour, strength
 uniform vec4 uDoorC[3]; // width (m), open, pool
@@ -3112,7 +3143,8 @@ float vnoise(vec2 p){
 // WHERE THE ROAD HOLDS WATER: patches that spread as the road gets wetter, and the
 // one pool that is always there, under the last light.
 float puddleMask(vec2 p){
-  float n=vnoise(p*.32)*.6+vnoise(p*.9+13.1)*.3+vnoise(p*2.3-7.7)*.1;
+  vec2 patternP=p+uWorldPatternOffset.xz;
+  float n=vnoise(patternP*.32)*.6+vnoise(patternP*.9+13.1)*.3+vnoise(patternP*2.3-7.7)*.1;
   float threshold=mix(.8,.55,clamp(uPuddle.w,0.0,1.0));
   float patches=smoothstep(threshold,threshold+.05,n);
   float pool=uPuddle.z>.01?1.0-smoothstep(uPuddle.z*.7,uPuddle.z,length(p-uPuddle.xy)):0.0;
@@ -3272,9 +3304,10 @@ void main(){
   if(uUnravelling.w>.5&&wd.y<-.001){
     float roadT=(uEyeCells.y*.5-uUnravelOrigin.y)/-wd.y;
     vec2 road=uEyeCells.xz*.5+wd.xz*roadT;
-    float grit=vnoise(road*2.1)*.65+vnoise(road*.31)*.35;
+    vec2 roadPattern=road+uWorldPatternOffset.xz;
+    float grit=vnoise(roadPattern*2.1)*.65+vnoise(roadPattern*.31)*.35;
     vec3 asphalt=vec3(.115,.123,.120)*(.78+grit*.35);
-    float worn=1.0-smoothstep(4.0,7.0,abs(road.x-uUnravelOrigin.x)+(vnoise(road*.12)-.5)*1.4);
+    float worn=1.0-smoothstep(4.0,7.0,abs(road.x-uUnravelOrigin.x)+(vnoise(roadPattern*.12)-.5)*1.4);
     asphalt+=vec3(.027,.025,.016)*worn;
     float roadFade=(1.0-smoothstep(38.0,100.0,roadT))
       *(1.0-smoothstep(-8.0,58.0,uEntryMetres));
@@ -3364,7 +3397,8 @@ void main(){
       vec2 hit=uReflectEye.xy+wd.xz*tRoad;
       float mask=puddleMask(hit);
       if(mask>.001){
-        vec2 ripple=vec2(sin(hit.x*7.0+uTime*3.1+vnoise(hit*2.0)*6.0),sin(hit.y*7.0+uTime*2.6+vnoise(hit*2.0+4.0)*6.0))*.0035*uRain*(1.0-uReduceMotionOptical);
+        vec2 patternHit=hit+uWorldPatternOffset.xz;
+        vec2 ripple=vec2(sin(patternHit.x*7.0+uTime*3.1+vnoise(patternHit*2.0)*6.0),sin(patternHit.y*7.0+uTime*2.6+vnoise(patternHit*2.0+4.0)*6.0))*.0035*uRain*(1.0-uReduceMotionOptical);
         vec4 mirrored=texture(uReflection,vec2(uv.x,1.0-uv.y)+ripple);
         float held=clamp(mirrored.a,0.0,1.0);
         // Where nothing is mirrored the water only darkens the road a little: a sheen.
@@ -3387,7 +3421,7 @@ void main(){
   // ray reaches. This frame is continuous tone, so a drop is lifted toward the
   // weather colour rather than pushed through a one-bit encode.
   if(uRain>.001&&uOpticalEffects>.0){
-    float rain=rainVolume(uEyeCells,wd,distanceM)*uRain;
+    float rain=rainVolume(uEyeCells+uWorldPatternOffset/.5,wd,distanceM)*uRain;
     colour=mix(colour,vec3(.70,.75,.82),clamp(rain,0.0,1.0)*.55);
   }
   // THE STORM, when the night's storm strikes (main.js stormFlashStrength): the
@@ -3881,11 +3915,45 @@ const markStageReady=new Uint8Array(SURFACE_LAYERS);
 let hushBodyReady=false,hushBodyLoadError=null;
 const pubStatus={characters:false,props:false,error:null};
 let pubHospitalityLoadGeneration=0,pubHospitalityError=null;
-let basePropPackLoad=null;
+let basePropPackLoad=null,authoredPropPackLoad=null;
+let hallChandelierReady=false;
+export function r3dHallChandelierReady(){return hallChandelierReady;}
 export async function r3dBasePropsReady(){
   const pending=basePropPackLoad;if(!pending)return false;
   await pending;
   return pending===basePropPackLoad?true:r3dBasePropsReady();
+}
+const busBodyPacks=Object.freeze([
+  {kind:'character',url:'assets/bus-body-passage.glb',meshes:['bus_body_passage_left','bus_body_passage_right']},
+  {kind:'character',url:'assets/source-drive/geometry/wheel-hands.glb',meshes:['drive_right_hand','drive_right_forearm']},
+  {kind:'character',url:'assets/source-drive/cut/cut-living.glb',meshes:['cut_fascia','cut_membrane']},
+  {kind:'character',url:'assets/source-drive/cut/cut-landscape.glb',meshes:['cut_thoracic_bone','cut_costal_glands','cut_lungs']},
+  {kind:'prop',url:'assets/source-drive/cut/cut-roadside.glb',meshes:['cut_inspection_lamp']},
+]);
+let busBodyPackLoad=null,busBodyPackBase=null;
+export function r3dBusBodyAssetsReady(){
+  const characters=new Set(P3.characterStats().meshes),props=new Set(P3.propMeshCatalog());
+  return busBodyPacks.every(p=>p.meshes.every(name=>(p.kind==='character'?characters:props).has(name)));
+}
+export function r3dPrepareBusBodyAssets(){
+  if(r3dBusBodyAssetsReady())return Promise.resolve(true);
+  if(busBodyPackLoad&&busBodyPackBase===basePropPackLoad)return busBodyPackLoad;
+  busBodyPackBase=basePropPackLoad;
+  busBodyPackLoad=(async()=>{
+    if(!await r3dBasePropsReady())throw Error('The street renderer is not ready.');
+    for(const p of busBodyPacks)await(p.kind==='character'?P3.addCharacterPack(assetUrl(p.url)):P3.addPropPack(assetUrl(p.url)));
+    if(!r3dBusBodyAssetsReady())throw Error('The body passage assets did not install.');
+    return true;
+  })().catch(error=>{busBodyPackLoad=null;throw error;});
+  return busBodyPackLoad;
+}
+// Borrowed Ellery scenes retain architecture from the authored extension
+// packs, not only the procedural base. Keep ordinary early-entry readiness
+// quick while giving those scenes the complete current-generation contract.
+export async function r3dAuthoredPropsReady(){
+  const pending=authoredPropPackLoad;if(!pending)return false;
+  await pending;
+  return pending===authoredPropPackLoad?true:r3dAuthoredPropsReady();
 }
 export function r3dPubStatus(){return {...pubStatus,hospitality:P3.propMeshCatalog().includes('pub_warm_interior'),hospitalityError:pubHospitalityError};}
 const streetCrowdPacks=createStreetCrowdPackLoader({props:P3,resolveAsset:assetUrl,onError:(error,kind)=>console.warn('street crowd '+kind+' unavailable; retaining authored figures',error)});
@@ -3905,6 +3973,9 @@ export function r3dHeldNoteStatus(){
 }
 let streetPilotReady=false;
 let openingStreetReady=false;
+let glassCourtReady=false;
+let streetFabricReady=false;
+let elleryPublicFrontReady=false;
 let chapelTapeDemandReady=false,chapelTapeDemandError=null,chapelTapeDemandLoadGeneration=0;
 export function r3dChapelTapeDemandReady(){return chapelTapeDemandReady;}
 export function r3dChapelTapeDemandStatus(){return{ready:chapelTapeDemandReady,error:chapelTapeDemandError};}
@@ -3914,6 +3985,13 @@ let pressureFinishReady=false;
 let pressureSceneDepthReady=false;
 const pressureFinishUniformCache=new Map();
 let hushBodyMode='live';
+const outcomeExposure=createOutcomeExposureController();
+export function r3dSetOutcomeExposure(value=null){return outcomeExposure.set(value);}
+export function r3dOutcomeExposureStatus(){
+  const state=outcomeExposure.snapshot();
+  return {state,sample:sampleOutcomeExposure(state,{reduceFlash:!!pixelMeshSettings.reduceFlash}),
+    asset:HUSH_BODY_ASSET,ready:hushBodyReady,pipeline:'pressure-geometry-before-final-dither'};
+}
 const BLUE_NOISE_SIZE=64;
 let blueNoiseTex=null;
 // A mid-grey 1x1 stands in until the mask decodes. Without it the first frames
@@ -5155,6 +5233,9 @@ const sourceVoidPhysicalUniformCache = new Map();
 let sourceVoidDawn = 0;
 let sourceVoidBeacon = null;
 let sourceVoidRain = 0;
+let sourceRainShelter = null;
+let sourceBusLighting = null;
+let sourceBusInterior = null;
 // THE WET ROAD in the outskirts: { groundY (m), puddle [x, z, radius], wet 0–1 }, or null.
 let sourceReflection = null, sourceReflectionDebug = false;
 export function r3dSetSourceReflectionDebug(on = true) { sourceReflectionDebug = !!on; return sourceReflectionDebug; }
@@ -5191,10 +5272,12 @@ function sourceTowerViewInside(eyeX,eyeZ){
 }
 let sourceCrossingDrawn = false;
 let sourceDoorLights = [];
-const sourceVoidPhysicalLightPositions = new Float32Array(8);
-const sourceVoidPhysicalLightColours = new Float32Array([.80,.86,.91,1.25, .92,.81,.64,.28]);
-const sourceVoidPhysicalLightPenetration = new Float32Array([1,1]);
-const sourceVoidPhysicalLightEmergency = new Float32Array([0,0]);
+const sourceVoidPhysicalLightPositions = new Float32Array(16);
+const sourceVoidPhysicalLightColours = new Float32Array([.80,.86,.91,1.25, .92,.81,.64,.28, 1,.80,.58,0, 1,.72,.45,0]);
+const sourceVoidPhysicalLightPenetration = new Float32Array([1,1,1,1]);
+const sourceVoidPhysicalLightEmergency = new Float32Array([0,0,0,0]);
+const sourceVoidPhysicalLightDirections = new Float32Array(16);
+const sourceVoidPhysicalLightConeInner = new Float32Array([1,1,1,1]);
 const sourceHomeNoMarks = new Float32Array(4);
 function sourceVoidPhysicalU(name){
   if(!sourceVoidPhysicalUniformCache.has(name))sourceVoidPhysicalUniformCache.set(name,gl.getUniformLocation(progSourceVoidPhysical,name));
@@ -5235,8 +5318,9 @@ function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReac
 
 function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.94,.96,1],torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode=0,torchYawOffset=0,present=true,unravelling=null}={}){
   const eyeX=camX*CELL,eyeY=camY*CELL,eyeZ=camZ*CELL;
+  const patternOriginOffsetMetres=['x','y','z'].map(axis=>Number.isFinite(voidState?.recordingOriginOffset?.[axis])?voidState.recordingOriginOffset[axis]:0);
   const drive=voidState?.driveStudy?.active===true?voidState.driveStudy:null;
-  const coastal=coastalWaterUniforms(voidState?.coastalMemory),physicalLighting=!!drive||coastal.active;
+  const coastal=coastalWaterUniforms(voidState?.coastalMemory),physicalLighting=!!drive||coastal.active||!!sourceBusInterior?.active;
   // Broad, unobtrusive light gives the real normals form. No imaginary lamp
   // models, red emergency sources or inherited Scene Dock light fixtures.
   // The second lamp is the nearest leaking door when there is one, so the trees
@@ -5246,6 +5330,21 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
     ?[eyeX-60,eyeY+80,eyeZ-36,260, ...(Array.isArray(leak.lightAt)?[leak.lightAt[0],leak.lightAt[1],leak.lightAt[2],leak.pool?16:9+7*leak.strength]:[leak.x+leak.forward[0]*1.5,leak.y+1.4,leak.z+leak.forward[1]*1.5,9+7*leak.strength])]
     :[eyeX-60,eyeY+80,eyeZ-36,260, eyeX+45,eyeY+18,eyeZ+20,180]);
   sourceVoidPhysicalLightColours.set(leak?[leak.colour[0],leak.colour[1],leak.colour[2],.9*leak.strength]:[.92,.81,.64,.28],4);
+  const busCover=outskirtsBusInteriorLightMix([eyeX,eyeY,eyeZ],sourceBusLighting?.origin);
+  sourceVoidPhysicalLightColours.set([.80,.86,.91,1.25*(1-.98*busCover)],0);
+  sourceVoidPhysicalLightColours[7]*=1-.5*busCover;
+  sourceVoidPhysicalLightColours[11]=0;
+  if(busCover>0){
+    sourceVoidPhysicalLightPositions.set([...sourceBusLighting.front,4.8],8);
+    sourceVoidPhysicalLightColours.set([1,.80,.58,.42*sourceBusLighting.power.front*busCover],8);
+  }
+  if(sourceBusLighting?.face){
+    const face=sourceBusLighting.face,cone=localLightConeDescriptor(face);
+    sourceVoidPhysicalLightPositions.set([...face.position,face.reach],12);
+    sourceVoidPhysicalLightColours.set([...face.colour,face.strength*sourceBusLighting.power.rear],12);
+    sourceVoidPhysicalLightDirections.set([...cone.direction,cone.outer],12);sourceVoidPhysicalLightConeInner[3]=cone.inner;
+  }
+  const voidLightCount=sourceBusLighting?.face?4:2;
 
 
   // The horizon renderer leaves blending and depth writes in a different state.
@@ -5267,40 +5366,43 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   // this frame's shadow before either camera samples the deforming body.
   P3.prepareCharacterFrame(now);
   P3.preparePropShadowPass({camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,
-    light:drive||(coastal.active&&localShadowLight)?1:voidTorch,shadowLight:physicalLighting?localShadowLight:null,timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,torchYawOffset,torch:{reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill}});
+    light:drive||(coastal.active&&localShadowLight)?1:voidTorch,shadowLight:physicalLighting?localShadowLight:null,timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,patternOriginOffsetMetres,torchYawOffset,torch:{reach:torchReach,coneInner:torchConeInner,coneOuter:torchConeOuter,spill:torchSpill}});
   // THE WET ROAD, MIRRORED: the scene again from under the road at half size, for
   // the composite's puddles. Drawn before the main pass, into its own target.
   const reflecting=!!(sourceReflection&&!towerInside&&visualEffectsEnabled()&&P3.reflectionTargets);
   if(reflecting){
     P3.renderPropPass({
       camX:eyeX,camY:2*sourceReflection.groundY-eyeY,camZ:eyeZ,yaw:worldYaw,pitch:-pitch,light:voidTorch,
+      patternOriginOffsetMetres,
       timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
       fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
-      localLightCount:drive?localLightCount:2,localLightPositions:drive?localLightPositions:sourceVoidPhysicalLightPositions,
+      localLightCount:drive?localLightCount:voidLightCount,localLightPositions:drive?localLightPositions:sourceVoidPhysicalLightPositions,
       localLightColors:drive?localLightColors:sourceVoidPhysicalLightColours,localLightPenetrations:drive?localLightPenetrations:sourceVoidPhysicalLightPenetration,
+      localLightDirections:drive?localLightDirections:sourceVoidPhysicalLightDirections,localLightConeInner:drive?localLightConeInner:sourceVoidPhysicalLightConeInner,
       localLightEmergency:drive?localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:drive?localShadowIndex:-1,shadowLight:drive?localShadowLight:null,
       torchYawOffset,lampFrame:resolveTorchFrame({eye:[eyeX,eyeY,eyeZ],yaw:worldYaw,pitch,yawOffset:torchYawOffset}),
       torch:{power:voidTorch,color:torchColor,reach:coastalFoot?torchReach:Math.min(3,torchReach*2.3),coneInner:torchConeInner,coneOuter:torchConeOuter,spill:Math.max(.08,torchSpill),shoulder:coastalFoot?.9:.65},
-      ambientColor:[.66,.73,.80],ambientIntensity:.19*(1+flash*5),
+      ambientColor:[.66,.73,.80],ambientIntensity:.19*(1-.78*busCover)*(1+flash*5),
       planTexture:null,planSize:[0,0],planOrigin:[0,0],streetTextures:true,maxDistance:70,reflection:true,
     });
   }
   if(drive)P3.captureDriveMirrors({fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,localLightCount,localLightPositions,localLightColors,localLightPenetrations,localLightEmergency,ambientColor:lightingAmbientColor,ambientIntensity:lightingAmbientIntensity,timeSec:now});
   P3.renderPropPass({
     camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,light:voidTorch,
+    patternOriginOffsetMetres,
     shadowPrepared:true,
     timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
     fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
-    localLightCount:physicalLighting?localLightCount:2,localLightPositions:physicalLighting?localLightPositions:sourceVoidPhysicalLightPositions,
+    localLightCount:physicalLighting?localLightCount:voidLightCount,localLightPositions:physicalLighting?localLightPositions:sourceVoidPhysicalLightPositions,
     localLightColors:physicalLighting?localLightColors:sourceVoidPhysicalLightColours,localLightPenetrations:physicalLighting?localLightPenetrations:sourceVoidPhysicalLightPenetration,
-    localLightDirections:physicalLighting?localLightDirections:null,localLightConeInner:physicalLighting?localLightConeInner:null,physicalStudyMaterials:coastal.active,
+    localLightDirections:physicalLighting?localLightDirections:sourceVoidPhysicalLightDirections,localLightConeInner:physicalLighting?localLightConeInner:sourceVoidPhysicalLightConeInner,physicalStudyMaterials:coastal.active||!!sourceBusInterior?.active,sourceBodyTissue:!!sourceBusInterior?.active,
     localLightEmergency:physicalLighting?localLightEmergency:sourceVoidPhysicalLightEmergency,localShadowIndex:physicalLighting?localShadowIndex:-1,shadowLight:physicalLighting?localShadowLight:null,
     torchYawOffset,
     torch:{power:voidTorch,color:torchColor,reach:coastalFoot?torchReach:Math.min(3,torchReach*2.3),coneInner:torchConeInner,coneOuter:torchConeOuter,spill:Math.max(.08,torchSpill),shoulder:coastalFoot?.9:.65},
     // The old constant fill kept the outskirts props nearly as legible when
     // the torch died. Retain a small night floor there; bells keep their fill.
-    ambientColor:physicalLighting?lightingAmbientColor:[.66,.73,.80],ambientIntensity:physicalLighting?lightingAmbientIntensity:(horizonState.active
-      ? .028+.15*Math.min(1,voidTorch) : .19)*(1+flash*5),
+    ambientColor:physicalLighting?lightingAmbientColor:[.66,.73,.80],ambientIntensity:sourceBusInterior?.active?.045:physicalLighting?lightingAmbientIntensity:(horizonState.active
+      ? .028+.15*Math.min(1,voidTorch) : .19)*(1-.78*busCover)*(1+flash*5),
     // Empty ground has no architectural occluder. Real props retain their own
     // depth test and flashlight shadow; no corridor plan is sampled here.
     planTexture:null,planSize:[0,0],planOrigin:[0,0],
@@ -5372,6 +5474,15 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform4f(sourceVoidPhysicalU('uTorch'),voidTorch,torchConeInner,torchConeOuter,torchReach);
   gl.uniform3fv(sourceVoidPhysicalU('uTorchColor'),torchColor);
   gl.uniform1f(sourceVoidPhysicalU('uRain'),towerInside?0:sourceVoidRain);
+  // Rain uses the historical world-cell lattice. The bus's rendered origin
+  // and the recording rebase enter that lattice once, without drying the view
+  // beyond its windows or adding a camera-attached weather mask.
+  const busRain=outskirtsBusRainUniforms({centreXCells:(sourceRainShelter?.x||0)/CELL,
+    centreZCells:(sourceRainShelter?.z||0)/CELL,baseYCells:(sourceRainShelter?.y||0)/CELL,
+    yaw:sourceRainShelter?.yaw||0,enabled:!!sourceRainShelter,
+    patternOriginOffsetMetres:{x:patternOriginOffsetMetres[0],z:patternOriginOffsetMetres[2]}});
+  gl.uniform4fv(sourceVoidPhysicalU('uBusRainRoof'),busRain.uBusRainRoof);
+  gl.uniform4fv(sourceVoidPhysicalU('uBusRainFrame'),busRain.uBusRainFrame);
   gl.uniform1f(sourceVoidPhysicalU('uRainBack'),sourceVoidRainRate<0?1:0);
   gl.uniform1f(sourceVoidPhysicalU('uTime'),now);
   gl.uniform1f(sourceVoidPhysicalU('uReduceMotionOptical'),pixelMeshSettings.reduceMotion?1:0);
@@ -5379,6 +5490,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform1f(sourceVoidPhysicalU('uFlash'),flash);
   gl.uniform1f(sourceVoidPhysicalU('uOvercast'),towerInside?0:sourceVoidRain);
   gl.uniform3f(sourceVoidPhysicalU('uEyeCells'),camX,camY,camZ);
+  gl.uniform3fv(sourceVoidPhysicalU('uWorldPatternOffset'),patternOriginOffsetMetres);
   const doorA=new Float32Array(12),doorB=new Float32Array(12),doorC=new Float32Array(12);
   sourceDoorLights.forEach((door,k)=>{
     doorA.set([door.x,door.z,door.forward[0],door.forward[1]],k*4);
@@ -6110,6 +6222,7 @@ function loadDataTexture(url){
 }
 
 export function r3dInit(mapEl) {
+  outcomeExposure.clear();
   const crowdLoadGeneration=streetCrowdPacks.reset();
   const peopleGeneration=++exteriorPeopleLoadGeneration;exteriorPeopleStatus={boothProps:false,boothCharacter:false,ambientProps:false,errors:[]};
   const hospitalityGeneration=++pubHospitalityLoadGeneration;pubHospitalityError=null;
@@ -6203,8 +6316,11 @@ export function r3dInit(mapEl) {
   waterFboB = makeFbo(waterTexB);
   fogTexture = makeTex(FOG_TEX, FOG_TEX, new Uint8Array(FOG_TEX * FOG_TEX).fill(255), 'r8');
   resize();
-  basePropPackLoad=P3.loadPropPack(assetUrl('assets/conservatory-props.glb'));
-  basePropPackLoad
+  // The mandatory bus is route geometry, not optional dressing: a base-ready
+  // promise must never expose its colliders with the old solid side skin.
+  basePropPackLoad=P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
+    .then(async pack=>{await P3.addPropPack(assetUrl('assets/outskirts-bus-passage.glb'));return pack;});
+  authoredPropPackLoad=basePropPackLoad
     .then((pack)=>{
       SHORE.sourceShoreSetHardwarePack(pack);
       void P3.addPropPack(assetUrl('assets/chapel-tape-demand.glb')).then(()=>{
@@ -6214,6 +6330,7 @@ export function r3dInit(mapEl) {
         chapelTapeDemandReady=true;chapelTapeDemandError=null;
       }).catch(error=>{if(tapeDemandGeneration!==chapelTapeDemandLoadGeneration)return;chapelTapeDemandError=String(error?.message||error);console.warn('chapel departure material unavailable; retaining an unbound exit',error);});
       void P3.addPropPack(assetUrl('assets/institution-posters.glb')).catch(err=>console.warn('institution posters unavailable',err));
+      void P3.addPropPack(assetUrl('assets/source-outskirts-graffiti.glb')).catch(err=>console.warn('Source street graffiti unavailable',err));
       void streetCrowdPacks.load(crowdLoadGeneration);
       for(const[kind,file,names]of[
         ['boothProps','booth-guard-props.glb',['yard_booth_interior','booth_guard_pen','booth_guard_key','booth_guard_cup']],
@@ -6245,6 +6362,10 @@ export function r3dInit(mapEl) {
         .then(()=>{if(peopleGeneration===exteriorPeopleLoadGeneration)exteriorPeopleStatus.boothCharacter=true;})
         .catch((err)=>console.warn('outskirts character pack unavailable',err));
       void P3.addCharacterPack(assetUrl('assets/outskirts-dog-handler.glb')).catch((err)=>console.warn('outskirts dog handler unavailable',err));
+      // Dedicated informant costume/negative hull. Keep its residency separate
+      // from the later Source operator whose identity and asset remain intact.
+      void P3.addCharacterPack(assetUrl('assets/tower-warning-missing-man.glb'),{allowedMeshes:['tower_warning_missing_man']})
+        .catch((err)=>console.warn('Missing Man character unavailable',err));
       void P3.addCharacterPack(assetUrl('assets/recordist-characters.glb')).catch((err)=>console.warn('recordist character pack unavailable',err));
       // The prop-store body and chamber cherub use this same skinned material,
       // shadow and final world dither path as the established Wrong Fold.
@@ -6281,6 +6402,9 @@ export function r3dInit(mapEl) {
         .catch((err)=>console.warn('outskirts vacant dog pack unavailable',err))
         .then(()=>P3.addPropPack(assetUrl('assets/conservatory-acquisitions.glb')));
     })
+    .then(()=>P3.addPropPack(assetUrl('assets/hall-chandelier-proof.glb'))
+      .then(()=>{const names=P3.propMeshCatalog();hallChandelierReady=['hall_chandelier_body','hall_chandelier_support_west','hall_chandelier_support_east'].every(name=>names.includes(name));})
+      .catch(err=>{hallChandelierReady=false;console.warn('Hall chandelier proof unavailable; retaining original fitting',err);}))
     // Floor textiles, after the procedural pack so atrium_waiting_rug's
     // flat-shaded version is overridden by the textured one of the same name.
     // Optional, like vegetation: a missing pack leaves the bands in place.
@@ -6288,6 +6412,17 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-adversary-scenery.glb'))
       .catch((err)=>console.warn('adversary room dressing unavailable; retaining original prop store',err)))
     .then(()=>P3.addPropPack(assetUrl(EXTERIOR_FRONTAGE_PACK)))
+    // Graffiti is its own surface dressing: neither the masonry nor the bus
+    // mesh needs to be replaced, and a missing pack leaves the street usable.
+    .then(()=>P3.addPropPack(assetUrl('assets/exterior-graffiti.glb'))
+      .catch(err=>console.warn('Exterior graffiti unavailable',err)))
+    .then(()=>P3.addPropPack(assetUrl('assets/bus-graffiti.glb'))
+      .catch(err=>console.warn('Bus graffiti unavailable',err)))
+    .then(()=>P3.addPropPack(assetUrl(EXTERIOR_STREET_FABRIC.pack))
+      .then(()=>{streetFabricReady=EXTERIOR_STREET_FABRIC.meshNames.every(name=>P3.propMeshCatalog().includes(name));})
+      .catch(err=>console.warn('Street fabric unavailable; retaining existing road section',err)))
+    .then(()=>P3.addPropPack(assetUrl(ELLERY_PUBLIC_FRONT_PACK))
+      .then(()=>{elleryPublicFrontReady=Object.keys(ELLERY_PUBLIC_FRONT_MESHES).every(name=>P3.propMeshCatalog().includes(name));}))
     .then(()=>P3.addPropPack(assetUrl(EXTERIOR_ROOFLINE_PACK))
       .catch(err=>console.warn('exterior roof closure unavailable; retaining original elevations',err)))
     .then(()=>P3.addPropPack(assetUrl(EXTERIOR_STATIONERS_PACK))
@@ -6299,6 +6434,13 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/street-pilot.glb'))
       .then(()=>{streetPilotReady=true;})
       .catch((err)=>console.warn('street pilot unavailable; retaining legacy traffic',err)))
+    .then(()=>P3.addPropPack(assetUrl('assets/glass-court.glb'))
+      .then(()=>{
+        const names=P3.propMeshCatalog();
+        glassCourtReady=GLASS_COURT.meshNames.every(name=>names.includes(name));
+        if(!glassCourtReady)throw new Error('Incomplete indoor greenhouse pack');
+      })
+      .catch(err=>{glassCourtReady=false;console.warn('Greenhouse unavailable; retaining the existing pool route',err);}))
     // Hero vegetation deliberately overrides the conservative tree, hedge and
     // ruined-garden meshes. A missing optional pack falls back to those names
     // without preventing later structural packs from loading.
@@ -6325,6 +6467,10 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-doors.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/tuning-fork.glb')))
     .then(()=>P3.addPropPack(assetUrl('assets/conservatory-main-stair.glb')))
+    // The original host names and lettering datums remain unchanged. This
+    // small replacement adds attached, worn mounting boards to the landings.
+    .then(()=>P3.addPropPack(assetUrl('assets/conservatory-landing-fittings.glb'))
+      .catch(err=>console.warn('landing fittings unavailable; retaining original lamps and signs',err)))
     // Retained wall ornament shares the ordinary depth, torch and final dither.
     // The masonry and the stair remain complete if this optional skin is absent.
     .then(()=>P3.addPropPack(assetUrl(MAIN_STAIR_WALL_PACK))
@@ -6865,6 +7011,9 @@ export function r3dStBrendansTreatmentStats() { return P3.stBrendansTreatmentSta
 export function r3dStBrendansPresenceStats() { return P3.stBrendansPresenceStats(); }
 export function r3dStreetPilotReady() { return streetPilotReady; }
 export function r3dOpeningStreetReady() { return openingStreetReady; }
+export function r3dGlassCourtReady() { return glassCourtReady; }
+export function r3dStreetFabricReady() { return streetFabricReady; }
+export function r3dElleryPublicFrontReady() { return elleryPublicFrontReady; }
 export function r3dStationersReady() { return ['district_terrace_frontage_stationer','exterior_stationers_room'].every(name=>P3.propMeshCatalog().includes(name)); }
 export function r3dAcademicGalleryStatus() { return {ready:academicGalleryReady,error:academicGalleryError}; }
 export function r3dPropInstanceIds() { return P3.propInstanceIds(); }
@@ -7033,6 +7182,7 @@ function updateWaterField(water, dt) {
 //          chunks:[{x,y,r,act,col}], key:{x,y}|null, door:{x,y}|null,
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
+  P3.setGlassCourtRainFrame?.(state.glassCourtRain?.shader||null);
   if(!towerCaptureInProgress&&!state.textSpace&&!state.sourceVoidPhysical&&!horizonState.active)lastBuildingViewState=state;
   driveFrameActive=state?.driveStudy?.active===true;
   if(!driveFrameActive)P3.setDriveStudyFrame(null);
@@ -7134,11 +7284,15 @@ export function r3dFrame(state) {
   // Keep the gameplay presence authoritative while giving only its drawing a
   // short material resolve. Despawn keeps the last world position long enough
   // to dissolve there; it does not retain collision, pursuit or awareness.
-  const hushBodyRenderAllowed=state.hushBodyAllowed!==false;
-  const incomingHush=hushBodyRenderAllowed&&state.hush&&Number.isFinite(state.hush.x)&&Number.isFinite(state.hush.y)
+  // The caught performer's presentation may outlive its gameplay despawn by
+  // one existing contact beat. Only an explicitly committed exposure can cross
+  // ordinary actor suppression; the actual world root/pose stays captured.
+  const exposureHush=outcomeExposure.resolve(state.hush,{reduceFlash:!!pixelMeshSettings.reduceFlash});
+  const hushBodyRenderAllowed=state.hushBodyAllowed!==false||!!exposureHush;
+  const incomingHush=exposureHush||(hushBodyRenderAllowed&&state.hush&&Number.isFinite(state.hush.x)&&Number.isFinite(state.hush.y)
     ? state.hush
-    : null;
-  const incomingHushSecondary=hushBodyRenderAllowed&&state.hushSecondary
+    : null);
+  const incomingHushSecondary=state.hushBodyAllowed!==false&&state.hushSecondary
     &&Number.isFinite(state.hushSecondary.x)&&Number.isFinite(state.hushSecondary.y)
     ?state.hushSecondary:null;
   if(incomingHush){
@@ -7190,6 +7344,9 @@ export function r3dFrame(state) {
   sourceVoidDawn=Math.max(0,Math.min(1,Number(state.sourceVoidDawn)||0));
   sourceVoidBeacon=state.sourceVoidBeacon&&Number.isFinite(state.sourceVoidBeacon.bearing)?state.sourceVoidBeacon:null;
   sourceVoidRain=Math.max(0,Math.min(1,Number(state.sourceVoidRain)||0));
+  sourceRainShelter=state.sourceRainShelter||null;
+  sourceBusLighting=state.sourceBusLighting||null;
+  sourceBusInterior=state.sourceBusInterior||null;
   canvas.dataset.sourceVoidPhysical=sourceVoidPhysicalActive?'true':'false';
 
   // Beyond the telephone street, its physical props and recorded splats share
@@ -7318,6 +7475,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uBounceIntensity'),lightingBounceIntensity*bounceAmount);
   gl.uniform1f(U('uBounceLampGain'),bounceLampGain);
   gl.uniform1f(U('uRainAmount'),Number.isFinite(state.rainAmount)?state.rainAmount:rainAmount);
+  gl.uniform1f(U('uGlassCourtRainShelter'),state.glassCourtRainShelter?1:0);
   gl.uniform1f(U('uRainIndoor'),indoorRain);
   gl.uniform1f(U('uNightSeed'),nightSeed);
   gl.uniform1f(U('uEndingWorldLook'),endingWorldLook);
@@ -7493,6 +7651,9 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,pressureIdentityTex||sourceTex);
   gl.uniform1i(postU('uPressureInk'),5);
   gl.uniform1f(postU('uPressureInkReady'),pressureFinishReady?1:0);
+  gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,markTex||sourceTex);
+  gl.uniform1i(postU('uMissingManMarks'),6);
+  gl.uniform1f(postU('uMissingManMarksReady'),props.missingManCoreVisible?1:0);
   gl.uniform2f(postU('uRes'), presentW, presentH);
   gl.uniform1f(postU('uFear'), fearLevel);
   gl.uniform1f(postU('uTimeP'), performance.now() * 0.001);
@@ -7537,6 +7698,32 @@ export function r3dClearScreen() {
 
 // Explicit evidence readback only; never part of the frame loop. Coordinates
 // here are framebuffer pixels (bottom-left), including the door-core sample.
+export function r3dMissingManMaterialProof(){
+  if(!gl||!markTex||!uniforms.sceneW)return{ready:false};
+  const w=uniforms.sceneW,h=uniforms.sceneH,ow=presentTarget?.width||canvas.width,oh=presentTarget?.height||canvas.height;
+  const old=gl.getParameter(gl.READ_FRAMEBUFFER_BINDING),read=gl.getParameter(gl.READ_BUFFER),fbo=gl.createFramebuffer();
+  try{
+    const marks=new Uint8Array(w*h*4),pixels=new Uint8Array(ow*oh*4);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.READ_FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,markTex,0);gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    if(gl.checkFramebufferStatus(gl.READ_FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)return{ready:false,error:'Material marks target incomplete'};
+    gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,marks);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER,presentTarget?.fbo||null);gl.readBuffer(presentTarget?gl.COLOR_ATTACHMENT0:gl.BACK);
+    gl.readPixels(0,0,ow,oh,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    let count=0,black=0,maxChannel=0,smokePixels=0,smokeLightInkPixels=0;const bounds=[w,h,-1,-1],samples=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const tag=marks[(y*w+x)*4+3];if(tag!==MISSING_MAN_CORE_BYTE&&tag!==MISSING_MAN_SMOKE_BYTE)continue;
+      const ox=Math.min(ow-1,Math.floor((x+.5)*ow/w)),oy=Math.min(oh-1,Math.floor((y+.5)*oh/h)),at=(oy*ow+ox)*4;
+      const rgb=Array.from(pixels.subarray(at,at+3));
+      if(tag===MISSING_MAN_SMOKE_BYTE){smokePixels++;if(Math.max(...rgb)>=32)smokeLightInkPixels++;continue;}
+      count++;if(rgb.every(v=>v===0))black++;
+      maxChannel=Math.max(maxChannel,...rgb);bounds[0]=Math.min(bounds[0],x);bounds[1]=Math.min(bounds[1],y);bounds[2]=Math.max(bounds[2],x);bounds[3]=Math.max(bounds[3],y);
+      if(samples.length<4)samples.push({scene:[x,y],output:[ox,oy],rgb});
+    }
+    return{ready:true,source:'Exact depth-winning world material marks and final presented game framebuffer',tagByte:MISSING_MAN_CORE_BYTE,
+      scene:[w,h],output:[ow,oh],corePixels:count,exactBlackPixels:black,maxChannel,smokePixels,smokeLightInkPixels,bounds:count?bounds:null,samples,
+      glError:gl.getError(),qualification:'Explicit developer readback only; UI canvas excluded. No human fear or frame-time claim.'};
+  }finally{gl.deleteFramebuffer(fbo);gl.bindFramebuffer(gl.READ_FRAMEBUFFER,old);gl.readBuffer(read);}
+}
 export function r3dSourceRoomRender({sample=false}={}){
   const targets=P3.propTargets(),active=textSpaceActive&&!!sourceLook.roomMemoryActive;
   const result={active,acquisition:active?'overworld-pixel-mesh':null,

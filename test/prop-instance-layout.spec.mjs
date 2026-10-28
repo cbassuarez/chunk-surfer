@@ -6,10 +6,12 @@ test('a switched emitter can be genuinely dark without changing ordinary materia
  for(const scale of[0,.3,1,2.4]){
   assert.equal(propPoweredMaterialScale({},scale),1,'ordinary props never inherit a practical switch');
   assert.equal(propPoweredMaterialScale({sourceMemoryFixture:true},scale),scale,'existing Source circuit response stays exact');
+  assert.equal(propPoweredMaterialScale({practicalFixture:true},scale),scale,'explicit ordinary lamp emission follows its submitted light');
  }
  for(const power of[0,.25,1]){
   assert.equal(propPoweredMaterialScale({fixturePower:power}),power);
   assert.equal(propPoweredMaterialScale({fixturePower:power,sourceMemoryFixture:true},.6),power*.6);
+  assert.equal(propPoweredMaterialScale({fixturePower:power,practicalFixture:true},.6),power*.6);
  }
  assert.equal(propPoweredMaterialScale({fixturePower:NaN}),1);
  assert.equal(propPoweredMaterialScale({fixturePower:-1}),0);

@@ -102,7 +102,7 @@ test('accepted forward movement performs the same controlled failure and full 10
   }
   assert.equal(state.physical.phase, 'landed');
   assert.equal(state.physical.feet, 0); assert.ok(didCatch); assert.ok(Math.abs(distance - 100) < 1e-8);
-  assert.deepEqual(events.map(event => event.type), ['strain', 'fracture', 'footing-loss', 'catch', 'land']);
+  assert.deepEqual(events.map(event => event.type), ['strain', 'fracture', 'footing-loss','stratum-0','stratum-1','stratum-2', 'catch', 'land']);
   assert.ok(events.every(event => event.id.startsWith('ending-wrong-door:ending-test:')));
   assert.equal(JSON.stringify(events).includes('source-II'), false);
   assert.deepEqual(state.receipts.map(receipt => receipt.type), events.map(event => event.type));
@@ -149,6 +149,9 @@ test('only the opened lower leaf and actual body crossing produce one Source IV 
   let state = walk(landed(), 0, C.passage.exitZ + 1.4).state;
   const blocked = advance(state, 1, { forward: 1 });
   assert.equal(blocked.state.status, 'active'); assert.ok(blocked.state.physical.z > C.passage.exitZ);
+  const callerCannotOptIn = advance(state, 1, { forward: 1, automaticDoors: true });
+  assert.equal(callerCannotOptIn.state.status, 'active');
+  assert.equal(callerCannotOptIn.state.physical.exitDoor.open, false, 'the ending owns its manual-door policy');
   const opened = step(blocked.state, { interact: true });
   assert.equal(opened.event.id, 'ending-wrong-door:ending-test:door:exit');
   assert.equal(opened.state.status, 'active');

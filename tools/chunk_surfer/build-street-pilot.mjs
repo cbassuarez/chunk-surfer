@@ -12,7 +12,7 @@ const reportFile=path.join(root,'artifacts/street-realignment/street-pilot-build
 const blender=process.env.BLENDER_BIN||(process.platform==='darwin'?'/Applications/Blender.app/Contents/MacOS/Blender':'blender');
 const config=process.argv.indexOf('--config');
 const normalizeOnly=process.argv.includes('--normalize-only');
-const args=['--background','--factory-startup','--python',path.join(import.meta.dirname,'build-street-pilot.py'),'--','--output',output,'--blend',blend,'--report',reportFile];
+const args=['--background','--factory-startup','--threads','1','--python',path.join(import.meta.dirname,'build-street-pilot.py'),'--','--output',output,'--blend',blend,'--report',reportFile];
 if(config>=0){if(!process.argv[config+1])throw new Error('--config requires a path');args.push('--config',path.resolve(process.argv[config+1]));}
 if(!normalizeOnly){
   const result=childProcess.spawnSync(blender,args,{stdio:'inherit'});

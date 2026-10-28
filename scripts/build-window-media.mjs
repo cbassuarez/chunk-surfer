@@ -46,6 +46,11 @@ function filterFor(spec){
 }
 
 mkdirSync(OUT_DIR,{recursive:true});
+// Extension producers own their own IDs. Rebuilding this original bank must
+// not remove separately licensed additions from the shipped catalogue.
+const previous=JSON.parse(readFileSync(MANIFEST_PATH,'utf8'));
+const ownedIds=new Set(SOURCES.map(source=>source.id));
+const retained=(previous.assets||[]).filter(asset=>!ownedIds.has(asset.id));
 const assets=[];
 for(const spec of SOURCES){
   const source=join(SOURCE_DIR,spec.file);
@@ -69,6 +74,6 @@ for(const spec of SOURCES){
     modifications:spec.operations,
   });
 }
-const manifest={schemaVersion:1,id:'window-media',generatedBy:'scripts/build-window-media.mjs',networkAtRuntime:false,audioPolicy:'silent',assets};
+const manifest={schemaVersion:1,id:'window-media',generatedBy:'scripts/build-window-media.mjs',networkAtRuntime:false,audioPolicy:'silent',assets:[...assets,...retained]};
 writeFileSync(MANIFEST_PATH,`${JSON.stringify(manifest,null,2)}\n`);
-console.log(`wrote ${assets.length} media records to ${MANIFEST_PATH}`);
+console.log(`wrote ${manifest.assets.length} media records (${assets.length} built, ${retained.length} retained) to ${MANIFEST_PATH}`);
