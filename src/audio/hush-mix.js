@@ -39,7 +39,8 @@ function noiseBuffer(ctx, seconds = 2.4) {
 }
 
 export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorOpen = false,
-  headphoneMonitorScale = 1, headphoneSurroundingScale = 1 } = {}) {
+  headphoneMonitorScale = 1, headphoneSurroundingScale = 1,
+  concealed = false, hushRelativeSide = null } = {}) {
   const monitorFit = Math.max(.8, Math.min(1.2, Number(headphoneMonitorScale) || 1));
   const surroundingFit = Math.max(.8, Math.min(1.2, Number(headphoneSurroundingScale) || 1));
   const audio = clamp01(field?.presentation?.audio ?? field?.absorption?.audio ?? 0);
@@ -54,6 +55,11 @@ export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorO
   // enough that ambient proximity does not qualify.
   const hissPresence = clamp01(monitorGain) * (monitorOpen ? 1 : .08) * monitorFit;
   const hissFloor = .38;
+  // A little of the room goes missing on the side the presence occupies.
+  // This is NOT a footstep or a tracked voice: it only shapes sounds already
+  // in the room, and the existing field and accessibility settings limit it.
+  // The listener-relative side comes from physical space, not its AI target.
+  const side = Number.isFinite(hushRelativeSide) ? Math.max(-1, Math.min(1, hushRelativeSide)) : 0;
   return {
     worldGain: surroundingFit * lerp(1, softened ? .32 : .10, Math.pow(audio, 1.30)),
     worldLowpassHz: lerp(19000, softened ? 1250 : 620, Math.pow(audio, 1.08)),
@@ -65,6 +71,8 @@ export function hushMixTargets(field, settings = {}, { monitorGain = 1, monitorO
     hissGain: hissPresence * hissScale * Math.max(0, (monitor - hissFloor) / (1 - hissFloor)) * .27,
     residueGain: monitorPresence * Math.max(0, (monitor - .64) / .36) * .14,
     fieldAmount: Math.max(audio, monitor),
+    worldLeftGain: 1 - (concealed && field?.active ? Math.max(0, -side) * audio * .22 : 0),
+    worldRightGain: 1 - (concealed && field?.active ? Math.max(0, side) * audio * .22 : 0),
   };
 }
 
@@ -87,9 +95,31 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
   worldLowpass.frequency.value = 19000;
   const worldGain = ctx.createGain();
   worldGain.gain.value = 1;
+  // Separate attenuation, not panning: no source is moved to the other ear,
+  // neither channel is boosted, and a mono downmix cannot become louder.
+  // Keep a centered fallback on Web Audio implementations without a splitter.
+  const worldSplitter = ctx.createChannelSplitter && ctx.createChannelMerger ? ctx.createChannelSplitter(2) : null;
+  const worldMerger = worldSplitter ? ctx.createChannelMerger(2) : null;
+  const worldLeft = worldSplitter ? ctx.createGain() : null;
+  const worldRight = worldSplitter ? ctx.createGain() : null;
+  if (worldLeft) {
+    // Splitters treat their input as discrete channels. Explicit speaker-mode
+    // upmix here ensures a mono world source reaches both ears unchanged.
+    worldGain.channelCount = 2;
+    worldGain.channelCountMode = 'explicit';
+    worldGain.channelInterpretation = 'speakers';
+    worldLeft.gain.value = worldRight.gain.value = 1;
+  }
   worldInput.connect(worldLowpass);
   worldLowpass.connect(worldGain);
-  if (worldDestination) worldGain.connect(worldDestination);
+  if (worldSplitter) {
+    worldGain.connect(worldSplitter);
+    worldSplitter.connect(worldLeft, 0);
+    worldSplitter.connect(worldRight, 1);
+    worldLeft.connect(worldMerger, 0, 0);
+    worldRight.connect(worldMerger, 0, 1);
+    if (worldDestination) worldMerger.connect(worldDestination);
+  } else if (worldDestination) worldGain.connect(worldDestination);
 
   const directInput = ctx.createGain();
   const directLowpass = ctx.createBiquadFilter();
@@ -158,6 +188,10 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
     const attack = targets.fieldAmount > previousAmount ? .07 : .30;
     lastTargets = targets;
     safeRamp(worldGain.gain, targets.worldGain, ctx, attack);
+    if (worldLeft) {
+      safeRamp(worldLeft.gain, targets.worldLeftGain, ctx, .18);
+      safeRamp(worldRight.gain, targets.worldRightGain, ctx, .18);
+    }
     safeRamp(worldLowpass.frequency, targets.worldLowpassHz, ctx, .11);
     safeRamp(directGain.gain, targets.directGain, ctx, attack);
     safeRamp(directLowpass.frequency, targets.directLowpassHz, ctx, .11);
@@ -306,7 +340,7 @@ export function createHushMix(ctx, { worldDestination = null, directDestination 
     reset() { applyField(null, {}, { monitorGain: 1, monitorOpen: false }); },
     destroy() {
       try { hissSource.stop(); } catch (_) {}
-      for (const node of [programInput, programWorld, programMonitor, worldInput, worldLowpass, worldGain, directInput, directLowpass, directGain, monitorInput, monitorLowpass, monitorDry, hissSource, hissHighpass, hissLowpass, hissGain]) {
+      for (const node of [programInput, programWorld, programMonitor, worldInput, worldLowpass, worldGain, worldSplitter, worldMerger, worldLeft, worldRight, directInput, directLowpass, directGain, monitorInput, monitorLowpass, monitorDry, hissSource, hissHighpass, hissLowpass, hissGain]) {
         try { node.disconnect(); } catch (_) {}
       }
     },

@@ -1,0 +1,10 @@
+{
+  "asset": "public/assets/hush-density.glb",
+  "identity": "The Thick Part",
+  "source": "tools/chunk_surfer/build-hush-density-study.py --production",
+  "anatomicalSources": [],
+  "geometry": "Original procedural solid-fold sculpture, continuous remeshed geometry, authored19-control skin and finite tentacular/pressure deformation.",
+  "conceptReference": "artifacts/hush-mythology-directions/density.png; generated design reference, not projected onto geometry.",
+  "license": "Project-authored original assets; project licensing applies.",
+  "priorHumanAsset": "public/assets/pressure-character.glb remains unchanged for explicitly borrowed human references."
+}

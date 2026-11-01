@@ -63,4 +63,26 @@ const nearest=migrateFloorplanPosition(FP,conservatory,{
 assert.ok(nearest&&!FP.isSolid(nearest.x,nearest.y),'a retired cell falls back to walkable same-floor space');
 assert.ok(Math.abs(FP.floorAt(nearest.x,nearest.y))<.001,'nearest fallback stays on Ground/1F');
 
+const migrateB3=(point)=>{
+  const p=FP.toRuntimePoint(point,{center:false});
+  return migrateFloorplanPosition(FP,conservatory,{px:p.x,py:p.y,layoutRevision:4,facing:1});
+};
+for(const [point,id] of [
+  [{x:18,y:10},'b3-control-west-partition'], // rendered window, collision-only
+  [{x:18.5,y:16},'b3-control-west-partition'],
+  [{x:22,y:18.5},'b3-control-south-partition'],
+]){
+  const got=migrateB3(point);
+  assert.equal(got.migration,id);
+  assert.ok(got.migrated&&!FP.isSolid(got.x,got.y));
+  assert.ok(Math.abs(FP.floorAt(got.x,got.y)+4)<.001,'recovery stays in B3 on basement level');
+}
+for(const point of [{x:17.5,y:10},{x:19,y:10},{x:22,y:17.5},{x:22,y:19}]){
+  const p=FP.toRuntimePoint(point,{center:false}),got=migrateB3(point);
+  if(!FP.isSolid(p.x,p.y)){
+    assert.equal(got.migrated,false,'adjacent open old positions are not moved');
+    assert.deepEqual({x:got.x,y:got.y},p);
+  }
+}
+
 console.log('floorplan position migration tests passed');

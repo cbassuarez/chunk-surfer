@@ -1,18 +1,69 @@
 {
-  "version": 1,
-  "sha256": "2cc6640a31120564abf762b88ac78c7c747b32aa0ce454a1d2cd8f7fcf107442",
-  "bytes": 16700,
+  "version": 2,
+  "sha256": "a89f5475c41d33c115ffcba840e725d2e15701aee5748b380f4d80b3f6789cac",
+  "bytes": 331204,
   "mesh": "ambient_bus_graffiti",
-  "triangles": 164,
-  "paths": 21,
-  "description": "Original hand-drawn matte spray marks on both lower bus side panels",
-  "bodyPlaneX": 1.225,
-  "paintPlaneAbsX": [
-    1.229,
-    1.233
+  "triangles": 6,
+  "creator": "unikumpu",
+  "license": "CC0 1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "creatorStatement": "https://www.reddit.com/r/unrealengine/comments/n7j1y7/need_cc0_graffiti_decals_i_thought_to_share_a_set/",
+  "sourceManifest": "assets/source-graffiti/unikumpu/manifest.json",
+  "adaptation": "Original image bytes and colours embedded; UVs trim transparent margins; alpha cutoff softens paint coverage.",
+  "tags": [
+    {
+      "id": "ASP",
+      "file": "Decal_Graffiti_ASP.png",
+      "side": 1,
+      "z": -0.75,
+      "y": 1.08,
+      "width": 0.78,
+      "height": 0.56,
+      "uv": [
+        0.11666666666666667,
+        0.06666666666666667,
+        0.9455555555555556,
+        0.9666666666666667
+      ],
+      "source": "https://drive.google.com/file/d/1TWwmeotyJDvFmtEKzIsiTqbAaBPirR8J/view",
+      "sha256": "8bf05d5462a8d3a4080c2cddee5ca89c92ac773a35511524f3d7aab875615216"
+    },
+    {
+      "id": "CAS",
+      "file": "Decal_Graffiti_CAS.png",
+      "side": 1,
+      "z": 0.28,
+      "y": 1.08,
+      "width": 0.22,
+      "height": 0.61,
+      "uv": [
+        0.39555555555555555,
+        0.03166666666666667,
+        0.6155555555555555,
+        0.9116666666666666
+      ],
+      "source": "https://drive.google.com/file/d/1FDe9W-J5fgO-IF9tOjLfzpfMEZLNUMsT/view",
+      "sha256": "ab62f2adb04095189b7e87238bbdecc7ccc20029460ca45534f1aab116cc27d7"
+    },
+    {
+      "id": "Johnny2",
+      "file": "Decal_Graffiti_Johnny2.png",
+      "side": -1,
+      "z": 0.02,
+      "y": 1.08,
+      "width": 0.99,
+      "height": 0.56,
+      "uv": [
+        0.03333333333333333,
+        0.17333333333333334,
+        0.9566666666666667,
+        0.9683333333333334
+      ],
+      "source": "https://drive.google.com/file/d/1DnODyXunbtAr6W2H9pOyiaCaRxyFsUTZ/view",
+      "sha256": "5dee4ef149b85728dbc9962cf005e62b2b5a2104c837760f187aa227e077c95a"
+    }
   ],
-  "source": "tools/chunk_surfer/build-bus-graffiti.mjs",
   "pending": [
-    "native final-dither visibility and motion inspection"
+    "native final-dither readability and moving-bus inspection"
   ]
 }

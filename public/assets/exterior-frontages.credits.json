@@ -4,9 +4,9 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-exterior-frontages.mjs",
     "license": "project source; stock font terms below",
-    "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5",
-    "triangles": 44760,
-    "bytes": 4582068
+    "sha256": "adb8f78bf952cb12a7f2fdfb2333ed7051b2f22a8c402e2e6e5a5e3c0503f039",
+    "triangles": 99784,
+    "bytes": 8767840
   },
   "geometry": {
     "origin": "Original project-native opaque geometry",

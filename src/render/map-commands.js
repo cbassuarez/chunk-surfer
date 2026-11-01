@@ -3,6 +3,7 @@
 import { fitBounds, insideRect, clampMarkerToEdge, minimapTransform } from '../game/map-projection.js';
 import { mapFloor, mapSpace, newestMapContact } from '../game/map-model.js';
 import { selectedMapSpace } from '../game/map-navigation.js';
+import { exteriorPlanCommands } from './exterior-map-view.js';
 
 function connectorEndpoint(connector, floorId) {
   if (connector?.a?.floorId === floorId) return connector.a;
@@ -159,12 +160,24 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
   const transform = minimapTransform({ center: model.player.position, radius, viewport, heading, aspect });
   const commands = [];
 
-  if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false) {
+  const authoredPlan=model.context==='exterior'?model.district?.plan:null;
+  if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false && authoredPlan) {
+    // Outdoors the minimap draws the same authored survey as the bag map. The
+    // sampled walkable cells are what made its holes and stepped edges.
+    const outside=points=>points.every(p=>p.x<viewport.x)||points.every(p=>p.x>viewport.x+viewport.w)
+      ||points.every(p=>p.y<viewport.y)||points.every(p=>p.y>viewport.y+viewport.h);
+    for(const command of exteriorPlanCommands(authoredPlan,transform.point))
+      if(!outside(command.points))commands.push({...command,viewport});
+  } else if (policy.minimapMode !== 'compass' && policy.showMapTopology !== false) {
     commands.push(localTopology(floor, transform, viewport, model.player.position, radius));
     if(model.context==='exterior')for(const footprint of model.district?.footprints||[]){
       const points=footprint.points.map(transform.point),xs=points.map(p=>p.x),ys=points.map(p=>p.y);
       if(Math.max(...xs)<viewport.x||Math.min(...xs)>viewport.x+viewport.w||Math.max(...ys)<viewport.y||Math.min(...ys)>viewport.y+viewport.h)continue;
       commands.push({kind:'district-footprint',id:footprint.id,points,role:footprint.role,viewport});
+    }
+    if(model.context==='exterior')for(const edge of model.district?.massEdges||[]){
+      const points=edge.map(transform.point);if(points.every(p=>p.x<viewport.x)||points.every(p=>p.x>viewport.x+viewport.w)||points.every(p=>p.y<viewport.y)||points.every(p=>p.y>viewport.y+viewport.h))continue;
+      commands.push({kind:'district-mass-edge',points,viewport});
     }
     if(model.context==='exterior')for(const edge of model.district?.institutionEdges||[]){
       const points=edge.map(transform.point);if(points.every(p=>p.x<viewport.x)||points.every(p=>p.x>viewport.x+viewport.w)||points.every(p=>p.y<viewport.y)||points.every(p=>p.y>viewport.y+viewport.h))continue;

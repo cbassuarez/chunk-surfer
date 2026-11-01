@@ -8,8 +8,8 @@
   "scope": "Existing dry north pool approach, indoor greenhouse and changing vestibule. Rehosts the original admission fittings without changing their instance. No new exterior connection, actors, triggers, rewards or mechanics.",
   "sourceSha256": {
     "tools/chunk_surfer/build-glass-court.mjs": "a5abae7566bedcb3105198efb44a4bde683a08b1547acf6061191a5ba1c78ec1",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "3f1516cafd99181d242e8ac94f558ce7d9c739cbf7ff24e54eb3dcfd8e9d62af",
-    "src/data/glass-court.js": "186d83caa84332b2af407ebc63975d61fc79d3b817755ac1c52094ec2cf8788d",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "e779455cf69089bb21a4f5db5edec18272964b9426e08406489189344196b18a",
+    "src/data/glass-court.js": "f7e2592d655d12f93b7a253a7b69d36202503846738c88cbbd4e7c29bd08c747",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -18,119 +18,135 @@
   },
   "pack": {
     "file": "public/assets/glass-court.glb",
-    "bytes": 3660444,
-    "sha256": "1da091a9acf14e71300addcdf35e30b82c8b2f887613cf4a3a43be033969dc5d"
+    "bytes": 2072440,
+    "sha256": "bb78b086f52316cc5d8dabbf5971fc650e518d9bdadd787782013322dfa7ba23"
   },
   "meshes": [
     {
       "name": "glass_court_frame",
-      "triangles": 6412,
+      "triangles": 2296,
       "bounds": {
         "min": [
-          -0.017500000074505806,
+          -12,
           -0.0860000029206276,
-          -0.029999999329447746
+          -0.11999999731779099
         ],
         "max": [
-          25,
-          5.199999809265137,
-          4.059999942779541
+          16,
+          9.5,
+          12.119999885559082
         ]
       }
     },
     {
       "name": "glass_court_glass",
-      "triangles": 672,
+      "triangles": 624,
       "bounds": {
         "min": [
-          0.006000000052154064,
-          0.20000000298023224,
+          -0.004000000189989805,
+          0.029999999329447746,
           -0.004000000189989805
         ],
         "max": [
-          20.993999481201172,
-          5.1892876625061035,
-          4.004000186920166
+          4.004000186920166,
+          5.1862874031066895,
+          12.003999710083008
         ]
       }
     },
     {
       "name": "glass_court_beds",
-      "triangles": 144,
+      "triangles": 96,
       "bounds": {
         "min": [
           0,
           0,
-          0
+          0.6499999761581421
         ],
         "max": [
-          21,
-          1.100000023841858,
-          1.100000023841858
+          4,
+          0.75,
+          11.350000381469727
         ]
       }
     },
     {
       "name": "glass_court_nursery",
-      "triangles": 1560,
+      "triangles": 1536,
       "bounds": {
         "min": [
-          0.15000000596046448,
-          0.6825000047683716,
-          0.019999999552965164
+          0.1850000023841858,
+          0.7799999713897705,
+          0.8600000143051147
         ],
         "max": [
-          20.850000381469727,
-          1.3385000228881836,
-          0.3400000035762787
+          3.815000057220459,
+          1.0384999513626099,
+          10.239999771118164
         ]
       }
     },
     {
       "name": "glass_court_plants",
-      "triangles": 23376,
+      "triangles": 11584,
       "bounds": {
         "min": [
-          0.014999999664723873,
-          1.0700000524520874,
-          0.014999999664723873
+          0.024135403335094452,
+          0.7099999785423279,
+          0.6650000214576721
         ],
         "max": [
-          20.985000610351562,
-          3.7018017768859863,
-          1.0850000381469727
+          3.974592924118042,
+          3.651113986968994,
+          11.130619049072266
         ]
       }
     },
     {
       "name": "glass_court_vestibule",
-      "triangles": 864,
+      "triangles": 536,
       "bounds": {
         "min": [
-          11.087499618530273,
-          0,
-          -1.028499960899353
+          -1.0700000524520874,
+          -0.017999999225139618,
+          -0.10849999636411667
         ],
         "max": [
-          25,
-          3.9000000953674316,
-          4.059999942779541
+          5.070000171661377,
+          3.8299999237060547,
+          17.09000015258789
+        ]
+      }
+    },
+    {
+      "name": "glass_court_upper_guards",
+      "triangles": 1872,
+      "bounds": {
+        "min": [
+          -5.190000057220459,
+          9.968626976013184,
+          -7.190000057220459
+        ],
+        "max": [
+          12.1899995803833,
+          18.14862823486328,
+          12.1899995803833
         ]
       }
     },
     {
       "name": "natatorium_entrance_fixtures",
-      "triangles": 1096,
+      "triangles": 144,
       "bounds": {
         "min": [
-          -12.725000381469727,
+          -2.9700000286102295,
           0,
-          -2.450000047683716
+          -2.700000047683716
         ],
         "max": [
-          12,
-          3.930000066757202,
-          1.6572215557098389
+          2.930000066757202,
+          2.140000104904175,
+          1.8271321058273315
         ]
       }
     }

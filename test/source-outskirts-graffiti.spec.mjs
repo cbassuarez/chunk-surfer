@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NodeIO } from '@gltf-transform/core';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { sourceOutskirtsGraffitiInstances } from '../src/game/source-outskirts-graffiti.js';
 
 test('paint exists only on rendered, appropriate Source wall and bus parents', () => {
@@ -24,16 +25,28 @@ test('paint exists only on rendered, appropriate Source wall and bus parents', (
   assert.deepEqual(sourceOutskirtsGraffitiInstances([]),[]);
 });
 
-test('built marks are normalled paint strokes fitted to real wall and vehicle enamel', async () => {
+test('original CC0 masked art stays fitted to real wall and vehicle enamel', async () => {
   const bytes=await readFile(new URL('../public/assets/source-outskirts-graffiti.glb',import.meta.url));
   const doc=await new NodeIO().readBinary(bytes);
   const root=doc.getRoot(), meshes=root.listMeshes();
   assert.deepEqual(meshes.map(m=>m.getName()).sort(),['source_outskirts_bus_graffiti','source_outskirts_wall_graffiti']);
+  const sourceManifest=JSON.parse(await readFile(new URL('../assets/source-graffiti/unikumpu/manifest.json',import.meta.url),'utf8'));
+  const credits=JSON.parse(await readFile(new URL('../public/assets/source-outskirts-graffiti.credits.json',import.meta.url),'utf8'));
+  assert.equal(credits.creator,'unikumpu');assert.equal(credits.license,'CC0 1.0');
+  const digest=b=>createHash('sha256').update(b).digest('hex');
+  assert.equal(credits.sha256,digest(bytes));
+  assert.deepEqual(new Set(credits.images.map(i=>i.file)),new Set(['Decal_Graffiti_valha.png','Decal_Graffiti_dephy.png','Decal_Graffiti_RANDOM.png']));
   for(const mesh of meshes){
     let triangles=0;
     for(const p of mesh.listPrimitives()){
       assert.ok(p.getAttribute('NORMAL'),'the production renderer requires normals');
-      assert.equal(p.getMaterial().getAlphaMode(),'OPAQUE');
+      assert.equal(p.getMaterial().getAlphaMode(),'MASK');
+      assert.ok(Math.abs(p.getMaterial().getAlphaCutoff()-.15)<1e-6);
+      const texture=p.getMaterial().getBaseColorTexture(),entry=sourceManifest.files.find(item=>item.filename===texture.getName());
+      assert.ok(entry,`art source ${texture.getName()} is documented`);
+      assert.deepEqual(entry.alpha_extrema,[0,255],'art includes transparent ground and fully opaque pigment');
+      assert.equal(digest(texture.getImage()),entry.sha256,'embedded PNG is the original art, not a traced imitation');
+      assert.ok(p.getAttribute('TEXCOORD_0'));
       const pos=p.getAttribute('POSITION').getArray(), normals=p.getAttribute('NORMAL').getArray(), indices=p.getIndices().getArray();
       triangles+=indices.length/3;
       assert.equal(normals.length,pos.length);
@@ -45,7 +58,11 @@ test('built marks are normalled paint strokes fitted to real wall and vehicle en
         }else assert.ok(y>.30&&y<1.36&&Math.abs(z)<.84,'wall tag remains between piers and stone caps');
         assert.equal(normals[i],Math.sign(x));
       }
+      const uv=p.getAttribute('TEXCOORD_0').getArray(),side=Math.sign(pos[0]);
+      assert.deepEqual([...uv],[0,0,1,0,1,1,0,1]);
+      assert.ok((pos[2]-pos[5])*side>0,'reader-left and right stay correctly oriented on both sides');
+      assert.ok(pos[1]>pos[7],'UV top lies above bottom');
     }
-    assert.ok(triangles>20&&triangles<500,'separate thin strokes, with bounded geometry');
+    assert.ok(triangles>=2&&triangles<=4,'one masked face per supported flank');
   }
 });

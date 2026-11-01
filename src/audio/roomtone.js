@@ -1,4 +1,4 @@
-import { assetUrl } from '../platform/paths.js';
+import { createFootstepAudio } from './footsteps.js';
 // Room tone: what an empty room actually sounds like, and the footsteps you
 // put into it.
 //
@@ -12,13 +12,27 @@ import { assetUrl } from '../platform/paths.js';
 
 import { ROOM_TONE } from '../config.js';
 
-let ctx = null, bus = null;
+let ctx = null, bus = null, footOutput = null;
 let bed = null;        // {src, filt, gain}
 let bedTarget = 0;
 
 export function roomToneInit(audioCtx, masterBus) {
+  if (ctx !== audioCtx || bus !== masterBus) {
+    if (bed) {
+      try { bed.src.stop(); bed.src.disconnect(); bed.filt.disconnect(); bed.gain.disconnect(); } catch (_) {}
+      bed = null; bedTarget = 0;
+    }
+    footsteps.clear();
+    try { footOutput?.disconnect(); } catch (_) {}
+    footOutput = audioCtx.createGain();
+    footOutput.gain.value = 1;
+    footOutput.connect(masterBus);
+  }
   ctx = audioCtx; bus = masterBus;
-  loadFootsteps();      // so the first step of a run is not the silent one
+  footsteps.update({ paused: false });
+  // The menu/entry interval prepares likely ordinary contacts. Region owners
+  // warm their actual material/profile before reaching a new surface.
+  void Promise.all(['concrete', 'wood', 'tile'].map(surface => loadFootsteps({ surface })));
 }
 
 function makeNoiseBuffer(seconds = 3) {
@@ -73,97 +87,26 @@ export function bedOff() { setBed(0, 0.6); }
 export function roomToneState() { return { active:bedTarget>0, target:bedTarget }; }
 
 // ── footsteps ───────────────────────────────────────────────────────────────
-// One long recording of a man walking, sliced at random. The noise MODEL is
-// unchanged — `level` is exactly the number `recordist.js` just emitted, so a
-// slow step is almost nothing and an injured step is still an announcement.
-// Only the timbre changed: a filtered noise burst never sounded like a shoe.
-const STEPS_URL = assetUrl('audio/game/bunch-of-footsteps-sounds.mp3');
-let stepsBuf = null;
-let stepsPending = null;
+// The shared player owns whole contacts and finite substrate/Source responses.
+// Gameplay noise remains with recordist.js. This bus retains the existing
+// glass/HUSH/world mix, including while the recorder is listening.
+const footsteps = createFootstepAudio({ getAudio: () => ({ ctx, destination: footOutput || bus }) });
 
-export function loadFootsteps() {
-  if (!ctx || stepsBuf || stepsPending) return stepsPending;
-  stepsPending = fetch(STEPS_URL)
-    .then((r) => { if (!r.ok) throw new Error(`${r.status} ${STEPS_URL}`); return r.arrayBuffer(); })
-    .then((ab) => ctx.decodeAudioData(ab))
-    .then((buf) => { stepsBuf = buf; stepsPending = null; return buf; })
-    .catch((err) => { console.warn('footsteps failed to load', err); stepsPending = null; return null; });
-  return stepsPending;
+export function loadFootsteps(descriptor = { surface: 'concrete' }) {
+  return footsteps.preload(descriptor);
 }
+export function prepareFootsteps(descriptor = {}) { return footsteps.preload(descriptor); }
+export function footstep(level = .22, options = {}) { return footsteps.contact({ ...options, level }); }
+export function updateFootsteps(state = {}) { footsteps.update(state); }
+export function clearFootContacts(owner) { footsteps.clear(owner); }
+export function pauseFootsteps() { footsteps.update({ paused: true }); }
+export function footstepState() { return footsteps.snapshot(); }
+// Read-only tap for task-local listening evidence. The audible branch continues
+// through world SFX, glass, HUSH and the normal output chain.
+export function footstepOutput() { return { context: ctx, source: footOutput }; }
 
-/**
- * @param level   how loud the footfall is
- * @param muffle  0..1. THE GROUND IS NOT ALWAYS GROUND.
- *
- * These are a recording of a man walking on floorboards, which is right for a
- * building and wrong everywhere else. Out on the horizon the body is standing
- * on a video tape in a void — his own arrival line is "the ground out here is
- * not ground" — and the boards were playing anyway, which put a corridor under
- * a place that has no floor.
- *
- * Muffling rather than silencing: silence makes walking feel broken, and a
- * footfall with its top gone and its room gone reads as a step onto something
- * that is not a surface, which is exactly the intended feeling.
- */
-export function footstep(level = 0.22, { muffle = 0, pan: position = null } = {}) {
-  if (!ctx || !bus || level <= 0.001) return;
-  if (!stepsBuf) { loadFootsteps(); return; }       // the first step of a run is silent
-  const now = ctx.currentTime;
-  const dull = Math.max(0, Math.min(1, Number(muffle) || 0));
-
-  // A window somewhere in the file, long enough to contain one footfall.
-  const dur = 0.16 + Math.random() * 0.14;
-  const startMax = Math.max(0, stepsBuf.duration - dur - 0.02);
-  const offset = startMax > 0 ? Math.random() * startMax : 0;
-
-  const src = ctx.createBufferSource();
-  src.buffer = stepsBuf;
-  src.playbackRate.setValueAtTime((0.90 + Math.random() * 0.20) * (1 - dull * 0.22), now);
-
-  // A hard gate on both ends: we are cutting into the middle of a recording and
-  // must not bring its edges with us.
-  const env = ctx.createGain();
-  env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(Math.min(0.85, level * 1.4), now + 0.004);
-  env.gain.setValueAtTime(Math.min(0.85, level * 1.4), now + dur - 0.03);
-  env.gain.exponentialRampToValueAtTime(0.0006, now + dur);
-
-  let out = env;
-  let pan = null;
-  let dampen = null;
-  if (dull > 0.001) {
-    dampen = ctx.createBiquadFilter();
-    dampen.type = 'lowpass';
-    dampen.frequency.setValueAtTime(6000 - dull * 5200, now);
-    dampen.Q.setValueAtTime(0.5, now);
-    out.connect(dampen);
-    out = dampen;
-  }
-  if (ctx.createStereoPanner) {
-    pan = ctx.createStereoPanner();
-    // The scatter narrows as the ground goes: a step with no room around it has
-    // nowhere to be.
-    pan.pan.setValueAtTime(Number.isFinite(position) ? Math.max(-1,Math.min(1,position))
-      : (Math.random() * 2 - 1) * 0.22 * (1 - dull * 0.7), now);
-    out.connect(pan);
-    out = pan;
-  }
-  src.connect(env);
-  out.connect(bus);
-  try { src.start(now, offset, dur); src.stop(now + dur + 0.02); } catch (_) { return; }
-  src.onended = () => { try { src.disconnect(); env.disconnect(); pan?.disconnect(); dampen?.disconnect(); } catch (_) {} };
-}
-
-// Audible water stays outside the stealth model. main.js emits the unchanged
-// footstep noise first, then adds this short filtered splash for the player.
-export function waterFootstep(level = 0.12) {
-  if(!ctx||!bus||level<=.001)return;
-  const now=ctx.currentTime,src=ctx.createBufferSource(),buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.18),ctx.sampleRate),data=buffer.getChannelData(0);
-  let low=0;for(let index=0;index<data.length;index+=1){low=low*.86+(Math.random()*2-1)*.14;data[index]=low*(1-index/data.length);}
-  src.buffer=buffer;
-  const filter=ctx.createBiquadFilter();filter.type='bandpass';filter.frequency.setValueAtTime(520,now);filter.Q.setValueAtTime(.65,now);
-  const gain=ctx.createGain();gain.gain.setValueAtTime(Math.min(.22,level),now);gain.gain.exponentialRampToValueAtTime(.0005,now+.18);
-  src.connect(filter);filter.connect(gain);gain.connect(bus);
-  try{src.start(now);src.stop(now+.2);}catch(_){return;}
-  src.onended=()=>{try{src.disconnect();filter.disconnect();gain.disconnect();}catch(_){}};
+// Compatibility for isolated callers: a whole supported water plant, not a
+// second effect layered over another semantic/audible footstep.
+export function waterFootstep(level = .12, options = {}) {
+  return footstep(level, { ...options, surface: 'water', profile: 'physical' });
 }

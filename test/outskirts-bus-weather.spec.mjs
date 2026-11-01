@@ -28,7 +28,7 @@ test('sky shelter changes across the physical doorway while practicals follow re
   const half=outskirtsBusInteriorLightMix(world(-1.045,-3.15),origin);
   near(half,.5,'shelter blends over the threshold instead of cutting exposure');
   assert.equal(outskirtsBusInteriorLightMix(world(0,5),origin),0);
-  assert.deepEqual(busPassageLampPower({entered:false,clock:30,enteredAt:null}),{front:1,rear:.72,strips:[1,1,1,1]});
+  assert.deepEqual(busPassageLampPower({entered:false,clock:30,enteredAt:null}),{front:1,rear:.72,face:.72,strips:[1,1,1,1]});
   near(busPassageLampPower({entered:true,trapAt:10,clock:10.35}).front,1);
   near(busPassageLampPower({entered:true,trapAt:10,clock:10.47}).front,.14);
   assert.equal(busPassageLampPower({entered:true,enteredAt:10,clock:999}).rear,.72);

@@ -6,7 +6,11 @@ import * as P3 from './props3d.js';
 import { CELL, EYE, F, ZONE, MATERIAL } from '../data/floorplan/legend.js';
 import { doorAssembly, doorLeafLocalMatrix } from '../data/source-door-fields.js';
 import { sourceFalseReturnDoorFraction } from '../game/source-false-return.js';
+import {THRESHOLD_GAG,THRESHOLD_GAG_MESHES,thresholdGagPose} from '../data/threshold-gag.js';
+import {thresholdGagGhostFrame} from '../game/threshold-gag-inspection.js';
+import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
 import { assetUrl } from '../platform/paths.js';
+import { fakeElleryHushActor } from './fake-ellery-hush.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, finite(n)));
@@ -115,13 +119,24 @@ export function sourceFalseReturnRenderFrame(layout, state, { planView = sourceF
   const hiddenProps = [], props = [];
   for (const p of layout.props || []) { if (hiddenBySource(p, layout, planView)) hiddenProps.push(p.id); else props.push(p); }
   for (const door of layout.doors) props.push(...drawDoor(door, state));
+  if(state.kind===THRESHOLD_GAG.hostKind&&state.thresholdGag?.available){
+    const pose=thresholdGagPose(state),m=THRESHOLD_GAG.mount;
+    THRESHOLD_GAG_MESHES.forEach((mesh,index)=>{
+      const p={id:'threshold-gag-'+index,mesh,x:m.x,y:m.y,z:m.z,matrix:matrix(m.x,m.y,m.z,m.yaw+(index>=2?pose.angle:0)),structural:true,thresholdGag:true,zone:ZONE.practice};
+      if(!hiddenBySource(p,layout,planView))props.push(p);
+    });
+  }
+  const ghost=thresholdGagGhostFrame(state);
+  if(ghost){const p={id:'ellery-inspection-apparition',mesh:meshForApparitionPose(ghost.poseId),x:ghost.x,y:ghost.feet,z:ghost.z,
+    matrix:matrix(ghost.x,ghost.feet,ghost.z,ghost.yaw),apparitionVariant:ghost.variant,emissive:[.65,.78,.82,ghost.charge],noShadow:true,zone:ZONE.practice,cullRadius:1.5};
+    if(!hiddenBySource(p,layout,planView))props.push(p);}
   const lights = (layout.lights || []).filter(p => !hiddenBySource(p, layout, planView)).sort((a,b) => Math.hypot(a.x-state.x,a.z-state.z) - Math.hypot(b.x-state.x,b.z-state.z));
   const eye = [finite(state.x, layout.spawn?.x), finite(state.feet, layout.spawn?.feet) + EYE, finite(state.z, layout.spawn?.z)];
-  return { props, lights, hiddenProps, sourceDoors: [...planView.sourceDoors], changedCells: planView.changed, authoredCamera: { eye, yaw: finite(state.yaw), pitch: clamp(state.pitch, -Math.PI / 2, Math.PI / 2) },
+  return { props, lights, hiddenProps,inspectionGhost:ghost,sourceDoors: [...planView.sourceDoors], changedCells: planView.changed, authoredCamera: { eye, yaw: finite(state.yaw), pitch: clamp(state.pitch, -Math.PI / 2, Math.PI / 2) },
     plan: planView.plan, counts: { props: props.length, lights: lights.length, doors: layout.doors.length, hiddenProps: hiddenProps.length } };
 }
 
-export function createSourceFalseReturnRenderer({ layout, renderer = R3, props = P3, onRelease = () => {}, resolveAsset = assetUrl,
+export function createSourceFalseReturnRenderer({ layout, renderer = R3, props = P3, onRelease = () => {}, resolveAsset = assetUrl,getReducedMotion=()=>false,
   getTorch = () => ({ on: true, look: { power: 1 } }) } = {}) {
   if ((!layout?.plan && typeof layout?.planFor !== 'function') || !Array.isArray(layout.doors) || !layout.doors.length) throw Error('The false return needs the actual Ellery floor set.');
   const local = copy(layout), allMeshes = new Set((local.props || []).map(p => p.mesh).filter(Boolean));
@@ -131,6 +146,8 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
   const required = new Set((local.props || []).filter(p => p.mesh !== 'main_stair_wall_treatment'
     && (p.structural || p.blocks || colliding.has(p.id))).map(p => p.mesh).filter(Boolean));
   for (const d of local.doors) for (const p of drawDoor(d, { elapsed: 0, doorOpen: {}, doorMotion: {} })) required.add(p.mesh);
+  THRESHOLD_GAG_MESHES.forEach(mesh=>{allMeshes.add(mesh);required.add(mesh);});
+  required.add(meshForApparitionPose(THRESHOLD_GAG.inscription.ghostPose));
   let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null, lightingFrame = null, omittedMeshes = [];
   const resident = () => { const catalog = new Set(props.propMeshCatalog?.() || []); return [...required].every(m => catalog.has(m)); };
   function availableProps(list) {
@@ -144,7 +161,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
   function clearShared() {
     renderer.r3dSetHorizon?.(null); renderer.r3dSetSourceShore?.(null); renderer.r3dSetSourceEmergency?.(0); renderer.r3dSetSourceWhiteout?.(0); renderer.r3dSetSourceFault?.(0);
     renderer.r3dSetSourcePortals?.([]); renderer.r3dSetSourceOpenings?.([]); renderer.r3dSetSourceTowerView?.(null); renderer.r3dSetSourceDoorLights?.([]); renderer.r3dSetSourceCrossing?.(null); renderer.r3dSetSourceReflection?.(null);
-    renderer.r3dSetLocalLights?.([]); renderer.r3dSetEmergencyShadows?.([]); renderer.r3dSetSourceTextInstances?.([]); renderer.r3dSetIndoorRain?.(0); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetProps?.([]); props.setPressureInstances?.([]);
+    renderer.r3dSetLocalLights?.([]); renderer.r3dSetEmergencyShadows?.([]); renderer.r3dSetSourceTextInstances?.([]); renderer.r3dSetIndoorRain?.(0); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetProps?.([]); props.setPressureInstances?.([]); props.setPressureSurfaceInstances?.([]);
   }
   function setLighting(context) {
     lightingFrame = copy(context || { ambientColor: [.66,.51,.35], ambientIntensity: .027, whitePointScale: 1 });
@@ -178,9 +195,11 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
       if (released) return false;
       const ready = renderer.r3dAuthoredPropsReady || renderer.r3dBasePropsReady;
       if (await ready?.call(renderer) === false) throw Error('Ellery\'s original prop catalog has not resolved.');
+      if (await renderer.r3dPrepareHushBody?.() === false) throw Error('The local HUSH body has not resolved.');
       if (released) return false;
       const doors = [...required].filter(mesh => /^door_/.test(mesh)), catalog = new Set(props.propMeshCatalog?.() || []);
       if (doors.some(mesh => !catalog.has(mesh))) await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));
+      if(THRESHOLD_GAG_MESHES.some(mesh=>!new Set(props.propMeshCatalog?.()||[]).has(mesh)))await props.addPropPack(resolveAsset('assets/ellery-threshold-gag.glb'));
       if (released) return false;
       // A copied stair can arrive before the host's optional wall-skin chain.
       if (allMeshes.has('main_stair_wall_treatment') && !new Set(props.propMeshCatalog?.() || []).has('main_stair_wall_treatment')) {
@@ -206,7 +225,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
     const heldTorch = getTorch?.(); torchFrame = { on: !!heldTorch?.on, look: copy(heldTorch?.look || {}) };
     renderer.r3dSetProps(last.props); renderer.r3dSetDynamicProps?.([]); renderer.r3dSetLocalLights(last.lights);
     return renderer.r3dFrame({ px: last.authoredCamera.eye[0] / CELL - .5, py: last.authoredCamera.eye[2] / CELL - .5, floorH: last.authoredCamera.eye[1] - EYE, authoredCamera: last.authoredCamera,
-      tileW: last.plan.w, tileH: last.plan.h, plan: true, worldCount: 0, worldTints: Array.from({length:5},()=>[1,1,1]), chunks: [], key: null, door: null, hush: null, audio: 0,
+      tileW: last.plan.w, tileH: last.plan.h, plan: true, worldCount: 0, worldTints: Array.from({length:5},()=>[1,1,1]), chunks: [], key: null, door: null, hush: fakeElleryHushActor(state.localHush,{reducedMotion:!!getReducedMotion()}), audio: 0,
       light: torchFrame.on ? 1 : 0, torchLook: torchFrame.look, water: {active:false}, sensoryProfile: 'story', textSpace: false, sourceVoidPhysical: false }) !== false;
   }
   function dispose() { if (released) return false; released = true; initialized = false; if (acquired) clearShared(); onRelease(); return true; }
@@ -215,7 +234,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
     initialized=false;loading=null;error=null;last=null;planView=null;planKey=null;
     return initialize();
   }
-  return { initialize, retry, render, ready: () => initialized && !released && !error && resident(), clear: () => renderer.r3dClearScreen?.(), dispose,
+  return { initialize, retry, render,reducedMotion:()=>!!getReducedMotion(),ready: () => initialized && !released && !error && resident(), clear: () => renderer.r3dClearScreen?.(), dispose,
     diagnostics: () => ({ ready: initialized && !released && !error && resident(), released, acquired, error, meshCount: required.size, omittedMeshes: [...omittedMeshes],
-      frame: last ? { camera: copy(last.authoredCamera), torch: copy(torchFrame), lighting: copy(lightingFrame), sourceDoors: [...last.sourceDoors], changedCells: last.changedCells, hiddenProps: [...last.hiddenProps], counts: {...last.counts} } : null }) };
+      frame: last ? { camera: copy(last.authoredCamera), torch: copy(torchFrame), lighting: copy(lightingFrame), sourceDoors: [...last.sourceDoors], changedCells: last.changedCells, hiddenProps: [...last.hiddenProps], counts: {...last.counts},inspectionGhost:copy(last.inspectionGhost) } : null }) };
 }

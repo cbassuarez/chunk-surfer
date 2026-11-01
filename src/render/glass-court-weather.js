@@ -5,8 +5,8 @@ import {GLASS_COURT as C} from '../data/glass-court.js';
 export function glassCourtRoofHeightAt(x,z){
   const lx=Number(x)-C.origin.x,lz=Number(z)-C.origin.z,r=C.roofBounds;
   if(!Number.isFinite(lx)||!Number.isFinite(lz)||lx<r.x0||lx>r.x1||lz<r.z0||lz>r.z1)return null;
-  const half=(r.z1-r.z0)/2;
-  return C.drawnFloor+C.eaves+(C.ridge-C.eaves)*(1-Math.abs(lz-(r.z0+r.z1)/2)/half);
+  const half=(r.x1-r.x0)/2;
+  return C.drawnFloor+C.eaves+(C.ridge-C.eaves)*(1-Math.abs(lx-(r.x0+r.x1)/2)/half);
 }
 export function glassCourtCoveredAt(x,z,feet=0){
   const roof=glassCourtRoofHeightAt(x,z);
@@ -19,7 +19,7 @@ uniform float uGlassCourtRainShelter;
 float glassCourtRoofCells(vec2 p){
   vec2 q=p*.5-vec2(${f(C.origin.x)},${f(C.origin.z)});
   if(q.x<${f(C.roofBounds.x0)}||q.x>${f(C.roofBounds.x1)}||q.y<${f(C.roofBounds.z0)}||q.y>${f(C.roofBounds.z1)})return -10000.0;
-  float g=1.0-abs(q.y-${f((C.roofBounds.z0+C.roofBounds.z1)/2)})/${f((C.roofBounds.z1-C.roofBounds.z0)/2)};
+  float g=1.0-abs(q.x-${f((C.roofBounds.x0+C.roofBounds.x1)/2)})/${f((C.roofBounds.x1-C.roofBounds.x0)/2)};
   return 2.0*(${f(C.drawnFloor+C.eaves)}+g*${f(C.ridge-C.eaves)});
 }
 bool glassCourtTrimRain(inout vec3 a,inout vec3 b){
@@ -42,12 +42,12 @@ uniform vec4 uGlassCourtRainMotion;
 float gcRainHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float gcRainOval(vec2 p,vec2 radius){return 1.0-smoothstep(.65,1.0,length(p/radius));}
 vec2 glassCourtRainFaceEvidence(vec3 world,vec3 normal){
-  if(uGlassCourtRainMaterial<.5||uGlassCourtRainActive<.5||abs(normal.z)<.94)return vec2(0.0);
+  if(uGlassCourtRainMaterial<.5||uGlassCourtRainActive<.5||abs(normal.x)<.94)return vec2(0.0);
   vec2 result=vec2(0.0);
   for(int i=0;i<2;i++){
     vec4 face=uGlassCourtRainFaces[i];
-    if(face.w<.001||abs(world.z-face.z)>.018)continue;
-    vec2 q=(world.xy-face.xy)/vec2(.42,.55);
+    if(face.w<.001||abs(world.x-face.z)>.018)continue;
+    vec2 q=(world.zy-face.xy)/vec2(.42,.55);
     if(abs(q.x)>1.1||abs(q.y)>1.15)continue;
     float gaze=(i==0?uGlassCourtRainMotion.y:uGlassCourtRainMotion.z)*uGlassCourtRainMotion.w;
     float stream=.018*sin(q.y*7.0+uGlassCourtRainMotion.x*.29)*uGlassCourtRainMotion.w;
@@ -58,7 +58,7 @@ vec2 glassCourtRainFaceEvidence(vec3 world,vec3 normal){
     float cheek=max(gcRainOval(p-vec2(-.51,-.21),vec2(.035,.30)),gcRainOval(p-vec2(.51,-.21),vec2(.035,.30)));
     float mouth=gcRainOval(p-vec2(0.0,-.48+.09*p.x*p.x),vec2(.29,.037));
     // Fixed world grains arrive together; no temporal flashing or bright eyes.
-    float grain=gcRainHash(floor(world.xy*180.0));
+    float grain=gcRainHash(floor(world.zy*180.0));
     float form=max(eyes,max(brow*.55,max(nose*.48,max(cheek*.35,mouth*.42))));
     float coverage=step(grain,face.w*form*.78)*step(.10,form);
     result=max(result,vec2(coverage,coverage*(eyes*.68+form*.12)));

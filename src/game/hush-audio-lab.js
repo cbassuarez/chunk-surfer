@@ -125,9 +125,9 @@ export function makeHushAudioLabScene({ playCue = null, applyField = null, reset
       uiText(left, top + 4, `EFFECTIVE      ${propagation ? fmt(propagation.effectiveLevelDb, 1) + ' dB' : '--'}`, 'ui-secondary');
       uiText(left, top + 5, `HEARD          ${propagation ? (isAudibleToHush(propagation, hushAudioPolicyForDifficulty({ values: { presencePressure: pressure() } })) ? 'YES' : 'NO') : '--'}`, propagation && isAudibleToHush(propagation, hushAudioPolicyForDifficulty({ values: { presencePressure: pressure() } })) ? 'ui-danger' : 'ui-secondary');
       uiText(left, top + 7, `INTEREST       ${fmt(audition.interest)}`, 'ui-amber');
-      drawVfdMeter(left + 15, top + 7, 14, monitorSnapshotForRms(audition.interest), { theme: 'amber' });
+      drawVfdMeter(left + 15, top + 7, 14, monitorSnapshotForRms(audition.interest), { theme: 'amber',id:'hush-lab:interest' });
       uiText(left, top + 8, `CERTAINTY      ${fmt(audition.certainty)}`, 'ui-blue');
-      drawVfdMeter(left + 15, top + 8, 14, monitorSnapshotForRms(audition.certainty), { theme: 'green' });
+      drawVfdMeter(left + 15, top + 8, 14, monitorSnapshotForRms(audition.certainty), { theme: 'green',id:'hush-lab:certainty' });
       uiText(left, top + 9, `AGITATION      ${fmt(audition.agitation)}`, 'ui-danger');
       uiText(left, top + 10, `PLAYFULNESS    ${fmt(audition.playfulness)}`, 'ui-secondary');
 

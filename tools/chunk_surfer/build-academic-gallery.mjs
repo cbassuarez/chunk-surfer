@@ -3,6 +3,7 @@ import cp from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import {repairCourtyardGallery} from './repair-courtyard-packs.mjs';
 
 const root=path.resolve(import.meta.dirname,'../..');
 const dir=path.join(root,'artifacts/academic-gallery-realignment');
@@ -95,4 +96,5 @@ fs.writeFileSync(reportFile,JSON.stringify(report,null,2)+'\n');fs.writeFileSync
 const provenance=JSON.parse(fs.readFileSync(path.join(root,'tools/chunk_surfer/acquisition-sources.json')));
 const scan=provenance.sources?.find(s=>s.mesh==='marble_bust_01')||provenance.assets?.find(s=>s.id==='marble_bust_01');
 fs.writeFileSync(output.replace('.glb','.credits.json'),JSON.stringify({version:1,asset:'academic-gallery.glb',source:'tools/chunk_surfer/build-academic-gallery.py',editableBlend:'artifacts/academic-gallery-realignment/academic-gallery.blend',authorship:'Project-authored geometry and atlases; scan-derived anonymous broken bust noted separately.',sources:[{id:'marble_bust_01',url:'https://polyhaven.com/a/marble_bust_01',license:'CC0-1.0',use:'Existing acquired scan physically clipped/capped/decimated for gallery_fragment only; intact and canonical socketed/returned busts remain untouched.',localSource:'public/assets/conservatory-acquisitions.glb',acquisitionRecord:scan||'tools/chunk_surfer/acquisition-sources.json'},{id:'existing-atrium',license:'Project source',use:'Existing academic plaster slab/support geometry retained outside compiled void; bronze rails replaced.',localSource:'public/assets/conservatory-props.glb'}],historicalReferences:'artifacts/academic-gallery-realignment/research.md; reference-only, no reference image embedded.'},null,2)+'\n');
+console.log('Courtyard gallery reconciliation:',await repairCourtyardGallery(output));
 console.log(`Academic gallery: ${final.length} bytes, ${report.catalogueTriangles} catalogue triangles, ${report.addedCatalogueTriangles} added, ${mipBytes} mip bytes, ${meshes.length} identity root meshes.`);

@@ -1,10 +1,9 @@
 import { assetUrl } from '../platform/paths.js';
 import { createContactExposurePlayer } from './contact-exposure.js';
-// Fear: the heartbeat you cannot slow, and the hush you keep almost hearing.
-//
-// One 0..1 level drives both. The heartbeat is a real loop whose RATE and gain
-// ride the level, so a frightened man's pulse is literally faster — you hear your
-// own body before you admit to yourself that you are afraid.
+import { createHeartbeatPlayer } from './heartbeat.js';
+// Fear uses complete recorded slow/fast pairs. The audio worklet owns timing;
+// the recorded timbre stays at its natural pitch and exposes the heard envelope
+// to the visual pulse. Source's presentation reducer still owns withdrawal.
 //
 // The hush stinger is ONE short file, varied procedurally every time: panned
 // somewhere you are not looking, pitched a little, and sometimes played
@@ -12,7 +11,6 @@ import { createContactExposurePlayer } from './contact-exposure.js';
 // never twice the same sound.
 
 const FILES = {
-  heart: assetUrl('audio/game/heartbeat.mp3'),
   hush: assetUrl('audio/game/hush.mp3'),
 };
 
@@ -20,7 +18,8 @@ let ctx = null, bus = null;
 const buffers = new Map();          // url → AudioBuffer
 const pendingLoads = new Map();     // one in-flight decode per current context/url
 let hushRev = null;                 // the hush, backwards (built once)
-let heart = null;                   // { src, gain, rate }
+const heartbeat = createHeartbeatPlayer();
+let generation = 0;
 const contactExposure = createContactExposurePlayer({
   getContext: () => ctx,
   getDestination: () => bus,
@@ -28,10 +27,12 @@ const contactExposure = createContactExposurePlayer({
   loadBuffer: () => load(FILES.hush),
 });
 
-export function fearAudioInit(audioCtx, destination) {
+export function fearAudioInit(audioCtx, destination, { heartbeatDestination = destination } = {}) {
   contactExposure.cancel({ fade: 0 });
+  if (ctx !== audioCtx) { generation++; buffers.clear(); pendingLoads.clear(); hushRev = null; }
   ctx = audioCtx; bus = destination;
-  preloadAll();
+  heartbeat.init(audioCtx, heartbeatDestination);
+  if (ctx) void preloadAll();
 }
 
 async function load(url) {
@@ -54,7 +55,7 @@ async function load(url) {
   })();
   return entry.promise;
 }
-export function preloadAll() { return Promise.all(Object.values(FILES).map(load)); }
+export function preloadAll() { return Promise.all([heartbeat.prepare(), ...Object.values(FILES).map(load)]); }
 
 // Physical Last Exposure contacts have a specific source and event lifetime.
 // Other authored fear cues retain hushStinger's legacy variation below.
@@ -72,41 +73,14 @@ function reversed(buf) {
   return out;
 }
 
-// ── the heartbeat ────────────────────────────────────────────────────────────
-// Loops forever once started; silent at fear 0, and it never fully stops, because
-// a heart does not.
-export function startHeartbeat() {
-  if (!ctx || !bus || heart) return;
-  const buf = buffers.get(FILES.heart);
-  if (!buf) { load(FILES.heart).then(() => { if (!heart) startHeartbeat(); }); return; }
-  const src = ctx.createBufferSource();
-  src.buffer = buf; src.loop = true;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  const lp = ctx.createBiquadFilter();          // a pulse felt in the chest, not the ears
-  lp.type = 'lowpass'; lp.frequency.setValueAtTime(220, ctx.currentTime);
-  src.connect(lp); lp.connect(gain); gain.connect(bus);
-  try { src.start(ctx.currentTime); } catch (_) { return; }
-  heart = { src, gain, lp };
-}
-
-// Fear 0..1 → pulse rate and level. Squared gain so it stays out of the way until
-// you are actually frightened, then arrives all at once.
-export function setFear(v) {
-  if (!ctx || !heart) return;
-  const f = Math.max(0, Math.min(1, v));
-  const now = ctx.currentTime;
-  heart.src.playbackRate.setTargetAtTime(0.72 + f * 1.15, now, 0.5);
-  heart.gain.gain.setTargetAtTime(f * f * 0.42, now, 0.35);
-  heart.lp.frequency.setTargetAtTime(190 + f * 320, now, 0.5);
-}
-
-export function stopHeartbeat({ fade = 0.6 } = {}) {
-  if (!ctx || !heart) return;
-  const h = heart; heart = null;
-  h.gain.gain.setTargetAtTime(0, ctx.currentTime, fade / 3);
-  setTimeout(() => { try { h.src.stop(); } catch (_) {} try { h.src.disconnect(); h.gain.disconnect(); h.lp.disconnect(); } catch (_) {} }, fade * 1000 + 120);
-}
+// A stopped or replaced owner cannot be resurrected by pending decode work.
+export function startHeartbeat() { return heartbeat.start(); }
+export function setFear(value) { heartbeat.setPressure(value); }
+export function stopHeartbeat(options) { heartbeat.stop(options); }
+export function setHeartbeatPaused(value) { heartbeat.setPaused(value); }
+export function heartbeatFrame() { return heartbeat.frame(); }
+export function heartbeatState() { return heartbeat.snapshot(); }
+export function heartbeatOutput() { return heartbeat.output(); }
 
 // ── the hush ─────────────────────────────────────────────────────────────────
 // One file, never twice the same. `intensity` 0..1 sets how loud and how close.
@@ -116,8 +90,9 @@ export function hushStinger(intensity = 0.5) {
   // The first scare of a run used to be silent: this returned while the file
   // was still loading and never came back for it. Play it the moment it lands.
   if (!fwd) {
+    const owner = generation;
     load(FILES.hush)?.then?.(() => {
-      if (buffers.get(FILES.hush)) hushStinger(intensity);
+      if (generation === owner && buffers.get(FILES.hush)) hushStinger(intensity);
     }).catch?.(() => {});
     return;
   }

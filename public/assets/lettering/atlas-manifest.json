@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "eb998f83c50e19cd687bf437000d8b18d7b304f72267bacf2822e9278a25f079",
+  "inputSha256": "4fafdb12815afb2d273976eb4c5440dddcda79d10ee5c25023fefb21b16780a6",
   "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -294,12 +294,12 @@
     },
     {
       "name": "lettering-12",
-      "width": 832,
-      "height": 704,
-      "normalWidth": 208,
-      "normalHeight": 176,
-      "ormWidth": 416,
-      "ormHeight": 352,
+      "width": 800,
+      "height": 632,
+      "normalWidth": 200,
+      "normalHeight": 158,
+      "ormWidth": 400,
+      "ormHeight": 316,
       "albedo": "lettering-12-albedo.png",
       "normal": "lettering-12-normal.png",
       "orm": "lettering-12-orm.png",
@@ -312,18 +312,18 @@
         0,
         0
       ],
-      "sharedTiles": 8,
+      "sharedTiles": 6,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 3075072
+      "rgbaBaseLevelBytes": 2654400
     },
     {
       "name": "lettering-13",
-      "width": 1016,
-      "height": 640,
-      "normalWidth": 254,
-      "normalHeight": 160,
-      "ormWidth": 508,
-      "ormHeight": 320,
+      "width": 704,
+      "height": 608,
+      "normalWidth": 176,
+      "normalHeight": 152,
+      "ormWidth": 352,
+      "ormHeight": 304,
       "albedo": "lettering-13-albedo.png",
       "normal": "lettering-13-normal.png",
       "orm": "lettering-13-orm.png",
@@ -336,18 +336,18 @@
         0,
         0
       ],
-      "sharedTiles": 6,
+      "sharedTiles": 8,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 3413760
+      "rgbaBaseLevelBytes": 2247168
     },
     {
       "name": "lettering-14",
-      "width": 280,
-      "height": 280,
-      "normalWidth": 70,
-      "normalHeight": 70,
-      "ormWidth": 140,
-      "ormHeight": 140,
+      "width": 632,
+      "height": 640,
+      "normalWidth": 158,
+      "normalHeight": 160,
+      "ormWidth": 316,
+      "ormHeight": 320,
       "albedo": "lettering-14-albedo.png",
       "normal": "lettering-14-normal.png",
       "orm": "lettering-14-orm.png",
@@ -360,9 +360,33 @@
         0,
         0
       ],
+      "sharedTiles": 3,
+      "preservesSampledStockChannels": false,
+      "rgbaBaseLevelBytes": 2123520
+    },
+    {
+      "name": "lettering-15",
+      "width": 384,
+      "height": 440,
+      "normalWidth": 96,
+      "normalHeight": 110,
+      "ormWidth": 192,
+      "ormHeight": 220,
+      "albedo": "lettering-15-albedo.png",
+      "normal": "lettering-15-normal.png",
+      "orm": "lettering-15-orm.png",
+      "category": "shared compatible print",
+      "process": "per-material fabrication; see entries",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "emissiveFactor": [
+        0,
+        0,
+        0
+      ],
       "sharedTiles": 1,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 411600
+      "rgbaBaseLevelBytes": 887040
     }
   ],
   "entries": [
@@ -23232,10 +23256,10 @@
       "id": "atrium-sign-main-exit",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.022727272727272728,
-        0.9423076923076923,
-        0.1747159090909091
+        0.02,
+        0.02531645569620253,
+        0.98,
+        0.19462025316455697
       ],
       "copy": "PUBLIC ENTRANCE \u2014 CLOSED",
       "lines": [
@@ -23504,10 +23528,10 @@
       "id": "chapel-stair-sign-nave",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.22017045454545456,
-        0.9423076923076923,
-        0.3721590909090909
+        0.02,
+        0.24525316455696203,
+        0.98,
+        0.41455696202531644
       ],
       "copy": "TOWER \u2014 RINGING CHAMBER \u2014 NO ADMITTANCE TO THE PUBLIC\nBELLS UP",
       "lines": [
@@ -23957,10 +23981,10 @@
       "id": "hall-entrance-sign",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.41761363636363635,
-        0.9423076923076923,
-        0.5071022727272727
+        0.02,
+        0.4651898734177215,
+        0.98,
+        0.564873417721519
       ],
       "copy": "CONCERT HALL \u2014 STALLS / GALLERIES",
       "lines": [
@@ -24505,22 +24529,22 @@
       "id": "pub-lyric-fascia-east",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.5525568181818182,
-        0.9423076923076923,
-        0.609375
+        0.02,
+        0.615506329113924,
+        0.98,
+        0.6787974683544303
       ],
       "copy": "PUBLIC HOUSE",
       "lines": [
         "PUBLIC HOUSE"
       ],
-      "widthM": 6.76,
+      "widthM": 6.75,
       "heightM": 0.35,
       "metrics": {
         "font": "NimbusRoman-Bold.otf",
         "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.21125000000000002,
-        "stemWidthM": 0.052812500000000005,
+        "capHeightM": 0.2109375,
+        "stemWidthM": 0.052734375,
         "coverage": 0.07822265625,
         "boundsPx": [
           248,
@@ -24651,7 +24675,7 @@
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
           "field": 0.16,
-          "minimumNormalPeriod": 0.02640625,
+          "minimumNormalPeriod": 0.0263671875,
           "inkRelief": 7e-06
         },
         "structure": {
@@ -24671,7 +24695,7 @@
           ],
           "edgeLoss": [
             -0.0,
-            0.01217757352941173
+            0.009934926470588235
           ]
         },
         "channelRanges": {
@@ -24705,8 +24729,8 @@
           0
         ],
         "center": [
-          0.312,
-          3.65,
+          0.096,
+          3.68,
           4
         ]
       },
@@ -24717,22 +24741,22 @@
       "id": "pub-lyric-fascia-west",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.6548295454545454,
-        0.9423076923076923,
-        0.7116477272727273
+        0.02,
+        0.7294303797468354,
+        0.98,
+        0.7927215189873418
       ],
       "copy": "THE LYRIC",
       "lines": [
         "THE LYRIC"
       ],
-      "widthM": 6.76,
+      "widthM": 6.75,
       "heightM": 0.35,
       "metrics": {
         "font": "NimbusRoman-Bold.otf",
         "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.21125000000000002,
-        "stemWidthM": 0.052812500000000005,
+        "capHeightM": 0.2109375,
+        "stemWidthM": 0.052734375,
         "coverage": 0.0587890625,
         "boundsPx": [
           283,
@@ -24845,7 +24869,7 @@
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
           "field": 0.16,
-          "minimumNormalPeriod": 0.02640625,
+          "minimumNormalPeriod": 0.0263671875,
           "inkRelief": 7e-06
         },
         "structure": {
@@ -24865,13 +24889,13 @@
           ],
           "edgeLoss": [
             -0.0,
-            0.012401838235294121
+            0.008589338235294116
           ]
         },
         "channelRanges": {
           "roughness": [
             0.26417696078431374,
-            0.42399711026659237
+            0.42285808593749996
           ],
           "metallic": [
             0.0,
@@ -24899,8 +24923,8 @@
           0
         ],
         "center": [
-          0.312,
-          3.65,
+          0.096,
+          3.68,
           -4
         ]
       },
@@ -24911,10 +24935,10 @@
       "id": "city_phone_box_apparatus:0",
       "page": 12,
       "uvRect": [
-        0.019230769230769232,
-        0.7571022727272727,
-        0.8810096153846154,
-        0.8678977272727273
+        0.02,
+        0.8433544303797469,
+        0.91625,
+        0.9667721518987342
       ],
       "copy": "PAY ON ANSWER",
       "lines": [
@@ -25123,13 +25147,1110 @@
       "substrate": null
     },
     {
-      "id": "landing-ground-landing",
-      "page": 12,
+      "id": "yard-caretaker-sign",
+      "page": 13,
       "uvRect": [
-        0.019230769230769232,
-        0.9133522727272727,
-        0.4807692307692308,
-        0.9758522727272727
+        0.022727272727272728,
+        0.02631578947368421,
+        0.9730113636363636,
+        0.13980263157894737
+      ],
+      "copy": "CARETAKER",
+      "lines": [
+        "CARETAKER"
+      ],
+      "widthM": 1.95,
+      "heightM": 0.2,
+      "metrics": {
+        "font": "NimbusSansNarrow-Bold.otf",
+        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+        "capHeightM": 0.12533632286995514,
+        "stemWidthM": 0.02040358744394619,
+        "coverage": 0.13801694070752366,
+        "boundsPx": [
+          178,
+          12,
+          490,
+          57
+        ],
+        "glyphs": [
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 176.436,
+            "advancePx": 36.516
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 212.952,
+            "advancePx": 36.516
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 249.468,
+            "advancePx": 36.516
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 285.984,
+            "advancePx": 33.516
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 319.5,
+            "advancePx": 30.516
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 350.016,
+            "advancePx": 36.516
+          },
+          {
+            "character": "K",
+            "line": 0,
+            "xPx": 386.53200000000004,
+            "advancePx": 36.516
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 423.04800000000006,
+            "advancePx": 33.516
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 456.5640000000001,
+            "advancePx": 36.516
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "86ea3ddb7d589edae6244aa1ddfd807a449a6df9a3cd35c5d1091e3255d5b716"
+      },
+      "category": "institution",
+      "process": "painted service room lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "86ea3ddb7d589edae6244aa1ddfd807a449a6df9a3cd35c5d1091e3255d5b716",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.00874439461883408,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.4538093137254902
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          -1,
+          0,
+          0
+        ],
+        "center": [
+          -6.100000000000001,
+          2.97,
+          1.5
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "yard-laundry-sign",
+      "page": 13,
+      "uvRect": [
+        0.022727272727272728,
+        0.1924342105263158,
+        0.9730113636363636,
+        0.3059210526315789
+      ],
+      "copy": "BATHS / LAUNDRY",
+      "lines": [
+        "BATHS / LAUNDRY"
+      ],
+      "widthM": 1.95,
+      "heightM": 0.2,
+      "metrics": {
+        "font": "NimbusSansNarrow-Bold.otf",
+        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+        "capHeightM": 0.12533632286995514,
+        "stemWidthM": 0.02040358744394619,
+        "coverage": 0.1834015727562228,
+        "boundsPx": [
+          107,
+          12,
+          565,
+          57
+        ],
+        "glyphs": [
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 102.88800000000003,
+            "advancePx": 36.516
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 139.40400000000002,
+            "advancePx": 36.516
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 175.92000000000002,
+            "advancePx": 30.516
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 206.436,
+            "advancePx": 36.516
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 242.952,
+            "advancePx": 33.516
+          },
+          {
+            "character": "/",
+            "line": 0,
+            "xPx": 290.98400000000004,
+            "advancePx": 14.516
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 320.0160000000001,
+            "advancePx": 30.516
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 350.5320000000001,
+            "advancePx": 36.516
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 387.0480000000001,
+            "advancePx": 36.516
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 423.56400000000014,
+            "advancePx": 36.516
+          },
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 460.08000000000015,
+            "advancePx": 36.516
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 496.5960000000002,
+            "advancePx": 36.516
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 533.1120000000002,
+            "advancePx": 33.516
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "8a98c8821da04af1d92f4b3434b7dd0a35873e1a7aaaa51e1a1c232176a312ed"
+      },
+      "category": "institution",
+      "process": "painted service room lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "8a98c8821da04af1d92f4b3434b7dd0a35873e1a7aaaa51e1a1c232176a312ed",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.00874439461883408,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.29422549019607847,
+            0.4561926470588235
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          -1,
+          0,
+          0
+        ],
+        "center": [
+          -6.600000000000001,
+          2.97,
+          2.5
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "yard-stores-sign",
+      "page": 13,
+      "uvRect": [
+        0.022727272727272728,
+        0.35855263157894735,
+        0.9730113636363636,
+        0.4720394736842105
+      ],
+      "copy": "COVERED STORES",
+      "lines": [
+        "COVERED STORES"
+      ],
+      "widthM": 1.95,
+      "heightM": 0.2,
+      "metrics": {
+        "font": "NimbusSansNarrow-Bold.otf",
+        "fontSha256": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264",
+        "capHeightM": 0.12533632286995514,
+        "stemWidthM": 0.02040358744394619,
+        "coverage": 0.20233530469443903,
+        "boundsPx": [
+          102,
+          12,
+          567,
+          57
+        ],
+        "glyphs": [
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 100.14600000000002,
+            "advancePx": 36.516
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 136.662,
+            "advancePx": 38.516
+          },
+          {
+            "character": "V",
+            "line": 0,
+            "xPx": 175.178,
+            "advancePx": 33.516
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 208.694,
+            "advancePx": 33.516
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 242.20999999999998,
+            "advancePx": 36.516
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 278.726,
+            "advancePx": 33.516
+          },
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 312.242,
+            "advancePx": 36.516
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 363.27400000000006,
+            "advancePx": 33.516
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 396.7900000000001,
+            "advancePx": 30.516
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 427.3060000000001,
+            "advancePx": 38.516
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 465.8220000000001,
+            "advancePx": 36.516
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 502.33800000000014,
+            "advancePx": 33.516
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 535.8540000000002,
+            "advancePx": 33.516
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "84023c863c98d90bbe6b570fba7f5b553b8b0f22188a7bb38fe516cd589e4966"
+      },
+      "category": "institution",
+      "process": "painted service room lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "84023c863c98d90bbe6b570fba7f5b553b8b0f22188a7bb38fe516cd589e4966",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.00874439461883408,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.4563328431372549
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          0,
+          0,
+          1
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          -1,
+          0,
+          0
+        ],
+        "center": [
+          -6.100000000000001,
+          3.95,
+          -1
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "landing-academic-floor-landing",
+      "page": 13,
+      "uvRect": [
+        0.022727272727272728,
+        0.524671052631579,
+        0.5681818181818182,
+        0.5970394736842105
+      ],
+      "copy": "VOCAL STUDIES",
+      "lines": [
+        "VOCAL STUDIES"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "metrics": {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+        "capHeightM": 0.106875,
+        "stemWidthM": 0.0178125,
+        "coverage": 0.09203361742424243,
+        "boundsPx": [
+          90,
+          13,
+          294,
+          31
+        ],
+        "glyphs": [
+          {
+            "character": "V",
+            "line": 0,
+            "xPx": 89.204,
+            "advancePx": 17.216
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 106.41999999999999,
+            "advancePx": 19.216
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 125.636,
+            "advancePx": 18.216
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 143.852,
+            "advancePx": 18.216
+          },
+          {
+            "character": "L",
+            "line": 0,
+            "xPx": 162.068,
+            "advancePx": 15.216
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 184.50000000000003,
+            "advancePx": 17.216
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 201.71600000000004,
+            "advancePx": 15.216
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 216.93200000000004,
+            "advancePx": 18.216
+          },
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 235.14800000000005,
+            "advancePx": 18.216
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 253.36400000000006,
+            "advancePx": 7.216
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 260.58000000000004,
+            "advancePx": 17.216
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 277.79600000000005,
+            "advancePx": 17.216
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "b466d5a3e070961053a0146cc74d4015bd6e4a53e8b322b16896f6631b482832"
+      },
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "b466d5a3e070961053a0146cc74d4015bd6e4a53e8b322b16896f6631b482832",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.0178125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.4543700980392157
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "landing-b3-landing",
+      "page": 13,
+      "uvRect": [
+        0.022727272727272728,
+        0.649671052631579,
+        0.5681818181818182,
+        0.7220394736842105
+      ],
+      "copy": "DANCE WING / B1-B5",
+      "lines": [
+        "DANCE WING / B1-B5"
+      ],
+      "widthM": 2.28,
+      "heightM": 0.26,
+      "metrics": {
+        "font": "NimbusSans-Bold.otf",
+        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+        "capHeightM": 0.106875,
+        "stemWidthM": 0.0178125,
+        "coverage": 0.11629971590909091,
+        "boundsPx": [
+          64,
+          13,
+          321,
+          31
+        ],
+        "glyphs": [
+          {
+            "character": "D",
+            "line": 0,
+            "xPx": 61.66399999999999,
+            "advancePx": 18.216
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 79.88,
+            "advancePx": 18.216
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 98.096,
+            "advancePx": 18.216
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 116.31200000000001,
+            "advancePx": 18.216
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 134.52800000000002,
+            "advancePx": 17.216
+          },
+          {
+            "character": "W",
+            "line": 0,
+            "xPx": 158.96000000000004,
+            "advancePx": 24.216
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 183.17600000000004,
+            "advancePx": 7.216
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 190.39200000000005,
+            "advancePx": 18.216
+          },
+          {
+            "character": "G",
+            "line": 0,
+            "xPx": 208.60800000000006,
+            "advancePx": 19.216
+          },
+          {
+            "character": "/",
+            "line": 0,
+            "xPx": 235.04000000000008,
+            "advancePx": 7.216
+          },
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 249.4720000000001,
+            "advancePx": 18.216
+          },
+          {
+            "character": "1",
+            "line": 0,
+            "xPx": 267.6880000000001,
+            "advancePx": 14.216
+          },
+          {
+            "character": "-",
+            "line": 0,
+            "xPx": 281.9040000000001,
+            "advancePx": 8.216
+          },
+          {
+            "character": "B",
+            "line": 0,
+            "xPx": 290.1200000000001,
+            "advancePx": 18.216
+          },
+          {
+            "character": "5",
+            "line": 0,
+            "xPx": 308.3360000000001,
+            "advancePx": 14.216
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "3073ba068ab2104bf80478eb82ec410f6b739a72a17cc870a4f194053c5d14d5"
+      },
+      "category": "institution",
+      "process": "institutional enamel landing lettering",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "3073ba068ab2104bf80478eb82ec410f6b739a72a17cc870a4f194053c5d14d5",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.0178125,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.45717401960784315
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          -1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          -1
+        ],
+        "center": [
+          0,
+          -0.04,
+          -0.0526
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "landing-ground-landing",
+      "page": 13,
+      "uvRect": [
+        0.022727272727272728,
+        0.774671052631579,
+        0.5681818181818182,
+        0.8470394736842105
       ],
       "copy": "GROUND",
       "lines": [
@@ -25305,12 +26426,12 @@
     },
     {
       "id": "landing-upper-floor-landing",
-      "page": 12,
+      "page": 13,
       "uvRect": [
-        0.5192307692307693,
-        0.9133522727272727,
-        0.9807692307692307,
-        0.9758522727272727
+        0.022727272727272728,
+        0.899671052631579,
+        0.5681818181818182,
+        0.9720394736842105
       ],
       "copy": "PRACTICE WING",
       "lines": [
@@ -25521,12 +26642,200 @@
       "substrate": null
     },
     {
-      "id": "tower_peal_board:0",
+      "id": "tower_rope_mat_tenor:0",
       "page": 13,
       "uvRect": [
-        0.015748031496062992,
+        0.6136363636363636,
+        0.524671052631579,
+        0.9630681818181818,
+        0.9292763157894737
+      ],
+      "copy": "8/\nTENOR",
+      "lines": [
+        "8/",
+        "TENOR"
+      ],
+      "widthM": 1.28,
+      "heightM": 1.28,
+      "metrics": {
+        "font": "NimbusMonoPS-Bold.otf",
+        "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
+        "capHeightM": 0.19772357723577236,
+        "stemWidthM": 0.0416260162601626,
+        "coverage": 0.08653909709828805,
+        "boundsPx": [
+          25,
+          63,
+          226,
+          207
+        ],
+        "glyphs": [
+          {
+            "character": "8",
+            "line": 0,
+            "xPx": 82.77199999999999,
+            "advancePx": 40.456
+          },
+          {
+            "character": "/",
+            "line": 0,
+            "xPx": 123.228,
+            "advancePx": 40.456
+          },
+          {
+            "character": "T",
+            "line": 1,
+            "xPx": 22.08799999999998,
+            "advancePx": 40.456
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 62.54399999999998,
+            "advancePx": 40.456
+          },
+          {
+            "character": "N",
+            "line": 1,
+            "xPx": 102.99999999999999,
+            "advancePx": 40.456
+          },
+          {
+            "character": "O",
+            "line": 1,
+            "xPx": 143.456,
+            "advancePx": 40.456
+          },
+          {
+            "character": "R",
+            "line": 1,
+            "xPx": 183.91199999999998,
+            "advancePx": 40.456
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "b131f12456eafbb2fde2ad864ab0c0b95d946f27dbc8574ea1e243c9570cb478"
+      },
+      "category": "maintenance",
+      "process": "bridged paint stencil on woven rope mat",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "woven rope mat",
+        "coating": "opaque paint on raised fibres",
+        "roughness": 0.94,
+        "inkRoughness": 0.86,
+        "fieldM": 0.08,
+        "variation": 0.035,
+        "roughnessVariation": 0.055,
+        "microReliefM": 2.5e-05,
+        "deposit": 0.04,
+        "edgeLoss": 0,
+        "sequence": [
+          "warp and weft orient the fibre texture",
+          "paint covers raised fibres without erasing character cores",
+          "contact polishes a broad actual walking region"
+        ],
+        "limits": [
+          "no procedural tear or replacement of host silhouette"
+        ],
+        "version": 1,
+        "profile": "rope-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "rope-stencil",
+        "support": {
+          "kind": "applied-lettering",
+          "edgeWear": false,
+          "contact": "none",
+          "exposure": "interior"
+        },
+        "coverageSha256": "b131f12456eafbb2fde2ad864ab0c0b95d946f27dbc8574ea1e243c9570cb478",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.08,
+          "minimumNormalPeriod": 0.015609756097560976,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "weave",
+          "actualPitchM": 0.008,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.0
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            0.0,
+            0.0
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.8431063725490195,
+            0.9674999999999999
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": "tools/chunk_surfer/build-props.mjs",
+      "orientation": {
+        "readerRight": [
+          1,
+          0,
+          0
+        ],
+        "up": [
+          0,
+          0,
+          -1
+        ],
+        "normal": [
+          0,
+          1,
+          0
+        ],
+        "center": [
+          0,
+          0.0505,
+          0
+        ]
+      },
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "tower_peal_board:0",
+      "page": 14,
+      "uvRect": [
+        0.02531645569620253,
         0.025,
-        0.6043307086614174,
+        0.9715189873417721,
         0.6359375
       ],
       "copy": "ELLERY COLLEGIATE CHAPEL \u2014 STEDMAN TRIPLES \u2014 1908",
@@ -26293,11 +27602,11 @@
     },
     {
       "id": "outskirts_lodge:0",
-      "page": 13,
+      "page": 14,
       "uvRect": [
-        0.015748031496062992,
+        0.02531645569620253,
         0.6859375,
-        0.5679133858267716,
+        0.9129746835443038,
         0.8015625
       ],
       "copy": "PORTER",
@@ -26474,11 +27783,11 @@
     },
     {
       "id": "outskirts_bus:0",
-      "page": 13,
+      "page": 14,
       "uvRect": [
-        0.015748031496062992,
+        0.02531645569620253,
         0.8515625,
-        0.4744094488188976,
+        0.7626582278481012,
         0.9703125
       ],
       "copy": "ELLERY",
@@ -26655,12 +27964,12 @@
     },
     {
       "id": "hymn_board:0",
-      "page": 13,
+      "page": 15,
       "uvRect": [
-        0.6358267716535433,
-        0.025,
-        0.9763779527559056,
-        0.6546875
+        0.041666666666666664,
+        0.03636363636363636,
+        0.9427083333333334,
+        0.9522727272727273
       ],
       "copy": "17 \u00b7 44 \u00b7 91",
       "lines": [
@@ -26841,646 +28150,6 @@
           0,
           0.48,
           -0.0305
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "landing-academic-floor-landing",
-      "page": 13,
-      "uvRect": [
-        0.5994094488188977,
-        0.7046875,
-        0.9773622047244095,
-        0.7734375
-      ],
-      "copy": "VOCAL STUDIES",
-      "lines": [
-        "VOCAL STUDIES"
-      ],
-      "widthM": 2.28,
-      "heightM": 0.26,
-      "metrics": {
-        "font": "NimbusSans-Bold.otf",
-        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
-        "capHeightM": 0.106875,
-        "stemWidthM": 0.0178125,
-        "coverage": 0.09203361742424243,
-        "boundsPx": [
-          90,
-          13,
-          294,
-          31
-        ],
-        "glyphs": [
-          {
-            "character": "V",
-            "line": 0,
-            "xPx": 89.204,
-            "advancePx": 17.216
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 106.41999999999999,
-            "advancePx": 19.216
-          },
-          {
-            "character": "C",
-            "line": 0,
-            "xPx": 125.636,
-            "advancePx": 18.216
-          },
-          {
-            "character": "A",
-            "line": 0,
-            "xPx": 143.852,
-            "advancePx": 18.216
-          },
-          {
-            "character": "L",
-            "line": 0,
-            "xPx": 162.068,
-            "advancePx": 15.216
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 184.50000000000003,
-            "advancePx": 17.216
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 201.71600000000004,
-            "advancePx": 15.216
-          },
-          {
-            "character": "U",
-            "line": 0,
-            "xPx": 216.93200000000004,
-            "advancePx": 18.216
-          },
-          {
-            "character": "D",
-            "line": 0,
-            "xPx": 235.14800000000005,
-            "advancePx": 18.216
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 253.36400000000006,
-            "advancePx": 7.216
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 260.58000000000004,
-            "advancePx": 17.216
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 277.79600000000005,
-            "advancePx": 17.216
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "b466d5a3e070961053a0146cc74d4015bd6e4a53e8b322b16896f6631b482832"
-      },
-      "category": "institution",
-      "process": "institutional enamel landing lettering",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "b466d5a3e070961053a0146cc74d4015bd6e4a53e8b322b16896f6631b482832",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.4543700980392157
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          -1,
-          0,
-          0
-        ],
-        "up": [
-          0,
-          1,
-          0
-        ],
-        "normal": [
-          0,
-          0,
-          -1
-        ],
-        "center": [
-          0,
-          -0.04,
-          -0.0526
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "landing-b3-landing",
-      "page": 13,
-      "uvRect": [
-        0.5994094488188977,
-        0.8234375,
-        0.9773622047244095,
-        0.8921875
-      ],
-      "copy": "DANCE WING / B1-B5",
-      "lines": [
-        "DANCE WING / B1-B5"
-      ],
-      "widthM": 2.28,
-      "heightM": 0.26,
-      "metrics": {
-        "font": "NimbusSans-Bold.otf",
-        "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
-        "capHeightM": 0.106875,
-        "stemWidthM": 0.0178125,
-        "coverage": 0.11629971590909091,
-        "boundsPx": [
-          64,
-          13,
-          321,
-          31
-        ],
-        "glyphs": [
-          {
-            "character": "D",
-            "line": 0,
-            "xPx": 61.66399999999999,
-            "advancePx": 18.216
-          },
-          {
-            "character": "A",
-            "line": 0,
-            "xPx": 79.88,
-            "advancePx": 18.216
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 98.096,
-            "advancePx": 18.216
-          },
-          {
-            "character": "C",
-            "line": 0,
-            "xPx": 116.31200000000001,
-            "advancePx": 18.216
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 134.52800000000002,
-            "advancePx": 17.216
-          },
-          {
-            "character": "W",
-            "line": 0,
-            "xPx": 158.96000000000004,
-            "advancePx": 24.216
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 183.17600000000004,
-            "advancePx": 7.216
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 190.39200000000005,
-            "advancePx": 18.216
-          },
-          {
-            "character": "G",
-            "line": 0,
-            "xPx": 208.60800000000006,
-            "advancePx": 19.216
-          },
-          {
-            "character": "/",
-            "line": 0,
-            "xPx": 235.04000000000008,
-            "advancePx": 7.216
-          },
-          {
-            "character": "B",
-            "line": 0,
-            "xPx": 249.4720000000001,
-            "advancePx": 18.216
-          },
-          {
-            "character": "1",
-            "line": 0,
-            "xPx": 267.6880000000001,
-            "advancePx": 14.216
-          },
-          {
-            "character": "-",
-            "line": 0,
-            "xPx": 281.9040000000001,
-            "advancePx": 8.216
-          },
-          {
-            "character": "B",
-            "line": 0,
-            "xPx": 290.1200000000001,
-            "advancePx": 18.216
-          },
-          {
-            "character": "5",
-            "line": 0,
-            "xPx": 308.3360000000001,
-            "advancePx": 14.216
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "3073ba068ab2104bf80478eb82ec410f6b739a72a17cc870a4f194053c5d14d5"
-      },
-      "category": "institution",
-      "process": "institutional enamel landing lettering",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "3073ba068ab2104bf80478eb82ec410f6b739a72a17cc870a4f194053c5d14d5",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0178125,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.45717401960784315
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          -1,
-          0,
-          0
-        ],
-        "up": [
-          0,
-          1,
-          0
-        ],
-        "normal": [
-          0,
-          0,
-          -1
-        ],
-        "center": [
-          0,
-          -0.04,
-          -0.0526
-        ]
-      },
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "tower_rope_mat_tenor:0",
-      "page": 14,
-      "uvRect": [
-        0.05714285714285714,
-        0.05714285714285714,
-        0.9357142857142857,
-        0.9357142857142857
-      ],
-      "copy": "8/\nTENOR",
-      "lines": [
-        "8/",
-        "TENOR"
-      ],
-      "widthM": 1.28,
-      "heightM": 1.28,
-      "metrics": {
-        "font": "NimbusMonoPS-Bold.otf",
-        "fontSha256": "f036d05d2168c7f71cb11d31e81d11133f3d09711e24ebde19d08a24842384d5",
-        "capHeightM": 0.19772357723577236,
-        "stemWidthM": 0.0416260162601626,
-        "coverage": 0.08653909709828805,
-        "boundsPx": [
-          25,
-          63,
-          226,
-          207
-        ],
-        "glyphs": [
-          {
-            "character": "8",
-            "line": 0,
-            "xPx": 82.77199999999999,
-            "advancePx": 40.456
-          },
-          {
-            "character": "/",
-            "line": 0,
-            "xPx": 123.228,
-            "advancePx": 40.456
-          },
-          {
-            "character": "T",
-            "line": 1,
-            "xPx": 22.08799999999998,
-            "advancePx": 40.456
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 62.54399999999998,
-            "advancePx": 40.456
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 102.99999999999999,
-            "advancePx": 40.456
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 143.456,
-            "advancePx": 40.456
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 183.91199999999998,
-            "advancePx": 40.456
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "b131f12456eafbb2fde2ad864ab0c0b95d946f27dbc8574ea1e243c9570cb478"
-      },
-      "category": "maintenance",
-      "process": "bridged paint stencil on woven rope mat",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "woven rope mat",
-        "coating": "opaque paint on raised fibres",
-        "roughness": 0.94,
-        "inkRoughness": 0.86,
-        "fieldM": 0.08,
-        "variation": 0.035,
-        "roughnessVariation": 0.055,
-        "microReliefM": 2.5e-05,
-        "deposit": 0.04,
-        "edgeLoss": 0,
-        "sequence": [
-          "warp and weft orient the fibre texture",
-          "paint covers raised fibres without erasing character cores",
-          "contact polishes a broad actual walking region"
-        ],
-        "limits": [
-          "no procedural tear or replacement of host silhouette"
-        ],
-        "version": 1,
-        "profile": "rope-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "rope-stencil",
-        "support": {
-          "kind": "applied-lettering",
-          "edgeWear": false,
-          "contact": "none",
-          "exposure": "interior"
-        },
-        "coverageSha256": "b131f12456eafbb2fde2ad864ab0c0b95d946f27dbc8574ea1e243c9570cb478",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.08,
-          "minimumNormalPeriod": 0.015609756097560976,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "weave",
-          "actualPitchM": 0.008,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.0
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            0.0,
-            0.0
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.8431063725490195,
-            0.9674999999999999
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": "tools/chunk_surfer/build-props.mjs",
-      "orientation": {
-        "readerRight": [
-          1,
-          0,
-          0
-        ],
-        "up": [
-          0,
-          0,
-          -1
-        ],
-        "normal": [
-          0,
-          1,
-          0
-        ],
-        "center": [
-          0,
-          0.0505,
-          0
         ]
       },
       "bounds": null,

@@ -81,6 +81,26 @@ test('godProbe reaches a nested probe and answers null for one that is not there
   assert.equal(ctx.godProbe('nothing.here'), null);
 });
 
+test('the Standing Tear, the tipoff guy, the bouncers and the street figures each have rows', () => {
+  for (const row of ['standing-tear-approach', 'standing-tear-enter']) assert.ok(rowIn(tabRows('scenes'), row), row);
+  assert.ok(rowIn(tabRows('tower-finale'), 'tower-warning-approach'));
+  for (const row of ['academic-bouncers-stand', 'academic-bouncers-talk']) assert.ok(rowIn(tabRows('academic'), row), row);
+  assert.ok(rowIn(tabRows('quests'), 'quest-street-crowd'));
+  const entries = {
+    godStandingTear: /beginStandingTear\(\{returnPose:pose,entryPose:/,
+    godTowerWarningApproach: /towerWarningState=freshTowerWarning\(\)/,
+    godStreetCrowdStand: /streetCrowdReviewStand\(id\)/,
+  };
+  for (const [helper, entry] of Object.entries(entries)) {
+    assert.match(functionSource(helper), entry, helper);
+    assert.ok(godTabs.includes(helper), `${helper} is reachable from a row`);
+  }
+  assert.match(tabRows('academic'), /godBuildingScene\('academic-bouncers',\(\)=>talkToAcademicBouncers\(\)\)/);
+  // The tear and the tipoff guy are staged where their dev reviews stage them.
+  assert.match(functionSource('godStandingTear'), /\(site\.x-3\)\/CELL-\.5,site\.z\/CELL-\.5,\{group:'upper',floor:site\.feet\}/);
+  assert.match(functionSource('godTowerWarningApproach'), /TOWER_WARNING\.approach/);
+});
+
 test('the LOOK STACK opens with the stable diffusion switch, the nuke and the readings', () => {
   const look = tabRows('look');
   const first = look.indexOf("section('Stable diffusion')");

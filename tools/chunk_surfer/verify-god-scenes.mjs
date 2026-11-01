@@ -52,7 +52,7 @@ const readState = (page) => page.evaluate(() => {
   const parity = window.__chunkParity?.();
   return {
     top: window.__scenes?.top?.({ includeOverlay: true })?.id || null, depth: window.__scenes?.depth?.() || 0,
-    area: parity?.save?.area || null, pos: window.__probe?.pos?.() || null,
+    area: parity?.save?.area || null, pos: window.__probe?.pos?.() || null, event: document.getElementById('event')?.textContent || null,
   };
 });
 
@@ -72,13 +72,18 @@ async function rows(browser) {
     ...pick('places'), ...pick('quests'), ...pick('academic'),
     ...pick('scenes', (id) => /^(tutorial-|arrival-title|transfer-room|archive)/.test(id)),
     'roof-word-lock', 'roof-city-seat-sit', 'drive-opening-van', 'drive-getin-teaser', ...pick('drives', (id) => id === 'drive-street-study'),
+    'warp-natatorium', 'roof-warp-city-seat', 'door-staff', 'door-pool',
+    'standing-tear-approach', 'standing-tear-enter', 'tower-warning-approach',
   ];
   const source = [
     'drive-source-cut', 'drive-source-resume', 'drive-coastal-memory',
     ...pick('source-space', (id) => /^(source-(coastal-memory|earthfall|pub-door|pub-inside|drive)|bust-)/.test(id)),
   ];
+  // GOD_ROWS=<regex> runs only the matching rows, for checking a change.
+  const only = process.env.GOD_ROWS ? new RegExp(process.env.GOD_ROWS) : null;
+  const warpOf = { 'warp-natatorium': 'natatorium', 'roof-warp-city-seat': 'roof-city-seat', 'academic-bouncers-stand': 'academic-bouncers' };
   const results = [];
-  for (const id of [...building, ...source, 'sd-processes']) {
+  for (const id of [...building, ...source, 'sd-processes'].filter((id) => !only || only.test(id))) {
     const before = errors.length;
     await page.evaluate(() => { try { window.__scenes.clear(); } catch {} });
     const topBefore = (await readState(page)).top;
@@ -88,7 +93,7 @@ async function rows(browser) {
     ]);
     await sleep(1800);
     const state = await readState(page);
-    const hookId = id.startsWith('place-') ? id.slice(6) : id.startsWith('academic-') && GOD_LOCATION_HOOKS[id.slice(9)] ? id.slice(9) : id === 'quest-pub-bar' ? 'pub-bar' : null;
+    const hookId = warpOf[id] || (id.startsWith('place-') ? id.slice(6) : id.startsWith('academic-') && GOD_LOCATION_HOOKS[id.slice(9)] ? id.slice(9) : id === 'quest-pub-bar' ? 'pub-bar' : null);
     let verdict;
     if (hookId) {
       const want = FP.toRuntimePoint(GOD_LOCATION_HOOKS[hookId].at);

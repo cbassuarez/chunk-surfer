@@ -83,29 +83,71 @@ export function createPresenceNavigation({
     return path;
   }
 
+  // A closed door may have a floor cell but no legal incoming step. Sound can
+  // originate there even though no body can stand there. Do not treat a portal
+  // with at least one legitimate incoming edge as blocked.
+  function enterable(point) {
+    return CARDINAL.some(([dx,dy]) => {
+      const neighbor = {x:point.x+dx,y:point.y+dy};
+      if (!isWalkable(neighbor)) return false;
+      const into = traverse(neighbor,point);
+      return into?.x===point.x && into?.y===point.y;
+    });
+  }
+
+  function destinationCandidates(goal) {
+    if (enterable(goal)) return {direct:true, points:[goal]};
+    // A physical door can occupy a 2x2 grid footprint. Search only its local
+    // perimeter; A* then selects a real reachable side from the sound-listener.
+    const points=[];
+    for (let dy=-2;dy<=2;dy++) for (let dx=-2;dx<=2;dx++) {
+      if ((!dx&&!dy)||Math.abs(dx)+Math.abs(dy)>2) continue;
+      const point={x:goal.x+dx,y:goal.y+dy};
+      if (isWalkable(point)&&enterable(point)) points.push(point);
+    }
+    return {direct:false, points};
+  }
+
+  function rememberRoute(key, path) {
+    routeCache.set(key,{path,at:typeof performance!=='undefined'?performance.now():Date.now()});
+    if (routeCache.size>64) routeCache.delete(routeCache.keys().next().value);
+  }
+
   function findPath(fromPoint, toPoint) {
     if (!isWalkable(fromPoint)) return null;
     const start = cellPoint(fromPoint);
     const goal = nearestWalkable(toPoint, 6);
     if (!goal) return null;
-    const cacheKey = `${keyFor(start.x, start.y)}>${keyFor(goal.x, goal.y)}`;
-    const cached = routeCache.get(cacheKey);
-    if (cached) return cached.map((point) => ({ ...point }));
+    const candidates=destinationCandidates(goal);
+    if (!candidates.points.length) return null;
+    // Candidate identities in the key invalidate a cached closed-door approach
+    // as soon as the nearby door or furniture geometry changes.
+    const ids=candidates.points.map(point=>keyFor(point.x,point.y)).sort();
+    const cacheKey = `${keyFor(start.x, start.y)}>${keyFor(goal.x, goal.y)}:${candidates.direct?'direct':ids.join(';')}`;
+    const cached = routeCache.get(cacheKey),now=typeof performance!=='undefined'?performance.now():Date.now();
+    if (cached?.path) return cached.path.map((point) => ({ ...point }));
+    // An unrelated obstacle can change elsewhere, so a negative result is held
+    // briefly rather than poisoning this route forever.
+    if (cached && now-cached.at<1000) return null;
+    const goalPenalty=new Map(candidates.points.map(point=>[keyFor(point.x,point.y),
+      candidates.direct?0:2*(Math.abs(goal.x-point.x)+Math.abs(goal.y-point.y))]));
+    // Prefer a point near the sound, but never send HUSH on a long detour to a
+    // marginally closer opposite side of a closed leaf.
+    const heuristic=(point)=>Math.min(...candidates.points.map(dest=>Math.abs(dest.x-point.x)+Math.abs(dest.y-point.y)+goalPenalty.get(keyFor(dest.x,dest.y))));
 
     const open = minHeap();
     const cameFrom = new Map();
     const best = new Map([[keyFor(start.x, start.y), 0]]);
-    open.push({ ...start, cost: 0, score: Math.abs(goal.x - start.x) + Math.abs(goal.y - start.y) });
-    let visited = 0;
+    open.push({ ...start, cost: 0, score: heuristic(start) });
+    let visited = 0,bestGoal=null,bestGoalCost=Infinity;
     while (open.size && visited++ < maxVisited) {
       const current = open.pop();
       const currentKey = keyFor(current.x, current.y);
       if (current.cost !== best.get(currentKey)) continue;
-      if (current.x === goal.x && current.y === goal.y) {
-        const path = reconstruct(cameFrom, { x: current.x, y: current.y });
-        routeCache.set(cacheKey, path);
-        if (routeCache.size > 64) routeCache.delete(routeCache.keys().next().value);
-        return path.map((point) => ({ ...point }));
+      if(current.score>=bestGoalCost)break;
+      if (goalPenalty.has(currentKey)) {
+        const cost=current.cost+goalPenalty.get(currentKey);
+        if(cost<bestGoalCost){bestGoalCost=cost;bestGoal={x:current.x,y:current.y};}
       }
       for (const [dx, dy] of CARDINAL) {
         const stepped = traverse(current, { x: current.x + dx, y: current.y + dy });
@@ -118,11 +160,27 @@ export function createPresenceNavigation({
         open.push({
           ...stepped,
           cost: nextCost,
-          score: nextCost + Math.abs(goal.x - stepped.x) + Math.abs(goal.y - stepped.y),
+          score: nextCost + heuristic(stepped),
         });
       }
     }
+    if(bestGoal){
+      const path=reconstruct(cameFrom,bestGoal);rememberRoute(cacheKey,path);
+      return path.map(point=>({...point}));
+    }
+    rememberRoute(cacheKey,null);
     return null;
+  }
+
+  // Only consult the pathfinder when the sound's floor cell cannot be entered.
+  // The returned approach is based on the listener and geometry, never the
+  // player's transform; a null result means the sound remains unreachable.
+  function reachableSoundTarget(fromPoint, soundPoint) {
+    const goal=nearestWalkable(soundPoint,6);
+    if (!goal) return null;
+    if (enterable(goal)) return goal;
+    const path=findPath(fromPoint,goal);
+    return path?.length ? {...path[path.length-1]} : null;
   }
 
   function nearestWalkable(point, radius = 8) {
@@ -155,6 +213,8 @@ export function createPresenceNavigation({
     // that cell. Finish the sub-cell approach directly; otherwise the actor
     // stalls up to almost a full cell away from the sound it was following.
     if (path.length === 1) {
+      if (Math.floor(targetPoint.x)!==currentCell.x||Math.floor(targetPoint.y)!==currentCell.y)
+        return {...fromPoint};
       const dx = targetPoint.x - fromPoint.x, dy = targetPoint.y - fromPoint.y;
       const distance = Math.hypot(dx, dy);
       if (distance <= maxDistance) return { x: targetPoint.x, y: targetPoint.y };
@@ -232,6 +292,7 @@ export function createPresenceNavigation({
   return {
     isWalkable,
     nearestWalkable,
+    reachableSoundTarget,
     findPath,
     resolveMove,
     rebaseHeading,

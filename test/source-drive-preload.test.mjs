@@ -6,6 +6,7 @@ import {r3dPresentationReady} from '../src/render/r3d.js';
 const source=readFileSync(new URL('../src/game/source-drive-renderer.js',import.meta.url),'utf8');
 const staticMeshes={
  'drive.glb':['drive_cabin','drive_radio','drive_road','drive_recorder_body'],
+ 'van-brand.glb':['van_brand_yard','van_brand_drive'],
  'cut-static.glb':['cut_geology','cut_retaining'],
  'cut-roadside.glb':['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges'],
  'drive-predicaments.glb':['dp_wreck_saloon','dp_road_fold','dp_whiteout_pylon'],
@@ -34,7 +35,7 @@ test('cold saved-drive preparation waits for the replacing building catalog befo
  const warm=h.preloadSourceDriveAssets(),owner=h.owner(),initial=owner.initialize();await flush();
  assert.equal(h.loads.length,0,'no hero pack may be erased by the pending base replacement');assert.deepEqual(h.world,[]);
  h.catalog.clear();h.catalog.add('new_building_wall');install(true);
- assert.deepEqual(await Promise.all([warm,initial]),[true,true]);assert.equal(h.loads.length,7);
+ assert.deepEqual(await Promise.all([warm,initial]),[true,true]);assert.equal(h.loads.length,8);
  for(const name of['drive_cabin','drive_road','drive_recorder_body','dp_wreck_saloon','drive_right_hand'])assert.ok(h.catalog.has(name),name);
  assert.ok(h.catalog.has('new_building_wall'));
 });
@@ -42,14 +43,14 @@ test('cold saved-drive preparation waits for the replacing building catalog befo
 test('a failed base catalog cannot acquire a drive and a later explicit retry can recover',async()=>{
  const h=fixture(),owner=h.owner();h.base.ready=Promise.resolve(false);
  await assert.rejects(owner.initialize(),/base prop catalog/);assert.equal(h.loads.length,0);assert.deepEqual(h.world,[]);assert.equal(owner.ready(),false);
- h.base.ready=Promise.resolve(true);assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,7);
+ h.base.ready=Promise.resolve(true);assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,8);
 });
 
-test('door prewarming loads only the seven P3 packs without acquiring the scene, camera or canvas',async()=>{
+test('door prewarming loads the eight P3 packs including physical van paint without acquiring the scene, camera or canvas',async()=>{
  const h=fixture();assert.equal(await h.preloadSourceDriveAssets(),true);
- assert.deepEqual(h.loads.map(x=>x.url),['drive.glb','geometry/wheel-hands.glb','cut/cut-static.glb','cut/cut-living.glb','cut/cut-roadside.glb','cut/cut-landscape.glb','predicaments/drive-predicaments.glb'].map(x=>'asset:assets/source-drive/'+x));
+ assert.deepEqual(h.loads.map(x=>x.url),['asset:assets/source-drive/drive.glb','asset:assets/van-brand.glb',...['geometry/wheel-hands.glb','cut/cut-static.glb','cut/cut-living.glb','cut/cut-roadside.glb','cut/cut-landscape.glb','predicaments/drive-predicaments.glb'].map(x=>'asset:assets/source-drive/'+x)]);
  assert.equal(h.loads.filter(x=>x.kind==='character').length,3);assert.deepEqual(h.world,[]);assert.ok(h.catalog.has('source_existing_wall'));
- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,7,'ready packs are reused rather than fetched and uploaded again');
+ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,8,'ready packs are reused rather than fetched and uploaded again');
  assert.doesNotMatch(source,/getContext\(['"]webgl|new\s+(?:WebGLRenderer|Worker)|requestAnimationFrame\(/,'prewarming cannot create another renderer or animation loop');
 });
 
@@ -58,33 +59,33 @@ test('door warm, repeated warm and concurrent initialization share loads and acq
  const owner=h.owner(),warm=h.preloadSourceDriveAssets(),again=h.preloadSourceDriveAssets({assets:{drive:'/assets/source-drive/drive.glb',metrics:'/assets/source-drive/geometry/metrics.json'}}),initial=owner.initialize({assets:{drive:'/assets/source-drive/drive.glb'}});
  assert.equal(owner.initialize(),initial);await flush();assert.equal(h.loads.length,1);assert.deepEqual(h.world,[]);assert.equal(owner.ready(),false);
  release();assert.deepEqual(await Promise.all([warm,again,initial]),[true,true,true]);
- assert.equal(h.loads.length,7);assert.equal(new Set(h.loads.map(x=>x.kind+':'+x.url)).size,7);assert.equal(owner.ready(),true);assert.equal(h.world.filter(x=>x[0]==='r3dSetPlan').length,1);assert.equal(h.world.filter(x=>x[0]==='canvas').length,1);
+ assert.equal(h.loads.length,8);assert.equal(new Set(h.loads.map(x=>x.kind+':'+x.url)).size,8);assert.equal(owner.ready(),true);assert.equal(h.world.filter(x=>x[0]==='r3dSetPlan').length,1);assert.equal(h.world.filter(x=>x[0]==='canvas').length,1);
 });
 
 test('one failed pack rejects all shared waiters, keeps successful packs, and permits renderer initialization retry',async()=>{
  const h=fixture(),owner=h.owner();h.failures.add('cut-living.glb');
  const failed=await Promise.allSettled([h.preloadSourceDriveAssets(),owner.initialize()]);
  assert.ok(failed.every(x=>x.status==='rejected'&&/failed cut-living/.test(x.reason.message)));assert.equal(owner.ready(),false);assert.deepEqual(h.world,[]);
- assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,8);assert.equal(h.loads.filter(x=>x.url.endsWith('cut-living.glb')).length,2);
+ assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,9);assert.equal(h.loads.filter(x=>x.url.endsWith('cut-living.glb')).length,2);
  for(const name of['drive.glb','wheel-hands.glb','cut-static.glb','cut-roadside.glb','cut-landscape.glb'])assert.equal(h.loads.filter(x=>x.url.endsWith('/'+name)).length,1,name);
- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,8);
+ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,9);
 });
 
 test('disposing during warm never clears the still-owned Source view and cannot acquire it after release',async()=>{
  const h=fixture();let release;h.gates.set('drive.glb',new Promise(resolve=>{release=resolve;}));const owner=h.owner(),loading=owner.initialize();await flush();assert.equal(owner.dispose(),true);assert.equal(owner.dispose(),false);assert.equal(h.released(),1);assert.deepEqual(h.world,[]);
  release();assert.equal(await loading,false);assert.equal(await owner.initialize(),false);assert.equal(owner.ready(),false);assert.deepEqual(h.world,[]);
- const next=h.owner();assert.equal(await next.initialize(),true);assert.equal(h.loads.length,7,'cancellation leaves successfully warmed packs reusable');next.dispose();assert.equal(h.world.filter(x=>x[0]==='driveFrame'&&x[1]===null).length,1,'a real owner still releases its scoped drive frame');
+ const next=h.owner();assert.equal(await next.initialize(),true);assert.equal(h.loads.length,8,'cancellation leaves successfully warmed packs reusable');next.dispose();assert.equal(h.world.filter(x=>x[0]==='driveFrame'&&x[1]===null).length,1,'a real owner still releases its scoped drive frame');
 });
 
 test('P3 character-cache invalidation also invalidates stale static GPU cache records',async()=>{
  const h=fixture();await h.preloadSourceDriveAssets();h.characters.clear(); // The real P3 re-init removes its context-owned bundles, while static names can remain.
- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,14);assert.deepEqual(h.world,[]);
+ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,16);assert.deepEqual(h.world,[]);
 });
 
 test('a missing static pack and a changed override are reloaded without replacing unrelated warmed packs',async()=>{
- const h=fixture();await h.preloadSourceDriveAssets();h.catalog.delete('cut_guardrail');await h.preloadSourceDriveAssets();assert.equal(h.loads.length,8);assert.ok(h.loads.at(-1).url.endsWith('cut-roadside.glb'));
- await h.preloadSourceDriveAssets({assets:{drive:'fixture://alternative/drive.glb'}});assert.equal(h.loads.length,9);assert.equal(h.loads.at(-1).url,'fixture://alternative/drive.glb');
- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,10,'returning to the canonical variant cannot reuse the replaced GPU meshes');assert.equal(h.loads.at(-1).url,'asset:assets/source-drive/drive.glb');assert.deepEqual(h.world,[]);
+ const h=fixture();await h.preloadSourceDriveAssets();h.catalog.delete('cut_guardrail');await h.preloadSourceDriveAssets();assert.equal(h.loads.length,9);assert.ok(h.loads.at(-1).url.endsWith('cut-roadside.glb'));
+ await h.preloadSourceDriveAssets({assets:{drive:'fixture://alternative/drive.glb'}});assert.equal(h.loads.length,10);assert.equal(h.loads.at(-1).url,'fixture://alternative/drive.glb');
+ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,11,'returning to the canonical variant cannot reuse the replaced GPU meshes');assert.equal(h.loads.at(-1).url,'asset:assets/source-drive/drive.glb');assert.deepEqual(h.world,[]);
 });
 
 test('presentation readiness requires the existing live context and a nonzero canvas',()=>{
@@ -108,12 +109,12 @@ test('the production drive renderer refuses unavailable, lost or unacquired fram
  h.presentation.rejectDraw=false;assert.equal(owner.render(frame),true);assert.equal(owner.ready(),true);assert.ok(h.world.some(call=>call[0]==='r3dFrame'));
 });
 
-test('opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh',async()=>{const h=fixture();for(const name of ['cm_limestone_coast','cm_seabed','cm_distant_pier'])h.catalog.add(name);await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,8);for(let i=0;i<4;i++)assert.ok(h.catalog.has('cm_limestone_outcrop_'+i));h.catalog.delete('cm_limestone_outcrop_2');await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,9);assert.ok(h.loads.at(-1).url.endsWith('coastal-memory.glb'));assert.ok(h.catalog.has('cm_limestone_outcrop_2'));assert.deepEqual(h.world,[]);});
+test('opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh',async()=>{const h=fixture();for(const name of ['cm_limestone_coast','cm_seabed','cm_distant_pier'])h.catalog.add(name);await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,9);for(let i=0;i<4;i++)assert.ok(h.catalog.has('cm_limestone_outcrop_'+i));h.catalog.delete('cm_limestone_outcrop_2');await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,10);assert.ok(h.loads.at(-1).url.endsWith('coastal-memory.glb'));assert.ok(h.catalog.has('cm_limestone_outcrop_2'));assert.deepEqual(h.world,[]);});
 
 test('missing UK paint invalidates the roadside cache rather than silently leaving the road unmarked',async()=>{
  for(const name of ['drive_uk_edge_markings','drive_uk_centre_and_edges']){
   const h=fixture();await h.preloadSourceDriveAssets();h.catalog.delete(name);
-  await h.preloadSourceDriveAssets();assert.equal(h.loads.length,8,name);
+  await h.preloadSourceDriveAssets();assert.equal(h.loads.length,9,name);
   assert.ok(h.loads.at(-1).url.endsWith('cut-roadside.glb'));assert.ok(h.catalog.has(name));
   assert.deepEqual(h.world,[],'repairing assets does not seize the world renderer');
  }

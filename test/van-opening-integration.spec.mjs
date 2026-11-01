@@ -260,12 +260,13 @@ test('automatic closing still plays the latch only when the physical leaves land
 test('reload derives world case, remaining stock and dome fixture from real packing and closed-door flags',()=>{
  const sync=section('function syncVanProps(){','// Two instances, hung');
  for(const [flags,expected] of [[{},['yard-van-field-case-open']],[{'kit.fitted':true},['yard-van-field-case','yard-van-field-case-open']],[{'van.closed':true},['yard-van-lamp','yard-van-field-case','yard-van-field-case-open']]]){
-  const removed=[],restored=[],kit=normalizeFieldKit(),present=new Set();
+  const removed=[],restored=[],kit=normalizeFieldKit(),present=new Set();let parkedSyncs=0;
   const context={planName:'conservatory',FP:{isLoaded:()=>true},flagTest:id=>!!flags[id],
    getSave:()=>({flags,fieldKit:kit}),getMeta:()=>freshMeta(),resolveFieldKit,packedWorkbenchGroups,vanRearStockState,
-   vanDoorOpenFraction:()=>flags['van.closed']?0:1,
+   vanDoorOpenFraction:()=>flags['van.closed']?0:1,syncParkedOpeningVehicle:()=>parkedSyncs++,
    PROPS:{setLooseProp:(id,value)=>{assert.equal(value,null);removed.push(id);},propById:id=>present.has(id),restoreAuthoredProp:id=>{restored.push(id);present.add(id);}}};
   vm.createContext(context);vm.runInContext(sync,context);context.syncVanProps();
+  assert.equal(parkedSyncs,1,'van stock synchronization also observes its actual parked placement');
   assert.deepEqual(removed.filter(id=>!id.startsWith('yard-van-stock-')),expected);
   const stock=vanRearStockState({closed:!!flags['van.closed'],bagTaken:false,fieldKit:resolveFieldKit(kit,freshMeta()),packedGroups:[]});
   assert.deepEqual(restored.filter(id=>id.startsWith('yard-van-stock-')).sort(),stock.filter(p=>p.visible).map(p=>p.id).sort());
@@ -285,7 +286,7 @@ test('lodge and world guidance preserve the separate map/fitting firewall',()=>{
 
 test('the actual HUD never renders a plan or minimal-signal legend before acquiring the Survey Indicator',()=>{
   const source=section('  const guidance=currentStoryGuidanceFrame();\n  const nav=activeDifficulty.navigation;',
-    '  // The compass line exposes');
+    '  // The compass owns this row');
   for(const [owned,lost,showMap,expected] of [
     [false,false,true,'none'],[false,false,false,'none'],
     [true,false,true,'map'],[true,false,false,'minimal'],[true,true,true,'missing'],
@@ -298,7 +299,7 @@ test('the actual HUD never renders a plan or minimal-signal legend before acquir
       drawMinimap:(_model,options)=>calls.push(options.navigationVisible===false
         ? options.mapStatus?.includes('MISSING')?'missing':'minimal' : 'map'),
       currentFacilityMapModel:()=>({}),performance:{now:()=>0},rec:{takes:[],injuries:0},
-      monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
+      monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,paused:false,workOrderAccepted:()=>false,
       recentMischief:()=>[],recentApparitions:()=>[],uiText:(_x,_y,text)=>calls.push(text.includes('MISSING')?'missing':'minimal')};
     vm.createContext(context);vm.runInContext(source,context);
     assert.deepEqual(calls,expected==='none'?[]:[expected],`${owned}/${lost}/${showMap}`);

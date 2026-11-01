@@ -112,9 +112,14 @@ export function makeGetInDriveTeaserScene({
     if(controller.operate)return controller.operate(kind,atContact);atContact();return true;
   }
   function pick(event){
-    const rect=getViewport(),width=event.width??rect?.width,height=event.height??rect?.height,x=event.x??event.clientX-rect?.left,y=event.y??event.clientY-rect?.top;
+    const {x,y,width,height}=pointerPoint(event);
     if(![x,y,width,height].every(Number.isFinite)||!renderer.project)return null;
     let best=null;for(const target of current?.renderFrame?.scene?.targets||[]){const p=renderer.project(target.point),distance=p?.visible?Math.hypot(p.x*width-x,p.y*height-y):Infinity;if(distance<25&&(!best||distance<best.distance))best={...target,distance};}return best;
+  }
+  function pointerPoint(event){
+    const rect=getViewport(),width=event.width??rect?.width,height=event.height??rect?.height;
+    const captured=!!(event.pointerCaptured??event.pointerLocked??event.locked??globalThis.document?.pointerLockElement);
+    return{width,height,captured,x:captured?width/2:event.x??event.clientX-rect?.left,y:captured?height/2:event.y??event.clientY-rect?.top};
   }
   function activate(target){
     if(!target)return false;
@@ -123,7 +128,16 @@ export function makeGetInDriveTeaserScene({
     if(target.id==='power')return controller.power?.();return operate(target.id);
   }
   const scene={
-    id:'get-in-drive-teaser',blocksWorld:true,blocksInput:true,suppressesHud:true,allowsLook:false,
+    id:'get-in-drive-teaser',blocksWorld:true,blocksInput:true,suppressesHud:true,
+    get allowsLook(){return ready&&!disposed&&!restored&&!completed&&!wasHeld&&!isHeld()&&!!current?.controlsEnabled;},
+    lookAngles(){return{...(controller.snapshot()?.look||{yaw:0,pitch:-.035})};},
+    lookBy(yaw=0,pitch=0){
+      if(!scene.allowsLook)return false;
+      const dx=Number.isFinite(yaw)?yaw:0,dy=Number.isFinite(pitch)?pitch:0;
+      if(!dx&&!dy)return false;
+      const look=scene.lookAngles(),changed=controller.setLook?.({yaw:look.yaw+dx,pitch:look.pitch+dy});
+      if(changed){if(drag)drag.cancelled=true;refreshFrame();}return!!changed;
+    },
     // The world-title card hands us an already black image. Keep that cover
     // continuous while acquiring the car; revealing the room here is a flash.
     get worldPresentation(){return restored?'visible':'hidden';},
@@ -164,14 +178,20 @@ export function makeGetInDriveTeaserScene({
       return true;
     },
     pointer(event={}){
-      if(!current?.controlsEnabled||wasHeld)return true;
-      if(event.type==='pointerdown'){drag={x:event.clientX,y:event.clientY,startX:event.clientX,startY:event.clientY,control:event.button===2?null:pick(event)};return true;}
-      if(event.type==='pointerup'){const target=drag&&Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)<10?drag.control:null;drag=null;activate(target);return true;}
       if(event.type==='pointercancel'){drag=null;return true;}
-      if(event.type==='pointermove'){
-        if(event.pointerLocked||event.locked||globalThis.document?.pointerLockElement)controller.lookDelta?.(event.movementX||0,event.movementY||0);
-        else if(drag&&(!drag.control||Math.hypot(event.clientX-drag.startX,event.clientY-drag.startY)>=10)){controller.lookDelta?.(event.clientX-drag.x,event.clientY-drag.y);drag={...drag,x:event.clientX,y:event.clientY};}
-      }return true;
+      if(!scene.allowsLook){drag=null;return true;}
+      const point=pointerPoint(event);
+      if(event.type==='pointerdown'){
+        if((event.button??0)!==0)return true;
+        drag={...point,pointerId:event.pointerId,control:pick(event)};return true;
+      }
+      if(event.type==='pointerup'){
+        if((event.button??0)!==0||drag?.pointerId!=null&&event.pointerId!=null&&drag.pointerId!==event.pointerId)return true;
+        const target=drag&&!drag.cancelled&&drag.captured===point.captured&&Math.hypot(point.x-drag.x,point.y-drag.y)<10?drag.control:null;
+        drag=null;activate(target);return true;
+      }
+      if(event.type==='pointermove'&&drag&&(Math.hypot(point.x-drag.x,point.y-drag.y)>=10||point.captured&&(event.movementX||event.movementY)))drag.cancelled=true;
+      return true;
     },keyup(event={}){const action=keyInputs[String(event.key||'').toLowerCase()];if(action){pressedKeys.delete(action);controller.input?.(action,false);}return true;},
     setPaused:setHeld,
     blur(){setHeld(true);},focus(){setHeld(!!isHeld());},

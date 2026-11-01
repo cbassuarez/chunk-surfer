@@ -735,22 +735,20 @@ export function drawTranscript(layout, {
   };
 }
 
-function wrappedChoice(text, width, maxLines = 2) {
-  const lines = uiWrap(text, Math.max(8, width));
-
-  if (lines.length <= maxLines) return lines;
-
-  const out = lines.slice(0, maxLines);
-  const last = out[out.length - 1];
-
-  out[out.length - 1] = last.length >= width
-    ? `${last.slice(0, Math.max(1, width - 1))}…`
-    : `${last}…`;
-
-  return out;
+function wrapChoice(text,width){
+  const words=String(text??'').split(/\s+/).filter(Boolean),lines=[];
+  let line='';
+  for(const word of words){
+    if(line && line.length+1+word.length>width){lines.push(line);line='';}
+    let rest=word;
+    while(rest.length>width){lines.push(rest.slice(0,width));rest=rest.slice(width);}
+    line=line?`${line} ${rest}`:rest;
+  }
+  if(line)lines.push(line);
+  return lines.length?lines:[''];
 }
 
-export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
+export function layoutTranscriptChoices(view, width, { lane = null, label = null } = {}) {
   const options = view?.pending?.options || [];
 
   if (!options.length) {
@@ -776,15 +774,18 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
           align: 'left',
         };
 
+  // The ordinary bank keeps its existing five-cell gutter. Two digits fit in
+  // the number field; only a list above 99 needs a uniformly wider gutter.
+  const gutterWidth = Math.max(5, String(options.length).length + 3);
   const rows = [];
 
-  const label = view.pending.kind === 'say'
+  const heading = label ?? (view.pending.kind === 'say'
     ? 'YOU / READY ▐'
-    : 'YOU / SELECT ▐';
+    : 'YOU / REPLY ▐');
 
   rows.push({
     kind: 'label',
-    text: label,
+    text: heading,
     selected: false,
   });
 
@@ -798,10 +799,9 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
     // A check names the voice that makes it, the way it is printed on the
     // choice before you commit to it.
     const tag = choice.tag ? `[${String(choice.tag).toUpperCase()}] ` : '';
-    const parts = wrappedChoice(
-      `${tag}${String(choice.text || '')}`,
-        Math.max(8, choiceLane.w - prefix.length),
-      2,
+    const parts = wrapChoice(
+      `${tag}${String(choice.text || choice.label || '')}`,
+      Math.max(1, choiceLane.w - Math.max(prefix.length, gutterWidth)),
     );
 
     parts.forEach((part, lineIdx) => {
@@ -809,6 +809,9 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
         kind: 'choice',
         reviewTarget: choice.reviewTarget || null,
         choiceIndex: idx,
+        gutterWidth,
+        firstLine: lineIdx === 0,
+        bodyText: part,
         text:
           `${lineIdx === 0 ? prefix : continuation}` +
           `${part}`,
@@ -823,7 +826,57 @@ export function layoutTranscriptChoices(view, width, { lane = null } = {}) {
     rows,
     height: rows.length + 1,
     lane: choiceLane,
+    selectedIndex: view.pending.index,
+    optionCount: options.length,
+    gutterWidth,
   };
+}
+
+// A fitted window can start partway through a long response. Its first visible
+// row must identify that response even when the source row was a continuation.
+// Ordinary rows retain the exact text/spacing used by the recorder display.
+export function transcriptChoiceText(row = {}) {
+  if (row.kind !== 'choice' || !Number.isInteger(row.choiceIndex) || row.bodyText == null) return String(row.text || '');
+  const prefix = `${row.selected ? '▸' : ' '} ${row.choiceIndex + 1}${row.archiveSignal ? '◆' : ' '} `;
+  return `${row.firstLine ? prefix : ' '.repeat(prefix.length)}${row.bodyText}`;
+}
+
+// A bounded display follows the selected response rather than silently hiding
+// the bottom of a long list. Preserve complete wrapped rows in the source layout.
+export function fitTranscriptChoices(layout, maxRows, {selectedOffset=0}={}) {
+  if (!layout?.rows?.length) return layout;
+  const capacity = Math.max(1, Math.floor(Number(maxRows) || 1));
+  if (layout.rows.length <= capacity) return {...layout, overflow:false, selectedScroll:false};
+  const heading = layout.rows[0], groups = [];
+  for (const row of layout.rows.slice(1)) {
+    let group = groups.at(-1);
+    if (!group || group.index !== row.choiceIndex) groups.push(group = {index:row.choiceIndex, rows:[]});
+    group.rows.push(row);
+  }
+  if (!groups.length) return {...layout, rows:[heading], height:2, overflow:true, selectedScroll:false};
+  const selected = Math.max(0, groups.findIndex(group => group.index === layout.selectedIndex));
+  const current = groups[selected];
+  if(capacity===1){
+    const offset=Math.max(0,Math.min(current.rows.length-1,Math.floor(Number(selectedOffset)||0)));
+    const rows=[{...current.rows[offset],firstLine:true}];
+    return {...layout,rows,height:rows.length+1,overflow:true,selectedScroll:current.rows.length>1,selectedOffset:offset,selectedMaxOffset:current.rows.length-1};
+  }
+  const space = capacity - 1;
+  if (current.rows.length > space) {
+    const offset = Math.max(0, Math.min(current.rows.length-space, Math.floor(Number(selectedOffset)||0)));
+    const visible=current.rows.slice(offset,offset+space).map((row,index)=>index===0?{...row,firstLine:true}:row);
+    const rows = [{...heading,text:`${heading.text}  ${offset+1}–${offset+space}/${current.rows.length}`}, ...visible];
+    return {...layout,rows,height:rows.length+1,overflow:true,selectedScroll:true,selectedOffset:offset,selectedMaxOffset:current.rows.length-space};
+  }
+  let first=selected,last=selected,used=current.rows.length;
+  while (true) {
+    const prev=first>0?groups[first-1]:null,next=last+1<groups.length?groups[last+1]:null;
+    if (prev && used+prev.rows.length<=space) { first--;used+=prev.rows.length;continue; }
+    if (next && used+next.rows.length<=space) { last++;used+=next.rows.length;continue; }
+    break;
+  }
+  const rows=[{...heading,text:`${heading.text}  ${first+1}–${last+1}/${groups.length}`},...groups.slice(first,last+1).flatMap(group=>group.rows)];
+  return {...layout,rows,height:rows.length+1,overflow:true,selectedScroll:false,selectedOffset:0,selectedMaxOffset:0};
 }
 
 export function drawTranscriptChoices(layout, {
@@ -857,31 +910,27 @@ export function drawTranscriptChoices(layout, {
         0.74,
       );
     } else {
-      const cls = row.archiveSignal && !row.selected
-        ? 'ui-blue'
-        : row.spent
-          ? 'ui-secondary'
-        : row.selected
-          ? 'ui-amber'
-          : 'ui-primary';
+      const cls = row.selected ? 'ui-amber'
+        : row.spent ? 'ui-secondary'
+        : row.archiveSignal ? 'ui-blue' : 'ui-primary';
 
-      const alpha = row.archiveSignal && !row.selected
-        ? 0.9
-        : row.spent
-          ? 0.48
-        : row.selected
-          ? 1
-          : 0.82;
+      const alpha = row.selected ? 1 : row.spent ? 0.48 : row.archiveSignal ? 0.9 : 0.82;
 
-      uiText(
-        laneX,
-        cy,
-        row.text.slice(0, layout.lane.w),
-        cls,
-        alpha,
-      );
-      const text = row.text.slice(0, layout.lane.w);
-      if (row.reviewTarget && text.trim()) registerReviewRegion(row.reviewTarget, { x: laneX, y: cy, w: text.length, h: 1, selected: row.selected });
+      const gutterWidth = row.gutterWidth || layout.gutterWidth
+        || Math.max(5, String((row.choiceIndex ?? 0) + 1).length + 3);
+      // Number, cursor and archive mark are addressable phosphor on the same
+      // glass as the changing response, never a physical cap above the cover.
+      if (row.firstLine && Number.isInteger(row.choiceIndex)) {
+        const number = String(row.choiceIndex + 1);
+        if (row.selected) uiText(laneX, cy, '▸', 'ui-amber', 1);
+        uiText(laneX + gutterWidth - 2 - number.length, cy, number, cls, alpha);
+        if (row.archiveSignal) uiText(laneX + gutterWidth - 2, cy, '◆', 'ui-blue', .9);
+      }
+      const bodyText = String(row.bodyText ?? row.text).slice(0, Math.max(0, layout.lane.w - gutterWidth));
+      uiText(laneX + gutterWidth, cy, bodyText, cls, alpha);
+      const text = transcriptChoiceText(row).slice(0, layout.lane.w);
+      if (row.reviewTarget && text.trim()) registerReviewRegion(row.reviewTarget,
+        { x: laneX, y: cy, w: Math.min(layout.lane.w, gutterWidth + bodyText.length), h: 1, selected: row.selected });
     }
 
     cy++;

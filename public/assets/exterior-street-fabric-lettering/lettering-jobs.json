@@ -3,22 +3,22 @@
   "pageSize": 1024,
   "jobs": [
     {
-      "id": "street-name-borough",
-      "text": "BOROUGH PASSAGE",
+      "id": "street-name-ellery-square",
+      "text": "ELLERY SQUARE",
       "center": [
-        83.2,
+        50.18,
         4.12,
-        -14.82
+        -24.6
       ],
       "normal": [
+        1,
         0,
-        0,
-        1
+        0
       ],
-      "widthM": 1.94,
+      "widthM": 1.84,
       "heightM": 0.25,
       "lines": [
-        "BOROUGH PASSAGE"
+        "ELLERY SQUARE"
       ],
       "category": "institution",
       "font": "NimbusSans-Bold.otf",

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "8820ca3190128ddef58b6f9ef1a93c012402be0f47c7703eff4cbc88765752b0",
+  "inputSha256": "beb9317b39662ad2163fde982568c68c7a65161a6713102facda0d15a5c6ab54",
   "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -79,11 +79,11 @@
     {
       "name": "lettering-03",
       "width": 1024,
-      "height": 760,
+      "height": 608,
       "normalWidth": 256,
-      "normalHeight": 190,
+      "normalHeight": 152,
       "ormWidth": 512,
-      "ormHeight": 380,
+      "ormHeight": 304,
       "albedo": "lettering-03-albedo.png",
       "normal": "lettering-03-normal.png",
       "orm": "lettering-03-orm.png",
@@ -96,9 +96,9 @@
         0,
         0
       ],
-      "sharedTiles": 20,
+      "sharedTiles": 16,
       "preservesSampledStockChannels": false,
-      "rgbaBaseLevelBytes": 4085760
+      "rgbaBaseLevelBytes": 3268608
     }
   ],
   "entries": [
@@ -5538,1645 +5538,13 @@
       "substrate": null
     },
     {
-      "id": "district-north-row-b-fascia-0",
-      "page": 2,
-      "uvRect": [
-        0.015625,
-        0.021052631578947368,
-        0.484375,
-        0.07894736842105263
-      ],
-      "copy": "M. THORNTON\nBAKER & CONFECTIONER",
-      "lines": [
-        "M. THORNTON",
-        "BAKER & CONFECTIONER"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.048295454545454544,
-        "boundsPx": [
-          170,
-          8,
-          310,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "M",
-            "line": 0,
-            "xPx": 168.72,
-            "advancePx": 18.156
-          },
-          {
-            "character": ".",
-            "line": 0,
-            "xPx": 186.876,
-            "advancePx": 5.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 197.18800000000002,
-            "advancePx": 13.156
-          },
-          {
-            "character": "H",
-            "line": 0,
-            "xPx": 210.34400000000002,
-            "advancePx": 15.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 225.50000000000003,
-            "advancePx": 15.156
-          },
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 240.65600000000003,
-            "advancePx": 14.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 254.81200000000004,
-            "advancePx": 14.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 268.968,
-            "advancePx": 13.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 282.124,
-            "advancePx": 15.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 297.28000000000003,
-            "advancePx": 14.156
-          },
-          {
-            "character": "B",
-            "line": 1,
-            "xPx": 172.518,
-            "advancePx": 7.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 179.674,
-            "advancePx": 7.156
-          },
-          {
-            "character": "K",
-            "line": 1,
-            "xPx": 186.83,
-            "advancePx": 8.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 194.98600000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 202.14200000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "&",
-            "line": 1,
-            "xPx": 212.45400000000004,
-            "advancePx": 8.156
-          },
-          {
-            "character": "C",
-            "line": 1,
-            "xPx": 223.76600000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 230.92200000000005,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 239.07800000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "F",
-            "line": 1,
-            "xPx": 246.23400000000007,
-            "advancePx": 6.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 252.39000000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "C",
-            "line": 1,
-            "xPx": 259.54600000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "T",
-            "line": 1,
-            "xPx": 266.70200000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "I",
-            "line": 1,
-            "xPx": 273.85800000000006,
-            "advancePx": 4.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 278.01400000000007,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 286.1700000000001,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 293.3260000000001,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 300.4820000000001,
-            "advancePx": 7.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "1e662159cbf35b305374cdb56995d731113d216fb71d9fd1e71ff74b20dd610f"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "1e662159cbf35b305374cdb56995d731113d216fb71d9fd1e71ff74b20dd610f",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.018133169934640522
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.7768936274509805
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "district-north-row-b-fascia-1",
-      "page": 2,
-      "uvRect": [
-        0.515625,
-        0.021052631578947368,
-        0.984375,
-        0.07894736842105263
-      ],
-      "copy": "HOLT & SISTER\nLINEN & HABERDASHERY",
-      "lines": [
-        "HOLT & SISTER",
-        "LINEN & HABERDASHERY"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.05142045454545455,
-        "boundsPx": [
-          165,
-          8,
-          315,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "H",
-            "line": 0,
-            "xPx": 163.56400000000002,
-            "advancePx": 15.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 178.72000000000003,
-            "advancePx": 15.156
-          },
-          {
-            "character": "L",
-            "line": 0,
-            "xPx": 193.87600000000003,
-            "advancePx": 13.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 207.03200000000004,
-            "advancePx": 13.156
-          },
-          {
-            "character": "&",
-            "line": 0,
-            "xPx": 225.34400000000005,
-            "advancePx": 16.156
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 246.65600000000006,
-            "advancePx": 11.156
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 257.81200000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 264.9680000000001,
-            "advancePx": 11.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 276.1240000000001,
-            "advancePx": 13.156
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 289.2800000000001,
-            "advancePx": 13.156
-          },
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 302.4360000000001,
-            "advancePx": 14.156
-          },
-          {
-            "character": "L",
-            "line": 1,
-            "xPx": 173.018,
-            "advancePx": 7.156
-          },
-          {
-            "character": "I",
-            "line": 1,
-            "xPx": 180.174,
-            "advancePx": 4.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 184.33,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 191.48600000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 198.64200000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "&",
-            "line": 1,
-            "xPx": 208.95400000000004,
-            "advancePx": 8.156
-          },
-          {
-            "character": "H",
-            "line": 1,
-            "xPx": 220.26600000000005,
-            "advancePx": 8.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 228.42200000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "B",
-            "line": 1,
-            "xPx": 235.57800000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 242.73400000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 249.89000000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "D",
-            "line": 1,
-            "xPx": 257.04600000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 264.20200000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "S",
-            "line": 1,
-            "xPx": 271.35800000000006,
-            "advancePx": 6.156
-          },
-          {
-            "character": "H",
-            "line": 1,
-            "xPx": 277.51400000000007,
-            "advancePx": 8.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 285.6700000000001,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 292.8260000000001,
-            "advancePx": 7.156
-          },
-          {
-            "character": "Y",
-            "line": 1,
-            "xPx": 299.9820000000001,
-            "advancePx": 7.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "7aba29aa392b40010be5c5492b98d3263def64c5d16a4a9d223b1df2fe71fccd"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "7aba29aa392b40010be5c5492b98d3263def64c5d16a4a9d223b1df2fe71fccd",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.023770424836601314
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.777875
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "district-north-row-b-fascia-2",
-      "page": 2,
-      "uvRect": [
-        0.015625,
-        0.12105263157894737,
-        0.484375,
-        0.17894736842105263
-      ],
-      "copy": "J. WINTER\nIRONMONGER",
-      "lines": [
-        "J. WINTER",
-        "IRONMONGER"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.03172348484848485,
-        "boundsPx": [
-          189,
-          8,
-          290,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "J",
-            "line": 0,
-            "xPx": 189.376,
-            "advancePx": 10.156
-          },
-          {
-            "character": ".",
-            "line": 0,
-            "xPx": 199.532,
-            "advancePx": 5.156
-          },
-          {
-            "character": "W",
-            "line": 0,
-            "xPx": 209.84400000000002,
-            "advancePx": 19.156
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 229.00000000000003,
-            "advancePx": 7.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 236.15600000000003,
-            "advancePx": 14.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 250.31200000000004,
-            "advancePx": 13.156
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 263.468,
-            "advancePx": 13.156
-          },
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 276.624,
-            "advancePx": 14.156
-          },
-          {
-            "character": "I",
-            "line": 1,
-            "xPx": 203.298,
-            "advancePx": 4.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 207.454,
-            "advancePx": 7.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 214.61,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 222.76600000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "M",
-            "line": 1,
-            "xPx": 229.92200000000003,
-            "advancePx": 9.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 239.07800000000003,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 247.23400000000004,
-            "advancePx": 7.156
-          },
-          {
-            "character": "G",
-            "line": 1,
-            "xPx": 254.39000000000004,
-            "advancePx": 8.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 262.54600000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 269.70200000000006,
-            "advancePx": 7.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "bf237cc940486122abfccf60d023d825da33f481a0c4338aa33beb66d2018538"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "bf237cc940486122abfccf60d023d825da33f481a0c4338aa33beb66d2018538",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.004979575163398705
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.7764730392156863
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "district-north-row-b-fascia-5",
-      "page": 2,
-      "uvRect": [
-        0.515625,
-        0.12105263157894737,
-        0.984375,
-        0.17894736842105263
-      ],
-      "copy": "BELL & SON\nFRAMES & RESTORATION",
-      "lines": [
-        "BELL & SON",
-        "FRAMES & RESTORATION"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.04142992424242424,
-        "boundsPx": [
-          174,
-          8,
-          307,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "B",
-            "line": 0,
-            "xPx": 180.298,
-            "advancePx": 13.156
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 193.454,
-            "advancePx": 13.156
-          },
-          {
-            "character": "L",
-            "line": 0,
-            "xPx": 206.61,
-            "advancePx": 13.156
-          },
-          {
-            "character": "L",
-            "line": 0,
-            "xPx": 219.76600000000002,
-            "advancePx": 13.156
-          },
-          {
-            "character": "&",
-            "line": 0,
-            "xPx": 238.07800000000003,
-            "advancePx": 16.156
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 259.39000000000004,
-            "advancePx": 11.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 270.54600000000005,
-            "advancePx": 15.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 285.70200000000006,
-            "advancePx": 14.156
-          },
-          {
-            "character": "F",
-            "line": 1,
-            "xPx": 173.018,
-            "advancePx": 6.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 179.174,
-            "advancePx": 7.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 186.33,
-            "advancePx": 7.156
-          },
-          {
-            "character": "M",
-            "line": 1,
-            "xPx": 193.48600000000002,
-            "advancePx": 9.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 202.64200000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "S",
-            "line": 1,
-            "xPx": 209.79800000000003,
-            "advancePx": 6.156
-          },
-          {
-            "character": "&",
-            "line": 1,
-            "xPx": 219.11000000000004,
-            "advancePx": 8.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 230.42200000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 237.57800000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "S",
-            "line": 1,
-            "xPx": 244.73400000000007,
-            "advancePx": 6.156
-          },
-          {
-            "character": "T",
-            "line": 1,
-            "xPx": 250.89000000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 258.04600000000005,
-            "advancePx": 8.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 266.20200000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 273.35800000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "T",
-            "line": 1,
-            "xPx": 280.51400000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "I",
-            "line": 1,
-            "xPx": 287.6700000000001,
-            "advancePx": 4.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 291.8260000000001,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 299.9820000000001,
-            "advancePx": 7.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "c1f240ab616c27c32819e0a33348b881b6fc9757f4fe0be967a5833bf1bf7005"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "c1f240ab616c27c32819e0a33348b881b6fc9757f4fe0be967a5833bf1bf7005",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.0153145424836602
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.777875
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "district-north-row-b-fascia-6",
-      "page": 2,
-      "uvRect": [
-        0.015625,
-        0.22105263157894736,
-        0.484375,
-        0.2789473684210526
-      ],
-      "copy": "WEST RIDING BOOKS\nOLD & NEW BOOKS",
-      "lines": [
-        "WEST RIDING BOOKS",
-        "OLD & NEW BOOKS"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.06017992424242424,
-        "boundsPx": [
-          137,
-          8,
-          343,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "W",
-            "line": 0,
-            "xPx": 135.752,
-            "advancePx": 19.156
-          },
-          {
-            "character": "E",
-            "line": 0,
-            "xPx": 154.90800000000002,
-            "advancePx": 13.156
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 168.06400000000002,
-            "advancePx": 11.156
-          },
-          {
-            "character": "T",
-            "line": 0,
-            "xPx": 179.22000000000003,
-            "advancePx": 13.156
-          },
-          {
-            "character": "R",
-            "line": 0,
-            "xPx": 197.53200000000004,
-            "advancePx": 14.156
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 211.68800000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "D",
-            "line": 0,
-            "xPx": 218.84400000000005,
-            "advancePx": 14.156
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 233.00000000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 240.15600000000006,
-            "advancePx": 14.156
-          },
-          {
-            "character": "G",
-            "line": 0,
-            "xPx": 254.31200000000007,
-            "advancePx": 15.156
-          },
-          {
-            "character": "B",
-            "line": 0,
-            "xPx": 274.6240000000001,
-            "advancePx": 13.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 287.7800000000001,
-            "advancePx": 15.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 302.9360000000001,
-            "advancePx": 15.156
-          },
-          {
-            "character": "K",
-            "line": 0,
-            "xPx": 318.0920000000001,
-            "advancePx": 15.156
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 333.2480000000001,
-            "advancePx": 11.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 188.90800000000002,
-            "advancePx": 8.156
-          },
-          {
-            "character": "L",
-            "line": 1,
-            "xPx": 197.06400000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "D",
-            "line": 1,
-            "xPx": 204.22000000000003,
-            "advancePx": 7.156
-          },
-          {
-            "character": "&",
-            "line": 1,
-            "xPx": 214.53200000000004,
-            "advancePx": 8.156
-          },
-          {
-            "character": "N",
-            "line": 1,
-            "xPx": 225.84400000000005,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 233.00000000000006,
-            "advancePx": 7.156
-          },
-          {
-            "character": "W",
-            "line": 1,
-            "xPx": 240.15600000000006,
-            "advancePx": 10.156
-          },
-          {
-            "character": "B",
-            "line": 1,
-            "xPx": 253.46800000000007,
-            "advancePx": 7.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 260.6240000000001,
-            "advancePx": 8.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 268.7800000000001,
-            "advancePx": 8.156
-          },
-          {
-            "character": "K",
-            "line": 1,
-            "xPx": 276.9360000000001,
-            "advancePx": 8.156
-          },
-          {
-            "character": "S",
-            "line": 1,
-            "xPx": 285.0920000000001,
-            "advancePx": 6.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "8449bc0a9ab171dfe1981c9ffc8da7585b7f278af747355c7baf0a808ea8d481"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "8449bc0a9ab171dfe1981c9ffc8da7585b7f278af747355c7baf0a808ea8d481",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.01813316993464059
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.777875
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
-      "id": "district-north-row-b-fascia-7",
-      "page": 2,
-      "uvRect": [
-        0.515625,
-        0.22105263157894736,
-        0.984375,
-        0.2789473684210526
-      ],
-      "copy": "F. DIXON\nFAMILY GROCER",
-      "lines": [
-        "F. DIXON",
-        "FAMILY GROCER"
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "metrics": {
-        "font": "NimbusRoman-Bold.otf",
-        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
-        "capHeightM": 0.1882291666666667,
-        "stemWidthM": 0.043437500000000004,
-        "coverage": 0.0296875,
-        "boundsPx": [
-          197,
-          8,
-          284,
-          37
-        ],
-        "glyphs": [
-          {
-            "character": "F",
-            "line": 0,
-            "xPx": 196.454,
-            "advancePx": 12.156
-          },
-          {
-            "character": ".",
-            "line": 0,
-            "xPx": 208.61,
-            "advancePx": 5.156
-          },
-          {
-            "character": "D",
-            "line": 0,
-            "xPx": 218.92200000000003,
-            "advancePx": 14.156
-          },
-          {
-            "character": "I",
-            "line": 0,
-            "xPx": 233.07800000000003,
-            "advancePx": 7.156
-          },
-          {
-            "character": "X",
-            "line": 0,
-            "xPx": 240.23400000000004,
-            "advancePx": 14.156
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 254.39000000000004,
-            "advancePx": 15.156
-          },
-          {
-            "character": "N",
-            "line": 0,
-            "xPx": 269.54600000000005,
-            "advancePx": 14.156
-          },
-          {
-            "character": "F",
-            "line": 1,
-            "xPx": 195.564,
-            "advancePx": 6.156
-          },
-          {
-            "character": "A",
-            "line": 1,
-            "xPx": 201.72,
-            "advancePx": 7.156
-          },
-          {
-            "character": "M",
-            "line": 1,
-            "xPx": 208.876,
-            "advancePx": 9.156
-          },
-          {
-            "character": "I",
-            "line": 1,
-            "xPx": 218.032,
-            "advancePx": 4.156
-          },
-          {
-            "character": "L",
-            "line": 1,
-            "xPx": 222.18800000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "Y",
-            "line": 1,
-            "xPx": 229.34400000000002,
-            "advancePx": 7.156
-          },
-          {
-            "character": "G",
-            "line": 1,
-            "xPx": 239.65600000000003,
-            "advancePx": 8.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 247.81200000000004,
-            "advancePx": 7.156
-          },
-          {
-            "character": "O",
-            "line": 1,
-            "xPx": 254.96800000000005,
-            "advancePx": 8.156
-          },
-          {
-            "character": "C",
-            "line": 1,
-            "xPx": 263.124,
-            "advancePx": 7.156
-          },
-          {
-            "character": "E",
-            "line": 1,
-            "xPx": 270.28000000000003,
-            "advancePx": 7.156
-          },
-          {
-            "character": "R",
-            "line": 1,
-            "xPx": 277.43600000000004,
-            "advancePx": 7.156
-          }
-        ],
-        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "1ba9b207ef1e05e8902157e5e9792b2561e537c17834d4e188e7a2f4b87044b9"
-      },
-      "category": "institution",
-      "process": "solid painted timber shop fascia",
-      "polarity": "light-on-dark",
-      "emission": "none",
-      "reliefM": 7e-06,
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 6e-06,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 7e-06,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "finishEvidence": {
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "coverageSha256": "1ba9b207ef1e05e8902157e5e9792b2561e537c17834d4e188e7a2f4b87044b9",
-        "immutableCoverage": true,
-        "sampledStockOutsidePigmentImmutable": false,
-        "physicalScalesM": {
-          "field": 0.16,
-          "minimumNormalPeriod": 0.0434375,
-          "inkRelief": 7e-06
-        },
-        "structure": {
-          "kind": "subpixel manufacture",
-          "actualPitchM": null,
-          "resolved": false
-        },
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "conditionRanges": {
-          "deposit": [
-            0.0,
-            0.023718750000000094
-          ],
-          "contact": [
-            0.0,
-            0.0
-          ],
-          "edgeLoss": [
-            -0.0,
-            0.01249591503267973
-          ]
-        },
-        "channelRanges": {
-          "roughness": [
-            0.2925,
-            0.7743700980392157
-          ],
-          "metallic": [
-            0.0,
-            0.0
-          ]
-        },
-        "bakedLighting": false,
-        "glyphDamage": false
-      },
-      "source": null,
-      "orientation": null,
-      "bounds": null,
-      "substrate": null
-    },
-    {
       "id": "district-north-row-c-fascia-0",
       "page": 2,
       "uvRect": [
         0.015625,
-        0.32105263157894737,
+        0.021052631578947368,
         0.484375,
-        0.37894736842105264
+        0.07894736842105263
       ],
       "copy": "THE READING ROOM\nBOOKSELLER & STATIONER",
       "lines": [
@@ -7503,9 +5871,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.32105263157894737,
+        0.021052631578947368,
         0.984375,
-        0.37894736842105264
+        0.07894736842105263
       ],
       "copy": "ELLIOTT & CO.\nTAILOR & DRAPER",
       "lines": [
@@ -7772,9 +6140,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.42105263157894735,
+        0.12105263157894737,
         0.484375,
-        0.4789473684210526
+        0.17894736842105263
       ],
       "copy": "H. FARRAR\nDISPENSING CHEMIST",
       "lines": [
@@ -8047,9 +6415,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.42105263157894735,
+        0.12105263157894737,
         0.984375,
-        0.4789473684210526
+        0.17894736842105263
       ],
       "copy": "RIDGEWAY CHINA\nCHINA & GLASS",
       "lines": [
@@ -8316,9 +6684,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.5210526315789473,
+        0.22105263157894736,
         0.484375,
-        0.5789473684210527
+        0.2789473684210526
       ],
       "copy": "FERN & ROOT\nFLORIST & SEEDSMAN",
       "lines": [
@@ -8591,9 +6959,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.5210526315789473,
+        0.22105263157894736,
         0.984375,
-        0.5789473684210527
+        0.2789473684210526
       ],
       "copy": "J. INGHAM\nWATCHMAKER & JEWELLER",
       "lines": [
@@ -8878,9 +7246,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.6210526315789474,
+        0.32105263157894737,
         0.484375,
-        0.6789473684210526
+        0.37894736842105264
       ],
       "copy": "HARRISON\nBAKER & CONFECTIONER",
       "lines": [
@@ -9159,9 +7527,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.6210526315789474,
+        0.32105263157894737,
         0.984375,
-        0.6789473684210526
+        0.37894736842105264
       ],
       "copy": "WAKEFIELD LINEN\nLINEN & HABERDASHERY",
       "lines": [
@@ -9476,9 +7844,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.7210526315789474,
+        0.42105263157894735,
         0.484375,
-        0.7789473684210526
+        0.4789473684210526
       ],
       "copy": "T. LISTER\nIRONMONGER",
       "lines": [
@@ -9709,9 +8077,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.7210526315789474,
+        0.42105263157894735,
         0.984375,
-        0.7789473684210526
+        0.4789473684210526
       ],
       "copy": "TOWN FRAMERS\nFRAMES & RESTORATION",
       "lines": [
@@ -10008,9 +8376,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.8210526315789474,
+        0.5210526315789473,
         0.484375,
-        0.8789473684210526
+        0.5789473684210527
       ],
       "copy": "R. NAYLOR\nOLD & NEW BOOKS",
       "lines": [
@@ -10253,9 +8621,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.8210526315789474,
+        0.5210526315789473,
         0.984375,
-        0.8789473684210526
+        0.5789473684210527
       ],
       "copy": "LEONARD & CO.\nFAMILY GROCER",
       "lines": [
@@ -10516,9 +8884,9 @@
       "page": 2,
       "uvRect": [
         0.015625,
-        0.9210526315789473,
+        0.6210526315789474,
         0.484375,
-        0.9789473684210527
+        0.6789473684210526
       ],
       "copy": "SOUTHERN FRAMERS\nFRAMING & GILDING",
       "lines": [
@@ -10821,9 +9189,9 @@
       "page": 2,
       "uvRect": [
         0.515625,
-        0.9210526315789473,
+        0.6210526315789474,
         0.984375,
-        0.9789473684210527
+        0.6789473684210526
       ],
       "copy": "A. KENDALL\nCLOCK REPAIRS",
       "lines": [
@@ -11069,12 +9437,12 @@
     },
     {
       "id": "district-south-row-c-fascia-7",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.015625,
-        0.021052631578947368,
+        0.7210526315789474,
         0.484375,
-        0.07894736842105263
+        0.7789473684210526
       ],
       "copy": "MERCURY PRINT\nLETTERPRESS & PRINT",
       "lines": [
@@ -11368,12 +9736,12 @@
     },
     {
       "id": "district-south-row-c-workshop-0",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.515625,
-        0.021052631578947368,
+        0.7210526315789474,
         0.984375,
-        0.07894736842105263
+        0.7789473684210526
       ],
       "copy": "G. DENHAM JOINERY",
       "lines": [
@@ -11582,12 +9950,12 @@
     },
     {
       "id": "district-south-row-c-workshop-1",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.015625,
-        0.12105263157894737,
+        0.8210526315789474,
         0.484375,
-        0.17894736842105263
+        0.8789473684210526
       ],
       "copy": "SOUTH MOTOR WORKS",
       "lines": [
@@ -11796,12 +10164,12 @@
     },
     {
       "id": "district-south-row-c-workshop-2",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.515625,
-        0.12105263157894737,
+        0.8210526315789474,
         0.984375,
-        0.17894736842105263
+        0.8789473684210526
       ],
       "copy": "WILTON UPHOLSTERY",
       "lines": [
@@ -12016,12 +10384,12 @@
     },
     {
       "id": "district-south-row-c-workshop-5",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.015625,
-        0.22105263157894736,
+        0.9210526315789473,
         0.484375,
-        0.2789473684210526
+        0.9789473684210527
       ],
       "copy": "KIRK ENGINEERING",
       "lines": [
@@ -12230,12 +10598,12 @@
     },
     {
       "id": "district-south-row-c-workshop-6",
-      "page": 3,
+      "page": 2,
       "uvRect": [
         0.515625,
-        0.22105263157894736,
+        0.9210526315789473,
         0.984375,
-        0.2789473684210526
+        0.9789473684210527
       ],
       "copy": "RAILWAY GARAGE",
       "lines": [
@@ -12435,9 +10803,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.32105263157894737,
+        0.02631578947368421,
         0.484375,
-        0.37894736842105264
+        0.09868421052631579
       ],
       "copy": "HARGREAVES\nBAKER & CONFECTIONER",
       "lines": [
@@ -12728,9 +11096,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.32105263157894737,
+        0.02631578947368421,
         0.984375,
-        0.37894736842105264
+        0.09868421052631579
       ],
       "copy": "DAWSON & DAUGHTER\nLINEN & HABERDASHERY",
       "lines": [
@@ -13051,9 +11419,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.42105263157894735,
+        0.1513157894736842,
         0.484375,
-        0.4789473684210526
+        0.2236842105263158
       ],
       "copy": "J. BURTON\nIRONMONGER",
       "lines": [
@@ -13284,9 +11652,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.42105263157894735,
+        0.1513157894736842,
         0.984375,
-        0.4789473684210526
+        0.2236842105263158
       ],
       "copy": "MARSHALL\nFRAMES & RESTORATION",
       "lines": [
@@ -13565,9 +11933,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.5210526315789473,
+        0.27631578947368424,
         0.484375,
-        0.5789473684210527
+        0.34868421052631576
       ],
       "copy": "M. FLETCHER\nOLD & NEW BOOKS",
       "lines": [
@@ -13822,9 +12190,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.5210526315789473,
+        0.27631578947368424,
         0.984375,
-        0.5789473684210527
+        0.34868421052631576
       ],
       "copy": "P. BELL\nFAMILY GROCER",
       "lines": [
@@ -14055,9 +12423,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.6210526315789474,
+        0.40131578947368424,
         0.484375,
-        0.6789473684210526
+        0.47368421052631576
       ],
       "copy": "ROYLE & SON\nFRAMING & GILDING",
       "lines": [
@@ -14324,9 +12692,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.6210526315789474,
+        0.40131578947368424,
         0.984375,
-        0.6789473684210526
+        0.47368421052631576
       ],
       "copy": "H. PICKERING\nCLOCK REPAIRS",
       "lines": [
@@ -14587,9 +12955,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.7210526315789474,
+        0.5263157894736842,
         0.484375,
-        0.7789473684210526
+        0.5986842105263158
       ],
       "copy": "WARD PRINTWORKS\nLETTERPRESS & PRINT",
       "lines": [
@@ -14898,9 +13266,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.7210526315789474,
+        0.5263157894736842,
         0.984375,
-        0.7789473684210526
+        0.5986842105263158
       ],
       "copy": "SUTCLIFFE JOINERY",
       "lines": [
@@ -15118,9 +13486,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.8210526315789474,
+        0.6513157894736842,
         0.484375,
-        0.8789473684210526
+        0.7236842105263158
       ],
       "copy": "DENTON ENGINEERING",
       "lines": [
@@ -15344,9 +13712,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.8210526315789474,
+        0.6513157894736842,
         0.984375,
-        0.8789473684210526
+        0.7236842105263158
       ],
       "copy": "HOLT UPHOLSTERY",
       "lines": [
@@ -15552,9 +13920,9 @@
       "page": 3,
       "uvRect": [
         0.015625,
-        0.9210526315789473,
+        0.7763157894736842,
         0.484375,
-        0.9789473684210527
+        0.8486842105263158
       ],
       "copy": "MILLS COACHWORKS",
       "lines": [
@@ -15766,9 +14134,9 @@
       "page": 3,
       "uvRect": [
         0.515625,
-        0.9210526315789473,
+        0.7763157894736842,
         0.984375,
-        0.9789473684210527
+        0.8486842105263158
       ],
       "copy": "NORTH GARAGE",
       "lines": [
@@ -15937,6 +14305,604 @@
           "roughness": [
             0.2925,
             0.7717063725490196
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "ellery-square-west-fascia-2",
+      "page": 3,
+      "uvRect": [
+        0.015625,
+        0.9013157894736842,
+        0.484375,
+        0.9736842105263158
+      ],
+      "copy": "ASHWORTH MUSIC\nMUSIC SELLER & PUBLISHER",
+      "lines": [
+        "ASHWORTH MUSIC",
+        "MUSIC SELLER & PUBLISHER"
+      ],
+      "widthM": 6.95,
+      "heightM": 0.55,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.1882291666666667,
+        "stemWidthM": 0.043437500000000004,
+        "coverage": 0.06216856060606061,
+        "boundsPx": [
+          146,
+          8,
+          333,
+          37
+        ],
+        "glyphs": [
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 146.486,
+            "advancePx": 14.156
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 160.642,
+            "advancePx": 11.156
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 171.798,
+            "advancePx": 15.156
+          },
+          {
+            "character": "W",
+            "line": 0,
+            "xPx": 186.954,
+            "advancePx": 19.156
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 206.11,
+            "advancePx": 15.156
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 221.26600000000002,
+            "advancePx": 14.156
+          },
+          {
+            "character": "T",
+            "line": 0,
+            "xPx": 235.42200000000003,
+            "advancePx": 13.156
+          },
+          {
+            "character": "H",
+            "line": 0,
+            "xPx": 248.57800000000003,
+            "advancePx": 15.156
+          },
+          {
+            "character": "M",
+            "line": 0,
+            "xPx": 268.89000000000004,
+            "advancePx": 18.156
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 287.04600000000005,
+            "advancePx": 14.156
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 301.20200000000006,
+            "advancePx": 11.156
+          },
+          {
+            "character": "I",
+            "line": 0,
+            "xPx": 312.35800000000006,
+            "advancePx": 7.156
+          },
+          {
+            "character": "C",
+            "line": 0,
+            "xPx": 319.51400000000007,
+            "advancePx": 14.156
+          },
+          {
+            "character": "M",
+            "line": 1,
+            "xPx": 163.20600000000002,
+            "advancePx": 9.156
+          },
+          {
+            "character": "U",
+            "line": 1,
+            "xPx": 172.36200000000002,
+            "advancePx": 7.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 179.51800000000003,
+            "advancePx": 6.156
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 185.67400000000004,
+            "advancePx": 4.156
+          },
+          {
+            "character": "C",
+            "line": 1,
+            "xPx": 189.83000000000004,
+            "advancePx": 7.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 200.14200000000005,
+            "advancePx": 6.156
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 206.29800000000006,
+            "advancePx": 7.156
+          },
+          {
+            "character": "L",
+            "line": 1,
+            "xPx": 213.45400000000006,
+            "advancePx": 7.156
+          },
+          {
+            "character": "L",
+            "line": 1,
+            "xPx": 220.61000000000007,
+            "advancePx": 7.156
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 227.76600000000008,
+            "advancePx": 7.156
+          },
+          {
+            "character": "R",
+            "line": 1,
+            "xPx": 234.92200000000008,
+            "advancePx": 7.156
+          },
+          {
+            "character": "&",
+            "line": 1,
+            "xPx": 245.2340000000001,
+            "advancePx": 8.156
+          },
+          {
+            "character": "P",
+            "line": 1,
+            "xPx": 256.5460000000001,
+            "advancePx": 6.156
+          },
+          {
+            "character": "U",
+            "line": 1,
+            "xPx": 262.7020000000001,
+            "advancePx": 7.156
+          },
+          {
+            "character": "B",
+            "line": 1,
+            "xPx": 269.8580000000001,
+            "advancePx": 7.156
+          },
+          {
+            "character": "L",
+            "line": 1,
+            "xPx": 277.0140000000001,
+            "advancePx": 7.156
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 284.17000000000013,
+            "advancePx": 4.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 288.32600000000014,
+            "advancePx": 6.156
+          },
+          {
+            "character": "H",
+            "line": 1,
+            "xPx": 294.48200000000014,
+            "advancePx": 8.156
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 302.63800000000015,
+            "advancePx": 7.156
+          },
+          {
+            "character": "R",
+            "line": 1,
+            "xPx": 309.79400000000015,
+            "advancePx": 7.156
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "6d08f1e87285e1bec8e03564734a21b4b99c9e93a79e362fd5b8d0d0dc1fbcdc"
+      },
+      "category": "institution",
+      "process": "solid painted timber shop fascia",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "6d08f1e87285e1bec8e03564734a21b4b99c9e93a79e362fd5b8d0d0dc1fbcdc",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.0434375,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.023718750000000094
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.014234579248366018
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.777875
+          ],
+          "metallic": [
+            0.0,
+            0.0
+          ]
+        },
+        "bakedLighting": false,
+        "glyphDamage": false
+      },
+      "source": null,
+      "orientation": null,
+      "bounds": null,
+      "substrate": null
+    },
+    {
+      "id": "ellery-square-west-fascia-3",
+      "page": 3,
+      "uvRect": [
+        0.515625,
+        0.9013157894736842,
+        0.984375,
+        0.9736842105263158
+      ],
+      "copy": "R. MASON\nDISPENSING CHEMIST",
+      "lines": [
+        "R. MASON",
+        "DISPENSING CHEMIST"
+      ],
+      "widthM": 6.95,
+      "heightM": 0.55,
+      "metrics": {
+        "font": "NimbusRoman-Bold.otf",
+        "fontSha256": "e0ad81923bc6d85d5426f796217c87963ca1ae3c65e22c87a25b6c6353de299e",
+        "capHeightM": 0.1882291666666667,
+        "stemWidthM": 0.043437500000000004,
+        "coverage": 0.03546401515151515,
+        "boundsPx": [
+          183,
+          8,
+          297,
+          37
+        ],
+        "glyphs": [
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 191.454,
+            "advancePx": 14.156
+          },
+          {
+            "character": ".",
+            "line": 0,
+            "xPx": 205.61,
+            "advancePx": 5.156
+          },
+          {
+            "character": "M",
+            "line": 0,
+            "xPx": 215.92200000000003,
+            "advancePx": 18.156
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 234.07800000000003,
+            "advancePx": 14.156
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 248.23400000000004,
+            "advancePx": 11.156
+          },
+          {
+            "character": "O",
+            "line": 0,
+            "xPx": 259.39000000000004,
+            "advancePx": 15.156
+          },
+          {
+            "character": "N",
+            "line": 0,
+            "xPx": 274.54600000000005,
+            "advancePx": 14.156
+          },
+          {
+            "character": "D",
+            "line": 1,
+            "xPx": 182.174,
+            "advancePx": 7.156
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 189.33,
+            "advancePx": 4.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 193.48600000000002,
+            "advancePx": 6.156
+          },
+          {
+            "character": "P",
+            "line": 1,
+            "xPx": 199.64200000000002,
+            "advancePx": 6.156
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 205.79800000000003,
+            "advancePx": 7.156
+          },
+          {
+            "character": "N",
+            "line": 1,
+            "xPx": 212.95400000000004,
+            "advancePx": 7.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 220.11000000000004,
+            "advancePx": 6.156
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 226.26600000000005,
+            "advancePx": 4.156
+          },
+          {
+            "character": "N",
+            "line": 1,
+            "xPx": 230.42200000000005,
+            "advancePx": 7.156
+          },
+          {
+            "character": "G",
+            "line": 1,
+            "xPx": 237.57800000000006,
+            "advancePx": 8.156
+          },
+          {
+            "character": "C",
+            "line": 1,
+            "xPx": 248.89000000000007,
+            "advancePx": 7.156
+          },
+          {
+            "character": "H",
+            "line": 1,
+            "xPx": 256.04600000000005,
+            "advancePx": 8.156
+          },
+          {
+            "character": "E",
+            "line": 1,
+            "xPx": 264.20200000000006,
+            "advancePx": 7.156
+          },
+          {
+            "character": "M",
+            "line": 1,
+            "xPx": 271.35800000000006,
+            "advancePx": 9.156
+          },
+          {
+            "character": "I",
+            "line": 1,
+            "xPx": 280.51400000000007,
+            "advancePx": 4.156
+          },
+          {
+            "character": "S",
+            "line": 1,
+            "xPx": 284.6700000000001,
+            "advancePx": 6.156
+          },
+          {
+            "character": "T",
+            "line": 1,
+            "xPx": 290.8260000000001,
+            "advancePx": 7.156
+          }
+        ],
+        "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
+        "coverageSha256": "74759773a3c875b81a2de92d32c7adf08a8bda2bc8537c8a963345362de37d82"
+      },
+      "category": "institution",
+      "process": "solid painted timber shop fascia",
+      "polarity": "light-on-dark",
+      "emission": "none",
+      "reliefM": 7e-06,
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 6e-06,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 7e-06,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "finishEvidence": {
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "coverageSha256": "74759773a3c875b81a2de92d32c7adf08a8bda2bc8537c8a963345362de37d82",
+        "immutableCoverage": true,
+        "sampledStockOutsidePigmentImmutable": false,
+        "physicalScalesM": {
+          "field": 0.16,
+          "minimumNormalPeriod": 0.0434375,
+          "inkRelief": 7e-06
+        },
+        "structure": {
+          "kind": "subpixel manufacture",
+          "actualPitchM": null,
+          "resolved": false
+        },
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "conditionRanges": {
+          "deposit": [
+            0.0,
+            0.023718750000000094
+          ],
+          "contact": [
+            0.0,
+            0.0
+          ],
+          "edgeLoss": [
+            -0.0,
+            0.009677287581699348
+          ]
+        },
+        "channelRanges": {
+          "roughness": [
+            0.2925,
+            0.777875
           ],
           "metallic": [
             0.0,

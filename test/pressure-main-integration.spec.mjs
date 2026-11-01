@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { createPressurePerformance, normalizePressurePresentation } from '../src/game/pressure-performance.js';
 import { freshPressureGait } from '../src/game/pressure-gait.js';
+import { estimateHushClearance } from '../src/game/hush-clearance.js';
 
 const sourceText=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function productionFunction(name){
@@ -14,7 +15,7 @@ function productionFunction(name){
 }
 function harness(){
   const context={
-    pressurePerformance:createPressurePerformance(),normalizePressurePresentation,recordingPressureVisualOrigin:null,
+    pressurePerformance:createPressurePerformance(),normalizePressurePresentation,estimateHushClearance,buildingPresenceNavigation:null,recordingPressureVisualOrigin:null,
     storyMode:true,source:false,special:false,paused:false,focused:true,hushRunActive:false,top:null,worldView:null,blocked:false,
     reduced:false,now:1000,sourceFloor:4.2,sourceMode:{meeting:false},bracket:null,dockLook:null,plantHaulSnapshot:null,
     presence:{active:true,x:4,y:6,velocityX:2,velocityY:0,behaviorMode:'chase',spawnedAt:100},

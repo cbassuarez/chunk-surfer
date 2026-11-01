@@ -5,6 +5,7 @@ import { EXTERIOR_ROOF_ARCHITECTURE_IDS, EXTERIOR_ROOFLINE_MESH } from '../data/
 import {GLASS_COURT as C} from '../data/glass-court.js';
 import {GLASS_COURT_SIGHTLINES as S} from '../data/glass-court-sightlines.js';
 import {buildingWindowInteriorPlane,buildingWindowPortal} from '../world/building-window-views.js';
+import {EXTERIOR_STREET_FABRIC} from '../data/exterior-street-fabric.js';
 
 // Cross-envelope visibility for the authored Ellery prop pack.
 //
@@ -14,6 +15,9 @@ import {buildingWindowInteriorPlane,buildingWindowPortal} from '../world/buildin
 // the depth-tested mesh pass while the player approaches from the yard.
 
 const EXTERIOR_ELLERY_MESHES=new Set([
+  ...EXTERIOR_STREET_FABRIC.meshNames,
+  ...C.meshNames,C.entranceFixtures.mesh,
+  'natatorium_roof_structure','natatorium_perimeter_relief',
   'ellery_public_front','ellery_public_forecourt',
   'conservatory_west_elevation',
   'conservatory_stair_window',

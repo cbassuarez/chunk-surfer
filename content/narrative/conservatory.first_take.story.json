@@ -38,7 +38,7 @@
       "lines": [
         {
           "who": "direction",
-          "text": "Foam on three walls, carpet, a dead ceiling. This is by far the quietest room in the building.",
+          "text": "Foam, carpet, a dead ceiling; glass divides the live floor from a dark control desk. This is by far the quietest room in the building.",
           "id": "start.line.1"
         },
         {
@@ -224,7 +224,7 @@
         },
         {
           "who": "direction",
-          "text": "A patchbay with every cable pulled. A chair. Foam gone brown at the edges where thirty years of hands went past it.",
+          "text": "A patchbay with every cable pulled and a chair at the console. Foam gone brown at the edges where thirty years of hands went past it.",
           "id": "room.line.2"
         },
         {

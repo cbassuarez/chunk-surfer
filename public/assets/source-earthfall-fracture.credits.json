@@ -1,0 +1,6 @@
+{
+ "pack": "source-earthfall-fracture",
+ "sha256": "1ff5a12cbca311815ae6e26910d8b194245625f55db9af67e198e543076f75d2",
+ "source": "Project-native source_demolition_retained (the retained Source elevation of conservatory_west_elevation), read-only",
+ "tool": "Voronoi cells from Blender Cell Fracture (extensions.blender.org cell_fracture, fracture_cell_calc), cut by plane bisection instead of its boolean because the elevation is open shells; two levels from deterministic seed points; small section loops capped"
+}

@@ -14,6 +14,22 @@ export function resolveGodRowDanger(row) {
   return typeof row?.danger === 'function' ? !!row.danger() : !!row?.danger;
 }
 
+// Each tab is drawn as a one-cell marker, its name and a one-cell gap. A line
+// takes tabs until the next would cross `width`; a lone tab wider than the
+// line still gets one to itself.
+export function godTabLines(names, width) {
+  const lines = [];
+  let line = [], used = 0;
+  names.forEach((name, index) => {
+    const cells = name.length + 1;
+    if (line.length && used + cells > width) { lines.push(line); line = []; used = 0; }
+    line.push({ index, name });
+    used += cells + 1;
+  });
+  if (line.length) lines.push(line);
+  return lines;
+}
+
 export function makeGodMenuScene({ tabs = [], onClose = () => {}, onError = (error) => console.error('[god-menu]', error) } = {}) {
   validateGodTabs(tabs);
   let pending = false, closed = false;
@@ -128,26 +144,29 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {}, onError = (err
       meter: false,
     }, (body) => {
 
-    let tabX = body.x;
-    availableTabs.forEach((tab, index) => {
-      const active = index === tabIndex;
-      const label = `${active ? '▸' : ' '}${String(tab.name || tab.id).toUpperCase()}`;
-      if (tabX + label.length < x + width - 2) {
-        uiText(tabX, body.y, label, active ? 'ui-danger' : 'ui-secondary');
+    // The tabs wrap onto as many lines as they need, so the one you are in is
+    // never pushed off the edge; the list starts under the last line.
+    const tabLines = godTabLines(availableTabs.map((tab) => String(tab.name || tab.id).toUpperCase()), body.w);
+    tabLines.forEach((line, lineIndex) => {
+      let tabX = body.x;
+      for (const { index, name } of line) {
+        const active = index === tabIndex;
+        uiText(tabX, body.y + lineIndex, `${active ? '▸' : ' '}${name}`, active ? 'ui-danger' : 'ui-secondary');
+        tabX += name.length + 2;
       }
-      tabX += label.length + 1;
     });
 
     clampSelection();
     const list = rows();
-    const maxRows = Math.max(1, body.h - 5);
+    const listY = body.y + tabLines.length + 2;
+    const maxRows = Math.max(1, body.h - tabLines.length - 4);
     const start = selected >= maxRows
       ? Math.min(selected - maxRows + 1, Math.max(0, list.length - maxRows))
       : 0;
 
     list.slice(start, start + maxRows).forEach((row, visibleIndex) => {
       const rowIndex = start + visibleIndex;
-      const rowY = body.y + 3 + visibleIndex;
+      const rowY = listY + visibleIndex;
       if (row.kind === 'section') {
         uiText(body.x + 1, rowY, `— ${String(row.label || '').toUpperCase()} —`, 'ui-amber');
         return;

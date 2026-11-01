@@ -17,12 +17,12 @@ test('the same authored body survives contained, dissolving and desktop presenta
   const contained=sourceDesktopRenderFrame(state({active:false}));
   assert.equal(contained.state.active,true,'a not-yet-breached mechanics frame still presents the antagonist');
   assert.equal(contained.openness,0);
-  assert.ok(contained.body?.character.joints.chest);
-  assert.equal(contained.body.mesh,'pressure_body');
+  assert.ok(contained.body?.character.joints.fold_B_3);
+  assert.equal(contained.body.mesh,'hush_density_core');
   assert.equal(SOURCE_DESKTOP_DISSOLVE_SECONDS,2.4);
   const frames=[0,.25,.5,.75,1].map(transition=>sourceDesktopRenderFrame(state({phase:'dissolving',transition})));
   assert.deepEqual(frames[0].body,contained.body);
-  assert.deepEqual(frames.at(-1).body,contained.body,'the shell dissolves without replacing the borrowed body');
+  assert.deepEqual(frames.at(-1).body,contained.body,'the shell dissolves without replacing the density');
   assert.deepEqual(frames.map(f=>f.openness),[0,.15625,.5,.84375,1]);
   assert.equal(sourceDesktopRenderFrame(state({phase:'desktop'})).openness,1);
   assert.equal(sourceDesktopRenderFrame(state({phase:'reforming',transition:1})).openness,0);
@@ -75,15 +75,15 @@ test('captured fading or hidden Presence cannot make the combat performer vanish
   const pressurePresentation={primary:{id:'captured-pressure',x:22,y:13,floorH:4.2,heightM:2.18,mode:'off',strength:0,
     performance:{role:'court-trace',clip:'pressure_arrest',time:1,heading:0,manifestation:0}}};
   const frame=sourceDesktopRenderFrame(state({pressurePresentation}));
-  assert.ok(frame.body); assert.equal(frame.body.mesh,'pressure_body');
-  assert.equal(frame.body.pressure.mode,'live'); assert.ok(frame.body.pressure.strength>.9);
+  assert.ok(frame.body); assert.equal(frame.body.mesh,'hush_density_core');
+  assert.equal(frame.body.pressure.mode,'core'); assert.ok(frame.body.pressure.strength>.9);
 });
 
 test('comfort settings stop authored motion while retaining tells and attack state', () => {
   for(const kind of ['broadcast','conceal','overload','loop','silence']) {
     const a=sourceDesktopRenderFrame(state({intent:{kind,progress:.6},reducedMotion:true,reduceFlash:true,clock:1}));
     const b=sourceDesktopRenderFrame(state({intent:{kind,progress:.6},reducedMotion:true,reduceFlash:true,clock:101}));
-    assert.equal(a.clip,'pressure_hold'); assert.equal(a.clipTime,0); assert.deepEqual(a.body,b.body);
+    assert.equal(a.clip,'pressure_approach'); assert.equal(a.clipTime,0); assert.deepEqual(a.body,b.body);
     assert.equal(a.state.intent.kind,kind); assert.equal(a.state.intent.progress,.6);
   }
   assert.notDeepEqual(sourceDesktopRenderFrame(state({intent:{kind:'overload',progress:.6}})).body.character,
@@ -121,13 +121,14 @@ test('finite desktop plates reuse closed Source strata and their real source gly
   const lines=sourceDesktopGlyphLines(); assert.ok(lines.length>=24); assert.ok(lines.every(line=>actual.has(line)));
 });
 
-test('the shipped borrowed body has its actual skin and all required authored performances', async () => {
-  const bytes=await readFile(new URL('../public/assets/pressure-character.glb',import.meta.url));
+test('the shipped density has its actual nonhuman skin and all required authored performances', async () => {
+  const bytes=await readFile(new URL('../public/assets/hush-density.glb',import.meta.url));
   assert.equal(bytes.toString('ascii',0,4),'glTF'); assert.equal(bytes.readUInt32LE(4),2);
   const json=JSON.parse(bytes.toString('utf8',20,20+bytes.readUInt32LE(12)).trim());
-  assert.ok(json.skins[0].joints.length>=30);
+  assert.equal(json.skins[0].joints.length,19);
   const names=new Set(json.animations.map(animation=>animation.name));
-  for(const name of ['pressure_hold','pressure_listen','pressure_load','pressure_pivot','pressure_arrest']) assert.ok(names.has(name));
+  for(const name of ['pressure_approach','density_idle','density_listen','density_retained']) assert.ok(names.has(name));
   assert.ok(json.nodes.some(node=>node.skin!==undefined&&node.mesh!==undefined));
-  assert.ok(json.meshes.some(mesh=>mesh.primitives.some(primitive=>primitive.targets?.length>=4)));
+  assert.deepEqual(json.meshes.map(mesh=>mesh.name).sort(),['hush_density_core','hush_density_return','hush_density_volume']);
+  assert.ok(json.meshes.every(mesh=>mesh.primitives.every(primitive=>!primitive.targets?.length)));
 });

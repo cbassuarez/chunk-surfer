@@ -33,7 +33,7 @@ assert.equal(ELLERY_LINEAGE.find(({id})=>id==='chapel').year,1908);
 assert.equal(ELLERY_MASSING.length,5);
 assert.ok(ELLERY_MASSING.find(({id})=>id==='hall').setback>=8,'fly tower remains withdrawn');
 assert.ok(EXTERIOR_LOTS.length>=10&&EXTERIOR_LOTS.every(({occupied})=>occupied));
-assert.equal(DISTRICT_COURTS.length,4,'each side has a secondary court or passage');
+assert.equal(DISTRICT_COURTS.length,3,'west, east and south keep a secondary court; the north side opens onto Ellery Square');
 assert.equal(EXTERIOR_INSPECTABLES.length,4,'lineage is physically inspectable');
 
 const slice=FP.physicalRenderPlanFor(...Object.values(FP.toRuntimePoint(conservatory.spawn)));

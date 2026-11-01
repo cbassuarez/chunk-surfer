@@ -11,7 +11,7 @@ import {ACADEMIC_SOCIETY_ACTORS} from '../src/data/academic-society.js';
 import {ACADEMIC_BOUNCER_SOCIAL_BEATS,ACADEMIC_BOUNCER_SOCIAL_TIMING} from '../src/data/academic-bouncer-society.js';
 import {ACADEMIC_FLOOR_GUESTS,ACADEMIC_FLOOR_POPULATION} from '../src/data/academic-floor-population.js';
 import {createAcademicBouncers} from '../src/game/academic-bouncers.js';
-import {makeAcademicBouncerScene,renderAcademicBouncerSocialScene} from '../src/game/academic-bouncer-scene.js';
+import {makeAcademicBouncerScene,renderAcademicBouncerSocialScene,installAcademicBouncerSocialPresenter} from '../src/game/academic-bouncer-scene.js';
 import {freshChapelTapeDemand,chapelTapeDemandBlocksProgress} from '../src/game/chapel-tape-demand.js';
 import {academicBouncerAccessForMove,academicBouncerPhysicalFocus} from '../src/game/academic-bouncer-access.js';
 import {academicBouncerSocialAudible as bouncerSocialAudible,academicBouncerSegmentClear} from '../src/game/academic-bouncer-audibility.js';
@@ -123,9 +123,10 @@ async function adapter(run,{saved=freshSave()}={}){
       // Academic admission takes place without an active Chapel tape-demand.
       chapelTapeDemandBlocksProgress,
       chapelTapeDemandState:()=>freshChapelTapeDemand(getSave().run?.id),
+      chapelTapeDamageNeedsRetake:()=>false,
       // This academic encounter has no pending Tower-warning overlay.
       interactTowerWarning:()=>false,
-      SPEECH:speech.api,academicAdversaryClaimsQuiet:()=>false,makeThoughtScene,renderAcademicBouncerSocialScene,NO_THINK:false,STORY:{},CR:{fx:{}},RENDERER:'3d',
+      SPEECH:speech.api,academicAdversaryClaimsQuiet:()=>false,makeThoughtScene,renderAcademicBouncerSocialScene,installAcademicBouncerSocialPresenter,NO_THINK:false,STORY:{},CR:{fx:{}},RENDERER:'3d',
       createReplayService:()=>null,applyStoryChoice(){},fireCue(){},
       makeAcademicBouncerScene:options=>makeAcademicBouncerScene({...options,createVoice:()=>voice}),
       playerKeys:new Set(),nowMs:10000,pushEvent:text=>messages.push(text),

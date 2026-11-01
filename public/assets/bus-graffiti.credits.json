@@ -1,7 +1,27 @@
 {
   "pack": "bus-graffiti.glb",
-  "author": "Chunk Surfer project",
-  "license": "Original project artwork",
-  "sha256": "2cc6640a31120564abf762b88ac78c7c747b32aa0ce454a1d2cd8f7fcf107442",
-  "source": "tools/chunk_surfer/build-bus-graffiti.mjs"
+  "creator": "unikumpu",
+  "license": "CC0 1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "creatorStatement": "https://www.reddit.com/r/unrealengine/comments/n7j1y7/need_cc0_graffiti_decals_i_thought_to_share_a_set/",
+  "sourceManifest": "assets/source-graffiti/unikumpu/manifest.json",
+  "adaptation": "Original image bytes and colours embedded; UVs trim transparent margins; alpha cutoff softens paint coverage.",
+  "sources": [
+    {
+      "file": "Decal_Graffiti_ASP.png",
+      "source": "https://drive.google.com/file/d/1TWwmeotyJDvFmtEKzIsiTqbAaBPirR8J/view",
+      "sha256": "8bf05d5462a8d3a4080c2cddee5ca89c92ac773a35511524f3d7aab875615216"
+    },
+    {
+      "file": "Decal_Graffiti_CAS.png",
+      "source": "https://drive.google.com/file/d/1FDe9W-J5fgO-IF9tOjLfzpfMEZLNUMsT/view",
+      "sha256": "ab62f2adb04095189b7e87238bbdecc7ccc20029460ca45534f1aab116cc27d7"
+    },
+    {
+      "file": "Decal_Graffiti_Johnny2.png",
+      "source": "https://drive.google.com/file/d/1DnODyXunbtAr6W2H9pOyiaCaRxyFsUTZ/view",
+      "sha256": "5dee4ef149b85728dbc9962cf005e62b2b5a2104c837760f187aa227e077c95a"
+    }
+  ],
+  "sha256": "a89f5475c41d33c115ffcba840e725d2e15701aee5748b380f4d80b3f6789cac"
 }

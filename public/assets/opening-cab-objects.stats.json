@@ -1,0 +1,1611 @@
+{
+  "schema": 1,
+  "asset": "assets/opening-cab-objects.glb",
+  "sha256": "d908c7a314386225758485d25dd51107180603617dcbbf1f07d658eaa3783aa7",
+  "bytes": 822936,
+  "totalTriangles": 23021,
+  "materials": 53,
+  "meshes": [
+    {
+      "mesh": "opening_cab_field_case",
+      "objectId": "case",
+      "selection": null,
+      "bounds": {
+        "min": [
+          -0.7742409110069275,
+          0.670199990272522,
+          -0.562000036239624
+        ],
+        "max": [
+          -0.18642450869083405,
+          1.1389631032943726,
+          0.062000006437301636
+        ]
+      },
+      "focusPoint": [
+        -0.5913028120994568,
+        0.8536001443862915,
+        -0.26979028681914013
+      ],
+      "triangles": 4491,
+      "primitives": 8
+    },
+    {
+      "mesh": "opening_cab_field_recorder_body",
+      "objectId": "recorder",
+      "selection": {
+        "part": "body"
+      },
+      "bounds": {
+        "min": [
+          -0.5491741895675659,
+          0.7882742881774902,
+          -0.1745036244392395
+        ],
+        "max": [
+          -0.4537723660469055,
+          0.8277499675750732,
+          -0.029042499139904976
+        ]
+      },
+      "focusPoint": [
+        -0.5005842447280884,
+        0.823106586933136,
+        -0.10134729743003845
+      ],
+      "triangles": 2669,
+      "primitives": 14
+    },
+    {
+      "mesh": "opening_cab_field_recorder_faceplate_aluminum",
+      "objectId": "recorder",
+      "selection": {
+        "part": "faceplate",
+        "option": "aluminum"
+      },
+      "bounds": {
+        "min": [
+          -0.5468618869781494,
+          0.8213039040565491,
+          -0.17100656032562256
+        ],
+        "max": [
+          -0.456980437040329,
+          0.8240898847579956,
+          -0.030996574088931084
+        ]
+      },
+      "focusPoint": [
+        -0.5292346676190695,
+        0.8240898847579956,
+        -0.10434968024492264
+      ],
+      "triangles": 341,
+      "primitives": 2
+    },
+    {
+      "mesh": "opening_cab_field_recorder_faceplate_black",
+      "objectId": "recorder",
+      "selection": {
+        "part": "faceplate",
+        "option": "black"
+      },
+      "bounds": {
+        "min": [
+          -0.5468618869781494,
+          0.8213039040565491,
+          -0.17100656032562256
+        ],
+        "max": [
+          -0.456980437040329,
+          0.8240898847579956,
+          -0.030996574088931084
+        ]
+      },
+      "focusPoint": [
+        -0.5292346676190695,
+        0.8240898847579956,
+        -0.10434968024492264
+      ],
+      "triangles": 341,
+      "primitives": 2
+    },
+    {
+      "mesh": "opening_cab_field_recorder_faceplate_olive",
+      "objectId": "recorder",
+      "selection": {
+        "part": "faceplate",
+        "option": "olive"
+      },
+      "bounds": {
+        "min": [
+          -0.5468618869781494,
+          0.8213039040565491,
+          -0.17100656032562256
+        ],
+        "max": [
+          -0.456980437040329,
+          0.8240898847579956,
+          -0.030996574088931084
+        ]
+      },
+      "focusPoint": [
+        -0.5292346676190695,
+        0.8240898847579956,
+        -0.10434968024492264
+      ],
+      "triangles": 341,
+      "primitives": 2
+    },
+    {
+      "mesh": "opening_cab_field_recorder_buttons_classic",
+      "objectId": "recorder",
+      "selection": {
+        "part": "buttons",
+        "option": "classic"
+      },
+      "bounds": {
+        "min": [
+          -0.4754643738269806,
+          0.8253671526908875,
+          -0.15543778240680695
+        ],
+        "max": [
+          -0.46231982111930847,
+          0.827401340007782,
+          -0.10506946593523026
+        ]
+      },
+      "focusPoint": [
+        -0.467777152856191,
+        0.827401340007782,
+        -0.1324867680668831
+      ],
+      "triangles": 36,
+      "primitives": 3
+    },
+    {
+      "mesh": "opening_cab_field_recorder_buttons_signal",
+      "objectId": "recorder",
+      "selection": {
+        "part": "buttons",
+        "option": "signal"
+      },
+      "bounds": {
+        "min": [
+          -0.4754643738269806,
+          0.8253671526908875,
+          -0.15543778240680695
+        ],
+        "max": [
+          -0.46231982111930847,
+          0.827401340007782,
+          -0.10506946593523026
+        ]
+      },
+      "focusPoint": [
+        -0.467777152856191,
+        0.827401340007782,
+        -0.1324867680668831
+      ],
+      "triangles": 36,
+      "primitives": 3
+    },
+    {
+      "mesh": "opening_cab_field_recorder_buttons_sea_glass",
+      "objectId": "recorder",
+      "selection": {
+        "part": "buttons",
+        "option": "sea-glass"
+      },
+      "bounds": {
+        "min": [
+          -0.4754643738269806,
+          0.8253671526908875,
+          -0.15543778240680695
+        ],
+        "max": [
+          -0.46231982111930847,
+          0.827401340007782,
+          -0.10506946593523026
+        ]
+      },
+      "focusPoint": [
+        -0.467777152856191,
+        0.827401340007782,
+        -0.1324867680668831
+      ],
+      "triangles": 36,
+      "primitives": 3
+    },
+    {
+      "mesh": "opening_cab_headphones_reference",
+      "objectId": "headphones",
+      "selection": {
+        "option": "reference"
+      },
+      "bounds": {
+        "min": [
+          -0.6106824278831482,
+          0.9002703428268433,
+          -0.35161465406417847
+        ],
+        "max": [
+          -0.5002519488334656,
+          1.105373501777649,
+          -0.17348498106002808
+        ]
+      },
+      "focusPoint": [
+        -0.54731551806132,
+        1.005297859509786,
+        -0.2102587173382441
+      ],
+      "triangles": 1424,
+      "primitives": 10
+    },
+    {
+      "mesh": "opening_cab_headphones_closed",
+      "objectId": "headphones",
+      "selection": {
+        "option": "closed"
+      },
+      "bounds": {
+        "min": [
+          -0.6125235557556152,
+          0.9091362953186035,
+          -0.348302960395813
+        ],
+        "max": [
+          -0.5081757307052612,
+          1.0951542854309082,
+          -0.1761104166507721
+        ]
+      },
+      "focusPoint": [
+        -0.55445929368337,
+        1.006229321161906,
+        -0.21770042181015015
+      ],
+      "triangles": 1417,
+      "primitives": 10
+    },
+    {
+      "mesh": "opening_cab_headphones_open",
+      "objectId": "headphones",
+      "selection": {
+        "option": "open"
+      },
+      "bounds": {
+        "min": [
+          -0.6123256087303162,
+          0.9062307476997375,
+          -0.3473295569419861
+        ],
+        "max": [
+          -0.5004758834838867,
+          1.1015956401824951,
+          -0.17545519769191742
+        ]
+      },
+      "focusPoint": [
+        -0.5522354443868002,
+        1.012923796971639,
+        -0.21161685387293497
+      ],
+      "triangles": 1429,
+      "primitives": 11
+    },
+    {
+      "mesh": "opening_cab_microphone_reference",
+      "objectId": "microphone",
+      "selection": {
+        "option": "reference"
+      },
+      "bounds": {
+        "min": [
+          -0.3848517835140228,
+          0.7882742881774902,
+          -0.17754580080509186
+        ],
+        "max": [
+          -0.3273634910583496,
+          0.8477504253387451,
+          -0.051500629633665085
+        ]
+      },
+      "focusPoint": [
+        -0.3550778130690257,
+        0.8205165465672811,
+        -0.11166512717803319
+      ],
+      "triangles": 1056,
+      "primitives": 8
+    },
+    {
+      "mesh": "opening_cab_microphone_directional",
+      "objectId": "microphone",
+      "selection": {
+        "option": "directional"
+      },
+      "bounds": {
+        "min": [
+          -0.38427799940109253,
+          0.7882742881774902,
+          -0.20903021097183228
+        ],
+        "max": [
+          -0.33187374472618103,
+          0.8114861249923706,
+          -0.019895896315574646
+        ]
+      },
+      "focusPoint": [
+        -0.3579237063725789,
+        0.7970614433288574,
+        -0.12391670048236847
+      ],
+      "triangles": 957,
+      "primitives": 8
+    },
+    {
+      "mesh": "opening_cab_microphone_wide",
+      "objectId": "microphone",
+      "selection": {
+        "option": "wide"
+      },
+      "bounds": {
+        "min": [
+          -0.39125895500183105,
+          0.7882742881774902,
+          -0.1617698222398758
+        ],
+        "max": [
+          -0.33872631192207336,
+          0.8183503150939941,
+          -0.0659589171409607
+        ]
+      },
+      "focusPoint": [
+        -0.3606029252211253,
+        0.804106593132019,
+        -0.1132979467511177
+      ],
+      "triangles": 1124,
+      "primitives": 10
+    },
+    {
+      "mesh": "opening_cab_amp_reference",
+      "objectId": "amp",
+      "selection": {
+        "option": "reference"
+      },
+      "bounds": {
+        "min": [
+          -0.6658217906951904,
+          0.9113885760307312,
+          -0.13745541870594025
+        ],
+        "max": [
+          -0.577375590801239,
+          1.0255850553512573,
+          -0.036088403314352036
+        ]
+      },
+      "focusPoint": [
+        -0.6028769016265869,
+        0.9724769790967306,
+        -0.0850977972149849
+      ],
+      "triangles": 1000,
+      "primitives": 7
+    },
+    {
+      "mesh": "opening_cab_amp_low_draw",
+      "objectId": "amp",
+      "selection": {
+        "option": "low-draw"
+      },
+      "bounds": {
+        "min": [
+          -0.6656508445739746,
+          0.9076981544494629,
+          -0.13703839480876923
+        ],
+        "max": [
+          -0.5739925503730774,
+          1.0308400392532349,
+          -0.03597283735871315
+        ]
+      },
+      "focusPoint": [
+        -0.6049991647402445,
+        0.9803765416145325,
+        -0.08222948759794235
+      ],
+      "triangles": 1001,
+      "primitives": 8
+    },
+    {
+      "mesh": "opening_cab_amp_headroom",
+      "objectId": "amp",
+      "selection": {
+        "option": "headroom"
+      },
+      "bounds": {
+        "min": [
+          -0.6633601784706116,
+          0.9206662178039551,
+          -0.13753755390644073
+        ],
+        "max": [
+          -0.5867884159088135,
+          1.014883041381836,
+          -0.03798593208193779
+        ]
+      },
+      "focusPoint": [
+        -0.6098489165306091,
+        0.976152777671814,
+        -0.08583743373552959
+      ],
+      "triangles": 1004,
+      "primitives": 8
+    },
+    {
+      "mesh": "opening_cab_flashlight_reference_body",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "reference",
+        "part": "body"
+      },
+      "bounds": {
+        "min": [
+          -0.6014071702957153,
+          0.8919858336448669,
+          -0.47730451822280884
+        ],
+        "max": [
+          -0.5193399786949158,
+          1.0508733987808228,
+          -0.4273518919944763
+        ]
+      },
+      "focusPoint": [
+        -0.5641782085100809,
+        0.9655176401138306,
+        -0.4603929618994395
+      ],
+      "triangles": 1067,
+      "primitives": 7
+    },
+    {
+      "mesh": "opening_cab_flashlight_reference_housing_graphite",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "reference",
+        "part": "housing",
+        "housing": "graphite"
+      },
+      "bounds": {
+        "min": [
+          -0.6011008620262146,
+          0.8922815322875977,
+          -0.4753292202949524
+        ],
+        "max": [
+          -0.5218445658683777,
+          1.0464459657669067,
+          -0.42958512902259827
+        ]
+      },
+      "focusPoint": [
+        -0.5675222078959147,
+        0.9824826121330261,
+        -0.45892449220021564
+      ],
+      "triangles": 125,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_reference_housing_olive",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "reference",
+        "part": "housing",
+        "housing": "olive"
+      },
+      "bounds": {
+        "min": [
+          -0.6011008620262146,
+          0.8922815322875977,
+          -0.4753292202949524
+        ],
+        "max": [
+          -0.5218445658683777,
+          1.0464459657669067,
+          -0.42958512902259827
+        ]
+      },
+      "focusPoint": [
+        -0.5675222078959147,
+        0.9824826121330261,
+        -0.45892449220021564
+      ],
+      "triangles": 125,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_reference_housing_ivory",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "reference",
+        "part": "housing",
+        "housing": "ivory"
+      },
+      "bounds": {
+        "min": [
+          -0.6011008620262146,
+          0.8922815322875977,
+          -0.4753292202949524
+        ],
+        "max": [
+          -0.5218445658683777,
+          1.0464459657669067,
+          -0.42958512902259827
+        ]
+      },
+      "focusPoint": [
+        -0.5675222078959147,
+        0.9824826121330261,
+        -0.45892449220021564
+      ],
+      "triangles": 125,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_throw_body",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "throw",
+        "part": "body"
+      },
+      "bounds": {
+        "min": [
+          -0.597290575504303,
+          0.909822404384613,
+          -0.47594934701919556
+        ],
+        "max": [
+          -0.5285444855690002,
+          1.0336010456085205,
+          -0.42622703313827515
+        ]
+      },
+      "focusPoint": [
+        -0.5714336236317953,
+        0.9679998159408569,
+        -0.4506155252456665
+      ],
+      "triangles": 1046,
+      "primitives": 7
+    },
+    {
+      "mesh": "opening_cab_flashlight_throw_housing_graphite",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "throw",
+        "part": "housing",
+        "housing": "graphite"
+      },
+      "bounds": {
+        "min": [
+          -0.5969061851501465,
+          0.9104235172271729,
+          -0.47387123107910156
+        ],
+        "max": [
+          -0.5297571420669556,
+          1.030755639076233,
+          -0.4275834262371063
+        ]
+      },
+      "focusPoint": [
+        -0.5685423612594604,
+        0.9729441404342651,
+        -0.4497326711813609
+      ],
+      "triangles": 115,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_throw_housing_olive",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "throw",
+        "part": "housing",
+        "housing": "olive"
+      },
+      "bounds": {
+        "min": [
+          -0.5969061851501465,
+          0.9104235172271729,
+          -0.47387123107910156
+        ],
+        "max": [
+          -0.5297571420669556,
+          1.030755639076233,
+          -0.4275834262371063
+        ]
+      },
+      "focusPoint": [
+        -0.5685423612594604,
+        0.9729441404342651,
+        -0.4497326711813609
+      ],
+      "triangles": 115,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_throw_housing_ivory",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "throw",
+        "part": "housing",
+        "housing": "ivory"
+      },
+      "bounds": {
+        "min": [
+          -0.5969061851501465,
+          0.9104235172271729,
+          -0.47387123107910156
+        ],
+        "max": [
+          -0.5297571420669556,
+          1.030755639076233,
+          -0.4275834262371063
+        ]
+      },
+      "focusPoint": [
+        -0.5685423612594604,
+        0.9729441404342651,
+        -0.4497326711813609
+      ],
+      "triangles": 115,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_flood_body",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "flood",
+        "part": "body"
+      },
+      "bounds": {
+        "min": [
+          -0.5983469486236572,
+          0.9001187086105347,
+          -0.4789921045303345
+        ],
+        "max": [
+          -0.5236644744873047,
+          1.036429524421692,
+          -0.4234725534915924
+        ]
+      },
+      "focusPoint": [
+        -0.5690203110376993,
+        0.9630006154378256,
+        -0.45869046449661255
+      ],
+      "triangles": 1153,
+      "primitives": 7
+    },
+    {
+      "mesh": "opening_cab_flashlight_flood_housing_graphite",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "flood",
+        "part": "housing",
+        "housing": "graphite"
+      },
+      "bounds": {
+        "min": [
+          -0.5946799516677856,
+          0.9004421234130859,
+          -0.47402578592300415
+        ],
+        "max": [
+          -0.5262589454650879,
+          1.0337218046188354,
+          -0.4295635223388672
+        ]
+      },
+      "focusPoint": [
+        -0.5693698326746622,
+        0.9783498644828796,
+        -0.4592755635579427
+      ],
+      "triangles": 44,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_flood_housing_olive",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "flood",
+        "part": "housing",
+        "housing": "olive"
+      },
+      "bounds": {
+        "min": [
+          -0.5946799516677856,
+          0.9004421234130859,
+          -0.47402578592300415
+        ],
+        "max": [
+          -0.5262589454650879,
+          1.0337218046188354,
+          -0.4295635223388672
+        ]
+      },
+      "focusPoint": [
+        -0.5693698326746622,
+        0.9783498644828796,
+        -0.4592755635579427
+      ],
+      "triangles": 44,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_flashlight_flood_housing_ivory",
+      "objectId": "flashlight",
+      "selection": {
+        "option": "flood",
+        "part": "housing",
+        "housing": "ivory"
+      },
+      "bounds": {
+        "min": [
+          -0.5946799516677856,
+          0.9004421234130859,
+          -0.47402578592300415
+        ],
+        "max": [
+          -0.5262589454650879,
+          1.0337218046188354,
+          -0.4295635223388672
+        ]
+      },
+      "focusPoint": [
+        -0.5693698326746622,
+        0.9783498644828796,
+        -0.4592755635579427
+      ],
+      "triangles": 44,
+      "primitives": 1
+    },
+    {
+      "mesh": "opening_cab_notebook",
+      "objectId": "notebook",
+      "selection": null,
+      "bounds": {
+        "min": [
+          -0.19847084191213465,
+          1.2653000354766846,
+          -0.9025631965882043
+        ],
+        "max": [
+          -0.04154664499719282,
+          1.2856999635696411,
+          -0.696937110425154
+        ]
+      },
+      "focusPoint": [
+        -0.1415663905917953,
+        1.2788499593734741,
+        -0.8300970987384018
+      ],
+      "triangles": 132,
+      "primitives": 11
+    },
+    {
+      "mesh": "opening_cab_mirror",
+      "objectId": "self-check",
+      "selection": null,
+      "bounds": {
+        "min": [
+          -0.09999999403953552,
+          1.752500057220459,
+          -0.3125
+        ],
+        "max": [
+          0.14000000059604645,
+          1.9270000457763672,
+          -0.2280000001192093
+        ]
+      },
+      "focusPoint": [
+        0.022121320168177288,
+        1.8327999114990234,
+        -0.27237868309020996
+      ],
+      "triangles": 68,
+      "primitives": 4
+    }
+  ],
+  "targets": {
+    "case": {
+      "bounds": {
+        "min": [
+          -0.7742409110069275,
+          0.670199990272522,
+          -0.562000036239624
+        ],
+        "max": [
+          -0.18642450869083405,
+          1.1389631032943726,
+          0.062000006437301636
+        ]
+      },
+      "point": [
+        -0.48033270984888077,
+        0.9045815467834473,
+        -0.2500000149011612
+      ]
+    },
+    "recorder": {
+      "bounds": {
+        "min": [
+          -0.5491741895675659,
+          0.7882742881774902,
+          -0.1745036244392395
+        ],
+        "max": [
+          -0.4537723660469055,
+          0.8277499675750732,
+          -0.029042499139904976
+        ]
+      },
+      "point": [
+        -0.5014732778072357,
+        0.8080121278762817,
+        -0.10177306178957224
+      ]
+    },
+    "headphones": {
+      "bounds": {
+        "min": [
+          -0.6125235557556152,
+          0.9002703428268433,
+          -0.35161465406417847
+        ],
+        "max": [
+          -0.5002519488334656,
+          1.105373501777649,
+          -0.17348498106002808
+        ]
+      },
+      "point": [
+        -0.5563877522945404,
+        1.002821922302246,
+        -0.26254981756210327
+      ]
+    },
+    "microphone": {
+      "bounds": {
+        "min": [
+          -0.39125895500183105,
+          0.7882742881774902,
+          -0.20903021097183228
+        ],
+        "max": [
+          -0.3273634910583496,
+          0.8477504253387451,
+          -0.019895896315574646
+        ]
+      },
+      "point": [
+        -0.35931122303009033,
+        0.8180123567581177,
+        -0.11446305364370346
+      ]
+    },
+    "amp": {
+      "bounds": {
+        "min": [
+          -0.6658217906951904,
+          0.9076981544494629,
+          -0.13753755390644073
+        ],
+        "max": [
+          -0.5739925503730774,
+          1.0308400392532349,
+          -0.03597283735871315
+        ]
+      },
+      "point": [
+        -0.6199071705341339,
+        0.9692690968513489,
+        -0.08675519563257694
+      ]
+    },
+    "flashlight": {
+      "bounds": {
+        "min": [
+          -0.6014071702957153,
+          0.8919858336448669,
+          -0.4789921045303345
+        ],
+        "max": [
+          -0.5193399786949158,
+          1.0508733987808228,
+          -0.4234725534915924
+        ]
+      },
+      "point": [
+        -0.5603735744953156,
+        0.9714296162128448,
+        -0.45123232901096344
+      ]
+    },
+    "notebook": {
+      "bounds": {
+        "min": [
+          -0.19847084191213465,
+          1.2653000354766846,
+          -0.9025631965882043
+        ],
+        "max": [
+          -0.04154664499719282,
+          1.2856999635696411,
+          -0.696937110425154
+        ]
+      },
+      "point": [
+        -0.12000874345466374,
+        1.2754999995231628,
+        -0.7997501535066791
+      ]
+    },
+    "self-check": {
+      "bounds": {
+        "min": [
+          -0.09999999999999999,
+          1.7525,
+          -0.2875
+        ],
+        "max": [
+          0.13999999999999999,
+          1.8475000000000001,
+          -0.2835
+        ]
+      },
+      "point": [
+        0.02,
+        1.8,
+        -0.2855
+      ]
+    }
+  },
+  "sources": [
+    {
+      "file": "public/assets/items/field-case.glb",
+      "sha256": "54a7c143ee7d752a81b33722b4ca75e22f388803e63c34ee25e30daee23769cb",
+      "sourceTriangles": 21144,
+      "triangles": 4491
+    },
+    {
+      "file": "public/assets/items/field-recorder.glb",
+      "sha256": "2a48d9fc098e8f5bb30df2a6330a2efc43e0e274bbf0cec97528f8e67964e34c",
+      "sourceTriangles": 25776,
+      "triangles": 3046
+    },
+    {
+      "file": "public/assets/items/headphones-reference.glb",
+      "sha256": "ac4b5e54bf5489980ac071b5ffcf7bcb142b1936786d4d8ccae425fde89ee86c",
+      "sourceTriangles": 21442,
+      "triangles": 1424
+    },
+    {
+      "file": "public/assets/items/headphones-closed.glb",
+      "sha256": "f8d07a880c7109cd9d7a5aec8aadc56f2bedad4cb926abbebd95ce63fa21efb1",
+      "sourceTriangles": 21478,
+      "triangles": 1417
+    },
+    {
+      "file": "public/assets/items/headphones-open.glb",
+      "sha256": "65d0a3d7b2b2ea419e3740e2952a80e45009201a2140ae80a6b8b5a78c81d3eb",
+      "sourceTriangles": 27554,
+      "triangles": 1429
+    },
+    {
+      "file": "public/assets/items/microphone-reference.glb",
+      "sha256": "e035d3a20b454d2ad36758b2410f2fc34224cae6f8fce3125cf0a969d735dba7",
+      "sourceTriangles": 26304,
+      "triangles": 1056
+    },
+    {
+      "file": "public/assets/items/microphone-directional.glb",
+      "sha256": "97c935d04efbfdd4f9235e6c4368937359134b38733e399ee41ec8007dd67dbb",
+      "sourceTriangles": 29988,
+      "triangles": 957
+    },
+    {
+      "file": "public/assets/items/microphone-wide.glb",
+      "sha256": "d5e104c42655130c5f0672e55a9ba05a69a70d45bad25810e6532ea618c62fea",
+      "sourceTriangles": 45524,
+      "triangles": 1124
+    },
+    {
+      "file": "public/assets/items/amp-reference.glb",
+      "sha256": "34d2a51a1a33551404021fdf29cc7c633493974b6f8ac7eefb88a7eabcbed170",
+      "sourceTriangles": 10962,
+      "triangles": 1000
+    },
+    {
+      "file": "public/assets/items/amp-low-draw.glb",
+      "sha256": "15a520592459d0dc5d156993a994d1163b3e75eece6866423342f6efb9b40ee1",
+      "sourceTriangles": 11000,
+      "triangles": 1001
+    },
+    {
+      "file": "public/assets/items/amp-headroom.glb",
+      "sha256": "d78bf834c7db6fe2bd65faac513b31f28478e3363beafd90aa1a4a5a6336578f",
+      "sourceTriangles": 13292,
+      "triangles": 1004
+    },
+    {
+      "file": "public/assets/items/flashlight-reference.glb",
+      "sha256": "6293251440e7ed10e48fccbd8d87cfca331f6116c047e42fb2826cf017ab28ea",
+      "sourceTriangles": 12246,
+      "triangles": 1192
+    },
+    {
+      "file": "public/assets/items/flashlight-throw.glb",
+      "sha256": "ecd8e7059dd2cf1e5cc65c88b6a428b649405c0e9f0f4ff83d3ba0a72c73d946",
+      "sourceTriangles": 13224,
+      "triangles": 1161
+    },
+    {
+      "file": "public/assets/items/flashlight-flood.glb",
+      "sha256": "6ad36ad9b8d61b8958297170c4cb7ad20858ddb736f5be7e65531846a4bbafd7",
+      "sourceTriangles": 13052,
+      "triangles": 1197
+    }
+  ],
+  "registration": {
+    "case": {
+      "sourceBounds": {
+        "min": [
+          -1.3727290792209366,
+          0,
+          -1.2945930702958375
+        ],
+        "max": [
+          1.3727290792209366,
+          2.0636702495516337,
+          1.2945930702958375
+        ]
+      },
+      "scale": 0.22728446910811348,
+      "point": [
+        -0.48,
+        0.6702,
+        -0.25
+      ],
+      "yaw": -1.5707963267948966,
+      "sourceFloorOrigin": [
+        0,
+        0,
+        0
+      ],
+      "method": "Original open FC–7 hierarchy; actual packing-bay transforms; Y up; housing width .624m; open face toward the driver"
+    },
+    "field-recorder": {
+      "bay": "foam-cut-edge:recorder",
+      "source": "public/assets/items/field-recorder.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.618661388738584,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.6527085293298772,
+        0.5015000014901161,
+        -0.09389692495721191,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.13874517381191254
+        ],
+        "max": [
+          0.498445987701416,
+          0.5244733691215515,
+          0.14199630916118622
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-reference": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.9433210024631693,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4052552580833435,
+          0.0038035395555198193,
+          -0.2705400586128235
+        ],
+        "max": [
+          0.4063454568386078,
+          0.9993934035301208,
+          0.27025237679481506
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-closed": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-closed.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.856037084589087,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4462331533432007,
+          0.0038035395555198193,
+          -0.2913042902946472
+        ],
+        "max": [
+          0.4481206238269806,
+          0.9993934035301208,
+          0.29430660605430603
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-open": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-open.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.8985406342554227,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.42373621463775635,
+          0.0008444774430245161,
+          -0.301670104265213
+        ],
+        "max": [
+          0.4283120632171631,
+          0.9993934035301208,
+          0.2990741431713104
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-reference": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5475633608935039,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -1,
+          -0.215583935379982,
+          -0.23970694839954376
+        ],
+        "max": [
+          -0.0014531834749504924,
+          0.21340753138065338,
+          0.23819464445114136
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-directional": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-directional.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.8362062418148974,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -1,
+          -0.06106550246477127,
+          -0.061139076948165894
+        ],
+        "max": [
+          -0.0012033639941364527,
+          0.06106550246477127,
+          0.060991931706666946
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-wide": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-wide.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.4153478645482876,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.9924725294113159,
+          -0.28216636180877686,
+          -0.1563214361667633
+        ],
+        "max": [
+          -0.0016653431812301278,
+          0.28338369727134705,
+          0.1622733473777771
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-reference": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5015955619323081,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4075993001461029,
+          0,
+          -0.23666276037693024
+        ],
+        "max": [
+          0.4075993001461029,
+          0.999190628528595,
+          0.23626944422721863
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-low-draw": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-low-draw.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5455704077397442,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.3747453987598419,
+          0,
+          -0.23427236080169678
+        ],
+        "max": [
+          0.3747453987598419,
+          0.9990455508232117,
+          0.23380853235721588
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-headroom": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-headroom.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.4105655379840849,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.49797165393829346,
+          0,
+          -0.24749210476875305
+        ],
+        "max": [
+          0.49797165393829346,
+          0.9875994920730591,
+          0.24931013584136963
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-reference": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.6901791540632644,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.1568908840417862,
+          0,
+          -0.15824468433856964
+        ],
+        "max": [
+          0.15824468433856964,
+          0.9992210865020752,
+          0.1568908840417862
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-throw": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-throw.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5310888947049053,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.20388831198215485,
+          0,
+          -0.20388831198215485
+        ],
+        "max": [
+          0.20564764738082886,
+          0.9992808699607849,
+          0.20564764738082886
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-flood": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-flood.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.607712117505343,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.17894986271858215,
+          0,
+          -0.1635262817144394
+        ],
+        "max": [
+          0.17894986271858215,
+          0.9973533153533936,
+          0.1635262817144394
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    }
+  },
+  "limits": {
+    "maxBytes": 4000000,
+    "maxStoredTriangles": 42000,
+    "maxDisplayedTriangles": 16000
+  },
+  "provenance": "Existing project-authored FC–7 and canonical instrument meshes with original physical packing sockets; new original cloth notebook and fixed interior mirror; no external downloads, textures or new narrative",
+  "limitations": [
+    "Mirror silver is static, not a rendered face/reflection.",
+    "World recorder phosphor is the original idle geometry; live readings appear in its direct inspection.",
+    "Witness Edition geometry is not newly granted during the prologue."
+  ]
+}

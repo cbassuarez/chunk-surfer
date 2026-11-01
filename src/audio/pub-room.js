@@ -41,7 +41,7 @@ export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
   function position(v,listener,options){const frame=pubRoomSpatial(listener,v.anchor||PUB_ROOM_SOUND_ANCHORS[v.kind],options),t=owner.ctx.currentTime;
     v.filter.frequency.setTargetAtTime(frame.cutoff,t,.04);v.gain.gain.setTargetAtTime(frame.gain*(v.kind==='stove'?.052:v.kind==='domino'?.035:.027),t,.05);v.panner.pan?.setTargetAtTime(frame.pan,t,.05);return frame;}
   const api={
-    update({dt=0,listener={},inPub=false,nearPub=false,doorOpen=false,openDoorIds=null,busy=false,recording=false,paused=false,source=false,blurred=false}={}){
+    update({dt=0,listener={},inPub=false,nearPub=false,doorOpen=false,openDoorIds=null,busy=false,recording=false,paused=false,source=false,blurred=false,contactHold=false}={}){
       if(disposed)return false;
       const audio=getAudio();
       if(paused||blurred||source||(!inPub&&!nearPub)||!audio?.ctx||!audio.destination||['closed','suspended'].includes(audio.ctx.state)){stop(source?'source':paused?'paused':blurred?'blurred':'outside');return false;}
@@ -53,7 +53,7 @@ export function createPubRoomAudio({getAudio=()=>null,fetchImpl}={}){
       lastInput={listener,options,recording};
       for(const v of [...contacts]){if(v.ends<=owner.ctx.currentTime)disconnect(v);else position(v,listener,options);}
       elapsed+=clamp(dt,0,.25);
-      if(busy||recording||!inPub){nextAt=Math.max(nextAt,elapsed+4);return true;}
+      if(busy||recording||!inPub||contactHold){nextAt=Math.max(nextAt,elapsed+4);return true;}
       if(elapsed>=nextAt){
         if(contacts.size<2){const kind=['glass','domino','crockery','domino'][cursor++%4];position(voice(kind),listener,options);}
         nextAt=elapsed+6.5+(cursor%3)*2.1;

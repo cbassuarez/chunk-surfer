@@ -46,6 +46,13 @@ const chunk = (values, size) => {
 // Grouped into sections, because a form has sections. Each entry is
 // [label, value] and a bare string is a section heading.
 function reportSections(summary) {
+  if(summary.classification==='failed-night')return [['THE NIGHT',[
+    ['DISPOSITION','FAILED NIGHT'],['DEMOLITION','06:00'],
+    ['BODY',summary.failure?.outcome==='survived'?'CLEARED THE SPAN':'DID NOT CLEAR THE SPAN'],
+    ['TIME ON SITE',formatDuration(summary.durationSeconds)],
+    ['RETAINED TAPE ENTRIES',String(summary.recordings?.tapes?.length||0)],
+    ['ADDED INJURY','NONE'],['ADDED EQUIPMENT LOSS','NONE'],
+  ]]];
   const ret = returnDefinition(summary.endingId, summary);
   const contaminated = summary.takes?.contaminated || [];
   const rooms = summary.takes?.rooms || [];
@@ -175,6 +182,10 @@ export function returnAccountLines(summary, { width = 64, causalStatus = {} } = 
     for (const [label, value] of entries) add(`${label}  ${value}`);
     result.push({ text: '', cls: 'ui-primary' });
   }
+  if(summary.classification==='failed-night'){
+    add('Recordings remain in RUN HISTORY. Missing local audio is marked unavailable.','ui-secondary');
+    return result;
+  }
   const achievementIds = [...(summary.unlockedAchievements || [])];
   if (causalStatus?.status === 'ready' && !achievementIds.includes('ACH_SECOND_TRACK')) achievementIds.push('ACH_SECOND_TRACK');
   if (achievementIds.length) {
@@ -217,19 +228,25 @@ export function makeReturnReportScene({
   onAccountOpen = () => {},
   onAccountRead = () => {},
 } = {}) {
-  const actions = [
+  const failedNight=summary.classification==='failed-night';
+  const actions = failedNight?[
+    {id:'replay',label:'NEW GAME'},
+    {id:'archive',label:'VIEW RECORDINGS'},
+    {id:'title',label:'QUIT TO TITLE'},
+  ]:[
     { id: 'title', label: 'QUIT TO TITLE' },
     { id: 'account', label: 'VIEW RUN' },
     { id: 'replay', label: 'NEW GAME' },
   ];
   const hits = createHitRegions(), held = new Set();
-  let stage = getCausalStatus()?.status === 'filing' ? 'filing' : 'residue';
+  let stage = !failedNight&&getCausalStatus()?.status === 'filing' ? 'filing' : 'residue';
   let action = 0, page = 0, entered = 0, consumed = false, exited = false, restartChoice = 0;
   let accountOpen = false, loadedSource = null, loadedImage = null, imageGeneration = 0;
   let detailPageCount = 1;
   const FADE_IN = 2.2;
 
   function availableActions() {
+    if(failedNight)return actions;
     const transfer = transferRoomCopy({ filed: filedCount() });
     return [
       ...actions,
@@ -268,12 +285,14 @@ export function makeReturnReportScene({
 
   function finish(actionId) {
     if (consumed || exited) return;
+    if(failedNight&&!actions.some(entry=>entry.id===actionId))return;
     if (!POST_RUN_ACTIONS.some((entry) => entry.id === actionId)) return;
     if (actionId === 'transfer-room' && !transferRoomCopy({ filed: filedCount() }).enabled) return;
     consumed = true;
     closeAccount();
     consumeReturnReport(summary.id);
     scenes.remove(scene);
+    if(failedNight&&actionId==='archive'){onArchive({summaryId:summary.id,recordings:true});return;}
     dispatchPostRunAction(actionId, { onReopen, onTransferRoom, onArchive, onTitle });
   }
 

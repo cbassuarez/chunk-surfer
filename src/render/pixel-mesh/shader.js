@@ -9,6 +9,21 @@ import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
 
+// CPU reference for the Source-only ink hook below. Water has already changed
+// illumination before recording. Keep that bit decision and the ink's measured
+// luminance; only its chromatic ratio survives the cyanotype endpoint resolve.
+export function sourceWaterRecordedInk(ink,{enabled=false,eye=[0,0,0],world=[0,0,0],waterY=0,absorptionScale=1}={}){
+  if(!enabled)return [...ink];
+  const distance=Math.hypot(...world.map((value,i)=>value-eye[i]));
+  const fraction=eye[1]<waterY?1:world[1]<waterY?Math.max(0,Math.min(1,(waterY-world[1])/Math.max(.0001,eye[1]-world[1]))):0;
+  const path=distance*fraction;if(path<=0)return [...ink];
+  const scale=Math.max(.05,Math.min(1,absorptionScale)),transmission=[.24,.075,.105].map(value=>Math.exp(-Math.min(path,18)*value*scale)),
+    luminance=rgb=>rgb.reduce((sum,value,i)=>sum+value*[.2126,.7152,.0722][i],0),
+    tinted=ink.map((value,i)=>value*transmission[i]),gain=luminance(ink)/Math.max(.000001,luminance(tinted)),
+    ramp=Math.max(0,Math.min(1,path/1.5)),amount=ramp*ramp*(3-2*ramp);
+  return ink.map((value,i)=>Math.max(0,Math.min(1,value+(tinted[i]*gain-value)*amount)));
+}
+
 export const PIXEL_MESH_FRAG = `#version 300 es
 precision highp float;
 uniform sampler2D uSrc;
@@ -50,6 +65,8 @@ uniform float uMarkDensityGain;
 // How hard the engraving follows the grain. 0 is the isotropic hash that
 // shipped, which makes it the A/B (see __probe.markGrain).
 uniform float uMarkGrainGain;
+uniform float uWorldLightTreatment;
+uniform float uFineMarkPx;
 // Diagnostic ablation: 0 prior acquisition, 1 pigment-edge classification,
 // 2 full-resolution printed sampling, 3 solid pigment (production),
 // 4 the prior hollow operator, 5 the approved paint resolve before gilt work;
@@ -91,6 +108,10 @@ uniform float uRecordingSensitivity;
 // Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).
 // This selects recording inks after the existing bit decision; no post grade.
 uniform vec2 uSourceBlueprint;
+// Source proper's coastal flood only: active, world water height, absorption,
+// unused. Its medium changes recorded ink hue without choosing another mark.
+uniform vec4 uSourceWaterInk;
+uniform float uSourceSunsetInk;
 uniform float uRecordingPatternScale;
 uniform float uRecordingBlackFloor;
 uniform float uRecordingDensityGamma;
@@ -120,6 +141,7 @@ uniform vec3 uVehicleBoxMin;
 uniform vec3 uVehicleBoxMax;
 uniform float uCabinScreen;
 int gScreenKind;
+bool gCabinHatch;
 // View metres from the packed depth (the inverse of 1/(1+.14d)).
 float cabViewDepth(float packedDepth){ return max(0.0, (1.0 / max(packedDepth, 1e-6) - 1.0) / 0.14); }
 // Stroke period in SCREEN PIXELS, not world units. That is the whole reason
@@ -330,9 +352,14 @@ vec2 rotateDir(vec2 d, float a){
 // stroke morphology is actually tested.
 float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, float stochastic){
   if(gScreenKind == 0) return stochastic;
-  float phase = (jitterValue - 0.5) * uScreenJitter;
-  float t = pow(strokeDistance(fragPx, rotateDir(dir, uScreenAngles.x), uScreenPeriodPx, phase),
-                max(0.05, uScreenSharpness));
+  // A cab changes the whole screen, not only its kind. A stochastic world's
+  // zero period formerly became a two-pixel hatch inside the same vehicle.
+  bool cabin=gCabinHatch&&uWorldLightTreatment>.5;
+  float period=cabin?5.5:uScreenPeriodPx;
+  float sharpness=cabin?1.15:uScreenSharpness;
+  float phase = (jitterValue - 0.5) * (cabin?.22:uScreenJitter);
+  float t = pow(strokeDistance(fragPx, rotateDir(dir, cabin?0.0:uScreenAngles.x), period, phase),
+                max(0.05, sharpness));
   if(gScreenKind == 2){
     // White line on a black ground: extra directions are extra LIGHT, so they
     // arrive as the surface brightens. min() because a fragment near any active
@@ -350,6 +377,14 @@ float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, floa
 }
 
 float formStipple(vec3 worldMetres, float irregularity, float density, vec3 grain){
+  if(uWorldLightTreatment>.5){
+    // The material and its light remain in world space. Acquisition grain is
+    // fine and fixed to the plate, like the existing hatch's stroke width.
+    // Do not let an entire 2cm world hash voxel become a luminous rectangle
+    // at arm's length. No clock/random frame phase participates in this rank.
+    float rank=blueNoise(floor(gl_FragCoord.xy/max(.85,uFineMarkPx)));
+    return clamp(rank-(density-.22)*uMarkDensityGain,0.0,1.0);
+  }
   // Aperiodic samples are pinned to the surface, but they are only consulted
   // in the narrow half-tone region below. There is no material-wide dot,
   // hatch or Bayer screen to turn plaster and boards into diamond plate. A 3D
@@ -391,6 +426,14 @@ float formStipple(vec3 worldMetres, float irregularity, float density, vec3 grai
   // procedural behaviour that shipped, and the louder banks earn their extra
   // marks rather than the whole building drifting darker.
   return clamp(threshold - (density - 0.22) * uMarkDensityGain, 0.0, 1.0);
+}
+
+float recordingScreenPhase(vec3 worldMetres){
+  if(uWorldLightTreatment<.5)return recordingHash3(floor(worldMetres*3.1));
+  // Continuous, held world phase: no 32cm tile can suddenly cut or restart a
+  // stroke. Material grain still supplies direction and its own confidence.
+  return .5+.25*sin(dot(worldMetres,vec3(.73,1.1,.57)))
+           +.25*sin(dot(worldMetres,vec3(-.31,.43,1.3)));
 }
 
 // The acquisition clock deliberately advances in held phases. Smear crossfades
@@ -465,6 +508,20 @@ ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
 ${SOURCE_BLUEPRINT_RECORDING_GLSL}
+vec3 sourceWaterRecordedInk(vec3 ink,vec3 worldMetres){
+  if(uSourceWaterInk.x<.5)return ink;
+  vec3 eye=uCam*uCellMeters;
+  float path=length(worldMetres-eye),level=uSourceWaterInk.y;
+  if(eye.y>=level){
+    if(worldMetres.y>=level)return ink;
+    path*=clamp((level-worldMetres.y)/max(.0001,eye.y-worldMetres.y),0.0,1.0);
+  }
+  if(path<=0.0)return ink;
+  vec3 transmission=exp(-min(path,18.0)*vec3(.24,.075,.105)*clamp(uSourceWaterInk.z,.05,1.0));
+  vec3 tinted=ink*transmission;
+  tinted*=luma(ink)/max(.000001,luma(tinted));
+  return clamp(mix(ink,tinted,smoothstep(0.0,1.5,path)),0.0,1.0);
+}
 vec2 printedSurfaceTexel(ivec2 pixel){
   ivec2 limit=textureSize(uMarks,0)-1;
   float tag=texelFetch(uMarks,clamp(pixel,ivec2(0),limit),0).a;
@@ -567,11 +624,12 @@ void main(){
   vec3 pinMetres = worldMetres;
   float inCab = 0.0;
   gScreenKind = uScreenKind;
+  gCabinHatch = false;
   if(uVehicleActive > 0.5){
     vec3 local = (uWorldToVehicle * vec4(worldMetres, 1.0)).xyz;
     if(all(greaterThan(local, uVehicleBoxMin)) && all(lessThan(local, uVehicleBoxMax))){
       pinMetres = local; inCab = 1.0;
-      if(uCabinScreen > 0.5 && uCabinScreen < 1.5) gScreenKind = 1;
+      if(uCabinScreen > 0.5 && uCabinScreen < 1.5){gScreenKind = 1;gCabinHatch=true;}
     }
   }
   vec4 markSample = texture(uMarks, fullUv);
@@ -805,7 +863,7 @@ void main(){
   // holds an architectural line together, and a hatch running along a wall does
   // nothing for the wall's corner.
   float screenMask = screenThreshold(plateFrag, screenDir, clamp(y, 0.0, 1.0),
-    hash21(cellId * 0.317), blueNoise(cellId));
+    uWorldLightTreatment>.5?recordingScreenPhase(pinMetres):hash21(cellId * 0.317), blueNoise(cellId));
   float maskThreshold = mix(screenMask, ordered, clamp(edge, 0.0, 1.0));
   float threshold = mix(
     maskThreshold,
@@ -1021,7 +1079,7 @@ void main(){
   float stippleThreshold = formStipple(pinMetres, uRecordingIrregularity, markDensity, markGrain);
   if(gScreenKind != 0){
     float hatched = screenThreshold(plateFrag, screenDir, halfTone,
-      recordingHash3(floor(pinMetres * 3.1)), stippleThreshold);
+      recordingScreenPhase(pinMetres), stippleThreshold);
     stippleThreshold = clamp(hatched - (markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
   }
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
@@ -1033,7 +1091,7 @@ void main(){
     vec2 endpointHalfTone=smoothstep(vec2(.14),vec2(.76),printEndpointTone);
     vec2 endpointThreshold=vec2(stippleThreshold);
     if(gScreenKind!=0){
-      float jitter=recordingHash3(floor(pinMetres*3.1));
+      float jitter=recordingScreenPhase(pinMetres);
       endpointThreshold=vec2(
         screenThreshold(plateFrag,screenDir,endpointHalfTone.x,jitter,stippleThreshold),
         screenThreshold(plateFrag,screenDir,endpointHalfTone.y,jitter,stippleThreshold));
@@ -1053,7 +1111,7 @@ void main(){
       // extra highlight hatch directions must not curve the area a second time.
       float areaThreshold=stippleThreshold;
       if(gScreenKind!=0){
-        float jitter=recordingHash3(floor(pinMetres*3.1));
+        float jitter=recordingScreenPhase(pinMetres);
         areaThreshold=strokeDistance(plateFrag,rotateDir(screenDir,uScreenAngles.x),uScreenPeriodPx,(jitter-.5)*uScreenJitter);
       }
       pigmentSample=printedAreaPigmentSample(printed.y,areaThreshold);
@@ -1074,6 +1132,10 @@ void main(){
   darkCrease*=1.0-printedCrease;
   captureBit = max(captureBit, brightContour*(1.0-missingSmoke));
   captureBit *= 1.0 - darkCrease;
+  // The plume prints as light ink wherever it stands and catches any light.
+  // A ribbon narrower than a display cell cannot survive the stochastic
+  // screen, so its own tapering geometry is the drawing, not the dither.
+  captureBit = max(captureBit, missingSmoke*step(0.04, luma(srcFull.rgb)));
 
   // Colour is a property of the light ink, never a third tonal value. Sample a
   // broad neighbourhood so hue belongs to the form rather than individual
@@ -1109,6 +1171,14 @@ void main(){
   captureLight *= luma(neutralLightInk) / max(0.001, luma(captureLight));
   captureLight = clamp(captureLight, 0.0, 1.0);
   captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);
+  // The sky records its measured sunset colour through the same selected
+  // marks; printed masonry and exact black identities keep their own inks.
+  float sunsetSky=(1.0-smoothstep(uSourceBlueprint.y+.00005,uSourceBlueprint.y+.0006,packedDepth))*uSourceSunsetInk*captureBlackProtect;
+  vec3 sunsetInk=max(broadColor,vec3(.0001));
+  sunsetInk=clamp(sunsetInk*luma(captureLight)/max(.0001,luma(sunsetInk)),0.0,1.0);
+  captureLight=mix(captureLight,sunsetInk,clamp(sunsetSky,0.0,1.0));
+  captureDark=sourceWaterRecordedInk(captureDark,worldMetres);
+  captureLight=sourceWaterRecordedInk(captureLight,worldMetres);
   // One authored source is allowed to keep its literal colour. Emergency red
   // is itself the event; translating it to the tube's default cyan/cream ink
   // erased the state change and made a correct raw frame look unlit in game.

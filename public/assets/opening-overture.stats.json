@@ -1,0 +1,204 @@
+{
+  "version": 2,
+  "asset": "opening-overture.glb",
+  "sha256": "d83493fc3ae15c5e0095131731375a2e36101f663ffe8856bc6a7615724d9e38",
+  "bytes": 993104,
+  "triangles": 8844,
+  "meshes": [
+    {
+      "name": "overture_pigeon_body",
+      "triangles": 2352,
+      "bounds": {
+        "min": [
+          -0.06235875083849877,
+          0.05399999999999999,
+          -0.10336598632038992
+        ],
+        "max": [
+          0.06235875083849877,
+          0.263,
+          0.127074568748284
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_head",
+      "triangles": 916,
+      "bounds": {
+        "min": [
+          -0.034690440488455425,
+          -0.034,
+          -0.03456419639560794
+        ],
+        "max": [
+          0.034806217782649106,
+          0.034,
+          0.03456419639560794
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_beak",
+      "triangles": 376,
+      "bounds": {
+        "min": [
+          -0.011699134946181885,
+          -0.023787966792017057,
+          -0.0662965321983621
+        ],
+        "max": [
+          0.011699134946181885,
+          0.008,
+          -0.020351009229454473
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_tail",
+      "triangles": 624,
+      "bounds": {
+        "min": [
+          -0.05321870663803232,
+          -0.0158,
+          -0.00043998004670883035
+        ],
+        "max": [
+          0.05321870663803232,
+          0.00288,
+          0.10628095711782677
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_wing_inner_l",
+      "triangles": 692,
+      "bounds": {
+        "min": [
+          -0.10813835424409672,
+          -0.014,
+          -0.051
+        ],
+        "max": [
+          0.008,
+          0.01619429578126956,
+          0.10054032887187447
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_wing_outer_l",
+      "triangles": 868,
+      "bounds": {
+        "min": [
+          -0.14350718574324817,
+          -0.0127,
+          -0.06345241474903032
+        ],
+        "max": [
+          0.0013015827469119376,
+          0.009874295781269563,
+          0.08923794146283726
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_foot_l",
+      "triangles": 584,
+      "bounds": {
+        "min": [
+          -0.017355402254909308,
+          -0.0004216570057476313,
+          -0.053023694283429124
+        ],
+        "max": [
+          0.0175,
+          0.08531764824771584,
+          0.029023694283429127
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_wing_inner_r",
+      "triangles": 692,
+      "bounds": {
+        "min": [
+          -0.008,
+          -0.014,
+          -0.051
+        ],
+        "max": [
+          0.10813835424409672,
+          0.01619429578126956,
+          0.10054032887187447
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_wing_outer_r",
+      "triangles": 868,
+      "bounds": {
+        "min": [
+          -0.0011726855339665692,
+          -0.0127,
+          -0.06345241474903032
+        ],
+        "max": [
+          0.14350718574324817,
+          0.009874295781269563,
+          0.08923794146283726
+        ]
+      }
+    },
+    {
+      "name": "overture_pigeon_foot_r",
+      "triangles": 584,
+      "bounds": {
+        "min": [
+          -0.017355402254909308,
+          -0.0004216570057476313,
+          -0.053023694283429124
+        ],
+        "max": [
+          0.0175,
+          0.08531764824771584,
+          0.029023694283429127
+        ]
+      }
+    },
+    {
+      "name": "overture_parking_bay",
+      "triangles": 288,
+      "bounds": {
+        "min": [
+          -1.4,
+          0.01,
+          -3.1
+        ],
+        "max": [
+          1.4,
+          0.014,
+          3.1
+        ]
+      }
+    }
+  ],
+  "materials": 17,
+  "images": 0,
+  "rig": {
+    "type": "runtime rigid articulated",
+    "parts": [
+      "overture_pigeon_body",
+      "overture_pigeon_head",
+      "overture_pigeon_beak",
+      "overture_pigeon_tail",
+      "overture_pigeon_wing_inner_l",
+      "overture_pigeon_wing_outer_l",
+      "overture_pigeon_foot_l",
+      "overture_pigeon_wing_inner_r",
+      "overture_pigeon_wing_outer_r",
+      "overture_pigeon_foot_r"
+    ],
+    "wings": "rear-folding shoulder/elbow joints; ten solid primary feathers, layered secondaries and coverts, visible rachis ridges",
+    "rootMotion": "authored finite takeoff paths in physical metres"
+  }
+}

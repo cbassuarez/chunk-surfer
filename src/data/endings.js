@@ -88,6 +88,7 @@ export const ENDING_ARRIVAL = Object.freeze({
   TIMED_OUT: 'timed-out',  // you tried to leave and the clock beat you
   ESCAPED: 'escaped',      // you made both legs
   CARRIED: 'carried',      // you brought somebody out
+  RESTED: 'rested',        // you accepted the Source seat's invitation
 });
 export const ENDING_ARRIVALS = Object.freeze(Object.values(ENDING_ARRIVAL));
 
@@ -658,9 +659,37 @@ export const CENTURY_STAY_MANIFEST = Object.freeze({
   cutscene: CENTURY_STAY_CUTSCENE,
 });
 
+// An alternate arrival at No Return. The seat is not a Contact fight and it
+// makes no claim that a fault was closed or a battle was lost.
+export const SOURCE_REST_CUTSCENE = cutscene({
+  endingId: 'contact-lost', variant: ENDING_VARIANT.SOURCE_REST, interactionMode: 'directed',
+  worldAnchors: { seat: Object.freeze({kind:'source',id:'source-rest-seat'}) },
+  actors: { player:'resting-body', source:'unresolved-field', recorder:'unanswered' },
+  camera: { treatment:'first-person-rest-in-source', allowsLook:true, pullback:false },
+  finalAction: { id:'remain-at-source-rest', label:'REMAIN', mode:ENDING_FINAL_ACTION_MODE.DIALOGUE },
+  reducedMotion: { treatment:'held-resting-view' },
+  finalHold: { image:'the place where the music continues after the listener is still', ms:4800 },
+  beats: [
+    cutsceneBeat('resting-room', 'time', { atMs:0, dialogue:[dialogueSource('ending.source-rest','start.line.1')] }),
+    cutsceneBeat('last-breath', 'time', { atMs:3600, effect:'body-still', dialogue:[dialogueSource('ending.source-rest','start.line.8')] }),
+  ],
+});
+
+export const SOURCE_REST_MANIFEST = Object.freeze({
+  ...ENDING_MANIFEST['contact-lost'],
+  variant:ENDING_VARIANT.SOURCE_REST, variantTitle:'The Place to Rest',
+  arrivals:Object.freeze([ENDING_ARRIVAL.RESTED]), passage:Object.freeze({}),
+  objective:null, tree:'ending.source-rest', hush:'absent', companion:null,
+  environment:Object.freeze([Object.freeze({at:0,kind:ENDING_EVENT.LENS,value:'calm'})]),
+  audio:Object.freeze({bed:null}), image:SOURCE_REST_CUTSCENE.finalHold.image,
+  coda:()=>'contact-lost', residue:'no-return-notice', tail:Object.freeze([]),
+  referenceTail:false, dockTail:false, cutscene:SOURCE_REST_CUTSCENE,
+});
+
 export function endingManifest(id, context = {}) {
   const variant = normalizeEndingVariant(id, context?.variant || context?.endingVariant, context?.arrival);
   if (variant === ENDING_VARIANT.CENTURY_STAY) return CENTURY_STAY_MANIFEST;
+  if (variant === ENDING_VARIANT.SOURCE_REST) return SOURCE_REST_MANIFEST;
   return ENDING_MANIFEST[id] || null;
 }
 
@@ -737,5 +766,7 @@ export function endingContractErrors() {
   errors.push(...endingEmbodimentErrors(ENDING_CUTSCENES));
   errors.push(...endingCutsceneErrors(CENTURY_STAY_CUTSCENE));
   errors.push(...endingEmbodimentErrors({ 'century-stay': CENTURY_STAY_CUTSCENE }));
+  errors.push(...endingCutsceneErrors(SOURCE_REST_CUTSCENE));
+  errors.push(...endingEmbodimentErrors({ 'source-rest': SOURCE_REST_CUTSCENE }));
   return errors;
 }

@@ -1,209 +1,639 @@
 {
   "pack": "exterior-graffiti.glb",
-  "source": "tools/chunk_surfer/build-exterior-graffiti.mjs",
+  "generator": "tools/chunk_surfer/build-exterior-graffiti.mjs",
   "meshes": {
-    "exterior_graffiti_north": {
-      "triangles": 138
-    },
     "exterior_graffiti_south": {
-      "triangles": 214
+      "triangles": 6,
+      "host": "district-south-court-walls",
+      "kind": "court"
     },
     "exterior_graffiti_west": {
-      "triangles": 166
+      "triangles": 6,
+      "host": "district-west-court-walls",
+      "kind": "court"
     },
     "exterior_graffiti_east": {
-      "triangles": 176
+      "triangles": 6,
+      "host": "district-east-court-walls",
+      "kind": "court"
+    },
+    "exterior_graffiti_west_street": {
+      "triangles": 28,
+      "host": "district-west-row-b",
+      "kind": "workshop"
+    },
+    "exterior_graffiti_east_street": {
+      "triangles": 26,
+      "host": "district-east-row-b",
+      "kind": "workshop"
+    },
+    "exterior_graffiti_south_street": {
+      "triangles": 26,
+      "host": "district-south-row-c",
+      "kind": "workshop"
+    },
+    "exterior_graffiti_north_street_a": {
+      "triangles": 2,
+      "host": "district-north-row-a",
+      "kind": "street"
+    },
+    "exterior_graffiti_west_street_a": {
+      "triangles": 2,
+      "host": "district-west-row-a",
+      "kind": "street"
+    },
+    "exterior_graffiti_east_street_a": {
+      "triangles": 2,
+      "host": "district-east-row-a",
+      "kind": "street"
+    },
+    "exterior_graffiti_square_north": {
+      "triangles": 8,
+      "host": "ellery-square-north",
+      "kind": "square"
+    },
+    "exterior_graffiti_square_west": {
+      "triangles": 8,
+      "host": "ellery-square-west",
+      "kind": "square"
     }
   },
   "marks": {
-    "north": [
+    "district-south-graffiti": [
       {
+        "art": "dephy",
         "side": -1,
-        "center": 4.5,
-        "y": 1.2,
-        "text": "MOTH",
-        "minZ": 3.6938,
-        "maxZ": 5.2962,
-        "minY": 1.03,
-        "maxY": 1.7,
-        "plane": -4.442
+        "z": 4.5,
+        "width": 1.8,
+        "y0": 0.77,
+        "y1": 2.1,
+        "surface": "masonry",
+        "height": 1.2,
+        "bottom": 0.8350000000000001,
+        "top": 2.035,
+        "plane": -4.442,
+        "normal": 1,
+        "slices": 1,
+        "z0": 3.6,
+        "z1": 5.4,
+        "source": "Decal_Graffiti_dephy.png"
       },
       {
+        "art": "Kurt",
         "side": 1,
-        "center": 7.15,
-        "y": 1.28,
-        "text": "LARK",
-        "minZ": 6.310250000000001,
-        "maxZ": 7.97975,
-        "minY": 1.11,
-        "maxY": 1.8150000000000002,
-        "plane": 4.442
+        "z": 7.15,
+        "width": 1.65,
+        "y0": 1,
+        "y1": 2.2,
+        "surface": "masonry",
+        "height": 1.0999999999999999,
+        "bottom": 1.0500000000000003,
+        "top": 2.15,
+        "plane": 4.442,
+        "normal": -1,
+        "slices": 1,
+        "z0": 6.325,
+        "z1": 7.9750000000000005,
+        "source": "Decal_Graffiti_Kurt.png"
       },
       {
+        "art": "ELLERY",
         "side": -1,
-        "center": 8.75,
-        "y": 1.22,
-        "text": "VEX",
-        "minZ": 8.0352,
-        "maxZ": 9.4548,
-        "minY": 1.05,
-        "maxY": 1.79,
-        "plane": -4.442
-      },
-      {
-        "side": 1,
-        "center": 11.42,
-        "y": 1.15,
-        "text": "NIX",
-        "minZ": 10.8105,
-        "maxZ": 12.0195,
-        "minY": 0.9799999999999999,
-        "maxY": 1.755,
-        "plane": 4.442
+        "z": 8.75,
+        "width": 1.8,
+        "y0": 0.82,
+        "y1": 2.1,
+        "surface": "masonry",
+        "height": 0.7863885839736553,
+        "bottom": 1.0668057080131723,
+        "top": 1.8531942919868276,
+        "plane": -4.442,
+        "normal": 1,
+        "slices": 1,
+        "z0": 7.85,
+        "z1": 9.65,
+        "source": "ellery-listening.png"
       }
     ],
-    "south": [
+    "district-west-graffiti": [
       {
+        "art": "GBS",
         "side": -1,
-        "center": 4.48,
-        "y": 1.25,
-        "text": "ROOK",
-        "minZ": 3.6272,
-        "maxZ": 5.3228,
-        "minY": 1.08,
-        "maxY": 1.75,
-        "plane": -4.442
+        "z": 4.5,
+        "width": 1.95,
+        "y0": 0.72,
+        "y1": 2.35,
+        "surface": "masonry",
+        "height": 1.3,
+        "bottom": 0.8850000000000001,
+        "top": 2.185,
+        "plane": -4.442,
+        "normal": 1,
+        "slices": 1,
+        "z0": 3.525,
+        "z1": 5.475,
+        "source": "Decal_Graffiti_GBS.png"
       },
       {
+        "art": "SURFER",
         "side": 1,
-        "center": 7.12,
-        "y": 1.22,
-        "text": "KITE",
-        "minZ": 6.233650000000001,
-        "maxZ": 7.9963500000000005,
-        "minY": 1.05,
-        "maxY": 1.7550000000000001,
-        "plane": 4.442
+        "z": 7.15,
+        "width": 1.7,
+        "y0": 0.85,
+        "y1": 2.2,
+        "surface": "masonry",
+        "height": 0.3328042328042328,
+        "bottom": 1.3585978835978838,
+        "top": 1.6914021164021165,
+        "plane": 4.442,
+        "normal": -1,
+        "slices": 1,
+        "z0": 6.300000000000001,
+        "z1": 8,
+        "source": "surfer-hear-you.png"
       },
       {
-        "side": -1,
-        "center": 8.73,
-        "y": 1.2,
-        "text": "DUST",
-        "minZ": 7.9034,
-        "maxZ": 9.546600000000002,
-        "minY": 1.03,
-        "maxY": 1.77,
-        "plane": -4.442
-      },
-      {
+        "art": "maryjane",
         "side": 1,
-        "center": 11.4,
-        "y": 1.24,
-        "text": "MOTH",
-        "minZ": 10.5639,
-        "maxZ": 12.2261,
-        "minY": 1.07,
-        "maxY": 1.845,
-        "plane": 4.442
+        "z": 11.42,
+        "width": 1.7,
+        "y0": 0.83,
+        "y1": 2.1,
+        "surface": "masonry",
+        "height": 1.1333333333333333,
+        "bottom": 0.8983333333333334,
+        "top": 2.0316666666666667,
+        "plane": 4.442,
+        "normal": -1,
+        "slices": 1,
+        "z0": 10.57,
+        "z1": 12.27,
+        "source": "Decal_Graffiti_maryjane.png"
       }
     ],
-    "west": [
+    "district-east-graffiti": [
       {
+        "art": "DUB",
         "side": -1,
-        "center": 4.52,
-        "y": 1.24,
-        "text": "NIX",
-        "minZ": 3.8255999999999992,
-        "maxZ": 5.204399999999999,
-        "minY": 1.07,
-        "maxY": 1.74,
-        "plane": -4.442
+        "z": 4.5,
+        "width": 1.8,
+        "y0": 0.82,
+        "y1": 2.17,
+        "surface": "masonry",
+        "height": 1.2,
+        "bottom": 0.8949999999999999,
+        "top": 2.0949999999999998,
+        "plane": -4.442,
+        "normal": 1,
+        "slices": 1,
+        "z0": 3.6,
+        "z1": 5.4,
+        "source": "Decal_Graffiti_DUB.png"
       },
       {
+        "art": "imdoinggreat",
         "side": 1,
-        "center": 7.16,
-        "y": 1.2,
-        "text": "VEX",
-        "minZ": 6.54685,
-        "maxZ": 7.7631499999999996,
-        "minY": 1.03,
-        "maxY": 1.735,
-        "plane": 4.442
+        "z": 7.15,
+        "width": 1.7,
+        "y0": 0.83,
+        "y1": 2.2,
+        "surface": "masonry",
+        "height": 1.1333333333333333,
+        "bottom": 0.9483333333333335,
+        "top": 2.081666666666667,
+        "plane": 4.442,
+        "normal": -1,
+        "slices": 1,
+        "z0": 6.300000000000001,
+        "z1": 8,
+        "source": "Decal_Graffiti_imdoinggreat.png"
       },
       {
+        "art": "valha",
         "side": -1,
-        "center": 8.76,
-        "y": 1.28,
-        "text": "REEL",
-        "minZ": 7.8868,
-        "maxZ": 9.6232,
-        "minY": 1.11,
-        "maxY": 1.85,
-        "plane": -4.442
-      },
-      {
-        "side": 1,
-        "center": 11.43,
-        "y": 1.18,
-        "text": "ROOK",
-        "minZ": 10.5473,
-        "maxZ": 12.302700000000002,
-        "minY": 1.01,
-        "maxY": 1.785,
-        "plane": 4.442
+        "z": 8.75,
+        "width": 1.8,
+        "y0": 0.75,
+        "y1": 2.2,
+        "surface": "masonry",
+        "height": 1.2,
+        "bottom": 0.8750000000000001,
+        "top": 2.075,
+        "plane": -4.442,
+        "normal": 1,
+        "slices": 1,
+        "z0": 7.85,
+        "z1": 9.65,
+        "source": "Decal_Graffiti_valha.png"
       }
     ],
-    "east": [
+    "district-west-row-b-graffiti": [
       {
-        "side": -1,
-        "center": 4.49,
-        "y": 1.19,
-        "text": "KITE",
-        "minZ": 3.6838,
-        "maxZ": 5.2862,
-        "minY": 1.02,
-        "maxY": 1.69,
-        "plane": -4.442
-      },
-      {
+        "art": "valha",
         "side": 1,
-        "center": 7.14,
-        "y": 1.26,
-        "text": "DUST",
-        "minZ": 6.30025,
-        "maxZ": 7.9697499999999994,
-        "minY": 1.09,
-        "maxY": 1.7950000000000002,
-        "plane": 4.442
+        "z": -12,
+        "width": 2.8499999999999996,
+        "y0": 0.65,
+        "y1": 2.55,
+        "surface": "shutter",
+        "height": 1.8999999999999997,
+        "bottom": 0.65,
+        "top": 2.55,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 8,
+        "z0": -13.425,
+        "z1": -10.575,
+        "source": "Decal_Graffiti_valha.png"
       },
       {
-        "side": -1,
-        "center": 8.72,
-        "y": 1.2,
-        "text": "LARK",
-        "minZ": 7.800200000000001,
-        "maxZ": 9.629800000000001,
-        "minY": 1.03,
-        "maxY": 1.77,
-        "plane": -4.442
-      },
-      {
+        "art": "dephy",
         "side": 1,
-        "center": 11.39,
-        "y": 1.25,
-        "text": "REEL",
-        "minZ": 10.6005,
-        "maxZ": 12.169500000000001,
-        "minY": 1.08,
-        "maxY": 1.855,
-        "plane": 4.442
+        "z": 20,
+        "width": 2.1149999999999993,
+        "y0": 0.87,
+        "y1": 2.28,
+        "surface": "shutter",
+        "height": 1.4099999999999995,
+        "bottom": 0.8700000000000002,
+        "top": 2.28,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 6,
+        "z0": 18.9425,
+        "z1": 21.0575,
+        "source": "Decal_Graffiti_dephy.png"
+      }
+    ],
+    "district-east-row-b-graffiti": [
+      {
+        "art": "RANDOM",
+        "side": 1,
+        "z": 20,
+        "width": 2.25,
+        "y0": 0.82,
+        "y1": 2.32,
+        "surface": "shutter",
+        "height": 1.5,
+        "bottom": 0.8199999999999998,
+        "top": 2.32,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 6,
+        "z0": 18.875,
+        "z1": 21.125,
+        "source": "Decal_Graffiti_RANDOM.png"
+      },
+      {
+        "art": "DUB",
+        "side": 1,
+        "z": -12,
+        "width": 2.5500000000000003,
+        "y0": 0.75,
+        "y1": 2.45,
+        "surface": "shutter",
+        "height": 1.7000000000000002,
+        "bottom": 0.75,
+        "top": 2.45,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 7,
+        "z0": -13.275,
+        "z1": -10.725,
+        "source": "Decal_Graffiti_DUB.png"
+      }
+    ],
+    "district-south-row-c-graffiti": [
+      {
+        "art": "PEACE",
+        "side": 1,
+        "z": -28,
+        "width": 2.1750000000000003,
+        "y0": 0.9,
+        "y1": 2.35,
+        "surface": "shutter",
+        "height": 1.4500000000000002,
+        "bottom": 0.8999999999999999,
+        "top": 2.35,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 6,
+        "z0": -29.0875,
+        "z1": -26.9125,
+        "source": "Decal_Graffiti_PEACE.png"
+      },
+      {
+        "art": "GBS",
+        "side": 1,
+        "z": -12,
+        "width": 2.595,
+        "y0": 0.72,
+        "y1": 2.45,
+        "surface": "shutter",
+        "height": 1.7300000000000002,
+        "bottom": 0.7199999999999999,
+        "top": 2.45,
+        "plane": 0.017,
+        "normal": 1,
+        "slices": 7,
+        "z0": -13.2975,
+        "z1": -10.7025,
+        "source": "Decal_Graffiti_GBS.png"
+      }
+    ],
+    "district-north-row-a-graffiti": [
+      {
+        "art": "Kurt",
+        "side": 1,
+        "z": 28.65,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": 28.237499999999997,
+        "z1": 29.0625,
+        "source": "Decal_Graffiti_Kurt.png"
+      }
+    ],
+    "district-west-row-a-graffiti": [
+      {
+        "art": "imdoinggreat",
+        "side": 1,
+        "z": -3.35,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -3.7625,
+        "z1": -2.9375,
+        "source": "Decal_Graffiti_imdoinggreat.png"
+      }
+    ],
+    "district-east-row-a-graffiti": [
+      {
+        "art": "RANDOM",
+        "side": 1,
+        "z": -3.35,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -3.7625,
+        "z1": -2.9375,
+        "source": "Decal_Graffiti_RANDOM.png"
+      }
+    ],
+    "ellery-square-north-graffiti": [
+      {
+        "art": "dephy",
+        "side": 1,
+        "z": -11.35,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -11.7625,
+        "z1": -10.9375,
+        "source": "Decal_Graffiti_dephy.png"
+      },
+      {
+        "art": "Kurt",
+        "side": 1,
+        "z": 12.65,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": 12.2375,
+        "z1": 13.0625,
+        "source": "Decal_Graffiti_Kurt.png"
+      },
+      {
+        "art": "PEACE",
+        "side": 1,
+        "z": -19.35,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -19.762500000000003,
+        "z1": -18.9375,
+        "source": "Decal_Graffiti_PEACE.png"
+      },
+      {
+        "art": "DUB",
+        "side": 1,
+        "z": 20.65,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": 20.237499999999997,
+        "z1": 21.0625,
+        "source": "Decal_Graffiti_DUB.png"
+      }
+    ],
+    "ellery-square-west-graffiti": [
+      {
+        "art": "maryjane",
+        "side": 1,
+        "z": -15.35,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -15.7625,
+        "z1": -14.9375,
+        "source": "Decal_Graffiti_maryjane.png"
+      },
+      {
+        "art": "PEACE",
+        "side": 1,
+        "z": 16.65,
+        "width": 0.8250000000000001,
+        "y0": 1.64,
+        "y1": 2.19,
+        "surface": "masonry",
+        "height": 0.55,
+        "bottom": 1.6400000000000001,
+        "top": 2.19,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": 16.237499999999997,
+        "z1": 17.0625,
+        "source": "Decal_Graffiti_PEACE.png"
+      },
+      {
+        "art": "DUB",
+        "side": 1,
+        "z": -15.35,
+        "width": 0.75,
+        "y0": 0.99,
+        "y1": 1.49,
+        "surface": "masonry",
+        "height": 0.5,
+        "bottom": 0.99,
+        "top": 1.49,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": -15.725,
+        "z1": -14.975,
+        "source": "Decal_Graffiti_DUB.png"
+      },
+      {
+        "art": "RANDOM",
+        "side": 1,
+        "z": 16.65,
+        "width": 0.75,
+        "y0": 0.99,
+        "y1": 1.49,
+        "surface": "masonry",
+        "height": 0.5,
+        "bottom": 0.99,
+        "top": 1.49,
+        "plane": 0.008,
+        "normal": 1,
+        "slices": 1,
+        "z0": 16.275,
+        "z1": 17.025,
+        "source": "Decal_Graffiti_RANDOM.png"
       }
     ]
   },
+  "sources": [
+    {
+      "art": "dephy",
+      "filename": "Decal_Graffiti_dephy.png",
+      "sha256": "3415ceb684f2f9c1ee8e4d58a3e85ebafff9e875e79f0166a92725afc2d60bb8",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1s1JmDDSkeoCiKEPNuAE39a8PbzLa6xy-/view"
+    },
+    {
+      "art": "Kurt",
+      "filename": "Decal_Graffiti_Kurt.png",
+      "sha256": "d4e21c23d576e2886031a1f9d503ea00e7372da7c0f2b9bdade32d6f610f8ede",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1JqKLQrFH1XtaturPRTHoh5OHmTqD3ODZ/view"
+    },
+    {
+      "art": "ELLERY",
+      "filename": "ellery-listening.png",
+      "sha256": "874e7e8f51c3988076e0c83680c1f9d7e21dc1d2912b98b948a97d9bc7f5bb30",
+      "artist": "Chunk Surfer / tagger",
+      "font": "tagger",
+      "text": "ellery keeps / the echo"
+    },
+    {
+      "art": "GBS",
+      "filename": "Decal_Graffiti_GBS.png",
+      "sha256": "c9fbe5dc286709dac93c538a5fc917860152207dac4401ee5b7cec2543110f10",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1GC8nG3h6Vlz63eS_QWzvGGov7CmmCyJZ/view"
+    },
+    {
+      "art": "SURFER",
+      "filename": "surfer-hear-you.png",
+      "sha256": "daf78aedf7d42692935322358fd7abfdd4d04d60269361869f86738b3078f1b7",
+      "artist": "Chunk Surfer / marker",
+      "font": "marker",
+      "text": "SURFER / YOU'RE THE ROOM TONE"
+    },
+    {
+      "art": "maryjane",
+      "filename": "Decal_Graffiti_maryjane.png",
+      "sha256": "9eff78caeae7e782eb4cbe9e3e110d31238465a41b62e07d35ba2d24afdaacdf",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1RZVyjPVpg-uLHgesLi6xyrpEL6zvZh0A/view"
+    },
+    {
+      "art": "DUB",
+      "filename": "Decal_Graffiti_DUB.png",
+      "sha256": "973f7f56e217ebc2468c8b89c731fbb8b8a3009958c379ad29dd3cb127215e30",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1CvTIvQs84l-W-d2H8gFnljdFeNeklIRJ/view"
+    },
+    {
+      "art": "imdoinggreat",
+      "filename": "Decal_Graffiti_imdoinggreat.png",
+      "sha256": "fee1acfa29a2a548a4329bf30f441572074bc5a0347b478d065f4e931f61a29e",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1SonI40RDgNTurLo-emFl7u8eJYGyMcMv/view"
+    },
+    {
+      "art": "valha",
+      "filename": "Decal_Graffiti_valha.png",
+      "sha256": "38600133095095d750c0444cd531694cac1583da9d867bd4570fdf3477c31ab0",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1PL56p1lU5n0r1nE_FG50xD7iR2B9Ciss/view"
+    },
+    {
+      "art": "RANDOM",
+      "filename": "Decal_Graffiti_RANDOM.png",
+      "sha256": "a297013b0bcb240aca44ee5c5e425e27d5d2760d7b4dde537992d33c4bc75fa9",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1PvU2lc_kOYJRsmiY-wYMbd7vUcSC1r5s/view"
+    },
+    {
+      "art": "PEACE",
+      "filename": "Decal_Graffiti_PEACE.png",
+      "sha256": "4114645dd8829215852eb04332027d45b467845d5736de3782c5fc09271b6d91",
+      "artist": "unikumpu",
+      "source": "https://drive.google.com/file/d/1om7IeOiUU18v4Y0NFW2KNOu4OmD--kQy/view"
+    }
+  ],
   "pending": [
     "native final-dither inspection"
   ],
-  "bytes": 63232,
-  "sha256": "ecb3c06ef949e69ef97b3f6aa38913ebdb825b2cceba1ad498cd75f5be767eea"
+  "bytes": 1764948,
+  "sha256": "6df8be69311ac78cc881715b9ea53671542225dfb4f6db0bc6d6291cdb613d3c"
 }

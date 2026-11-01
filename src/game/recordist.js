@@ -345,7 +345,7 @@ export function batteryLevel() { return state.battery; }
 // the dead man's tray would be worth precisely nothing, and the whole trade would
 // be a lie. A second, smaller reserve can be found on the pool-maintenance cart;
 // both caches are physical, finite, and require going somewhere to earn them.
-const BATTERY_MAX = 2;
+export const BATTERY_MAX = 2;
 export function addBattery(v) { state.battery = Math.max(0, Math.min(BATTERY_MAX, state.battery + v)); }
 export function killTorch() { state.light = false; state.battery = 0; }
 
@@ -634,8 +634,9 @@ function projectTakes() {
   state.places = takeSink.places();
 }
 
-export function addTake(roomId, { contaminated = false, place = null } = {}) {
-  takeSink?.mark?.(roomId, { contaminated, place });
+export function addTake(roomId, { contaminated = false, place = null, contaminationSources } = {}) {
+  takeSink?.mark?.(roomId, { contaminated, place,
+    ...(Array.isArray(contaminationSources)?{contaminationSources:[...contaminationSources]}:{}) });
   if (takeSink) { projectTakes(); return; }
   // No sink wired (headless tests, the bag lab): keep the old behaviour so the
   // module still stands up on its own.

@@ -1,10 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_MATERIAL_CELL,earthfallExitDoorHeight,sourceEarthfallUpperHeight,SOURCE_EARTHFALL_STRATA} from '../src/data/source-earthfall.js';
+import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_MATERIAL_CELL,earthfallExitDoorHeight,sourceEarthfallUpperHeight,SOURCE_EARTHFALL_STRATA,sourceEarthfallStructuralLayout,sourceEarthfallReleasePlan,SOURCE_EARTHFALL_CONSTRUCTION} from '../src/data/source-earthfall.js';
 import {freshSourceEarthfall,sourceEarthfallFrame,sourceEarthfallSupportAt,stepSourceEarthfall} from '../src/game/source-earthfall.js';
-import {sourceEarthfallGeometry,sourceEarthfallRenderFrame,installSourceEarthfallMeshes,createSourceEarthfallRenderer,SOURCE_EARTHFALL_RENDER_BUDGET as BUDGET} from '../src/render/source-earthfall-renderer.js';
-import {sourceContinuationMeshPayload} from '../src/render/source-continuation-renderer.js';
+import {sourceEarthfallGeometry,sourceEarthfallRenderFrame,sourceEarthfallContinuationPreview,installSourceEarthfallMeshes,createSourceEarthfallRenderer,SOURCE_EARTHFALL_RENDER_BUDGET as BUDGET} from '../src/render/source-earthfall-renderer.js';
+import {freshSourceContinuation} from '../src/game/source-continuation.js';
+import {sourceContinuationEntranceOffset} from '../src/game/source-continuation-entry.js';
+import {portalIdentity,portalMultiply,portalInverse,portalTransformPoint} from '../src/render/source-mesh-portals.js';
+import {sourceContinuationMeshPayload,sourceContinuationRenderFrame} from '../src/render/source-continuation-renderer.js';
+import {SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED} from '../src/render/source-earthfall-ellery-aside.js';
+import {earthfallCollapseMeshes} from '../src/render/source-earthfall-collapse.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
 import {SOURCE_DEMOLITION_GEOMETRY as DEMO} from '../src/data/generated/source-demolition-geometry.js';
 import {ST_BRENDANS_PRESENCE_MESH} from '../src/data/st-brendans-presences.js';
@@ -27,13 +32,13 @@ function uploadedTriangles(piece,instance){
 const pieces=new Map(sourceEarthfallGeometry().map(p=>[p.name,p]));
 
 test('the actual upper earth triangles form the exact finite controller support before release',()=>{
-  for(const elapsed of[0,.61,2.99]){
+  for(const elapsed of[0,.61,1.8]){
     const state={...fresh(),committed:elapsed>0,committedAt:0,clock:elapsed,elapsed,phase:elapsed?'fracturing':'intact'},frame=sourceEarthfallRenderFrame(state);
     const triangles=frame.props.filter(p=>p.earthfallRole==='earth').flatMap(p=>uploadedTriangles(pieces.get(p.mesh),p));
     let samples=0;
     for(let x=C.earth.minX+.17;x<C.earth.maxX;x+=1.31)for(let z=C.earth.minZ+.19;z<C.earth.maxZ;z+=1.37){
-      const expected=sourceEarthfallSupportAt(x,z,state);assert.equal(expected.y,sourceEarthfallUpperHeight(elapsed));
-      assert.ok(triangles.some(points=>{const y=triangleHeight(points,x,z);return y!=null&&Math.abs(y-expected.y)<2e-5;}),`unsupported visible point ${x},${z} at ${elapsed}`);samples++;
+      const expected=sourceEarthfallSupportAt(x,z,state);if(!expected){assert.ok(elapsed>0);continue;}assert.ok(Math.hypot(expected.contact.x-x,expected.contact.z-z)<=C.bodyRadius+1e-7);
+      assert.ok(triangles.some(points=>{const y=triangleHeight(points,expected.contact.x,expected.contact.z);return y!=null&&Math.abs(y-expected.y)<2e-5;}),`unsupported visible point ${x},${z} at ${elapsed}`);samples++;
     }
     assert.ok(samples>300);
   }
@@ -49,29 +54,29 @@ test('every fragment face has outward winding and finite physically scaled Sourc
       assert.ok(centroid.reduce((n,v,a)=>n+v*p.normals[i+a],0)>0,'a fractured edge faces inward');triangles++;
     }
   }
-  assert.equal(triangles,BUDGET.customTriangles);assert.ok(triangles<1700);
+  assert.equal(triangles,BUDGET.customTriangles);assert.ok(triangles<1800);
 });
 
 test('falling uses actual body coordinates and lands hard on a fixed finite head beside a narrow spine',()=>{
  let state={...fresh(),committed:true,committedAt:0,clock:3,elapsed:3,phase:'falling',feet:92};let impact=false,landed=false;
  for(let i=0;i<1200&&!landed;i++){
-  state=stepSourceEarthfall(state,{dt:1/120}).state;const frame=sourceEarthfallRenderFrame(state),head=frame.props.find(p=>p.earthfallRole==='catch'),triangles=uploadedTriangles(pieces.get(head.mesh),head),top=Math.max(...triangles.map(p=>triangleHeight(p,state.x,state.z)).filter(y=>y!=null));assert.equal(top,0);assert.equal(frame.source.catchSurfaceY,0);assert.deepEqual(frame.authoredCamera.eye,[state.x,state.feet+C.eyeHeight,state.z]);assert.ok(head.cullRadius<24);
-  const path=frame.props.find(p=>p.earthfallRole==='path'),pathTriangles=uploadedTriangles(pieces.get(path.mesh),path),pathTop=Math.max(...pathTriangles.map(p=>triangleHeight(p,0,-30)).filter(y=>y!=null));assert.equal(pathTop,0);
+  state=stepSourceEarthfall(state,{dt:1/120}).state;const frame=sourceEarthfallRenderFrame(state),head=frame.props.find(p=>p.earthfallRole==='catch'),triangles=uploadedTriangles(pieces.get(head.mesh),head),top=Math.max(...triangles.map(p=>triangleHeight(p,state.x,state.z)).filter(y=>y!=null));assert.equal(top,0);assert.equal(frame.source.catchSurfaceY,0);assert.equal(frame.authoredCamera.eye[0],state.x);assert.equal(frame.authoredCamera.eye[2],state.z);assert.ok(Math.abs(frame.authoredCamera.eye[1]-state.feet-C.eyeHeight)<.25);assert.ok(head.cullRadius<50);
+  const path=frame.props.find(p=>p.earthfallRole==='path'),pathTriangles=uploadedTriangles(pieces.get(path.mesh),path),pathTop=Math.max(...pathTriangles.map(p=>triangleHeight(p,0,(C.passage.exitZ-3+C.catch.minZ+.5)/2)).filter(y=>y!=null));assert.equal(pathTop,0);
   impact||=state.phase==='catching';landed=state.phase==='landed';
  }
  assert.ok(impact&&landed);const f=sourceEarthfallRenderFrame(state);assert.equal(f.props.filter(p=>p.earthfallRole==='path').length,1);assert.equal(f.props.filter(p=>p.earthfallRole==='landing-edge').length,5);
 });
 
 test('fractures open only after footing loss, remain deterministic, and never borrow the camera',()=>{
-  const state={...fresh(),committed:true,committedAt:0,clock:4.5,elapsed:4.5,phase:'falling',feet:89};
+  const state={...fresh(),committed:true,committedAt:0,clock:C.footingLossAt+1.5,elapsed:C.footingLossAt+1.5,phase:'falling',feet:89};
   const a=sourceEarthfallRenderFrame(state),b=sourceEarthfallRenderFrame({...state,yaw:1.8,pitch:-.8});
   assert.deepEqual(a.props.map(p=>[p.id,[...p.matrix]]),b.props.map(p=>[p.id,[...p.matrix]]));
   assert.ok(a.props.filter(p=>p.earthfallRole==='earth').every(p=>p.matrix[13]<99));
   assert.ok(a.props.filter(p=>p.earthfallRole==='residue').every(p=>p.apparitionVariant===14&&p.emissive.slice(0,3).every(v=>v===0)));
   const off=sourceEarthfallRenderFrame(state,{effectsMode:'off'}),reduced=sourceEarthfallRenderFrame(state,{reducedMotion:true});
   assert.equal(off.counts.presences,0);assert.ok(reduced.counts.presences<=12);assert.equal(off.counts.earth,120);
-  assert.deepEqual(reduced.props.filter(p=>p.earthfallRole==='earth').map(p=>[p.cell,[...p.matrix]]),a.props.filter(p=>p.earthfallRole==='earth').map(p=>[p.cell,[...p.matrix]]),'essential bearing folds must keep the same real aperture in reduced mode');
-  assert.equal(sourceEarthfallRenderFrame({...state,elapsed:2.5,clock:2.5,phase:'fracturing',feet:100}).props.filter(p=>p.earthfallRole==='tear').length>200,true);
+  assert.deepEqual(reduced.props.filter(p=>p.earthfallRole==='earth').map(p=>[p.cell,[...p.matrix]]),a.props.filter(p=>p.earthfallRole==='earth').map(p=>[p.cell,[...p.matrix]]),'essential structural response must retain the same contact geometry in reduced mode');
+  assert.equal(sourceEarthfallRenderFrame({...state,elapsed:C.fractureAt+1.9,clock:C.fractureAt+1.9,phase:'fracturing',feet:100}).props.filter(p=>p.earthfallRole==='tear').length>200,true);
 });
 
 test('the moving material sound anchor stays on the actual shared central fragment top pivot',()=>{
@@ -83,36 +88,38 @@ test('the moving material sound anchor stays on the actual shared central fragme
   }
 });
 
-test('released real triangles separate from the falling body and open a visible seam promptly',()=>{
-  let state={...fresh(),committed:true,committedAt:0,clock:3,elapsed:3,phase:'falling'};
-  for(let i=0;i<90;i++)state=stepSourceEarthfall(state,{dt:1/120}).state;
-  const f=sourceEarthfallRenderFrame(state),cell=f.props.find(p=>p.cell===78),triangles=uploadedTriangles(pieces.get(cell.mesh),cell),highest=Math.max(...triangles.flat().map(p=>p[1]));
-  assert.ok(state.feet-highest>3,`nearby printed earth is still riding beneath the body: separation ${state.feet-highest}m`);
-  for(const age of[.3,.6]){
-    const frame=sourceEarthfallRenderFrame({...state,clock:3+age,elapsed:3+age}),a=frame.props.find(p=>p.cell===77),b=frame.props.find(p=>p.cell===78),pa=pieces.get(a.mesh),pb=pieces.get(b.mesh),ba=sourceContinuationMeshPayload(pa).bounds,bb=sourceContinuationMeshPayload(pb).bounds;
-    const common=pa.points.filter(p=>pb.points.some(q=>p.every((v,i)=>v===q[i])));assert.equal(common.length,2);
-    for(const point of common){
-      const left=transform(a.matrix,point.map((v,i)=>v-ba.center[i])),right=transform(b.matrix,point.map((v,i)=>v-bb.center[i]));
-      assert.ok(Math.hypot(...left.map((v,i)=>v-right[i]))>.07,'adjacent controlled hinges still occupy exactly the same seam');
-    }
-  }
+test('released finite cells retain mass near the failed footprint instead of clearing a spectator shaft',()=>{
+ const state={...fresh(),committed:true,committedAt:0,clock:C.footingLossAt+1.5,elapsed:C.footingLossAt+1.5,phase:'falling',feet:92};
+ const frame=sourceEarthfallRenderFrame(state),original=sourceEarthfallRenderFrame(fresh());
+ const earth=frame.props.filter(p=>p.earthfallRole==='earth');assert.equal(earth.length,120);
+ for(const cell of earth){
+  const old=original.props.find(p=>p.cell===cell.cell),piece=pieces.get(cell.mesh);
+  const diagonal=Math.hypot(Math.max(...piece.points.map(p=>p[0]))-Math.min(...piece.points.map(p=>p[0])),Math.max(...piece.points.map(p=>p[2]))-Math.min(...piece.points.map(p=>p[2])));
+  assert.ok(Math.hypot(cell.x-old.x,cell.z-old.z)<diagonal/2+.4,'major mass has been evacuated beyond its own fragment footprint');
+  const lengths=m=>[0,4,8].map(i=>Math.hypot(m[i],m[i+1],m[i+2]));
+  assert.ok(lengths(cell.matrix).every(n=>Math.abs(n-1)<1e-6),'fracture changed solid dimensions');
+  assert.ok(uploadedTriangles(piece,cell).flat().every(p=>p.every(Number.isFinite)));
+ }
+ assert.ok(earth.some(p=>p.y>95),'retained local material must coexist with detached pieces');
+ assert.ok(earth.some(p=>p.y<95),'a large part of the cap must detach');
 });
 
-test('support cuts initiate in order while every supported top stays held, and model mass settles finitely inward',()=>{
+test('support cuts accumulate while peripheral model loads retain finite actual foundations',()=>{
   let previousCount=0;
   for(const elapsed of[.59,.65,1,1.4,1.8,2.1]){
     const f=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:elapsed,elapsed,phase:'fracturing'}),cuts=f.props.filter(p=>p.earthfallRole==='tear');
     assert.ok(cuts.length>=previousCount);previousCount=cuts.length;
-    assert.ok(cuts.every(p=>p.initiationAt<=elapsed&&Math.abs(p.y-sourceEarthfallUpperHeight(elapsed)-.002)<.00001));
+    assert.ok(cuts.every(p=>p.initiationAt<=elapsed&&Number.isInteger(p.attachedCell)));assert.ok(cuts.every(p=>Number.isFinite(p.y)&&p.y>98));
     if(elapsed===.59)assert.equal(cuts.length,0);
-    if(elapsed===.65){assert.ok(cuts.length>0&&cuts.length<120);assert.ok(cuts.every(p=>p.supportBand===0));}
+    if(elapsed===.65)assert.ok(cuts.length<120);
   }
   const landed=elapsed=>sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:elapsed,elapsed,phase:'landed',feet:0}).props.filter(p=>p.earthfallRole==='model');
   const end=landed(12),later=landed(40);assert.deepEqual(end.map(p=>[...p.matrix]),later.map(p=>[...p.matrix]),'settled loads must not continue spinning with scene time');
   for(const p of end){
-    const topLean=[p.matrix[4],p.matrix[6]],towardSpine=[-p.x,-21-p.z];
-    assert.ok(topLean[0]*towardSpine[0]+topLean[1]*towardSpine[1]>0,'heavy models tip coherently inward instead of random splaying');
-    assert.equal(p.supportY,86);
+    assert.equal(p.supportY,99.82);
+    const bank=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:12,elapsed:12,phase:'landed',feet:0}).props.find(b=>b.id===p.id.replace('model-','model-bank-'));
+    assert.ok(bank);assert.equal(bank.matrix[5],8,'the foundation must have continuous visible depth');
+    assert.ok(Math.abs(bank.y+4-p.supportY)<1e-5);
   }
 });
 
@@ -168,7 +175,7 @@ function fixture({gate=null,missingBase=false}={}){
   const calls=[],catalog=new Map((missingBase?['grand_piano']:['grand_piano','instrument_case']).map(n=>[n,{}]));let ranges=0,rangeReleases=0,releases=0;
   const renderer=new Proxy({}, {get:(_,key)=>(...args)=>{calls.push({key,args});return key==='r3dBasePropsReady'?(gate||Promise.resolve(true)):key==='r3dFrame'?true:undefined;}});
   const props={propMeshCatalog:()=>[...catalog.keys()],setPressureInstances:()=>{},installAuthoredPropMeshes(){for(const p of sourceEarthfallGeometry())catalog.set(p.name,{});return true;},
-    async addPropPack(url){const names=url.includes('source-demolition')?[DEMO.staticMesh,...DEMO.parts.map(p=>p.mesh)]:url.includes('presences')?Object.values(ST_BRENDANS_PRESENCE_MESH):(()=>{const d=doorAssembly('bay-goods-pair',{activeLeaves:'all'});return[d.frameMesh,d.leafMesh,d.freeStandingHeadMesh].filter(Boolean);})();for(const n of names)catalog.set(n,{});},
+    async addPropPack(url){const names=url.includes('source-earthfall-ellery-aside')?SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED:url.includes('source-earthfall-fracture')?earthfallCollapseMeshes():url.includes('source-demolition')?[DEMO.staticMesh,...DEMO.parts.map(p=>p.mesh)]:url.includes('presences')?Object.values(ST_BRENDANS_PRESENCE_MESH):(()=>{const d=doorAssembly('bay-goods-pair',{activeLeaves:'all'});return[d.frameMesh,d.leafMesh,d.freeStandingHeadMesh].filter(Boolean);})();for(const n of names)catalog.set(n,{});},
     setAuthoredPropRange(owner,far){ranges++;assert.equal(typeof owner,'symbol');assert.equal(far,BUDGET.far);let freed=false;return()=>{if(freed)return false;freed=true;rangeReleases++;return true;};}};
   const owner=createSourceEarthfallRenderer({renderer,props,resolveAsset:u=>u,onRelease:()=>releases++});
   return{owner,calls,catalog,ranges:()=>ranges,rangeReleases:()=>rangeReleases,releases:()=>releases};
@@ -193,10 +200,10 @@ test('installer uploads the tested finite triangles through the normal physical 
   const gl={ARRAY_BUFFER:34962,ELEMENT_ARRAY_BUFFER:34963,STATIC_DRAW:35044,FLOAT:5126,UNSIGNED_INT:5125,
     createBuffer:()=>{const b={};buffers.push(b);return b;},createVertexArray:()=>({}),bindVertexArray(){},bindBuffer(_target,b){current=b;},bufferData(_target,data){current.data=data.slice();},enableVertexAttribArray(){},disableVertexAttribArray(){},vertexAttribPointer(...args){attributes.push(args);},vertexAttribDivisor(){},vertexAttrib1f(){}};
   const maps={texture:{source:true},normalTexture:{normal:true},ormTexture:{orm:true},letteringFinish:{version:1}};
-  const names=installSourceEarthfallMeshes(gl,{catalog},{maps});assert.equal(names.length,138);
-  assert.equal(catalog.size,138);assert.equal(buffers.filter(b=>b.data instanceof Float32Array).length,138*3);
-  assert.equal([...catalog.values()].reduce((n,m)=>n+m.primitives[0].count/3,0),BUDGET.customTriangles);
-  const p=catalog.get('source-earthfall-earth-0').primitives[0];assert.equal(p.texture,maps.texture);assert.equal(p.printedSurface.process,'source-blueprint-fragments');assert.ok(attributes.some(a=>a[0]===12&&a[1]===4&&a[4]===29*4&&a[5]===100));
+  const names=installSourceEarthfallMeshes(gl,{catalog},{maps});assert.equal(names.length,142);
+  assert.equal(catalog.size,142);assert.equal(buffers.filter(b=>b.data instanceof Float32Array).length,(142+120)*3);
+  assert.equal([...catalog.values()].reduce((n,m)=>n+m.primitives.reduce((sum,p)=>sum+p.count/3,0),0),BUDGET.customTriangles);
+  const slab=catalog.get('source-earthfall-earth-0'),p=slab.primitives[0];assert.equal(slab.primitives.length,2);assert.equal(slab.primitives[1].texture,null);assert.equal(slab.primitives[1].materialRole,'fracture-core');assert.equal(slab.primitives[1].metallic,0);assert.equal(slab.primitives[1].roughness,.98);assert.equal(p.texture,maps.texture);assert.equal(p.printedSurface.process,'source-blueprint-fragments');assert.ok(attributes.some(a=>a[0]===12&&a[1]===4&&a[4]===29*4&&a[5]===100));
   const backing=catalog.get('source-earthfall-catch').primitives[0],path=catalog.get('source-earthfall-path').primitives[0];
   assert.equal(backing.texture,null,'bright repeated source stock must not fill every opened hole');assert.equal(backing.materialRole,'quiet-metal');assert.equal(backing.metallic,0);assert.equal(backing.roughness,1);
   assert.ok(backing.base.slice(0,3).every((v,i)=>v<path.base[i]/10));assert.equal(path.texture,maps.texture);assert.equal(path.printedSurface.process,'source-blueprint-fragments');
@@ -212,17 +219,53 @@ test('installer uploads the tested finite triangles through the normal physical 
 });
 
 
-test('three distinct collapsing strata use fixed world origins and upper architecture remains100m above the landing',()=>{
+test('the deeper Source sections have pre-existing breaks and never retreat for the falling camera',()=>{
  const start=sourceEarthfallRenderFrame(fresh()),late=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:10,elapsed:10,phase:'landed',feet:0});
  assert.equal(start.props.filter(p=>p.earthfallRole==='stratum').length,12);assert.equal(late.props.filter(p=>p.earthfallRole==='stratum').length,12);
- const facade=f=>f.props.find(p=>p.earthfallRole==='ellery');assert.equal(facade(start).y,100);assert.deepEqual([...facade(start).matrix],[...facade(late).matrix]);assert.equal(late.props.find(p=>p.earthfallRole==='upper-ruin').y,100);assert.equal(late.props.find(p=>p.earthfallRole==='path').supportY,0);
- for(const layer of SOURCE_EARTHFALL_STRATA){const before=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt-.01,elapsed:layer.releaseAt-.01,phase:'falling',feet:80});const after=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt+1,elapsed:layer.releaseAt+1,phase:'falling',feet:40});const a=before.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index),b=after.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index);assert.ok(a.every(p=>Math.abs(p.y-layer.y+layer.thickness/2)<1e-5));assert.ok(b.every(p=>Math.abs(p.x)>15));}
+ const facade=f=>f.props.find(p=>p.earthfallRole==='ellery'),standing=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:C.footingLossAt-.01,elapsed:C.footingLossAt-.01,phase:'fracturing'});
+ assert.equal(facade(start).y,100);assert.deepEqual([...facade(start).matrix],[...facade(standing).matrix],'the false Ellery stands until the footing goes');
+ assert.equal(facade(late),undefined,'after the footing goes it comes down with him');assert.ok(late.props.some(p=>p.earthfallRole==='ellery-collapse'));
+ const paged=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:C.footingLossAt+7,elapsed:C.footingLossAt+7,phase:'landed',feet:0});
+ assert.ok(paged.props.some(p=>p.earthfallRole==='folio-page'),'the fragments end as printed pages');assert.equal(late.props.find(p=>p.earthfallRole==='upper-ruin').y,100);assert.equal(late.props.find(p=>p.earthfallRole==='path').supportY,0);
+ for(const layer of SOURCE_EARTHFALL_STRATA){const before=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt-.01,elapsed:layer.releaseAt-.01,phase:'falling',feet:80});const after=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:layer.releaseAt+1,elapsed:layer.releaseAt+1,phase:'falling',feet:40});const a=before.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index),b=after.props.filter(p=>p.earthfallRole==='stratum'&&p.layer===layer.index);assert.ok(a.every(p=>Math.abs(p.y-layer.y+layer.thickness/2)<1e-5));assert.ok(b.every((p,i)=>Math.abs(p.x-a[i].x)<.05));assert.ok(b.every(p=>Math.abs(p.x)>8&&Math.abs(p.x)<12));assert.ok(b.every((p,i)=>Math.abs(p.y-a[i].y)<.2));}
 });
 
 
 test('the three construction sections have distinct supported undersides and native models attached to their failure transforms',()=>{
  const frame=sourceEarthfallRenderFrame(fresh());assert.deepEqual(new Set(frame.props.filter(p=>p.earthfallRole==='stratum').map(p=>p.construction)),new Set(['coffer','soundboard','binding']));
  for(const [layer,construction]of[[0,'coffer'],[1,'soundboard'],[2,'binding']]){assert.ok(frame.props.filter(p=>p.earthfallRole==='stratum-support'&&p.layer===layer).length>=8);assert.ok(frame.props.filter(p=>p.layer===layer).every(p=>!p.construction||p.construction===construction));}
- assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='grand_piano').length,2);assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='instrument_case').length,4);assert.ok(frame.props.length<320);
+ assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='grand_piano').length,2);assert.equal(frame.props.filter(p=>p.earthfallRole==='stratum-model'&&p.mesh==='instrument_case').length,4);assert.ok(frame.props.length<340);
  const time=SOURCE_EARTHFALL_STRATA[1].releaseAt+1,a=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:time,elapsed:time,phase:'falling',feet:65}),b=sourceEarthfallRenderFrame({...fresh(),committed:true,committedAt:0,clock:time,elapsed:time,phase:'falling',feet:65,yaw:2,pitch:-1});assert.deepEqual(a.props.map(p=>[p.id,[...p.matrix]]),b.props.map(p=>[p.id,[...p.matrix]]));
+});
+
+
+test('support buckles before release with finite local contact, while actual joists and spall give near-field depth',()=>{
+ const state={...fresh(),committed:true,committedAt:0,clock:C.footingLossAt-.3,elapsed:C.footingLossAt-.3,phase:'fracturing'},frame=sourceEarthfallRenderFrame(state);
+ const failed=sourceEarthfallRenderFrame({...state,clock:C.footingLossAt+1.1,elapsed:C.footingLossAt+1.1,phase:'falling'}),earth=failed.props.filter(p=>p.earthfallRole==='earth');
+ assert.ok(new Set(earth.map(p=>p.y.toFixed(3))).size>20,'released pieces must have unequal finite motion');
+ assert.ok(C.lowering.drop<1.5,'the whole scene must not ride an eight-metre lift before support loss');
+ assert.equal(frame.props.filter(p=>p.earthfallRole==='ground-joist').length,sourceEarthfallStructuralLayout().filter(m=>m.type==='rib').length);
+ const debris=frame.props.filter(p=>p.earthfallRole==='fracture-debris');assert.ok(debris.length<=BUDGET.fractureDebris);
+ assert.ok(debris.every(p=>p.releaseAt<frame.source.elapsed&&p.y<C.upperFloor+1&&Number.isInteger(p.attachedCell)));
+ const off=sourceEarthfallRenderFrame(state,{effectsMode:'off'});assert.equal(off.props.filter(p=>p.earthfallRole==='fracture-debris').length,0);
+ assert.deepEqual(off.props.filter(p=>p.earthfallRole==='ground-joist').map(p=>[...p.matrix]),frame.props.filter(p=>p.earthfallRole==='ground-joist').map(p=>[...p.matrix]));
+});
+
+test('impact stays in the physical view with a bounded body response and deterministic reduced-motion endpoint',()=>{
+ const state={...fresh(),committed:true,committedAt:0,clock:9,elapsed:9,phase:'catching',feet:0,catchElapsed:.12},normal=sourceEarthfallRenderFrame(state),quiet=sourceEarthfallRenderFrame(state,{reducedMotion:true});
+ assert.ok(normal.eye[1]<C.eyeHeight&&normal.eye[1]>C.eyeHeight-.25);assert.equal(quiet.eye[1],C.eyeHeight);
+ assert.ok(Math.abs(normal.pitch-state.pitch)<.1);assert.equal(quiet.pitch,state.pitch);
+ assert.ok(normal.source.blackoutAlpha<.33,'a blackout must not conceal a location change');
+});
+
+
+test('the Earthfall continuation preview translates portal clips and source presentation exactly once',()=>{
+ const entry={...freshSourceContinuation(),doorOpen:{'wrong-entry-return':true}},world=sourceContinuationRenderFrame(entry),before=JSON.stringify(world.props),offset=-sourceContinuationEntranceOffset().z,T=portalIdentity();T[14]=offset;const inverseT=portalInverse(T),preview=sourceEarthfallContinuationPreview(),near=(a,b,label)=>assert.ok(Math.abs(a-b)<4e-5,`${label}: ${a} != ${b}`);let permits=0,excludes=0,presentations=0,rotated=0;
+ const signed=(p,q)=>p[0]*q[0]+p[1]*q[1]+p[2]*q[2]+p[3],checkPlanes=(original,moved,point)=>{assert.equal(moved.length,original.length);for(let k=0;k<original.length;k++){assert.deepEqual(moved[k].slice(0,3),original[k].slice(0,3));near(moved[k][3],original[k][3]-original[k][2]*offset,'translated plane constant');near(signed(original[k],point),signed(moved[k],[point[0],point[1],point[2]+offset]),'the same geometric half-space');}};
+ for(const p of world.props){const moved=preview.props.find(q=>q.id==='earthfall-preview-'+p.id);if(!moved)continue;near(moved.x,p.x,'preview x');near(moved.y,p.y,'preview y');near(moved.z,p.z+offset,'preview z');for(let k=0;k<16;k++)near(moved.matrix[k],p.matrix[k]+(k===14?offset:0),'model translation');const point=[p.x+.17,p.y+.23,p.z-.31];
+  if(p.portalClipPlanes){permits++;checkPlanes(p.portalClipPlanes,moved.portalClipPlanes,point);}
+  if(p.portalExcludePlanes){excludes++;assert.equal(moved.portalExcludePlanes.length,p.portalExcludePlanes.length);for(let k=0;k<p.portalExcludePlanes.length;k++)checkPlanes(p.portalExcludePlanes[k],moved.portalExcludePlanes[k],point);}
+  if(p.sourceWorldMatrix){presentations++;if(p.sourceWorldMatrix.some((v,k)=>Math.abs(v-portalIdentity()[k])>1e-6))rotated++;const expected=portalMultiply(T,portalMultiply(p.sourceWorldMatrix,inverseT));expected.forEach((v,k)=>near(moved.sourceWorldMatrix[k],v,'source frame conjugation'));const source=portalTransformPoint(portalInverse(p.sourceWorldMatrix),point),shifted=portalTransformPoint(portalInverse(moved.sourceWorldMatrix),[point[0],point[1],point[2]+offset]);shifted.forEach((v,k)=>near(v,source[k]+(k===2?offset:0),'pressure source is translated once'));}
+ }
+ assert.ok(permits>0&&excludes>0&&presentations>0&&rotated>0,'the production preview exercises finite portals and a rotated canonical background image');near(preview.surroundingsGate.z,world.surroundings.gate.z+offset,'gate translation');assert.deepEqual(preview.surroundingsPressure.gate,preview.surroundingsGate);assert.equal(JSON.stringify(world.props),before,'adapting the preview cannot mutate canonical continuation geometry');const snapshot=JSON.stringify(preview);assert.equal(sourceEarthfallContinuationPreview(),preview);assert.equal(JSON.stringify(sourceEarthfallContinuationPreview()),snapshot,'the cached preview never accumulates another translation');
 });

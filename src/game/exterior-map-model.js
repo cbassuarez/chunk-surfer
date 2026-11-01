@@ -2,6 +2,7 @@ import {CELL} from '../data/floorplan/legend.js';
 import {EXTERIOR_MAP_DEFINITION,EXTERIOR_MAP_FLOOR,EXTERIOR_MAP_ZONES,EXTERIOR_MAP_STREETS,EXTERIOR_MAP_STREET_LABELS,exteriorMapFootprints,exteriorMapTargets,exteriorInstitutionCells} from '../data/exterior-map.js';
 import {buildMapModel} from './map-model.js';
 import {EXTERIOR_COLLISION_GEOMETRY} from '../data/generated/exterior-collision.js';
+import {EXTERIOR_MAP_PLAN} from '../data/exterior-map-plan.js';
 const zones=new Set(EXTERIOR_MAP_ZONES);
 export function usesExteriorMap({zone,height=0}={}){return zones.has(Number(zone))&&height<3.25;}
 // Conservative broadphase only. The actual prop movement predicate still
@@ -44,7 +45,7 @@ export function captureExteriorMapSource({physical,projectLogical,canOccupy=()=>
     counts.set(k,(counts.get(k)||0)+1);heights.set(k,span.floor);
   }
   const open=new Set([...counts].filter(([,count])=>count===stride*stride).map(([key])=>key));
-  const rawTargets=exteriorMapTargets(),spaces=rawTargets.map(target=>{
+  const rawTargets=exteriorMapTargets({renderedInstances}),spaces=rawTargets.map(target=>{
     const p=projectLogical(target.logical),position=target.physical||{x:p.x/stride,y:p.z/stride};
     return {...target,position,height:p.height??0};
   });
@@ -56,17 +57,26 @@ export function captureExteriorMapSource({physical,projectLogical,canOccupy=()=>
   const edgesFor=cells=>{const edges=[];for(const key of cells){const[x,y]=key.split(',').map(Number);
     for(const[dx,dy,a,b]of [[-1,0,{x,y},{x,y:y+1}],[1,0,{x:x+1,y},{x:x+1,y:y+1}],[0,-1,{x,y},{x:x+1,y}],[0,1,{x,y:y+1},{x:x+1,y:y+1}]])if(!cells.has(`${x+dx},${y+dy}`))edges.push([a,b]);}return edges;};
   const institutionEdges=edgesFor(institution);
-  const institutionalRuns=runs(institution),footprints=[...institutionalRuns.map((run,index)=>({id:`ellery:${index}`,role:'institution',points:[{x:run.x0,y:run.y},{x:run.x1+1,y:run.y},{x:run.x1+1,y:run.y+1},{x:run.x0,y:run.y+1}]})),...exteriorMapFootprints()];
+  const institutionalRuns=runs(institution),footprints=[...institutionalRuns.map((run,index)=>({id:`ellery:${index}`,role:'institution',points:[{x:run.x0,y:run.y},{x:run.x1+1,y:run.y},{x:run.x1+1,y:run.y+1},{x:run.x0,y:run.y+1}]})),...exteriorMapFootprints({renderedInstances})];
   const churchCells=new Set();for(const shape of footprints.filter(p=>p.role==='church')){
     const xs=shape.points.map(p=>p.x),ys=shape.points.map(p=>p.y);
     for(let x=Math.min(...xs);x<Math.max(...xs);x++)for(let y=Math.min(...ys);y<Math.max(...ys);y++)churchCells.add(`${x},${y}`);
   }
   institutionEdges.push(...edgesFor(churchCells));
+  // A terrace is one mass on the sheet. Deeds remain separate footprints for
+  // their fills and labels, but only an edge no neighbouring deed shares is
+  // inked; outlining each deed read as a field of bounding boxes.
+  const round=v=>Math.round(v*1000)/1000+0,edgeKey=(a,b)=>[`${round(a.x)},${round(a.y)}`,`${round(b.x)},${round(b.y)}`].sort().join('|');
+  const massSides=footprints.filter(p=>p.role!=='church'&&p.role!=='institution').flatMap(shape=>shape.points.map((a,i)=>[a,shape.points[(i+1)%shape.points.length]]));
+  const sideCount=new Map();for(const[a,b]of massSides){const key=edgeKey(a,b);sideCount.set(key,(sideCount.get(key)||0)+1);}
+  const massEdges=massSides.filter(([a,b])=>sideCount.get(edgeKey(a,b))===1);
   return{version:1,definition:EXTERIOR_MAP_DEFINITION,topologyStride:stride,context:'exterior',floors:[floor],targets:[],spaces,landmarks:[],connectors:[],
     // Geometry availability is truthful even though the street drawing uses a
     // survey plan instead of exploding the conservatoire's interior floors.
     architecture:{version:1,available:true,bounds,buildingBounds:bounds,units:{horizontalMetresPerUnit:CELL*stride},floors:[{id:EXTERIOR_MAP_FLOOR,bounds}],levels:[{id:'district-ground',floorId:EXTERIOR_MAP_FLOOR,height:0,exterior:true,bounds,surfaces:[],boundaries:[]}],stairs:[]},
-    district:{footprints,institutionEdges,streets:EXTERIOR_MAP_STREETS,streetLabels:EXTERIOR_MAP_STREET_LABELS},
+    // The drawn survey is the authored plan; footprints and edges remain the
+    // collision-derived record that labels, routes and tests are checked against.
+    district:{plan:EXTERIOR_MAP_PLAN,footprints,institutionEdges,massEdges,streets:EXTERIOR_MAP_STREETS,streetLabels:EXTERIOR_MAP_STREET_LABELS},
   };
 }
 function remapWaypoint(source,waypoint,{proxyIndoor=false}={}){

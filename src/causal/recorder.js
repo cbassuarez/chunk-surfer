@@ -26,7 +26,8 @@ function changedDiscontinuously(a, b) {
 function pressureBoundary(frame) {
   return ['primary', 'secondary'].map((slot) => {
     const actor = frame?.[slot], performance = actor?.performance;
-    return actor ? `${actor.id}:${performance?.role}:${performance?.clip}:${performance?.cue?.name || ''}` : '';
+    const density=performance?.density;
+    return actor ? `${actor.id}:${performance?.role}:${performance?.clip}:${performance?.cue?.name || ''}:${!!actor.referenceTrace}:${density?.seed??''}:${density?.event??''}:${!!density?.blocked}:${!!density?.listening}` : '';
   }).join('|');
 }
 

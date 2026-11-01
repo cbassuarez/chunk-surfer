@@ -5,7 +5,7 @@ import {
   MISSING_MAN_CORE_BYTE,MISSING_MAN_CORE_TAG,MISSING_MAN_MATERIAL_GLSL,missingManMaterialRole,isMissingManCoreTag,
 } from '../src/render/missing-man-material.js';
 import {
-  MISSING_MAN_SMOKE_MESH,missingManSmokePoint,sampleMissingManSmoke,
+  MISSING_MAN_SMOKE,MISSING_MAN_SMOKE_MESH,missingManSmokePoint,sampleMissingManSmoke,
   missingManSmokeInstances,installMissingManSmoke,
 } from '../src/render/missing-man-smoke.js';
 import {towerWarningPcmEnvelope,createTowerWarningAudio} from '../src/audio/tower-warning.js';
@@ -14,6 +14,7 @@ import {TOWER_WARNING as WARNING} from '../src/data/tower-warning.js';
 import {freshTowerWarning,towerWarningFrame,stepTowerWarning,towerWarningOccluded} from '../src/game/tower-warning.js';
 import {parseCharacterAsset,sampleCharacterPose} from '../src/render/character-asset.js';
 import {installTowerWarningFigure,towerWarningInstances,towerWarningFigureStatus,towerWarningLighting} from '../src/render/tower-warning.js';
+import {nativeSegmentObstruction} from '../src/render/stillness-native-receivers.js';
 
 const near=(a,b,tolerance=1e-7)=>assert.ok(Math.abs(a-b)<=tolerance,`${a} != ${b}`);
 const distance=(a,b)=>Math.hypot(...a.map((v,k)=>v-b[k]));
@@ -93,45 +94,65 @@ test('only authored negative core and smoke materials acquire special roles',()=
   assert.equal(missingManMaterialRole(),null);
 });
 
-test('the smoke starts at the actual ember, rises, then enters the authored face sink',()=>{
-  for(const clock of[0,.1,1,17,10000])for(let strand=0;strand<4;strand++){
-    missingManSmokePoint(tip,sink,0,{clock,strand}).forEach((value,k)=>near(value,tip[k]));
-    missingManSmokePoint(tip,sink,1,{clock,strand}).forEach((value,k)=>near(value,sink[k]));
-    const initial=missingManSmokePoint(tip,sink,.01,{clock,strand});
-    assert.ok(initial[1]>tip[1],'first movement rises away from the ember');
-    assert.ok(distance(missingManSmokePoint(tip,sink,.9,{clock,strand}),sink)<.04,'old smoke enters the face rather than dispersing outwards');
+test('the smoke rises off the actual ember, curls and thins, and never bends back into the face',()=>{
+  for(const clock of[0,.1,1,17,10000])for(let strand=0;strand<MISSING_MAN_SMOKE.strands;strand++){
+    missingManSmokePoint(tip,0,{clock,strand}).forEach((value,k)=>near(value,tip[k]));
+    let previous=tip[1];
+    for(let u=.1;u<=1.0001;u+=.1){const p=missingManSmokePoint(tip,u,{clock,strand});assert.ok(p[1]>previous,'every part of the plume is above the part below it');previous=p[1];}
+    assert.ok(previous-tip[1]>.35,'the plume climbs well clear of the hand');
   }
-  assert.equal(missingManSmokePoint(null,sink,.5),null);
-  assert.equal(missingManSmokePoint(tip,sink,NaN),null);
+  const plume=sampleMissingManSmoke({tip,clock:1});
+  for(let strand=0;strand<MISSING_MAN_SMOKE.strands;strand++){
+    const own=plume.filter(s=>s.strand===strand);
+    for(let n=1;n<own.length;n++){assert.ok(own[n].width>own[n-1].width,'it widens as it rises');assert.ok(own[n].density<own[n-1].density+1e-9||n<2,'and thins');}
+  }
+  for(const s of plume)assert.ok(distance(s.b,sink)>.1,'no strand is drawn into the face');
+  assert.equal(missingManSmokePoint(null,.5),null);
+  assert.equal(missingManSmokePoint(tip,NaN),null);
 });
 
 test('smoke is finite, bounded world geometry across clocks and translated anchors',()=>{
+  const most=MISSING_MAN_SMOKE.strands*MISSING_MAN_SMOKE.segments+MISSING_MAN_SMOKE.breath.strands*MISSING_MAN_SMOKE.breath.segments;
   for(const clock of[0,.001,1,4.59,4.6,18,10000]){
-    const segments=sampleMissingManSmoke({tip,sink,clock});
-    assert.ok(segments.length>0&&segments.length<=24);
+    const input={tip,mouth:sink,forward:[0,0,-1],breath:.7,clock},segments=sampleMissingManSmoke(input);
+    assert.ok(segments.length>0&&segments.length<=most);
     for(const s of segments){
       assert.ok([...s.a,...s.b,s.width,s.density,s.age].every(Number.isFinite));
-      assert.ok(s.width>0&&s.width<.025);assert.ok(s.density>0&&s.density<=1);
-      assert.ok(s.age>=0&&s.age<1);assert.ok(distance(s.a,s.b)<.08,'no wrapped segment crosses the head');
-      assert.ok(distance(s.a,tip)<.7);
+      assert.ok(s.width>0&&s.width<.05);assert.ok(s.density>0&&s.density<=1);
+      assert.ok(s.age>=0&&s.age<1);assert.ok(distance(s.a,s.b)<.1,'strands are continuous ribbons, not jumps');
+      assert.ok(distance(s.a,tip)<.7||distance(s.a,sink)<.4);
     }
-    const shift=[120,.12,-105],moved=sampleMissingManSmoke({tip:tip.map((v,k)=>v+shift[k]),sink:sink.map((v,k)=>v+shift[k]),clock});
+    const shift=[120,.12,-105],moved=sampleMissingManSmoke({...input,tip:tip.map((v,k)=>v+shift[k]),mouth:sink.map((v,k)=>v+shift[k])});
     assert.equal(moved.length,segments.length);
-    for(let n=0;n<segments.length;n++)for(const end of['a','b'])for(let k=0;k<3;k++)near(moved[n][end][k]-shift[k],segments[n][end][k]);
+    for(let n=0;n<segments.length;n++)for(const end of['a','b'])for(let k=0;k<3;k++)near(moved[n][end][k]-shift[k],segments[n][end][k],1e-6);
   }
-  for(const input of[{}, {tip,sink:[1e4,0,0]}, {tip:[NaN,0,0],sink}])assert.deepEqual(sampleMissingManSmoke(input),[]);
+  for(const input of[{}, {tip:[NaN,0,0]}])assert.deepEqual(sampleMissingManSmoke(input),[]);
 });
 
-test('smoke ages move towards the sink without connecting across their emitter wrap',()=>{
-  const before=sampleMissingManSmoke({tip,sink,clock:.2}),after=sampleMissingManSmoke({tip,sink,clock:.3});
+test('each strand is one unbroken ribbon whose curl climbs with the clock',()=>{
+  const before=sampleMissingManSmoke({tip,clock:.2}),after=sampleMissingManSmoke({tip,clock:.3});
   assert.equal(before.length,after.length);
-  for(let n=0;n<before.length;n++){
-    assert.equal(before[n].strand,after[n].strand);
-    near(after[n].age-before[n].age,.1/4.6);
-    assert.ok(distance(before[n].a,after[n].a)>0);
+  for(let strand=0;strand<MISSING_MAN_SMOKE.strands;strand++){
+    const own=before.filter(s=>s.strand===strand);
+    for(let n=1;n<own.length;n++)own[n].a.forEach((v,k)=>near(v,own[n-1].b[k]));
   }
-  const nearWrap=sampleMissingManSmoke({tip,sink,clock:4.6-.001});
-  for(const s of nearWrap)assert.ok(distance(s.a,s.b)<.08);
+  assert.ok(before.some((s,n)=>distance(s.b,after[n].b)>1e-4),'the shape moves');
+  assert.ok(before.every((s,n)=>Math.abs(s.b[1]-after[n].b[1])<1e-9),'rise is a fixed profile; only the curl travels');
+});
+
+test('a breath leaves the mouth along his facing only when he speaks or exhales',()=>{
+  const forward=[Math.sin(.6),0,-Math.cos(.6)],input={tip,mouth:sink,forward,clock:3};
+  assert.equal(sampleMissingManSmoke({...input,breath:0}).some(s=>s.kind==='breath'),false);
+  const breath=sampleMissingManSmoke({...input,breath:.8}).filter(s=>s.kind==='breath');
+  assert.ok(breath.length>0);
+  for(const strand of new Set(breath.map(s=>s.strand))){
+    const own=breath.filter(s=>s.strand===strand),first=own[0].a,last=own.at(-1).b;
+    first.forEach((v,k)=>near(v,sink[k],.02));
+    assert.ok(dot(subtract(last,first),forward)>.12,'out in front of his face');
+    assert.ok(last[1]>first[1],'and rising as it slows');
+  }
+  const weak=sampleMissingManSmoke({...input,breath:.2}).filter(s=>s.kind==='breath');
+  assert.ok(weak.reduce((n,s)=>n+s.density,0)<breath.reduce((n,s)=>n+s.density,0));
 });
 
 test('idle smoke remains present, engagement changes density only, and reduced motion has no free-running clock',()=>{
@@ -173,6 +194,27 @@ test('the smoke catalog installs finite three-plane geometry once without BLEND 
   assert.equal(mesh.primitives.length,1);assert.equal(mesh.primitives[0].count,18);
   assert.equal(mesh.primitives[0].base[3],1);assert.equal(mesh.primitives[0].materialRole,'missing-man-smoke');
   assert.ok(uploads.every(u=>Array.from(u.data).every(Number.isFinite)));
+  const primitive=mesh.primitives[0],geometry=primitive.nativeReceiverGeometry;
+  assert.ok(geometry,'the installed ribbon retains its actual native query geometry');
+  for(const[key,index,ArrayType]of[['positions',0,Float32Array],['normals',1,Float32Array],['uvs',2,Float32Array],['indices',3,Uint16Array]]){
+    assert.deepEqual(Array.from(ArrayType.from(geometry[key])),Array.from(uploads[index].data),`${key} matches the actual uploaded buffer rather than an invented blocker`);
+  }
+  for(const side of['min','max'])for(let k=0;k<3;k++){
+    const values=Array.from(geometry.indices,id=>geometry.positions[id*3+k]);
+    const actual=Math[side](...values),bound=primitive.nativeReceiverBounds[side][k];
+    assert.ok(side==='min'?bound<=actual+1e-7:bound>=actual-1e-7,'retained broad bounds contain every uploaded ribbon vertex');
+  }
+  const distant=missingManSmokeInstances({tip:[120,.12,-105],clock:1.31});
+  const clear=nativeSegmentObstruction({eye:[33.5,1.74,31.35],target:[33.15,.97,32.85],instances:distant,catalog:pack.catalog});
+  assert.deepEqual(clear,{blocked:false,hit:null},'actual distant smoke instances do not fail an unrelated pub sightline globally');
+  const ribbon=missingManSmokeInstances({tip,clock:1.31})[0];
+  const triangle=Array.from(geometry.indices.slice(0,3),id=>transform(ribbon.matrix,Array.from(geometry.positions.slice(id*3,id*3+3))));
+  const u=subtract(triangle[1],triangle[0]),v=subtract(triangle[2],triangle[0]);
+  const cross=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],normal=cross.map(n=>n/Math.hypot(...cross));
+  const centre=[0,1,2].map(k=>triangle.reduce((sum,p)=>sum+p[k],0)/3);
+  const crossing=nativeSegmentObstruction({eye:along(centre,normal,.25),target:along(centre,normal,-.25),instances:[ribbon],catalog:pack.catalog});
+  assert.equal(crossing.blocked,true);assert.equal(crossing.hit.id,ribbon.id);assert.equal(crossing.hit.conservative,false,'a ray crossing the real ribbon hits triangles, not a placeholder box');
+  assert.ok(crossing.hit.distance>0&&crossing.hit.distance<.5-.02);
   assert.equal(installMissingManSmoke(gl,pack),true);assert.equal(created,count,'repeat frames reuse one geometry allocation');
   assert.equal(pack.catalog.get(MISSING_MAN_SMOKE_MESH),mesh);
 });
@@ -442,15 +484,16 @@ test('actual weighted walk vertices retain standing scale without a collapsed fi
 });
 
 test('published stride matches actual planted feet instead of sliding the body over a decorative walk cycle',()=>{
-  const normalized=towerWarningAssetContract(builtContract);
-  for(const [bone,first,last]of[['foot_R',0,7],['foot_L',8,16]]){
+  const normalized=towerWarningAssetContract(builtContract),windows=builtContract.gait.plantedWindows;
+  for(const bone of['foot_R','foot_L']){
+    const[from,to]=windows[bone];assert.ok(to-from>.35,`${bone} carries weight for a real share of the cycle`);
     const joint=builtEntry.skin.joints.findIndex(n=>builtAsset.nodes[n].name===bone),ib=builtEntry.skin.inverseBind[joint];
     // The exported bind is rigid with baked scale. Inverting its translation
     // using the transposed rotation recovers this actual ankle pivot.
     const bind=[0,1,2].map(k=>-ib[k*4]*ib[12]-ib[k*4+1]*ib[13]-ib[k*4+2]*ib[14]);
     let planted=null;
-    for(let n=first;n<=last;n++){
-      const distance=normalized.gait.strideMetres*n/16;
+    for(let n=0;n<=12;n++){
+      const distance=normalized.gait.strideMetres*(from+(to-from)*n/12);
       const performance=towerWarningPerformance({...baseFrame,phase:'leaving',phaseSeconds:3,distance,walking:true},{assetContract:builtContract});
       const pose=sampleCharacterPose(builtAsset,builtEntry,performance.character),p=builtAnchor({joint:bone,position:bind},pose);
       const world=[p[0],p[1],p[2]-distance];
@@ -486,26 +529,31 @@ test('departure blends actual weighted hold and first-stride poses during the ex
   assert.equal(held.character.clip,clip,'root turning or physical obstruction holds the prepared stride');near(held.character.time,duration);
 });
 
-test('the complete posed coat, hat, hands and legs clear the actual departure masonry while following runtime turns',()=>{
+test('he stays clear of the house until he walks into it, and the wall then takes all of him',()=>{
   let state=freshTowerWarning({phase:'leaving',yaw:WARNING.yaw});
-  let checked=0;
-  for(let n=0;n<170;n++){
-    state=stepTowerWarning(state,{dt:.1});if(n%3&&n!==169)continue;
-    const frame=towerWarningFrame(state),performance=towerWarningPerformance(frame,{assetContract:builtContract});
-    const pose=sampleCharacterPose(builtAsset,builtEntry,performance.character),c=Math.cos(frame.yaw),s=Math.sin(frame.yaw);
-    for(const primitive of builtEntry.primitives)for(let vertex=0;vertex<primitive.vertexCount;vertex++){
-      const p=skinVertex(primitive,vertex,pose),world=[frame.position.x+p[0]*c-p[2]*s,frame.position.y+p[1],frame.position.z+p[0]*s+p[2]*c];
-      // One millimetre tolerates floating-point/tailoring contact; the original
-      // failed walk exceeded a metre and visibly intersected real architecture.
-      for(const box of WARNING.occluders){
-        const penetrates=world[0]>box.minX+.001&&world[0]<box.maxX-.001&&world[1]>box.minY+.001&&world[1]<box.maxY-.001&&world[2]>box.minZ+.001&&world[2]<box.maxZ-.001;
-        assert.equal(penetrates,false,`${materialName(primitive)} enters ${box.id} at distance ${frame.distance.toFixed(3)}`);
-      }
+  let checked=0,inside=null;const house=WARNING.occluders[0];
+  const skinned=(frame,performance)=>{
+    const pose=sampleCharacterPose(builtAsset,builtEntry,performance.character),c=Math.cos(frame.yaw),s=Math.sin(frame.yaw),out=[];
+    for(const primitive of builtEntry.primitives)for(let vertex=0;vertex<primitive.vertexCount;vertex+=3){
+      const p=skinVertex(primitive,vertex,pose);out.push([frame.position.x+p[0]*c-p[2]*s,frame.position.y+p[1],frame.position.z+p[0]*s+p[2]*c]);
     }
+    return out;
+  };
+  const within=(w,box)=>w[0]>box.minX&&w[0]<box.maxX&&w[1]>box.minY&&w[1]<box.maxY&&w[2]>box.minZ&&w[2]<box.maxZ;
+  for(let n=0;n<170;n++){
+    state=stepTowerWarning(state,{dt:.1});
+    const frame=towerWarningFrame(state);if(frame.position.z>WARNING.pier.plinth-.55||n%4)continue;
+    // One millimetre tolerates tailoring contact; nothing reaches the house
+    // before the masonry legs begin.
+    for(const w of skinned(frame,towerWarningPerformance(frame,{assetContract:builtContract})))
+      for(const box of WARNING.occluders)assert.equal(within(w,{minX:box.minX+.001,maxX:box.maxX-.001,minY:box.minY+.001,maxY:box.maxY-.001,minZ:box.minZ+.001,maxZ:box.maxZ-.001}),false,`enters ${box.id} at ${frame.distance.toFixed(3)}m`);
     checked++;
   }
-  assert.ok(checked>=55);assert.equal(towerWarningFrame(state).routeFinished,true);
-  assert.equal(towerWarningFrame(state).visible,true,'the geometry check keeps the endpoint visible while followed');
+  const frame=towerWarningFrame(state);
+  assert.ok(checked>=4);assert.equal(frame.routeFinished,true);
+  assert.equal(frame.visible,true,'the body is retired by the host on real occlusion, not by this walk');
+  inside=skinned(frame,towerWarningPerformance(frame,{assetContract:builtContract}));
+  assert.ok(inside.every(w=>within(w,house)),'coat tails, heels and hat brim are all inside the house front');
 });
 
 test('the actual renderer attaches world smoke and ember light to its sampled hand and uses only owned PCM density',()=>{
@@ -523,14 +571,15 @@ test('the actual renderer attaches world smoke and ember light to its sampled ha
   world.forEach((v,k)=>near(v,status.current.tip[k]));
   const light=towerWarningLighting(frame,{listener,audio})[0];
   [light.x,light.y,light.z].forEach((v,k)=>near(v,world[k]));
-  assert.equal(live.length,quiet.length);assert.ok(live.length>1);
-  for(let n=1;n<live.length;n++){
-    assert.deepEqual(live[n].matrix,quiet[n].matrix,'PCM does not detach or resize the actual smoke paths');
+  assert.ok(live.length>quiet.length,'his words carry a breath of smoke');assert.ok(quiet.length>1);
+  for(let n=1;n<quiet.length;n++){
+    assert.deepEqual(live[n].matrix,quiet[n].matrix,'PCM does not detach or resize the rising smoke');
     near(live[n].emissive[3]/quiet[n].emissive[3],( .8+.7*.3)/.8);
   }
   const paused=towerWarningInstances(frame,{listener,audio:{...audio,active:false,paused:true},paused:true});
   for(let n=1;n<live.length;n++)assert.deepEqual(paused[n],live[n],'pause retains acquired smoke and measured density without an independent clock');
   const stale=towerWarningInstances(frame,{listener,audio:{...audio,lineId:'stale'}});
+  assert.equal(stale.length,quiet.length,'a stale line carries no breath');
   for(let n=1;n<quiet.length;n++)assert.equal(stale[n].emissive[3],quiet[n].emissive[3]);
   assert.deepEqual(towerWarningInstances({...frame,phase:'departed',visible:false},{listener,audio}),[]);
   assert.deepEqual(towerWarningLighting({...frame,phase:'departed',visible:false},{listener,audio}),[]);

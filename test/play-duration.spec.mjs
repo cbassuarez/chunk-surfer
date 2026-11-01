@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import * as D from '../src/game/play-duration.js';
+import {advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
 import * as SAVE from '../src/game/save.js';
 import * as PALETTE from '../src/render/palette.js';
 import * as BINDINGS from '../src/game/bindings.js';
@@ -146,7 +147,7 @@ test('production main clock excludes menus, pause, native focus loss and termina
   const start=main.indexOf('function tickRunPlayDuration('),end=main.indexOf('\n}\n',start)+3;
   assert.ok(start>=0&&end>start);
   const save={...SAVE.freshSave(),run:{id:'duration-host',status:'active'}},menus=new Set();
-  const host={getSave:()=>save,runPlayDurationClock:D.createPlayDurationClock(),storyMode:true,inRogue:true,paused:false,
+  const host={getSave:()=>save,runPlayDurationClock:D.createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,storyMode:true,inRogue:true,paused:false,
     scenes:{has:id=>menus.has(id)},focused:true,gameplayInputLifecycleActive:()=>host.focused};
   const tick=vm.runInNewContext(`(${main.slice(start,end)})`,host);
   let now=0;tick(now);tick(now+=1000);assert.equal(save.playDuration.seconds,1);

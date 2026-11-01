@@ -1,0 +1,29 @@
+{
+  "pack": "source-outskirts-graffiti.glb",
+  "sha256": "926b2cc316cc3290b8e1bb34c4428c9e31c768e4a780efba02792268db8da320",
+  "creator": "unikumpu",
+  "license": "CC0 1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "creatorStatement": "https://www.reddit.com/r/unrealengine/comments/n7j1y7/need_cc0_graffiti_decals_i_thought_to_share_a_set/",
+  "sourceManifest": "assets/source-graffiti/unikumpu/manifest.json",
+  "images": [
+    {
+      "file": "Decal_Graffiti_valha.png",
+      "sha256": "38600133095095d750c0444cd531694cac1583da9d867bd4570fdf3477c31ab0",
+      "source": "https://drive.google.com/file/d/1PL56p1lU5n0r1nE_FG50xD7iR2B9Ciss/view"
+    },
+    {
+      "file": "Decal_Graffiti_dephy.png",
+      "sha256": "3415ceb684f2f9c1ee8e4d58a3e85ebafff9e875e79f0166a92725afc2d60bb8",
+      "source": "https://drive.google.com/file/d/1s1JmDDSkeoCiKEPNuAE39a8PbzLa6xy-/view"
+    },
+    {
+      "file": "Decal_Graffiti_RANDOM.png",
+      "sha256": "a297013b0bcb240aca44ee5c5e425e27d5d2760d7b4dde537992d33c4bc75fa9",
+      "source": "https://drive.google.com/file/d/1PvU2lc_kOYJRsmiY-wYMbd7vUcSC1r5s/view"
+    }
+  ],
+  "adaptation": "Original PNG bytes embedded; authored placements, scale, and renderer MASK cutoff.",
+  "ukOriginClaimed": false,
+  "nativeDitherAcceptance": "pending"
+}

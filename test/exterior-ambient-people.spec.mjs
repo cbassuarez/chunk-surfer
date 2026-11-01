@@ -4,6 +4,7 @@ import {exteriorAmbientPeoplePose as pose,exteriorAmbientPeopleInstances as inst
 import {exteriorAmbientInstances} from '../src/game/exterior-ambient.js';
 import {busGraffitiInstance} from '../src/render/bus-graffiti.js';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {NodeIO} from '@gltf-transform/core';
 
 const near=(a,b,tolerance=1e-6)=>assert.ok(Math.hypot(...a.map((v,i)=>v-b[i]))<tolerance,`${a} should match ${b}`);
@@ -41,7 +42,22 @@ test('bus paint asset has two real painted panel faces away from bus windows, wh
       sides.add(Math.sign(x));
     }
   }
-  assert.deepEqual([...sides].sort(),[-1,1]);assert.ok(vertices>100);
+  assert.deepEqual([...sides].sort(),[-1,1]);assert.equal(vertices,12);
+  const manifest=JSON.parse(readFileSync(new URL('../assets/source-graffiti/unikumpu/manifest.json',import.meta.url)));
+  assert.equal(mesh.listPrimitives().length,3);
+  for(const primitive of mesh.listPrimitives()){
+    const material=primitive.getMaterial(),image=material.getBaseColorTexture().getImage();
+    const digest=createHash('sha256').update(image).digest('hex');
+    assert.ok(manifest.files.some(file=>file.sha256===digest),'embedded image is an unchanged original');
+    assert.equal(material.getAlphaMode(),'MASK');assert.equal(material.getMetallicFactor(),0);
+    assert.deepEqual(material.getEmissiveFactor(),[0,0,0]);
+    const positions=primitive.getAttribute('POSITION').getArray();
+    const uv=primitive.getAttribute('TEXCOORD_0').getArray();
+    const a=0,b=1;
+    // Increasing U travels in reader-right for each face, avoiding mirrored tags.
+    const dx=positions[b*3+2]-positions[a*3+2],side=Math.sign(positions[0]);
+    assert.ok((uv[b*2]-uv[a*2])*dx*side<0);
+  }
 });
 
 test('ambient replacement is gated and preserves routes, identity and equipment ownership',()=>{

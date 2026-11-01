@@ -195,7 +195,51 @@ console.log('map core tests ok');
   assert.equal(doorSight(5.5,8),false,'a closed live leaf blocks sight');
   assert.equal(doorSight(5.5,7.5),true);
 
+  // A wall in the second half of a metre must stop the actual ray marcher,
+  // not merely answer correctly when the detailed predicate is called alone.
+  // Rounding before that predicate skipped every odd half-metre row.
+  const halfMetreFloor=new Set();
+  for(let y=0;y<40;y++)for(let x=0;x<40;x++)if(y!==19)halfMetreFloor.add(`${x},${y}`);
+  const thinWall=visibilityLookup({visibilityOpen:halfMetreFloor,visibilityScale:2});
+  const stopped=sightPolygon({origin:{x:5.75,y:8.75},heading:Math.PI,isOpen:thinWall,radius:12});
+  const straight=stopped[Math.floor(SIGHT.rays/2)];
+  assert.ok(straight.y>9.3&&straight.y<9.5,`the real half-metre wall stops the cone at ${straight.y}`);
+
+  const liveLeaf=visibilityLookup({open:new Set(Array.from({length:30},(_,y)=>`5,${y}`)),
+    doors:[{state:'closed',position:{x:5.5,y:9.5},widthAxis:'x',apertureWidth:1}]});
+  const blockedLeaf=sightPolygon({origin:{x:5.5,y:8.75},heading:Math.PI,isOpen:liveLeaf,radius:12});
+  assert.ok(blockedLeaf[Math.floor(SIGHT.rays/2)].y<9.5,'a leaf between metre nodes stops the actual sight cone');
+
   const longCorridor=new Set(Array.from({length:40},(_,y)=>`5,${y}`));
   const long=sightPolygon({origin:{x:5.5,y:30.5},heading:0,isOpen:openCellLookup({open:longCorridor}),radius:18});
   assert.ok(30.5-long[Math.floor(long.length/2)].y>17,'the viewshed reaches the minimap edge instead of stopping at the old 14m cap');
+}
+
+// The final canvas must use the same pixel scale for walkable topology and
+// the exterior footprint outlines. A one-text-cell minimum used to make each
+// metre row cover several neighbouring rows at normal outdoor zoom.
+{
+  const {drawLocalTopology}=await import('../src/render/minimap.js');
+  const {uiInit,uiCellMetrics}=await import('../src/render/ui.js');
+  const {minimapTransform}=await import('../src/game/map-projection.js');
+  const previous=Object.fromEntries(['document','window','getComputedStyle'].map(k=>[k,globalThis[k]]));
+  const fills=[],ctx=new Proxy({globalAlpha:1},{get(t,k){return k in t?t[k]:(...args)=>{if(k==='fillRect')fills.push(args);};},set(t,k,v){t[k]=v;return true;}});
+  globalThis.document={createElement:()=>({style:{},getContext:()=>ctx})};
+  globalThis.getComputedStyle=()=>({position:'relative'});
+  try{
+    for(const dpr of[1,2])for(const heading of[0,.7,Math.PI/2]){
+      globalThis.window={devicePixelRatio:dpr,addEventListener(){}};
+      uiInit({clientWidth:1280,clientHeight:800,appendChild(){}});
+      const metrics=uiCellMetrics(),viewport={x:1,y:1,w:22,h:10},center={x:.5,y:.5},radius=18;
+      const transform=minimapTransform({center,radius,viewport,heading,aspect:metrics.aspect});
+      for(const topology of[{open:new Set(['0,0']),runs:[{y:0,x0:0,x1:0}]},{open:new Set(['0,0'])}]){
+        fills.length=0;drawLocalTopology({...topology,transform,viewport,center,radius});
+        assert.equal(fills.length,1);
+        const expected=transform.scaleX*metrics.cellW*dpr;
+        assert.ok(expected<metrics.cellH*dpr/2,'the regression exercises sub-cell outdoor row height');
+        assert.ok(Math.abs(fills[0][2]-expected)<1e-7);
+        assert.ok(Math.abs(fills[0][3]-expected)<1e-7,'a square metre remains square in actual canvas pixels');
+      }
+    }
+  }finally{for(const[k,v]of Object.entries(previous)){if(v===undefined)delete globalThis[k];else globalThis[k]=v;}}
 }

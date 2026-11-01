@@ -5,6 +5,7 @@ import {BUS_BODY_CORRIDOR as C,busBodyCorridorCentre as centre,busBodyCorridorCo
 import {parseCharacterAsset} from '../src/render/character-asset.js';
 import {parseGlb} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 import {readBusAccessor} from '../tools/chunk_surfer/build-outskirts-bus-passage.mjs';
+import {localLightConeWeight} from '../src/render/local-light-cone.js';
 
 const load=name=>{const b=fs.readFileSync(new URL(`../public/assets/source-drive/cut/${name}.glb`,import.meta.url));return parseCharacterAsset(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength));};
 const landscape=load('cut-landscape'),living=load('cut-living'),entries=new Map([...landscape.entries,...living.entries].map(e=>[e.name,e]));
@@ -45,6 +46,44 @@ test('real Cut assets, fixed roots and saved physiology provide bounded reusable
   assert.deepEqual(a.filter(fixed).map(p=>Array.from(p.matrix)),b.filter(fixed).map(p=>Array.from(p.matrix)),'breathing translates the whole tunnel');
   assert.notDeepEqual(a.filter(p=>p.corridorPart==='cage').map(p=>p.character.morphs),b.filter(p=>p.corridorPart==='cage').map(p=>p.character.morphs));
   assert.deepEqual(propsAt({clock:1,progress:36,reducedMotion:true}).map(p=>p.character?.morphs),propsAt({clock:9,progress:36,reducedMotion:true}).map(p=>p.character?.morphs));
+});
+
+test('overlapping real opal practicals light the wet floor and one grazed wall throughout all72m without a following fill',t=>{
+  let minimumFloor=Infinity,minimumGrazedWall=Infinity,maximumNearestDistance=0;const stations=new Map();
+  // The same finite-radius square attenuation, Lambert term and authored cone
+  // used by the production prop shader; excludes ambient and carried torch.
+  const irradiance=(p,n,lights)=>lights.reduce((sum,l)=>{
+    const d=[l.x-p[0],l.y-p[1],l.z-p[2]],distance=Math.hypot(...d),attenuation=Math.max(0,1-distance/l.radius)**2,
+      lambert=Math.max(0,d.reduce((v,a,k)=>v+a*n[k],0)/distance),luma=.2126*l.color[0]+.7152*l.color[1]+.0722*l.color[2];
+    return sum+luma*l.intensity*attenuation*lambert*localLightConeWeight(l,d.map(v=>-v));
+  },0);
+  for(let sample=0;sample<=720;sample++){
+    const z=sample/10,c=centre(z),lights=lightsAt({progress:z}),cos=Math.cos(c.yaw),sin=Math.sin(c.yaw);
+    assert.ok(lights.length>0&&lights.length<=3);assert.ok(lights.every(l=>l.distanceM<C.viewDistance&&l.radius<C.viewDistance&&l.intensity===.85));
+    maximumNearestDistance=Math.max(maximumNearestDistance,Math.min(...lights.map(l=>Math.hypot(l.x-c.x,l.y-C.floor,l.z-z))));
+    for(const light of lights){assert.ok(light.direction[1]<-.6);assert.ok(close(Math.hypot(...light.direction),1));stations.set(light.id,light.along);}
+    for(const across of[-.45,0,.45])minimumFloor=Math.min(minimumFloor,irradiance([c.x+across*cos,C.floor,z-across*sin],[0,1,0],lights));
+    minimumGrazedWall=Math.min(minimumGrazedWall,Math.max(...[-1,1].map(side=>irradiance([c.x+side*.70*cos,1.2,z-side*.70*sin],[-side*cos,0,side*sin],lights))));
+  }
+  assert.equal(stations.size,11);const along=[...stations.values()].sort((a,b)=>a-b);
+  assert.equal(along[0],1.2);assert.equal(along.at(-1),70.8);
+  for(let i=1;i<along.length;i++)assert.ok(along[i]-along[i-1]<=7.2+1e-8);
+  assert.ok(maximumNearestDistance<4.5,'a player-sized floor sample leaves useful practical reach');
+  assert.ok(minimumFloor>.12,'a repeating floor segment falls back into a direct-light blackout');
+  assert.ok(minimumGrazedWall>.05,'both nominal side surfaces disappear between practicals');
+  t.diagnostic(JSON.stringify({samples:721,minimumDirectFloorIrradiance:minimumFloor,minimumBrighterWallIrradiance:minimumGrazedWall,maximumNearestPracticalDistanceM:maximumNearestDistance,fixtureStations:along,activeWindowM:C.viewDistance,maximumLights:3}));
+});
+
+test('every active emitter stays on its actual opal lens and the finite fixture window matches the light window',()=>{
+  const origin={x:4096,y:15.7,z:-700,yaw:Math.PI/2};
+  for(let progress=0;progress<=72;progress+=.3){
+    const lights=lightsAt({origin,progress}),fixtures=propsAt({origin,progress}).filter(p=>p.corridorPart==='practical');
+    assert.deepEqual(fixtures.map(p=>p.id).sort(),lights.map(l=>l.id).sort());
+    for(const light of lights){
+      const lens=point(fixtures.find(p=>p.id===light.id).matrix,[.335,4.16,0]);
+      assert.ok(Math.hypot(lens[0]-light.x,lens[1]-light.y,lens[2]-light.z)<.0006,'light drifted off its visible packed lens');
+    }
+  }
 });
 
 function clip(poly,axis,value,above){const out=[];for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],ia=above?a[axis]>=value:a[axis]<=value,ib=above?b[axis]>=value:b[axis]<=value;if(ia)out.push(a);if(ia!==ib){const t=(value-a[axis])/(b[axis]-a[axis]);out.push(a.map((v,k)=>v+t*(b[k]-v)));}}return out;}

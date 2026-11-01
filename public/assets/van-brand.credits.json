@@ -1,0 +1,9 @@
+{
+  "asset": "assets/van-brand.glb",
+  "copy": "FIELD RECORDING SERVICES",
+  "artwork": "Original project-authored filled-polygon brush/graffiti mark, src/data/van-brand-art.js",
+  "geometry": "Original task-authored thin pigment extrusion; no font or third-party graffiti copied",
+  "license": "Project-authored original assets; project licensing applies.",
+  "sourceSha256": "6baecb7b79ac9543f29c16388d349e9c8e5f5e934f7d2f76d8bb1c8522ae9d98",
+  "sha256": "e711e9fa2396e6e4c7a7dff84cf76c277d197dedb80a6890911f4a0511b6a561"
+}

@@ -1,5 +1,6 @@
 import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubStations,sourcePubTask,sourcePubFloorHoles,sourcePubFallProgress} from '../data/source-pub.js';
 import {uiSize,uiText,uiCenter,uiFill} from '../render/ui.js';
+import {recordNightClockTravel} from './night-clock-travel.js';
 
 const clone=value=>JSON.parse(JSON.stringify(value)),clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
 const finite=value=>typeof value==='number'&&Number.isFinite(value);
@@ -135,7 +136,7 @@ export function stepSourcePub(value,input={}){
 
 // The host retains pause/audio/save ownership. This scene holds only this
 // room's motion, look and resumable service sequence. No global input listeners.
-export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{}}={}){
+export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
   let state=normalizeSourcePubCheckpoint(checkpoint,{runId,returnPose}),ready=false,closed=false,paused=false,leaving=false,error=null,loadPromise=null,drag=null,exitPrompt=false,saveClock=0;
   const keys=new Set();
   if(typeof renderer?.render!=='function')throw Error('A game-owned Source pub renderer is required.');
@@ -177,8 +178,10 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
       if(closed||paused||leaving||exitPrompt)return;
       if(!renderReady()){clearMotion();return;}
       const hostLook=typeof getLook==='function'?getLook():null;
+      const before={x:state.x,z:state.z,layer:state.layer,fall:!!state.fall};
       const result=stepSourcePub(state,{dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),look:hostLook});state=result.state;
+      if(!before.fall&&!state.fall&&before.layer===state.layer)onAcceptedTravel(Math.hypot(state.x-before.x,state.z-before.z));
       saveClock+=Math.max(0,Number(dt)||0);if(saveClock>=1){saveClock=0;save('position');}
     },
     view(){const live=renderReady();return{...snapshot(),ready:live,closed,paused,leaving,error,exitPrompt,focus:live?focusedSourcePubStation(state):null,orders:state.stage<SOURCE_PUB.rounds.length?sourcePubRound(state.stage).orders:null};},

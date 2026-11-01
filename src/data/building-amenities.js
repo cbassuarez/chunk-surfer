@@ -4,17 +4,19 @@
 import { MATERIAL, ZONE } from './floorplan/legend.js';
 
 const freeze = (v) => Object.freeze(v);
+const coreShift=(x,y)=>x>=75&&x<=82&&y>=23.5&&y<=27?y-15:y;
 const prop = (id, mesh, x, y, extra = {}) => freeze({
-  id, mesh, x, y, yaw: 0, scale: 1, interactive: false, blocks: false,
+  id, mesh, x, y:coreShift(x,y), yaw: 0, scale: 1, interactive: false, blocks: false,
   renderOffsetX: x - Math.round(x * 2) / 2,
   renderOffsetZ: y - Math.round(y * 2) / 2,
   ...extra,
+  ...(extra.inspectAt?{inspectAt:{...extra.inspectAt,y:coreShift(extra.inspectAt.x,extra.inspectAt.y)}}:{}),
 });
-const partition = (id, x, y, width, depth, height = 3.4) => freeze({ id, x, y, width, depth, height });
+const partition = (id, x, y, width, depth, height = 3.4) => freeze({ id, x, y:coreShift(x,y), width, depth, height });
 
 export const PUBLIC_SANITARY_CORE = freeze({
-  id: 'public-sanitary-core', x0: 75, x1: 82, y0: 23.5, y1: 27, floor: 0,
-  anchor: freeze({ x: 78.5, y: 25.25 }), ceiling: 3.5,
+  id: 'public-sanitary-core', x0: 75, x1: 82, y0: 8.5, y1: 12, floor: 0,
+  anchor: freeze({ x: 78.5, y: 10.25 }), ceiling: 3.5,
 });
 // Wall centre-lines align with runtime cell centres. A 0.5 m proxy includes
 // the player's half-cell approach margin; visible partitions are 140 mm thick.
@@ -42,15 +44,15 @@ const coreProfile = () => ({ floor: 0, ceil: 3.5, zone: ZONE.foyer, material: MA
 export const BUILDING_AMENITY_LEVELS = freeze([
   freeze({ id: 'public-sanitary-core-air', replace: true, physicalReplace: true,
     layer: 'ground', space: 'front_atrium', renderGroup: 'ground',
-    origin: freeze({ x: 75, y: 23.5 }), physicalOrigin: freeze({ x: 75, y: 23.5 }), base: 0,
+    origin: freeze({ x: 75, y: 8.5 }), physicalOrigin: freeze({ x: 75, y: 8.5 }), base: 0,
     rows: freeze(['FFFFFFF', 'FFFFFFF', 'FFFFFFF']), profile: coreProfile }),
   freeze({ id: 'public-sanitary-core-rear-air', replace: true, physicalReplace: true,
     layer: 'ground', space: 'front_atrium', renderGroup: 'ground',
-    origin: freeze({ x: 75, y: 26 }), physicalOrigin: freeze({ x: 75, y: 26 }), base: 0,
+    origin: freeze({ x: 75, y: 11 }), physicalOrigin: freeze({ x: 75, y: 11 }), base: 0,
     rows: freeze(['FFFFFFF']), profile: coreProfile }),
   ...[
-    { id: 'public-wc-large-throat', x: 76.5, y: 23.5 },
-    { id: 'public-wc-standard-throat', x: 79, y: 24.5 },
+    { id: 'public-wc-large-throat', x: 76.5, y: 8.5 },
+    { id: 'public-wc-standard-throat', x: 79, y: 9.5 },
   ].map(({ id, x, y }) => freeze({ id, replace: true, physicalReplace: true,
     layer: 'ground', space: 'front_atrium', renderGroup: 'ground', origin: freeze({ x, y }), physicalOrigin: freeze({ x, y }),
     base: 0, rows: freeze(['+']), profile: () => ({ floor: 0, ceil: 3.4, zone: ZONE.foyer, material: MATERIAL.wetTile }) })),
@@ -60,8 +62,8 @@ export const BUILDING_AMENITY_LEVELS = freeze([
 // deliberately not reused for a WC. Both leaves start open and can be closed
 // normally. There is no new key, puzzle, powered lock or automatic closer.
 export const BUILDING_AMENITY_DOORS = freeze([
-  ['public-wc-large', 76.5, 23.5, 'left'],
-  ['public-wc-standard', 79, 24.5, 'right'],
+  ['public-wc-large', 76.5, 8.5, 'left'],
+  ['public-wc-standard', 79, 9.5, 'right'],
 ].map(([id, x, y, hinge]) => freeze({
   id, archetype: 'service-fire-single', legacyIds: freeze([]), at: freeze({ x, y }), x, y,
   hinge, widthAxis: 'x', swing: 'room-in', key: null, initialState: 'open', open: true,
@@ -74,7 +76,7 @@ export const BUILDING_AMENITY_COLLIDERS = freeze([
     minElevation: 0, maxElevation: p.height, spaceId: 'front_atrium' })),
   ...POOL_WASH_PARTITIONS.map((p) => freeze({ ...p, kind: 'obb', yaw: 0,
     minElevation: 0, maxElevation: p.height, spaceId: 'natatorium' })),
-  freeze({ id: 'amenity-drinking-fountain-body', kind: 'obb', x: 96.78, y: 16.65, width: .64, depth: .70,
+  freeze({ id: 'amenity-drinking-fountain-body', kind: 'obb', x: 88.5, y: 14.78, width: .70, depth: .64,
     yaw: 0, minElevation: 0, maxElevation: 1.3, spaceId: 'front_atrium' }),
   freeze({ id: 'amenity-staff-locker-body', kind: 'obb', x: 18.8, y: 275.2, width: .40, depth: 1.4,
     yaw: 0, minElevation: 10, maxElevation: 11.98, spaceId: 'academic' }),
@@ -82,7 +84,7 @@ export const BUILDING_AMENITY_COLLIDERS = freeze([
   // transformed by the cupboard at80.9,26.35/yawPI. Structural OBB tests
   // have no implicit player radius, so include the same200mm body margin
   // as ordinary prop collision around this slim panel only.
-  freeze({ id: 'amenity-cleaner-parked-leaf-body', kind: 'obb', x: 80.46, y: 26.12,
+  freeze({ id: 'amenity-cleaner-parked-leaf-body', kind: 'obb', x: 80.46, y: 11.12,
     width: .045 + .40, depth: .44 + .40, yaw: Math.PI,
     minElevation: 0, maxElevation: 2.04, spaceId: 'front_atrium', bodyMargin: .20,
     sourceProp: 'amenity-cleaner-cupboard' }),
@@ -145,23 +147,23 @@ export const BUILDING_AMENITY_PROPS = freeze([
   // the separate exact OBBs above own their visible bodies, not anchor boxes.
   // The honours boards occupy14.175..16.225 and17.025..19.075 on this wall.
   // Keep the complete bowl/backplate in the existing gap, beyond SP03's edge.
-  prop('amenity-public-drinking-fountain', 'amenity_public_drinking_fountain', 96.5, 16.65, { yaw: Math.PI / 2, structural: true, renderGroups: ['ground'] }),
+  prop('amenity-public-drinking-fountain', 'amenity_public_drinking_fountain', 88.5, 14.5, { yaw: 0, structural: true, renderGroups: ['ground'] }),
   prop('amenity-staff-coat-lockers', 'amenity_staff_coat_lockers', 18.5, 275.2, { yaw: Math.PI / 2, structural: true, floorOverride: 10, renderGroups: ['academic'] }),
 ]);
 
 export const BUILDING_AMENITY_RELOCATIONS = freeze([
-  freeze({ id: 'pool-entry-rules', x: 95, y: 28, note: 'On the changing vestibule north wall above the attendant counter.' }),
+  freeze({ id: 'pool-entry-rules', x: 86.6, y: 29.5, note: 'On the changing vestibule east wall above the attendant counter.' }),
 ]);
 
 export const BUILDING_AMENITY_SURVEY_NODES = freeze([
-  freeze({ id: 'public-wc-approach', x: 80.75, y: 22.75, facing: 'south', note: 'Protected rear cross aisle and both entrances.' }),
-  freeze({ id: 'public-wc-large-threshold', x: 76.75, y: 23.25, facing: 'south', doorId: 'public-wc-large' }),
-  freeze({ id: 'public-wc-large-interior', x: 76.75, y: 25.0, facing: 'south' }),
-  freeze({ id: 'public-wc-main-wash', x: 80.75, y: 24.25, facing: 'east' }),
-  freeze({ id: 'public-wc-standard-threshold', x: 79.25, y: 24.25, facing: 'south', doorId: 'public-wc-standard' }),
+  freeze({ id: 'public-wc-approach', x: 80.75, y: 7.75, facing: 'south', note: 'Protected rear cross aisle and both entrances.' }),
+  freeze({ id: 'public-wc-large-threshold', x: 76.75, y: 8.25, facing: 'south', doorId: 'public-wc-large' }),
+  freeze({ id: 'public-wc-large-interior', x: 76.75, y: 10.0, facing: 'south' }),
+  freeze({ id: 'public-wc-main-wash', x: 80.75, y: 9.25, facing: 'east' }),
+  freeze({ id: 'public-wc-standard-threshold', x: 79.25, y: 9.25, facing: 'south', doorId: 'public-wc-standard' }),
   freeze({ id: 'pool-wash-approach', x: 74.55, y: 37.0, facing: 'south' }),
   freeze({ id: 'pool-shower-interior', x: 74.05, y: 38.75, facing: 'west' }),
   freeze({ id: 'staff-counter-approach', x: 17.25, y: 271.25, facing: 'east', floor: 10 }),
-  freeze({ id: 'public-drinking-fountain', x: 95.75, y: 16.65, facing: 'east' }),
+  freeze({ id: 'public-drinking-fountain', x: 88.5, y: 13.75, facing: 'south' }),
   freeze({ id: 'staff-lockers-approach', x: 17.75, y: 275.25, facing: 'east', floor: 10 }),
 ]);

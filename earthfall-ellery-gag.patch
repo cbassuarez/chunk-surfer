@@ -1,0 +1,948 @@
+diff --git a/index.html b/index.html
+index c23c3cb01bef8e16aecc977d9137958a97cb36c8..5800438b86087f8c450c1d98a2016d1847ec5783 100644
+--- a/index.html
++++ b/index.html
+@@ -149,6 +149,6 @@
+   <div id="hushJump"></div>
+ </div>
+ 
+-<script type="module" src="./src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1-chapel-service-v1-st-brendans-weight-presences-v1-source-threshold-omen-v2-ellery-threshold-gag-v11"></script>
++<script type="module" src="./src/main.js?v=20260907-guided-case-tour-encounter-preparation-radio-field-instrument-stack-v1-item-portraits-v2-vfd-glow-clear-van-kit-3d-hall-applause-v3-audio-clock-v1-chapel-service-v1-st-brendans-weight-presences-v1-source-threshold-omen-v2-ellery-threshold-gag-v11-earthfall-gag-v5"></script>
+ </body>
+ </html>
+diff --git a/src/audio/source-earthfall-gag.js b/src/audio/source-earthfall-gag.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..364a82400b9743e5721567b4ef71a94e0534c109
+--- /dev/null
++++ b/src/audio/source-earthfall-gag.js
+@@ -0,0 +1,50 @@
++import {createThresholdGagAudio} from './threshold-gag.js';
++
++// The borrowed room owns its cue clock. This adapter observes its earned
++// edges; it never schedules a future joke or changes the demolition clock.
++export function createSourceEarthfallGagAudio({getAudio=()=>null,fetcher,urlFor,
++  createAudio=createThresholdGagAudio,maxEventAge=.16}={}){
++  let allowed=false,observed=false,runId=null,disposed=false;
++  const seen=new Set(),receipts=[];
++  const sound=createAudio({getAudio,protectedAudio:()=>!allowed,
++    ...(fetcher?{fetcher}:{}),...(urlFor?{urlFor}:{})});
++  function ready(){return !disposed&&!!sound.snapshot().ready;}
++  async function prepare(){if(disposed)return false;sound.resume();return await sound.prepare()===true;}
++  function stop(){allowed=false;sound.pause();}
++  function update(frame={},options={}){
++    if(disposed)return snapshot();
++    const nextRun=String(frame.runId??'earthfall-aside');
++    if(nextRun!==runId){runId=nextRun;observed=false;seen.clear();receipts.length=0;}
++    const gag=frame.gag,eye=frame.eye||[],listener={runId,x:Number(eye[0])||0,z:Number(eye[2])||0,
++      feet:(Number(eye[1])||0)-1.62,yaw:Number(frame.yaw)||0,pitch:Number(frame.pitch)||0,chartId:0};
++    let pair;try{pair=getAudio();}catch{}
++    const context=pair?.ctx||pair?.context;
++    const active=!!frame.active&&!!gag?.enabled&&Number(frame.blackoutAlpha||0)<.95
++      &&!frame.protected&&!options.protected&&!options.suspended&&!options.hidden&&options.focused!==false
++      &&!!context&&!['suspended','interrupted','closed'].includes(context.state);
++    // Loading a checkpoint partway through the room does not earn its old
++    // zero-age receipt again. Later newly crossed edges remain eligible.
++    const restoredBatch=!observed&&Number(gag?.elapsed||0)>maxEventAge;
++    if(frame.active&&gag?.enabled)observed=true;
++    allowed=active;if(active)sound.resume();else sound.pause();
++    sound.update(listener,null,gag?.soundPose||gag||{});
++    for(const event of options.events||[]){
++      if(!String(event?.type||'').startsWith('threshold-gag-'))continue;
++      const key=String(event.id||'apparatus')+':'+event.type;
++      if(seen.has(key))continue;seen.add(key);
++      const age=Number.isFinite(event.age)?Math.max(0,event.age):Number.isFinite(event.at)
++        ?Math.max(0,Number(gag?.elapsed||0)-event.at):0;
++      const reason=!active?'protected-or-outside':restoredBatch||frame.restored||event.suppressed?'restored-baseline'
++        :age>maxEventAge?'stale-no-backlog':!ready()?'bank-not-ready-no-backlog':null;
++      // The shared helper consumes a suppressed semantic edge too. Opening
++      // the gate later can never replay an edge missed during a protection.
++      allowed=active&&!reason;const played=sound.event(event,listener);
++      receipts.push({id:event.id,type:event.type,at:event.at??null,age,reason:played?'played':reason||'duplicate-or-invalid'});
++      if(receipts.length>16)receipts.shift();
++    }
++    allowed=active;return snapshot();
++  }
++  function destroy(){if(disposed)return;stop();disposed=true;sound.dispose();}
++  function snapshot(){return{...sound.snapshot(),runId,receipts:receipts.map(v=>({...v})),audibleGate:allowed};}
++  return{prepare,ready,update,stop,destroy,snapshot};
++}
+diff --git a/src/audio/source-earthfall.js b/src/audio/source-earthfall.js
+index e29d23c0e7727eeaca3ab594af5c58cee787fd5a..9104c59f7da60e755c7e536ee053f85d127a3ee8 100644
+--- a/src/audio/source-earthfall.js
++++ b/src/audio/source-earthfall.js
+@@ -1,4 +1,5 @@
+ import {createDoorAudio} from './door-audio.js';
++import {createSourceEarthfallGagAudio} from './source-earthfall-gag.js';
+ import {SOURCE_ELLERY_ASIDE_ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
+ import { assetUrl } from '../platform/paths.js';
+ import { SOURCE_DEMOLITION_AUDIO_DIR, SOURCE_DEMOLITION_AUDIO_CLIPS } from '../data/source-demolition-audio.js';
+@@ -54,6 +55,7 @@ function eventInfo(event, frame) {
+ 
+ export function createSourceEarthfallAudio({ getAudio = () => null,
+   urlFor = file => assetUrl(`${SOURCE_DEMOLITION_AUDIO_DIR}/${file}`), fetcher = globalThis.fetch,createAsideDoorAudio=createDoorAudio,
++  createAsideGagAudio=createSourceEarthfallGagAudio,gagFetcher,gagUrlFor,
+ } = {}) {
+   let graph = null, sequenceId = null, runId = null, disposed = false, enabled = false, effects = true, reduced = false;
+   let observedActive = false, rumble = null;
+@@ -304,7 +306,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
+       played, skipped, receipts: [...receipts], history: [...history], reducedDread: reduced,
+       positionMethod: g?.ctx.createPanner ? 'world HRTF' : 'world stereo fallback; elevation changes distance/filter',
+       propagationMethod: g?.ctx.createDelay ? 'bounded physical travel DelayNode; continuous distance update' : 'onset travel delay only; DelayNode unavailable',
+-      aside:asideDoors?{...asideDoors.snapshot?.(),materialHistory:[...asideMaterialHistory]}:null,
++      aside:asideDoors?{...asideDoors.snapshot?.(),materialHistory:[...asideMaterialHistory],gag:asideGag?.snapshot()||null,gagReady:!!asideGag?.ready()}:null,
+       rumble: rumble ? { playing: true, offset: rumble.offset, startedAt: rumble.at } : { playing: false },
+       sourceBank: `${SOURCE_DEMOLITION_AUDIO_DIR}/manifest.json`,
+       bankSubset: [...MATERIALS],
+@@ -319,6 +321,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
+         sourceEnd: voice.sourceEnd, until: voice.until }] : [])]) };
+   }
+   function update(frame = {}, options = {}) {
++    asideGag?.stop();
+     if (disposed) return { ...snapshot(), active: false, muted: true };
+     const nextId = String(frame.sequenceId || sequenceId || 'source-earthfall');
+     const nextRun = String(frame.runId ?? runId ?? '');
+@@ -381,10 +384,17 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
+       reason: !active ? 'outside-earthfall' : !enabled ? 'recording-playback-or-suspended' : 'earthfall' };
+     return snapshot();
+   }
+-  let asideDoors=null,asideSeen=new Set(),asideRun=null,asideMaterialHistory=[];
++  let asideDoors=null,asideGag=null,asideSeen=new Set(),asideRun=null,asideMaterialHistory=[];
+   const asidePortals=SOURCE_ELLERY_ASIDE_ASSET.doors.map(d=>({id:'earthfall-ellery:'+d.id,archetype:d.archetype,definition:{archetype:d.archetype}}));
+   const ensureAsideDoors=()=>asideDoors||(asideDoors=createAsideDoorAudio({getAudio,fetchImpl:fetcher}));
+-  async function prepareAside(){const d=ensureAsideDoors();d.update({active:true,listener:{x:65.15,y:1.62,z:11.65,yaw:-.75},nearDoors:asidePortals});await d.whenReady();d.pause('aside-prepared');return true;}
++  const ensureAsideGag=()=>asideGag||(asideGag=createAsideGagAudio({getAudio,maxEventAge:CONFIG.maxEventAge,
++    ...(gagFetcher?{fetcher:gagFetcher}:{}),...(gagUrlFor?{urlFor:gagUrlFor}:{})}));
++  async function prepareAside(){
++    const d=ensureAsideDoors(),gag=ensureAsideGag();
++    d.update({active:true,listener:{x:65.15,y:1.62,z:11.65,yaw:-.75},nearDoors:asidePortals});
++    try{const [doorReady,gagReady]=await Promise.all([d.whenReady(),gag.prepare()]);return doorReady!==false&&gagReady===true;}
++    finally{d.pause('aside-prepared');gag.stop();}
++  }
+   function updateAside(frame={},options={}){
+     // The remembered room is not on the shaking ground; its own sound owns it.
+     stopRumble();
+@@ -393,7 +403,8 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
+     const d=ensureAsideDoors(),active=!!frame.active&&frame.blackoutAlpha<.95&&!options.protected&&!options.suspended&&!options.hidden&&options.focused!==false;
+     if(asideRun!==frame.runId){asideRun=frame.runId;asideSeen.clear();asideMaterialHistory=[];}
+     d.update({active,listener:{x:frame.eye?.[0]??0,y:frame.eye?.[1]??1.62,z:frame.eye?.[2]??0,yaw:frame.yaw??0},nearDoors:asidePortals});
+-    for(const event of options.events||[]){if(asideSeen.has(event.id))continue;asideSeen.add(event.id);if(!active)continue;const door=frame.doors?.[event.doorIndex],portal=asidePortals[event.doorIndex];if(!door||!portal)continue;d.event({type:event.type,portal,fromClosed:event.type==='opening-start',fraction:door.fraction},door.anchor);}
++    for(const event of options.events||[]){if(String(event.type||'').startsWith('threshold-gag-'))continue;if(asideSeen.has(event.id))continue;asideSeen.add(event.id);if(!active)continue;const door=frame.doors?.[event.doorIndex],portal=asidePortals[event.doorIndex];if(!door||!portal)continue;d.event({type:event.type,portal,fromClosed:event.type==='opening-start',fraction:door.fraction},door.anchor);}
++    ensureAsideGag().update(frame,options);
+     // Every sound here has a source in the remembered room: the charges at
+     // their piers, the core's bearing, its floor, the walls at their pieces,
+     // and the roar of the dust. No earthquake bed is laid under it, and
+@@ -420,11 +431,11 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
+       asideMaterialHistory.push({id:event.id,type:event.type,position:event.position,age:event.age,reason:played?'played':reason||'voice-budget'});
+       if(asideMaterialHistory.length>8)asideMaterialHistory.shift();
+     }
+-    return d.snapshot();
++    return {...d.snapshot(),gag:asideGag.snapshot(),gagReady:asideGag.ready()};
+   }
+-  function stopAside(){asideDoors?.pause('aside-stopped');stopDemolition();cut();}
++  function stopAside(){asideDoors?.pause('aside-stopped');asideGag?.stop();stopDemolition();cut();}
+   function stop() { stopAside();cut(); enabled = false; last = { ...last, active: false, muted: true, audible: false, reason: 'stopped' }; }
+-  function reset() { stop();asideSeen.clear();asideRun=null; sequenceId = null; runId = null; observedActive = false; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
+-  function destroy() { stop();asideDoors?.dispose(); disposed = true; graph?.master.disconnect?.(); graph?.residualBus.disconnect?.(); graph = null; }
+-  return { update, updateAside,prepareAside,stopAside,asideSnapshot:()=>asideDoors?.snapshot()||null, ready: () => load(), stop, reset, snapshot, destroy };
++  function reset() { stop();asideGag?.destroy();asideGag=null;asideSeen.clear();asideRun=null; sequenceId = null; runId = null; observedActive = false; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
++  function destroy() { stop();asideDoors?.dispose();asideGag?.destroy(); disposed = true; graph?.master.disconnect?.(); graph?.residualBus.disconnect?.(); graph = null; }
++  return { update, updateAside,prepareAside,asideGagReady:()=>!!asideGag?.ready(),stopAside,asideSnapshot:()=>asideDoors?{...asideDoors.snapshot(),gag:asideGag?.snapshot()||null,gagReady:!!asideGag?.ready()}:null, ready: () => load(), stop, reset, snapshot, destroy };
+ }
+diff --git a/src/data/source-earthfall-ellery-aside.js b/src/data/source-earthfall-ellery-aside.js
+index 11883fae69f421e8cfa5346f732a90eacb1a2780..dfc74bfd9e403f149eb775aa7eeb54c701b22ceb 100644
+--- a/src/data/source-earthfall-ellery-aside.js
++++ b/src/data/source-earthfall-ellery-aside.js
+@@ -7,7 +7,7 @@
+ // core goes first and the walls are drawn in after it, and dust leaves every
+ // base and rolls across the floor until it fills the view.
+ export const SOURCE_EARTHFALL_ELLERY_ASIDE=Object.freeze({
+- version:2,id:'source-earthfall:ellery-aside-v2',duration:7.8,fixedStep:1/120,maxFrameDelta:.25,
++ version:3,id:'source-earthfall:ellery-aside-v3',duration:7.8,fixedStep:1/120,maxFrameDelta:.25,
+  walkSpeed:2.8,bodyRadius:.22,bodyHeight:1.8,eyeHeight:1.62,
+  room:Object.freeze({minX:57.25,maxX:73.25,minZ:3.25,maxZ:15.25,floor:0,ceiling:5.5}),
+  center:Object.freeze({x:65.25,y:0,z:9.25}),
+diff --git a/src/data/source-earthfall-gag.js b/src/data/source-earthfall-gag.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1b58aad41a9dbe08476b743608ea4a74a919e26a
+--- /dev/null
++++ b/src/data/source-earthfall-gag.js
+@@ -0,0 +1,78 @@
++import {THRESHOLD_GAG,THRESHOLD_GAG_SOLIDS,thresholdGagAngle,thresholdGagTiming} from './threshold-gag.js';
++import {SOURCE_EARTHFALL_ELLERY_ASIDE as ASIDE} from './source-earthfall-ellery-aside.js';
++
++// Recognition has its own clock. The implosion retains its original 0..7.8 s
++// construction clock, so no door, charge, floor or acoustic phase is stretched.
++export const EARTHFALL_GAG=Object.freeze({
++  id:'earthfall-ellery-second-ghost',version:1,
++  mount:Object.freeze({x:62.2,y:1.15,z:9.65,yaw:-.75}),
++  releaseAt:6,maximumRecognitionSeconds:12,noticeSeconds:.25,
++  shadowAt:12,shadowArcSeconds:.9,shadowArriveAt:15.3,completeAt:16,
++  target:Object.freeze({x:65.15,z:11.65}),
++});
++const finite=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
++const clamp=(v,a,b)=>Math.max(a,Math.min(b,finite(v,a)));
++const ease=v=>{const t=clamp(v,0,1);return t*t*(3-2*t);};
++export function freshEarthfallGag({legacy=false}={}){
++  return{version:1,elapsed:legacy?EARTHFALL_GAG.completeAt:0,waited:0,noticed:0,emitted:legacy?31:0,complete:legacy,legacy,reduced:false,reducedDread:false};
++}
++export function normalizeEarthfallGag(v){
++  if(!v||v.version!==1)return freshEarthfallGag({legacy:true});
++  const elapsed=clamp(v.elapsed,0,EARTHFALL_GAG.completeAt),complete=!!v.complete||elapsed>=EARTHFALL_GAG.completeAt-1e-8;
++  return{version:1,elapsed:complete?EARTHFALL_GAG.completeAt:elapsed,waited:clamp(v.waited,0,EARTHFALL_GAG.maximumRecognitionSeconds),
++    noticed:clamp(v.noticed,0,1),emitted:clamp(Math.floor(finite(v.emitted)),0,31),complete,legacy:!!v.legacy,reduced:!!v.reduced,reducedDread:!!v.reducedDread};
++}
++export function earthfallGagPoint(p,angle=0){
++  const m=EARTHFALL_GAG.mount,a=m.yaw+angle,c=Math.cos(a),s=Math.sin(a);
++  return{x:m.x+c*p[0]-s*p[2],y:m.y+p[1],z:m.z+s*p[0]+c*p[2]};
++}
++export function earthfallGagNoticed(state){
++  const p=earthfallGagPoint(THRESHOLD_GAG.revealLocal),dx=p.x-state.x,dz=p.z-state.z,d=Math.hypot(dx,dz),pitch=Math.atan2(p.y-(state.feet+1.62),d);
++  return d<8&&Math.cos(Math.atan2(dx,-dz)-state.yaw)>Math.cos(.72)&&Math.abs(pitch-state.pitch)<.6;
++}
++export function earthfallGagSequenceTime(state){
++  const g=state.gag;return g?.legacy?finite(state.elapsed):finite(g?.waited)+Math.max(0,finite(g?.elapsed)-EARTHFALL_GAG.releaseAt)+finite(state.elapsed);
++}
++export function sourceEarthfallGagFrame(state={}){
++  const g=normalizeEarthfallGag(state.gag),t=g.elapsed,m=EARTHFALL_GAG.mount,local=Math.max(0,t-EARTHFALL_GAG.releaseAt),fired=t>=EARTHFALL_GAG.releaseAt,
++    angle=thresholdGagAngle(local,{fired,reduced:g.reduced}),clock=thresholdGagTiming(g.reduced);
++  let shadow=null;
++  if(!g.legacy&&!g.reducedDread&&t>=EARTHFALL_GAG.shadowAt&&finite(state.elapsed)<ASIDE.wallsAt.north+.1){
++    const arc=-1.1*ease((t-EARTHFALL_GAG.shadowAt)/EARTHFALL_GAG.shadowArcSeconds),p=earthfallGagPoint([-.68,-1.15,.075],arc),
++      endpoint=earthfallGagPoint([-.68,-1.15,.075],-1.1),u=ease((t-EARTHFALL_GAG.shadowAt-EARTHFALL_GAG.shadowArcSeconds)/(EARTHFALL_GAG.shadowArriveAt-EARTHFALL_GAG.shadowAt-EARTHFALL_GAG.shadowArcSeconds)),travel=g.reduced?.4:1,
++      x=p.x+(EARTHFALL_GAG.target.x-endpoint.x)*u*travel,z=p.z+(EARTHFALL_GAG.target.z-endpoint.z)*u*travel,
++      fadeStart=ASIDE.coreAt-.05,charge=.90*ease((t-EARTHFALL_GAG.shadowAt)/.35)*(1-ease((finite(state.elapsed)-fadeStart)/(ASIDE.wallsAt.north+.1-fadeStart)));
++    shadow={x,z,feet:.025,pitch:-Math.PI/2,scaleX:2.4,scaleY:1.2,scaleZ:.1,yaw:Math.atan2(EARTHFALL_GAG.target.x-endpoint.x,-(EARTHFALL_GAG.target.z-endpoint.z)),variant:15,charge,poseId:'head_turn'};
++  }
++  return{enabled:!g.legacy,elapsed:t,phase:!fired?'recognition':t<EARTHFALL_GAG.shadowAt?'familiar':g.complete?'demolition':'violation',
++    angle,mount:{...m},speaker:earthfallGagPoint(THRESHOLD_GAG.speaker,angle),contact:earthfallGagPoint(THRESHOLD_GAG.contact),
++    shadow,reduced:g.reduced,reducedDread:g.reducedDread,noticed:g.noticed>=EARTHFALL_GAG.noticeSeconds,complete:g.complete,
++    finishAt:EARTHFALL_GAG.releaseAt+clock.finish};
++}
++export function earthfallGagPenetration(x,z,state){
++  const g=sourceEarthfallGagFrame(state);if(!g.enabled||finite(state.elapsed)>=ASIDE.foldStart)return 0;
++  const m=g.mount,r=.22,feet=finite(state.feet);
++  return Math.max(0,...THRESHOLD_GAG_SOLIDS.map(box=>{
++    if(feet+1.8<=m.y+box.min[1]||feet>=m.y+box.max[1])return 0;
++    const a=m.yaw+(box.moving?g.angle:0),c=Math.cos(a),s=Math.sin(a),dx=x-m.x,dz=z-m.z,lx=c*dx+s*dz,lz=-s*dx+c*dz;
++    return Math.max(0,Math.min(lx+r-box.min[0],box.max[0]+r-lx,lz+r-box.min[2],box.max[2]+r-lz));
++  }));
++}
++export function advanceEarthfallGag(state,dt,events,{reducedMotion=false,reducedDread=false}={}){
++  const g=state.gag;g.reducedDread=!!reducedDread;if(g.complete)return false;
++  const before=g.elapsed;if(before<EARTHFALL_GAG.releaseAt)g.waited=Math.min(EARTHFALL_GAG.maximumRecognitionSeconds,g.waited+dt);
++  if(earthfallGagNoticed(state))g.noticed=Math.min(1,g.noticed+dt);
++  if(before<EARTHFALL_GAG.releaseAt){
++    g.elapsed=Math.min(EARTHFALL_GAG.releaseAt,g.elapsed+dt);
++    if(g.elapsed>=EARTHFALL_GAG.releaseAt&&g.noticed<EARTHFALL_GAG.noticeSeconds&&g.waited<EARTHFALL_GAG.maximumRecognitionSeconds)g.elapsed=EARTHFALL_GAG.releaseAt-1e-6;
++  }else g.elapsed=Math.min(EARTHFALL_GAG.completeAt,g.elapsed+dt);
++  if(before<EARTHFALL_GAG.releaseAt&&g.elapsed>=EARTHFALL_GAG.releaseAt)g.reduced=!!reducedMotion;
++  const clock=thresholdGagTiming(g.reduced),edges=[['release',0],['stop',clock.contact],['rattle',clock.rattle],['speaker-click',clock.click],['boo',clock.boo]];
++  for(let i=0;i<edges.length;i++){
++    const[kind,offset]=edges[i],at=EARTHFALL_GAG.releaseAt+offset,bit=1<<i;if(g.emitted&bit||g.elapsed<at-1e-8)continue;
++    g.emitted|=bit;const f=sourceEarthfallGagFrame(state),position=kind==='release'?f.mount:kind==='boo'||kind==='speaker-click'?f.speaker:f.contact;
++    const event={id:EARTHFALL_GAG.id+':'+state.runId,type:'threshold-gag-'+kind,at,position:{x:position.x,y:position.y,z:position.z},chartId:0,age:0};events.push(event);
++  }
++  if(g.elapsed>=EARTHFALL_GAG.completeAt-1e-8){g.elapsed=EARTHFALL_GAG.completeAt;g.complete=true;}
++  return true;
++}
+diff --git a/src/dev/threshold-gag-review.js b/src/dev/threshold-gag-review.js
+index be6e10391783716e92d8a9d735794f50eba7457f..2a44864b44890e2ff7964155d166d120dd8cc1fb 100644
+--- a/src/dev/threshold-gag-review.js
++++ b/src/dev/threshold-gag-review.js
+@@ -18,11 +18,13 @@ export function installThresholdGagReview(api){
+   let stagedBudget=false,freezeStop=false,stopFrozen=false,capture=null,frameId=null,observations=[],busy=false,active=false;
+   const button=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.style.cssText='font:inherit;padding:3px 6px';b.onclick=async()=>{if(busy)return;busy=true;b.disabled=true;try{await fn();active=true;}catch(e){status.textContent=String(e?.stack||e);}finally{busy=false;b.disabled=false;document.getElementById('map')?.focus();}};panel.append(b);return b;};
+   button('Stage Ellery arrival',()=>{stopFrozen=false;return api.stage('arrival');});button('Stage Ellery return',()=>{stopFrozen=false;return api.stage('return');});
++  button('Stage Earthfall Ellery',()=>{stopFrozen=false;return api.stage('earthfall');});
+   button('Reload checkpoint',()=>{stopFrozen=false;return api.stage('saved');});button('Resume scene',()=>{stopFrozen=false;api.scene()?.resume();});
+   for(const[name,yaw,pitch]of[['Look north',0,0],['Look west',-Math.PI/2,0],['Look at face','face',.02],['Look down',null,-.65]])button(name,()=>{const scene=api.scene(),v=scene?.view();scene?.setLook({yaw:yaw==='face'?Math.atan2(thresholdGagViewPoints()[1][0]-v.x,-(thresholdGagViewPoints()[1][2]-v.z)):yaw??v.yaw,pitch});});
+   button('Look at mechanism',()=>{const scene=api.scene(),v=scene?.view(),p=thresholdGagPoint([-.68,0,.05]);scene?.setLook({yaw:Math.atan2(p.x-v.x,v.z-p.z),pitch:Math.atan2(p.y-(v.feet+1.62),Math.hypot(p.x-v.x,p.z-v.z))});});
+   button('Look at inscription',()=>{const scene=api.scene(),v=scene?.view(),p=thresholdGagPoint(THRESHOLD_GAG.inscription.target);scene?.setLook({yaw:Math.atan2(p.x-v.x,v.z-p.z),pitch:Math.atan2(p.y-(v.feet+THRESHOLD_GAG.eyeHeight),Math.hypot(p.x-v.x,p.z-v.z))});});
+-  button('Turn around',()=>{const scene=api.scene(),v=scene?.view();scene?.setLook({yaw:v.yaw+Math.PI,pitch:0});});
++  button('Look at Earthfall gag',()=>{const scene=api.scene(),v=scene?.view()?.aside,p=v?.gag?.mount;if(!p)return;scene.setLook({yaw:Math.atan2(p.x-.45-v.x,v.z-(p.z+.45)),pitch:Math.atan2(p.y-.25-(v.feet+1.62),Math.hypot(p.x-.45-v.x,p.z+.45-v.z))});});
++  button('Turn around',()=>{const scene=api.scene(),v=scene?.lookAngles?.()||scene?.view();scene?.setLook({yaw:v.yaw+Math.PI,pitch:0});});
+   button('Yaw −15°',()=>api.scene()?.lookBy(-Math.PI/12,0));button('Yaw +15°',()=>api.scene()?.lookBy(Math.PI/12,0));
+   const check=(label,fn)=>{const l=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.onchange=()=>{fn(box.checked);document.getElementById('map')?.focus();};l.append(box,label);panel.append(l);};
+   check('Freeze at stop (inspection)',v=>{freezeStop=v;stopFrozen=false;});check('Reduced motion',v=>api.reduceMotion(v));check('DEV: allow inspection scare (staged budget)',v=>{stagedBudget=v;api.allowInspectionBudget(v);});
+diff --git a/src/game/source-earthfall-ellery-aside.js b/src/game/source-earthfall-ellery-aside.js
+index 14ecd093071d46825badd609d64b0539963f18ac..f618bd2bdd0ddee95af103c01f48464d352c3405 100644
+--- a/src/game/source-earthfall-ellery-aside.js
++++ b/src/game/source-earthfall-ellery-aside.js
+@@ -2,6 +2,7 @@ import {doorLeafLocalMatrix} from '../data/source-door-fields.js';
+ import {SOURCE_EARTHFALL_ELLERY_ASIDE as C,SOURCE_ELLERY_ASIDE_PANELS as PANELS,SOURCE_ELLERY_ASIDE_CHARGES as CHARGES,sourceElleryAsideCollapse,sourceElleryAsideDoorFraction,sourceElleryAsideDoorLight,sourceElleryAsidePhase} from '../data/source-earthfall-ellery-aside.js';
+ import {SOURCE_ELLERY_ASIDE_ASSET as ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
+ import {sourceElleryAsideDust} from './source-earthfall-ellery-aside-dust.js';
++import {freshEarthfallGag,normalizeEarthfallGag,advanceEarthfallGag,sourceEarthfallGagFrame,earthfallGagPenetration,earthfallGagSequenceTime} from '../data/source-earthfall-gag.js';
+ const finite=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d,clamp=(v,a,b)=>Math.max(a,Math.min(b,finite(v,a)));
+ const copy=v=>JSON.parse(JSON.stringify(v)),angle=v=>Math.atan2(Math.sin(finite(v)),Math.cos(finite(v)));
+ const ID=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
+@@ -95,10 +96,14 @@ export function sourceElleryAsideWalkBounds(elapsed=0){
+ }
+ const circleRect=(x,z,b)=>Math.hypot(Math.max(b.minX-x,0,x-b.maxX),Math.max(b.minZ-z,0,z-b.maxZ))<C.bodyRadius;
+ const propBox=p=>{const b=p.bounds;if(!b)return null;const scale=p.scale||1;return{minX:p.x+b.min[0]*scale,maxX:p.x+b.max[0]*scale,minZ:p.z+b.min[2]*scale,maxZ:p.z+b.max[2]*scale};};
+-export function freshSourceEarthfallElleryAside({runId=''}={}){return{version:C.version,id:C.id,runId:String(runId),status:'active',elapsed:0,accumulator:0,...C.spawn,velocityY:0,receipts:[],consumed:false};}
++export function freshSourceEarthfallElleryAside({runId=''}={}){return{version:C.version,id:C.id,runId:String(runId),status:'active',elapsed:0,accumulator:0,...C.spawn,velocityY:0,receipts:[],consumed:false,gag:freshEarthfallGag()};}
+ export function normalizeSourceEarthfallElleryAside(value,options={}){
+- const fresh=freshSourceEarthfallElleryAside({runId:options.runId??value?.runId});if(!value||value.version!==C.version||value.id!==C.id||options.runId!=null&&String(options.runId)!==String(value.runId))return fresh;
++ const fresh=freshSourceEarthfallElleryAside({runId:options.runId??value?.runId}),legacy=value?.version===2&&value.id==='source-earthfall:ellery-aside-v2';if(!value||!legacy&&(value.version!==C.version||value.id!==C.id)||options.runId!=null&&String(options.runId)!==String(value.runId))return fresh;
+  const result={...fresh,status:value.status==='completed'?'completed':'active',elapsed:clamp(value.elapsed,0,C.duration),accumulator:clamp(value.accumulator,0,C.fixedStep),x:finite(value.x,fresh.x),z:finite(value.z,fresh.z),feet:finite(value.feet),velocityY:finite(value.velocityY),yaw:angle(value.yaw),pitch:clamp(value.pitch??0,-1.3,1.3),consumed:!!value.consumed,receipts:Array.isArray(value.receipts)?value.receipts.slice(-96).filter(r=>r&&typeof r.id==='string').map(copy):[]};
++ result.gag=legacy?freshEarthfallGag({legacy:true}):normalizeEarthfallGag(value.gag);
++ // A recorded destruction pose must never wait inside already-broken floors
++ // for an inserted prologue. Explicitly staged and damaged saves skip it too.
++ if(result.elapsed>1e-8&&!result.gag.complete)result.gag=normalizeEarthfallGag({...result.gag,complete:true,emitted:31});
+  if(result.elapsed>=C.duration){result.status='completed';result.consumed=true;}
+  return result;
+ }
+@@ -122,6 +127,7 @@ function throatSupport(x,z,elapsed){
+ export function sourceElleryAsideCanStand(x,z,s){
+  const b=sourceElleryAsideWalkBounds(s.elapsed),r=C.bodyRadius,inside=x>=b.minX+r&&x<=b.maxX-r&&z>=b.minZ+r&&z<=b.maxZ-r;
+  if(!inside&&!throatSupport(x,z,s.elapsed))return false;
++ if(s.gag&&earthfallGagPenetration(x,z,s)>earthfallGagPenetration(s.x??x,s.z??z,s)+1e-8)return false;
+  if(s.elapsed<C.foldStart)for(const p of ASSET.props){if(!/chandelier-cage|dispatch|road-case|crate|reel/.test(p.id))continue;const box=propBox(p);if(box&&circleRect(x,z,box))return false;}
+  const contact=sourceElleryAsideFooting(x,z,s.elapsed);if(!contact)return false;const feet=contact.y,margin=r;
+  for(let i=0;i<ASSET.doors.length;i++){
+@@ -135,11 +141,12 @@ export function sourceElleryAsideCanStand(x,z,s){
+ }
+ export function stepSourceEarthfallElleryAside(value,input={}){
+  const state=normalizeSourceEarthfallElleryAside(value),events=[];
+- if(state.status!=='active'||input.paused||input.protected||input.assetsReady===false)return{state,events,complete:state.status==='completed'};
++ if(state.status!=='active'||input.paused||input.protected||input.hidden||input.suspended||input.focused===false||input.assetsReady===false||input.gagAudioReady===false)return{state,events,complete:state.status==='completed'};
+  if(input.look){state.yaw=angle(input.look.yaw??state.yaw+finite(input.look.dx));state.pitch=clamp(input.look.pitch??state.pitch+finite(input.look.dy),-1.3,1.3);}
+  state.accumulator+=clamp(input.dt??0,0,C.maxFrameDelta);
+  while(state.accumulator+1e-10>=C.fixedStep&&state.status==='active'){
+-  const before=state.elapsed,standing=sourceElleryAsideFooting(state.x,state.z,before);state.accumulator=Math.max(0,state.accumulator-C.fixedStep);state.elapsed=Math.min(C.duration,state.elapsed+C.fixedStep);
++  const before=state.elapsed,standing=sourceElleryAsideFooting(state.x,state.z,before);state.accumulator=Math.max(0,state.accumulator-C.fixedStep);
++  const gagActive=advanceEarthfallGag(state,C.fixedStep,events,input);if(!gagActive)state.elapsed=Math.min(C.duration,state.elapsed+C.fixedStep);
+   if(standing?.local&&Math.abs(state.feet-standing.y)<.16){const carried=transformAsidePoint(sourceElleryAsidePanelMatrix(standing.id,state.elapsed),standing.local);state.x=carried[0];state.z=carried[2];state.feet=carried[1];}
+   const b=sourceElleryAsideWalkBounds(state.elapsed),r=C.bodyRadius;
+   if(state.elapsed>=C.foldStart&&!sourceElleryAsideCanStand(state.x,state.z,state)){
+@@ -174,5 +181,6 @@ export function sourceEarthfallElleryAsideFrame(value){
+   ...cues.map(cue=>{const at=cue.piece.releaseAt,p=sourceElleryAsidePieceState(cue.piece.id,state.elapsed).center;
+    return{type:cue.type,...(cue.host?{host:cue.host}:{}),id:`${C.id}:${state.runId}:${cue.type}${cue.host?':'+cue.host:''}`,at,age:state.elapsed-at,position:{x:p[0],y:p[1],z:p[2]},pieceId:cue.piece.id};}),
+  ].filter(cue=>cue.age>=-1e-7);
+- return{...state,active:state.status==='active',phase:sourceElleryAsidePhase(state.elapsed),collapse,blackoutAlpha:collapse.blackout,doors,materialEvents,dust:sourceElleryAsideDust(state.elapsed,[state.x,state.feet+C.eyeHeight,state.z]),walkBounds:sourceElleryAsideWalkBounds(state.elapsed),eye:[state.x,state.feet+C.eyeHeight,state.z],events:state.receipts.map(e=>({...copy(e),age:Math.max(0,state.elapsed-e.at)}))};
++ const gag=sourceEarthfallGagFrame(state),supportMatrix=sourceElleryAsideObjectMatrix('earthfall-gag',[gag.mount.x,0,gag.mount.z],state.elapsed),carry=p=>{const q=transformAsidePoint(supportMatrix,[p.x,p.y,p.z]);return{x:q[0],y:q[1],z:q[2]};};
++ return{...state,gag:{...gag,supportMatrix,soundPose:{mount:carry(gag.mount),speaker:carry(gag.speaker),contact:carry(gag.contact)}},sequenceElapsed:earthfallGagSequenceTime(state),active:state.status==='active',phase:state.gag.complete?sourceElleryAsidePhase(state.elapsed):gag.phase,collapse,blackoutAlpha:collapse.blackout,doors,materialEvents,dust:sourceElleryAsideDust(state.elapsed,[state.x,state.feet+C.eyeHeight,state.z]),walkBounds:sourceElleryAsideWalkBounds(state.elapsed),eye:[state.x,state.feet+C.eyeHeight,state.z],events:state.receipts.map(e=>({...copy(e),age:Math.max(0,state.elapsed-e.at)}))};
+ }
+diff --git a/src/game/source-earthfall-scene.js b/src/game/source-earthfall-scene.js
+index 44c24039eae3eaf8cbe14c45f86753d92a1503e7..1ad300ae8e20a5e0746ab0d97bf5de9f688b62a0 100644
+--- a/src/game/source-earthfall-scene.js
++++ b/src/game/source-earthfall-scene.js
+@@ -4,6 +4,7 @@ import {freshSourceEarthfallElleryAside,stepSourceEarthfallElleryAside,sourceEar
+ import {uiDraw} from '../render/ui.js';
+ import {normalizeSourceEarthfall,stepSourceEarthfall,sourceEarthfallFrame,sourceEarthfallFocus} from './source-earthfall.js';
+ import {createFootContactClock} from '../audio/foot-contact.js';
++import {earthfallGagSequenceTime} from '../data/source-earthfall-gag.js';
+ 
+ const copy=value=>JSON.parse(JSON.stringify(value));
+ const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
+@@ -39,10 +40,11 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+   }
+   function apply(input){
+     const p=presentation()||{};
++    const protectedStep=!!p.protected||!!p.suspended||!!p.hidden||p.focused===false;
+     if(paused||p.protected||p.suspended||p.hidden||p.focused===false){footClock.reset(footOwner);clearFootContacts?.(footOwner);}
+     if(asideActive()){
+       const before=state.elleryAside;
+-      const result=stepSourceEarthfallElleryAside(state.elleryAside,{...input,paused,protected:!!p.protected,assetsReady:live()});state.elleryAside=result.state;asideEvents=result.events;
++      const result=stepSourceEarthfallElleryAside(state.elleryAside,{...input,paused,protected:protectedStep,assetsReady:live(),gagAudioReady:audio?.asideGagReady?.()!==false,reducedMotion:!!p.reducedMotion,reducedDread:!!p.reducedDread});state.elleryAside=result.state;asideEvents=result.events;
+       if(typeof onFootContact==='function'&&Number(input.dt)>0&&live()&&!paused&&!p.protected&&!p.suspended&&!p.hidden&&p.focused!==false&&state.elleryAside.status==='active'){
+         const next=state.elleryAside,standing=sourceElleryAsideFooting(before.x,before.z,before.elapsed),contact=sourceElleryAsideFooting(next.x,next.z,next.elapsed);
+         if(standing&&contact&&Math.abs(before.feet-standing.y)<.16&&Math.abs(next.feet-contact.y)<.16&&!before.velocityY&&!next.velocityY){
+@@ -53,7 +55,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+           for(const plant of footClock.update({dt:Number(input.dt),distance,scene:footOwner,supported:true,teleported:distance>=1.3})){
+             footIndex++;
+             onFootContact({...plant,owner:footOwner,surface:'service-concrete',profile:'physical',position:{x:next.x,z:next.z},
+-              distanceM:plant.distance,strideM:plant.stride,level:.12,condition:'walk',id:`${footOwner}:${state.runId}:${footIndex}`,time:next.elapsed});
++              distanceM:plant.distance,strideM:plant.stride,level:.12,condition:'walk',id:`${footOwner}:${state.runId}:${footIndex}`,time:earthfallGagSequenceTime(next)});
+           }
+         }else footClock.update({dt:Number(input.dt),distance:0,scene:footOwner,supported:false});
+       }
+@@ -67,7 +69,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       }else if(result.events.length)save('aside-event');
+       return;
+     }
+-    const result=stepSourceEarthfall(state,{...input,paused,protected:!!p.protected,assetsReady:live()});
++    const result=stepSourceEarthfall(state,{...input,paused,protected:protectedStep,assetsReady:live()});
+     state=result.state;
+     const events=result.events||(result.event?[result.event]:[]);
+     if(events.some(event=>event.type==='catch'||event.type==='catch-return'))clear();
+@@ -86,9 +88,11 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       if(initializing)return initializing;
+       save('loading');
+       initializing=Promise.all([Promise.resolve().then(()=>renderer.initialize?.()),
+-        Promise.resolve().then(()=>audio?.ready?.()).catch(()=>false),Promise.resolve().then(()=>enableElleryAside&&audio?.prepareAside?.()).catch(()=>false)]).then(([ok])=>{
++        Promise.resolve().then(()=>audio?.ready?.()).catch(()=>false),Promise.resolve().then(()=>enableElleryAside&&audio?.prepareAside?.()).catch(()=>false)]).then(([ok,,asideAudio])=>{
+         if(closed)return false;if(ok===false)throw Error('The lower path has not resolved.');
++        if(enableElleryAside&&audio?.asideGagReady&&asideAudio===false)throw Error('The familiar apparatus sound could not be prepared.');
+         ready=true;save('entry-or-resume');
++        if(asideActive())audio?.updateAside?.(sourceEarthfallElleryAsideFrame(state.elleryAside),{...(presentation()||{}),events:[]});
+         if(state.status==='returned'||state.status==='completed'&&!state.exitReceipt?.delivered)
+           finish(state.status==='completed'?'complete':'return');
+         return true;
+@@ -98,13 +102,15 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+     update(dt){
+       if(closed||paused||leaving)return;
+       if(!live()){clear();audio?.stop?.();return;}
+-      onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
++      const tickPresentation=presentation()||{};
++      if(!tickPresentation.protected&&!tickPresentation.hidden&&!tickPresentation.suspended&&tickPresentation.focused!==false
++        &&(!asideActive()||audio?.asideGagReady?.()!==false))onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
+       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+         side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
+       if(closed||leaving)return;
+       const frame=sourceEarthfallFrame(state),p=presentation()||{};
+-      if(asideActive())audio?.updateAside?.(sourceEarthfallElleryAsideFrame(state.elleryAside),{...p,events:asideEvents,suspended:false});
+-      else audio?.update?.(frame,{...p,listener:{x:state.x,y:state.feet+1.62,z:state.z,yaw:state.yaw},suspended:false});
++      if(asideActive())audio?.updateAside?.(sourceEarthfallElleryAsideFrame(state.elleryAside),{...p,events:asideEvents,suspended:!!p.suspended});
++      else audio?.update?.(frame,{...p,listener:{x:state.x,y:state.feet+1.62,z:state.z,yaw:state.yaw},suspended:!!p.suspended});
+       saveClock+=Math.min(.25,Math.max(0,Number(dt)||0));traceClock+=Math.min(.25,Math.max(0,Number(dt)||0));
+       if(saveClock>=.5){saveClock=0;save('position');}
+       if(traceClock>=.1){traceClock=0;const a=asideActive()?sourceEarthfallElleryAsideFrame(state.elleryAside):null;onTrace({type:'pose',elapsed:a?.elapsed??state.elapsed,x:a?.x??state.x,z:a?.z??state.z,
+diff --git a/src/main.js b/src/main.js
+index 5e54223a75c5b10f45262f8f438588b270b07f53..48392138b8001a4a78b623b96466ffdd64f5f87b 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -35199,12 +35199,30 @@ async function bootScenes(){
+           while(buildingLoadPromise){if(!await buildingLoadPromise)return false;}
+           godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL,{apertureComplete:true});
+           const entry=chunkSurfRuntime.sourceContinuationEntry('forward',{runId:getSave().run?.id||''});
++          /* EARTHFALL_GAG_REVIEW_STAGE_BEGIN */
++          if(mode==='earthfall'||mode==='saved'&&saved?.elleryAside){
++            const {freshSourceEarthfallElleryAside}=await import('./game/source-earthfall-ellery-aside.js');
++            const checkpoint=mode==='saved'?saved:{...freshSourceEarthfall({runId:entry.checkpoint.runId,returnPose:entry.returnPose}),
++              committed:true,committedAt:0,phase:'catching',clock:12,elapsed:12,catchElapsed:.12,feet:0,z:-18,
++              elleryAside:freshSourceEarthfallElleryAside({runId:entry.checkpoint.runId})};
++            sourceEarthfallAudio?.destroy?.();sourceEarthfallAudio=null;sourceContinuationTrace.length=0;
++            chunkSurfRuntime.setEarthfallCheckpoint(checkpoint);
++            const scene=await beginSourceEarthfall(entry);scene?.pause?.();return scene;
++          }
++          /* EARTHFALL_GAG_REVIEW_STAGE_END */
+           const checkpoint=thresholdReviewCheckpoint({runId:entry.checkpoint.runId,returnPose:entry.checkpoint.returnPose,mode,saved});
+           chunkSurfRuntime.setFalseReturnCheckpoint(checkpoint);
+           return beginSourceFalseReturn(entry,()=>stagedInspectionBudget);
+         },
+         reduceMotion:enabled=>setDesktopReduceMotion(enabled),
+-        inspect:()=>{const s=sourceContinuationScene?.view?.();if(!s)return null;return{fixture:true,revision:'threshold-gag-ellery-8',inspectionBudgetStaged:stagedInspectionBudget,earnedProgression:false,
++        inspect:()=>{const s=sourceContinuationScene?.view?.();if(!s)return null;
++          /* EARTHFALL_GAG_REVIEW_INSPECT_BEGIN */
++          if(s.aside||sourceContinuationScene?.id==='source-earthfall')return{fixture:true,revision:'earthfall-threshold-gag-5',earnedProgression:false,
++            state:{kind:s.aside?'earthfall-ellery':'source-earthfall',...(s.aside||s.frame),ready:s.ready,paused:s.paused,error:s.error},
++            outer:{phase:s.phase,elapsed:s.elapsed,impactPass:s.impactPass,asideCompleted:s.elleryAsideCompleted},
++            audio:sourceEarthfallAudio?.snapshot?.(),render:sourceContinuationRenderer?.diagnostics?.(),injuries:REC.recState().injuries};
++          /* EARTHFALL_GAG_REVIEW_INSPECT_END */
++          return{fixture:true,revision:'threshold-gag-ellery-8',inspectionBudgetStaged:stagedInspectionBudget,earnedProgression:false,
+           state:{kind:s.kind,x:s.x,z:s.z,feet:s.feet,yaw:s.yaw,pitch:s.pitch,chartId:s.chartId,elapsed:s.elapsed,ready:s.ready,paused:s.paused,error:s.error,opened:s.opened,sourceDoors:s.sourceDoors,loopLatch:s.loopLatch,focus:s.focus,thresholdGag:s.thresholdGag},
+           audio:sourceContinuationAudio?.snapshot?.().thresholdGag||null,display:{profile:R3.r3dLookStatus?.(),screen:R3.r3dScreen?.(),shader:R3.r3dPixelMeshStats?.()},
+           render:sourceContinuationRenderer?.diagnostics?.(),injuries:REC.recState().injuries};},
+diff --git a/src/render/source-earthfall-ellery-aside.js b/src/render/source-earthfall-ellery-aside.js
+index 05992a95d0771ba816b112b9c669b7e1b8a914d6..6d7a728dca6ce2c26b5586e373ccb0a0a22a563b 100644
+--- a/src/render/source-earthfall-ellery-aside.js
++++ b/src/render/source-earthfall-ellery-aside.js
+@@ -7,13 +7,14 @@ import {SOURCE_EARTHFALL_ELLERY_ASIDE as C,asideSmooth} from '../data/source-ear
+ import {SOURCE_ELLERY_ASIDE_ASSET as ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
+ import {sourceEarthfallElleryAsideFrame,sourceElleryAsidePieceState,sourceElleryAsideObjectMatrix,multiplyAsideMatrix as mul} from '../game/source-earthfall-ellery-aside.js';
+ import {SOURCE_ELLERY_ASIDE_DUST as DUST} from '../game/source-earthfall-ellery-aside-dust.js';
++import {sourceEarthfallGagRenderFrame,SOURCE_EARTHFALL_GAG_REQUIRED,SOURCE_EARTHFALL_GAG_PACK,SOURCE_EARTHFALL_GAG_APPARITION_MESH} from './source-earthfall-gag.js';
+ const matrix=(x=0,y=0,z=0,yaw=0,sx=1,sy=sx,sz=sx)=>{const c=Math.cos(yaw),s=Math.sin(yaw);return[c*sx,0,-s*sx,0,0,sy,0,0,s*sz,0,c*sz,0,x,y,z,1];};
+ const transformPoint=(m,p)=>[0,1,2].map(a=>m[a]*p[0]+m[a+4]*p[1]+m[a+8]*p[2]+m[a+12]);
+ const placed=(id,mesh,m,extra={})=>({id:'earthfall-ellery:'+id,mesh,matrix:m,x:m[12],y:m[13],z:m[14],zone:ZONE.getIn,structural:true,noReflection:true,...extra});
+ const DUST_MESHES=[...Array.from({length:DUST.variants},(_,i)=>DUST.mesh(i)),DUST.puffMesh];
+-export const SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED=Object.freeze([...ASSET.panels.map(p=>p.mesh),...new Set(ASSET.props.map(p=>p.mesh)),...new Set(ASSET.doors.flatMap(d=>[d.assembly.frameMesh,d.assembly.leafMesh,d.assembly.freeStandingHeadMesh].filter(Boolean))),...DUST_MESHES]);
++export const SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED=Object.freeze([...ASSET.panels.map(p=>p.mesh),...new Set(ASSET.props.map(p=>p.mesh)),...new Set(ASSET.doors.flatMap(d=>[d.assembly.frameMesh,d.assembly.leafMesh,d.assembly.freeStandingHeadMesh].filter(Boolean))),...DUST_MESHES,...SOURCE_EARTHFALL_GAG_REQUIRED]);
+ export function sourceEarthfallElleryAsideRenderFrame(value,presentation={}){
+- const frame=sourceEarthfallElleryAsideFrame(value),props=[],lights=[],time=frame.elapsed,structuralStates=ASSET.panels.map(p=>sourceElleryAsidePieceState(p.id,time));
++ const frame=sourceEarthfallElleryAsideFrame(value),props=[],lights=[],time=frame.elapsed,structuralStates=ASSET.panels.map(p=>sourceElleryAsidePieceState(p.id,time)),gagPresentation=sourceEarthfallGagRenderFrame(frame);
+  if(frame.blackoutAlpha<1){
+   for(const panel of ASSET.panels){const state=structuralStates.find(s=>s.id===panel.id);props.push(placed('panel:'+panel.id,panel.mesh,state.matrix,{asideRole:'architecture',panel:panel.id,construction:panel.kind,host:panel.host,releaseAt:state.releaseAt}));}
+   for(const p of ASSET.props){
+@@ -30,8 +31,9 @@ export function sourceEarthfallElleryAsideRenderFrame(value,presentation={}){
+    lights.push({id:'earthfall-ellery:door-light:'+d.id,x:lightP[0],y:lightP[1],z:lightP[2],radius:7,intensity:gain*1.3,color:d.host==='west'?[1,.55,.24]:[.72,.73,.62],penetration:1});
+   }
+   for(const puff of frame.dust.puffs)props.push(placed('dust:'+puff.id,puff.mesh,puff.matrix,{asideRole:'dust',dust:puff.kind,structural:false}));
++  props.push(...gagPresentation.props);
+  }
+- return{...frame,props,lights,structuralStates,authoredCamera:{eye:frame.eye,yaw:frame.yaw,pitch:frame.pitch},counts:{props:props.length,panels:props.filter(p=>p.asideRole==='architecture').length,doors:frame.doors.length,dust:frame.dust.puffs.length}};
++ return{...frame,props,lights,structuralStates,gagPresentation,authoredCamera:{eye:frame.eye,yaw:frame.yaw,pitch:frame.pitch},counts:{props:props.length,panels:props.filter(p=>p.asideRole==='architecture').length,doors:frame.doors.length,dust:frame.dust.puffs.length,gag:gagPresentation.props.length}};
+ }
+ export function createSourceEarthfallElleryAsideRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,getTorch=()=>({on:false,look:{power:0}}),diagnostics:diagnosticEnabled=false}={}){
+  let ready=false,disposed=false,loading=null,last=null,error=null,repair=null,repairAttempts=0,lastDraws=null;
+@@ -40,9 +42,13 @@ export function createSourceEarthfallElleryAsideRenderer({renderer=R3,props=P3,r
+  const clear=()=>{for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);for(const name of['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);};
+  function initialize(){if(loading)return loading;loading=(async()=>{
+   if(await(renderer.r3dAuthoredPropsReady||renderer.r3dBasePropsReady)?.call(renderer)===false)throw Error('Ellery has not resolved.');if(disposed)return false;
+-  if(!resident()){await props.addPropPack(resolveAsset(C.pack));if(disposed)return false;
++  if(!resident()){const before=new Set(props.propMeshCatalog?.()||[]),remembered=[...ASSET.panels.map(p=>p.mesh),...ASSET.props.filter(p=>!p.sourcePack).map(p=>p.mesh)];
++   if(remembered.some(name=>!before.has(name)))await props.addPropPack(resolveAsset(C.pack));if(disposed)return false;
+    if(DUST_MESHES.some(name=>!new Set(props.propMeshCatalog?.()||[]).has(name)))await props.addPropPack(resolveAsset(C.dustPack));
+-   const catalogNow=new Set(props.propMeshCatalog?.()||[]);for(const pack of new Set(ASSET.props.filter(p=>p.sourcePack&&!catalogNow.has(p.mesh)).map(p=>p.sourcePack)))await props.addPropPack(resolveAsset('assets/'+pack));if(disposed)return false;const doors=ASSET.doors.flatMap(d=>[d.assembly.frameMesh,d.assembly.leafMesh,d.assembly.freeStandingHeadMesh].filter(Boolean)),catalog=new Set(props.propMeshCatalog?.()||[]);if(doors.some(name=>!catalog.has(name)))await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));}
++   const catalogNow=new Set(props.propMeshCatalog?.()||[]);for(const pack of new Set(ASSET.props.filter(p=>p.sourcePack&&!catalogNow.has(p.mesh)).map(p=>p.sourcePack)))await props.addPropPack(resolveAsset('assets/'+pack));if(disposed)return false;const doors=ASSET.doors.flatMap(d=>[d.assembly.frameMesh,d.assembly.leafMesh,d.assembly.freeStandingHeadMesh].filter(Boolean)),catalog=new Set(props.propMeshCatalog?.()||[]);if(doors.some(name=>!catalog.has(name)))await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));
++   if(disposed)return false;if(SOURCE_EARTHFALL_GAG_REQUIRED.filter(name=>name!==SOURCE_EARTHFALL_GAG_APPARITION_MESH).some(name=>!new Set(props.propMeshCatalog?.()||[]).has(name)))await props.addPropPack(resolveAsset(SOURCE_EARTHFALL_GAG_PACK));
++   if(disposed)return false;if(!new Set(props.propMeshCatalog?.()||[]).has(SOURCE_EARTHFALL_GAG_APPARITION_MESH))await props.addPropPack(resolveAsset('assets/conservatory-props.glb'));
++  }
+   if(disposed)return false;if(!resident())throw Error('The remembered Scene Dock is incomplete.');ready=true;return true;
+  })().catch(e=>{error=String(e?.message||e);throw e;});return loading;}
+  function acquire(){
+diff --git a/src/render/source-earthfall-gag.js b/src/render/source-earthfall-gag.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca5e300783a4a6c92de81dddecf61bbea46f4f84
+--- /dev/null
++++ b/src/render/source-earthfall-gag.js
+@@ -0,0 +1,40 @@
++// The second apparatus is the same constructed object, carried by the Scene
++// Dock floor. Its detached pressure is the existing apparition shader variant.
++import {ZONE} from '../data/floorplan/legend.js';
++import {THRESHOLD_GAG_MESHES,THRESHOLD_GAG} from '../data/threshold-gag.js';
++import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
++import {sourceElleryAsideObjectMatrix,multiplyAsideMatrix as multiply,transformAsidePoint} from '../game/source-earthfall-ellery-aside.js';
++
++export const SOURCE_EARTHFALL_GAG_APPARITION_MESH=meshForApparitionPose('head_turn');
++export const SOURCE_EARTHFALL_GAG_REQUIRED=Object.freeze([...THRESHOLD_GAG_MESHES,SOURCE_EARTHFALL_GAG_APPARITION_MESH]);
++export const SOURCE_EARTHFALL_GAG_PACK='assets/ellery-threshold-gag.glb';
++const finite=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
++// The source hinge convention is deliberately opposite the room's native
++// matrix helper: local -X must swing toward local -Z at +PI/2.
++export function sourceEarthfallGagNativeMatrix({x=0,y=0,z=0,yaw=0,pitch=0,scale=1,scaleX=scale,scaleY=scale,scaleZ=scale}={}){
++ const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),k=finite(scale,1),sx=finite(scaleX,k),sy=finite(scaleY,k),sz=finite(scaleZ,k);
++ return[c*sx,0,s*sx,0,-s*sp*sy,cp*sy,c*sp*sy,0,-s*cp*sz,-sp*sz,c*cp*sz,0,x,y,z,1];
++}
++const position=(m,p)=>{const a=transformAsidePoint(m,p);return{x:a[0],y:a[1],z:a[2]};};
++const instance=(id,mesh,matrix,extra={})=>({id:'earthfall-ellery:gag:'+id,mesh,matrix,x:matrix[12],y:matrix[13],z:matrix[14],
++ zone:ZONE.getIn,noReflection:true,structural:true,thresholdGag:true,asideRole:'gag',...extra});
++
++export function sourceEarthfallGagRenderFrame(frame={}){
++ const gag=frame.gag;
++ if(!gag?.enabled||frame.blackoutAlpha>=1)return{props:[],supportMatrix:null,mount:null,speaker:null,contact:null,shadow:null};
++ const mount=gag.mount,angle=finite(gag.angle,Math.PI/2),demolitionTime=finite(frame.elapsed);
++ if(!mount||![mount.x,mount.y,mount.z,mount.yaw].every(Number.isFinite))return{props:[],supportMatrix:null,mount:null,speaker:null,contact:null,shadow:null};
++ const supportMatrix=gag.supportMatrix||sourceElleryAsideObjectMatrix('earthfall-ellery-gag',[mount.x,0,mount.z],demolitionTime),
++  fixed=multiply(supportMatrix,sourceEarthfallGagNativeMatrix(mount)),
++  moving=multiply(supportMatrix,sourceEarthfallGagNativeMatrix({...mount,yaw:mount.yaw+angle})),props=[];
++ THRESHOLD_GAG_MESHES.forEach((mesh,index)=>props.push(instance(index,mesh,index<2?fixed:moving,{gagPart:index<2?'fixed':'moving',gagPhase:gag.phase,hingeAngle:angle})));
++ let shadow=null;
++ if(gag.shadow&&finite(gag.shadow.charge)>0){
++  const p=gag.shadow,feet=finite(p.feet),shadowSupport=sourceElleryAsideObjectMatrix('earthfall-ellery-gag-pressure',[p.x,feet,p.z],demolitionTime),
++   matrix=multiply(shadowSupport,sourceEarthfallGagNativeMatrix({x:finite(p.x),y:feet,z:finite(p.z),yaw:finite(p.yaw),pitch:finite(p.pitch),scale:finite(p.scale,1),scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ}));
++  shadow=instance('pressure',SOURCE_EARTHFALL_GAG_APPARITION_MESH,matrix,{gagPart:'pressure',structural:false,noShadow:true,
++   apparitionVariant:15,emissive:[.65,.78,.82,Math.max(0,Math.min(1,finite(p.charge)))],cullRadius:2});
++  props.push(shadow);
++ }
++ return{props,supportMatrix,mount:position(fixed,[0,0,0]),speaker:position(moving,THRESHOLD_GAG.speaker),contact:position(fixed,THRESHOLD_GAG.contact),shadow};
++}
+diff --git a/test/run-all.mjs b/test/run-all.mjs
+index 42745134e0e9107d76d7510843810f67f856f320..289000f5fa26e7c392be306486acf592b5d7cafb 100644
+--- a/test/run-all.mjs
++++ b/test/run-all.mjs
+@@ -75,6 +75,9 @@ const tests = [
+   'test/source-earthfall-integration.spec.mjs',
+   'test/source-earthfall-render.spec.mjs',
+   'test/source-earthfall-ellery-aside.spec.mjs',
++  'test/source-earthfall-gag-audio.spec.mjs',
++  'test/source-earthfall-gag-render.spec.mjs',
++  'test/source-earthfall-gag.spec.mjs',
+   'test/source-authored-camera.spec.mjs',
+   'test/source-continuation.spec.mjs',
+   'test/threshold-gag.spec.mjs',
+diff --git a/test/source-earthfall-ellery-aside.spec.mjs b/test/source-earthfall-ellery-aside.spec.mjs
+index e680c87383da98ac24056308921eebe3050382b6..d4fd148c63af892c53575066cf1809872ce5d9d4 100644
+--- a/test/source-earthfall-ellery-aside.spec.mjs
++++ b/test/source-earthfall-ellery-aside.spec.mjs
+@@ -7,6 +7,8 @@ import {sourceEarthfallElleryAsideRenderFrame as render}from'../src/render/sourc
+ import {freshSourceEarthfall}from'../src/game/source-earthfall.js';
+ import {createSourceEarthfallScene}from'../src/game/source-earthfall-scene.js';
+ import {parseGlb}from'../tools/chunk_surfer/rebuild-tree-crowns.mjs';import{readBusAccessor as read}from'../tools/chunk_surfer/build-outskirts-bus-passage.mjs';
++// Physical-collapse fixtures deliberately begin after the new recognition beat.
++const demoFresh=options=>{const s=fresh(options);return{...s,gag:{...s.gag,elapsed:12,waited:6,noticed:1,emitted:31,complete:true}};};
+ const near=(a,b,e=1e-6)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
+ const advance=(s,seconds,input={})=>{const events=[];for(let t=0;t<seconds-1e-8;t+=1/120){const r=step(s,{dt:1/120,...input});s=r.state;events.push(...r.events);}return{state:s,events};};
+ const bytes=fs.readFileSync('public/assets/source-earthfall-ellery-aside.glb'),pack=parseGlb(bytes);
+@@ -58,30 +60,30 @@ test('charges show only as dust jets, then dust leaves every wall base and reach
+   const out=jets.at(-1).center;assert.ok((out[0]-c.position.x)*c.normal[0]+(out[2]-c.position.z)*c.normal[2]>1,`${c.id}: its jet leaves the pier into the room`);}
+  const surge=dust(C.wallsAt.south+.5).puffs.filter(p=>p.kind==='surge');assert.deepEqual([...new Set(surge.map(p=>p.id.split(':')[1]))].sort(),['east','north','south','west']);
+  const eye=[C.spawn.x,C.eyeHeight,C.spawn.z];assert.equal(dust(C.wallsAt.south,eye).cover,0,'the walls are seen coming in');
+- const s=advance(fresh(),C.fadeStart).state;assert.equal(frame(s).dust.cover,1,'by black the dust has reached him');
++ const s=advance(demoFresh(),C.fadeStart).state;assert.equal(frame(s).dust.cover,1,'by black the dust has reached him');
+  // No flash: once the charges fire no lamp ever brightens, and dust is never construction.
+  let last=Infinity;for(let t=C.chargeAt;t<=C.fadeEnd;t+=1/60){const total=at(t).lights.reduce((n,l)=>n+l.intensity,0);assert.ok(total<=last+.08,`a lamp brightened at ${t.toFixed(2)}s`);last=Math.min(last,total);}
+  assert.ok(at(5).props.filter(p=>p.asideRole==='dust').every(p=>p.structural===false&&/^earthfall_dust_(billow_|puff)/.test(p.mesh)));
+ });
+ 
+ test('foot contact uses transformed finite floor pieces and carries the body as those pieces sag',()=>{
+- const start=fresh({runId:'floor'});assert.ok(footing(start.x,start.z,0));assert.equal(footing(C.room.minX-5,C.room.minZ-5,14),null);
++ const start=demoFresh({runId:'floor'});assert.ok(footing(start.x,start.z,0));assert.equal(footing(C.room.minX-5,C.room.minZ-5,14),null);
+  const resting=advance(start,5).state,contact=footing(resting.x,resting.z,5);assert.ok(contact);near(resting.feet,contact.y,.01);assert.ok(resting.feet<-.3&&resting.feet>-1,'the bay under him sags toward the hole and he goes with it');
+ });
+ test('retained door clocks earn bounded distinct physical cues, freeze and survive reload without repeating prior events',()=>{
+- let r=advance(fresh({runId:'doors'}),7),s=r.state;assert.ok(r.events.some(e=>e.type==='closed'));assert.ok(r.events.some(e=>e.type==='opening-start'));assert.equal(new Set(r.events.map(e=>e.id)).size,r.events.length);
++ let r=advance(demoFresh({runId:'doors'}),7),s=r.state;assert.ok(r.events.some(e=>e.type==='closed'));assert.ok(r.events.some(e=>e.type==='opening-start'));assert.equal(new Set(r.events.map(e=>e.id)).size,r.events.length);
+  for(const guard of[{paused:true},{protected:true},{assetsReady:false}])assert.deepEqual(step(s,{dt:.2,forward:1,...guard}).state,normalize(s));
+  const restored=normalize(JSON.parse(JSON.stringify(s)));assert.deepEqual(step(s,{dt:.2,side:1}),step(restored,{dt:.2,side:1}));assert.ok(step(restored,{dt:.2}).events.every(e=>!s.receipts.some(old=>old.id===e.id)));
+ });
+ test('the whole single aside brings the room down once with a bounded black endpoint and no singular transform',()=>{
+- const r=advance(fresh(),C.duration+.2,{forward:1,side:1});assert.equal(r.state.status,'completed');assert.equal(r.state.consumed,true);assert.equal(r.events.filter(e=>e.type==='aside-complete').length,1);const f=render(r.state);assert.equal(f.blackoutAlpha,1);assert.equal(f.props.length,0);assert.deepEqual(step(r.state,{dt:.2}).state,r.state);
++ const r=advance(fresh(),31,{forward:1,side:1});assert.equal(r.state.status,'completed');assert.equal(r.state.consumed,true);assert.equal(r.events.filter(e=>e.type==='aside-complete').length,1);const f=render(r.state);assert.equal(f.blackoutAlpha,1);assert.equal(f.props.length,0);assert.deepEqual(step(r.state,{dt:.2}).state,r.state);
+ });
+ test('the real Earthfall scene keeps an aside checkpoint, returns just before impact and never enters it twice',async()=>{
+  const drawn=[],sounds=[],renderer={initialize:async()=>true,ready:()=>true,render(s){drawn.push(['fall',s.phase]);return true;},renderAside(s){drawn.push(['aside',s.elapsed]);return true;},dispose(){}},audio={ready:async()=>true,prepareAside:async()=>true,stop(){},stopAside(){},update(f){sounds.push(...f.events.filter(e=>e.age<1/120+1e-5).map(e=>e.type));},updateAside(){}};
+  let scene=createSourceEarthfallScene({checkpoint:freshSourceEarthfall({runId:'aside-scene'}),renderer,audio});await scene.initialize();scene.key({key:'w'});for(let i=0;i<30;i++)scene.update(1/120);scene.keyup({key:'w'});
+  for(let i=0;i<1500&&!scene.view().aside;i++)scene.update(1/120);assert.ok(scene.view().aside);scene.render();assert.equal(scene.allowsLook,true);scene.lookBy(.3,-.2);scene.key({key:'a'});for(let i=0;i<500;i++)scene.update(1/120);scene.keyup({key:'a'});const saved=scene.serialize();scene.pause();for(let i=0;i<40;i++)scene.update(1/60);assert.deepEqual(scene.serialize(),saved);
+  scene=createSourceEarthfallScene({checkpoint:JSON.parse(JSON.stringify(saved)),renderer,audio});await scene.initialize();assert.ok(scene.view().aside);assert.deepEqual(scene.serialize().elleryAside,saved.elleryAside);
+- let resumed=null;for(let i=0;i<3000&&!resumed;i++){scene.update(1/120);scene.render();const s=scene.serialize();if(s.impactPass===1&&s.phase==='falling')resumed=s;}
++ let resumed=null;for(let i=0;i<4200&&!resumed;i++){scene.update(1/120);scene.render();const s=scene.serialize();if(s.impactPass===1&&s.phase==='falling')resumed=s;}
+  assert.ok(resumed);assert.equal(resumed.elleryAsideCompleted,true);assert.equal(resumed.elleryAside.consumed,true);near(resumed.feet,-resumed.velocityY*C.resumeFallSeconds,.001);
+  for(let i=0;i<300&&scene.serialize().phase!=='landed';i++){scene.update(1/120);scene.render();}const end=scene.serialize();assert.equal(end.phase,'landed');assert.equal(end.receipts.filter(e=>e.type==='catch').length,1);assert.equal(end.receipts.filter(e=>e.type==='catch-return').length,1);assert.equal(end.receipts.filter(e=>e.type==='land-return').length,1);assert.equal(scene.view().aside,null);assert.ok(sounds.includes('catch-return'),'second impact must earn a distinct audible receipt');
+ });
+diff --git a/test/source-earthfall-gag-audio.spec.mjs b/test/source-earthfall-gag-audio.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1a01033d2fd28e6ab6e83473b6cc7f73b76f3f59
+--- /dev/null
++++ b/test/source-earthfall-gag-audio.spec.mjs
+@@ -0,0 +1,89 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++import {createSourceEarthfallAudio} from '../src/audio/source-earthfall.js';
++import {THRESHOLD_GAG_AUDIO as T} from '../src/audio/threshold-gag.js';
++import {SOURCE_EARTHFALL_ELLERY_ASIDE as ASIDE,SOURCE_ELLERY_ASIDE_CHARGES as CHARGES} from '../src/data/source-earthfall-ellery-aside.js';
++import {freshSourceEarthfallElleryAside,stepSourceEarthfallElleryAside,sourceEarthfallElleryAsideFrame} from '../src/game/source-earthfall-ellery-aside.js';
++import {EARTHFALL_GAG} from '../src/data/source-earthfall-gag.js';
++
++function fixture({gate=null,fail=false,noAudio=false}={}){
++ const sources=[],nodes=[],fetches=[],doors=[],seconds=[.205,.245,.185,.9204166667],files=Object.values(T.clips);
++ const parameter=()=>({value:0,setValueAtTime(v){this.value=v;},linearRampToValueAtTime(v){this.value=v;},setTargetAtTime(v){this.value=v;},cancelScheduledValues(){}});
++ const node=(kind,extra={})=>{const n={kind,...extra,connections:[],connect(to){this.connections.push(to);return to;},disconnect(){this.connections=[];this.disconnected=true;}};nodes.push(n);return n;};
++ const ctx={state:'running',currentTime:0,sampleRate:8000,
++  createBufferSource(){const s=node('source',{playbackRate:parameter(),starts:[],stops:[],start(...a){this.starts.push(a);},stop(...a){this.stops.push(a);}});sources.push(s);return s;},
++  createGain:()=>node('gain',{gain:parameter()}),createBiquadFilter:()=>node('filter',{frequency:parameter(),Q:parameter()}),
++  createPanner:()=>node('hrtf',{positionX:parameter(),positionY:parameter(),positionZ:parameter()}),createStereoPanner:()=>node('pan',{pan:parameter()}),
++  createBuffer(channels,length,rate){return{duration:length/rate,numberOfChannels:channels,getChannelData:()=>new Float32Array(length)};},
++  async decodeAudioData(b){return{duration:b.byteLength>=8?new DataView(b).getFloat64(0,true):seconds[new Uint8Array(b)[0]],numberOfChannels:1};}};
++ const destination=node('provided-sfx');ctx.destination=node('hardware');let pair=noAudio?null:{ctx,destination};
++ const material=JSON.parse(readFileSync('public/audio/source-demolition/manifest.json'));
++ const runtime=createSourceEarthfallAudio({getAudio:()=>pair,urlFor:f=>'/material/'+f,
++  fetcher:async url=>{if(url.endsWith('manifest.json'))return{ok:true,json:async()=>material};const clip=material.clips.find(c=>url.endsWith(c.file)),b=new ArrayBuffer(clip.bytes);new DataView(b).setFloat64(0,clip.duration,true);return{ok:true,arrayBuffer:async()=>b};},
++  gagUrlFor:f=>'/gag/'+f,gagFetcher:async url=>{fetches.push(url);if(gate)await gate;if(fail)return{ok:false,status:404};const i=files.findIndex(f=>url.endsWith(f));assert.ok(i>=0);return{ok:true,arrayBuffer:async()=>new Uint8Array([i]).buffer};},
++  createAsideDoorAudio:()=>({update(){},event(e,p){doors.push({e,p});},whenReady:async()=>true,pause(){},dispose(){},snapshot:()=>({doorFixture:true})})});
++ return{runtime,ctx,sources,nodes,fetches,doors,destination,setAudio:p=>{pair=p;}};
++}
++const pose=(elapsed=0,extra={})=>({active:true,runId:'earthfall-gag-test',elapsed:0,blackoutAlpha:0,eye:[65.15,1.62,11.65],yaw:-.75,pitch:0,doors:[],materialEvents:[],
++ gag:{enabled:true,elapsed,phase:elapsed<6?'rest':elapsed<7.59?'running':'spent',mount:{x:63,y:1.15,z:8.8},speaker:{x:62.8,y:.965,z:8.6},contact:{x:62.9,y:1.15,z:8.9}},...extra});
++const cue=(kind,at)=>({id:'same-apparatus-id',type:'threshold-gag-'+kind,at,chartId:0,position:kind==='boo'||kind==='speaker-click'?pose().gag.speaker:kind==='release'?pose().gag.mount:pose().gag.contact});
++async function prepared(f=fixture()){assert.equal(await f.runtime.prepareAside(),true);f.runtime.updateAside(pose());return f;}
++
++test('the aside waits for all four unchanged human/mechanical clips without playing or touching hardware output',async()=>{
++ let release;const f=fixture({gate:new Promise(r=>release=r)});let settled=false;const pending=f.runtime.prepareAside().then(v=>{settled=true;return v;});await Promise.resolve();await Promise.resolve();
++ assert.equal(settled,false);assert.equal(f.runtime.asideGagReady(),false);assert.equal(f.sources.length,0);release();assert.equal(await pending,true);assert.equal(f.runtime.asideGagReady(),true);assert.equal(f.fetches.length,4);
++ assert.ok(f.fetches.some(u=>u.endsWith('boo.wav?v=human-short-grain-room-3')));assert.equal(await f.runtime.prepareAside(),true);assert.equal(f.fetches.length,4);assert.equal(f.sources.length,0);
++ const missing=fixture({noAudio:true});assert.equal(await missing.runtime.prepareAside(),false);assert.equal(missing.runtime.asideGagReady(),false);
++ const failed=fixture({fail:true});assert.equal(await failed.runtime.prepareAside(),false);assert.match(failed.runtime.asideSnapshot().gag.error,/unavailable/);
++ f.runtime.destroy();missing.runtime.destroy();failed.runtime.destroy();
++});
++
++test('all five event kinds sharing one apparatus id play once at exact edges, through the same HRTF speaker/gain',async()=>{
++ const f=await prepared();const edges=[['release',6],['stop',6.19],['rattle',6.41],['speaker-click',6.5],['boo',6.6]];
++ for(const[kind,at]of edges){f.ctx.currentTime=at;f.runtime.updateAside(pose(at),{events:[cue(kind,at)]});}
++ let g=f.runtime.asideSnapshot().gag;assert.equal(g.played,5);assert.equal(g.skipped,0);assert.deepEqual(g.receipts.map(e=>e.reason),Array(5).fill('played'));assert.equal(f.doors.length,0,'gag ids never enter the door dispatcher');
++ f.runtime.updateAside(pose(6.6),{events:edges.map(([k,t])=>cue(k,t))});assert.equal(f.runtime.asideSnapshot().gag.played,5);
++ const word=g.history.find(e=>e.type==='played'&&e.kind==='boo');assert.deepEqual(word.position,pose().gag.speaker);assert.equal(word.duration,.9204166667);assert.equal(word.start,6.6);
++ assert.ok(g.layers.every(v=>v.hrtf));assert.ok(f.sources.every(s=>s.playbackRate.value===1&&!s.loop&&s.starts.length===1));assert.ok(f.nodes.every(n=>!n.connections.includes(f.ctx.destination)));assert.ok(f.nodes.some(n=>n.connections.includes(f.destination)));
++ const moved=pose(6.65);moved.gag.speaker={x:66,y:1.3,z:10};moved.yaw+=Math.PI;f.runtime.updateAside(moved);g=f.runtime.asideSnapshot().gag;assert.deepEqual(g.layers.find(v=>v.kind==='boo').position,moved.gag.speaker);assert.equal(g.played,5);
++ moved.gag.soundPose={mount:moved.gag.mount,contact:moved.gag.contact,speaker:{x:67,y:.6,z:11}};f.runtime.updateAside(moved);assert.deepEqual(f.runtime.asideSnapshot().gag.layers.find(v=>v.kind==='boo').position,moved.gag.soundPose.speaker,'the carried speaker wins over the authored uncarried mount');f.runtime.destroy();
++});
++
++test('pause, recording/listening/playback protection, hidden/focus and suspended context clear voices and consume missed edges',async()=>{
++ for(const options of[{protected:true},{suspended:true},{hidden:true},{focused:false},{contextSuspended:true}]){
++  const f=await prepared();f.runtime.updateAside(pose(6),{events:[cue('release',6)]});assert.equal(f.runtime.asideSnapshot().gag.voices,1);
++  if(options.contextSuspended)f.ctx.state='suspended';f.runtime.updateAside(pose(6.6),{...options,events:[cue('boo',6.6)]});assert.equal(f.runtime.asideSnapshot().gag.voices,0);
++  f.ctx.state='running';f.runtime.updateAside(pose(6.6),{events:[cue('boo',6.6)]});assert.equal(f.runtime.asideSnapshot().gag.played,1,'a missed spoken edge cannot catch up');f.runtime.destroy();
++ }
++});
++
++test('stale and first-observed restored edges are receipts, never a reload or delayed backlog',async()=>{
++ const late=await prepared();late.runtime.updateAside(pose(7.1),{events:[cue('boo',6.6)]});assert.equal(late.runtime.asideSnapshot().gag.played,0);assert.equal(late.runtime.asideSnapshot().gag.receipts[0].reason,'stale-no-backlog');late.runtime.updateAside(pose(7.2),{events:[cue('boo',7.2)]});assert.equal(late.runtime.asideSnapshot().gag.played,0);late.runtime.destroy();
++ const saved=fixture();await saved.runtime.prepareAside();saved.runtime.updateAside(pose(6.6),{events:[cue('boo',6.6)]});assert.equal(saved.runtime.asideSnapshot().gag.played,0);assert.equal(saved.runtime.asideSnapshot().gag.receipts[0].reason,'restored-baseline');saved.runtime.destroy();
++});
++
++test('a reused paused owner prepares again and keeps once-only receipts until the actual run changes',async()=>{
++ const f=await prepared();f.runtime.updateAside(pose(6),{events:[cue('release',6)]});f.runtime.stopAside();assert.equal(f.runtime.asideSnapshot().gag.voices,0);assert.equal(await f.runtime.prepareAside(),true);assert.equal(f.fetches.length,4);
++ f.runtime.updateAside(pose(6.6),{events:[cue('release',6),cue('boo',6.6)]});assert.equal(f.runtime.asideSnapshot().gag.played,2);
++ f.runtime.updateAside(pose(0,{runId:'new-run'}));f.runtime.updateAside(pose(6,{runId:'new-run'}),{events:[cue('release',6)]});assert.equal(f.runtime.asideSnapshot().gag.played,3);f.runtime.destroy();assert.equal(f.runtime.asideSnapshot().gag.disposed,true);
++});
++
++test('the gag clock cannot start charges or roar early; unchanged demolition-relative timing remains authoritative',async()=>{
++ const f=await prepared();await f.runtime.ready();f.runtime.updateAside(pose(6.6),{events:[cue('boo',6.6)]});const before=f.sources.length;assert.equal(before,1);assert.equal(f.runtime.snapshot().aside.materialHistory.length,0);assert.equal(f.runtime.snapshot().rumble.playing,false);
++ const charges={id:'earthfall-charge-onset',type:'charges',at:ASIDE.chargeAt,age:0,position:ASIDE.center,charges:CHARGES.map(c=>({...c,offset:c.at-ASIDE.chargeAt}))};
++ f.runtime.updateAside(pose(12,{elapsed:ASIDE.chargeAt,materialEvents:[charges]}));assert.equal(f.sources.length,before+CHARGES.length);assert.equal(f.runtime.snapshot().aside.materialHistory[0].reason,'played');assert.equal(ASIDE.chargeAt,2);assert.equal(ASIDE.wallsAt.north,3.35);
++ f.runtime.updateAside(pose(12,{elapsed:ASIDE.chargeAt,materialEvents:[charges]}));assert.equal(f.sources.length,before+CHARGES.length,'the charge ripple does not repeat');f.runtime.destroy();
++});
++
++test('real aside controller edges earn the same mechanical timings before the unchanged demolition clock begins',async()=>{
++ const f=await prepared();let state=freshSourceEarthfallElleryAside({runId:'actual-aside-gag'});const events=[];f.runtime.updateAside(sourceEarthfallElleryAsideFrame(state));
++ for(let i=0;i<Math.ceil(EARTHFALL_GAG.completeAt*120)+2&&!state.gag.complete;i++){
++  const result=stepSourceEarthfallElleryAside(state,{dt:1/120,gagAudioReady:true,assetsReady:true});state=result.state;events.push(...result.events);f.ctx.currentTime+=1/120;
++  const frame=sourceEarthfallElleryAsideFrame(state);f.runtime.updateAside(frame,{events:result.events});assert.equal(state.elapsed,0,'recognition never advances charge/wall time');
++ }
++ assert.equal(state.gag.complete,true);const cueEvents=events.filter(e=>e.type.startsWith('threshold-gag-'));
++ assert.deepEqual(cueEvents.map(e=>e.type),['threshold-gag-release','threshold-gag-stop','threshold-gag-rattle','threshold-gag-speaker-click','threshold-gag-boo']);
++ for(const[e,offset]of cueEvents.map((e,i)=>[e,[0,.19,.41,.5,.6][i]]))assert.ok(Math.abs(e.at-EARTHFALL_GAG.releaseAt-offset)<1e-8);
++ assert.equal(f.runtime.asideSnapshot().gag.played,5);assert.equal(f.runtime.asideSnapshot().gag.skipped,0);assert.equal(f.runtime.snapshot().aside.materialHistory.length,0);f.runtime.destroy();
++});
+diff --git a/test/source-earthfall-gag-render.spec.mjs b/test/source-earthfall-gag-render.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5938676dcdbb844046c80eef07b8b79cf3150618
+--- /dev/null
++++ b/test/source-earthfall-gag-render.spec.mjs
+@@ -0,0 +1,87 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {Box3,Vector3,Matrix4} from 'three';
++import {SOURCE_EARTHFALL_ELLERY_ASIDE as C} from '../src/data/source-earthfall-ellery-aside.js';
++import {SOURCE_ELLERY_ASIDE_ASSET as ASSET} from '../src/data/generated/source-earthfall-ellery-aside.js';
++import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
++import {THRESHOLD_GAG_MESHES,THRESHOLD_GAG} from '../src/data/threshold-gag.js';
++import {thresholdGagGeometry,thresholdGagPosePoint} from '../tools/chunk_surfer/threshold-gag-geometry.mjs';
++import {freshSourceEarthfallElleryAside,sourceEarthfallElleryAsideFrame,sourceElleryAsideObjectMatrix,multiplyAsideMatrix,transformAsidePoint} from '../src/game/source-earthfall-ellery-aside.js';
++import {sourceEarthfallGagRenderFrame,sourceEarthfallGagNativeMatrix,SOURCE_EARTHFALL_GAG_REQUIRED,SOURCE_EARTHFALL_GAG_APPARITION_MESH} from '../src/render/source-earthfall-gag.js';
++import {createSourceEarthfallElleryAsideRenderer,SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED} from '../src/render/source-earthfall-ellery-aside.js';
++
++const near=(a,b,e=1e-7)=>assert.ok(Math.abs(a-b)<e,`${a} != ${b}`);
++const pointNear=(a,b)=>a.forEach((v,k)=>near(v,b[k]));
++const liveMount=()=>sourceEarthfallElleryAsideFrame(freshSourceEarthfallElleryAside()).gag.mount;
++function stagedFrame({elapsed=0,angle=0,shadow=null,...extra}={}){
++ const mount=liveMount();return{elapsed,blackoutAlpha:0,eye:[C.spawn.x,C.eyeHeight,C.spawn.z],yaw:C.spawn.yaw,pitch:C.spawn.pitch,
++  gag:{enabled:true,phase:'spent',elapsed:9,angle,mount,supportMatrix:sourceElleryAsideObjectMatrix('gag',[mount.x,0,mount.z],elapsed),shadow},...extra};
++}
++
++test('the reused mechanism and its sound anchors share one honest Source hinge pose and floor carrier',()=>{
++ for(const elapsed of[0,C.floorCoreAt+.8])for(const angle of[0,.04,.10,.7,Math.PI/2]){
++  const f=stagedFrame({elapsed,angle}),r=sourceEarthfallGagRenderFrame(f),g=f.gag,m=g.mount;
++  assert.deepEqual(r.props.map(p=>p.mesh),THRESHOLD_GAG_MESHES);
++  const fixed=multiplyAsideMatrix(g.supportMatrix,sourceEarthfallGagNativeMatrix(m)),moving=multiplyAsideMatrix(g.supportMatrix,sourceEarthfallGagNativeMatrix({...m,yaw:m.yaw+angle}));
++  assert.deepEqual(r.props.slice(0,2).map(p=>p.matrix),[fixed,fixed]);assert.deepEqual(r.props.slice(2).map(p=>p.matrix),[moving,moving]);
++  pointNear(Object.values(r.speaker),transformAsidePoint(moving,THRESHOLD_GAG.speaker));pointNear(Object.values(r.contact),transformAsidePoint(fixed,THRESHOLD_GAG.contact));
++  const hinge=transformAsidePoint(moving,[0,0,0]);pointNear(hinge,transformAsidePoint(fixed,[0,0,0]));
++  const p=[-.72,.32,.08],native=thresholdGagPosePoint(thresholdGagPosePoint(p,angle),m.yaw),expected=transformAsidePoint(g.supportMatrix,[m.x+native[0],m.y+native[1],m.z+native[2]]);
++  pointNear(transformAsidePoint(moving,p),expected);
++ }
++ const f=stagedFrame({elapsed:C.floorCoreAt+.8}),r=sourceEarthfallGagRenderFrame(f);assert.ok(r.mount.y<f.gag.mount.y-.1,'the assembly goes with its failed floor instead of hovering in the remembered room');
++});
++
++test('the detached presence reuses pressure variant15 with no shadow and never follows the camera',()=>{
++ const mount=liveMount(),shadow={x:mount.x+1.1,z:mount.z+.8,feet:0,yaw:-.4,pitch:.1,scale:1.05,charge:.76,variant:15},f=stagedFrame({elapsed:3.5,shadow}),a=sourceEarthfallGagRenderFrame(f),b=sourceEarthfallGagRenderFrame({...f,eye:[70,4,13],yaw:2,pitch:-1});
++ assert.deepEqual(a.props,b.props,'head movement must not reposition, billow or billboard the pressure');
++ assert.equal(a.shadow.mesh,SOURCE_EARTHFALL_GAG_APPARITION_MESH);assert.equal(a.shadow.apparitionVariant,15);assert.equal(a.shadow.noShadow,true);assert.equal(a.shadow.structural,false);assert.equal(a.shadow.emissive[3],shadow.charge);
++ const carrier=sourceElleryAsideObjectMatrix('pressure',[shadow.x,shadow.feet,shadow.z],f.elapsed),matrix=multiplyAsideMatrix(carrier,sourceEarthfallGagNativeMatrix({x:shadow.x,y:shadow.feet,z:shadow.z,yaw:shadow.yaw,pitch:shadow.pitch,scale:shadow.scale}));
++ assert.deepEqual(a.shadow.matrix,matrix);assert.equal(sourceEarthfallGagRenderFrame(stagedFrame({shadow:{...shadow,charge:0}})).shadow,null);
++ assert.equal(sourceEarthfallGagRenderFrame({...f,blackoutAlpha:1}).props.length,0);assert.equal(sourceEarthfallGagRenderFrame({...f,gag:{...f.gag,enabled:false}}).props.length,0);
++});
++
++test('floor pressure remains a thin ground-clear projection without scaling or flattening the apparatus',()=>{
++ const mount=liveMount(),shadow={x:mount.x+.9,z:mount.z+.7,feet:.025,yaw:-.4,pitch:-Math.PI/2,scaleZ:.1,charge:.70},f=stagedFrame({shadow}),r=sourceEarthfallGagRenderFrame(f),plain=sourceEarthfallGagRenderFrame(stagedFrame()),b=PROP_BOUNDS[SOURCE_EARTHFALL_GAG_APPARITION_MESH],bounds=new Box3();
++ for(const x of[b.min[0],b.max[0]])for(const y of[b.min[1],b.max[1]])for(const z of[b.min[2],b.max[2]])bounds.expandByPoint(new Vector3(...transformAsidePoint(r.shadow.matrix,[x,y,z])));
++ assert.ok(bounds.min.y>=C.room.floor,'even the full uneroded mesh stays above its real floor');
++ assert.ok(bounds.max.y<C.room.floor+.04,'the original depth becomes a thin floor clearance, never an upright body');
++ assert.ok(Math.max(bounds.max.x-bounds.min.x,bounds.max.z-bounds.min.z)>1.5,'body length survives as a substantial floor trace');
++ assert.deepEqual(r.props.slice(0,4),plain.props,'nonuniform pressure scale must not reach the four rigid apparatus parts');
++ assert.equal(r.shadow.apparitionVariant,15);assert.equal(r.shadow.noShadow,true);
++});
++
++test('actual complete apparatus sweep clears the copied room, all furnishings, doors and the ordinary arrival lane',()=>{
++ const mount=liveMount(),geometry=thresholdGagGeometry(),bounds=new Box3(),native=sourceEarthfallGagNativeMatrix(mount);
++ for(let k=0;k<=180;k++)for(const mesh of geometry)for(const g of mesh.groups.values())for(let i=0;i<g.p.length;i+=3){
++  const local=g.p.slice(i,i+3),p=mesh.part==='moving'?thresholdGagPosePoint(local,k/180*Math.PI/2):local;bounds.expandByPoint(new Vector3(...transformAsidePoint(native,p)));
++ }
++ assert.ok(bounds.min.x>C.room.minX+C.bodyRadius&&bounds.max.x<C.room.maxX-C.bodyRadius&&bounds.min.z>C.room.minZ+C.bodyRadius&&bounds.max.z<C.room.maxZ-C.bodyRadius);
++ near(bounds.min.y,C.room.floor);assert.ok(bounds.max.y<C.room.ceiling-.5);
++ // Copied furnishings use the ordinary room's opposite yaw convention.
++ for(const p of ASSET.props.filter(p=>p.bounds)){
++  const matrix=new Matrix4().makeRotationY(p.yaw||0);matrix.setPosition(p.x,p.y,p.z);const box=new Box3(new Vector3(...p.bounds.min),new Vector3(...p.bounds.max)).applyMatrix4(matrix);
++  assert.equal(bounds.intersectsBox(box),false,`the swept apparatus intersects ${p.id}`);
++ }
++ for(const panel of ASSET.panels.filter(p=>p.kind==='portal'))assert.equal(bounds.intersectsBox(new Box3(new Vector3(...panel.bounds.min),new Vector3(...panel.bounds.max))),false,`the apparatus enters the actual ${panel.id} doorway`);
++ const c=Math.cos(mount.yaw),s=Math.sin(mount.yaw),dx=C.spawn.x-mount.x,dz=C.spawn.z-mount.z,laneX=c*dx+s*dz;
++ assert.ok(laneX-.46-C.bodyRadius>.10,'ordinary forward walking clears the fixed scenery feet and the whole swing without moving the player');
++});
++
++function residencyFixture({missing=[],gate=null}={}){
++ const catalog=new Set(SOURCE_EARTHFALL_ELLERY_ASIDE_REQUIRED.filter(n=>!missing.includes(n))),calls=[],packs=[];
++ const renderer=new Proxy({}, {get:(_,name)=>(...args)=>{calls.push({name,args});return name==='r3dAuthoredPropsReady'||name==='r3dBasePropsReady'?Promise.resolve(true):name==='r3dFrame'?true:undefined;}});
++ const props={propMeshCatalog:()=>[...catalog],async addPropPack(url){packs.push(url);if(gate)await gate;if(url.endsWith('ellery-threshold-gag.glb'))THRESHOLD_GAG_MESHES.forEach(n=>catalog.add(n));if(url.endsWith('conservatory-props.glb'))catalog.add(SOURCE_EARTHFALL_GAG_APPARITION_MESH);}};
++ const owner=createSourceEarthfallElleryAsideRenderer({renderer,props,resolveAsset:u=>u,getTorch:()=>({on:false,look:{power:0}})});
++ return{owner,catalog,calls,packs};
++}
++test('the shared renderer acquires and repairs the dedicated gag without incomplete draws or a camera/torch override',async()=>{
++ const h=residencyFixture({missing:THRESHOLD_GAG_MESHES});assert.equal(await h.owner.initialize(),true);assert.deepEqual(h.packs,['assets/ellery-threshold-gag.glb']);
++ const state=freshSourceEarthfallElleryAside();assert.equal(h.owner.render(state),true);const draw=h.calls.findLast(c=>c.name==='r3dFrame').args[0],expected=sourceEarthfallElleryAsideFrame(state);
++ assert.deepEqual(draw.authoredCamera,{eye:expected.eye,yaw:expected.yaw,pitch:expected.pitch});assert.equal(draw.light,0);assert.equal(draw.torchLook.power,0);assert.equal(draw.textSpace,false);
++ const count=h.calls.filter(c=>c.name==='r3dFrame').length;h.catalog.delete(SOURCE_EARTHFALL_GAG_APPARITION_MESH);assert.equal(h.owner.ready(),false);assert.equal(h.owner.render(state),true);assert.equal(h.calls.filter(c=>c.name==='r3dFrame').length,count);
++ assert.equal(await h.owner.ensureResident(),true);assert.deepEqual(h.packs,['assets/ellery-threshold-gag.glb','assets/conservatory-props.glb']);assert.equal(h.owner.render(state),true);h.owner.dispose();
++});
++test('retiring the scene during dedicated-pack preparation cannot reacquire the room or submit a stray pressure',async()=>{
++ let release;const h=residencyFixture({missing:THRESHOLD_GAG_MESHES,gate:new Promise(r=>release=r)}),loading=h.owner.initialize();await Promise.resolve();h.owner.dispose();release();assert.equal(await loading,false);assert.equal(h.owner.ready(),false);assert.equal(h.owner.render(freshSourceEarthfallElleryAside()),false);assert.equal(h.calls.some(c=>c.name==='r3dFrame'),false);
++});
+diff --git a/test/source-earthfall-gag.spec.mjs b/test/source-earthfall-gag.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..08459751f767b9ef60f730a992216468b38e8120
+--- /dev/null
++++ b/test/source-earthfall-gag.spec.mjs
+@@ -0,0 +1,147 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {EARTHFALL_GAG as G,earthfallGagPoint,sourceEarthfallGagFrame,earthfallGagPenetration} from '../src/data/source-earthfall-gag.js';
++import {THRESHOLD_GAG,thresholdGagTiming} from '../src/data/threshold-gag.js';
++import {SOURCE_EARTHFALL_ELLERY_ASIDE as C} from '../src/data/source-earthfall-ellery-aside.js';
++import {SOURCE_ELLERY_ASIDE_ASSET as A} from '../src/data/generated/source-earthfall-ellery-aside.js';
++import {freshSourceEarthfallElleryAside as fresh,normalizeSourceEarthfallElleryAside as normalize,stepSourceEarthfallElleryAside as step,sourceEarthfallElleryAsideFrame as frame,sourceElleryAsidePanelMatrix as panel,sourceElleryAsideCanStand as canStand} from '../src/game/source-earthfall-ellery-aside.js';
++import {freshSourceEarthfall} from '../src/game/source-earthfall.js';
++import {createSourceEarthfallScene} from '../src/game/source-earthfall-scene.js';
++
++const copy=value=>JSON.parse(JSON.stringify(value));
++const near=(a,b,epsilon=1e-7)=>assert.ok(Math.abs(a-b)<=epsilon,`${a} != ${b}`);
++const gagEvents=events=>events.filter(event=>event.type.startsWith('threshold-gag-'));
++function aimed(state=fresh({runId:'second-gag'}),away=false){
++  const target=earthfallGagPoint(THRESHOLD_GAG.revealLocal),dx=target.x-state.x,dz=target.z-state.z;
++  return {...state,yaw:Math.atan2(dx,-dz)+(away?Math.PI:0),pitch:Math.atan2(target.y-(state.feet+C.eyeHeight),Math.hypot(dx,dz))};
++}
++function advance(value,seconds,input={},rate=120){
++  let state=value;const events=[];
++  for(let tick=0;tick<Math.round(seconds*rate);tick++){
++    const result=step(state,{dt:1/rate,...input});state=result.state;events.push(...result.events);
++  }
++  return {state,events};
++}
++
++test('the second apparatus leaves a stable, freely playable room before its familiar performance',()=>{
++  const start=aimed(),waiting=advance(start,G.releaseAt-C.fixedStep),f=frame(waiting.state);
++  near(waiting.state.elapsed,0);assert.equal(waiting.state.gag.complete,false);
++  assert.equal(gagEvents(waiting.events).length,0);assert.equal(f.materialEvents.length,0);
++  assert.equal(f.dust.puffs.length,0);assert.equal(f.blackoutAlpha,0);
++  for(const piece of A.panels)assert.deepEqual(panel(piece.id,waiting.state.elapsed),panel(piece.id,0));
++  assert.deepEqual(f.doors.map(door=>door.fraction),frame(start).doors.map(door=>door.fraction));
++  const moved=advance(start,.5,{side:1,look:{yaw:0,pitch:-.2}}).state;
++  assert.ok(Math.hypot(moved.x-start.x,moved.z-start.z)>.5);near(moved.pitch,-.2);
++  near(moved.elapsed,0);assert.equal(moved.gag.complete,false);
++  const post=earthfallGagPoint([.245,-.5,.015]);
++  assert.ok(earthfallGagPenetration(post.x,post.z,start)>0,'the reused apparatus has a physical supporting post');
++  assert.equal(canStand(post.x,post.z,start),false,'ordinary movement cannot pass through its post');
++  assert.equal(canStand(start.x,start.z,start),true,'its original arrival remains usable');
++});
++
++test('the human boo follows a real stop, then the detached presence exceeds the stopped arm before demolition',()=>{
++  const clock=thresholdGagTiming(false),run=advance(aimed(),G.completeAt),events=gagEvents(run.events);
++  assert.deepEqual(events.map(event=>event.type),['threshold-gag-release','threshold-gag-stop','threshold-gag-rattle','threshold-gag-speaker-click','threshold-gag-boo']);
++  const expected=[0,clock.contact,clock.rattle,clock.click,clock.boo];
++  for(let i=0;i<events.length;i++){
++    near(events[i].at,G.releaseAt+expected[i]);assert.ok(Object.values(events[i].position).every(Number.isFinite));
++  }
++  assert.ok(events.at(-1).at>events[1].at+.3,'the human delivery arrives after mechanical contact');
++  assert.ok(events.at(-1).at<G.shadowAt,'familiarity precedes the violation');
++  const early={...aimed(),gag:{...fresh().gag,elapsed:G.shadowAt-.01}},later={...early,gag:{...early.gag,elapsed:G.shadowAt+G.shadowArcSeconds+.5}};
++  assert.equal(sourceEarthfallGagFrame(early).shadow,null);
++  const f=sourceEarthfallGagFrame(later);assert.ok(f.shadow);near(f.angle,0);
++  const armEnd=earthfallGagPoint([-.68,-1.15,.075]);
++  assert.ok(Math.hypot(f.shadow.x-armEnd.x,f.shadow.z-armEnd.z)>.3,'presence has left the honest mechanical stop');
++  assert.deepEqual(sourceEarthfallGagFrame({...later,yaw:later.yaw+1,pitch:1}).shadow,f.shadow,'looking changes the observer, not the world-space shadow');
++  near(run.state.elapsed,0);assert.equal(run.state.gag.complete,true);
++  assert.ok(advance(run.state,C.chargeAt).state.elapsed>=C.chargeAt-1e-7,'old demolition begins only after the new performance completes');
++});
++
++test('looking away can delay recognition only within the bounded twelve-second opportunity',()=>{
++  const hidden=aimed(fresh({runId:'unseen'}),true),before=advance(hidden,G.maximumRecognitionSeconds-C.fixedStep);
++  assert.equal(gagEvents(before.events).length,0);assert.equal(before.state.gag.complete,false);near(before.state.elapsed,0);
++  const released=advance(before.state,C.fixedStep*2);
++  assert.equal(gagEvents(released.events).filter(event=>event.type==='threshold-gag-release').length,1);
++  const done=advance(released.state,G.completeAt-G.releaseAt+.1);
++  assert.equal(done.state.gag.complete,true);assert.ok(done.state.elapsed>0);
++  assert.ok(before.state.gag.waited<=G.maximumRecognitionSeconds);
++});
++
++test('fixed-step cue order and movement are unchanged at 60 and 120 submitted frames per second',()=>{
++  const start=aimed(),a=advance(start,G.completeAt+.5,{},60),b=advance(start,G.completeAt+.5,{},120);
++  assert.deepEqual(a.state,b.state);assert.deepEqual(a.events,b.events);
++  const walkA=advance(start,.5,{side:1},60),walkB=advance(start,.5,{side:1},120);
++  assert.deepEqual(walkA.state,walkB.state);
++});
++
++test('pause, protected media, missing assets and audio, focus loss and suspension freeze the new clocks and look',()=>{
++  const start=advance(aimed(),1).state;
++  for(const guard of [{paused:true},{protected:true},{hidden:true},{suspended:true},{focused:false},{assetsReady:false},{gagAudioReady:false}]){
++    const result=step(start,{dt:.2,forward:1,look:{yaw:2,pitch:1},...guard});
++    assert.deepEqual(result.state,normalize(start),JSON.stringify(guard));assert.deepEqual(result.events,[]);
++  }
++});
++
++test('save/reload preserves waiting, swing, shadow and demolition without replaying earlier one-shot cues',()=>{
++  for(const seconds of [2,G.releaseAt+.1,G.shadowAt+.5,G.completeAt+C.coreAt+.1]){
++    const original=advance(aimed(),seconds),saved=normalize(copy(original.state)),a=advance(original.state,.5),b=advance(saved,.5);
++    assert.deepEqual(b,a,`resume at ${seconds}s`);
++    const previous=new Set(gagEvents(original.events).map(event=>event.type));
++    assert.ok(gagEvents(b.events).every(event=>!previous.has(event.type)),`cue replay at ${seconds}s`);
++  }
++});
++
++test('legacy v2 bodies continue their existing demolition and consumed saves never acquire a new gag',()=>{
++  for(const elapsed of [0,1.4,3.6,C.duration]){
++    const body={version:2,id:'source-earthfall:ellery-aside-v2',runId:'legacy',status:elapsed===C.duration?'completed':'active',
++      elapsed,accumulator:0,x:66.2,z:10.4,feet:-.17,velocityY:-.4,yaw:.6,pitch:-.2,
++      consumed:elapsed===C.duration,receipts:[{id:'old-door',type:'closed',at:2.3,doorIndex:1}]};
++    const saved=normalize(body,{runId:'legacy'});
++    for(const key of ['x','z','feet','velocityY','yaw','pitch','elapsed','receipts','status','consumed'])assert.deepEqual(saved[key],body[key],`${key} at ${elapsed}`);
++    assert.equal(saved.gag.legacy,true);assert.equal(saved.gag.complete,true);near(saved.gag.elapsed,G.completeAt);
++    assert.equal(sourceEarthfallGagFrame(saved).enabled,false);assert.equal(sourceEarthfallGagFrame(saved).shadow,null);
++    const after=advance(saved,.1);assert.deepEqual(gagEvents(after.events),[]);
++    if(body.consumed)assert.deepEqual(after.state,saved);
++    else assert.ok(after.state.elapsed>elapsed);
++  }
++});
++
++test('reduced dread removes the detached presence while retaining ordinary control and bounded onward progress',()=>{
++  const r=advance(aimed(),G.shadowAt+.5,{reducedMotion:true,reducedDread:true}),f=sourceEarthfallGagFrame(r.state);
++  assert.equal(f.shadow,null);assert.equal(f.reduced,true);assert.equal(f.reducedDread,true);
++  const moved=advance(r.state,.2,{side:1,look:{yaw:0,pitch:.3},reducedMotion:true,reducedDread:true}).state;
++  assert.ok(Math.hypot(moved.x-r.state.x,moved.z-r.state.z)>.2);near(moved.pitch,.3);
++  const done=advance(moved,G.completeAt+C.duration+.5,{reducedMotion:true,reducedDread:true});
++  assert.equal(done.state.status,'completed');assert.equal(done.state.consumed,true);
++});
++
++test('the actual Earthfall scene can hold and reload this prologue before its one existing resumed impact',async()=>{
++  let presentation={},audioReady=true;const sounds=[],traces=[];
++  const renderer={initialize:async()=>true,ready:()=>true,render:()=>true,renderAside:()=>true,dispose(){}};
++  const audio={ready:async()=>true,prepareAside:async()=>true,asideGagReady:()=>audioReady,stop(){},stopAside(){},update(){},updateAside(f,o){sounds.push(...(o.events||[]));}};
++  const outer=freshSourceEarthfall({runId:'scene-gag'});
++  Object.assign(outer,{committed:true,phase:'catching',clock:12,elapsed:12,committedAt:0,feet:0,catchElapsed:.12,z:-18,
++    receipts:[{id:'initial-catch',type:'catch',at:11.88,position:{x:0,y:0,z:-18},gain:.5}],elleryAside:aimed(fresh({runId:'scene-gag'}))});
++  const create=checkpoint=>createSourceEarthfallScene({checkpoint,renderer,audio,presentation:()=>presentation,onTrace:value=>traces.push(value)});
++  let scene=create(outer);await scene.initialize();
++  for(const hold of [{hidden:true},{focused:false},{suspended:true},{protected:true}]){
++    presentation=hold;const before=scene.serialize();scene.update(.2);assert.deepEqual(scene.serialize(),before);
++  }
++  presentation={};audioReady=false;const silent=scene.serialize();scene.update(.2);assert.deepEqual(scene.serialize(),silent);audioReady=true;
++  scene.update(.2);const saved=copy(scene.serialize());scene.exit();scene=create(saved);await scene.initialize();
++  assert.deepEqual(scene.serialize().elleryAside,saved.elleryAside);assert.equal(scene.allowsLook,true);
++  const outerTime=scene.serialize().elapsed;
++  for(let tick=0;tick<(G.maximumRecognitionSeconds+G.completeAt+C.duration+1)*60&&scene.serialize().impactPass===0;tick++){
++    assert.equal(scene.serialize().elapsed,outerTime,'the 100m fall clock holds while inhabiting the copied room');scene.update(1/60);
++  }
++  const resumed=scene.serialize();assert.equal(resumed.impactPass,1);assert.equal(resumed.elleryAsideCompleted,true);assert.equal(resumed.elleryAside.consumed,true);
++  assert.equal(resumed.phase,'falling');near(resumed.feet,-resumed.velocityY*C.resumeFallSeconds,.001);
++  for(let tick=0;tick<300&&scene.serialize().phase!=='landed';tick++)scene.update(1/60);
++  const landed=scene.serialize();assert.equal(landed.phase,'landed');assert.equal(scene.view().aside,null);
++  for(const type of ['catch','catch-return','land-return'])assert.equal(landed.receipts.filter(event=>event.type===type).length,1,type);
++  assert.equal(traces.filter(trace=>trace.type==='fall-resume').length,1);
++  assert.equal(gagEvents(sounds).filter(event=>event.type==='threshold-gag-boo').length,1);
++  assert.ok(!sounds.some(event=>/injur|damage|penalty/.test(event.type)));
++  scene.exit();
++});
+diff --git a/test/source-earthfall-integration.spec.mjs b/test/source-earthfall-integration.spec.mjs
+index 5106f1d2efe055f30fb73a484ebf8f11fd8fd6d2..8582863974f49b07c57c25de985465445bf27148 100644
+--- a/test/source-earthfall-integration.spec.mjs
++++ b/test/source-earthfall-integration.spec.mjs
+@@ -141,7 +141,7 @@ test('Ellery contacts follow supported voluntary walking and never the fall or p
+  scene.key({key:'w'});for(let i=0;i<45;i++)scene.update(1/60);scene.keyup({key:'w'});
+  assert.ok(contacts.length>0);assert.ok(contacts.every(e=>e.owner==='source-earthfall:ellery'&&e.surface==='service-concrete'&&e.profile==='physical'&&e.strideM>0&&e.interval>0&&e.distanceM>0));
+  scene.pause();assert.equal(cleared.at(-1),'source-earthfall:ellery');scene.exit();
+- let aside=freshSourceEarthfallElleryAside({runId:'feet'});for(let i=0;i<Math.round(3.6*60);i++)aside=stepSourceEarthfallElleryAside(aside,{dt:1/60}).state;
++ let aside=freshSourceEarthfallElleryAside({runId:'feet'});aside.gag={...aside.gag,elapsed:12,waited:6,emitted:31,complete:true};for(let i=0;i<Math.round(3.6*60);i++)aside=stepSourceEarthfallElleryAside(aside,{dt:1/60}).state;
+  const late=create(aside);await late.initialize();const before=contacts.length,position=late.serialize().elleryAside;
+  for(let i=0;i<60;i++)late.update(1/60);
+  const after=late.serialize().elleryAside;assert.ok(Math.hypot(after.x-position.x,after.z-position.z)>.01,'the sagging support really carries the body');

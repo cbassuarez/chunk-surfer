@@ -1,0 +1,333 @@
+{
+  "schema": 2,
+  "generatedBy": "tools/chunk_surfer/build-threshold-gag-audio.mjs",
+  "date": "2026-10-31",
+  "purpose": "One small mechanical joke: mounted release, timber contact, settling and a slightly late human boo through established grain and compact authored room tail. No horror sting or threat cue.",
+  "voice": {
+    "text": "boo.",
+    "phoneticIntent": "/buː/",
+    "method": "Recorded human pronunciation by Dinoroki, original own-work CC0 upload. User selected the short take after audition; no TTS, AI voice, clone, pitch manipulation or time stretching.",
+    "author": "Dinoroki",
+    "credit": "Boo pronunciation by Dinoroki (En-us-boo.ogg), CC0 1.0, Wikimedia Commons. Speaker edit, game bitcrushing and authored reverb by Chunk Surfer.",
+    "title": "En-us-boo.ogg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:En-us-boo.ogg",
+    "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5d/En-us-boo.ogg",
+    "sourcePublished": "2024-04-13",
+    "retrieved": "2026-10-31",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "authorPermissionEvidence": "Primary Commons file page identifies Dinoroki as author, own work, and explicitly CC0 1.0; original SHA1 matches Commons metadata.",
+    "outputStatus": "Selected human source with requested bitcrushing/reverb. Original upload is compressed OGG; no raw microphone/PCM master was available. Retained WAV is a decode, not an original recording master.",
+    "original": {
+      "file": "assets/threshold-gag-audio-source/En-us-boo.ogg",
+      "sha256": "371374c5a5b22e3775dab17c7d7c76745d846f9b6339f3913359c2ebc4acd59e",
+      "bytes": 13908,
+      "seconds": 0.46441666666666664,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -4.616674628264037,
+      "rmsDbFS": -17.358861258659168,
+      "firstAudibleSeconds": 0,
+      "lastAudibleSeconds": 0.464375,
+      "sha1": "8c7b1496e52001ea6841db97fbf51a5f94d37e52",
+      "channels": 2,
+      "sampleRate": 44100,
+      "container": "Ogg Vorbis"
+    },
+    "sourceLicensePage": {
+      "file": "assets/threshold-gag-audio-source/dinoroki-source-page.html",
+      "sha256": "d8f502a05d78013fad5f5016c969eddf0e752ea0f43878fe04cc95f5730b2664"
+    },
+    "unprocessed": {
+      "file": "boo-human-source.wav",
+      "sha256": "104f0e5481feaadfa5fbbe566f0a08d0ce42b6621f052ebe60548413c4bc2d70",
+      "bytes": 122982,
+      "seconds": 0.46441666666666664,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -4.616676390070433,
+      "rmsDbFS": -17.358861263991766,
+      "firstAudibleSeconds": 0,
+      "lastAudibleSeconds": 0.464375,
+      "sampleRate": 44100,
+      "bits": 24,
+      "channels": 2,
+      "description": "Unmodified decode of selected original; no filtering, level, timing, pitch or performance change."
+    },
+    "cleanEdit": {
+      "file": "assets/threshold-gag-audio-source/boo-clean-edit.wav",
+      "sha256": "7f554ea05cc274326f19862e32a537277d982d4b8202583d594d9ffee12cec69",
+      "bytes": 66978,
+      "seconds": 0.46441666666666664,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -11.22863775696529,
+      "rmsDbFS": -24.43841848988225,
+      "firstAudibleSeconds": 0.0011666666666666668,
+      "lastAudibleSeconds": 0.458625
+    },
+    "crushedDry": {
+      "file": "assets/threshold-gag-audio-source/boo-crushed-dry.wav",
+      "sha256": "f3368cfe0875b5b8f0331c80fd6616085a04c396cdff74fbe6b7317d3a70cc39",
+      "bytes": 66978,
+      "seconds": 0.46441666666666664,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -10.868081316822725,
+      "rmsDbFS": -24.459141069576265,
+      "firstAudibleSeconds": 0.023791666666666666,
+      "lastAudibleSeconds": 0.31975
+    },
+    "authoredImpulse": {
+      "file": "assets/threshold-gag-audio-source/main-b3-authored-impulse.wav",
+      "sha256": "95d567ad8c90b68cad9c3b496b0911a09b04556c3801b4433243f31d65f6a3f4",
+      "bytes": 175196,
+      "seconds": 0.456,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": 2.081056010673784,
+      "rmsDbFS": -19.970468021620402,
+      "firstAudibleSeconds": 0.005541666666666667,
+      "lastAudibleSeconds": 0.453
+    },
+    "processing": {
+      "schema": 1,
+      "source": "En-us-boo.ogg",
+      "sampleRate": 48000,
+      "sourceTrim": false,
+      "pitchOrTimeChange": false,
+      "cleanEdit": {
+        "highpassHz": 100,
+        "lowpassHz": 8000,
+        "gain": 0.63,
+        "attackSeconds": 0.002,
+        "releaseSeconds": 0.008,
+        "releaseAtSeconds": 0.4564,
+        "channels": 1
+      },
+      "bitcrush": {
+        "module": "tools/chunk_surfer/stop-listening-dsp.mjs",
+        "function": "bitcrush",
+        "profile": "boo-heavy",
+        "bits": 6,
+        "rate": 18000,
+        "mix": 0.98,
+        "rmsMatchedToClean": true,
+        "change": "User requested more bitcrushing after the 9-bit/24 kHz/.86 derivative. Local 6-bit signed quantization, 18 kHz independent hold clock and .98 crushed mix; preserve selected human timing/pitch and shared ear-room profiles."
+      },
+      "reverb": {
+        "module": "src/audio/stop-listening-gut.js",
+        "function": "stopListeningImpulse",
+        "profile": "main_b3",
+        "seconds": 0.45,
+        "wet": 0.14,
+        "preDelay": 0.006,
+        "seed": 1162628185,
+        "random": "xorshift32",
+        "irChannels": 2,
+        "emitterChannels": 1,
+        "normalizationScale": 0.008456635928390797,
+        "normalizationReference": "https://www.w3.org/TR/webaudio/#dom-convolvernode-normalize",
+        "method": "Synthesized decaying-noise/early-reflection IR, deterministically authored. Not measured; not a recording of this room. Mono fold of normalized stereo IR before convolution; one physical HRTF emitter at runtime. Wet-only response gain is calibrated after normalization to -18 dB active-window RMS relative to dry; 0.14 send, IR shape and dry level stay fixed.",
+        "wetIsAdditive": true,
+        "normalization": "ConvolverNode RMS calibration (.00125 * 44100 / sampleRate / max(.000125, IR_RMS)), followed by separately stated wet response gain.",
+        "wetResponse": {
+          "file": "assets/threshold-gag-audio-source/boo-wet-response.wav",
+          "sha256": "dd106b238001c5adbc90ef7b92849027f511143e67257e2b20c25d10ceecc0a0",
+          "bytes": 132640,
+          "seconds": 0.9204166666666667,
+          "analysisSampleRate": 24000,
+          "analysisChannels": 1,
+          "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+          "peakDbFS": -29.672011298874686,
+          "rmsDbFS": -45.38143008768006,
+          "firstAudibleSeconds": 0.030333333333333334,
+          "lastAudibleSeconds": 0.5263333333333333
+        },
+        "fullConvolutionSamples": 44179,
+        "fftSize": 65536,
+        "dryGain": 1,
+        "postMixRmsMatchGain": 1,
+        "responseCalibrationGain": 5.984825586826066,
+        "responseCalibrationGainDb": 15.541029969425946,
+        "wetSend": 0.14,
+        "targetActiveWetToDryDb": -18,
+        "activeWindowMethod": "20 ms dry-RMS blocks within 24 dB of strongest block; first through last qualifying block",
+        "activeWindowStartSeconds": 0.02,
+        "activeWindowEndSeconds": 0.32,
+        "activeDryRmsDbFS": -22.539834611113548,
+        "uncalibratedActiveWetRmsDbFS": -56.0808645805395,
+        "calibratedActiveWetRmsDbFS": -40.53983461111355,
+        "actualActiveWetToDryDb": -18,
+        "retainedTailSeconds": 0.45597916666666666,
+        "finite": true
+      },
+      "output": {
+        "file": "public/audio/threshold-gag/boo.wav",
+        "sampleRate": 24000,
+        "bits": 16,
+        "channels": 1,
+        "finiteTailFadeSeconds": 0.005
+      }
+    },
+    "screening": {
+      "selected": "User explicitly selected the shorter Dinoroki human audition and requested the existing bitcrushing/reverb stack.",
+      "rejected": [
+        {
+          "title": "eSpeak boo",
+          "reason": "User rejected synthetic speech."
+        },
+        {
+          "title": "JeanMyna_VA take 3",
+          "reason": "User: Still too performed; find a flatter take. Originals retained under artifacts as rejected research; excluded from shipping source folder."
+        },
+        {
+          "title": "Dull Boo",
+          "author": "JelloApocalypse",
+          "url": "https://freesound.org/people/JelloApocalypse/sounds/802628/",
+          "reason": "Original CC BY-NC 4.0 is outside the requested commercially usable licenses; mirror claims were not treated as permission."
+        }
+      ],
+      "listening": "Human authoring selection is established for the clean short source. No agent listening or final processed/in-game listening acceptance claimed."
+    }
+  },
+  "mechanicalSources": [
+    {
+      "id": "kranhytt-674784",
+      "author": "Kranhytt",
+      "title": "small wooden creaking attic door closing 1.wav",
+      "url": "https://freesound.org/people/Kranhytt/sounds/674784/",
+      "licence": "CC BY 4.0",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Contact excerpt beginning about 30 ms before the main attack, retaining the recorded settling tail. Mono downmix and 2 ms edge fades; no pitch/time change or normalization.",
+      "deliveryKind": "freesound-hq-preview",
+      "sourceFile": "artifacts/door-sound-study/source-audio/674784-hq-preview.mp3",
+      "sourceFileSha256": "c357bd9bcc7a7ecc7e32db36a4444bf57107cf88ed4889adbdbda7baebcc4312",
+      "download": "https://cdn.freesound.org/previews/674/674784_9551767-hq.mp3",
+      "sourcePage": "artifacts/door-sound-study/source-audio/674784-page.html",
+      "sourcePageSha256": "c519efb7b7224605837d573539fc28a96aefc346e5cb6eed89cfb7ce9b9412dd",
+      "originalSpecification": {
+        "sampleRate": 96000,
+        "bits": 24,
+        "channels": 2
+      },
+      "masterAccess": "Original upload not downloaded; source page offers it after login. Production uses the explicitly licensed public MP3 preview."
+    },
+    {
+      "id": "a-sounds-587337",
+      "author": "a-sounds",
+      "title": "DOORMetl_Squeaky metal door open and close, different speeds, garden door.wav",
+      "url": "https://freesound.org/people/a-sounds/sounds/587337/",
+      "licence": "CC0 1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "changes": "Two real hinge-motion excerpts from the same metal garden door. 5 ms start/25 ms end fades; no pitch, stretch, EQ or normalization. Not an institutional hydraulic-closer recording.",
+      "deliveryKind": "freesound-hq-preview",
+      "sourceFile": "artifacts/door-sound-study/source-audio/587337-hq-preview.mp3",
+      "sourceFileSha256": "f4e9da07e1032bfed3de2d60d116850fed19f9b44ad82ffc19b34db57720309f",
+      "download": "https://cdn.freesound.org/previews/587/587337_13258370-hq.mp3",
+      "sourcePage": "artifacts/door-sound-study/source-audio/587337-page.html",
+      "sourcePageSha256": "bbc32dfc3cb4abac67d7d64f3f5452107b8d59620d5fb01bf354d00f1e26644a",
+      "originalSpecification": {
+        "sampleRate": 48000,
+        "bits": 24,
+        "channels": 1
+      },
+      "masterAccess": "Original upload not downloaded; source page offers it after login. Production uses the explicitly licensed public MP3 preview."
+    }
+  ],
+  "mechanicalChanges": "Unchanged original-pitch excerpts of existing licensed project doors; bounded filters, mono 24k PCM, fades and stated gain. Assembly surrogates, not recordings of this apparatus.",
+  "click": {
+    "method": "Runtime finite synthesized bipolar contact, 14 ms; no recorded source or scare dispatcher."
+  },
+  "clips": [
+    {
+      "id": "boo",
+      "file": "boo.wav",
+      "sha256": "4c305b0f8f8dc34c7c5ff6f389f7f5e5fb021d174844686c281b915b0091809d",
+      "bytes": 44258,
+      "seconds": 0.9204166666666667,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -10.109788069782407,
+      "rmsDbFS": -27.042247754989237,
+      "firstAudibleSeconds": 0.023791666666666666,
+      "lastAudibleSeconds": 0.5265
+    },
+    {
+      "id": "hinge",
+      "file": "hinge.wav",
+      "sha256": "e6f2abe7dab0b2ff8d0b3185336f945b5f1a08464f93387316d0f60fe8d559b2",
+      "bytes": 9918,
+      "seconds": 0.205,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -8.86841468263592,
+      "rmsDbFS": -28.392346064821318,
+      "firstAudibleSeconds": 0.00016666666666666666,
+      "lastAudibleSeconds": 0.2025,
+      "source": "public/audio/doors/metal-hinge-01.wav",
+      "from": 0.12,
+      "fadeIn": 0.004,
+      "fadeOut": 0.025,
+      "filter": "highpass=f=160:p=2,lowpass=f=4200:p=2",
+      "gain": 0.5
+    },
+    {
+      "id": "wood-stop",
+      "file": "wood-stop.wav",
+      "sha256": "b5a9948f6e4af1fb500e58de0c2b71fe1ab00c3c408a40bfe5e92b41dcbff102",
+      "bytes": 11838,
+      "seconds": 0.245,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -12.45820260602165,
+      "rmsDbFS": -26.10024136538197,
+      "firstAudibleSeconds": 0.0003333333333333333,
+      "lastAudibleSeconds": 0.242875,
+      "source": "public/audio/doors/timber-close-01.wav",
+      "from": 0.018,
+      "fadeIn": 0.002,
+      "fadeOut": 0.035,
+      "filter": "highpass=f=110:p=2,lowpass=f=4800:p=2",
+      "gain": 1
+    },
+    {
+      "id": "settle",
+      "file": "settle.wav",
+      "sha256": "5b8107cf71d451e76393213fe35ecbbe1ef502c63fafc8c9e59bbb71374c2e1f",
+      "bytes": 8958,
+      "seconds": 0.185,
+      "analysisSampleRate": 24000,
+      "analysisChannels": 1,
+      "analysisMethod": "FFmpeg mono decode; stereo originals/IR use FFmpeg channel fold for this diagnostic only.",
+      "peakDbFS": -30.317688934674713,
+      "rmsDbFS": -41.9612563711017,
+      "firstAudibleSeconds": 0.00008333333333333333,
+      "lastAudibleSeconds": 0.18341666666666667,
+      "source": "public/audio/doors/timber-close-01.wav",
+      "from": 0.24,
+      "fadeIn": 0.005,
+      "fadeOut": 0.04,
+      "filter": "highpass=f=130:p=2,lowpass=f=3500:p=2",
+      "gain": 1
+    }
+  ],
+  "bank": {
+    "runtimeClipCount": 4,
+    "encodedBytes": 74972,
+    "decodedSeconds": 1.555416666666667,
+    "sourceAndReviewFilesExcludedFromRuntimeLoading": true
+  },
+  "acceptance": {
+    "sourceListening": "The user selected Dinoroki's short human take after audition. This does not establish processed mix/in-game acceptance.",
+    "runtime": "Current human+DSP actual-game capture and listening review required. Offline levels/finite signal checks establish technical limits only."
+  }
+}

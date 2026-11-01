@@ -2,6 +2,7 @@ import { CELL } from '../data/floorplan/legend.js';
 import { normalizePressurePresentation } from '../game/pressure-performance.js';
 import { hushPoseAt } from './hush-pose.js';
 import { PRESSURE_GAIT } from '../game/pressure-gait.js';
+import { hushDensityCharacter } from '../game/hush-density-performance.js';
 
 const HEIGHT = 2.18;
 const MODES = ['live', 'core', 'glow', 'off'];
@@ -9,12 +10,81 @@ const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const angle = value => Math.atan2(Math.sin(value), Math.cos(value));
 const smooth = value => { const u = clamp(value, 0, 1); return u * u * (3 - 2 * u); };
+export const HUSH_DENSITY_RENDER = Object.freeze({
+  asset: 'assets/hush-density.glb', heightM: 2.05, widthM: .90,
+  core: 'hush_density_core', surface: 'hush_density_return', volume: 'hush_density_volume',
+});
 function freeze(value) {
+  if (ArrayBuffer.isView(value)) return value;
   if (value && typeof value === 'object') {
     for (const item of Object.values(value)) freeze(item);
     Object.freeze(value);
   }
   return value;
+}
+
+// One simulation-owned pressure mass. It can borrow a human reference at the
+// service court, but ordinary HUSH never inherits the human foot solver, face,
+// joint offsets or a camera-facing root. Old recordings use a bounded captured
+// fallback supplied by hushDensityCharacter, never a new renderer clock.
+export function pressureInstances(primary, secondary, { mode = 'live', reducedMotion = false, reduceFlash = false } = {}) {
+  if (mode === 'off') return freeze([]);
+  const result = [];
+  for (const [index, raw] of [primary, secondary].entries()) {
+    const a = actor(raw, index, reducedMotion);
+    if (!a) continue;
+    if (a.performance.role === 'tenant') {
+      result.push(...legacyPressureInstances(a, null, { mode, reducedMotion, reduceFlash }));
+      continue;
+    }
+    const p = a.performance, resolvedMode = MODES.includes(a.mode) ? a.mode : MODES.includes(mode) ? mode : 'live';
+    if (resolvedMode === 'off') continue;
+    const pose = hushPoseAt(p.cue?.name, 0, p.cue?.elapsed ?? -1, { reducedMotion: reducedMotion || p.reducedMotion });
+    const flicker = !reduceFlash && pose.flicker > 0 && Math.floor((p.cue?.elapsed || 0) * 9) % 2 ? 1 - pose.flicker * .72 : 1;
+    const strength = a.strength * p.manifestation * (1 - pose.dim) * flicker;
+    if (strength <= .018) continue;
+    const scale = a.heightM / HUSH_DENSITY_RENDER.heightM;
+    const scaleX = a.clearanceM == null ? 1 : clamp(a.clearanceM / (HUSH_DENSITY_RENDER.widthM * scale), .22, 1);
+    const surface = resolvedMode === 'live';
+    result.push({
+      id: `pressure:${a.id}:${index}`, mesh: surface ? HUSH_DENSITY_RENDER.core : HUSH_DENSITY_RENDER.volume,
+      x: (a.x + .5) * CELL, y: a.floorH, z: (a.y + .5) * CELL, yaw: p.heading, scale, scaleX,
+      character: hushDensityCharacter(p, { reducedMotion: reducedMotion || p.reducedMotion }),
+      densitySurface: surface,
+      pressure: { strength, mode: resolvedMode === 'glow' ? 'glow' : 'core', glow: resolvedMode === 'glow' ? 1 : 0, seed: p.seed },
+    });
+    // These are the retained human recordings addressed by the existing
+    // conversation, not another enemy or HUSH's original anatomy. Projection
+    // is in its authored bearing, never towards the observer.
+    if (a.referenceTrace && p.role === 'court-trace') {
+      const reference = { ...a, id: `${a.id}:reference`, mode: 'glow', strength: Math.min(.32, strength * .35),
+        performance: { ...p, manifestation: 1 } };
+      const forward = [Math.sin(p.heading), -Math.cos(p.heading)];
+      const traces = legacyPressureInstances(reference, null, { mode: 'glow', reducedMotion, reduceFlash });
+      for (const trace of traces) result.push({ ...trace,
+        id: trace.id + ':reference', x: trace.x + forward[0] * .22, z: trace.z + forward[1] * .22,
+        referenceTrace: true });
+    }
+  }
+  return freeze(result.slice(0, 4));
+}
+
+// Sparse actual surfaces use the ordinary lighting/depth/acquisition route.
+// Core and return have identical skin, clocks, rigid portal matrices and clip
+// planes. They add no reflection, shadow, collider, sound or extra mover.
+export function pressureSurfaceInstances(instances = []) {
+  const rows = [];
+  for (const instance of instances) {
+    if (!instance?.densitySurface || instance.mesh !== HUSH_DENSITY_RENDER.core
+      || Number(instance.pressure?.strength) <= .018) continue;
+    const next = structuredClone(instance);
+    delete next.pressure; delete next.densitySurface;
+    next.id = `${instance.id}:surface`; next.mesh = HUSH_DENSITY_RENDER.surface;
+    next.noShadow = true; next.noReflection = true; next.hushDensitySurface = true;
+    if (next.matrix) next.matrix = Array.from(next.matrix);
+    rows.push(next);
+  }
+  return freeze(rows.slice(0, 4));
 }
 function rotation(x = 0, y = 0, z = 0) {
   const cx = Math.cos(x / 2), sx = Math.sin(x / 2), cy = Math.cos(y / 2), sy = Math.sin(y / 2), cz = Math.cos(z / 2), sz = Math.sin(z / 2);
@@ -33,7 +103,7 @@ function actor(value, index, reducedMotion) {
 // Convert a frozen simulation performance into physical mesh submissions.
 // All cue motion is evaluated from its captured elapsed time. There is no
 // render clock, billboard orientation or cue-driven body scaling here.
-export function pressureInstances(primary, secondary, { mode = 'live', reducedMotion = false, reduceFlash = false } = {}) {
+export function legacyPressureInstances(primary, secondary, { mode = 'live', reducedMotion = false, reduceFlash = false } = {}) {
   if (mode === 'off') return freeze([]);
   const result = [];
   for (const [index, raw] of [primary, secondary].entries()) {

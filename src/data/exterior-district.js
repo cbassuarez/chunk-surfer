@@ -51,10 +51,11 @@ export const DISTRICT_STREETS = freeze([
 // at occupied thresholds rather than offering fake interiors, but each gives a
 // different corner somewhere to go besides around the ring.
 export const DISTRICT_COURTS = freeze([
-  freeze({id:'west-mews-court',axis:'horizontal',x0:-30,x1:-15,y0:20,y1:28,kind:'court'}),
-  freeze({id:'north-borough-passage',axis:'vertical',x0:74,x1:82,y0:-28,y1:-15,kind:'court'}),
-  freeze({id:'east-workshop-court',axis:'horizontal',x0:143,x1:163,y0:12,y1:20,kind:'court'}),
-  freeze({id:'south-pub-yard',axis:'vertical',x0:82,x1:90,y0:107,y1:123,kind:'court'}),
+  // Each is a shared surface: `mouth` is the side that meets the ring, and the
+  // flagged route runs along the court's `route` edge.
+  freeze({id:'west-mews-court',axis:'horizontal',x0:-30,x1:-15,y0:20,y1:28,kind:'court',mouth:'x1',route:'y0'}),
+  freeze({id:'east-workshop-court',axis:'horizontal',x0:143,x1:163,y0:12,y1:20,kind:'court',mouth:'x0',route:'y0'}),
+  freeze({id:'south-pub-yard',axis:'vertical',x0:82,x1:90,y0:107,y1:123,kind:'court',mouth:'y0',route:'x0'}),
 ]);
 const DISTRICT_ROUTES=freeze([...DISTRICT_STREETS,...DISTRICT_COURTS]);
 
@@ -89,7 +90,7 @@ export const EXTERIOR_INSPECTABLES = freeze([
 
 export const YARD_SERVICE_RANGES = freeze([
   freeze({id:'yard-former-stables',physical:{x:36,y:18},w:12,d:8,height:7.4,year:1888,use:'former stables and caretaker store'}),
-  freeze({id:'yard-rehearsal-annex',physical:{x:39,y:34},w:14,d:10,height:8.8,year:1912,use:'former rehearsal annex'}),
+  freeze({id:'yard-rehearsal-annex',physical:{x:39,y:34},w:16,d:10,height:8.8,year:1912,use:'The Lyric public house in the former rehearsal range'}),
   freeze({id:'yard-baths-plant',physical:{x:39,y:55},w:13,d:12,height:7.2,year:1936,use:'baths plant and laundry'}),
   freeze({id:'yard-covered-stores',physical:{x:40,y:77},w:12,d:13,height:6.4,year:1986,use:'covered stores'}),
 ]);
@@ -107,17 +108,28 @@ export function exteriorStreetAt(x,y){
   return DISTRICT_ROUTES.find((street)=>within(x,street.x0,street.x1)&&within(y,street.y0,street.y1))||null;
 }
 
+// A ring street is a Leeds section: four metres of flags each side of a
+// six-metre carriageway, kerbed at the road edge. A court is setts wall to
+// wall; districtCourtFloorAt lifts its flagged route and its mouth.
 function streetGlyph(street,x,y){
-  if(street.axis==='horizontal'){
-    const edge=Math.min(y-street.y0,street.y1-y);
-    if(edge<=1)return'p';
-    if(edge===2||edge===3)return's';
-    return'e';
-  }
-  const edge=Math.min(x-street.x0,street.x1-x);
-  if(edge<=1)return'p';
-  if(edge===2||edge===3)return's';
-  return'e';
+  if(street.kind==='court')return's';
+  const edge=street.axis==='horizontal'?Math.min(y-street.y0,street.y1-y):Math.min(x-street.x0,street.x1-x);
+  return edge<=3?'p':'e';
+}
+
+// Shared surface (Leeds Type 5): the flagged route stands 30 mm proud of the
+// setts, and the ring pavement carries on across the mouth before it eases
+// down over three metres, so the footway never stops for a court.
+export const COURT_SURFACE=freeze({setts:.025,route:.055,routeWidth:2,mouthFloor:.12,mouthRamp:3});
+export function districtCourtFloorAt(x,y){
+  const court=DISTRICT_COURTS.find((c)=>within(x,c.x0,c.x1)&&within(y,c.y0,c.y1));
+  if(!court)return null;
+  const C=COURT_SURFACE;
+  const fromMouth=court.mouth==='x1'?court.x1-x:court.mouth==='x0'?x-court.x0:y-court.y0;
+  const fromRoute=court.route==='y0'?y-court.y0:x-court.x0;
+  const onRoute=fromRoute<C.routeWidth;
+  const mouth=C.setts+(C.mouthFloor-C.setts)*Math.max(0,1-fromMouth/C.mouthRamp);
+  return{floor:Math.max(mouth,onRoute?C.route:C.setts),route:onRoute};
 }
 
 export function buildExteriorDistrictRows(){

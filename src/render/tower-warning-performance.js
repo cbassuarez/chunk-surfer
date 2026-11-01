@@ -35,6 +35,13 @@ function handLiftAt(time, duration) {
   const t = duration > 0 ? time * TOWER_WARNING_PERFORMANCE.smokeGestureSeconds / duration : 0;
   return smooth(t / .4) * (1 - smooth((t - 1.3) / .8));
 }
+// The exhale follows the drag: the hand has left the lips, then the smoke
+// comes out. Owned by the gesture clip's own clock, not a free oscillator.
+function exhaleAt(clip, time, duration, smokeClip) {
+  if (clip !== smokeClip || !(duration > 0)) return 0;
+  const t = time * TOWER_WARNING_PERFORMANCE.smokeGestureSeconds / duration;
+  return t > 1.35 && t < 2.7 ? .8 * Math.sin(Math.PI * (t - 1.35) / 1.35) : 0;
+}
 function speechAt(frame, audio, paused) {
   const lineId = frame.line?.id == null ? null : String(frame.line.id);
   const owned = !!lineId && lineId === audio?.lineId && lineId === audio?.envelope?.lineId;
@@ -151,7 +158,8 @@ export function towerWarningPerformance(frame = {}, {
     speech,
     smoke: { clock: elapsed, enabled: visible, animated: visible && !soft, emitting: visible && !soft && !held,
       density: visible ? spec.idleSmokeDensity + energy * spec.speechSmokeGain : 0,
-      inward: true,
+      // A breath leaves his mouth with the words, and once after each drag.
+      breath: visible ? Math.max(energy * .9, exhaleAt(clip, time, smokeDuration, clips.smoke)) : 0,
       energy, socket: contract.cigarette },
     diagnostics: { noIndependentClock: true, jawAnimated: false, armAxesGuessed: false,
       geometryAndRootOwnedByRuntime: true, heldSilhouette: !walking, axisContractReady: !!headAxis && !!neckAxis },

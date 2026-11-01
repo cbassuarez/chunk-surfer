@@ -1,4 +1,6 @@
 import { normalizePressureGait, pressureGaitVisibility, PRESSURE_GAIT } from './pressure-gait.js';
+import { hushDensityUsesRole, normalizeHushDensityPose, stepHushDensityPose,
+  interpolateHushDensityPose, hushDensityFromCaptured } from './hush-density-performance.js';
 
 // Presentation only. Presence, Source bracketing and contact keep all gameplay
 // authority. Positions use the renderer's physical half-metre cells; floorH is
@@ -25,16 +27,19 @@ function normalizeActor(value) {
   const cue = p.cue && PRESSURE_CUES.includes(p.cue.name)
     ? { name: p.cue.name, elapsed: bounded(p.cue.elapsed, 0, 30) } : null;
   const gait = normalizePressureGait(p.gait);
+  const density = hushDensityUsesRole(p.role) ? normalizeHushDensityPose(p.density) : null;
   return {
     id: typeof value.id === 'string' && value.id ? value.id.slice(0, 96) : p.role,
     x: bounded(value.x, -1000000, 1000000), y: bounded(value.y, -1000000, 1000000), floorH: bounded(value.floorH, -10000, 10000, 0),
     strength: bounded(value.strength, 0, 1, .96), radiusM: bounded(value.radiusM, 0, 100, 5.2),
     heightM: bounded(value.heightM, .4, 4, 2.18), widthM: bounded(value.widthM, .1, 2, .68),
     glow: value.glow == null ? null : bounded(value.glow, 0, 3.2), mode: enumValue(value.mode, ['live', 'core', 'glow', 'off'], null),
+    ...(value.referenceTrace === true ? { referenceTrace: true } : {}),
+    ...(Number.isFinite(Number(value.clearanceM)) && value.clearanceM != null ? { clearanceM: bounded(value.clearanceM, .18, 2) } : {}),
     performance: { version: 1, role: p.role, heading: angle(p.heading), clip: enumValue(p.clip, PRESSURE_CLIPS, 'pressure_hold'),
       time: bounded(p.time, 0, MAX_TIME), loop: p.loop !== false, seed: Math.floor(bounded(p.seed, 0, 4294967295)),
       manifestation: bounded(p.manifestation, 0, 1), motion: enumValue(p.motion, PRESSURE_MOTIONS, 'idle'), cue,
-      reducedMotion: p.reducedMotion === true, ...(gait ? { gait } : {}) },
+      reducedMotion: p.reducedMotion === true, ...(gait ? { gait } : {}), ...(density ? { density } : {}) },
   };
 }
 
@@ -50,7 +55,7 @@ export function interpolatePressurePresentation(a, b, amount) {
   if (!first || !second) return clone(t < .5 ? first : second);
   const lerp = (x, y) => x + (y - x) * t;
   function actor(x, y) {
-    if (!x || !y || x.id !== y.id || x.performance.role !== y.performance.role || x.performance.clip !== y.performance.clip
+    if (!x || !y || x.id !== y.id || x.performance.role !== y.performance.role || x.referenceTrace !== y.referenceTrace || x.performance.clip !== y.performance.clip
       || x.performance.cue?.name !== y.performance.cue?.name || x.performance.reducedMotion !== y.performance.reducedMotion
       || x.performance.gait?.phase !== y.performance.gait?.phase || x.performance.gait?.cycle !== y.performance.gait?.cycle
       || x.performance.gait?.pivot !== y.performance.gait?.pivot || x.performance.gait?.redirect !== y.performance.gait?.redirect
@@ -61,6 +66,11 @@ export function interpolatePressurePresentation(a, b, amount) {
     result.performance.heading = angle(x.performance.heading + angle(y.performance.heading - x.performance.heading) * t);
     result.performance.time = lerp(x.performance.time, y.performance.time);
     result.performance.manifestation = lerp(x.performance.manifestation, y.performance.manifestation);
+    if (x.clearanceM != null && y.clearanceM != null) result.clearanceM = lerp(x.clearanceM, y.clearanceM);
+    if (x.performance.density || y.performance.density) {
+      const density = interpolateHushDensityPose(x.performance.density, y.performance.density, t);
+      if (density) result.performance.density = density; else delete result.performance.density;
+    }
     if (result.performance.cue) result.performance.cue.elapsed = lerp(x.performance.cue.elapsed, y.performance.cue.elapsed);
     if (result.performance.gait) {
       for (const key of ['elapsed', 'duration', 'travelMetres', 'progress', 'listenTurn', 'blockedElapsed']) {
@@ -75,7 +85,7 @@ export function interpolatePressurePresentation(a, b, amount) {
 
 export function createPressurePerformance(initial = null) {
   let state = normalizePressurePresentation(initial) || { version: 1, clock: 0, primary: null, secondary: null };
-  let replay = false, seed = 0, liveBeforeReplay = null;
+  let replay = false, seed = state.primary?.performance.seed ?? state.secondary?.performance.seed ?? 0, liveBeforeReplay = null;
   const pendingCues = new Map();
 
   function tickActor(previous, incoming, dt, reducedMotion) {
@@ -119,18 +129,32 @@ export function createPressurePerformance(initial = null) {
     if (cue) { cue.elapsed += dt; if (cue.elapsed > 8) cue = null; }
     const queued = pendingCues.get(role);
     if (queued) { cue = { name: queued, elapsed: 0 }; pendingCues.delete(role); }
-    return normalizeActor({ ...incoming, id, performance: { version: 1, role, heading, clip, time, loop: !gait, seed: incoming.seed ?? seed,
-      manifestation: gait?.phase === 'recover' ? pressureGaitVisibility(gait)
-        : 1 - (1 - (old?.manifestation || 0)) * Math.exp(-dt * 7.2), motion, cue, reducedMotion, ...(gait ? { gait } : {}) } });
+    const actorSeed = incoming.seed ?? old?.seed ?? seed;
+    const density = hushDensityUsesRole(role) ? stepHushDensityPose(old?.density || hushDensityFromCaptured(old || { seed: actorSeed }), {
+      dt, acceptedMetres: same ? Math.hypot(dx, dz) * .5 : 0,
+      headingDelta: same ? angle(heading - old.heading) : 0, listenTurn: gait?.listenTurn || 0,
+      listening: gait?.phase === 'listen' || motion === 'listen',
+      blocked: gait?.blocked === true || gait?.phase === 'recover',
+      loading: gait?.phase === 'load' || gait?.redirect === true,
+      loadProgress: gait ? gait.elapsed / gait.duration : 0,
+      seed: actorSeed, reducedMotion,
+    }) : null;
+    return normalizeActor({ ...incoming, id, performance: { version: 1, role, heading, clip, time, loop: !gait, seed: actorSeed,
+      // The density remains compressed at an obstruction. Only the old human
+      // support animation needs the scheduler's withdraw/reset visibility.
+      manifestation: !density && gait?.phase === 'recover' ? pressureGaitVisibility(gait)
+        : 1 - (1 - (old?.manifestation || 0)) * Math.exp(-dt * 7.2), motion, cue, reducedMotion,
+      ...(gait ? { gait } : {}), ...(density ? { density } : {}) } });
   }
 
   return {
     tick(dt, { primary = null, secondary = null, suspended = false, reducedMotion = false } = {}) {
       if (suspended) return clone(state);
+      const elapsed = bounded(dt, 0, .25);
+      if (!elapsed) return clone(state);
       if (replay && liveBeforeReplay) state = liveBeforeReplay;
       liveBeforeReplay = null;
       replay = false;
-      const elapsed = bounded(dt, 0, .25);
       state = { version: 1, clock: Math.min(MAX_TIME, state.clock + elapsed),
         primary: tickActor(state.primary, primary, elapsed, reducedMotion), secondary: tickActor(state.secondary, secondary, elapsed, reducedMotion) };
       return clone(state);
@@ -140,6 +164,14 @@ export function createPressurePerformance(initial = null) {
       pendingCues.set(role, name); return true;
     },
     snapshot: () => clone(state),
+    restore(value) {
+      // A normal checkpoint resumes its live authority. A tape's applyFrame
+      // remains a separate read-only operation with a live return state.
+      state = normalizePressurePresentation(value) || { version: 1, clock: 0, primary: null, secondary: null };
+      seed = state.primary?.performance.seed ?? state.secondary?.performance.seed ?? 0;
+      replay = false; liveBeforeReplay = null; pendingCues.clear();
+      return clone(state);
+    },
     applyFrame(value) {
       if (!replay) liveBeforeReplay = clone(state);
       replay = true; pendingCues.clear();

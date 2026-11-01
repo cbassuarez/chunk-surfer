@@ -84,7 +84,8 @@ test('core-only, glow-only and off retain their actual triangle footprint and de
 
 test('Pressure material still enters the shared recording instead of a smooth final repaint', async () => {
   const renderer = await readFile(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
-  assert.match(renderer, /const pressureSourceTex = finishPressure\(sceneTex\);[\s\S]*?runBurstPass\(pressureSourceTex, now\)/);
+  assert.match(renderer, /function runPixelMeshPass\([^)]*sourceTexture\s*=\s*sceneTex[^)]*\)/);
+  assert.match(renderer, /const pressureSourceTex = finishPressure\(sourceTexture\);[\s\S]*?runBurstPass\(pressureSourceTex, now\)/);
   const post = renderer.slice(renderer.indexOf('function presentThroughPost('), renderer.indexOf('export function r3dSourceIdentityStatus'));
   assert.doesNotMatch(post, /finishPressure\(/);
   const merge = PRESSURE_FINISH_FRAG.slice(PRESSURE_FINISH_FRAG.indexOf('if(uAcquiredOnly>.5)'), PRESSURE_FINISH_FRAG.indexOf('vec3 c=src.rgb'));

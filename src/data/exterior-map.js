@@ -6,8 +6,9 @@ import {CHURCH} from './st-brendans.js';
 import {CONSERVATORY_PROPS} from './conservatory-props.js';
 import {EXTERIOR_MAP_SHELL} from './generated/exterior-map-shell.js';
 import {ZONE} from './floorplan/legend.js';
-import {EXTERIOR_STATIONERS,STATIONERS_DOORS} from './exterior-stationers.js';
+import {EXTERIOR_STATIONERS,STATIONERS_DOORS,STATIONERS_DOOR_PLACED} from './exterior-stationers.js';
 import {SOUTH_ROW_SHOPS,PLAZA_SHOPFRONTS} from './plaza-shopfronts.js';
+import {GLASS_COURT} from './glass-court.js';
 export const EXTERIOR_MAP_FLOOR='district';
 export const EXTERIOR_MAP_ZONES=Object.freeze([ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.serviceYard,ZONE.pub,ZONE.stationers]);
 export const EXTERIOR_MAP_DEFINITION=Object.freeze({version:1,id:'ellery-district',topologyStride:2,
@@ -17,14 +18,21 @@ const rectangle=(x0,y0,x1,y1)=>[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}]
 const yardLogical=(x,y)=>({x:50+x,y:200+y});
 // A closed shop is marked at its public pavement, not given a false entrance.
 // Use the same row/deed ownership and physical transform as the placed fascia.
-function binderyPlacement(){
+function frontagePose(prop,renderedInstances=[]){
+  return renderedInstances.find(p=>p.id===prop.id)||{x:prop.x-48+(Number(prop.renderOffsetX)||0),
+    z:prop.y-338+(Number(prop.renderOffsetZ)||0),yaw:prop.yaw,scale:prop.scale,scaleX:prop.scaleX,scaleZ:prop.scaleZ};
+}
+function projectFromPose(pose,x,z){
+  const c=Math.cos(pose.yaw||0),s=Math.sin(pose.yaw||0),sx=(pose.scale||1)*(pose.scaleX||1),sz=(pose.scale||1)*(pose.scaleZ||1);
+  return{x:pose.x+c*x*sx-s*z*sz,y:pose.z+s*x*sx+c*z*sz};
+}
+function binderyPlacement({renderedInstances=[]}={}){
   const deed=SOUTH_ROW_SHOPS.find(shop=>shop.useId==='bindery');
   const row=CONSERVATORY_PROPS.find(prop=>prop.id===deed?.rowId);
   if(!row||!deed)return null;
-  const c=Math.cos(row.yaw||0),s=Math.sin(row.yaw||0),z=-32+(deed.deed+.5)*8;
-  const origin={x:row.x-48+(Number(row.renderOffsetX)||0),y:row.y-338+(Number(row.renderOffsetZ)||0)};
+  const z=-32+(deed.deed+.5)*8,pose=frontagePose(row,renderedInstances);
   return {rowId:row.id,deed:deed.deed,name:PLAZA_SHOPFRONTS[deed.useIndex].name,
-    position:{x:origin.x+c*1.25-s*z,y:origin.y+s*1.25+c*z}};
+    position:projectFromPose(pose,1.25,z)};
 }
 export function exteriorInstitutionCells({renderedInstances=[]}={}){
   const authored=CONSERVATORY_PROPS.find(p=>p.id===EXTERIOR_MAP_SHELL.propId);
@@ -39,16 +47,22 @@ export function exteriorInstitutionCells({renderedInstances=[]}={}){
   }
   return cells;
 }
-export function exteriorMapFootprints(){
+export function exteriorMapFootprints({renderedInstances=[]}={}){
   const result=[]; // Ellery's occupied envelope is captured from the real plan.
-  for(const range of YARD_SERVICE_RANGES)result.push({id:range.id,role:'outbuilding',label:range.use.toUpperCase(),
-    points:rectangle(range.physical.x-range.w/2,range.physical.y-range.d/2,range.physical.x+range.w/2,range.physical.y+range.d/2)});
+  for(const range of YARD_SERVICE_RANGES){
+    const pose=renderedInstances.find(p=>p.id===range.id)||{x:range.physical.x,z:range.physical.y};
+    const pub=range.id===EXTERIOR_PUB.building?.id;
+    result.push({id:pub?'lyric':range.id,sourcePropId:range.id,role:pub?'pub':'outbuilding',label:pub?'THE LYRIC':range.use.toUpperCase(),
+      points:rectangle(-range.w/2,-range.d/2,range.w/2,range.d/2).map(p=>projectFromPose(pose,p.x,p.y))});
+  }
   // These deeds use the same placed frontage origin, yaw, 8m rhythm, depth and
   // court mouth as buildDistrictFrontage(). The mouth remains empty at grade.
-  for(const prop of CONSERVATORY_PROPS.filter(p=>/^district-(?:west|east|north|south)-row-/.test(p.id))){
-    const origin={x:prop.x-48+(Number(prop.renderOffsetX)||0),y:prop.y-338+(Number(prop.renderOffsetZ)||0)};
-    const c=Math.cos(prop.yaw||0),s=Math.sin(prop.yaw||0),workshop=prop.mesh.includes('workshop'),depth=workshop?6.8:5.4;
-    const project=({x,y})=>({x:origin.x+c*x-s*y,y:origin.y+s*x+c*y});
+  // Anchored: each row's trade layer and per-shop inspectables share the row's
+  // id prefix, and stamping eight deeds from every one of them filled the
+  // sheet with offset duplicate rectangles.
+  for(const prop of CONSERVATORY_PROPS.filter(p=>/^district-(?:west|east|north|south)-row-[a-z]$/.test(p.id))){
+    const pose=frontagePose(prop,renderedInstances),workshop=prop.mesh.includes('workshop'),depth=workshop?6.8:5.4;
+    const project=({x,y})=>projectFromPose(pose,x,y);
     for(let deed=0;deed<8;deed++){
       if(prop.mesh.includes('passage')&&deed===4)continue;
       if(prop.id===EXTERIOR_PUB.row.id&&EXTERIOR_PUB.row.deeds.includes(deed))continue;
@@ -62,12 +76,21 @@ export function exteriorMapFootprints(){
   // internal room list. Keep the original rectangle union without interior ink.
   for(const room of CHURCH.rooms)result.push({id:`church:${room.id}`,role:'church',label:null,
     points:rectangle(room.x0,room.y0,room.x1+1,room.y1+1)});
-  const b=EXTERIOR_PUB.bounds;
-  result.push({id:'lyric',role:'pub',label:'THE LYRIC',points:rectangle(b.x0,b.z0,b.x1,b.z1)});
+  // The glazed roof is an independent link after the old atrium roof is cut
+  // away. Its current physical contract, not the retired scenic shell, owns
+  // this narrow footprint between the two outdoor courts.
+  const glassPose=renderedInstances.find(p=>p.id==='glass-court-frame')||{x:GLASS_COURT.origin.x,z:GLASS_COURT.origin.z};
+  const roof=GLASS_COURT.roofBounds;
+  result.push({id:'baths-greenhouse-link',sourcePropId:'glass-court-frame',role:'greenhouse',label:'GREENHOUSE',
+    points:rectangle(roof.x0,roof.z0,roof.x1,roof.z1).map(p=>projectFromPose(glassPose,p.x,p.y))});
+  if(!result.some(shape=>shape.id==='lyric')){
+    const b=EXTERIOR_PUB.bounds;
+    result.push({id:'lyric',role:'pub',label:'THE LYRIC',points:rectangle(b.x0,b.z0,b.x1,b.z1)});
+  }
   return result;
 }
-export function exteriorMapTargets(){
-  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubExteriorAt(pubDoor.id),bindery=binderyPlacement();
+export function exteriorMapTargets({renderedInstances=[]}={}){
+  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubExteriorAt(pubDoor.id),bindery=binderyPlacement({renderedInstances});
   return [
     {id:'outside:van',label:'VAN / EQUIPMENT',shortLabel:'VAN',logical:{x:61,y:208},currentRadius:4},
     {id:'outside:shelter',label:'ARRIVAL SHELTER',shortLabel:'BUS',logical:{x:54.5,y:205},currentRadius:3},
@@ -75,8 +98,9 @@ export function exteriorMapTargets(){
     {id:'outside:lyric',label:'THE LYRIC / ENTRANCE',shortLabel:'THE LYRIC',logical:pubExteriorLogicalAt(pubDoor.id),physical:{x:pub.x,y:pub.z},doorIds:[pubDoor.id],currentRadius:4},
     ...(bindery?[{id:'outside:bindery',label:bindery.name+' / SHOPFRONT',shortLabel:'BINDERY',logical:districtLogicalAt(bindery.position.x,bindery.position.y),physical:bindery.position,currentRadius:3,access:'shopfront'}]:[]),
     {id:'outside:stationers',label:'STATIONERS / ENTRANCE',shortLabel:'SHOP',
-      logical:{x:STATIONERS_DOORS[0].at.x+.25,y:STATIONERS_DOORS[0].at.y+1.5},
-      physical:{x:EXTERIOR_STATIONERS.door.x,y:EXTERIOR_STATIONERS.door.z+1.25},doorIds:[EXTERIOR_STATIONERS.door.id],currentRadius:3},
+      // A step out from the door, whichever way the shopfront faces.
+      logical:{x:STATIONERS_DOORS[0].at.x+.25+EXTERIOR_STATIONERS.outward.x*1.5,y:STATIONERS_DOORS[0].at.y+.25+EXTERIOR_STATIONERS.outward.z*1.5},
+      physical:{x:STATIONERS_DOOR_PLACED.x+EXTERIOR_STATIONERS.outward.x*1.25,y:STATIONERS_DOOR_PLACED.z+EXTERIOR_STATIONERS.outward.z*1.25},doorIds:[EXTERIOR_STATIONERS.door.id],currentRadius:3},
     {id:'outside:st-brendan',label:"ST BRENDAN'S / EXIT ONLY",shortLabel:'CHURCH',logical:yardLogical(CHURCH.doors[0].threshold.outside.x,CHURCH.doors[0].threshold.outside.y),doorIds:[CHURCH.doors[0].id],currentRadius:4,access:'exit-only',waypointable:false},
   ].map(target=>({floorId:EXTERIOR_MAP_FLOOR,visibility:'issued',selectable:true,waypointable:true,...target}));
 }

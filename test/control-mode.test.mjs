@@ -51,7 +51,8 @@ test('the keyboard never aims: looking belongs to the mouse and the right stick'
 test('mouse look settings are bounded and persist', () => {
   assert.equal(DEFAULT_SETTINGS.mouseSensitivity, 1);
   assert.equal(DEFAULT_SETTINGS.mouseInvertY, false);
-  assert.equal(normalizeSettings({ mouseSensitivity: 9 }).mouseSensitivity, 3);
+  assert.equal(normalizeSettings({ mouseSensitivity: 9 }).mouseSensitivity, 9);
+  assert.equal(normalizeSettings({ mouseSensitivity: 12 }).mouseSensitivity, 10);
   assert.equal(normalizeSettings({ mouseSensitivity: 0 }).mouseSensitivity, 0.2);
   assert.equal(normalizeSettings({ mouseSensitivity: 'x' }).mouseSensitivity, 1);
   assert.equal(normalizeSettings({ mouseInvertY: true }).mouseInvertY, true);

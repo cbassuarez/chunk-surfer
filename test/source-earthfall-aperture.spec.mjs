@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_EARTHFALL as C,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop} from '../src/data/source-earthfall.js';
+import {SOURCE_EARTHFALL as C,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop,sourceEarthfallFracturePose,sourceEarthfallPoint,sourceEarthfallBodyContacts,sourceEarthfallStructuralLayout,sourceEarthfallStructuralPose} from '../src/data/source-earthfall.js';
 import {freshSourceEarthfall,stepSourceEarthfall} from '../src/game/source-earthfall.js';
 import {sourceEarthfallGeometry,sourceEarthfallRenderFrame} from '../src/render/source-earthfall-renderer.js';
 import {sourceContinuationMeshPayload} from '../src/render/source-continuation-renderer.js';
@@ -25,7 +25,7 @@ function uploadedEarth(frame,legacy=false){
     for(let i=0;i<payload.positions.length;i+=9){
       const points=[0,1,2].map(k=>{
         const local=[...payload.positions.slice(i+k*3,i+k*3+3)];
-        return legacy?legacyPoint(cell,local.map((v,a)=>v+payload.bounds.center[a]),frame.source.elapsed):transform(prop.matrix,local);
+        return transform(prop.matrix,local);
       });
       const triangle=packedTriangle(points);all.push(triangle);if(payload.normals[i+1]>.99)top.push(triangle);
     }
@@ -48,34 +48,64 @@ export function earthfallApertureProbe({age,moving=false,reduced=false,legacy=fa
   return{age,moving,reduced,legacy,eye:origin,feet:state.feet,samples:points.length,clearTop:clear('top'),clearAll:clear('all'),directDownClear:!triangles.all.some(t=>blocks(origin,down,t))};
 }
 
-// Retain the failed inward-gather bank as a CPU-only mutation fixture. These
-// are its original finite centre-pivot poses, applied to the SAME current GPU
-// triangle payload. It separated shared edges but left the entire path covered.
-const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
-const oldHash=(index,salt)=>{let n=Math.imul(index+71,0x45d9f3b)^Math.imul(salt+13,0x27d4eb2d);n=Math.imul(n^(n>>>16),0x45d9f3b);return((n^(n>>>16))>>>0)/4294967296;};
-function legacyPoint(cell,point,elapsed){
-  const plan=sourceEarthfallReleasePlan(cell.index,cell.center),age=Math.max(0,elapsed-plan.releaseAt),fold=smooth(age/.8),gather=smooth(age/2.6),x=cell.center.x,z=cell.center.z;
-  const dx=Math.sign(-x),dz=Math.sign(-21-z),pitch=dz*.028*fold,roll=-dx*(x<0?.16:.13)*fold,yaw=(oldHash(cell.index,8)-.5)*.016*fold;
-  const px=point[0]-x,py=point[1]-100,pz=point[2]-z,a=Math.cos(pitch),b=Math.sin(pitch),c=Math.cos(roll),d=Math.sin(roll);
-  const u=c*px-d*a*py+d*b*pz,v=d*px+c*a*py-c*b*pz,w=b*py+a*pz;
-  return[x+dx*Math.min(Math.abs(x)*.12,1.4)*gather+Math.cos(yaw)*u+Math.sin(yaw)*w,
-    100-sourceEarthfallControlledDrop(elapsed,plan.releaseAt,180,plan.departureSpeed)+v,
-    z+dz*Math.min(Math.abs(-21-z)*.04,.45)*gather-Math.sin(yaw)*u+Math.cos(yaw)*w];
-}
-
-for(const moving of[false,true])test(`actual uploaded fragments reveal the lower path from the ${moving?'forward-moving':'stopped'} body instead of cofalling as a continuous field`,t=>{
-  for(const age of[.6,1.5,3])for(const reduced of[false,true]){
-    const probe=earthfallApertureProbe({age,moving,reduced});t.diagnostic(JSON.stringify(probe));
-    assert.ok(probe.clearTop/probe.samples>.8,'the top field still blankets the view of the existing lower path');
-    assert.ok(probe.clearAll/probe.samples>.8,'fragment sides still occlude the intended path aperture');
-    assert.equal(probe.directDownClear,true,'the player must see real underfoot depth through the opened slot');
+// Aperture percentages remain diagnostic measurements, not a demand that all
+// mass evacuates a convenient shaft. The former>80%clear-ray test rewarded
+// the exact unsupported chute that this study is intended to remove.
+test('cap loads connect to actual ribs before either bond releases',()=>{
+ const structure=sourceEarthfallStructuralLayout(),members=new Map(structure.map(m=>[m.id,m]));
+ for(const cell of cells){
+  const plan=sourceEarthfallReleasePlan(cell.index,cell.center);
+  assert.equal(plan.hostSupports.length,2);
+  for(const id of plan.hostSupports){const host=members.get(id);assert.ok(host,`missing host ${id}`);assert.ok(plan.releaseAt>host.failureAt,'a cap cannot detach before its connected rib bond fails');}
+  for(const elapsed of[0,1,2]){
+   const pose=sourceEarthfallFracturePose(cell.index,elapsed,cell.center);
+   for(const id of plan.hostSupports){const host=members.get(id),support=sourceEarthfallStructuralPose(host,elapsed);assert.ok(Math.abs(pose.y-cell.depth-(support.y+host.size.y/2))<1e-7,'an intact cap must contact the actual supporting rib top');}
   }
+ }
 });
 
-test('the path-aperture criterion rejects the prior inward bank despite its separated pivots and edges',t=>{
-  for(const moving of[false,true]){
-    const failed=earthfallApertureProbe({age:1.5,moving,legacy:true});t.diagnostic(JSON.stringify(failed));
-    assert.equal(failed.clearTop,0);assert.equal(failed.clearAll,0);assert.equal(failed.directDownClear,false);
-    const corrected=earthfallApertureProbe({age:1.5,moving});assert.ok(corrected.clearAll/corrected.samples>.8);
+test('settled middle ribs meet their ledges with actual rotated corners',()=>{
+ for(const member of sourceEarthfallStructuralLayout().filter(m=>m.type==='rib'&&!m.retainedSide))for(const elapsed of[C.footingLossAt+3,C.footingLossAt+7,25]){
+  const pose=sourceEarthfallStructuralPose(member,elapsed),corners=[];
+  for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1])corners.push(sourceEarthfallPoint(pose,[member.center.x+x*member.size.x/2,member.center.y+y*member.size.y/2,member.center.z+z*member.size.z/2],member.center));
+  const lowest=Math.min(...corners.map(p=>p[1]));assert.ok(Math.abs(lowest-92.65)<1e-8,`rotated ${member.id} floats or embeds by ${lowest-92.65}m`);
+ }
+});
+
+test('the default controlled body has no cap, rib, bearing or ledge penetration at120Hz',t=>{
+ let state=freshSourceEarthfall({runId:'physical-contact-proof'}),ticks=0,loss=null,maximum=0,contacts=0;
+ while(!state.committed)state=stepSourceEarthfall(state,{dt:C.fixedStep,forward:1}).state;
+ while(state.phase!=='landed'&&ticks++<1800){
+  const result=stepSourceEarthfall(state,{dt:C.fixedStep});state=result.state;
+  if(result.events.some(e=>e.type==='footing-loss')){assert.equal(state.phase,'falling');loss={elapsed:state.elapsed,feet:state.feet};}
+  maximum=Math.max(maximum,...sourceEarthfallBodyContacts(state,state.elapsed).map(c=>c.penetration),0);contacts+=state.contactCount;
+ }
+ assert.equal(state.phase,'landed');assert.ok(loss&&loss.feet>97&&loss.feet<100,'the local support must be lost before the deep fall');
+ assert.ok(contacts>0,'the collision test must actually exercise debris contacts');
+ assert.ok(maximum<1e-5,`capsule remains inside physical material by ${maximum}m`);
+ t.diagnostic(JSON.stringify({ticks,footingLoss:loss,contactResolutions:contacts,residualPenetration:maximum,landed:{x:state.x,z:state.z,feet:state.feet}}));
+});
+
+test('fragment volume remains rigid and shallow mass remains after the body falls below it',()=>{
+ for(const cell of cells){
+  const initial=sourceEarthfallFracturePose(cell.index,0,cell.center),after=sourceEarthfallFracturePose(cell.index,10,cell.center);
+  const corners=[...cell.points,...cell.points.map(p=>[p[0],p[1]-cell.depth,p[2]])];
+  const a=corners.map(p=>sourceEarthfallPoint(initial,p,cell.center)),b=corners.map(p=>sourceEarthfallPoint(after,p,cell.center));
+  for(let i=1;i<corners.length;i++)assert.ok(Math.abs(Math.hypot(...a[i].map((v,k)=>v-a[0][k]))-Math.hypot(...b[i].map((v,k)=>v-b[0][k])))<1e-9,'a fragment cannot shrink to fake clearance');
+  assert.ok(after.y>85,'debris must not accelerate down and disappear below the player');
+ }
+});
+
+test('actual uploaded material keeps the data rigid transform used for collision',()=>{
+ for(const elapsed of[0,2,3.4,4,5.5,10]){
+  const state={...freshSourceEarthfall({runId:'uploaded-proof'}),committed:true,committedAt:0,clock:elapsed,elapsed,phase:elapsed<3?'fracturing':'falling'};
+  const frame=sourceEarthfallRenderFrame(state);
+  for(const prop of frame.props.filter(p=>p.earthfallRole==='earth')){
+   const cell=cells[prop.cell],payload=payloads.get(prop.mesh),pose=sourceEarthfallFracturePose(cell.index,elapsed,cell.center);
+   for(const point of cell.points){
+    const uploaded=transform(prop.matrix,point.map((v,k)=>v-payload.bounds.center[k])),physical=sourceEarthfallPoint(pose,point,cell.center);
+    assert.ok(uploaded.every((v,k)=>Math.abs(v-physical[k])<2e-5),'GPU and collision disagree about a real cap corner');
+   }
   }
+ }
 });

@@ -19,7 +19,7 @@ function advance(engine,state,seconds,input={}){
 }
 function collapsed(){
   let state=advance(stepEndingWrongDoorDemolition,initial(),.25,{forward:1}).state;
-  state=advance(stepEndingWrongDoorDemolition,state,10).state;
+  state=advance(stepEndingWrongDoorDemolition,state,EARTH.footingLossAt+7).state;
   const distance=state.physical.z-(EARTH.passage.exitZ+1.4);
   state=advance(stepEndingWrongDoorDemolition,state,distance/EARTH.walkSpeed,{forward:1}).state;
   state=stepEndingWrongDoorDemolition(state,{interact:true}).state;

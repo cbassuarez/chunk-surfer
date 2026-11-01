@@ -121,8 +121,8 @@ function centreArc(definition,time,events,reducedMotion){
     opacity:1,velocity:vector(),angularVelocity:vector(),reducedMotion:!!reducedMotion};
 }
 function waveFrames(world,events){return events.filter(event=>event.age<=waveDuration(world)).map(event=>world==='fall'
-  ?{...event,kind:'radial-pressure',radius:event.age*C.waveSpeed,speed:C.waveSpeed,width:C.waveWidth,maxRadius:C.waveMaximumRadius,minimumX:75}
-  :{...event,kind:'centre-pressure',origin:{x:-142,y:35,z:-12},radius:C.centreWaveRadius,angle:ARCS[0].startAngle+event.age*C.centreWaveSpeed/C.centreWaveRadius,
+  ?{...event,kind:'radial-pressure',radius:event.age*C.waveSpeed,speed:C.waveSpeed,width:C.waveWidth,maxRadius:C.waveMaximumRadius,minimumX:C.fallPressureMinimumX}
+  :{...event,kind:'centre-pressure',origin:{...ARCS[0].position},radius:C.centreWaveRadius,angle:ARCS[0].startAngle+event.age*C.centreWaveSpeed/C.centreWaveRadius,
     angularSpeed:C.centreWaveSpeed/C.centreWaveRadius,speed:C.centreWaveSpeed,width:C.waveWidth,maxAngle:Math.PI*2,
     bands:[60,72,85].map(radius=>({radius,angle:ARCS[0].startAngle+event.age*C.centreWaveSpeed/radius}))});}
 function pressureSounds(world,events,definitions,time){

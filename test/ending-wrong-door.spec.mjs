@@ -27,7 +27,7 @@ function committed() {
   return result;
 }
 function landed() {
-  const result = advance(committed().state, 10);
+  const result = advance(committed().state, C.footingLossAt + 7);
   assert.equal(result.state.physical.phase, 'landed');
   return result.state;
 }
@@ -113,7 +113,7 @@ test('waiting, rejected movement and protected presentation cannot spend the end
     const result = advance(initial(), 1, input);
     assert.equal(result.state.physical.committed, false); assert.deepEqual(result.events, []);
   }
-  for (const state of [initial(), committed().state, advance(committed().state, 4).state, landed()]) {
+  for (const state of [initial(), committed().state, advance(committed().state, C.footingLossAt + 1).state, landed()]) {
     for (const guard of [{ paused: true }, { protected: true }, { assetsReady: false }, { renderReady: false }]) {
       const result = step(state, { dt: 99, forward: 1, side: 1, look: { yaw: 2 }, interact: true, ...guard });
       assert.deepEqual(result.state, state); assert.deepEqual(result.events, []); assert.equal(result.saveDue, false);
@@ -125,7 +125,7 @@ test('waiting, rejected movement and protected presentation cannot spend the end
 });
 
 test('midfall and midcatch serialization preserve cues and subsequent motion without replay', () => {
-  for (const age of [4, 7.9]) {
+  for (const age of [C.footingLossAt + 1, C.footingLossAt + 4.9]) {
     const current = advance(committed().state, age).state;
     assert.ok(['falling', 'catching'].includes(current.physical.phase));
     const loaded = normalize(copy(current)); assert.deepEqual(loaded, current);

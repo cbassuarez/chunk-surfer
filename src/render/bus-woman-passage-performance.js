@@ -10,6 +10,7 @@ const unit=a=>mul(a,1/(Math.hypot(...a)||1));
 const axis=(a,t)=>[...mul(unit(a),Math.sin(t/2)),Math.cos(t/2)];
 const qmul=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
 const inverse=q=>[-q[0],-q[1],-q[2],q[3]];
+const qmix=(a,b,t)=>{const sign=a.reduce((n,v,i)=>n+v*b[i],0)<0?-1:1;return unit(a.map((v,i)=>v+(sign*b[i]-v)*t));};
 const rotate=(p,q)=>{const t=mul(cross(q.slice(0,3),p),2);return add(p,add(mul(t,q[3]),cross(q.slice(0,3),t)));};
 const heading=q=>{const forward=rotate([0,0,-1],q);return Math.atan2(-forward[0],-forward[2]);};
 const wrap=t=>Math.atan2(Math.sin(t),Math.cos(t));
@@ -46,7 +47,32 @@ export function busWomanPassageFrame(passage={}, {reducedMotion=false}={}){
 
 /** Absolute semantic joints, before the ordinary instance/root transform. */
 export function busWomanPassagePose(mode='wait',seconds=0,options={}){
-  const base=busWomanWrongOriginPose(mode,seconds,options),frame=busWomanPassageFrame(options.passage,options);
+  // The quiet four-second endpoint is already motionless. Keep that same
+  // physical support under reduced motion, rather than a separate rest pose
+  // which would shift by millimetres when the baked body takes over.
+  const bodyOptions=(mode==='wait'||mode==='ticket-wait')&&seconds>=4?{...options,reducedMotion:false}:options;
+  const openingAge=age(options.passage?.openAt,options.passage?.clock);
+  if(openingAge!=null){
+    // The split surface is baked from this exact supported pose. Settle the
+    // living cervical chain into it before the mesh handoff; freezing the
+    // captured start prevents later player gaze from moving the target.
+    const start=busWomanPassagePose(mode,seconds,{...options,passage:{...options.passage,clock:options.passage.openAt,openAt:null}});
+    const target=busWomanPassagePose(mode,seconds,{...options,reducedMotion:false,passage:{clock:4,noticeAt:0,passAt:1,closeAt:.8,exitedAt:null,gazeYaw:-1.5}});
+    const blend=options.reducedMotion?1:ramp(openingAge,0,.30),joints={...start.joints};
+    const original=busWomanWrongOriginPose(mode,seconds,bodyOptions),neck=original.joints.neck,head=original.joints.head,jaw=original.joints.jaw;
+    const neckRotation=qmix(start.joints.neck.rotation,target.joints.neck.rotation,blend);
+    const headRotation=qmix(start.joints.head.rotation,target.joints.head.rotation,blend);
+    const headPosition=add(neck.translation,rotate(sub(head.translation,neck.translation),qmul(neckRotation,inverse(neck.rotation))));
+    const rigidJaw=add(headPosition,rotate(sub(jaw.translation,head.translation),qmul(headRotation,inverse(head.rotation))));
+    const traction=start.passage.jawTraction+(target.passage.jawTraction-start.passage.jawTraction)*blend;
+    joints.neck={translation:[...neck.translation],rotation:neckRotation};
+    joints.head={translation:headPosition,rotation:headRotation};
+    joints.jaw={translation:add(rigidJaw,mul(unit(sub(original.joints.hand_R.translation,rigidJaw)),traction)),
+      rotation:qmix(start.joints.jaw.rotation,target.joints.jaw.rotation,blend)};
+    return{...start,joints,passage:{...start.passage,phase:'body-handoff',openingAge,handoff:blend,
+      actualYaw:heading(headRotation),rigidJaw,headPosition,jawTraction:traction}};
+  }
+  const base=busWomanWrongOriginPose(mode,seconds,bodyOptions),frame=busWomanPassageFrame(options.passage,options);
   if(!frame.active)return{...base,passage:frame};
   const joints={...base.joints},oldNeck=base.joints.neck,oldHead=base.joints.head,oldJaw=base.joints.jaw;
   const baseYaw=heading(oldHead.rotation),baseNeckYaw=heading(oldNeck.rotation);

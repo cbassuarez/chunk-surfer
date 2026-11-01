@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createSourceIVScene } from '../src/game/source-iv-scene.js';
+import {createFootContactClock} from '../src/audio/foot-contact.js';
 import { freshSourceIV, normalizeSourceIV, stepSourceIV, sourceIVFrame, sourceIVFocus } from '../src/game/source-iv.js';
 import { SOURCE_IV as C } from '../src/data/source-iv.js';
 
@@ -26,6 +27,7 @@ function harness(options = {}) {
       dispose() { disposals++; }, clear() { clears++; } },
     onCheckpoint(value, metadata) { checkpoints.push({ value: copy(value), metadata: copy(metadata) }); },
     onSound(value) { sounds.push(copy(value)); }, onError(error) { errors.push(String(error?.message || error)); },
+    onFootContact:options.onFootContact,clearFootContacts:options.clearFootContacts,
     onTrace(value) { traces.push(copy(value)); },
     onComplete(value) { completes.push(copy(value)); return options.onComplete?.(value) ?? true; },
     onExit(value) { exits.push(copy(value)); },
@@ -51,11 +53,11 @@ test('ready play and loading draw no gameplay captions, including beside the fin
   const source=readFileSync(new URL('../src/game/source-iv-scene.js',import.meta.url),'utf8');
   // Substitute only the text drawing boundary. Run the actual scene factory
   // with its actual physical controller, rather than a second test presenter.
-  const factory=new Function('normalizeSourceIV','stepSourceIV','sourceIVFrame','sourceIVFocus','uiSize','uiCenter',
+  const factory=new Function('normalizeSourceIV','stepSourceIV','sourceIVFrame','sourceIVFocus','uiSize','uiCenter','createFootContactClock',
     source.replace(/^import[^\n]*\n/gm,'').replace('export function createSourceIVScene','return function createSourceIVScene'));
   const words=[],draws=[];
   const create=factory(normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus,
-    ()=>({cols:120,rows:60}),(...args)=>words.push(args));
+    ()=>({cols:120,rows:60}),(...args)=>words.push(args),createFootContactClock);
   const scene=create({checkpoint:farDoor(),renderer:{initialize:()=>true,ready:()=>true,
     clear(){},render(state){draws.push(copy(state));return true;}}});
   scene.render();assert.deepEqual(words,[],'loading stays visually within the transition');
@@ -88,6 +90,17 @@ test('Source IV emits footsteps only for real movement and the door sound only f
   h.scene.key({ key: 'e' }); assert.equal(h.scene.serialize().exitDoor.open, true);
   assert.equal(h.sounds.filter(s => s.type === 'door').length, 1);
   assert.ok(h.sounds.some(s => s.type === 'footstep')); h.scene.exit();
+});
+
+test('shared IV foot contacts replace only legacy player steps and discard partial strides at pause',async()=>{
+  const contacts=[],cleared=[],h=harness({checkpoint:farDoor(),onFootContact:event=>contacts.push(event),clearFootContacts:owner=>cleared.push(owner)});
+  await h.scene.initialize();h.scene.key({key:'w'});updateFor(h.scene,1);
+  assert.ok(contacts.length>0);assert.equal(h.sounds.filter(s=>s.type==='footstep').length,0);
+  assert.ok(contacts.every(e=>e.owner==='source-IV'&&e.profile==='glazed'&&e.surface==='source-code'&&e.strideM>0&&e.interval>0&&e.distanceM>0&&Number.isFinite(e.position.z)));
+  const count=contacts.length;updateFor(h.scene,.5);assert.equal(contacts.length,count,'closed leaf cannot emit a contact');
+  h.scene.pause();assert.equal(cleared.at(-1),'source-IV');h.scene.resume();
+  h.scene.key({key:'e'});assert.equal(h.sounds.filter(e=>e.type==='door').length,1,'physical door remains on the existing sound route');
+  h.scene.exit();assert.equal(cleared.at(-1),'source-IV');
 });
 
 test('pause, recording and focus protection freeze body, look, sound and delayed completion, requiring fresh movement', async () => {
@@ -179,4 +192,15 @@ test('IV preparation, residency loss and a failed render hold the last complete 
   const failed=harness({render:()=>false});await failed.scene.initialize();failed.scene.render();failed.scene.render();
   assert.ok(failed.scene.view().error);assert.equal(failed.draws.length,1);
   assert.equal(failed.stats().clears,0,'a retry caption may overlay the preceding image without a black clear');failed.scene.exit();
+});
+
+test('shared IV gait matches real speed, survives look updates and cannot emit after motion stops',async()=>{
+  const contacts=[],h=harness({onFootContact:e=>contacts.push(e)});await h.scene.initialize();
+  h.scene.key({key:'w'});h.scene.update(1/60);assert.equal(contacts.length,1,'first real move plants immediately');
+  for(let i=1;i<300;i++){h.scene.setLook({yaw:0,pitch:Math.sin(i/40)*.1});h.scene.update(1/60);}
+  assert.ok(contacts.length>=15&&contacts.length<=17,`3.2m/s yielded ${contacts.length} contacts in 5 seconds`);
+  assert.ok(contacts.every(e=>Math.abs(e.speed-C.walkSpeed)<.001&&e.strideM>1&&e.strideM<1.1));
+  assert.ok(contacts.every((e,i)=>i===0||e.footSide!==contacts[i-1].footSide));
+  h.scene.keyup({key:'w'});const count=contacts.length;updateFor(h.scene,1);assert.equal(contacts.length,count);
+  assert.equal(h.sounds.filter(e=>e.type==='footstep').length,0);h.scene.exit();
 });

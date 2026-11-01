@@ -9,8 +9,8 @@ export const OUTSKIRTS_BUS_PASSAGE=freeze({
   stripMeshes:['outskirts_bus_strip_0','outskirts_bus_strip_1','outskirts_bus_strip_2','outskirts_bus_strip_3'],
   width:2.45,length:9.2,floor:.5,roof:3.10,bodyRadius:.25,leafThickness:.08,
   rainRoof:{halfWidth:1.22,frontZ:-4.58,backZ:4.62,eaves:2.90,rise:.20},
-  facePractical:{lens:[1.026,2.32,3.05],light:[.985,2.30,3.05],direction:[-.949,-.079,.305],
-    colour:[1,.80,.58],reach:4.8,strength:3.8,coneInner:.87,coneOuter:.45},
+  facePractical:{lens:[1.026,2.32,3.05],light:[.985,2.30,3.05],direction:[-.90,-.40,.15],
+    colour:[1,.80,.58],reach:3.4,strength:3.8,coneInner:.94,coneOuter:.79},
   aisle:{halfWidth:.56,seatCentreX:.84,seatWidth:.56,stanchionX:.59,stanchionRadius:.019,stanchionZ:[-2.6,.1,1.5]},
   seatRows:[-2.10,-1.22,-.34,.54,1.42],
   axle:{frontZ:-2.0,rearZ:2.85,tyreRadius:.43},
@@ -19,7 +19,12 @@ export const OUTSKIRTS_BUS_PASSAGE=freeze({
     leafObstacles:[{minX:-.04,maxX:.04,minZ:0,maxZ:1.10},{minX:.015,maxX:.075,minZ:-.02,maxZ:.07},
       {minX:-.081,maxX:-.049,minZ:.894,maxZ:.926},{minX:.049,maxX:.081,minZ:.894,maxZ:.926}]},
   exit:{side:1,hinge:[1.245,.25,3.30],fromZ:3.30,toZ:4.40,openYaw:Math.PI/2,innerGrabX:.92,
-    initialYaw:0,rattleYaw:.05,rattleSeconds:1.65,
+    initialYaw:0,
+    // The three pulls, in seconds from TRY, shared by the hands, the leaf, the
+    // lamps and the thuds in outskirts-street.js. kicks are how far each drives
+    // the leaf into its jam. The third takes the rear tube, and recoilAt is
+    // the body giving up and going back up the aisle to where she can open.
+    pulls:[.46,.78,1.08],kicks:[.035,.05,.07],attemptSeconds:1.65,recoilAt:1.42,recoilSeconds:.85,
     outside:[1.9,3.85],
     leafObstacles:[{minX:-.04,maxX:.04,minZ:0,maxZ:1.10},{minX:.015,maxX:.075,minZ:-.02,maxZ:.07},
       {minX:-.081,maxX:-.049,minZ:.894,maxZ:.926},{minX:.049,maxX:.081,minZ:.894,maxZ:.926},

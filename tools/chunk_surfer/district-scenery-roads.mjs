@@ -3,9 +3,16 @@
 // same road grain visible from the roof without opening new walkable routes.
 export const DISTRICT_SCENERY_ROADS=Object.freeze([
   {id:'north-inner-west',x:-79,z:-41.5,w:10,d:7.4},
-  {id:'north-inner-east',x:93,z:-41.5,w:254,d:7.4},
+  // Ellery Square and its two flanking blocks interrupt both northern roads;
+  // byways run round those blocks instead.
+  {id:'north-inner-east-end',x:209,z:-41.5,w:22,d:7.4},
+  {id:'nw-byway-north',x:10,z:-66,w:76,d:6},
+  {id:'square-mews',x:86,z:-70.2,w:84,d:5},
+  {id:'ne-byway-north',x:163,z:-66,w:70,d:6},
+  {id:'nw-byway-west',x:-30.5,z:-43,w:6,d:46},
+  {id:'ne-byway-east',x:199,z:-43,w:6,d:46},
   {id:'north-outer-west',x:-79,z:-63,w:10,d:7.2},
-  {id:'north-outer-east',x:93,z:-63,w:254,d:7.2},
+  {id:'north-outer',x:86,z:-90,w:304,d:7.2},
   {id:'south-inner',x:68,z:136,w:304,d:7.4},
   {id:'south-outer',x:68,z:160.5,w:304,d:7.2},
   {id:'west-inner',x:-43,z:49,w:7.4,d:134},

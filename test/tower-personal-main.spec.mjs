@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import {
   CHUNK_SURF_PHASE, SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE,
-  normalizeChunkSurfState, reduceChunkSurf,
+  normalizeChunkSurfState, chunkSurfFinaleRouting, reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
 import { cathedralBellCombatBattle } from '../src/data/combat-definitions.js';
 import {freshChapelTapeDemand,chapelTapeDemandBlocksProgress} from '../src/game/chapel-tape-demand.js';
@@ -41,6 +41,8 @@ function personalHarness() {
   const noOp = () => {};
   const sandbox = {
     px: 10, py: 20, stepCount: 2, CELL: .5, renderMove: {}, motionRig: {}, trail: [{ x: 9, y: 20 }], storyMode: true, paused: false,
+    // Source personal-space fixtures do not have the chapel's loose case.
+    chapelTapeCaseAvailable:()=>true,
     playbackRoom: null, pendingTapeRoll: false,
     actx: { currentTime: 5, state: 'running', destination: {},
       createChannelSplitter: () => ({ connect: noOp, disconnect: noOp }),
@@ -636,7 +638,7 @@ test('arriving and waiting under the lantern preserves the reward until the play
   const noOp = () => {};
   const sandbox = {
     storyMode: true, finaleActive: false, px: 1, py: 2, cathedralFinalCombatOpen: false, escape: null,
-    SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE, normalizeChunkSurfState, reduceChunkSurf, cathedralBellCombatBattle,
+    SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE, normalizeChunkSurfState, chunkSurfFinaleRouting, reduceChunkSurf, cathedralBellCombatBattle,
     usingSpecialSpace: () => false, usingSourceSpace: () => false,
     getSave: () => save, saveCommit(patch) { Object.assign(save, copy(patch)); commits.push(copy(save)); },
     brendanAuthoredAt: () => ({ level: 'ground', x: 1, y: 2 }), churchCrossingAt: () => true,
@@ -649,6 +651,7 @@ test('arriving and waiting under the lantern preserves the reward until the play
     openCathedralLesson: () => false, prepareCathedralRetry: () => null, cathedralFightCheckpoint: noOp,
     chapelTapeDemandBlocksProgress,
     chapelTapeDemandState:()=>freshChapelTapeDemand('personal-cathedral-test'),
+    chapelTapeDamageNeedsRetake:()=>false,
     // The belfry reward fixture has no Tower warning or academic encounter.
     interactTowerWarning:()=>false, talkToAcademicBouncers:()=>false,
     resolveCathedralLoss: noOp, openCathedralSecondPhase: noOp, cancelApparitionApplause: noOp,
@@ -681,7 +684,7 @@ test('an active ending presenter cannot be replaced by a saved extraction checkp
   let carries=0;
   const sandbox={storyMode:true,finaleActive:true,cathedralFinalCombatOpen:false,escape:null,
     usingSpecialSpace:()=>false,scenes:{blocksWorld:()=>false},SOURCE_FINALE_ROUTE,SOURCE_FINALE_STAGE,
-    normalizeChunkSurfState,getSave:()=>({chunkSurf:{finale:{route:SOURCE_FINALE_ROUTE.TOWER,stage:SOURCE_FINALE_STAGE.TOWER_ESCAPE}}}),
+    normalizeChunkSurfState,chunkSurfFinaleRouting,getSave:()=>({chunkSurf:{finale:{route:SOURCE_FINALE_ROUTE.TOWER,stage:SOURCE_FINALE_STAGE.TOWER_ESCAPE}}}),
     startCathedralCarry:()=>{carries++;}};
   vm.createContext(sandbox);vm.runInContext(cathedralFunctions+'\nglobalThis.tick=tickCathedralFinale;',sandbox);
   sandbox.tick();assert.equal(carries,0);

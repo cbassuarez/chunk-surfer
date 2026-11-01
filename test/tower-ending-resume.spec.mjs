@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import * as scenes from '../src/game/scenes.js';
 import { ENDING_VARIANT, endingManifest } from '../src/data/endings.js';
 import { normalizeEndingCutsceneCheckpoint } from '../src/game/save.js';
+import { nightDeadlinePending } from '../src/game/night-deadline.js';
 import { endingSourceResume } from '../src/game/ending-source-journey.js';
 import { advanceEndingCutscene, createEndingCutsceneState } from '../src/game/ending-cutscene.js';
 import { createEndingEmbodimentState, reduceEndingEmbodiment, ENDING_FINAL_ACTION_MODE } from '../src/game/ending-embodiment.js';
@@ -31,7 +32,7 @@ function resumedEnding({ id = 'tower-won', arrival = 'carried', checkpoint = tru
   let clock = 0;
   const noop = () => {};
   const context = {
-    scenes, ENDING_VARIANT, endingManifest, endingSourceResume, advanceEndingCutscene, createEndingCutsceneState,
+    scenes, ENDING_VARIANT, endingManifest, endingSourceResume, advanceEndingCutscene, createEndingCutsceneState, nightDeadlinePending,
     createEndingEmbodimentState, reduceEndingEmbodiment, ENDING_FINAL_ACTION_MODE,
     activeEndingCutscene: null, escape: null, endingArrival: null, endingDossier: null,
     px: saved.px, py: saved.py, RENDERER: '3d',

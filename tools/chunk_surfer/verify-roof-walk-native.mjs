@@ -182,9 +182,10 @@ try{
     Math.abs(light.x-84.35)<.1&&Math.abs(light.y-3.5)<.1&&Math.abs(light.z-1.32)<.1);
   log('first landing selects lower facade security light',!!lowerSecurity&&lowerSecurity.intensity>0,
     lowerSecurity||firstLandingRender.lighting?.lights);
-  log('first landing renders real north-street car from exterior ground group',
-    firstLandingRender.renderedIds?.includes('district-north-car-east'),
-    firstLandingRender.renderedIds?.filter(id=>id.includes('north-car')));
+  // North Street has double yellows now; its cars park round Ellery Square.
+  log('first landing renders a real parked car from exterior ground group',
+    firstLandingRender.renderedIds?.some(id=>/-car-/.test(id)),
+    firstLandingRender.renderedIds?.filter(id=>/-car-/.test(id)));
   // From the actual safe door landing, one ordinary oblique glance should
   // place school bays on the left and north street below on the right.
   await page.evaluate(()=>window.__probe.lookAtWorld(Math.PI*1.5,-.75));

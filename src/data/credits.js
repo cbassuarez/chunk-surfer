@@ -6,7 +6,11 @@ import { CHAPEL_CHOIR_SOURCE } from './chapel-choir.js';
 import { ST_BRENDANS_AUDIO_SOURCES } from './st-brendans-audio.js';
 import { STANDING_TEAR_REPERTOIRE } from './standing-tear-memory-score.js';
 import { DOOR_AUDIO_SOURCES } from './door-audio-assets.js';
+import { FOOTSTEP_AUDIO_SOURCES } from './footstep-audio-assets.js';
+import { HEARTBEAT_AUDIO_SOURCES } from './heartbeat-audio-assets.js';
 import {WINDOW_MEDIA_EXTENSION_SOURCES} from './window-media-sources.js';
+import {STILLNESS_ANATOMY} from './generated/stillness-anatomy.js';
+import {sourceRestCouperinCreditLines} from './source-rest-couperin-source.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -74,6 +78,16 @@ export const CREDITS = Object.freeze([
     ]),
   }),
   Object.freeze({
+    heading: 'Stillness — Human Relief Scan',
+    lines: Object.freeze([
+      `${STILLNESS_ANATOMY.source.title} — ${STILLNESS_ANATOMY.source.author} (${STILLNESS_ANATOMY.source.license})`,
+      STILLNESS_ANATOMY.source.sourceUrl,
+      STILLNESS_ANATOMY.source.originalWork,
+      STILLNESS_ANATOMY.source.licenseUrl,
+      STILLNESS_ANATOMY.attribution,
+    ]),
+  }),
+  Object.freeze({
     heading: 'Window Collage Footage',
     lines: Object.freeze([
       'Bolognese bellringers — Renato Morselli (CC BY 3.0)',
@@ -108,6 +122,10 @@ export const CREDITS = Object.freeze([
     ]), 'Also spatially looped in Source II–III surroundings; decoded 10/12-bit PCM amplitude quantization, separate 28/36 kHz sample holding, camera-relative placement, filtering and 6.8-second synthetic convolution; local machinery warnings duck this bus.']),
   }),
   Object.freeze({
+    heading: 'Source III — Harpsichord and Revoicing',
+    lines: Object.freeze(sourceRestCouperinCreditLines()),
+  }),
+  Object.freeze({
     heading: 'Sound Effect Recordings',
     lines: Object.freeze([
       ...soundEffectCredits(),
@@ -120,6 +138,23 @@ export const CREDITS = Object.freeze([
       `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
       `Adapted: ${source.changes}`,
     ])),
+  }),
+  Object.freeze({
+    heading: 'Footstep and Source Surface Recordings',
+    lines: Object.freeze(FOOTSTEP_AUDIO_SOURCES.flatMap(source=>[
+      `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+      `Adapted: ${source.changes}`,
+    ]).concat([
+      'Published HQ MP3 previews edited to PCM WAV; original lossless masters were not acquired.',
+      'Ordinary shoe contacts remain separate from granular substrate derivatives and authored finite Source responses.',
+    ])),
+  }),
+  Object.freeze({
+    heading: 'Bodily Pulse Recordings',
+    lines: Object.freeze(HEARTBEAT_AUDIO_SOURCES.flatMap(source=>[
+      `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+      `Adapted: ${source.changes}`,
+    ]).concat(['Original lossless studio Foley performances, not biological heart recordings.'])),
   }),
   Object.freeze({
     heading: 'Chapel Service Recordings',

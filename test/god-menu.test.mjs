@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeGodMenuScene, resolveGodRowDanger, resolveGodRowValue } from '../src/game/god-menu.js';
+import { godTabLines, makeGodMenuScene, resolveGodRowDanger, resolveGodRowValue } from '../src/game/god-menu.js';
 
 test('god menu accepts both dynamic and literal row values', () => {
   assert.equal(resolveGodRowValue({value:()=> 'READY'}),'READY');
@@ -46,4 +46,19 @@ test('god menu scene blocks both player input and world simulation', () => {
   assert.equal(scene.id, 'god-menu');
   assert.equal(scene.blocksInput, true);
   assert.equal(scene.blocksWorld, true);
+});
+
+test('god menu tabs wrap onto further lines instead of running off the panel', () => {
+  // The fifteen production tab names at the panel's 92-cell body width.
+  const names = ['SESSION','PLACES','DRIVES','CATHEDRAL','ROOF','SOURCE','TOWER','DOORS','CONDITIONS',
+    'LOOK STACK','ITEMS','GAME PARTS','SIDE QUESTS','THIRD FLOOR','AUDIO'];
+  const lines = godTabLines(names, 92);
+  assert.ok(lines.length >= 2);
+  assert.deepEqual(lines.flat().map(({ index }) => index), names.map((_, index) => index));
+  for (const line of lines) {
+    const cells = line.reduce((sum, { name }) => sum + name.length + 2, 0) - 1;
+    assert.ok(cells <= 92, `line of ${cells} cells`);
+  }
+  assert.equal(godTabLines(['SESSION', 'PLACES'], 92).length, 1);
+  assert.deepEqual(godTabLines(['A-VERY-LONG-TAB'], 4).map((line) => line.length), [1]);
 });

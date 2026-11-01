@@ -12,7 +12,7 @@ test('Source proper hands actual material, depth and current marks to the overwo
   assert.match(adapter,/texture\(uPropDepth,uv\)/);
   assert.match(adapter,/1\.0\/\(1\.0\+viewMetres\*\.14\)/,'recording reconstruction needs the ordinary view-depth encoding');
   assert.match(adapter,/layout\(location=1\) out vec4 oMark/,'the mark attachment must have a fragment output');
-  assert.match(adapter,/oMark=useHull\?texelFetch\(uHullMarks,ivec2\(gl_FragCoord\.xy\),0\):\s*uMarksReady>\.5\?texelFetch\(uPropMarks,ivec2\(gl_FragCoord\.xy\),0\):vec4\(0\.0,\.5,\.5,1\.0\)/,'missing authored marks must use the production sentinel, never stale frame data');
+  assert.match(adapter,/oMark=useHull\?texelFetch\(uHullMarks,ivec2\(uv\*uRes\),0\):\s*uMarksReady>\.5\?texelFetch\(uPropMarks,ivec2\(uv\*uRes\),0\):vec4\(0\.0,\.5,\.5,1\.0\)/,'missing authored marks must use the production sentinel, never stale frame data');
   assert.match(adapter,/hullMetres\+\.015<viewMetres/,'the physical first-lift return must survive and occlude by true depth');
   assert.doesNotMatch(adapter,/sourceHash|fieldDepth|sourceEnergy|screenThreshold|paperScene/,'the implementation must not ship the study recolour or synthetic hatch');
 });

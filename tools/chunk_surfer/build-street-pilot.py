@@ -37,16 +37,16 @@ CAR = {
     "reference": "Anonymous five-door compact; Ford Focus dimensional reference, model identity intentionally not copied.",
 }
 
-# Initial cross-section only. Root owns the physical floor/crossing agreement.
-# Mesh is local to physical (78,-7.5), extends X +/-15, Z +/-7.
+# Cross-section. Root owns the physical floor/crossing agreement. Mesh is local
+# to physical (78,-7.25), the carriageway centre on the floor grid, and
+# extends X +/-15, Z +/-7: a six-metre road kerbed at |z|=3, four-metre flags.
 GROUND = {
     "lengthM": 30.0,
     "halfWidthM": 7.0,
     "carriagewayHalfWidthM": 3.0,
     "roadEdgeY": .012,
     "roadCrownY": .012,
-    "settsOuterM": 5.0,
-    "settsY": .025,
+    "kerbM": 3.0,
     "pavementY": .120,
     "kerbTopY": .120,
     "kerbWidthM": .150,
@@ -54,8 +54,17 @@ GROUND = {
     "crossingWidthM": 2.8,
     "stopOffsetM": 4.55,
     "crossingDropHalfLengthM": 2.0,
-    "pavementRampOuterM": 6.5,
+    "dropRampM": 2.0,
+    "dropY": .018,
 }
+
+# The ray-marched floor draws heights in 32/255 m steps. Paint and repairs are
+# lifted onto the drawn road; the live street takes its flags, kerbs, ramp and
+# tactile from the street fabric, which is built on the same drawn heights.
+def grid_drawn_height(h):
+    return round((h+8)/32*255)/255*32-8
+DRAWN_ROAD_Y=grid_drawn_height(0)
+PAINT_Y=DRAWN_ROAD_Y+.004
 
 SIGNAL = {
     "widthM": .425,
@@ -500,12 +509,11 @@ def smoothstep(a,b,x):
 
 
 def pavement_height(x,z):
-    # Shared exact contract: centre physical(78,-7.5), road|z|<=3, setts3..5,
-    # pavement5..7. Only the crossing's inner kerb is dropped. Root samples
-    # this function into floorplan cells; outer pavement remains unchanged.
+    # Centre physical(78,-7.25): road |z|<=3, pavement 3..7. Both kerbs drop
+    # flush at the crossing and the flags ease back up over two metres.
     drop_x=1-smoothstep(GROUND["crossingWidthM"]*.5,GROUND["crossingDropHalfLengthM"],abs(x-GROUND["crossingX"]))
-    drop_z=1-smoothstep(GROUND["settsOuterM"],GROUND["pavementRampOuterM"],abs(z))
-    return GROUND["pavementY"]-(GROUND["pavementY"]-GROUND["settsY"])*drop_x*drop_z
+    drop_z=1-smoothstep(GROUND["kerbM"],GROUND["kerbM"]+GROUND["dropRampM"],abs(z))
+    return GROUND["pavementY"]-(GROUND["pavementY"]-GROUND["dropY"])*drop_x*drop_z
 
 
 def build_ground():
@@ -513,89 +521,91 @@ def build_ground():
     half=GROUND["carriagewayHalfWidthM"]; xhalf=GROUND["lengthM"]*.5
     for z0,z1 in [(-half,0),(0,half)]:
         m.face([(-xhalf,ground_height(z0),z0),(-xhalf,ground_height(z1),z1),(xhalf,ground_height(z1),z1),(xhalf,ground_height(z0),z0)],"asphalt")
-    return m.finish({"physicalAnchor":[78,-7.5],"surface":"road only, profile independent of comparison categories",**GROUND})
+    return m.finish({"physicalAnchor":[78,-7.25],"surface":"road only, profile independent of comparison categories",**GROUND})
 
 
 def build_pavement():
     m=Mesh("street_pilot_pavement")
-    half=GROUND["settsOuterM"]; outer=GROUND["halfWidthM"]; xhalf=GROUND["lengthM"]*.5
+    half=GROUND["kerbM"]; outer=GROUND["halfWidthM"]; xhalf=GROUND["lengthM"]*.5
     x_knots=[-xhalf,-2.0,-1.7,-1.4,0,1.4,1.7,2.0,xhalf]
     for side in (-1,1):
-        z_knots=[side*value for value in [half,5.375,5.75,6.125,6.5,outer]]
+        z_knots=[side*value for value in [half,half+.5,half+1,half+1.5,half+2,outer]]
         for x0,x1 in zip(x_knots,x_knots[1:]):
             for z0,z1 in zip(z_knots,z_knots[1:]):
                 points=[(x0,pavement_height(x0,z0),z0),(x0,pavement_height(x0,z1),z1),(x1,pavement_height(x1,z1),z1),(x1,pavement_height(x1,z0),z0)]
                 if side<0: points.reverse()
                 m.face(points,"paving",True)
-    return m.finish({"physicalAnchor":[78,-7.5],"heightFunction":".12-.095*(1-smoothstep(1.4,2,abs(x)))*(1-smoothstep(5,6.5,abs(z)))","crossingRamp":"continuous physical geometry, root floorplan samples match"})
+    return m.finish({"physicalAnchor":[78,-7.25],"heightFunction":".12-.102*(1-smoothstep(1.4,2,abs(x)))*(1-smoothstep(3,5,abs(z)))","live":"control only; the street fabric draws the live flags"})
 
 
 def build_kerbs():
     m=Mesh("street_pilot_kerbs")
-    half=GROUND["settsOuterM"]; xhalf=GROUND["lengthM"]*.5
+    half=GROUND["kerbM"]; xhalf=GROUND["lengthM"]*.5
     x_knots=[-xhalf,-2.0,-1.7,-1.4,0,1.4,1.7,2.0,xhalf]
+    foot=GROUND["roadEdgeY"]
     for side in (-1,1):
         z=side*half
         for x0,x1 in zip(x_knots,x_knots[1:]):
             y0=pavement_height(x0,z); y1=pavement_height(x1,z)
             # Four finite faces create the bevel. Top follows the same actual
-            # drop, while its foot remains at the sett surface, never below0.
-            m.face([(x0,GROUND["settsY"],z-side*.020),(x1,GROUND["settsY"],z-side*.020),(x1,max(GROUND["settsY"],y1-.012),z-side*.020),(x0,max(GROUND["settsY"],y0-.012),z-side*.020)],"kerb")
-            m.face([(x0,max(GROUND["settsY"],y0-.012),z-side*.020),(x1,max(GROUND["settsY"],y1-.012),z-side*.020),(x1,y1,z+side*.070),(x0,y0,z+side*.070)],"kerb")
-    return m.finish({"physicalAnchor":[78,-7.5],"kerbAtLocalAbsZ":half,"noInvisibleCollisionLedge":True})
+            # drop, while its foot stays on the road edge, never below it.
+            m.face([(x0,foot,z-side*.020),(x1,foot,z-side*.020),(x1,max(foot,y1-.012),z-side*.020),(x0,max(foot,y0-.012),z-side*.020)],"kerb")
+            m.face([(x0,max(foot,y0-.012),z-side*.020),(x1,max(foot,y1-.012),z-side*.020),(x1,y1,z+side*.070),(x0,y0,z+side*.070)],"kerb")
+    return m.finish({"physicalAnchor":[78,-7.25],"kerbAtLocalAbsZ":half,"live":"control only; the street fabric draws the live kerbs"})
 
 
 def build_setts():
+    # The sett margins became pavement. What is left of them is the channel:
+    # a dark 300 mm strip of road beside each kerb. The name is kept for the
+    # control mesh list.
     m=Mesh("street_pilot_setts")
     xhalf=GROUND["lengthM"]*.5
     for side in (-1,1):
-        z0=side*GROUND["carriagewayHalfWidthM"]; z1=side*GROUND["settsOuterM"]
-        points=[(-xhalf,GROUND["settsY"],z0),(-xhalf,GROUND["settsY"],z1),(xhalf,GROUND["settsY"],z1),(xhalf,GROUND["settsY"],z0)]
+        z0=side*(GROUND["kerbM"]-.30); z1=side*GROUND["kerbM"]
+        y=GROUND["roadEdgeY"]+.001
+        points=[(-xhalf,y,z0),(-xhalf,y,z1),(xhalf,y,z1),(xhalf,y,z0)]
         if side<0: points.reverse()
-        m.face(points,"pavingEdge")
-        # Sparse large joints only. No fine regular bright lattice at distance.
-        for i in range(15):
-            x=-14+i*2
-            m.box((x,GROUND["settsY"]+.0015,(z0+z1)*.5),(.022,.003,abs(z1-z0)),"gutter")
-    return m.finish({"physicalAnchor":[78,-7.5],"surface":"full parking/sett strips3..5m","topY":GROUND["settsY"],"maxDetailY":GROUND["settsY"]+.003})
+        m.face(points,"gutter")
+    return m.finish({"physicalAnchor":[78,-7.25],"surface":"300mm channel inside each kerb","live":"control only; the street fabric draws the live channel"})
 
 
 def build_markings():
     m=Mesh("street_pilot_markings")
     # Controlled crossing studs, not a zebra. These are engineering draft
     # geometry until the original working drawing is visually checked.
-    half=GROUND["settsOuterM"]
+    half=GROUND["kerbM"]
+    # Paint sits on the drawn road, which the floor grid renders above the
+    # authored one; at the authored height it was hidden under the grid.
     for x in (-GROUND["crossingWidthM"]*.5,GROUND["crossingWidthM"]*.5):
-        for i in range(21):
+        for i in range(13):
             z=-half+i*.5
-            y=GROUND["roadEdgeY"]+.006 if abs(z)<3 else GROUND["settsY"]+.006
-            m.box((x,y,z),(.100,.008,.100),"roadPaint")
+            m.box((x,PAINT_Y-.002,z),(.100,.008,.100),"roadPaint")
     # A stop line extends to the kerb edge, not only across the moving lane.
     # 3m clear edge-to-edge separation to the crossing studs (TSM6 18.1.5).
     offset=GROUND["stopOffsetM"]
     for side in (-1,1):
         x=side*offset
-        for z0,z1,y in [(0,3,.018),(3,half,.031)]:
-            lo,hi=sorted((side*z0,side*z1))
-            m.face([(x-.10,y,lo),(x-.10,y,hi),(x+.10,y,hi),(x+.10,y,lo)],"roadPaint")
+        lo,hi=sorted((0,side*half))
+        m.face([(x-.10,PAINT_Y,lo),(x-.10,PAINT_Y,hi),(x+.10,PAINT_Y,hi),(x+.10,PAINT_Y,lo)],"roadPaint")
     # True 2m-long,100mm-wide marks within 500mm guide lines;150mm clear
     # longitudinal gaps and600x200mm terminal bars. TSM6 15.8/Figure15-3.
     length,width,band,gap=2.0,.10,.50,.15
     angle=math.asin(band/math.hypot(length,width))-math.atan2(width,length)
     along=length*math.cos(angle)+width*math.sin(angle)
     for approach in (-1,1):
-        for centre in (-4.5,0,4.5):
+        # Kerbside zigzags sit in the channel's edge; the third is the centre line.
+        for centre in (-2.6,0,2.6):
             inner=offset+.10+gap
             for i in range(8):
                 cx=approach*(inner+i*(along+gap)+along*.5)
                 theta=angle*(1 if i%2 else -1)
                 ux=approach*math.cos(theta);uz=math.sin(theta)
                 vx=-uz;vz=ux
-                points=[(cx+u*ux*length*.5+v*vx*width*.5,.031 if abs(centre)>3 else .018,centre+u*uz*length*.5+v*vz*width*.5) for u,v in [(-1,-1),(1,-1),(1,1),(-1,1)]]
+                points=[(cx+u*ux*length*.5+v*vx*width*.5,PAINT_Y,centre+u*uz*length*.5+v*vz*width*.5) for u,v in [(-1,-1),(1,-1),(1,1),(-1,1)]]
                 m.face(list(reversed(points)),"roadPaint")
             terminal=approach*(inner+8*along+8*gap+.10)
-            m.face([(terminal-.10,.031 if abs(centre)>3 else .018,centre-.30),(terminal-.10,.031 if abs(centre)>3 else .018,centre+.30),(terminal+.10,.031 if abs(centre)>3 else .018,centre+.30),(terminal+.10,.031 if abs(centre)>3 else .018,centre-.30)],"roadPaint")
-    return m.finish({"physicalAnchor":[78,-7.5],"studRowCrossingWidthM":GROUND["crossingWidthM"],"studSizeM":.10,"studPitchM":.50,"traversalWidthM":half*2,"stopLinesLocalX":[-offset,offset],"stopLineFullHalfCarriagewayM":half,"stopToStudClearEdgeM":3.0,"zigzags":{"marksPerApproach":8,"markLengthM":length,"longitudinalExtentM":along,"gapM":gap,"strokeM":width,"bandM":band,"terminalSizeM":[.20,.60],"outerKerbGapM":.25},"status":"DfT visual dimensions source-tested; real highway approval and native perception not certified"})
+            m.face([(terminal-.10,PAINT_Y,centre-.30),(terminal-.10,PAINT_Y,centre+.30),(terminal+.10,PAINT_Y,centre+.30),(terminal+.10,PAINT_Y,centre-.30)],"roadPaint")
+    return m.finish({"physicalAnchor":[78,-7.25],"studRowCrossingWidthM":GROUND["crossingWidthM"],"studSizeM":.10,"studPitchM":.50,"traversalWidthM":half*2,"stopLinesLocalX":[-offset,offset],"stopLineFullHalfCarriagewayM":half,"stopToStudClearEdgeM":3.0,"zigzags":{"marksPerApproach":8,"markLengthM":length,"longitudinalExtentM":along,"gapM":gap,"strokeM":width,"bandM":band,"terminalSizeM":[.20,.60],"outerKerbGapM":.25},"status":"DfT visual dimensions source-tested; real highway approval and native perception not certified"})
 
 
 def build_repairs():
@@ -603,16 +613,17 @@ def build_repairs():
     # Utility work follows coherent cuts, with broad irregular sealant edges;
     # it does not decorate the street with arbitrary grunge or emissive flecks.
     for x,z,length,width in [(-9.0,-1.5,4.4,.8),(8.7,1.2,3.6,1.1)]:
-        y=GROUND["roadEdgeY"]+.001
+        y=DRAWN_ROAD_Y+.002
         m.face([(x-length*.5,y,z-width*.5),(x-length*.46,y,z+width*.5),(x+length*.5,y,z+width*.44),(x+length*.48,y,z-width*.46)],"asphaltRepair")
-    return m.finish({"physicalAnchor":[78,-7.5],"materialHistory":"Two finite utility repairs, no procedural scatter"})
+    return m.finish({"physicalAnchor":[78,-7.25],"materialHistory":"Two finite utility repairs, no procedural scatter"})
 
 
 def build_tactile():
     m=Mesh("street_pilot_tactile")
+    kerb=GROUND["kerbM"]
     for side in (-1,1):
         for row in range(2):
-            z0=side*(5+row*.4);z1=side*(5+(row+1)*.4)
+            z0=side*(kerb+row*.4);z1=side*(kerb+(row+1)*.4)
             for col in range(7):
                 x0=-1.4+col*.4;x1=x0+.4
                 points=[(x0,pavement_height(x0,z0)+.002,z0),(x0,pavement_height(x0,z1)+.002,z1),(x1,pavement_height(x1,z1)+.002,z1),(x1,pavement_height(x1,z0)+.002,z0)]
@@ -623,15 +634,15 @@ def build_tactile():
     # L-shaped tail locates the controlled crossing from the back of footway.
     # Its near edge is800mm deep; the stem is1200mm wide on the right.
     for side in (-1,1):
-        for row in range(3):
-            z0=side*(5.8+row*.4);z1=side*(6.2+row*.4)
+        for row in range(8):
+            z0=side*(kerb+.8+row*.4);z1=side*(kerb+1.2+row*.4)
             for col in range(3):
                 x0=(-1.4 if side<0 else .2)+col*.4;x1=x0+.4
                 points=[(x0,pavement_height(x0,z0)+.002,z0),(x0,pavement_height(x0,z1)+.002,z1),(x1,pavement_height(x1,z1)+.002,z1),(x1,pavement_height(x1,z0)+.002,z0)]
                 uvs=[(0,0),(0,1),(1,1),(1,0)]
                 if side<0:points.reverse();uvs.reverse()
                 m.face(points,"tactile",uvs=uvs)
-    return m.finish({"physicalAnchor":[78,-7.5],"controlledCrossing":"muted red blister paving, two400mm-deep rows per side across2.8m width","tileM":.4,"blistersPerTile":[6,6],"blisterDiameterM":.025,"blisterCapHeightM":.005,"treatment":"Tangent-space normal map at physical dimensions; no displaced silhouette or tactile physics claim","tileCount":46,"addedTriangles":92,"guidanceStemWidthM":1.2,"guidanceStemToBackOfFootway":True})
+    return m.finish({"physicalAnchor":[78,-7.25],"controlledCrossing":"muted red blister paving, two400mm-deep rows per side across2.8m width","tileM":.4,"blistersPerTile":[6,6],"blisterDiameterM":.025,"blisterCapHeightM":.005,"treatment":"Tangent-space normal map at physical dimensions; no displaced silhouette or tactile physics claim","tileCount":46,"addedTriangles":92,"guidanceStemWidthM":1.2,"guidanceStemToBackOfFootway":True})
 
 
 def merged_surface(objects):
@@ -648,7 +659,7 @@ def merged_surface(objects):
             name=data.materials[polygon.material_index].name
             if name not in m.material_names:m.material_names.append(name)
             m.slots.append(m.material_names.index(name))
-    return m.finish({"physicalAnchor":[78,-7.5],"runtime":"Default single surface draw; category meshes retained for isolated controls","categories":[obj.name for obj in objects]})
+    return m.finish({"physicalAnchor":[78,-7.25],"runtime":"Default single surface draw; category meshes retained for isolated controls","categories":[obj.name for obj in objects]})
 
 
 def build_signal_shell(name="street_pilot_signal_housing",with_pole=True):
@@ -787,7 +798,11 @@ def main():
     MATERIALS["streetPilot.frontLamp"]=make_material("streetPilot.frontLamp",albedo,orm,normal,(.20,.18,.12))
     MATERIALS["streetPilot.rearLamp"]=make_material("streetPilot.rearLamp",albedo,orm,normal,(.10,.012,.004))
     surfaces=[build_ground(),build_pavement(),build_kerbs(),build_setts(),build_markings(),build_repairs(),build_tactile()]
-    objects=[build_car(),build_wheel(),*surfaces,merged_surface(surfaces),build_signal_shell(),build_signal_shell("street_pilot_signal_head",with_pole=False)]
+    # The live surface is the paint alone. Road, flags, kerbs, channel and
+    # tactile are drawn for the whole ring by the floor grid and street fabric;
+    # the other categories stay in the pack as controls.
+    live=[obj for obj in surfaces if obj.name in ("street_pilot_markings","street_pilot_repairs")]
+    objects=[build_car(),build_wheel(),*surfaces,merged_surface(live),build_signal_shell(),build_signal_shell("street_pilot_signal_head",with_pole=False)]
     objects.extend(build_signal_lens(f"street_pilot_signal_{name}",index) for index,name in enumerate(("red","amber","green")))
     objects.extend([build_ped_housing(),build_ped_button(),build_ped_icon("street_pilot_ped_red",False),build_ped_icon("street_pilot_ped_green",True)])
     report={"version":2,"purpose":"Isolated Borough Passage street proof; no wider rollout", "car":CAR,"ground":GROUND,"signal":SIGNAL,"atlas":{"dimensions":[ATLAS_SIDE,ATLAS_SIDE],"maps":["albedo sRGB","ORM linear","normal linear;400mm6x6blister tiles25mmdia/5mmheight"],"estimatedMipmappedBytes":int(ATLAS_SIDE*ATLAS_SIDE*4*3*4/3)},"meshes":{obj.name:{"triangles":triangle_count(obj),"materials":len(obj.data.materials)} for obj in objects},"authorship":"Project-authored mesh/atlas; dimensions/reference provenance retained in street research dossier", "validation":{"visualReview":"pending","liveDither":"pending","participants":"pending"}}

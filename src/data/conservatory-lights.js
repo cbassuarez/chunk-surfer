@@ -292,6 +292,12 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // down; without this it is a fifteen-metre unlit plane at the top of the shot.
   L('bay-facade-wash', LIGHT_KIND.SKY, 46.0, 9.0, 11.0, [.50, .58, .74], 1.42, 26.0,
     { groups:['ground'], zones:[ZONE.dock] }),
+  // The night coming down through the pool hall's broken glazing. The courts
+  // above are open to the sky, so the break over the sump is the one place in
+  // the hall with light from outside: aimed down, so the slab stays dark and
+  // what it finds is the hanging pane, the trusses and the rainwater.
+  L('natatorium-break-sky', LIGHT_KIND.SKY, 84.0, 41.2, 9.4, [.50, .58, .74], .9, 14.0,
+    { groups:['ground'], zones:[ZONE.natatorium], direction:[0,-1,0], coneOuterCos:-.05, coneInnerCos:.45 }),
   // A bulkhead over the dock door, on the same dead circuit as everything else,
   // still running because it is wired to the yard supply and not the building's.
   L('bay-canopy-bulkhead', LIGHT_KIND.FITTING, 55.2, 7.5, 4.1, [1, .74, .42], .86, 7.5,
@@ -388,13 +394,24 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   L('plant-manifold-live', LIGHT_KIND.FITTING, 33.0, 38.15, -1.78, [.70,.84,.74], .78, 7.4,
     { groups:['basement'], zones:[ZONE.plant], circuit:'sp01', anchorPropId:'light-plant-manifold-casing', anchorOffset:[0,.18,0], flutter:{amount:.08,steady:.72} }),
   // B3's work light stands in B3 and is zoned to it. It used to carry
-  // ZONE.danceStudio while sitting at (18,6) — inside the take room — so it was
+  // ZONE.danceStudio while sitting in the take room, so it was
   // filtered out for the player standing under it and resolved only for one
-  // stood in B2, eight metres away through a wall. B3 has no other practical.
-  L('b3-work-live', LIGHT_KIND.FITTING, 18.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
+  // stood in B2, eight metres away through a wall.
+  L('b3-work-live', LIGHT_KIND.FITTING, 16.5, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
     { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
+  // A modest booth work light, on the same switched supply as the live room.
+  // The console and its meter bridge remain physically unpowered.
+  L('b3-control-work-live', LIGHT_KIND.FITTING, 24.75, 9.5, -1.37, [.76,.73,.62], .58, 7.2,
+    { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-control-casing', anchorOffset:[0,.18,0], flutter:{amount:.05,steady:.82} }),
   L('b3-emergency', LIGHT_KIND.EMERGENCY, 23.5, 20.75, -1.67, EMERGENCY_RED, .40, 7.0,
     { groups:['basement'], zones:[ZONE.studio], circuit:'sp01', anchorPropId:'light-b3-emergency-casing', anchorOffset:[0,.18,0] }),
+  // A battery-backed exit bulkhead gives the live-room entrance a small,
+  // steady pool even with the house supply and the mixing desk both dead.
+  L('b3-exit-maintained', LIGHT_KIND.FITTING, 14.25, 18.5, -1.67, [1,.84,.63], 1.6, 7.0,
+    // The snapped wall fitting itself occupies the masonry. Put its emitter
+    // just inside the live room so architectural visibility is not blocked at
+    // the source, while retaining the casing's real wall placement.
+    {groups:['basement'],zones:[ZONE.studio],powerMode:LIGHT_POWER_MODE.MAINTAINED,anchorPropId:'light-b3-exit-casing',anchorOffset:[0,.18,-.35]}),
   L('dance-work-live', LIGHT_KIND.FITTING, 32.0, 5.75, -1.37, [.78, .78, .65], .82, 9.0,
     { groups:['basement'], zones:[ZONE.danceStudio], circuit:'sp01', anchorPropId:'light-dance-work-casing', anchorOffset:[0,.18,0], flutter:{ amount:.07, steady:.78 } }),
 

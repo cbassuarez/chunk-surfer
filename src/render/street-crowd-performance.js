@@ -6,7 +6,8 @@ import {exteriorPerformanceFrame} from './exterior-conversation-performance.js';
 export {STREET_CROWD_CHARACTER_PACK,STREET_CROWD_PROP_PACK} from '../data/street-crowd-characters.js';
 
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(a,n)=>a.map(v=>v*n),dot=(a,b)=>a.reduce((n,v,i)=>n+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],length=a=>Math.hypot(...a),unit=a=>mul(a,1/(length(a)||1)),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const identity=[0,0,0,1],axis=(a,t)=>[...mul(unit(a),Math.sin(t/2)),Math.cos(t/2)],rotate=(v,q)=>{const t=mul(cross(q.slice(0,3),v),2);return add(v,add(mul(t,q[3]),cross(q.slice(0,3),t)));};
+// Scalar rotation avoids intermediate arrays while preserving arithmetic order.
+const identity=[0,0,0,1],axis=(a,t)=>[...mul(unit(a),Math.sin(t/2)),Math.cos(t/2)],rotate=(v,q)=>{const tx=(q[1]*v[2]-q[2]*v[1])*2,ty=(q[2]*v[0]-q[0]*v[2])*2,tz=(q[0]*v[1]-q[1]*v[0])*2;return [v[0]+(tx*q[3]+(q[1]*tz-q[2]*ty)),v[1]+(ty*q[3]+(q[2]*tx-q[0]*tz)),v[2]+(tz*q[3]+(q[0]*ty-q[1]*tx))];};
 const multiply=(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]];
 function between(a,b){const x=unit(a),y=unit(b),d=dot(x,y);return d<-.99999?[...unit(cross(x,Math.abs(x[0])<.8?[1,0,0]:[0,1,0])),0]:unit([...cross(x,y),1+d]);}
 function oriented(from,normal,to,toNormal){const swing=between(from,to),direction=unit(to),project=v=>unit(sub(v,mul(direction,dot(v,direction)))),a=project(rotate(normal,swing)),b=project(toNormal);return multiply(axis(direction,Math.atan2(dot(direction,cross(a,b)),dot(a,b))),swing);}
@@ -23,6 +24,7 @@ const sourceHeight=source=>source==='male'?1.78:1.70;
 // Forty small entries cover the entire cast instead of solving 200 fingers
 // every render frame. Action progress never becomes part of the cache key.
 const fingerPoseCache=new Map();
+const rigBoneMaps=new Map(Object.entries(RIGS).map(([name,source])=>[name,new Map(source.map(b=>[b.name,b]))]));
 export function streetCrowdCharacterIdForMesh(mesh){return streetCrowdDesign(mesh)?.id||null;}
 
 function actionState(frame,reducedMotion){
@@ -30,9 +32,9 @@ function actionState(frame,reducedMotion){
   const pulse=frame?.action?(reducedMotion?(progress>0&&progress<1?1:0):Math.sin(progress*Math.PI)):0;
   return{action:frame?.action||null,progress,pulse};
 }
-export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=false,yaw=0,conversation=null}={}){
+function streetCrowdPoseInternal(idOrMesh,{frame=null,timeSec=0,reducedMotion=false,yaw=0,conversation=null,renderOnly=false}={}){
   const d=streetCrowdDesign(idOrMesh);if(!d)return null;
-  const source=RIGS[d.source],bones=new Map(source.map(b=>[b.name,b])),desired=new Map(),contacts=[];
+  const source=RIGS[d.source],bones=rigBoneMaps.get(d.source),desired=new Map(),contacts=[];
   const scale=[d.width,d.height/sourceHeight(d.source),d.depth],toLocal=p=>p.map((v,i)=>v/scale[i]),toPhysical=p=>p.map((v,i)=>v*scale[i]);
   const {action,progress,pulse}=actionState(frame,reducedMotion),seated=d.posture==='seated',seat=d.seatY;
   const performance=exteriorPerformanceFrame(d.id,{timeSec,reducedMotion,conversation});
@@ -60,7 +62,7 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
     if(seated){
       const hip=add(thigh.head,shift),ankle=toLocal([sign*.17,foot.head[1]*scale[1],-.20]),leg=chain(hip,ankle,length(sub(thigh.tail,thigh.head)),length(sub(shin.tail,shin.head)),[sign*.40,0,-1]);
       put(thigh.name,hip,leg.middle);put(shin.name,leg.middle,leg.end);put(foot.name,leg.end,add(leg.end,sub(foot.tail,foot.head)));put(toe.name,add(leg.end,sub(toe.head,foot.head)),add(leg.end,sub(toe.tail,foot.head)));
-      contacts.push({kind:'seat',side,seatY:seat,hip:toPhysical(hip),knee:toPhysical(leg.middle),ankle:toPhysical(leg.end),error:leg.error});
+      if(!renderOnly)contacts.push({kind:'seat',side,seatY:seat,hip:toPhysical(hip),knee:toPhysical(leg.middle),ankle:toPhysical(leg.end),error:leg.error});
     }else for(const b of[thigh,shin,foot,toe])desired.set(b.name,{head:b.head,rotation:identity});
   }
   // Kit anchors are independent of wrists. The builder uses these same
@@ -109,11 +111,11 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
     const target=toLocal(physicalTarget),solve=chain(shoulder,target,length(sub(arm.tail,arm.head)),length(sub(fore.tail,fore.head)),[sign*.35,-.65,.15]);
     put(arm.name,shoulder,solve.middle);put(fore.name,solve.middle,solve.end);
     desired.set(hand.name,{head:solve.end,rotation:palmQ});hands[side]=solve.end;
-    contacts.push({kind:'wrist',side,target,point:solve.end,physicalTarget,physicalPoint:toPhysical(solve.end),error:solve.error});
+    if(!renderOnly)contacts.push({kind:'wrist',side,target,point:solve.end,physicalTarget,physicalPoint:toPhysical(solve.end),error:solve.error});
     const cacheKey=d.id+':'+side+':'+(grip?.kind||'relaxed'),cached=fingerPoseCache.get(cacheKey),fingerContactStart=contacts.length;
     if(cached){
       for(const[name,entry]of cached.joints)desired.set(name,{head:add(solve.end,rotate(entry.head,palmQ)),rotation:multiply(palmQ,entry.rotation)});
-      for(const entry of cached.contacts){const target=add(solve.end,rotate(entry.target,palmQ)),point=add(solve.end,rotate(entry.point,palmQ));contacts.push({...entry,target,point,physicalTarget:toPhysical(target),physicalPoint:toPhysical(point)});}
+      if(!renderOnly)for(const entry of cached.contacts){const target=add(solve.end,rotate(entry.target,palmQ)),point=add(solve.end,rotate(entry.point,palmQ));contacts.push({...entry,target,point,physicalTarget:toPhysical(target),physicalPoint:toPhysical(point)});}
     }else for(const[digitIndex,digit]of digits.entries()){
       const bonesForDigit=links(digit),base=add(solve.end,rotate(sub(bonesForDigit[0].head,hand.head),palmQ)),sizes=bonesForDigit.map(b=>length(sub(b.tail,b.head)));let targetPoint,pole=rotate(palmNormal,palmQ);
       if(grip?.kind==='cylinder'){
@@ -144,6 +146,8 @@ export function streetCrowdPose(idOrMesh,{frame=null,timeSec=0,reducedMotion=fal
   const joints=Object.fromEntries(source.map(b=>{const pose=desired.get(b.name);return[`street_${d.source}_${b.name}`,{translation:sub(pose.head,b.head),rotation:pose.rotation}];}));
   return{joints,hands,contacts,scale,seatY:seated?seat:null,action,progress,pulse,objects,performance,object:d.accessory?{kind:d.accessory,hand:d.accessory==='flask'||d.accessory==='pamphlets'?'L':'R'}:null};
 }
+// Diagnostics keep the full contact data; rendering only needs joints and scale.
+export function streetCrowdPose(idOrMesh,options={}){return streetCrowdPoseInternal(idOrMesh,{...options,renderOnly:false});}
 export function streetCrowdDescriptor(idOrMesh,frame=null,options={}){const pose=streetCrowdPose(idOrMesh,{...options,frame});return pose?{joints:pose.joints}:null;}
 
 function instanceMatrix(instance){
@@ -154,7 +158,7 @@ function instanceMatrix(instance){
 export function streetCrowdRenderInstance(instance,{actorId=instance?.id,frame=null,timeSec=0,reducedMotion=false,conversation=null}={}){
   if(!instance)return instance;
   const d=streetCrowdDesign(actorId)||streetCrowdDesign(instance.mesh);if(!d)return instance;
-  const pose=streetCrowdPose(d.id,{frame,timeSec,reducedMotion,yaw:instance.yaw,conversation}),matrix=instanceMatrix(instance);
+  const pose=streetCrowdPoseInternal(d.id,{frame,timeSec,reducedMotion,yaw:instance.yaw,conversation,renderOnly:true}),matrix=instanceMatrix(instance);
   for(let column=0;column<3;column++)for(let row=0;row<3;row++)matrix[column*4+row]*=pose.scale[column];
   return{...instance,mesh:d.mesh,matrix:new Float32Array(matrix),character:{joints:pose.joints}};
 }

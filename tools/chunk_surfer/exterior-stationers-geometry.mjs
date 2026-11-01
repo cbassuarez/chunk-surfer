@@ -1,4 +1,4 @@
-import{EXTERIOR_STATIONERS as S,STATIONERS_FURNITURE,STATIONERS_LIGHTS,stationersLocal}from'../../src/data/exterior-stationers.js';
+import{EXTERIOR_STATIONERS as S,STATIONERS_FURNITURE,STATIONERS_DESIGN_LIGHTS as STATIONERS_LIGHTS,stationersLocal}from'../../src/data/exterior-stationers.js';
 const EPS=1e-9,cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],sub=(a,b)=>a.map((v,k)=>v-b[k]);
 const interpolate=(a,b,t)=>({position:a.position.map((v,k)=>v+(b.position[k]-v)*t),normal:a.normal.map((v,k)=>v+(b.normal[k]-v)*t),uv:a.uv.map((v,k)=>v+(b.uv[k]-v)*t)});
 function splitPolygon(points,axis,bound,sign){

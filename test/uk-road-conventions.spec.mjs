@@ -22,8 +22,8 @@ function components(tris){const rows=[],owner=new Map();for(const t of tris){let
 test('actual exterior stop paint spans the whole half carriageway and preserves a3m clear stand-off',()=>{
  const parts=components(triangles(street,'street_pilot_markings'));
  const stops=parts.filter(p=>{const b=bounds(p),cx=(b.max[0]+b.min[0])/2;return Math.abs(Math.abs(cx)-4.55)<.001&&b.max[2]-b.min[2]>1.9;});
- assert.equal(stops.length,4,'moving lane and parking strip on both approaches');
- for(const side of[-1,1]){const p=stops.filter(p=>Math.sign((bounds(p).min[0]+bounds(p).max[0])/2)===side).flat(),b=bounds(p);near(b.max[2]-b.min[2],5);near(b.max[0]-b.min[0],.20);near(Math.min(...p.map(v=>Math.abs(v[0])))-1.45,3);}
+ assert.equal(stops.length,2,'one line per approach, from the kerb to the centre line');
+ for(const side of[-1,1]){const p=stops.filter(p=>Math.sign((bounds(p).min[0]+bounds(p).max[0])/2)===side).flat(),b=bounds(p);near(b.max[2]-b.min[2],3);near(b.max[0]-b.min[0],.20);near(Math.min(...p.map(v=>Math.abs(v[0])))-1.45,3);}
  for(const direction of[1,-1]){const v=STREET_PILOT.vehicles.find(v=>v.direction===direction);near(v.stopLineX,direction>0?STREET_PILOT.stopLines.eastbound:STREET_PILOT.stopLines.westbound);const primary=STREET_PILOT.vehicleSignals.find(p=>p.id===(direction>0?'eastbound-primary':'westbound-primary'));near(Math.abs(primary.x-v.stopLineX),2.5);}
 });
 

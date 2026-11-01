@@ -29,6 +29,37 @@ function fixture(options={}){
   return{...g,audio,setPair:v=>{pair=v;},protect:v=>{protectedValue=v;},update:(s,extra={})=>audio.update({state:s,ready:true,...extra})};
 }
 
+test('the rest recording fades only the score, leaving pressure impacts sounding and restoring the same score on exit',async()=>{
+  const h=fixture();await h.audio.prepare();
+  h.update(state({elapsed:9.6}));h.ctx.currentTime+=.05;h.update(state({elapsed:9.65}));
+  const [score,impact]=h.sources;assert.ok(impact,'the existing bell impact has its own voice');
+  const envelope=source=>source.connections[0].connections[0].gain;
+  const scoreGain=envelope(score),impactGain=envelope(impact),impactHistory=impactGain.history.length;
+  const reverb=h.nodes.find(n=>n.kind==='convolver').connections[0].gain;
+  assert.ok(scoreGain.value>0);assert.equal(reverb.value,.86);
+  assert.equal(h.audio.setRestMusicActive(true),true);
+  assert.equal(scoreGain.value,0);assert.equal(reverb.value,0,'the score reverb fades with its dry voice');
+  assert.equal(impactGain.history.length,impactHistory,'an existing bell envelope is untouched');
+  assert.equal(score.stops.length,0,'the old score keeps its phase while inaudible');
+  h.ctx.currentTime+=.6;h.update(state({elapsed:10.25}));
+  assert.equal(scoreGain.value,0,'normal spatial updates do not reopen the score');
+  assert.equal(h.audio.setRestMusicActive(false),true);
+  assert.ok(scoreGain.value>0);assert.equal(reverb.value,.86);
+  assert.equal(score.stops.length,0);assert.equal(h.audio.snapshot().restMusicActive,false);
+  h.audio.dispose();
+});
+
+test('a score created or restarted while rest is active starts silent until the recording ends',async()=>{
+  const h=fixture();await h.audio.prepare();h.audio.setRestMusicActive(true);
+  h.update(state());let score=h.sources[0];
+  const envelope=source=>source.connections[0].connections[0].gain;
+  assert.equal(envelope(score).value,0);assert.equal(h.audio.snapshot().restMusicActive,true);
+  h.audio.pause();h.ctx.currentTime+=2;h.update(state({elapsed:2.1}));score=h.sources.at(-1);
+  assert.equal(envelope(score).value,0,'pause and resume cannot restart the old music over the recording');
+  assert.equal(h.audio.setRestMusicActive(false),true);assert.ok(envelope(score).value>0);
+  h.audio.dispose();
+});
+
 test('a release on an exact fixed-tick boundary survives floating-point rounding and plays once',async()=>{
   const h=fixture();await h.audio.prepare();
   h.update(state({elapsed:9.6}));h.ctx.currentTime+=.05;
@@ -59,6 +90,55 @@ test('fixed world music follows camera yaw and pitch without restarting phrases 
   h.audio.dispose();const stereo=fixture({hrtf:false});await stereo.audio.prepare();stereo.update(state());assert.equal(stereo.audio.snapshot().music.spatialization,'stereo');stereo.audio.dispose();
 });
 
+test('a presented three-axis listener basis handles a wall or ceiling chart without changing the shared listener',()=>{
+  const frame={listener:{eye:[0,0,0],right:[0,1,0],up:[-1,0,0],forward:[0,0,-1]},projectPoint:(_chart,p)=>({...p})};
+  const placement=sourceSurroundingsPlacement({x:0,y:10,z:-3},state({yaw:Math.PI,pitch:1}),frame,0);
+  assert.deepEqual(placement.relativeXYZ,[10,0,-3]);assert.ok(placement.pan>.9);assert.equal(placement.distance,Math.hypot(10,3));
+});
+
+test('chart presentation changes reproject the registered music without restarting its continuing score',async()=>{
+  const h=fixture();await h.audio.prepare();let s=state({elapsed:8,chartId:0});
+  const listener={eye:[0,0,0],right:[1,0,0],up:[0,1,0],forward:[0,0,-1]};
+  const frame=projectPoint=>({listener,projectPoint});
+  h.update(s,{acousticFrame:frame((chart,p)=>chart===0?{...p}:null)});
+  const source=h.sources[0],initial=h.audio.snapshot().music;assert.equal(initial.chartId,0);assert.ok(initial.placement.pan>0);
+  h.ctx.currentTime+=.1;s={...s,elapsed:s.elapsed+.1,chartId:1,portalSerial:1};
+  h.update(s,{acousticFrame:frame((chart,p)=>chart===0?{x:-p.y,y:p.x,z:p.z}:null)});
+  assert.ok(h.audio.snapshot().music.placement.pan<0);assert.deepEqual(h.audio.snapshot().music.position,initial.position);
+  h.ctx.currentTime+=.1;s.elapsed+=.1;h.update(s,{acousticFrame:frame(()=>null)});
+  assert.equal(h.audio.snapshot().music.spatialGain,0);assert.equal(h.audio.snapshot().musicVoices,1);
+  h.ctx.currentTime+=.1;s.elapsed+=.1;h.update(s,{acousticFrame:frame((_chart,p)=>({...p}))});
+  assert.ok(h.audio.snapshot().music.spatialGain>0);assert.equal(h.sources.length,1);assert.equal(source.starts.length,1);assert.equal(source.stops.length,0);
+  assert.equal(h.audio.snapshot().music.phase,initial.phase);assert.equal(h.audio.snapshot().resyncs,0);h.audio.dispose();
+});
+
+test('physical portal acoustics keep chart-zero music audible while looking away and through several charts',async()=>{
+  const [{sourceContinuationAcousticFrame},{JOURNEY_PORTALS}]=await Promise.all([
+    import('../src/render/source-continuation-renderer.js'),import('../src/data/source-continuation-journey.js')
+  ]);
+  const endpoint=JOURNEY_PORTALS[0].b,h=fixture();await h.audio.prepare();
+  let s=state({elapsed:8,chartId:endpoint.chartId,x:endpoint.x+endpoint.normal[0]*5,z:endpoint.z+endpoint.normal[2]*5,feet:endpoint.feet,yaw:0});
+  h.update(s,{acousticFrame:sourceContinuationAcousticFrame(s)});
+  const initial=h.audio.snapshot().music,source=h.sources[0];assert.ok(initial.spatialGain>0);
+  h.ctx.currentTime+=.1;s={...s,elapsed:s.elapsed+.1,yaw:Math.PI};h.update(s,{acousticFrame:sourceContinuationAcousticFrame(s)});
+  const turned=h.audio.snapshot().music;assert.ok(turned.spatialGain>0);assert.ok(Math.abs(turned.placement.pan-initial.placement.pan)>.05);
+  assert.ok(Math.abs(turned.placement.gain-initial.placement.gain)<1e-9,'head direction cannot close a physical acoustic path');
+  const third=JOURNEY_PORTALS[2].b;h.ctx.currentTime+=.1;s={...s,elapsed:s.elapsed+.1,chartId:third.chartId,x:third.x+third.normal[0]*5,z:third.z+third.normal[2]*5,feet:third.feet,foldSerial:3};
+  const frame=sourceContinuationAcousticFrame(s);assert.ok(frame.projectPoint(0,initial.position),'the emitter chart remains connected through physical apertures');
+  h.update(s,{acousticFrame:frame});const distant=h.audio.snapshot().music;assert.ok(distant.spatialGain>0);assert.equal(distant.chartId,0);assert.deepEqual(distant.position,initial.position);
+  assert.equal(h.sources.length,1);assert.equal(source.starts.length,1);assert.equal(source.stops.length,0);assert.equal(distant.phase,initial.phase);assert.equal(h.audio.snapshot().resyncs,0);h.audio.dispose();
+});
+
+test('a pressure tail keeps its emission chart and authored end while its visible image changes or disappears',async()=>{
+  const h=fixture();await h.audio.prepare();let s=state({elapsed:9.6,chartId:0});
+  const listener={eye:[0,0,0],right:[1,0,0],up:[0,1,0],forward:[0,0,-1]},visible={listener,projectPoint:(_chart,p)=>({...p})};
+  h.update(s,{acousticFrame:visible});h.ctx.currentTime+=.05;s.elapsed=9.65;h.update(s,{acousticFrame:visible});
+  const impact=h.audio.snapshot().impacts[0],source=h.sources.find(row=>row.buffer?.duration===12);assert.ok(impact);assert.ok(source);assert.equal(impact.chartId,0);assert.ok(impact.spatialGain>0);
+  h.ctx.currentTime+=.01;s.elapsed+=.01;s.chartId=2;h.update(s,{acousticFrame:{listener,projectPoint:()=>null}});
+  const hidden=h.audio.snapshot().impacts[0];assert.equal(hidden.spatialGain,0);assert.deepEqual(hidden.position,impact.position);assert.equal(hidden.until,impact.until);
+  assert.equal(source.starts.length,1);assert.equal(source.stops.length,0);assert.ok(h.audio.snapshot().impactTails<=2);h.audio.dispose();
+});
+
 test('pause, missing readiness and protected recorder/playback flush all tails, resuming the held score rather than elapsed wall time',async()=>{
   const h=fixture();await h.audio.prepare();const s=state({elapsed:8});h.update(s);const phase=h.audio.snapshot().score.phase;
   h.audio.pause();assert.equal(h.audio.snapshot().voices,0);assert.ok(h.nodes.filter(n=>n.kind==='convolver').every(n=>n.buffer===null));
@@ -72,7 +152,29 @@ test('a threshold releases the old world and attacks the next within one music v
   h.ctx.currentTime+=.1;const next=state({phase:'catch',elapsed:12.1});h.update(next);assert.equal(h.sources.length,1);assert.equal(h.audio.snapshot().music.pieceId,'ensemble');
   assert.ok(h.nodes.some(n=>n.kind==='gain'&&n.gain.history.some(v=>v[0]==='ramp'&&v[1]===0&&Math.abs(v[2]-10.3)<1e-6)));
   h.ctx.currentTime+=.21;next.elapsed+=.21;h.update(next);assert.ok(old.stops.length);assert.equal(h.sources.length,2);assert.equal(h.audio.snapshot().musicVoices,1);assert.equal(h.audio.snapshot().music.pieceId,'couperin');assert.equal(h.sources[1].starts[0].offset,sourceSurroundingsFrame(next).score.phase);
-  const ordinary=h.audio.snapshot().dsp.outputGain;next.counterweight.mode='lowering-warning';h.update(next);assert.ok(h.audio.snapshot().dsp.outputGain<ordinary*.25,'machine warning keeps priority');h.audio.dispose();
+  const ordinary=h.audio.snapshot().dsp.outputGain;next.counterweight={active:true,mode:'lowering-warning'};h.update(next);assert.ok(h.audio.snapshot().dsp.outputGain<ordinary*.25,'machine warning keeps priority');h.audio.dispose();
+});
+
+test('only an active warning in the current world ducks the foreground score, whose output remains bounded',async()=>{
+  const h=fixture();await h.audio.prepare();
+  const cases=[
+    ['dormant II ignores the inactive Catch warning',state({counterweight:{active:false,mode:'warning'},closure:{mode:'dormant'}}),1],
+    ['II ignores the other world even if its saved machine is active',state({counterweight:{active:true,mode:'lowering-warning'},closure:{mode:'dormant'}}),1],
+    ['the local II closing-front warning retains priority',state({closure:{mode:'warning'}}),C.warningDuck],
+    ['inactive Catch warning has no priority',state({phase:'catch',counterweight:{active:false,mode:'warning'}}),1],
+    ['active Catch warning retains priority',state({phase:'catch',counterweight:{active:true,mode:'warning'}}),C.warningDuck],
+    ['active Catch lowering warning retains priority',state({phase:'catch',counterweight:{active:true,mode:'lowering-warning'}}),C.warningDuck],
+    ['Catch ignores a retained II front warning',state({phase:'catch',counterweight:{active:true,mode:'walking'},closure:{mode:'warning'}}),1],
+  ];
+  for(const [label,s,duck] of cases){
+    h.audio.stop();h.update(s);const snapshot=h.audio.snapshot();
+    assert.equal(snapshot.dsp.outputGain,C.outputGain*duck,label);
+    assert.equal(snapshot.musicVoices,1);assert.ok(snapshot.music.gain>=C.musicBaseGain&&snapshot.music.gain<=1,'foreground source remains below unity');
+  }
+  const limiter=h.nodes.find(n=>n.kind==='limiter');
+  assert.ok(limiter.curve.every(value=>Number.isFinite(value)&&Math.abs(value)<=C.limiterCeiling+1e-7));
+  assert.ok(C.outputGain*C.limiterCeiling<.5,'the complete dry/wet surroundings bus retains output headroom');
+  h.audio.dispose();
 });
 
 test('pressure releases and travelling-front responses sound only near their actual shared times, stay bounded, and discard missed events',async()=>{

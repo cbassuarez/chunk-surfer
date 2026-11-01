@@ -33,6 +33,8 @@ FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.hei
   widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors,
   edgePortals:conservatory.edgePortals,doors:conservatory.doors});
 P.propsInit(FP);
+// The glass court's roof guards switch on once its pack loads; the approach has to clear them.
+P.setColliderGroupEnabled('glass-court',true);
 
 test('compiled prop and borrowed camera share the intended east edge anchor',()=>{
   const bench=P.propById(ROOF_CITY_SEAT.id),render=P.renderInstances({group:'academicRoof'}).find(p=>p.id===bench.id);
@@ -54,7 +56,10 @@ test('safe approach remains walkable and focusable while ladder, vent and rehear
   const x=ROOF_CITY_SEAT.approach.x*2,y=ROOF_CITY_SEAT.approach.y*2;
   assert.equal(FP.floorAt(x,y),17);assert.equal(P.propCanOccupy(x,y),true);
   assert.equal(P.propCanOccupy(bench.rx,bench.ry),false,'the authored stone bench has real collision');
-  const focus=P.pickProp(x,y,1,2,{yaw:1.5,pitch:-.55,eyeHeight:1.62});
+  // Looking at the bench from the approach. It used to be behind the bench,
+  // looking out over it; that ground is the courtyard's sky opening now.
+  const yaw=Math.atan2(ROOF_CITY_SEAT.at.x-(x+.5)/2,-(ROOF_CITY_SEAT.at.y-(y+.5)/2));
+  const focus=P.pickProp(x,y,1,2,{yaw,pitch:-.55,eyeHeight:1.62});
   assert.equal(focus?.id,ROOF_CITY_SEAT.id,'the approach reaches this bench through ordinary E focus');
   const footprint=p=>{
     const c=Math.abs(Math.cos(p.yaw||0)),s=Math.abs(Math.sin(p.yaw||0));

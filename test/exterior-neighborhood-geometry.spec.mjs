@@ -128,7 +128,7 @@ test('build receipt binds the exact source, font and output bytes',()=>{
 test('selected commercial deeds replace ground-floor stock with separate flat/shop doors and particular displays',()=>{
   for(const row of C.rows){
     const r=out.reports.find(r=>r.mesh===row.mesh);
-    assert.equal(r.trades.length,EXTERIOR_TRADE_DEEDS[row.kind].length);
+    assert.equal(r.trades.length,(EXTERIOR_TRADE_DEEDS[row.tradeKind||row.kind]||[]).length);
     for(const t of r.trades){
       const own=r.parts.filter(p=>p.id.startsWith(`deed-${t.deed}-`));
       for(const id of['shop-stall-riser','shop-fascia','flat-closed-door','shop-closed-door','shop-riser-repaired-board'])assert.ok(own.some(p=>p.id.endsWith(id)),`${row.kind}:${t.deed} has ${id}`);
@@ -136,7 +136,7 @@ test('selected commercial deeds replace ground-floor stock with separate flat/sh
       if(!t.closed)assert.ok(own.some(p=>p.id.includes(`shop-stock-${t.display}-`)),`${t.display} has material contents, not a trade name on empty glazing`);
       assert.equal(own.some(p=>/sash-0-/.test(p.id)),false,'old domestic ground-floor sash stock is replaced');
     }
-    assert.ok(r.deeds.some(d=>d.kind==='house'||d.kind==='workshop'),'ordinary uses remain beside commerce');
+    assert.ok(r.deeds.some(d=>['house','stucco-house','workshop'].includes(d.kind)),'ordinary uses remain beside commerce');
   }
   assert.equal(EXTERIOR_TRADE_DEEDS.terrace.some(s=>s.deed===3),false,'the separately fitted Stationers deed remains untouched');
   assert.equal(EXTERIOR_TRADE_DEEDS.passage.some(s=>s.deed===4),false,'the existing court mouth never becomes a shop');
@@ -158,10 +158,12 @@ test('awnings are supported overhead and former pavement column feet are removed
 });
 
 test('placed rows have different named trades on real fascias without duplicating building bodies',()=>{
-  const prints=out.reports.slice(4).flatMap(r=>r.prints);
+  // Reports run rows, then the closed court, then the lightweight row names.
+  const dressing=out.reports.slice(C.rows.length+1);
+  const prints=dressing.flatMap(r=>r.prints);
   assert.equal(EXTERIOR_FRONTAGE_DRESSING.length,9);
   assert.equal(new Set(prints.map(p=>p.lines[0])).size,prints.length,'business names belong to distinct placed neighbours');
-  assert.ok(out.reports.slice(4).every(r=>r.triangles<=60&&r.windows.length===0&&r.deeds.length===0),'row names do not clone complete buildings');
+  assert.ok(dressing.every(r=>r.triangles<=60&&r.windows.length===0&&r.deeds.length===0),'row names do not clone complete buildings');
   for(const row of EXTERIOR_FRONTAGE_DRESSING){
     assert.equal(row.id==='district-south-row-a',false,'the finished pub and six south shops have no replacement signs');
     const r=out.reports.find(r=>r.mesh===row.mesh);

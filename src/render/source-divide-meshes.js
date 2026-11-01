@@ -33,7 +33,8 @@ export function installDivideMeshes(gl,pack) {
       for(const point of points){positions.push(...point.map((v,k)=>v-bounds.center[k]));normals.push(...n);uvs.push(...sourcePrintUV(point,n,8));}
     }
     const vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
-    const bind=(location,data,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
+    const uploaded=[];
+    const bind=(location,data,size)=>{const values=new Float32Array(data);uploaded[location]=values;gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
     bind(0,positions,3);bind(1,normals,3);bind(2,uvs,2);
     const indices=new Uint32Array(positions.length/3);for(let i=0;i<indices.length;i++)indices[i]=i;
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);
@@ -45,7 +46,7 @@ export function installDivideMeshes(gl,pack) {
       gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,stride,offset);gl.vertexAttribDivisor(location,1);
     }
     gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE,...sourceBlueprintMaterial(maps,{base:[...(piece.color||[.68,.70,.64]).slice(0,3),1]})}]});
+    pack.catalog.set(name,{name,nodeMatrix:identity,instanceBuffer,extras:{sourceDivide:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:uploaded[0],normals:uploaded[1],uvs:uploaded[2],indices}),base:[...(piece.color||[.68,.70,.64]).slice(0,3),1],emissive:[0,0,0],texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:'source masonry',materialRole:'source-divide',printedSurface:SOURCE_PRINT_SURFACE,...sourceBlueprintMaterial(maps,{base:[...(piece.color||[.68,.70,.64]).slice(0,3),1]})}]});
   }
   gl.bindVertexArray(null);return names;
 }

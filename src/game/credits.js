@@ -6,6 +6,9 @@ import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.j
 import * as AUDIO from '../audio/story-audio.js';
 
 const AUTO_SCROLL_ROWS_PER_SEC = 0.72;
+// A late arrival can run out of score before the roll; never trade legibility
+// for a mathematically exact ending cue.
+const MAX_MUSIC_SCROLL_ROWS_PER_SEC = 2.5;
 const KEY_SCROLL_ROWS = 3;
 const PAGE_SCROLL_ROWS = 10;
 export const END_CREDITS_OPENING_DURATION = 3.8;
@@ -155,6 +158,19 @@ export function makeCreditsScene({
   // once when it has faded to full black (bring the hiss bed up under nothing).
   onQuote,
   onBlack,
+  // A specific ending may retain its own live music owner through the roll.
+  // The usual credits piece and its release remain the default everywhere.
+  suppressSoundtrack = false,
+  // The Source II rest lets the performance and silence have the last word.
+  // It has no closing quotation or return-report transition.
+  quietEnding = false,
+  soundtrack = AUDIO,
+  // Optional live playhead for an ending which carries a performance into the
+  // roll. The regular credits remain on their authored fixed speed.
+  getMusicPosition = null,
+  // A retained ending's presentation follows the same real lifecycle hold as
+  // its audio. Ordinary credits keep their existing independent UI clock.
+  getPresentationHeld = null,
   openingDuration = END_CREDITS_OPENING_DURATION,
   closingHold = END_CREDITS_CLOSING_HOLD,
   initialCols = 80,
@@ -170,7 +186,24 @@ export function makeCreditsScene({
   let quoteElapsed = null;    // null until the closing quote starts
   let blackFired = false;
   let quoteFired = false;
+  let manualEnd = false;
+  let quietFittedRate = null,quietMusicEnded = false;
   const heldActions = new Set();
+
+  function remainingMusic(){
+    quietMusicEnded=false;
+    if(typeof getMusicPosition!=='function'||manualEnd||presentationContext!=='ending')return null;
+    let state;try{state=getMusicPosition();}catch{return null;}
+    const duration=Number(state?.duration),time=Number(state?.currentTime);
+    // Only an actual completed performance may carry its fitted roll cadence
+    // into the remaining credits. A failed, paused or missing stream may not.
+    quietMusicEnded=quietEnding&&!!state&&!state.failed&&!state.paused&&Number.isFinite(duration)&&duration>0
+      &&Number.isFinite(time)&&time>=0&&(state.ended===true||time>=duration);
+    if(!state||typeof state.duration!=='number'||typeof state.currentTime!=='number'
+      ||state.playing!==true||state.paused||state.failed||!Number.isFinite(duration)||duration<=0
+      ||!Number.isFinite(time)||time<0||time>=duration)return null;
+    return duration-time;
+  }
 
   function fireQuote() {
     if (quoteFired || presentationContext !== 'ending') return;
@@ -218,6 +251,7 @@ export function makeCreditsScene({
   function userScroll(delta) {
     enterRoll();
     scroll = clamp(scroll + delta, 0, layout.maxScroll);
+    if(scroll<layout.maxScroll)manualEnd=false;
     closingElapsed = 0;
     paused = true;
   }
@@ -232,12 +266,16 @@ export function makeCreditsScene({
     // The roll has its own piece, played through the shared soundtrack slot so
     // it displaces the title bed rather than stacking on top of it. Fading out
     // on the way is what stops the ending from cutting to silence mid-bar.
-    enter() { AUDIO.startSoundtrack({ track: 'credits', fade: 2.2 }); },
-    exit() { AUDIO.fadeSoundtrack({ fade: 3.2 }); },
+    enter() { if(!suppressSoundtrack)soundtrack.startSoundtrack({ track: 'credits', fade: 2.2 }); },
+    exit() { if(!suppressSoundtrack)soundtrack.fadeSoundtrack({ fade: 3.2 }); },
     resume() { heldActions.clear(); },
 
     update(dt = 0) {
       if (done) return;
+      if(quietEnding&&typeof getPresentationHeld==='function'){
+        let held=false;try{held=!!getPresentationHeld();}catch{}
+        if(held)return;
+      }
       const delta = Math.max(0, Number(dt) || 0);
       // Once the quote is up, nothing else moves and pausing does not hold it:
       // this is the ending playing itself out, not a roll you are scrubbing.
@@ -254,14 +292,29 @@ export function makeCreditsScene({
       elapsed += delta;
       if (elapsed < openingDuration) return;
       const rollDelta = before < openingDuration ? Math.max(0, elapsed - openingDuration) : delta;
+      const remaining = remainingMusic(),finalSeconds=quietEnding?0:CLOSING_QUOTE_SECONDS+1.6;
+      let closingDelta=rollDelta;
       if (scroll < layout.maxScroll) {
-        scroll = Math.min(layout.maxScroll, scroll + rollDelta * AUTO_SCROLL_ROWS_PER_SEC);
+        // Sampled media time is at the end of this update. Add rollDelta back
+        // to find its starting budget. A quiet ending has no quotation to
+        // reserve; its real ending sound may continue under a readable roll.
+        const rows=layout.maxScroll-scroll;
+        const budget=remaining===null?null:remaining+rollDelta-closingHold-finalSeconds;
+        const rate=budget===null?(quietMusicEnded&&quietFittedRate!==null?quietFittedRate:AUTO_SCROLL_ROWS_PER_SEC)
+          :Math.min(MAX_MUSIC_SCROLL_ROWS_PER_SEC,rows/Math.max(.001,budget));
+        if(quietEnding&&remaining!==null)quietFittedRate=rate;
+        const used=rate>0?Math.min(rollDelta,rows/rate):0;
+        scroll = Math.min(layout.maxScroll, scroll + rollDelta * rate);
         if (scroll < layout.maxScroll) return;
+        if(remaining!==null)closingDelta=Math.max(0,rollDelta-used);
       }
-      closingElapsed += rollDelta;
+      closingElapsed += closingDelta;
       // The ending does not cut from "thank you for listening" to a stats screen.
       // It answers its own opening quote first, and goes to black doing it.
-      if (presentationContext === 'ending' && closingElapsed >= closingHold) beginQuote();
+      if (presentationContext === 'ending' && closingElapsed >= closingHold
+        &&(quietEnding||remaining===null||remaining<=finalSeconds+delta)) {
+        if(quietEnding)finish();else beginQuote();
+      }
     },
 
     key(e = {}) {
@@ -290,6 +343,7 @@ export function makeCreditsScene({
       if (raw === 'Home') {
         enterRoll();
         scroll = 0;
+        manualEnd = false;
         closingElapsed = 0;
         paused = true;
         return true;
@@ -298,6 +352,7 @@ export function makeCreditsScene({
         enterRoll();
         scroll = layout.maxScroll;
         closingElapsed = 0;
+        manualEnd = true;
         paused = true;
         return true;
       }

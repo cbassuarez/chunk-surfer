@@ -12,29 +12,37 @@
 
 import { uiDraw, uiDrawHardware, uiWithClip, uiWithHardwareLayer, uiFill, uiText, uiCellMetrics } from './ui.js';
 import { THEMES, UI_COLOR, activeTheme, activeSurface, setActiveSurface, uiBrightness, themeRoleColor, themeRoleDim, uiFlickerAlpha, uiRoleColor } from './palette.js';
-import { drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
+import { drawVfdDots, drawVfdGlyph, vfdGlowBleed } from './vfd-font.js';
 import { drawCapLegend, drawPrintedText } from './keycap.js';
 import { drawHardwareCap, hardwareCapGeometry, hardwareMotionReduced } from './hardware-material.js';
 import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass, drawVfdGrid } from './instrument-material.js';
 import { sampleControl } from '../game/control-mechanics.js';
 import { drawPromptParts } from './prompt-glyphs.js';
 import { fitText } from './fit-text.js';
-import { MONITOR_DANGER_THRESHOLDS, MONITOR_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
+import { MONITOR_DANGER_THRESHOLDS, monitorSnapshot } from '../audio/monitor.js';
+import { dualTraceSnapshot } from '../audio/dual-trace.js';
 import {
-  METER_MIN_DB, locationMarks, locationScaleFits, locationTicks,
+  locationMarks, locationScaleFits, locationTicks,
   meterGeometry, meterMarkBoxes, meterMarks, meterScaleFits, meterSegmentAt,
-  meterSegmentCount, meterState, meterTicks, unitToDb,
+  meterTicks, unitToDb,
 } from './meter.js';
 
 export const PANEL = Object.freeze({ padX: 2, headerRows: 2, footerRows: 2 });
 
-export function machinePanelBody(x, y, w, h, { footer = '' } = {}) {
-  return {
+export function machinePanelBody(x, y, w, h, { footer = '', apertureBounds = null } = {}) {
+  const body = {
     x: x + PANEL.padX + 1,
     y: y + PANEL.headerRows + 2,
     w: Math.max(1, w - PANEL.padX * 2 - 2),
     h: Math.max(1, h - PANEL.headerRows - (footer ? PANEL.footerRows : 1) - 2),
   };
+  // A deliberately smaller cutout owns the content budget too. Ordinary
+  // panels retain their established geometry, including existing consent UI.
+  if (!apertureBounds) return body;
+  const left = Math.max(body.x, apertureBounds.x), top = Math.max(body.y, apertureBounds.y);
+  return { x: left, y: top,
+    w: Math.max(0, Math.min(body.x + body.w, apertureBounds.x + apertureBounds.w) - left),
+    h: Math.max(0, Math.min(body.y + body.h, apertureBounds.y + apertureBounds.h) - top) };
 }
 
 const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(Number(v)) ? Number(v) : 0));
@@ -65,6 +73,26 @@ export function machinePanelAperture(x, y, w, h) {
     w: Math.max(.1, w - 2.8), h: Math.max(.1, h - PANEL.headerRows - PANEL.footerRows - .7) };
 }
 
+/** Opt-in metal rail for fixed controls. Caller-owned x/w/h never change.
+ * Match the recorder's 12 px clearance past its well lip and 18 px lower
+ * metal inset at the normal 20 px row size. The well itself extends at most
+ * 7 CSS px outside its aperture, independently of the UI text scale.
+ */
+export function machinePanelBezelRail(x, y, w, h, { controlHeight = 1.25, edge = 'bottom' } = {}) {
+  const aperture = machinePanelAperture(x, y, w, h), { cellH } = uiCellMetrics();
+  const wellLip = 7 / Math.max(1, cellH);
+  if (edge === 'top') {
+    const controlY = y + PANEL.headerRows + .6;
+    const top = Math.max(aperture.y, controlY + controlHeight + .6 + wellLip);
+    return { controlY, controlHeight,
+      apertureBounds: { ...aperture, y: top, h: Math.max(.1, aperture.y + aperture.h - top) } };
+  }
+  const controlY = y + h - .9 - controlHeight;
+  const bottom = Math.min(aperture.y + aperture.h, controlY - .6 - wellLip);
+  return { controlY, controlHeight,
+    apertureBounds: { ...aperture, h: Math.max(.1, bottom - aperture.y) } };
+}
+
 /** A synchronous scope guarantees the front cover also paints on early return. */
 export function withMachinePanel(x, y, w, h, options = {}, drawContent) {
   const previous = activeSurface();
@@ -85,7 +113,8 @@ export function drawMachinePanel(x, y, w, h, {
   // keyboard. Takes precedence over `footer` when both are given, so a caller
   // can migrate one surface at a time.
   footerParts = null,
-  finish = 'aluminum', glass = {}, aperture: hasAperture = true, apertureBounds = null, drawContent = null,
+  finish = 'aluminum', glass = {}, aperture: hasAperture = true, apertureBounds = null,
+  bodyWithinAperture = false, drawContent = null,
 } = {}) {
   // Same guard. god-menu.js asks for theme:'red' for the whole developer panel
   // and has always drawn amber.
@@ -111,7 +140,10 @@ export function drawMachinePanel(x, y, w, h, {
       w: aperture.w * cellW * dpr, h: aperture.h * cellH * dpr, dpr, depth: optical.depth ?? 1 });
   });
 
-  const body = machinePanelBody(x, y, w, h, { footer: footer || footerParts?.length ? 'CONTROLS' : '' });
+  const body = machinePanelBody(x, y, w, h, {
+    footer: footer || footerParts?.length ? 'CONTROLS' : '',
+    apertureBounds: bodyWithinAperture && customAperture ? aperture : null,
+  });
   if (typeof drawContent === 'function') {
     uiWithHardwareLayer(() => uiWithClip(aperture, () => drawContent(body)), () => {
       if (glass === false || !hasAperture) return;
@@ -153,7 +185,8 @@ export function drawMachinePanel(x, y, w, h, {
     uiDraw(({ctx,dpr,cellW,cellH}) => {
       rect(ctx, (meterX-.3)*cellW*dpr, (y+.86)*cellH*dpr, 12.6*cellW*dpr, 1.12*cellH*dpr, '#0a130c');
     });
-    drawVfdMeter(meterX, y + 1, 12, snapshot, { theme, bandThresholds: MONITOR_DANGER_THRESHOLDS });
+    drawVfdMeter(meterX, y + 1, 12, snapshot, { theme, bandThresholds: MONITOR_DANGER_THRESHOLDS,
+      id:snapshot?.sourceId||`panel-meter:${label}:${source||''}` });
     drawVfdWarningTriangle(x + w - 3, y + 1, snapshot);
   }
 
@@ -166,31 +199,11 @@ export function drawMachinePanel(x, y, w, h, {
   return body;
 }
 
-// ── the bargraph meter (A-1000 / Akai VOLUME scale) ─────────────────────────
-//
-// The instrument, not a texture. See render/meter.js for why it has a scale at
-// all — two authored lines describe a meter "flat at the bottom of the scale",
-// and the sound design files a flat meter as evidence the protagonist reasons
-// from rather than decoration. The arithmetic lives there, pure and tested;
-// this draws it.
-//
-// Three things this fixes that no amount of restyling would have:
-//
-//   · It was hard-capped at twelve segments. `n = min(THRESHOLDS.length, width)`
-//     and then `totalW = n * cellW`, so a caller asking for thirty cells got
-//     twelve segments in twelve cells and the rest of its budget vanished.
-//   · The peak marker was dead code everywhere but one call site. It drew only
-//     when `peakIndex >= lit`, and every recorder meter is fed
-//     `monitorSnapshotForRms(scalar)` — where `peak === rms`, so `peakIndex` is
-//     always inside the lit run. The tape has always kept peak-hold; the needle
-//     beside it never showed one.
-//   · Dormant segments were hard-coded phosphor at 0.10, ignoring the `dim`
-//     token the palette explicitly calls "dormant phosphor — the VFD tell".
-//
-// SIZE is `auto` by default: the widget takes the rows it is given and drops
-// the scale rather than overflowing a panel. The grid is not generous at the
-// extremes — uiScale runs to 1.5, so the worst case is 75x20 — and roughly
-// twenty machine-panel headers draw this in a single row.
+// Compact Dual trace for the one-row panel apertures. Signal integration,
+// ballistics, peak hold and hysteresis live in audio/dual-trace.js; meter.js
+// continues to own scale/mark placement. A separate upper rail keeps the held
+// peak visible even when it falls within the RMS body. Callers use a stable
+// instrument/source id so resizing or moving a panel cannot reset its history.
 export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
   thresholdDb = -3, label = '', theme = null, bandThresholds = null,
   rows = 1, marks = null, id = null, scaleLabel = '', over = null,
@@ -203,33 +216,25 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
   const t = activeTheme();
 
   const w = Math.max(1, Number(width) || 1);
-  const count = meterSegmentCount(w);
-  const key = id || `${x}:${y}`;
-
-  // `segments` stays authoritative for how much is lit, so the HUSH pressure
-  // monitorDisplaySnapshot injects and the clip-to-full-scale rule both survive
-  // exactly — but position comes from dB, so the bar and the printed scale
-  // cannot describe different things.
-  const rawDb = Number.isFinite(Number(snapshot?.db)) ? Number(snapshot.db) : METER_MIN_DB;
-  const flooredDb = snapshot?.segments > 0
-    ? Math.max(rawDb, MONITOR_THRESHOLDS[Math.min(MONITOR_THRESHOLDS.length, snapshot.segments) - 1])
-    : rawDb;
-
-  const ballistic = meterState(key, flooredDb, nowSec() * 1000, { clipped: !!snapshot?.clipped });
-  const lit = meterSegmentAt(ballistic.needleDb, count);
+  const count = w >= 8 ? 24 : Math.max(4, Math.floor(w * 3));
+  const key = id || snapshot?.sourceId || `compact-meter:${label||'monitor'}`;
+  // Compact apertures share the same signal model as the recorder and HUD.
+  // Danger/clip annunciators stay separate from the RMS body; neither a held
+  // clip nor a HUSH status floor should turn an average-level number into 0dB.
+  const ballistic = dualTraceSnapshot(key, snapshot, nowSec() * 1000);
+  const lit = Math.round(ballistic.segments24 * count / 24);
   const peakSeg = meterSegmentAt(ballistic.peakDb, count);
-  const overNow = over != null ? !!over : nowSec() * 1000 < (ballistic.overUntilMs || 0);
+  const overNow = over != null ? !!over : ballistic.clipped;
 
-  // Banks of four across twelve-ish segments land on the same boundaries as
-  // MONITOR_DANGER_THRESHOLDS' normal / mid-hot / hot, so the grouping and the
-  // colouring say the same thing in two languages.
-  const { shape, offset } = meterGeometry({ x, w, segments: count, bankSize: 4 });
+  // Uniform spacing matches the linear dB scale; physical bank gaps must not
+  // imply a different threshold scale from the printed numbers.
+  const { shape, offset } = meterGeometry({ x, w, segments: count, bankSize: count });
   const scaleRow = rows >= 2 && meterScaleFits(w);
   const placed = scaleRow ? meterMarks(marks, w) : [];
 
   uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
-    const top = (y + 0.24) * cellH * dpr;
-    const height = 0.44 * cellH * dpr;
+    const top = (y + 0.30) * cellH * dpr;
+    const height = 0.38 * cellH * dpr;
 
     for (const cell of shape.cells) {
       const i = cell.index;
@@ -247,7 +252,7 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
         ctx.fillStyle = hot ? t.danger : midHot ? themeRoleColor('warning', at, cols) : phosphor;
         ctx.globalAlpha = litDuty(at, y, hot ? 'danger' : midHot ? 'counter' : 'phosphor', 1);
         ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 4.5 * dpr;
+        ctx.shadowBlur = 1.2 * dpr;
       } else {
         // Dormant. Unlit elements on a real VFD do not go black; that faint
         // grid is the tell.
@@ -268,12 +273,13 @@ export function drawVfdMeter(x, y, width = 14, snapshot = monitorSnapshot(), {
     // THE HELD PEAK. A cap above the lit run that sits, then falls — which is
     // what a microphone does, and the rule the tape already keeps: a single
     // close pass is on the recording forever.
-    if (peakSeg > 0 && peakSeg > lit) {
+    if (peakSeg > 0) {
       const cell = shape.cells[Math.min(shape.cells.length - 1, peakSeg - 1)];
       ctx.save();
       ctx.globalAlpha = 0.95 * uiFlickerAlpha(x + peakSeg, y, 'counter');
       ctx.fillStyle = themeRoleColor('counter', x + peakSeg, cols);
-      ctx.fillRect((offset + cell.x) * cellW * dpr, top, Math.max(1, cell.w * cellW * dpr), height);
+      ctx.fillRect((offset + cell.x) * cellW * dpr, (y + .14) * cellH * dpr,
+        Math.max(1, cell.w * cellW * dpr), Math.max(1, .08 * cellH * dpr));
       ctx.restore();
     }
 
@@ -677,6 +683,21 @@ export function drawVfdText(x, y, text, {
   });
 
   return value.length * scale;
+}
+
+// A dot picture on the same glass as drawVfdText. The box is in cells, the dots
+// stay square inside it, and the phosphor, dormant dots, duty and scan are the
+// text's own, so a picture and the words beside it are one display.
+export function drawVfdSprite(x, y, w, h, levels, {
+  role = 'ui-primary', alpha = 1, color = null, blur = 4.25, halation = 0.18,
+} = {}) {
+  uiDraw(({ ctx, dpr, cellW, cellH, cols }) => {
+    const duty = litDuty(x, y, 'phosphor', alpha);
+    drawVfdDots(ctx, levels, x * cellW * dpr, y * cellH * dpr, w * cellW * dpr, h * cellH * dpr, {
+      color: color || uiRoleColor(role, x, cols), dim: themeRoleDim('phosphor', x, cols),
+      dpr, alpha: duty, scan: scanDuty(x, y), blur, halation,
+    });
+  });
 }
 
 // ── ILLUMINATED PUSHBUTTON LEGEND CAPS ───────────────────────────────────────

@@ -48,6 +48,16 @@ export const PRESENCE = {
   lightHumMinIntervalMs: 850,
   lightHumMaxIntervalMs: 1650,
   memorySec: 5.5,           // a sound remains useful long enough to close ground
+  // A clearly heard nearby environmental impact deserves time for a physical
+  // approach: the body pauses between each 42 cm stride. This is a bounded
+  // memory of that sound, not a target lock or a knowledge of the player.
+  nearEnvironmentalMemorySec: 14,
+  nearEnvironmentalRangeCells: 6,
+  nearEnvironmentalMinimumStrength: .55,
+  // A door shutting is one discrete, identifiable sound. Its geometry can be
+  // a few metres away, and a full gait through a sightline takes time.
+  doorCloseMemoryRangeCells: 12,
+  doorCloseMinimumStrength: .35,
   // It does not leave. It loses interest and drifts back out to the far band,
   // which is what `loseInterestSec` was always meant to mean.
   disengageSec: 18,
@@ -85,9 +95,13 @@ const state = {
   active: false,
   x: 0, y: 0,
   targetX: 0, targetY: 0,
+  soundTargetX: 0, soundTargetY: 0,
   hasTarget: false,
   targetLevel: 0,
   targetConfidence: 0,
+  targetMemorySec: 0,
+  targetIsApproach: false,
+  targetEventKind: null,
   targetReason: null,
   targetPriority: 0,
   targetSetAt: 0,
@@ -121,6 +135,10 @@ const state = {
   pendingContact: null,
   contactDirector: freshHushContactDirectorState(),
 };
+// Goal-to-floor resolution is memoised for one second and keyed to the raw
+// heard belief. A door can change state without rewriting that belief; a fresh
+// check can then use its newly reachable side without a per-frame path search.
+let soundResolution = { navigation:null, key:null, recheckAt:0 };
 
 // An authored tableau borrows the real body without lending the scene any of
 // the pursuit state underneath it. External sound can keep driving the monitor
@@ -138,7 +156,11 @@ export function capturePresenceTableauState(now = performance.now()) {
     active: !!state.active,
     x: state.x, y: state.y,
     targetX: state.targetX, targetY: state.targetY, hasTarget: !!state.hasTarget,
+    soundTargetX:state.soundTargetX,soundTargetY:state.soundTargetY,
     targetLevel: state.targetLevel, targetConfidence: state.targetConfidence,
+    targetMemorySec: state.targetMemorySec,
+    targetIsApproach: !!state.targetIsApproach,
+    targetEventKind: state.targetEventKind,
     targetReason: state.targetReason, targetPriority: state.targetPriority,
     targetAgeMs: ageMs(state.targetSetAt, now),
     lastHeardAgeMs: ageMs(state.lastHeardAt, now),
@@ -175,7 +197,7 @@ export function beginPresenceTableau({ x, y, snapshot = null } = {}) {
   state.velocityX = 0; state.velocityY = 0; state.speed = 0;
   state.motionMode = 'idle'; state.behaviorMode = 'stand';
   state.gait = null;
-  state.hasTarget = false; state.targetLevel = 0; state.targetConfidence = 0;
+  state.hasTarget = false; state.targetLevel = 0; state.targetConfidence = 0; state.targetMemorySec = 0; state.targetIsApproach = false; state.targetEventKind = null;
   state.targetReason = null; state.targetPriority = 0;
   state.externalTargetUntil = 0; state.externalTargetPriority = 0;
   state.hasProwl = false; state.pendingContact = null;
@@ -207,9 +229,14 @@ export function restorePresenceTableau(snapshot = tableau?.snapshot, now = perfo
     active: true,
     x: Number(snapshot.x) || 0, y: Number(snapshot.y) || 0,
     targetX: Number(snapshot.targetX) || 0, targetY: Number(snapshot.targetY) || 0,
+    soundTargetX: Number.isFinite(Number(snapshot.soundTargetX)) ? Number(snapshot.soundTargetX) : Number(snapshot.targetX) || 0,
+    soundTargetY: Number.isFinite(Number(snapshot.soundTargetY)) ? Number(snapshot.soundTargetY) : Number(snapshot.targetY) || 0,
     hasTarget: !!snapshot.hasTarget,
     targetLevel: Number(snapshot.targetLevel) || 0,
     targetConfidence: Number(snapshot.targetConfidence) || 0,
+    targetMemorySec: Math.max(0, Number(snapshot.targetMemorySec) || 0),
+    targetIsApproach: !!snapshot.targetIsApproach,
+    targetEventKind: snapshot.targetEventKind || null,
     targetReason: snapshot.targetReason || null,
     targetPriority: Number(snapshot.targetPriority) || 0,
     targetSetAt: now - Math.max(0, Number(snapshot.targetAgeMs) || 0),
@@ -240,6 +267,7 @@ export function restorePresenceTableau(snapshot = tableau?.snapshot, now = perfo
     pendingContact: null,
     contactDirector: normalizeHushContactDirectorState(snapshot.contactDirector),
   });
+  soundResolution={navigation:null,key:null,recheckAt:0};
   return true;
 }
 
@@ -284,14 +312,25 @@ export function publicSnapshot() {
 
 // Acoustic systems may offer a remembered source location. The presence module
 // remains the authority for movement and decides how long that offer matters.
-export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expiresAt = 0, priority = 0.5, reason = 'SOUND' } = {}) {
+export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expiresAt = 0, priority = 0.5, reason = 'SOUND', eventKind = null } = {}) {
   if (tableau) return false;
   if (!state.active || !position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return false;
   const now = performance.now();
   const p = Math.max(0, Math.min(1, Number(priority) || 0));
   if (now < state.externalTargetUntil && p < state.externalTargetPriority) return false;
+  // A weak electrical hum should not pull a body away from the distinct sound
+  // it is already approaching, merely because the short priority window ended.
+  // A fresh equal/stronger sound, arrival, timeout or a blocked gait can still
+  // interrupt. Hum is sampled normally again at the next listening interval.
+  const rememberedCloseSound = state.hasTarget && state.targetReason === 'ACOUSTIC_EVENT'
+    && state.targetMemorySec > 0 && (now - state.targetSetAt) < state.targetMemorySec * 1000 * difficultyRules.memoryScale
+    && ['chase','investigate','limp','listen'].includes(state.behaviorMode)
+    && Math.hypot(state.targetX-state.x,state.targetY-state.y) >= (state.targetIsApproach ? .18 : .72) * D
+    && state.gait?.blocked !== true && state.gait?.phase !== 'recover';
+  if (reason === 'FLASHLIGHT_ELECTRICAL_HUM' && rememberedCloseSound && p < state.targetPriority) return false;
   const certainty = Math.max(0, Math.min(1, Number(confidence) || 0));
   const strength = Math.max(0, Math.min(1, Number(level) || 0));
+  const soundDistance = Math.hypot(position.x - state.x, position.y - state.y);
   // Low-certainty sounds name a patch of room, not a coordinate. The offset is
   // chosen once per offer and then held stable; swimming it every frame would
   // merely be a different kind of player tracking.
@@ -299,9 +338,21 @@ export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expi
   const errorAngle = Math.random() * Math.PI * 2;
   state.targetX = position.x + Math.cos(errorAngle) * errorRadius;
   state.targetY = position.y + Math.sin(errorAngle) * errorRadius;
+  state.soundTargetX = state.targetX;
+  state.soundTargetY = state.targetY;
+  soundResolution={navigation:null,key:null,recheckAt:0};
   state.hasTarget = true;
   state.targetLevel = strength;
   state.targetConfidence = certainty;
+  // Only well-localised close environmental sounds, or a clearly heard door
+  // closure within six metres, are held longer. The ordinary external priority
+  // window remains unchanged for other sounds.
+  const closeEvent = strength >= PRESENCE.nearEnvironmentalMinimumStrength && soundDistance <= PRESENCE.nearEnvironmentalRangeCells;
+  const doorClose = eventKind === 'door_close' && strength >= PRESENCE.doorCloseMinimumStrength && soundDistance <= PRESENCE.doorCloseMemoryRangeCells;
+  state.targetMemorySec = reason === 'ACOUSTIC_EVENT' && certainty >= .7 && (closeEvent || doorClose)
+    ? PRESENCE.nearEnvironmentalMemorySec : 0;
+  state.targetIsApproach = false;
+  state.targetEventKind = eventKind;
   state.targetReason = reason;
   state.targetPriority = p;
   state.targetSetAt = now;
@@ -324,14 +375,37 @@ export function offerSoundTarget({ position, level = 0.2, confidence = 0.5, expi
   return true;
 }
 
+
+// Extend only a freshly heard environmental event already accepted by this
+// body. A scene may give a real, location-fixed sound enough time for the slow
+// ordinary gait to investigate; this never sets a target or blocks a later
+// competing sound/contact. The short timestamp guard prevents reviving an old
+// belief when a different event was rejected by the priority rules.
+export function extendHeardEnvironmentalMemory({eventKind,position,seconds=0}={}) {
+  if(tableau||!state.active||!state.hasTarget||state.targetReason!=='ACOUSTIC_EVENT'
+      ||!eventKind||state.targetEventKind!==eventKind||!position
+      ||!Number.isFinite(position.x)||!Number.isFinite(position.y)
+      ||performance.now()-state.targetSetAt>50
+      ||Math.hypot(state.soundTargetX-position.x,state.soundTargetY-position.y)>6*D)return false;
+  const duration=Math.max(0,Math.min(35,Number(seconds)||0));
+  if(duration<=0)return false;
+  state.targetMemorySec=Math.max(state.targetMemorySec||0,duration);
+  return true;
+}
+
 function activateAt(x, y, { sector = null, gaitSeed = null } = {}) {
   if (tableau) return false;
   state.active = true;
   state.x = x;
   state.y = y;
   state.hasTarget = false;
+  state.soundTargetX = 0; state.soundTargetY = 0;
+  soundResolution={navigation:null,key:null,recheckAt:0};
   state.targetLevel = 0;
   state.targetConfidence = 0;
+  state.targetMemorySec = 0;
+  state.targetIsApproach = false;
+  state.targetEventKind = null;
   state.targetReason = null;
   state.targetPriority = 0;
   state.externalTargetUntil = 0;
@@ -554,15 +628,27 @@ function processLightSound(lightSound, now) {
 
 function resolveTargetToFloor(navigation) {
   if (!state.hasTarget || !navigation?.nearestWalkable) return;
-  const target = navigation.nearestWalkable({ x: state.targetX, y: state.targetY }, 8);
+  const currentKey=`${state.targetSetAt}:${state.soundTargetX},${state.soundTargetY}`;
+  const now=performance.now();
+  if(soundResolution.navigation===navigation && soundResolution.key===currentKey && now<soundResolution.recheckAt)return;
+  const sound={x:state.soundTargetX,y:state.soundTargetY};
+  const floorTarget=navigation.nearestWalkable(sound,8);
+  const target = navigation.reachableSoundTarget
+    ? navigation.reachableSoundTarget({x:state.x,y:state.y},sound)
+    : floorTarget;
   if (!target) {
     enterStand(performance.now(), 2200, 5600);
+    soundResolution={navigation:null,key:null,recheckAt:0};
     return;
   }
   state.targetX = target.x;
   state.targetY = target.y;
-  state.lastSoundX = target.x;
-  state.lastSoundY = target.y;
+  state.targetIsApproach = !!floorTarget&&(target.x!==floorTarget.x||target.y!==floorTarget.y);
+  // Search remains anchored to the heard position, not the substituted floor
+  // approach. A later geometry change can resolve the same belief again.
+  state.lastSoundX = floorTarget?.x??target.x;
+  state.lastSoundY = floorTarget?.y??target.y;
+  soundResolution={navigation,key:currentKey,recheckAt:now+1000};
 }
 
 // `onContactAttempt` is the game's, not ours. In ordinary building play it
@@ -597,7 +683,8 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   // not a hidden tether to the player.
   const sinceTarget = (now - state.targetSetAt) / 1000;
   const committedGait = !sourceMode && ['load', 'advance', 'recover'].includes(state.gait?.phase);
-  if (state.hasTarget && !externalFresh && sinceTarget > PRESENCE.memorySec * difficultyRules.memoryScale
+  const memorySeconds = sourceMode ? PRESENCE.memorySec : Math.max(PRESENCE.memorySec, state.targetMemorySec || 0);
+  if (state.hasTarget && !externalFresh && sinceTarget > memorySeconds * difficultyRules.memoryScale
       && !committedGait) {
     // Let one already telegraphed compression/step finish before releasing its
     // remembered clue. The next arrested frame loses that belief immediately.
@@ -666,7 +753,7 @@ export function updatePresence(dt, px, py, onContactAttempt, {
     }
     if (state.hasTarget) {
       const remaining = Math.hypot(state.targetX - state.x, state.targetY - state.y);
-      if (remaining < .72 * D && !committedGait) {
+      if (remaining < (state.targetIsApproach ? .18 : .72) * D && !committedGait) {
         enterStand(now, state.targetPriority >= .88 ? 450 : 1800, state.targetPriority >= .88 ? 1100 : 6200);
       } else if (state.behaviorMode === 'chase' && now >= state.chaseUntil
           && !committedGait) {
@@ -812,9 +899,13 @@ export function loadPresenceState(saved = {}) {
     active: false,
     x: 0, y: 0,
     targetX: 0, targetY: 0,
+    soundTargetX: 0, soundTargetY: 0,
     hasTarget: false,
     targetLevel: 0,
     targetConfidence: 0,
+    targetMemorySec: 0,
+    targetIsApproach: false,
+    targetEventKind: null,
     targetReason: null,
     targetPriority: 0,
     targetSetAt: 0,
@@ -845,6 +936,7 @@ export function loadPresenceState(saved = {}) {
     pendingContact: null,
   });
   state.awareness = saved.awareness || 0;
+  soundResolution={navigation:null,key:null,recheckAt:0};
   state.caughtCount = saved.caughtCount || 0;
   state.spawnedAt = -1e9;
   state.lastCatchAt = performance.now() - Math.max(0, PRESENCE.catchCooldownSec - 3) * 1000;

@@ -1,0 +1,4406 @@
+{
+  "kind": "source-earthfall-ellery-aside",
+  "bytes": 2131184,
+  "sha256": "3b3c21102fb996cec3bf1f1cc9e794ecdabb2f4f31f8c560c71ffd09df31b5fb",
+  "sourcePackSHA": "458c1f7c33f5621b4376b2433fdc1c7b4cdb141bf05711d03587975517505e0a",
+  "meshes": 123,
+  "materials": 26,
+  "images": 15,
+  "triangles": 15147,
+  "metadata": {
+    "version": 2,
+    "packSHA": "3b3c21102fb996cec3bf1f1cc9e794ecdabb2f4f31f8c560c71ffd09df31b5fb",
+    "sourcePackSHA": "458c1f7c33f5621b4376b2433fdc1c7b4cdb141bf05711d03587975517505e0a",
+    "sourcePack": "conservatory-props.glb",
+    "panels": [
+      {
+        "id": "west:0:0",
+        "host": "west",
+        "kind": "masonry",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            0,
+            3
+          ],
+          "max": [
+            58.21000003814697,
+            1.8433333333333335,
+            5.15
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          0.9141666666666667,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_west:0:0",
+        "radius": 1.5876268951390633,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "chapel stone",
+          "dark wood"
+        ]
+      },
+      {
+        "id": "west:0:1",
+        "host": "west",
+        "kind": "masonry",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            0,
+            5.15
+          ],
+          "max": [
+            58.21000003814697,
+            1.8433333333333333,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          0.9141666666666667,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_west:0:1",
+        "radius": 1.5876268951390633,
+        "materialCategories": [
+          "municipal glazed brick",
+          "dark wood"
+        ]
+      },
+      {
+        "id": "west:0:2",
+        "host": "west",
+        "kind": "masonry",
+        "row": 0,
+        "column": 2,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            0,
+            7.3
+          ],
+          "max": [
+            58.21000003814697,
+            1.8433333333333333,
+            8.7
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          0.9141666666666667,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_west:0:2",
+        "radius": 1.5876268951390633,
+        "materialCategories": [
+          "municipal glazed brick",
+          "wet slate",
+          "dark wood",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "west:0:4",
+        "host": "west",
+        "kind": "masonry",
+        "row": 0,
+        "column": 4,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            0,
+            11.8
+          ],
+          "max": [
+            57.36,
+            1.8433333333333333,
+            13.75
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          0.9141666666666667,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_west:0:4",
+        "radius": 1.434913104738588,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:0:5",
+        "host": "west",
+        "kind": "masonry",
+        "row": 0,
+        "column": 5,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            0,
+            13.75
+          ],
+          "max": [
+            57.36,
+            1.8433333333333335,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          0.9141666666666667,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_west:0:5",
+        "radius": 1.434913104738588,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "dark wood"
+        ]
+      },
+      {
+        "id": "west:1:0",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            1.843333333333333,
+            3
+          ],
+          "max": [
+            58.22749996185303,
+            3.701666666666666,
+            5.15
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_west:1:0",
+        "radius": 1.5801996793449362,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "west:1:1",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            1.8433333333333333,
+            5.15
+          ],
+          "max": [
+            58.22749996185303,
+            3.701666666666666,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_west:1:1",
+        "radius": 1.5847614271838488,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "west:1:2",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 2,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            1.843333333333333,
+            7.3
+          ],
+          "max": [
+            58.22749996185303,
+            3.701666666666666,
+            9.45
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_west:1:2",
+        "radius": 1.5801996793449362,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "west:1:3",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 3,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            3.15,
+            9.45
+          ],
+          "max": [
+            57.46500015258789,
+            3.701666666666666,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          10.524999999999999
+        ],
+        "mesh": "earthfall_ellery_west:1:3",
+        "radius": 1.434913104738589,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "west:1:4",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 4,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            1.843333333333333,
+            11.6
+          ],
+          "max": [
+            57.46500015258789,
+            3.701666666666666,
+            13.75
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_west:1:4",
+        "radius": 1.434913104738589,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "west:1:5",
+        "host": "west",
+        "kind": "masonry",
+        "row": 1,
+        "column": 5,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            1.843333333333333,
+            13.75
+          ],
+          "max": [
+            57.36,
+            3.701666666666666,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          2.7725,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_west:1:5",
+        "radius": 1.4349131047385881,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:2:0",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.14,
+            3.701666666666666,
+            3
+          ],
+          "max": [
+            58.948999881744385,
+            5.5,
+            5.15
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_west:2:0",
+        "radius": 2.0129238213570675,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "west:2:1",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            57.14,
+            3.701666666666666,
+            5.15
+          ],
+          "max": [
+            59.36899995803833,
+            5.5,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_west:2:1",
+        "radius": 2.290155604449295,
+        "materialCategories": [
+          "painted steel",
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:2:2",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 2,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            3.701666666666666,
+            7.3
+          ],
+          "max": [
+            57.36,
+            5.5,
+            9.45
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_west:2:2",
+        "radius": 1.4349131047385884,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:2:3",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 3,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            3.701666666666666,
+            9.45
+          ],
+          "max": [
+            57.36,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          10.524999999999999
+        ],
+        "mesh": "earthfall_ellery_west:2:3",
+        "radius": 1.4349131047385895,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:2:4",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 4,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            3.701666666666666,
+            11.6
+          ],
+          "max": [
+            57.36,
+            5.5,
+            13.75
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_west:2:4",
+        "radius": 1.4349131047385895,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "west:2:5",
+        "host": "west",
+        "kind": "masonry",
+        "row": 2,
+        "column": 5,
+        "bounds": {
+          "min": [
+            57.05000019073486,
+            3.701666666666666,
+            13.75
+          ],
+          "max": [
+            57.36,
+            5.5,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          57.25,
+          4.630833333333333,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_west:2:5",
+        "radius": 1.4349131047385884,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:0:0",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            70.75,
+            0,
+            3
+          ],
+          "max": [
+            73.3700008392334,
+            1.8433333333333333,
+            5.150000000000001
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_east:0:0",
+        "radius": 2.6676442218640113,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "chapel stone",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "east:0:1",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            71.75,
+            0,
+            5.15
+          ],
+          "max": [
+            73.3700008392334,
+            1.8433333333333333,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_east:0:1",
+        "radius": 2.066149969011069,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick"
+        ]
+      },
+      {
+        "id": "east:0:2",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 2,
+        "bounds": {
+          "min": [
+            73.06999969482422,
+            0,
+            7.3
+          ],
+          "max": [
+            73.3700008392334,
+            1.8433333333333333,
+            9.45
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_east:0:2",
+        "radius": 1.425964899940095,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick"
+        ]
+      },
+      {
+        "id": "east:0:3",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 3,
+        "bounds": {
+          "min": [
+            73.06999969482422,
+            0,
+            9.45
+          ],
+          "max": [
+            73.3700008392334,
+            1.8433333333333333,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          10.524999999999999
+        ],
+        "mesh": "earthfall_ellery_east:0:3",
+        "radius": 1.4259648999400953,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick"
+        ]
+      },
+      {
+        "id": "east:0:4",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 4,
+        "bounds": {
+          "min": [
+            73.06999969482422,
+            0,
+            11.6
+          ],
+          "max": [
+            73.3700008392334,
+            1.8433333333333333,
+            12.7
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_east:0:4",
+        "radius": 1.4259648999400953,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick"
+        ]
+      },
+      {
+        "id": "east:0:5",
+        "host": "east",
+        "kind": "masonry",
+        "row": 0,
+        "column": 5,
+        "bounds": {
+          "min": [
+            73.06999969482422,
+            0,
+            13.8
+          ],
+          "max": [
+            73.98500061035156,
+            1.8433333333333333,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          0.9141666666666667,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_east:0:5",
+        "radius": 1.4251581296278832,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "wet slate",
+          "dark wood",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "east:1:0",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            71.5878787878788,
+            1.8433333333333333,
+            3
+          ],
+          "max": [
+            73.3700008392334,
+            3.701666666666666,
+            5.15
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_east:1:0",
+        "radius": 2.06614996901107,
+        "materialCategories": [
+          "municipal glazed brick",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "east:1:1",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            71.75,
+            1.8433333333333328,
+            5.15
+          ],
+          "max": [
+            73.3700008392334,
+            3.701666666666666,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_east:1:1",
+        "radius": 2.0661499690110694,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:1:2",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 2,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            1.8433333333333333,
+            7.3
+          ],
+          "max": [
+            73.3700008392334,
+            3.701666666666666,
+            9.45
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_east:1:2",
+        "radius": 1.425964899940095,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:1:3",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 3,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            1.8433333333333333,
+            9.45
+          ],
+          "max": [
+            73.3700008392334,
+            3.701666666666666,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          10.524999999999999
+        ],
+        "mesh": "earthfall_ellery_east:1:3",
+        "radius": 1.4259648999400956,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:1:4",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 4,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            1.8433333333333333,
+            11.6
+          ],
+          "max": [
+            73.96500015258789,
+            3.701666666666666,
+            13.75
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_east:1:4",
+        "radius": 1.4259648999400956,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "east:1:5",
+        "host": "east",
+        "kind": "masonry",
+        "row": 1,
+        "column": 5,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            1.8433333333333333,
+            13.75
+          ],
+          "max": [
+            73.96500015258789,
+            3.701666666666666,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          2.7725,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_east:1:5",
+        "radius": 1.425964899940094,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "east:2:0",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            71.5310001373291,
+            3.7016666666666658,
+            3
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            5.15
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          4.075
+        ],
+        "mesh": "earthfall_ellery_east:2:0",
+        "radius": 2.0661499690110703,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "east:2:1",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            71.5310001373291,
+            3.7016666666666658,
+            5.15
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          6.225
+        ],
+        "mesh": "earthfall_ellery_east:2:1",
+        "radius": 2.06614996901107,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "east:2:2",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 2,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            3.701666666666666,
+            7.3
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            9.45
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          8.375
+        ],
+        "mesh": "earthfall_ellery_east:2:2",
+        "radius": 1.4259648999400951,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:2:3",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 3,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            3.701666666666666,
+            9.45
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          10.524999999999999
+        ],
+        "mesh": "earthfall_ellery_east:2:3",
+        "radius": 1.4259648999400958,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:2:4",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 4,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            3.701666666666666,
+            11.6
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            13.75
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          12.675
+        ],
+        "mesh": "earthfall_ellery_east:2:4",
+        "radius": 1.4259648999400958,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "east:2:5",
+        "host": "east",
+        "kind": "masonry",
+        "row": 2,
+        "column": 5,
+        "bounds": {
+          "min": [
+            73.1299991607666,
+            3.701666666666666,
+            13.75
+          ],
+          "max": [
+            73.3700008392334,
+            5.5,
+            15.9
+          ]
+        },
+        "clipAxes": [
+          2,
+          1
+        ],
+        "pivot": [
+          73.25,
+          4.630833333333333,
+          14.825
+        ],
+        "mesh": "earthfall_ellery_east:2:5",
+        "radius": 1.4259648999400945,
+        "materialCategories": [
+          "municipal glazed brick"
+        ]
+      },
+      {
+        "id": "north:0:0",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            59.14375,
+            1.8433333333333333,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:0",
+        "radius": 1.4236104392015514,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:0:1",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            61.2875,
+            1.8433333333333333,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:1",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:0:2",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            63.431250000000006,
+            1.8433333333333333,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:2",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:0:3",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            65.575,
+            1.8433333333333333,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:3",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:0:4",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.575,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            67.71875,
+            1.8433333333333333,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:4",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:0:5",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            69.86250000000001,
+            1.8433333333333333,
+            4.559999942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:5",
+        "radius": 1.8784097332480763,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "dark wood",
+          "academic plaster",
+          "worn wood"
+        ]
+      },
+      {
+        "id": "north:0:6",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            72.00625000000001,
+            1.8433333333333335,
+            4.585151515151515
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:6",
+        "radius": 1.8784097332480763,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "dark wood",
+          "academic plaster",
+          "worn wood"
+        ]
+      },
+      {
+        "id": "north:0:7",
+        "host": "north",
+        "kind": "masonry",
+        "row": 0,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            0,
+            3.130000114440918
+          ],
+          "max": [
+            74.15,
+            1.8433333333333335,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          0.9141666666666667,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:0:7",
+        "radius": 1.434003739915331,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "chapel stone",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:0",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            1.8433333333333328,
+            3.130000114440918
+          ],
+          "max": [
+            59.14375,
+            3.701666666666666,
+            4.212500095367432
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:0",
+        "radius": 1.4236104392015514,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "north:1:1",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            1.8433333333333333,
+            3.130000114440918
+          ],
+          "max": [
+            61.2875,
+            3.701666666666666,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:1",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:2",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            1.8433333333333333,
+            3.130000114440918
+          ],
+          "max": [
+            63.431250000000006,
+            3.701666666666666,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:2",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:3",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            1.8433333333333333,
+            3.130000114440918
+          ],
+          "max": [
+            65.575,
+            3.701666666666666,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:3",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:4",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.575,
+            1.843333333333333,
+            3.130000114440918
+          ],
+          "max": [
+            67.71875,
+            3.701666666666666,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:4",
+        "radius": 1.423610439201557,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:5",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            1.8433333333333333,
+            3.130000114440918
+          ],
+          "max": [
+            69.86250000000001,
+            3.701666666666666,
+            3.4600000381469727
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:5",
+        "radius": 1.4275386724153412,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:6",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            1.8433333333333328,
+            3.130000114440918
+          ],
+          "max": [
+            72.00625000000001,
+            3.701666666666666,
+            4.923030303030303
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:6",
+        "radius": 2.0802945055753725,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:1:7",
+        "host": "north",
+        "kind": "masonry",
+        "row": 1,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            1.8433333333333328,
+            3.130000114440918
+          ],
+          "max": [
+            74.15,
+            3.701666666666666,
+            4.25
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          2.7725,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:1:7",
+        "radius": 1.7355882893328778,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:0",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            59.14375,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:0",
+        "radius": 2.3799701992563627,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:1",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            61.2875,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:1",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:2",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            63.431250000000006,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:2",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:3",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            65.575,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:3",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:4",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.575,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            67.71875,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:4",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:5",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            69.86250000000001,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:5",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:6",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            72.00625000000001,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:6",
+        "radius": 2.3799701992563658,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "north:2:7",
+        "host": "north",
+        "kind": "masonry",
+        "row": 2,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            3.701666666666666,
+            3.130000114440918
+          ],
+          "max": [
+            74.15,
+            5.5,
+            5.372499942779541
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          4.630833333333333,
+          3.25
+        ],
+        "mesh": "earthfall_ellery_north:2:7",
+        "radius": 2.3799701992563596,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:0",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            59.14375,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:0",
+        "radius": 1.4236104392015514,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:1",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            61.2875,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:1",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:2",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            63.431250000000006,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:2",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:3",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            0,
+            15.070000171661377
+          ],
+          "max": [
+            63.67,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:3",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "dark wood"
+        ]
+      },
+      {
+        "id": "south:0:4",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.83,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            67.71875,
+            1.8433333333333333,
+            15.485000133514404
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:4",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "wet slate",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:5",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            69.86250000000001,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:5",
+        "radius": 1.4275386724153412,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:6",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            72.00625000000001,
+            1.8433333333333335,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:6",
+        "radius": 1.434003739915331,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:0:7",
+        "host": "south",
+        "kind": "masonry",
+        "row": 0,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            0,
+            15.039999961853027
+          ],
+          "max": [
+            74.15,
+            1.8433333333333333,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          0.9141666666666667,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:0:7",
+        "radius": 1.4340037399153307,
+        "materialCategories": [
+          "municipal glazed brick",
+          "ellery dark brick",
+          "painted steel",
+          "dark wood",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:0",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            1.8433333333333328,
+            15.039999961853027
+          ],
+          "max": [
+            59.14375,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:0",
+        "radius": 1.4236104392015514,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:1",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            1.8433333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            61.2875,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:1",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:2",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            1.8433333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            63.431250000000006,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:2",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:3",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            1.8433333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            65.575,
+            3.701666666666666,
+            15.46500015258789
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:3",
+        "radius": 1.4236104392015567,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:1:4",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.575,
+            1.843333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            67.71875,
+            3.701666666666666,
+            15.46500015258789
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:4",
+        "radius": 1.423610439201557,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:5",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            1.8433333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            69.86250000000001,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:5",
+        "radius": 1.4275386724153412,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:6",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            1.8433333333333333,
+            15.039999961853027
+          ],
+          "max": [
+            72.00625000000001,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:6",
+        "radius": 1.434003739915331,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:1:7",
+        "host": "south",
+        "kind": "masonry",
+        "row": 1,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            1.8433333333333328,
+            15.039999961853027
+          ],
+          "max": [
+            74.15,
+            3.701666666666666,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          2.7725,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:1:7",
+        "radius": 1.4340037399153311,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "south:2:0",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57,
+            3.701666666666666,
+            14.41993761062622
+          ],
+          "max": [
+            59.14375,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          58.071875,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:0",
+        "radius": 1.4236104392015518,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:1",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            59.14375,
+            3.701666666666666,
+            15.039999961853027
+          ],
+          "max": [
+            61.2875,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          60.215625,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:1",
+        "radius": 1.4236104392015572,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:2",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 2,
+        "bounds": {
+          "min": [
+            61.2875,
+            3.701666666666666,
+            15.039999961853027
+          ],
+          "max": [
+            63.431250000000006,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          62.359375,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:2",
+        "radius": 1.4236104392015572,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:3",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 3,
+        "bounds": {
+          "min": [
+            63.431250000000006,
+            3.701666666666666,
+            14.41993761062622
+          ],
+          "max": [
+            65.575,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          64.50312500000001,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:3",
+        "radius": 1.4236104392015572,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:4",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 4,
+        "bounds": {
+          "min": [
+            65.575,
+            3.701666666666666,
+            15.039999961853027
+          ],
+          "max": [
+            67.71875,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          66.646875,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:4",
+        "radius": 1.4236104392015572,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:5",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 5,
+        "bounds": {
+          "min": [
+            67.71875,
+            3.701666666666666,
+            14.41993761062622
+          ],
+          "max": [
+            69.86250000000001,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          68.790625,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:5",
+        "radius": 1.4236104392015572,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:6",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 6,
+        "bounds": {
+          "min": [
+            69.86250000000001,
+            3.701666666666666,
+            14.41993761062622
+          ],
+          "max": [
+            72.00625000000001,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          70.93437500000002,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:6",
+        "radius": 1.4340037399153311,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "south:2:7",
+        "host": "south",
+        "kind": "masonry",
+        "row": 2,
+        "column": 7,
+        "bounds": {
+          "min": [
+            72.00625000000001,
+            3.701666666666666,
+            14.41993761062622
+          ],
+          "max": [
+            74.15,
+            5.5,
+            15.369999885559082
+          ]
+        },
+        "clipAxes": [
+          0,
+          1
+        ],
+        "pivot": [
+          73.078125,
+          4.630833333333333,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_south:2:7",
+        "radius": 1.4340037399153311,
+        "materialCategories": [
+          "municipal glazed brick",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-west:0:0",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.25,
+            4.960000038146973,
+            3.2800002098083496
+          ],
+          "max": [
+            61.25,
+            5.5,
+            7.300000000000001
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          5.18,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_roof-west:0:0",
+        "radius": 2.93524371186462,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-west:0:1",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            4.960000038146973,
+            3.2800002098083496
+          ],
+          "max": [
+            65.25,
+            5.5,
+            7.300000000000001
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          5.18,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_roof-west:0:1",
+        "radius": 2.93524371186462,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "roof-west:1:0",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.25,
+            4.960000038146973,
+            7.299999999999999
+          ],
+          "max": [
+            61.25,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          5.18,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_roof-west:1:0",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-west:1:1",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            4.960000038146973,
+            7.299999999999999
+          ],
+          "max": [
+            65.25,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          5.18,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_roof-west:1:1",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "roof-west:2:0",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.25,
+            4.960000038146973,
+            11.6
+          ],
+          "max": [
+            61.25,
+            5.5,
+            15.21999979019165
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          5.18,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_roof-west:2:0",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-west:2:1",
+        "host": "roof-west",
+        "kind": "timber",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            4.960000038146973,
+            11.6
+          ],
+          "max": [
+            65.25,
+            5.5,
+            15.21999979019165
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          5.18,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_roof-west:2:1",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "roof-east:0:0",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            4.960000038146973,
+            3.2800002098083496
+          ],
+          "max": [
+            69.25,
+            5.5,
+            7.300000000000001
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          5.18,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_roof-east:0:0",
+        "radius": 2.93524371186462,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-east:0:1",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            4.960000038146973,
+            3.2800002098083496
+          ],
+          "max": [
+            73.25,
+            5.5,
+            7.300000000000001
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          5.18,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_roof-east:0:1",
+        "radius": 2.93524371186462,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "roof-east:1:0",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            4.960000038146973,
+            7.299999999999999
+          ],
+          "max": [
+            69.25,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          5.18,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_roof-east:1:0",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-east:1:1",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            4.960000038146973,
+            7.299999999999999
+          ],
+          "max": [
+            73.25,
+            5.5,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          5.18,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_roof-east:1:1",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "roof-east:2:0",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            4.960000038146973,
+            11.6
+          ],
+          "max": [
+            69.25,
+            5.5,
+            15.21999979019165
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          5.18,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_roof-east:2:0",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel"
+        ]
+      },
+      {
+        "id": "roof-east:2:1",
+        "host": "roof-east",
+        "kind": "timber",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            4.960000038146973,
+            11.6
+          ],
+          "max": [
+            73.25,
+            5.5,
+            15.21999979019165
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          5.18,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_roof-east:2:1",
+        "radius": 2.9352437118646204,
+        "materialCategories": [
+          "aged white paint",
+          "painted steel",
+          "wired roof glass"
+        ]
+      },
+      {
+        "id": "floor-west:0:0",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.25,
+            -0.0020000000949949026,
+            3.25
+          ],
+          "max": [
+            61.25,
+            0.07000000029802322,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          0,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_floor-west:0:0",
+        "radius": 2.9364202696490973,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "municipal glazed brick",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "floor-west:0:1",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            -0.0020000000949949026,
+            3.25
+          ],
+          "max": [
+            65.25,
+            0.07000000029802322,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          0,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_floor-west:0:1",
+        "radius": 2.9364202696490973,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "municipal glazed brick",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "floor-west:1:0",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.28499984741211,
+            -0.0020000000949949026,
+            7.3
+          ],
+          "max": [
+            61.25,
+            0.026000000536441803,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          0,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_floor-west:1:0",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "board marked concrete",
+          "chapel stone",
+          "wet slate",
+          "painted steel",
+          "speaker cone"
+        ]
+      },
+      {
+        "id": "floor-west:1:1",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            -0.0020000000949949026,
+            7.3
+          ],
+          "max": [
+            65.25,
+            0.00800000037997961,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          0,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_floor-west:1:1",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "board marked concrete",
+          "chapel stone"
+        ]
+      },
+      {
+        "id": "floor-west:2:0",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            57.25,
+            -0.0020000000949949026,
+            11.6
+          ],
+          "max": [
+            61.25,
+            0.07000000029802322,
+            15.25
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          59.25,
+          0,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_floor-west:2:0",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "wet slate",
+          "municipal glazed brick",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "floor-west:2:1",
+        "host": "floor-west",
+        "kind": "floor",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            61.25,
+            -0.0020000000949949026,
+            11.6
+          ],
+          "max": [
+            65.25,
+            0.07000000029802322,
+            15.649999618530273
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          63.25,
+          0,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_floor-west:2:1",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "wet slate",
+          "municipal glazed brick",
+          "academic plaster",
+          "speaker cone"
+        ]
+      },
+      {
+        "id": "floor-east:0:0",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 0,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            -0.0020000000949949026,
+            3.25
+          ],
+          "max": [
+            69.25,
+            0.07000000029802322,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          0,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_floor-east:0:0",
+        "radius": 2.9364202696490973,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "municipal glazed brick",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "floor-east:0:1",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 0,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            -0.0020000000949949026,
+            3.25
+          ],
+          "max": [
+            73.25,
+            0.07000000029802322,
+            7.3
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          0,
+          5.15
+        ],
+        "mesh": "earthfall_ellery_floor-east:0:1",
+        "radius": 2.9364202696490973,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "municipal glazed brick",
+          "academic plaster",
+          "aged white paint"
+        ]
+      },
+      {
+        "id": "floor-east:1:0",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 1,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            -0.0020000000949949026,
+            7.3
+          ],
+          "max": [
+            69.25,
+            0.00800000037997961,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          0,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_floor-east:1:0",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "board marked concrete",
+          "chapel stone"
+        ]
+      },
+      {
+        "id": "floor-east:1:1",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 1,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            -0.0020000000949949026,
+            7.3
+          ],
+          "max": [
+            73.21500015258789,
+            0.00800000037997961,
+            11.6
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          0,
+          9.45
+        ],
+        "mesh": "earthfall_ellery_floor-east:1:1",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "board marked concrete",
+          "chapel stone"
+        ]
+      },
+      {
+        "id": "floor-east:2:0",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 2,
+        "column": 0,
+        "bounds": {
+          "min": [
+            65.25,
+            -0.0020000000949949026,
+            11.6
+          ],
+          "max": [
+            69.25,
+            0.07000000029802322,
+            15.649999618530273
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          67.25,
+          0,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_floor-east:2:0",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "wet slate",
+          "municipal glazed brick",
+          "academic plaster",
+          "speaker cone"
+        ]
+      },
+      {
+        "id": "floor-east:2:1",
+        "host": "floor-east",
+        "kind": "floor",
+        "row": 2,
+        "column": 1,
+        "bounds": {
+          "min": [
+            69.25,
+            -0.0020000000949949026,
+            11.6
+          ],
+          "max": [
+            73.25,
+            0.07000000029802322,
+            15.25
+          ]
+        },
+        "clipAxes": [
+          0,
+          2
+        ],
+        "pivot": [
+          71.25,
+          0,
+          13.75
+        ],
+        "mesh": "earthfall_ellery_floor-east:2:1",
+        "radius": 2.936420269649098,
+        "materialCategories": [
+          "painted steel",
+          "board marked concrete",
+          "chapel stone",
+          "wet slate",
+          "municipal glazed brick",
+          "academic plaster"
+        ]
+      },
+      {
+        "id": "return:dock-grey-exterior",
+        "host": "west",
+        "kind": "portal",
+        "row": 0,
+        "column": 0,
+        "pivot": [
+          57.25,
+          1.6,
+          10.25
+        ],
+        "mesh": "earthfall_ellery_return:dock-grey-exterior",
+        "bounds": {
+          "min": [
+            55.1,
+            0,
+            8.629999999999999
+          ],
+          "max": [
+            57.25,
+            3.1999999999999997,
+            11.870000000000001
+          ]
+        },
+        "radius": 3.1315970366571744,
+        "materialCategories": [
+          "municipal glazed brick",
+          "board marked concrete"
+        ]
+      },
+      {
+        "id": "return:dock-foyer-service",
+        "host": "east",
+        "kind": "portal",
+        "row": 0,
+        "column": 0,
+        "pivot": [
+          74.25,
+          1.6,
+          13.25
+        ],
+        "mesh": "earthfall_ellery_return:dock-foyer-service",
+        "bounds": {
+          "min": [
+            73.15,
+            0,
+            12.63
+          ],
+          "max": [
+            76.4,
+            2.35,
+            13.87
+          ]
+        },
+        "radius": 2.750799883670207,
+        "materialCategories": [
+          "municipal glazed brick",
+          "board marked concrete"
+        ]
+      },
+      {
+        "id": "return:dock-inner-service",
+        "host": "south",
+        "kind": "portal",
+        "row": 0,
+        "column": 0,
+        "pivot": [
+          64.75,
+          1.6,
+          15.25
+        ],
+        "mesh": "earthfall_ellery_return:dock-inner-service",
+        "bounds": {
+          "min": [
+            63.6,
+            0,
+            15.25
+          ],
+          "max": [
+            65.9,
+            2.55,
+            17.4
+          ]
+        },
+        "radius": 2.9163333142835386,
+        "materialCategories": [
+          "municipal glazed brick",
+          "board marked concrete"
+        ]
+      }
+    ],
+    "props": [
+      {
+        "id": "dock-level-check-box",
+        "mesh": "earthfall_ellery_scene_dock_check_position",
+        "fallbackMesh": null,
+        "x": 65,
+        "y": 0.01,
+        "z": 10,
+        "yaw": 0,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0.01,
+        "bounds": {
+          "min": [
+            -0.8,
+            0,
+            -0.8
+          ],
+          "max": [
+            0.8,
+            0.012,
+            0.8
+          ]
+        },
+        "originalMesh": "scene_dock_check_position"
+      },
+      {
+        "id": "dock-sign-studios-plant",
+        "mesh": "earthfall_ellery_scene_dock_sign_services",
+        "fallbackMesh": null,
+        "x": 62.5,
+        "y": 2.42,
+        "z": 14.967,
+        "yaw": 0,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": true,
+        "waterlineBody": null,
+        "waterlineOffset": 2.42,
+        "bounds": {
+          "min": [
+            -1.35,
+            -0.43,
+            -0.073
+          ],
+          "max": [
+            1.35,
+            0.43,
+            0.033
+          ]
+        },
+        "originalMesh": "scene_dock_sign_services"
+      },
+      {
+        "id": "dock-desk-1",
+        "mesh": "earthfall_ellery_scene_dock_dispatch_desk",
+        "fallbackMesh": null,
+        "x": 60,
+        "y": 0,
+        "z": 6,
+        "yaw": 0.15,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.775,
+            0,
+            -0.37
+          ],
+          "max": [
+            0.775,
+            1.042,
+            0.37
+          ]
+        },
+        "originalMesh": "scene_dock_dispatch_desk"
+      },
+      {
+        "id": "dock-work-order-clipboard",
+        "mesh": "earthfall_ellery_loose_note",
+        "fallbackMesh": null,
+        "x": 59.767526549606714,
+        "y": 0.72,
+        "z": 6.066000718649413,
+        "yaw": 0.12,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0.72,
+        "bounds": {
+          "min": [
+            -0.16,
+            0,
+            -0.21
+          ],
+          "max": [
+            0.16,
+            0.022,
+            0.21
+          ]
+        },
+        "originalMesh": "loose_note"
+      },
+      {
+        "id": "dock-crew-board",
+        "mesh": "earthfall_ellery_notice_board",
+        "fallbackMesh": null,
+        "x": 58,
+        "y": 1.15,
+        "z": 8,
+        "yaw": 1.5707963267948966,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 1.15,
+        "bounds": {
+          "min": [
+            -0.6,
+            0,
+            -0.045
+          ],
+          "max": [
+            0.6,
+            0.9,
+            0.03
+          ]
+        },
+        "originalMesh": "notice_board"
+      },
+      {
+        "id": "dock-hand-truck",
+        "mesh": "earthfall_ellery_scene_dock_hand_truck",
+        "fallbackMesh": null,
+        "x": 71,
+        "y": 0,
+        "z": 5.5,
+        "yaw": 1.5707963267948966,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.311,
+            0.005,
+            -0.305
+          ],
+          "max": [
+            0.311,
+            1.278,
+            0.297
+          ]
+        },
+        "originalMesh": "scene_dock_hand_truck"
+      },
+      {
+        "id": "dock-freight-crates",
+        "mesh": "earthfall_ellery_scene_dock_freight_crates",
+        "fallbackMesh": null,
+        "x": 72,
+        "y": 0,
+        "z": 7.5,
+        "yaw": 0,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.43,
+            0,
+            -0.362
+          ],
+          "max": [
+            0.43,
+            1.6,
+            0.363
+          ]
+        },
+        "originalMesh": "scene_dock_freight_crates"
+      },
+      {
+        "id": "dock-freight-crate-low",
+        "mesh": "earthfall_ellery_scene_dock_crate_low",
+        "fallbackMesh": null,
+        "x": 71.5,
+        "y": 0,
+        "z": 8.5,
+        "yaw": 1.5707963267948966,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.609,
+            0,
+            -0.247
+          ],
+          "max": [
+            0.609,
+            0.456,
+            0.247
+          ]
+        },
+        "originalMesh": "scene_dock_crate_low"
+      },
+      {
+        "id": "dock-road-case",
+        "mesh": "earthfall_ellery_scene_dock_road_case_open",
+        "fallbackMesh": null,
+        "x": 60,
+        "y": 0,
+        "z": 12.5,
+        "yaw": -1.5707963267948966,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.6,
+            0.005,
+            -0.281
+          ],
+          "max": [
+            0.6,
+            0.807,
+            0.325
+          ]
+        },
+        "originalMesh": "scene_dock_road_case_open"
+      },
+      {
+        "id": "dock-cable-reel",
+        "mesh": "earthfall_ellery_scene_dock_cable_reel",
+        "fallbackMesh": null,
+        "x": 72,
+        "y": 0,
+        "z": 10.5,
+        "yaw": 0,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -0.323,
+            0,
+            -0.396
+          ],
+          "max": [
+            0.45,
+            0.96,
+            0.42
+          ]
+        },
+        "originalMesh": "scene_dock_cable_reel"
+      },
+      {
+        "id": "dock-shutter-bar",
+        "mesh": "earthfall_ellery_scene_dock_shutter_bar",
+        "fallbackMesh": null,
+        "x": 73.1,
+        "y": 0,
+        "z": 11,
+        "yaw": 1.5707963267948966,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -1.18,
+            1.185,
+            -0.17
+          ],
+          "max": [
+            1.18,
+            1.475,
+            0.142
+          ]
+        },
+        "originalMesh": "scene_dock_shutter_bar"
+      },
+      {
+        "id": "dock-chandelier-frame",
+        "mesh": "earthfall_ellery_scene_dock_chandelier_cage",
+        "fallbackMesh": null,
+        "x": 69,
+        "y": 0,
+        "z": 6.5,
+        "yaw": 0,
+        "scale": 1,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 0,
+        "bounds": {
+          "min": [
+            -1.073,
+            0.01,
+            -0.84
+          ],
+          "max": [
+            1.073,
+            2.713,
+            0.84
+          ]
+        },
+        "originalMesh": "scene_dock_chandelier_cage"
+      },
+      {
+        "id": "dock-chandelier-tag",
+        "mesh": "earthfall_ellery_loose_note",
+        "fallbackMesh": null,
+        "x": 68,
+        "y": 2.55,
+        "z": 6.5,
+        "yaw": -0.2,
+        "scale": 0.45,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 2.55,
+        "bounds": {
+          "min": [
+            -0.16,
+            0,
+            -0.21
+          ],
+          "max": [
+            0.16,
+            0.022,
+            0.21
+          ]
+        },
+        "originalMesh": "loose_note"
+      },
+      {
+        "id": "dock-chandelier-intact",
+        "mesh": "chandelier_03",
+        "fallbackMesh": null,
+        "x": 69,
+        "y": 2.475,
+        "z": 6.5,
+        "yaw": 0,
+        "scale": 1.48,
+        "zone": 16,
+        "portraitIndex": 0,
+        "structural": false,
+        "waterlineBody": null,
+        "waterlineOffset": 2.475,
+        "sourcePack": "conservatory-acquisitions.glb",
+        "originalMesh": "chandelier_03"
+      }
+    ],
+    "doors": [
+      {
+        "id": "dock-grey-exterior",
+        "x": 57.25,
+        "y": 0,
+        "z": 10.25,
+        "yaw": 1.5707963267948966,
+        "archetype": "bay-goods-pair",
+        "hinge": "left",
+        "activeLeaves": [
+          0,
+          1
+        ],
+        "assembly": {
+          "archetype": "bay-goods-pair",
+          "frameMesh": "door_frame_goods",
+          "headMesh": "door_head_goods",
+          "freeStandingHeadMesh": null,
+          "leafMesh": "door_leaf_bay_goods",
+          "leafCount": 2,
+          "activeLeaves": [
+            0,
+            1
+          ],
+          "aperture": {
+            "width": 3,
+            "height": 3.4
+          },
+          "leaf": {
+            "width": 1.48,
+            "height": 3.05,
+            "depth": 0.07
+          },
+          "opening": {
+            "width": 3,
+            "height": 3.05
+          },
+          "openSeconds": 1.6,
+          "closeSeconds": 2.1,
+          "hinge": "left"
+        },
+        "panel": "return:dock-grey-exterior",
+        "blindStart": 0,
+        "host": "west",
+        "blindDepth": 2.15,
+        "outward": [
+          -1,
+          0,
+          0
+        ],
+        "halfWidth": 1.62
+      },
+      {
+        "id": "dock-foyer-service",
+        "x": 74.25,
+        "y": 0,
+        "z": 13.25,
+        "yaw": 1.5707963267948966,
+        "archetype": "staff-half-glazed",
+        "hinge": "right",
+        "activeLeaves": [
+          0
+        ],
+        "assembly": {
+          "archetype": "staff-half-glazed",
+          "frameMesh": "door_frame_single_oak",
+          "headMesh": "door_head_infill",
+          "freeStandingHeadMesh": null,
+          "leafMesh": "door_leaf_staff",
+          "leafCount": 1,
+          "activeLeaves": [
+            0
+          ],
+          "aperture": {
+            "width": 1,
+            "height": 3.4
+          },
+          "leaf": {
+            "width": 0.95,
+            "height": 2.15,
+            "depth": 0.05
+          },
+          "opening": {
+            "width": 1,
+            "height": 2.2
+          },
+          "openSeconds": 0.7,
+          "closeSeconds": 0.7,
+          "hinge": "right"
+        },
+        "panel": "return:dock-foyer-service",
+        "blindStart": -1.1,
+        "host": "east",
+        "blindDepth": 2.15,
+        "outward": [
+          1,
+          0,
+          0
+        ],
+        "halfWidth": 0.62
+      },
+      {
+        "id": "dock-inner-service",
+        "x": 64.75,
+        "y": 0,
+        "z": 15.25,
+        "yaw": 0,
+        "archetype": "service-wired-pair",
+        "hinge": "left",
+        "activeLeaves": [
+          0,
+          1
+        ],
+        "assembly": {
+          "archetype": "service-wired-pair",
+          "frameMesh": "door_frame_pair",
+          "headMesh": "door_head_transom",
+          "freeStandingHeadMesh": "door_head_transom",
+          "leafMesh": "door_leaf_pool",
+          "leafCount": 2,
+          "activeLeaves": [
+            0,
+            1
+          ],
+          "aperture": {
+            "width": 2,
+            "height": 3.4
+          },
+          "leaf": {
+            "width": 0.91,
+            "height": 2.2,
+            "depth": 0.05
+          },
+          "opening": {
+            "width": 2.06,
+            "height": 2.4
+          },
+          "openSeconds": 0.72,
+          "closeSeconds": 1.02,
+          "hinge": "left"
+        },
+        "panel": "return:dock-inner-service",
+        "blindStart": 0,
+        "host": "south",
+        "blindDepth": 2.15,
+        "outward": [
+          0,
+          0,
+          1
+        ],
+        "halfWidth": 1.15
+      }
+    ],
+    "room": {
+      "minX": 57.25,
+      "maxX": 73.25,
+      "minZ": 3.25,
+      "maxZ": 15.25,
+      "floor": 0,
+      "ceiling": 5.5
+    }
+  }
+}

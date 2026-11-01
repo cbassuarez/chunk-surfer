@@ -1,6 +1,7 @@
 import { BUILDING_AMENITY_DOORS } from './building-amenities.js';
 import { PUB_DOORS } from './exterior-pub.js';
 import { STATIONERS_DOORS } from './exterior-stationers.js';
+import {YARD_PUBLIC_ROOM_DOORS} from './yard-public-rooms.js';
 // Explicit door schedule for Ellery Conservatory. Door geometry, behaviour,
 // locks and acoustic loss are authored here; portal width never infers leaves.
 
@@ -118,6 +119,7 @@ const D = (id, archetype, legacyId, options = {}) => {
 
 export const CONSERVATORY_DOORS = Object.freeze([
   ...BUILDING_AMENITY_DOORS,
+  ...YARD_PUBLIC_ROOM_DOORS,
   ...PUB_DOORS,
   ...STATIONERS_DOORS,
   // The public front was sealed when Ellery closed. It is still an architectural
@@ -174,21 +176,23 @@ export const CONSERVATORY_DOORS = Object.freeze([
   D('dock-inner-service', DOOR_ARCHETYPE.SERVICE_WIRED_PAIR, '131,33', {
     at:{x:65,y:15.5},open:true,key:'master',hinge:'left',swing:'escape',widthAxis:'x',activeLeaves:[0,1],
   }),
-  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
+  D('foh-office', DOOR_ARCHETYPE.STAFF_HALF_GLAZED, '189,27', { at:{x:94.5,y:12.5}, key: 'master', hinge: 'left', swing: 'office-in', widthAxis:'x' }),
+  // The east end of the ground spine, out to the west baths court.
+  D('spine-west-court', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, null, { at:{x:74,y:23.5}, hinge:'left', swing:'escape', widthAxis:'y' }),
   D('hall-vestibule', DOOR_ARCHETYPE.HALL_ACOUSTIC_PAIR, '197,51', {
     hinge:'right',swing:'hall-out',activeLeaves:[0],widthAxis:'y',renderGroups:['ground','hall'],
   }),
   D('pool-lobby', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, '168,55', {
-    at:{x:84,y:27.5},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],
+    at:{x:84,y:15},legacyIds:['169,55'],hinge:'right',swing:'dry-out',activeLeaves:[0,1],
   }),
   // A dry planted approach, then a separately ventilated changing vestibule,
   // then the humid pool. These ordinary paired closers are never interlocked:
   // either side can always open them without a key, including after a reload.
   D('glasshouse-changing', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, null, {
-    at:{x:92,y:30},hinge:'right',swing:'dry-out',widthAxis:'y',activeLeaves:[0,1],
+    at:{x:84,y:27},hinge:'right',swing:'dry-out',widthAxis:'x',activeLeaves:[0,1],
   }),
   D('changing-pool', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, null, {
-    at:{x:94,y:32},hinge:'right',swing:'pool-in',widthAxis:'x',activeLeaves:[0,1],
+    at:{x:84,y:32},hinge:'right',swing:'pool-in',widthAxis:'x',activeLeaves:[0,1],
   }),
   D('hall-rear-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,73', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-west', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '154,111', { open: true, hinge: 'right', swing: 'escape', widthAxis:'y' }),

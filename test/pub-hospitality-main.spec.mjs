@@ -73,6 +73,7 @@ test('actual main routes room sound and diagnostics by physical listener, pause,
     FP:{isLoaded:()=>true,logicalToPhysical:()=>({x:EXTERIOR_PUB.interiorAnchor.x*2,z:EXTERIOR_PUB.interiorAnchor.z*2,y:.12}),zoneAt:()=>ZONE.pub,forEachDoor:visit=>visit({id:'pub-west-entry',runtime:{openFraction:.8}})},
     R3:{r3dWorldYaw:()=>1.25,r3dPubStatus:()=>({hospitality:true})},REC:{isRecording:()=>false},SPEECH:{speaking:()=>speaking},scenes:{top:()=>top},
     createPubRoomAudio:()=>ordinaryOwner,createSourcePubAudio:()=>sourceOwner,
+    tickPubPressure:()=>{},pubPressureFrame:{active:false},pubPressureAudio:null,pubPressureTrace:[],pubPressureSight:null,
     pubHospitalityRendered:[{id:'pub-complete-interior',mesh:PUB_HOSPITALITY_MESH}],pubHospitalityLocalLightIds:['pub-hearth-light'],
   };
   vm.createContext(environment);for(const name of['currentPubHospitalityInput','tickPubRoomAudio','pubHospitalityProbe'])vm.runInContext(production(name),environment);

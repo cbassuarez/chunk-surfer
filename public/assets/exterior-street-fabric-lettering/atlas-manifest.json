@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "inputSha256": "fa54e84ebc115fc98af45d2aa43c0368688a2e94b3000d476e0795fc3f99c63a",
+  "inputSha256": "7936db5dadbacfd17b7eb647e8e697533a5fab7508ad718a22c7b0996f7cda5d",
   "generatorSha256": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
   "finishAuthoringSha256": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
   "pages": [
@@ -381,7 +381,7 @@
       "substrate": null
     },
     {
-      "id": "street-name-borough",
+      "id": "street-name-ellery-square",
       "page": 0,
       "uvRect": [
         0.02,
@@ -389,112 +389,100 @@
         0.98,
         0.7305194805194806
       ],
-      "copy": "BOROUGH PASSAGE",
+      "copy": "ELLERY SQUARE",
       "lines": [
-        "BOROUGH PASSAGE"
+        "ELLERY SQUARE"
       ],
-      "widthM": 1.94,
+      "widthM": 1.84,
       "heightM": 0.25,
       "metrics": {
         "font": "NimbusSans-Bold.otf",
         "fontSha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
-        "capHeightM": 0.13135416666666666,
-        "stemWidthM": 0.027786458333333333,
-        "coverage": 0.211181640625,
+        "capHeightM": 0.1509375,
+        "stemWidthM": 0.03354166666666667,
+        "coverage": 0.24443126860119047,
         "boundsPx": [
-          19,
-          29,
-          752,
-          84
+          16,
+          23,
+          755,
+          91
         ],
         "glyphs": [
           {
-            "character": "B",
+            "character": "E",
             "line": 0,
-            "xPx": 12.632000000000005,
-            "advancePx": 51.624
+            "xPx": 9.463999999999999,
+            "advancePx": 58.756
           },
           {
-            "character": "O",
+            "character": "L",
             "line": 0,
-            "xPx": 64.256,
-            "advancePx": 55.624
+            "xPx": 68.22,
+            "advancePx": 53.756
           },
           {
-            "character": "R",
+            "character": "L",
             "line": 0,
-            "xPx": 119.88,
-            "advancePx": 51.624
-          },
-          {
-            "character": "O",
-            "line": 0,
-            "xPx": 171.504,
-            "advancePx": 55.624
-          },
-          {
-            "character": "U",
-            "line": 0,
-            "xPx": 227.128,
-            "advancePx": 51.624
-          },
-          {
-            "character": "G",
-            "line": 0,
-            "xPx": 278.752,
-            "advancePx": 55.624
-          },
-          {
-            "character": "H",
-            "line": 0,
-            "xPx": 334.37600000000003,
-            "advancePx": 51.624
-          },
-          {
-            "character": "P",
-            "line": 0,
-            "xPx": 406.6240000000001,
-            "advancePx": 47.624
-          },
-          {
-            "character": "A",
-            "line": 0,
-            "xPx": 454.2480000000001,
-            "advancePx": 51.624
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 505.8720000000001,
-            "advancePx": 47.624
-          },
-          {
-            "character": "S",
-            "line": 0,
-            "xPx": 553.4960000000001,
-            "advancePx": 47.624
-          },
-          {
-            "character": "A",
-            "line": 0,
-            "xPx": 601.1200000000001,
-            "advancePx": 51.624
-          },
-          {
-            "character": "G",
-            "line": 0,
-            "xPx": 652.7440000000001,
-            "advancePx": 55.624
+            "xPx": 121.976,
+            "advancePx": 53.756
           },
           {
             "character": "E",
             "line": 0,
-            "xPx": 708.3680000000002,
-            "advancePx": 47.624
+            "xPx": 175.732,
+            "advancePx": 58.756
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 234.488,
+            "advancePx": 63.756
+          },
+          {
+            "character": "Y",
+            "line": 0,
+            "xPx": 298.244,
+            "advancePx": 58.756
+          },
+          {
+            "character": "S",
+            "line": 0,
+            "xPx": 381.756,
+            "advancePx": 58.756
+          },
+          {
+            "character": "Q",
+            "line": 0,
+            "xPx": 440.51199999999994,
+            "advancePx": 68.756
+          },
+          {
+            "character": "U",
+            "line": 0,
+            "xPx": 509.2679999999999,
+            "advancePx": 63.756
+          },
+          {
+            "character": "A",
+            "line": 0,
+            "xPx": 573.0239999999999,
+            "advancePx": 63.756
+          },
+          {
+            "character": "R",
+            "line": 0,
+            "xPx": 636.7799999999999,
+            "advancePx": 63.756
+          },
+          {
+            "character": "E",
+            "line": 0,
+            "xPx": 700.5359999999998,
+            "advancePx": 58.756
           }
         ],
         "strokeMeasurement": "Pinned I straight stem; brush uses a conservative broad-nib design reference, not a claim about every taper.",
-        "coverageSha256": "d5b04252008dd0e9f45d992fb61958dd80b9195455e4523ecef59d39d952a74f"
+        "coverageSha256": "37a78cc16d5c1247ce6ca587ba396b2175d349d6152e81a1df2e87ef9f05e100"
       },
       "category": "institution",
       "process": "municipal vitreous enamel nameplate",
@@ -542,12 +530,12 @@
           "contact": "none",
           "exposure": "sheltered"
         },
-        "coverageSha256": "d5b04252008dd0e9f45d992fb61958dd80b9195455e4523ecef59d39d952a74f",
+        "coverageSha256": "37a78cc16d5c1247ce6ca587ba396b2175d349d6152e81a1df2e87ef9f05e100",
         "immutableCoverage": true,
         "sampledStockOutsidePigmentImmutable": false,
         "physicalScalesM": {
           "field": 0.16,
-          "minimumNormalPeriod": 0.007578125,
+          "minimumNormalPeriod": 0.007187500000000001,
           "inkRelief": 7e-06
         },
         "structure": {
@@ -573,7 +561,7 @@
         "channelRanges": {
           "roughness": [
             0.2925,
-            0.5963328431372549
+            0.5973142156862745
           ],
           "metallic": [
             0.0,

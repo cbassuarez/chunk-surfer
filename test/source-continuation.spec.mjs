@@ -7,7 +7,9 @@ const returnPose = { x: 6.125, y: -305.75, yaw: -.8, pitch: .12, floorH: 15.2, p
 const fresh = () => resumeSourceContinuation(freshSourceContinuation({ runId: 'test-run', returnPose }));
 const near = (a, b, tolerance = 1e-7) => assert.ok(Math.abs(a - b) <= tolerance, `${a} != ${b}`);
 const step = (s, input = {}) => stepSourceContinuation(s, input).state;
-const catchAt = (level, p = null) => ({ ...fresh(), phase: 'catch', level, ...(p || CONTINUATION_DROP_LIPS[level] || C.catch.finalApproach), feet: continuationCatchFloor(level), grace: 0 });
+// Bounded mechanism fixtures isolate the drum. The continuous route in the
+// level-design spec carries the real Hush from the actual entry instead.
+const catchAt = (level, p = null) => ({ ...fresh(), hush:{...fresh().hush,active:false},phase: 'catch', level, ...(p || CONTINUATION_DROP_LIPS[level] || C.catch.finalApproach), feet: continuationCatchFloor(level), grace: 0,recoveryAnchor:{...continuationRefugeAt({phase:'catch',level}),phase:'catch',yaw:0,pitch:0,kind:'refuge',supportId:`catch-${level}-return-pad`,earnedAt:0} });
 const wait = (s, seconds, dt = 1 / 60) => { for (let t = 0; t < seconds - 1e-8; t += dt) s = step(s, { dt: Math.min(dt, seconds - t) }); return s; };
 function finishFall(state) {
   const events = [];
@@ -17,13 +19,13 @@ function finishFall(state) {
 function crossFinal(state) {
   let result = stepSourceContinuation(state, { interact: true }); state = result.state;
   assert.equal(result.event.type, 'door'); assert.equal(state.status, 'active');
-  for (let i = 0; i < 160 && state.status === 'active'; i++) { result = stepSourceContinuation(state, { dt: 1 / 60, forward: 1 }); state = result.state; }
+  for (let i = 0; i < 160 && state.status === 'active'; i++) { result = stepSourceContinuation(state, { dt: 1 / 60, side: 1 }); state = result.state; }
   return { state, event: result.event };
 }
 
 test('local state clones return pose, keeps run authority and adds no Contact/inventory/injury state', () => {
   const s = fresh(); assert.deepEqual(s.returnPose, returnPose); s.returnPose.preserved.source = false; assert.equal(returnPose.preserved.source, true);
-  assert.equal(s.layoutVersion, 2); assert.equal(normalizeSourceContinuation(s, { runId: 'other' }).status, 'not-started');
+  assert.equal(s.layoutVersion, C.layoutVersion); assert.equal(normalizeSourceContinuation(s, { runId: 'other' }).status, 'not-started');
   for (const field of ['contact', 'finale', 'inventory', 'injuries', 'takes']) assert.equal(field in s, false);
 });
 
@@ -37,31 +39,32 @@ test('both Sources remain one physical construction while the journey phase chan
   assert.equal(continuationSurfaces('catch'), continuationSurfaces('wrong-return'));
   const a = sourceContinuationFrame(fresh()), b = sourceContinuationFrame(catchAt(2));
   assert.deepEqual(a.geometry.surfaces, b.geometry.surfaces); assert.equal(a.cutaway, null); assert.equal(b.cutaway, null);
-  assert.equal(a.camera.mode, 'first-person'); assert.equal(b.camera.mode, 'first-person');
-  assert.equal(a.player.visible, false); assert.equal(b.player.visible, false);
+  assert.equal(a.camera.mode, 'first-person'); assert.equal(b.camera.mode, 'overhead');
+  assert.equal(a.player.visible, false); assert.equal(b.player.visible, true);assert.deepEqual(b.camera.target,[b.x,b.feet,b.z]);
 });
 
 test('three flights use42 real300mm treads with separate supports and no camera climb', () => {
   const steps = continuationSurfaces().filter(s => s.role === 'stair'); assert.equal(steps.length, 42);
   for (const id of new Set(steps.map(s => s.stairId))) { const rows = steps.filter(s => s.stairId === id); assert.equal(rows.length, 14); for (let k = 1; k < rows.length; k++) near(Math.abs(rows[k].y - rows[k - 1].y), .3); }
-  for (const s of [fresh(), catchAt(1)]) { const f = sourceContinuationFrame(s); near(f.camera.eye[1] - f.player.y, C.eyeHeight); near(f.camera.yaw, s.yaw); }
+  for (const s of [fresh(), catchAt(1)]) { const f = sourceContinuationFrame(s); near(f.bodyEye[1] - f.player.y, C.eyeHeight); near(f.camera.yaw,s.phase==='catch'?0:s.yaw); }
 });
 
 test('the three descent decisions use different real partial sectors instead of interchangeable square rings', () => {
-  const sectors = continuationSurfaces().filter(s => s.kind === 'sector'); assert.equal(sectors.length, 4);
+  const sectors = continuationSurfaces().filter(s => s.kind === 'sector'&&s.role==='catch'); assert.equal(sectors.length, 4);
   assert.equal(new Set(sectors.map(s => `${s.innerRadius}/${s.outerRadius}/${s.startAngle}/${s.endAngle}`)).size, 4);
   assert.deepEqual(sectors.map(s => s.y), [8.4, 2.4, -4.8, -12.6]);
   for (let level = 0; level < 4; level++) { assert.equal(continuationDropLips({ level }).length, level < 3 ? 2 : 0); assert.equal(continuationSupportAt(C.catch.center.x, C.catch.center.z, { feet: continuationCatchFloor(level) }), null); }
 });
 
 test('II to III needs a fully opened leaf, right height, aperture and complete body crossing', () => {
-  const seed = { ...fresh(), x: -17.5, z: -12, feet: 8.4, yaw: -Math.PI / 2 };
+  const gate=C.wrongReturn.threshold;
+  const seed = { ...fresh(), chartId:4, x:gate.x+.5, z:gate.z, feet:gate.y, yaw:-Math.PI/2 };
   let s = wait({ ...seed,yaw:Math.PI/2 }, 1); for (let i = 0; i < 40; i++) s = step(s, { dt: .1, forward: -1 });
-  assert.ok(s.x > -18); assert.equal(s.phase, 'wrong-return');
-  s = step(seed, { interact: true }); s = step(s, { dt: .25, forward: 1 }); assert.equal(s.phase, 'wrong-return'); assert.ok(s.x >= -17.67);
+  assert.ok(s.x > gate.x); assert.equal(s.phase, 'wrong-return');
+  s = step(seed, { interact: true }); s = step(s, { dt: .25, forward: 1 }); assert.equal(s.phase, 'wrong-return'); assert.ok(s.x >= gate.x+C.bodyRadius);
   s = wait(s, .5); const events = []; for (let i = 0; i < 80 && s.phase === 'wrong-return'; i++) { const r = stepSourceContinuation(s, { dt: 1 / 60, forward: 1 }); s = r.state; events.push(...r.events); }
-  assert.equal(s.phase, 'catch'); assert.ok(s.x < -18 - C.bodyRadius); assert.equal(s.reveal, null);
-  assert.equal(events.filter(e => e.type === 'phase').length, 1); assert.equal(events.find(e => e.type === 'phase').doorId, 'wrong-onward');
+  assert.equal(s.phase, 'catch'); assert.ok(s.x < gate.x-C.bodyRadius); assert.equal(s.chartId,0); assert.equal(s.reveal, null);
+  assert.equal(events.filter(e => e.type === 'phase').length, 1); assert.equal(events.find(e => e.type === 'phase').doorId, gate.doorId);
   const low = step({ ...seed, feet: 0, x: -10 }, { dt: .25, forward: 1 }); assert.equal(low.phase, 'wrong-return');
 });
 
@@ -83,9 +86,9 @@ test('initial exploration and waiting do not awaken a machine before the first c
   assert.equal(wait(partial, .2).counterweight.mode, 'walking');
 });
 
-test('carried first-person look remains responsive during a physical fall and never steers its body', () => {
+test('overhead camera remains fixed during a physical fall and look never steers its body', () => {
   let a = step(catchAt(0), { interact: true }), b = structuredClone(a);
-  for (let i = 0; i < 180 && a.fall; i++) { a = step(a, { dt: 1 / 60, side: 1, forward: 1, look: { yaw: .5, pitch: -.7 } }); b = step(b, { dt: 1 / 60 }); near(a.x, b.x); near(a.z, b.z); near(a.feet, b.feet); const f = sourceContinuationFrame(a); near(f.camera.pitch, -.7); near(f.camera.yaw, .5); }
+  for (let i = 0; i < 180 && a.fall; i++) { a = step(a, { dt: 1 / 60, side: 1, forward: 1, look: { yaw: .5, pitch: -.7 } }); b = step(b, { dt: 1 / 60 }); near(a.x, b.x); near(a.z, b.z); near(a.feet, b.feet); const f = sourceContinuationFrame(a); near(f.camera.pitch,-Math.PI/2); near(f.camera.yaw,0); }
   assert.equal(a.fall, null); assert.equal(a.accumulator, 0);
 });
 
@@ -164,7 +167,7 @@ test('final opening alone cannot finish; actual body clearance produces one pres
   assert.ok(result.state.x > C.catch.finalDoor.x + C.bodyRadius); assert.equal(stepSourceContinuation(result.state, { dt: .2, interact: true }).event, null);
   const reverse = resumeSourceContinuation({ ...result.state, handoff: true, exitReceipt: { ...result.state.exitReceipt, delivered: true } }, { reverse: true });
   assert.equal(reverse.level, 3); near(reverse.feet, -12.6); assert.equal(reverse.exitReceipt.delivered, true); assert.equal(reverse.completed, true);
-  let again = { state: reverse }; for (let i = 0; i < 100 && again.state.status === 'active'; i++) again = stepSourceContinuation(again.state, { dt: 1 / 60, forward: 1 });
+  let again = { state: reverse }; for (let i = 0; i < 100 && again.state.status === 'active'; i++) again = stepSourceContinuation(again.state, { dt: 1 / 60, side: 1 });
   assert.equal(again.event.firstCompletion, false); assert.equal(again.event.receipt, result.event.receipt);
 });
 
@@ -177,9 +180,9 @@ test('legacy v1 saves preserve earned phase, monotonic descent, return pose and 
 
 test('malformed saves return to real safe support and cannot invent a finite world pose or exit', () => {
   const s = normalizeSourceContinuation({ ...fresh(), x: NaN, z: 200, feet: Infinity }); assert.ok(continuationSupportAt(s.x, s.z, s));
-  const bad = normalizeSourceContinuation({ ...catchAt(2), x: -38, z: -12, lastSafe: { ...continuationRefugeAt({ phase: 'catch', level: 2 }) } }); assert.ok(sourceContinuationCanOccupy(bad.x, bad.z, bad));
+  const bad = normalizeSourceContinuation({ ...catchAt(2), x:C.catch.center.x, z:C.catch.center.z, lastSafe: { ...continuationRefugeAt({ phase: 'catch', level: 2 }) } }); assert.ok(sourceContinuationCanOccupy(bad.x, bad.z, bad));
   assert.equal(normalizeSourceContinuation({ ...fresh(), exitPose: { x: 1, y: Infinity } }).exitPose, null);
-  const fall = step(catchAt(0), { interact: true }); assert.deepEqual(normalizeSourceContinuation(fall).fall, fall.fall);
+  const fall = step(catchAt(0), { interact: true }); const normalized=normalizeSourceContinuation(fall);assert.deepEqual(normalized.fall,{...fall.fall,chartId:0,fromChartId:0});assert.deepEqual(normalizeSourceContinuation(normalized).fall,normalized.fall);
 });
 
 test('stationary threat telemetry expires grace without steering or changing the live mechanism', () => {

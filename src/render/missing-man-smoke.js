@@ -1,41 +1,69 @@
-// Finite world-space cigarette filaments. Their real triangles share prop
-// depth and acquisition; no screen-facing card, new animation clock or layer.
+// Finite world-space cigarette smoke. Its real triangles share prop depth and
+// acquisition; no screen-facing card, new animation clock or layer.
+//
+// Smoke RISES. It leaves the ember as a thread, curls, widens and thins as it
+// climbs, and drifts a little downwind. The earlier version bent every strand
+// back into the face under the brim, which read in the dither as a stiff
+// stick joining hand to hat. When he talks, or has just drawn on it, a short
+// breath leaves his mouth forward and up.
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 export const MISSING_MAN_SMOKE_MESH='tower_warning_inward_smoke';
+export const MISSING_MAN_SMOKE=Object.freeze({rise:.44,drift:[.62,0,.34],strands:3,segments:9,
+  breath:{strands:2,segments:6,reach:.22,lift:.16}});
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const finite=v=>Array.isArray(v)&&v.length===3&&v.every(Number.isFinite);
 const sub=(a,b)=>a.map((v,k)=>v-b[k]);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const norm=a=>{const d=Math.hypot(...a)||1;return a.map(v=>v/d);};
-export function missingManSmokePoint(tip,sink,u,{clock=0,strand=0}={}){
-  if(!finite(tip)||!finite(sink)||!Number.isFinite(u))return null;
-  u=clamp(u,0,1);const v=1-u,span=Math.hypot(...sub(tip,sink));
-  const c1=[tip[0]+.035,tip[1]+Math.min(.22,span*.42),tip[2]-.025];
-  const c2=[sink[0]-.018,sink[1]-.065,sink[2]-.085];
-  const p=tip.map((n,k)=>n*v*v*v+3*c1[k]*v*v*u+3*c2[k]*v*u*u+sink[k]*u*u*u);
-  const curl=Math.sin(Math.PI*u)**2,phase=u*7.4-clock*.72+strand*1.7;
-  p[0]+=(Math.sin(phase)*.014+Math.sin(phase*1.83+.8)*.005)*curl;
-  p[2]+=Math.cos(phase*.83)*.011*curl;
-  return p;
+const DRIFT=norm(MISSING_MAN_SMOKE.drift);
+
+// One point on a rising strand, u = 0 at the ember and 1 where it has thinned
+// to nothing. The curl advects upward with the clock, so the shape climbs.
+export function missingManSmokePoint(tip,u,{clock=0,strand=0}={}){
+  if(!finite(tip)||!Number.isFinite(u))return null;
+  u=clamp(u,0,1);
+  const phase=u*7.6-clock*1.15+strand*2.09,swirl=(.004+.05*u**1.5)*Math.min(1,u*12);
+  const drift=.11*u*u;
+  return[
+    tip[0]+DRIFT[0]*drift+(Math.sin(phase)*.8+Math.sin(phase*2.3+strand)*.3)*swirl,
+    tip[1]+MISSING_MAN_SMOKE.rise*u**.92,
+    tip[2]+DRIFT[2]*drift+(Math.cos(phase*.83+.6)*.8+Math.sin(phase*1.7-strand)*.3)*swirl,
+  ];
 }
-export function sampleMissingManSmoke({tip,sink,clock=0,engaged=false,reducedMotion=false,densityScale=1}={}){
-  if(!finite(tip)||!finite(sink)||Math.hypot(...sub(tip,sink))>1.5)return[];
+// A breath from the mouth: out along his facing, then up as it slows.
+export function missingManBreathPoint(mouth,forward,u,{clock=0,strand=0}={}){
+  if(!finite(mouth)||!finite(forward)||!Number.isFinite(u))return null;
+  u=clamp(u,0,1);const f=norm([forward[0],0,forward[2]]),side=[-f[2],0,f[0]];
+  const out=MISSING_MAN_SMOKE.breath.reach*(1-(1-u)**2),swirl=.006+.03*u;
+  const phase=u*6-clock*1.4+strand*2.6,wobble=Math.sin(phase)*swirl;
+  return[mouth[0]+f[0]*out+side[0]*wobble,mouth[1]-.012*Math.sin(Math.PI*u)+MISSING_MAN_SMOKE.breath.lift*u*u+Math.cos(phase*.7)*swirl*.4,mouth[2]+f[2]*out+side[2]*wobble];
+}
+
+export function sampleMissingManSmoke({tip,mouth=null,forward=null,breath=0,clock=0,engaged=false,reducedMotion=false,densityScale=1}={}){
+  if(!finite(tip))return[];
   clock=reducedMotion?0:Math.max(0,Number(clock)||0);
   densityScale=clamp(Number.isFinite(densityScale)?densityScale:1,0,1.4);
-  const segments=[];
-  // Four separated filaments advect from the ember, rise, then disappear
-  // under the brim. Endpoint wrapping never draws a line through the body.
-  for(let strand=0;strand<4;strand++){
-    const start=((clock/4.6+strand*.257)%1+1)%1;
-    for(let n=0;n<6;n++){
-      const u=start+n*.045,next=u+.052;if(next>=1)continue;
-      const a=missingManSmokePoint(tip,sink,u,{clock,strand}),b=missingManSmokePoint(tip,sink,next,{clock,strand});
-      const envelope=Math.sin(Math.PI*u),packet=Math.sin(Math.PI*(n+.5)/6);
-      segments.push({a,b,age:u,strand,width:(.008+envelope*.016)*(1-.38*u),
-        density:(engaged?.66:.48)*Math.max(.12,envelope)*Math.max(.2,packet)*densityScale});
+  const segments=[],{strands,segments:count}=MISSING_MAN_SMOKE;
+  for(let strand=0;strand<strands;strand++){
+    for(let n=0;n<count;n++){
+      const u=n/count,next=(n+1)/count;
+      const a=missingManSmokePoint(tip,u,{clock,strand}),b=missingManSmokePoint(tip,next,{clock,strand});
+      // A thread at the ember, a loose wisp at the top, and gone before the brim.
+      const fade=(1-u)**1.25,start=Math.min(1,(n+1)/2);
+      segments.push({a,b,age:u,strand,kind:'rise',width:.008+.042*u,
+        density:(engaged?.78:.66)*fade*start*densityScale*(strand?.8:1)});
     }
   }
-  return segments;
+  breath=clamp(Number(breath)||0,0,1);
+  if(breath>.02&&finite(mouth)&&finite(forward)){
+    const {strands:paths,segments:steps}=MISSING_MAN_SMOKE.breath;
+    for(let strand=0;strand<paths;strand++)for(let n=0;n<steps;n++){
+      const u=n/steps,next=(n+1)/steps;
+      segments.push({a:missingManBreathPoint(mouth,forward,u,{clock,strand}),b:missingManBreathPoint(mouth,forward,next,{clock,strand}),
+        age:u,strand:strands+strand,kind:'breath',width:.008+.04*u,density:.55*breath*(1-u)**1.1*densityScale});
+    }
+  }
+  return segments.filter(s=>s.a&&s.b&&s.density>.004);
 }
 function segmentMatrix(a,b,width){
   const along=sub(b,a),length=Math.hypot(...along);if(length<1e-6)return null;
@@ -72,6 +100,10 @@ export function installMissingManSmoke(gl,pack){
     nodeMatrix:new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),instanceBuffer,
     extras:{missingManSmoke:true},primitives:[{vao,count:indices.length,indexType:gl.UNSIGNED_SHORT,
       base:[.11,.12,.115,1],emissive:[0,0,0],metallic:0,roughness:1,portrait:false,alphaCut:0,
-      materialName:'warning_smoke',materialRole:'missing-man-smoke'}]});
+      materialName:'warning_smoke',materialRole:'missing-man-smoke',
+      // Retain the same ribbon triangles for read-only native visibility.
+      // The instance matrix supplies the real strand width and endpoints.
+      nativeReceiverGeometry:{positions:new Float32Array(positions),normals:new Float32Array(normals),uvs:new Float32Array(uv),indices:new Uint16Array(indices)},
+      nativeReceiverBounds:{min:[-.5,0,-.5],max:[.5,1,.5]}}]});
   gl.bindVertexArray(null);return true;
 }

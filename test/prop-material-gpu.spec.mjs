@@ -75,10 +75,10 @@ color=uMode==0?vec4(n*.5+.5,1.0):vec4(letteringLocalReflectance(n,uView,uLight,u
     const productionWitnessVertex=`#version 300 es
 precision highp float;
 uniform mat2 uUv;uniform vec3 uWorldX,uWorldY,uNormal;
-out vec3 vWorld,vNormal;out vec2 vUv;out float vLocalHeight;flat out int vZone,vPortrait,vStructural;
+out vec3 vWorld,vNormal,vSourceSurroundingsRestWorld,vSourceSurroundingsLocal;out vec2 vUv;out float vLocalHeight;flat out int vZone,vPortrait,vStructural;
 flat out vec4 vEmissive;flat out int vPaperIndex;flat out vec4 vPaperHandling;flat out float vFixturePower;
 void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.0-1.0,0.0,1.0);
-vWorld=uWorldX*p.x+uWorldY*p.y;vUv=uUv*p;vNormal=uNormal;vLocalHeight=0.0;vZone=0;vPortrait=0;vStructural=0;
+vWorld=uWorldX*p.x+uWorldY*p.y;vSourceSurroundingsRestWorld=vWorld;vSourceSurroundingsLocal=vWorld;vUv=uUv*p;vNormal=uNormal;vLocalHeight=0.0;vZone=0;vPortrait=0;vStructural=0;
 vEmissive=vec4(0.0);vPaperIndex=-1;vPaperHandling=vec4(0.0);vFixturePower=1.0;}`;
     const finalMarker='  col=col/(1.0+col*.30);';
     if(!production.fragment.includes(finalMarker))throw new Error('Production normal diagnostic insertion point missing');

@@ -112,7 +112,7 @@ test('the interior bus encounter follows with its rig while the rear-bay root an
   assert.ok(Math.abs(first.matrix[12]-p.x)<.0001&&Math.abs(first.matrix[14]-p.z)<.0001);
   const outside=at(...OUTSKIRTS_BUS_PASSAGE.exit.outside);
   position=stand(runtime,outside.x,outside.z);viewYaw=Math.atan2(p.x-outside.x,-(p.z-outside.z));
-  assert.equal(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage,4);
+  assert.equal(runtime.outskirtsStreetFrame({viewYaw}).encounter.stage,3,'a staged position outside the shut rear door cannot earn the body crossing');
   assert.equal(runtime.outskirtsCharacterFrame().woman.stepAt,null,'leaving the rear door starts the obsolete roadward root step');
   for(let i=0;i<4;i++){runtime.tickOutskirtsCharacters(.25,{viewYaw});runtime.outskirtsStreetFrame({viewYaw});}
   const end=ticketFollows(instances(runtime,position,viewYaw),p.id);

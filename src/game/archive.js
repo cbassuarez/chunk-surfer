@@ -10,11 +10,14 @@ import { returnDefinition } from '../progression/report.js';
 import { endingHintForEnding } from './post-run-copy.js';
 import { getSave } from './save.js';
 import { playDurationLine } from './play-duration.js';
+import * as PB from './playback.js';
+import { archivedRecordingRows, archivedRecordingStatus } from './night-failure-archive.js';
+import { takeStamp } from './clock.js';
 
 const CATEGORY_ORDER = ['work', 'disclosures', 'returns', 'method'];
 const CATEGORY_LABEL = { work: 'STORY', disclosures: 'SECRETS', returns: 'ENDINGS', method: 'CHALLENGES' };
 
-export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
+export function makeArchiveScene({ meta, onClose = () => {}, summaryId=null, recordings=false } = {}) {
   const entries = achievementEntries(meta);
   const files = returnFileEntries(meta);
   let tab = 0;
@@ -24,7 +27,9 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
   // A filed document runs to five paragraphs and the panel holds two or three, so
   // it pages. Up/Down already move between returns; left/right are free on this
   // tab and were doing nothing.
-  let docPage = 0, renderedPages = 1;
+  let docPage = 0, renderedPages = 1, recordingMode=false, recordingSel=0, recordingMessage='';
+  const selectedRecordings=()=>archivedRecordingRows(files[sel]?.summary);
+  if(summaryId){const index=files.findIndex(file=>file.summary?.id===summaryId);if(index>=0){tab=1;sel=index;recordingMode=!!recordings;}}
 
   const visibleEntries = () => tab === 0 ? entries.filter((entry) => entry.category === CATEGORY_ORDER[category]) : files;
   const clamp = () => {
@@ -35,9 +40,27 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
   return {
     id: 'archive', blocksInput: true, blocksWorld: true, handlesEscape: true, lensPreset: 'calm',
     enter() { AUDIO.startMenuHiss(); },
-    exit() { AUDIO.stopMenuHiss(); onClose(); },
+    exit() { if(PB.archivedPlaybackActive())PB.stopPlayback();AUDIO.stopMenuHiss(); onClose(); },
+    update(){if(PB.archivedPlaybackActive())PB.tickPlayback();},
     key(e) {
       const k = String(e.key || '').toLowerCase();
+      if(recordingMode){
+        const rows=selectedRecordings();
+        if(e.key==='Escape'||k==='b'||k==='r'){if(PB.archivedPlaybackActive())PB.stopPlayback();recordingMode=false;return true;}
+        if(e.key==='ArrowUp'||k==='w'){recordingSel=Math.max(0,recordingSel-1);recordingMessage='';return true;}
+        if(e.key==='ArrowDown'||k==='s'){recordingSel=Math.max(0,Math.min(rows.length-1,recordingSel+1));recordingMessage='';return true;}
+        if(e.key==='Enter'){
+          if(e.repeat)return true;
+          if(PB.archivedPlaybackActive()){PB.stopPlayback();recordingMessage='STOPPED';return true;}
+          const row=rows[recordingSel];
+          if(archivedRecordingStatus(row)==='UNAVAILABLE'){recordingMessage='RECORDING UNAVAILABLE';return true;}
+          const playing=PB.playArchivedTake(row);recordingMessage=playing?'PLAYING':PB.playbackError()?.message||'AUDIO UNAVAILABLE';
+          if(playing?.readyPromise)void playing.readyPromise.then(result=>{if(!result)recordingMessage=PB.playbackError()?.message||'RECORDING UNAVAILABLE';});
+          return true;
+        }
+        return true;
+      }
+      if(tab===1&&k==='r'&&selectedRecordings().length){recordingMode=true;recordingSel=0;recordingMessage='';return true;}
       if (e.key === 'Tab') {
         tab = (tab + (e.shiftKey ? -1 : 1) + 2) % 2;
         sel = 0; scroll = 0; docPage=0; AUDIO.menuPage(); return true;
@@ -61,11 +84,26 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const w = Math.min(94, cols - 4), h = Math.min(Math.max(32, rows - 8), rows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((rows - h) / 2);
       withMachinePanel(x, y, w, h, {
-        label: 'ARCHIVE',
+        label: recordingMode?'ARCHIVED RECORDINGS':'ARCHIVE',
         source: 'PROGRESS',
         footerParts: [{ action: 'tabNext', label: 'TAB' }, { action: 'select', label: 'ENTRY' }, { action: 'back', label: 'CLOSE' }],
         meter: false,
       }, (body) => {
+      if(recordingMode){
+        const tapes=selectedRecordings(),cap=Math.max(1,body.h-8),start=Math.max(0,recordingSel-cap+1);
+        uiText(body.x,body.y,'RETAINED TAPE · READ ONLY','ui-amber');
+        uiText(body.x,body.y+1,'ENTER PLAY / STOP    R / ESC BACK','ui-label');
+        if(!tapes.length)uiText(body.x,body.y+3,'NO RECORDINGS RETAINED','ui-secondary');
+        tapes.slice(start,start+cap).forEach((tape,j)=>{
+          const i=start+j,status=archivedRecordingStatus(tape),label=tape.place||tape.roomId;
+          uiText(body.x,body.y+3+j,`${i===recordingSel?'▸':' '} ${i+1}. ${label}`.slice(0,Math.max(8,body.w-19)),i===recordingSel?'ui-amber':'ui-primary');
+          uiText(body.x+Math.max(0,body.w-17),body.y+3+j,status,'ui-secondary');
+        });
+        const tape=tapes[recordingSel];
+        if(tape)uiText(body.x,body.y+body.h-3,`${takeStamp(tape.ordinal?Math.max(0,tape.ordinal-1):recordingSel,{captured:tape.nightStamp})}   ${Math.max(0,Number(tape.durationSeconds)||0).toFixed(1)} s`,'ui-label');
+        uiText(body.x,body.y+body.h-1,recordingMessage||(PB.archivedPlaybackActive()?'PLAYING':'No recording starts automatically.'),'ui-secondary');
+        return;
+      }
       drawVfdText(body.x, body.y, tab === 0 ? 'ACHIEVEMENTS' : 'RUN HISTORY', { color: UI_COLOR.amber, max: body.w });
       uiText(body.x + Math.max(20, body.w - 38), body.y, tab === 0 ? '[ACHIEVEMENTS]  RUN HISTORY' : ' ACHIEVEMENTS  [RUN HISTORY]', 'ui-label');
       uiText(body.x, body.y + 1, playDurationLine(getSave(), body.w).slice(0, body.w), 'ui-label', .78);
@@ -90,7 +128,8 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
           const ending = returnDefinition(entry.summary?.endingId);
           const title = ending?.title || String(entry.summary?.endingId || 'ending').replaceAll('-', ' ').toUpperCase();
           uiText(body.x, body.y + 5 + j, `${on ? '▸' : ' '} ${title}`.slice(0, listW - 12), on ? 'ui-amber' : 'ui-primary');
-          uiText(body.x + listW - 9, body.y + 5 + j, 'COMPLETED', 'ui-green');
+          const failed=entry.summary?.classification==='failed-night';
+          uiText(body.x + listW - 9, body.y + 5 + j, failed?'FAILED':'COMPLETED', failed?'ui-danger':'ui-green');
           return;
         }
         const hidden = entry.hidden && !entry.unlocked;
@@ -103,7 +142,7 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       const entry = list[sel];renderedPages=1;
       if (!entry) {
         if (tab === 1) {
-          uiText(body.x, body.y + 6, 'NO COMPLETED RUNS', 'ui-secondary');
+          uiText(body.x, body.y + 6, 'NO FILED RUNS', 'ui-secondary');
           uiWrap('Finish the story to add its ending, unlocked hint, and archived document here.', body.w).slice(0, Math.max(0, body.h - 10))
             .forEach((line, i) => uiText(body.x, body.y + 8 + i, line, 'ui-secondary', .72));
         } else {
@@ -117,10 +156,11 @@ export function makeArchiveScene({ meta, onClose = () => {} } = {}) {
       if (tab === 1) {
         const ending = returnDefinition(entry.summary?.endingId);
         uiText(dx, body.y + 5, ending?.title || String(entry.summary?.endingId || 'ending').replaceAll('-', ' ').toUpperCase(), 'ui-amber');
-        uiText(dx, body.y + 7, 'COMPLETED', 'ui-green');
-        uiText(dx, body.y + 10, 'HINT FOR ANOTHER ENDING', 'ui-label');
+        const failed=entry.summary?.classification==='failed-night';
+        uiText(dx, body.y + 7, failed?'FAILED NIGHT':'COMPLETED', failed?'ui-danger':'ui-green');
+        uiText(dx, body.y + 10, failed?'R  RETAINED RECORDINGS':'HINT FOR ANOTHER ENDING', 'ui-label');
         let ry = body.y + 12;
-        uiWrap(endingHintForEnding(entry.summary?.endingId) || 'Try changing a major choice near the end of the story.', dw).slice(0, 3)
+        uiWrap(failed?'The night ended at demolition. Clearing the span saved the body, not the job.':endingHintForEnding(entry.summary?.endingId) || 'Try changing a major choice near the end of the story.', dw).slice(0, 3)
           .forEach((line, i) => uiText(dx, ry + i, line, 'ui-primary'));
         ry += 4;
         uiText(dx, ry, 'ARCHIVED STORY DOCUMENT', 'ui-label');

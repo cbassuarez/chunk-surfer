@@ -151,14 +151,17 @@ test('the compact city shelter and bench fit the pavement edge and leave a genui
       if(x===-13)previous=p;
     }
   }
+  // The stop is part of the four-metre pavement now: no end steps, and the
+  // kerb (125 mm drawn, Leeds SPD ¶747) is the road edge at x -10.25.
   for(const [fromZ,toZ] of [[11.5,12],[12,11.5],[19.5,20],[20,19.5]]){
     const a=FP.logicalAtPhysical(-11.5/CELL,fromZ/CELL,{floor:0});
     const b=FP.logicalAtPhysical(-11.5/CELL,toZ/CELL,{floor:0});
-    assert.ok(Math.abs(FP.floorAt(a.x,a.y)-FP.floorAt(b.x,b.y))<=.095001,'end step remains at most 95mm');
-    assert.ok(FP.canStep(a.x,a.y,b.x,b.y).ok,'ordinary movement crosses each end step both ways');
+    assert.ok(Math.abs(FP.floorAt(a.x,a.y)-FP.floorAt(b.x,b.y))<1e-6,'the pavement runs level past the stop');
+    assert.ok(FP.canStep(a.x,a.y,b.x,b.y).ok,'ordinary movement passes the stop both ways');
   }
-  const gutter=FP.logicalAtPhysical(-11/CELL,16/CELL,{floor:0});
-  assert.ok(Math.abs(FP.floorAt(gutter.x,gutter.y)-.025)<1e-6,'sett gutter beside the pad remains at its existing height');
+  const kerbSide=FP.logicalAtPhysical(-10.5/CELL,16/CELL,{floor:0}),road=FP.logicalAtPhysical(-10/CELL,16/CELL,{floor:0});
+  assert.ok(Math.abs(FP.floorAt(kerbSide.x,kerbSide.y)-.12)<1e-6,'the pavement reaches the kerb at the stop');
+  assert.ok(Math.abs(FP.floorAt(road.x,road.y))<1e-6,'the bus pulls in to the kerb, onto the carriageway');
   assert.equal(PROPS.propById('yard-bus-shelter').mesh,'city_bus_shelter','arrival shelter retains its original mesh');
 });
 

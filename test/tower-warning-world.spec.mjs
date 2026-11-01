@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
-import {TOWER_WARNING as W,TOWER_WARNING_LEVELS} from '../src/data/tower-warning.js';
-import {F,MATERIAL} from '../src/data/floorplan/legend.js';
+import {TOWER_WARNING as W,TOWER_WARNING_LEVELS,TOWER_WARNING_STREET_CORNER} from '../src/data/tower-warning.js';
+import {F} from '../src/data/floorplan/legend.js';
 import {EXTERIOR_COLLISION_GEOMETRY} from '../src/data/generated/exterior-collision.js';
 import {exteriorFacadeCanStep} from '../src/world/exterior-facade-collision.js';
 import {parseCharacterAsset,sampleCharacterPose} from '../src/render/character-asset.js';
@@ -18,9 +18,10 @@ const at=p=>FP.logicalAtPhysical(p.x*2-.5,p.z*2-.5,{group:'ground',floor:p.y});
 const bytes=fs.readFileSync(new URL('../public/assets/tower-warning-missing-man.glb',import.meta.url));
 const asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength));
 
-test('the warning stands on the old Lyric pavement and turns through actual clear masonry, on real paving',()=>{
-  const samples=[W.position];
-  for(let n=1;n<W.route.length;n++){
+test('the warning walks real paving up to the house front, then into the house itself',()=>{
+  const samples=[W.position],paved=W.route.findIndex(p=>p.masonry);
+  assert.ok(paved>1,'some of the walk is on actual paving before the wall');
+  for(let n=1;n<paved;n++){
     const a=W.route[n-1],b=W.route[n],count=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.08);
     for(let i=1;i<=count;i++){const t=i/count;samples.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});}
   }
@@ -36,16 +37,19 @@ test('the warning stands on the old Lyric pavement and turns through actual clea
       height:W.bodyHeight,radius:W.bodyRadius,stepUp:.05},placed);
     assert.equal(hit.ok,true,JSON.stringify(hit.hit));
   }
-  const end=at(W.route.at(-1));assert.equal(end.owner,TOWER_WARNING_LEVELS[0].id);
-  assert.equal(FP.materialAt(end.x,end.y),MATERIAL.wetPaving);
-  // The rejected route went west into a workshop. The passage must not turn
-  // its real occupied building into an imagined empty patch of street.
-  assert.equal(exteriorFacadeCanStep({from:{x:-14.5,z:110,feet:.12},to:{x:-15.5,z:110,feet:.12},
-    height:W.bodyHeight,radius:W.bodyRadius,stepUp:.05},placed).ok,false);
+  // From the first masonry leg on he is walking into the house front: the
+  // last legs genuinely cross the plinth and facade that ordinary movement
+  // cannot, and end inside the occupied house rather than at its door.
+  assert.ok(W.route.slice(paved).every(p=>p.masonry),'once in the wall, every later leg is in the wall');
+  const end=W.route.at(-1),house=TOWER_WARNING_STREET_CORNER.occupied;
+  assert.ok(end.x>house.minX+W.bodyRadius&&end.x<house.maxX-W.bodyRadius&&end.z>house.minZ+W.bodyRadius,'the endpoint is deep inside the house');
+  for(const z of[W.pier.face+.3,end.z]){const cell=at({x:W.pier.x,y:.12,z});
+    assert.ok(!cell||FP.isSolid(cell.x,cell.y),`ordinary movement cannot follow him to z ${z}: he is inside a real building`);}
+  assert.ok(W.pier.x-W.bodyRadius>-12.225&&W.pier.x+W.bodyRadius<-11.42,'he enters plain brick between the front door and the first sash window');
 });
 
-test('the hide authority follows the actual pub return masonry without sealing its side window or public room',()=>{
-  const p=placed.find(p=>p.id==='pub-complete-frontage');
+test('the hide authority stays on the actual closed street corner after the inhabited pub moves into the block',()=>{
+  const p=placed.find(p=>p.id==='district-south-row-a');
   const walls=EXTERIOR_COLLISION_GEOMETRY[p.mesh].walls;
   const c=Math.cos(p.yaw),s=Math.sin(p.yaw),world=(x,z)=>[p.x+x*c-z*s,p.z+x*s+z*c];
   for(const o of W.occluders.filter(o=>o.mesh===p.mesh))assert.ok(walls.some(w=>{
@@ -53,10 +57,13 @@ test('the hide authority follows the actual pub return masonry without sealing i
     return Math.abs(a[0]-o.minX)<1e-6&&Math.abs(b[0]-o.minX)<1e-6&&
       Math.abs(Math.min(a[1],b[1])-o.minZ)<1e-6&&Math.abs(Math.max(a[1],b[1])-o.maxZ)<1e-6&&
       Math.abs(p.y+w[4]-o.minY)<1e-6&&Math.abs(p.y+w[5]-o.maxY)<1e-6;
-  }),`${o.id}: an inferred occupied room cannot stand in for an actual opaque shell part`);
-  assert.equal(towerWarningOccluded({x:-12,y:1.8,z:110.05},{x:-14.4,y:.12,z:110.05}),false,
-    'the real side window preserves a view from the public room into the alley');
-  for(const p of W.route)assert.ok(!W.occluders.some(o=>p.x>o.minX&&p.x<o.maxX&&p.z>o.minZ&&p.z<o.maxZ));
+  }),`${o.id}: the old address needs the actual closed occupied house, not an occluder following the new pub`);
+  assert.equal(W.occluders.some(o=>o.mesh==='exterior_pub_frontage'),false,'moving the pub must not move this distant disappearance boundary');
+  assert.equal(towerWarningOccluded({x:-12,y:1.8,z:110.05},{x:-14.4,y:.12,z:110.05}),true,
+    'the vacated address is closed occupied construction rather than another public room');
+  assert.ok(TOWER_WARNING_STREET_CORNER.occupied.minX<0);
+  for(const p of W.route.filter(p=>!p.masonry))assert.ok(!W.occluders.some(o=>p.x>o.minX&&p.x<o.maxX&&p.z>o.minZ&&p.z<o.maxZ));
+  assert.ok(W.occluders.some(o=>{const p=W.route.at(-1);return p.x>o.minX&&p.x<o.maxX&&p.z>o.minZ&&p.z<o.maxZ;}),'the walk ends inside the hide authority');
 });
 
 test('the dedicated Missing Man keeps real skinned garments, isolated opaque core materials and distance-owned gait',()=>{

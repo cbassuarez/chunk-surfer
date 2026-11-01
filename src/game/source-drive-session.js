@@ -14,6 +14,7 @@ import { driveEvolutionFrame } from './source-drive/evolution.js';
 import { programmeFrame } from './source-drive/radio-programmes.js';
 import { SOURCE_DRIVE_OPENING, seedMovingDriveEntry, driveOpeningView } from './source-drive/entry-cut.js';
 import {driveDoorCrossingFrame} from './source-drive/door-crossing.js';
+import {freshDriveFirstStrike,normalizeDriveFirstStrike,stepDriveFirstStrike,driveFirstStrikeColliders,applyDriveFirstStrikeFrame} from './source-drive/deadline.js';
 
 export const SOURCE_DRIVE_VERSION = 1;
 export const SOURCE_DRIVE_ENCOUNTER = 'source-the-cut-v1';
@@ -42,7 +43,7 @@ export function freshSourceDriveCheckpoint({ returnPose = null, runId = '' } = {
   return { version: SOURCE_DRIVE_VERSION, encounterId: SOURCE_DRIVE_ENCOUNTER, runId: String(runId), status: 'not-started',
     returnPose: validPose(returnPose), drive: createDrive({ length: 1200 }), weather: JSON.parse(serializeDriveWeather(createDriveWeather())),
     look: { yaw: 0, pitch: -.14 }, settings: { wipers: true, headlights: true }, fingerprint: null, tape: null,
-    started: false, clippedTimeSeconds: 0 };
+    started: false, clippedTimeSeconds: 0, firstStrike: null };
 }
 
 export function normalizeSourceDriveCheckpoint(value = null) {
@@ -50,6 +51,11 @@ export function normalizeSourceDriveCheckpoint(value = null) {
   try {
     if (!['not-started', 'active', 'returned'].includes(value.status)) throw Error('Invalid drive lifecycle.');
     const drive = restoreDrive(JSON.stringify(value.drive));
+    const firstStrike=normalizeDriveFirstStrike(value.firstStrike);
+    // An unfinished physical clearance retains its actual moving vehicle;
+    // image/focus ownership still holds simulation until the first real draw.
+    if(firstStrike)for(const[key,min,max]of[['speed',-4.1,16.1],['lateralSpeed',-12,12],['yawRate',-3,3],['wheelAngle',-.52,.52],['steeringWheelAngle',-9.1,9.1],['throttle',0,1],['brakeAmount',0,1]])
+      if(Number.isFinite(value.drive[key]))drive[key]=clamp(value.drive[key],min,max);
     if (drive.length !== 1200 || ![drive.x, drive.z, drive.heading, drive.programTime, drive.furthest].every(Number.isFinite)
       || drive.programTime < 0 || drive.furthest < 0) throw Error('Invalid drive state.');
     const weather = restoreDriveWeather(value.weather);
@@ -63,7 +69,7 @@ export function normalizeSourceDriveCheckpoint(value = null) {
     return { version: SOURCE_DRIVE_VERSION, encounterId: SOURCE_DRIVE_ENCOUNTER, runId: String(value.runId || ''), status: value.status,
       returnPose: pose, drive, weather, look: { yaw: clamp(Number(look.yaw) || 0, -1.55, 1.55), pitch: clamp(Number(look.pitch) || 0, -.62, .45) },
       settings: { wipers: !!value.settings?.wipers, headlights: value.settings?.headlights !== false }, fingerprint,
-      tape: value.tape == null ? null : clone(value.tape), started: !!value.started, clippedTimeSeconds: Math.max(0, Number(value.clippedTimeSeconds) || 0) };
+      tape: value.tape == null ? null : clone(value.tape), started: !!value.started, clippedTimeSeconds: Math.max(0, Number(value.clippedTimeSeconds) || 0),firstStrike };
   } catch { return freshSourceDriveCheckpoint({ runId: value.runId }); }
 }
 
@@ -96,6 +102,7 @@ export function createSourceDriveSession(host = {}) {
   let previousAxleDistance = -s.z, started = saved.started, clippedTimeSeconds = saved.clippedTimeSeconds;
   let transport = Promise.resolve(), busy = false, lastError = null, checkpointAt = s.programTime;
   let picturePresented = false, automaticStart = null, retryWait = 0, startFailures = 0;
+  let firstStrike=saved.firstStrike,deadlineClaiming=false,deadlineCompleting=false,deadlineRendered=false,deadlineRetryWait=0;
   let doorFinishRequested=false,doorContacted=s.events?.some(e=>e.type==='goods-threshold-impact')||false,
     doorOpened=driveDoorCrossingFrame(s).open>0;
 
@@ -103,22 +110,45 @@ export function createSourceDriveSession(host = {}) {
   const event = (type, data = {}) => { const value = note(s, type, data); host.onEvent?.(clone(value)); return value; };
   const tapeStatus = () => recording?.status?.() || recording?.snapshot?.() || {};
   const tapeCheckpoint = () => recording?.checkpoint?.() ?? saved.tape;
+  const deadlinePending=()=>{const value=host.getDeadlinePending?.();return value===true?{eventId:`night-deadline:${saved.runId}`,phase:'pending'}:
+    value&&['pending','presenting'].includes(value.phase)?value:null;};
+  const deadlineProtected=()=>{const tape=tapeStatus();return busy||!!(tape.recording||tape.playing||tape.cuing||tapeCheckpoint()?.pending||host.deadlineProtected?.());};
+  function deadlineStatus(){return firstStrike?{...clone(firstStrike),claiming:deadlineClaiming,completing:deadlineCompleting,
+    instruction:`DEMOLITION · CLEAR ${firstStrike.safeSide<0?'LEFT':'RIGHT'} EDGE AND BRAKE`}:null;}
   function publish() {
     const tape = tapeStatus();
     host.onStatus?.({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), parked: !!s.arrived, brakeHeld: !!s.brakeHold, positionRecovered: s.boundaryRecovery?.acknowledged===false, returning, returned, busy, error: lastError,
       canBegin: initialized && s.paused && !returned && !returning, canLeave:false,doorCrossing:driveDoorCrossingFrame(s),
       title: returned ? 'The grey doors' : s.paused ? 'The Cut' : '',
-      instruction: returned ? '' : s.paused ? 'PICTURE HELD · ESC · MENU' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : s.arrived ? 'W · DRIVE THROUGH THE DOORS   E · LISTEN   R · RECORD' : 'R · RECORD   E · LISTEN   X · STOP',
-      recording: !!tape.recording, playing: !!tape.playing });
+      instruction:firstStrike?deadlineStatus().instruction:returned ? '' : s.paused ? 'PICTURE HELD · ESC · MENU' : s.brakeHold ? 'BRAKE HELD · W / S TO MOVE   R · RECORD   E · LISTEN' : s.arrived ? 'W · DRIVE THROUGH THE DOORS   E · LISTEN   R · RECORD' : 'R · RECORD   E · LISTEN   X · STOP',
+      recording: !!tape.recording, playing: !!tape.playing,firstStrike:deadlineStatus(),recordingPending:!!tapeCheckpoint()?.pending });
   }
   function serialize() {
     const tape = tapeCheckpoint();
     return { version: SOURCE_DRIVE_VERSION, encounterId: SOURCE_DRIVE_ENCOUNTER, runId: saved.runId,
       status: returned ? 'returned' : started ? 'active' : 'not-started', returnPose: clone(saved.returnPose),
       drive: JSON.parse(saveDrive(s)), weather: JSON.parse(serializeDriveWeather(weather)), look: { ...look }, settings: { ...settings },
-      fingerprint: fingerprint ? clone(fingerprint) : null, tape: tape == null ? null : clone(tape), started, clippedTimeSeconds };
+      fingerprint: fingerprint ? clone(fingerprint) : null, tape: tape == null ? null : clone(tape), started, clippedTimeSeconds,firstStrike:firstStrike?clone(firstStrike):null };
   }
   function checkpoint(reason = 'autosave') { const value = serialize(); host.onCheckpoint?.(value, { reason }); return value; }
+  function requestDeadline(){
+    const pending=deadlinePending();if(!pending||firstStrike||deadlineClaiming||deadlineRetryWait>0||deadlineProtected()||!picturePresented
+      ||opening&&!opening.picture||driveDoorCrossingFrame(s).phase!=='approach'||typeof host.onDeadlineClaim!=='function')return;
+    const proposed=freshDriveFirstStrike(s,{eventId:pending.eventId||`night-deadline:${saved.runId}`});
+    deadlineClaiming=true;const proposedCheckpoint={...serialize(),firstStrike:clone(proposed)};
+    Promise.resolve().then(()=>host.onDeadlineClaim({eventId:proposed.eventId,checkpoint:proposedCheckpoint,sceneCheckpoint:{kind:'drive',firstStrike:clone(proposed)}}))
+      .then(ok=>{if(disposed)return;if(ok===false)throw Error('The failed-night drive claim was not saved.');firstStrike=proposed;checkpointAt=s.programTime;checkpoint('deadline-claimed');rebuild();publish();})
+      .catch(error=>{deadlineRetryWait=2;report(error);}).finally(()=>{deadlineClaiming=false;});
+  }
+  function finishDeadline(){
+    if(!firstStrike?.outcome||firstStrike.completionDelivered||!deadlineRendered||deadlineCompleting||disposed||deadlineRetryWait>0
+      ||s.paused||deadlineProtected()||!picturePresented)return;
+    deadlineCompleting=true;keys.clear();const value=checkpoint('deadline-terminal-rendered');
+    Promise.resolve().then(()=>{if(typeof host.onDeadlineComplete!=='function')throw Error('The failed-night return owner is unavailable.');
+      return host.onDeadlineComplete({eventId:firstStrike.eventId,outcome:firstStrike.outcome,checkpoint:value,frame,rendered:true});})
+      .then(ok=>{if(ok===false)throw Error('The failed night could not yet be filed.');firstStrike.completionDelivered=true;if(!disposed)checkpoint('deadline-delivered');})
+      .catch(error=>{deadlineRetryWait=2;report(error);}).finally(()=>{deadlineCompleting=false;});
+  }
   function transaction(fn) {
     const task = transport.then(async () => { if (disposed) throw Error('The drive session is disposed.'); busy = true; publish(); try { return await fn(); } finally { busy = false; publish(); } });
     transport = task.catch(() => {});
@@ -238,6 +268,7 @@ export function createSourceDriveSession(host = {}) {
     if (!recording) throw Error('Field recording is unavailable; the journey can still continue.');
     const status = tapeStatus();
     if (status.recording || tapeCheckpoint()?.pending) return stopTransport('player-stop');
+    if(deadlinePending()||firstStrike)throw Object.assign(Error('The night has ended. A new recording cannot start.'),{code:'NIGHT_EXPIRED'});
     await recording.stopPlayback?.();
     const result = await recording.record({ encounterId: SOURCE_DRIVE_ENCOUNTER, kind: 'field', counted: false, station: s.station,
       phase: PHASES[s.phase], programmeTime: s.programTime, distance: s.furthest, position: { x: s.x, z: s.z }, signal: 'cabin-reference' });
@@ -246,6 +277,7 @@ export function createSourceDriveSession(host = {}) {
   }); }
   function playLast() { return transaction(async () => {
     if (!recording) throw Error('Field playback is unavailable.');
+    if(deadlinePending()||firstStrike)throw Object.assign(Error('The night has ended. A new playback cannot start.'),{code:'NIGHT_EXPIRED'});
     await recording.seal?.({ reason: 'playback' });
     await recording.stopPlayback?.();
     const result = await recording.play({});
@@ -273,15 +305,17 @@ export function createSourceDriveSession(host = {}) {
     const level = tape.playing ? (host.playbackLevel?.() || 0) : (acoustics?.level?.() || 0);
     const seconds = tape.playing ? (tape.playbackTapeSeconds ?? physical.headSeconds ?? tape.positionSeconds ?? tape.position ?? 0) : (physical.headSeconds ?? tape.headSeconds ?? tape.tapeEndSeconds ?? tape.elapsedSeconds ?? 0);
     const pendingStorage = tapeCheckpoint()?.pending?.state === 'pending-storage';
-    return { counter: clock(seconds), levels: { left: level, right: level }, note: pendingStorage ? 'TAPE HELD · PRESS STOP TO SAVE' : tape.recording ? 'FIELD TAKE · ROLLING' : tape.playing ? 'PLAY · HEADPHONES' : 'FIELD TAKE · READY', mode: tape.recording ? 'record' : tape.playing ? 'play' : 'idle' };
+    return { counter: clock(seconds), levels: { left: level, right: level }, note: pendingStorage ? 'TAPE HELD · PRESS STOP TO SAVE' : tape.recording ? 'FIELD TAKE · ROLLING' : tape.playing ? 'PLAY · HEADPHONES' : firstStrike?`06:00 · CLEAR ${firstStrike.safeSide<0?'LEFT':'RIGHT'} / BRAKE`:'FIELD TAKE · READY', mode: tape.recording ? 'record' : tape.playing ? 'play' : 'idle' };
   }
   function rebuild() {
     if (!initialized || !metrics || returned) return;
+    if(firstStrike?.outcome)deadlineRendered=false;
     const scene = makeDriveScene(s, metrics, { ...settings, handControl: controlPose(), weather: driveWeatherFrame(weather) });
     const wf = driveWeatherFrame(weather, { bodyMatrix: scene.body, cabinMount: metrics.cabinBodyMount, headlamps: scene.lamps.slice(0, 2) });
     frame = { scene, eye: scene.eye, look: { yaw: s.heading + look.yaw, pitch: look.pitch + scene.roadPitch }, props: scene.props, lights: scene.lamps,
       weather: wf, heading: s.heading, lampDip: .020 - scene.roadPitch, mirrors: scene.mirrors, timeSec: s.programTime, driveState: s,
       evolution: scene.evolution, radio: acoustics?.programmeFrame?.()||programmeFrame(s,scene.evolution), readout: readout(), active: true };
+    if(firstStrike)applyDriveFirstStrikeFrame(frame,firstStrike);
   }
   function advanceFingerprint(before) {
     const trigger = ORDINARY_BRIDGE.d - 95;
@@ -302,9 +336,13 @@ export function createSourceDriveSession(host = {}) {
     if (!initialized || disposed || returned || returning || s.paused) return;
     if(opening&&!opening.picture&&host.context&&host.context.state!=='running'){void pause();return;}
     const incoming = Number.isFinite(dt) ? Math.max(0, dt) : 0, elapsed = Math.min(.25, incoming);
+    deadlineRetryWait=Math.max(0,deadlineRetryWait-elapsed);
+    if(firstStrike?.outcome)return;
+    requestDeadline();
     clippedTimeSeconds += incoming - elapsed;
     const old = s.furthest, phase = s.phase, wasArrived = s.arrived, wasHeld = !!s.brakeHold;
-    stepDrive(s, elapsed, Object.fromEntries([...keys].map(key => [key, true])), driveColliders(s));
+    const nextCourses=firstStrike&&!deadlineProtected()?{...firstStrike,elapsed:Math.min(42,firstStrike.elapsed+elapsed)}:firstStrike;
+    stepDrive(s, elapsed, Object.fromEntries([...keys].map(key => [key, true])), driveFirstStrikeColliders(nextCourses,driveColliders(s)));
     const crossing=driveDoorCrossingFrame(s);
     if(crossing.open>0&&!doorOpened){doorOpened=true;acoustics.click?.('goods-door-release');event('goods-doors-opening',{distance:crossing.distance,speed:s.speed});}
     if(crossing.contact&&!doorContacted){doorContacted=true;acoustics.joint?.({strength:1.2});applyRoadImpulse(s,.09);event('goods-threshold-impact',{distance:crossing.distance,speed:s.speed});}
@@ -318,12 +356,17 @@ export function createSourceDriveSession(host = {}) {
     previousAxleDistance = distance;
     const evolution=driveEvolutionFrame(s);
     stepDriveWeather(weather, { dt: elapsed, timeSec: s.programTime, ...evolution.weather, wipers: settings.wipers, speed: s.speed });
-    rebuild(); updateControl(); acoustics.sync?.(s, frame.scene.cut?.sources || [],frame.weather,evolution,frame.scene.predicaments?.sources||[]); recording?.tick?.();
+    recording?.tick?.();
+    let deadlineEvents=[];
+    if(firstStrike){const result=stepDriveFirstStrike(firstStrike,s,{dt:elapsed,protected:deadlineProtected(),doorCrossing:crossing});firstStrike=result.state;deadlineEvents=result.events;
+      if(deadlineEvents.length)checkpoint('deadline-structural');}
+    rebuild();updateControl();acoustics.sync?.(s, frame.scene.cut?.sources || [],frame.weather,evolution,frame.scene.predicaments?.sources||[]);
+    if(firstStrike){frame.firstStrike.events=deadlineEvents;host.onDeadlineFrame?.(frame,{events:deadlineEvents,protected:deadlineProtected(),listener:{x:frame.eye[0],y:frame.eye[1],z:frame.eye[2],yaw:frame.look.yaw}});}
     if(opening&&!opening.picture&&opening.soundStartedAt!=null&&s.programTime-opening.soundStartedAt>=SOURCE_DRIVE_OPENING.audioLeadSeconds){
       opening.picture=true;event('journey-picture',{speed:s.speed,station:s.station,programmeTime:s.programTime});checkpoint('moving-picture');publish();
     }
     if (s.phase !== phase || s.arrived !== wasArrived || !!s.brakeHold !== wasHeld || s.programTime - checkpointAt >= 4) { checkpointAt = s.programTime; checkpoint('progress'); publish(); }
-    if(crossing.complete&&!doorFinishRequested){
+    if(crossing.complete&&!firstStrike&&!deadlineClaiming&&!doorFinishRequested){
       doorFinishRequested=true;
       Promise.resolve(finish({throughDoor:true})).then(ok=>{if(!ok)doorFinishRequested=false;}).catch(error=>{
         doorFinishRequested=false;retryWait=Math.max(retryWait,5);report(error);
@@ -336,9 +379,10 @@ export function createSourceDriveSession(host = {}) {
     if (!frame) return false;
     frame.readout = readout();
     host.renderer.setRecorderReadout?.(frame.readout);
-    if(host.renderer.render(frame)===false){void pause();return false;}
+    if(host.renderer.render(frame)===false){deadlineRendered=false;void pause();return false;}
     picturePresented=true;
     if(opening&&!opening.renderPrimed){opening.renderPrimed=true;publish();}
+    if(firstStrike?.outcome){deadlineRendered=true;finishDeadline();}
     return true;
   }
   function input(action, pressed = true) {
@@ -350,6 +394,7 @@ export function createSourceDriveSession(host = {}) {
   function key(e) {
     const k = String(e?.key || '').toLowerCase();
     if (k === 'escape') { keys.clear(); host.onPauseRequested?.(); return true; }
+    if(firstStrike?.outcome){if(k==='e'&&!e.repeat){deadlineRetryWait=0;finishDeadline();}return true;}
     if(opening&&!opening.picture)return true;
     if(e?.repeat&&(k==='enter'||KEY_INPUTS[k]&&!keys.has(KEY_INPUTS[k])))return true;
     if (k === 'enter') return true;
@@ -366,6 +411,22 @@ export function createSourceDriveSession(host = {}) {
     return false;
   }
   function keyup(e) { const action = KEY_INPUTS[String(e?.key || '').toLowerCase()]; return action ? input(action, false) : false; }
+  function allowsLook() {
+    // The host's pause/focus/menu gates own capture. Keep the cabin lease
+    // through its async picture-resume so the closing gesture can reacquire
+    // the pointer; motion still waits for the session itself to be running.
+    return initialized && !disposed && !returned && !returning && (!opening || opening.picture);
+  }
+  function lookBy(yaw = 0, pitch = 0) {
+    if (!allowsLook() || s.paused) return false;
+    const dx = Number.isFinite(yaw) ? yaw : 0, dy = Number.isFinite(pitch) ? pitch : 0;
+    if (!dx && !dy) return false;
+    look.yaw = clamp(look.yaw + dx, -1.55, 1.55);
+    look.pitch = clamp(look.pitch + dy, -.62, .45);
+    if (drag) drag.cancelled = true;
+    rebuild();
+    return true;
+  }
   function pick(x, y, width, height) {
     if (!frame || !host.renderer.project) return null;
     let best = null;
@@ -382,18 +443,33 @@ export function createSourceDriveSession(host = {}) {
     return false;
   }
   function pointer(e = {}) {
-    if(opening&&!opening.picture)return true;
-    if (s.paused || returned || returning || !initialized) return false;
-    const type = String(e.type || '').replace(/^pointer/, ''), x = Number(e.x), y = Number(e.y), width = Number(e.width), height = Number(e.height);
+    const type = String(e.type || '').replace(/^pointer/, '');
     if (type === 'cancel' || type === 'lostcapture') { drag = null; return true; }
+    if (!allowsLook() || s.paused) { drag = null; return false; }
+    const captured = !!(e.pointerCaptured ?? e.pointerLocked ?? e.locked ?? globalThis.document?.pointerLockElement);
+    const width = Number(e.width), height = Number(e.height);
+    // Captured look has no free cursor. The centre of the current cabin view
+    // selects its controls; an old DOM client position must not press a knob.
+    const x = captured ? width / 2 : Number(e.x), y = captured ? height / 2 : Number(e.y);
     if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return false;
-    if (type === 'down') { drag = { x, y, look: { ...look }, control: pick(x, y, width, height) }; return true; }
-    if (type === 'move' && drag) { const dx = x - drag.x, dy = y - drag.y; if (!drag.control || Math.hypot(dx, dy) >= 10) { look.yaw = clamp(drag.look.yaw + dx * .0028, -1.55, 1.55); look.pitch = clamp(drag.look.pitch - dy * .0028, -.62, .45); rebuild(); } return true; }
-    if (type === 'up') { const target = drag && Math.hypot(x - drag.x, y - drag.y) < 10 ? drag.control : null; drag = null; return activate(target) || true; }
+    if (type === 'down') {
+      if ((e.button ?? 0) !== 0) return true;
+      drag = { x, y, captured, pointerId: e.pointerId, control: pick(x, y, width, height) }; return true;
+    }
+    if (type === 'move' && drag) {
+      if (Math.hypot(x - drag.x, y - drag.y) >= 10 || captured && (e.movementX || e.movementY)) drag.cancelled = true;
+      return true; // The shared look owner consumes relative motion once.
+    }
+    if (type === 'up') {
+      if ((e.button ?? 0) !== 0 || drag?.pointerId != null && e.pointerId != null && drag.pointerId !== e.pointerId) return true;
+      const target = drag && !drag.cancelled && drag.captured === captured && Math.hypot(x - drag.x, y - drag.y) < 10 ? drag.control : null;
+      drag = null; return activate(target) || true;
+    }
     if (type === 'wheel') { const target = pick(x, y, width, height); if (target?.id === 'power') return operate('power', () => { s.volume = clamp(s.volume - Math.sign(e.deltaY) * .05, 0, 1); }); if (target?.id === 'tune') return tune((['service', 'company', 'music'].indexOf(s.station) + (e.deltaY > 0 ? 1 : 2)) % 3); }
     return false;
   }
   function finish({throughDoor=false}={}) { return transaction(async () => {
+    if(firstStrike)return false;
     const crossing=driveDoorCrossingFrame(s);
     // Explicit debug callers retain the former parked-finish adapter; normal
     // controls can complete only by crossing the actual open goods threshold.
@@ -424,10 +500,13 @@ export function createSourceDriveSession(host = {}) {
     try { await recording?.dispose?.(); }
     finally { acoustics?.dispose?.(); host.renderer.dispose?.(); handControl = queuedControl = null; resetWheelHands(); }
   }
-  const session = { id: 'source-drive', blocksWorld: true, blocksInput: true, suppressesHud: true, allowsLook: false,
+  const session = { id: 'source-drive', blocksWorld: true, blocksInput: true, suppressesHud: true,
+    get allowsLook() { return allowsLook(); }, lookAngles: () => ({ ...look }), lookBy,
     initialize, start, pause, resumeWhenPresented, update, render, key, keyup, pointer, input, serialize, checkpoint, finish, dispose,
     record: toggleRecord, play: playLast, stop,
-    status: () => ({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), returned, returning, busy, error: lastError, parked: s.arrived, state: clone(s), look: { ...look }, tape: tapeStatus() }),
+    status: () => ({ initialized, paused: s.paused, opening:driveOpeningView(opening,s), returned, returning, busy, error: lastError, parked: s.arrived, state: clone(s), look: { ...look }, tape: tapeStatus(),firstStrike:deadlineStatus(),
+      instruction:firstStrike?deadlineStatus().instruction:null,recording:!!tapeStatus().recording,recordingPending:!!tapeCheckpoint()?.pending,recordingFinalizing:busy&&!!tapeCheckpoint()?.pending }),
+    firstStrikeStatus:deadlineStatus,
     openingFrame:()=>driveOpeningView(opening,s),
     frame: () => frame,
     // Read-only diagnostic taps: the review harness uses the exact existing

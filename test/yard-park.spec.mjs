@@ -119,7 +119,19 @@ test('the fountain is a second body of water, and it is not the swimming bath', 
   // depth and clarity is the whole point of generalising it.
   const bodies = computeWaterBodies(FP);
   const ids = bodies.map((body) => body.id).sort();
-  assert.deepEqual(ids, ['natatorium', 'park-fountain']);
+  assert.deepEqual(ids, ['natatorium', 'natatorium-rainwater', 'park-fountain']);
+  // A drained bath still keeps the rain that came through its broken ceiling:
+  // a third body, inside the bath's own footprint, there exactly when the bath
+  // is not flooded, and clear enough to see the tiles through.
+  const rain = bodies.find((body) => body.id === 'natatorium-rainwater');
+  const full = bodies.find((body) => body.id === 'natatorium');
+  assert.ok(rain.bounds.minX >= full.bounds.minX && rain.bounds.maxX <= full.bounds.maxX
+    && rain.bounds.minY >= full.bounds.minY && rain.bounds.maxY <= full.bounds.maxY);
+  assert.ok(rain.murk < full.murk);
+  for (const natatoriumWater of ['drained', 'murky']) {
+    const run = { environment: { natatoriumWater } };
+    assert.notEqual(rain.active(run), full.active(run), `${natatoriumWater}: one water or the other`);
+  }
 
   const bath = bodies.find((body) => body.id === 'natatorium');
   const fountain = bodies.find((body) => body.id === 'park-fountain');

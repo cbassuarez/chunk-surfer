@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceFalseReturnPlan, sourceFalseReturnRenderFrame, createSourceFalseReturnRenderer, SOURCE_FALSE_RETURN_CAPTURE_EXPOSURE } from '../src/render/source-false-return-renderer.js';
-import { sourceFalseReturnDoorFraction } from '../src/game/source-false-return.js';
+import { sourceFalseReturnDoorFraction, freshSourceFalseReturn } from '../src/game/source-false-return.js';
 import { doorAssembly } from '../src/data/source-door-fields.js';
 import { CELL, EYE, F, ZONE, MATERIAL } from '../src/data/floorplan/legend.js';
 import * as R3 from '../src/render/r3d.js';
@@ -9,6 +9,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { buildSourceFalseReturnLayout } from '../src/game/source-false-return-layout.js';
+import {THRESHOLD_GAG,THRESHOLD_GAG_MESHES,thresholdGagPose,thresholdGagTiming} from '../src/data/threshold-gag.js';
 
 const encode = h => Math.round((h + 8) / 32 * 255);
 function layout() {
@@ -23,8 +24,8 @@ function layout() {
     bounds:{minX:-6,maxX:11.5,minZ:-4,maxZ:13.5},spawn:{x:2,z:8,feet:4.8,yaw:-Math.PI/2,pitch:0},lightingContext:{ambientColor:[.66,.51,.35],ambientIntensity:.027,captureExposure:1,whitePointScale:1} };
 }
 const state = (extra={}) => ({x:2,z:8,feet:4.8,yaw:-Math.PI/2,pitch:-.2,elapsed:0,opened:[],sourceDoors:[],doorMotion:{},doorOpen:{},...extra});
-function fixture({gate=null,authoredGate=null,missing=[],packFailure=false,configure=()=>{},getTorch}={}) {
-  const l=layout(),calls=[],catalog=new Set(l.props.map(p=>p.mesh));
+function fixture({gate=null,authoredGate=null,gagGate=null,missing=[],missingGag=[],packFailure=false,gagFailure=false,configure=()=>{},getTorch}={}) {
+  const l=layout(),calls=[],catalog=new Set([...l.props.map(p=>p.mesh),'apparition_pose_head_turn']);
   configure(l);
   for(const p of l.props||[])if(p.mesh)catalog.add(p.mesh);
   for(const d of l.doors) for(const m of [d.frameMesh,d.headMesh,d.mesh]) if(m&&!missing.includes(m))catalog.add(m);
@@ -32,7 +33,17 @@ function fixture({gate=null,authoredGate=null,missing=[],packFailure=false,confi
   const renderer=Object.fromEntries(Object.keys(R3).filter(k=>typeof R3[k]==='function').map(k=>[k,(...args)=>{calls.push({name:k,args});return k==='r3dFrame'?true:undefined;} ]));
   renderer.r3dBasePropsReady=async()=>{calls.push({name:'base',args:[]});return gate?await gate:true;};
   renderer.r3dAuthoredPropsReady=async()=>{calls.push({name:'authored',args:[]});return authoredGate?await authoredGate:renderer.r3dBasePropsReady();};
-  const props={propMeshCatalog:()=>[...catalog],setPressureInstances:value=>calls.push({name:'pressure',args:[value]}),async addPropPack(url){calls.push({name:'pack',args:[url]});if(packFailure)throw Error('door bank unavailable');for(const d of l.doors)for(const m of[d.frameMesh,d.headMesh,d.mesh])if(m)catalog.add(m);}};
+  const props={propMeshCatalog:()=>[...catalog],setPressureInstances:value=>calls.push({name:'pressure',args:[value]}),async addPropPack(url){
+    calls.push({name:'pack',args:[url]});
+    if(url.endsWith('assets/conservatory-doors.glb')){
+      if(packFailure)throw Error('door bank unavailable');
+      for(const d of l.doors)for(const m of[d.frameMesh,d.headMesh,d.mesh])if(m)catalog.add(m);
+    }else if(url.endsWith('assets/ellery-threshold-gag.glb')){
+      if(gagGate)await gagGate;if(gagFailure)throw Error('apparatus pack unavailable');
+      for(const name of THRESHOLD_GAG_MESHES)if(!missingGag.includes(name))catalog.add(name);
+    }else if(url.endsWith('assets/conservatory-stair-walls.glb'))catalog.add('main_stair_wall_treatment');
+    else throw Error('Unexpected borrowed-Ellery fixture pack: '+url);
+  }};
   const owner=createSourceFalseReturnRenderer({layout:l,renderer,props,getTorch,resolveAsset:url=>'fixture:'+url,onRelease(){releases++;calls.push({name:'release',args:[]});}});
   return {owner,l,calls,catalog,releases:()=>releases};
 }
@@ -124,6 +135,45 @@ test('a borrowed structural mesh arriving after base readiness is awaited before
   assert.equal(h.calls.filter(c=>c.name==='authored').length,1);h.owner.dispose();
 });
 
+test('the complete apparatus pack is awaited before borrowing the renderer and loaded only once',async()=>{
+  let resolve;const h=fixture({gagGate:new Promise(r=>resolve=r)});let complete=false;
+  const pending=h.owner.initialize().then(value=>{complete=true;return value;});
+  for(let n=0;n<6;n++)await Promise.resolve();
+  assert.equal(complete,false);assert.equal(h.calls.some(c=>c.name==='r3dSetPlan'),false,'an unresolved physical obstacle cannot acquire Ellery');
+  resolve(true);assert.equal(await pending,true);assert.equal(await h.owner.initialize(),true);
+  assert.ok(THRESHOLD_GAG_MESHES.every(name=>h.catalog.has(name)));
+  assert.equal(h.calls.filter(c=>c.name==='pack'&&c.args[0].endsWith('assets/ellery-threshold-gag.glb')).length,1);
+  h.owner.render(state());assert.equal(h.calls.filter(c=>c.name==='pack'&&c.args[0].endsWith('assets/ellery-threshold-gag.glb')).length,1);h.owner.dispose();
+  const missing=fixture({missingGag:['ellery_threshold_ghost']});await assert.rejects(missing.owner.initialize(),/ellery_threshold_ghost/);
+  assert.equal(missing.owner.ready(),false);assert.equal(missing.calls.some(c=>c.name==='r3dSetPlan'),false);missing.owner.dispose();
+  const failed=fixture({gagFailure:true});await assert.rejects(failed.owner.initialize(),/apparatus pack unavailable/);assert.equal(failed.calls.some(c=>c.name==='r3dSetPlan'),false);failed.owner.dispose();
+});
+
+test('only the returned Ellery contains the world-anchored apparatus, with a rigid speaker, stop and inspectable reverse',()=>{
+  FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
+  const actual=buildSourceFalseReturnLayout({floorplan:FP,props:PROPS.renderInstances({inscriptions:true,batchDressing:false}),propSources:PROPS.allProps()});
+  const fresh=freshSourceFalseReturn({runId:'apparatus-render',spawn:actual.spawn});
+  const view=s=>{const provided=actual.planFor(s);return sourceFalseReturnRenderFrame({...actual,...provided},s);};
+  const original=view(fresh);assert.equal(original.props.some(p=>THRESHOLD_GAG_MESHES.includes(p.mesh)),false,'the first convincing arrival has neither white ghost nor scenic backing');
+  const mount=THRESHOLD_GAG.mount,clock=thresholdGagTiming(false),anchor=[mount.x,mount.y,mount.z];let fixed=null,deployed=null;
+  for(const thresholdGag of[{available:true,phase:'rest',elapsed:0},{available:true,phase:'running',elapsed:clock.contact},{available:true,phase:'running',elapsed:clock.contact+.06},{available:true,phase:'spent',elapsed:clock.finish}]){
+    const s={...fresh,x:71.2,z:58.75,thresholdGag},frame=view(s),pose=thresholdGagPose(s);
+    const part=mesh=>{const p=frame.props.find(p=>p.mesh===mesh);assert.ok(p,mesh);return p;};
+    const ghost=part('ellery_threshold_ghost'),armature=part('ellery_threshold_armature'),base=part('ellery_threshold_mount');
+    assert.deepEqual([...ghost.matrix],[...armature.matrix],'cutout, arm, tab, spine and speaker move as one assembly');
+    // Submitted matrices are Float32; metre coordinates near X70 have an
+    // approximately 8-micrometre ULP, unlike the former near-origin fixture.
+    assert.ok(transform(ghost.matrix,[0,0,0]).every((v,k)=>Math.abs(v-anchor[k])<1e-5),'all motion stays on the real mounted pin');
+    assert.ok(transform(armature.matrix,THRESHOLD_GAG.speaker).every((v,k)=>Math.abs(v-[pose.speaker.x,pose.speaker.y,pose.speaker.z][k])<1e-5),'the audio origin belongs to the modeled reverse speaker');
+    if(fixed)assert.deepEqual([...base.matrix],fixed,'the wood stop and mounting never swing');else fixed=[...base.matrix];
+    assert.deepEqual(frame.authoredCamera,{eye:[s.x,s.feet+EYE,s.z],yaw:s.yaw,pitch:s.pitch},'the gag does not own the player camera');
+    if(thresholdGag.phase==='spent')deployed=[...ghost.matrix];
+  }
+  const reverse=view({...fresh,x:67.4,z:56.8,yaw:1.2,pitch:-.5,thresholdGag:{available:true,phase:'spent',elapsed:clock.finish}});
+  assert.deepEqual([...reverse.props.find(p=>p.mesh==='ellery_threshold_ghost').matrix],deployed,'walking to the reverse never billboards or repaints the sheet');
+  assert.ok(original.props.some(p=>p.mesh==='upright_piano'),'the ordinary borrowed room remains the architectural source');
+});
+
 test('missing optional decoration is reported and omitted without hiding a colliding obstacle',async()=>{
   const h=fixture();h.catalog.delete('chair');await h.owner.initialize();assert.equal(h.owner.ready(),true);
   h.owner.render(state());assert.deepEqual(h.owner.diagnostics().omittedMeshes,['chair']);
@@ -134,8 +184,8 @@ test('missing optional decoration is reported and omitted without hiding a colli
 });
 
 test('door pack loading is bounded to actual missing joinery and an invalid layout is rejected before acquisition',async()=>{
-  const h=fixture();h.catalog.delete(h.l.doors[0].mesh);assert.equal(await h.owner.initialize(),true);assert.equal(h.calls.filter(c=>c.name==='pack').length,1);
-  h.owner.render(state());assert.equal(h.calls.filter(c=>c.name==='pack').length,1);h.owner.dispose();
+  const h=fixture();h.catalog.delete(h.l.doors[0].mesh);assert.equal(await h.owner.initialize(),true);assert.equal(h.calls.filter(c=>c.name==='pack'&&c.args[0].endsWith('assets/conservatory-doors.glb')).length,1);
+  h.owner.render(state());assert.equal(h.calls.filter(c=>c.name==='pack'&&c.args[0].endsWith('assets/conservatory-doors.glb')).length,1);h.owner.dispose();
   assert.throws(()=>sourceFalseReturnPlan({plan:{w:2,h:2,rgba:new Uint8Array(3)},doors:[]}),/physical render plan/);
   assert.throws(()=>createSourceFalseReturnRenderer({layout:{plan:{},doors:[]}}),/actual Ellery floor set/);
 });

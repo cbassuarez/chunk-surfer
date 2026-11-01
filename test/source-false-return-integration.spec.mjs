@@ -13,7 +13,7 @@ import {createSourceFalseReturnScene} from '../src/game/source-false-return-scen
 const copy=v=>JSON.parse(JSON.stringify(v));
 const initial=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL,{seed:4417}).state;
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
-function production(name){const start=main.indexOf(`function ${name}(`);assert.ok(start>=0,name);return main.slice(main.slice(start-6,start)==='async '?start-6:start,main.indexOf('\n}\n',start)+3);}
+function production(name){const start=main.indexOf(`function ${name}(`);assert.ok(start>=0,name);return main.slice(main.slice(start-6,start)==='async '?start-6:start,main.indexOf('\n}\n',start)+3).replaceAll('import.meta.env.DEV','false');}
 const layout={spawn:{x:0,z:1,feet:4.8,yaw:0,pitch:0},bounds:{minX:-3,maxX:3,minZ:-18,maxZ:4},
   doors:Array.from({length:5},(_,i)=>({id:'practice-'+i,x:0,z:-2-i*3,feet:4.8,normal:{x:0,z:-1},halfWidth:.8,counted:true,openSeconds:.45})),
   loops:[],supportAt:()=>({floor:4.8,ceil:8.4}),canOccupy:()=>true};
@@ -21,13 +21,13 @@ function host(){
   const runtime=createSourceSpaceRuntime({initialState:initial()}),entry=runtime.sourceContinuationEntry('forward',{runId:'false-main'});
   let data={run:{id:'false-main'},chunkSurf:runtime.state()},continued=0,disposals=0;
   const traces=[],audio={stop(){},pause(){},event(){},update(){}},body=runtime.edgeDoorApproach();
-  const h={chunkSurfRuntime:runtime,sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:traces,
+  const h={createFakeElleryHost:()=>({noise:()=>false,protectedNow:()=>false,contact:()=>false,cancel(){}}),chunkSurfRuntime:runtime,sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:traces,
     sourceDriveSession:null,sourcePubScene:null,coastalMemoryScene:null,paused:false,document:{hidden:false,hasFocus:()=>true},r3dCache:{},px:body.x,py:body.y,renderMove:null,motionRig:null,trail:[],
     freshSourceFalseReturn,normalizeSourceFalseReturn,sourceFalseReturnNeeded,sourceEarthfallNeeded,createSourceFalseReturnScene,
     buildSourceFalseReturnLayout:()=>layout,FP:{},PROPS:{renderInstances:()=>[],allProps:()=>[]},resolveLocalLights:()=>[],liveLightCircuits:()=>new Set(),ZONE:{practice:6},
     createSourceFalseReturnRenderer:()=>({initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){if(this.dead)return false;this.dead=true;disposals++;return true;}}),
-    createSourceContinuationAudio:()=>audio,scenes:{push:s=>s.enter(),remove:s=>s.exit()},ensureCtx(){},actx:{},sfxGain:{},getSave:()=>data,saveCommit:p=>{data={...data,...p};},
-    PB:{stopPlayback(){}},pubRoomAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,frontEndSession:null,frontEndPlateOverride:null,
+    createSourceContinuationAudio:()=>audio,playSceneFootContact(){},clearSceneFootContacts(){},scenes:{push:s=>s.enter(),remove:s=>s.exit()},ensureCtx(){},actx:{},sfxGain:{},getSave:()=>data,saveCommit:p=>{data={...data,...p};},
+    REC:{isRecording:()=>false,isListening:()=>false},STAB:{reserveExternalScare:()=>true},activeBattleId:null,activeEndingCutscene:null,PB:{stopPlayback(){},isPlaying:()=>false},pubRoomAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,frontEndSession:null,frontEndPlateOverride:null,
     RT:{setBed(){}},STORY:{stopAll(){}},SPEECH:{clearSpeech(){}},R3:{r3dSetFrontEndPlate(){},r3dSetLookAngles(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
     sourceCameraPatch:()=>({}),sourcePresentationTorch:()=>({on:false,look:{power:0}}),
     sourceEarthfallProtected:()=>false,gameplayInputLifecycleActive:()=>true,pushEvent:e=>{throw Error(e);},

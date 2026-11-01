@@ -146,7 +146,7 @@ export function effectiveTorchScale(field) {
 // only multiplied the raymarcher's light scalar; reach, cone and prop lighting
 // remained clean, which made the interference disappear depending on what the
 // player happened to be looking at.
-export function applyHushTorchInterference(torch = {}, field = null) {
+export function applyHushTorchInterference(torch = {}, field = null, { peek = 0 } = {}) {
   const absorption = clamp01(field?.presentation?.light ?? field?.absorption?.light);
   if (!field?.active || absorption <= .001 || Number(torch.power) <= 0) {
     return { ...torch, hushInterference: 0 };
@@ -161,16 +161,27 @@ export function applyHushTorchInterference(torch = {}, field = null) {
     coneInner + .015,
     clamp01((Number(torch.coneOuter) || .94) + choke * .035),
   );
+  // A peek is a glimpse out of the shadow, not night vision: retain part of
+  // the actual lamp so the nearby wall and the depth-tested black body can be
+  // distinguished. The regular field, the player's torch choice and its hum
+  // remain authoritative. With the torch off this branch cannot create light.
+  const glimpse = clamp01(peek);
+  const originalPower = clamp01(Number(torch.power) || 0);
+  const originalReach = Math.max(0, Number.isFinite(Number(torch.reach)) ? Number(torch.reach) : 1);
+  const originalSpill = Math.max(0, Number(torch.spill) || 0);
+  const corruptedPower = clamp01(originalPower * powerScale);
+  const corruptedReach = originalReach * reachScale;
+  const corruptedSpill = originalSpill * (1 - absorption * .92);
   return {
     ...torch,
-    power: clamp01((Number(torch.power) || 0) * powerScale),
+    power: lerp(corruptedPower, Math.max(corruptedPower, originalPower * .64), glimpse),
     // Interference can only remove reach. A warm flood already falls below
     // .35; the old renderer floor could make that weak lamp reach farther.
-    reach: Math.max(0, Number.isFinite(Number(torch.reach)) ? Number(torch.reach) : 1) * reachScale,
+    reach: lerp(corruptedReach, Math.max(corruptedReach, originalReach * .78), glimpse),
     color: baseColor.map((channel, index) => lerp(channel, ashen[index], absorption * .58)),
     coneInner: Math.min(.965, coneInner),
     coneOuter: Math.min(.985, coneOuter),
-    spill: Math.max(0, (Number(torch.spill) || 0) * (1 - absorption * .92)),
+    spill: lerp(corruptedSpill, Math.max(corruptedSpill, originalSpill * .5), glimpse),
     hushInterference: absorption,
   };
 }
@@ -188,10 +199,11 @@ export function applyHushTorchInterference(torch = {}, field = null) {
 // dark is the only thing in the room, because an absence of the only light is
 // indistinguishable from the wall behind it.
 //
-// A peek is bought with a noise and with the torch you did not dare use, so it
-// must pay. Holding the absence back off the surroundings leaves the body
-// something to read AGAINST. It does not brighten the HUSH; nothing does.
-const HUSH_PEEK_LEGIBILITY = Object.freeze({ strength: .74, radiusScale: .62 });
+// Holding the absence back from the surroundings on a peek gives the black,
+// depth-tested body something to read against. This neither creates the body
+// nor makes it visible through an obstruction. Whether the torch is on is the
+// player's decision, with its usual acoustic cost.
+const HUSH_PEEK_LEGIBILITY = Object.freeze({ strength: .45, radiusScale: .48 });
 
 export function hushAbsenceLook({ active = false, field = null, dread = 0, peek = 0 } = {}) {
   if (!active) return { active: false, strength: 0, radiusM: 0 };

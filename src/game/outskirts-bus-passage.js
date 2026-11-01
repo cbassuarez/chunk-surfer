@@ -9,7 +9,41 @@ const radius = OUTSKIRTS_BUS_PASSAGE.bodyRadius;
 export function busPassageLampPower(transit={}){
   const since=transit.trapAt==null?-Infinity:Number(transit.clock)-Number(transit.trapAt);
   const strips=[.35,1.05,1.85,2.65].map(at=>{const t=Math.max(0,Math.min(1,(since-at)/.12));return 1-t*t*(3-2*t);});
-  return{front:.14+.86*strips[0],rear:.72,strips};
+  return{front:.14+.86*strips[0],rear:busPassageRearTube(transit),face:.72,strips};
+}
+
+// The rear tube is the exit's own light. It outlives the trap, flinches on the
+// first two pulls and the third takes it. The hooded lamp on her stays, so
+// what is left lit in the bus is her.
+function busPassageRearTube(transit={}){
+  if(transit.tryAt==null)return .72;
+  const t=Number(transit.clock)-transit.tryAt,{pulls}=OUTSKIRTS_BUS_PASSAGE.exit,last=pulls[pulls.length-1];
+  if(t>=last)return t<last+.08?.10:t<last+.20?.46:.04;
+  return pulls.some(at=>t>=at&&t<at+.09)?.24:.72;
+}
+
+// The street's torch runs on its own failing clock, and that clock must not
+// choose the moment the bus goes dark. Once the door has shut the torch answers
+// the scene instead: a sag at each dying strip, at each pull, a near-failure
+// when the rear tube goes, one catch as she starts to part, and then it stays
+// up, because she is what you are here to see.
+export function busPassageTorchDirected(transit={}){
+  if(transit.trapAt==null||transit.exited||transit.interior?.active)return null;
+  const clock=Number(transit.clock),{pulls}=OUTSKIRTS_BUS_PASSAGE.exit;let level=1;
+  const sag=(at,depth,seconds)=>{const t=clock-at;if(t>=0&&t<seconds)level=Math.min(level,1-depth*Math.sin(Math.PI*t/seconds));};
+  for(const at of[.35,1.05,1.85,2.65])sag(transit.trapAt+at,.30,.16);
+  if(transit.tryAt!=null){
+    pulls.slice(0,-1).forEach(at=>sag(transit.tryAt+at,.22,.14));
+    sag(transit.tryAt+pulls[pulls.length-1],.74,.36);
+  }
+  if(transit.openAt!=null)sag(transit.openAt+.10,.50,.40);
+  return level;
+}
+
+// 0..1 at each pull, gone by the next: the body taking the door's refusal.
+export function busPassagePullJolt(elapsed=0){
+  const{pulls,kicks}=OUTSKIRTS_BUS_PASSAGE.exit,top=kicks[kicks.length-1];
+  return pulls.reduce((sum,at,i)=>{const x=elapsed-at;return x<0?sum:sum+kicks[i]/top*(x<.05?x/.05:Math.exp(-(x-.05)/.07));},0);
 }
 
 export function busPassageOpening(transit={}){
@@ -20,8 +54,10 @@ export function busPassageOpening(transit={}){
 
 export function busPassageExitAngle(transit={}){
   if(transit.tryAt==null)return 0;
+  // Each pull drives the leaf into its jam and it springs back. It never
+  // swings inward, and nothing about it says it might give.
   const t=Math.max(0,Number(transit.clock)-transit.tryAt),exit=OUTSKIRTS_BUS_PASSAGE.exit;
-  return t>=exit.rattleSeconds?0:exit.rattleYaw*Math.sin(t*Math.PI*8)*Math.sin(Math.PI*t/exit.rattleSeconds);
+  return t>=exit.attemptSeconds?0:busPassagePullJolt(t)*exit.kicks[exit.kicks.length-1];
 }
 
 export function busPassageBodyCrossing(from,to,{ready=false}={}){

@@ -43,7 +43,7 @@ export function busWomanPerformance({ clock = 0, woman = {}, id = '', aboard = f
     mode = 'ticket-wait'; seconds = 4;
   } else if (aboard || (woman.ticketReturned && sinceReceipt != null) || (receipt != null && receipt < 12)) { mode = 'wait'; seconds = Math.min(4, now % 24); }
   else { mode = 'search'; seconds = Math.min(6, now % 24); }
-  if (reducedMotion) seconds = mode === 'receive' ? 4 : mode === 'ready' ? BUS_WOMAN_READY_SECONDS : mode.startsWith('acknowledge') ? 2.4 : mode.startsWith('step') ? BUS_WOMAN_STEP_SECONDS : 0;
+  if (reducedMotion) seconds = mode === 'receive' ? 4 : mode === 'ready' ? BUS_WOMAN_READY_SECONDS : mode.startsWith('acknowledge') ? 2.4 : mode.startsWith('step') ? BUS_WOMAN_STEP_SECONDS : aboard && passage && (mode === 'wait' || mode === 'ticket-wait') ? 4 : 0;
   return { mode, seconds, acknowledgeYaw: woman.acknowledgeYaw,
     ...(passage?{passage:{...passage,clock:now}}:{}),
     ...(stretch != null || repeat != null ? { stretch: stretch ?? repeat } : {}),

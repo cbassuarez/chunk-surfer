@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {SOURCE_CONTINUATION as C, CONTINUATION_DROP_LIPS, continuationCatchFloor, continuationRefugeAt} from '../src/data/source-continuation.js';
 import {freshSourceContinuation, stepSourceContinuation, sourceContinuationThreatTelemetry} from '../src/game/source-continuation.js';
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
-const seed = () => ({...freshSourceContinuation({runId:'pursuit-entry'}),status:'active',x:-18.19,z:-12,feet:8.4,yaw:-Math.PI/2,doorOpen:{'wrong-onward':true}});
+const seed = () => ({...freshSourceContinuation({runId:'pursuit-entry'}),status:'active',chartId:4,x:C.wrongReturn.threshold.x+.19,z:C.wrongReturn.threshold.z,feet:8.4,yaw:-Math.PI/2,doorOpen:{[C.wrongReturn.threshold.doorId]:true}});
 const next=(state,input={})=>stepSourceContinuation(state,{dt:1/60,...input});
-function entry(){const result=next(seed(),{forward:1});assert.equal(result.state.phase,'catch');return result.state;}
-function atLip(level=0){return{...entry(),level,...CONTINUATION_DROP_LIPS[level],feet:continuationCatchFloor(level)};}
+function entry(){let state=seed();for(let n=0;n<16&&state.phase!=='catch';n++)state=next(state,{forward:1}).state;assert.equal(state.phase,'catch');assert.equal(state.chartId,0);return state;}
+function atLip(level=0){return{...entry(),level,...CONTINUATION_DROP_LIPS[level],feet:continuationCatchFloor(level),recoveryAnchor:{...continuationRefugeAt({phase:'catch',level}),phase:'catch',yaw:0,pitch:0,kind:'refuge',supportId:`catch-${level}-return-pad`,earnedAt:0}};}
 
 test('the threshold restores no camera hold and exploration cannot awaken the drum before a chosen descent',()=>{
  let state=entry();assert.equal(state.reveal,null);assert.equal(state.counterweight.active,false);
@@ -22,7 +22,11 @@ test('a first voluntary descent wakes one visible physical source with a full wa
  assert.deepEqual(r.events[0].position,{x:C.catch.hoist.start.x,y:C.catch.top,z:C.catch.hoist.start.z});
  assert.equal(state.counterweight.mode,'warning');assert.equal(state.counterweight.elapsed,0);
  for(let i=0;i<Math.floor(C.catch.counterweightWarningSeconds*60)-1;i++){r=next(state);state=r.state;assert.equal(r.events.some(e=>e.type==='counterweight-warning'),false);assert.equal(state.counterweight.mode,'warning');}
- const saved=JSON.parse(JSON.stringify(state));r=next(saved);assert.equal(r.events.some(e=>e.type==='counterweight-warning'),false);assert.equal(r.state.counterweight.mode,'walking');
+ const saved=JSON.parse(JSON.stringify(state));r=next(saved);assert.deepEqual(r.state.counterweight,next(state).state.counterweight);assert.equal(r.events.some(e=>e.type==='counterweight-warning'),false);
+ // Entry can leave half a fixed tick in the accumulator. It must not shorten
+ // the warning, and replay must cross its boundary on the same accepted tick.
+ for(let n=0;n<2&&r.state.counterweight.mode==='warning';n++)r=next(r.state);
+ assert.equal(r.state.counterweight.mode,'walking');
 });
 
 test('waiting after commitment observes physical return circuits while the entry bridge and refuges remain safe',()=>{
@@ -41,9 +45,9 @@ test('contact prediction uses the actual continuing route and contact remains fi
  assert.ok(state.grace>2.9);const at=continuationRefugeAt(state);assert.equal(state.x,at.x);assert.equal(state.z,at.z);assert.equal(sourceContinuationThreatTelemetry(state).timeToContact,null);
 });
 
-test('first-person input remains held through the ordinary door while a deliberate drop clears old motion',async()=>{
+test('entering the overhead Catch clears first-person held motion and deliberate drops clear old motion',async()=>{
  const trace=[],scene=createSourceContinuationScene({checkpoint:seed(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
- await scene.initialize();scene.key({key:'w'});scene.update(.1);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.ok(scene.serialize().x<crossed.x);assert.equal(scene.lookBy(.2,-.1),true);scene.exit();
+ await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);assert.equal(scene.lookBy(.2,-.1),false);scene.keyup({key:'w'});scene.key({key:'a'});scene.update(.1);assert.ok(scene.serialize().x<crossed.x,'a fresh left input uses fixed west');scene.exit();
  const dropping=createSourceContinuationScene({checkpoint:atLip(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
  await dropping.initialize();dropping.key({key:'w'});dropping.key({key:'e'});dropping.key({key:'d'});
  for(let i=0;i<600&&dropping.serialize().fall;i++)dropping.update(1/60);

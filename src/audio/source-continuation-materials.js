@@ -1,5 +1,6 @@
 import {assetUrl} from '../platform/paths.js';
 import {continuationSolids} from '../data/source-continuation.js';
+import {sourceAcousticCoordinates} from './source-surroundings.js';
 
 // Existing CC0 recordings, retained at their original pitch. These are local
 // timber/stone contacts, not purported recordings of a giant impossible room.
@@ -30,14 +31,16 @@ function intersects(a,b,box){
   return true;
 }
 
-export function continuationAcousticPlacement(source,state={},solids=continuationSolids(state)){
-  const listener=atBody(state),dx=source.x-listener.x,dy=source.y-listener.y,dz=source.z-listener.z;
-  const distance=Math.hypot(dx,dy,dz),horizontal=Math.hypot(dx,dz),yaw=finite(state.yaw);
-  const blocked=solids.some(s=>s.role!=='rail'&&s.maxY-s.minY>1.7&&intersects(listener,source,s));
+export function continuationAcousticPlacement(source,state={},solids=continuationSolids(state),acousticFrame=null,chartId=finite(state.chartId)){
+  const listener=atBody(state),coordinates=sourceAcousticCoordinates(source,state,acousticFrame,{chartId,includePitch:false}),[right,,back]=coordinates.relativeXYZ;
+  const distance=coordinates.distance,horizontal=Math.hypot(right,back);
+  // Local solid tests have meaning only within the emitter's chart. A visible
+  // neighbor is projected through its real aperture by the acoustic frame.
+  const blocked=chartId===finite(state.chartId)&&solids.some(s=>s.role!=='rail'&&s.maxY-s.minY>1.7&&intersects(listener,source,s));
   const cabinet=state.phase==='catch';
   return{distance,blocked,arrival:Math.min(1.1,distance/343),
-    pan:clamp((dx*Math.cos(yaw)+dz*Math.sin(yaw))/Math.max(2,horizontal)*.88,-.88,.88),
-    gain:(1+distance/18)**-1.12*(blocked?.38:1),
+    pan:clamp(right/Math.max(2,horizontal)*.88,-.88,.88),
+    gain:coordinates.source?(1+distance/18)**-1.12*(blocked?.38:1):0,
     cutoff:blocked?780:Math.max(1200,8500/(1+distance/36)),
     wet:cabinet?.24:.065,domain:cabinet?'retaining-case':'open-underside'};
 }
@@ -62,11 +65,11 @@ export function continuationReflectionBuffer(ctx,domain){
 export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globalThis.fetch,
   urlFor=file=>assetUrl('audio/source-demolition/'+file),protectedAudio=()=>false}={}){
   let ctx=null,destination=null,bank=null,loading=null,generation=0,disposed=false;
-  let ready=false,failed=null,listener={},previous=null,travel=0,upperHeard=false;
+  let ready=false,failed=null,listener={},previous=null,travel=0,upperHeard=false,acousticFrame=null;
   let played=0,skipped=0,lastDomain=null,runId=null;
   const voices=new Set();
   function release(v){if(v.dead)return;v.dead=true;v.source.onended=null;try{v.source.stop();}catch{}for(const n of v.nodes)try{n.disconnect();}catch{}voices.delete(v);}
-  function stop(){for(const v of [...voices])release(v);previous=null;travel=0;}
+  function stop(){for(const v of [...voices])release(v);previous=null;travel=0;acousticFrame=null;}
   function prepare(){
     if(disposed||protectedAudio()) {stop();return false;}
     let pair;try{pair=getAudio();}catch{stop();return false;}
@@ -113,16 +116,16 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
     return ready;
   }
   function place(v){
-    const mix=continuationAcousticPlacement(v.position,listener);v.mix=mix;
+    const mix=continuationAcousticPlacement(v.position,listener,continuationSolids(listener),acousticFrame,v.chartId);v.mix=mix;
     const target=(p,value)=>{if(p.setTargetAtTime)p.setTargetAtTime(value,ctx.currentTime,.06);else p.value=value;};
     target(v.gain.gain,v.level*mix.gain);target(v.filter.frequency,mix.cutoff);
     if(v.pan)target(v.pan.pan,mix.pan);target(v.wet.gain,mix.wet);
   }
-  function play(id,position,level=.08,{offset=0,seconds=1.5,kind=id}={}){
+  function play(id,position,level=.08,{offset=0,seconds=1.5,kind=id,chartId=finite(listener.chartId)}={}){
     if(!prepare()||voices.size>=CONTINUATION_MATERIALS.maxVoices){skipped++;return false;}
     const buffer=bank.buffers.get(id);if(!buffer)return false;
     const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),envelope=ctx.createGain(),gain=ctx.createGain(),pan=ctx.createStereoPanner?.();
-    const wet=ctx.createGain(),nodes=[source,filter,envelope,gain,wet],v={source,filter,gain,pan,wet,nodes,position:{...position},level,kind,dead:false};
+    const wet=ctx.createGain(),nodes=[source,filter,envelope,gain,wet],v={source,filter,gain,pan,wet,nodes,position:{...position},chartId,level,kind,dead:false};
     source.buffer=buffer;source.playbackRate.value=1;filter.type='lowpass';filter.Q.value=.35;
     source.connect(filter).connect(envelope).connect(gain);if(pan){nodes.push(pan);gain.connect(pan).connect(destination);}else gain.connect(destination);
     const domain=listener.phase==='catch'?'retaining-case':'open-underside';lastDomain=domain;
@@ -146,31 +149,31 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
     source.start(start,offset,duration);
     played++;return true;
   }
-  function event(e,state=listener){
+  function event(e,state=listener,presentedFrame=acousticFrame){
     if(!['wrong-return','catch'].includes(state?.phase)||!prepare())return false;
-    listener=state;const pos=e.position||{x:finite(state.x),y:finite(state.feet),z:finite(state.z)};
+    listener=state;acousticFrame=presentedFrame;const pos=e.position||{x:finite(state.x),y:finite(state.feet),z:finite(state.z)};
     if(e.type==='land')return play('stone',pos,.09,{offset:.12,seconds:.75,kind:'loaded-landing'});
     if(e.type==='capture')return play('timber',pos,.12,{seconds:1.6,kind:'lining-takes-weight'});
     if(e.type==='recovered')return play('timber',pos,.045,{offset:.85,seconds:.9,kind:'lining-releases-weight'});
-    if(/^counterweight-(lands|warning|lowering-warning|strain|release)$/.test(e.type))return play('joint',e.position||{x:state.counterweight?.x||0,y:state.counterweight?.y||0,z:state.counterweight?.z||0},.10,{offset:.16,seconds:1.7,kind:'actual-load-contact'});
+    if(/^counterweight-(lands|warning|lowering-warning|strain|release)$/.test(e.type))return play('joint',e.position||{x:state.counterweight?.x||0,y:state.counterweight?.y||0,z:state.counterweight?.z||0},.10,{offset:.16,seconds:1.7,kind:'actual-load-contact',chartId:0});
     if(e.type==='phase')return play('timber',pos,.065,{offset:.3,seconds:1.8,kind:'case-throat'});
-    if(e.type==='closure-warning')return play('joint',pos,.055,{seconds:1.8,kind:'return-bearing'});
+    if(e.type==='closure-warning')return play('joint',pos,.055,{seconds:1.8,kind:'return-bearing',chartId:0});
     return false;
   }
-  function update(state){
+  function update(state,presentedFrame=null){
     if(!['wrong-return','catch'].includes(state?.phase)||!prepare()){stop();return false;}
     if(runId!==state.runId){stop();runId=state.runId;upperHeard=false;}
-    listener=state;for(const v of [...voices]){if(v.until<=ctx.currentTime)release(v);else place(v);}
+    listener=state;acousticFrame=presentedFrame;for(const v of [...voices]){if(v.until<=ctx.currentTime)release(v);else place(v);}
     // The first audible remnant belongs to the same ruined upper world. It is
     // a one-time contact heard from above, never a repeating ambience timer.
     if(!upperHeard&&state.phase==='wrong-return'&&state.elapsed>7){
-      upperHeard=play('stone',{x:0,y:100,z:45.5},.22,{offset:.2,seconds:1.15,kind:'upper-ruin-settle'});
+      upperHeard=play('stone',{x:0,y:100,z:45.5},.22,{offset:.2,seconds:1.15,kind:'upper-ruin-settle',chartId:0});
     }
     const w=state.counterweight,moving=w?.active&&['walking','falling','hoisting','traversing','lowering','returning'].includes(w.mode);
     if(moving&&previous&&previous.phase===state.phase){
       const distance=Math.hypot(w.x-previous.x,w.y-previous.y,w.z-previous.z);
       if(distance<2)travel+=distance;else travel=0;
-      if(travel>1.8){travel%=1.8;play('timber',{x:w.x,y:w.y,z:w.z},.045,{offset:.45,seconds:1.3,kind:'loaded-frame-travel'});}
+      if(travel>1.8){travel%=1.8;play('timber',{x:w.x,y:w.y,z:w.z},.045,{offset:.45,seconds:1.3,kind:'loaded-frame-travel',chartId:0});}
     }else travel=0;
     previous=w?{...w,phase:state.phase}:null;return true;
   }
@@ -181,5 +184,5 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
       retryCount:ctx?Math.max(0,(loadPolicies.get(ctx)?.attempts||0)-1):0,
       nextRetryAt:ctx?loadPolicies.get(ctx)?.nextRetryAt||0:0,
       reflectionModel:'authored sparse early reflections; no measured IR',
-      layers:[...voices].map(v=>({kind:v.kind,position:v.position,mix:v.mix}))})};
+      layers:[...voices].map(v=>({kind:v.kind,position:v.position,chartId:v.chartId,mix:v.mix}))})};
 }

@@ -68,10 +68,10 @@ export function createConversation({
   nodes = null, beats = [], startAt = 'start', sceneId = 'conversation', replay = null,
   onChoice, onLine, onDone, cue, fx, audio, getAudio, volume = 0.26,
   feedbackScope=sceneId,feedbackProfile=sceneId.includes('radio')?'radio':'panel',
-  isActive = () => true,
+  isActive = () => true, voiceEnabled = true,
 } = {}) {
-  const voice = createSamDialogVoice({ volume, getAudio });
-  voice.warm?.();
+  const voice = voiceEnabled ? createSamDialogVoice({ volume, getAudio }) : null;
+  voice?.warm?.();
 
   let mode = nodes ? 'nodes' : 'beats';
   let nodeId = startAt;
@@ -239,7 +239,7 @@ export function createConversation({
     const who = whoOf(l);
     const text = textOf(l);
     if (text) audio?.duckSoundtrack?.();
-    if (text && isVoiced(who) && l.voice !== false) {
+    if (text && voiceEnabled && isVoiced(who) && l.voice !== false) {
       handle = voice.start(text, { speaker: l.voiceSpeaker || who, rate: l.rate || 1 });
       audio?.stopTyping?.();
     } else if (text) {

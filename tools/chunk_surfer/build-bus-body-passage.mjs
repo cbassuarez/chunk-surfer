@@ -106,8 +106,17 @@ export function buildBusBodyPassage(){
   const altered=parse('outskirts-bus-woman-wrong-origin.glb'),canonical=parse('bus-woman-character.glb');
   const body=altered.asset.entries.find(e=>e.name==='outskirts_bus_woman_wrong_origin_3'),bag=canonical.asset.entries.find(e=>e.name==='bus_woman_bag'),ticket=canonical.asset.entries.find(e=>e.name==='bus_woman_ticket');
   const ordinary=posed(body,altered.asset,'wait'),paper=posed(body,altered.asset,'ticket-wait'),materials=structuredClone(altered.raw.json.materials);
-  const fat=materials.push({name:'body passage attached subcutaneous margin',pbrMetallicRoughness:{baseColorFactor:[.39,.23,.12,1],roughnessFactor:.58,metallicFactor:0},extras:{tissueSurface:{preservePigment:true,localSpecular:true}}})-1;
-  const brain=materials.push({name:'body passage divided cortical folds',pbrMetallicRoughness:{baseColorFactor:[.27,.105,.085,1],roughnessFactor:.42,metallicFactor:0},extras:{tissueSurface:{preservePigment:true,localSpecular:true}}})-1;
+  const tissueSurface={version:1,profile:'bus-body-passage',preservePigment:true,localSpecular:true};
+  // These are the existing exposed anatomical surfaces, not ordinary skin or
+  // cloth. Preserve their authored pigment through Source's reserved signal
+  // palette and let the actual lamps reveal their wet dielectric response.
+  const wetRoughness=new Map([['muscle',.38],['injured-skin',.65],['fascia',.45]]);
+  for(const material of materials)if(wetRoughness.has(material.extras?.characterRole)){
+    material.pbrMetallicRoughness={...material.pbrMetallicRoughness,roughnessFactor:wetRoughness.get(material.extras.characterRole),metallicFactor:0};
+    material.extras={...material.extras,materialFactors:'gltf',tissueSurface:{...tissueSurface}};
+  }
+  const fat=materials.push({name:'body passage attached subcutaneous margin',pbrMetallicRoughness:{baseColorFactor:[.39,.23,.12,1],roughnessFactor:.34,metallicFactor:0},extras:{materialFactors:'gltf',tissueSurface}})-1;
+  const brain=materials.push({name:'body passage divided cortical folds',pbrMetallicRoughness:{baseColorFactor:[.27,.105,.085,1],roughnessFactor:.42,metallicFactor:0},extras:{materialFactors:'gltf',tissueSurface}})-1;
   const flesh={fat,brain,muscle:13,bone:15},left=newMesh(BUS_BODY_PASSAGE_MESHES[0]),right=newMesh(BUS_BODY_PASSAGE_MESHES[1]);left.side=-1;right.side=1;
   const cuts=[];let sourceTriangles=0;
   for(let ip=0;ip<ordinary.length;ip++){

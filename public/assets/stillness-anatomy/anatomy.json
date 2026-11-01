@@ -1,0 +1,214 @@
+{
+  "version": 2,
+  "id": "lee-perry-smith-architectural-relief",
+  "aspect": 0.7142857142857142,
+  "widthToHeight": 0.7142857142857142,
+  "columns": 96,
+  "rows": 128,
+  "coordinateSpace": "Normalized receiver patch. X/Y [-.5,.5], outward Z [0,1], UV [0,1]; preserve aspect through physical width/height. Mesh row0 is bottom; PNG row0 is top.",
+  "source": {
+    "title": "Infinite, 3D Head Scan",
+    "author": "Lee Perry-Smith",
+    "sourceUrl": "https://raw.githubusercontent.com/mrdoob/three.js/r185/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb",
+    "originalWork": "https://www.triplegangers.com/",
+    "distribution": "three.js r185 examples/models/gltf/LeePerrySmith",
+    "sha256": "402b8a8ac9f03232e6d64b5962929703a069daf99d3c49ac8eb0e48bedc9c576",
+    "bytes": 404976,
+    "vertices": 9279,
+    "triangles": 17684,
+    "license": "CC-BY-3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "licenseSourceUrl": "https://raw.githubusercontent.com/mrdoob/three.js/r185/examples/models/gltf/LeePerrySmith/LeePerrySmith_License.txt",
+    "licenseSha256": "7cf4da43a6ae6d32f7f7d063fe129a19468af6f4fe7c53b937f83959709fcb50"
+  },
+  "attribution": "Infinite, 3D Head Scan by Lee Perry-Smith, based on work at www.triplegangers.com; distributed through three.js r185. CC BY3.0. Modified for Chunk Surfer: frontal crop, connected strain deformation, reduced skull base mass, broad scanned-silhouette contact feather, low-frequency wall bow and outward-only bas-relief rasterization. No endorsement implied.",
+  "crop": {
+    "minX": -1.75,
+    "maxX": 1.75,
+    "minY": -0.9,
+    "maxY": 4
+  },
+  "landmarkUVs": {
+    "forehead": {
+      "neutral": [
+        0.5,
+        0.7653061224489796
+      ],
+      "strained": [
+        0.5,
+        0.7653061224489796
+      ]
+    },
+    "glabella": {
+      "neutral": [
+        0.4942857142857143,
+        0.5877551020408163
+      ],
+      "strained": [
+        0.49485714285714283,
+        0.6091836734693877
+      ]
+    },
+    "leftLid": {
+      "neutral": [
+        0.3371428571428572,
+        0.5224489795918367
+      ],
+      "strained": [
+        0.3610807399529395,
+        0.5051234510048013
+      ]
+    },
+    "rightLid": {
+      "neutral": [
+        0.6571428571428571,
+        0.5224489795918367
+      ],
+      "strained": [
+        0.6383887354192238,
+        0.5128275119477089
+      ]
+    },
+    "noseTip": {
+      "neutral": [
+        0.4748571428571428,
+        0.4075510204081632
+      ],
+      "strained": [
+        0.4753398123344389,
+        0.40631712851131613
+      ]
+    },
+    "leftNasalWing": {
+      "neutral": [
+        0.4114285714285714,
+        0.3693877551020408
+      ],
+      "strained": [
+        0.4255094972200646,
+        0.34592975713818686
+      ]
+    },
+    "rightNasalWing": {
+      "neutral": [
+        0.5714285714285714,
+        0.37142857142857144
+      ],
+      "strained": [
+        0.5773178476432047,
+        0.35328251573580655
+      ]
+    },
+    "upperLip": {
+      "neutral": [
+        0.48857142857142855,
+        0.29183673469387755
+      ],
+      "strained": [
+        0.5152833578978417,
+        0.2235505995737236
+      ]
+    },
+    "lowerLip": {
+      "neutral": [
+        0.48857142857142855,
+        0.26326530612244897
+      ],
+      "strained": [
+        0.5157142857142857,
+        0.19387755102040813
+      ]
+    },
+    "chin": {
+      "neutral": [
+        0.4942857142857143,
+        0.1346938775510204
+      ],
+      "strained": [
+        0.5214285714285715,
+        0.06530612244897958
+      ]
+    },
+    "leftCheek": {
+      "neutral": [
+        0.22285714285714286,
+        0.4081632653061224
+      ],
+      "strained": [
+        0.23327750981386725,
+        0.40198660219441035
+      ]
+    },
+    "rightCheek": {
+      "neutral": [
+        0.76,
+        0.4081632653061224
+      ],
+      "strained": [
+        0.7560307000311922,
+        0.40930712559158156
+      ]
+    }
+  },
+  "landmarkMethod": "Authored anatomical landmarkXY after inspecting raw orthographic scan. Nose tip checked against maximum frontdepth. Strained positions follow the same connected warp; not clinical measurement.",
+  "bake": {
+    "width": 768,
+    "height": 1024,
+    "precision": "Float64 source/raster computation; 16-bit unsigned linear height output; no 8-bit intermediate or diffuse image.",
+    "frontAxis": "+Z",
+    "backPlaneSourceZ": 1.05,
+    "sourceHeightSpan": 2.5,
+    "contactEnvelope": {
+      "featherWidth": 0.24,
+      "backPlane": 1.05,
+      "sourceHeightSpan": 2.5,
+      "bowBoxRadiusWidth": 0.055,
+      "bowPasses": 2,
+      "bowGain": 0.12,
+      "patchFeatherWidth": 0.1
+    },
+    "renormalizedToPeak": false,
+    "physicalPreview": {
+      "width": 1,
+      "height": 1.4000000000000001,
+      "depth": 0.18
+    },
+    "heightQuantizationMaximum": 0.000015259021896696422,
+    "boundary": "Broad C1 smoothstep fade over the actual scanned silhouette, a low-frequency source-derived wall bow, C1 patch fade and exactly flat two-grid-vertex collar."
+  },
+  "shapes": {
+    "neutral": "Original connected scanned human face with closed lids/lips; reduced skull mass and broad material contact envelope.",
+    "strained": "Smooth connected source-mesh jaw draw, inward/uneven brow compression and asymmetric cheek pressure before rasterization. No painted sockets/mouth, new holes, teeth, photographic diffuse or coloroval."
+  },
+  "acceptance": "CPU asset study and topology/provenance checks only. Native material, dither, depth/shadow integration, performance and unfamiliar-player acceptance pending.",
+  "outputs": {
+    "neutral-height16.png": {
+      "bytes": 969881,
+      "sha256": "7ccff9a84c1f9393b03704a55e338221f7f04b0908c4480140997fda76e43756"
+    },
+    "neutral-height16.bin": {
+      "bytes": 1572864,
+      "sha256": "b931da9bbd9048a12ba70ef49567f889e1fe342bf681364c8524750f7ea877d9"
+    },
+    "neutral-grid16.bin": {
+      "bytes": 24576,
+      "sha256": "6b5028488506751566dc1d568af3d05f3a1dc75c70cf009503e5f59f69eb5991"
+    },
+    "strained-height16.png": {
+      "bytes": 1023651,
+      "sha256": "bc5232dce523603d028e38b8a4330c509211562b84f7be724200544e1aed3112"
+    },
+    "strained-height16.bin": {
+      "bytes": 1572864,
+      "sha256": "9a63a1b093270687a74561d7ff5ff9d48a5d088bf54dbe474051179e3e1bbd88"
+    },
+    "strained-grid16.bin": {
+      "bytes": 24576,
+      "sha256": "874891cce6333f5ab52f7dfaacf7f97ab5a179e783f6bbe571ffe9c578ff58cc"
+    },
+    "src/data/generated/stillness-anatomy.js": {
+      "bytes": 72833,
+      "sha256": "e15de8d021cf121bb4c4258775c4e339fadecb788f2a48579ee6229379ffb31e"
+    }
+  }
+}

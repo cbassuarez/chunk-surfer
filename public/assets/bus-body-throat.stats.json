@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "sha256": "40a82d24dd496e87d6f7ca2738c451d12802735f0e4c473d805713ba268f4f61",
+  "bytes": 1816080,
+  "totalVertices": 14027,
+  "totalTriangles": 25524,
+  "throat": {
+    "halfWidth": 0.6,
+    "floor": 0.505,
+    "shoulder": 2.35,
+    "crown": 2.86,
+    "centreY": 1.66,
+    "rimZ": 3.94,
+    "wallZ": 4.25,
+    "lipZ": 4.23,
+    "lumenZ": 4.44,
+    "slit": {
+      "closed": 0.075,
+      "open": 0.3,
+      "up": 0.6,
+      "down": 0.74
+    }
+  },
+  "meshes": {
+    "bus_body_throat_lining": {
+      "vertices": 12287,
+      "triangles": 22124,
+      "restBounds": {
+        "min": [
+          -0.57,
+          0.5103778801843318,
+          3.55
+        ],
+        "max": [
+          -0.57,
+          2.2279999999999998,
+          3.55
+        ]
+      },
+      "openBounds": {
+        "min": [
+          -0.6047630119589762,
+          0.503,
+          3.919070138020465
+        ],
+        "max": [
+          0.6039690382633078,
+          2.8602676065783896,
+          4.441816483246156
+        ]
+      }
+    },
+    "bus_body_throat_strands": {
+      "vertices": 1740,
+      "triangles": 3400,
+      "restBounds": {
+        "min": [
+          -0.57,
+          0.7876558852812829,
+          3.55
+        ],
+        "max": [
+          -0.57,
+          2.0627097669243355,
+          3.55
+        ]
+      },
+      "openBounds": {
+        "min": [
+          -0.6004636305543307,
+          0.8528216692211534,
+          3.9246361491048307
+        ],
+        "max": [
+          0.6008021363425113,
+          2.4614652292010515,
+          4.187232085250406
+        ]
+      }
+    }
+  },
+  "targets": {
+    "bus_body_throat_lining": [
+      "unfold",
+      "pulse",
+      "dilate"
+    ],
+    "bus_body_throat_strands": [
+      "unfold",
+      "snap"
+    ]
+  }
+}

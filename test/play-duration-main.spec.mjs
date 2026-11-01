@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {createPlayDurationClock,freshPlayDuration} from '../src/game/play-duration.js';
+import {advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function body(name){const start=main.indexOf(`function ${name}(`),end=main.indexOf('\n}',start);assert.ok(start>=0&&end>start);return main.slice(start,end+2);}
 function host(){
  const save={run:{id:'run:first',status:'active'},playSeconds:700,playDuration:freshPlayDuration()},menus=new Set();
  const h={getSave:()=>save,storyMode:true,inRogue:true,paused:false,focused:true,scenes:{has:id=>menus.has(id)},
-  runPlayDurationClock:createPlayDurationClock(),gameplayInputLifecycleActive:()=>h.focused};
+    runPlayDurationClock:createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,gameplayInputLifecycleActive:()=>h.focused};
  vm.createContext(h);vm.runInContext(body('tickRunPlayDuration'),h);
  return{h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h)};
 }

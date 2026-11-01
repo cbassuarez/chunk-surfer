@@ -2,8 +2,8 @@
   "source": "tools/chunk_surfer/characters/build-tower-warning-missing-man.py",
   "sourceAsset": "public/assets/outskirts-characters.glb",
   "sourceSha256": "80bfb9ca094946ce6f5d6496caf78a0d99846fd3e8477d09a3363c0bfa6ea114",
-  "bytes": 8511152,
-  "sha256": "fdf0a81604693db19298977a37956b690232b272038c62ae65ae5a010ac5a8c4",
+  "bytes": 8549576,
+  "sha256": "716fb98d76e77a9c41fa32845f79cd61b2a0f1ead5a49a20ba036ed0ad548e04",
   "blender": "4.5.3 LTS",
   "units": "metres",
   "forward": "-Z",
@@ -72,8 +72,33 @@
     "depart": 1.05
   },
   "gait": {
-    "strideMetres": 1.168546923370206,
-    "qualification": "Retained authored1.2m full-cycle source stride, uniformly height-fitted; actual planted-foot sampling must validate before visual acceptance."
+    "strideMetres": 0.902,
+    "cycleSec": 1.1,
+    "plantedWindows": {
+      "foot_R": [
+        0.19999999999999996,
+        0.6399999999999999
+      ],
+      "foot_L": [
+        0.7,
+        1.14
+      ]
+    },
+    "pelvisBase": -0.04177201421466392,
+    "toeClearance": 0.00622364476959814,
+    "reach": [],
+    "qualification": "Procedural distance-owned walk authored on the fitted rest skeleton: heel strike, flat stance, heel-off roll over the ball, ~3cm pelvic rise, sway, list and counter-rotated chest."
+  },
+  "departurePivot": {
+    "joint": "foot_L",
+    "start": [
+      -0.106,
+      -0.007495182100683451
+    ],
+    "end": [
+      -0.094,
+      0.06466481789931659
+    ]
   },
   "rig": {
     "head": {
@@ -103,40 +128,40 @@
   },
   "cigarette": {
     "baseBindMeshGame": [
-      0.5104107592028219,
-      1.0479740796546875,
-      -0.3022016057911056
+      0.49136706300009847,
+      1.0448991118478363,
+      -0.30437610452484176
     ],
     "emberBindMeshGame": [
-      0.5746939427012451,
-      1.087653573818259,
-      -0.338348177978245
+      0.5627490585082073,
+      1.0647095475410746,
+      -0.343434081166503
     ],
     "axisBindMeshGame": [
-      0.767598569393158,
-      0.47380855679512024,
-      -0.4316222667694092
+      0.8523644804954529,
+      0.23655416071414948,
+      -0.466387003660202
     ],
     "gripBindMeshGame": [
-      0.5208754472953968,
-      1.0544334970975666,
-      -0.3080859395949218
+      0.5079675243721073,
+      1.0495061656192322,
+      -0.31345935558153454
     ],
     "handLocalBlender": [
-      0.040236152708530426,
-      0.16295726597309113,
-      0.04608801379799843
+      0.02504889667034149,
+      0.17388582229614258,
+      0.026522617787122726
     ],
     "joint": "hand_R",
-    "socketQualification": "Rigid hand-weighted prop fitted between actual source index/middle chains; arm motion baked, no runtime hand Euler override."
+    "socketQualification": "Rigid hand-weighted prop wedged in the gap between the curled index and middle first phalanges, filter proud on the palm side; arm motion baked, no runtime hand override."
   },
   "missingMan": {
-    "version": 1,
+    "version": 2,
     "holdClip": "warning_hold",
     "gestureClip": "warning_smoke",
     "walkClip": "warning_walk",
     "walkDurationSec": 1.1,
-    "strideM": 1.168546923370206,
+    "strideM": 0.902,
     "gestureDurationSec": 2.8,
     "departureClip": "warning_depart",
     "departureDurationSec": 1.05,
@@ -144,17 +169,17 @@
       "ember": {
         "joint": "hand_R",
         "position": [
-          0.5746939427012451,
-          1.087653573818259,
-          -0.338348177978245
+          0.5627490585082073,
+          1.0647095475410746,
+          -0.343434081166503
         ]
       },
       "cigaretteBase": {
         "joint": "hand_R",
         "position": [
-          0.5104107592028219,
-          1.0479740796546875,
-          -0.3022016057911056
+          0.49136706300009847,
+          1.0448991118478363,
+          -0.30437610452484176
         ]
       },
       "face": {
@@ -163,6 +188,14 @@
           0.0,
           1.6603104202885013,
           -0.17041309299148838
+        ]
+      },
+      "mouth": {
+        "joint": "head",
+        "position": [
+          -1.800387432792474e-20,
+          1.5914394948705584,
+          -0.16226794857207605
         ]
       }
     },
@@ -188,73 +221,46 @@
       "collarSettle": "collar_settle"
     },
     "anchorSpace": "bind-mesh game coordinates; transform by sampled world*inverseBind bone palette",
+    "gait": {
+      "strideMetres": 0.902,
+      "cycleSec": 1.1,
+      "phaseOffset": 0.8,
+      "plantedWindows": {
+        "foot_R": [
+          0.19999999999999996,
+          0.6399999999999999
+        ],
+        "foot_L": [
+          0.7,
+          1.14
+        ]
+      }
+    },
+    "departurePivot": {
+      "joint": "foot_L",
+      "start": [
+        -0.106,
+        -0.007495182100683451
+      ],
+      "end": [
+        -0.094,
+        0.06466481789931659
+      ]
+    },
     "heightM": 1.83872569183708,
     "heightFitBaked": 0.9737891028085051,
     "rootTransform": "identity; scale baked in vertices/rest joints/animation translations"
   },
   "meshes": {
     "tower_warning_missing_man": {
-      "vertices": 40283,
-      "triangles": 73668,
+      "vertices": 40421,
+      "triangles": 73944,
       "primitives": 11
     }
   },
   "qualityLimits": [
-    "No actor mocap; authored FK/IK performance from retained anatomical source.",
-    "Actual game final dither, costume clipping, cigarette contact, stride and negative-core validation pending.",
+    "No actor mocap; every clip is procedural FK/IK on the retained anatomical rig.",
+    "Fingers are single rigid bones in the source rig; the relaxed curl is baked into the bind mesh.",
     "Negative hull keeps original concealed outfit geometry black; only bespoke outercoat/hat/hand/boots/prop materials receive light."
-  ],
-  "embeddedTextureInspection": {
-    "warning_coat_wool": {
-      "imageSize": [
-        512,
-        512
-      ],
-      "encodedSrgbMean": [
-        0.4234911301556756,
-        0.41947420905618105,
-        0.40290397195255057
-      ],
-      "decodedLinearReflectanceMean": [
-        0.14993099970275045,
-        0.14692793068655247,
-        0.13491265299328076
-      ],
-      "baseColorFactor": [
-        1,
-        1,
-        1,
-        1
-      ]
-    },
-    "warning_felt_trilby": {
-      "imageSize": [
-        512,
-        512
-      ],
-      "encodedSrgbMean": [
-        0.3572697209376915,
-        0.3523054235121783,
-        0.33509822172277115
-      ],
-      "decodedLinearReflectanceMean": [
-        0.10486475613228541,
-        0.10185973925314025,
-        0.09183571809587508
-      ],
-      "baseColorFactor": [
-        1,
-        1,
-        1,
-        1
-      ]
-    }
-  },
-  "boundedFinish": {
-    "hat": "Front centre dent25mm and paired crown pinches20mm, inward only.",
-    "coat": "Six broad inward drape valleys up to9mm with causal skirt falloff; outer silhouette never expanded.",
-    "lapels": "Four physical roll rings inside original unchanged border/fan envelope.",
-    "grip": "Only ring/little MCPs flex35degrees about validated palm frame; index/middle/thumb/cigarette/hand socket unchanged.",
-    "scale": "Fixed validated .9737891028085051 so crown lowering cannot rescale contacts/gait."
-  }
+  ]
 }

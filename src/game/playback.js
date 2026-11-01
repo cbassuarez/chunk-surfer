@@ -3,6 +3,18 @@ import {makeTapeDamage,normalizeTapeDamage,tapeDamageEnvelope,tapeDamageGainAt,t
 import { TOWER_PERSONAL_CUE, playTowerPersonalRecording } from '../audio/tower-personal-recording.js';
 import { COASTAL_MEMORY_CUE, playCoastalMemoryRecording } from '../audio/coastal-memory.js';
 import { decodeSourceDriveMedia, normalizeSourceDriveMedia, SOURCE_DRIVE_CAPTURE_KIND, sourceDriveAudioKey } from '../audio/source-drive-recording.js';
+import { captureNightClock, normalizeNightCapture } from './night-clock.js';
+
+let nightClockSource = () => null;
+export function setNightClockSource(source = null) {
+  nightClockSource = typeof source === 'function' ? source : () => null;
+}
+function captureNightStamp() { return captureNightClock(nightClockSource()); }
+let transportGate=()=>true;
+export function setTransportGate(provider=null){transportGate=typeof provider==='function'?provider:()=>true;}
+export function canStartTransport(kind='record'){
+  try{return transportGate({kind,continuing:false})!==false;}catch{return false;}
+}
 
 // Playback. The take contains what you did not hear.
 //
@@ -60,6 +72,7 @@ const state = {
   chunkByKey: null,          // (key) -> chunk, coming back
   onGuest: null,             // fired when the guest crosses audibility
   scheduleDiscrete: null,
+  scheduleB3Speaker: null,
   onTransport: null, playSlate: null,
   loadContinuousMedia: null, onPlaybackError: null, lastError: null,
 };
@@ -93,7 +106,7 @@ export const PLAYBACK = {
   guestEnterMinSec: 1.4,     // never on top of the take's own fade-in
 };
 
-export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey, onGuest, scheduleDiscrete, onTransport, playSlate, loadContinuousMedia, onPlaybackError } = {}) {
+export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey, onGuest, scheduleDiscrete, scheduleB3Speaker, onTransport, playSlate, loadContinuousMedia, onPlaybackError } = {}) {
   state.ctx = ctx || state.ctx;
   state.bus = bus || state.bus;
   if (pickGuest) state.pickGuest = pickGuest;
@@ -102,6 +115,7 @@ export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey
   if (chunkByKey) state.chunkByKey = chunkByKey;
   if (onGuest) state.onGuest = onGuest;
   if(scheduleDiscrete)state.scheduleDiscrete=scheduleDiscrete;
+  if(scheduleB3Speaker!==undefined)state.scheduleB3Speaker=scheduleB3Speaker;
   if(onTransport)state.onTransport=onTransport;
   if(playSlate)state.playSlate=playSlate;
   if(loadContinuousMedia!==undefined)state.loadContinuousMedia=loadContinuousMedia;
@@ -112,10 +126,12 @@ export function playbackInit({ ctx, bus, pickGuest, chunkById, keyOf, chunkByKey
 // room attempts. It is never a room-tone job, never receives a catalogue guest,
 // and is never reconstructed if its local media is missing.
 export function beginContinuousFieldTake({runId,place='Source · recorded journey',metadata={}}={}) {
+  if(!canStartTransport('continuous-record'))return null;
   if(!runId||isPlaying()||hasOpenTake()||Math.abs(state.head-state.end)>.051)return null;
   const ordinal=state.history.length+1,id=`take:${ordinal}`,roomId=`source-drive-field:${ordinal}`;
   const captureId=globalThis.crypto?.randomUUID?.()||`${Date.now().toString(36)}-${++continuousCaptureSerial}`;
   const take={id,ordinal,roomId,startSeconds:state.end,endSeconds:state.end,durationSeconds:.01,
+    nightStamp:captureNightStamp(),
     status:'archived',counted:false,sealed:false,at:Date.now(),cell:null,place,contaminated:false,
     levels:new Map(),audible:[],discrete:[],guest:null,presence:{peak:0,atSec:0},
     continuous:{schema:1,kind:SOURCE_DRIVE_CAPTURE_KIND,key:sourceDriveAudioKey(runId,id,captureId),runId:String(runId),takeId:id,captureId,pending:true,durable:false},
@@ -192,6 +208,7 @@ const sourcePosition = (atSec, durationSeconds) => {
 };
 
 export function beginTake(roomId, cell, { durationSeconds = PLAYBACK.sourceSeconds } = {}) {
+  if(!canStartTransport('listen'))return null;
   const previous=state.takes.get(roomId);
   state.takes.set(roomId, {
     previous:previous?.sealed?previous:previous?.previous||null,
@@ -209,10 +226,14 @@ export function beginTake(roomId, cell, { durationSeconds = PLAYBACK.sourceSecon
 // The two facts the recordist used to hold separately. Set when the take is
 // accepted, which is after sealTake — the tape is already closed by then, so
 // this is the paperwork rather than the recording.
-export function markTake(roomId, { contaminated = false, place = null } = {}) {
+export function markTake(roomId, { contaminated = false, place = null, contaminationSources } = {}) {
   const take = state.takes.get(roomId);
   if (!take) return false;
   take.contaminated = !!contaminated;
+  // Keep absent legacy attribution absent; an empty list is an explicit
+  // unknown source and must not be silently rewritten as mains hum.
+  if(Array.isArray(contaminationSources))take.contaminationSources=[...new Set(contaminationSources.filter(source=>typeof source==='string'))];
+  else delete take.contaminationSources;
   // First clean take of a room owns its place; a tape does not re-roll.
   if (place && !take.place) take.place = place;
   // COUNTED IS NOT THE SAME QUESTION AS SEALED.
@@ -256,11 +277,15 @@ export function abortTake(roomId) {
 export function startTapeTake(roomId, slate = null) {
   const take=state.takes.get(roomId);
   if(!take||take.sealed)return null;
+  if(take.id)return take;
+  // This interval was admitted by beginTake before the deadline. It may finish
+  // listening and roll; beginning another room/cabin interval is denied above.
   take.id=`take:${state.history.length+1}`;
   take.ordinal=state.history.length+1;
   take.startSeconds=state.end;
   take.endSeconds=state.end;
   take.slate=slate;
+  take.nightStamp=captureNightStamp();
   state.head=state.end;
   return take;
 }
@@ -501,11 +526,13 @@ export function serializeTakes() {
     ...(t.continuous ? { continuous: {...t.continuous}, fieldMetadata:{...(t.fieldMetadata||{})}, fieldEndReason:t.fieldEndReason||null, mediaUnavailable:!!t.mediaUnavailable } : {}),
     roomId: t.roomId,
     at: t.at,
+    ...(normalizeNightCapture(t.nightStamp) ? { nightStamp: normalizeNightCapture(t.nightStamp) } : {}),
     durationSeconds: t.continuous?Math.max(.01,t.endSeconds-t.startSeconds):t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
     counted: t.status? t.status==='accepted'&&!t.voided&&!normalizeTapeDamage(t.damage,t) : !t.id||!!t.sealed,
     migrated: !!t.migrated,
     cell: t.cell ? { x: Number(t.cell.x)||0, y: Number(t.cell.y)||0 } : null,
     contaminated: !!t.contaminated,
+    ...(Array.isArray(t.contaminationSources)?{contaminationSources:[...t.contaminationSources]}:{}),
     place: t.place || null,
     presence: { peak: t.presence?.peak || 0, atSec: t.presence?.atSec || 0 },
     audible: (t.audible || [...(t.levels||new Map()).entries()].sort((a,b)=>b[1]-a[1]).slice(0,6)).map(([ref, level]) => [
@@ -547,12 +574,14 @@ export function loadTakes(saved = []) {
       discrete: (row.discrete || []).map((e) => ({ ...e })),
       presence: { peak: row.presence?.peak || 0, atSec: row.presence?.atSec || 0 },
       contaminated: !!row.contaminated,
+      ...(Array.isArray(row.contaminationSources)?{contaminationSources:[...new Set(row.contaminationSources.filter(source=>typeof source==='string'))]}:{}),
       place: row.place || null,
       audible:row.continuous?[]:audible,
       guest: !row.continuous&&row.guest?.key ? { id: null, key: row.guest.key } : null,
       sealed: true,
       counted: row.continuous?false:row.counted!==false,
       at: row.at || 0,
+      ...(normalizeNightCapture(row.nightStamp) ? { nightStamp: normalizeNightCapture(row.nightStamp) } : {}),
       migrated: !!row.migrated,
     };
     const damage=normalizeTapeDamage(row.damage,take);
@@ -628,7 +657,12 @@ export function guestShape(presence = null, { durationSeconds = PLAYBACK.sourceS
 
 // ── playing it back ─────────────────────────────────────────────────────────
 export function playTake(roomId, { character = 1, atHead = false, continuousOutput = null } = {}) {
-  const t = tapeTake(roomId);
+  if(!canStartTransport('playback'))return null;
+  return playPreparedTake(tapeTake(roomId),{character,atHead,continuousOutput});
+}
+
+function playPreparedTake(t, { character = 1, atHead = false, continuousOutput = null } = {}) {
+  const roomId=t?.roomId;
   if (!t || !t.sealed || !state.ctx || !state.bus || isPlaying()) return null;
   state.lastError=null;
   if(t.continuous&&(t.mediaUnavailable||!normalizeSourceDriveMedia(t.continuous)?.durable)){
@@ -738,6 +772,12 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
       if(voice)nodes.push(voice);
       continue;
     }
+    if(typeof event.cueId==='string'&&event.cueId.startsWith('b3.speaker.')&&state.scheduleB3Speaker){
+      const remaining=Math.max(0,(t.durationSeconds-(Number(event.atSec)||0))/sourceDuration(t.durationSeconds)*playbackSeconds);
+      state.scheduleB3Speaker(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes,
+        cutoff:event.provenance?.cutoff,duration:Math.min(1,remaining)});
+      continue;
+    }
     if(state.scheduleDiscrete){state.scheduleDiscrete(event.cueId,playbackAt,{gain:event.gain,pan:event.pan,output:out,nodes});continue;}
     if(event.cueId==='bell.tenor.clock'){
       const osc=ctx.createOscillator(),gain=ctx.createGain(),panner=ctx.createStereoPanner();osc.type='sine';osc.frequency.value=233.08;gain.gain.setValueAtTime(.0001,playbackAt);gain.gain.exponentialRampToValueAtTime(.14*Math.max(.1,event.gain),playbackAt+.012);gain.gain.exponentialRampToValueAtTime(.0001,playbackAt+5.8);panner.pan.value=event.pan;osc.connect(gain);gain.connect(panner);panner.connect(out);osc.start(playbackAt);osc.stop(playbackAt+6);nodes.push(osc,gain,panner);
@@ -748,6 +788,24 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
   state.playing = { roomId:t.roomId, take:t, nodes, output:out,slateAt,slateFired:false,startedAt: t0, endsAt, durationSec:playbackSeconds, guestFired: false };
   return state.playing;
 }
+
+// Playback from an archived COPY, without replacing the current tape, moving
+// its head, adding a new guest, recording, or emitting the in-world guest event.
+// The existing renderer/scheduler still plays the actual retained sources.
+export function playArchivedTake(row,{output=null}={}){
+  if(!row?.roomId||hasOpenTake()||isPlaying()||!state.ctx||!state.bus)return null;
+  if(row.voided){state.lastError={code:'ARCHIVE_TAKE_ERASED',message:'This tape interval was erased. Its original audio is unavailable.',takeId:row.id};return null;}
+  const t=JSON.parse(JSON.stringify(row));
+  const missing=(t.audible||[]).some(([ref,level])=>Number(level)>0&&!sampleFor(ref)?.buffer)
+    ||!!t.guest?.key&&!sampleFor(t.guest.key)?.buffer;
+  if(missing){state.lastError={code:'ARCHIVE_SOURCE_UNAVAILABLE',message:'A source used by this recording is unavailable.',takeId:t.id};return null;}
+  Object.assign(t,{levels:new Map(),sealed:true,migrated:false,guest:t.guest?.key?{key:t.guest.key}:null,
+    startSeconds:Number(t.startSeconds)||0,endSeconds:Number(t.endSeconds)||Number(t.durationSeconds)||0});
+  const playing=playPreparedTake(t,{atHead:true,continuousOutput:output});
+  if(playing){playing.readOnlyArchive=true;playing.guestFired=true;}
+  return playing;
+}
+export function archivedPlaybackActive(){return state.playing?.readOnlyArchive===true;}
 
 function playContinuousSource(p,offset=0){
   const source=state.ctx.createBufferSource();source.buffer=p.buffer;source.loop=false;source.playbackRate.value=1;source.connect(p.output);p.nodes.push(source);p.source=source;
@@ -790,7 +848,7 @@ export function tickPlayback() {
     state.head=s.from+(s.to-s.from)*p;
     if(p<1)return 'seeking';
     s.sound?.stop?.();state.seeking=null;
-    if(s.then){playTake(s.then.id,{character:s.then.character,continuousOutput:s.then.continuousOutput,atHead:true});return 'playing';}
+    if(s.then){playPreparedTake(tapeTake(s.then.id),{character:s.then.character,continuousOutput:s.then.continuousOutput,atHead:true});return 'playing';}
     return 'cued';
   }
   if (!state.playing || !state.ctx) return 'idle';
@@ -798,13 +856,13 @@ export function tickPlayback() {
   const p = state.playing;
   if(p.continuous){
     if(p.loading)return 'loading';if(p.paused)return 'paused';
-    const elapsed=Math.max(0,Math.min(p.durationSec,now-p.startedAt));state.head=(p.take.startSeconds||0)+elapsed;
-    if(p.ended||now>=p.endsAt){state.head=p.take.endSeconds;stopPlayback();return 'ended';}return 'playing';
+    const elapsed=Math.max(0,Math.min(p.durationSec,now-p.startedAt));if(!p.readOnlyArchive)state.head=(p.take.startSeconds||0)+elapsed;
+    if(p.ended||now>=p.endsAt){if(!p.readOnlyArchive)state.head=p.take.endSeconds;stopPlayback();return 'ended';}return 'playing';
   }
   if(!p.slateFired&&p.slateAt!==null&&now>=p.slateAt&&now<p.endsAt){
     p.slateFired=true;state.playSlate?.(p.take.slate,{ctx:state.ctx,output:p.output,when:p.startedAt,nodes:p.nodes});
   }
-  state.head=(p.take.startSeconds||0)+Math.max(0,Math.min(1,(now-p.startedAt)/p.durationSec))*sourceDuration(p.take.durationSeconds);
+  if(!p.readOnlyArchive)state.head=(p.take.startSeconds||0)+Math.max(0,Math.min(1,(now-p.startedAt)/p.durationSec))*sourceDuration(p.take.durationSeconds);
   if (!p.guestFired && state.guestAt && now >= state.guestAt) {
     p.guestFired = true;
     state.onGuest?.(p.roomId);

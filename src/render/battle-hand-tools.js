@@ -15,6 +15,7 @@ import { ensureWorldLetteringFonts, worldLetteringFontsStatus } from './world-le
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import { createThreePhysicalPrint } from './three-physical-print.js';
 import {FIELD_WRAPPED_PRINT,facetedWrappedPrintGeometry,torchGripRingYs} from './wrapped-tool-print.js';
+import { buildRadioContactModel } from './radio-contact-model.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, finite(n, lo)));
@@ -290,35 +291,29 @@ function fork(group) {
 }
 
 function radio(group) {
-  const w = .102, h = .150, d = .040, body = physical('#414a39', .62, .18), steel = physical(COLORS.steel, .32, .75), dark = physical('#17211a', .74);
-  box(group, [w, h, d], body, [0, 0, 0], .008, 'portable short-wave radio');
-  box(group, [w - .008, h - .011, .003], dark, [0, 0, .020], .004);
-  cylinder(group, .0041, .114, steel, [-.032, .126, -.009]);
-  cylinder(group, .005, .010, dark, [-.032, .073, -.009]);
-  for (let i = 0; i < 13; i++) box(group, [.072, .00145, .001], physical('#77816d', .7), [0, .045 - i * .004, .022], .0004);
-  box(group, [.076, .017, .002], physical('#101b14', .22), [0, -.035, .022], .0015);
-  label(group, 'FM  88  96  104  MHz', .071, .009, [0, -.035, .0232], { size: 37, color: '#bdc89f' });
-  const knob = cylinder(group, .008, .009, steel, [.032, -.058, .026], [Math.PI / 2, 0, 0]);
-  knob.name = 'radio tuning dial';
-  const tick = box(group, [.001, .005, .0005], dark, [.032, -.0555, .031], .0001);
-  box(group, [.0018, .033, .023], physical('#111b14', .72), [-.0515, .030, .004], .0008, 'radio PTT recess');
-  const transmitCap = box(group, [.0038, .028, .018], physical('#252f23', .82), [-.053, .030, .004], .0018, 'radio PTT keycap');
-  label(group, 'FIELD RADIO', .052, .007, [-.008, -.058, .0231]);
-  for (const x of [-.039, .039]) for (const y of [-.063, .063]) screw(group, x, y, .023, steel, .0014);
-  const controls = { tune: { ...target([.032, -.058, .032]), approachAngle: .4 }, transmit: { ...target([-.0552, .030, .004], [-1, 0, 0]), approachAngle: -.45 } };
-  const grip = recorderCradle([-.03, .0004, 0]);
-  return { bounds: { width: w, height: .260, depth: .047 }, contacts: { right: grip }, controls,
+  // Conversation and combat share one canonical-size channel walkie. Only the
+  // whole supported cradle moves down to meet its taller battery shoe.
+  const model=buildRadioContactModel();group.add(model.group);
+  model.parts.shell.name='portable short-wave radio'; // Retained inspection API.
+  model.parts.ptt.name='radio PTT keycap';model.parts.channelKnob.name='radio tuning dial';
+  const controls={tune:target([.030,.101,.014]),transmit:target([-.058,.027,.001],[-1,0,0])};
+  const grip=recorderCradle([-.03,-.015,0]),dimensions=model.bounds.total;
+  model.update({channel:2,volume:.75,carrier:'off'});
+  return { bounds: { width: dimensions.width, height: dimensions.height, depth: dimensions.depth }, contacts: { right: grip }, controls,
     update(frame) {
       const active = frame.active !== false && frame.side !== 'enemy';
       const pressure = frame.controlPressure != null && Number.isFinite(Number(frame.controlPressure))
         ? clamp(frame.controlPressure) : Math.sin(Math.PI * clamp(frame.progress));
-      const angle = active && (frame.action === 'tune' || frame.action === 'channel') ? -.3 * pressure : 0;
-      knob.rotation.y = angle;
-      tick.position.set(.032 + Math.sin(angle) * .0025, -.058 + Math.cos(angle) * .0025, .031);
-      const travel = active && frame.action === 'radio-decoy' ? .0014 * pressure : 0;
-      transmitCap.position.x = -.053 + travel;
-      controls.transmit.position[0] = -.0552 + travel;
+      const transmitting=active&&frame.action==='radio-decoy',tuning=active&&['tune','channel'].includes(frame.action);
+      const channel=Math.max(1,Math.min(16,Math.round(Number(frame.channel)||2)));
+      // A combat animation cannot invent a live narrative carrier. The owner
+      // may supply actual radio power/carrier state; the default remains off.
+      model.update({channel,volume:frame.volume??.75,ptt:transmitting?pressure:0,
+        carrier:frame.radioCarrier||'off',dead:!!(frame.radioDead??frame.dead)});
+      model.parts.channelKnob.rotation.y-=(tuning ? .3*pressure : 0);
+      controls.transmit.position=[...model.controls.ptt.position];
     },
+    disposeResources(){model.dispose();},
   };
 }
 
@@ -414,9 +409,12 @@ export function buildBattleHandTool(tool = 'self', cosmetics = {}) {
     },
     dispose() {
       if (disposed) return; disposed = true; letters.disposed = true;
-      for (const item of resources.geometries) item.dispose();
-      for (const item of resources.maps) item.dispose();
-      for (const item of resources.materials) item.dispose();
+      if(detail.disposeResources)detail.disposeResources();
+      else{
+        for (const item of resources.geometries) item.dispose();
+        for (const item of resources.maps) item.dispose();
+        for (const item of resources.materials) item.dispose();
+      }
       resources.geometries.clear(); resources.maps.clear(); resources.materials.clear();
       group.clear(); group.removeFromParent();
     },

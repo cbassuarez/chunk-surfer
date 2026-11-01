@@ -13,14 +13,32 @@ export function exteriorMapProjection({bounds,viewport,nav={},aspect=.5}){
   const scale=Math.min((viewport.w-2)/Math.max(1,width),(viewport.h-1)/Math.max(1,height*aspect))*clamp(Number(nav.zoom)||1,.7,2.5);
   return{point(p){const q=raw(p);return{x:viewport.x+viewport.w/2+q.x*scale+(Number(nav.panX)||0),y:viewport.y+viewport.h/2+q.y*scale*aspect+(Number(nav.panY)||0)};},scale,rotation:mapQuarterRotation(nav.rotation)};
 }
+// One palette for the authored plan on both the bag map and the minimap.
+const PLAN_FILL={pub:'#45563d',church:'#354a36',institution:'#293c2d',square:'#3a4e3e',frontage:'#2c3d2e',outbuilding:'#2c3d2e',greenhouse:'rgba(150,196,200,.62)',
+  stationers:'#2c3d2e',bindery:'#2c3d2e',
+  paving:'rgba(143,167,128,.16)',street:'rgba(143,167,128,.30)',path:'rgba(176,196,154,.34)',garden:'rgba(104,140,88,.55)',monument:'#b5c4a6',
+  fountain:'#b5c4a6',water:'rgba(110,160,172,.78)'};
+export function exteriorPlanCommands(plan,project){
+  const shape=(kind,s)=>({kind,id:s.id,role:s.role,points:s.points.map(project),holes:(s.holes||[]).map(h=>h.map(project))});
+  return[
+    ...plan.ground.map(s=>shape('plan-shape',s)),
+    ...plan.buildings.map(s=>shape('plan-shape',s)),
+    ...plan.courts.map(s=>shape('plan-shape',s)),
+    shape('plan-shape',plan.ellery),
+    ...plan.edges.map(e=>({kind:'plan-edge',points:e.map(project),role:'building'})),
+    ...plan.ellery.edges.map(e=>({kind:'plan-edge',points:e.map(project),role:'institution'})),
+  ];
+}
 function ink(ctx,{cellW,cellH,dpr},viewport){
   const point=p=>({x:p.x*cellW*dpr,y:p.y*cellH*dpr});
   const path=(points,close=false)=>{ctx.beginPath();points.forEach((p,i)=>{const q=point(p);i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y);});if(close)ctx.closePath();};
   return{
-    polygon(points,role='frontage',local=false){
+    // Fill only. Outlines are drawn separately from shared-edge-free lists, so
+    // a terrace reads as one building rather than eight boxes.
+    polygon(points,role='frontage',holes=[]){
       if(!points.length)return;path(points,true);
-      ctx.fillStyle=role==='pub'?'#45563d':role==='church'?'#354a36':role==='institution'?'#293c2d':'#2c3d2e';ctx.fill();
-      if(role!=='church'&&role!=='institution'){ctx.strokeStyle=local?'#829379':'#899b80';ctx.lineWidth=(local?.7:.8)*dpr;ctx.stroke();}
+      for(const hole of holes){const h=hole.map(point);ctx.moveTo(h[0].x,h[0].y);for(const q of h.slice(1))ctx.lineTo(q.x,q.y);ctx.closePath();}
+      ctx.fillStyle=PLAN_FILL[role]||PLAN_FILL.frontage;ctx.fill('evenodd');
     },
     line(points,color='#a0b294',width=.7,dash=[]){if(points.length<2)return;path(points);ctx.strokeStyle=color;ctx.lineWidth=width*dpr;ctx.setLineDash(dash.map(n=>n*dpr));ctx.stroke();ctx.setLineDash([]);},
     text(value,p,{color='#bfcbb0',size=11,align='left',alpha=1}={}){const q=point(p);ctx.save();ctx.globalAlpha*=alpha;drawElectronicText(ctx,value,q.x,q.y,{fontSize:size*dpr,color,mode:'lcd',align,baseline:'middle',dpr});ctx.restore();},
@@ -33,8 +51,11 @@ function ink(ctx,{cellW,cellH,dpr},viewport){
 export function drawExteriorMapCommand(command){
   uiDraw(metrics=>{const{ctx}=metrics;ctx.save();const pen=ink(ctx,metrics,command.viewport);pen.clip();
     ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
-    if(command.kind==='district-footprint')pen.polygon(command.points,command.role,true);
+    if(command.kind==='district-footprint')pen.polygon(command.points,command.role);
     else if(command.kind==='district-boundary')pen.line(command.points,'#a8b59a',.75);
+    else if(command.kind==='district-mass-edge')pen.line(command.points,'#829379',.7);
+    else if(command.kind==='plan-shape')pen.polygon(command.points,command.role,command.holes);
+    else if(command.kind==='plan-edge')pen.line(command.points,command.role==='institution'?'#a8b59a':'#829379',command.role==='institution'?.8:.7);
     else if(command.kind==='district-landmark'){
       pen.diamond(command.point,'#a8bca0',2);
       if(command.showLabel)pen.text(command.label,{x:command.point.x+.55,y:command.point.y-.45},{size:9,alpha:.8});
@@ -50,7 +71,18 @@ export function drawExteriorMap({model,nav={},viewport}={}){
   const hits=(model.spaces||[]).filter(s=>s.selectable!==false&&inside(points[s.id])).map(s=>({id:`bag:space:${s.id}`,kind:'map-space',action:'select-space',payload:{spaceId:s.id},x:points[s.id].x-1.2,y:points[s.id].y-.65,w:2.4,h:1.3,point:points[s.id],enabled:true}));
   uiDraw(m=>{const{ctx,cellW,cellH,dpr}=m;ctx.save();const pen=ink(ctx,m,viewport);pen.clip();
     ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
-    if(model.policy?.showMapTopology!==false){
+    if(model.policy?.showMapTopology!==false&&model.district?.plan){
+      for(const command of exteriorPlanCommands(model.district.plan,projection.point)){
+        if(command.kind==='plan-shape')pen.polygon(command.points,command.role,command.holes);
+        else pen.line(command.points,command.role==='institution'?'#a8b59a':'#899b80',command.role==='institution'?.85:.8);
+      }
+      for(const label of model.district.plan.labels){
+        const p=projection.point(label),vertical=label.vertical&&projection.rotation%2===0;
+        if(vertical){const q={x:p.x*cellW*dpr,y:p.y*cellH*dpr};ctx.save();ctx.translate(q.x,q.y);ctx.rotate(-Math.PI/2);ctx.translate(-q.x,-q.y);}
+        pen.text(label.text,p,{size:label.size==='place'?13:10,align:'center',color:label.size==='place'?'#c5ceb5':'#bdcba9',alpha:.86});
+        if(vertical)ctx.restore();
+      }
+    }else if(model.policy?.showMapTopology!==false){
       // Only clear captured ground is painted: lawns/courts, streets and the
       // occupied building masses stay perceptually distinct on a small sheet.
       ctx.fillStyle='#8fa7804a';
@@ -59,6 +91,7 @@ export function drawExteriorMap({model,nav={},viewport}={}){
         ctx.beginPath();corners.forEach((p,i)=>i?ctx.lineTo(p.x*cellW*dpr,p.y*cellH*dpr):ctx.moveTo(p.x*cellW*dpr,p.y*cellH*dpr));ctx.closePath();ctx.fill();
       }
       for(const footprint of model.district?.footprints||[])pen.polygon(footprint.points.map(projection.point),footprint.role);
+      for(const edge of model.district?.massEdges||[])pen.line(edge.map(projection.point),'#899b80',.8);
       for(const edge of model.district?.institutionEdges||[])pen.line(edge.map(projection.point),'#a8b59a',.75);
       for(const label of model.district?.streetLabels||[])pen.text(label.label,projection.point(label.position),{size:10,align:'center',color:'#bdcba9',alpha:.86});
       const ellery=projection.point({x:89,y:44});pen.text('ELLERY',ellery,{size:13,align:'center',color:'#c5ceb5'});

@@ -913,8 +913,9 @@ import {
 } from '../data/source-outskirts-arrival.js';
 import { outskirtsFoldVisibility } from '../data/source-outskirts-folds.js';
 import { sourceOutskirtsGraffitiInstances } from './source-outskirts-graffiti.js';
+import { vanBrandInstances } from '../render/van-brand.js';
 import { OUTSKIRTS_BUS_PASSAGE as BUS_PASSAGE, busPassageFloorAt } from '../data/outskirts-bus-passage.js';
-import { sweptBusPassageRefuses, busPassageLocation, busPassageLampPower,busPassageOpening,busPassageExitAngle,busPassageBodyCrossing } from './outskirts-bus-passage.js';
+import { sweptBusPassageRefuses, busPassageLocation, busPassageLampPower,busPassageOpening,busPassageExitAngle,busPassageBodyCrossing,busPassageTorchDirected } from './outskirts-bus-passage.js';
 import {BUS_BODY_CORRIDOR,busBodyCorridorContains,busBodyCorridorCanStep,busBodyCorridorFloorAt,busBodyCorridorProps,busBodyCorridorLights} from './bus-body-corridor.js';
 import { PROP_BOUNDS } from '../data/generated/prop-geometry.js';
 import { createOutskirtsExperience } from './outskirts-experience.js';
@@ -3165,7 +3166,7 @@ export function createSourceSpaceRuntime({
     // happy about it. Steady whenever flashing is reduced.
     if (inDarkOutskirts()) return Object.freeze({
       mode: 'normal', active: false, xray: false, cycle: 1,
-      flicker: reducedMotion || flashMode !== 'full' ? 1 : torchFlickerAt(time, state.seed, outskirtsLosing()),
+      flicker: reducedMotion || flashMode !== 'full' ? 1 : busPassageTorchDirected(streetExperience.busTransitState()) ?? torchFlickerAt(time, state.seed, outskirtsLosing()),
     });
     if (sourceRoomMemoryActive()) return Object.freeze({ mode: 'normal', profile: 'proper', active: false, xray: false, cycle: 1, flicker: 1 });
     return Object.freeze({ mode: 'xray', active: false, xray: true, cycle: 1, flicker: 1 });
@@ -3225,8 +3226,12 @@ export function createSourceSpaceRuntime({
     const residue = sourceUnravellingFrame(horizonUnravelling).bodyResidue;
     if (residue <= .0001) return null;
     const gait = outskirtsGaitAt(time, state.seed, { reducedMotion });
-    return { ...gait, sway: gait.sway * residue, lurch: gait.lurch * residue,
-      stumble: gait.stumble * residue, eyeDropM: gait.eyeDropM * residue, residue };
+    const transit=streetExperience.busTransitState(),age=!transit.exited||!transit.interior||transit.crossedAt==null?Infinity:Math.max(0,transit.clock-transit.crossedAt);
+    // A brief bodily catch on the ground after expulsion. The retained bus
+    // clock pauses/resumes this exactly; aim, position and input stay free.
+    const expulsion=reducedMotion||age>=.55?0:age<.06?Math.sin(age/.06*Math.PI/2):Math.pow((.55-age)/.49,2);
+    return { ...gait, sway: gait.sway * residue, lurch: (gait.lurch+.18*expulsion) * residue,
+      stumble: gait.stumble * residue, eyeDropM: (gait.eyeDropM+.10*expulsion) * residue, residue,expulsion };
   }
   function horizonMovementMultiplier(time = 0, reducedMotion = false) {
     const residue = sourceUnravellingFrame(horizonUnravelling).bodyResidue;
@@ -3597,8 +3602,8 @@ export function createSourceSpaceRuntime({
     if(busCrossing?.handled)return busCrossing;
     if(streetExperience.busTransitState().interior?.active){
       player={...player,...to};const body=busInteriorFrame(),interior=streetExperience.busTransitState().interior;
-      interior.stepIndex=(interior.stepIndex||0)+1;streetExperience.busSetInterior(interior);
-      streetExperience.action(`outskirts-bus:organ-step-${interior.stepIndex}`,'bus-body-step',{x:(to.x+.5)*CELL,z:(to.y+.5)*CELL},{strength:.22});
+      streetExperience.busInteriorStep({x:(to.x+.5)*CELL,z:(to.y+.5)*CELL});
+      interior.stepIndex=streetExperience.busTransitState().interior.stepIndex;
       const checkpoint=Math.floor(Math.max(0,body.along)/8);
       if(checkpoint!==interior.walkCheckpoint){streetExperience.busSetInterior({...interior,walkCheckpoint:checkpoint});setState(state,{immediate:false,recordCausal:false});}
       return{handled:true,event:'bus-interior-walk',position:{...player}};
@@ -5437,7 +5442,7 @@ export function createSourceSpaceRuntime({
       });
     // The current Ellery frontage and roofline are fixed canonical context in
     // the initial group above. No building follows the observer down the road.
-    return [...out, ...sourceOutskirtsGraffitiInstances(out), ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
+    return [...out, ...sourceOutskirtsGraffitiInstances(out), ...vanBrandInstances(out), ...streetDetailInstances(px, py, options, out), ...doubleInstances(px, py, options), ...(inOutskirtsView()
       ? [...edgeDoorInstances(px, py, options), ...phoneBoxInstances(px, py, options), ...flurryInstances(px, py, options), ...phantomInstances()] : [])];
   }
 
@@ -5705,7 +5710,7 @@ export function createSourceSpaceRuntime({
         acknowledgeYaw: Math.atan2(Math.sin(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw),
           Math.cos(Math.atan2(eye.x-woman.x,eye.z-woman.z)+Math.PI-woman.yaw)) });
       const afterTransit=streetExperience.busTransitState();
-      if (streetExperience.busStage() !== beforeStage||['doorOpened','entered','close','exited','noticeAt','passAt'].some(key=>beforeTransit[key]!==afterTransit[key]))setState(state,{immediate:true});
+      if (streetExperience.busStage() !== beforeStage||['doorOpened','entered','trapAt','close','exited','noticeAt','passAt'].some(key=>beforeTransit[key]!==afterTransit[key]))setState(state,{immediate:true});
     }
     // The seventh lodge's hatch moves at reaching distance, after the guard has
     // been learned. It does not spend its event while the player watches afar.
@@ -5807,6 +5812,20 @@ export function createSourceSpaceRuntime({
     if(before.z<BUS_PASSAGE.bodyPassage.planeZ-.76||before.z>=BUS_PASSAGE.bodyPassage.planeZ||Math.abs(after.z-.35)>.00001
       ||Math.abs(after.x)>BUS_PASSAGE.bodyPassage.width/2-BUS_PASSAGE.bodyRadius)return null;
     streetExperience.busSetInterior(pocket);player={...player,...to};setState(state,{immediate:true});return{handled:true,event:'bus-body-enter',position:{...player},interior:busInteriorFrame()};
+  }
+  // The door's third refusal. Once only: a body in the bay goes back up the
+  // aisle to where she has room to open, turned to face her. One already clear
+  // of the bay only turns.
+  function busTakeRecoil(){
+    const t=streetExperience.busTransitState(),exit=BUS_PASSAGE.exit;
+    if(t.tryAt==null||t.recoilAt!=null||t.openAt!=null||t.exited||t.interior?.active||t.clock-t.tryAt<exit.recoilAt)return null;
+    const bus=outskirtPieces().find(p=>p.busPassage&&streetPieceVisible(p));if(!bus)return null;
+    const lamp=streetAnchor(bus,BUS_PASSAGE.exit.hinge[0],BUS_PASSAGE.exit.fromZ);
+    streetExperience.busRecoil({position:{x:lamp.x,y:outskirtsHeight()+2.6,z:lamp.z}});
+    const eye=outskirtsEye(),woman=streetAnchor(bus,BUS_PASSAGE.woman.x,BUS_PASSAGE.woman.z);
+    const bayed=streetBusLocal(bus,eye).z>BUS_PASSAGE.bodyPassage.frontZ-.1;
+    const pose=bayed?busPocketFor(bus,player).returnPose:null,at=pose?streetAnchor(bus,...BUS_PASSAGE.bodyPassage.insideReturn):eye;
+    return{...(pose?{x:pose.x,y:pose.y,seconds:exit.recoilSeconds}:{}),yaw:Math.atan2(woman.x-at.x,-(woman.z-at.z))};
   }
   function busAttemptFrame(bus,t){
     const front=t.frontTryAt!=null&&(t.tryAt==null||t.frontTryAt>t.tryAt),at=front?t.frontTryAt:t.tryAt;
@@ -8597,7 +8616,7 @@ export function createSourceSpaceRuntime({
     edgeDoorApproach,
     beginEdgeDoorApproach,
     outskirtsBeatFrame,
-    outskirtsStreetFrame, outskirtsBusPassageFrame,busInteriorFrame,outskirtsBusPassageTransition,consumeBusPassageCrossing, outskirtsPerformAction, setOutskirtsWorldState,
+    outskirtsStreetFrame, outskirtsBusPassageFrame,busInteriorFrame,busTakeRecoil,outskirtsBusPassageTransition,consumeBusPassageCrossing, outskirtsPerformAction, setOutskirtsWorldState,
     tickOutskirtsCharacters, outskirtsCharacterFrame, applyOutskirtsCharacterFrame,
     outskirtsWeather,
     outskirtPieceRefuses,

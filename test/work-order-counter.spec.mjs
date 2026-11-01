@@ -3,19 +3,20 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from '../src/game/work-order-state.js';
+import {nightClockReadout} from '../src/game/night-clock.js';
 import {navigatorTelemetryState} from '../src/render/navigator-telemetry.js';
 import {sampleNavigatorLcdMotion} from '../src/render/navigator-lcd-motion.js';
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const fn=name=>{const a=main.indexOf(`function ${name}(`),b=main.indexOf('\n}',a);assert.ok(a>=0&&b>a);return main.slice(a,b+2);};
 function telemetry(flags,takes=[]){
- const a=main.indexOf('telemetry:{takesVisible:')+'telemetry:'.length,b=main.indexOf('},\n',a)+1;assert.ok(a>10&&b>a);
- return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,getSave:()=>({flags}),rec:{takes,injuries:0},paused:false,
+ const a=main.indexOf('telemetry:{takesEnabled:')+'telemetry:'.length,b=main.indexOf('},\n',a)+1;assert.ok(a>10&&b>a);
+ return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,nightClockReadout,getSave:()=>({flags}),rec:{takes,injuries:0},paused:false,
   monitorDisplaySnapshot:()=>({db:-96,segments:0}),performance:{now:()=>1000},dockCommandUntil:0});
 }
 test('the actual navigator submission hides takes before signing even with a packed case, plan or previewed work order',()=>{
  for(const flags of [{},{'bag.taken':true,'map.taken':true},{'radio.work-order-read':true},{'cold.exit.prepared':true}]){
   assert.equal(workOrderAccepted(flags),false);const raw=telemetry(flags,['main_b3']),state=navigatorTelemetryState(raw);
-  assert.equal(raw.takesVisible,false);assert.equal(state.takes,0);assert.equal(state.total,0);assert.deepEqual(state.slots,[]);
+  assert.equal(raw.takesEnabled,false);assert.equal(state.takes,0);assert.equal(state.total,0);assert.deepEqual(state.slots,[]);
   assert.equal(state.monitor.available,true,'the real monitor remains available before the assignment');
  }
  assert.equal(navigatorTelemetryState(telemetry({[WORK_ORDER_ACCEPTED_FLAG]:true})).total,5);

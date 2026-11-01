@@ -1,8 +1,121 @@
 {
   "pack": {
-    "author": "Chunk Surfer project",
-    "license": "project source",
-    "sha256": "ecb3c06ef949e69ef97b3f6aa38913ebdb825b2cceba1ad498cd75f5be767eea"
+    "sha256": "6df8be69311ac78cc881715b9ea53671542225dfb4f6db0bc6d6291cdb613d3c",
+    "bytes": 1764948
   },
-  "construction": "Original hand-drawn opaque pigment strokes on existing court masonry; no external artwork."
+  "images": {
+    "artist": "unikumpu",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "creator_statement": "https://www.reddit.com/r/unrealengine/comments/n7j1y7/need_cc0_graffiti_decals_i_thought_to_share_a_set/",
+    "provenance": "assets/source-graffiti/unikumpu/manifest.json",
+    "files": [
+      {
+        "art": "dephy",
+        "filename": "Decal_Graffiti_dephy.png",
+        "sha256": "3415ceb684f2f9c1ee8e4d58a3e85ebafff9e875e79f0166a92725afc2d60bb8",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1s1JmDDSkeoCiKEPNuAE39a8PbzLa6xy-/view"
+      },
+      {
+        "art": "Kurt",
+        "filename": "Decal_Graffiti_Kurt.png",
+        "sha256": "d4e21c23d576e2886031a1f9d503ea00e7372da7c0f2b9bdade32d6f610f8ede",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1JqKLQrFH1XtaturPRTHoh5OHmTqD3ODZ/view"
+      },
+      {
+        "art": "GBS",
+        "filename": "Decal_Graffiti_GBS.png",
+        "sha256": "c9fbe5dc286709dac93c538a5fc917860152207dac4401ee5b7cec2543110f10",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1GC8nG3h6Vlz63eS_QWzvGGov7CmmCyJZ/view"
+      },
+      {
+        "art": "maryjane",
+        "filename": "Decal_Graffiti_maryjane.png",
+        "sha256": "9eff78caeae7e782eb4cbe9e3e110d31238465a41b62e07d35ba2d24afdaacdf",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1RZVyjPVpg-uLHgesLi6xyrpEL6zvZh0A/view"
+      },
+      {
+        "art": "DUB",
+        "filename": "Decal_Graffiti_DUB.png",
+        "sha256": "973f7f56e217ebc2468c8b89c731fbb8b8a3009958c379ad29dd3cb127215e30",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1CvTIvQs84l-W-d2H8gFnljdFeNeklIRJ/view"
+      },
+      {
+        "art": "imdoinggreat",
+        "filename": "Decal_Graffiti_imdoinggreat.png",
+        "sha256": "fee1acfa29a2a548a4329bf30f441572074bc5a0347b478d065f4e931f61a29e",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1SonI40RDgNTurLo-emFl7u8eJYGyMcMv/view"
+      },
+      {
+        "art": "valha",
+        "filename": "Decal_Graffiti_valha.png",
+        "sha256": "38600133095095d750c0444cd531694cac1583da9d867bd4570fdf3477c31ab0",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1PL56p1lU5n0r1nE_FG50xD7iR2B9Ciss/view"
+      },
+      {
+        "art": "RANDOM",
+        "filename": "Decal_Graffiti_RANDOM.png",
+        "sha256": "a297013b0bcb240aca44ee5c5e425e27d5d2760d7b4dde537992d33c4bc75fa9",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1PvU2lc_kOYJRsmiY-wYMbd7vUcSC1r5s/view"
+      },
+      {
+        "art": "PEACE",
+        "filename": "Decal_Graffiti_PEACE.png",
+        "sha256": "4114645dd8829215852eb04332027d45b467845d5736de3782c5fc09271b6d91",
+        "artist": "unikumpu",
+        "source": "https://drive.google.com/file/d/1om7IeOiUU18v4Y0NFW2KNOu4OmD--kQy/view"
+      }
+    ]
+  },
+  "narrative": {
+    "artist": "Chunk Surfer",
+    "fonts": [
+      {
+        "name": "Tagger Regular",
+        "author": "Zuzanna Rogatty; Stowarzyszenie Kulturotwórcze Miastodwa",
+        "source": "https://github.com/warszawskie-kroje/tagger",
+        "license": "SIL Open Font License 1.1",
+        "license_file": "../tagger/OFL.txt"
+      },
+      {
+        "name": "Permanent Marker",
+        "author": "Copyright 2010 Font Diner, Inc.",
+        "source": "https://github.com/google/fonts/tree/main/apache/permanentmarker",
+        "license": "Apache License 2.0",
+        "license_file": "../permanent-marker/LICENSE.txt"
+      }
+    ],
+    "licenseFiles": [
+      "assets/exterior-graffiti-licenses/Tagger-OFL.txt",
+      "assets/exterior-graffiti-licenses/Permanent-Marker-Apache-2.0.txt"
+    ],
+    "provenance": "assets/source-graffiti/easter-eggs/manifest.json",
+    "files": [
+      {
+        "art": "ELLERY",
+        "filename": "ellery-listening.png",
+        "sha256": "874e7e8f51c3988076e0c83680c1f9d7e21dc1d2912b98b948a97d9bc7f5bb30",
+        "artist": "Chunk Surfer / tagger",
+        "font": "tagger",
+        "text": "ellery keeps / the echo"
+      },
+      {
+        "art": "SURFER",
+        "filename": "surfer-hear-you.png",
+        "sha256": "daf78aedf7d42692935322358fd7abfdd4d04d60269361869f86738b3078f1b7",
+        "artist": "Chunk Surfer / marker",
+        "font": "marker",
+        "text": "SURFER / YOU'RE THE ROOM TONE"
+      }
+    ]
+  },
+  "treatment": "Source artwork in the game; not represented as UK-created. Transparent regions leave the existing surface visible."
 }

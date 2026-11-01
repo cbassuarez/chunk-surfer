@@ -2,7 +2,7 @@
 // A window is a masonry aperture, a reveal, a timber sash and an interior bay;
 // its sparse practical is behind that construction. No transparency or glow
 // card hides a solid wall. All parts use the ordinary opaque prop pipeline.
-import {EXTERIOR_NEIGHBOURHOOD as C,EXTERIOR_TRADE_DEEDS,EXTERIOR_FRONTAGE_DRESSING,exteriorDeedWindowLit,exteriorDeedClosedEarly} from '../../src/data/exterior-frontages.js';
+import {EXTERIOR_NEIGHBOURHOOD as C,EXTERIOR_TRADE_DEEDS,EXTERIOR_FRONTAGE_DRESSING,firstDeedZ,exteriorDeedWindowLit,exteriorDeedClosedEarly} from '../../src/data/exterior-frontages.js';
 const material=(name,rgb,metallicFactor=0,roughnessFactor=.9,extra={})=>({name,pbrMetallicRoughness:{baseColorFactor:[...rgb,1],metallicFactor,roughnessFactor},...extra});
 export const NEIGHBOURHOOD_MATERIALS={
   brick:material('ellery red brick',[.25,.095,.052],0,.94),
@@ -167,9 +167,12 @@ export function buildExteriorNeighbourhood(api){
     r.trades.push({deed:slot.deed,display:slot.display,trade:slot.trade,paint:slot.paint,closed,awning:deployed?'deployed':'rolled',awningClearance:deployed?2.55:2.9225});
   }
   for(const row of C.rows){
-    const out=owner(row.mesh),{m,r}=out;
-    for(let i=0;i<C.count;i++){
-      const z=-28+i*8,h=row.heights[i],b=context(out,`deed-${i}-`,p=>[p[0],p[1],p[2]+z]),brick=i%3===1?'terracotta':'brick',closed=exteriorDeedClosedEarly(row.kind,i);
+    const out=owner(row.mesh),{m,r}=out,count=row.count??C.count,first=4-count*4,square=row.kind==='square';
+    for(let i=0;i<count;i++){
+      const z=first+i*8,h=row.heights[i],b=context(out,`deed-${i}-`,p=>[p[0],p[1],p[2]+z]);
+      // The square's terraces are one stucco composition: white walls, a single
+      // cornice line, porticoed doors and a first-floor balcony on every house.
+      const brick=square?'white':i%3===1?'terracotta':'brick',closed=!square&&exteriorDeedClosedEarly(row.kind,i);
       if(row.openDeed===i){
         const holes=[window(b,r,{id:'passage-bridge-sash',z:0,y:7.60,w:1.25,h:1.36,lit:true,seed:i})];
         // The pre-existing court mouth remains open through its full 6.4m.
@@ -180,8 +183,8 @@ export function buildExteriorNeighbourhood(api){
         for(const side of[-1,1])b.box('passage-party-pier-'+side,[-row.depth+.08,3.2,side*3.89],[.18,6.4,.22],'stone');
         r.deeds.push({deed:i,kind:'open-court',z,height:8.7,windows:1,clearHeight:6.33,closedEarly:false});continue;
       }
-      const industrial=row.kind==='workshop'&&h<9,holes=[],floors=industrial?1:Math.max(2,Math.floor((h-1.5)/3.1));
-      const trade=EXTERIOR_TRADE_DEEDS[row.kind].find(slot=>slot.deed===i);
+      const industrial=row.kind==='workshop'&&h<9,holes=[],floors=industrial?1:square?4:Math.max(2,Math.floor((h-1.5)/3.1));
+      const trade=(EXTERIOR_TRADE_DEEDS[row.tradeKind||row.kind]||[]).find(slot=>slot.deed===i);
       const doorZ=-2.75,doorWidth=industrial?4.8:1.05;
       if(trade)for(const[id,dz,width]of[['flat-door',-3.20,.81],['shop-door',2.98,.93]])holes.push({id,z0:dz-width/2-.06,z1:dz+width/2+.06,y0:.08,y1:2.89});
       else holes.push({id:'door',z0:industrial?-2.4:doorZ-.59,z1:industrial?2.4:doorZ+.59,y0:.08,y1:industrial?3.64:2.89});
@@ -196,7 +199,11 @@ export function buildExteriorNeighbourhood(api){
           for(let j=0;j<7;j++)b.box('shop-closed-blind-'+j,[-.22,1.21+j*.244,.75],[.035,.23,4.19],j%3===0?'black':'wood');
           b.box('shop-stall-riser',[.04,.49,.75],[.16,.86,4.55],'green');
           b.box('shop-plain-fascia',[.05,3.32,0],[.22,.33,7.22],'green');
-        }else for(const[bay,dz]of[-.75,2.15].entries())holes.push(window(b,r,{id:`sash-${floor}-${bay}`,z:dz,y:2.05+floor*3.05,lit:exteriorDeedWindowLit(row.kind,i,floor,bay),seed:i+bay}));
+        }else for(const[bay,dz]of[-.75,2.15].entries()){
+          // The piano nobile's tall windows open onto the balcony.
+          const tall=square&&floor===1;
+          holes.push(window(b,r,{id:`sash-${floor}-${bay}`,z:dz,y:tall?5.32:2.05+floor*3.05,h:tall?2.05:1.55,lit:exteriorDeedWindowLit(row.kind,i,floor,bay),seed:i+bay}));
+        }
       }
       b.box('occupied-back-volume',[-(row.depth+.84)/2,h/2,0],[row.depth-.84,h,7.84],brick);
       splitWall(b,{height:h,openings:holes,material:brick});
@@ -230,7 +237,7 @@ export function buildExteriorNeighbourhood(api){
           r.notices.push({...notice,center,readerRight:[0,0,-1],up:[0,1,0],deed:i});
         }
       }else{
-        const paint=i%2?'green':'wood';
+        const paint=square?'black':i%2?'green':'wood';
         b.box('closed-door-leaf',[-.11,1.46,doorZ],[.12,2.74,1.04],paint);
         for(const side of[-1,1])b.box('door-jamb-'+side,[.035,1.49,doorZ+side*.63],[.16,2.98,.14],'white');
         b.box('door-lintel',[.035,2.97,doorZ],[.25,.16,1.50],'stone');
@@ -238,12 +245,32 @@ export function buildExteriorNeighbourhood(api){
         for(const y of[.47,1.04])b.box('door-raised-panel-'+y,[-.02,y,doorZ],[.045,.42,.78],paint);
         b.beam('door-real-pull',[.08,1.10,doorZ+.34],[.08,1.39,doorZ+.34],.035,'brass');
         b.box('door-step',[.06,.065,doorZ],[.42,.09,1.46],'stone');
+        if(square&&!(row.fittedDeeds||[]).includes(i)){
+          for(const side of[-1,1])b.cylinder('portico-column-'+side,[.42,1.47,doorZ+side*.82],.13,2.94,'white',10);
+          b.box('portico-entablature',[.30,3.08,doorZ],[.70,.26,2.02],'white');
+          b.box('portico-cornice',[.33,3.25,doorZ],[.78,.08,2.14],'stone');
+          b.box('portico-step',[.36,.035,doorZ],[.80,.07,2.0],'stone');
+        }
         if(closed){
           const notice=C.notices[0],center=[-.043,1.52,z+doorZ];
           b.box('early-closure-paper',[-.047,1.52,doorZ],[.004,notice.heightM,notice.widthM],'paper');
           r.notices.push({...notice,center,readerRight:[0,0,-1],up:[0,1,0],deed:i});
           for(const dz of[-.10,.10])b.box('closure-tape-'+dz,[-.042,1.52+notice.heightM/2-.015,doorZ+dz],[.002,.045,.045],'white');
         }
+      }
+      if(square){
+        for(const y of[.86,1.56,2.26])b.box('rustication-'+y,[.012,y,0],[.02,.035,7.84],'stone');
+        b.box('balcony-slab',[.30,3.66,0],[.60,.12,7.70],'stone');
+        b.beam('balcony-rail',[.58,4.62,-3.82],[.58,4.62,3.82],.05,'black');
+        b.beam('balcony-rail-low',[.58,3.82,-3.82],[.58,3.82,3.82],.035,'black');
+        for(let k=0;k<=8;k++)b.beam('balcony-post-'+k,[.58,3.72,-3.82+k*.955],[.58,4.62,-3.82+k*.955],.03,'black');
+        b.box('parapet',[.02,h+.42,0],[.26,.84,7.92],'white');
+        b.box('parapet-coping',[.05,h+.88,0],[.34,.08,8.0],'stone');
+        b.box('flat-roof',[-row.depth/2,h+.05,0],[row.depth,.10,7.84],'slate');
+        if(i%2===0){b.box('chimney',[-row.depth*.55,h+1.15,3.9],[.95,2.2,1.25],'white');for(const dz of[-.3,.3])b.cylinder('chimney-pot-'+dz,[-row.depth*.55,h+2.38,3.9+dz],.11,.42,'terracotta');}
+        b.cylinder('downpipe',[.20,h/2,3.75],.065,h-.35,'steel');
+        r.deeds.push({deed:i,kind:trade?'shop-with-flat':'stucco-house',z,height:h,windows:floors*2-(trade?1:0),closedEarly:false});
+        continue;
       }
       const rise=industrial?1.1:2.0;
       b.quad('roof-front',[0,h,-4],[-row.depth/2,h+rise,-4],[-row.depth/2,h+rise,4],[0,h,4],'slate');
@@ -257,6 +284,7 @@ export function buildExteriorNeighbourhood(api){
     }
     // Wall brackets free the existing footway from the former column feet.
     // Their exact lamp centres also author the street-fabric runtime lights.
+    if(square)continue;
     const b=context(out,'street-');for(const z of[-25,-9,9,25]){b.box('lamp-wall-plate-'+z,[.15,5.24,z],[.20,.44,.18],'steel');b.beam('lamp-arm-'+z,[.22,5.18,z],[1.10,5.72,z],.075,'steel');b.box('lamp-head-'+z,[1.10,5.80,z],[.46,.16,.28],'bulb');}
   }
   {
@@ -289,7 +317,7 @@ export function buildExteriorNeighbourhood(api){
   for(const placed of EXTERIOR_FRONTAGE_DRESSING){
     const out=owner(placed.mesh),{r}=out;
     for(const slot of placed.shops){
-      const z=-28+slot.deed*8;
+      const z=firstDeedZ(placed.count)+slot.deed*8;
       r.prints.push({id:`${placed.id}-fascia-${slot.deed}`,lines:[slot.name,slot.trade],
         center:[.194,3.40,z],readerRight:[0,0,-1],up:[0,1,0],widthM:6.95,heightM:.55,
         capHeightM:.21,lineScale:[1,.52],lineCentres:[.32,.77],font:'NimbusRoman-Bold.otf',

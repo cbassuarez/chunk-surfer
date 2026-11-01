@@ -8,6 +8,11 @@ import * as PROPS from '../src/game/props.js';
 
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[]});
 PROPS.propsInit(FP);
+// In play these packs switch their colliders on as soon as they load, so a
+// stand point has to clear them too (the glass court's roof guards once sat
+// on the city seat's).
+PROPS.setColliderGroupEnabled('glass-court',true);
+PROPS.setColliderGroupEnabled('opening-street',true);
 
 test('Hall hook creates the physical render plan used by live study entry',()=>{
   const at=FP.toRuntimePoint(GOD_LOCATION_HOOKS['concert-hall'].at);
@@ -18,7 +23,7 @@ test('Hall hook creates the physical render plan used by live study entry',()=>{
 });
 
 test('every God location is one authored scale conversion with its exact facing and context',()=>{
-  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,82);
+  assert.equal(Object.keys(GOD_LOCATION_HOOKS).length,91);
   for(const[id,hook]of Object.entries(GOD_LOCATION_HOOKS)){
     const at=FP.toRuntimePoint(hook.at),physical=FP.logicalToPhysical(at.x,at.y);
     assert.equal(FP.isSolid(at.x,at.y),false,id);

@@ -105,7 +105,10 @@ export function monitorProgramMeasurement() {
 
 const dbFor = (rms) => rms > 0 ? Math.max(-96, 20 * Math.log10(rms)) : -96;
 const segmentsFor = (db) => MONITOR_THRESHOLDS.reduce((n, t) => n + (db >= t ? 1 : 0), 0);
-const rmsForDb = (db) => Math.max(0, Math.min(1, Math.pow(10, (Number(db) || -96) / 20)));
+const rmsForDb = (db) => {
+  const value = db == null ? NaN : Number(db);
+  return Math.max(0, Math.min(1, Math.pow(10, (Number.isFinite(value) ? value : -96) / 20)));
+};
 
 export function monitorBandForDb(db, { previousBand = null, hysteresisDb = 0 } = {}) {
   const level = Number.isFinite(Number(db)) ? Number(db) : -96;
@@ -130,13 +133,38 @@ export function monitorSnapshotForRms(rms, { peak = rms, clipped = false } = {})
   };
 }
 
+// Display-only adapter. Keep the independent measured peak and the audio-clock
+// Dual trace state; taking just micLevel() here discards both. Gameplay continues
+// to consume the fast micMeasurement()/micEffectiveMeasurement() paths.
+export function monitorSnapshotForMeasurement(measurement = {}, { sourceId = 'room-mic' } = {}) {
+  const value = measurement && typeof measurement === 'object' ? measurement : {};
+  const measured = normalizeMeasurement(value);
+  // A new reporting interval can be quieter than the rolling RMS window.
+  // The legacy helper bounds peak by RMS; this measured adapter must not.
+  const peak = Number.isFinite(value.peak) ? Math.max(0, Math.min(1, value.peak)) : measured.peak;
+  const clipped = !!value.clipped || peak >= CLIP_PEAK;
+  return {
+    ...monitorSnapshotForRms(measured.rms, measured),
+    peak, peakDb: dbFor(peak), clipped,
+    segments: clipped ? MONITOR_THRESHOLDS.length : segmentsFor(dbFor(measured.rms)),
+    instantPeakDb: dbFor(peak),
+    instantClipped: clipped,
+    available: value.available !== false && value.active !== false,
+    sourceId,
+    peakKind: 'sample',
+    unit: 'dBFS',
+    integrated: value.integrated !== false,
+    ...(value.dualTrace ? { dualTrace: value.dualTrace } : {}),
+  };
+}
+
 // Feed one semantic world sound into the operator meter. Player-generated
 // equipment sounds count (a door, keys, the field case); system-authored sounds
 // do not. Sounds explicitly hidden from HUSH are also hidden from the exposure
 // display: the bar and warning are a promise about what the AI can use.
 export function monitorObserveAcousticEvent(event, nowMs = null) {
   if (!event?.semantics?.playerGenerated || event.semantics.audibleToMonitor === false) return false;
-  const now = Number.isFinite(Number(nowMs)) ? Number(nowMs)
+  const now = nowMs != null && Number.isFinite(Number(nowMs)) ? Number(nowMs)
     : (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
   const durationMs = Math.max(40, Number(event?.acoustic?.durationMs) || 300);
   const input = {
@@ -211,6 +239,13 @@ export function monitorSnapshot(nowMs = performance.now()) {
     peak,
     peakDb,
     clipped: clipHeld,
+    // New displays own their hold/release. Preserve the legacy fields above
+    // for existing consumers without stacking their 650ms hold into Dual trace.
+    instantPeakDb: dbFor(instantPeak),
+    instantClipped: clipping,
+    sourceId: 'field-exposure',
+    peakKind: 'level',
+    unit: 'dB',
     band,
     // Drawn vs. heard. Identical unless something is close, and the gap between
     // them is the whole device — see monitorSetPresenceInput.

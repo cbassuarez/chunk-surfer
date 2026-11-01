@@ -19,6 +19,11 @@ const residue = Object.freeze({
 // Completion is not survival. These facts are drawn from the actual ending,
 // independently of the institution's optional interpretation of the return.
 export function returnExposureIdentity(summary = {}, saveStatus = 'unknown') {
+  if(summary.classification==='failed-night')return {
+    title:'GAME OVER',state:'GAME OVER',endingTitle:'DEMOLITION 06:00',subtitle:'DEMOLITION 06:00',
+    residue:`${summary.failure?.outcome==='survived'?'You cleared the failing span. The night was lost.':'You did not clear the failing span. The night was lost.'} ${summary.recordings?.tapes?.length||0} tape entries retained.`,
+    save:saveStatus==='saved'?'RECORDINGS SAVED':saveStatus==='saving'?'SAVING RECORDINGS':saveStatus==='failed'?'RECORDINGS COULD NOT BE SAVED':'',
+  };
   const def = returnDefinition(summary.endingId, summary);
   const century = !!def?.variantTitle;
   // The arrival is authoritative: staying by choice and being defeated into
@@ -88,6 +93,7 @@ export function drawReturnExposure({ summary, snapshot = null, elapsed = 0, save
     y += layout.lineStep;
   }
   const compact = rows < 24;
+  if(!layout.tiny&&identity.subtitle&&y+2<layout.actionsY)uiText(layout.x,y++,identity.subtitle,'ui-secondary',textAlpha*.9);
   // The hero already says GAME OVER or THE END. A second status line would
   // repeat it; the named ending belongs only in the optional account/history.
   const stateLines = !layout.tiny && identity.save ? uiWrap(identity.save, layout.width) : [];

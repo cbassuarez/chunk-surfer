@@ -6,15 +6,18 @@
     "district_terrace_frontage",
     "district_workshop_frontage",
     "district_passage_frontage",
+    "ellery_square_north_terrace",
+    "ellery_square_side_terrace",
+    "ellery_square_west_terrace",
     "district_court_walls",
     "district_west_row_a_trade",
     "district_west_row_b_trade",
     "district_east_row_a_trade",
     "district_east_row_b_trade",
     "district_north_row_a_trade",
-    "district_north_row_b_trade",
     "district_north_row_c_trade",
     "district_south_row_b_trade",
+    "ellery_square_west_trade",
     "district_south_row_c_trade"
   ],
   "unchangedContent": [
@@ -478,6 +481,254 @@
       "prints": [],
       "notices": []
     },
+    "ellery_square_north_terrace": {
+      "triangles": 27516,
+      "primitives": 12,
+      "bounds": {
+        "min": [
+          -5.4,
+          0,
+          -40
+        ],
+        "max": [
+          0.76,
+          16.19,
+          40
+        ]
+      },
+      "windows": 80,
+      "litWindows": 23,
+      "deeds": [
+        {
+          "deed": 0,
+          "kind": "stucco-house",
+          "z": -36,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 1,
+          "kind": "stucco-house",
+          "z": -28,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 2,
+          "kind": "stucco-house",
+          "z": -20,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 3,
+          "kind": "stucco-house",
+          "z": -12,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 4,
+          "kind": "stucco-house",
+          "z": -4,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 5,
+          "kind": "stucco-house",
+          "z": 4,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 6,
+          "kind": "stucco-house",
+          "z": 12,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 7,
+          "kind": "stucco-house",
+          "z": 20,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 8,
+          "kind": "stucco-house",
+          "z": 28,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 9,
+          "kind": "stucco-house",
+          "z": 36,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        }
+      ],
+      "trades": [],
+      "prints": [],
+      "notices": []
+    },
+    "ellery_square_side_terrace": {
+      "triangles": 13848,
+      "primitives": 12,
+      "bounds": {
+        "min": [
+          -5.4,
+          0,
+          -20
+        ],
+        "max": [
+          0.76,
+          16.19,
+          20.525
+        ]
+      },
+      "windows": 40,
+      "litWindows": 12,
+      "deeds": [
+        {
+          "deed": 0,
+          "kind": "stucco-house",
+          "z": -16,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 1,
+          "kind": "stucco-house",
+          "z": -8,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 2,
+          "kind": "stucco-house",
+          "z": 0,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 3,
+          "kind": "stucco-house",
+          "z": 8,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 4,
+          "kind": "stucco-house",
+          "z": 16,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        }
+      ],
+      "trades": [],
+      "prints": [],
+      "notices": []
+    },
+    "ellery_square_west_terrace": {
+      "triangles": 13668,
+      "primitives": 16,
+      "bounds": {
+        "min": [
+          -5.4,
+          0,
+          -20
+        ],
+        "max": [
+          0.76,
+          16.19,
+          20.525
+        ]
+      },
+      "windows": 38,
+      "litWindows": 13,
+      "deeds": [
+        {
+          "deed": 0,
+          "kind": "stucco-house",
+          "z": -16,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 1,
+          "kind": "stucco-house",
+          "z": -8,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        },
+        {
+          "deed": 2,
+          "kind": "shop-with-flat",
+          "z": 0,
+          "height": 13.6,
+          "windows": 7,
+          "closedEarly": false
+        },
+        {
+          "deed": 3,
+          "kind": "shop-with-flat",
+          "z": 8,
+          "height": 13.6,
+          "windows": 7,
+          "closedEarly": false
+        },
+        {
+          "deed": 4,
+          "kind": "stucco-house",
+          "z": 16,
+          "height": 13.6,
+          "windows": 8,
+          "closedEarly": false
+        }
+      ],
+      "trades": [
+        {
+          "deed": 2,
+          "display": "print",
+          "trade": "MUSIC SELLER & PUBLISHER",
+          "paint": "wood",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        },
+        {
+          "deed": 3,
+          "display": "bottles",
+          "trade": "DISPENSING CHEMIST",
+          "paint": "green",
+          "closed": false,
+          "awning": "rolled",
+          "awningClearance": 2.9225
+        }
+      ],
+      "prints": [],
+      "notices": []
+    },
     "district_court_walls": {
       "triangles": 2448,
       "primitives": 11,
@@ -883,77 +1134,6 @@
       ],
       "notices": []
     },
-    "district_north_row_b_trade": {
-      "triangles": 12,
-      "primitives": 1,
-      "bounds": {
-        "min": [
-          0.196,
-          3.125,
-          -31.475
-        ],
-        "max": [
-          0.196,
-          3.675,
-          31.475
-        ]
-      },
-      "windows": 0,
-      "litWindows": 0,
-      "deeds": [],
-      "trades": [],
-      "prints": [
-        {
-          "id": "district-north-row-b-fascia-0",
-          "deed": 0,
-          "lines": [
-            "M. THORNTON",
-            "BAKER & CONFECTIONER"
-          ]
-        },
-        {
-          "id": "district-north-row-b-fascia-1",
-          "deed": 1,
-          "lines": [
-            "HOLT & SISTER",
-            "LINEN & HABERDASHERY"
-          ]
-        },
-        {
-          "id": "district-north-row-b-fascia-2",
-          "deed": 2,
-          "lines": [
-            "J. WINTER",
-            "IRONMONGER"
-          ]
-        },
-        {
-          "id": "district-north-row-b-fascia-5",
-          "deed": 5,
-          "lines": [
-            "BELL & SON",
-            "FRAMES & RESTORATION"
-          ]
-        },
-        {
-          "id": "district-north-row-b-fascia-6",
-          "deed": 6,
-          "lines": [
-            "WEST RIDING BOOKS",
-            "OLD & NEW BOOKS"
-          ]
-        },
-        {
-          "id": "district-north-row-b-fascia-7",
-          "deed": 7,
-          "lines": [
-            "F. DIXON",
-            "FAMILY GROCER"
-          ]
-        }
-      ],
-      "notices": []
-    },
     "district_north_row_c_trade": {
       "triangles": 12,
       "primitives": 1,
@@ -1096,9 +1276,48 @@
       ],
       "notices": []
     },
+    "ellery_square_west_trade": {
+      "triangles": 4,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          0.196,
+          3.125,
+          -3.475
+        ],
+        "max": [
+          0.196,
+          3.675,
+          11.475
+        ]
+      },
+      "windows": 0,
+      "litWindows": 0,
+      "deeds": [],
+      "trades": [],
+      "prints": [
+        {
+          "id": "ellery-square-west-fascia-2",
+          "deed": 2,
+          "lines": [
+            "ASHWORTH MUSIC",
+            "MUSIC SELLER & PUBLISHER"
+          ]
+        },
+        {
+          "id": "ellery-square-west-fascia-3",
+          "deed": 3,
+          "lines": [
+            "R. MASON",
+            "DISPENSING CHEMIST"
+          ]
+        }
+      ],
+      "notices": []
+    },
     "district_south_row_c_trade": {
       "triangles": 76,
-      "primitives": 3,
+      "primitives": 2,
       "bounds": {
         "min": [
           -0.020000000000000004,
@@ -1179,18 +1398,18 @@
       "notices": []
     }
   },
-  "totalTriangles": 44760,
+  "totalTriangles": 99784,
   "materialCount": 22,
-  "textureBaseLevelBytes": 13427904,
+  "textureBaseLevelBytes": 12610752,
   "pending": [
     "native final-dither movement inspection",
     "fresh-player recognition of occupied rooms and early closures"
   ],
   "sourceHashes": {
-    "src/data/exterior-frontages.js": "255cc48fdcdf74f35e4cf56c749bc62b1ba91c5b0acaa5d7850c06f53cececaf",
-    "tools/chunk_surfer/exterior-neighborhood-geometry.mjs": "1afa04b20541144a10ea2c20f488095a9964b583f411a75ccafcc60275b9726b",
+    "src/data/exterior-frontages.js": "9a8b2284bc21f8fc282d0d5186416be703ea39b4c2380ef413af7216c22a870e",
+    "tools/chunk_surfer/exterior-neighborhood-geometry.mjs": "1b3f239ad9364a77405ea6cd25f0fdb94e489efb619169d50e78c6f2882198ea",
     "tools/chunk_surfer/build-exterior-frontages.mjs": "a41998407a78f9614784d89deeeeade750a94225daf9cf6121f794db99831d18"
   },
-  "bytes": 4582068,
-  "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5"
+  "bytes": 8767840,
+  "sha256": "adb8f78bf952cb12a7f2fdfb2333ed7051b2f22a8c402e2e6e5a5e3c0503f039"
 }

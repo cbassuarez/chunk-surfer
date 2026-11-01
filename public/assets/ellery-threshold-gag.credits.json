@@ -1,0 +1,48 @@
+{
+  "kind": "ellery-threshold-gag",
+  "author": "Chunk Surfer project",
+  "geometry": "Original project-authored procedural construction; no external mesh or texture assets",
+  "reference": "User-supplied ellery-threshold-gag-reference.png (visual and mechanical contract; not embedded)",
+  "sources": [
+    "tools/chunk_surfer/threshold-gag-geometry.mjs",
+    "tools/chunk_surfer/build-threshold-gag.mjs"
+  ],
+  "sha256": "b83b194b731442e70dbc12acda439d809748fc26e868678784ad83eb874206ee",
+  "bytes": 972076,
+  "triangles": 8758,
+  "textureAssets": [],
+  "fonts": "Original front boo! brushwork; separately authored whole-word cubic handwriting on the reverse with pressure-shaped ribbons, sparse paint pools, retrace and dry-bristle exposure; two anonymous illegible signatures; no glyph alphabet or font files",
+  "reverseInscription": {
+    "lines": [
+      "HIS FEARFUL",
+      "MEDIOCRITY"
+    ],
+    "attribution": "ELLERY STUDENTS",
+    "handwrittenLines": [
+      "His fearful",
+      "Mediocrity"
+    ],
+    "handwrittenAttribution": "Ellery students",
+    "construction": "Original whole-word cubic brush paths with individual pen lifts, changing pressure, ink pools, retrace and dry brush; no glyph alphabet, font or texture",
+    "signatures": "two anonymous illegible curved hand flourishes; no names or date",
+    "panel": {
+      "minX": -0.943,
+      "maxX": -0.473,
+      "minY": 0.21,
+      "maxY": 0.548,
+      "frontZ": 0.018,
+      "backZ": 0.008
+    },
+    "inkZ": 0.0072,
+    "inkMaterial": 14,
+    "mainCapHeight": 0.08,
+    "attributionCapHeight": 0.035,
+    "inspectionTarget": [
+      -0.68,
+      0.36,
+      0.005
+    ],
+    "provenance": "New user-approved student mock-title; students/backstage crews are established, no maker identity or date asserted"
+  },
+  "limitations": "Concept-matched authored mechanism; final in-engine placement, motion, light/dither and acoustic validation owned by encounter integration."
+}

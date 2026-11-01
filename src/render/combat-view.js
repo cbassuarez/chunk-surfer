@@ -946,18 +946,47 @@ function beingSeed(profileKey = '') {
   return hash;
 }
 
-// The formless hush at the centre of a borrowed shell. Small, dense, slightly
-// off-centre and adrift — the shell never sits quite right over it. Marked
-// `core` so drawSignalBeing renders it as a dark mass ringed by faint signal
-// instead of the shell's tint, and so it never dissolves with coherence.
+// The battle display records a stepped projection of the same three unequal
+// folds as the physical density. This is a vector identity adapter, not a claim
+// that a canvas trace supplies the world's real mesh, lighting or occlusion.
+// Broad connected black coverage and real gaps replace the tiny core diamond.
+export const SIGNAL_DENSITY_CELL = .020;
+const densityFolds = [
+  [[-.10,.35,.100],[-.29,.22,.092],[-.33,-.04,.083],[-.27,-.28,.067],[-.09,-.39,.052]],
+  [[.015,.35,.105],[.055,.12,.089],[.035,-.12,.078],[.075,-.34,.070],[-.025,-.43,.047]],
+  [[.13,.35,.103],[.29,.20,.090],[.34,-.03,.078],[.27,-.22,.063],[.12,-.29,.048]],
+];
 function pushCore(points, tick, seed) {
-  const cx = Math.sin(tick * .7 + seed) * .045;
-  const cy = Math.cos(tick * .5 + seed) * .035;
-  for (let i = 0; i < 12; i++) {
-    const angle = (i / 12) * Math.PI * 2 + tick * .8;
-    const radius = .028 + (Math.sin(i * 2.7 + tick * 1.3) * .5 + .5) * .055;
-    points.push({ u: cx + Math.cos(angle) * radius, v: cy + Math.sin(angle) * radius * .92, a: .96, core: true });
+  const folds = densityFolds.map((fold, k) => fold.map(([u,v,r], station) => {
+    const distal = (station / (fold.length - 1)) ** 2;
+    // The base stays fixed; only distal material carries an unequal curl. The
+    // input is the existing battle clock, not world hearing or player bearing.
+    const curl = Math.sin(tick * .72 - station * .78 + k * 1.9 + seed * .013);
+    return [u + curl * .024 * distal, v + Math.cos(tick * .43 - station + k * 2.1) * .012 * distal, r];
+  }));
+  const segments = folds.flatMap(fold => fold.slice(1).map((b, i) => {
+    const a = fold[i], dx = b[0] - a[0], dy = b[1] - a[1];
+    return { a, dx, dy, deltaRadius: b[2] - a[2], lengthSquared: Math.max(.000001, dx * dx + dy * dy) };
+  }));
+  const inside = (u, v) => {
+    for (const s of segments) {
+      const t = clamp(((u - s.a[0]) * s.dx + (v - s.a[1]) * s.dy) / s.lengthSquared, 0, 1);
+      const radius = s.a[2] + s.deltaRadius * t, dx = u - s.a[0] - s.dx * t, dy = v - s.a[1] - s.dy * t;
+      if (dx * dx + dy * dy <= radius * radius) return true;
+    }
+    return false;
+  };
+  const returns = [], step = SIGNAL_DENSITY_CELL;
+  for (let row = -26; row <= 23; row++) for (let column = -22; column <= 22; column++) {
+    const u = column * step, v = row * step;
+    if (!inside(u, v)) continue;
+    points.push({ u, v, a: 1, core: true, cell: step });
+    const boundary = !inside(u - step, v) || !inside(u + step, v) || !inside(u, v - step) || !inside(u, v + step);
+    // Return on selected actual contour cells, never a complete friendly halo.
+    if (boundary && (column * 11 + row * 7 + seed) % 9 === 0) returns.push({ u, v, a: .24,
+      pressureReturn: true, cell: step });
   }
+  points.push(...returns);
 }
 
 function beingPoints(figure, { tick, layers, seed }) {
@@ -1123,8 +1152,8 @@ export function drawAttackNotes({
   });
 }
 
-export function drawSignalBeing(profileKey, {
-  x, y, w, h, snr = 'signal', coherenceRatio = 1, movementIndex = 0,
+export function signalBeingGeometry(profileKey, {
+  coherenceRatio = 1, movementIndex = 0,
   intentKind = null, now = 0, resolveProgress = 0, reducedMotion = false,
   oblique = 0, hitFlash = 0, knock = 0,
 } = {}) {
@@ -1145,7 +1174,9 @@ export function drawSignalBeing(profileKey, {
   } else if (intentKind === 'conceal') {
     alphaScale = .32;
   } else if (intentKind === 'overload') {
-    points = points.map((p, i) => ({ ...p, u: p.u + (rnd(i * 3) - .5) * .07, v: p.v + (rnd(i * 7) - .5) * .03 }));
+    points = points.map((p, i) => p.core || p.pressureReturn
+      ? { ...p, u: p.u + Math.sin(p.v * 8 + tick * 1.3) * .026, v: p.v + Math.sin(p.u * 5 - tick) * .012 }
+      : { ...p, u: p.u + (rnd(i * 3) - .5) * .07, v: p.v + (rnd(i * 7) - .5) * .03 });
   } else if (intentKind === 'loop') {
     for (let i = 0; i < 30; i++) {
       const angle = (i / 30) * Math.PI * 2 + tick;
@@ -1162,10 +1193,28 @@ export function drawSignalBeing(profileKey, {
     points = points.map((p) => ({ ...p, u: p.u + p.v * shear }));
   }
 
-  const keep = .15 + .85 * clamp(coherenceRatio, 0, 1);
-  const flash = clamp(hitFlash, 0, 1);
+  return { figure, seed, points, alphaScale, keep: .15 + .85 * clamp(coherenceRatio, 0, 1),
+    flash: clamp(hitFlash, 0, 1), strike: resolveProgress > .18 && resolveProgress < .55 ? Math.sin(resolveProgress * Math.PI) : 0,
+    coreMaterial: 'opaque black with sparse neutral return', dimensionality: 'stepped 2D battle projection' };
+}
+
+export function signalBeingCellMaterial(point, { tint = '120,190,255', flash = 0, alphaScale = 1, grain = 1 } = {}) {
+  if (point.core) return { color: '0,0,0', alpha: 1, shadowPixels: 0 };
+  if (point.pressureReturn) return { color: '222,230,222', alpha: clamp(point.a, 0, 1), shadowPixels: 0 };
+  return { color: flash > 0 ? '255,244,230' : tint,
+    alpha: Math.min(1, clamp(point.a * alphaScale, 0, 1) * grain + flash * .5), shadowPixels: 4 + flash * 5 };
+}
+
+export function drawSignalBeing(profileKey, {
+  x, y, w, h, snr = 'signal', coherenceRatio = 1, movementIndex = 0,
+  intentKind = null, now = 0, resolveProgress = 0, reducedMotion = false,
+  oblique = 0, hitFlash = 0, knock = 0,
+} = {}) {
+  const geometry = signalBeingGeometry(profileKey, { coherenceRatio, movementIndex, intentKind, now,
+    resolveProgress, reducedMotion, oblique, hitFlash, knock });
+  const { points, alphaScale, keep, flash, strike, seed } = geometry;
+  const rnd = i => { const s = Math.sin((i + 1 + seed) * 127.1) * 43758.5453; return s - Math.floor(s); };
   const tint = SNR_TINT[snr] || SNR_TINT.signal;
-  const strike = resolveProgress > .18 && resolveProgress < .55 ? Math.sin(resolveProgress * Math.PI) : 0;
 
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const px = (x + knock) * cellW * dpr;
@@ -1180,23 +1229,20 @@ export function drawSignalBeing(profileKey, {
     ctx.rect(px - cellW * dpr, py, pw + cellW * dpr * 2, ph);
     ctx.clip();
     points.forEach((point, index) => {
-      // The core is the hush itself: it never thins out with coherence, and it
-      // reads as a dark mass haloed by the shell's tint rather than taking the
-      // tint. The shell (everything else) dissolves as the fight wears it down.
-      if (!point.core && rnd(index) > keep) return;
-      const alpha = point.core
-        ? clamp(point.a, 0, 1) * (.8 + .2 * rnd(index * 13))
-        : clamp(point.a * alphaScale, 0, 1) * (.55 + .45 * rnd(index * 13));
-      const color = flash > 0 ? '255,244,230' : point.core ? '9,7,12' : tint;
+      // Black coverage and sparse neutral return retain their identity while
+      // the borrowed room signal dissolves. No coloured whole-body halo.
+      if (!point.core && !point.pressureReturn && rnd(index) > keep) return;
+      const material = signalBeingCellMaterial(point, { tint, flash, alphaScale, grain: .55 + .45 * rnd(index * 13) });
       const size = point.core ? dot * 1.7 : dot;
-      ctx.fillStyle = `rgba(${color},${Math.min(1, alpha + flash * .5).toFixed(3)})`;
-      ctx.shadowColor = point.core ? `rgba(${tint},.85)` : `rgba(${color},.9)`;
-      ctx.shadowBlur = ((point.core ? 6 : 4) + flash * 5) * dpr;
+      ctx.fillStyle = `rgba(${material.color},${material.alpha.toFixed(3)})`;
+      ctx.shadowColor = `rgba(${material.color},.9)`;
+      ctx.shadowBlur = material.shadowPixels * dpr;
+      const width = point.cell ? pw * point.cell * 1.05 : size, height = point.cell ? ph * point.cell * 1.05 : size;
       ctx.fillRect(
-        Math.round(cx + point.u * pw - size / 2),
-        Math.round(cy + point.v * ph - size / 2),
-        Math.round(size),
-        Math.round(size),
+        Math.round(cx + point.u * pw - width / 2),
+        Math.round(cy + point.v * ph - height / 2),
+        Math.max(1, Math.round(width)),
+        Math.max(1, Math.round(height)),
       );
     });
     ctx.restore();

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "sha256": "15f9e65c8f030804d02d0ffcc0a957548c732bdc5388a62642c41d1fabc1241e",
-  "bytes": 7161472,
+  "sha256": "1d653eb5995d487ad8ea67c885845238c3519b64930d10348e3f5558e79e5fac",
+  "bytes": 7161988,
   "totalVertices": 49456,
   "totalTriangles": 89414,
   "meshes": {
@@ -204,5 +204,5 @@
     },
     "instance": "bus matrix at ground"
   },
-  "contractSha256": "3c4c8dcb8dde83e2b793b78624f369d7d18c4b91b8d904c274db36418ead6410"
+  "contractSha256": "5288eadcb11b1703a91a6cf01a1a51cebf234f17842a1167d12395bed2ccf185"
 }

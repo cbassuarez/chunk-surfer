@@ -8,11 +8,21 @@ export const EXTERIOR_FRONTAGE_PACK='/assets/exterior-frontages.glb';
 export const EXTERIOR_NEIGHBOURHOOD=freeze({
   deedWidth:8,count:8,front:0,wallDepth:.34,roomDepth:.78,
   maximumProjection:.32,maximumOverheadProjection:1.0,minimumAwningClearance:2.45,
-  maximumPackTriangles:46000,maximumPackBytes:5500000,maximumPrintPages:4,maximumPrintBaseLevelBytes:14000000,
+  // Ellery Square's fifteen stucco houses roughly double the pack. The print
+  // budget is memory: the atlas packer now cuts 512px-wide pages, so the same
+  // bytes span more of them.
+  maximumPackTriangles:110000,maximumPackBytes:12000000,maximumPrintPages:6,maximumPrintBaseLevelBytes:14000000,
   rows:[
     {mesh:'district_terrace_frontage',kind:'terrace',depth:5.4,heights:[11.2,11.2,12.4,12.4,10.8,10.8,13,13]},
     {mesh:'district_workshop_frontage',kind:'workshop',depth:6.8,heights:[7.2,7.2,8.6,11.2,11.2,7.8,8.4,10.4]},
     {mesh:'district_passage_frontage',kind:'passage',depth:5.4,heights:[11.2,11.2,12.4,12.4,10.8,10.8,13,13],openDeed:4},
+    // Ellery Square's three sides: one stucco terrace, one cornice line.
+    {mesh:'ellery_square_north_terrace',kind:'square',depth:5.4,count:10,heights:Array(10).fill(13.6)},
+    {mesh:'ellery_square_side_terrace',kind:'square',depth:5.4,count:5,heights:Array(5).fill(13.6)},
+    // The west side keeps three shops under its houses, facing the garden.
+    // Deed 1's ground floor is fitted by the stationers pack, which cuts it
+    // out and brings its own shopfront: nothing may stand proud of it.
+    {mesh:'ellery_square_west_terrace',kind:'square',tradeKind:'squareShops',depth:5.4,count:5,heights:Array(5).fill(13.6),fittedDeeds:[1]},
   ],
   // Closure belongs to commerce downstairs; a light upstairs can still be on.
   // No extra explorable interior, quest, or falsely operable door is promised.
@@ -31,6 +41,9 @@ export const EXTERIOR_TRADE_DEEDS=freeze({
     {deed:4,display:'vessels',trade:'CHINA & GLASS',paint:'wood',awning:'rolled'},
     {deed:5,display:'flowers',trade:'FLORIST & SEEDSMAN',paint:'green',awning:'rolled'},
     {deed:6,display:'clocks',trade:'WATCHMAKER & JEWELLER',paint:'wood',awning:'rolled'}],
+  // Deed 1 is the stationers, which brings its own shopfront and fascia.
+  squareShops:[{deed:2,display:'print',trade:'MUSIC SELLER & PUBLISHER',paint:'wood',awning:'rolled'},
+    {deed:3,display:'bottles',trade:'DISPENSING CHEMIST',paint:'green',awning:'rolled'}],
   passage:[{deed:0,display:'provisions',trade:'BAKER & CONFECTIONER',paint:'wood',awning:'rolled'},
     {deed:1,display:'cloth',trade:'LINEN & HABERDASHERY',paint:'green',awning:'rolled'},
     {deed:2,display:'tools',trade:'IRONMONGER',paint:'wood',awning:'deployed'},
@@ -41,7 +54,9 @@ export const EXTERIOR_TRADE_DEEDS=freeze({
     {deed:4,display:'clocks',trade:'CLOCK REPAIRS',paint:'green',awning:'rolled'},
     {deed:7,display:'print',trade:'LETTERPRESS & PRINT',paint:'wood',awning:'rolled'}],
 });
-const row=(id,kind,x,z,yaw,names,workshops=[])=>({id,kind,mesh:`${id.replaceAll('-','_')}_trade`,physical:{x,z,yaw},
+// Deeds are 8m and centred on the row: deed i sits at firstDeedZ(count)+8i.
+export const firstDeedZ=(count=8)=>4-count*4;
+const row=(id,kind,x,z,yaw,names,workshops=[],count=8)=>({id,kind,count,mesh:`${id.replaceAll('-','_')}_trade`,physical:{x,z,yaw},
   shops:EXTERIOR_TRADE_DEEDS[kind].map((slot,i)=>({...slot,name:names[i]})),workshops});
 // Names belong to placed rows, not to the reusable building body. Nine light
 // print meshes provide local identity without cloning nine complete streets.
@@ -51,14 +66,14 @@ export const EXTERIOR_FRONTAGE_DRESSING=freeze([
   row('district-east-row-a','passage',143.05,20,Math.PI,['MORLEY','HUDSON & CO.','CARTER & SON','BROWNE','L. ARMITAGE','DOBSON']),
   row('district-east-row-b','workshop',143.05,82,Math.PI,['CROFT FRAMING','C. HEMSWORTH','EASTERN PRESS'],['WOOLLEY JOINERY','BATHS MOTOR WORKS','CROWN UPHOLSTERY','WHARF ENGINEERING','EAST GARAGE']),
   row('district-north-row-a','terrace',18,-15.05,Math.PI/2,['WALKER & PEEL','H. BIRTLES','R. ASQUITH','BROOK & SON','ELM FLORIST','V. HALL']),
-  row('district-north-row-b','passage',82,-15.05,Math.PI/2,['M. THORNTON','HOLT & SISTER','J. WINTER','BELL & SON','WEST RIDING BOOKS','F. DIXON']),
-  row('district-north-row-c','terrace',138,-15.05,Math.PI/2,['THE READING ROOM','ELLIOTT & CO.','H. FARRAR','RIDGEWAY CHINA','FERN & ROOT','J. INGHAM']),
+  row('district-north-row-c','terrace',154,-15.05,Math.PI/2,['THE READING ROOM','ELLIOTT & CO.','H. FARRAR','RIDGEWAY CHINA','FERN & ROOT','J. INGHAM']),
   row('district-south-row-b','passage',82,107.05,-Math.PI/2,['HARRISON','WAKEFIELD LINEN','T. LISTER','TOWN FRAMERS','R. NAYLOR','LEONARD & CO.']),
+  row('ellery-square-west','squareShops',50,-40.45,0,['ASHWORTH MUSIC','R. MASON'],[],5),
   row('district-south-row-c','workshop',138,107.05,-Math.PI/2,['SOUTHERN FRAMERS','A. KENDALL','MERCURY PRINT'],['G. DENHAM JOINERY','SOUTH MOTOR WORKS','WILTON UPHOLSTERY','KIRK ENGINEERING','RAILWAY GARAGE']),
 ]);
 const description={books:'Bound volumes stand behind a worn timber window; a single reading lamp has been left on.',cloth:'Folded cloth and paper patterns occupy the old display. The painted joinery has been repaired rather than replaced.',bottles:'Labelled bottles and a small dispensing cabinet sit well back from the street.',vessels:'Cup-and-saucer sets are spaced on stepped shelves. A few older pieces remain behind the newer stock.',flowers:'Seed packets, clay pots and dried stems share a shut florist’s window.',clocks:'Clock faces and watch cases are arranged behind a deep sash. The shop is shut; its flat is a different household.',provisions:'Loaves, tins and paper-wrapped provisions have been left in the window after closing.',tools:'Hand tools hang above small wooden bins; the ironmonger’s canopy is still out in the rain.',frames:'Nested picture frames and a small mitre bench give the narrow display its trade.',print:'Paper reams, a hand-fed press and type trays occupy the old shop bay.'};
 export const EXTERIOR_FRONTAGE_INSPECTABLES=freeze(EXTERIOR_FRONTAGE_DRESSING.flatMap(r=>r.shops.map(s=>{
-  const z=-28+s.deed*8,c=Math.cos(r.physical.yaw),sn=Math.sin(r.physical.yaw);
+  const z=firstDeedZ(r.count)+s.deed*8,c=Math.cos(r.physical.yaw),sn=Math.sin(r.physical.yaw);
   return{id:`${r.id}-trade-${s.deed}`,rowId:r.id,deed:s.deed,label:s.name,trade:s.trade,
     physical:{x:r.physical.x+c*.60-sn*z,y:r.physical.z+sn*.60+c*z},
     mountNormal:{nx:c,ny:sn},text:`${s.name} · ${s.trade}. ${description[s.display]}`};

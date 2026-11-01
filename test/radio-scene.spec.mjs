@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as scenes from '../src/game/scenes.js';
 import { makeRadioScene, RADIO_CONTACT_HOLD, RADIO_STAGE_HOLDS, radioStageForLine } from '../src/game/radio-scene.js';
-import { drawRadioScene, radioSceneLayout } from '../src/render/radio-scene.js';
+import { drawRadioScene, radioSceneLayout, radioChoiceFooter, radioChoiceFooterLines } from '../src/render/radio-scene.js';
 import { uiInit, uiSetScale, uiSize, uiWrap } from '../src/render/ui.js';
 import { UI_CELL_W, UI_CELL_H } from '../src/render/atlas.js';
 import { rehydrateTree } from '../src/narrative/runtime-content.js';
@@ -238,9 +238,8 @@ test('all authored radio prose and choices fit the viewport without overlapping 
         assert.ok(bottom<=(layout.choices[0]?.y-.15||layout.footerY-.5),`${label}: prose ${bottom} overlaps choices/footer`);
         for(const rect of layout.choices){
           assert.ok(rect.x>=0&&rect.y>=0&&rect.x+rect.w<=size.cols&&rect.y+rect.h<=layout.footerY,label);
-          const rows=uiWrap(rect.choice.text,rect.w-8);
-          assert.ok(rows.length<=2,`${label}: choice must not be silently truncated`);
-          assert.ok((rows.length-1)*.9+1<=rect.h+.001,label);
+          const rows=uiWrap(rect.choice.text,rect.w-layout.choiceTextInset);
+          assert.ok((rows.length-1)*layout.lineStep+1<=rect.h+.001,`${label}: every choice row is visible`);
         }
       }
     }
@@ -268,22 +267,75 @@ function renderProbe(width=960,height=600){
   globalThis.document=document;globalThis.window={devicePixelRatio:1,addEventListener(){}};globalThis.getComputedStyle=()=>({position:'relative'});
   uiInit({clientWidth:width,clientHeight:height,style:{},appendChild(){}});uiSetScale(1);
   return{
-    draw(stage,age,reducedMotion){
+    draw(stage,age,reducedMotion,view={}){
       const commands=surfaces[0].commands;commands.length=0;
-      drawRadioScene({line:null,typed:0,radio:{stage,age,time:age,ready:true,terminal:true}},{reducedMotion});
-      const end=commands.findIndex(command=>command.method==='drawImage');
-      return structuredClone(commands.slice(0,end<0?commands.length:end));
+      drawRadioScene({line:null,typed:Infinity,...view,radio:{stage,age,time:age,ready:true,terminal:true,...view.radio}},{reducedMotion});
+      return commands.map(({method,args,fill})=>({method,
+        args:args.map(arg=>arg&&typeof arg==='object'?'[surface]':arg),
+        fill:fill&&typeof fill==='object'?{type:fill.type,stops:fill.stops}:fill}));
     },
     restore(){uiSetScale(1);for(const[key,value]of Object.entries(originals)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}},
   };
 }
 
-test('the shared radio panel has no animated substitute for the inventory model',()=>{
+test('radio captions receive feathered line-sized backing instead of enclosing the conversation in recorder glass',()=>{
   const probe=renderProbe();
   try{
-    for(const stage of ['live',...Object.keys(RADIO_STAGE_HOLDS)]){
-      assert.deepEqual(probe.draw(stage,.1,true),probe.draw(stage,1.1,true),`${stage} must not animate within its reduced-motion stage`);
+    const doc=readStory('radio.pre_third_room_breakdown'),node=doc.nodes.contact;
+    const view={line:node.lines.at(-1),pending:{options:node.choices,index:1},radio:{contact:true}};
+    const commands=probe.draw('decision',2,true,view);
+    // Numbered physical caps also use gradients. Measure the feathered
+    // caption washes specifically, rather than treating resin as a caption.
+    const washes=commands.filter(command=>command.method==='fillRect'&&command.fill?.type==='linear'
+      &&command.fill.stops[0]?.[1]==='rgba(0,0,0,0)');
+    assert.ok(washes.length>=4,'the actual prose and both replies receive local legibility backing');
+    for(const command of washes){
+      assert.ok(command.args[3]<=UI_CELL_H*1.5,'no wash can become a full-height text panel');
+      assert.equal(command.fill.stops[0][1],'rgba(0,0,0,0)');
+      assert.equal(command.fill.stops.at(-1)[1],'rgba(0,0,0,0)');
     }
-    assert.deepEqual(probe.draw('relay',.1,false),probe.draw('relay',1.1,false),'the panel stays steady while dialogue and audio own the event');
+    assert.equal(commands.filter(command=>command.method==='fillRect'&&command.args[2]>=950&&command.args[3]>=590).length,1,
+      'only the restrained world scrim covers the entire view');
+  }finally{probe.restore();}
+});
+
+test('radio makes immediate number choices and held contact visibly different',()=>{
+  const options=[{text:'Ask for help.'},{text:'Wait.'}];
+  const ordinary=radioChoiceFooter({pending:{options},radio:{ready:true}});
+  assert.match(ordinary,/1–2 TRANSMIT/);
+  assert.doesNotMatch(ordinary,/HOLD TO TRANSMIT/);
+  const contact=radioChoiceFooter({pending:{options},radio:{ready:true,contact:true}});
+  assert.match(contact,/1–2 SELECT/);
+  assert.match(contact,/HOLD TO TRANSMIT/);
+  const {scene}=contactFixture();openContact(scene);
+  assert.equal(scene.view().radio.holdDuration,RADIO_CONTACT_HOLD);
+  const offChannel=radioChoiceFooter({pending:{options},radio:{ready:true,canTune:true,instrument:{channel:13}}});
+  assert.match(offChannel,/CHANNEL/);
+  assert.doesNotMatch(offChannel,/TRANSMIT/,'do not invite a command which the instrument will reject');
+});
+
+test('compact radio footer retains whole key legends and the commitment instruction',()=>{
+  const options=[{text:'One.'},{text:'Two.'},{text:'Three.'}];
+  for(const width of [28,32,40,46])for(const contact of [false,true]){
+    const lines=radioChoiceFooterLines({pending:{options},radio:{ready:true,contact}},width);
+    assert.ok(lines.length<=2,`${width} columns: ${lines.join(' / ')}`);
+    assert.ok(lines.every(line=>line.length<=width),`${width}: ${lines.join(' / ')}`);
+    assert.ok(lines.some(line=>line.includes('[ENTER / SPACE]')&&
+      (contact ? line.includes('HOLD') : line.includes('TRANSMIT'))));
+    assert.ok(lines.some(line=>line.includes(contact?'1–3 SELECT':'1–3 TRANSMIT')));
+    if(!contact)assert.ok(lines.some(line=>line.includes('[V] LOWER')));
+  }
+});
+
+test('contact progress is proportional to the actual hold duration',()=>{
+  const probe=renderProbe();
+  try{
+    const options=[{text:'Reach.'},{text:'Stay still.'}];
+    const sample=hold=>probe.draw('decision',2,true,{pending:{options,index:1},radio:{contact:true,hold,holdDuration:.8}})
+      .find(command=>command.method==='fillRect'&&command.fill==='#d8b36c');
+    assert.equal(sample(0),undefined,'no progress before holding');
+    const half=sample(.4),full=sample(.8);
+    assert.ok(half&&full);
+    assert.ok(Math.abs(half.args[2]*2-full.args[2])<1e-6);
   }finally{probe.restore();}
 });

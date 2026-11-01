@@ -35,9 +35,10 @@ test('optional indoor pack starts without invisible new stock or partitions',()=
 test('the street profile, rain mix and original bin/bollard placements are restored',()=>{
   const rows=buildExteriorDistrictRows(),routes=[...DISTRICT_STREETS,...DISTRICT_COURTS];
   const inside=(v,a,b)=>v>=a&&v<=b;
-  const oldGlyph=(r,x,z)=>{const edge=r.axis==='horizontal'?Math.min(z-r.y0,r.y1-z):Math.min(x-r.x0,r.x1-x);return edge<=1?'p':edge===2||edge===3?'s':'e';};
+  // The Leeds section: four-metre flags either side of a six-metre road; courts are setts.
+  const sectionGlyph=(r,x,z)=>{if(r.kind==='court')return's';const edge=r.axis==='horizontal'?Math.min(z-r.y0,r.y1-z):Math.min(x-r.x0,r.x1-x);return edge<=3?'p':'e';};
   for(let z=DISTRICT_BOUNDS.y0;z<=DISTRICT_BOUNDS.y1;z++)for(let x=DISTRICT_BOUNDS.x0;x<=DISTRICT_BOUNDS.x1;x++){
-    const glyphs=routes.filter(r=>inside(x,r.x0,r.x1)&&inside(z,r.y0,r.y1)).map(r=>oldGlyph(r,x,z));
+    const glyphs=routes.filter(r=>inside(x,r.x0,r.x1)&&inside(z,r.y0,r.y1)).map(r=>sectionGlyph(r,x,z));
     const expected=glyphs.includes('e')?'e':glyphs.includes('s')?'s':glyphs.length?'p':' ';
     assert.equal(rows[z-DISTRICT_BOUNDS.y0][x-DISTRICT_BOUNDS.x0]||' ',expected);
   }

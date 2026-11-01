@@ -49,6 +49,7 @@ function surfaceHarness(extra = {}) {
     drawVfdText: electronic('vfd'),
     uiFill: outer('fill'), uiScrim: outer('scrim'),
     inputPrompt: (action) => action.toUpperCase(),
+    activeInputPromptDevice: () => 'keyboard',
     promptLine: (parts) => parts.map((part) => part.label).join(' / '),
     UI_COLOR: { glass: '#030503', amber: '#d9ab73', frame: '#555', primary: '#bfd2bc' },
     withMachinePanel(x, y, w, h, options, drawContent) {
@@ -191,6 +192,10 @@ test('Source uses the shared cinematic strip with denser glass, without darkenin
     uiFill: (...args) => events.push({ kind: 'fill', args }),
     layoutTranscript: () => ({ height: 3 }),
     layoutTranscriptChoices: () => ({ height: 2 }),
+    fitTranscriptChoices: choice => choice,
+    activeInputPromptDevice: () => 'keyboard',
+    promptLine: () => 'SELECT / SAY',
+    uiText: (...args) => events.push({ kind: 'hint', args }),
     drawTranscript: (...args) => events.push({ kind: 'transcript', args }),
     drawTranscriptChoices: (...args) => events.push({ kind: 'choices', args }),
     SOURCE_CONTACT_ACTION: { COMBAT: 'combat' },
@@ -202,7 +207,7 @@ test('Source uses the shared cinematic strip with denser glass, without darkenin
       : globals.makeColdOpenScene({ worldUnderlay: true, ambient: false });
     events.length = 0;
     active.render();
-    assert.deepEqual(events.map((event) => event.kind), ['fill', 'transcript', 'choices']);
+    assert.deepEqual(events.map((event) => event.kind), ['fill', 'transcript', 'choices', 'hint']);
     const [x, y, width, height, color] = events[0].args;
     assert.equal(color, source ? 'rgba(2,4,5,.94)' : 'rgba(2,4,5,.58)');
     assert.ok(x > 0 && y > 0 && width < 112 && height < 48, 'only the dialogue strip receives dense glass');
@@ -267,6 +272,7 @@ test('opening transcript normal and side-by-side branches paint behind one cover
       transcriptSource: () => 'GUARD',
       layoutTranscript: () => ({ height: 3 }),
       layoutTranscriptChoices: () => ({ height: 2 }),
+      fitTranscriptChoices: choice => choice,
       planStoryArtSideBySide: () => ({ show: sideBySide, artCols: 24, textCols: 36, gap: 2, rows: 20 }),
       planStoryArtInPanel: () => ({ show: false }),
       fixedTranscriptLanes: () => ({ right: { x: 26, w: 36 } }),

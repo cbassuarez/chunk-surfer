@@ -6,11 +6,12 @@
 import * as scenes from './scenes.js';
 import { roomHistory } from '../data/room-history.js';
 import * as AUDIO from '../audio/story-audio.js';
-import { uiFill, uiScrim, uiSize, uiCellMetrics, uiStrokeRect, uiText, uiWrap } from '../render/ui.js';
+import { uiDraw, uiFill, uiScrim, uiSize, uiCellMetrics, uiStrokeRect, uiText, uiWrap } from '../render/ui.js';
 import { UI_COLOR } from '../render/palette.js';
-import { withMachinePanel, drawLampButton } from '../render/presentation.js';
+import { withMachinePanel, drawLampButton, machinePanelBezelRail } from '../render/presentation.js';
+import { drawInstrumentPlate } from '../render/instrument-material.js';
 import { drawPrintedText } from '../render/keycap.js';
-import { bagTabRegions, bagTabButtonState, BAG_TABS_HEIGHT } from '../render/bag-tabs.js';
+import { bagTabRegions, bagTabButtonState, BAG_TABS_HEIGHT, BAG_TAB_CAP_HEIGHT } from '../render/bag-tabs.js';
 import { buildBagModel, bagEntry, bagSection, EMPTY_JOB, normalizeBagSectionId } from './bag-model.js';
 import {
   currentBagEntry,
@@ -1445,15 +1446,21 @@ export function makeBagScene({
       if(route.type==='sheet-reader'){
         const size=uiSize(),reader=route.reader.view?.()||{page:0,total:1};
         route.reader.render?.();
-        uiFill(0,0,size.cols,BAG_TABS_HEIGHT,'rgba(8,10,11,.98)');
+        // The same fixed case selectors remain mounted in metal while a
+        // sheet is open. This strip is reserved by the document reader.
+        uiDraw(({ctx,dpr,cellW,cellH})=>drawInstrumentPlate(ctx,{
+          x:0,y:0,w:size.cols*cellW*dpr,h:BAG_TABS_HEIGHT*cellH*dpr,
+          dpr,finish:'aluminum',seed:'field-case-reader-selectors',
+        }));
         const closeW=Math.min(14,Math.max(8,size.cols)),closeX=Math.max(0,size.cols-closeW);
-        const readerTabs={tabs:{x:1,y:.1,w:Math.max(1,size.cols-2),h:BAG_TABS_HEIGHT}};
+        const readerTabs={tabs:{x:1,y:.65,w:Math.max(1,size.cols-2),h:BAG_TABS_HEIGHT}};
         for(const tab of bagTabRegions(model,readerTabs)){
           drawLampButton(tab.x,tab.y,tab.w,tab.h,bagTabButtonState(tab,'sheets'));
           addHit({...tab,kind:'bag-tab',onClick:()=>setSection(tab.sectionId)});
         }
-        uiText(2,3.5,fit(`FIELD CASE / SHEETS / ${route.document?.title||route.document?.id||'DOCUMENT'}`,Math.max(8,closeX-3)),'ui-label',.72);
-        uiText(closeX,3.5,'[B] CLOSE BAG','ui-amber',.9);
+        drawPrintedText(2,3.5,fit(`FIELD CASE / SHEETS / ${route.document?.title||route.document?.id||'DOCUMENT'}`,Math.max(8,closeX-3)),
+          {w:Math.max(8,closeX-3),ink:'#333830',finish:'etched',darkPanel:false});
+        drawPrintedText(closeX,3.5,'[B] CLOSE BAG',{w:closeW,ink:'#333830',finish:'etched',darkPanel:false});
         addHit({id:'bag:sheet-close',kind:'bag-close',x:closeX,y:3.5,w:closeW,h:1.2,label:'CLOSE BAG',onClick:close});
         addHit({id:'bag:sheet-back',kind:'bag-back',x:0,y:Math.max(0,size.rows-4),w:Math.max(8,Math.floor(size.cols*.25)),h:4,label:'BACK TO SHEETS',onClick:()=>route.reader.key?.({key:'Escape',code:'Escape'})});
         if(reader.page>0)addHit({id:'bag:sheet-prev',kind:'sheet-page',x:Math.floor(size.cols*.25),y:Math.max(0,size.rows-4),w:Math.floor(size.cols*.25),h:4,label:'PREVIOUS PAGE',onClick:()=>route.reader.key?.({key:'ArrowLeft',code:'ArrowLeft'})});
@@ -1471,6 +1478,8 @@ export function makeBagScene({
       const subview=!['root','item-actions'].includes(route.type);
       const mapHardware=nav.sectionId==='map'&&!subview;
       const journalHardware=nav.sectionId==='journal'&&!subview;
+      const selectorRail=mapHardware||journalHardware?null:machinePanelBezelRail(
+        outer.x,outer.y,outer.w,outer.h,{edge:'top',controlHeight:BAG_TAB_CAP_HEIGHT});
       let layout;
       withMachinePanel(outer.x, outer.y, outer.w, outer.h, {
         label: 'FIELD CASE / 4417-C',
@@ -1480,12 +1489,14 @@ export function makeBagScene({
         // still has its metal faceplate, but never puts a cover over that bay.
         glass: skills && !subview || mapHardware || journalHardware ? false : {},
         aperture: !(mapHardware || journalHardware),
+        apertureBounds:selectorRail?.apertureBounds,
       }, (body) => {
       layout = bagLayout({
         body:mapHardware||journalHardware?{x:outer.x+3,y:outer.y+2.6,w:outer.w-6,h:outer.h-3.6}:body,
         sectionId:mapHardware?'map':journalHardware?'journal':null,
         forceMode: typeof forceLayout === 'function' ? forceLayout() : forceLayout,
       });
+      if(selectorRail)layout.tabs.capY=selectorRail.controlY;
       if(mapHardware){
         const viewport=mapLayoutFromBag(layout).mapViewport,key=JSON.stringify(viewport);
         if(mapViewportKey&&key!==mapViewportKey){

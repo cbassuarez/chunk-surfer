@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {SOURCE_CONTINUATION as C, CONTINUATION_DROP_LIPS} from '../src/data/source-continuation.js';
+import {SOURCE_JOURNEY,JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
 
 const renderer=()=>({initialize:async()=>true,render:()=>true,ready:()=>true,dispose(){}});
 const checkpoint=()=>({...freshSourceContinuation({runId:'controls',returnPose:{x:1,y:2}}),status:'active'});
@@ -17,33 +18,61 @@ test('ordinary look deltas belong to the scene and pause clears movement without
   scene.resume();scene.update(.2);assert.equal(scene.serialize().x,turned.x);assert.equal(scene.serialize().z,turned.z);scene.exit();
 });
 
-test('Source III retains ordinary first-person look and camera-relative arrow movement',async()=>{
+test('Space jumps with carried movement, ignores repeats and preserves fresh movement after landing',async()=>{
+  const traces=[],scene=createSourceContinuationScene({checkpoint:checkpoint(),renderer:renderer(),onTrace:t=>traces.push(t)});
+  await scene.initialize();scene.key({key:'w'});scene.key({key:' ',code:'Space'});
+  assert.ok(scene.serialize().fall,'Space works on the ordinary unmarked entry floor');
+  const launch=scene.serialize();scene.key({key:' ',code:'Space',repeat:true});assert.deepEqual(scene.serialize(),launch);
+  scene.update(.1);scene.pause();const paused=scene.serialize();scene.update(.2);assert.deepEqual(scene.serialize(),paused);scene.resume();
+  for(let i=0;i<120&&scene.serialize().fall;i++)scene.update(.025);
+  assert.equal(scene.serialize().fall,null);assert.equal(scene.serialize().recovery,null);
+  scene.key({key:'w'});const landed=scene.serialize();scene.update(.05);assert.ok(scene.serialize().z<landed.z);
+  assert.ok(traces.some(t=>t.event?.type==='drop'&&t.event.trigger==='jump'));scene.exit();
+});
+
+test('Source III has a fixed overhead compass and cannot inherit invisible first-person look',async()=>{
   const traces=[],scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...CONTINUATION_DROP_LIPS[0],feet:C.catch.top,level:0},renderer:renderer(),onTrace:v=>traces.push(v)});
-  await scene.initialize();assert.equal(scene.lookBy(.2,-.1),true);const before=scene.serialize();
+  await scene.initialize();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.2,-.1),false);const before=scene.serialize();
   scene.key({key:'ArrowUp'});scene.update(.05);scene.keyup({key:'ArrowUp'});
-  assert.ok(scene.serialize().x>before.x);assert.ok(scene.serialize().z<before.z);assert.ok(Math.abs(scene.lookAngles().yaw-before.yaw)<1e-8);
+  assert.equal(scene.serialize().x,before.x);assert.ok(scene.serialize().z<before.z);assert.equal(scene.lookAngles().yaw,0);assert.equal(scene.lookAngles().pitch,-Math.PI/2);
   scene.setLook({yaw:0,pitch:0});scene.key({key:'e'});scene.update(.2);
   const drop=traces.find(v=>v.event?.type==='drop');assert.ok(drop?.choiceId);
   for(let i=0;i<20;i++)scene.update(.1);
   const pose=traces.find(v=>v.type==='pose'&&v.counterweight?.active);assert.ok(Number.isFinite(pose.threatDistanceMetres));scene.exit();
 });
 
-test('crossing into Source III preserves held first-person motion and accepts immediate look',async()=>{
-  const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),x:-18.19,z:-12,feet:C.catch.top,yaw:-Math.PI/2,doorOpen:{'wrong-onward':true}},renderer:renderer()});
-  await scene.initialize();scene.key({key:'w'});scene.update(.1);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');
-  assert.equal(crossed.reveal,null);scene.update(.2);assert.ok(scene.serialize().x<crossed.x,'the same held forward still walks forward');
-  assert.equal(scene.lookBy(.3,.2),true);assert.notEqual(scene.serialize().yaw,crossed.yaw);scene.keyup({key:'w'});scene.exit();
+test('crossing into Source III releases carried movement before the overhead control mapping takes over',async()=>{
+  const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),chartId:4,x:SOURCE_JOURNEY.gate.x+.19,z:SOURCE_JOURNEY.gate.z,feet:C.catch.top,yaw:-Math.PI/2,doorOpen:{'journey-catch-gate':true}},renderer:renderer()});
+  await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');
+  assert.equal(crossed.reveal,null);scene.update(.2);assert.equal(scene.serialize().x,crossed.x,'a held first-person input cannot carry into a changed compass');assert.equal(scene.serialize().z,crossed.z);
+  assert.equal(scene.lookBy(.3,.2),false);assert.equal(scene.serialize().yaw,crossed.yaw);scene.keyup({key:'w'});
+  scene.key({key:'a'});scene.update(.1);assert.ok(scene.serialize().x<crossed.x,'a fresh overhead-left input moves west');scene.exit();
 });
 
-test('a rotated transfer retains local first-person controls for the correspondingly rotated view',async()=>{
-  const seed={...checkpoint(),phase:'catch',x:-28,z:-12,feet:C.catch.top,level:0},scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),studyRotation:Math.PI});
+test('crossing either impossible axis retains held walking through its real receiving fall',async()=>{
+  for(const edge of JOURNEY_PORTALS.slice(0,2)){
+    const traces=[],seed={...checkpoint(),...edge.a.approach};seed.hush.active=false;
+    const scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),onTrace:v=>traces.push(v)});await scene.initialize();
+    scene.key({key:'w'});
+    for(let k=0;k<180&&!scene.serialize().lastFold;k++)scene.update(1/60);
+    const crossed=scene.serialize();assert.equal(crossed.lastFold?.id,edge.id);assert.equal(crossed.chartId,edge.toChart);
+    assert.ok(traces.some(t=>t.type==='fold-control-continuity'&&t.held.includes('w')));
+    for(let k=0;k<120&&(scene.serialize().fall||scene.serialize().cameraTransit);k++)scene.update(1/60);
+    const landed=scene.serialize();assert.equal(landed.fall,null);assert.equal(landed.cameraTransit,null);assert.equal(landed.recovery,null);
+    scene.update(.1);const next=scene.serialize();assert.ok(Math.hypot(next.x-landed.x,next.z-landed.z)>.2,'held movement must continue after gravity alignment');
+    assert.equal(traces.some(t=>t.type==='control-boundary'&&t.reason==='land'),false,'a portal landing retains the same control authority');scene.exit();
+  }
+});
+
+test('a rotated study keeps fixed local compass inputs with its correspondingly rotated overhead view',async()=>{
+  const seed={...checkpoint(),phase:'catch',x:C.catch.center.x+10,z:C.catch.center.z,feet:C.catch.top,level:0},scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),studyRotation:Math.PI});
   await scene.initialize();scene.key({key:'d'});scene.update(.1);scene.keyup({key:'d'});
   assert.ok(scene.serialize().x>seed.x,'local right maps through the same rotation as the physical camera');assert.equal(scene.serialize().yaw,seed.yaw);scene.exit();
 });
 
 test('the final latch has a finite audible handoff, freezes on pause and dispatches once',async()=>{
   let calls=0,stops=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),audio:{stop(){stops++;}},onComplete(){calls++;return true;}});
-  await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
+  await scene.initialize();scene.key({key:'e'});scene.key({key:'d'});
   for(let i=0;i<20&&!scene.serialize().completed;i++)scene.update(.05);
   assert.equal(scene.serialize().completed,true);assert.equal(calls,0);assert.equal(stops,0);
   scene.pause();scene.update(1);assert.equal(calls,0);scene.resume();
@@ -53,7 +82,7 @@ test('the final latch has a finite audible handoff, freezes on pause and dispatc
 test('a rejected host handoff retains the frame and lets a fresh interaction retry',async()=>{
   for(const failure of [false,Error('host unavailable')]){
     let calls=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),onComplete(){calls++;if(calls===1){if(failure===false)return false;throw failure;}return true;}});
-    await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
+    await scene.initialize();scene.key({key:'e'});scene.key({key:'d'});
     for(let i=0;i<20&&!scene.serialize().completed;i++)scene.update(.05);
     scene.update(.2);scene.update(.2);await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls,1);assert.equal(scene.view().ready,false);assert.ok(scene.view().error);

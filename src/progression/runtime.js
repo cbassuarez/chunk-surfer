@@ -10,6 +10,7 @@ import { reduceRunLedger } from './run-ledger.js';
 import { EVENT_SCHEMA_VERSION } from './schema.js';
 import { deriveUnlocks, diffUnlocks } from './unlocks.js';
 import { queueChangedStats } from './stat-defs.js';
+import { nightDeadlinePending } from '../game/night-deadline.js';
 
 export const progressionEvents = createEventBus();
 let buildId = 'LOCAL';
@@ -155,8 +156,10 @@ export function commitReturn(endingId, authoritative = {}, now = Date.now()) {
   if (!run) throw new Error('cannot commit a return without an active run');
   const existing = run.finalizedReturn;
   if (existing?.summaryId) {
+    if(existing.kind==='failed-night')return reconcileNightFailureReturn()||existing;
     return getMeta().returns.records[existing.summaryId] || existing;
   }
+  if(nightDeadlinePending(save.nightDeadline))throw Object.assign(new Error('The night has expired; finish its demolition scene.'),{code:'NIGHT_EXPIRED'});
 
   const beforeUnlocks = deriveUnlocks(getMeta());
   let summary = buildRunSummary({ endingId, save, meta: getMeta(), authoritative, now });
@@ -226,7 +229,42 @@ export function commitReturn(endingId, authoritative = {}, now = Date.now()) {
   return summary;
 }
 
+// A separate return authority: losing this night does not emit completion or
+// ending events, increment runsCompleted, unlock endings or award Dead Air.
+// The complete factual summary is staged in SAVE before META is touched. A
+// crash between files can therefore be reconciled without recomputing media,
+// repeating consequences, or treating the save marker as a completed report.
+export function reconcileNightFailureReturn() {
+  const save=getSave(),run=save.run,pending=run?.pendingReturn,finalized=run?.finalizedReturn;
+  if(finalized?.kind!=='failed-night'||!finalized.summaryId)return null;
+  const meta=getMeta(),existing=meta.returns.records[finalized.summaryId];
+  if(existing)return existing;
+  const summary=pending?.kind==='failed-night'?pending.summary:null;
+  if(summary?.classification!=='failed-night'||summary.id!==finalized.summaryId||summary.runId!==run.id)return null;
+  metaCommit({returns:{records:{...meta.returns.records,[summary.id]:summary},history:unique([...(meta.returns.history||[]),summary.id])},
+    presentation:{...meta.presentation,pendingReports:unique([...(meta.presentation.pendingReports||[]),summary.id])}});
+  return summary;
+}
+
+export function commitNightFailure(authoritative = {}, now = Date.now()) {
+  const save=getSave(),run=save.run,deadline=save.nightDeadline;
+  if(!run)throw new Error('Cannot file a failed night without a run.');
+  if(run.finalizedReturn?.summaryId){
+    if(run.finalizedReturn.kind==='failed-night')return reconcileNightFailureReturn()||run.finalizedReturn;
+    return getMeta().returns.records[run.finalizedReturn.summaryId]||run.finalizedReturn;
+  }
+  if(deadline?.phase!=='terminal'||deadline.runId!==run.id||!['survived','entombed'].includes(deadline.consequenceReceipt?.outcome))
+    throw Object.assign(new Error('The First Strike scene has not finished.'),{code:'DEADLINE_SCENE_UNFINISHED'});
+  const summary=buildRunSummary({endingId:'night-deadline',save,meta:getMeta(),
+    authoritative:{...authoritative,classification:'failed-night'},now});
+  const marker={kind:'failed-night',endingId:'night-deadline',summaryId:summary.id,committedAt:now};
+  saveCommit({run:{...run,status:'failed-night',completedAt:now,pendingReturn:{...marker,summary},finalizedReturn:marker},
+    nightDeadline:{...deadline,summaryId:summary.id}});
+  return reconcileNightFailureReturn();
+}
+
 export function pendingReturnReport() {
+  reconcileNightFailureReturn();
   const meta = getMeta();
   const id = meta.presentation.pendingReports?.[0];
   return id ? meta.returns.records?.[id] || null : null;
@@ -238,7 +276,7 @@ export function consumeReturnReport(summaryId) {
   metaCommit({ presentation: { ...meta.presentation, pendingReports } });
   const run = getSave().run;
   if (run?.finalizedReturn?.summaryId === summaryId) {
-    run.status = 'complete';
+    run.status = run.finalizedReturn.kind==='failed-night'?'failed-night':'complete';
     run.pendingReturn = null;
     saveCommit({ run });
   }

@@ -73,7 +73,7 @@ function fixture({ phase = 0, legacyStage } = {}) {
         parents.set(id, key(p)); points.set(id, next); queue.push(next);
       }
     }
-    assert.ok(parents.has(key(goal)), `no production-runtime route to bus local ${x},${z}`);
+    assert.ok(parents.has(key(goal)), `no production-runtime route to bus local ${x},${z}, phase ${phase}: ${JSON.stringify({start:f.local(f.position),goal:f.local(goal),goalClear:f.runtime.geometry.canStep(goal.x,goal.y,goal.x,goal.y)})}`);
     const path = [];
     for (let id = key(goal); parents.get(id) != null; id = parents.get(id)) path.push(points.get(id));
     for (const next of path.reverse()) f.step(next);
@@ -109,7 +109,9 @@ test('ordinary runtime movement boards, permits early retreat, then discovers a 
     const yaw=Math.atan2(target.x-f.position.x,-(target.y-f.position.y));f.frame({viewYaw:yaw});
     assert.ok(Number.isFinite(f.transit().trapAt),'looking at the cleared entry never commits the trap');
     for(let i=0;i<4;i++)f.frame();assert.equal(f.runtime.outskirtsBusPassageFrame().entryAngle,0);f.reload();
-    f.walkTo(.5,4);const stance=f.local(f.position);
+    // Stay below the rear jamb's body-clearance band on every incoming grid
+    // phase; rounding an exact 4m target can otherwise request z=4.25m.
+    f.walkTo(.5,3.9);const stance=f.local(f.position);
     // The normal movement request may end at actual hardware contact rather
     // than pretending every .5m input must complete through a closed leaf.
     const request=f.at(stance.x+.5,stance.z),touch=f.step(request),contact=f.local(f.position);
@@ -119,10 +121,10 @@ test('ordinary runtime movement boards, permits early retreat, then discovers a 
     assert.equal(tried.changed,true,`real grid stance cannot try the bar atphase${phase}: ${JSON.stringify({stance,contact,tried,touch})}`);
     assert.equal(f.transit().exited,false);for(let i=0;i<7;i++)f.frame();
     assert.equal(f.runtime.outskirtsBusPassageFrame().exitAngle,0);f.reload();
-    f.walkTo(0,2.5);const opened=f.runtime.outskirtsPerformAction({action:'bus-woman-open',pass:BUS.pass});
+    f.walkTo(0,2.3);const opened=f.runtime.outskirtsPerformAction({action:'bus-woman-open',pass:BUS.pass});
     assert.equal(opened.changed,true);assert.equal(f.transit().exited,false,'E skips walking through the body');
     for(let i=0;i<12;i++)f.frame();assert.equal(f.runtime.outskirtsBusPassageFrame().bodyOpening.ready,true);f.reload();
-    f.walkTo(0,4);const entered=f.step(f.at(f.local(f.position).x,4.5));
+    f.walkTo(0,3.9);const entered=f.step(f.at(f.local(f.position).x,f.local(f.position).z+.5));
     assert.equal(entered.move.via,'bus-body-enter');assert.equal(f.runtime.busInteriorFrame().active,true);f.reload();
     const start={...f.position},key=p=>`${p.x},${p.y}`,queue=[start],parents=new Map([[key(start),null]]),points=new Map([[key(start),start]]);let goal=null;
     for(let q=0;q<queue.length&&!goal;q++)for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){

@@ -69,7 +69,12 @@ import { normalizeEndingVariant } from '../data/ending-variants.js';
 import { normalizeAcademicFloorReturns } from './academic-floor-returns.js';
 import { normalizeEndingWrongDoorDemolition } from './ending-wrong-door.js';
 import { normalizeSourceIV } from './source-iv.js';
+import { normalizePressurePresentation } from './pressure-performance.js';
 import { freshPlayDuration, normalizePlayDuration } from './play-duration.js';
+import { freshNightClock, normalizeNightClock } from './night-clock.js';
+import { freshNightDeadline, normalizeNightDeadline } from './night-deadline.js';
+import { retainedNightMediaKeys, pendingNightArchivePatch } from './night-failure-archive.js';
+import { SOURCE_REST_SEATS } from './source-rest-seat.js';
 
 const SAVE_KEY = 'chunk-surfer:save:v4';
 const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
@@ -98,11 +103,14 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   doors: { schema: 2, states: {} },
   playSeconds: 0,
   playDuration: freshPlayDuration(),
+  nightClock: freshNightClock(),
+  nightDeadline: freshNightDeadline({runId:run?.id||''}),
   steps: 0,
   bagNav: null,
   bagSheets: freshBagSheetState(),
   bagMap: freshBagMapState(),
   hushAudio: null,
+  pressurePresentation: null,
   chunkSurf: freshChunkSurfState(),
   sourceDrive: normalizeSourceDriveCheckpoint(null),
   sourceReturnFlashback: null,
@@ -164,7 +172,7 @@ const finitePoint = (value) => value && Number.isFinite(Number(value.x)) && Numb
   ? { x: Number(value.x), y: Number(value.y) }
   : null;
 
-const ENDING_CUTSCENE_ARRIVALS = new Set(['agreed', 'defeated', 'timed-out', 'escaped', 'carried']);
+const ENDING_CUTSCENE_ARRIVALS = new Set(['agreed', 'defeated', 'timed-out', 'escaped', 'carried', 'rested']);
 
 export function normalizeEndingCutsceneCheckpoint(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -172,7 +180,15 @@ export function normalizeEndingCutsceneCheckpoint(value) {
   const arrival = String(value.arrival || '');
   if (!ENDING_IDS.includes(endingId) || !ENDING_CUTSCENE_ARRIVALS.has(arrival)) return null;
   const variant=normalizeEndingVariant(endingId,value.variant,arrival);
-  return { schema: 1, endingId, arrival, ...(variant?{variant}:{}) };
+  let restLock=null;
+  if(endingId==='contact-lost'&&arrival==='rested'&&variant==='source-rest'&&Object.hasOwn(value,'restLock')){
+    const marker=value.restLock,runId=marker?.runId,seatId=marker?.seatId;
+    // Corrupt transient consent must not become an unmarked final commitment.
+    if(!marker||Array.isArray(marker)||typeof runId!=='string'||!runId.trim()||runId.length>512||runId!==runId.trim()
+      ||typeof seatId!=='string'||!SOURCE_REST_SEATS.some(seat=>seat.id===seatId))return null;
+    restLock={runId,seatId};
+  }
+  return { schema: 1, endingId, arrival, ...(variant?{variant}:{}),...(restLock?{restLock}:{}) };
 }
 
 // The destination is already real before the cinematic's metrics can load.
@@ -261,7 +277,9 @@ function normalizeHushAudioSave(value) {
 }
 
 function migrateSaveV1ToV2(data) {
-  const next = { ...freshSave(), ...data, version: 2, playDuration: normalizePlayDuration(data?.playDuration) };
+  const next = { ...freshSave(), ...data, version: 2, playDuration: normalizePlayDuration(data?.playDuration),
+    nightClock: normalizeNightClock(data?.nightClock, { legacySave: data }),
+    nightDeadline: normalizeNightDeadline(data?.nightDeadline,{runId:data?.run?.id||'',legacy:!data?.nightDeadline}) };
   next.px = scaleCoord(data.px);
   next.py = scaleCoord(data.py);
   if (next.obj) {
@@ -320,6 +338,8 @@ function normalizeSaveV4(data, meta = null) {
     ...source,
     version: SAVE_VERSION,
     playDuration: normalizePlayDuration(source.playDuration),
+    nightClock: normalizeNightClock(source.nightClock, { legacySave: source }),
+    nightDeadline: normalizeNightDeadline(source.nightDeadline, {runId:run?.id||'',legacy:!source.nightDeadline}),
     layoutRevision:Math.max(0,Math.floor(finiteNumber(source.layoutRevision,0))),
     facing:((Math.round(finiteNumber(source.facing,0))%4)+4)%4,
     view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
@@ -344,6 +364,7 @@ function normalizeSaveV4(data, meta = null) {
     bagMap: normalizeBagMapState(source.bagMap),
     doors: normalizeDoorSave(source.doors),
     hushAudio: normalizeHushAudioSave(source.hushAudio),
+    pressurePresentation: normalizePressurePresentation(source.pressurePresentation),
     chunkSurf,
     sourceDrive:normalizeSourceDriveCheckpoint(source.sourceDrive),
     sourceReturnFlashback:sourceReturnFlashback?.returnPose?sourceReturnFlashback:null,
@@ -559,7 +580,8 @@ export function metaCommit(patch = {}) {
 }
 
 export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null, prepareInVan = false } = {}) {
-  if(!transientState())void clearSourceDriveAudio();
+  const pendingArchive=pendingNightArchivePatch(save,meta);if(pendingArchive)metaCommit(pendingArchive);
+  if(!transientState())void clearSourceDriveAudio({preserveKeys:retainedNightMediaKeys(meta)});
   const settings = normalizeSettings(save?.settings);
   const plannedNow = Number.isFinite(Number(launchPlan?.startedAt))
     ? Number(launchPlan.startedAt)

@@ -1,10 +1,13 @@
 // Academic roof, authored metres. Logical addresses are a separate save/map
 // page; physical coordinates remain over the existing atrium and gallery.
 import { F, MATERIAL, ZONE } from './floorplan/legend.js';
+import {ELLERY_COURTYARD_SKY} from './ellery-courtyard-architecture.js';
 
 const point=(x,y)=>Object.freeze({x,y});
 export const ROOF_CITY_SEAT=Object.freeze({
-  id:'roof-city-seat',at:point(212,290),approach:point(210,290),
+  // The approach sits beside the bench: the courtyard's sky opening took the
+  // roof west of x 210.5, and the glass court's guard rail runs along that edge.
+  id:'roof-city-seat',at:point(212,290),approach:point(211.5,291),
   // Prop +Z faces east with -PI/2; camera forward uses the opposite yaw
   // convention. A slight northward rake avoids the existing guard upright.
   yaw:1.50,pitch:-.21,eyeDrop:.46,propYaw:-Math.PI/2,
@@ -15,12 +18,13 @@ export const ACADEMIC_ROOF=Object.freeze({
   entry:point(205,272),ren:point(210,273),seal:point(210,275),
   // Both anchors stay on supported glass. Their initial views look across
   // the pane; the east anchor faces northwest toward the fixed city landmarks.
-  sitWest:point(200,287),sitEast:point(205,284),
+  sitWest:point(200,280),sitEast:point(205,280),
   gate:point(44,242),gateInspect:point(44,242.25),
   stairFoot:point(174,285),stairTurn:point(159,283),stairHead:point(188,282),
   northBridge:point(188,285),
   ladderBottom:point(45,266),ladderTop:point(212,294),
-  glass:Object.freeze({x0:196,x1:206,y0:276,y1:289}),
+  glass:Object.freeze({x0:196,x1:206,y0:276,y1:283}),
+  openSkyBounds:ELLERY_COURTYARD_SKY,
 });
 export const roofPointToPhysical=({x,y})=>({
   x:ACADEMIC_ROOF.physicalOrigin.x+x-ACADEMIC_ROOF.origin.x,
@@ -34,7 +38,10 @@ export const ACADEMIC_ROOF_SEAT_LOOK=Object.freeze({
 export const academicRoofYawDelta=(from,to)=>Math.atan2(Math.sin(to-from),Math.cos(to-from));
 
 export function academicRoofRows(){
-  return Array.from({length:ACADEMIC_ROOF.depth},()=> 'Q'.repeat(ACADEMIC_ROOF.width));
+  return Array.from({length:ACADEMIC_ROOF.depth},(_,z)=>Array.from({length:ACADEMIC_ROOF.width},(_,x)=>{
+    const px=ACADEMIC_ROOF.physicalOrigin.x+x,pz=ACADEMIC_ROOF.physicalOrigin.y+z,b=ELLERY_COURTYARD_SKY;
+    return px>=b.x0&&px<b.x1&&pz>=b.z0&&pz<b.z1?' ':'Q';
+  }).join(''));
 }
 export function academicRoofProfile(x,y,cell){
   if(cell.solid)return null;
@@ -42,7 +49,7 @@ export function academicRoofProfile(x,y,cell){
   // The north edge opens only where the guarded fire-escape bridge arrives.
   if(rim&&!(y===0&&x>=15&&x<=17))return{floor:17,ceil:18.1,flags:F.SKY|F.WALLED,zone:ZONE.academicRoof,
     material:MATERIAL.metalPlant,collisionOnly:true};
-  const glass=x>=6&&x<=15&&y>=6&&y<=18;
+  const glass=x>=6&&x<=15&&y>=6&&y<=12;
   return{floor:ACADEMIC_ROOF.base,ceil:24,
     flags:F.SKY|F.WALLED,zone:ZONE.academicRoof,
     material:glass?MATERIAL.roofGlass:MATERIAL.metalPlant};
@@ -126,7 +133,7 @@ export const ACADEMIC_ROOF_PROPS=Object.freeze([
     {action:'roof-sit-east',yaw:-Math.PI/2,label:'Supported glass bay'}),
   roofProp(ROOF_CITY_SEAT.id,'academic_roof_city_seat',ROOF_CITY_SEAT.at,
     {action:'roof-city-seat',yaw:ROOF_CITY_SEAT.propYaw,blocks:true,
-      inspectAt:point(211,290),label:'Stone city seat'}),
+      inspectAt:point(212,290),label:'Stone city seat'}),
   roofProp('roof-shortcut-bottom','academic_roof_service_ladder',ACADEMIC_ROOF.ladderBottom,
     {action:'roof-shortcut',requiresKey:'ren-service',label:'Caged service ladder',
       renderGroups:['academic','academicRoof'],floorOverride:10,inspectAt:point(44,265)}),

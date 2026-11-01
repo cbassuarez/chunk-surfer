@@ -59,7 +59,7 @@ function harness() {
     openPauseMenu: () => { h.pauseOpens += 1; h.top = { id: 'pause', blocksInput: true }; },
     resumeGameplayInput: reason => h.captures.push(reason), recoverInteractionAudio() {},
     isOnboardingActive: () => false, setupHandoffBlocksMovement: () => false,
-    inCover: () => false, coverAvailable: () => true, exitCover() {},
+    inCover: () => !!h.covered, coverAvailable: () => true, exitCover() { h.covered = false; },
     snapMotionRig() {}, maybeLockHushFromInputDelta() {},
     step: (x, y) => h.moves.push([x, y]),
     arrowDelta: () => { const a = keyboardMotionAxes(h.motionInput.held); return [a.moveX, a.moveY]; },
@@ -119,6 +119,19 @@ test('held movement is retired on hidden frames and never bursts when visibility
   h.hidden(false); h.api.recoverMotionFocus('visibility-visible'); h.api.tickHeldMovement(5000);
   assert.equal(h.moves.length, 1, 'the old hold is not a fresh return gesture');
   h.key('KeyW'); assert.equal(h.moves.length, 2);
+});
+
+test('cover receives the held strafe without an immediate walking step', () => {
+  const h = harness(); h.covered = true;
+  h.key('KeyD');
+  assert.deepEqual(h.moves, [], 'the body must stay behind the obstruction');
+  assert.equal(keyboardMotionAxes(h.motionInput.held).moveX, 1, 'cover can read the peek intent');
+  h.api.tickHeldMovement(1200);
+  assert.deepEqual(h.moves, [], 'the held walking clock cannot move it either');
+  h.api.onKeyUp({ code: 'KeyD', key: 'd', target: {}, preventDefault() {} });
+  h.covered = false;
+  h.key('KeyD');
+  assert.equal(h.moves.length, 1, 'normal walking returns after cover');
 });
 
 test('paused hidden dialogue cannot consume E, Space, Enter or a world-local Escape', () => {

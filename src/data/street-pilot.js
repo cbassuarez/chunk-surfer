@@ -8,6 +8,8 @@
 export const STREET_PILOT_BASELINE=!!(import.meta.env?.DEV&&typeof location!=='undefined'
   &&new URLSearchParams(location.search).get('streetProof')==='baseline');
 
+import {streetCrossingFloorAt} from './street-crossings.js';
+
 const freeze=value=>{
   if(value&&typeof value==='object'&&!Object.isFrozen(value)){
     for(const child of Object.values(value))freeze(child);
@@ -43,18 +45,19 @@ export const STREET_PILOT=freeze({
   status:'isolated-prototype',
   coordinateSpace:'physical-metres',
   districtRoad:{x0:-14.5,x1:142.5},
-  patch:{x0:63,x1:93,z0:-14.5,z1:-.5},
-  groundAnchor:{x:78,y:0,z:-7.5},
-  road:{z0:-10.5,z1:-4.5,y:.012,collisionFloorM:0},
-  crossing:{x0:76.6,x1:79.4,z0:-12.5,z1:-2.5,centreX:78},
+  // The carriageway centre sits on the floor grid, whose glyph o covers
+  // o-.25..o+.75: North Street's road glyphs run from -10.25 to -4.25.
+  patch:{x0:63,x1:93,z0:-14.25,z1:-.25},
+  groundAnchor:{x:78,y:0,z:-7.25},
+  road:{z0:-10.25,z1:-4.25,y:.012,collisionFloorM:0},
+  crossing:{x0:76.6,x1:79.4,z0:-10.25,z1:-4.25,centreX:78},
   // Nearest paint edges are 3m from the nearest crossing-stud edges (TSM6
-  // 18.1.5). The line spans the complete half carriageway, including setts.
+  // 18.1.5). The line spans the complete half carriageway, kerb to centre.
   stopLines:{eastbound:73.45,westbound:82.55,widthM:.20},
   markings:{type:'signal-controlled-pedex',crossingDiagram:'1055.1',stopDiagram:'1001',zigzagDiagram:'1001.3',
     studSizeM:.10,studPitchM:.50,strokeM:.10,zigzagMarkLengthM:2,
     zigzagGapM:.15,zigzagBandM:.50,zigzagCount:8,terminalWidthM:.20,terminalLengthM:.60},
   noseClearanceM:.35,
-  parkingStripZ:-3.5,
   cycle:{
     seconds:54,
     pedestrianGreenEnd:6,
@@ -103,27 +106,29 @@ export const STREET_PILOT=freeze({
     meshForward:'local-negative-z',
   },
   vehicles:[
-    {id:'late-bus',kind:'bus',direction:1,laneZ:-9,stopLineX:73.45},
-    {id:'north-night-car',kind:'car',direction:-1,laneZ:-6,stopLineX:82.55},
+    {id:'late-bus',kind:'bus',direction:1,laneZ:-8.75,stopLineX:73.45},
+    {id:'north-night-car',kind:'car',direction:-1,laneZ:-5.75,stopLineX:82.55},
   ],
+  // Poles stand 600 mm back from the kerb face (Inclusive Mobility §4.2 asks
+  // for at least 450 mm), at the front of the four-metre pavement.
   vehicleSignals:[
-    {id:'eastbound-primary',x:75.95,y:0,z:-12.9,yaw:-Math.PI/2},
-    {id:'eastbound-secondary',x:80.05,y:0,z:-1.1,yaw:-Math.PI/2},
-    {id:'westbound-primary',x:80.05,y:0,z:-1.1,yaw:Math.PI/2},
-    {id:'westbound-secondary',x:75.95,y:0,z:-12.9,yaw:Math.PI/2},
+    {id:'eastbound-primary',x:75.95,y:0,z:-10.85,yaw:-Math.PI/2},
+    {id:'eastbound-secondary',x:80.05,y:0,z:-3.65,yaw:-Math.PI/2},
+    {id:'westbound-primary',x:80.05,y:0,z:-3.65,yaw:Math.PI/2},
+    {id:'westbound-secondary',x:75.95,y:0,z:-10.85,yaw:Math.PI/2},
   ],
   pedestrianSignals:[
     // Far-side faces look back toward the pedestrian approaching from across
     // the road. Each housing includes its own ground-rooted pole.
-    {id:'north-far-side',x:79.8,y:0,z:-12.9,yaw:Math.PI},
-    {id:'south-far-side',x:76.2,y:0,z:-1.1,yaw:0},
+    {id:'north-far-side',x:79.8,y:0,z:-10.85,yaw:Math.PI},
+    {id:'south-far-side',x:76.2,y:0,z:-3.65,yaw:0},
   ],
   pedestrianButtons:[
     // Short posts sit beside, rather than inside, the red tactile field. A
     // turning cone is modeled beneath each housing. Automatic authored demand
     // remains gameplay-owned; these units do not pretend to be interactive.
-    {id:'north-demand',x:76.1,y:0,z:-13.1,yaw:Math.PI/6},
-    {id:'south-demand',x:79.9,y:0,z:-1.9,yaw:Math.PI+Math.PI/6},
+    {id:'north-demand',x:76.1,y:0,z:-11.25,yaw:Math.PI/6},
+    {id:'south-demand',x:79.9,y:0,z:-3.25,yaw:Math.PI+Math.PI/6},
   ],
   buttonGeometry:{centreHeightM:1.05,tactileCone:true,footwayAngleDeg:30,interactive:false},
   signalGeometry:{
@@ -139,28 +144,21 @@ export const STREET_PILOT=freeze({
   // that this fictional street satisfies a real highway design approval.
   researchStatus:{
     cycle:'DfT sequence and durations checked; local layout remains prototype',
-    pedestrianClearance:'10m kerb-to-kerb with 10s blackout and 1s all-red; participant observation pending',
+    pedestrianClearance:'6m kerb-to-kerb with 10s blackout and 1s all-red; participant observation pending',
     signals:'UK Pedex visual treatment; automatic authored demand retained, not a real controller simulation',
     vehicle:'body sockets pending generated-asset measurement',
   },
 });
 
-const smooth=(lo,hi,value)=>{
-  const t=Math.max(0,Math.min(1,(value-lo)/(hi-lo)));
-  return t*t*(3-2*t);
-};
-
-// Exact playable-floor counterpart of the pilot ground builder. Outside the
-// existing patch return null so a caller retains its existing floor profile.
-// The render road receiver sits .012m above collision floor, not a new step.
+// Playable floor inside the patch, sampled at a physical point (the floor grid
+// passes glyph centres). Outside the patch return null so a caller retains its
+// existing profile. The crossing's dropped kerbs come from the shared crossing
+// table, the same one the street fabric draws them from.
 export function streetPilotFloorAt(worldX,worldZ){
   if(STREET_PILOT_BASELINE)return null;
   const p=STREET_PILOT.patch;
   if(!Number.isFinite(worldX)||!Number.isFinite(worldZ)
     ||worldX<p.x0||worldX>p.x1||worldZ<p.z0||worldZ>p.z1)return null;
-  const x=Math.abs(worldX-STREET_PILOT.groundAnchor.x);
-  const z=Math.abs(worldZ-STREET_PILOT.groundAnchor.z);
-  if(z<=3)return 0;
-  if(z<=5)return .025;
-  return .12-.095*(1-smooth(1.4,2,x))*(1-smooth(5,6.5,z));
+  if(Math.abs(worldZ-STREET_PILOT.groundAnchor.z)<=3)return 0;
+  return streetCrossingFloorAt(worldX,worldZ)??.12;
 }

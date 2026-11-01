@@ -2,6 +2,7 @@ import { COASTAL_MEMORY_LAYOUT, COASTAL_NOTE_COPY } from '../data/coastal-memory
 import { beginCoastalMemory, normalizeCoastalMemory, stepCoastalMemory, coastalMemoryFrame,
   requestCoastalReturn, acknowledgeCoastalRecording, acknowledgeCoastalReturn } from './coastal-memory.js';
 import { createCoastalMemoryAudio } from '../audio/coastal-memory.js';
+import { createFootContactClock } from '../audio/foot-contact.js';
 
 const copy = value => structuredClone(value);
 const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
@@ -40,6 +41,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   isHidden = () => globalThis.document?.hidden === true, isHeld = () => false,
   paintOverlay = () => {}, onCheckpoint = () => {}, onRecording = () => false,
   onReturn = () => false, onTorch = () => false, onExit = () => {}, onError = () => {}, onTrace = () => {},
+  onFootContact = null, clearFootContacts = () => {},
 } = {}) {
   const options = { layout, runId, entryDoorId, returnPose };
   let state = normalizeCoastalMemory(checkpoint, options);
@@ -49,7 +51,11 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   let leaving = false, error = null, noteOpen = false, recorderHeld = false, drag = null;
   let entryElapsed = 0, clock = 0, saveClock = 0, traceClock = 0;
   let recordingInFlight = false, returnInFlight = false, returnFailed = false, recordingRetryAt = 0;
-  const keys = new Set(), snapshot = () => copy(state), clear = () => { keys.clear(); drag = null; };
+  const footOwner = 'coastal-memory';
+  const footClock = createFootContactClock();
+  let footIndex = 0;
+  const resetFeet = () => { footClock.reset(footOwner); clearFootContacts?.(footOwner); };
+  const keys = new Set(), snapshot = () => copy(state), clear = () => { keys.clear(); drag = null; resetFeet(); };
   const frozen = () => paused || hidden || heldExternal;
   const renderReady = () => ready && renderer?.ready?.() !== false;
   const live = () => renderReady() && !closed && !leaving && !frozen();
@@ -174,6 +180,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
       }
       audio?.setPaused?.(false); flush(); if (closed || leaving) return;
       const seconds = clamp(dt, 0, .25); clock += seconds; entryElapsed = Math.min(.65, entryElapsed + seconds);
+      const before = state.pose;
       let pose = state.pose;
       if (!noteOpen && state.status === 'active') {
         const turn = Number(keys.has('arrowright')) - Number(keys.has('arrowleft'));
@@ -183,6 +190,20 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
           side: Number(keys.has('d')) - Number(keys.has('a')) }, layout);
       }
       apply({ dt: seconds, pose, renderReady: true });
+      if (typeof onFootContact === 'function' && !closed && !leaving && state.status === 'active') {
+        const distance = Math.hypot(state.pose.x - before.x, state.pose.z - before.z);
+        // Only this swept walking path owns contacts; setPose and return rails
+        // never spend stride distance or manufacture a step after relocation.
+        const support = layout.supportAt ? layout.supportAt(state.pose.x, state.pose.z, state.pose.feet) : state.pose.feet;
+        const height = supportHeight(support), supported = Number.isFinite(height) && support?.walkable !== false && Math.abs(state.pose.feet - height) < .16;
+        const contacts = footClock.update({dt:Number(dt)||0,distance,scene:footOwner,supported,teleported:distance>=1.3});
+        for (const plant of contacts) {
+          footIndex++;
+          onFootContact({ ...plant, owner: footOwner, surface: typeof support?.material === 'string' ? support.material : 'coastal-earth', profile: 'physical',
+            position: { x: state.pose.x, z: state.pose.z }, distanceM: plant.distance, strideM: plant.stride, level: .14, condition: 'walk',
+            id: `${footOwner}:${state.runId}:${footIndex}`, time: state.elapsed });
+        }
+      }
       if (closed || leaving) return; sound();
       saveClock += seconds; traceClock += seconds;
       if (saveClock >= 1) { saveClock = 0; save('position'); }
@@ -204,7 +225,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
       if (!Number.isFinite(height) || support?.walkable === false || value.feet != null && Math.abs(value.feet - height) > .4) return false;
       target.feet = height;
       if (layout.canOccupy && !layout.canOccupy(target.x, target.z, target.feet)) return false;
-      target.pitch = clamp(target.pitch, -1.3, .8); flush();
+      target.pitch = clamp(target.pitch, -1.3, .8); flush(); resetFeet();
       apply({ dt: 0, pose: target }); sound(); save('technical-pose');
       trace({ type: 'technical-pose-assignment', pose: state.pose, elapsed: state.elapsed }); return true;
     },

@@ -30,8 +30,10 @@
 //
 
 import * as scenes from './scenes.js';
-import { TRANSPORT, drawRecorderFace, recorderPanelRect, recorderHitRegions } from '../render/recorder-view.js';
+import { TRANSPORT, drawRecorderFace, recorderPanelRect, recorderHitRegions, recorderGuideLayout } from '../render/recorder-view.js';
+import { recorderFaceLayout } from '../render/recorder-instrument.js';
 import { uiSize } from '../render/ui.js';
+import { promptLine, activeInputPromptDevice } from './bindings.js';
 import { fitText } from '../render/fit-text.js';
 import { createConversation } from './conversation.js';
 import { pressControl, releaseControl, cancelControlScope } from './control-feedback.js';
@@ -95,6 +97,7 @@ export function makeRecorderScene({
   let closed = false;
   let guide = null;
   let guideConvo = null;
+  let guideChoiceScrollOffset=0,guideChoiceScrollMax=0,guideChoiceScrollKey=null;
   let hitRegions = [];
   const heldControls = new Map();
   const sound=name=>uiCue(name,{scope:'recorder',profile:'recorder',quiet:state().recording?true:undefined});
@@ -165,10 +168,19 @@ export function makeRecorderScene({
     return !!removed;
   }
 
+  function guideView(){
+    if(!guideConvo)return null;
+    const view=guideConvo.view(),pending=view?.pending;
+    const signature=pending?JSON.stringify([view.nodeId,pending.kind,pending.index,(pending.options||[]).map(choice=>[choice.text,choice.label])]):null;
+    if(signature!==guideChoiceScrollKey){guideChoiceScrollKey=signature;guideChoiceScrollOffset=0;guideChoiceScrollMax=0;}
+    return {...view,choiceScrollOffset:guideChoiceScrollOffset};
+  }
+
   function beginGuide(config = {}) {
     if (closed || !config?.nodes) return false;
     guideConvo?.stop?.();
     guide = config;
+    guideChoiceScrollOffset=0;guideChoiceScrollMax=0;guideChoiceScrollKey=null;
     guideConvo = createConversation({
       nodes: config.nodes,
       startAt: config.startAt || 'start',
@@ -273,6 +285,12 @@ export function makeRecorderScene({
       const raw = event?.key || '';
       const k = String(raw).toLowerCase();
       if (guideConvo) {
+        guideView();
+        const pageNext=raw==='PageDown'||event.controllerAction==='tabNext',pagePrev=raw==='PageUp'||event.controllerAction==='tabPrev';
+        if ((pageNext||pagePrev) && guideChoiceScrollMax>0) {
+          guideChoiceScrollOffset=Math.max(0,Math.min(guideChoiceScrollMax,guideChoiceScrollOffset+(pageNext?1:-1)));
+          return true;
+        }
         // A guided pre-roll is committed once REC is pressed. Escape and R do
         // not abandon the monitor between "kill the light" and "roll"; the
         // conversation's own Continue/choice inputs own this transport state.
@@ -396,6 +414,9 @@ export function makeRecorderScene({
       });
 
       const showNotice = notice && t < noticeUntil;
+      const displayedGuide=guideView();
+      const guideChoices=displayedGuide?recorderGuideLayout(recorderFaceLayout(rect).transcriptRect,displayedGuide).choices:null;
+      guideChoiceScrollMax=guideChoices?.selectedMaxOffset||0;
       const face = {
         ...(live.face || {}),
         mode,
@@ -404,7 +425,7 @@ export function makeRecorderScene({
         playing: !!live.playing,
         rect,
         source: live.source || null,
-        guide: guideConvo?.view?.() || null,
+        guide: displayedGuide,
         progress: live.trace ? (live.face?.progress ?? 0) : (live.progress || 0),
         // Nothing is moving on a machine sitting in your hands doing nothing.
         spin: live.recording || live.playing ? (live.spin ?? 0) : 0,
@@ -422,14 +443,18 @@ export function makeRecorderScene({
         // the machine talks about itself.
         // Tracing, the note is the thread; REC's refusal is not what he raised the
         // machine to read.
-        note: showNotice ? notice : live.trace ? (live.note || '') : (active && !active.enabled ? active.reason : (live.note || '')),
+        note: guideConvo ? '' : showNotice ? notice : live.trace ? (live.note || '') : (active && !active.enabled ? active.reason : (live.note || '')),
         noteTheme: showNotice || (!live.trace && active && !active.enabled) ? 'amber' : (live.noteTheme || 'green'),
         // The footer says how to WORK the machine, not what is on it. It used to
         // reprint the key list with a caret, which put REC / PLAY / TAKES on the
         // panel twice — once as the key cluster against the right bezel and once
         // as a menu along the foot. The caret moved to the keys themselves.
         footer: guideConvo
-          ? (guideConvo.view()?.pending?.options?.length ? 'SELECT · ENTER TRANSMIT' : 'ENTER CONTINUE')
+          ? (displayedGuide?.pending?.options?.length
+            ? promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'}])
+              +(guideChoices?.selectedScroll?(activeInputPromptDevice()==='keyboard'?' · [PGUP/PGDN] READ':` · ${promptLine([{action:'tabPrev'},{action:'tabNext',label:'READ'}])}`):'')
+              +(activeInputPromptDevice()==='keyboard'?` · [1${displayedGuide.pending.options.length>1?`–${Math.min(9,displayedGuide.pending.options.length)}`:''}] REPLY`:'')
+            : promptLine([{action:'continue',label:'CONTINUE'}]))
           : browsingNow
           ? '↑↓ TAKE · ←→ TRANSPORT · ENTER PLAY/PRESS · TAB TAKES · R CLOSE'
           : 'UP DOWN SELECT · ENTER PRESS · R CLOSE',
@@ -451,13 +476,15 @@ export function makeRecorderScene({
     exit() { closed = true; clearControls(); guideConvo?.stop?.(); guideConvo = null; guide = null; },
 
     browseTakes,
+    beginGuide,
+    close,
 
     // The pattern the bag established: everything a headless test needs, and
     // nothing the game reads.
     debugState() {
       return {
         cursor, browsing, focus, row, notice: t < noticeUntil ? notice : '',
-        guide: guide ? { id: guide.id || 'listen', view: guideConvo?.view?.() || null } : null,
+        guide: guide ? { id: guide.id || 'listen', view: guideView(), scrollMax:guideChoiceScrollMax } : null,
         keys: keys().map((entry) => ({ id: entry.id, enabled: entry.enabled, reason: entry.reason || '' })),
         selectedKey: key()?.id || null,
         hitRegions: hitRegions.map((region) => ({ ...region })),

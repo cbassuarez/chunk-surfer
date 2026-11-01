@@ -25,8 +25,10 @@ const finite = (value) => Number.isFinite(Number(value));
 const clampElapsed = (value) => Math.max(0, finite(value) ? Number(value) : 0);
 const stringSet = (value) => new Set(Array.isArray(value) ? value.map(String) : []);
 
-export function endingCutsceneCompletionId(endingId) {
-  return `ending-cutscene:${String(endingId || '')}:complete`;
+export function endingCutsceneCompletionId(endingId, variant = null) {
+  // Rest and Contact defeat are distinct acts with separate receipts.
+  const suffix = endingId === 'contact-lost' && variant === 'source-rest' ? ':source-rest' : '';
+  return `ending-cutscene:${String(endingId || '')}${suffix}:complete`;
 }
 
 export function createEndingCutsceneState(spec, {
@@ -123,7 +125,7 @@ export function advanceEndingCutscene(state, spec, input = {}) {
   }
 
   const complete = cursor >= beats.length;
-  const completionId = complete ? endingCutsceneCompletionId(spec?.endingId) : null;
+  const completionId = complete ? endingCutsceneCompletionId(spec?.endingId, spec?.variant) : null;
   if (complete && !previous.complete) events.push(Object.freeze({ type: 'complete', id: completionId, skipped: skip }));
   const next = Object.freeze({
     ...previous,

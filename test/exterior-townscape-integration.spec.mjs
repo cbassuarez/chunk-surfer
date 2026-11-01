@@ -41,8 +41,10 @@ test('the public door stays closure-locked and W3 and D0 keep their established 
  const d0=FP.doorState().find(p=>p.id==='pool-lobby');assert.ok(d0);assert.equal(d0.legacyId,'168,55');assert.equal(d0.keyId,null);assert.equal(d0.archetype,'pool-glazed-pair');assert.equal(d0.leafCount,2);assert.deepEqual(d0.aperture,{width:2,height:3.4});
 });
 
-test('every reachable trade target survives production propsInit, describes its actual display and never renders a proxy',()=>{
- const legal=INSPECTABLES.filter(e=>exteriorStreetAt(e.physical.x+e.mountNormal.nx*.80,e.physical.y+e.mountNormal.ny*.80));
+test('every reachable trade target survives production propsInit, describes its actual display and never renders a proxy',async()=>{
+ // A shop on Ellery Square is reached from the square's own roads, not a district street.
+ const{ellerySquareGroundAt}=await load('src/data/ellery-square.js');
+ const legal=INSPECTABLES.filter(e=>{const x=e.physical.x+e.mountNormal.nx*.80,y=e.physical.y+e.mountNormal.ny*.80;return exteriorStreetAt(x,y)||ellerySquareGroundAt(x,y);});
  const authored=AUTHORED.filter(p=>p.interactionProxy);assert.equal(authored.length,legal.length);assert.ok(legal.length>=35&&legal.length<INSPECTABLES.length,'scenery beyond the walkable ring must not promise an interaction');
  for(const e of legal){const p=PROPS.propById(e.id);assert.ok(p,`${e.id} is silently dropped as a solid-cell placement`);assert.equal(p.blocks,false);assert.equal(p.label,e.label);assert.equal(p.inspect.first,e.text);assert.ok(p.inspect.first.includes(e.trade));assert.equal(rendered.some(r=>r.id===e.id),false);}
  const ids=new Set(legal.map(e=>e.id));assert.equal(rendered.some(r=>ids.has(r.id)),false);
@@ -52,7 +54,9 @@ test('every reachable trade target survives production propsInit, describes its 
 });
 
 test('allfour staticstreet meshes render at their baked physicalorigin and services follow the actual workshop poses',()=>{
- for(const mesh of FABRIC.meshNames.filter(m=>m!=='exterior_street_wall_services')){const instance=rendered.find(p=>p.mesh===mesh);assert.ok(instance,`${mesh} never survived production propsInit`);near(instance.x,64);near(instance.y,0);near(instance.z,46);}
+ for(const mesh of FABRIC.meshNames.filter(m=>m!=='exterior_street_wall_services')){const instance=rendered.find(p=>p.mesh===mesh);assert.ok(instance,`${mesh} never survived production propsInit`);near(instance.x,64);near(instance.y,0);near(instance.z,46);
+  for(const observerZone of[ZONE.street,ZONE.dock,ZONE.civicCourt])assert.equal(shouldHideCrossEnvelopeProp(instance,{observerZone}),false,`${mesh} must survive the final outdoor visibility filter`);
+ }
  const expected=exteriorStreetWallServiceInstances(rows),actual=rendered.filter(p=>p.mesh==='exterior_street_wall_services');assert.equal(actual.length,expected.length);assert.ok(actual.length===3);
  for(const e of expected){const a=actual.find(p=>p.id===e.id);assert.ok(a);for(const k of['x','y','z','yaw'])near(a[k],e[k]);}
 });
@@ -60,7 +64,7 @@ test('allfour staticstreet meshes render at their baked physicalorigin and servi
 test('actual lamp socket geometry and row transforms agree with runtime light candidates',()=>{
  const reports=buildExteriorNeighbourhood({materials:[],mesh:name=>({name}),addBox(){},addQuad(){},addBeam(){},addCylinder(){}});
  const lightCandidates=exteriorStreetLampLights({rows,origin:{x:64,z:46},maxDistance:1000,maxLights:100});
- for(const row of rows){const kind=row.mesh==='district_terrace_frontage_stationer'?'district_terrace_frontage':row.mesh,report=reports.find(r=>r.mesh===kind);if(!report)continue;
+ for(const row of rows){const kind=row.mesh==='district_terrace_frontage_stationer'?'district_terrace_frontage':row.mesh,report=reports.find(r=>r.mesh===kind);if(!report||kind.startsWith('ellery_square_'))continue; // the square is lit by its own lamp columns
   const lamps=report.parts.filter(p=>p.id.startsWith('street-lamp-head-'));assert.equal(lamps.length,4);
   for(const lamp of lamps){const[x,y,z]=lamp.center,c=Math.cos(row.yaw),s=Math.sin(row.yaw),world={x:row.x+c*x-s*z,y:row.y+y,z:row.z+s*x+c*z};const actual=lightCandidates.find(l=>l.id===`${row.id}:road-supply-lamp:${z}`);assert.ok(actual);for(const k of['x','y','z'])near(actual[k],world[k]);}
  }

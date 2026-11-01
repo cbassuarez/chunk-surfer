@@ -1,0 +1,15 @@
+{
+  "kind": "source-earthfall-ellery-aside",
+  "derivedFrom": {
+    "pack": "conservatory-props.glb",
+    "sha256": "458c1f7c33f5621b4376b2433fdc1c7b4cdb141bf05711d03587975517505e0a",
+    "credits": "conservatory-props.credits.json"
+  },
+  "derivation": "Detached native Scene Dock geometry, UVs and image bytes; articulated construction, compiled doorway apertures, blind masonry returns and authored singularity.",
+  "pack": {
+    "bytes": 2131184,
+    "sha256": "3b3c21102fb996cec3bf1f1cc9e794ecdabb2f4f31f8c560c71ffd09df31b5fb",
+    "triangles": 15147
+  },
+  "newExternalSources": []
+}

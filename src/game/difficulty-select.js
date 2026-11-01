@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
 import { uiCenter, uiLine, uiScrim, uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawLocationIndicator, withMachinePanel, drawVfdText, drawLampButton } from '../render/presentation.js';
+import { drawLocationIndicator, withMachinePanel, drawVfdText, drawLampButton, machinePanelBezelRail } from '../render/presentation.js';
 import { drawPrintedText } from '../render/keycap.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { UI_COLOR } from '../render/palette.js';
@@ -141,16 +141,22 @@ export function makeDifficultySelectScene({
     const { cols, rows } = uiSize(), compact = rows < 28 || cols < 100;
     const w = Math.max(30, Math.min(106, cols - 3)), h = Math.max(13, Math.min(36, rows - 2));
     const x = (cols - w) / 2, y = (rows - h) / 2;
+    const rail = machinePanelBezelRail(x,y,w,h,{controlHeight:1.25});
     const ink = '#c5d3bd', muted = '#97b29c', amber = '#ecd29a';
     const text = (tx,ty,value,width,{height=.55,color=ink}={}) => drawPrintedText(tx,ty,String(value),{w:width,h:height,ink:color});
     uiScrim(.4);
-    withMachinePanel(x,y,w,h,{wordmark:'AUDIOCORP',label:mode==='custom'?'CUSTOM SHIFT':'CHOOSE SHIFT',source:'VAN',footer:'',meter:false},body=>{
-      // The optical aperture ends above machinePanelBody's nominal footer.
-      // Keep both actuators and their save status inside that visible opening.
-      const buttonY = y + h - 2.35 - 2.4;
+    withMachinePanel(x,y,w,h,{wordmark:'AUDIOCORP',label:mode==='custom'?'CUSTOM SHIFT':'CHOOSE SHIFT',source:'VAN',footer:'',meter:false,apertureBounds:rail.apertureBounds,bodyWithinAperture:true},body=>{
+      const buttonY = rail.controlY;
+      // Live save status stays on the display; the fixed actuators occupy the
+      // metal below it. Budget this row before sizing the compact rules list.
+      const message=error||(pending?'Saving your shift. Please wait.':'Selecting a row previews it. Confirm saves a draft; finishing the case starts the shift.');
+      const statusScale=compact?.8:.9,statusStep=compact?.7:.75;
+      const statusLines=uiWrap(message,Math.max(1,Math.floor(body.w/statusScale))).slice(0,2);
+      const statusY=body.y+body.h-.4-statusLines.length*statusStep;
+      const contentBottom=statusY-.45;
       const listW = Math.max(12, Math.floor(body.w * .32)), detailX = body.x + listW + 2, detailW = body.x + body.w - detailX;
-      const rowY = body.y + (compact ? .7 : 1.3), rowStep = Math.min(compact ? 1.3 : 2.6, Math.max(.8,(buttonY-rowY-1)/presets.length));
-      uiLine(body.x+listW+.6,body.y+.1,body.x+listW+.6,buttonY-.45,UI_COLOR.frame,.65);
+      const rowY = body.y + (compact ? .7 : 1.3), rowStep = Math.min(compact ? 1.3 : 2.6, Math.max(0,(contentBottom-rowY)/presets.length));
+      uiLine(body.x+listW+.6,body.y+.1,body.x+listW+.6,contentBottom,UI_COLOR.frame,.65);
       presets.forEach((preset,index)=>{
         const on = index === sel, ry = rowY + index * rowStep;
         text(body.x,ry,`${on?'› ':''}${preset.name}${preset.locked?' ◇':''}`,listW,{height:compact?.58:.75,color:preset.locked?muted:on?amber:ink});
@@ -164,11 +170,12 @@ export function makeDifficultySelectScene({
       const explanation=mode==='custom'?RULE_HELP[RULE_ORDER[ruleSel]]:preset.locked?'Complete an ending to unlock this shift.':preset.intended?'Recommended for a first visit.':preset.description;
       const summaryLines=uiWrap(explanation,Math.floor(detailW*1.45)).slice(0,compact?2:3);
       summaryLines.forEach((value,index)=>text(detailX,body.y+(compact?1.05:1.6)+index*(compact?.65:.85),value,detailW,{height:compact?.45:.6,color:muted}));
-      const rulesY=body.y+(compact?2.65:4.5), ruleStep=Math.max(.65,Math.min(compact?.8:1.65,(buttonY-rulesY-.6)/RULE_ORDER.length));
+      const rulesY=body.y+(compact?2.65:4.5), ruleStep=Math.max(0,Math.min(compact?.8:1.65,(contentBottom-rulesY)/RULE_ORDER.length));
+      const ruleHeight=Math.min(compact?.42:.58,ruleStep*.8);
       RULE_ORDER.forEach((key,index)=>{
         const ry=rulesY+index*ruleStep,selected=mode==='custom'&&index===ruleSel,value=VALUE_LABELS[values[key]]||String(values[key]).toUpperCase();
-        text(detailX,ry,`${selected?'› ':''}${RULE_LABELS[key]}`,detailW*.61,{height:compact?.42:.58,color:selected?amber:muted});
-        text(detailX+detailW*.63,ry,selected?`‹ ${value} ›`:value,detailW*.37,{height:compact?.42:.58,color:ink});
+        text(detailX,ry,`${selected?'› ':''}${RULE_LABELS[key]}`,detailW*.61,{height:ruleHeight,color:selected?amber:muted});
+        text(detailX+detailW*.63,ry,selected?`‹ ${value} ›`:value,detailW*.37,{height:ruleHeight,color:ink});
         if(mode==='custom')hits.add({id:`difficulty-rule:${key}`,kind:'difficulty-rule',x:detailX,y:ry-.1,w:detailW,h:ruleStep,disabled:pending||!!error,selected,label:RULE_LABELS[key],
           onHover:()=>selectRule(index),onClick:(_,event)=>cycleCustomRule(index,Number(event.cellX)<detailX+detailW*.63?-1:1)});
       });
@@ -179,8 +186,8 @@ export function makeDifficultySelectScene({
       drawLampButton(confirm.x,confirm.y,confirm.w,confirm.h,{legend:label,enabled:!pending&&!preset.locked,color:error?'red':'amber',lit:!pending&&!preset.locked});
       hits.add({id:'difficulty:back',kind:'back',...back,label:'BACK',disabled:pending,onClick:cancelPreparation});
       hits.add({id:'difficulty:confirm',kind:'confirm',...confirm,label,disabled:pending||!!preset.locked,onClick:confirmPreset});
-      const message=error||(pending?'Saving your shift. Please wait.':'Selecting a row previews it. Confirm saves a draft; finishing the case starts the shift.');
-      text(body.x,buttonY+1.5,message,body.w,{height:compact?.38:.48,color:error?'#e2a080':muted});
+      statusLines.forEach((line,index)=>drawVfdText(body.x,statusY+index*statusStep,line,
+        {scale:statusScale,max:body.w,color:error?'#e2a080':muted}));
     });
   }
 

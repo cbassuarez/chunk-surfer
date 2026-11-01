@@ -59,7 +59,7 @@ function normalizeBusTransit(value,oldStage=0){
     doorAt:moment(v?.doorAt),enteredAt:moment(v?.enteredAt),closeAt:moment(v?.closeAt),exitedAt:moment(v?.exitedAt),
     noticeAt:moment(v?.noticeAt??(completed?v?.closeAt??0:null)),passAt:moment(v?.passAt??(completed?v?.exitedAt??0:null)),
     gazeYaw:clamp(v?.gazeYaw??(completed?-2.1:0),-2.75,1.1),gazeSampleAt:moment(v?.gazeSampleAt),
-    trapAt:moment(v?.trapAt),frontTryAt:moment(v?.frontTryAt),tryAt:moment(v?.tryAt),openAt:moment(v?.openAt??(completed?0:null)),
+    trapAt:moment(v?.trapAt),frontTryAt:moment(v?.frontTryAt),tryAt:moment(v?.tryAt),recoilAt:moment(v?.recoilAt),openAt:moment(v?.openAt??(completed?0:null)),
     crossedAt:moment(v?.crossedAt??(completed?v?.exitedAt??0:null)),stripCueCount:Math.floor(clamp(v?.stripCueCount??(completed?4:0),0,4)),
     stripPositions:Array.isArray(v?.stripPositions)?v.stripPositions.slice(0,4).map(point):[],
     entryLattice:v?.entryLattice&&Number.isFinite(v.entryLattice.x)&&Number.isFinite(v.entryLattice.y)?{x:v.entryLattice.x,y:v.entryLattice.y}:null,
@@ -305,6 +305,12 @@ export function createOutskirtsExperience(initialState) {
     if(changed){t[key]=state.clock;t.attemptPose=playerPose;events.push(event);}
     return{handled:true,changed,status:'stuck',event,eventsQueued:true};
   }
+  // Once only, on the door's third refusal. The lamp dying is heard from it.
+  function busRecoil({position={}}={}){
+    const t=state.busTransit;if(t.recoilAt!=null)return false;
+    t.recoilAt=state.clock;events.push({id:'outskirts-bus:rear-tube',cue:'bus-strip',variant:3,...position,strength:.62});
+    return true;
+  }
   function busWomanOpen({position={}}={}){
     const t=state.busTransit;
     if(t.tryAt==null||t.exited||t.interior?.active)return{handled:false,reason:'rear-door-not-tried'};
@@ -316,6 +322,15 @@ export function createOutskirtsExperience(initialState) {
     return{handled:true,changed,status:changed?'opening':'already-opening',event,eventsQueued:true};
   }
   function busSetInterior(interior){state.busTransit.interior=interior?normalizeBusTransit({...state.busTransit,interior},state.busStage).interior:null;return state.busTransit.interior;}
+  function busInteriorStep(position={}){
+    const interior=state.busTransit.interior;
+    if(!interior?.active)return false;
+    interior.stepIndex=(interior.stepIndex||0)+1;
+    // Footfalls are transient accepted movement, not durable one-shot story
+    // receipts. A long retreat must not evict the hatch/ticket action ledger.
+    events.push({id:`outskirts-bus:organ-step-${interior.stepIndex}`,cue:'bus-body-step',...position,strength:.22});
+    return true;
+  }
   function busCompleteCrossing(position={}){
     const t=state.busTransit;if(t.exited)return false;
     t.crossedAt=state.clock;t.exitedAt=state.clock;t.exited=true;state.busStage=4;
@@ -359,7 +374,7 @@ export function createOutskirtsExperience(initialState) {
     return { ...state.woman };
   }
   return {
-    remember, echo, bus, busTransit,busDoorTry,busWomanOpen,busSetInterior,busCompleteCrossing, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
+    remember, echo, bus, busTransit,busDoorTry,busRecoil,busWomanOpen,busSetInterior,busInteriorStep,busCompleteCrossing, action, tickCharacters, characterFrame, applyCharacterFrame, womanState, womanWrongOrigin,
     setRoadLoop: ({ turns = state.loopTurns, holding = state.loopHolding } = {}) => {
       state.loopTurns = Math.floor(clamp(turns, 0, 1_000_000)); state.loopHolding = holding === true;
       return { turns: state.loopTurns, holding: state.loopHolding };

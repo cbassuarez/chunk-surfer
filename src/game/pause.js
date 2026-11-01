@@ -7,6 +7,7 @@ import { promptLine } from './bindings.js';
 import * as AUDIO from '../audio/story-audio.js';
 import { fitText } from '../render/fit-text.js';
 import { isMapShortcut } from './map-shortcut.js';
+import {navigatorClockState} from '../render/navigator-clock.js';
 
 const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
 
@@ -127,7 +128,9 @@ export function makePauseScene({
       uiText(statusX, iy + 7, `TAKES  ${live.takes ?? 0} / 5`, 'ui-secondary');
       uiText(statusX, iy + 9, `LIGHT  ${live.light ? 'ON' : 'OFF'}`, live.light ? 'ui-amber' : 'ui-secondary');
       uiText(statusX, iy + 11, `HUSH   ${live.hush || 'QUIET'}`, live.hush === 'CONTACT' ? 'ui-danger' : 'ui-secondary');
-      uiText(statusX, iy + 13, `TIME   ${live.time || '00:00:00'}`, 'ui-secondary');
+      const nightClock=navigatorClockState(live.time);
+      uiText(statusX, iy + 13, `TIME   ${nightClock?.text||'--:--'}`, 'ui-secondary');
+      if(nightClock?.approximate&&body.h>=18)uiText(statusX,iy+14,nightClock.qualifier,'ui-label',.7);
       if (live.lead && body.h >= 18) uiText(statusX, iy + 15, `LEAD   ${clip(live.lead, 20)}`, 'ui-amber');
     }
 

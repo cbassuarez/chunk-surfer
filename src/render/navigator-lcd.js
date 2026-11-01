@@ -1,6 +1,7 @@
 // Full-DPR reflective LCD ink and optics, physically separate from VFD glass.
 import {drawElectronicText} from './electronic-text.js';
-import {MONITOR_THRESHOLDS,MONITOR_DANGER_THRESHOLDS} from '../audio/monitor.js';
+import {dualTraceCells,dualTracePeakIndex,dualTraceUnit,drawTraceCell,
+  drawSevenSegmentNumber,measureSevenSegment,traceDbText} from './dual-trace-display.js';
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 let fontOwner=null;
 const inkMetrics=new Map();
@@ -35,35 +36,35 @@ export function navigatorTelemetryLayout(lcd){
   const left=lcd.x+.60,right=lcd.x+lcd.w-.60,inner=Math.max(1,right-left),compact=lcd.h<3.7;
   const takeW=clamp(inner*.34,6.5,9.4),dividerX=left+takeW+.47;
   const monitorX=dividerX+.65,monitorW=Math.max(1,right-monitorX);
-  const headerY=lcd.y+.28,meterY=lcd.y+(compact?2.05:2.68);
+  const headerY=lcd.y+(compact?.15:.28),headerH=compact?.50:.60,meterY=lcd.y+(compact?1.98:2.70);
   return {lcd:{...lcd},compact,
     takes:{x:left,y:headerY,w:takeW,h:lcd.h-.56},
     divider:{x:dividerX,y:lcd.y+.43,w:.035,h:lcd.h-.86},
-    takeLabel:{x:left,y:headerY,w:takeW,h:.6},
+    takeLabel:{x:left,y:headerY,w:takeW,h:headerH},
     takeCount:{x:left,y:lcd.y+.89,w:takeW*.59,h:compact?1:1.25},
     capacity:{x:left+takeW*.61,y:lcd.y+(compact?1.17:1.36),w:takeW*.39,h:.64},
     slots:{x:left,y:lcd.y+(compact?2.12:2.49),w:takeW,h:compact?.24:.32},
     injuries:{x:left,y:lcd.y+(compact?2.56:3.17),w:takeW,h:.48},
-    monitorLabel:{x:monitorX,y:headerY,w:Math.max(4.4,monitorW-5.4),h:.6},
-    db:{x:monitorX,y:lcd.y+.96,w:Math.max(4,monitorW-2.7),h:compact?.9:1.25},
-    dbUnit:{x:right-2.2,y:lcd.y+(compact?1.27:1.54),w:2.2,h:.5},
-    meter:{x:monitorX,y:meterY,w:monitorW,h:compact?.32:.40},
-    scale:{x:monitorX,y:meterY+(compact?.49:.63),w:monitorW,h:.48},
-    status:{x:right-5.4,y:headerY,w:5.4,h:.6}};
+    monitorLabel:{x:monitorX,y:headerY,w:Math.max(4.4,monitorW-5.4),h:headerH},
+    db:{x:monitorX,y:lcd.y+(compact?.82:1.08),w:compact?5.1:6.4,h:compact?.90:1.20},
+    dbUnit:{x:monitorX+(compact?5.1:6.4),y:lcd.y+(compact?1.25:1.63),w:3.2,h:.5},
+    peakReadout:{x:right-7.4,y:lcd.y+(compact?1.20:1.59),w:7.4,h:compact?.52:.65},
+    peakRail:{x:monitorX,y:meterY-(compact?.18:.25),w:monitorW,h:.10},
+    meter:{x:monitorX,y:meterY,w:monitorW,h:compact?.32:.45},
+    scale:{x:monitorX,y:lcd.y+(compact?2.48:3.45),w:monitorW,h:.60},
+    status:{x:right-5.4,y:headerY,w:5.4,h:headerH}};
 }
 export function navigatorLcdMeterGeometry(meter,{cellW,dpr=1}){
-  const u=Math.max(.5,dpr),count=MONITOR_THRESHOLDS.length,gap=Math.max(u,.11*cellW*dpr);
-  const width=meter.w*cellW*dpr,segmentWidth=(width-gap*(count-1))/count;
-  return MONITOR_THRESHOLDS.map((thresholdDb,index)=>({index,thresholdDb,
-    x:meter.x*cellW*dpr+index*(segmentWidth+gap),w:segmentWidth,
-    center:meter.x*cellW*dpr+index*(segmentWidth+gap)+segmentWidth/2}));
+  return dualTraceCells({x:meter.x*cellW*dpr,width:meter.w*cellW*dpr,count:24,
+    gap:1.5*(cellW/8.45)*dpr});
 }
 export function navigatorLcdScaleMarks(layout,metrics){
-  const cells=navigatorLcdMeterGeometry(layout.meter,metrics),cellPixels=metrics.cellW*(metrics.dpr||1);
-  return [-48,MONITOR_DANGER_THRESHOLDS.hotDb,0].map((thresholdDb,position)=>{
-    const cell=cells.find(item=>item.thresholdDb===thresholdDb),align=position===0?'left':position===2?'right':'center';
-    const width=1.7,x=align==='left'?layout.scale.x:align==='right'?layout.scale.x+layout.scale.w-width:cell.center/cellPixels-width/2;
-    return {label:String(thresholdDb),thresholdDb,index:cell.index,centerPx:cell.center,align,
+  const cellPixels=metrics.cellW*(metrics.dpr||1);
+  return [-48,-24,0].map((thresholdDb,position)=>{
+    const center=layout.meter.x+dualTraceUnit(thresholdDb)*layout.meter.w;
+    const align=position===0?'left':position===2?'right':'center';
+    const width=2.3,x=align==='left'?layout.scale.x:align==='right'?layout.scale.x+layout.scale.w-width:center-width/2;
+    return {label:String(thresholdDb),thresholdDb,index:dualTracePeakIndex(thresholdDb,24),centerPx:center*cellPixels,align,
       box:{x,y:layout.scale.y,w:width,h:layout.scale.h}};
   });
 }
@@ -110,6 +111,9 @@ export function paintNavigatorTelemetry(ctx,lcd,state,{cellW,cellH,dpr=1,motion=
     // Matrix ROM remains a loading fallback; premium text is vector LCD ink
     // rasterized once at the actual display pixel size, with no VFD bloom.
     if(!nativeReady||typeof ctx.fillText!=='function'){
+      // Electronic text applies its own alpha to the inherited Canvas alpha.
+      // Apply the dormant ink opacity once on both lettering paths.
+      ctx.globalAlpha=opacity;
       drawElectronicText(ctx,value,anchor,py(b.y+b.h*.5),{mode:'lcd',color,dim:color,
         alpha,cellWidth:fontSize*.53,fontSize,maxWidth:available,align,baseline:'middle',dpr});return;
     }
@@ -125,32 +129,51 @@ export function paintNavigatorTelemetry(ctx,lcd,state,{cellW,cellH,dpr=1,motion=
     ctx.save();ctx.beginPath();ctx.rect(px(b.x)-u,top,available+2*u,bottom-top);ctx.clip();
     ctx.fillText(value,Math.round(anchor),baseline,available);ctx.restore();
   };
-  if(state.takesVisible!==false){
-    text('TAKES',layout.takeLabel,{size:.57,weight:600});
-    text(String(state.takes).padStart(2,'0'),layout.takeCount,{size:layout.compact?1.37:1.65,weight:600,reference:'0123456789'});
-    text(`/ ${String(state.total).padStart(2,'0')}`,layout.capacity,{size:.70,color:quietInk});
-  }
+  // An unpowered LCD retains its label and every digit electrode. The faint
+  // all-eight footprint describes the hardware, never an early live count.
+  const takesEnabled=(state.takesEnabled??state.takesVisible)!==false;
+  const takesAlpha=takesEnabled?1:.13;
+  text('TAKES',layout.takeLabel,{size:.57,weight:600,alpha:takesAlpha});
+  text(takesEnabled?String(state.takes).padStart(2,'0'):'88',layout.takeCount,
+    {size:layout.compact?1.37:1.65,weight:600,reference:'0123456789',alpha:takesAlpha});
+  text(takesEnabled?`/ ${String(state.total).padStart(2,'0')}`:'/ 88',layout.capacity,
+    {size:.70,color:quietInk,alpha:takesAlpha});
   if(state.injuries)text(`HURT ${state.injuries}`,layout.injuries,{size:.52,weight:600,color:'#53382b'});
   text('MONITOR',layout.monitorLabel,{size:.55,weight:600});
-  text(state.monitor.available?String(Math.round(state.monitor.db)):'--',layout.db,{size:layout.compact?1.12:1.45,weight:600,reference:'-0123456789'});
-  if(state.monitor.available)text('dB',layout.dbUnit,{size:.54,color:quietInk,align:'right'});
+  ctx.globalAlpha=opacity;
+  drawSevenSegmentNumber(ctx,traceDbText(state.monitor.numericDb??state.monitor.db,
+    {decimals:0,available:state.monitor.available}),px(layout.db.x),py(layout.db.y),py(layout.db.h),
+    {color:ink,dormant:ink,lcd:true});
+  if(state.monitor.available){
+    text(state.monitor.unit==='dBFS'&&state.monitor.peakKind==='sample'?'dBFS':'dB',layout.dbUnit,
+      {size:.54,color:quietInk});
+    const peakText=traceDbText(state.monitor.numericPeakDb??state.monitor.peakDb,{decimals:0});
+    const peakHeight=py(layout.peakReadout.h),peakWidth=measureSevenSegment(peakText,peakHeight);
+    const end=px(layout.peakReadout.x+layout.peakReadout.w),center=py(layout.peakReadout.y+layout.peakReadout.h/2);
+    const label=state.monitor.peakKind==='sample'?'PK':'MAX',labelRight=(end-peakWidth-4*dpr)/(cellW*dpr);
+    text(label,{x:layout.peakReadout.x,y:layout.peakReadout.y,w:Math.max(0,labelRight-layout.peakReadout.x),h:layout.peakReadout.h},
+      {size:.51,color:quietInk,align:'right'});
+    ctx.globalAlpha=opacity;
+    drawSevenSegmentNumber(ctx,peakText,end,center-peakHeight/2,peakHeight,{color:ink,dormant:ink,lcd:true,align:'right'});
+  }
   if(state.monitor.warning)box(layout.status,state.monitor.clipped?'#744130':'#6c6331',.10);
-  text(state.monitor.status,layout.status,{size:.49,weight:state.monitor.warning?600:400,
+  text(state.monitor.warning||!state.monitor.available?state.monitor.status:'RMS',layout.status,{size:.49,weight:state.monitor.warning?600:400,
     align:'right',color:state.monitor.warning?'#533526':quietInk});
   const cells=navigatorLcdMeterGeometry(layout.meter,{cellW,dpr});
+  const peakIndex=state.monitor.available?dualTracePeakIndex(state.monitor.peakDb,24):-1;
   for(const{index,x:left,w:segmentWidth}of cells){
     const top=py(layout.meter.y),active=index<state.monitor.segments;
-    const color=active&&MONITOR_THRESHOLDS[index]>=MONITOR_DANGER_THRESHOLDS.hotDb?'#663b2b'
-      :active&&MONITOR_THRESHOLDS[index]>=MONITOR_DANGER_THRESHOLDS.midHotDb?'#51502b':ink;
     const trail=active?0:Math.max(0,motion?.afterimage?.[index]||0)*.10;
-    rect(left,top,segmentWidth,py(layout.meter.h),color,active?.96:.12+trail);
-    if(index===state.monitor.peakSegments-1&&state.monitor.peakSegments>state.monitor.segments)
-      rect(left,top-1.5*u,segmentWidth,u,ink,.88);
+    ctx.globalAlpha=opacity;
+    drawTraceCell(ctx,left,top,segmentWidth,py(layout.meter.h),ink,
+      {alpha:active?.96:.13+trail,chamfer:.8*u});
+    drawTraceCell(ctx,left,py(layout.peakRail.y),segmentWidth,py(layout.peakRail.h),ink,
+      {alpha:index===peakIndex?.96:.13,chamfer:.8*u});
   }
   if(state.monitor.available){
     for(const mark of navigatorLcdScaleMarks(layout,{cellW,dpr})){
       rect(mark.centerPx-.25*u,py(layout.scale.y)-1.8*u,.5*u,1.4*u,quietInk,.6);
-      text(mark.label,mark.box,{size:.43,color:quietInk,align:mark.align});
+      text(mark.label,mark.box,{size:.55,color:quietInk,align:mark.align});
     }
   }else text('INPUT UNAVAILABLE',layout.scale,{size:.44,color:quietInk});
   ctx.restore();return layout;

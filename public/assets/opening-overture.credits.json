@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "title": "Opening overture pigeons",
+  "creator": "Chunk Surfer procedural authoring",
+  "license": "CC0-1.0",
+  "source": "tools/chunk_surfer/build-opening-overture.mjs",
+  "description": "Original hero rock pigeon geometry: smoothly rounded breast, small slate head, orange-red iris and pupil within orbital rim, split dark bill with ivory cere and nostrils, green-purple neck feathers, white rump, twelve tail feathers with dark terminal band, two wing bars, layered coverts and ten solid primary feathers per wing, scaly red legs and individual clawed toes. Chipped ivory L-corners and short dashed sides mark a2.8m by6.2m service parking bay. No external images or meshes.",
+  "externalSources": [],
+  "referenceSources": [
+    {
+      "title": "Rock Pigeon Identification",
+      "publisher": "Cornell Lab of Ornithology",
+      "url": "https://www.allaboutbirds.org/guide/Rock_Pigeon/id",
+      "use": "Plump body/small head, thin bill, blue-bar wing and tail pattern;30–36cm length and50–67cm wingspan.",
+      "assetReuse": false
+    },
+    {
+      "title": "Rock pigeon",
+      "publisher": "New Zealand Birds Online / Te Papa",
+      "url": "https://www.nzbirdsonline.org.nz/species/rock-pigeon",
+      "use": "Iris, ivory cere, grey-black bill, red-pink toes, white rump and green-purple neck plumage.",
+      "assetReuse": false
+    },
+    {
+      "title": "How Bird Feathers Work",
+      "publisher": "Natural History Museum of Los Angeles County",
+      "url": "https://nhm.org/stories/how-bird-feathers-work",
+      "use": "Overlapping contour feathers and coverts above flight feathers; solid feather vane and central shaft.",
+      "assetReuse": false
+    },
+    {
+      "title": "Wing and Body Kinematics of Takeoff and Landing Flight in the Pigeon",
+      "publisher": "Journal of Experimental Biology / Harvard University repository",
+      "url": "https://dash.harvard.edu/server/api/core/bitstreams/7312037c-9419-6bd4-e053-0100007fdf3b/content",
+      "use": "Leg extension, initial upstroke/downstroke sequence and coordinated body/wing motion; authored animation is not a force simulation.",
+      "assetReuse": false
+    }
+  ],
+  "pack": {
+    "sha256": "d83493fc3ae15c5e0095131731375a2e36101f663ffe8856bc6a7615724d9e38",
+    "bytes": 993104,
+    "triangles": 8844
+  }
+}

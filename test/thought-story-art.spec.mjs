@@ -18,16 +18,16 @@ function render(options={}){
     withMachinePanel:(x,y,w,h,_options,draw)=>draw({x,y,w,h}),
     resolveStoryArt:value=>{counts.resolved++;return value;},drawStoryArtCard:()=>counts.art++,
     planStoryArtInPanel,planStoryArtSideBySide,storyArtSideBySidePanelRows,storyArtSideBySideTextLayout,
-    drawTranscriptHeader:({y})=>({y,rows:1}),layoutTranscriptChoices:()=>({height:2}),fixedTranscriptLanes:()=>({right:{}}),
+    drawTranscriptHeader:({y})=>({y,rows:1}),layoutTranscriptChoices:()=>({height:2}),fitTranscriptChoices:x=>x,fixedTranscriptLanes:()=>({right:{}}),
     layoutTranscript:v=>v,drawTranscript:v=>{
       if(options.showStoryArt===false)assert.deepEqual(v,planThoughtTextPanel({view,width:86,rows:60,slate:options.slate||''}).transcript);
-      else assert.equal(v,view);
+      else assert.equal(v.art,view.art);
       counts.transcript++;
     },drawTranscriptChoices:()=>counts.choices++,
-    transcriptSource:who=>who,promptLine:()=>'',
+    transcriptSource:who=>who,promptLine:()=>'',activeInputPromptDevice:()=> 'keyboard',
   };
   const make=new Function(...Object.keys(dependencies),factoryBody)(...Object.values(dependencies));
-  const scene=make(options);scene.render();assert.equal(scene.view(),view);assert.equal(scene.view().art,art);
+  const scene=make(options);scene.render();assert.deepEqual({...scene.view(),choiceScrollOffset:undefined},{...view,choiceScrollOffset:undefined});assert.equal(scene.view().art,art);
   return counts;
 }
 

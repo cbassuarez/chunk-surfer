@@ -318,7 +318,7 @@ export const FIRST_TAKE = {
   start: {
     speaker: 'STUDIO B3',
     lines: [
-      { who: 'direction', text: 'Foam on three walls, carpet, a dead ceiling. The quietest room in the building.' },
+      { who: 'direction', text: 'Foam, carpet, a dead ceiling; glass divides the live floor from a dark control desk. The quietest room in the building.' },
       { who: 'direction', text: 'You put the rig down and start unwinding the cable.' },
       { who: 'you', text: '...' },
       { who: 'you', text: 'I have set it on the floor.' },
@@ -390,7 +390,7 @@ export const FIRST_TAKE = {
     speaker: 'STUDIO B3',
     lines: [
       { who: 'direction', text: 'The torch goes round it. Cable snakes, coiled the way you coil them, which is the way everybody coils them.' },
-      { who: 'direction', text: 'A patchbay with every cable pulled. A chair. Foam gone brown at the edges where thirty years of hands went past it.' },
+      { who: 'direction', text: 'A patchbay with every cable pulled and a chair at the console. Foam gone brown at the edges where thirty years of hands went past it.' },
       { who: 'you', text: 'Somebody worked in here for a long time and then one day they did not come back.' },
       { who: 'you', text: 'That is not ominous. That is every building I have ever been paid to record.' },
     ],
@@ -479,7 +479,7 @@ export const FIRST_TAKE = {
 // something about it listens first.
 const LISTEN_ROOMS = {
   main_b3: {
-    amb: 'foam on three walls, carpet, dead air, and the size of a cupboard',
+    amb: 'foam, carpet, dead air, and glass between the live room and an empty control desk',
     examine: [
       { q: 'the foam', lines: [
         { who: 'you', text: 'Wedge foam, going to powder at the edges. Somebody treated this room properly, once, and then stopped paying the heating.' },

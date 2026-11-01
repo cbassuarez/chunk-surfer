@@ -3,7 +3,8 @@ import { lastReturnRecord } from './return-history.js';
 import { secondShiftForEnding } from '../game/second-shift.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { WITNESS_EDITION_ID } from './unlocks.js';
-import { normalizeEndingVariant, centuryStayRecord } from '../data/ending-variants.js';
+import { ENDING_VARIANT, normalizeEndingVariant, centuryStayRecord } from '../data/ending-variants.js';
+import { archiveNightRecordings } from '../game/night-failure-archive.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -28,9 +29,14 @@ export const RETURN_DEFS = Object.freeze([
 ]);
 
 export function returnDefinition(id, context = {}) {
+  if(id==='night-deadline')return {id,title:'DEMOLITION',classification:'FAILED NIGHT',hiddenUntilSeen:true};
   const base = RETURN_DEFS.find((def) => def.id === id) || null;
-  if (base && normalizeEndingVariant(id, context?.endingVariant || context?.variant)) {
+  const variant = normalizeEndingVariant(id, context?.endingVariant || context?.variant);
+  if (base && variant === ENDING_VARIANT.CENTURY_STAY) {
     return { ...base, classification: 'CONTAINMENT / CENTURY STAY', variantTitle: 'A HUNDRED MORE YEARS' };
+  }
+  if (base && variant === ENDING_VARIANT.SOURCE_REST) {
+    return { ...base, classification: 'SOURCE / REST', variantTitle: 'THE PLACE TO REST' };
   }
   return base;
 }
@@ -45,18 +51,20 @@ export function returnIndexEntries(meta) {
     .sort((a, b) => (Number(b.completedAt) || 0) - (Number(a.completedAt) || 0));
   return RETURN_DEFS.map((def) => {
     const filed = records.find((entry) => entry.endingId === def.id);
+    const variant = normalizeEndingVariant(def.id, filed?.endingVariant);
+    const variantDefinition = variant ? returnDefinition(def.id,{variant}) : null;
     return {
       ...def,
       seen: seen.has(def.id),
       adjacent: !seen.has(def.id) && shift?.adjacentEndingId === def.id,
       adjacentLead: shift?.adjacentEndingId === def.id ? shift.lead : '',
       displayTitle: seen.has(def.id) ? def.title : '████████████',
-      displayClassification: normalizeEndingVariant(def.id, filed?.endingVariant)
-        ? 'CONTAINMENT / CENTURY STAY'
+      displayClassification: variantDefinition
+        ? variantDefinition.classification
         : seen.has(def.id) || revealClassifications || shift?.adjacentEndingId === def.id ? def.classification : '',
       status: seen.has(def.id) ? 'FILED' : shift?.adjacentEndingId === def.id ? 'LEAD' : 'WITHHELD',
-      endingVariant: normalizeEndingVariant(def.id, filed?.endingVariant),
-      variantTitle: normalizeEndingVariant(def.id, filed?.endingVariant) ? 'A HUNDRED MORE YEARS' : '',
+      endingVariant: variant,
+      variantTitle: variantDefinition?.variantTitle || '',
       interference: normalizeInterferenceRecord(filed?.interference),
     };
   });
@@ -64,7 +72,8 @@ export function returnIndexEntries(meta) {
 
 export function buildRunSummary({ endingId, save, meta, authoritative = {}, now = Date.now() } = {}) {
   const run = save?.run;
-  if (!run || !ENDING_IDS.includes(endingId)) throw new Error(`cannot summarize ending: ${endingId}`);
+  const failedNight=endingId==='night-deadline'&&authoritative.classification==='failed-night';
+  if (!run || !ENDING_IDS.includes(endingId)&&!failedNight) throw new Error(`cannot summarize ending: ${endingId}`);
   const ledger = run.ledger || {};
   const rec = authoritative.rec || {};
   const completedRooms = Array.isArray(rec.takes) ? [...new Set(rec.takes)] : [...new Set(ledger.takes?.rooms || [])];
@@ -85,13 +94,15 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     id: `return:${run.id}`,
     runId: run.id,
     endingId,
-    endingArrival: ['agreed','defeated','timed-out','escaped','carried'].includes(authoritative.endingArrival)
+    ...(failedNight?{classification:'failed-night',failure:{system:'first-strike',outcome:save.nightDeadline?.consequenceReceipt?.outcome,
+      eventId:save.nightDeadline?.eventId,deadlineSeconds:30120,addedInjury:0},recordings:archiveNightRecordings(save)}:{}),
+    endingArrival: ['agreed','defeated','timed-out','escaped','carried','rested'].includes(authoritative.endingArrival)
       ? authoritative.endingArrival : null,
     endingVariant: normalizeEndingVariant(endingId, authoritative.endingVariant, authoritative.endingArrival),
     seal: centuryStayRecord(endingId, authoritative.endingVariant, authoritative.endingArrival),
     startedAt: run.startedAt,
     completedAt: now,
-    durationSeconds: Math.max(0, Number(save?.playSeconds) || Math.floor((now - run.startedAt) / 1000)),
+    durationSeconds: failedNight?Math.max(0,Number(save?.playDuration?.seconds)||0):Math.max(0, Number(save?.playSeconds) || Math.floor((now - run.startedAt) / 1000)),
     rules: clone(run.rules),
     integrity: clone(run.integrity),
     takes: {
@@ -133,7 +144,7 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     power: clone(ledger.power || { live: [], everRestored: [] }),
     unlockedAchievements: [],
     newlyUnlockedFeatures: [],
-    endingsAtCompletion: new Set([...(meta?.endingsSeen || []), endingId]).size,
+    endingsAtCompletion: new Set([...(meta?.endingsSeen || []), ...(failedNight?[]:[endingId])]).size,
   };
 }
 

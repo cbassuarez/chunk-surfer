@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "copy": "FIELD RECORDING SERVICES",
+  "asset": "assets/van-brand.glb",
+  "sha256": "e711e9fa2396e6e4c7a7dff84cf76c277d197dedb80a6890911f4a0511b6a561",
+  "bytes": 2378792,
+  "sourceViewBox": [
+    0,
+    0,
+    1800,
+    540
+  ],
+  "inputs": {
+    "src/data/van-brand-art.js": "6baecb7b79ac9543f29c16388d349e9c8e5f5e934f7d2f76d8bb1c8522ae9d98",
+    "src/data/van-brand.js": "0be18aabce3a9113903f360d5fd6a5bd5771b640ec86d439595f85e63b956c46",
+    "tools/chunk_surfer/build-van-brand.mjs": "72c0f56e7b286531f0269d9644a8dda8c59a0422fe4e8ce8f648dc995911f92b"
+  },
+  "meshes": [
+    {
+      "fit": "yard",
+      "mesh": "van_brand_yard",
+      "vertices": 37248,
+      "triangles": 24416,
+      "bounds": {
+        "min": [
+          -1.04772,
+          1.3450227283447742,
+          -0.8865821763399289
+        ],
+        "max": [
+          1.04772,
+          1.9887199556742179,
+          1.3865821763399289
+        ]
+      },
+      "sourcePolygons": 56,
+      "pigments": [
+        "oxide",
+        "ink"
+      ]
+    },
+    {
+      "fit": "drive",
+      "mesh": "van_brand_drive",
+      "vertices": 37248,
+      "triangles": 24416,
+      "bounds": {
+        "min": [
+          -0.9677199999999999,
+          1.3776760162494113,
+          0.6027916171157962
+        ],
+        "max": [
+          0.9677199999999999,
+          1.8433293296366684,
+          2.247208382884204
+        ]
+      },
+      "sourcePolygons": 56,
+      "pigments": [
+        "oxide",
+        "ink"
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "id": "oxide",
+      "linearRGB": [
+        0.41254261348390375,
+        0.04091519690685319,
+        0.0202885630566524
+      ],
+      "frontOffsetM": 0.0026,
+      "thicknessM": 0.0002,
+      "pigmentLayerStepM": 0.00012,
+      "roughness": 0.79,
+      "metallic": 0,
+      "printedSurface": {
+        "version": 1,
+        "coverage": "solid",
+        "polarity": "dark-on-light",
+        "process": "owner-applied spray and brush paint"
+      },
+      "letteringFinish": {
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "localSpecular": true
+      }
+    },
+    {
+      "id": "ink",
+      "linearRGB": [
+        0.008568125618069307,
+        0.016807375752887384,
+        0.012983032342173012
+      ],
+      "frontOffsetM": 0.0026,
+      "thicknessM": 0.0002,
+      "pigmentLayerStepM": 0.00012,
+      "roughness": 0.79,
+      "metallic": 0,
+      "printedSurface": {
+        "version": 1,
+        "coverage": "solid",
+        "polarity": "dark-on-light",
+        "process": "owner-applied spray and brush paint"
+      },
+      "letteringFinish": {
+        "version": 1,
+        "profile": "apparatus-stencil",
+        "localSpecular": true
+      }
+    }
+  ],
+  "rendering": {
+    "textures": 0,
+    "alpha": "OPAQUE",
+    "printedCoverage": "solid polygon geometry",
+    "emissive": false,
+    "shader": "Existing P3 material, world depth and solid-lettering marks → acquisition → final dither/VFD"
+  },
+  "unchangedHosts": [
+    "public/assets/conservatory-props.glb",
+    "public/assets/source-vehicle-interior.glb",
+    "public/assets/source-drive/drive.glb"
+  ],
+  "validation": {
+    "method": "Actual host flank planes verified by 70 ray/triangle samples per vehicle",
+    "pending": [
+      "Final-shader ordinary-distance and moving native inspection"
+    ]
+  }
+}

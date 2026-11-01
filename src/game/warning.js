@@ -2,9 +2,13 @@
 // session-only microphone choice. Permission choices never imply one another.
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiWrap } from '../render/ui.js';
-import { withMachinePanel, drawVfdText } from '../render/presentation.js';
-import { UI_COLOR } from '../render/palette.js';
+import { uiSize, uiFill, uiText, uiWrap, uiCellMetrics } from '../render/ui.js';
+import { withMachinePanel, drawVfdText, drawVfdSprite, machinePanelBody, machinePanelAperture } from '../render/presentation.js';
+import { UI_COLOR, activeTheme } from '../render/palette.js';
+import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
+import { createHitRegions } from '../render/hit-regions.js';
+import { fitText } from '../render/fit-text.js';
+import { vfdMicrophoneFrame, VFD_MIC_DOTS } from '../render/vfd-microphone.js';
 import { promptLine } from './bindings.js';
 
 const WARNINGS = [
@@ -50,19 +54,217 @@ const MICROPHONE = [
   'You can play without a microphone.',
 ];
 
+// Reserve the decision and its input legend before fitting the copy. The true
+// aperture is smaller than machinePanelBody, especially without a metal footer.
+const TITLE_ROWS = 3;
+const ACTION_ROWS = 3; // blank separation, choices, input legend
+const GLASS_CLEARANCE = 0.65;
+let idleMicFrame = null;
+
+const cardClass = (line) => /^(THIS GAME|Choose PROFILE|REQUESTING|MICROPHONE|NO MICROPHONE)/.test(line)
+  ? 'ui-amber'
+  : /^(Processing|Names never|Settings can|PROFILE OFF|The complete)/.test(line)
+    ? 'ui-blue'
+    : 'ui-secondary';
+
+// The copy keeps hard line breaks from when it was laid out for one width. A
+// line that starts indented or in lower case continues the one before it, so
+// it is joined back, then wrapped to the width the panel really has; bullets
+// keep a hanging indent.
+export function warningCardRows(lines, width) {
+  const logical = [];
+  for (const line of lines) {
+    if (line && logical.length && logical[logical.length - 1] && /^(\s|[a-z])/.test(line)) {
+      logical[logical.length - 1] += ` ${line.trim()}`;
+    } else logical.push(line);
+  }
+  const out = [];
+  for (const line of logical) {
+    if (!line) { out.push({ text: '', cls: 'ui-secondary' }); continue; }
+    const cls = cardClass(line);
+    const bullet = line.startsWith('• ');
+    const parts = uiWrap(bullet ? line.slice(2) : line, Math.max(8, width - (bullet ? 2 : 0)));
+    parts.forEach((text, i) => out.push({ text: bullet ? `${i ? '  ' : '• '}${text}` : text, cls }));
+  }
+  return out;
+}
+
+// The microphone's box in cells, beside the text. Its dots stay square, so the
+// width follows from the height and the cell's own aspect. Narrow panels give
+// the words the room first: the picture shrinks, then goes.
+export function warningMicArt(bodyW, { aspect = uiCellMetrics().aspect, minText = 36, maxHeight = 9 } = {}) {
+  const ratio = VFD_MIC_DOTS.cols / VFD_MIC_DOTS.rows;
+  for (let h = Math.min(9, Math.floor(maxHeight)); h >= 5; h--) {
+    const w = Math.ceil(h * ratio / Math.max(0.2, aspect || 0.45));
+    if (bodyW - w - 3 >= minText) return { w, h };
+  }
+  return null;
+}
+
+const CARD_LINES = Object.freeze({ warning: WARNINGS, profile: PROFILE, microphone: MICROPHONE });
+
+// Choices stay on the glass while only the explanatory copy scrolls. A phase
+// change keeps the original card's footprint, so a permission result cannot
+// move a control under a held pointer. Single actions occupy the decline slot.
+export function warningCardLayout(card, { cols, rows, footer = '', aspect, lines } = {}) {
+  const w = Math.min(92, cols - 4);
+  const x = Math.floor((cols - w) / 2);
+  const probe = machinePanelBody(0, 0, w, 100, { footer });
+  const probeGlass = machinePanelAperture(0, 0, w, 100);
+  const safeBottom = box => Math.floor(box.y + box.h - GLASS_CLEARANCE + 1e-7);
+  const chrome = 100 - (safeBottom(probeGlass) - probe.y);
+  const contentRows = rows - 2 - chrome - ACTION_ROWS;
+  let art = card === 'microphone' ? warningMicArt(probe.w, {
+    ...(aspect == null ? {} : { aspect }), maxHeight: contentRows,
+  }) : null;
+  // At large UI scale, give the permission explanation the illustration's
+  // space first, then remove empty paragraph rows. The actual words stay intact.
+  if (art && TITLE_ROWS + warningCardRows(CARD_LINES[card], probe.w - art.w - 5).length > contentRows) art = null;
+  const textX = art ? art.w + 3 : 0, textW = probe.w - textX;
+  let baseline = warningCardRows(CARD_LINES[card] || [], textW - 2);
+  const compact = card === 'microphone' && TITLE_ROWS + baseline.length > contentRows;
+  if (compact) baseline = baseline.filter(row => row.text);
+  let out = lines ? warningCardRows(lines, textW - 2) : baseline;
+  if (compact) out = out.filter(row => row.text);
+  const titleRows = compact ? 2 : TITLE_ROWS;
+  const wanted = Math.max(titleRows + Math.max(out.length, baseline.length), art ? art.h : 0) + ACTION_ROWS;
+  const h = Math.max(chrome + titleRows + ACTION_ROWS + 1, Math.min(rows - 2, wanted + chrome));
+  const y = Math.max(0, Math.floor((rows - h) / 2));
+  const body = machinePanelBody(x, y, w, h, { footer });
+  const aperture = machinePanelAperture(x, y, w, h);
+  const actionY = safeBottom(aperture) - 2;
+  const visible = Math.max(1, actionY - 1 - (body.y + titleRows));
+  const actionW = Math.floor((body.w - 3) / 2);
+  const actions = [0, 1].map(index => ({
+    index, x: body.x + index * (actionW + 3), y: actionY - 0.25,
+    w: index ? body.w - actionW - 3 : actionW, h: 1.4, textY: actionY,
+  }));
+  return {
+    x, y, w, h, body, aperture, art, compact, titleRows, textX, textW, out, visible,
+    actions: card === 'warning' ? [actions[1]] : actions,
+    textRect: { x: body.x + textX, y: body.y + titleRows, w: textW, h: visible },
+    hint: { x: body.x, y: actionY + 1, w: body.w },
+    scrollMax: Math.max(0, out.length - visible),
+  };
+}
+
 export function makeWarningScene({
   onDone = () => {},
   onProfileOn = () => {},
   onProfileOff = () => {},
   onMicAllow = () => {},
   onMicDeny = () => {},
+  getMicSnapshot = null,
   showWarning = true,
   askProfile = true,
   askMic = false,
 } = {}) {
   const cards = [showWarning && 'warning', askProfile && 'profile', askMic && 'microphone'].filter(Boolean);
+  const hits = createHitRegions();
+  const heldActivation = new Set();
   let index = 0;
   let answered = false, closed = false, selected = 1;
+  let scroll = 0, scrollMax = 0;
+  let phase = 'choice', micResult = null, requestGeneration = 0, ownsMicRequest = false;
+  let revision = 0, armedPointer = null, lastLayout = null, wheelRemainder = 0;
+
+  const card = () => cards[index];
+  const keyToken = e => e.controllerAction ? `pad:${e.controllerAction}` : e.code || e.key;
+  const clearPressed = () => { armedPointer = null; heldActivation.clear(); };
+
+  function resetTargets() {
+    revision++;
+    hits.reset();
+    armedPointer = null;
+    lastLayout = null;
+    wheelRemainder = 0;
+  }
+
+  function choices() {
+    if (card() === 'warning') return [{ id: 'continue', label: 'CONTINUE' }];
+    if (card() === 'profile') return [
+      { id: 'allow', label: 'PROFILE ON' }, { id: 'deny', label: 'PROFILE OFF' },
+    ];
+    const decline = { id: 'deny', label: 'PLAY WITHOUT MIC' };
+    return phase === 'requesting' ? [decline]
+      : [{ id: 'allow', label: canUseDefaultMic() ? 'USE DEFAULT MIC' : phase === 'failure' ? 'TRY AGAIN' : 'ALLOW MICROPHONE' }, decline];
+  }
+
+  function canUseDefaultMic() {
+    return phase === 'failure' && (micResult?.reason === 'selected-device-missing'
+      || micResult?.failedConstraint === 'deviceId');
+  }
+
+  function microphoneLines() {
+    if (phase === 'requesting') return [
+      'REQUESTING MICROPHONE ACCESS', '',
+      'Respond to the system or browser permission prompt if it appears.', '',
+      'The game will continue when access is granted.',
+      'You can also play without a microphone.',
+    ];
+    if (phase !== 'failure') return MICROPHONE;
+    const recovery = {
+      'selected-device-missing': [
+        'THE SAVED MICROPHONE IS NOT AVAILABLE.',
+        'Choose USE DEFAULT MIC to try the system input instead.',
+      ],
+      'insecure-context': [
+        'MICROPHONE ACCESS NEEDS A SECURE PAGE.',
+        'Open a secure (HTTPS) version of the game, then try again.',
+      ],
+      'microphone-policy-blocked': [
+        'MICROPHONE ACCESS IS BLOCKED IN THIS VIEW.',
+        'Open the game directly, or enable microphone access in its host.',
+      ],
+      'no-media-devices': [
+        'THIS VIEW CANNOT ACCESS A MICROPHONE.',
+        'Try a current browser or update the installed game.',
+      ],
+      'no-audio-context': [
+        'GAME AUDIO COULD NOT START.',
+        'Check your audio device and restart the game, then try again.',
+      ],
+      'audio-context-closed': [
+        'GAME AUDIO HAS STOPPED.',
+        'Restart the game to reconnect audio, then try again.',
+      ],
+      'audio-setup-failed': [
+        'MICROPHONE AUDIO COULD NOT START.',
+        'Access was granted, but audio could not start. Restart the game, then try again.',
+      ],
+      'capture-disabled': [
+        'MICROPHONE ACCESS IS DISABLED.',
+        'Enable microphone access for this app in your system or browser settings.',
+      ],
+      'capture-aborted': [
+        'MICROPHONE START WAS INTERRUPTED.',
+        'Check that the input device is ready, then try again.',
+      ],
+      'inactive-document': [
+        'RETURN TO THE GAME TO USE THE MICROPHONE.',
+        'Bring this window to the front, then try again.',
+      ],
+      'no-audio-track': [
+        'THE MICROPHONE DID NOT PROVIDE AUDIO.',
+        'Reconnect or enable the input device, then try again.',
+      ],
+    };
+    const guidance = recovery[micResult?.reason]
+      || (canUseDefaultMic() ? recovery['selected-device-missing'] : null);
+    if (guidance) return [guidance[0], '', guidance[1], '', 'You can play without a microphone.'];
+    if (micResult?.state === 'denied') return [
+      'MICROPHONE ACCESS WAS NOT GRANTED.', '',
+      'You can play without a microphone.',
+      'To try again, allow access in your system or browser settings.',
+    ];
+    return [
+      micResult?.state === 'unavailable' ? 'NO MICROPHONE IS AVAILABLE.' : 'MICROPHONE COULD NOT START.', '',
+      micResult?.reason === 'device-busy'
+        ? 'Check whether another application is using the microphone, then try again.'
+        : 'Check your input device and its permissions, then try again.', '',
+      'You can play without a microphone.',
+    ];
+  }
 
   function finish() {
     if (closed) return;
@@ -72,88 +274,258 @@ export function makeWarningScene({
   }
 
   function next() {
+    resetTargets();
+    requestGeneration++;
+    phase = 'choice';
+    micResult = null;
     if (++index >= cards.length) finish();
-    else { answered = false; selected = 1; }
+    else { answered = false; selected = 1; scroll = 0; scrollMax = 0; }
+  }
+
+  function settleMicrophone(result, generation) {
+    if (closed || generation !== requestGeneration || phase !== 'requesting') return;
+    if (result?.state === 'asking') return;
+    if (result?.active === true || result?.state === 'on' || result?.state === 'test') {
+      ownsMicRequest = false;
+      next();
+      return;
+    }
+    micResult = result && ['denied', 'unavailable', 'error'].includes(result.state)
+      ? result : { state: 'error', reason: 'microphone-not-started' };
+    phase = 'failure';
+    answered = false;
+    selected = 1;
+    scroll = 0;
+    resetTargets();
+  }
+
+  function requestMicrophone() {
+    if (answered || phase === 'requesting') return;
+    // A failed exact device selection never silently switches microphones.
+    // The recovery choice explicitly names the input it will request.
+    const useDefault = canUseDefaultMic();
+    answered = true;
+    phase = 'requesting';
+    ownsMicRequest = true;
+    selected = 0;
+    scroll = 0;
+    resetTargets();
+    const generation = ++requestGeneration;
+    try {
+      // Invoke synchronously on the user's activation, before any await. The
+      // OS grant and this session's in-game consent remain separate decisions.
+      const result = useDefault ? onMicAllow({ deviceId: 'default', lastDeviceLabel: '' }) : onMicAllow();
+      if (result && typeof result.then === 'function') {
+        Promise.resolve(result).then(
+          snapshot => settleMicrophone(snapshot, generation),
+          () => settleMicrophone({ state: 'error' }, generation),
+        );
+      } else settleMicrophone(result ?? getMicSnapshot?.(), generation);
+    } catch (_) { settleMicrophone({ state: 'error' }, generation); }
+  }
+
+  function activate(id) {
+    if (closed) return;
+    if (card() === 'microphone') {
+      if (id === 'allow') { requestMicrophone(); return; }
+      if (id !== 'deny') return;
+      // micStop (owned by the caller) invalidates any late OS result as well.
+      requestGeneration++;
+      ownsMicRequest = false;
+      onMicDeny();
+      next();
+      return;
+    }
+    if (answered) return;
+    answered = true;
+    if (card() === 'profile') (id === 'allow' ? onProfileOn : onProfileOff)();
+    next();
+  }
+
+  function scrollCopy(delta) {
+    scroll = Math.max(0, Math.min(scrollMax, scroll + delta));
+  }
+
+  function inputLegend(width, count) {
+    const parts = [
+      ...(count > 1 ? [{ action: 'set', label: 'CHOOSE' }] : []),
+      { action: 'confirm', label: count > 1 ? 'CONFIRM' : 'SELECT' },
+    ];
+    const essential = promptLine(parts);
+    const more = scrollMax ? promptLine([{ action: 'select', label: 'MORE' }]) : '';
+    if (!more) return fitText(essential, width);
+    if (essential.length + more.length + 3 <= width) return `${essential} · ${more}`;
+    // Direction glyphs work for keys and a D-pad; the actual confirm button
+    // still comes from the active controller family/remapping.
+    return fitText([
+      ...(count > 1 ? ['←→ CHOOSE'] : []),
+      promptLine([{ action: 'confirm', label: count > 1 ? 'CONFIRM' : 'SELECT' }]),
+      '↑↓ MORE',
+    ].join(' · '), width);
   }
 
   const scene = {
     id: 'warning',
     blocksInput: true,
     blocksWorld: true,
+    handlesEscape: true,
     worldPresentation: 'hidden',
     lensPreset: 'calm',
-    enter() { if (!cards.length) finish(); },
+    blur: clearPressed,
+    enter() {
+      globalThis.addEventListener?.('blur', clearPressed);
+      if (!cards.length) finish();
+    },
+    exit() {
+      closed = true;
+      requestGeneration++;
+      resetTargets();
+      clearPressed();
+      globalThis.removeEventListener?.('blur', clearPressed);
+      if (ownsMicRequest) {
+        ownsMicRequest = false;
+        onMicDeny();
+      }
+    },
+    update() {
+      // micInit may return early for a request already in flight. Observing its
+      // snapshot covers that case without launching a second native prompt.
+      if (closed || phase !== 'requesting' || !getMicSnapshot) return;
+      try {
+        const snapshot = getMicSnapshot();
+        if (snapshot && snapshot.state !== 'idle') settleMicrophone(snapshot, requestGeneration);
+      } catch (_) { settleMicrophone({ state: 'error' }, requestGeneration); }
+    },
 
     key(e) {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || closed) return true;
+      if (e.metaKey || e.ctrlKey || e.altKey || closed) return true;
       const key = (e.key || '').toLowerCase();
       const code = e.code || '';
-      const card = cards[index];
-      if (card === 'profile' || card === 'microphone') {
-        if (['ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key) || ['left', 'right'].includes(e.controllerAction)) {
-          selected = 1 - selected;
-          return true;
-        }
-        const yes = key === 'y' || code === 'KeyY';
-        const no = key === 'n' || code === 'KeyN' || e.controllerAction === 'back';
-        const confirm = e.key === 'Enter' || code === 'Enter' || e.key === ' ' || code === 'Space' || e.controllerAction === 'confirm';
-        if (!(yes || no || confirm)) return true;
-        const allow = yes || (!no && selected === 0);
-        if (!answered) {
-          answered = true;
-          if (card === 'profile') (allow ? onProfileOn : onProfileOff)();
-          else (allow ? onMicAllow : onMicDeny)();
-        }
-        next();
+      const direction = /^(Arrow(Up|Down|Left|Right)|Tab|PageUp|PageDown|Home|End|Escape|Enter)$/.test(code) ? code : e.key || code;
+      const page = Math.max(1, (lastLayout?.visible || 5) - 1);
+      e.preventDefault?.();
+      armedPointer = null;
+      const scrollBy = direction === 'ArrowUp' || key === 'w' || ['up', 'move_up'].includes(e.controllerAction) ? -1
+        : direction === 'ArrowDown' || key === 's' || ['down', 'move_down'].includes(e.controllerAction) ? 1
+          : direction === 'PageUp' ? -page : direction === 'PageDown' ? page : 0;
+      if (scrollBy) {
+        scrollCopy(scrollBy);
         return true;
       }
-      if (card === 'warning' && (
-        e.key === 'Enter' || code === 'Enter' || e.key === ' ' || code === 'Space'
-        || key === 'z' || e.controllerAction === 'confirm'
-      )) {
-        next();
+      if (direction === 'Home' || direction === 'End') {
+        scroll = direction === 'Home' ? 0 : scrollMax;
         return true;
+      }
+      const items = choices();
+      if (['ArrowLeft', 'ArrowRight', 'Tab'].includes(direction)
+        || ['left', 'right', 'move_left', 'move_right'].includes(e.controllerAction)) {
+        selected = (selected + 1) % items.length;
+        return true;
+      }
+      const yes = key === 'y' || code === 'KeyY';
+      const no = key === 'n' || code === 'KeyN' || direction === 'Escape' || e.controllerAction === 'back';
+      const confirm = direction === 'Enter' || code === 'Enter' || key === ' ' || code === 'Space' || e.controllerAction === 'confirm';
+      if (!(yes || no || confirm || card() === 'warning' && key === 'z')) return true;
+      if (card() === 'warning' && !(confirm || key === 'z')) return true;
+      if (e.repeat || heldActivation.has(keyToken(e))) return true;
+      if (phase === 'requesting' && yes) return true;
+      heldActivation.add(keyToken(e));
+      activate(card() === 'warning' ? 'continue' : no ? 'deny' : yes ? 'allow' : items[Math.min(selected, items.length - 1)].id);
+      return true;
+    },
+    keyup(e) { heldActivation.delete(keyToken(e)); return true; },
+
+    pointer(e) {
+      if (closed) return true;
+      if (e.type === 'pointercancel') { armedPointer = null; return true; }
+      if (e.type === 'wheel') {
+        const text = lastLayout?.textRect;
+        if (!text || !scrollMax || e.cellX < text.x || e.cellX >= text.x + text.w
+          || e.cellY < text.y || e.cellY >= text.y + text.h) return true;
+        e.preventDefault?.();
+        const units = e.deltaMode === 1 ? 1 : e.deltaMode === 2 ? text.h : 1 / (uiCellMetrics().cellH || 20);
+        wheelRemainder += (Number(e.deltaY) || 0) * units;
+        const lines = Math.trunc(wheelRemainder);
+        if (lines) { scrollCopy(lines); wheelRemainder -= lines; }
+        return true;
+      }
+      if (e.isPrimary === false || e.originalEvent?.isPrimary === false) return true;
+      if (e.type === 'pointermove') { hits.handle(e, { click: false }); return true; }
+      if ((e.button ?? 0) !== 0 || e.originalEvent?.ctrlKey || e.originalEvent?.metaKey) return true;
+      const target = hits.hit(e.cellX, e.cellY);
+      if (e.type === 'pointerdown') {
+        armedPointer = target && !target.disabled ? { id: target.id, pointerId: e.pointerId, revision } : null;
+        target?.onHover?.(target, e);
+      } else if (e.type === 'pointerup') {
+        const armed = armedPointer;
+        armedPointer = null;
+        if (armed && armed.revision === revision && armed.pointerId === e.pointerId && armed.id === target?.id) {
+          target.onClick?.(target, e);
+        }
       }
       return true;
     },
 
     render() {
+      if (closed) return;
+      hits.reset();
       const { cols, rows } = uiSize();
       uiFill(0, 0, cols, rows, UI_COLOR.glass);
-      const card = cards[index];
-      const lines = card === 'warning' ? WARNINGS : card === 'profile' ? PROFILE : MICROPHONE;
-      const w = Math.min(92, cols - 4);
-      const textW = w - 4;
-      const out = [];
-      for (const line of lines) {
-        if (!line) { out.push({ text: '', cls: 'ui-secondary' }); continue; }
-        const cls = /^(THIS GAME|Choose PROFILE)/.test(line)
-          ? 'ui-amber'
-          : /^(Processing|Names never|Settings can|PROFILE OFF|The complete)/.test(line)
-            ? 'ui-blue'
-            : 'ui-secondary';
-        for (const text of uiWrap(line, textW)) out.push({ text, cls });
-      }
-      const h = Math.min(rows - 2, out.length + 8);
-      const x = Math.floor((cols - w) / 2);
-      const y = Math.floor((rows - h) / 2);
-      withMachinePanel(x, y, w, h, {
+      const currentCard = card();
+      const layout = warningCardLayout(currentCard, {
+        cols, rows, ...(currentCard === 'microphone' ? { lines: microphoneLines() } : {}),
+      });
+      const { art, textX, textW, out, visible } = layout;
+      lastLayout = layout;
+      scrollMax = layout.scrollMax;
+      scroll = Math.min(scroll, scrollMax);
+      const items = choices();
+      selected = Math.min(selected, items.length - 1);
+      const renderedRevision = revision;
+
+      withMachinePanel(layout.x, layout.y, layout.w, layout.h, {
         theme: 'amber',
         wordmark: 'AUDIOCORP',
-        label: card === 'warning' ? 'PHOTOSENSITIVITY' : card === 'profile' ? 'PSYCHOLOGICAL PROFILE' : 'MICROPHONE',
-        source: card === 'warning' ? 'READ THIS' : card === 'profile' ? 'LOCAL DOSSIER' : 'THIS SESSION',
-        footer: card === 'warning'
-          ? promptLine([{ action: 'continue', label: 'CONTINUE' }])
-          : `${selected === 0 ? '▶ ' : '  '}${card === 'profile' ? 'PROFILE ON' : 'ALLOW'}  ${selected === 1 ? '▶ ' : '  '}${card === 'profile' ? 'PROFILE OFF' : 'NOT NOW'}   [←→] CHOOSE  [ENTER] CONFIRM  [Y/N]`,
+        label: currentCard === 'warning' ? 'PHOTOSENSITIVITY' : currentCard === 'profile' ? 'PSYCHOLOGICAL PROFILE' : 'MICROPHONE',
+        source: currentCard === 'warning' ? 'READ THIS' : currentCard === 'profile' ? 'LOCAL DOSSIER' : 'THIS SESSION',
+        footer: '',
         meter: false,
       }, (panel) => {
-      drawVfdText(panel.x, panel.y, card === 'warning' ? 'BEFORE YOU START' : card === 'profile' ? 'CONSENT REQUIRED' : 'YOUR MICROPHONE', { max: panel.w });
-      let lineY = panel.y + 3;
-      for (const row of out) {
-        if (lineY >= panel.y + panel.h - 1) break;
-        if (row.text) uiText(panel.x, lineY, row.text, row.cls);
-        lineY += 1;
-      }
+        if (art) {
+          const contentHeight = layout.actions[0].textY - 1 - panel.y;
+          const top = panel.y + Math.max(0, Math.floor((contentHeight - art.h) / 2));
+          idleMicFrame ||= vfdMicrophoneFrame({ live: false, reduced: true });
+          drawVfdSprite(panel.x, top, art.w, art.h, idleMicFrame);
+        }
+        const tx = panel.x + textX;
+        drawVfdText(tx, panel.y, currentCard === 'warning' ? 'BEFORE YOU START' : currentCard === 'profile' ? 'CONSENT REQUIRED' : 'YOUR MICROPHONE', { max: textW });
+        out.slice(scroll, scroll + visible).forEach((row, i) => {
+          if (row.text) uiText(tx, layout.textRect.y + i, row.text, row.cls, 1, textW - 2);
+        });
+        for (const [direction, visibleArrow, y, label] of [
+          [-1, scroll > 0, layout.textRect.y, '▲'],
+          [1, scroll < scrollMax, layout.textRect.y + visible - 1, '▼'],
+        ]) {
+          if (!visibleArrow) continue;
+          const x = tx + textW - 1;
+          uiText(x, y, label, 'ui-amber');
+          hits.add({ id: `${revision}:scroll:${direction}`, kind: 'warning-scroll', x: x - 0.5, y: y - 0.2, w: 1.5, h: 1.4,
+            onClick: () => { if (revision === renderedRevision) scrollCopy(direction * Math.max(1, visible - 1)); } });
+        }
+        items.forEach((item, i) => {
+          const region = items.length === 1 ? layout.actions.at(-1) : layout.actions[i];
+          const id = `${revision}:choice:${item.id}`;
+          hits.add({ ...region, id, kind: 'warning-choice', label: item.label, selected: i === selected,
+            onHover: () => { if (revision === renderedRevision) selected = i; },
+            onClick: () => { if (revision === renderedRevision) activate(item.id); } });
+          drawVfdRow({ uiFill, uiText, theme: activeTheme }, {
+            x: region.x, y: region.textY, w: region.w,
+            label: fitText(item.label, region.w - 2),
+            style: vfdRowStyle({ selected: i === selected, hovered: hits.isHovered(id) }),
+            role: i === selected ? 'ui-primary' : 'ui-secondary',
+          });
+        });
+        uiText(layout.hint.x, layout.hint.y, inputLegend(layout.hint.w, items.length), 'ui-secondary', 0.75, layout.hint.w);
       });
     },
   };

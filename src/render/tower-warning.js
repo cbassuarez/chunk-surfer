@@ -44,22 +44,23 @@ function presentation(frame,options={}){
   const position=frame.position||TOWER_WARNING.position;if(![position.x,position.y,position.z].every(Number.isFinite))return null;
   const yaw=finite(frame.yaw,TOWER_WARNING.yaw),contract=actor?.extras?.missingMan;
   const performance=towerWarningPerformance(frame,{...options,assetContract:contract});
-  let tip=null,sink=null,base=null;
+  let tip=null,mouth=null,base=null;
   if(actor&&contract){
     const pose=sampleCharacterPose(actor.characterAsset,actor.characterEntry,performance.character);
     tip=worldAnchor(bindAnchor(contract.anchors?.ember,pose),position,yaw);
     base=worldAnchor(bindAnchor(contract.anchors?.cigaretteBase,pose),position,yaw);
-    sink=worldAnchor(bindAnchor(contract.anchors?.face,pose),position,yaw);
+    mouth=worldAnchor(bindAnchor(contract.anchors?.mouth||contract.anchors?.face,pose),position,yaw);
   }
-  return{position,yaw,performance,tip,sink,base};
+  // Figure-local forward is -z; this is where a breath goes.
+  return{position,yaw,performance,tip,mouth,base,forward:[Math.sin(yaw),0,-Math.cos(yaw)]};
 }
 export function towerWarningInstances(frame,{zone=ZONE.street,...options}={}){
   const view=presentation(frame,options);if(!view){lastFrame=null;return[];}
-  const {position:p,yaw,performance,tip,sink}=view;lastFrame=view;
+  const {position:p,yaw,performance,tip,mouth,forward}=view;lastFrame=view;
   const body={id:TOWER_WARNING.id,mesh:TOWER_WARNING_MESH,x:p.x,y:p.y,z:p.z,yaw,scale:1,zone,
     structural:false,interactive:false,blocks:false,character:performance.character,
     noReflection:false,noShadow:false};
-  const smoke=tip&&sink?missingManSmokeInstances({tip,sink,clock:performance.smoke?.clock??frame.elapsed,
+  const smoke=tip?missingManSmokeInstances({tip,mouth,forward,breath:performance.smoke?.breath||0,clock:performance.smoke?.clock??frame.elapsed,
     engaged:frame.phase==='turning'||frame.phase==='speaking',reducedMotion:options.reducedMotion,
     densityScale:.8+(performance.smoke?.energy||0)*.3},{zone}):[];
   return[body,...smoke];
@@ -76,5 +77,5 @@ export function towerWarningFigureStatus(){
   return{design:'missing-man',loaded:!!actor,sourceMesh:actor?.towerWarningSource?.name||null,
     materials:actor?.primitives.map(p=>({name:p.materialName,role:p.materialRole}))||[],
     contract:actor?.extras?.missingMan||null,
-    current:lastFrame?{tip:lastFrame.tip,base:lastFrame.base,sink:lastFrame.sink,performance:lastFrame.performance}:null};
+    current:lastFrame?{tip:lastFrame.tip,base:lastFrame.base,mouth:lastFrame.mouth,performance:lastFrame.performance}:null};
 }

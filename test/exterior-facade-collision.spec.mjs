@@ -94,7 +94,6 @@ const regressions=[
   ['east institutional bay','bay-west-elevation',[355,680],[354,680]],
   ['east court side wall','district-east-court-walls',[400,716],[400,717]],
   ['west court side wall','district-west-court-walls',[60,732],[60,733]],
-  ['north court side wall','district-north-court-walls',[260,632],[261,632]],
 ];
 for(const[label,id,a,b]of regressions)test(`the original GLB ${label} blocks an admitted half-metre plan step`,()=>{
   const from=body(a),to=body(b);

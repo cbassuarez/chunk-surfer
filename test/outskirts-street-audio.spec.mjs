@@ -140,3 +140,36 @@ test('bus woman notice and passing use finite spatial cloth, retain the world bu
   assert.equal(audio.nodes.length,count,'spent body sounds replayed after pause');
   assert.equal(sound.snapshot().voices,0);sound.destroy();
 });
+
+test('bus trap, four electrical failures, stuck handle and body transit stay finite on the actual world bus',async()=>{
+  const audio=fakeAudio();audio.ctx.decodeAudioData=async()=>({duration:1});
+  const sound=createOutskirtsStreetAudio({...audio,loadSample:async id=>({duration:1.5,id})});
+  sound.update({events:[]},{listener});await new Promise(resolve=>setImmediate(resolve));
+  const cues=['bus-entry-shut','bus-strip','bus-strip','bus-strip','bus-strip','bus-door-stuck','bus-body-open','bus-body-step','bus-body-expel'];
+  const events=cues.map((cue,i)=>({id:`body-proof:${i}`,cue,variant:i-1,x:1,z:-2,strength:.8}));
+  sound.update({events},{listener});
+  assert.equal(sound.snapshot().voices,10,'eight finite physical cues plus two recorded cloth layers; shared contact owns body steps');
+  assert.ok(audio.nodes.some(node=>node.connections.includes(audio.destination)),'the sequence bypassed the supplied world SFX bus');
+  assert.equal(audio.nodes.some(node=>node.kind==='tone'),false,'the ordeal must not invent a vocal performance or musical sting');
+  const sources=audio.nodes.filter(n=>n.starts);
+  assert.ok(sources.every(n=>n.loop!==true&&n.stops.length===1&&n.stops[0]-n.starts[0][0]<3.1),'an action left an unbounded source');
+  const count=audio.nodes.length;
+  sound.pause();sound.resume();sound.update({events},{listener});
+  assert.equal(audio.nodes.length,count,'spent electrical, handle or body cues replayed after pause');
+  sound.update({beds:[{id:'bus-organ',kind:'body',x:0,z:0,gain:.3}]},{listener});
+  assert.equal(sound.snapshot().beds,1);const held=audio.nodes.length;
+  sound.update({beds:[{id:'bus-organ',kind:'body',x:2,z:0,gain:.3}]},{listener});
+  assert.equal(audio.nodes.length,held,'moving inside the corridor restarted its pressure bed');
+  sound.update({beds:[]},{listener});assert.equal(sound.snapshot().voices,0);
+  sound.destroy();assert.ok(audio.nodes.every(n=>n.disconnected));
+});
+
+test('bus body contact stays with the shared footstep owner while woman footsteps remain audible',()=>{
+  const audio=fakeAudio(),sound=createOutskirtsStreetAudio(audio);
+  sound.update({events:[{id:'body-contact:1',cue:'bus-body-step',x:0,z:0}]},{listener});
+  assert.equal(sound.snapshot().voices,0);
+  assert.equal(audio.nodes.length,0,'a body contact must not add the old synthetic full step');
+  sound.update({events:[{id:'woman-foot:1',cue:'footstep',x:1,z:-2}]},{listener});
+  assert.equal(sound.snapshot().voices,1,'the separate woman/NPC cue remains a world source');
+  sound.destroy();
+});

@@ -427,7 +427,7 @@ test('actual renderer consumes one warp snap; ordinary floor movement stays ease
     vfdPreviousX: 0, vfdPreviousZ: 0, vfdMovement: 0, camX: 0, camZ: 0, camY: -10,
     towerCaptureInProgress:false,
     yaw: 0, yawTarget: 1, planYaw: 0, planYawTarget: 0, leanEase: .9, pitch: 0, pitchTarget: .1,
-    EYE_METERS: 1.65, CELL, r3dResetVfdMemory: () => resets++,
+    EYE_METERS: 1.65, CELL, r3dResetVfdMemory: () => resets++, r3dCancelMouseLookGlide:noop, advanceMouseLookGlide:noop,
   }, renderer);
   const state = { px: 50, py: 60, floorH: 10, lean: 0, yawOffset: .4, get light() { throw sentinel; } };
   assert.throws(() => ctx.r3dFrame(state), error => error === sentinel);
@@ -452,7 +452,7 @@ function tabsFixture() {
     'godSetRoofAccess','godCycleRenStage','godResetRen','godResetEarRoom',
     'godOpeningVehicle','godGetInDriveTeaser','godCoastalMemory','godSourceEarthfall','godPracticeStudent',
     'godRoofWordLock','godRoofCitySeat','godDaydream','godDreamFigure','godArrivalTitle','openTransferRoom',
-    'nukeStableDiffusion','scanStableDiffusionProcesses'];
+    'nukeStableDiffusion','scanStableDiffusionProcesses','godTowerWarningApproach','godStreetCrowdStand'];
   for (const name of callbacks) ctx[name] = noop;
   Object.assign(ctx, { godActionRow, godStopRows, godLocationValue, GOD_LOCATION_HOOKS, storyMode: true, inRogue: true, FP,
     SCENE_DOCK_LABEL: 'GET-IN', godInventory: () => inventory, LOSABLE: ['recorder','torch','map','radio'],

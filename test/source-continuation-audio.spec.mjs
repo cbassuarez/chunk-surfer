@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSourceContinuationAudio, sourceContinuationPlacement, SOURCE_CONTINUATION_AUDIO as C } from '../src/audio/source-continuation.js';
+import { SOURCE_CONTINUATION as LAYOUT } from '../src/data/source-continuation.js';
 
 function graph({ panner = true } = {}) {
   const nodes = [], sources = [], buffers = [];
@@ -20,6 +21,100 @@ const state = (extra = {}) => ({ phase: 'catch', x: -23, z: 0, feet: 3, yaw: 0, 
   counterweight: { active: true, mode: 'walking', x: -18, z: -3, y: 3 }, ...extra });
 const layer = (sound, kind) => sound.snapshot().layers.filter(v => v.kind === kind);
 function frame(sound, s, dt = .1, focus = null) { return sound.update({ state: s, dt, focus, ready: true }); }
+const hush = (extra = {}) => ({ id: 'source-continuation-hush', active: true, x: -20, z: -5, feet: 3, heading: 0, mode: 'follow', armed: true, fall: null, ...extra });
+
+test('the continuation host forwards rest score ducking even across an audio pause',()=>{
+  const sound=createSourceContinuationAudio();
+  sound.setRestMusicActive(true);assert.equal(sound.snapshot().surroundings.restMusicActive,true);
+  sound.pause();assert.equal(sound.snapshot().surroundings.restMusicActive,true);
+  sound.setRestMusicActive(false);assert.equal(sound.snapshot().surroundings.restMusicActive,false);
+  sound.dispose();
+});
+
+test('an attached seat stream ducks the score only after confirmed playback and releases it on pause or detach',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});frame(sound,state());
+  let playing=false;const calls=[],owner={update:value=>calls.push(value),snapshot:()=>({playing})};
+  const detach=sound.attachRestMusic(owner);frame(sound,state());
+  assert.equal(sound.snapshot().surroundings.restMusicActive,false,'buffering leaves the original music available');
+  playing=true;frame(sound,state());assert.equal(sound.snapshot().surroundings.restMusicActive,true);
+  sound.pause();sound.pause();assert.equal(sound.snapshot().surroundings.restMusicActive,false);
+  assert.equal(calls.filter(c=>c.paused).length,1,'repeated lifecycle holds do not repeatedly pause the stream');
+  playing=false;frame(sound,state());assert.equal(sound.snapshot().surroundings.restMusicActive,false);
+  playing=true;frame(sound,state());assert.equal(sound.snapshot().surroundings.restMusicActive,true);
+  assert.equal(sound.detachRestMusic({}),false);assert.equal(detach(),true);assert.equal(detach(),false);
+  assert.equal(sound.snapshot().surroundings.restMusicActive,false);const count=calls.length;
+  frame(sound,state());sound.dispose();assert.equal(calls.length,count,'the detached owner remains the caller’s responsibility');
+});
+
+test('a failing attached seat owner releases the original score instead of making silence',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});frame(sound,state());
+  let throws=false;const owner={update(){if(throws)throw Error('media failure');},snapshot:()=>({playing:true})};
+  sound.attachRestMusic(owner);frame(sound,state());assert.equal(sound.snapshot().surroundings.restMusicActive,true);
+  throws=true;frame(sound,state());assert.equal(sound.snapshot().surroundings.restMusicActive,false);sound.dispose();
+});
+
+test('the active Source II performance suppresses world sounds without restarting it, then restores Source III',()=>{
+  const g=graph(),contacts=[],clears=[],calls=[];
+  const sound=createSourceContinuationAudio({getAudio:()=>g,onFootContact:e=>contacts.push(e),clearFootContacts:owner=>clears.push(owner)});
+  const catchState=state(),wrong=state({phase:'wrong-return',x:0,z:-3,feet:0,closure:{mode:'closing',frontZ:0},hush:hush()});
+  frame(sound,catchState);sound.event({type:'drop'},catchState);
+  const oldSources=g.sources.slice();assert.ok(oldSources.length);
+  let active=true,playing=true,failed=null;
+  const owner={update(value){calls.push({...value});if(value.active===false){active=false;playing=false;}},
+    snapshot:()=>({active,playing,failed})};
+  sound.attachRestMusic(owner);frame(sound,wrong);
+  assert.equal(sound.snapshot().restMusicIsolated,true);
+  assert.equal(sound.snapshot().mode,'rest-recording-only');
+  assert.equal(sound.snapshot().sources,0,'existing mechanisms and effects are retired');
+  assert.ok(oldSources.every(source=>source.stops.length),'already sounding world effects are stopped');
+  assert.equal(sound.snapshot().surroundings.voices,0,'old score and bell tails are silent');
+  assert.equal(sound.snapshot().materials.voices,0);
+  assert.equal(sound.event({type:'closure-warning'},wrong),false);
+  assert.equal(sound.event({type:'hush-warning'},wrong),false);
+  assert.equal(sound.event({type:'door'},wrong),false);
+  for(let i=0;i<25;i++)frame(sound,{...wrong,x:i*.1,elapsed:i*.1});
+  assert.equal(sound.snapshot().sources,0);assert.equal(contacts.length,0,'walking cannot leak contact sounds');
+  assert.ok(clears.length);assert.equal(active,true);assert.ok(!calls.some(call=>call.active===false));
+  sound.event({type:'phase'},catchState);
+  assert.equal(active,false,'crossing to Source III retires the test performance');
+  frame(sound,catchState);assert.equal(sound.snapshot().restMusicIsolated,false);
+  assert.equal(sound.snapshot().surroundings.restMusicActive,false);
+  assert.ok(sound.snapshot().sources>0,'ordinary Source III machinery can sound again');sound.dispose();
+});
+
+test('a failed Source II performance restores ordinary sound, without trapping the scene in silence',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});let failed=null;
+  const owner={update(){},snapshot:()=>({active:true,playing:!failed,failed})};
+  sound.attachRestMusic(owner);const wrong=state({phase:'wrong-return',closure:{mode:'closing',frontZ:0}});
+  frame(sound,wrong);assert.equal(sound.snapshot().restMusicIsolated,true);assert.equal(sound.snapshot().sources,0);
+  failed='recording unavailable';frame(sound,wrong);
+  assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
+  assert.equal(sound.event({type:'closure-warning'},wrong),true);sound.dispose();
+});
+
+test('phase-aware Source III keeps score continuous while walking but preserves HUSH and mechanism sounds until seated',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g}),calls=[];
+  let restActive=false,finishAtEnd=false,phase='catch';
+  const owner={supportsPhase:p=>p==='wrong-return'||p==='catch',update:v=>calls.push(v),
+    snapshot:()=>({phase,active:true,playing:true,restActive,finishAtEnd})};
+  sound.attachRestMusic(owner);const s=state({hush:hush()});frame(sound,s);
+  assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
+  assert.equal(sound.snapshot().surroundings.restMusicActive,true,'only the old score is ducked');
+  assert.equal(sound.event({type:'hush-warning'},s),true);assert.equal(sound.event({type:'counterweight-warning'},s),true);
+  restActive=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);assert.equal(sound.snapshot().sources,0);
+  assert.equal(sound.event({type:'hush-warning'},s),false);
+  restActive=false;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
+  finishAtEnd=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);
+  assert.ok(!calls.some(c=>c.active===false),'supported III never retires its own performance');sound.dispose();
+});
+
+test('a detached phase-aware ending owner remains playing and no longer receives world lifecycle holds',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g}),calls=[];
+  const owner={supportsPhase:()=>true,update:v=>calls.push(v),snapshot:()=>({phase:'catch',active:true,playing:true,restActive:true,finishAtEnd:true})};
+  const detach=sound.attachRestMusic(owner);frame(sound,state());assert.equal(sound.snapshot().restMusicIsolated,true);
+  assert.equal(detach(),true);const count=calls.length;sound.pause();sound.dispose();
+  assert.equal(calls.length,count);assert.equal(owner.snapshot().playing,true);assert.equal(owner.snapshot().phase,'catch');
+});
 
 test('unavailable and suspended contexts never queue cues to replay at readiness', () => {
   let pair = null; const sound = createSourceContinuationAudio({ getAudio: () => pair });
@@ -127,6 +222,12 @@ test('the first overhead warning sounds at the retained physical counterweight b
   sound.dispose();
 });
 
+test('a missing Catch mechanism pose falls back to the authored hoist location',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});frame(sound,state({counterweight:null}));
+  assert.deepEqual(sound.snapshot().source,{x:LAYOUT.catch.hoist.start.x,y:LAYOUT.catch.top,z:LAYOUT.catch.hoist.start.z});
+  assert.ok(Object.values(sound.snapshot().mix).every(Number.isFinite));sound.dispose();
+});
+
 test('body footsteps come from supported body travel and cannot play during a drop or recovery', () => {
   const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g }); let s = state();
   frame(sound, s); s = { ...s, x: s.x + 1 }; frame(sound, s);
@@ -135,6 +236,18 @@ test('body footsteps come from supported body travel and cannot play during a dr
   assert.equal(layer(sound, 'footstep').length, 0);
   s = { ...s, x: s.x + 1, fall: null, recovery: { elapsed: .1 } }; frame(sound, s);
   assert.equal(layer(sound, 'footstep').length, 0); sound.dispose();
+});
+
+test('shared player contacts replace the II thud without replacing Hush or machinery and clear at lifecycle seams',()=>{
+  const contacts=[],cleared=[],g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g,onFootContact:e=>contacts.push(e),clearFootContacts:owner=>cleared.push(owner)});
+  let s=state({phase:'wrong-return',x:0,z:-3,feet:0,hush:hush()});frame(sound,s);
+  s={...s,x:s.x+1,hush:{...s.hush,x:s.hush.x+1.2}};frame(sound,s);
+  assert.equal(contacts.length,1);assert.equal(contacts[0].owner,'source-continuation');assert.equal(contacts[0].profile,'physical');
+  assert.ok(contacts[0].strideM>0&&contacts[0].interval>0&&contacts[0].distanceM>0);assert.equal(contacts[0].surface,'cold-stone');assert.equal(layer(sound,'footstep').length,0);assert.equal(layer(sound,'hush-footstep').length,1);
+  assert.ok(layer(sound,'mechanism').length>0,'existing machinery remains owned by this soundscape');
+  s={...s,x:s.x+1,fall:{vy:-3}};frame(sound,s);assert.equal(contacts.length,1);
+  sound.event({type:'portal'},s);assert.equal(cleared.at(-1),'source-continuation');
+  sound.pause();sound.dispose();assert.equal(cleared.at(-1),'source-continuation');
 });
 
 test('handle and lip approach are one physical contact, never a repeated beacon or resume notification', () => {
@@ -180,4 +293,136 @@ test('mono fallback, unavailable suppliers and disposal remain silent-safe', () 
   assert.equal(frame(sound, state()), false); assert.equal(sound.event({ type: 'land' }, state()), false);
   const absent = createSourceContinuationAudio({ getAudio() { throw Error('missing bus'); } });
   assert.doesNotThrow(() => absent.event({ type: 'land' }, state())); assert.equal(absent.snapshot().sources, 0);
+});
+
+test('Hush footfalls follow actual supported distance at its feet, with no stationary danger loop', () => {
+  const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g }); let s = state({ hush: hush() });
+  frame(sound, s);
+  for (let i = 0; i < 30; i++) { g.ctx.currentTime += .1; frame(sound, { ...s, elapsed: i * .1, hush: { ...s.hush, animationClock: i } }); }
+  assert.equal(sound.snapshot().hush.footsteps, 0, 'animation time and presence alone cannot invent footfalls');
+  s = { ...s, hush: { ...s.hush, x: s.hush.x + .62 } }; frame(sound, s);
+  assert.equal(sound.snapshot().hush.footsteps, 0);
+  s = { ...s, hush: { ...s.hush, x: s.hush.x + .62 } }; frame(sound, s);
+  const step = layer(sound, 'hush-footstep')[0];
+  assert.equal(sound.snapshot().hush.footsteps, 1);assert.ok(step);
+  assert.equal(step.source.y, s.hush.feet + .03);assert.equal(step.source.z, s.hush.z);
+  assert.ok(Math.abs(step.source.x - s.hush.x) <= .151);assert.ok(step.mix.pan > 0);
+  assert.ok(step.gain > .019, 'the physical pursuer has a distinct heavier contact than the operator');
+  assert.equal(g.sources.filter(n => n.loop).length, 1, 'only the existing mechanism owns a loop');
+  g.ctx.currentTime += 1;frame(sound, s);assert.equal(layer(sound, 'hush-footstep').length, 0);
+  assert.equal(sound.snapshot().hush.footsteps, 1);sound.dispose();
+});
+
+test('Hush air travel, recovery, relocation and phase boundaries discard stride debt', () => {
+  const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g });
+  let s = state({ hush: hush() });frame(sound, s);
+  const move = (amount, extra = {}, actor = {}) => { s = { ...s, ...extra, hush: { ...s.hush, x: s.hush.x + amount, ...actor } };g.ctx.currentTime += .1;frame(sound, s); };
+  move(.7);move(.7, {}, { mode: 'falling', fall: { vy: -8 }, feet: 1 });
+  move(.6, {}, { mode: 'follow', fall: null, feet: 3 });move(.6);
+  assert.equal(sound.snapshot().hush.footsteps, 0, 'first supported frame starts a new stride');
+  move(.6);assert.equal(sound.snapshot().hush.footsteps, 1);
+  move(.7, { recovery: { elapsed: .1 } });move(.7, { recovery: null });move(.6);
+  assert.equal(sound.snapshot().hush.footsteps, 1, 'recovery cannot bank a stride');
+  move(20);move(.6);assert.equal(sound.snapshot().hush.footsteps, 1, 'relocation cannot create a catch-up burst');
+  move(.7, {}, { mode: 'recovering', recovery: { elapsed: .1 } });move(.7, {}, { mode: 'follow', recovery: null });move(.6);
+  assert.equal(sound.snapshot().hush.footsteps, 1, 'the Hush own recovery cannot make airborne steps or bank a stride');
+  move(.7, { phase: 'wrong-return', closure: { mode: 'dormant' } });move(.6);
+  assert.equal(sound.snapshot().hush.footsteps, 1, 'a new world samples a new actor origin');
+  sound.pause();move(.7);move(.6);assert.equal(sound.snapshot().hush.footsteps, 1, 'pause discards the incomplete stride');
+  move(.6);assert.equal(sound.snapshot().hush.footsteps, 2);sound.dispose();
+});
+
+test('contact grace does not silence the Hush actual supported departure steps',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});let s=state({grace:3,hush:hush()});frame(sound,s);
+  for(let n=0;n<2;n++){g.ctx.currentTime+=.1;s={...s,grace:s.grace-.1,hush:{...s.hush,x:s.hush.x+.62}};frame(sound,s);}
+  assert.ok(s.grace>0);assert.equal(sound.snapshot().hush.supported,true);assert.equal(sound.snapshot().hush.footsteps,1);
+  assert.equal(layer(sound,'hush-footstep').length,1,'contact immunity is not an audio or pursuit freeze');
+  sound.dispose();
+});
+
+test('Hush warning, notice, drop, landing and capture are finite spatial cues at the transformed live actor', () => {
+  const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g });
+  const s = state({ hush: hush({ x: -17, z: -2, feet: -5 }) });frame(sound, s);
+  for (const type of ['hush-warning', 'hush-armed', 'hush-notice', 'hush-drop', 'hush-land', 'hush-recovery', 'hush-recovered', 'capture']) {
+    g.ctx.currentTime += 2;frame(sound, s);
+    assert.equal(sound.event({ type, reason: 'hush-pressure', position: { x: 999, y: 999, z: 999 } }, s), true);
+    const voice = layer(sound, type)[0];assert.ok(voice);
+    assert.equal(voice.source.x, s.hush.x);assert.equal(voice.source.z, s.hush.z);
+    assert.equal(voice.source.y, s.hush.feet + (['hush-warning', 'hush-armed', 'hush-land', 'hush-recovered'].includes(type) ? .03 : .95));
+    assert.ok(Object.values(voice.mix).every(Number.isFinite));assert.ok(voice.mix.gain < .8, 'the actor below is actually attenuated');
+    assert.ok(sound.snapshot().sources <= C.maxSources);assert.ok(sound.snapshot().voices <= C.maxVoices);
+  }
+  assert.ok(g.sources.filter(n => !n.loop && n.kind === 'noise').every(n => n.stops.length), 'every actor sound has an authored end');
+  assert.equal(g.sources.filter(n => n.loop).length, 1);
+  g.ctx.currentTime += 2;frame(sound, s);assert.equal(sound.snapshot().sources, 2);
+  assert.equal(sound.event({ type: 'hush-land' }, { ...s, hush: { ...s.hush, active: false } }), false);
+  assert.equal(sound.event({ type: 'hush-notice' }, { ...s, phase: 'ellery' }), false);
+  assert.equal(sound.event({ type: 'hush-warning' }, { ...s, status: 'completed' }), false);sound.dispose();
+});
+
+test('REC protection, lost readiness and context replacement release Hush contacts without replay', () => {
+  const first = graph(), second = graph();let pair = first, protectedValue = false;
+  const sound = createSourceContinuationAudio({ getAudio: () => pair, protectedAudio: () => protectedValue });
+  let s = state({ hush: hush() });frame(sound, s);sound.event({ type: 'hush-land' }, s);
+  protectedValue = true;assert.equal(sound.event({ type: 'hush-notice' }, s), false);assert.equal(sound.snapshot().voices, 0);
+  assert.ok(first.sources.every(n => n.stops.length));
+  protectedValue = false;s = { ...s, hush: { ...s.hush, x: s.hush.x + 8 } };frame(sound, s);
+  assert.equal(layer(sound, 'hush-land').length, 0);assert.equal(sound.snapshot().hush.footsteps, 0);
+  sound.update({ state: s, ready: false });assert.equal(sound.snapshot().voices, 0);
+  pair = second;frame(sound, s);assert.equal(sound.snapshot().sources, 2);
+  assert.equal(sound.snapshot().hush.footsteps, 0);
+  second.ctx.state = 'suspended';assert.equal(sound.event({ type: 'hush-armed' }, s), false);
+  second.ctx.state = 'running';frame(sound, s);assert.equal(sound.snapshot().sources, 2);
+  sound.dispose();assert.ok(second.sources.every(n => n.stops.length && n.disconnected));
+});
+
+test('Hush event storms retain the mechanism reservation and the existing graph bounds', () => {
+  const g = graph(), sound = createSourceContinuationAudio({ getAudio: () => g }), s = state({ hush: hush() });
+  for (let i = 0; i < 100; i++) sound.event({ type: ['hush-notice', 'hush-land', 'hush-armed'][i % 3] }, s);
+  frame(sound, s);assert.equal(layer(sound, 'mechanism').length, 1);
+  assert.ok(sound.snapshot().voices <= C.maxVoices);assert.ok(sound.snapshot().sources <= C.maxSources);
+  assert.ok(sound.snapshot().skipped > 0);sound.pause();assert.equal(sound.snapshot().sources, 0);
+  assert.ok(g.nodes.filter(n => n !== g.destination).every(n => n.disconnected));sound.dispose();
+});
+
+test('chart crossings reset only the crossing actor stride and keep transient emission points in their original chart',()=>{
+  const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g});
+  const acoustic=s=>({listener:{eye:[s.x,s.feet+.95,s.z],right:[1,0,0],up:[0,1,0],forward:[0,0,-1]},projectPoint:(chart,p)=>chart===s.chartId?{...p}:chart===0?{x:-p.y,y:p.x,z:p.z}:null});
+  let s=state({phase:'wrong-return',chartId:0,x:0,z:0,feet:0,closure:{mode:'dormant'},hush:hush({chartId:0,x:5,z:-2,feet:0})});
+  sound.update({state:s,ready:true,dt:.05,acousticFrame:acoustic(s)});
+  s={...s,x:.7,hush:{...s.hush,x:5.7}};g.ctx.currentTime+=.05;sound.update({state:s,ready:true,dt:.05,acousticFrame:acoustic(s)});
+  sound.event({type:'hush-land'},s,acoustic(s));const emitted=layer(sound,'hush-land')[0];assert.equal(emitted.chartId,0);assert.ok(emitted.mix.pan>0);
+  s={...s,chartId:1,portalSerial:1,x:.8,hush:{...s.hush,x:6.3}};g.ctx.currentTime+=.05;
+  sound.event({type:'portal'},s,acoustic(s));sound.update({state:s,ready:true,dt:.05,acousticFrame:acoustic(s)});
+  assert.equal(layer(sound,'footstep').length,0);assert.equal(sound.snapshot().hush.footsteps,1,'the old-chart Hush still completes its real stride');
+  s={...s,hush:{...s.hush,chartId:1,portalSerial:1,x:6.35}};g.ctx.currentTime+=.05;
+  sound.event({type:'hush-portal'},s,acoustic(s));sound.update({state:s,ready:true,dt:.05,acousticFrame:acoustic(s)});
+  assert.equal(sound.snapshot().hush.footsteps,1,'the Hush crossing is not walked floor distance');
+  const tail=layer(sound,'hush-land')[0];assert.deepEqual(tail.source,emitted.source);assert.equal(tail.chartId,0);assert.ok(tail.mix.pan<0,'the old source is heard at its newly presented wall position');
+  assert.ok(sound.snapshot().voices<=C.maxVoices);assert.ok(sound.snapshot().sources<=C.maxSources);sound.dispose();
+});
+
+test('physical presented listener axes override raw yaw for chart-local contacts',()=>{
+  const frame={listener:{eye:[0,0,0],right:[0,1,0],up:[-1,0,0],forward:[0,0,-1]},projectPoint:(_chart,p)=>({...p})};
+  const mix=sourceContinuationPlacement({x:0,y:10,z:0},state({yaw:Math.PI}),frame,0);
+  assert.ok(mix.pan>.8);assert.equal(mix.distance,10);assert.ok(Object.values(mix).every(Number.isFinite));
+});
+
+test('shared II gait follows supported metre speed and refuses unsupported, relocated or portal travel',()=>{
+  const contacts=[],g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g,onFootContact:e=>contacts.push(e)});
+  let s=state({phase:'wrong-return',x:-6,z:-3,feet:0});frame(sound,s,1/60);
+  for(let i=0;i<300;i++){
+    s={...s,x:s.x+3.2/60,elapsed:(i+1)/60};g.ctx.currentTime+=1/60;frame(sound,s,1/60);
+    if(i===0)assert.equal(contacts.length,1,'first continuous supported body travel plants immediately');
+  }
+  assert.ok(contacts.length>=15&&contacts.length<=17,`3.2m/s yielded ${contacts.length} contacts in 5 seconds`);
+  assert.ok(contacts.every(e=>e.surface==='cold-stone'&&Math.abs(e.speed-3.2)<.001&&e.strideM>1&&e.strideM<1.1));
+  assert.ok(contacts.every((e,i)=>i===0||e.footSide!==contacts[i-1].footSide));
+  const count=contacts.length;for(let i=0;i<60;i++)frame(sound,s,1/60);assert.equal(contacts.length,count);
+  s={...s,x:100,z:100};frame(sound,s,1/60);s={...s,x:100.05};frame(sound,s,1/60);
+  assert.equal(contacts.length,count,'unsupported movement never becomes a shoe plant');
+  sound.event({type:'portal'},s);s={...s,x:0,z:-3};frame(sound,s,1/60);
+  assert.equal(contacts.length,count,'portal placement establishes a new origin without walking it');
+  s={...s,x:.05};frame(sound,s,1/60);assert.equal(contacts.length,count+1,'fresh supported movement resumes immediately');
+  sound.dispose();
 });

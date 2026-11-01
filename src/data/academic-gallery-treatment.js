@@ -2,9 +2,12 @@
 // state-owned meshes stay authoritative; the optional pack changes presentation.
 // Authored metres, gallery base +10m. The atrium remains a real absent floor.
 import { ROOF_PASSWORD_HOST_ID } from './roof-password.js';
+import {ELLERY_COURTYARD_SKY} from './ellery-courtyard-architecture.js';
 export const ACADEMIC_GALLERY = Object.freeze({
   base:10,ceiling:17,
   void:Object.freeze({x0:79,x1:89,z0:8,z1:21}),
+  courtyardVoid:ELLERY_COURTYARD_SKY,
+  guardPolygon:Object.freeze([[79,8],[89,8],[89,15],[94,15],[94,27],[77,27],[77,15],[79,15]].map(Object.freeze)),
   guard:Object.freeze({west:78.84,east:89.16,north:7.84,south:21.16,height:1.18}),
   plinthSeat:1.11,
 });
@@ -60,6 +63,8 @@ export function academicGalleryMesh(instance,hasMesh=()=>false){
 // and ribs, with its existing transform. No Ren, roof seating or action is added
 // to the gallery. The older, unrelated oversized grid remains visible below.
 export function academicGalleryPlacement(prop){
+  const bust=/^academic-bust-(?:plinth-|fragment-)?([1-6])$/.exec(prop.id||'');
+  if(bust){const index=Number(bust[1]),dx=index<=3?-1.5:4.5;return{...prop,x:prop.x+dx,blocks:prop.mesh==='academic_bust_plinth'?true:prop.blocks,...(prop.mesh==='academic_bust_plinth'?{w:.68,d:.68,h:1.11}:{})};}
   // These fittings were left over the open rail after the gallery alignment.
   // Their back planes now meet the actual existing north/east masonry; IDs and
   // emergency circuit ownership remain the same.

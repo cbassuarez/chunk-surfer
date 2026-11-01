@@ -116,7 +116,7 @@ import { OUTSKIRTS_BUS_PASSAGE } from '../src/data/outskirts-bus-passage.js';
 }
 
 const loadedPacks = new Set([
-  ...['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters', 'outskirts-dog-handler', 'bus-woman-character', 'outskirts-bus-woman-wrong-origin', 'outskirts-vacant-dog'].map(name=>`/assets/${name}.glb`),
+  ...['vegetation', 'conservatory-doors', 'conservatory-acquisitions', 'source-structures', 'conservatory-props', 'outskirts-characters', 'outskirts-dog-handler', 'bus-woman-character', 'outskirts-bus-woman-wrong-origin', 'outskirts-vacant-dog', 'source-outskirts-graffiti', 'van-brand'].map(name=>`/assets/${name}.glb`),
   ...SOURCE_OUTSKIRTS_TOWN.packs,
 ]);
 const packMeshes = new Set([...loadedPacks].flatMap((path) => {

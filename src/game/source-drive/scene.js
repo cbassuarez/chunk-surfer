@@ -10,6 +10,7 @@ import{driveEvolutionFrame}from'./evolution.js';
 import{makePredicamentScene,predicamentColliders}from'./predicaments/scene.js';
 import{driveDoorCrossingFrame}from'./door-crossing.js';
 import{ukRoadMarkingMeshAt}from'../../data/uk-road-markings.js';
+import{vanBrandInstances}from'../../render/van-brand.js';
 export const rotation=(x=0,y=0,z=0)=>{const cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);return[cy*cz+sy*sx*sz,cx*sz,-sy*cz+cy*sx*sz,0,-cy*sz+sy*sx*cz,cx*cz,sy*sz+cy*sx*cz,0,sy*cx,-sx,cy*cx,0,0,0,0,1];};
 export function multiply(a,b){const m=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let i=0;i<4;i++)m[c*4+r]+=a[i*4+r]*b[c*4+i];return m;}
 const transform=(m,v)=>[m[0]*v[0]+m[4]*v[1]+m[8]*v[2]+m[12],m[1]*v[0]+m[5]*v[1]+m[9]*v[2]+m[13],m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]];
@@ -70,5 +71,6 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  targets.push({id:'play',label:'PLAY LAST TAKE · E',point:transform(recM,recorderKeys.play)},{id:'stop',label:'STOP TRANSPORT · X',point:transform(recM,recorderKeys.stop)});
  const evolution=driveEvolutionFrame(s),cut=makeCutScene(s,evolution),predicaments=makePredicamentScene(s);props.push(...cut.props,...predicaments.props);lamps.push(...cut.lights,...predicaments.lights);const mic=offset(metrics.eye,mount),cabinSource=source=>{const d=source.world.map((v,i)=>v-body[12+i]);return{...source,position:[body[0]*d[0]+body[1]*d[1]+body[2]*d[2]-mic[0],body[4]*d[0]+body[5]*d[1]+body[6]*d[2]-mic[1],body[8]*d[0]+body[9]*d[1]+body[10]*d[2]-mic[2]]};};cut.sources=cut.sources.map(cabinSource);predicaments.sources=predicaments.sources.map(cabinSource);
  const rainShelter={x:bridge.matrix[12],y:bridge.y+ORDINARY_BRIDGE.clearance,z:bridge.matrix[14],heading:bridge.heading};
+ props.push(...vanBrandInstances(props));
  const eye=transform(head,offset(metrics.eye,mount));return{cut,predicaments,evolution,props,colliders,eye,lamps,mirrors,targets,body,bridge,rainShelter,doorCrossing,recorderMatrix:recM,cabPoint,roadPitch:attitude.pitch};
 }

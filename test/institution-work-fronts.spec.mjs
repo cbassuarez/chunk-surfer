@@ -54,7 +54,7 @@ const dot=(a,b)=>a.reduce((sum,n,i)=>sum+n*b[i],0);
 const unit=p=>p.map(n=>n/Math.hypot(...p));
 
 const cases=[
-  {id:'b3-patchbay',mesh:'legacy_patchbay',anchor:[24,10.8],workProp:'b3-chair',normal:{nx:-1,ny:0},floor:-4},
+  {id:'b3-patchbay',mesh:'legacy_patchbay',anchor:[23.5,8],inspectAt:{x:22,y:8},normal:{nx:-1,ny:0},floor:-4},
   {id:'acq-chapel-score-cabinet-west',mesh:'gothic_cabinet_01',anchor:[89.5,153.5],inspectAt:{x:90.35,y:154.15},normal:{nx:1,ny:0},floor:8.6},
   {id:'acq-chapel-score-cabinet-east',mesh:'gothic_cabinet_01',anchor:[98.5,153.5],inspectAt:{x:97.65,y:154.15},normal:{nx:-1,ny:0},floor:8.6},
 ];
@@ -124,7 +124,7 @@ test('facing repairs preserve authored obstacles and inspection anchors',()=>{
   for(const item of cases){
     const authored=CONSERVATORY_PROPS.find(p=>p.id===item.id),runtime=PROPS.propById(item.id),spec=PROP_MESH[item.mesh];
     assert.equal(CONSERVATORY_PROPS.filter(p=>p.id===item.id).length,1);
-    assert.deepEqual([authored.x,authored.y],item.anchor,'a visual repair must not move the existing obstacle');
+    assert.deepEqual([authored.x,authored.y],item.anchor,'the obstacle must remain at its authored location');
     if(item.inspectAt)assert.deepEqual(authored.inspectAt,item.inspectAt,'retain the authored gameplay proxy');
     assert.equal(runtime.blocks,true,'the visible object must remain an honest body obstacle');
     assert.equal(PROPS.propCanOccupy(authored.x*2-.5,authored.y*2-.5),false);

@@ -82,20 +82,27 @@ export function busBodyCorridorProps({origin={},clock=0,reducedMotion=false,prog
       props.push(placed('cut_costal_secretions',m,`bus-organ-${i}:secretion-${index}`,{joints:{},morphs:w},'secretion'));
     }
   }
-  for(const gate of gateStations())if(Math.abs(gate.z-progress)<C.viewDistance+3){
+  for(const gate of gateStations())if(Math.abs(gate.z-progress)<C.viewDistance){
     const m=frameMatrix(origin,gate.z,{offset:[gate.side*1.10,-.20,0],scale:[.60,.60,.60],yawOffset:gate.side>0?Math.PI:0});
     props.push(placed('cut_inspection_lamp',m,`bus-organ:practical-${gate.index}`,undefined,'practical'));
   }
   return props;
 }
-function gateStations(){return[1.2,15.6,30,44.4,58.8,70.8].map((z,index)=>({z,index,side:index%2?1:-1}));}
+function gateStations(){
+  const stations=Array.from({length:10},(_,i)=>1.2+i*7.2);
+  stations.push(C.length-1.2);
+  return stations.map((z,index)=>({z,index,side:index%2?1:-1}));
+}
 export function busBodyCorridorLights({origin={},progress=0}={}){
   origin=originOf(origin);progress=clamp(finite(progress)?progress:0,0,C.length);const lights=[];
   for(const gate of gateStations()){
-    if(Math.abs(gate.z-progress)>=C.viewDistance+3)continue;
+    if(Math.abs(gate.z-progress)>=C.viewDistance)continue;
     const centre=busBodyCorridorCentre(gate.z),yaw=origin.yaw+centre.yaw,offset=worldVector(centre.yaw,[gate.side*(1.10-.335*.60),2.296,0]);
-    const p=worldPoint(origin,[centre.x+offset[0],offset[1],gate.z+offset[2]]),d=worldVector(yaw,[-gate.side*.94,-.20,.25]),length=Math.hypot(...d);
-    lights.push({id:`bus-organ:practical-${gate.index}`,x:p[0],y:p[1],z:p[2],color:[.83,.77,.61],intensity:.72,radius:5.8,penetration:1,direction:d.map(v=>v/length),along:gate.z,
+    const p=worldPoint(origin,[centre.x+offset[0],offset[1],gate.z+offset[2]]),d=worldVector(yaw,[-gate.side*.72,-.68,0]),length=Math.hypot(...d);
+    // Broad opal practicals graze the opposite flesh and wet footing. Their
+    // real reach overlaps between stations; no camera fill follows the player.
+    lights.push({id:`bus-organ:practical-${gate.index}`,x:p[0],y:p[1],z:p[2],color:[.83,.77,.61],intensity:.85,radius:8.2,penetration:1,
+      direction:d.map(v=>v/length),coneOuterCos:-.45,coneInnerCos:.35,along:gate.z,
       distanceM:Math.abs(gate.z-progress),fixtureMesh:'cut_inspection_lamp'});
   }
   return lights.sort((a,b)=>a.distanceM-b.distanceM).slice(0,3);

@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_STRATA,sourceEarthfallUpperHeight,sourceEarthfallLowerContains,sourceEarthfallCellLayout,sourceEarthfallFracturePose,sourceEarthfallReleasePlan,earthfallExitDoorHeight} from '../src/data/source-earthfall.js';
+import {SOURCE_EARTHFALL as C,SOURCE_EARTHFALL_STRATA,sourceEarthfallUpperHeight,sourceEarthfallLowerContains,sourceEarthfallCellLayout,sourceEarthfallFracturePose,sourceEarthfallReleasePlan,earthfallExitDoorHeight,sourceEarthfallBodyContacts,sourceEarthfallStructuralLayout,sourceEarthfallStructuralPose} from '../src/data/source-earthfall.js';
 import {freshSourceEarthfall,normalizeSourceEarthfall,stepSourceEarthfall,sourceEarthfallFrame,sourceEarthfallSupportAt} from '../src/game/source-earthfall.js';
 const near=(a,b,t=1e-7)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 const fresh=()=>freshSourceEarthfall({runId:'earthfall-test',returnPose:{x:7,y:-919,yaw:.3,preserved:['original-field']}});
 const step=(s,input={})=>stepSourceEarthfall(s,input).state;
 function advance(s,seconds,input={}){const events=[];for(let time=0;time+1e-8<seconds;){const dt=Math.min(1/120,seconds-time),r=stepSourceEarthfall(s,{...input,dt});s=r.state;events.push(...r.events);time+=dt;}return{state:s,events};}
 function committed(){let s=fresh();for(let i=0;i<120&&!s.committed;i++)s=step(s,{dt:1/120,forward:1});assert.ok(s.committed);return s;}
-function landed(){const s=advance(committed(),10).state;assert.equal(s.phase,'landed');return s;}
+function landed(){const s=advance(committed(),C.footingLossAt+7).state;assert.equal(s.phase,'landed');return s;}
 function walk(s,x,z){const events=[];for(let i=0;i<6000&&s.status==='active';i++){const dx=x-s.x,dz=z-s.z,d=Math.hypot(dx,dz);if(d<.025)return{state:s,events};const r=stepSourceEarthfall(s,{dt:1/120,forward:Math.min(1,d/(C.walkSpeed/120)),look:{yaw:Math.atan2(dx,-dz)}});s=r.state;events.push(...r.events);}return{state:s,events};}
 
 test('a finite corridor stands100m above a separate visible landing head and3.6m SourceII spine',()=>{
  const s=fresh(),f=sourceEarthfallFrame(s);assert.equal(C.upperFloor-C.lowerFloor,100);assert.equal(C.earth.maxX-C.earth.minX,18);assert.equal(C.passage.halfWidth*2,3.6);
- assert.ok((C.catch.maxX-C.catch.minX)*(C.catch.maxZ-C.catch.minZ)<550,'the old192x162m catch floor must not return');
- assert.equal(f.catchSurfaceY,0);assert.equal(f.geometry.path.y,0);assert.equal(f.geometry.upperEarth.y,100);assert.equal(sourceEarthfallSupportAt(13,-7,landed()),null);assert.equal(sourceEarthfallSupportAt(3,-30,landed()),null);assert.equal(sourceEarthfallSupportAt(0,-30,landed()).y,0);
+ assert.ok((C.catch.maxX-C.catch.minX)*(C.catch.maxZ-C.catch.minZ)<2000,'the receiving head stays finite and covers the complete reachable upper deck');
+ for(const x of[C.earth.minX-3,C.earth.maxX+3])for(const z of[C.earth.minZ-3,C.earth.maxZ+3])assert.ok(sourceEarthfallLowerContains(x,z),'no allowed cap arrival may fall past an artificially small catch');
+ assert.equal(f.catchSurfaceY,0);assert.equal(f.geometry.path.y,0);assert.equal(f.geometry.upperEarth.y,100);assert.equal(sourceEarthfallSupportAt(14.3,-7,landed()),null);assert.equal(sourceEarthfallSupportAt(3,-60,landed()),null);assert.equal(sourceEarthfallSupportAt(0,-60,landed()).y,0);
 });
 
 test('waiting, looking, interacting or restored positions do not invent a crossing or start demolition',()=>{
@@ -21,47 +22,85 @@ test('waiting, looking, interacting or restored positions do not invent a crossi
  const saved=normalizeSourceEarthfall({...fresh(),z:-9});assert.equal(advance(saved,1,{forward:1}).state.committed,false);
 });
 
-test('ordinary forward crossing starts one controlled lowering and stopping never cancels it',()=>{
- const first=committed(),r=advance(first,2);assert.ok(r.state.feet<98&&r.state.feet>92);near(r.state.feet,sourceEarthfallUpperHeight(r.state.elapsed));assert.equal(r.state.phase,'fracturing');
+test('ordinary forward crossing starts finite support loading and stopping never cancels it',()=>{
+ const first=committed(),r=advance(first,C.footingLossAt-1);assert.ok(r.state.feet<100&&r.state.feet>98.8);near(r.state.feet,sourceEarthfallUpperHeight(r.state.elapsed));assert.equal(r.state.phase,'fracturing');
  const next=advance(r.state,3);assert.equal(next.state.phase,'falling');assert.ok(next.state.feet<92);assert.equal(next.state.receipts.filter(e=>e.type==='strain').length,1);assert.equal(next.state.receipts.filter(e=>e.type==='footing-loss').length,1);
 });
 
 test('the player can walk and look while the visible supporting corridor lowers before breaking',()=>{
- let s=advance(committed(),1).state,before={...s};s=advance(s,.2,{side:1,look:{yaw:.5,pitch:-.6}}).state;assert.ok(Math.hypot(s.x-before.x,s.z-before.z)>.5);assert.equal(s.pitch,-.6);near(s.yaw,.5);
+ let s=advance(committed(),C.lowering.startAt+.4).state,before={...s};s=advance(s,.2,{side:1,look:{yaw:.5,pitch:-.6}}).state;assert.ok(Math.hypot(s.x-before.x,s.z-before.z)>.5);assert.equal(s.pitch,-.6);near(s.yaw,.5);
  const support=sourceEarthfallSupportAt(s.x,s.z,s);near(s.feet,support.y);near(sourceEarthfallFrame(s).geometry.upperEarth.y,support.y);assert.ok(s.feet<before.feet);
 });
 
-test('precommit retreat restores the same Source pose; a door left8m above cannot teleport the lowered body back',()=>{
+test('precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back',()=>{
  const retreat=advance(fresh(),1,{forward:-1}).state;assert.equal(retreat.status,'returned');assert.deepEqual(retreat.returnPose,fresh().returnPose);assert.equal(retreat.committed,false);
- let s=advance(committed(),2.8).state;s={...s,z:-.001};s=step(s,{dt:1/120,forward:-1});assert.equal(s.status,'active');assert.ok(s.feet<93);assert.ok(s.z>0);
+ let s=advance(committed(),C.footingLossAt+.8).state;s={...s,z:-.001};s=step(s,{dt:1/120,forward:-1});assert.equal(s.status,'active');assert.ok(s.feet<99);assert.ok(s.z>0);
 });
 
 test('pause, protected recording, unavailable assets and unavailable rendering freeze physical state and clocks',()=>{
- for(const s of[fresh(),committed(),advance(committed(),4).state,landed()])for(const guard of[{paused:true},{protected:true},{assetsReady:false},{renderReady:false}])assert.deepEqual(step(s,{dt:.25,forward:1,interact:true,look:{yaw:2},...guard}),normalizeSourceEarthfall(s));
+ for(const s of[fresh(),committed(),advance(committed(),C.footingLossAt+1).state,landed()])for(const guard of[{paused:true},{protected:true},{assetsReady:false},{renderReady:false}])assert.deepEqual(step(s,{dt:.25,forward:1,interact:true,look:{yaw:2},...guard}),normalizeSourceEarthfall(s));
 });
 
 test('the full100m descent belongs to the body, crosses3distinct strata and lands on a fixed lower surface',()=>{
  let s=committed(),last=s.feet,drop=0;const events=[];let lowered=false,fall=false,impact=false,black=false;
- for(let i=0;i<1600&&s.phase!=='landed';i++){const r=stepSourceEarthfall(s,{dt:1/120});s=r.state;events.push(...r.events);assert.ok(s.feet<=last+1e-8);drop+=last-s.feet;last=s.feet;const f=sourceEarthfallFrame(s);assert.equal(f.catchSurfaceY,0);assert.equal(f.geometry.path.y,0);
- lowered||=s.phase==='fracturing'&&s.feet<99;fall||=s.phase==='falling';impact||=s.phase==='catching';black||=f.blackoutAlpha>.99;}
- assert.ok(lowered&&fall&&impact&&black);assert.equal(s.phase,'landed');near(s.feet,0);near(drop,100);assert.ok(s.elapsed<9);assert.equal(sourceEarthfallFrame(s).blackoutAlpha,0);
+ for(let i=0;i<1600&&s.phase!=='landed';i++){const r=stepSourceEarthfall(s,{dt:1/120});s=r.state;events.push(...r.events);assert.ok(s.feet-last<.1,'contact response cannot launch the body between ticks');drop+=last-s.feet;last=s.feet;const f=sourceEarthfallFrame(s);assert.equal(f.catchSurfaceY,0);assert.equal(f.geometry.path.y,0);
+ lowered||=s.phase==='fracturing'&&s.feet<99.95;fall||=s.phase==='falling';impact||=s.phase==='catching';black||=f.blackoutAlpha>.3;}
+ assert.ok(lowered&&fall&&impact&&black);assert.equal(s.phase,'landed');near(s.feet,0);near(drop,100);assert.ok(s.elapsed<C.footingLossAt+9);assert.equal(sourceEarthfallFrame(s).blackoutAlpha,0);
  for(const type of['strain','fracture','footing-loss','stratum-0','stratum-1','stratum-2','catch','land'])assert.equal(s.receipts.filter(e=>e.type===type).length,1,type);
  const strata=events.filter(e=>e.type.startsWith('stratum-'));assert.deepEqual(strata.map(e=>e.position.y),[74,49,25]);assert.ok(strata.every((e,i)=>!i||e.at>strata[i-1].at));
  assert.ok(!('injuries'in s)&&!events.some(e=>/injur|damage|punish/.test(e.type)));
 });
 
-test('all reachable lowering and outward-airborne footprints land on the actual finite head without an air clamp',()=>{
- const directions=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];let count=0;
- for(const x of[-C.earth.maxX+C.bodyRadius+.02,0,C.earth.maxX-C.bodyRadius-.02])for(const ground of directions)for(const air of directions){let s={...committed(),x};
- for(let i=0;i<1600&&s.phase!=='landed'&&s.status==='active';i++){const before=s,vector=s.phase==='fracturing'?ground:air;s=step(s,{dt:1/120,side:vector[0],forward:vector[1]});if(before.phase==='falling')assert.ok(Math.hypot(s.x-before.x,s.z-before.z)<=C.airSpeed/120+1e-7,'live airborne position cannot snap/project');}
- if(s.status==='returned')continue;assert.equal(s.phase,'landed');assert.ok(sourceEarthfallLowerContains(s.x,s.z,C.bodyRadius));assert.equal(sourceEarthfallSupportAt(s.x,s.z,s).y,0);count++;}
- assert.ok(count>140);
+test('air input preserves inherited motion without an invisible clamp or projection',()=>{
+ const base={...fresh(),committed:true,committedAt:0,clock:7,elapsed:7,phase:'falling',feet:40,x:10,z:-46,velocityX:.3,velocityZ:-.2,velocityY:-20};
+ for(const input of[{side:1},{side:-1},{forward:1},{forward:-1}]){
+  const neutral=step(base,{dt:C.fixedStep}),moving=step(base,{dt:C.fixedStep,...input});
+  near(Math.hypot(moving.x-neutral.x,moving.z-neutral.z),C.airSpeed*C.fixedStep);
+ }
+ const outside={...base,x:C.catch.maxX+.2,z:C.catch.minZ-1};
+ const moved=step(outside,{dt:C.fixedStep});assert.ok(moved.x>outside.x,'outlying air position must not snap into the catch');
 });
 
-test('impact is a brief bounded blackout at zero height, while normal look resumes after it',()=>{
+test('ordinary stopped and continuously walking arrivals reach the physical receiving head',()=>{
+ for(const input of[{}, {forward:1}]){
+  let s=committed();for(let i=0;i<2000&&s.phase!=='landed'&&s.status==='active';i++)s=step(s,{dt:C.fixedStep,...input});
+  assert.equal(s.phase,'landed');assert.ok(sourceEarthfallLowerContains(s.x,s.z));assert.equal(sourceEarthfallSupportAt(s.x,s.z,s).y,0);
+ }
+});
+
+test('a right-edge rubble hold remains escapable through a real lateral gap',t=>{
+ // Reach the edge with ordinary movement before local bond loss; this is not
+ // a staged body placed inside a pocket that ordinary controls cannot reach.
+ let state=advance(committed(),C.footingLossAt-.2666666666667,{side:1}).state;
+ assert.ok(state.x>8.7&&state.x<C.earth.maxX-C.bodyRadius);
+ while(state.elapsed<C.footingLossAt+9&&state.phase!=='landed')state=step(state,{dt:C.fixedStep});
+ assert.equal(state.phase,'falling');assert.ok(state.feet>92,'the rubble can physically hold an arriving body');
+ const held={x:state.x,z:state.z,feet:state.feet};
+ const escaped=advance(state,6,{side:-1}).state;
+ assert.ok(escaped.feet<88,'ordinary lateral walking must leave the ledge through geometry, not an invisible ejection');
+ const landed=advance(escaped,8).state;assert.equal(landed.phase,'landed');assert.ok(sourceEarthfallLowerContains(landed.x,landed.z));
+ t.diagnostic(JSON.stringify({held,afterSixSeconds:{x:escaped.x,z:escaped.z,feet:escaped.feet},landed:{x:landed.x,z:landed.z,feet:landed.feet}}));
+});
+
+test('contact impulses survive normalization and fixed ticks agree across caller frame frequencies',()=>{
+ const start=committed(),results=[];
+ for(const frameDt of[C.fixedStep,1/60,.1]){
+  let state=structuredClone(start);
+  for(let elapsed=0;elapsed<12-1e-8;elapsed+=frameDt)state=step(state,{dt:Math.min(frameDt,12-elapsed)});
+  results.push(state);
+ }
+ for(const state of results.slice(1)){
+  for(const key of['x','z','feet','velocityX','velocityY','velocityZ','elapsed','clock'])near(state[key],results[0][key],1e-9);
+  assert.equal(state.phase,results[0].phase);assert.deepEqual(state.receipts,results[0].receipts);
+ }
+ const impulse={...start,velocityX:5.2,velocityZ:-6.1};
+ near(normalizeSourceEarthfall(impulse).velocityX,5.2);near(normalizeSourceEarthfall(impulse).velocityZ,-6.1);
+});
+
+test('impact is a brief partial blink at zero height, while normal look resumes after it',()=>{
  const base={...fresh(),committed:true,committedAt:0,clock:8,elapsed:8,phase:'catching',feet:0,catchElapsed:0};let s=base;const xy={x:s.x,z:s.z};let max=0;
  for(let i=0;i<70;i++){s=step(s,{dt:1/120,forward:1});max=Math.max(max,sourceEarthfallFrame(s).blackoutAlpha);if(s.phase==='catching'){near(s.x,xy.x);near(s.z,xy.z);near(s.feet,0);}}
- assert.equal(max,1);assert.equal(s.phase,'landed');assert.equal(sourceEarthfallFrame(s).blackoutAlpha,0);assert.ok(s.z<xy.z);
+ assert.ok(max>.3&&max<=.32);assert.equal(s.phase,'landed');assert.equal(sourceEarthfallFrame(s).blackoutAlpha,0);assert.ok(s.z<xy.z);
 });
 
 test('the lower threshold opens on approach but must still be physically crossed; an off-axis step cannot grant SourceII',()=>{
@@ -94,12 +133,13 @@ test('a borrowed manual-door policy blocks approach until interaction while ordi
 test('the extended receiving spine adds a sustained walk while retaining continuous physical footing',()=>{
  const start=landed(),result=walk(start,0,C.passage.exitZ-.5);
  assert.equal(result.state.status,'completed');
- assert.ok(result.state.clock-start.clock>19,'the former twelve-second approach must not return');
- assert.ok(result.state.clock-start.clock<22,'the extension is a walk-up, not an unbounded transit section');
+ const physicalDistance=Math.hypot(start.x,C.passage.exitZ-.5-start.z);
+ assert.ok(Math.abs((result.state.clock-start.clock)-physicalDistance/C.walkSpeed)<.6,'walk time must follow the actual landing pose and physical route');
  const path=sourceEarthfallFrame(start).geometry.path;
  for(let z=-15;z>=C.passage.exitZ-1;z-=.5){
    assert.equal(sourceEarthfallSupportAt(0,z,start)?.y,C.lowerFloor,`missing footing at ${z}`);
-   assert.ok(z>=path.minZ&&z<=path.maxZ,'visible path and support must agree');
+   const head=sourceEarthfallFrame(start).geometry.catchSurface;
+   assert.ok(z>=path.minZ&&z<=path.maxZ||z>=head.minZ&&z<=head.maxZ,'visible receiving head or spine must support each physical point');
  }
  assert.equal(result.events.filter(event=>event.type==='door'&&event.id==='source-earthfall-exit').length,1);
  assert.equal(result.events.filter(event=>event.type==='enter-source-II').length,1);
@@ -148,7 +188,7 @@ test('save/reload retains the exact physical fall and receipts without replaying
 });
 
 test('one-time migration rescues retired broad-floor saves without projecting an ordinary live fall',()=>{
- const old={...fresh(),layoutRevision:undefined,x:70,z:20};const migrated=normalizeSourceEarthfall(old);assert.equal(migrated.layoutRevision,3);assert.ok(sourceEarthfallSupportAt(migrated.x,migrated.z,migrated));assert.deepEqual(normalizeSourceEarthfall(migrated),migrated);
+ const old={...fresh(),layoutRevision:undefined,x:70,z:20};const migrated=normalizeSourceEarthfall(old);assert.equal(migrated.layoutRevision,4);assert.ok(sourceEarthfallSupportAt(migrated.x,migrated.z,migrated));assert.deepEqual(normalizeSourceEarthfall(migrated),migrated);
  const legacyFalling=normalizeSourceEarthfall({...old,committed:true,phase:'falling',elapsed:5,clock:5,feet:54});assert.ok(sourceEarthfallLowerContains(legacyFalling.x,legacyFalling.z,C.bodyRadius));near(legacyFalling.feet,54);
 });
 
@@ -163,10 +203,19 @@ test('a completed old-approach receipt retains doorway clearance once while acti
  }
 });
 
-test('actual shared fragment pivots lower with their support, then open and depart outside the lower path',()=>{
+test('finite fragments remain as shallow debris instead of accelerating away to clear the lower view',()=>{
  const cells=sourceEarthfallCellLayout();assert.equal(cells.length,120);
- for(const cell of cells){const held=sourceEarthfallFracturePose(cell.index,2,cell.center);near(held.y,sourceEarthfallUpperHeight(2));near(held.x,cell.center.x);near(held.z,cell.center.z);assert.equal(held.support,true);const plan=sourceEarthfallReleasePlan(cell.index,cell.center);assert.ok(plan.releaseAt>=C.footingLossAt);const gone=sourceEarthfallFracturePose(cell.index,10,cell.center);assert.equal(gone.support,false);assert.ok(Math.abs(gone.x)>C.passage.halfWidth);assert.ok(gone.y<50);assert.deepEqual(sourceEarthfallFracturePose(cell.index,10,cell.center),gone);}
- assert.deepEqual(SOURCE_EARTHFALL_STRATA.map(s=>s.y),[74,49,25]);
+ let settled=0;
+ for(const cell of cells){
+  const held=sourceEarthfallFracturePose(cell.index,2,cell.center),plan=sourceEarthfallReleasePlan(cell.index,cell.center);
+  assert.ok(Math.abs(held.x-cell.center.x)<.1&&Math.abs(held.z-cell.center.z)<.1);assert.equal(held.support,true);
+  assert.ok(plan.hostSupports.length===2);assert.equal(plan.departureSpeed,0);
+  const debris=sourceEarthfallFracturePose(cell.index,10,cell.center);assert.equal(debris.support,false);
+  assert.ok(debris.y>85&&debris.y<100,'cap mass belongs to the finite shallow cavity, not an evacuated100m shaft');
+  assert.ok(Math.hypot(debris.x-cell.center.x,debris.z-cell.center.z)<3,'a finite fragment cannot flee24m sideways');
+  if(debris.settled)settled++;
+ }
+ assert.ok(settled>100);assert.deepEqual(SOURCE_EARTHFALL_STRATA.map(s=>s.y),[74,49,25]);
 });
 
 test('an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt',()=>{

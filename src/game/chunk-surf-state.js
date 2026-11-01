@@ -411,6 +411,34 @@ export function sourceBossAvailable(value) {
 // now spatial rather than a room graph.
 export const createChunkSurfState = freshChunkSurfState;
 
+// Read the finale routing without constructing the many unrelated Source
+// checkpoints. This shares the migration rules used by full normalization;
+// it stays live for callers which mutate a save between frames.
+export function chunkSurfFinaleRouting(value = null) {
+  if (!value || typeof value !== 'object') return { route: null, stage: SOURCE_FINALE_STAGE.UNCOMMITTED, result: null };
+  const phase = PHASES.has(value.phase) ? value.phase : (value.completed ? CHUNK_SURF_PHASE.COMPLETED : CHUNK_SURF_PHASE.HALL);
+  const rawFinal = value.finalEncounter && typeof value.finalEncounter === 'object' ? value.finalEncounter : {};
+  const rawFinale = value.finale && typeof value.finale === 'object' && !Array.isArray(value.finale) ? value.finale : {};
+  let route = FINALE_ROUTES.has(rawFinale.route) ? rawFinale.route : null;
+  let stage = FINALE_STAGES.has(rawFinale.stage) ? rawFinale.stage : SOURCE_FINALE_STAGE.UNCOMMITTED;
+  let result = FINALE_RESULTS.has(rawFinale.result) ? rawFinale.result : null;
+  if (Number(value.schema) < 5) {
+    if (phase === CHUNK_SURF_PHASE.HORIZON) stage = SOURCE_FINALE_STAGE.HORIZON;
+    if (value.horizon?.exit === HORIZON_EXIT.TOWER) {
+      route = SOURCE_FINALE_ROUTE.TOWER;
+      stage = SOURCE_FINALE_STAGE.TOWER_COMMITTED;
+    } else if (value.horizon?.exit === HORIZON_EXIT.CHAPEL) {
+      route = SOURCE_FINALE_ROUTE.CHAPEL;
+      stage = SOURCE_FINALE_STAGE.CHAPEL_COMMITTED;
+    } else if ((value.completed || phase === CHUNK_SURF_PHASE.COMPLETED) && rawFinal.won !== false) {
+      route = SOURCE_FINALE_ROUTE.CONTACT;
+      stage = SOURCE_FINALE_STAGE.RESOLVED;
+      result = SOURCE_FINALE_RESULT.WON;
+    }
+  }
+  return { route, stage, result };
+}
+
 export function normalizeChunkSurfState(value = null, fallback = {}) {
   if (!value || typeof value !== 'object') return freshChunkSurfState(fallback);
   const base = freshChunkSurfState({
@@ -438,27 +466,8 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
   const pursuitsCleared = unique(value.pursuitsCleared).filter((id) => PURSUIT_BEATS.has(id));
   const rawFinale = value.finale && typeof value.finale === 'object' && !Array.isArray(value.finale)
     ? value.finale : {};
-  let finaleRoute = FINALE_ROUTES.has(rawFinale.route) ? rawFinale.route : null;
-  let finaleStage = FINALE_STAGES.has(rawFinale.stage) ? rawFinale.stage : SOURCE_FINALE_STAGE.UNCOMMITTED;
-  let finaleResult = FINALE_RESULTS.has(rawFinale.result) ? rawFinale.result : null;
+  const { route: finaleRoute, stage: finaleStage, result: finaleResult } = chunkSurfFinaleRouting(value);
   const legacyFinale = Number(value.schema) < 5;
-  if (legacyFinale) {
-    if (phase === CHUNK_SURF_PHASE.HORIZON) finaleStage = SOURCE_FINALE_STAGE.HORIZON;
-    if (value.horizon?.exit === HORIZON_EXIT.TOWER) {
-      finaleRoute = SOURCE_FINALE_ROUTE.TOWER;
-      finaleStage = SOURCE_FINALE_STAGE.TOWER_COMMITTED;
-    } else if (value.horizon?.exit === HORIZON_EXIT.CHAPEL) {
-      finaleRoute = SOURCE_FINALE_ROUTE.CHAPEL;
-      finaleStage = SOURCE_FINALE_STAGE.CHAPEL_COMMITTED;
-    } else if ((value.completed || phase === CHUNK_SURF_PHASE.COMPLETED) && rawFinal.won !== false) {
-      // Before schema 5 a resolved fault with no Horizon exit silently became
-      // the Ellery tower.  It is the old shape of a Contact victory and now
-      // lands on that terminal result instead of changing routes after reload.
-      finaleRoute = SOURCE_FINALE_ROUTE.CONTACT;
-      finaleStage = SOURCE_FINALE_STAGE.RESOLVED;
-      finaleResult = SOURCE_FINALE_RESULT.WON;
-    }
-  }
   const legacyLandscape = value.firstLiftCompleted == null
     && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL, CHUNK_SURF_PHASE.COMPLETED].includes(phase);
   const firstLiftCompleted = value.firstLiftCompleted == null ? legacyLandscape : !!value.firstLiftCompleted;

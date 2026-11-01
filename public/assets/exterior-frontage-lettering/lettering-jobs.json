@@ -3186,570 +3186,6 @@
       "reliefM": 0.000007
     },
     {
-      "id": "district-north-row-b-fascia-0",
-      "lines": [
-        "M. THORNTON",
-        "BAKER & CONFECTIONER"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        -28
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.16,
-          0.095,
-          0.052
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 0,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
-      "id": "district-north-row-b-fascia-1",
-      "lines": [
-        "HOLT & SISTER",
-        "LINEN & HABERDASHERY"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        -20
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.075,
-          0.18,
-          0.12
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 1,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
-      "id": "district-north-row-b-fascia-2",
-      "lines": [
-        "J. WINTER",
-        "IRONMONGER"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        -12
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.16,
-          0.095,
-          0.052
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 2,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
-      "id": "district-north-row-b-fascia-5",
-      "lines": [
-        "BELL & SON",
-        "FRAMES & RESTORATION"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        12
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.16,
-          0.095,
-          0.052
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 5,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
-      "id": "district-north-row-b-fascia-6",
-      "lines": [
-        "WEST RIDING BOOKS",
-        "OLD & NEW BOOKS"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        20
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.075,
-          0.18,
-          0.12
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 6,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
-      "id": "district-north-row-b-fascia-7",
-      "lines": [
-        "F. DIXON",
-        "FAMILY GROCER"
-      ],
-      "center": [
-        0.194,
-        3.4,
-        28
-      ],
-      "readerRight": [
-        0,
-        0,
-        -1
-      ],
-      "up": [
-        0,
-        1,
-        0
-      ],
-      "widthM": 6.95,
-      "heightM": 0.55,
-      "capHeightM": 0.21,
-      "lineScale": [
-        1,
-        0.52
-      ],
-      "lineCentres": [
-        0.32,
-        0.77
-      ],
-      "font": "NimbusRoman-Bold.otf",
-      "process": "solid painted timber shop fascia",
-      "palette": {
-        "ground": [
-          0.16,
-          0.095,
-          0.052
-        ],
-        "ink": [
-          0.7,
-          0.65,
-          0.49
-        ]
-      },
-      "deed": 7,
-      "category": "institution",
-      "rasterWidthPx": 480,
-      "rasterHeightPx": 44,
-      "polarity": "light-on-dark",
-      "baseRoughness": 0.78,
-      "inkRoughness": 0.76,
-      "finishSupport": {
-        "kind": "carrier",
-        "edgeWear": true,
-        "contact": "none",
-        "exposure": "sheltered"
-      },
-      "finish": {
-        "substrate": "metal support with fired vitreous-enamel face",
-        "coating": "screen-fired dielectric lettering",
-        "roughness": 0.32,
-        "inkRoughness": 0.44,
-        "fieldM": 0.16,
-        "variation": 0.024,
-        "roughnessVariation": 0.055,
-        "microReliefM": 0.000006,
-        "deposit": 0.055,
-        "edgeLoss": 0.1,
-        "sequence": [
-          "fired face remains largely intact",
-          "sheltered ledge accumulates a thin deposit",
-          "isolated actual perimeter impact exposes dull support"
-        ],
-        "limits": [
-          "support alloy is not established; exposed support is neutral, never invented iron rust"
-        ],
-        "version": 1,
-        "profile": "enamel",
-        "support": {
-          "kind": "carrier",
-          "edgeWear": true,
-          "contact": "none",
-          "exposure": "sheltered"
-        },
-        "fabricationReliefM": 0.000007,
-        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
-        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
-        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
-        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
-      },
-      "reliefM": 0.000007
-    },
-    {
       "id": "district-north-row-c-fascia-0",
       "lines": [
         "THE READING ROOM",
@@ -4830,6 +4266,194 @@
         ]
       },
       "deed": 7,
+      "category": "institution",
+      "rasterWidthPx": 480,
+      "rasterHeightPx": 44,
+      "polarity": "light-on-dark",
+      "baseRoughness": 0.78,
+      "inkRoughness": 0.76,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    },
+    {
+      "id": "ellery-square-west-fascia-2",
+      "lines": [
+        "ASHWORTH MUSIC",
+        "MUSIC SELLER & PUBLISHER"
+      ],
+      "center": [
+        0.194,
+        3.4,
+        0
+      ],
+      "readerRight": [
+        0,
+        0,
+        -1
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "widthM": 6.95,
+      "heightM": 0.55,
+      "capHeightM": 0.21,
+      "lineScale": [
+        1,
+        0.52
+      ],
+      "lineCentres": [
+        0.32,
+        0.77
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "process": "solid painted timber shop fascia",
+      "palette": {
+        "ground": [
+          0.16,
+          0.095,
+          0.052
+        ],
+        "ink": [
+          0.7,
+          0.65,
+          0.49
+        ]
+      },
+      "deed": 2,
+      "category": "institution",
+      "rasterWidthPx": 480,
+      "rasterHeightPx": 44,
+      "polarity": "light-on-dark",
+      "baseRoughness": 0.78,
+      "inkRoughness": 0.76,
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "none",
+        "exposure": "sheltered"
+      },
+      "finish": {
+        "substrate": "metal support with fired vitreous-enamel face",
+        "coating": "screen-fired dielectric lettering",
+        "roughness": 0.32,
+        "inkRoughness": 0.44,
+        "fieldM": 0.16,
+        "variation": 0.024,
+        "roughnessVariation": 0.055,
+        "microReliefM": 0.000006,
+        "deposit": 0.055,
+        "edgeLoss": 0.1,
+        "sequence": [
+          "fired face remains largely intact",
+          "sheltered ledge accumulates a thin deposit",
+          "isolated actual perimeter impact exposes dull support"
+        ],
+        "limits": [
+          "support alloy is not established; exposed support is neutral, never invented iron rust"
+        ],
+        "version": 1,
+        "profile": "enamel",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "none",
+          "exposure": "sheltered"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    },
+    {
+      "id": "ellery-square-west-fascia-3",
+      "lines": [
+        "R. MASON",
+        "DISPENSING CHEMIST"
+      ],
+      "center": [
+        0.194,
+        3.4,
+        8
+      ],
+      "readerRight": [
+        0,
+        0,
+        -1
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "widthM": 6.95,
+      "heightM": 0.55,
+      "capHeightM": 0.21,
+      "lineScale": [
+        1,
+        0.52
+      ],
+      "lineCentres": [
+        0.32,
+        0.77
+      ],
+      "font": "NimbusRoman-Bold.otf",
+      "process": "solid painted timber shop fascia",
+      "palette": {
+        "ground": [
+          0.075,
+          0.18,
+          0.12
+        ],
+        "ink": [
+          0.7,
+          0.65,
+          0.49
+        ]
+      },
+      "deed": 3,
       "category": "institution",
       "rasterWidthPx": 480,
       "rasterHeightPx": 44,

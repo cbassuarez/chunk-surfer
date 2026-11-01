@@ -52,6 +52,17 @@ test('recorded sources preload once, keep original pitch and expire after the au
   sound.prepare();assert.equal(g.fetches.length,3);sound.dispose();
 });
 
+test('recorded material tails retain their emission chart while the presented image rotates or becomes inaudible',async()=>{
+  const g=audio(),sound=createContinuationMaterialAudio({getAudio:()=>g,fetcher:g.fetcher,urlFor:f=>f});sound.prepare();await sound.whenReady();
+  const listener={eye:[0,1.62,0],right:[1,0,0],up:[0,1,0],forward:[0,0,-1]},first={listener,projectPoint:(_chart,p)=>({...p})};
+  const s=state({chartId:1,x:0,z:0});sound.update(s,first);sound.event({type:'land',position:{x:2,y:0,z:0}},s,first);
+  const initial=sound.snapshot().layers[0],source=g.sources[0];assert.equal(initial.chartId,1);assert.ok(initial.mix.pan>0);
+  sound.update({...s,chartId:0},{listener,projectPoint:(chart,p)=>chart===1?{x:-p.y,y:p.x,z:p.z}:p});
+  const rotated=sound.snapshot().layers[0];assert.deepEqual(rotated.position,initial.position);assert.equal(rotated.chartId,1);assert.equal(rotated.mix.pan,0);
+  sound.update({...s,chartId:2},{listener,projectPoint:()=>null});assert.equal(sound.snapshot().layers[0].mix.gain,0);
+  assert.equal(source.starts.length,1);assert.equal(source.stops.length,0);sound.dispose();
+});
+
 test('protection and pause cancel sources and reflected tails without a delayed replay',async()=>{
   const g=audio();let protectedAudio=false;
   const sound=createContinuationMaterialAudio({getAudio:()=>g,fetcher:g.fetcher,urlFor:f=>f,protectedAudio:()=>protectedAudio});

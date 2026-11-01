@@ -178,7 +178,8 @@ test('real fear wrapper preloads once and a cancelled cold contact cannot leak a
     FEAR.cancelContactExposure({ fade: 0 });
     const preload = FEAR.preloadAll();
     decoded.resolve(hush); await preload; await flush();
-    assert.equal(fetched.length, 2, 'heartbeat and hush are each fetched once despite concurrent preload/contact');
+    assert.equal(fetched.filter(url=>url.endsWith('hush.mp3')).length, 1, 'the forward hush is fetched once despite concurrent preload/contact');
+    assert.ok(!fetched.some(url=>url.endsWith('game/heartbeat.mp3')), 'the retired phrase is never fetched; heartbeat banks have a separate worklet owner');
     assert.equal(pending.state, 'cancelled'); assert.equal(h.sources.length, 0);
     const ready = FEAR.playContactExposure({ eventId: 'wrapper:ready', pan: .4 });
     assert.equal(ready.state, 'playing'); assert.equal(h.sources[0].buffer, hush, 'uses the forward original, never reversed copy');

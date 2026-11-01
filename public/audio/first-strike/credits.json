@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "id": "clearance-horn",
+  "file": "clearance-horn.mp3",
+  "source": {
+    "id": "industrial-air-horn",
+    "title": "Industrial Air Horn",
+    "author": "mcpable",
+    "sourcePage": "https://freesound.org/people/mcpable/sounds/131930/",
+    "download": "https://cdn.freesound.org/previews/131/131930_1542102-hq.mp3",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 58551,
+    "sha256": "a73670ddeee9bed590c19a928715a4ed866893992c849261d7acbc37e8966a9a",
+    "provenance": "Uploader describes air horn on an oil rig in Alberta. This retained file is the licensed HQ MP3 preview, not the original24-bit stereo WAV. Recorder, microphone, distance and processing history are unspecified. Used as a real industrial clearance-horn source, not documentary Ellery demolition sound."
+  },
+  "bytes": 42285,
+  "sha256": "9094e7b74c16e9c9ea7a155a2f0207e8cad5cb2f5bf6d3935dcaeb32d0e37b8d",
+  "processing": "Retain complete2.571s source, downmixmono48kHz; highpass150Hz, lowpass5200Hz, \u22123dB,8msattackfade/230msendfade toretain a natural tail. MP3 delivery128kbps. No TTS, pitch shift, looping or synthesized horn.",
+  "notMeasured": "Distance/obstruction/reflections are runtime authored approximations. Source is a real industrial oil-rig horn, not a documentary Ellery demolition performance."
+}

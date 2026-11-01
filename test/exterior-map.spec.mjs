@@ -12,6 +12,8 @@ import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {EXTERIOR_PUB,pubExteriorAt,pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
 import {SOUTH_ROW_SHOPS} from '../src/data/plaza-shopfronts.js';
+import {exteriorMapFootprints,exteriorMapTargets,exteriorInstitutionCells} from '../src/data/exterior-map.js';
+import {GLASS_COURT} from '../src/data/glass-court.js';
 import {captureExteriorMapSource,buildExteriorMapModel,usesExteriorMap,exteriorMapOccupancyFilter} from '../src/game/exterior-map-model.js';
 import {findGridRoute} from '../src/game/map-routing.js';
 import {buildMinimapCommands} from '../src/render/map-commands.js';
@@ -20,9 +22,9 @@ import {exteriorMapProjection} from '../src/render/exterior-map-view.js';
 FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
 const projectLogical=p=>{const r=FP.toRuntimePoint(p),q=FP.logicalToPhysical(r.x,r.y);return{x:q.x,z:q.z,height:q.y,renderGroup:q.renderGroup};};
 const canOccupy=s=>PROPS.propCanOccupy(s.logicalX,s.logicalY);
-const physical=FP.physicalSpanData(),started=performance.now();
+const physical=FP.physicalSpanData(),renderedInstances=PROPS.renderInstances({inscriptions:false}),started=performance.now();
 let broadphaseChecks=0;
-const source=captureExteriorMapSource({physical,projectLogical,canOccupy:exteriorMapOccupancyFilter({props:PROPS.allProps(),colliders:PROPS.structuralColliders(),renderedInstances:PROPS.renderInstances({inscriptions:false}),canOccupy:s=>{broadphaseChecks++;return canOccupy(s);}})});
+const source=captureExteriorMapSource({physical,projectLogical,renderedInstances,canOccupy:exteriorMapOccupancyFilter({props:PROPS.allProps(),colliders:PROPS.structuralColliders(),renderedInstances,canOccupy:s=>{broadphaseChecks++;return canOccupy(s);}})});
 const captureMs=performance.now()-started;
 const playerAt=space=>({x:space.position.x*2,y:space.position.y*2,height:space.height,areaLabel:'COURTYARD',heading:0});
 const modelFor=(extra={})=>buildExteriorMapModel({source,player:playerAt(source.spaces[0]),job:{done:2,total:5,rooms:[]},navigation:{showRoute:true},...extra});
@@ -34,7 +36,7 @@ test('outside context is a district, while roof/interior/Source retain their own
   const model=modelFor();assert.equal(model.context,'exterior');assert.deepEqual(model.floors.map(f=>f.id),['district']);assert.equal(model.spaces.some(s=>s.objective),false);
 });
 test('the broadphase preserves the full authoritative collision capture',()=>{
-  const exact=captureExteriorMapSource({physical,projectLogical,canOccupy});
+  const exact=captureExteriorMapSource({physical,projectLogical,renderedInstances,canOccupy});
   assert.deepEqual(source.floors[0].open,exact.floors[0].open);
   assert.deepEqual(source.floors[0].visibilityOpen,exact.floors[0].visibilityOpen);
   assert.ok(broadphaseChecks<source.floors[0].visibilityOpen.size*.5,'empty ground avoids most full prop/facade collision calls');
@@ -48,7 +50,7 @@ test('street, pub, bay and van targets are standing points in the actual compile
 test('Lyric shell and entrance follow the relocated canonical pub, including stable logical save coordinates',()=>{
   const doorway=pubExteriorAt(EXTERIOR_PUB.doors[0].id),target=source.spaces.find(s=>s.id==='outside:lyric'),shape=source.district.footprints.find(s=>s.id==='lyric');
   assert.deepEqual(target.position,{x:doorway.x,y:doorway.z});assert.deepEqual(target.logical,pubExteriorLogicalAt(EXTERIOR_PUB.doors[0].id));
-  assert.equal(shape.points[0].x,EXTERIOR_PUB.bounds.x0);assert.equal(shape.points[2].y,EXTERIOR_PUB.bounds.z1);
+  assert.equal(shape.points[0].x,EXTERIOR_PUB.building.bounds.x0);assert.equal(shape.points[2].y,EXTERIOR_PUB.building.bounds.z1);
   assert.ok(target.position.y<EXTERIOR_PUB.frontWorldZ,'marker is on the outside apron, not in furniture');
 });
 test('Bindery and Lyric have named, truthful street-map and minimap addresses',()=>{
@@ -69,13 +71,51 @@ test('Bindery and Lyric have named, truthful street-map and minimap addresses',(
     assert.equal(OBJ.playerWaypoint()?.spaceId,place.id);OBJ.clearWaypoint();
   }
 });
-test('the Lyric owns its two south-row deeds once, while court mouths remain openings',()=>{
+test('the Lyric occupies its existing yard building once, while south-row shops and court mouths remain truthful',()=>{
   const shapes=source.district.footprints;
   assert.equal(shapes.filter(f=>f.id==='lyric').length,1);
-  assert.ok(!shapes.some(f=>f.id==='district-south-row-a:0'));assert.ok(!shapes.some(f=>f.id==='district-south-row-a:1'));
+  assert.equal(shapes.find(f=>f.id==='lyric').sourcePropId,EXTERIOR_PUB.building.id);
+  assert.ok(!shapes.some(f=>f.id===EXTERIOR_PUB.building.id),'one silhouette, not two overlapping building stamps');
+  assert.ok(shapes.some(f=>f.id==='district-south-row-a:0'));assert.ok(shapes.some(f=>f.id==='district-south-row-a:1'));
   assert.ok(shapes.some(f=>f.id==='district-south-row-a:2'),'the next ordinary shop deed remains mapped');
   assert.ok(!shapes.some(f=>f.id==='district-north-row-b:4'));
   assert.ok(shapes.some(f=>f.role==='church'));assert.ok(shapes.some(f=>f.role==='outbuilding'));
+});
+test('outdoor masses and shop markers use the actual rendered metre frame, including rotated and scaled rows',()=>{
+  const rowId=SOUTH_ROW_SHOPS.find(shop=>shop.useId==='bindery').rowId;
+  const original=renderedInstances.find(p=>p.id===rowId),moved={...original,x:original.x+17,z:original.z-9};
+  const before=exteriorMapFootprints({renderedInstances}),after=exteriorMapFootprints({renderedInstances:renderedInstances.map(p=>p.id===rowId?moved:p)});
+  const id=before.find(s=>s.id.startsWith(rowId+':')).id;
+  const a=before.find(s=>s.id===id),b=after.find(s=>s.id===id);
+  for(let i=0;i<a.points.length;i++){assert.ok(Math.abs(b.points[i].x-a.points[i].x-17)<1e-7);assert.ok(Math.abs(b.points[i].y-a.points[i].y+9)<1e-7);}
+  const markerA=exteriorMapTargets({renderedInstances}).find(s=>s.id==='outside:bindery');
+  const markerB=exteriorMapTargets({renderedInstances:renderedInstances.map(p=>p.id===rowId?moved:p)}).find(s=>s.id==='outside:bindery');
+  assert.ok(Math.abs(markerB.physical.x-markerA.physical.x-17)<1e-7);assert.ok(Math.abs(markerB.physical.y-markerA.physical.y+9)<1e-7);
+  const turned={...original,yaw:original.yaw+Math.PI/2,scaleX:2,scaleZ:.5};
+  const turnedShape=exteriorMapFootprints({renderedInstances:renderedInstances.map(p=>p.id===rowId?turned:p)}).find(s=>s.id===id);
+  const length=(p,q)=>Math.hypot(q.x-p.x,q.y-p.y);
+  assert.ok(Math.abs(length(turnedShape.points[0],turnedShape.points[1])-length(a.points[0],a.points[1])*2)<1e-7);
+  assert.ok(Math.abs(length(turnedShape.points[1],turnedShape.points[2])-4)<1e-7,'an eight-metre deed follows the actual half-depth scale');
+  const hero=renderedInstances.find(p=>p.id===EXTERIOR_MAP_SHELL.propId);
+  const cells=exteriorInstitutionCells({renderedInstances});
+  const shifted=exteriorInstitutionCells({renderedInstances:[{...hero,x:hero.x+11,z:hero.z-7}]});
+  assert.deepEqual(shifted,new Set([...cells].map(k=>{const[x,y]=k.split(',').map(Number);return`${x+11},${y-7}`;})));
+});
+test('the two accessible baths courts stay open on the survey around one narrow greenhouse link',()=>{
+  const floor=source.floors[0],van=source.spaces.find(s=>s.id==='outside:van');
+  const masses=source.district.footprints.filter(shape=>shape.role==='institution');
+  const covers=(shape,p)=>p.x>=Math.min(...shape.points.map(q=>q.x))&&p.x<Math.max(...shape.points.map(q=>q.x))
+    &&p.y>=Math.min(...shape.points.map(q=>q.y))&&p.y<Math.max(...shape.points.map(q=>q.y));
+  for(const court of GLASS_COURT.outdoorCourts){
+    const point={x:(court.x0+court.x1)/2,y:(court.z0+court.z1)/2};
+    assert.ok(floor.open.has(`${Math.floor(point.x)},${Math.floor(point.y)}`),`${court.id} court is actual clear ground`);
+    assert.ok(!masses.some(shape=>covers(shape,point)),`${court.id} court is not painted over by the retired atrium roof`);
+    assert.ok(findGridRoute(floor,van.position,point),`${court.id} court connects to the actual exterior walking ground`);
+  }
+  const links=source.district.footprints.filter(shape=>shape.id==='baths-greenhouse-link');
+  assert.equal(links.length,1);
+  assert.deepEqual(links[0].points,[{x:GLASS_COURT.bounds.x0,y:GLASS_COURT.bounds.z0},{x:GLASS_COURT.bounds.x1,y:GLASS_COURT.bounds.z0},
+    {x:GLASS_COURT.bounds.x1,y:GLASS_COURT.bounds.z1},{x:GLASS_COURT.bounds.x0,y:GLASS_COURT.bounds.z1}]);
 });
 test('Ellery massing comes from the actual rendered exterior shell, with no interior-plan islands or room label leak',()=>{
   assert.ok(source.district.institutionEdges.length>20);
@@ -84,6 +124,7 @@ test('Ellery massing comes from the actual rendered exterior shell, with no inte
   assert.equal(source.spaces.some(s=>/STUDIO B3|SOURCE|RINGING ROOM|BELL CHAMBER/.test(s.label)),false);
   assert.equal(source.district.footprints.some(f=>f.id==='ellery'),false);
   const regenerated=buildExteriorMapShell({write:false});assert.deepEqual(regenerated,EXTERIOR_MAP_SHELL,'selected actual exterior mesh fingerprint and projected cells must stay fresh');
+  assert.equal(regenerated.asset,'public/assets/ellery-public-front.glb','the final runtime mesh replacement owns the street silhouette');
   const covers=(x,y)=>masses.some(f=>x>=f.points[0].x&&x<f.points[2].x&&y>=f.points[0].y&&y<f.points[2].y);
   assert.ok(covers(72,63),'rendered1888schoolpavilion is an exterior mass even without an indoor ground room');
   assert.ok(covers(84,23),'rendered1967academicblock is retained');
@@ -91,6 +132,17 @@ test('Ellery massing comes from the actual rendered exterior shell, with no inte
   const first=[...physical.cells].find(([,spans])=>spans.some(s=>s.zone===ZONE.street));
   const noIndoorPlan=captureExteriorMapSource({physical:{cells:new Map([first])},projectLogical});
   assert.deepEqual(noIndoorPlan.district.footprints.filter(f=>f.role==='institution'),masses,'interior room availability cannot change the exterior shell');
+});
+test('each terrace row stamps its deeds once and is inked as one mass, not a box per deed',()=>{
+  const deeds=source.district.footprints.filter(f=>/^district-.*-row-.*:\d$/.test(f.id));
+  assert.equal(deeds.some(f=>/-trade/.test(f.id)),false,'trade layers and shop inspectables share the row prefix but are not rows');
+  assert.ok(deeds.length<=10*8,`${deeds.length} deeds from ten rows`);
+  const key=p=>`${Math.round(p.x*1000)/1000+0},${Math.round(p.y*1000)/1000+0}`,edges=new Set(source.district.massEdges.map(e=>e.map(key).sort().join('|')));
+  const north=[0,1].map(d=>deeds.find(f=>f.id===`district-north-row-a:${d}`));
+  const shared=north[0].points.map((a,i)=>[a,north[0].points[(i+1)%4]]).find(([a,b])=>north[1].points.some(p=>key(p)===key(a))&&north[1].points.some(p=>key(p)===key(b)));
+  assert.ok(shared,'neighbouring deeds share a party wall');
+  assert.equal(edges.has(shared.map(key).sort().join('|')),false,'the party wall between two deeds is not inked');
+  assert.ok(source.district.massEdges.length<deeds.length*4);
 });
 test('church rooms merge into one legible cruciform outer silhouette without internal room-edge ink',()=>{
   const cells=new Set();for(const f of source.district.footprints.filter(f=>f.role==='church'))for(let x=f.points[0].x;x<f.points[2].x;x++)for(let y=f.points[0].y;y<f.points[2].y;y++)cells.add(`${x},${y}`);
@@ -129,17 +181,18 @@ test('existing outside map navigation repairs an interior floor selection and re
   const pub=source.spaces.find(s=>s.id==='outside:lyric');const marked=repairMapNav({...nav,selectedByFloor:{district:pub.id}},model);assert.equal(selectedMapSpace(marked,model).id,pub.id);
   assert.match(model.spaces.find(s=>s.id==='outside:st-brendan').label,/EXIT ONLY/);
 });
-test('heading-up minimap carries genuine building masses, boundaries and available landmarks',()=>{
+test('heading-up minimap carries the authored building masses, boundaries and available landmarks',()=>{
   const pub=source.spaces.find(s=>s.id==='outside:lyric'),model=modelFor({player:playerAt(pub)}),commands=buildMinimapCommands({model,viewport:{x:1,y:1,w:22,h:10},aspect:.5});
-  assert.ok(commands.some(c=>c.kind==='district-footprint'&&c.id==='lyric'));
+  assert.ok(commands.some(c=>c.kind==='plan-shape'&&c.role==='pub'),'the Lyric is drawn from the authored plan');
+  assert.equal(commands.some(c=>c.kind==='local-topology'||c.kind==='district-footprint'),false,'no sampled cells or deed boxes outdoors');
   assert.ok(commands.some(c=>c.kind==='district-landmark'&&c.id===pub.id));
   const bayModel=modelFor({player:playerAt(source.spaces.find(s=>s.id==='outside:loading-bay'))});
-  assert.ok(buildMinimapCommands({model:bayModel,viewport:{x:1,y:1,w:22,h:10},aspect:.5}).some(c=>c.kind==='district-boundary'));
+  assert.ok(buildMinimapCommands({model:bayModel,viewport:{x:1,y:1,w:22,h:10},aspect:.5}).some(c=>c.kind==='plan-edge'&&c.role==='institution'));
 });
 test('restricted and compass modes cannot accidentally reveal new street geometry or names',()=>{
   for(const navigation of [{showMapTopology:false},{minimapMode:'compass'}]){
     const commands=buildMinimapCommands({model:modelFor({navigation}),viewport:{x:0,y:0,w:22,h:10}});
-    assert.equal(commands.some(c=>c.kind.startsWith('district-')),false);
+    assert.equal(commands.some(c=>c.kind.startsWith('district-')||c.kind.startsWith('plan-')),false);
   }
   const commands=buildMinimapCommands({model:modelFor({navigation:{showRoom:false}}),viewport:{x:0,y:0,w:22,h:10}});
   assert.ok(commands.filter(c=>c.kind==='district-landmark').every(c=>!c.showLabel));
@@ -174,5 +227,18 @@ test('the actual district canvas supplies clipped, canonical landmark hits and k
   assert.ok(calls.some(c=>c.kind==='clip'));assert.equal(stack.length,0);assert.deepEqual(state,{globalAlpha:1,shadowBlur:7});
   calls.length=0;draw({model:{...model,policy:{...model.policy,showMapTopology:false}},nav,viewport});assert.equal(calls.some(c=>c.kind==='text'&&c.value==='ELLERY'),false);
   assert.deepEqual(draw({model:{...model,policy:{showMap:false}},nav,viewport}).hits,[]);
+});
+test('the authored plan keeps the park fountain where its water actually is',async()=>{
+  const [{EXTERIOR_MAP_PLAN},{EXTERIOR_FOREGROUND},{computeWaterBodies}]=await Promise.all([
+    import('../src/data/exterior-map-plan.js'),import('../src/data/exterior-foreground.js'),import('../src/game/water-bodies.js')]);
+  const kerb=EXTERIOR_MAP_PLAN.ground.find(g=>g.id==='yard-park-fountain'),water=EXTERIOR_MAP_PLAN.ground.find(g=>g.id==='yard-park-fountain-water');
+  assert.ok(kerb&&water,'the fountain is drawn on the survey');
+  const centre=points=>points.reduce((c,p)=>({x:c.x+p.x/points.length,y:c.y+p.y/points.length}),{x:0,y:0});
+  const f=EXTERIOR_FOREGROUND.garden.fountain;
+  for(const shape of[kerb,water]){const c=centre(shape.points);assert.ok(Math.hypot(c.x-f.x,c.y-f.z)<1e-9);}
+  assert.ok(EXTERIOR_MAP_PLAN.ground.indexOf(water)>EXTERIOR_MAP_PLAN.ground.findIndex(g=>g.id==='yard-park'),'drawn over the lawn');
+  const body=computeWaterBodies(FP).find(b=>b.id==='park-fountain');assert.ok(body,'the basin still has water in the compiled plan');
+  const mid=FP.logicalToPhysical((body.bounds.minX+body.bounds.maxX)/2,(body.bounds.minY+body.bounds.maxY)/2);
+  assert.ok(Math.hypot((mid.x+.5)*.5-f.x,(mid.z+.5)*.5-f.z)<.6,'the drawn basin and the real water share a centre');
 });
 console.log(`exterior map: ${source.floors[0].open.size} clear metre cells; ${source.district.footprints.length} footprint runs/deeds; ${source.district.institutionEdges.length} real edges; capture ${captureMs.toFixed(1)}ms`);

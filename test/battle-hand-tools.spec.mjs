@@ -84,16 +84,18 @@ test('tool disposal preserves borrowed hand geometry, skin materials and maps at
 test('radio THROW VOICE presses its physical PTT while the tuning dial stays still', () => {
   const tool = buildBattleHandTool('radio'), cap = tool.group.getObjectByName('radio PTT keycap');
   const dial = tool.group.getObjectByName('radio tuning dial');
-  const rest = cap.position.x, contactRest = tool.controls.transmit.position[0], wristRest = tool.controls.transmit.wrist.position[0];
+  const rest = cap.position.x, contactRest = tool.controls.transmit.position[0], wristRest = tool.controls.transmit.wrist.position[0],dialRest=dial.rotation.y;
+  tool.group.updateMatrixWorld(true);const visibleRest=cap.getWorldPosition(new Vector3()).x;
   for (const pressure of [0, .25, 1, .5, 0]) {
     tool.update({ action: 'radio-decoy', side: 'player', active: true, progress: .4, controlPressure: pressure });
-    assert.ok(Math.abs(cap.position.x - rest - .0014 * pressure) < 1e-12);
-    assert.ok(Math.abs(tool.controls.transmit.position[0] - contactRest - .0014 * pressure) < 1e-12);
-    assert.ok(Math.abs(tool.controls.transmit.wrist.position[0] - wristRest - .0014 * pressure) < 1e-12);
-    assert.equal(dial.rotation.y, 0, 'PTT does not turn the untouched tuning dial');
+    assert.ok(Math.abs(cap.position.x - rest - .0016 * pressure) < 1e-12);
+    assert.ok(Math.abs(cap.getWorldPosition(new Vector3()).x-visibleRest-.0016*pressure)<1e-12,'the rendered canonical cap really travels1.6mm');
+    assert.ok(Math.abs(tool.controls.transmit.position[0] - contactRest - .0016 * pressure) < 1e-12);
+    assert.ok(Math.abs(tool.controls.transmit.wrist.position[0] - wristRest - .0016 * pressure) < 1e-12);
+    assert.equal(dial.rotation.y, dialRest, 'PTT does not turn the untouched tuning dial');
   }
   tool.update({ action: 'channel', side: 'player', active: true, progress: .4, controlPressure: 1 });
-  assert.ok(dial.rotation.y < 0, 'channel tuning operates the dial');
+  assert.ok(dial.rotation.y < dialRest, 'channel tuning operates the dial');
   assert.equal(cap.position.x, rest, 'tuning leaves the PTT released');
   tool.update({ action: 'radio-decoy', side: 'enemy', active: true, progress: .4, controlPressure: 1 });
   assert.equal(cap.position.x, rest);

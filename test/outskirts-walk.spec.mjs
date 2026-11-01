@@ -44,6 +44,12 @@ function frame(yaw = 0) {
 }
 
 function step(next) {
+  const dx=next.x-position.x,dy=next.y-position.y;
+  assert.ok(Math.abs(dx)<=1.000001&&Math.abs(dy)<=1.000001&&(Math.abs(dx)+Math.abs(dy))>0,'continuous walk requested more than an ordinary half-metre input');
+  if(dx&&dy){
+    assert.equal(runtime.geometry.canStep(position.x,position.y,next.x,position.y).ok,true,'continuous diagonal bypasses horizontal guard');
+    assert.equal(runtime.geometry.canStep(position.x,position.y,position.x,next.y).ok,true,'continuous diagonal bypasses vertical guard');
+  }
   const result = runtime.geometry.canStep(position.x, position.y, next.x, next.y);
   assert.equal(result.ok, true, `route fails at ${alongAt(position).toFixed(2)}m -> ${alongAt(next).toFixed(2)}m, x=${((next.x-axis)*CELL).toFixed(2)}: ${result.why}`);
   const before = position;
@@ -69,7 +75,8 @@ function walkPocketTarget(target, { origin, bus = null } = {}) {
       const next = { x: p.x + dx, y: p.y + dy }, id = key(next), at = local(next);
       if (parents.has(id) || (bus ? Math.abs(at.x) > 3 || at.z < -4 || at.z > 5
         : Math.abs(at.x - busBodyCorridorCentre(at.z).x) > 1 || at.z < 0 || at.z > BUS_BODY_CORRIDOR.length + .5)) continue;
-      if (!runtime.geometry.canStep(p.x, p.y, next.x, next.y).ok) continue;
+      const move=runtime.geometry.canStep(p.x,p.y,next.x,next.y);
+      if (!move.ok || move.redirect&&move.via!=='bus-body-exit') continue;
       parents.set(id, key(p)); points.set(id, next); queue.push(next);
     }
   }
@@ -149,13 +156,17 @@ for (let k = 0; k < 29; k += 1) {
     }
     const bus = runtime.outskirtsPiece('r7-bus'), at = (x, z, origin = bus) => ({ x: (origin.x + x * Math.cos(origin.yaw) + z * Math.sin(origin.yaw)) / CELL - .5,
       y: (origin.z - x * Math.sin(origin.yaw) + z * Math.cos(origin.yaw)) / CELL - .5 });
-    walkPocketTarget(at(.75, 4), { origin: bus, bus });
+    walkPocketTarget(at(.4,3.9), { origin: bus, bus });
+    const contact=runtime.outskirtsBusPassageFrame().local;
+    step(at(contact.x+.5,contact.z));
     assert.equal(runtime.outskirtsPerformAction({ action: 'bus-exit-try', pass: 7 }).changed, true);
     for (let i = 0; i < 7; i++) frame();
-    walkPocketTarget(at(0, 2.5), { origin: bus, bus });
+    walkPocketTarget(at(0,2.3), { origin: bus, bus });
     assert.equal(runtime.outskirtsPerformAction({ action: 'bus-woman-open', pass: 7 }).changed, true);
     for (let i = 0; i < 12; i++) frame();
-    walkPocketTarget(at(0, 4.5), { origin: bus, bus });
+    walkPocketTarget(at(0,3.9), { origin: bus, bus });
+    const front=runtime.outskirtsBusPassageFrame().local;
+    step(at(front.x,front.z+.5));
     const interior = runtime.busInteriorFrame(); assert.ok(interior?.active, 'ordinary movement never enters her opened body');
     walkPocketTarget(at(busBodyCorridorCentre(72).x, 72.5, interior.origin), { origin: interior.origin });
     assert.equal(runtime.busInteriorFrame(), null);

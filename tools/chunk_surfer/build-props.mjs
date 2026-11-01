@@ -15,6 +15,8 @@ import { CORRIDOR_LETTERING_FACES } from '../../src/data/corridor-lettering.js';
 import { importPropMesh } from './lib/glb-import.mjs';
 import { createReliquaryPropGeometry, RELIQUARY_PROP_MATERIALS } from './reliquary-prop-geometry.mjs';
 import { buildAcademicRoof } from './academic-roof-geometry.mjs';
+import {clipCourtyardArchitecture} from './courtyard-architecture-geometry.mjs';
+import {buildEllerySquareFittings} from './ellery-square-geometry.mjs';
 import { buildExteriorForeground } from './exterior-foreground-geometry.mjs';
 import { addBourgeoisPubFrontage, buildForegroundShelters } from './exterior-frontage-geometry.mjs';
 import { buildArrivalCourt } from './arrival-court-geometry.mjs';
@@ -22,12 +24,15 @@ import { addSouthShopDeed } from './exterior-shop-massing.mjs';
 import { SOUTH_ROW_SHOPS } from '../../src/data/plaza-shopfronts.js';
 import { buildYardRangeBody, addYardRangeWestFrontage } from './yard-range-frontage-geometry.mjs';
 import { buildPubInterior } from './pub-interior-geometry.mjs';
+import {buildYardPublicRangeBody,addYardPublicRangeFrontage,buildPubAnnexFrontage,buildYardCaretakerInterior} from './yard-public-rooms-geometry.mjs';
+import {yardRangePublicUse} from '../../src/data/yard-public-rooms.js';
 import { buildDemolitionExcavator } from './demolition-machinery-geometry.mjs';
 import { buildAcademicRoofDressing } from './academic-roof-dressing.mjs';
 import { buildArchitectureFittings } from './architecture-fittings-geometry.mjs';
 import { buildInstitutionOccupation } from './institution-occupation-geometry.mjs';
 import { buildBuildingAmenities } from './building-amenities-geometry.mjs';
 import { buildOrganConsole } from './organ-console-geometry.mjs';
+import { buildB3StudioGeometry } from './b3-studio-geometry.mjs';
 import { buildTowerShutterWinch } from './tower-shutter-linkage-geometry.mjs';
 import { buildMainStairUse } from './main-stair-use-geometry.mjs';
 import { buildLoadingBayAccess } from './loading-bay-access-geometry.mjs';
@@ -74,11 +79,13 @@ const LETTERING_INPUTS=[...VAN_REAR_STOCK_SOURCES,'tools/chunk_surfer/build-prop
 LETTERING_INPUTS.push('src/data/plaza-shopfronts.js','tools/chunk_surfer/shop-display-geometry.mjs',
   'tools/chunk_surfer/plaza-shop-lettering.mjs','tools/chunk_surfer/generated/plaza-shop-lettering.json',
   'src/data/yard-range-frontages.js','tools/chunk_surfer/yard-range-frontage-geometry.mjs');
+LETTERING_INPUTS.push('tools/chunk_surfer/b3-studio-geometry.mjs');
 LETTERING_INPUTS.push('src/data/demolition-machinery.js','tools/chunk_surfer/demolition-machinery-geometry.mjs');
 LETTERING_INPUTS.push('tools/chunk_surfer/scene-dock-geometry.mjs','src/data/scene-dock-dressing.js');
 const sourceHash=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex');
 const letteringBuildInputHashes=Object.fromEntries(LETTERING_INPUTS.map(file=>[file,sourceHash(file)]));
 const OUT_DIR = process.env.CHUNK_SURFER_PROPS_OUT_DIR ? path.resolve(process.env.CHUNK_SURFER_PROPS_OUT_DIR) : path.join(ROOT, 'public/assets');
+LETTERING_INPUTS.push('src/data/ellery-courtyard-architecture.js','tools/chunk_surfer/courtyard-architecture-geometry.mjs','src/data/yard-public-rooms.js','tools/chunk_surfer/yard-public-rooms-geometry.mjs');
 const OUT = path.join(OUT_DIR, 'conservatory-props.glb');
 const STATS = path.join(OUT_DIR, 'conservatory-props.stats.json');
 const CREDITS = path.join(OUT_DIR, 'conservatory-props.credits.json');
@@ -827,6 +834,7 @@ function alongFoldedStand(s,out=0){
   const m=mesh('speaker_cabinet'); addBox(m,[0,.46,0],[.58,.92,.48],MAT.black);addCylinder(m,[0,.52,-.245],.19,.025,MAT.cone,18);addCylinder(m,[0,.76,-.245],.07,.026,MAT.cone,14);addBox(m,[0,.08,.255],[.36,.05,.08],MAT.steel);
 }
 buildOrganConsole({mesh,MAT,addBox,addLegs,addEllipsoid});
+buildB3StudioGeometry({mesh,MAT,addBox,addCylinder,addCylinderX,addBeam,addLegs});
 {
   const m=mesh('organ_pipes'); for(let i=0;i<13;i++){const x=(i-6)*.16,h=1.5+(.95-Math.abs(i-6)*.12);addCylinder(m,[x,h/2,0],.055,h,MAT.steel,12);addBox(m,[x,.16,-.06],[.07,.12,.12],MAT.brass);}
 }
@@ -1123,10 +1131,35 @@ for(const [name,widthM,heightM,yaw]of [['loose_note',.32,.42,0],['loose_note_pag
   for(const x of[-10.6,-8,-5.2,-2.5,0,2.5,5.2,8,10.6]){
     addBeam(m,[x,roofY(x),z0],[x,roofY(x),z1],.105,x===0?MAT.steel:MAT.agedWhite);
   }
+  // Two bays over the sump have lost their glazing (NATATORIUM_CEILING_BREAK
+  // in conservatory.js): one pane gone and one shattered on each, and one pane
+  // swung down off its bar. Through the gaps is the slab the water came from.
+  const broken={'0:-1':'gone','0:1':'shard','3.25:-1':'shard','3.25:1':'gone'};
+  const lerp=(p,q,t)=>p.map((v,k)=>v+(q[k]-v)*t);
   for(let z=z0;z<z1-.01;z+=bay){
     const a=z+.12,b=Math.min(z+bay-.12,z1);
-    addQuad(m,[-5.05,roofY(-5.05)-.05,a],[-.82,roofY(-.82)-.05,a],[-.82,roofY(-.82)-.05,b],[-5.05,roofY(-5.05)-.05,b],MAT.roofGlass);
-    addQuad(m,[.82,roofY(.82)-.05,a],[5.05,roofY(5.05)-.05,a],[5.05,roofY(5.05)-.05,b],[.82,roofY(.82)-.05,b],MAT.roofGlass);
+    for(const side of[-1,1]){
+      const xo=side*5.05,xi=side*.82,yo=roofY(xo)-.05,yi=roofY(xi)-.05;
+      // Same corner order, and so the same facing, as the intact pane.
+      const p=side<0?[[xo,yo,a],[xi,yi,a],[xi,yi,b],[xo,yo,b]]:[[xi,yi,a],[xo,yo,a],[xo,yo,b],[xi,yi,b]];
+      const state=broken[`${z}:${side}`];
+      if(state==='gone')continue;
+      if(state==='shard'){
+        addTriangle(m,p[0],lerp(lerp(p[0],p[1],.62),p[3],.18),p[3],MAT.roofGlass);
+        addTriangle(m,p[1],p[2],lerp(p[1],p[3],.22),MAT.roofGlass);
+        addTriangle(m,p[2],p[3],lerp(p[2],p[0],.14),MAT.roofGlass);
+        continue;
+      }
+      addQuad(m,...p,MAT.roofGlass);
+    }
+  }
+  // The pane that did not fall: hung from its outer bar, swung down towards
+  // the water, glazed both ways so it reads from the deck and from the bath.
+  {
+    const x=-5.05,y=roofY(x)-.05,a=.45,b=2.6;
+    const hang=[[x,y,a],[x,y,b],[x+.55,y-1.85,b-.3],[x+.62,y-1.78,a+.2]];
+    addQuad(m,hang[0],hang[1],hang[2],hang[3],MAT.roofGlass);
+    addQuad(m,hang[3],hang[2],hang[1],hang[0],MAT.roofGlass);
   }
 }
 {
@@ -2701,10 +2734,9 @@ function buildDistrictFrontage(name,variant){
     const z=-32+unitW*(i+.5),h=heights[i],depth=variant==='workshop'?6.8:5.4;
     if(variant==='civic'){
       const shop=SOUTH_ROW_SHOPS.find(shop=>shop.deed===i);
-      if(shop)addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth,useIndex:shop.useIndex});
-      // Deeds0/1 belong to the independently placed, enterable Lyric shell.
-      // A second closed shop here would occupy the same doors and room.
-      continue;
+      if(shop){addSouthShopDeed(exteriorApi,m,{deed:i,z,h,unitW,depth,useIndex:shop.useIndex});continue;}
+      // The Lyric now occupies the actual yard rehearsal range. Its former
+      // street deeds retain ordinary occupied frontage rather than a gap.
     }
 
     if(variant==='passage'&&i===4){
@@ -2767,8 +2799,8 @@ buildDistrictFrontage('district_passage_frontage','passage');
   // The first two south-row deeds share an independent midpoint anchor. Their
   // shell and interior are placed together by the exterior-pub contract.
   const m=mesh('exterior_pub_frontage');
-  for(const deed of[0,1]){
-    const report=addBourgeoisPubFrontage(exteriorApi,m,{z:-4+8*deed,h:12.8,unitW:8,depth:5.4,deed});
+  {
+    const report=buildPubAnnexFrontage(exteriorApi,m);
     for(const face of report.signFaces)lettering(m,face.copy,{
       ...face,category:'institution',font:'NimbusRoman-Bold.otf',rasterWidthPx:768,rasterHeightPx:40,
       process:'aged gilt pub fascia lettering',ground:MAT.pubGreen,ink:MAT.brass,
@@ -2777,6 +2809,7 @@ buildDistrictFrontage('district_passage_frontage','passage');
   }
 }
 const pubInteriorGeometry=buildPubInterior(exteriorApi);
+buildYardCaretakerInterior(exteriorApi);
 
 {
   // Side walls and a closed occupied threshold for a short street court. Local
@@ -2811,13 +2844,19 @@ const pubInteriorGeometry=buildPubInterior(exteriorApi);
   const X=(worldX)=>worldX+7,Z=(worldZ)=>worldZ+7; // instance anchor is (-7,-7)
   const palette=[MAT.brickRed,MAT.terracotta,MAT.brickDark,MAT.concrete,MAT.glazedBrick];
   const park={x0:-73,x1:-35,z0:-70,z1:-36};
-  function townBuilding({x,z,w,d,h,axis='x',inward=1,index=0}){
-    if(x+w/2>park.x0&&x-w/2<park.x1&&z+d/2>park.z0&&z-d/2<park.z1)return;
+  // Ellery Square, its three terraces and North Street's row c are real
+  // buildings now; the background town keeps clear of them.
+  // The square's north-west townhouse block and north-east mansion block are
+  // authored below; the generic rings keep out of them too.
+  const clear=[park,{x0:42,x1:130,z0:-88,z1:-14},{x0:118,x1:198,z0:-24,z1:-12},
+    {x0:-30,x1:44.6,z0:-74,z1:-20},{x0:127,x1:198,z0:-74,z1:-20},{x0:56,x1:112,z0:-118,z1:-96},{x0:-32,x1:-6,z0:118,z1:144}];
+  function townBuilding({x,z,w,d,h,axis='x',inward=1,index=0,explicit=false,mansion=false}){
+    if(!explicit&&clear.some(c=>x+w/2>c.x0&&x-w/2<c.x1&&z+d/2>c.z0&&z-d/2<c.z1))return;
     const mat=palette[index%palette.length];
     // A few taller houses retain the district's older civic ambition. These
     // occupy the same parcels and roof envelopes as their ordinary neighbours;
     // wealth is in the shaped eaves and window rhythm, not a new skyline.
-    const civic=h>=10.5&&(index%7===0||index%13===0);
+    const civic=mansion||h>=10.5&&(index%7===0||index%13===0);
     addBox(m,[X(x),h/2,Z(z)],[w,h,d],mat);
     addBox(m,[X(x),.48,Z(z)],[w+.08,.96,d+.08],MAT.stone);
     addBox(m,[X(x),h-.38,Z(z)],[w+.16,.24,d+.16],MAT.stone);
@@ -2936,6 +2975,46 @@ const pubInteriorGeometry=buildPubInterior(exteriorApi);
       z+=d+gap;i++;
     }
   }
+  // THE SQUARE'S OUTER SHELL. Townhouses close the north-west block round a
+  // mews; mansions with mansard roofs take the north-east; a terrace backs
+  // onto the north terrace across a mews lane. Byways run between them.
+  const run=(axis,fixed,from,to,{d=9,h=11,mansion=false,seed=0,pitch=0}={})=>{
+    let a=from,i=0;
+    while(a<to-3){
+      const len=Math.min(to-a,(mansion?13:7.2)+((i+seed)%3)*(mansion?1.6:1.1)),gap=pitch;
+      const c=a+len/2,height=h+((i*5+seed)%4)*(mansion?.9:.7);
+      townBuilding(axis==='x'?{x:c,z:fixed,w:len,d,h:height,axis:'x',index:i+seed,explicit:true,mansion}
+        :{x:fixed,z:c,w:d,d:len,h:height,axis:'z',index:i+seed,explicit:true,mansion});
+      a+=len+gap;i++;
+    }
+  };
+  run('x',-58.9,-24,44.6,{d:6.2,h:11.4,seed:3});             // north-west block, north face
+  run('z',-25.6,-55.8,-20.5,{d:6.2,h:11,seed:6});             // north-west block, west face
+  run('x',-37.5,-12,38,{d:5.2,h:6.2,seed:9,pitch:1.2});       // its mews cottages
+  run('x',-56.5,127.4,196,{d:13,h:13,mansion:true,seed:1});   // north-east mansions
+  run('z',190,-43.5,-20.5,{d:13,h:13,mansion:true,seed:4});
+  run('x',-78,44,128,{d:10,h:11.8,seed:12});                  // behind the north terrace
+  // Byway trees: rain-dark planes along the lanes between those blocks.
+  const streetTree=(x,z,i)=>{
+    const h=4.6+(i%3)*.6;
+    addCylinder(m,[X(x),h/2,Z(z)],.16,h,MAT.wood,8);
+    for(const [dx,dy,dz] of[[-.6,0,0],[.6,.2,0],[0,.4,-.5],[0,.1,.55]])
+      addCylinder(m,[X(x+dx),h+dy,Z(z+dz)],.7+(i%3)*.1,1.3,MAT.deadLeaf,9);
+  };
+  let tree=0;
+  for(let x=-22;x<=40;x+=11)streetTree(x,-66,tree++);
+  for(let x=48;x<=124;x+=10.5)streetTree(x,-70.2,tree++);
+  for(let x=132;x<=194;x+=11)streetTree(x,-66,tree++);
+  for(let z=-60;z<=-24;z+=10)streetTree(-31,z,tree++);
+  for(let z=-60;z<=-24;z+=10)streetTree(199,z,tree++);
+  // Two pocket greens in the town beyond: railed lawns with a few trees.
+  for(const g of[{x0:58,x1:110,z0:-116,z1:-98},{x0:-30,x1:-8,z0:124,z1:142}]){
+    addBox(m,[X((g.x0+g.x1)/2),.04,Z((g.z0+g.z1)/2)],[g.x1-g.x0,.08,g.z1-g.z0],MAT.soil);
+    for(const z of[g.z0,g.z1])addBox(m,[X((g.x0+g.x1)/2),.78,Z(z)],[g.x1-g.x0,.07,.07],MAT.steel);
+    for(const x of[g.x0,g.x1])addBox(m,[X(x),.78,Z((g.z0+g.z1)/2)],[.07,.07,g.z1-g.z0],MAT.steel);
+    for(let i=0;i<8;i++)streetTree(g.x0+4+((i*13)%(g.x1-g.x0-8)),g.z0+3+((i*7)%(g.z1-g.z0-6)),tree++);
+  }
+
   // Gaps between the rows are real cross-streets in silhouette, not continuous
   // facade bands. Staggering them also keeps repeated roof peaks from lining up.
   for(const [z,seed] of[[-31,2],[-52,5],[-76,8]])rowX(z,-82,218,1,seed);
@@ -2970,28 +3049,33 @@ const pubInteriorGeometry=buildPubInterior(exteriorApi);
 }
 
 buildDistrictSceneryRoads({mesh,materials,addBox,addQuad});
+buildEllerySquareFittings({mesh,addBox,addBeam,addCylinder,MAT});
 
 function buildYardRange(name,range,kind){
   const m=mesh(name),w=range.w,d=range.d,h=range.height,service=kind==='stores';
-  const westBody=buildYardRangeBody(exteriorApi,m,{range,kind});
+  const publicUse=yardRangePublicUse(range.id);
+  const westBody=buildYardPublicRangeBody(exteriorApi,m,{range,kind})||buildYardRangeBody(exteriorApi,m,{range,kind});
   for(const side of[-1,1]){
-    addBox(m,[0,.55,side*(d/2+.03)],[w+.1,1.1,.14],MAT.stone);
+    if(!(publicUse==='lyric'&&side===-1))addBox(m,[0,.55,side*(d/2+.03)],[w+.1,1.1,.14],MAT.stone);
     addBox(m,[0,h-.48,side*(d/2+.05)],[w+.2,.26,.16],MAT.stone);
   }
   // A real door every six metres; no elevation is permitted to become a blank
   // industrial plane at eye height.
   for(let x=-w/2+2.1;x<w/2-1;x+=4.2){
-    addBox(m,[x,1.55,-d/2-.10],[1.25,2.75,.18],MAT.agedWhite);
+    if(publicUse!=='lyric')addBox(m,[x,1.55,-d/2-.10],[1.25,2.75,.18],MAT.agedWhite);
     if(service){
       addBox(m,[x,2.05,d/2+.11],[2.65,3.45,.18],MAT.steel);
       for(let y=.62;y<3.55;y+=.34)addBox(m,[x,y,d/2+.23],[2.42,.07,.08],MAT.black);
       addBox(m,[x,5.05,d/2+.12],[1.42,1.05,.18],MAT.black);
       addBox(m,[x,5.67,d/2+.15],[1.68,.16,.22],MAT.stone);
-    }else{
-      addBox(m,[x,4.75,-d/2-.11],[1.35,1.55,.18],kind==='baths'?MAT.roofGlass:MAT.black);
-      addBox(m,[x,5.62,-d/2-.13],[1.58,.16,.22],MAT.stone);
-      addBox(m,[x,4.75,d/2+.11],[1.35,1.55,.18],kind==='baths'?MAT.roofGlass:MAT.black);
-      addBox(m,[x,5.62,d/2+.13],[1.58,.16,.22],MAT.stone);
+    }else for(const side of[-1,1]){
+      // Lived-in upper rooms: some lamps on, glazing bars, sills and heads.
+      const lit=(Math.round(x*3)+range.id.length+(side>0?1:0))%3===0;
+      addBox(m,[x,4.75,side*(d/2+.11)],[1.35,1.55,.18],lit?MAT.warmWindow:kind==='baths'?MAT.roofGlass:MAT.black);
+      addBox(m,[x,4.75,side*(d/2+.21)],[.05,1.55,.04],MAT.agedWhite);
+      addBox(m,[x,4.75,side*(d/2+.21)],[1.35,.05,.04],MAT.agedWhite);
+      addBox(m,[x,5.62,side*(d/2+.13)],[1.58,.16,.22],MAT.stone);
+      addBox(m,[x,3.92,side*(d/2+.16)],[1.52,.12,.28],MAT.stone);
     }
   }
   for(const side of[-1,1]){
@@ -3004,6 +3088,25 @@ function buildYardRange(name,range,kind){
   }
   const rise=service?.65:1.75;
   addPitchedRoof(m,{x:0,z:0,w,d,eaves:h,rise,mat:service?MAT.steel:MAT.slate,gableMat:service?MAT.steel:(kind==='baths'?MAT.glazedBrick:MAT.brickRed),ridge:'z'});
+  // Finished houses, not sheds: the yard-facing gable gets its upper rooms
+  // and the roofs their stacks. Ground floors stay exactly as the rooms need;
+  // the Lyric's rooms over the bar look onto the park the same way.
+  {
+    for(const[index,z]of[-d/4,d/4].entries()){
+      const lit=(index+range.id.length)%2===0;
+      addBox(m,[-w/2-.11,h-2.15,z],[.18,1.45,1.25],lit?MAT.warmWindow:MAT.black);
+      addBox(m,[-w/2-.21,h-2.15,z],[.04,1.45,.05],MAT.agedWhite);
+      addBox(m,[-w/2-.21,h-2.15,z],[.04,.05,1.25],MAT.agedWhite);
+      addBox(m,[-w/2-.13,h-1.36,z],[.22,.16,1.5],MAT.stone);
+      addBox(m,[-w/2-.16,h-2.93,z],[.28,.12,1.45],MAT.stone);
+    }
+    // Pots top out 1.3m over the ridge. The Source folds the stable range
+    // overhead at 12.4m, so anything above 10.7m would reach the walker.
+    for(const x of[-w/4,w/4]){
+      addBox(m,[x,h+rise+.4,0],[.86,1.2,1.05],MAT.brickRed);
+      for(const dz of[-.24,.24])addCylinder(m,[x,h+rise+1.15,dz],.1,.3,MAT.terracotta,8);
+    }
+  }
   for(const x of[-w/2+.35,w/2-.35]){
     addCylinder(m,[x,h/2,-d/2-.17],.075,h-.3,MAT.steel,8);
     addBox(m,[x,.13,-d/2-.42],[.18,.12,.62],MAT.steel);                  // drain shoe
@@ -3011,7 +3114,10 @@ function buildYardRange(name,range,kind){
   if(kind==='baths')for(const x of[-w*.25,w*.25]){
     addRoofLantern(m,{x,z:0,w:2.2,d:d*.55,y:h+rise-.12,rise:.48});       // repaired lanterns
   }
-  addYardRangeWestFrontage(exteriorApi,m,{range,kind,bodyReport:westBody});
+  if(publicUse){
+    const frontage=addYardPublicRangeFrontage(exteriorApi,m,{range,kind,bodyReport:westBody});
+    for(const face of frontage.signFaces||[])lettering(m,face.copy,{...face,category:'institution',font:'NimbusSansNarrow-Bold.otf',process:'painted service room lettering',ground:MAT.pubGreen,ink:MAT.brass});
+  }else addYardRangeWestFrontage(exteriorApi,m,{range,kind,bodyReport:westBody});
 }
 const rangeById=Object.fromEntries(YARD_SERVICE_RANGES.map((range)=>[range.id,range]));
 buildYardRange('yard_stable_range',rangeById['yard-former-stables'],'stable');
@@ -3376,6 +3482,44 @@ buildStBrendans();
     addCylinder(m,[x,.88,0],.15,.16,MAT.steel,10);
     addBox(m,[x,.62,-.12],[.20,.20,.04],MAT.agedWhite);
   }
+}
+{
+  // Three to a road end, 1.6 m apart: a car cannot pass, a pram can.
+  const m=mesh('district_bollard_row');
+  for(const x of[-1.6,0,1.6]){
+    addCylinder(m,[x,.48,0],.11,.96,MAT.steel,10);
+    addCylinder(m,[x,.88,0],.15,.16,MAT.steel,10);
+    addBox(m,[x,.62,-.12],[.20,.20,.04],MAT.agedWhite);
+  }
+}
+{
+  // Leeds city litter bin: a black drum with a gold band under a hooded top,
+  // about 1.3 m tall (Inclusive Mobility §4.2), apertures under the hood.
+  const m=mesh('district_litter_bin');
+  addCylinder(m,[0,.03,0],.32,.06,MAT.black,16);
+  addCylinder(m,[0,.56,0],.30,1.0,MAT.black,16);
+  addCylinder(m,[0,.80,0],.306,.07,MAT.brass,16);
+  addCylinder(m,[0,1.12,0],.33,.10,MAT.black,16);
+  addCylinder(m,[0,1.21,0],.25,.08,MAT.black,16);
+  addCylinder(m,[0,1.28,0],.05,.06,MAT.brass,8);
+  for(const z of[-.29,.29])addBox(m,[0,.99,z],[.30,.12,.04],MAT.dark);
+}
+{
+  // Telecom cabinet against the building line: green steel on a concrete plinth.
+  const m=mesh('district_street_cabinet');
+  addBox(m,[0,.04,0],[1.18,.08,.45],MAT.concrete);
+  addBox(m,[0,.68,0],[1.10,1.20,.40],MAT.pubGreen);
+  addBox(m,[0,1.31,0],[1.16,.06,.45],MAT.pubGreen);
+  addBox(m,[0,.68,-.205],[.012,1.08,.01],MAT.dark);
+  for(const x of[-.28,.28])addBox(m,[x,.72,-.207],[.04,.10,.01],MAT.steel);
+  addBox(m,[-.36,1.05,-.206],[.22,.14,.01],MAT.ivory);
+}
+{
+  // Council grit bin: a yellow box with a sloping lid.
+  const m=mesh('district_grit_bin');
+  addBox(m,[0,.34,0],[.88,.62,.58],MAT.mustard);
+  addBox(m,[0,.70,.02],[.92,.08,.64],MAT.mustard,0,.14);
+  addBox(m,[0,.48,-.295],[.44,.10,.01],MAT.black);
 }
 {
   const m=mesh('ambient_late_bus');
@@ -5402,6 +5546,13 @@ buildArrivalCourt(exteriorApi);
   // All three are cheap in boxes and they are the whole difference between a
   // fountain that is running and one that is switched off.
 
+  // RUNNING WATER is its own material so the prop shader can make it run:
+  // the same rain-dark glass, but the renderer breaks it into pieces that
+  // travel down each strand (props3d.js, uFountainWater). Pushed here, after
+  // every fixed index, so nothing that names a material by number moves.
+  const RUNNING_WATER=materials.push({name:'fountain running water',
+    pbrMetallicRoughness:{baseColorFactor:[0.29,0.49,0.54,1],metallicFactor:0,roughnessFactor:0.24}})-1;
+
   // A veil off a bowl lip — the sheet the rim spills between the heavy falls.
   //
   // NOT A CONTINUOUS RING. A closed band of boxes under a bowl is a drum, and
@@ -5421,7 +5572,7 @@ buildArrivalCourt(exteriorApi);
         Math.abs(((a-(k/4)*Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI)));
       const h=drop*(.30+.70*Math.min(1,near/.55))*(.72+((i*5)%7)/7*.5);
       addBox(m,[Math.cos(a)*radius,y-h/2,Math.sin(a)*radius],
-        [thickness,h,seg*.62],MAT.roofGlass,a);
+        [thickness,h,seg*.62],RUNNING_WATER,a);
     }
   };
 
@@ -5437,7 +5588,7 @@ buildArrivalCourt(exteriorApi);
       const y=fromY-span*(t*t*.72+t*.28);
       const w=width*(1+t*.38);
       const thickness=.048*(1-t*.30);
-      addBox(m,[Math.cos(a)*out,y,Math.sin(a)*out],[thickness,span/steps*1.28,w],MAT.roofGlass,a);
+      addBox(m,[Math.cos(a)*out,y,Math.sin(a)*out],[thickness,span/steps*1.28,w],RUNNING_WATER,a);
     }
   };
 
@@ -5448,9 +5599,9 @@ buildArrivalCourt(exteriorApi);
       const t=(i/7)*Math.PI*2+cx*.7;
       const r=.16*scale+((i%3)*.05)*scale;
       addBox(m,[cx+Math.cos(t)*r,DROP+.055+.10*scale,cz+Math.sin(t)*r],
-        [.035*scale,.20*scale+(i%2)*.07*scale,.035*scale],MAT.roofGlass,t,.22);
+        [.035*scale,.20*scale+(i%2)*.07*scale,.035*scale],RUNNING_WATER,t,.22);
     }
-    addCylinder(m,[cx,DROP+.075,cz],.30*scale,.05*scale,MAT.roofGlass,10);
+    addCylinder(m,[cx,DROP+.075,cz],.30*scale,.05*scale,RUNNING_WATER,10);
   };
 
   // The jet. A column that thins, then a plume that opens: the break at the top
@@ -5458,14 +5609,14 @@ buildArrivalCourt(exteriorApi);
   const JET_Y=UP_Y+.96;
   for(let i=0;i<6;i++){
     const t=i/6;
-    addCylinder(m,[0,JET_Y+.30+t*1.10,0],.058-t*.034,.40,MAT.roofGlass,8);
+    addCylinder(m,[0,JET_Y+.30+t*1.10,0],.058-t*.034,.40,RUNNING_WATER,8);
   }
-  addEllipsoid(m,[0,JET_Y+1.58,0],[.10,.15,.10],MAT.roofGlass,6,8);     // the break
+  addEllipsoid(m,[0,JET_Y+1.58,0],[.10,.15,.10],RUNNING_WATER,6,8);     // the break
   for(let i=0;i<10;i++){
     const a=(i/10)*Math.PI*2, r=.14+(i%3)*.07;
     // Falling away from the break, opening as it goes: the plume that makes the
     // jet read as something under pressure.
-    addBox(m,[Math.cos(a)*r,JET_Y+1.44-((i%4)*.16),Math.sin(a)*r],[.035,.30+(i%3)*.10,.035],MAT.roofGlass,a,.30);
+    addBox(m,[Math.cos(a)*r,JET_Y+1.44-((i%4)*.16),Math.sin(a)*r],[.035,.30+(i%3)*.10,.035],RUNNING_WATER,a,.30);
   }
 
   // Upper bowl → lower bowl. The whole rim weeps; four heavier falls on the
@@ -5487,7 +5638,7 @@ buildArrivalCourt(exteriorApi);
       for(let k=0;k<12;k++){
         const t=(k/12)*Math.PI*2;
         addBox(m,[Math.cos(a)*(LOW_R+.12)+Math.cos(t)*rr,DROP+.07,Math.sin(a)*(LOW_R+.12)+Math.sin(t)*rr],
-          [ss,ss*1.6,rr*2*Math.tan(Math.PI/12)],MAT.roofGlass,t);
+          [ss,ss*1.6,rr*2*Math.tan(Math.PI/12)],RUNNING_WATER,t);
       }
     }
   }
@@ -6421,6 +6572,10 @@ for(const [name,parts] of createReliquaryPropGeometry()) {
   }
 }
 
+// These courts are actual missing masonry and overhead slabs, not SKY flags
+// underneath the previous room. Run after all imported model replacements.
+const courtyardArchitectureReceipt=clipCourtyardArchitecture(meshes);
+
 // Resolve the same generated room/landing hosts the runtime will actually
 // expose. A door named on a map but lacking a placed corridor plate is not a
 // print job. The data import remains pure and does not compile a hidden plan.
@@ -6525,6 +6680,9 @@ for(let pageIndex=0;pageIndex<letteringBake.pages.length;pageIndex++){
     mat.normalTexture={index:ids.normal};
   }
 }
+// Printed faces are appended after the first geometry pass. Apply the same
+// court subtraction to those faces so retired room notices cannot float in air.
+clipCourtyardArchitecture(meshes);
 for(const m of meshes.values()){
   const primitives=[];
   for(const [mat,g] of m.groups){
@@ -6564,7 +6722,7 @@ fs.writeFileSync(path.join(OUT_DIR,'conservatory-props.lettering.json'),JSON.str
   blankSurfacesPreserved:['door_stencil','atrium_formal_banner','yard_markings'],
 },null,2)+'\n');
 
-const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:0,meshes:{}};
+const stats={generatedAt:new Date().toISOString(),bytes:total,totalTriangles:0,meshes:{},courtyardArchitecture:courtyardArchitectureReceipt};
 const meshBounds={};
 for(const m of meshes.values()){
   let tri=0,verts=0; const lo=[Infinity,Infinity,Infinity],hi=[-Infinity,-Infinity,-Infinity];

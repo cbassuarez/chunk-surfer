@@ -23,7 +23,7 @@ const end=source.indexOf('\nbuildDistrictSceneryRoads(',start);
 assert.ok(start>=0&&end>start,'the existing town is a bounded authored region');
 const region=source.slice(start,end)
   .replace('    const mat=palette[index%palette.length];',
-    '    globalThis.parcels.push({x,z,w,d,h,axis,inward,index});\n    const mat=palette[index%palette.length];')
+    '    globalThis.parcels.push({x,z,w,d,h,axis,inward,index,explicit,mansion});\n    const mat=palette[index%palette.length];')
   .replace('  // Gaps between the rows',
     '  globalThis.townBuilding=townBuilding;\n  // Gaps between the rows');
 const MAT={stone:10,black:2,wood:1,steel:3,agedWhite:17,warmWindow:21,
@@ -47,15 +47,18 @@ vm.runInContext(`
 const parcels=JSON.parse(JSON.stringify(context.parcels));
 const town=context.meshes.get('district_outer_sprawl');
 const triangles=[...town.groups.values()].reduce((sum,g)=>sum+g.indices.length/3,0);
-const civic=p=>p.h>=10.5&&(p.index%7===0||p.index%13===0);
+const civic=p=>p.mansion||p.h>=10.5&&(p.index%7===0||p.index%13===0);
 const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
 
-test('richer houses leave every existing parcel, gap and park exclusion in place',()=>{
-  assert.equal(parcels.length,247);
+// Ellery Square cleared the sprawl round the square and replaced it with an
+// authored outer shell: townhouses north-west, mansions north-east.
+test('the town keeps its parcels, gaps and park exclusion around Ellery Square',()=>{
+  assert.equal(parcels.length,206);
   assert.equal(digest(JSON.stringify(parcels)),
-    '1ea98096ca35a576b699359c52056561a266c7dfffbd5eaf2247694bdde666c1',
-    'pre-revision parcel positions, dimensions, heights and row ordering are unchanged');
-  assert.equal(parcels.filter(civic).length,30,'ornament stays a sparse 30 of 247 houses');
+    '703270430eaec3998ab9d94c12c43de23968e58f1c2d39e0d590d11c149c4168',
+    'parcel positions, dimensions, heights and row ordering are unchanged');
+  assert.equal(parcels.filter(civic).length,32,'ornament stays a sparse 32 of 206 houses');
+  assert.ok(parcels.filter(p=>p.mansion).length>=6,'the north-east mansions are their own block');
   assert.ok(parcels.some(p=>civic(p)&&p.axis==='x')&&parcels.some(p=>civic(p)&&p.axis==='z'));
   assert.ok(triangles<=155296*1.15,'city detail stays within 15% of its previous triangle count');
 });
@@ -85,13 +88,13 @@ test('all houses stay inside their exact prior roof and chimney envelopes',()=>{
   }
 });
 
-test('the 217 ordinary neighbours preserve their previous actual vertices and materials',()=>{
+test('the 174 ordinary neighbours preserve their actual vertices and materials',()=>{
   const ordinary=crypto.createHash('sha256');
   for(const p of parcels.filter(p=>!civic(p))){
     town.groups.clear();context.townBuilding(p);
     ordinary.update(digest(JSON.stringify([...town.groups])));
   }
   assert.equal(ordinary.digest('hex'),
-    '9a22dc62d3d46102bc9979228886ee96ad75c26c1ec300ad5e5e227ebfc6b043',
-    'ordinary buildings match the geometry captured before the ornament revision');
+    '43dbe870cca038a8ca6ba066054a1b09d8dfc8a6579b70546a07722e29ce4819',
+    'ordinary buildings match the geometry captured with the Ellery Square plan');
 });

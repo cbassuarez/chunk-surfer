@@ -412,12 +412,12 @@ export function makeTitleScene({
         footerParts: [{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'CONFIRM' }],
         meter: true,
         // Real level, through the same dB mapping, ballistics and peak hold the
-        // recorder's meter uses (render/meter.js) — so the title shows the same
+        // recorder's meter uses (audio/dual-trace.js) — so the title shows the same
         // machine behaving the same way, which is what it was always claiming.
-        meterSnapshot: monitorSnapshotForRms(programRms, {
+        meterSnapshot: {...monitorSnapshotForRms(programRms, {
           peak: programPeak,
           clipped: programClipped,
-        }),
+        }),sourceId:'title-program',peakKind:'sample'},
       }, (body) => {
 
       const display = 'CHUNK SURFER';

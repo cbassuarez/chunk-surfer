@@ -10,6 +10,7 @@ import { beginSourceReplayTake, completeSourceReplayTake, freshSourceReplayManif
 import { makeSourceRepriseScene, SOURCE_REPRISE_CAST_SECONDS,
   SOURCE_REPRISE_UNFOLD_SECONDS, SOURCE_REPRISE_RECOGNITION_SECONDS } from '../src/game/source-reprise-scene.js';
 import { createPressurePerformance } from '../src/game/pressure-performance.js';
+import { freshHushDensityPose } from '../src/game/hush-density-performance.js';
 
 const actor = (time = 0, extra = {}) => ({
   id: 'pressure:spawn-1', x: 12, y: -7, floorH: .25, strength: .92,
@@ -98,6 +99,18 @@ test('a stationary observer records and actually stores continuing Pressure, wit
     assert.equal(window[0].pressurePresentation.primary.performance.time,0,'the bounded Source reprise window lost its recorded Pressure');
     window[0].pressurePresentation.primary.x=999;
     assert.equal(recorder.frames[0].pressurePresentation.primary.x,12,'the reprise window mutated the captured night');
+    // A density event can matter inside the ordinary sample interval even
+    // while the root, human compatibility clip and cue stay unchanged.
+    const densityActor=actor(10,{referenceTrace:true,clearanceM:.42});
+    densityActor.performance.density={...freshHushDensityPose(4417),phase:2.7,event:'travel',traction:.8};
+    recorder.tick(.001,frame(0,presentation(10.001,densityActor)));
+    const beforeBoundary=recorder.frames.length;
+    densityActor.performance.density={...densityActor.performance.density,event:'blocked',blocked:true,compression:.9};
+    recorder.tick(.001,frame(0,presentation(10.002,densityActor)));
+    assert.equal(recorder.frames.length,beforeBoundary+1,'blocked density event was lost inside the sample interval');
+    const captured=unpackShadowFrames(JSON.parse(JSON.stringify(packShadowFrames(recorder.frames)))).at(-1).pressurePresentation.primary;
+    assert.deepEqual(captured.performance.density,densityActor.performance.density);
+    assert.equal(captured.referenceTrace,true);assert.equal(captured.clearanceM,.42);
     // Presence/cue changes must be captured even inside the normal 100ms interval.
     recorder.tick(.001, frame(0, presentation(10.001, null)));
     assert.equal(recorder.frames.at(-1).pressurePresentation.primary, null);

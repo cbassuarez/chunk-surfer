@@ -8,7 +8,9 @@ import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {CELL,ZONE} from '../src/data/floorplan/legend.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
+import {ELLERY_SQUARE,squareLogicalAt} from '../src/data/ellery-square.js';
 import {CONSERVATORY_PROPS,PROP_MESH} from '../src/data/conservatory-props.js';
+import {STREET_PARKING_BAYS} from '../src/data/exterior-street-fabric.js';
 import {exteriorAmbientInstances,exteriorAmbientSnapshot,exteriorHeadlightLights} from '../src/game/exterior-ambient.js';
 import {busGraffitiInstance} from '../src/render/bus-graffiti.js';
 import {
@@ -158,17 +160,19 @@ test('clock freezes inactive time, bounds stalls and changes motion rate without
   clock.reset(0);near(clock.time(),0);near(clock.inspect().discardedSeconds,0);
 });
 
-test('floor retains road/setts/footway section and drops only the crossing approach',()=>{
-  near(streetPilotFloorAt(78,-7.5),0);
-  near(streetPilotFloorAt(78,-3.5),.025);
+test('floor is road kerb to kerb and four-metre pavement, dropped flush only at the crossing',()=>{
+  near(streetPilotFloorAt(78,-7.25),0);
+  near(streetPilotFloorAt(70.25,-10),0);near(streetPilotFloorAt(70.25,-4.5),0);
+  near(streetPilotFloorAt(70.25,-10.75),.12);near(streetPilotFloorAt(70.25,-3.75),.12);
   near(streetPilotFloorAt(90,-1),.12);
-  near(streetPilotFloorAt(78,-2.499999),.025,1e-6);
-  near(streetPilotFloorAt(78,-1),.12);
+  // Flush at the kerb, easing back to full height across two and a half metres.
+  near(streetPilotFloorAt(78.25,-10.75),.006);near(streetPilotFloorAt(78.25,-3.75),.006);
+  near(streetPilotFloorAt(78.25,-12.75),.12);near(streetPilotFloorAt(78.25,-1.75),.12);
   assert.equal(streetPilotFloorAt(62,-7.5),null);
   assert.equal(streetPilotFloorAt(78,0),null);
-  const ramp=[-2.49,-2.25,-2,-1.75,-1.5,-1.25,-1].map(z=>streetPilotFloorAt(78,z));
+  const ramp=[-3.75,-2.75,-1.75,-.75].map(z=>streetPilotFloorAt(78.25,z));
   assert.ok(ramp.every((value,index)=>index===0||value>=ramp[index-1]));
-  assert.ok(ramp.every(value=>value>=.025&&value<=.12));
+  assert.ok(ramp.every(value=>value>=.006&&value<=.12));
 });
 
 let planCompiled=false;
@@ -178,11 +182,19 @@ function compileActualPilotPlan(){
     width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,
     connectors:conservatory.connectors,edgePortals:conservatory.edgePortals,doors:conservatory.doors,
   });
-  const northParked=CONSERVATORY_PROPS.filter(prop=>prop.id.startsWith('district-north-car-'));
-  PROPS.propsInit(FP,northParked);
+  PROPS.propsInit(FP,CONSERVATORY_PROPS.filter(prop=>prop.mesh==='city_parked_car'));
   planCompiled=true;
 }
 const actualPoint=(x,z)=>FP.toRuntimePoint(districtLogicalAt(x,z),{center:false});
+// North of the footway the crossing continues onto Ellery Square's esplanade,
+// which keeps its own logical page behind an edge seam.
+const crossingPoint=(x,z)=>FP.toRuntimePoint(
+  (z<ELLERY_SQUARE.bounds.z1?squareLogicalAt:districtLogicalAt)(x,z),{center:false});
+const stepAcross=(from,to,dz)=>{
+  if(Math.abs(to.x-from.x)+Math.abs(to.y-from.y)===1)return FP.canStep(from.x,from.y,to.x,to.y);
+  const step=FP.canStep(from.x,from.y,from.x,from.y+dz);
+  return{...step,ok:step.ok&&step.redirect?.x===to.x&&step.redirect?.y===to.y};
+};
 
 test('the production compiled crossing is open and walkable both ways with matching floor heights',()=>{
   compileActualPilotPlan();PROPS.setColliderGroupEnabled('street-pilot',true);
@@ -190,34 +202,39 @@ test('the production compiled crossing is open and walkable both ways with match
     for(const x of[77,78,79]){
       const path=[];
       for(let z=-16;z<=-1;z+=.5){
-        const p=actualPoint(x,z);path.push(p);
+        const p=crossingPoint(x,z);path.push(p);
         assert.equal(FP.isSolid(p.x,p.y),false,`solid crossing/passage at${x},${z}`);
         assert.equal(PROPS.propCanOccupy(p.x,p.y),true,`prop blocks crossing at${x},${z}`);
-        const expected=streetPilotFloorAt(Math.floor(x),Math.floor(z));
+        // The floor grid samples each glyph at its centre: glyph o covers o-.25..o+.75.
+        const expected=streetPilotFloorAt(Math.floor(x+.25)+.25,Math.floor(z+.25)+.25);
         if(expected!==null)near(FP.floorAt(p.x,p.y),expected,1e-6);
       }
       for(let i=1;i<path.length;i++){
         const from=path[i-1],to=path[i];
-        assert.equal(FP.canStep(from.x,from.y,to.x,to.y).ok,true,'normal approach across road');
-        assert.equal(FP.canStep(to.x,to.y,from.x,from.y).ok,true,'ordinary retreat remains available');
+        assert.equal(stepAcross(from,to,1).ok,true,'normal approach across road');
+        assert.equal(stepAcross(to,from,-1).ok,true,'ordinary retreat remains available');
       }
     }
   }finally{PROPS.setColliderGroupEnabled('street-pilot',false);}
 });
 
-test('actual north parked car bodies and padded collision envelopes clear the westbound lane',()=>{
+test('North Street has no parking; every bay keeps its car off the kerb and out of the moving lanes',()=>{
   compileActualPilotPlan();
-  const parked=PROPS.renderInstances({group:'ground',inscriptions:false})
-    .filter(prop=>prop.id.startsWith('district-north-car-'));
-  assert.equal(parked.length,3);
-  const lane=STREET_PILOT.vehicles.find(node=>node.id==='north-night-car');
-  for(const car of parked){
-    near(car.z,-3.5);near(Math.abs(car.yaw),Math.PI/2);
-    const halfStaticWidth=PROP_MESH[car.mesh].w/2+.2;
-    const clearance=Math.abs(car.z-lane.laneZ)-halfStaticWidth-STREET_PILOT.car.envelopeWidthM/2;
-    assert.ok(clearance>=.25,`${car.id} leaves only${clearance}m after padded envelopes`);
-    assert.equal(PROPS.propCanOccupy(...Object.values(actualPoint(car.x,lane.laneZ))),true);
-    assert.equal(PROPS.propCanOccupy(...Object.values(actualPoint(car.x,car.z))),false);
+  const parked=PROPS.renderInstances({group:'ground',inscriptions:false}).filter(prop=>prop.mesh==='city_parked_car');
+  assert.equal(parked.length,STREET_PARKING_BAYS.length);
+  for(const lane of STREET_PILOT.vehicles){
+    const half=STREET_PILOT[lane.kind].envelopeWidthM/2;
+    for(const car of parked){
+      if(car.x<STREET_PILOT.districtRoad.x0||car.x>STREET_PILOT.districtRoad.x1)continue;
+      const halfStaticWidth=Math.abs(Math.sin(car.yaw))>.5?PROP_MESH[car.mesh].w/2:PROP_MESH[car.mesh].d/2;
+      assert.ok(Math.abs(car.z-lane.laneZ)-halfStaticWidth-half>=.25,`${car.id} stands in ${lane.id}'s lane`);
+    }
+  }
+  for(const bay of STREET_PARKING_BAYS){
+    const car=parked.find(p=>p.id===bay.id);assert.ok(car,bay.id);
+    const across=Math.abs(Math.sin(bay.yaw))>.5?car.z:car.x;
+    // Body edge 350 mm off the kerb face, on the road side of it.
+    near((across-bay.line)*bay.toRoad,PROP_MESH[car.mesh].w/2+.35,1e-6);
   }
 });
 

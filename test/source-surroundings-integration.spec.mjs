@@ -8,6 +8,7 @@ import {sourceSurroundingsPlacement} from '../src/audio/source-surroundings.js';
 import {sourceSurroundingsFrame} from '../src/game/source-surroundings.js';
 import {standingTearRepertoireById} from '../src/data/standing-tear-memory-score.js';
 import {CREDITS} from '../src/data/credits.js';
+import {SOURCE_CONTINUATION} from '../src/data/source-continuation.js';
 import * as scenes from '../src/game/scenes.js';
 
 const state=(extra={})=>({...resumeSourceContinuation(freshSourceContinuation({runId:'audio-wrapper'})),elapsed:2,...extra});
@@ -42,7 +43,7 @@ test('both production factories bind distinct live SFX/music destinations and pr
   const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),factories=[...main.matchAll(/sourceContinuationAudio\s*\|\|=\s*createSourceContinuationAudio\((\{[\s\S]*?\n  \})\);/g)];
   assert.equal(factories.length,2,'fake Ellery entry and the continuation entry both configure the reused audio owner');
   for(const factory of factories){
-    const g=audioGraph(),flags={record:false,listen:false,play:false,shake:'full'},environment={actx:g.ctx,sfxGain:g.sfx,musicGain:g.music,
+    const g=audioGraph(),flags={record:false,listen:false,play:false,shake:'full'},environment={actx:g.ctx,sfxGain:g.sfx,musicGain:g.music,playSceneFootContact:()=>{},clearSceneFootContacts:()=>{},
       shakeMode:()=>flags.shake,REC:{isRecording:()=>flags.record,isListening:()=>flags.listen},PB:{isPlaying:()=>flags.play}};
     const config=Function('environment',`with(environment){return (${factory[1]});}`)(environment);
     assert.equal(config.getAudio().destination,g.sfx);assert.equal(config.getMusicAudio().destination,g.music);
@@ -71,12 +72,13 @@ test('wrapper pause and REC/listen/playback protection silence every owned graph
 });
 
 test('the actual rotated Catch scene passes raw surroundings state separately, keeping fixed music aligned with the unchanged world',async()=>{
-  const g=audioGraph(),sound=wrapper(g),updates=[],checkpoint=state({phase:'catch',x:-27,z:-12,feet:8.4,level:0,yaw:.2,pitch:-.1,elapsed:2}),rotation=Math.PI/2;
+  const centre=SOURCE_CONTINUATION.catch.center;
+  const g=audioGraph(),sound=wrapper(g),updates=[],checkpoint=state({phase:'catch',x:centre.x+11,z:centre.z,feet:8.4,level:0,yaw:.2,pitch:-.1,elapsed:2}),rotation=Math.PI/2;
   const audio={...sound,update:args=>{updates.push(args);return sound.update(args);}},renderer={initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}};
   const scene=createSourceContinuationScene({checkpoint,renderer,audio,studyRotation:rotation});await scene.initialize();scene.update(.016);await settle();g.ctx.currentTime+=.016;scene.update(.016);
-  const args=updates.at(-1);assert.ok(args);assert.notEqual(args.state,args.surroundingsState);assert.deepEqual(args.surroundingsState,scene.serialize());assert.ok(Math.abs(args.state.yaw-args.surroundingsState.yaw-rotation)<1e-8);
+  const args=updates.at(-1);assert.ok(args);assert.notEqual(args.state,args.surroundingsState);assert.deepEqual(args.surroundingsState,scene.serialize());assert.ok(Math.abs(args.state.yaw-rotation)<1e-8,'overhead sound follows the screen compass, independent of the saved first-person look');
   assert.notEqual(args.state.x,args.surroundingsState.x);const score=sourceSurroundingsFrame(args.surroundingsState).score;
-  const expected=sourceSurroundingsPlacement(score.position,args.surroundingsState),wrong=sourceSurroundingsPlacement(score.position,args.state);
+  const expected=sourceSurroundingsPlacement(score.position,{...args.surroundingsState,yaw:0,pitch:0}),wrong=sourceSurroundingsPlacement(score.position,args.state);
   assert.deepEqual(sound.snapshot().surroundings.music.placement,expected);assert.notDeepEqual(expected.relativeXYZ,wrong.relativeXYZ,'a rotated listener against unrotated source would point at the wrong physical material');
   assert.equal(sound.snapshot().surroundings.score.phase,score.phase);scene.pause();assert.equal(sound.snapshot().surroundings.voices,0);scene.exit();sound.dispose();
 });

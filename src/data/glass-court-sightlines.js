@@ -4,9 +4,10 @@ export const GLASS_COURT_SIGHTLINES=Object.freeze({
   windowId:'W3-foyer-north',
   maximumExteriorDistance:36,
   fanlight:Object.freeze({id:'baths-D0-high-fanlight',doorId:'pool-lobby',
-    x0:83,x1:85,z0:27,z1:28,planeZ:27.5,sill:3.4,head:5.5}),
+    x0:83,x1:85,z0:14.5,z1:15.5,planeZ:15,sill:3.4,head:5.5}),
   enclosures:Object.freeze([
-    Object.freeze({spaceId:'front_atrium',x0:74,x1:98,z0:3,z1:28}),
+    Object.freeze({spaceId:'front_atrium',x0:74,x1:98,z0:3,z1:15}),
+    Object.freeze({spaceId:'greenhouse',x0:82,x1:86,z0:15,z1:27}),
     Object.freeze({spaceId:'natatorium',x0:70,x1:97,z0:27,z1:51}),
   ]),
 });

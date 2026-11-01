@@ -1,21 +1,33 @@
-// Pigment on the existing four court walls, in their local metre frames.
-// No new collision or wall panels: the marks sit just in front of the masonry.
-export const EXTERIOR_GRAFFITI_PACK = '/assets/exterior-graffiti.glb';
-export const EXTERIOR_GRAFFITI_COURTS = Object.freeze([
-  {id:'north',x:78,z:-15,yaw:Math.PI,scaleZ:13/16},
-  {id:'south',x:86,z:107,yaw:0,scaleZ:1},
-  {id:'west',x:-15,z:24,yaw:Math.PI/2,scaleZ:15/16},
-  {id:'east',x:143,z:16,yaw:-Math.PI/2,scaleZ:20/16},
-].map(Object.freeze));
-export const EXTERIOR_GRAFFITI_MESHES = Object.freeze(Object.fromEntries(
-  EXTERIOR_GRAFFITI_COURTS.map(({id})=>[`exterior_graffiti_${id}`,{w:9,d:16,h:2.4,blocks:false}]),
+// Original CC0 artist marks mounted on existing outdoor hosts. Coordinates
+// below are in each host's own frame, in metres; the runtime clones the real
+// host's pose, including its offset, floor, yaw and scale.
+export const EXTERIOR_GRAFFITI_PACK='/assets/exterior-graffiti.glb';
+const mark=(art,side,z,width,y0,y1,surface='masonry')=>({art,side,z,width,y0,y1,surface});
+const court=(id,marks)=>({id:`district-${id}-graffiti`,host:`district-${id}-court-walls`,mesh:`exterior_graffiti_${id}`,kind:'court',marks});
+const frontage=(id,host,kind,marks)=>({id:`${host}-graffiti`,host,mesh:`exterior_graffiti_${id}`,kind,marks});
+export const EXTERIOR_GRAFFITI_HOSTS=Object.freeze([
+ court('south',[mark('dephy',-1,4.5,1.8,.77,2.1),mark('Kurt',1,7.15,1.65,1.0,2.2),mark('ELLERY',-1,8.75,1.8,.82,2.1)]),
+ court('west',[mark('GBS',-1,4.5,1.95,.72,2.35),mark('SURFER',1,7.15,1.7,.85,2.2),mark('maryjane',1,11.42,1.7,.83,2.1)]),
+ court('east',[mark('DUB',-1,4.5,1.8,.82,2.17),mark('imdoinggreat',1,7.15,1.7,.83,2.2),mark('valha',-1,8.75,1.8,.75,2.2)]),
+ frontage('west_street','district-west-row-b','workshop',[
+   mark('valha',1,-12,3.4,.65,2.55,'shutter'),mark('dephy',1,20,2.3,.87,2.28,'shutter')]),
+ frontage('east_street','district-east-row-b','workshop',[
+   mark('RANDOM',1,20,2.5,.82,2.32,'shutter'),mark('DUB',1,-12,2.75,.75,2.45,'shutter')]),
+ frontage('south_street','district-south-row-c','workshop',[
+   mark('PEACE',1,-28,2.25,.90,2.35,'shutter'),mark('GBS',1,-12,3.15,.72,2.45,'shutter')]),
+ frontage('north_street_a','district-north-row-a','street',[
+   mark('Kurt',1,28.65,1.05,1.64,2.19)]),
+ frontage('west_street_a','district-west-row-a','street',[
+   mark('imdoinggreat',1,-3.35,1.05,1.64,2.19)]),
+ frontage('east_street_a','district-east-row-a','street',[
+   mark('RANDOM',1,-3.35,1.05,1.64,2.19)]),
+ frontage('square_north','ellery-square-north','square',[
+   mark('dephy',1,-11.35,1.05,1.64,2.19),mark('Kurt',1,12.65,.94,1.64,2.19),
+   mark('PEACE',1,-19.35,1.05,1.64,2.19),mark('DUB',1,20.65,.95,1.64,2.19)]),
+ frontage('square_west','ellery-square-west','square',[
+   mark('maryjane',1,-15.35,.98,1.64,2.19),mark('PEACE',1,16.65,.95,1.64,2.19),
+   mark('DUB',1,-15.35,.93,.99,1.49),mark('RANDOM',1,16.65,.98,.99,1.49)]),
+].map(host=>Object.freeze({...host,marks:Object.freeze(host.marks.map(Object.freeze))})));
+export const EXTERIOR_GRAFFITI_MESHES=Object.freeze(Object.fromEntries(
+ EXTERIOR_GRAFFITI_HOSTS.map(h=>[h.mesh,{w:h.kind==='court'?9:1,d:h.kind==='court'?16:80,h:3.5,blocks:false}]),
 ));
-
-// Side determines the inward-facing surface. Positions fit between the real
-// doors (the opposite wall reverses their local Z coordinates).
-export const EXTERIOR_GRAFFITI_MARKS = Object.freeze({
-  north:[[-1,4.50,1.20,'MOTH',0],[1,7.15,1.28,'LARK',1],[-1,8.75,1.22,'VEX',2],[1,11.42,1.15,'NIX',0]],
-  south:[[-1,4.48,1.25,'ROOK',2],[1,7.12,1.22,'KITE',0],[-1,8.73,1.20,'DUST',1],[1,11.40,1.24,'MOTH',2]],
-  west:[[-1,4.52,1.24,'NIX',1],[1,7.16,1.20,'VEX',2],[-1,8.76,1.28,'REEL',0],[1,11.43,1.18,'ROOK',1]],
-  east:[[-1,4.49,1.19,'KITE',0],[1,7.14,1.26,'DUST',2],[-1,8.72,1.20,'LARK',1],[1,11.39,1.25,'REEL',2]],
-});

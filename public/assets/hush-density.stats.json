@@ -1,0 +1,1583 @@
+{
+  "kind": "production-hush-density",
+  "identity": "The Thick Part",
+  "source": "tools/chunk_surfer/build-hush-density-study.py",
+  "concept": "artifacts/hush-mythology-directions/density.png",
+  "blender": "4.5.3 LTS",
+  "units": "metres",
+  "forward": "-Z",
+  "mesh": "hush_density_core / hush_density_return / hush_density_volume",
+  "globalReplacement": true,
+  "bytes": 4639740,
+  "sha256": "80c0b64c1c2bd5def9e5f0beade85a411f0360d2682f4b094509b3d730771b79",
+  "vertices": 22002,
+  "triangles": 44000,
+  "joints": [
+    "density_root",
+    "fold_A_0",
+    "fold_A_1",
+    "fold_A_2",
+    "fold_A_3",
+    "fold_A_4",
+    "fold_A_5",
+    "fold_B_0",
+    "fold_B_1",
+    "fold_B_2",
+    "fold_B_3",
+    "fold_B_4",
+    "fold_B_5",
+    "fold_C_0",
+    "fold_C_1",
+    "fold_C_2",
+    "fold_C_3",
+    "fold_C_4",
+    "fold_C_5"
+  ],
+  "jointBindPositions": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      -0.3134534332955925,
+      0.11768569184714545,
+      0.03661743299908013
+    ],
+    [
+      -0.3313556490673562,
+      0.38946034819137754,
+      0.051731878436648907
+    ],
+    [
+      -0.3492578648391199,
+      0.7362073235271219,
+      0.06306771251482549
+    ],
+    [
+      -0.3373230543246108,
+      1.0548396792410493,
+      0.07440354659300207
+    ],
+    [
+      -0.28958381226657426,
+      1.2891281760895252,
+      0.08196076931178646
+    ],
+    [
+      -0.24184457020853783,
+      1.3828435748289152,
+      0.09707521474935528
+    ],
+    [
+      -0.05685500723364633,
+      0.1270572317210845,
+      -0.10696979865782326
+    ],
+    [
+      0.014753855853408434,
+      0.46443266718288984,
+      -0.12208424409539205
+    ],
+    [
+      0.014753855853408434,
+      0.8767804216362075,
+      -0.12964146681417643
+    ],
+    [
+      -0.018066873061491667,
+      1.279756636215586,
+      -0.14475591225174522
+    ],
+    [
+      0.07442790842595406,
+      1.6733613109210257,
+      -0.19009924856445154
+    ],
+    [
+      0.19675971619967259,
+      1.8982782678955625,
+      -0.22032813943958912
+    ],
+    [
+      0.31312411871613666,
+      0.11768569184714545,
+      0.21043355553112109
+    ],
+    [
+      0.36086336077417314,
+      0.34260264882168234,
+      0.21043355553112109
+    ],
+    [
+      0.3787655765459368,
+      0.6237488450398535,
+      0.21799077824990548
+    ],
+    [
+      0.348928550259664,
+      0.8861519615101465,
+      0.22554800096868982
+    ],
+    [
+      0.29522190294437295,
+      1.1110689184846836,
+      0.22554800096868982
+    ],
+    [
+      0.24748266088633636,
+      1.223527396971952,
+      0.2255480009686898
+    ]
+  ],
+  "jointAxes": "Every node has explicit game X=lateral,Y=up,Z=depth axes; star-parented to density_root. No humanoid joints.",
+  "morphs": 0,
+  "restBounds": {
+    "min": [
+      -0.45000000000000007,
+      0.0,
+      -0.35
+    ],
+    "max": [
+      0.45000000000000007,
+      2.05,
+      0.35
+    ]
+  },
+  "sampledAnimatedBounds": {
+    "min": [
+      -0.4502291117249302,
+      0.0,
+      -0.3798694878048598
+    ],
+    "max": [
+      0.45,
+      2.061054338916232,
+      0.36699576355705743
+    ]
+  },
+  "topology": {
+    "connectedComponents": 1,
+    "euler": 2,
+    "genus": 0,
+    "throughOpenings": 0,
+    "openChannels": 2,
+    "negativeSpaceType": "Open-ended spaces between independent rounded fold crowns; no closed ring rhythm",
+    "boundaryEdges": 0,
+    "nonManifoldEdges": 0
+  },
+  "maximumSampledEdgeExtensionRatio": 6.034231762929598,
+  "baseContact": {
+    "pinnedBelowHeightM": 0.085,
+    "maximumRootRelativeBaseDriftM": 0,
+    "plantedSupportClaim": false,
+    "meaning": "Base remains fixed relative to the accepted collider root and drags with it. No world-planted feet, no additional reach or contact rules."
+  },
+  "clips": {
+    "pressure_hold": 1,
+    "pressure_idle": 9.6,
+    "pressure_approach": 2.4,
+    "pressure_limp": 3.4,
+    "pressure_listen": 4.8,
+    "pressure_load": 0.5,
+    "pressure_advance": 0.72,
+    "pressure_arrest": 1,
+    "pressure_pivot": 0.72,
+    "density_clamp": 2.2,
+    "density_retained": 1,
+    "density_release": 1.5,
+    "density_turn": 1.2,
+    "density_reload": 0.5,
+    "density_listen": 4.8,
+    "density_idle": 6.4
+  },
+  "poseStates": {
+    "N": "Neutral fixed density",
+    "L": "Loaded inward stack",
+    "R": "Retained wrong correction"
+  },
+  "clipEndpoints": {
+    "pressure_hold": "N\u2192N",
+    "pressure_idle": "N\u2192N",
+    "pressure_arrest": "R\u2192R",
+    "density_retained": "R\u2192R",
+    "pressure_load": "N\u2192L",
+    "density_reload": "R\u2192L",
+    "pressure_advance": "L\u2192R",
+    "pressure_pivot": "L\u2192R",
+    "pressure_listen": "N\u2192R",
+    "density_listen": "R\u2192R",
+    "density_clamp": "N\u2192R",
+    "density_release": "R\u2192N",
+    "pressure_approach": "R\u2192R, exact finite correction repeated only while clock advances",
+    "pressure_limp": "Retimed approach, not an injury",
+    "density_turn": "R\u2192R, local shear only; world heading remains upstream",
+    "density_idle": "R\u2192R, finite asynchronous curl packet; do not auto-loop"
+  },
+  "exactCorrectionReference": {
+    "pulseSeconds": 0.6,
+    "pressureListenStarts": [
+      0.28,
+      1.18
+    ],
+    "densityClampStarts": [
+      0.2,
+      1.08
+    ],
+    "description": "Identical piecewise capture/hold/recoil/correction curves, not noise, generic sine breathing or perpetual idle."
+  },
+  "transitionSeams": [
+    {
+      "id": "hold-load",
+      "maximumVertexDifferenceM": 0.0
+    },
+    {
+      "id": "load-advance",
+      "maximumVertexDifferenceM": 0.0
+    },
+    {
+      "id": "advance-retained",
+      "maximumVertexDifferenceM": 4.449557262054371e-16
+    },
+    {
+      "id": "retained-reload",
+      "maximumVertexDifferenceM": 0.0
+    },
+    {
+      "id": "reload-advance",
+      "maximumVertexDifferenceM": 2.220446049250313e-16
+    },
+    {
+      "id": "retained-listen",
+      "maximumVertexDifferenceM": 0.0
+    },
+    {
+      "id": "approach-loop",
+      "maximumVertexDifferenceM": 0.0
+    }
+  ],
+  "windowDepthProbes": [
+    {
+      "pose": "neutral",
+      "heightM": 0.5,
+      "clearRunsM": [
+        [
+          -0.24,
+          -0.135
+        ],
+        [
+          0.16500000000000004,
+          0.28500000000000003
+        ]
+      ],
+      "widthsM": [
+        0.10499999999999998,
+        0.12
+      ]
+    },
+    {
+      "pose": "neutral",
+      "heightM": 0.78,
+      "clearRunsM": [
+        [
+          -0.2625,
+          -0.09750000000000003
+        ],
+        [
+          0.1725,
+          0.29999999999999993
+        ]
+      ],
+      "widthsM": [
+        0.16499999999999998,
+        0.12749999999999995
+      ]
+    },
+    {
+      "pose": "neutral",
+      "heightM": 1.04,
+      "clearRunsM": [
+        [
+          -0.255,
+          -0.14250000000000002
+        ],
+        [
+          0.11250000000000004,
+          0.19499999999999995
+        ]
+      ],
+      "widthsM": [
+        0.11249999999999999,
+        0.0824999999999999
+      ]
+    },
+    {
+      "pose": "loaded",
+      "heightM": 0.5,
+      "clearRunsM": [
+        [
+          -0.23249999999999998,
+          -0.135
+        ],
+        [
+          0.16500000000000004,
+          0.27749999999999997
+        ]
+      ],
+      "widthsM": [
+        0.09749999999999998,
+        0.11249999999999993
+      ]
+    },
+    {
+      "pose": "loaded",
+      "heightM": 0.78,
+      "clearRunsM": [
+        [
+          -0.24,
+          -0.11249999999999999
+        ],
+        [
+          0.15749999999999997,
+          0.27749999999999997
+        ]
+      ],
+      "widthsM": [
+        0.1275,
+        0.12
+      ]
+    },
+    {
+      "pose": "loaded",
+      "heightM": 1.04,
+      "clearRunsM": [
+        [
+          -0.23249999999999998,
+          -0.1725
+        ],
+        [
+          0.08999999999999997,
+          0.18000000000000005
+        ]
+      ],
+      "widthsM": [
+        0.06,
+        0.09000000000000008
+      ]
+    },
+    {
+      "pose": "retained",
+      "heightM": 0.5,
+      "clearRunsM": [
+        [
+          -0.24,
+          -0.135
+        ],
+        [
+          0.16500000000000004,
+          0.28500000000000003
+        ]
+      ],
+      "widthsM": [
+        0.10499999999999998,
+        0.12
+      ]
+    },
+    {
+      "pose": "retained",
+      "heightM": 0.78,
+      "clearRunsM": [
+        [
+          -0.255,
+          -0.10499999999999998
+        ],
+        [
+          0.16500000000000004,
+          0.28500000000000003
+        ]
+      ],
+      "widthsM": [
+        0.15000000000000002,
+        0.12
+      ]
+    },
+    {
+      "pose": "retained",
+      "heightM": 1.04,
+      "clearRunsM": [
+        [
+          -0.2475,
+          -0.15749999999999997
+        ],
+        [
+          0.10499999999999998,
+          0.1875
+        ]
+      ],
+      "widthsM": [
+        0.09000000000000002,
+        0.08250000000000002
+      ]
+    },
+    {
+      "pose": "peak-clamp",
+      "heightM": 0.5,
+      "clearRunsM": [
+        [
+          -0.23249999999999998,
+          -0.135
+        ],
+        [
+          0.16500000000000004,
+          0.27749999999999997
+        ]
+      ],
+      "widthsM": [
+        0.09749999999999998,
+        0.11249999999999993
+      ]
+    },
+    {
+      "pose": "peak-clamp",
+      "heightM": 0.78,
+      "clearRunsM": [
+        [
+          -0.24,
+          -0.11249999999999999
+        ],
+        [
+          0.15749999999999997,
+          0.27
+        ]
+      ],
+      "widthsM": [
+        0.1275,
+        0.11250000000000004
+      ]
+    },
+    {
+      "pose": "peak-clamp",
+      "heightM": 1.04,
+      "clearRunsM": [
+        [
+          -0.22499999999999998,
+          -0.1725
+        ],
+        [
+          0.08999999999999997,
+          0.18000000000000005
+        ]
+      ],
+      "widthsM": [
+        0.05249999999999999,
+        0.09000000000000008
+      ]
+    }
+  ],
+  "renderContract": {
+    "submit": "Direct props3d pressure instance, character.clip/time/loop only unless deliberate fold-joint override",
+    "omit": [
+      "legacy humanoid support descriptor",
+      "old chest/head/clavicle override map",
+      "cue-zero morph overrides"
+    ],
+    "material": "Current pressure negative mass and radiance through actual acquisition and final dither. Grey material is diagnostic only."
+  },
+  "limits": [
+    "Existing gameplay root/contact/hearing/audio contracts remain authoritative.",
+    "Global integration is authorized; native render, collision-clearance and human fear acceptance remain separate validation.",
+    "The base is root-relative traction, not world-planted feet.",
+    "Strong folds can intentionally overlap in depth; sampled strain is not proof of all-time self-collision absence."
+  ],
+  "asset": "public/assets/hush-density.glb",
+  "meshes": {
+    "hush_density_core": {
+      "vertices": 20395,
+      "triangles": 40328
+    },
+    "hush_density_return": {
+      "vertices": 2072,
+      "triangles": 3672
+    },
+    "hush_density_volume": {
+      "vertices": 22002,
+      "triangles": 44000
+    },
+    "combinedExportedVertices": 44469,
+    "uniqueSculptVertices": 22002,
+    "returnTriangleFraction": 0.08345454545454545,
+    "surfaceSelection": "Deterministic inward-face normal zones,~8.35% of original triangles. Complementary core/return partitions share exact geometric positions, normals and skin values. Fullvolume is a separate render route, not another creature."
+  },
+  "geometryVertexBudgetMeaning": "Unique sculpt vertices and compact core/return/fullvolume exported entry vertices are both reported. Combined exported vertices<=50000.",
+  "rigControls": [
+    {
+      "name": "fold_A_0",
+      "fold": "A",
+      "station": 0,
+      "normalizedStation": 0.0,
+      "pivotM": [
+        -0.3134534332955925,
+        0.11768569184714545,
+        0.03661743299908013
+      ],
+      "tangentAxis": [
+        -0.06562812080103589,
+        0.9963046029950787,
+        0.05540837311222426
+      ],
+      "curlAxis": [
+        -0.9978375048157017,
+        -0.06572909540815658,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": true,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.0,
+        "translationM": 0.0
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_A_1",
+      "fold": "A",
+      "station": 1,
+      "normalizedStation": 0.2,
+      "pivotM": [
+        -0.3313556490673562,
+        0.38946034819137754,
+        0.051731878436648907
+      ],
+      "tangentAxis": [
+        -0.057737775248793186,
+        0.9974201912140455,
+        0.04265338753084997
+      ],
+      "curlAxis": [
+        -0.9983287400982936,
+        -0.057790368520659295,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.017,
+        "translationM": 0.008
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_A_2",
+      "fold": "A",
+      "station": 2,
+      "normalizedStation": 0.4,
+      "pivotM": [
+        -0.3492578648391199,
+        0.7362073235271219,
+        0.06306771251482549
+      ],
+      "tangentAxis": [
+        -0.008962864322862816,
+        0.9993798661797504,
+        0.03405216788508343
+      ],
+      "curlAxis": [
+        -0.9999597860938831,
+        -0.008968065291667968,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.034,
+        "translationM": 0.016
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_A_3",
+      "fold": "A",
+      "station": 3,
+      "normalizedStation": 0.6,
+      "pivotM": [
+        -0.3373230543246108,
+        1.0548396792410493,
+        0.07440354659300207
+      ],
+      "tangentAxis": [
+        0.1072401511418603,
+        0.9936532419378281,
+        0.033952684275543814
+      ],
+      "curlAxis": [
+        -0.994226471755161,
+        0.10730201704201064,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.051000000000000004,
+        "translationM": 0.024
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_A_4",
+      "fold": "A",
+      "station": 4,
+      "normalizedStation": 0.8,
+      "pivotM": [
+        -0.28958381226657426,
+        1.2891281760895252,
+        0.08196076931178646
+      ],
+      "tangentAxis": [
+        0.2788757608245749,
+        0.9580413512251391,
+        0.06621993179718842
+      ],
+      "curlAxis": [
+        -0.960148828536047,
+        0.27948922530368986,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.068,
+        "translationM": 0.032
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_A_5",
+      "fold": "A",
+      "station": 5,
+      "normalizedStation": 1.0,
+      "pivotM": [
+        -0.24184457020853783,
+        1.3828435748289152,
+        0.09707521474935528
+      ],
+      "tangentAxis": [
+        0.44929071097435636,
+        0.881988408564978,
+        0.14224733455912192
+      ],
+      "curlAxis": [
+        -0.8910493602173847,
+        0.4539064194921562,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.085,
+        "translationM": 0.04
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_0",
+      "fold": "B",
+      "station": 0,
+      "normalizedStation": 0.0,
+      "pivotM": [
+        -0.05685500723364633,
+        0.1270572317210845,
+        -0.10696979865782326
+      ],
+      "tangentAxis": [
+        0.20742824535415733,
+        0.9772700136065702,
+        -0.04378177171734497
+      ],
+      "curlAxis": [
+        -0.9782079991544523,
+        0.20762733536373074,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": true,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.0,
+        "translationM": 0.0
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_1",
+      "fold": "B",
+      "station": 1,
+      "normalizedStation": 0.2,
+      "pivotM": [
+        0.014753855853408434,
+        0.46443266718288984,
+        -0.12208424409539205
+      ],
+      "tangentAxis": [
+        0.09503796331192044,
+        0.9950187999860897,
+        -0.030089420130076643
+      ],
+      "curlAxis": [
+        -0.9954695377529885,
+        0.09508101496014501,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.017,
+        "translationM": 0.008
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_2",
+      "fold": "B",
+      "station": 2,
+      "normalizedStation": 0.4,
+      "pivotM": [
+        0.014753855853408434,
+        0.8767804216362075,
+        -0.12964146681417643
+      ],
+      "tangentAxis": [
+        -0.04020673918290334,
+        0.9988053055575155,
+        -0.02777372345286322
+      ],
+      "curlAxis": [
+        -0.9991907576449857,
+        -0.040222255491699645,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.034,
+        "translationM": 0.016
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_3",
+      "fold": "B",
+      "station": 3,
+      "normalizedStation": 0.6,
+      "pivotM": [
+        -0.018066873061491667,
+        1.279756636215586,
+        -0.14475591225174522
+      ],
+      "tangentAxis": [
+        0.07449037164556976,
+        0.9943619367303396,
+        -0.07546869095189764
+      ],
+      "curlAxis": [
+        -0.9972057962603513,
+        0.07470341293916044,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.051000000000000004,
+        "translationM": 0.024
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_4",
+      "fold": "B",
+      "station": 4,
+      "normalizedStation": 0.8,
+      "pivotM": [
+        0.07442790842595406,
+        1.6733613109210257,
+        -0.19009924856445154
+      ],
+      "tangentAxis": [
+        0.32593260849705413,
+        0.9384144184322947,
+        -0.11465737654719058
+      ],
+      "curlAxis": [
+        -0.9446442560231897,
+        0.32809637237006195,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.068,
+        "translationM": 0.032
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_B_5",
+      "fold": "B",
+      "station": 5,
+      "normalizedStation": 1.0,
+      "pivotM": [
+        0.19675971619967259,
+        1.8982782678955625,
+        -0.22032813943958912
+      ],
+      "tangentAxis": [
+        0.47450195513633725,
+        0.8724103548370958,
+        -0.11725215283655219
+      ],
+      "curlAxis": [
+        -0.8784698851940379,
+        0.4777977195499931,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.085,
+        "translationM": 0.04
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_0",
+      "fold": "C",
+      "station": 0,
+      "normalizedStation": 0.0,
+      "pivotM": [
+        0.31312411871613666,
+        0.11768569184714545,
+        0.21043355553112109
+      ],
+      "tangentAxis": [
+        0.2076273353637306,
+        0.9782079991544522,
+        0.0
+      ],
+      "curlAxis": [
+        -0.9782079991544523,
+        0.20762733536373063,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": true,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.0,
+        "translationM": 0.0
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_1",
+      "fold": "C",
+      "station": 1,
+      "normalizedStation": 0.2,
+      "pivotM": [
+        0.36086336077417314,
+        0.34260264882168234,
+        0.21043355553112109
+      ],
+      "tangentAxis": [
+        0.12861832253833727,
+        0.9915836121567426,
+        0.014807674010819895
+      ],
+      "curlAxis": [
+        -0.9916923409234262,
+        0.12863242574800215,
+        0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.017,
+        "translationM": 0.008
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_2",
+      "fold": "C",
+      "station": 2,
+      "normalizedStation": 0.4,
+      "pivotM": [
+        0.3787655765459368,
+        0.6237488450398535,
+        0.21799077824990548
+      ],
+      "tangentAxis": [
+        -0.021943411822406625,
+        0.9993729183726058,
+        0.027789507030770565
+      ],
+      "curlAxis": [
+        -0.999759028235462,
+        -0.0219518897064613,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.034,
+        "translationM": 0.016
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_3",
+      "fold": "C",
+      "station": 3,
+      "normalizedStation": 0.6,
+      "pivotM": [
+        0.348928550259664,
+        0.8861519615101465,
+        0.22554800096868982
+      ],
+      "tangentAxis": [
+        -0.16895015131374158,
+        0.9855061023458098,
+        0.015282951620484639
+      ],
+      "curlAxis": [
+        -0.9856212141564326,
+        -0.16896988549679376,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.051000000000000004,
+        "translationM": 0.024
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_4",
+      "fold": "C",
+      "station": 4,
+      "normalizedStation": 0.8,
+      "pivotM": [
+        0.29522190294437295,
+        1.1110689184846836,
+        0.22554800096868982
+      ],
+      "tangentAxis": [
+        -0.2879552658265272,
+        0.9576438611941153,
+        -7.878450476346326e-17
+      ],
+      "curlAxis": [
+        -0.9576438611941154,
+        -0.28795526582652725,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.068,
+        "translationM": 0.032
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    },
+    {
+      "name": "fold_C_5",
+      "fold": "C",
+      "station": 5,
+      "normalizedStation": 1.0,
+      "pivotM": [
+        0.24748266088633636,
+        1.223527396971952,
+        0.2255480009686898
+      ],
+      "tangentAxis": [
+        -0.39075505651581616,
+        0.920494696240734,
+        -2.271848284714921e-16
+      ],
+      "curlAxis": [
+        -0.9204946962407341,
+        -0.3907550565158162,
+        -0.0
+      ],
+      "splayAxis": [
+        0,
+        0,
+        1
+      ],
+      "rootPin": false,
+      "suggestedSecondaryAdditive": {
+        "rotationRadians": 0.085,
+        "translationM": 0.04
+      },
+      "meaning": "Authored travelling curls already present. Secondary runtime wave should fade down against active clip, use captured travel/attention only, and omit root/station0."
+    }
+  ],
+  "nativeWidthM": 0.9,
+  "recommendedDefaultScale": [
+    1,
+    1,
+    1
+  ],
+  "runtimeWidthPolicy": "Do not reinterpret legacy actor.widthM=.68 as mandatory default squeeze. Door squeezing requires an observed clearance rule; ordinary default native width is .90m.",
+  "sourceHumanReferencePreserved": "public/assets/pressure-character.glb",
+  "idlePolicy": "density_idle is one finite6.4s asynchronous travelling packet,R\u2192R. pressure_idle remains a static compatibility alias. Do not loop idle continuously or synchronize all folds.",
+  "locomotionPolicy": "pressure_approach/limp are closedR\u2192R tip-capture\u2192travellingcontraction\u2192drag/release cycles, phase owned by accepted displacement and capped at2cycles/s. pressure_advance adds the same finite wave toL\u2192R. No biped gait, foot IK or root translation.",
+  "productionCredit": "Entirely original procedural nonhuman geometry and authored spatial rig/curves. No MakeHuman geometry or human textures used.",
+  "maximumSampledRadialEnvelopeM": 0.5640990406697736,
+  "nativeDimensionsM": {
+    "width": 0.9,
+    "height": 2.05,
+    "depth": 0.7
+  },
+  "authoredScaleRange": [
+    0.9,
+    1.16
+  ],
+  "poseJointDeltas": {
+    "columns": [
+      "dx",
+      "dy",
+      "dz",
+      "eulerX",
+      "eulerY",
+      "eulerZ"
+    ],
+    "N": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "L": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.005000000000000001,
+        -0.0016,
+        -0.0032,
+        0.007000000000000001,
+        -0.009,
+        -0.011000000000000001
+      ],
+      [
+        0.025,
+        -0.008,
+        -0.016,
+        0.035,
+        -0.045,
+        -0.055
+      ],
+      [
+        0.02125,
+        -0.0068,
+        -0.0136,
+        0.029750000000000002,
+        -0.03825,
+        -0.04675
+      ],
+      [
+        0.015,
+        -0.0048,
+        -0.0096,
+        0.021,
+        -0.027,
+        -0.033
+      ],
+      [
+        0.0075,
+        -0.0024,
+        -0.0048,
+        0.0105,
+        -0.0135,
+        -0.0165
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.004,
+        -0.009,
+        0.016,
+        -0.020000000000000004,
+        0.010000000000000002,
+        0.014000000000000002
+      ],
+      [
+        -0.02,
+        -0.045,
+        0.08,
+        -0.1,
+        0.05,
+        0.07
+      ],
+      [
+        -0.02,
+        -0.045,
+        0.08,
+        -0.1,
+        0.05,
+        0.07
+      ],
+      [
+        -0.115,
+        -0.19,
+        0.14,
+        -0.18,
+        0.1,
+        0.2
+      ],
+      [
+        -0.145,
+        -0.23,
+        0.175,
+        -0.22,
+        0.12,
+        0.25
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.004,
+        -0.0044,
+        0.005000000000000001,
+        -0.007000000000000001,
+        0.011000000000000001,
+        0.011000000000000001
+      ],
+      [
+        -0.02,
+        -0.022,
+        0.025,
+        -0.035,
+        0.055,
+        0.055
+      ],
+      [
+        -0.017,
+        -0.018699999999999998,
+        0.02125,
+        -0.029750000000000002,
+        0.04675,
+        0.04675
+      ],
+      [
+        -0.012,
+        -0.013199999999999998,
+        0.015,
+        -0.021,
+        0.033,
+        0.033
+      ],
+      [
+        -0.006,
+        -0.006599999999999999,
+        0.0075,
+        -0.0105,
+        0.0165,
+        0.0165
+      ]
+    ],
+    "R": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0024000000000000002,
+        0.0016,
+        -0.0024000000000000002,
+        0.005000000000000001,
+        -0.005000000000000001,
+        -0.005000000000000001
+      ],
+      [
+        0.012,
+        0.008,
+        -0.012,
+        0.025,
+        -0.025,
+        -0.025
+      ],
+      [
+        0.0102,
+        0.0068,
+        -0.0102,
+        0.02125,
+        -0.02125,
+        -0.02125
+      ],
+      [
+        0.0072,
+        0.0048,
+        -0.0072,
+        0.015,
+        -0.015,
+        -0.015
+      ],
+      [
+        0.0036,
+        0.0024,
+        -0.0036,
+        0.0075,
+        -0.0075,
+        -0.0075
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.0024000000000000002,
+        -0.0036,
+        0.007000000000000001,
+        -0.009,
+        0.007000000000000001,
+        0.005000000000000001
+      ],
+      [
+        -0.012,
+        -0.018,
+        0.035,
+        -0.045,
+        0.035,
+        0.025
+      ],
+      [
+        -0.012,
+        -0.018,
+        0.035,
+        -0.045,
+        0.035,
+        0.025
+      ],
+      [
+        -0.018,
+        -0.025,
+        0.035,
+        -0.045,
+        0.035,
+        0.025
+      ],
+      [
+        -0.025,
+        -0.035,
+        0.05,
+        -0.055,
+        0.045,
+        0.05
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        -0.002,
+        -0.0028000000000000004,
+        0.0024000000000000002,
+        -0.003,
+        0.007000000000000001,
+        0.005000000000000001
+      ],
+      [
+        -0.01,
+        -0.014,
+        0.012,
+        -0.015,
+        0.035,
+        0.025
+      ],
+      [
+        -0.0085,
+        -0.011899999999999999,
+        0.0102,
+        -0.01275,
+        0.029750000000000002,
+        0.02125
+      ],
+      [
+        -0.006,
+        -0.0084,
+        0.0072,
+        -0.009,
+        0.021,
+        0.015
+      ],
+      [
+        -0.003,
+        -0.0042,
+        0.0036,
+        -0.0045,
+        0.0105,
+        0.0075
+      ]
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+import {createStaticTexture,STATIC_TEXTURE} from './static-texture.js';
 import { assetUrl } from '../platform/paths.js';
 import { runtimeParams } from '../platform/launch.js';
 import { authoredCue } from './authored-cues.js';
@@ -112,12 +113,22 @@ const buffers = new Map();
 const pending = new Map();
 
 let soundtrack = null; // { src, gain, startedAt, stopping, track }
+let soundtrackGeneration = 0;
+let openingOverture = null, openingOvertureGeneration = 0;
+let openingOverturePreparationError = null;
+export const OPENING_OVERTURE_SOURCE_OFFSET_SECONDS = 2.32;
 let openingBed = null; // { src, hp, lp, gain, startedAt, downbeatAt, stopping, target }
 let openingBedWanted = false, openingBedGeneration = 0;
 let typing = null;     // { gain, hp, lp, active, timer, targetGain }
 let menuHiss = null;
 
 export function storyAudioInit(audioCtx, destination, buses = {}) {
+  if (ctx && ctx !== audioCtx) {
+    stopMenuHiss();
+    stopOpeningOvertureScore({ fade: 0 });
+    stopSoundtrackNow();
+    pending.clear();
+  }
   ctx = audioCtx;
   bus = destination;
   audioBuses = {
@@ -137,11 +148,13 @@ export async function preload(url) {
   if (!ctx) return null;
   if (buffers.has(url)) return buffers.get(url);
   if (pending.has(url)) return pending.get(url);
+  const context = ctx;
   const job = fetch(url)
     .then((r) => { if (!r.ok) throw new Error(`${r.status} ${url}`); return r.arrayBuffer(); })
-    .then((ab) => ctx.decodeAudioData(ab))
-    .then((buf) => { buffers.set(url, buf); pending.delete(url); return buf; })
-    .catch((err) => { console.warn('story audio load failed', url, err); pending.delete(url); return null; });
+    .then((ab) => context.decodeAudioData(ab))
+    .then((buf) => { if (context === ctx) buffers.set(url, buf); return context === ctx ? buf : null; })
+    .catch((err) => { console.warn('story audio load failed', url, err); return null; })
+    .finally(() => { if (pending.get(url) === job) pending.delete(url); });
   pending.set(url, job);
   return job;
 }
@@ -217,13 +230,19 @@ export function musicVolume() { return musicScale; }
 // One soundtrack at a time, whichever track it is. Asking for a different
 // track than the one playing swaps it; asking for the same one just re-ramps,
 // which is what makes this safe to call from a scene's enter() every time.
-export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at = null, offset = 0 } = {}) {
+export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at = null, offset = 0, openingOwner = null } = {}) {
   if (!ctx || !bus) return null;
+  if (openingOverture && track !== 'title') stopOpeningOvertureScore({ fade: .02 });
+  if (openingOverture && track === 'title' && openingOwner !== openingOverture.epoch && (openingOverture.paused || openingOverture.pending)) return null;
+  const generation = ++soundtrackGeneration, context = ctx;
   const url = STORY_AUDIO[track] || STORY_AUDIO.title;
   const level = gain == null ? trackGain(track) * musicScale : gain;
   const buf = buffers.get(url);
   if (!buf) {
-    preload(url).then(() => startSoundtrack({ track, gain, fade, at, offset }));
+    preload(url).then(loaded => {
+      if (loaded && context === ctx && generation === soundtrackGeneration)
+        startSoundtrack({ track, gain, fade, at, offset, openingOwner });
+    });
     return null;
   }
   if (soundtrack && !soundtrack.stopping) {
@@ -239,12 +258,16 @@ export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at =
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.loop = true;
+  if (openingOwner !== null && openingOwner === openingOverture?.epoch) {
+    src.loopStart = openingOverture.sourceOffsetSeconds;
+    src.loopEnd = buf.duration;
+  }
   const g = ctx.createGain();
   g.gain.setValueAtTime(0, startAt);
   src.connect(g);
   g.connect(outBus('music'));
   try { src.start(startAt, Math.max(0, Number(offset) || 0)); } catch (_) { return null; }
-  soundtrack = { src, gain: g, startedAt: startAt, stopping: false, track };
+  soundtrack = { src, gain: g, startedAt: startAt, offset: Math.max(0, Number(offset) || 0), context: ctx, stopping: false, track, openingOwner };
   setGainAt(g, level, startAt, fade);
   src.onended = () => {
     try { src.disconnect(); g.disconnect(); } catch (_) {}
@@ -253,8 +276,100 @@ export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at =
   return soundtrack;
 }
 
+function stopSoundtrackNow() {
+  soundtrackGeneration++;
+  const voice = soundtrack; soundtrack = null;
+  if (!voice) return;
+  voice.stopping = true;
+  try { voice.gain.gain.cancelScheduledValues(voice.context.currentTime); voice.gain.gain.setValueAtTime(0, voice.context.currentTime); voice.src.stop(); } catch (_) {}
+  try { voice.src.disconnect(); voice.gain.disconnect(); } catch (_) {}
+}
+
+// The overture owns only this title transport. Preparation is silent; the
+// first presented birds frame explicitly starts offset zero. Pause retires
+// the source, so a shared running AudioContext cannot spend the held score.
+export function prepareOpeningOvertureScore() {
+  if (!ctx || !bus || ctx.state !== 'running') {
+    openingOverturePreparationError = 'Audio context is not running';
+    return Promise.resolve(false);
+  }
+  const context = ctx;
+  return preload(STORY_AUDIO.title).then(buffer => {
+    const ready = !!buffer && context === ctx && context.state === 'running';
+    if (context === ctx) openingOverturePreparationError = ready ? null : 'Opening title score unavailable';
+    return ready;
+  });
+}
+function overturePosition(owner = openingOverture) {
+  if (!owner) return 0;
+  const voice = owner.voice;
+  return owner.offset + (voice && !owner.paused ? Math.max(0, voice.context.currentTime - voice.startedAt) : 0);
+}
+export function openingOvertureScoreState() {
+  const owner = openingOverture;
+  const position = overturePosition(owner), duration = buffers.get(STORY_AUDIO.title)?.duration;
+  const sourceOffset = owner?.sourceOffsetSeconds ?? OPENING_OVERTURE_SOURCE_OFFSET_SECONDS;
+  const span = duration > sourceOffset ? duration - sourceOffset : Infinity;
+  return { ready: !!ctx && ctx.state === 'running' && buffers.has(STORY_AUDIO.title), active: !!owner,
+    paused: !!owner?.paused, pending: !!owner?.pending, playing: !!owner?.voice && !owner.paused,
+    positionSeconds: position, sourceOffsetSeconds: sourceOffset, sourcePositionSeconds: sourceOffset + position % span,
+    track: owner ? 'title' : null, epoch: owner?.epoch ?? openingOvertureGeneration,
+    error: openingOverturePreparationError, provenance: 'Existing project title_song.mp3; opening transport omits its measured 2.32-second leading silence. No new score or verified beat markers.' };
+}
+function playOpeningOverture(owner) {
+  if (openingOverture !== owner || owner.paused || !ctx || ctx.state !== 'running') return;
+  const buffer = buffers.get(STORY_AUDIO.title);
+  if (!buffer) {
+    if (owner.pending) return;
+    owner.pending = true;
+    prepareOpeningOvertureScore().then(loaded => {
+      if (openingOverture !== owner || owner.epoch !== openingOvertureGeneration) return;
+      owner.pending = false;
+      if (loaded) playOpeningOverture(owner);
+    });
+    return;
+  }
+  owner.pending = false;
+  openingOverturePreparationError = null;
+  if (owner.voice && soundtrack === owner.voice) return;
+  owner.sourceOffsetSeconds = Math.min(owner.sourceOffsetSeconds, Math.max(0, buffer.duration - .05));
+  const offset = owner.sourceOffsetSeconds + owner.offset % (buffer.duration - owner.sourceOffsetSeconds);
+  owner.voice = startSoundtrack({ track: 'title', offset, fade: owner.fade, openingOwner: owner.epoch });
+}
+export function startOpeningOvertureScore({ fade = .12, offset = 0, sourceOffsetSeconds = OPENING_OVERTURE_SOURCE_OFFSET_SECONDS } = {}) {
+  if (openingOverture) { playOpeningOverture(openingOverture); return openingOvertureScoreState(); }
+  stopOpeningSceneBed({ fade: .02 });
+  stopSoundtrackNow();
+  const requestedOffset = Number(offset), requestedFade = Number(fade), requestedSourceOffset = Number(sourceOffsetSeconds);
+  openingOverture = { epoch: ++openingOvertureGeneration, offset: Number.isFinite(requestedOffset) ? Math.max(0, requestedOffset) : 0,
+    sourceOffsetSeconds: Number.isFinite(requestedSourceOffset) ? Math.max(0, Math.min(10, requestedSourceOffset)) : OPENING_OVERTURE_SOURCE_OFFSET_SECONDS,
+    paused: false, pending: false, voice: null, fade: Number.isFinite(requestedFade) ? Math.max(.005, requestedFade) : .12 };
+  playOpeningOverture(openingOverture);
+  return openingOvertureScoreState();
+}
+export function pauseOpeningOvertureScore() {
+  const owner = openingOverture;
+  if (!owner || owner.paused) return openingOvertureScoreState();
+  owner.offset = overturePosition(owner); owner.paused = true;
+  if (soundtrack === owner.voice) stopSoundtrackNow();
+  owner.voice = null;
+  return openingOvertureScoreState();
+}
+export function resumeOpeningOvertureScore() {
+  if (openingOverture) { openingOverture.paused = false; playOpeningOverture(openingOverture); }
+  return openingOvertureScoreState();
+}
+export function stopOpeningOvertureScore({ fade = .05 } = {}) {
+  const owner = openingOverture; openingOverture = null; openingOvertureGeneration++;
+  if (owner?.voice && soundtrack === owner.voice) {
+    if (fade <= 0) stopSoundtrackNow(); else fadeSoundtrack({ fade });
+  }
+  return openingOvertureScoreState();
+}
+
 
 export function startOpeningSceneBed({ gain = OPENING_BED_GAIN, fade = 1.8 } = {}) {
+  if (openingOverture) return null;
   if (!ctx || !bus || openingBed) return openingBed;
   openingBedWanted = true;
   const generation = openingBedGeneration;
@@ -373,6 +488,7 @@ function hardStopOpeningSceneBedAt(at) {
 }
 
 export function commitOpeningSceneBedToColdOpenTitle({ fade = 0.012 } = {}) {
+  if (openingOverture) return { scheduled: false, at: ctx?.currentTime || 0, delaySeconds: 0, reason: 'overture-continuing' };
   if (!ctx || !bus) {
     startSoundtrack({ track: 'title', fade: 0.04 });
     return { scheduled: false, at: 0, delaySeconds: 0, reason: 'no-context' };
@@ -402,6 +518,8 @@ export function commitOpeningSceneBedToColdOpenTitle({ fade = 0.012 } = {}) {
 }
 
 export function fadeSoundtrack({ fade = 7.0 } = {}) {
+  soundtrackGeneration++;
+  openingOverture = null; openingOvertureGeneration++;
   if (!ctx || !soundtrack) return;
   const s = soundtrack;
   s.stopping = true;
@@ -502,6 +620,7 @@ export function audioState() {
     busIsCtxDest: !!ctx && bus === ctx.destination,
     song: soundtrack ? +soundtrack.gain.gain.value.toFixed(4) : null,
     songTrack: soundtrack?.track || null,
+    openingOverture: openingOvertureScoreState(),
     songLoaded: buffers.has(STORY_AUDIO.title),
     creditsLoaded: buffers.has(STORY_AUDIO.credits),
     openingBed: openingBed
@@ -827,15 +946,10 @@ export const confirm = () => { click({ freq: 900, gain: 0.055, dur: 0.03 }); cli
 // short, mechanical head/relay sounds rather than arcade bleeps.
 export function startMenuHiss(){
   if(!ctx||!bus||menuHiss)return;
-  const length=Math.max(1,Math.floor(ctx.sampleRate*1.5)),buf=ctx.createBuffer(1,length,ctx.sampleRate),d=buf.getChannelData(0);
-  let brown=0;for(let i=0;i<length;i++){brown=(brown*.985)+(Math.random()*2-1)*.06;d[i]=(Math.random()*2-1)*.34+brown*.22;}
-  const src=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter(),g=ctx.createGain();
-  src.buffer=buf;src.loop=true;hp.type='highpass';hp.frequency.value=900;lp.type='lowpass';lp.frequency.value=7800;g.gain.value=.018;
-    src.connect(hp);hp.connect(lp);lp.connect(g);g.connect(outBus('menu'));src.start();menuHiss={src,hp,lp,g};
+  menuHiss=createStaticTexture({context:ctx,destination:outBus('menu'),gain:STATIC_TEXTURE.menuGain});
 }
 export function stopMenuHiss(){
-  if(!menuHiss)return;const m=menuHiss;menuHiss=null;setGain(m.g,0,.12);
-  globalThis.setTimeout?.(()=>{try{m.src.stop();}catch(_){}for(const n of [m.src,m.hp,m.lp,m.g])try{n.disconnect();}catch(_){}},180);
+  if(!menuHiss)return;const owner=menuHiss;menuHiss=null;owner.stop({fade:.12});
 }
 // Shared semantic controls. Results are emitted only after an action succeeds.
 export function menuMove(options){ return uiCue(UI_CUE.MOVE,options); }

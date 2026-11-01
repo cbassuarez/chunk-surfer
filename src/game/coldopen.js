@@ -9,12 +9,13 @@
 // building forty times today.)
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiLine } from '../render/ui.js';
+import { uiSize, uiFill, uiText, uiLine, uiDraw } from '../render/ui.js';
 import { PANEL, withMachinePanel, drawVfdText } from '../render/presentation.js';
 import {
   drawTranscript,
   drawTranscriptChoices,
   drawTranscriptHeader,
+  fitTranscriptChoices,
   fixedTranscriptLanes,
   layoutTranscript,
   layoutTranscriptChoices,
@@ -30,7 +31,8 @@ import {
   storyArtSideBySideTextLayout,
 } from './story-art-card.js';
 import { resolveStoryArt } from './story-art.js';
-import { promptLine } from './bindings.js';
+import { promptLine, activeInputPromptDevice } from './bindings.js';
+import {sourceRestSubtitleLayout} from '../render/source-rest-subtitle.js';
 
 const COL_W = 86;
 const KEEP = 12;
@@ -53,18 +55,25 @@ export const STYLE = {
 export function makeColdOpenScene({
   id = 'cold-open',
   beats = [], opening = null, startAt = 'start', slate = '', ambient = true, lensPreset = 'booth',
-  onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null,
+  onDone, onChoice, onLine, cue, fx, audio, getAudio, replay = null, voiceEnabled = true,
   blocksWorld = true, allowsLook = false, suppressesHud = false,
   worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
   transcriptBackground = 'rgba(2,4,5,.58)',
-  transcriptPlacement = 'bottom',
+  transcriptPlacement = 'bottom', presentationView = null, automatic = false,
 } = {}) {
   let scene = null;
   let completed = false;
   let exited = false;
+  let choiceScrollOffset=0,choiceScrollKey='',choiceScrollMax=0;
+  function choiceView(){
+    const raw=convo.view(),view=typeof presentationView==='function'?(presentationView(raw)||raw):raw;
+    const key=`${view.nodeId||''}:${view.pending?.kind||''}:${view.pending?.index??''}`;
+    if(key!==choiceScrollKey){choiceScrollKey=key;choiceScrollOffset=0;choiceScrollMax=0;}
+    return {...view,choiceScrollOffset};
+  }
   const active = () => !exited && (presentation !== 'cinematic' || scenes.top() === scene);
   const convo = createConversation({
-    nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio,
+    nodes: opening, beats, startAt, sceneId: id, replay, onChoice, onLine, cue, fx, audio, getAudio, voiceEnabled,
     isActive: active,
     onDone: () => {
       if (completed || exited) return;
@@ -93,19 +102,24 @@ export function makeColdOpenScene({
     },
     exit() { exited = true; convo.stop(); audio?.stopTyping?.(); },
     update(dt) { if (active()) convo.update(dt); },
-    view() { return { ...convo.view(), presentation, transcriptBackground }; }, // for the headless suites
+    view() { return { ...choiceView(), presentation, transcriptBackground }; }, // for the headless suites
     textReviewSuspend() { convo.textReviewSuspend?.(); },
     textReviewResume() { convo.textReviewResume?.(); },
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (!active()) return true;
       if (e.key === 'Escape') return true;   // no way out of a conversation
+      const v=choiceView();
+      const choicePageNext=e.key==='PageDown'||e.controllerAction==='tabNext',choicePagePrev=e.key==='PageUp'||e.controllerAction==='tabPrev';
+      if(v.pending?.options?.length&&choiceScrollMax>0&&(choicePageNext||choicePagePrev)){
+        choiceScrollOffset=Math.max(0,Math.min(choiceScrollMax,choiceScrollOffset+(choicePageNext?1:-1)));return true;
+      }
       return convo.key(e);
     },
 
       render() {
         if (!active()) return;
-        const v = convo.view();
+        const v = choiceView();
         const { cols, rows } = uiSize();
 
         // Endings remain in the world. Their transcript is an instrument panel
@@ -119,9 +133,33 @@ export function makeColdOpenScene({
         // lane, modal card or centered column here: the transformed room is the
         // primary image and remains legible while the player reads.
         if (presentation === 'cinematic') {
+          if(v.restSubtitle){
+            const scale=1.55,localCols=Math.floor(cols/scale),localRows=Math.floor(rows/scale);
+            const width=Math.max(18,Math.min(86,localCols-8));
+            const choices=fitTranscriptChoices(layoutTranscriptChoices(v,width-4,{label:v.choiceHeading??null}),Math.max(1,localRows-8),{selectedOffset:choiceScrollOffset});
+            choiceScrollMax=choices.selectedMaxOffset||0;
+            const layout=sourceRestSubtitleLayout(v,{cols:localCols,rows:localRows,choiceRows:choices.height?choices.height+2:0});
+            uiDraw(({ctx})=>{ctx.scale(scale,scale);
+            if(!v.restBlack)uiFill(layout.x,layout.y-1,layout.width,layout.height+2,'rgba(0,0,0,.88)');
+            let cy=layout.y;
+            if(layout.label)uiText(layout.x+2,cy++,layout.label,'ui-counter',.72);
+            for(const line of layout.body)uiText(layout.x+2,cy++,line,'ui-primary',v.restBlack?1:.88);
+            if(choices.height){
+              const choiceY=layout.y+layout.height-choices.height-1;
+              drawTranscriptChoices(choices,{x:layout.x+2,y:choiceY,width:layout.width-4,maxRows:choices.height});
+              const prompt=v.presentationPrompt??promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'}]);
+              uiText(layout.x+2,layout.y+layout.height,String(prompt).slice(0,layout.width-4),'ui-counter',.9);
+            }else if(!v.restBlack){
+              const controls=promptLine([...(v.restCanLeave?[{action:'interact',label:'GET UP'}]:[]),{action:'back',label:'PAUSE'}]);
+              uiText(layout.x+2,layout.y+layout.height,controls.slice(0,layout.width-4),'ui-counter',.8);
+            }
+            });
+            return;
+          }
           const width = Math.min(76, Math.max(26, cols - 12));
           const x = Math.max(3, Math.floor((cols - width) / 2));
-          const choices = layoutTranscriptChoices(v, width - 4);
+          const choices = fitTranscriptChoices(layoutTranscriptChoices(v,width-4,{label:v.choiceHeading??null}),Math.max(1,rows-8),{selectedOffset:choiceScrollOffset});
+          choiceScrollMax=choices.selectedMaxOffset||0;
           const choiceRows = choices.height ? choices.height + 1 : 0;
           const maxTranscriptRows = Math.max(2, Math.min(choices.height ? 7 : 4, rows - choiceRows - 7));
           const transcript = layoutTranscript(v, {
@@ -146,7 +184,11 @@ export function makeColdOpenScene({
               width: width - 4,
               maxRows: choices.height,
             });
-          } else {
+            const prompt=promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:v.pending.kind==='say'?'SAY':'REPLY'}])
+              +(choiceScrollMax?(activeInputPromptDevice()==='keyboard'?' · [PGUP/PGDN] READ':` · ${promptLine([{action:'tabPrev'},{action:'tabNext',label:'READ'}])}`):'')
+              +(activeInputPromptDevice()==='keyboard'?` · [1${v.pending.options.length>1?`–${Math.min(9,v.pending.options.length)}`:''}] ${v.pending.kind==='say'?'SAY':'REPLY'}`:'');
+            uiText(x+2,y+h-1,String(v.presentationPrompt??prompt).slice(0,width-4),'ui-secondary',.75);
+          } else if(!automatic) {
             const prompt = promptLine([{ action: 'continue', label: 'CONTINUE' }]);
             uiText(x + width - Math.min(width - 3, prompt.length) - 2, y + h - 1, prompt.slice(0, width - 3), 'ui-secondary', .62);
           }
@@ -184,7 +226,7 @@ export function makeColdOpenScene({
         // laid out before the bezel is committed to a height.
         const measureW = Math.max(8, w - PANEL.padX * 2 - 4);
         const measured = layoutTranscript(v, { width: measureW, maxRows: rows });
-        const measuredChoices = layoutTranscriptChoices(v, measureW);
+        const measuredChoices = fitTranscriptChoices(layoutTranscriptChoices(v,measureW),Math.max(1,rows-15),{selectedOffset:choiceScrollOffset});
         const contentRows = measured.height
           + (measuredChoices.height ? measuredChoices.height + 1 : 0);
         const panelH = art
@@ -215,7 +257,9 @@ export function makeColdOpenScene({
             label: 'MONITOR',
             source: transcriptSource(sourceWho),
             footer: v.pending?.options?.length
-              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
+              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: v.pending.kind==='say'?'SAY':'REPLY' }])
+                +(choiceScrollMax?(activeInputPromptDevice()==='keyboard'?' · [PGUP/PGDN] READ':` · ${promptLine([{action:'tabPrev'},{action:'tabNext',label:'READ'}])}`):'')
+                +(activeInputPromptDevice()==='keyboard'?` · [1${v.pending.options.length>1?`–${Math.min(9,v.pending.options.length)}`:''}] ${v.pending.kind==='say'?'SAY':'REPLY'}`:'')
               : promptLine([{ action: 'continue', label: 'CONTINUE' }]),
             meter: true,
           },
@@ -231,7 +275,8 @@ export function makeColdOpenScene({
           system: v.speaker,
         });
 
-        let choices = layoutTranscriptChoices(v, contentW);
+        let choices = fitTranscriptChoices(layoutTranscriptChoices(v,contentW),Math.max(1,Math.floor(body.h-5)),{selectedOffset:choiceScrollOffset});
+        choiceScrollMax=choices.selectedMaxOffset||0;
         let choiceReserve = choices.height ? choices.height + 1 : 0;
 
         let transcriptY =
@@ -261,7 +306,8 @@ export function makeColdOpenScene({
 
         if (sidePlan.show) {
           const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
-          choices = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
+          choices = fitTranscriptChoices(layoutTranscriptChoices(v,contentW,{lane:lanes.right}),Math.max(1,Math.floor(sidePlan.rows-4)),{selectedOffset:choiceScrollOffset});
+          choiceScrollMax=choices.selectedMaxOffset||0;
           choiceReserve = choices.height ? choices.height + 1 : 0;
           const textLayout = storyArtSideBySideTextLayout({
             rows: sidePlan.rows,

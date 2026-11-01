@@ -22,7 +22,7 @@ function advance(state, seconds, input = {}) {
 }
 function completed() {
   let state = advance(initial(), .25, { forward: 1 });
-  state = advance(state, 10);
+  state = advance(state, C.footingLossAt + 7);
   assert.equal(state.physical.phase, 'landed');
   state = advance(state, (C.passage.exitZ + 1.4 - state.physical.z) / -C.walkSpeed, { forward: 1 });
   state = step(state, { interact: true }).state;

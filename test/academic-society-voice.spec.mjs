@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { isVoiced, profileFor } from '../src/audio/sam-voice.js';
-import { transcriptBlocks, transcriptSource, layoutTranscript, layoutTranscriptChoices } from '../src/render/transcript.js';
+import { transcriptBlocks, transcriptSource, layoutTranscript, layoutTranscriptChoices, fitTranscriptChoices } from '../src/render/transcript.js';
 import { freshStoryArtShotState, resolveStoryArtShot } from '../src/game/story-art-shot.js';
 import { flagTest } from '../src/game/flags.js';
 import { createConversation } from '../src/game/conversation.js';
@@ -125,8 +125,8 @@ test('thought monitor shows the current ghost name and keeps unsaid player choic
   let view = { who: 'unknown', line: { sourceLabel: 'CELESTE' } };
   const thought = loadGame('thoughts', ['makeThoughtScene'], {
     createConversation: () => ({ view: () => view }),
-    uiScrim() {}, scenes: {}, transcriptSource, promptLine: () => 'CONTINUE',
-    layoutTranscriptChoices: () => ({ height: 0 }),
+    uiScrim() {}, scenes: {}, transcriptSource, promptLine: () => 'CONTINUE', activeInputPromptDevice:()=> 'keyboard',
+    layoutTranscriptChoices: () => ({ height: 0 }), fitTranscriptChoices,
     resolveStoryArt: () => null,
   });
   const scene = thought.makeThoughtScene({ nodes: {} });
@@ -149,7 +149,7 @@ test('external removal releases a dialogue once; completion and Escape keep dist
   // initialized viewport as the presenter tests. A zero-size uninitialized UI
   // makes even this short caption span pages and consumes Continue as paging.
   const { makeThoughtScene } = loadGame('thoughts', ['makeThoughtScene'], {
-    createConversation, scenes, layoutTranscriptChoices,
+    createConversation, scenes, layoutTranscriptChoices, fitTranscriptChoices,
   });
   for (const action of ['remove', 'clear', 'complete', 'escape']) {
     scenes.clear();

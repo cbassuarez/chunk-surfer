@@ -34,3 +34,9 @@ test('the normal and isolated prop pipelines derive the shell after writing the 
   assert.match(source.slice(hook,hook+400),/assetPath:OUT/);
   assert.match(source.slice(hook,hook+400),/CHUNK_SURFER_PROPS_OUT_DIR[\s\S]*path\.join\(OUT_DIR,'exterior-map-shell\.js'\)/);
 });
+test('the final runtime elevation replacement refreshes its own outdoor survey after the GLB is written',()=>{
+  const source=fs.readFileSync(path.join(root,'tools/chunk_surfer/build-ellery-public-front.mjs'),'utf8');
+  const hook=source.indexOf("const {buildExteriorMapShell}=await import('./build-exterior-map-shell.mjs')");
+  assert.ok(hook>source.indexOf('fs.writeFileSync(out,output)'));
+  assert.match(source.slice(hook,hook+200),/buildExteriorMapShell\(\{root,assetPath:out\}\)/);
+});

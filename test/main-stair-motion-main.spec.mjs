@@ -169,6 +169,33 @@ test('ordinary movement, Source and unrelated stairs retain the existing spring 
   }
 });
 
+test('ordinary camera spring follows elapsed foreground time at both 60 and 14 fps',()=>{
+  function sample(frameMs){
+    const h=harness({kind:'ordinary'}),start=h.tick(1000);h.commit();
+    for(let elapsed=frameMs;elapsed<300;elapsed+=frameMs)h.tick(1000+elapsed);
+    const pose=h.tick(1300);
+    return {pose,rig:h.c.motionRig,start};
+  }
+  const fast=sample(1000/60),slow=sample(1000/14);
+  assert.ok(Math.hypot(fast.pose.x-slow.pose.x,fast.pose.z-slow.pose.z)<0.01,
+    'the low-fps eye must not trail the same committed step substantially more');
+  assert.ok(Math.hypot(slow.pose.x-slow.rig.targetX,slow.pose.z-slow.rig.targetZ)
+    <Math.hypot(slow.start.x-slow.rig.targetX,slow.start.z-slow.rig.targetZ)*0.7);
+});
+
+test('ordinary spring bounds a long frame and focus recovery cannot replay movement',()=>{
+  function sample(elapsed){const h=harness({kind:'ordinary'});h.commit();return h.tick(1000+elapsed);}
+  const bounded=sample(200),longFrame=sample(5000);
+  near(longFrame.x,bounded.x);near(longFrame.z,bounded.z);
+  const h=harness({kind:'ordinary'});h.commit();h.tick(1050);
+  h.c.resetMotionInput('window-blur',{stopRenderMove:true});
+  assert.equal(h.c.motionFocusSuspended,true);
+  h.setTime(10000);assert.equal(h.c.recoverMotionFocus('window-focus'),true);
+  const resumed=h.tick(10000),target=h.c.FP.logicalToPhysical(h.c.px,h.c.py);
+  near(resumed.x,target.x);near(resumed.z,target.z);
+  assert.equal(h.c.renderMove,null);assert.equal(h.c.keysDown.size,0);
+});
+
 test('one deferred audible contact occurs at phase .8 and survives a frame jumping beyond contact',()=>{
   for(const phases of [[0,.4,.79,.8,.8,.95,1],[0,.1,1]]) {
     const h=harness(),move=h.commit();
@@ -327,7 +354,7 @@ function compiledKeyboardHost({frameMs=16}={}){
   const {FP,PROPS}=STAIR_AUDIT.compileConservatory();
   let now=1000,collisionChecks=0;const input=new InputManager(),seams=[];
   const rendererScope=vm.createContext({yaw:Math.PI/2,yawTarget:Math.PI/2,pitch:0,pitchTarget:0,planYaw:0,planYawTarget:0,facing:1,
-    lookPitchFloor:()=>-1.25,r3dResetVfdMemory:()=>{}});
+    lookPitchFloor:()=>-1.25,LOOK_UP_LIMIT:1.1,r3dResetVfdMemory:()=>{},r3dCancelMouseLookGlide:()=>{}});
   const ring=renderer.match(/^const STEP_RING =[^\n]+/m)?.[0];assert.ok(ring);
   vm.runInContext(ring,rendererScope);
   for(const name of ['r3dStepDelta','r3dShiftLookFrame','r3dLookAngles','r3dSetLookAngles']){

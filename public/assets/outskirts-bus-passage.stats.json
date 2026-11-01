@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "sha256": "0fde41e46a05f4b7a2b3c7e1cb78ae795b0815a2a5e28908249931e6872ecea8",
-  "bytes": 931104,
+  "sha256": "edc677b62870d326153b2d6e78cab4eea2dd03beb21a497a8c3a10d6fa38a0cb",
+  "bytes": 885668,
   "totalTriangles": 7188,
   "totalVertices": 12924,
   "meshes": {
@@ -104,19 +104,19 @@
             3.05
           ],
           "direction": [
-            -0.949,
-            -0.079,
-            0.305
+            -0.9,
+            -0.4,
+            0.15
           ],
           "colour": [
             1,
             0.8,
             0.58
           ],
-          "reach": 4.8,
+          "reach": 3.4,
           "strength": 3.8,
-          "coneInner": 0.87,
-          "coneOuter": 0.45,
+          "coneInner": 0.94,
+          "coneOuter": 0.79,
           "mount": [
             1.1260000000000001,
             2.32,
@@ -176,19 +176,19 @@
             3.05
           ],
           "direction": [
-            -0.949,
-            -0.079,
-            0.305
+            -0.9,
+            -0.4,
+            0.15
           ],
           "colour": [
             1,
             0.8,
             0.58
           ],
-          "reach": 4.8,
+          "reach": 3.4,
           "strength": 3.8,
-          "coneInner": 0.87,
-          "coneOuter": 0.45,
+          "coneInner": 0.94,
+          "coneOuter": 0.79,
           "mount": [
             1.1260000000000001,
             2.32,
@@ -330,8 +330,8 @@
   },
   "materialCount": 21,
   "embeddedImages": 12,
-  "sourceBusFingerprint": "29c498f06cd8336a3141052a6ff48cdb10c3694de9a206f6b9d6296bcd0d82af",
-  "factorySha256": "d0299522411ca4bb4c309c88dc1c7990b84f63d29abcef2cf4d2c9b80b052462",
-  "contractSha256": "bf0fce462f431141757b86b2a1ae0171df44dd801dc709fb099cb3c9a79c9872",
+  "sourceBusFingerprint": "fe9678cc7bc7c315e8d82ba0d86ba68401e5f360a2fd8bfe2f892c83224b4dea",
+  "factorySha256": "661c4141ff3fb2ba79ca5d402ac0774b9a48f414e48f72e61919e9a8ed209ccd",
+  "contractSha256": "29058f39d9668cb4f06c9211c0cb164247775a256d521e03327eff8a95286011",
   "ordinaryBusUnchanged": true
 }

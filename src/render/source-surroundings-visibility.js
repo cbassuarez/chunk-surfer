@@ -1,6 +1,11 @@
+import {SOURCE_SURROUNDINGS as C} from '../data/source-surroundings.js';
+export function sourceSurroundingsPrimitiveSide(primitive={},instance={}){
+  const side=instance.sourceSurroundingsSide;
+  return Number.isInteger(side)&&side>=0&&side<=2?side:primitive.sourceSurroundingsSide===1?1:primitive.sourceSurroundingsSide===2?2:0;
+}
 // A material-only sight aperture. Ordinary props have side0 and are never
 // clipped; no depth wall, collision surface or route boundary is introduced.
-export const DEFAULT_SOURCE_SURROUNDINGS_GATE=Object.freeze({x:-18,y:8.39,z:-12,width:2.2,height:2.86,normalX:1,normalZ:0});
+export const DEFAULT_SOURCE_SURROUNDINGS_GATE=Object.freeze({x:C.thresholdX,y:8.39,z:C.thresholdZ,width:2.2,height:2.86,normalX:1,normalZ:0});
 const finite=(value,fallback)=>Number.isFinite(Number(value))?Number(value):fallback;
 export function normalizeSourceSurroundingsGate(value=null){
   const source=value&&typeof value==='object'?value:{},base=DEFAULT_SOURCE_SURROUNDINGS_GATE;

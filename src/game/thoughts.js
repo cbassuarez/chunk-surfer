@@ -34,12 +34,13 @@ import {
   drawTranscript,
   drawTranscriptChoices,
   drawTranscriptHeader,
+  fitTranscriptChoices,
   fixedTranscriptLanes,
   layoutTranscript,
   layoutTranscriptChoices,
   transcriptSource,
 } from '../render/transcript.js';
-import { promptLine } from './bindings.js';
+import { promptLine, activeInputPromptDevice } from './bindings.js';
 
 // Match the cold-open dialogue shell width (COL_W) so the in-world thought
 // monitor reads as the same machine, not a narrower one-off.
@@ -48,8 +49,9 @@ const BAND_W = 86;
 // The glass, not the outer faceplate, is the reading budget. Measure the
 // complete current utterance so typing never makes its container jump.
 export function planThoughtTextPanel({view={},width=BAND_W,rows=40,slate='',page=0}={}) {
-  const contentW=Math.max(8,width-8),choices=layoutTranscriptChoices(view,contentW);
-  const reserve=choices.height?choices.height+1:0,maxHeight=Math.max(8,rows-4);
+  const contentW=Math.max(8,width-8),maxHeight=Math.max(8,rows-4);
+  const choices=fitTranscriptChoices(layoutTranscriptChoices(view,contentW),Math.max(1,Math.floor(maxHeight-11)),{selectedOffset:view.choiceScrollOffset});
+  const reserve=choices.height?choices.height+1:0;
   let headerSlate=slate,headerSystem=view.speaker||'';
   const headerRows=()=> (headerSlate?1:0)+(headerSystem?(headerSlate?2:1):0);
   if(maxHeight-6.5-headerRows()-1-reserve<3)headerSystem='';
@@ -110,7 +112,12 @@ export function makeThoughtScene({
   let completed = false;
   let cancelled = false;
   let scene = null;
-  let textPage=0,textPageKey='';
+  let textPage=0,textPageKey='',choiceScrollOffset=0,choiceScrollKey='',choiceScrollMax=0;
+  function choiceView(){
+    const view=convo.view(),key=`${view.nodeId||''}:${view.pending?.kind||''}:${view.pending?.index??''}`;
+    if(key!==choiceScrollKey){choiceScrollKey=key;choiceScrollOffset=0;choiceScrollMax=0;}
+    return {...view,choiceScrollOffset};
+  }
   function textPlan(v){
     const key=`${v.nodeId||''}:${v.lineSerial||0}:${v.pending?.kind||''}`;
     if(key!==textPageKey){textPageKey=key;textPage=0;}
@@ -147,7 +154,7 @@ export function makeThoughtScene({
     },
     update(dt) { convo.update(dt); },
     worldView:typeof worldView==='function'?worldView:undefined,
-    view() { return convo.view(); },        // for the headless suites
+    view() { return choiceView(); },        // for the headless suites and compact presenters
     textReviewSuspend() { convo.textReviewSuspend(); },
     textReviewResume() { convo.textReviewResume(); },
     keyup(e) { return convo.keyup?.(e) || false; },
@@ -160,7 +167,11 @@ export function makeThoughtScene({
         onCancel?.();
         return true;
       }
-      const v=convo.view();
+      const v=choiceView();
+      const choicePageNext=e.key==='PageDown'||e.controllerAction==='tabNext',choicePagePrev=e.key==='PageUp'||e.controllerAction==='tabPrev';
+      if(v.pending?.options?.length && choiceScrollMax>0 && (choicePageNext||choicePagePrev)){
+        choiceScrollOffset=Math.max(0,Math.min(choiceScrollMax,choiceScrollOffset+(choicePageNext?1:-1)));return true;
+      }
       if(!showStoryArt||!v.art){
         const p=textPlan(v),advance=['Enter',' ','z','Z'].includes(e.key);
         if(p.pages>1&&(e.key==='PageDown'||e.key==='PageUp')){textPage=Math.max(0,Math.min(p.pages-1,p.page+(e.key==='PageDown'?1:-1)));return true;}
@@ -170,7 +181,7 @@ export function makeThoughtScene({
     },
 
       render() {
-        const v = convo.view();
+        const v = choiceView();
         const { cols, rows } = uiSize();
 
         if (scrim > 0) uiScrim(scrim);
@@ -178,10 +189,7 @@ export function makeThoughtScene({
         const w = Math.min(BAND_W, cols - 8);
         const x = Math.floor((cols - w) / 2);
 
-        const choices = layoutTranscriptChoices(
-          v,
-          Math.max(12, w - 6),
-        );
+        const choices = fitTranscriptChoices(layoutTranscriptChoices(v,Math.max(12,w-6)),Math.max(1,Math.floor(rows-15)),{selectedOffset:choiceScrollOffset});
 
         // A conversation about the person physically in front of us can keep
         // that body visible. Its authored art remains in the conversation
@@ -202,7 +210,7 @@ export function makeThoughtScene({
           ? Math.min(rows - 4, fixedArtPanelH)
           : textLayoutPlan.panelH;
 
-        const y0 = anchor === 'bottom'
+        const y0 = (anchor === 'bottom' || anchor === 'lower')
           ? Math.max(2, rows - panelH - 1)
           : Math.max(2, Math.floor((rows - panelH) / 2));
 
@@ -220,7 +228,9 @@ export function makeThoughtScene({
             label: 'MONITOR',
             source: (v.pending?.kind !== 'say' && v.line?.sourceLabel) || transcriptSource(sourceWho),
             footer: (v.pending?.options?.length
-              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: 'TRANSMIT' }])
+              ? promptLine([{ action: 'select', label: 'SELECT' }, { action: 'confirm', label: v.pending.kind==='say'?'SAY':'REPLY' }])
+                +(choiceScrollMax?(activeInputPromptDevice()==='keyboard'?' · [PGUP/PGDN] READ':` · ${promptLine([{action:'tabPrev'},{action:'tabNext',label:'READ'}])}`):'')
+                +(activeInputPromptDevice()==='keyboard'?` · [1${v.pending.options.length>1?`–${Math.min(9,v.pending.options.length)}`:''}] ${v.pending.kind==='say'?'SAY':'REPLY'}`:'')
               : promptLine([{ action: 'continue', label: textLayoutPlan?.pages>1&&textLayoutPlan.page<textLayoutPlan.pages-1?'NEXT PAGE':'CONTINUE' }]))
               +(textLayoutPlan?.pages>1?` · ${textLayoutPlan.page+1}/${textLayoutPlan.pages} PGUP/PGDN`:''),
             meter: true,
@@ -238,7 +248,9 @@ export function makeThoughtScene({
           system: textLayoutPlan?textLayoutPlan.headerSystem:v.speaker,
         });
 
-        let choiceLayout = layoutTranscriptChoices(v, contentW);
+        const choiceCapacity=Math.max(1,Math.min(Math.floor(Math.max(8,rows-4)-11),Math.floor(panel.h-5)));
+        let choiceLayout = fitTranscriptChoices(layoutTranscriptChoices(v,contentW),choiceCapacity,{selectedOffset:choiceScrollOffset});
+        choiceScrollMax=choiceLayout.selectedMaxOffset||0;
         let reserve = choiceLayout.height ? choiceLayout.height + 1 : 0;
 
         let transcriptY =
@@ -268,7 +280,8 @@ export function makeThoughtScene({
 
         if (sidePlan.show) {
           const lanes = fixedTranscriptLanes(contentW, { split: sidePlan });
-          choiceLayout = layoutTranscriptChoices(v, contentW, { lane: lanes.right });
+          choiceLayout = fitTranscriptChoices(layoutTranscriptChoices(v,contentW,{lane:lanes.right}),Math.max(1,Math.min(choiceCapacity,Math.floor(sidePlan.rows-4))),{selectedOffset:choiceScrollOffset});
+          choiceScrollMax=choiceLayout.selectedMaxOffset||0;
           reserve = choiceLayout.height ? choiceLayout.height + 1 : 0;
           const textLayout = storyArtSideBySideTextLayout({
             rows: sidePlan.rows,

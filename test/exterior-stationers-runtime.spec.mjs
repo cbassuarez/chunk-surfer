@@ -12,7 +12,8 @@ import {
   EXTERIOR_STATIONERS as S, EXTERIOR_STATIONERS_PACK,
   STATIONERS_LEVELS, STATIONERS_DOORS, STATIONERS_PROPS, STATIONERS_COLLIDERS, STATIONERS_LIGHTS,
 } from '../src/data/exterior-stationers.js';
-import { districtLogicalAt } from '../src/data/exterior-district.js';
+import { squareLogicalAt } from '../src/data/ellery-square.js';
+import { stationersPlace, STATIONERS_DOOR_PLACED, STATIONERS_BOUNDS_PLACED } from '../src/data/exterior-stationers.js';
 import { isExteriorObserver, shouldHideCrossEnvelopeProp } from '../src/game/prop-visibility.js';
 import { getInGoodsDoorAim } from '../src/game/get-in-door-entry.js';
 import { captureExteriorMapSource, usesExteriorMap } from '../src/game/exterior-map-model.js';
@@ -29,7 +30,7 @@ test('the occupied stationer has its own readable lighting rather than the dark 
   assert.ok(context.ambientIntensity>fallback.ambientIntensity*4);
   assert.ok(context.ambientIntensity<=resolveLightingContext({zone:ZONE.pub}).ambientIntensity);
   assert.equal(context.captureExposure,1.5);
-  const lights=resolveLocalLights(context,{origin:{x:23.75,z:-17.25},liveCircuits:new Set()});
+  const lights=resolveLocalLights(context,{origin:stationersPlace(23.75,-17.25),liveCircuits:new Set()});
   assert.deepEqual(lights.map(l=>l.id).sort(),STATIONERS_LIGHTS.map(l=>l.id).sort());
   for(const light of lights){
     const source=STATIONERS_LIGHTS.find(l=>l.id===light.id);
@@ -43,11 +44,13 @@ const rendered = PROPS.renderInstances({ group: 'ground', inscriptions: false })
 const mainSource = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const rendererSource = fs.readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
 const bodyAt = (x, z) => {
-  const logical = districtLogicalAt(x - CELL / 2, z - CELL / 2);
+  const placedAt = stationersPlace(x, z);
+  const logical = squareLogicalAt(placedAt.x - CELL / 2, placedAt.z - CELL / 2);
   return { x: logical.x / CELL, y: logical.y / CELL };
 };
 const aisle = bodyAt(23.75, -17.25), approach = bodyAt(S.door.x, -14.25);
-const renderCellAt = (slice, x, z) => {
+const renderCellAt = (slice, designX, designZ) => {
+  const { x, z } = stationersPlace(designX, designZ);
   const i = (Math.floor(z / CELL) - slice.originY) * slice.w + Math.floor(x / CELL) - slice.originX;
   assert.ok(i >= 0 && i < slice.solid.length);
   return { solid: slice.solid[i], floor: slice.floor[i], ceil: slice.ceil[i], flags: slice.flags[i], zone: slice.zone[i] };
@@ -68,8 +71,9 @@ test('the optional shop enters the actual plan, prop registry, colliders and ord
     const draw = rendered.find(candidate => candidate.id === prop.id);
     assert.ok(draw);
     assert.equal(draw.mesh, S.room.mesh);
-    assert.equal(draw.x, S.room.anchor.x);
-    assert.equal(draw.z, S.room.anchor.z);
+    const anchor = stationersPlace(S.room.anchor.x, S.room.anchor.z);
+    assert.equal(draw.x, anchor.x);
+    assert.equal(draw.z, anchor.z);
     assert.equal(draw.y, S.floor);
     assert.equal(draw.zone, ZONE.stationers);
   }
@@ -132,7 +136,8 @@ test('the actual district map captures the shop aisle and exposes one persistent
   // full district collision/route test belongs to exterior-map.spec.mjs.
   const cells = new Map([...FP.physicalSpanData().cells].filter(([key]) => {
     const [x, z] = key.split(',').map(Number);
-    return x * CELL >= 18 && x * CELL <= 26 && z * CELL >= -21 && z * CELL <= -13;
+    const b = STATIONERS_BOUNDS_PLACED;
+    return x * CELL >= b.x0 - .5 && x * CELL <= b.x1 + 1.5 && z * CELL >= b.z0 - .5 && z * CELL <= b.z1 + .5;
   }));
   const projectLogical = point => {
     const rt = FP.toRuntimePoint(point), at = FP.logicalToPhysical(rt.x, rt.y);
@@ -144,10 +149,12 @@ test('the actual district map captures the shop aisle and exposes one persistent
   assert.ok(source.floors[0].visibilityOpen.has(`${Math.floor(physical.x)},${Math.floor(physical.z)}`));
   const mark = source.spaces.find(space => space.id === 'outside:stationers');
   assert.ok(mark && mark.waypointable && mark.selectable);
-  assert.deepEqual(mark.position, { x: S.door.x, y: S.door.z + 1.25 });
+  assert.deepEqual(mark.position, { x: STATIONERS_DOOR_PLACED.x + S.outward.x * 1.25, y: STATIONERS_DOOR_PLACED.z + S.outward.z * 1.25 });
   assert.deepEqual(mark.doorIds, [S.door.id]);
   assert.equal(mark.floorId, 'district');
-  assert.equal(source.district.footprints.filter(shape => shape.role === 'stationers').length, 1);
+  // The shop is on Ellery Square now: its mark stands in the square's road,
+  // in front of the west terrace, not on a district row.
+  assert.ok(mark.position.x > S.row.x, 'the mark stands outside the terrace, on the square');
   assert.ok(EXTERIOR_MAP_SPACE_IDS.includes(mark.id));
   OBJ.setPlayerWaypoint({ spaceId: mark.id, floorId: mark.floorId, label: mark.label, position: mark.position });
   const saved = structuredClone(OBJ.saveObjState());
@@ -176,7 +183,7 @@ test('actual door focus withholds entry until both standalone pack meshes are av
       px: approach.x, py: approach.y, CELL, GREY_DOOR_ID: 'dock-grey-exterior', getInGoodsDoorAim,
       R3: { r3dStationersReady: ready } };
     const focus = new Function('scope', `with(scope){return (${focusSource});}`)(scope);
-    const hit = focus([0, -1]);
+    const hit = focus([-1, 0]);
     const expected = catalog.includes(S.row.mesh) && catalog.includes(S.room.mesh);
     assert.equal(ready(), expected);
     assert.equal(hit?.portal?.id || null, expected ? S.door.id : null);

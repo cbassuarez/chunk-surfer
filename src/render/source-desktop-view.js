@@ -3,7 +3,8 @@
 import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { type: 'json' };
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { normalizePressurePresentation } from '../game/pressure-performance.js';
-import { pressureInstances } from './pressure-volume.js';
+import { hushDensityFromCaptured, normalizeHushDensityPose } from '../game/hush-density-performance.js';
+import { pressureInstances, pressureSurfaceInstances } from './pressure-volume.js';
 import { assetUrl } from '../platform/paths.js';
 import { createSourceDesktopDither } from './source-desktop-dither.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
@@ -17,6 +18,110 @@ const clamp = (n, min = 0, max = 1) => Math.max(min, Math.min(max, finite(n, min
 const smooth = n => { const t = clamp(n); return t * t * (3 - 2 * t); };
 const phases = new Set(['contained', 'sealed', 'dissolving', 'desktop', 'reforming', 'ended']);
 const intents = new Set(['broadcast', 'conceal', 'overload', 'loop', 'silence']);
+
+export const SOURCE_DESKTOP_PRESSURE_ASSET = 'assets/hush-density.glb';
+
+// The battle owner supplies this clock and intent. The captured density is an
+// entry reference, not a live world actor: fighting never advances its gait or
+// teaches it a new sound. Pause/focus remains owned by the existing session.
+export function sourceDesktopDensityPerformance(state, capturedPerformance = {}) {
+  const entry = hushDensityFromCaptured(capturedPerformance);
+  const kind = state.intent.kind, progress = state.intent.progress;
+  const reduced = state.reducedMotion;
+  const compression = kind === 'overload' ? .36 + smooth(progress) * .58
+    : kind === 'silence' ? .84 : kind === 'loop' ? .63 : kind === 'conceal' ? .46 : .34;
+  return normalizeHushDensityPose({ ...entry,
+    phase: entry.phase + (reduced ? 0 : state.clock * .30),
+    rate: reduced ? 0 : .30,
+    traction: reduced ? 0 : kind === 'overload' ? .72 : kind === 'loop' ? .68 : kind === 'silence' ? .12 : .36,
+    compression, retained: Math.max(entry.retained, kind === 'silence' ? .84 : .32),
+    attention: reduced ? 0 : kind === 'loop' ? (progress - .5) * .68 : entry.attention * .5,
+    event: reduced || kind === 'silence' ? 'still' : kind === 'overload' ? 'load' : 'notice',
+    eventTime: reduced ? 0 : progress * 4.8,
+    listening: !reduced && !['overload', 'silence'].includes(kind), blocked: false,
+    residualDragMps: 0,
+  });
+}
+
+// Sample the same descriptor as the world pressure pass. Reading the authored
+// tracks directly makes repeated times and two-clip blends deterministic; an
+// AnimationMixer's cached bindings can otherwise retain last frame's additive
+// fold offsets. Every track falls back to its original local value.
+export function createSourceDesktopPressureSampler(THREE, root, animations) {
+  const bindings = new Map(), clips = new Map(), joints = new Map(), restBones = [], restMorphs = [];
+  root.traverse(node => {
+    if (node.isBone) {
+      joints.set(node.name, node);
+      restBones.push({ node, position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() });
+    }
+    if (node.isMesh && node.morphTargetInfluences) restMorphs.push({ node, values: [...node.morphTargetInfluences] });
+  });
+  for (const clip of animations) {
+    const tracks = new Map();
+    for (const track of clip.tracks) {
+      let binding = bindings.get(track.name);
+      if (!binding) {
+        const property = THREE.PropertyBinding.create(root, track.name);
+        property.bind();
+        const rest = new Float64Array(track.getValueSize());
+        property.getValue(rest, 0);
+        binding = { property, rest, output: new Float64Array(rest.length), rotation: track.ValueTypeName === 'quaternion' };
+        bindings.set(track.name, binding);
+      }
+      tracks.set(track.name, track.createInterpolant());
+    }
+    clips.set(clip.name, { duration: clip.duration, tracks });
+  }
+  const vector = new THREE.Vector3(), quaternion = new THREE.Quaternion(), target = new THREE.Quaternion();
+  function sample(descriptor = {}) {
+    for (const { node, position, quaternion, scale } of restBones) {
+      node.position.copy(position); node.quaternion.copy(quaternion); node.scale.copy(scale);
+    }
+    for (const { node, values } of restMorphs) node.morphTargetInfluences.splice(0, values.length, ...values);
+    let layers = descriptor.clips;
+    if (!layers) layers = descriptor.blend ? [
+      { name: descriptor.clip, time: descriptor.time, loop: descriptor.loop, weight: 1 - (descriptor.blend.weight ?? 0) },
+      { name: descriptor.blend.clip, time: descriptor.blend.time, loop: descriptor.blend.loop, weight: descriptor.blend.weight ?? 0 },
+    ] : [{ name: descriptor.clip, time: descriptor.time, loop: descriptor.loop, weight: 1 }];
+    if (!Array.isArray(layers) || !layers.length || layers.length > 2) throw new Error('Desktop pressure requires one or two clip layers');
+    const sampled = layers.map(layer => {
+      const name = layer.name ?? layer.clip, clip = name ? clips.get(name) : null;
+      if (name && !clip) throw new Error(`Desktop pressure clip unavailable: ${name}`);
+      const time = Math.max(0, finite(layer.time));
+      return { clip, time: clip ? layer.loop && clip.duration > 0 ? time % clip.duration : Math.min(time, clip.duration) : 0,
+        weight: Math.max(0, finite(layer.weight, 1)) };
+    });
+    const a = sampled[0], b = sampled[1], fraction = b ? b.weight / Math.max(1e-9, a.weight + b.weight) : 0;
+    const held = sampled.every(layer => layer.weight === 0);
+    for (const [name, binding] of bindings) {
+      const first = held ? binding.rest : a.clip?.tracks.get(name)?.evaluate(a.time) || binding.rest;
+      let value = first;
+      if (b && !held) {
+        const second = b.clip?.tracks.get(name)?.evaluate(b.time) || binding.rest;
+        value = binding.output;
+        if (binding.rotation) quaternion.fromArray(first).slerp(target.fromArray(second), fraction).toArray(value);
+        else for (let index = 0; index < first.length; index++) value[index] = first[index] + (second[index] - first[index]) * fraction;
+      }
+      binding.property.setValue(value, 0);
+    }
+    for (const [name, extra] of Object.entries(descriptor.joints || {})) {
+      const bone = joints.get(name); if (!bone) continue;
+      if (extra.rotation) bone.quaternion.multiply(quaternion.fromArray(extra.rotation));
+      if (extra.translation) bone.position.add(vector.fromArray(extra.translation));
+    }
+    root.traverse(node => {
+      if (!node.isMesh) return;
+      for (const [name, value] of Object.entries(descriptor.morphs || {})) {
+        const index = node.morphTargetDictionary?.[name];
+        if (index !== undefined) node.morphTargetInfluences[index] = value;
+      }
+    });
+    root.updateMatrixWorld(true);
+    return descriptor;
+  }
+  return { sample, dispose() { for (const { property } of bindings.values()) property.unbind(); },
+    debug: () => ({ clips: [...clips.keys()], joints: joints.size, tracks: bindings.size }) };
+}
 
 export function sourceDesktopGlyphLines(limit = 48) {
   return Object.values(SOURCE_ATLAS.sectors || {}).flatMap(s => s.sourceLines || [])
@@ -77,7 +182,7 @@ export function sourceDesktopRenderFrame(input = {}, previous = null) {
   const kind = state.intent.kind, p = state.intent.progress;
   const cue = kind === 'loop' ? 'double' : kind === 'overload' ? 'lean-in' : kind === 'conceal' ? 'turn' : kind === 'silence' ? 'dim' : 'lean';
   const captured = state.pressurePresentation?.primary;
-  const actor = captured ? { ...captured, x: 0, y: 0, floorH: 0, heightM: 2.18, mode: 'live', strength: .96,
+  const actor = captured ? { ...captured, x: 0, y: 0, floorH: 0, heightM: 2.18, clearanceM: null, mode: 'live', strength: .96,
     performance: { ...captured.performance, role: 'source-front', heading: Math.PI, gait: null,
       manifestation: 1, cue: { name: cue, elapsed: .35 + p * 1.3 }, reducedMotion: state.reducedMotion } }
     : { id: 'source-desktop-pressure', x: 0, y: 0, floorH: 0, heightM: 2.18, widthM: .68, strength: .96,
@@ -89,9 +194,16 @@ export function sourceDesktopRenderFrame(input = {}, previous = null) {
   const clipTime = state.reducedMotion ? 0 : kind === 'overload' ? p * .5
     : kind === 'loop' ? p * .72 : kind === 'silence' ? p : state.clock % 4.8;
   actor.performance.clip = clip; actor.performance.time = clipTime;
+  actor.performance.density = sourceDesktopDensityPerformance(state, captured?.performance || actor.performance);
+  // This encounter performs HUSH's density. A captured offered-hand human
+  // trace remains at its Source encounter, rather than becoming a battle echo.
+  actor.referenceTrace = false;
   const instances = pressureInstances(actor, null, { reducedMotion: state.reducedMotion, reduceFlash: state.reduceFlash });
   const body = instances[0], echo = instances[1] || null;
-  return { state, openness, body, echo, clip, clipTime, failure,
+  const surface = pressureSurfaceInstances(body ? [body] : [])[0] || null;
+  const echoSurface = pressureSurfaceInstances(echo ? [echo] : [])[0] || null;
+  return { state, openness, body, echo, surface, echoSurface, clip: body?.character.clip || clip,
+    clipTime: body?.character.time ?? clipTime, failure,
     guardVisible: state.cover.count > 0 && /^(hold|spanner-guard)$/.test(state.actionId),
     rakeVisible: state.cover.exposed || state.actionId === 'expose',
     shellRetention: 1 - openness * .82,
@@ -166,13 +278,30 @@ export const SOURCE_DESKTOP_PLATES = Object.freeze([
   { id: 'strata-east-cleft-chip', position: [2.7, 1.55, -1.2], size: [1.5, .55, .7] },
 ]);
 
-// The negative body cannot borrow the shell's coloured lighting or become grey
-// through transparent skin. These finite inverted hulls follow the very same
-// skin and morphs; the opaque core and the scene's depth clip their inner light.
-// Both enter the existing transparent acquisition/dither together.
+// Production density uses an opaque absence and its fitted physical return.
+// Both enter the existing transparent acquisition/dither together. The retained
+// human-reference compatibility path below still supports its finite hulls;
+// those are never generated for the density asset.
 export function finishSourceDesktopPressure(THREE, root, { own = value => value } = {}) {
-  const meshes = [], cores = [], glows = [];
+  const meshes = [], cores = [], glows = [], returns = [], volumes = [];
   root.traverse(node => { if (node.isMesh) meshes.push(node); });
+  if (meshes.some(mesh => mesh.name === 'hush_density_core')) {
+    for (const mesh of meshes) {
+      mesh.frustumCulled = false;
+      if (mesh.name === 'hush_density_core') {
+        const material = own(new THREE.MeshBasicMaterial({ color: 0x000000,
+          side: THREE.DoubleSide, depthTest: true, depthWrite: true, fog: false, toneMapped: false }));
+        mesh.material = material; cores.push(material);
+      } else if (mesh.name === 'hush_density_return') {
+        // This is the real, fitted surface supplied by the same production
+        // asset as the world pass, not an expanded screen-space white outline.
+        returns.push(mesh);
+      } else if (mesh.name === 'hush_density_volume') {
+        mesh.visible = false; volumes.push(mesh);
+      }
+    }
+    return { cores, glows, returns, volumes };
+  }
   const bands = [[.012, .72], [.027, .33], [.050, .18], [.082, .10], [.120, .052], [.170, .025]];
   for (const mesh of meshes) {
     const core = own(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true,
@@ -203,7 +332,7 @@ export function finishSourceDesktopPressure(THREE, root, { own = value => value 
       glows.push({ material, opacity, radius });
     }
   }
-  return { cores, glows };
+  return { cores, glows, returns, volumes };
 }
 
 export function createSourceDesktopView({ canvas = null, container = null, assetBase = null, onError = null } = {}) {
@@ -219,11 +348,12 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     Object.assign(diagnostic.style, { position:'absolute',left:'0',top:'0',width:'100%',height:'100%',pointerEvents:'none',display:'none' });
     target.parentNode?.insertBefore(diagnostic, target.nextSibling);
   }
-  let THREE, renderer, dither, scene, camera, bodyRoot, echoRoot, mixer, echoMixer, clips, action, selectedClip = '', disposed = false;
+  let THREE, renderer, dither, scene, camera, bodyRoot, echoRoot, bodySampler, echoSampler, disposed = false;
   let snapshot = null, frame = null, error = null, renderCount = 0, resourceReady = false;
   let width = 1280, height = 800, dpr = 1, rendererSized = false;
-  const owned = new Set(), textures = new Set(), shell = [], covers = [], bones = [], materials = [], echoBones = [], echoMaterials = [];
+  const owned = new Set(), textures = new Set(), shell = [], covers = [], materials = [], echoMaterials = [];
   const modelIds = [], animationClips = [], shaderUniforms = [], modelGroups = [], bodyGlows = [], echoGlows = [];
+  let bodySurfaces = [], echoSurfaces = [], bodyVolumes = [], echoVolumes = [];
   let guardPlate, rake, ambient, bodyMeshCount = 0;
   const path = p => assetBase ? new URL(p, assetBase).href : assetUrl(p);
   const own = value => { owned.add(value); return value; };
@@ -288,24 +418,6 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     if (spec.id.startsWith('strata-')) mesh.rotation.y = spec.position[0] < 0 ? .18 : -.21;
     scene.add(mesh); return mesh;
   }
-  function sampleRig(root, animationMixer, cache, pose, clipTime) {
-    // AnimationMixer skips unchanged bindings. Restore the last authored sample,
-    // rather than bind pose, before adding restrained cue offsets each render.
-    for (const { bone, position, quaternion, scale } of cache) { bone.position.copy(position); bone.quaternion.copy(quaternion); bone.scale.copy(scale); }
-    animationMixer.setTime(clipTime);
-    for (const { bone, position, quaternion, scale } of cache) {
-      position.copy(bone.position); quaternion.copy(bone.quaternion); scale.copy(bone.scale);
-      const joint = pose.joints?.[bone.name];
-      if (joint?.rotation) bone.quaternion.multiply(new THREE.Quaternion(...joint.rotation));
-    }
-    root.traverse(node => {
-      if (!node.isMesh) return;
-      for (const [name, value] of Object.entries(pose.morphs || {})) {
-        const index = node.morphTargetDictionary?.[name]; if (index !== undefined) node.morphTargetInfluences[index] = value;
-      }
-    });
-    root.updateMatrixWorld(true);
-  }
   function render() {
     if (!resourceReady || disposed || !snapshot) return false;
     frame = sourceDesktopRenderFrame(snapshot); snapshot = frame.state;
@@ -315,20 +427,23 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     scene.visible = snapshot.active;
     const pose = frame.body?.character;
     bodyRoot.visible = snapshot.active && !!pose;
+    echoRoot.visible = snapshot.active && !!frame.echo;
     if (pose) {
-      if (selectedClip !== frame.clip) {
-        mixer.stopAllAction(); action = mixer.clipAction(clips.get(frame.clip) || clips.get('pressure_hold'));
-        action.reset().play();
-        echoMixer.stopAllAction(); echoMixer.clipAction(clips.get(frame.clip) || clips.get('pressure_hold')).reset().play();
-        selectedClip = frame.clip;
-      }
-      bodyRoot.rotation.y = Math.PI + (snapshot.reducedMotion ? 0 : snapshot.intent.kind === 'loop' ? (snapshot.intent.progress - .5) * .14 : 0);
-      sampleRig(bodyRoot, mixer, bones, pose, frame.clipTime);
-      echoRoot.visible = snapshot.active && !!frame.echo;
+      // World headings use the opposite sign to Three's Y rotation.
+      bodyRoot.rotation.y = -frame.body.yaw;
+      bodyRoot.scale.set(frame.body.scale * (frame.body.scaleX ?? 1),
+        frame.body.scale * (frame.body.scaleY ?? 1), frame.body.scale * (frame.body.scaleZ ?? 1));
+      bodySampler.sample(pose);
+      for (const mesh of bodySurfaces) mesh.visible = !!frame.surface;
+      for (const mesh of bodyVolumes) mesh.visible = frame.body.mesh === 'hush_density_volume';
       if (frame.echo) {
-        echoRoot.rotation.y = bodyRoot.rotation.y;
-        echoRoot.position.set(frame.echo.x - frame.body.x, 0, frame.echo.z - frame.body.z);
-        sampleRig(echoRoot, echoMixer, echoBones, frame.echo.character, Math.max(0, frame.clipTime - (snapshot.reducedMotion ? 0 : .18)));
+        echoRoot.rotation.y = -frame.echo.yaw;
+        echoRoot.scale.set(frame.echo.scale * (frame.echo.scaleX ?? 1),
+          frame.echo.scale * (frame.echo.scaleY ?? 1), frame.echo.scale * (frame.echo.scaleZ ?? 1));
+        echoRoot.position.set(frame.echo.x - frame.body.x, frame.echo.y - frame.body.y, frame.echo.z - frame.body.z);
+        echoSampler.sample(frame.echo.character);
+        for (const mesh of echoSurfaces) mesh.visible = !!frame.echoSurface;
+        for (const mesh of echoVolumes) mesh.visible = frame.echo.mesh === 'hush_density_volume';
       }
     }
     // Intent changes the radiance, never washes the black body into grey.
@@ -388,25 +503,23 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     rake = new THREE.SpotLight('#e1dcba', 4.0, 8, .09, .85, 1.4); rake.position.set(-2.8, .65, 3);
     rake.target.position.set(.25, 1.0, 0); scene.add(rake, rake.target);
     const loader = new GLTFLoader();
-    const [character, propPack] = await Promise.all([loader.loadAsync(path('assets/pressure-character.glb')), loader.loadAsync(path('assets/conservatory-props.glb')),dither.ready]);
+    const [character, propPack] = await Promise.all([loader.loadAsync(path(SOURCE_DESKTOP_PRESSURE_ASSET)), loader.loadAsync(path('assets/conservatory-props.glb')),dither.ready]);
     collect(character.scene); collect(propPack.scene);
     if (disposed) { for (const value of owned) value.dispose?.(); for (const texture of textures) texture.dispose(); return false; }
-    bodyRoot = character.scene; bodyRoot.name = 'source-desktop-borrowed-body'; scene.add(bodyRoot);
-    mixer = new THREE.AnimationMixer(bodyRoot); clips = new Map(character.animations.map(clip => [clip.name, clip]));
-    animationClips.push(...clips.keys());
+    bodyRoot = character.scene; bodyRoot.name = 'source-desktop-density'; scene.add(bodyRoot);
+    animationClips.push(...character.animations.map(clip => clip.name));
     bodyRoot.traverse(node => {
-      if (node.isBone) bones.push({ bone: node, position: node.position.clone(), quaternion: node.quaternion.clone(), scale: node.scale.clone() });
       if (node.isSkinnedMesh) { bodyMeshCount++; node.frustumCulled = false; }
     });
     echoRoot = cloneRig(bodyRoot); echoRoot.name = 'source-desktop-loop-overprint'; echoRoot.visible = false; scene.add(echoRoot);
-    echoMixer = new THREE.AnimationMixer(echoRoot);
-    echoRoot.traverse(node => {
-      if (node.isBone) echoBones.push({bone:node,position:node.position.clone(),quaternion:node.quaternion.clone(),scale:node.scale.clone()});
-    });
+    bodySampler = createSourceDesktopPressureSampler(THREE, bodyRoot, character.animations);
+    echoSampler = createSourceDesktopPressureSampler(THREE, echoRoot, character.animations);
     const bodyFinish = finishSourceDesktopPressure(THREE, bodyRoot, { own });
     const echoFinish = finishSourceDesktopPressure(THREE, echoRoot, { own });
     materials.push(...bodyFinish.cores); bodyGlows.push(...bodyFinish.glows);
     echoMaterials.push(...echoFinish.cores); echoGlows.push(...echoFinish.glows);
+    bodySurfaces = bodyFinish.returns; echoSurfaces = echoFinish.returns;
+    bodyVolumes = bodyFinish.volumes; echoVolumes = echoFinish.volumes;
     for (const spec of [
       { id: 'upright_piano', x: -2.05, z: -.8, scale: .65, yaw: Math.PI + .25 },
       { id: 'open_instrument_case', x: 1.65, z: .25, scale: 1.45, yaw: Math.PI - .2 },
@@ -416,7 +529,10 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       const root = found.clone(true); root.position.set(spec.x, .08, spec.z); root.scale.setScalar(spec.scale); root.rotation.y = spec.yaw;
       scene.add(root); modelGroups.push(root); modelIds.push(spec.id);
     }
-    if (!bodyMeshCount || !clips.has('pressure_load') || !clips.has('pressure_listen')) throw new Error('Pressure rig or authored performance is unavailable');
+    if (!bodyMeshCount || !bodyRoot.getObjectByName('density_root') ||
+      !['pressure_approach', 'density_listen', 'density_idle'].every(name => animationClips.includes(name))) {
+      throw new Error('Density rig or authored performance is unavailable');
+    }
     resourceReady = true; resize(width, height, dpr); render(); return true;
   })().catch(reason => { error = String(reason?.message || reason); onError?.(reason); throw reason; });
 
@@ -432,8 +548,10 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     resize,
     debug: () => ({ ready: resourceReady, disposed, error, renderCount, width, height, dpr,
       dither:dither?.debug(),
-      skinnedMeshes: bodyMeshCount, bones: bones.length, animationClips, modelIds,
-      pressureFinish: { core: 'opaque-neutral-black', glow: 'skinned-neutral-white',
+      pressureAsset: SOURCE_DESKTOP_PRESSURE_ASSET,
+      skinnedMeshes: bodyMeshCount, bones: bodySampler?.debug().joints || 0, animationClips, modelIds,
+      pressureFinish: { core: 'opaque-neutral-black', surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
+        surfaceMeshes: bodySurfaces.length,
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },
       plates: SOURCE_DESKTOP_PLATES.map(piece => piece.id), glyphLines: sourceDesktopGlyphLines().length,
@@ -441,10 +559,10 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
         rakeVisible: frame.rakeVisible, state: frame.state },
       gpu: renderer && { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures } }),
     dispose() {
-      if (disposed) return; disposed = true; mixer?.stopAllAction(); echoMixer?.stopAllAction();
+      if (disposed) return; disposed = true;
       diagnostic?.remove();
       resourceReady = false; target.removeEventListener('webglcontextlost', contextLost);
-      if (bodyRoot) mixer?.uncacheRoot(bodyRoot); if (echoRoot) echoMixer?.uncacheRoot(echoRoot);
+      bodySampler?.dispose(); echoSampler?.dispose();
       for (const value of owned) value.dispose?.(); for (const texture of textures) texture.dispose();
       dither?.dispose();
       renderer?.renderLists.dispose(); renderer?.dispose(); renderer?.forceContextLoss(); scene?.clear();

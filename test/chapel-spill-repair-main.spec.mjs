@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import * as D from '../src/game/chapel-tape-demand.js';
+import {chunkSurfFinaleRouting} from '../src/game/chunk-surf-state.js';
 import * as PB from '../src/game/playback.js';
 import * as REC from '../src/game/recordist.js';
 import {selectChapelDamageTarget} from '../src/game/tape-damage.js';
@@ -47,9 +48,10 @@ function harness({saved=null,now=1000}={}){
   const commits=[],speech=[],events=[],thoughts=[],endings=[],hauntPulses=[];
   const host={...D,PB,REC,selectChapelDamageTarget,CHAPEL_TAPE_DEMAND_FLAG:D.CHAPEL_TAPE_DEMAND_FLAG,CHAPEL_TAPE_DAMAGE_ACK:ACK,
     getSave:()=>save,saveCommit:patch=>{Object.assign(save,patch);commits.push(copy(patch));},
-    ENCOUNTERS:{encounterCleared:room=>save.encounters.cleared.includes(room)},normalizeChunkSurfState:value=>value,SOURCE_FINALE_ROUTE:{CHAPEL:'chapel',TOWER:'tower'},
+    ENCOUNTERS:{encounterCleared:room=>save.encounters.cleared.includes(room)},normalizeChunkSurfState:value=>value,chunkSurfFinaleRouting,SOURCE_FINALE_ROUTE:{CHAPEL:'chapel',TOWER:'tower'},
     TOWER_PERSONAL_TAKE:'tower-personal',TARGETS:ROOMS,ROOM_CELLS:Object.fromEntries(ROOMS.map((room,index)=>[room,{x:20+index,y:30}])),roomLabel:room=>LABELS[room]||room,
     performance:{now:()=>clock},paused:false,storyMode:true,inRogue:true,usingPlan:()=>true,usingSpecialSpace:()=>false,gameplayInputLifecycleActive:()=>focused,
+    pumpDoorAudioEvents:()=>{},architectureDoorCauses:new Map(),syncArchitectureDoorAudio:()=>{},
     scenes:{blocksWorld:()=>blocked,push:scene=>thoughts.push(scene)},makeThoughtScene:options=>options,
     SPEECH:{say:line=>speech.push(copy(line))},pushEvent:line=>events.push(line),fireCue:()=>{},
     FP:{logicalToPhysical:(x,y)=>({x,y:0,z:y,renderGroup:'upper'}),toRuntimePoint:p=>({x:p.x*2,y:p.y*2}),homeAnchor:()=>({x:4,y:8}),

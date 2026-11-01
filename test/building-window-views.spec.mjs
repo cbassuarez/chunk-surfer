@@ -68,7 +68,8 @@ test('production basin and deck slices keep the whole W4 throat open without per
   connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[],
  });
  const window=BUILDING_WINDOWS.find(w=>w.id==='W4-pool-south');
- for(const observer of[{x:84,z:47.5,floor:-2,pitch:.62},{x:84,z:49,floor:0,pitch:0}]){
+ // The deep end falls to the drain (NATATORIUM_SUMP): -2.40m here, stored as float32.
+ for(const observer of[{x:84,z:47.5,floor:Math.fround(-2.4),pitch:.62},{x:84,z:49,floor:0,pitch:0}]){
   const rx=observer.x/CELL,ry=observer.z/CELL;
   assert.equal(FP.floorAt(rx,ry),observer.floor,'the test starts on the real basin/deck floor');
   const slice=FP.physicalRenderPlanFor(rx,ry);

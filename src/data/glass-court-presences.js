@@ -3,8 +3,8 @@
 import {GLASS_COURT as C} from './glass-court.js';
 
 const figures=[
-  {id:'glass-court-planted-head',mesh:'apparition_pose_head_turn',x:5.6,z:.60,yaw:Math.PI},
-  {id:'glass-court-planted-stoop',mesh:'apparition_pose_stoop',x:18.2,z:.60,yaw:Math.PI},
+  {id:'glass-court-planted-head',mesh:'apparition_pose_head_turn',x:.35,z:3,yaw:Math.PI/2},
+  {id:'glass-court-planted-stoop',mesh:'apparition_pose_stoop',x:3.65,z:9,yaw:-Math.PI/2},
 ];
 export const GLASS_COURT_PRESENCES=Object.freeze(figures.map(f=>{
   const p={x:C.logicalOrigin.x+f.x,y:C.logicalOrigin.y+f.z};

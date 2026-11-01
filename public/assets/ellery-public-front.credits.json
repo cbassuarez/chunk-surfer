@@ -4,9 +4,9 @@
   "license": "Project-native geometry; copied hero/material image rights unchanged",
   "sourceHero": {
     "name": "conservatory_west_elevation",
-    "fingerprint": "49c48d3f681d686730b5a0a001de3321316531d426db0874b51ada0b6cc6eed6",
-    "triangles": 17784,
-    "retainedTriangles": 17269,
+    "fingerprint": "0bbee88d9932239ddb772588618967329bc0c0eea822705cee68bf44d397c34f",
+    "triangles": 17829,
+    "retainedTriangles": 17329,
     "occupiedAirClips": [
       {
         "physicalMin": [
@@ -56,8 +56,8 @@
     "clip": [
       {
         "material": "chapel stone",
-        "inputTriangles": 8576,
-        "unchangedTriangles": 8222,
+        "inputTriangles": 8623,
+        "unchangedTriangles": 8269,
         "changedTriangles": 354,
         "removedTriangles": 282,
         "clippedTriangles": 108
@@ -72,18 +72,18 @@
       },
       {
         "material": "board marked concrete",
-        "inputTriangles": 552,
-        "unchangedTriangles": 392,
-        "changedTriangles": 160,
-        "removedTriangles": 30,
-        "clippedTriangles": 208
+        "inputTriangles": 613,
+        "unchangedTriangles": 484,
+        "changedTriangles": 129,
+        "removedTriangles": 57,
+        "clippedTriangles": 121
       },
       {
         "material": "black lacquer",
-        "inputTriangles": 3324,
+        "inputTriangles": 3252,
         "unchangedTriangles": 2900,
-        "changedTriangles": 424,
-        "removedTriangles": 344,
+        "changedTriangles": 352,
+        "removedTriangles": 272,
         "clippedTriangles": 120
       },
       {
@@ -136,11 +136,11 @@
       },
       {
         "material": "wired roof glass",
-        "inputTriangles": 100,
+        "inputTriangles": 109,
         "unchangedTriangles": 90,
-        "changedTriangles": 10,
-        "removedTriangles": 1,
-        "clippedTriangles": 25
+        "changedTriangles": 19,
+        "removedTriangles": 4,
+        "clippedTriangles": 33
       },
       {
         "material": "academic plaster",
@@ -162,9 +162,9 @@
   },
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "e17346732a88b44194e93f1e081a7a142a4b66fc1b95839c48b5215ac4937c4b",
+    "sha256": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
     "unchangedDuringBuild": true,
-    "meshCount": 607
+    "meshCount": 625
   },
   "geometry": [
     "src/data/ellery-public-front.js",

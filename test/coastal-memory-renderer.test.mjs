@@ -23,6 +23,19 @@ test('unnoticed headlights remain dark; reduced motion freezes sea without freez
  assert.equal(a.scene.props.find(p=>p.id==='coastal-sunken-same-van').fixturePower,0,'headlamp glass cannot emit before the glance wakes its supply');
  const b=coastalMemoryRenderFrame({pose:{...L.spawn,x:L.spawn.x+1},elapsed:18},{reducedMotion:true,vehicleMetrics:metrics});assert.notDeepEqual(a.eye,b.eye);
 });
+test('only the confirmed submerged opening van carries solid paint on its exact settled body frame',()=>{
+ for(const level of[0,.5,1]){
+  const frame={pose:L.spawn,elapsed:12,wreckLightLevel:level},before=structuredClone(frame);
+  const out=coastalMemoryRenderFrame(frame,{vehicleMetrics:metrics}),body=out.scene.props.find(p=>p.id==='coastal-sunken-same-van');
+  const marks=out.scene.props.filter(p=>p.paintOf);assert.equal(marks.length,1);
+  const mark=marks[0];assert.equal(mark.paintOf,body.id);assert.equal(mark.mesh,'van_brand_drive');
+  assert.deepEqual(mark.matrix,COASTAL_SETTLED_BODY_WORLD);assert.deepEqual(mark.matrix,body.matrix);assert.notEqual(mark.matrix,body.matrix);
+  assert.equal(mark.sourceStructure,'coastal-memory');assert.equal(mark.skyExposed,false);assert.equal(mark.fixturePower,level);
+  assert.equal(mark.emissive,undefined);assert.equal(mark.cabinVolume,undefined);assert.equal(mark.character,undefined);
+  assert.equal(out.scene.lamps.filter(l=>l.fixture==='same van headlamp').length,2,'pigment adds no practical or headlamp');
+  assert.deepEqual(frame,before);assert.equal(out.coastalMemory.active,true);assert.equal(out.coastalMemory.waterY,0);
+ }
+});
 test('the visible practical owns the single shadow map at the wreck and pier, including a retreat',()=>{
  const render=pose=>coastalMemoryRenderFrame({pose,elapsed:12,wreckLightLevel:1},{vehicleMetrics:metrics});
  const entry=render(L.spawn),pier=render({...L.spawn,x:13.07639,z:86}),retreat=render(L.spawn);
@@ -51,7 +64,15 @@ test('catalog replacement fails visibly instead of continuing over a missing ban
  const f=fixture();await f.owner.initialize();f.catalog.delete('cm_grass_bank');assert.throws(()=>f.owner.render({pose:L.spawn}),/catalog/);f.owner.dispose();
 });
 test('a second coastal visit reuses the actual resident van and mechanism packs',async()=>{
- const f=fixture();await f.owner.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,2);f.owner.dispose();
- const second=createCoastalMemoryRenderer(f.options);await second.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,2,'retreat/re-entry must not allocate both GLB packs again');
+ const f=fixture();await f.owner.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,3);assert(f.catalog.has('van_brand_drive'));f.owner.dispose();
+ const second=createCoastalMemoryRenderer(f.options);await second.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,3,'retreat/re-entry must not allocate the vehicle, coast or pigment packs again');
  assert.ok(second.ready());second.dispose();assert.equal(f.releases(),2);
+});
+test('coastal paint loads in an isolated catalog, reuses global residency and detects a replaced pigment mesh',async()=>{
+ const cold=fixture();await cold.owner.initialize();assert(cold.calls.some(c=>c[0]==='pack'&&c[1]==='assets/van-brand.glb'));
+ cold.catalog.delete('van_brand_drive');assert.equal(cold.owner.ready(),false);assert.throws(()=>cold.owner.render({pose:L.spawn}),/catalog/);cold.owner.dispose();
+ const resident=fixture();resident.catalog.add('van_brand_drive');await resident.owner.initialize();
+ assert.equal(resident.calls.some(c=>c[0]==='pack'&&c[1]==='assets/van-brand.glb'),false,'the ordinary game already owns this exact mesh');
+ assert.equal(resident.owner.render({pose:L.spawn}),true);const submitted=resident.calls.find(c=>c[0]==='r3dSetProps'&&c[1].some(p=>p.paintOf));
+ assert(submitted);assert.deepEqual(submitted[1].find(p=>p.paintOf).matrix,COASTAL_SETTLED_BODY_WORLD);resident.owner.dispose();
 });

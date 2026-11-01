@@ -1,0 +1,618 @@
+{
+  "provenance": "Existing project-authored FC–7 and canonical instrument meshes with original physical packing sockets; new original cloth notebook and fixed interior mirror; no external downloads, textures or new narrative",
+  "sources": [
+    {
+      "file": "public/assets/items/field-case.glb",
+      "sha256": "54a7c143ee7d752a81b33722b4ca75e22f388803e63c34ee25e30daee23769cb",
+      "sourceTriangles": 21144,
+      "triangles": 4491
+    },
+    {
+      "file": "public/assets/items/field-recorder.glb",
+      "sha256": "2a48d9fc098e8f5bb30df2a6330a2efc43e0e274bbf0cec97528f8e67964e34c",
+      "sourceTriangles": 25776,
+      "triangles": 3046
+    },
+    {
+      "file": "public/assets/items/headphones-reference.glb",
+      "sha256": "ac4b5e54bf5489980ac071b5ffcf7bcb142b1936786d4d8ccae425fde89ee86c",
+      "sourceTriangles": 21442,
+      "triangles": 1424
+    },
+    {
+      "file": "public/assets/items/headphones-closed.glb",
+      "sha256": "f8d07a880c7109cd9d7a5aec8aadc56f2bedad4cb926abbebd95ce63fa21efb1",
+      "sourceTriangles": 21478,
+      "triangles": 1417
+    },
+    {
+      "file": "public/assets/items/headphones-open.glb",
+      "sha256": "65d0a3d7b2b2ea419e3740e2952a80e45009201a2140ae80a6b8b5a78c81d3eb",
+      "sourceTriangles": 27554,
+      "triangles": 1429
+    },
+    {
+      "file": "public/assets/items/microphone-reference.glb",
+      "sha256": "e035d3a20b454d2ad36758b2410f2fc34224cae6f8fce3125cf0a969d735dba7",
+      "sourceTriangles": 26304,
+      "triangles": 1056
+    },
+    {
+      "file": "public/assets/items/microphone-directional.glb",
+      "sha256": "97c935d04efbfdd4f9235e6c4368937359134b38733e399ee41ec8007dd67dbb",
+      "sourceTriangles": 29988,
+      "triangles": 957
+    },
+    {
+      "file": "public/assets/items/microphone-wide.glb",
+      "sha256": "d5e104c42655130c5f0672e55a9ba05a69a70d45bad25810e6532ea618c62fea",
+      "sourceTriangles": 45524,
+      "triangles": 1124
+    },
+    {
+      "file": "public/assets/items/amp-reference.glb",
+      "sha256": "34d2a51a1a33551404021fdf29cc7c633493974b6f8ac7eefb88a7eabcbed170",
+      "sourceTriangles": 10962,
+      "triangles": 1000
+    },
+    {
+      "file": "public/assets/items/amp-low-draw.glb",
+      "sha256": "15a520592459d0dc5d156993a994d1163b3e75eece6866423342f6efb9b40ee1",
+      "sourceTriangles": 11000,
+      "triangles": 1001
+    },
+    {
+      "file": "public/assets/items/amp-headroom.glb",
+      "sha256": "d78bf834c7db6fe2bd65faac513b31f28478e3363beafd90aa1a4a5a6336578f",
+      "sourceTriangles": 13292,
+      "triangles": 1004
+    },
+    {
+      "file": "public/assets/items/flashlight-reference.glb",
+      "sha256": "6293251440e7ed10e48fccbd8d87cfca331f6116c047e42fb2826cf017ab28ea",
+      "sourceTriangles": 12246,
+      "triangles": 1192
+    },
+    {
+      "file": "public/assets/items/flashlight-throw.glb",
+      "sha256": "ecd8e7059dd2cf1e5cc65c88b6a428b649405c0e9f0f4ff83d3ba0a72c73d946",
+      "sourceTriangles": 13224,
+      "triangles": 1161
+    },
+    {
+      "file": "public/assets/items/flashlight-flood.glb",
+      "sha256": "6ad36ad9b8d61b8958297170c4cb7ad20858ddb736f5be7e65531846a4bbafd7",
+      "sourceTriangles": 13052,
+      "triangles": 1197
+    }
+  ],
+  "registration": {
+    "case": {
+      "sourceBounds": {
+        "min": [
+          -1.3727290792209366,
+          0,
+          -1.2945930702958375
+        ],
+        "max": [
+          1.3727290792209366,
+          2.0636702495516337,
+          1.2945930702958375
+        ]
+      },
+      "scale": 0.22728446910811348,
+      "point": [
+        -0.48,
+        0.6702,
+        -0.25
+      ],
+      "yaw": -1.5707963267948966,
+      "sourceFloorOrigin": [
+        0,
+        0,
+        0
+      ],
+      "method": "Original open FC–7 hierarchy; actual packing-bay transforms; Y up; housing width .624m; open face toward the driver"
+    },
+    "field-recorder": {
+      "bay": "foam-cut-edge:recorder",
+      "source": "public/assets/items/field-recorder.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.618661388738584,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.6527085293298772,
+        0.5015000014901161,
+        -0.09389692495721191,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.13874517381191254
+        ],
+        "max": [
+          0.498445987701416,
+          0.5244733691215515,
+          0.14199630916118622
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-reference": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.9433210024631693,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4052552580833435,
+          0.0038035395555198193,
+          -0.2705400586128235
+        ],
+        "max": [
+          0.4063454568386078,
+          0.9993934035301208,
+          0.27025237679481506
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-closed": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-closed.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.856037084589087,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4462331533432007,
+          0.0038035395555198193,
+          -0.2913042902946472
+        ],
+        "max": [
+          0.4481206238269806,
+          0.9993934035301208,
+          0.29430660605430603
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "headphones-open": {
+      "bay": "packing-bay:headphones",
+      "source": "public/assets/items/headphones-open.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.8985406342554227,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.10617061857091592,
+        1.373121737898483,
+        -0.6335757132253991,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.42373621463775635,
+          0.0008444774430245161,
+          -0.301670104265213
+        ],
+        "max": [
+          0.4283120632171631,
+          0.9993934035301208,
+          0.2990741431713104
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-reference": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5475633608935039,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -1,
+          -0.215583935379982,
+          -0.23970694839954376
+        ],
+        "max": [
+          -0.0014531834749504924,
+          0.21340753138065338,
+          0.23819464445114136
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-directional": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-directional.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.8362062418148974,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -1,
+          -0.06106550246477127,
+          -0.061139076948165894
+        ],
+        "max": [
+          -0.0012033639941364527,
+          0.06106550246477127,
+          0.060991931706666946
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "microphone-wide": {
+      "bay": "foam-cut-edge:microphone",
+      "source": "public/assets/items/microphone-wide.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.4153478645482876,
+      "rotationZ": 1.5707963267948966,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.17902957342582415,
+        -3.4450928483976665e-16,
+        -0.9838436927881214,
+        0,
+        6.167735030609917e-17,
+        1,
+        -3.389432869965508e-16,
+        0,
+        -0.5946631413456492,
+        0.5015000014901161,
+        0.5366827551259323,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.9924725294113159,
+          -0.28216636180877686,
+          -0.1563214361667633
+        ],
+        "max": [
+          -0.0016653431812301278,
+          0.28338369727134705,
+          0.1622733473777771
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-reference": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5015955619323081,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.4075993001461029,
+          0,
+          -0.23666276037693024
+        ],
+        "max": [
+          0.4075993001461029,
+          0.999190628528595,
+          0.23626944422721863
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-low-draw": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-low-draw.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5455704077397442,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.3747453987598419,
+          0,
+          -0.23427236080169678
+        ],
+        "max": [
+          0.3747453987598419,
+          0.9990455508232117,
+          0.23380853235721588
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "amp-headroom": {
+      "bay": "packing-bay:amp",
+      "source": "public/assets/items/amp-headroom.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.4105655379840849,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        -0.6962042243426958,
+        1.2778883809099117,
+        -0.748576666160774,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.49797165393829346,
+          0,
+          -0.24749210476875305
+        ],
+        "max": [
+          0.49797165393829346,
+          0.9875994920730591,
+          0.24931013584136963
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-reference": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-reference.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.6901791540632644,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.1568908840417862,
+          0,
+          -0.15824468433856964
+        ],
+        "max": [
+          0.15824468433856964,
+          0.9992210865020752,
+          0.1568908840417862
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-throw": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-throw.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.5310888947049053,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.20388831198215485,
+          0,
+          -0.20388831198215485
+        ],
+        "max": [
+          0.20564764738082886,
+          0.9992808699607849,
+          0.20564764738082886
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "flashlight-flood": {
+      "bay": "packing-bay:flashlight",
+      "source": "public/assets/items/flashlight-flood.glb",
+      "caseScale": 0.22728446910811348,
+      "itemScale": 0.607712117505343,
+      "rotationZ": 0,
+      "socketMatrix": [
+        0.9838436927881214,
+        0,
+        0.17902957342582415,
+        0,
+        0.054614517552333264,
+        0.9523335698857134,
+        -0.30013001539542644,
+        0,
+        -0.17049587277573156,
+        0.3050586364434435,
+        0.9369473761624548,
+        0,
+        0.8976225579740611,
+        1.2778883809099117,
+        -0.45854875721093885,
+        1
+      ],
+      "sourceBounds": {
+        "min": [
+          -0.17894986271858215,
+          0,
+          -0.1635262817144394
+        ],
+        "max": [
+          0.17894986271858215,
+          0.9973533153533936,
+          0.1635262817144394
+        ]
+      },
+      "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    }
+  },
+  "limitations": [
+    "Mirror silver is static, not a rendered face/reflection.",
+    "World recorder phosphor is the original idle geometry; live readings appear in its direct inspection.",
+    "Witness Edition geometry is not newly granted during the prologue."
+  ],
+  "sha256": "d908c7a314386225758485d25dd51107180603617dcbbf1f07d658eaa3783aa7"
+}

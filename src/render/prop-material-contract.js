@@ -26,7 +26,7 @@ export function letteringFinishDescriptor(value){
 // This is a material contract, never inferred from a red colour or room name.
 export function tissueSurfaceDescriptor(value){
   if(value==null)return null;
-  if(value.version!==1||value.profile!=='severed-auricle'||
+  if(value.version!==1||!['severed-auricle','bus-body-passage'].includes(value.profile)||
     value.preservePigment!==true||value.localSpecular!==true)
     throw new Error('Invalid tissue surface material contract');
   return Object.freeze({version:1,profile:value.profile,preservePigment:true,localSpecular:true});

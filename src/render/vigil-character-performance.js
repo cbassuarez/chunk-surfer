@@ -19,7 +19,12 @@ const freeHands={leila:{R:{wrist:[.23,.88,-.075],axis:[.08,-1,0],normal:[-1,0,0]
 // The bone endpoints sit just outside its surface; actual fingertip pads make
 // contact. Following the head keeps the cup supported through its small nod.
 const kitHeadphoneTips={thumb:[-.118,1.624,-.022],index:[-.118,1.635,-.014],middle:[-.119,1.650,-.027],ring:[-.118,1.666,-.038],little:[-.115,1.660,-.047]};
-export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=false,rig=null,timeSec=0,conversation=null}={}){
+// Each cast member's finger grasps are fixed in the hand's frame. Solving
+// them once preserves exact hand/object contact as the arm and object move.
+// Paper handling is the exception: the right fingers slide over the paper.
+// Custom rigs always retain their own solver. cacheFingers is a test seam.
+const fingerPoseCache=new Map();
+export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=false,rig=null,timeSec=0,conversation=null,cacheFingers=true}={}){
  const d=VIGIL_CHARACTER_DESIGNS[id],source=rig||VIGIL_CHARACTER_RIGS[id],layout=VIGIL_OBJECT_LAYOUT[id];if(!d||!source||!layout)throw Error('Unknown vigil character '+id);
  const bones=new Map(source.map(b=>[b.name,b])),poses=new Map(),contacts=[],rest=name=>{const b=bones.get(name);if(!b)throw Error('Missing vigil bone '+name);return b;},put=(name,head,rotation=I)=>poses.set(name,{head,rotation}),world=(p,name)=>{const b=rest(name),v=poses.get(name);return add(v.head,rot(sub(p,b.head),v.rotation));},chain=(finger,side)=>['','_mid','_tip'].map(s=>rest(finger+s+'_'+side));
  const performance=exteriorPerformanceFrame(id,{timeSec,reducedMotion,conversation}),{attention,talk,gesture,ambient}=performance;
@@ -49,12 +54,24 @@ export function vigilCharacterPose(id,{action=null,progress=0,reducedMotion=fals
   const pole=id==='kit'&&side==='L'?[-.35,-.65,-.65]:[sign*.55,-.65,.35];
   const shoulder=torso(upper.head),arm=twoBone(shoulder,wrist,len(sub(upper.tail,upper.head)),len(sub(forearm.tail,forearm.head)),pole),fromUpper=sub(upper.tail,upper.head),fromLower=sub(forearm.tail,forearm.head),toUpper=sub(arm.middle,shoulder),toLower=sub(arm.end,arm.middle),restPlane=unit(cross(fromUpper,fromLower)),armPlane=unit(cross(toUpper,toLower));
   put(upper.name,shoulder,oriented(fromUpper,restPlane,toUpper,armPlane));const elbowQ=oriented(fromLower,restPlane,toLower,armPlane),wristQ=oriented(fromLower,palmNormal,toLower,rot(palmNormal,palmQ));put(forearm.name,arm.middle,qmix(elbowQ,wristQ,.60));put(hand.name,arm.end,palmQ);hands[side]=arm.end;contacts.push({kind:'wrist',side,target:wrist,point:arm.end,error:arm.error,shoulder,elbow:arm.middle,palmNormal:rot(palmNormal,palmQ)});
-  for(const [digitIndex,finger]of ['thumb','index','middle','ring','little'].entries()){
+  const fingerKey=`${id}:${side}`,fingerUseCache=cacheFingers&&!rig&&!(side==='R'&&(action==='photos-sort'||action==='binder-page'));
+  const fingerCached=fingerUseCache?fingerPoseCache.get(fingerKey):null,contactStart=contacts.length;
+  if(fingerCached){
+   for(const [name,entry] of fingerCached.joints)put(name,add(arm.end,rot(entry.head,palmQ)),qm(palmQ,entry.rotation));
+   for(const entry of fingerCached.contacts)contacts.push({...entry,target:add(arm.end,rot(entry.target,palmQ)),point:add(arm.end,rot(entry.point,palmQ))});
+  }else for(const [digitIndex,finger]of ['thumb','index','middle','ring','little'].entries()){
    const links=chain(finger,side),base=world(links[0].head,hand.name),sizes=links.map(b=>len(sub(b.tail,b.head)));let target,pole=rot(palmNormal,palmQ);
    if(grip?.kind==='paper'&&digitIndex<3){const inverse=[-objectQ[0],-objectQ[1],-objectQ[2],objectQ[3]],localBase=rot(sub(base,position),inverse),inward=grip.axis[0],y=Math.max(-layout.height/2+.012,Math.min(layout.height/2-.012,localBase[1]));const x=anchor[0]+inward*(finger==='thumb'?-.004:.006);target=objectPoint([x,y,paperSurface(layout,x,y,finger==='thumb')]);pole=rot(finger==='thumb'?[sign*.4,0,-1]:[sign*.7,0,.6],objectQ);}
    else if(grip?.kind==='cylinder'){const theta=finger==='thumb'?1.28:[-1.62,-1.65,-2.05,-2.60][digitIndex-1],x=Math.cos(theta)*grip.radius,z=Math.sin(theta)*grip.radius;const inverse=[-objectQ[0],-objectQ[1],-objectQ[2],objectQ[3]],localBase=rot(sub(base,position),inverse);target=objectPoint([side==='L'?x:-x,localBase[1]-(finger==='thumb'?.018:.003),z]);pole=rot(finger==='thumb'?[sign*.15,0,1]:[sign*.4,0,-1],objectQ);}
    else if(grip?.kind==='paper'){const inverse=[-objectQ[0],-objectQ[1],-objectQ[2],objectQ[3]],b=rot(sub(base,position),inverse);target=objectPoint(add(b,[grip.axis[0]*.018,-.018,.025]));pole=rot([0,0,1],objectQ);}else if(id==='kit'&&side==='L'){target=world(kitHeadphoneTips[finger].map((v,i)=>v*[d.width,d.height/1.78,d.depth][i]),'head');pole=rot([-1,0,.15],headQ);}else if(id==='owen'&&side==='L'&&digitIndex<2){target=world(vigilHandPoint(vigilHandFrame(source,side),OWEN_KEY_RING.pinch[finger]),hand.name);pole=rot(mul(palmNormal,finger==='thumb'?1:-1),palmQ);}else{const natural=sub(links[2].tail,links[0].head),total=sizes.reduce((a,b)=>a+b,0);target=add(base,rot(add(mul(natural,finger==='thumb'?.90:.77),mul(palmNormal,total*.18)),palmQ));}
    const solve=fingerChain(base,target,sizes,pole);for(let i=0;i<3;i++){const desired=sub(solve.points[i+1],solve.points[i]),axis=sub(links[i].tail,links[i].head);put(links[i].name,solve.points[i],qm(between(rot(axis,palmQ),desired),palmQ));}contacts.push({kind:'finger',side,finger,target,point:solve.points[3],error:solve.error,gripped:!!grip&&(grip.kind!=='paper'||digitIndex<3),...(id==='owen'&&side==='L'&&digitIndex<2?{secondary:'keys'}:{})});
+  }
+  if(fingerUseCache&&!fingerCached){
+   const inverse=[-palmQ[0],-palmQ[1],-palmQ[2],palmQ[3]];
+   fingerPoseCache.set(fingerKey,{
+    joints:source.filter(b=>/^(thumb|index|middle|ring|little)(_|$)/.test(b.name)&&b.name.endsWith('_'+side)).map(b=>{const entry=poses.get(b.name);return[b.name,{head:rot(sub(entry.head,arm.end),inverse),rotation:qm(inverse,entry.rotation)}];}),
+    contacts:contacts.slice(contactStart).map(entry=>({...entry,target:rot(sub(entry.target,arm.end),inverse),point:rot(sub(entry.point,arm.end),inverse)})),
+   });
   }
   for(const name of ['thigh_'+side,'shin_'+side,'foot_'+side,'toe_'+side])put(name,rest(name).head);
  }

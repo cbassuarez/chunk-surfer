@@ -146,6 +146,12 @@ function shapeForearm(THREE, arm) {
   arm.skin.geometry.computeBoundingSphere();
 }
 
+// The carried radio uses the same recordist anatomy and fabric, while owning
+// its camera, event clock, controls and render target independently of combat.
+export { makeSkin as createRecordistHandMaterial, addForearm as addRecordistForearm,
+  shapeForearm as shapeRecordistForearm };
+export const recordistHandsDisplay = () => displaySource?.();
+
 export function warmBattleHands() {
   if (current || pending || unavailable || typeof document === 'undefined') return pending;
   const version = generation;

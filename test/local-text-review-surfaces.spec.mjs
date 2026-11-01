@@ -9,7 +9,8 @@ const { drawRadioScene, radioSceneLayout } = await import('../src/render/radio-s
 const { drawRecorderFace, TRANSPORT } = await import('../src/render/recorder-view.js');
 const { recorderFaceLayout } = await import('../src/render/recorder-instrument.js');
 const { createAcademicBouncers } = await import('../src/game/academic-bouncers.js');
-const { makeAcademicBouncerScene, renderAcademicBouncerSocialScene } = await import('../src/game/academic-bouncer-scene.js');
+const { makeAcademicBouncerScene, renderAcademicBouncerSocialScene, installAcademicBouncerSocialPresenter,academicBouncerPanelLayout,academicBouncerSocialPanelLayout } = await import('../src/game/academic-bouncer-scene.js');
+const {setActiveInputDevice}=await import('../src/game/bindings.js');
 const { uiInit, uiSize } = await import('../src/render/ui.js');
 const scenes = await import('../src/game/scenes.js');
 
@@ -141,6 +142,42 @@ test('bouncer dialog and social override retain review targets without changing 
   session.beginFrame(); renderAcademicBouncerSocialScene(convo.view());
   assert.ok(session.regions().every(region => region.target.id === convo.view().line.reviewTarget.id));
   assert.ok(session.regions().length > 0); convo.stop();
+});
+
+test('social panel pages long replies without forwarding page keys or changing the committed choice', () => {
+  const calls=[],pending={kind:'branch',index:0,options:[{text:Array(1800).fill('long reply').join(' ')}]};
+  const scene={view:()=>({pending}),key:event=>{calls.push(event.key);return true;},render(){}};
+  installAcademicBouncerSocialPresenter(scene);
+  assert.equal(scene.key({key:'PageDown'}),true);assert.deepEqual(calls,[]);
+  assert.equal(scene.key({key:'PageUp'}),true);assert.deepEqual(calls,[]);
+  assert.equal(scene.key({key:'Tab',controllerAction:'tabNext'}),true);
+  assert.equal(scene.key({key:'q',controllerAction:'tabPrev'}),true);assert.deepEqual(calls,[]);
+  scene.key({key:'1'});scene.key({key:'Escape'});
+  assert.deepEqual(calls,['1','Escape']);assert.equal(pending.index,0);
+});
+
+test('bouncer panels expose the active controller paging controls without changing a timed interjection',()=>{
+  const long=Array(1800).fill('long reply').join(' '),calls=[];
+  const attempt={phase:'listening',currentLine:{text:'A question.',sourceLabel:'VERA',who:'vera'},lineKey:'first',options:[{id:'a',text:long}]};
+  const controller={view:()=>({attempt}),beginAttempt:()=>true,cancelAttempt(){},tick(){},interject:id=>{calls.push(id);return true;}};
+  const scene=makeAcademicBouncerScene({controller,createVoice:()=>({warm(){},start(){return{done:()=>false}},stop(){},dispose(){}})});
+  setActiveInputDevice('controller',{viable:true,controllerFamily:'xbox'});
+  try {
+    scenes.push(scene);
+    const timed=academicBouncerPanelLayout(scene.view(),uiSize());
+    const social=academicBouncerSocialPanelLayout({pending:{kind:'branch',options:attempt.options,index:0}},uiSize());
+    for(const layout of[timed,social]){
+      assert.ok(layout.choiceWindow.selectedScroll);
+      assert.match(layout.footer,/\[LB\]/);assert.match(layout.footer,/\[RB\]/);assert.match(layout.footer,/READ/);
+      assert.doesNotMatch(layout.footer,/PGUP|PGDN/);
+    }
+    scene.key({key:'Tab',controllerAction:'tabNext'});scene.keyup({key:'Tab'});
+    assert.equal(scene.view().choiceScrollOffset,1);assert.deepEqual(calls,[]);
+    scene.key({key:'q',controllerAction:'tabPrev'});scene.keyup({key:'q'});
+    assert.equal(scene.view().choiceScrollOffset,0);assert.deepEqual(calls,[]);
+    scene.key({key:'Enter',controllerAction:'confirm'});scene.keyup({key:'Enter'});
+    assert.deepEqual(calls,['a']);
+  }finally{scenes.clear();setActiveInputDevice('keyboard');}
 });
 
 test('F8 resolves each directly painted selected option ahead of other choices, active speech and old player history', () => {

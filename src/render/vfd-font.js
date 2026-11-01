@@ -463,6 +463,21 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
     }
   }
 
+  emitVfdDots(ctx, lit, dark, r, {
+    box: { x: px, y: py, w: cellW, h: cellH }, color, dim, alpha, dimAlpha, blur, halation,
+    duty: Math.max(0, Math.min(1, alpha * scan)),
+  });
+  ctx.restore();
+}
+
+// The emitting half of a dot matrix, shared by the 5×7 font and any wider dot
+// field. `lit` entries are [x, y, level] in device px with level 0..1 (a graphic
+// VFD drives each dot's duty, a character module only on or off); `dark` are the
+// dormant dots. `box` is where the dots sit, `glowBox` how far their light may
+// carry, which for a picture is a character cell's worth so it glows like text.
+function emitVfdDots(ctx, lit, dark, r, {
+  box, glowBox = box, color, dim = null, alpha = 1, dimAlpha = 0.78, duty = 1, blur = 3, halation = 0.14,
+} = {}) {
   // The dots that are not emitting go down first and stay source-over: an unlit
   // dot is not a light, it is a thing the light is not coming out of.
   if (dim && dark.length) {
@@ -476,7 +491,6 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
     }
   }
 
-  const duty = Math.max(0, Math.min(1, alpha * scan));
   if (lit.length && duty > 0) {
     // THE TWO LOBES, off one mask of the lit dots.
     //
@@ -489,22 +503,23 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
     // scales the lobes rather than being ignored now that shadowBlur is gone.
     // 3.2 is the reference, being what the bulk of the game's text uses.
     const spread = Math.max(0.6, Math.min(2.2, (Number(blur) || 0) / 3.2));
-    const boxW = cellW, boxH = cellH;
-    const bleed = halation > 0 ? Math.ceil(vfdGlowBleed(boxW, boxH) * spread) : 0;
+    const boxW = box.w, boxH = box.h;
+    const bleed = halation > 0 ? Math.ceil(vfdGlowBleed(glowBox.w, glowBox.h) * spread) : 0;
     const pad = bleed > 0 ? scratch(boxW + bleed * 2, boxH + bleed * 2) : null;
     if (pad) {
       const mw = Math.ceil(boxW + bleed * 2), mh = Math.ceil(boxH + bleed * 2);
       // The mask is the lit dots alone, flat, at full strength: no shadow, no
       // alpha, nothing to undo later. Its origin is the glyph box less the
       // bleed, so the lobes land back exactly where the dots are.
-      const ox = px - bleed, oy = py - bleed;
+      const ox = box.x - bleed, oy = box.y - bleed;
       pad.maskCtx.fillStyle = color;
-      pad.maskCtx.globalAlpha = 1;
-      for (const [dx, dy] of lit) {
+      for (const [dx, dy, level = 1] of lit) {
+        pad.maskCtx.globalAlpha = level;
         pad.maskCtx.beginPath();
         pad.maskCtx.arc(dx - ox, dy - oy, r, 0, Math.PI * 2);
         pad.maskCtx.fill();
       }
+      pad.maskCtx.globalAlpha = 1;
       // Widest and faintest first, then the tight halo on top of it.
       const gain = duty * Math.max(0, halation) / 0.14;
       const veil = Math.max(1, Math.min(5, Math.round(VFD_GLOW.veilHalvings * spread)));
@@ -516,9 +531,9 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
     // opaque and they are what makes the 5×7 matrix readable, so they go down
     // source-over on top of their own glow rather than adding into it.
     ctx.fillStyle = color;
-    ctx.globalAlpha = duty;
     ctx.shadowBlur = 0;
-    for (const [dx, dy] of lit) {
+    for (const [dx, dy, level = 1] of lit) {
+      ctx.globalAlpha = duty * level;
       ctx.beginPath();
       ctx.arc(dx, dy, r, 0, Math.PI * 2);
       ctx.fill();
@@ -531,8 +546,8 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.fillStyle = '#FFFFFF';
-      ctx.globalAlpha = VFD_GLOW.hotAmount * duty;
-      for (const [dx, dy] of lit) {
+      for (const [dx, dy, level = 1] of lit) {
+        ctx.globalAlpha = VFD_GLOW.hotAmount * duty * level;
         ctx.beginPath();
         ctx.arc(dx, dy, r * VFD_GLOW.hotRadius, 0, Math.PI * 2);
         ctx.fill();
@@ -540,5 +555,35 @@ export function drawVfdGlyph(ctx, ch, px, py, cellW, cellH, {
       ctx.restore();
     }
   }
+}
+
+// A graphic VFD: the same phosphor dots on a wider grid. `levels` is rows of
+// 0..1 per dot; 0 leaves a dormant dot. Fills (w × h) device px at (px, py) with
+// square dots, centred, so a picture sits on the same glass as the words beside it.
+export function drawVfdDots(ctx, levels, px, py, w, h, {
+  color = '#F2A81E', dim = null, blur = 3, dpr = 1, alpha = 1, scan = 1, halation = 0.14, dimAlpha = 0.78,
+} = {}) {
+  const rowCount = levels?.length || 0, colCount = levels?.[0]?.length || 0;
+  if (!rowCount || !colCount) return;
+  const step = Math.min(w / colCount, h / rowCount);
+  const ox = px + (w - step * colCount) / 2, oy = py + (h - step * rowCount) / 2;
+  const r = Math.max(0.7 * dpr, step * 0.42);
+  const lit = [], dark = [];
+  for (let ry = 0; ry < rowCount; ry++) {
+    const row = levels[ry];
+    for (let cx = 0; cx < colCount; cx++) {
+      const level = Math.max(0, Math.min(1, Number(row[cx]) || 0));
+      if (!(level > 0) && !dim) continue;
+      const dot = [ox + step * (cx + 0.5), oy + step * (ry + 0.5), level];
+      (level > 0 ? lit : dark).push(dot);
+    }
+  }
+  ctx.save();
+  emitVfdDots(ctx, lit, dark, r, {
+    box: { x: ox, y: oy, w: step * colCount, h: step * rowCount },
+    // A 5×7 glyph fills 80% of its cell (see drawVfdGlyph's padding).
+    glowBox: { w: step * VFD_COLS / 0.8, h: step * VFD_ROWS / 0.8 },
+    color, dim, alpha, dimAlpha, blur, halation, duty: Math.max(0, Math.min(1, alpha * scan)),
+  });
   ctx.restore();
 }

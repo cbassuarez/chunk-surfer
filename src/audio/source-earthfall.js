@@ -1,5 +1,12 @@
+import {createDoorAudio} from './door-audio.js';
+import {createSourceEarthfallGagAudio} from './source-earthfall-gag.js';
+import {SOURCE_ELLERY_ASIDE_ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
 import { assetUrl } from '../platform/paths.js';
 import { SOURCE_DEMOLITION_AUDIO_DIR, SOURCE_DEMOLITION_AUDIO_CLIPS } from '../data/source-demolition-audio.js';
+import { earthfallRumbleBuffer, earthfallRumbleDuration } from './source-earthfall-rumble.js';
+import { earthfallChargePlan, earthfallReportBuffers, earthfallRoarBuffer } from './source-earthfall-demolition.js';
+import { SOURCE_EARTHFALL_ELLERY_ASIDE as ASIDE } from '../data/source-earthfall-ellery-aside.js';
+import { earthfallChaseWorldPoint } from '../data/source-earthfall-chase.js';
 
 // Reuses the accepted CC0 material bank. There is no new recording, loop,
 // score, synthetic fall wind or impact punishment. Each context can share this
@@ -10,10 +17,16 @@ export const SOURCE_EARTHFALL_AUDIO = Object.freeze({
   masterGain: .62, residualGain: .13, reducedResidualGain: .42,
   initiationSeconds: 1.1,
   initiationSplit: .55,
+  // The record-driven ground bed (source-earthfall-rumble.js), under the
+  // material clips. It thins and darkens with depth as the surface recedes.
+  rumbleGain: .85, reducedRumbleGain: .55,
+  // The aside's implosion (source-earthfall-demolition.js): the charge ripple
+  // and the dust roar, which closes in and muffles as the dust reaches him.
+  chargeGain: .6, roarGain: .7,
 });
 const CONFIG = SOURCE_EARTHFALL_AUDIO;
 const MATERIALS = new Set(['restraint', 'failure-body', 'stone-spall']);
-const TYPES = new Set(['strain', 'fracture', 'footing-loss', 'catch', 'land','stratum-0','stratum-1','stratum-2']);
+const TYPES = new Set(['strain', 'fracture', 'load-transfer', 'footing-loss', 'catch', 'land','catch-return','land-return','stratum-0','stratum-1','stratum-2']);
 const cache = new WeakMap();
 const valid = value => value !== null && value !== undefined && Number.isFinite(Number(value));
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
@@ -42,10 +55,11 @@ function eventInfo(event, frame) {
 }
 
 export function createSourceEarthfallAudio({ getAudio = () => null,
-  urlFor = file => assetUrl(`${SOURCE_DEMOLITION_AUDIO_DIR}/${file}`), fetcher = globalThis.fetch,
+  urlFor = file => assetUrl(`${SOURCE_DEMOLITION_AUDIO_DIR}/${file}`), fetcher = globalThis.fetch,createAsideDoorAudio=createDoorAudio,
+  createAsideGagAudio=createSourceEarthfallGagAudio,gagFetcher,gagUrlFor,
 } = {}) {
   let graph = null, sequenceId = null, runId = null, disposed = false, enabled = false, effects = true, reduced = false;
-  let observedActive = false;
+  let observedActive = false, rumble = null;
   let seen = new Set(), seenTypes = new Set(), receipts = [], played = 0, skipped = 0;
   let last = { active: false, muted: true, reason: 'outside-earthfall' };
   const history = [];
@@ -65,8 +79,81 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     for (const node of voice.nodes) { try { node.disconnect?.(); } catch {} }
     graph.voices.delete(voice);
   }
+  let demolition = { charges: [], roar: null };
+  function stopDemolition() {
+    for (const voice of [...demolition.charges, demolition.roar]) {
+      if (!voice) continue;
+      try { voice.source.stop(); } catch {}
+      for (const node of voice.nodes) { try { node.disconnect?.(); } catch {} }
+    }
+    demolition = { charges: [], roar: null };
+  }
+  // The reports are already built; this is only scheduling, so firing them
+  // costs the frame nothing. Nothing replays if the cue is late.
+  function playCharges(event, listener) {
+    const g = graph, buffers = earthfallReportBuffers(g.ctx);
+    if (!buffers) return false;
+    const now = g.ctx.currentTime + .005, plan = earthfallChargePlan(event.charges || [], listener);
+    plan.forEach((shot, index) => {
+      const source = g.ctx.createBufferSource(), filter = g.ctx.createBiquadFilter(), pan = g.ctx.createStereoPanner?.(), gain = g.ctx.createGain();
+      source.buffer = buffers[index % buffers.length]; filter.type = 'lowpass'; filter.frequency.value = shot.cutoff;
+      gain.gain.value = CONFIG.chargeGain * shot.gain;
+      if (pan) { pan.pan.value = shot.pan; source.connect(filter).connect(pan).connect(gain); } else source.connect(filter).connect(gain);
+      gain.connect(g.master);
+      const at = shot.at - (event.age || 0);
+      source.start(now + Math.max(0, at), Math.max(0, -at));
+      demolition.charges.push({ source, nodes: [source, filter, pan, gain].filter(Boolean) });
+    });
+    return true;
+  }
+  // The roar runs on the aside's clock from the moment the first wall's base
+  // crushes, and restarts if the two drift apart.
+  function syncRoar(frame, active) {
+    const g = graph, start = ASIDE.wallsAt.north - .3, seconds = (Number(frame.elapsed) || 0) - start;
+    const buffer = active && g ? earthfallRoarBuffer(g.ctx) : null;
+    if (!buffer || seconds < 0 || (frame.blackoutAlpha || 0) >= 1 || seconds >= buffer.duration - .05) {
+      if (demolition.roar) { try { demolition.roar.source.stop(); } catch {} for (const node of demolition.roar.nodes) { try { node.disconnect?.(); } catch {} } demolition.roar = null; }
+      return;
+    }
+    const now = g.ctx.currentTime;
+    let roar = demolition.roar;
+    if (roar && Math.abs(roar.offset + (now - roar.at) - seconds) > .25) { try { roar.source.stop(); } catch {} roar = demolition.roar = null; }
+    if (!roar) {
+      const source = g.ctx.createBufferSource(), filter = g.ctx.createBiquadFilter(), gain = g.ctx.createGain();
+      source.buffer = buffer; filter.type = 'lowpass'; filter.frequency.value = 2600; gain.gain.value = 0;
+      source.connect(filter).connect(gain).connect(g.master); source.start(now, seconds);
+      roar = demolition.roar = { source, filter, gain, at: now, offset: seconds, nodes: [source, filter, gain] };
+    }
+    const cover = clamp(frame.dust?.cover, 0, 1);
+    target(roar.gain.gain, CONFIG.roarGain * Math.min(1, seconds / 1.5) * (1 - (frame.blackoutAlpha || 0)), g.ctx, .08);
+    target(roar.filter.frequency, 2600 - 2200 * cover, g.ctx, .15);
+  }
+  function stopRumble() {
+    if (!rumble) return;
+    try { rumble.source.stop(); } catch {}
+    for (const node of [rumble.source, rumble.filter, rumble.gain]) { try { node.disconnect?.(); } catch {} }
+    rumble = null;
+  }
+  // The rumble is the record itself, so it stays on the record's clock: it
+  // starts at the committed record time and restarts if the two drift apart.
+  function syncRumble(frame) {
+    const g = graph, seconds = frame.quake?.seconds, buffer = g && earthfallRumbleBuffer(g.ctx);
+    if (!buffer || !frame.committed || !Number.isFinite(seconds) || seconds >= earthfallRumbleDuration() - .05) { stopRumble(); return; }
+    const now = g.ctx.currentTime;
+    if (rumble && Math.abs(rumble.offset + (now - rumble.at) - seconds) > .2) stopRumble();
+    if (!rumble) {
+      const source = g.ctx.createBufferSource(), filter = g.ctx.createBiquadFilter(), gain = g.ctx.createGain();
+      source.buffer = buffer; filter.type = 'lowpass'; filter.frequency.value = 1400; gain.gain.value = 0;
+      source.connect(filter).connect(gain).connect(g.master); source.start(now, seconds);
+      rumble = { source, filter, gain, at: now, offset: seconds };
+    }
+    const depth = clamp((Number(frame.physicalDepth) || 0) / 100, 0, 1);
+    target(rumble.gain.gain, (reduced ? CONFIG.reducedRumbleGain : CONFIG.rumbleGain) * (1 - .7 * depth), g.ctx, .08);
+    target(rumble.filter.frequency, 1400 - 1000 * depth, g.ctx, .2);
+  }
   function cut() {
     if (!graph) return;
+    stopRumble(); stopDemolition();
     zero(graph.master.gain, graph.ctx);
     for (const voice of [...graph.voices]) detach(voice);
     // Delay buffers belong to the detached voices. None can survive a hard
@@ -180,7 +267,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     source.connect(level).connect(path.input); path.output.connect(g.master);
     const voice = { id, type: event.type, eventId: event.id, source, level, path,
       origin: { ...origin }, followMaterial: id === 'failure-body',
-      followAnchor: id === 'failure-body' ? 'fallingMaterial' : event.type === 'catch' ? 'catch' : null,
+      followAnchor: id === 'failure-body' ? 'fallingMaterial' : ['catch','catch-return'].includes(event.type) ? 'catch' : null,
       amplitude: volume, at, sourceEnd: at + seconds, until: at + seconds + CONFIG.maxArrivalDelay,
       sourceOffset: offset, sourceDuration: seconds,
       sourceEnded: false, residual: null, nodes: [source, level, ...path.nodes] };
@@ -220,10 +307,12 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
       played, skipped, receipts: [...receipts], history: [...history], reducedDread: reduced,
       positionMethod: g?.ctx.createPanner ? 'world HRTF' : 'world stereo fallback; elevation changes distance/filter',
       propagationMethod: g?.ctx.createDelay ? 'bounded physical travel DelayNode; continuous distance update' : 'onset travel delay only; DelayNode unavailable',
+      aside:asideDoors?{...asideDoors.snapshot?.(),materialHistory:[...asideMaterialHistory],gag:asideGag?.snapshot()||null,gagReady:!!asideGag?.ready()}:null,
+      rumble: rumble ? { playing: true, offset: rumble.offset, startedAt: rumble.at } : { playing: false },
       sourceBank: `${SOURCE_DEMOLITION_AUDIO_DIR}/manifest.json`,
       bankSubset: [...MATERIALS],
       residualMethod: 'filtered send from the one playing failure source; no replay, synthetic wind or new performance',
-      order: 'disjoint chronological support segments; held interval; main body only at footing-loss',
+      order: 'three disjoint chronological support segments; local loading then main body only at footing-loss',
       voices: voices.flatMap(voice => [{ id: voice.id, eventId: voice.eventId, kind: 'material',
         position: voice.path.position, mix: voice.path.mix, startedAt: voice.at, sourceEnd: voice.sourceEnd,
         sourceOffset: voice.sourceOffset, sourceDuration: voice.sourceDuration,
@@ -233,6 +322,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
         sourceEnd: voice.sourceEnd, until: voice.until }] : [])]) };
   }
   function update(frame = {}, options = {}) {
+    asideGag?.stop();
     if (disposed) return { ...snapshot(), active: false, muted: true };
     const nextId = String(frame.sequenceId || sequenceId || 'source-earthfall');
     const nextRun = String(frame.runId ?? runId ?? '');
@@ -250,7 +340,7 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
     enabled = active && !!contextReady && !options.protected && !options.suspended && !options.hidden
       && options.focused !== false && !frame.protected;
     effects = options.effectsMode !== 'off'; reduced = !!options.reducedDread || options.effectsMode === 'reduced';
-    if ((active || frame.preload) && g) void load(g);
+    if ((active || frame.preload) && g) { void load(g); earthfallRumbleBuffer(g.ctx); }
     if (!enabled) cut();
     else {
       target(g.master.gain, CONFIG.masterGain, g.ctx, .025);
@@ -260,13 +350,15 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
         if (voice.until <= g.ctx.currentTime) detach(voice);
         else place(voice, frame, options);
       }
+      syncRumble(frame);
     }
     for (const event of (Array.isArray(frame.events) ? frame.events : []).map(item => eventInfo(item, frame)).filter(Boolean)) {
       if (seen.has(event.id) || seenTypes.has(event.type)) continue;
       seen.add(event.id); seenTypes.add(event.type); receipts.push(event.id);
       let reason = !enabled ? 'protected-or-outside' : initialCommitted || frame.restored || frame.replayed || event.suppressed ? 'restored-baseline'
         : event.age > CONFIG.maxEventAge ? 'stale-no-backlog' : !g?.bank?.loaded ? 'bank-not-ready-no-backlog'
-          : !event.position ? 'missing-world-anchor' : event.type === 'footing-loss' && !effects ? 'residual-effects-off' : null;
+          : !event.position ? 'missing-world-anchor' : event.type.startsWith('stratum-') ? 'depth-receipt-no-material-failure'
+          : event.type === 'footing-loss' && !effects ? 'residual-effects-off' : null;
       let didPlay = false;
       if (!reason) {
         // Non-overlapping intervals of the same recording remain earned by
@@ -275,13 +367,15 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
         if (event.type === 'strain') didPlay = material('restraint', event, frame, options, .45, CONFIG.initiationSplit);
         if (event.type === 'fracture') didPlay = material('restraint', event, frame, options, .495,
           CONFIG.initiationSeconds - CONFIG.initiationSplit, CONFIG.initiationSplit);
+        // Finish the existing recording's unplayed tail as the bearings load;
+        // the initial two segments remain disjoint and are never restarted.
+        if(event.type==='load-transfer')didPlay=material('restraint',event,frame,options,.42,Infinity,CONFIG.initiationSeconds);
         if (event.type === 'footing-loss') {
           didPlay = material('failure-body', event, frame, options, .76);
           if (didPlay && effects) addResidual(event, frame, options);
         }
-        if(event.type.startsWith('stratum-'))didPlay=material('stone-spall',event,frame,options,.48);
-        if (event.type === 'catch') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallImpactGain)?clamp(options.earthfallImpactGain,0,1):.7);
-        if (event.type === 'land') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallSettleGain)?clamp(options.earthfallSettleGain,0,1):.18);
+        if (event.type === 'catch'||event.type==='catch-return') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallImpactGain)?clamp(options.earthfallImpactGain,0,1):.7);
+        if (event.type === 'land'||event.type==='land-return') didPlay = material('stone-spall',event,frame,options,valid(options.earthfallSettleGain)?clamp(options.earthfallSettleGain,0,1):.18);
       }
       if (didPlay) played++; else skipped++;
       history.push({ id: event.id, type: event.type, age: event.age, reason: didPlay ? 'played' : reason || 'voice-budget' });
@@ -291,8 +385,74 @@ export function createSourceEarthfallAudio({ getAudio = () => null,
       reason: !active ? 'outside-earthfall' : !enabled ? 'recording-playback-or-suspended' : 'earthfall' };
     return snapshot();
   }
-  function stop() { cut(); enabled = false; last = { ...last, active: false, muted: true, audible: false, reason: 'stopped' }; }
-  function reset() { stop(); sequenceId = null; runId = null; observedActive = false; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
-  function destroy() { stop(); disposed = true; graph?.master.disconnect?.(); graph?.residualBus.disconnect?.(); graph = null; }
-  return { update, ready: () => load(), stop, reset, snapshot, destroy };
+  let asideDoors=null,asideGag=null,asideSeen=new Set(),asideRun=null,asideMaterialHistory=[],asideChaseObserved=false;
+  const asidePortals=SOURCE_ELLERY_ASIDE_ASSET.doors.map(d=>({id:'earthfall-ellery:'+d.id,archetype:d.archetype,definition:{archetype:d.archetype}}));
+  const ensureAsideDoors=()=>asideDoors||(asideDoors=createAsideDoorAudio({getAudio,fetchImpl:fetcher}));
+  const ensureAsideGag=()=>asideGag||(asideGag=createAsideGagAudio({getAudio,maxEventAge:CONFIG.maxEventAge,
+    ...(gagFetcher?{fetcher:gagFetcher}:{}),...(gagUrlFor?{urlFor:gagUrlFor}:{})}));
+  async function prepareAside(){
+    const d=ensureAsideDoors(),gag=ensureAsideGag();
+    d.update({active:true,listener:{x:65.15,y:1.62,z:11.65,yaw:-.75},nearDoors:asidePortals});
+    try{const [doorReady,gagReady]=await Promise.all([d.whenReady(),gag.prepare()]);return doorReady!==false&&gagReady===true;}
+    finally{d.pause('aside-prepared');gag.stop();}
+  }
+  function updateAside(frame={},options={}){
+    // The remembered room is not on the shaking ground; its own sound owns it.
+    stopRumble();
+    // Built here, in the still of the waking, not on the frame that needs them.
+    if(graph){earthfallReportBuffers(graph.ctx);earthfallRoarBuffer(graph.ctx);}
+    const d=ensureAsideDoors(),active=!!frame.active&&frame.blackoutAlpha<.95&&!options.protected&&!options.suspended&&!options.hidden&&options.focused!==false;
+    if(asideRun!==frame.runId){asideRun=frame.runId;asideSeen.clear();asideMaterialHistory=[];asideChaseObserved=false;}
+    d.update({active,listener:{x:frame.eye?.[0]??0,y:frame.eye?.[1]??1.62,z:frame.eye?.[2]??0,yaw:frame.yaw??0},nearDoors:asidePortals});
+    for(const event of options.events||[]){if(String(event.type||'').startsWith('threshold-gag-'))continue;if(asideSeen.has(event.id))continue;asideSeen.add(event.id);if(!active)continue;const door=frame.doors?.[event.doorIndex],portal=asidePortals[event.doorIndex];if(!door||!portal)continue;d.event({type:event.type,portal,fromClosed:event.type==='opening-start',fraction:door.fraction},door.anchor);}
+    ensureAsideGag().update(frame,options);
+    // Every sound here has a source in the remembered room: the charges at
+    // their piers, the core's bearing, its floor, the walls at their pieces,
+    // and the roar of the dust. No earthquake bed is laid under it, and
+    // resuming never replays missed failures.
+    const g=ensureGraph(),listener={x:frame.eye?.[0]??0,y:frame.eye?.[1]??1.62,z:frame.eye?.[2]??0,yaw:frame.yaw??0};
+    const materialActive=active&&g?.bank?.loaded&&!['suspended','interrupted','closed'].includes(g?.ctx?.state);
+    if(!materialActive)cut();
+    else{
+      target(g.master.gain,CONFIG.masterGain,g.ctx,.025);
+      target(g.residualBus.gain,0,g.ctx,.01);
+      for(const voice of [...g.voices]){if(voice.until<=g.ctx.currentTime)detach(voice);else place(voice,{},{listener});}
+    }
+    syncRoar(frame,materialActive);
+    // Four widely separated restraint failures come from actual room piers.
+    // They use the retained credited material recording, at its original pitch;
+    // these authored placements are not a measured room response. A restored
+    // compressed room establishes a baseline and never replays missed attacks.
+    const compression=Number(frame.chase?.compression)||0;
+    const piers=[[ASIDE.room.minX,ASIDE.center.z],[ASIDE.center.x,ASIDE.room.maxZ],[ASIDE.room.maxX,ASIDE.center.z],[ASIDE.center.x,ASIDE.room.minZ]];
+    for(let i=0;i<4;i++){
+      const threshold=i*.25,id=`earthfall-chase:${frame.runId}:restraint:${i}`;
+      if(!['chase','contact','collapse'].includes(frame.chase?.phase)||compression+1e-7<threshold||asideSeen.has(id))continue;
+      asideSeen.add(id);
+      const p=earthfallChaseWorldPoint({x:piers[i][0],z:piers[i][1],feet:1.4},frame.chase),position={x:p.x,y:p.feet,z:p.z};
+      const reason=!asideChaseObserved?'restored-baseline':!materialActive?'protected-or-bank-not-ready':null;
+      const didPlay=!reason&&material('restraint',{id,position,age:0,gain:1},{},{listener},.23+i*.035,.75,i%2?.65:0);
+      asideMaterialHistory.push({id,type:'chase-restraint',position,reason:didPlay?'played':reason||'voice-budget'});
+    }
+    asideChaseObserved=true;
+    for(const event of frame.materialEvents||[]){
+      if(event.age<0||asideSeen.has(event.id))continue;asideSeen.add(event.id);
+      const reason=!materialActive?'protected-or-bank-not-ready':event.age>CONFIG.maxEventAge?'stale-no-backlog':!point(event.position)?'missing-world-anchor':null;
+      let played=false;
+      if(!reason){
+        if(event.type==='charges')played=playCharges(event,listener);
+        else if(event.type==='masonry-bond')played=material('restraint',{...event,gain:.55},{},{listener},.47,.55,0);
+        else if(event.type==='roof-bearing')played=material('restraint',{...event,gain:.5},{},{listener},.43,1.15,1.1);
+        else if(event.type==='floor-bond')played=material('stone-spall',{...event,gain:.5},{},{listener},.38,.9,0);
+      }
+      asideMaterialHistory.push({id:event.id,type:event.type,position:event.position,age:event.age,reason:played?'played':reason||'voice-budget'});
+      if(asideMaterialHistory.length>8)asideMaterialHistory.shift();
+    }
+    return {...d.snapshot(),gag:asideGag.snapshot(),gagReady:asideGag.ready()};
+  }
+  function stopAside(){asideDoors?.pause('aside-stopped');asideGag?.stop();stopDemolition();cut();}
+  function stop() { stopAside();cut(); enabled = false; last = { ...last, active: false, muted: true, audible: false, reason: 'stopped' }; }
+  function reset() { stop();asideGag?.destroy();asideGag=null;asideSeen.clear();asideRun=null;asideChaseObserved=false; sequenceId = null; runId = null; observedActive = false; seen.clear(); seenTypes.clear(); receipts = []; history.length = 0; played = 0; skipped = 0; }
+  function destroy() { stop();asideDoors?.dispose();asideGag?.destroy(); disposed = true; graph?.master.disconnect?.(); graph?.residualBus.disconnect?.(); graph = null; }
+  return { update, updateAside,prepareAside,asideGagReady:()=>!!asideGag?.ready(),stopAside,asideSnapshot:()=>asideDoors?{...asideDoors.snapshot(),gag:asideGag?.snapshot()||null,gagReady:!!asideGag?.ready()}:null, ready: () => load(), stop, reset, snapshot, destroy };
 }

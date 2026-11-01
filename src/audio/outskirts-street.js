@@ -181,7 +181,10 @@ export function createOutskirtsStreetAudio({getAudio=()=>null,loadSample=loadFol
       case 'bus-body-open':
         recorded(spec,level*.72,'fold-cloth-c',{rate:.55,lowpass:2300});
         parts=[burst(240,.70,.20,.25),burst(490,.68,.24,.95),burst(170,.48,.30,1.78),burst(1100,.28,.14,2.45)];break;
-      case 'bus-body-step':parts=[burst(280,.18,.22),burst(1260,.11,.09,.04)];break;
+      // The accepted player contact owns the sole and wet tissue layer through
+      // roomtone's shared footstep renderer. Keep this narrative event spent,
+      // without adding a second synthetic footfall on the same contact.
+      case 'bus-body-step':return false;
       case 'bus-body-expel':
         recorded(spec,level*.54,'fold-cloth-b',{rate:.70,lowpass:2100});
         parts=[burst(530,.46,.39),burst(170,.22,.48,.24),burst(1600,.13,.15,.31)];break;

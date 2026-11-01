@@ -60,14 +60,17 @@ function drawPulseCorners(ctx, frame, width, height, dpr) {
   ctx.restore();
 }
 
-export function fearOverlayFrame(pressure = {}, nowMs = 0) {
+export function fearOverlayFrame(pressure = {}, _nowMs = 0) {
   const heartbeat = clamp01(pressure.heartbeat);
   const hiss = clamp01(pressure.monitorHiss);
   const dread = clamp01(pressure.visualDread);
-  const phase = ((Math.max(0, Number(nowMs) || 0) / 1000) * (0.82 + heartbeat * 1.18)) % 1;
-  const firstBeat = Math.exp(-Math.pow((phase - 0.08) / 0.055, 2));
-  const secondBeat = Math.exp(-Math.pow((phase - 0.24) / 0.075, 2)) * 0.68;
-  const pulse = clamp01(Math.max(firstBeat, secondBeat) * heartbeat);
+  // The audio owner supplies the envelope of the sample being heard. A render
+  // delay, muted/unavailable source or Source's withdrawal cannot manufacture
+  // an independent beat from a wall clock. Dread and hiss remain separate.
+  const clock = pressure.heartbeatClock;
+  const pulse = clock?.available === true && clock.active === true
+    && clock.paused !== true && Number.isFinite(clock.pulse)
+    ? clamp01(clock.pulse) * heartbeat : 0;
   return Object.freeze({
     heartbeat,
     hiss,

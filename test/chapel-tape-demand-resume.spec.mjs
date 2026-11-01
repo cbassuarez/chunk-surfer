@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import * as D from '../src/game/chapel-tape-demand.js';
+import {chunkSurfFinaleRouting} from '../src/game/chunk-surf-state.js';
 import {endingManifest} from '../src/data/endings.js';
 import {dueTimelineSteps} from '../src/game/ending-runtime.js';
 
@@ -19,7 +20,7 @@ function harness({saved=null,now=0}={}){
   const events=[],recordingPressureVoices=new Set();
   const door={id:'chapel-c17',open:true,cx:3.5,cy:5.5,widthAxis:'x',cells:[{x:2,y:5},{x:3,y:5},{x:4,y:5}]};
   const host={...D,CHAPEL_TAPE_DEMAND_FLAG:D.CHAPEL_TAPE_DEMAND_FLAG,CELL:.5,storyMode:true,inRogue:true,paused:false,runPlayDurationClock:{suspend:()=>{}},
-    getSave:()=>save,saveCommit:patch=>Object.assign(save,patch),recordingPressureVoices,ENCOUNTERS:{encounterCleared:()=>true},normalizeChunkSurfState:value=>value,SOURCE_FINALE_ROUTE:{CHAPEL:'chapel'},
+    getSave:()=>save,saveCommit:patch=>Object.assign(save,patch),recordingPressureVoices,ENCOUNTERS:{encounterCleared:()=>true},normalizeChunkSurfState:value=>value,chunkSurfFinaleRouting,SOURCE_FINALE_ROUTE:{CHAPEL:'chapel'},
     performance:{now:()=>clock},scenes:{blocksWorld:()=>worldBlocked},gameplayInputLifecycleActive:()=>inputActive,usingPlan:()=>true,usingSpecialSpace:()=>false,
     FP:{isSolid:()=>false,logicalToPhysical:(x,y)=>({x,y:0,z:y,renderGroup:'upper'}),doorAt:()=>door,homeAnchor:()=>({x:4,y:8}),toRuntimePoint:point=>point},
     PROPS:{propCanOccupy:()=>true,propById:()=>null},tapeDemandWallContact:()=>({gap:.5,cell:{x:3,y:6},planeX:null,planeY:7,nx:0,ny:-1,floor:0,yaw:0}),
@@ -30,6 +31,7 @@ function harness({saved=null,now=0}={}){
     renderMove:null,motionRig:null,trail:[],finaleActive:false,MAIN_EXIT_CELL:{x:79,y:3},endingManifest,dueTimelineSteps,
     fireCue:noop,SPEECH:{say:noop},cancelLastExposure:noop,arrowDelta:()=>[0,0],applyLensPreset:noop,advanceActiveEndingCutscene:noop,applyEndingEvent:event=>events.push(copy(event)),
     getInDriveTeaserScene:null,sourceReturnFlashbackScene:null,pubRoomAudio:null,sourcePubAudio:null,sourceContinuationAudio:null,towerWarningAudio:null,
+    architectureDoorAudio:null,architectureDoorEvents:{hold:noop},cancelRecordingPressureAudio:noop,
     sourceDriveSession:null,sourcePubScene:null,standingTearScene:null,coastalMemoryScene:null,academicGhostDispatch:null,outskirtsStreetAudio:null,
     bellPealPerformance:null,towerBellDirector:null,personalWindowEffects:{},windowChoreography:{},dialogGain:null,sfxGain:null,sfxDirectGain:null,musicGain:null,whisperBed:null,
     syncPointerMode:noop,saveAcademicGhostClub:noop,cancelApparitionApplause:noop,pauseTowerEndingRecording:noop,saveSourceView:noop,

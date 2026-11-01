@@ -37,7 +37,7 @@ test('world projection centres the same steep ray as the raster prop camera',()=
     const capped=r3dSetLookAngles({pitch:-2.3});
     close(capped.pitch,DOWNWARD_LOOK_LIMIT,'looking down stops short of flipping over');
     r3dSetLightingContext({roofSkyRecovery:0});
-    close(r3dSetLookAngles({pitch:-2.3}).pitch,-.62,'indoor pitch range returns');
+    close(r3dSetLookAngles({pitch:-2.3}).pitch,-1.15,'the wider indoor pitch range returns');
   }finally{r3dSetLightingContext({});r3dSetLookAngles({yaw:0,pitch:0});}
 });
 

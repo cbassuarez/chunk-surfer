@@ -1,0 +1,1171 @@
+diff --git a/src/game/clock.js b/src/game/clock.js
+index 5fc4c5abd4f0b307276d1d5fba0a258a43182a55..f0231bfe57555ec9274bf197552a3bee7c6ccf3d 100644
+--- a/src/game/clock.js
++++ b/src/game/clock.js
+@@ -1,20 +1,7 @@
+-// What time it is, and how much of that you still know.
+-//
+-// There is no timer on this screen and there never will be. The recordist owns
+-// a watch, the recorder writes a timestamp on every file, and both of them are
+-// correct. What rots is the reading of them.
+-//
+-// The previous recordist's log does this in his own hand, and the player has
+-// already watched it happen: 21:40, 22:15, 23:02, 00:20, 01:35, 02:10, 02:5?,
+-// ??:??. He was not confused and he was not lying. He simply stopped being able
+-// to write the number down, in a building where he had by then listened to four
+-// rooms and was about to listen to a fifth.
+-//
+-// So the player's own bag does exactly the same thing, take by take, quietly,
+-// where anybody can check it and almost nobody will. By the fifth room the
+-// night has no numbers in it. Nobody is ever told why.
+-//
+-// This is the whole demolition clock. There is no other one, until the end.
++// Take-file timestamps and their established erosion. The live night is owned
++// by night-clock.js. New files keep its capture instant; legacy files retain
++// their authored take-order stamps, which were never measured wall-clock time.
++// Never backfill a precise capture time into an old tape.
+ 
+ export const START_MIN = 21 * 60 + 38;      // 21:38, the service door
+ export const PER_TAKE_MIN = 72;             // a room, and the walk to the next
+@@ -27,7 +14,7 @@ export function clockString(minutes) {
+   return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+ }
+ 
+-// The wall-clock time a take was made, if anyone could still read a clock.
++// The original authored night position, retained only for unstamped old takes.
+ export function timeOfTake(index) {
+   return clockString(START_MIN + (index + 1) * PER_TAKE_MIN + (index * 7) % 13);
+ }
+@@ -51,10 +38,13 @@ export function erode(stamp, n) {
+ // fourth take. It is a property of how many rooms are now inside you.
+ const EROSION = [1, 2, 3, 4, 4];
+ 
+-export function takeStamp(index, { dead = false } = {}) {
++export function takeStamp(index, { dead = false, captured = null } = {}) {
+   if (dead) return DEAD;
+   if (index < 0) return '';
+-  return erode(timeOfTake(index), EROSION[Math.min(index, EROSION.length - 1)]);
++  const measured = captured?.schema === 1 && typeof captured.elapsedSeconds === 'number'
++    && Number.isFinite(captured.elapsedSeconds) && captured.elapsedSeconds >= 0;
++  const stamp = measured ? clockString(START_MIN + Math.floor(captured.elapsedSeconds / 60)) : timeOfTake(index);
++  return `${measured && captured.priorUnmeasured !== false ? '~' : ''}${erode(stamp, EROSION[Math.min(index, EROSION.length - 1)])}`;
+ }
+ 
+ // The work order is printed. Print does not rot.
+diff --git a/src/game/night-clock-travel.js b/src/game/night-clock-travel.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c9039c5fcfc1435692a2c001fdd3381be3d5e9f0
+--- /dev/null
++++ b/src/game/night-clock-travel.js
+@@ -0,0 +1,9 @@
++// A cheap receipt seam, independent of audio and look/camera animation. Each
++// producer reports only accepted, supported player travel in physical metres.
++let travelled = 0;
++export function recordNightClockTravel(distance) {
++  if (typeof distance === 'number' && Number.isFinite(distance) && distance > .00001 && distance <= 5)
++    travelled = Math.min(100, travelled + distance);
++}
++export function consumeNightClockTravel() { const result = travelled; travelled = 0; return result; }
++export function clearNightClockTravel() { travelled = 0; }
+diff --git a/src/game/night-clock.js b/src/game/night-clock.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a28c2b5b80e7ac10b405eb03ce500b2571be77e
+--- /dev/null
++++ b/src/game/night-clock.js
+@@ -0,0 +1,107 @@
++// One fictional night, advanced by presented foreground time and explicit
++// lost-time consequences. Real play duration and encounter deadlines stay separate.
++import { START_MIN, PER_TAKE_MIN, clockString } from './clock.js';
++import { TARGETS } from '../data/conservatory-script.js';
++
++export const NIGHT_CLOCK_DEFAULT_RATE = 1;
++const MAX_SECONDS = Number.MAX_SAFE_INTEGER;
++const finite = value => typeof value === 'number' && Number.isFinite(value);
++const seconds = value => finite(value) ? Math.max(0, Math.min(MAX_SECONDS, value)) : 0;
++const rate = value => finite(value) && value > 0 && value <= 60 ? value : NIGHT_CLOCK_DEFAULT_RATE;
++const receiptId = value => typeof value === 'string' && value.length > 0 && value.length <= 512 ? value : null;
++
++export function freshNightClock({ rate: pace = NIGHT_CLOCK_DEFAULT_RATE, elapsedSeconds = 0 } = {}) {
++  return { schema: 1, elapsedSeconds: seconds(elapsedSeconds), rate: rate(pace), priorUnmeasured: false, lossEvents: [] };
++}
++
++function legacyTakeCount(save) {
++  const rec = save?.rec || {};
++  const rows = Array.isArray(rec.tapes) ? rec.tapes.filter(t => t && !t.voided && !t.damage
++    && t.counted !== false && !t.authored && !t.debug && !t.continuous && (!t.status || t.status === 'accepted')).map(t => t.roomId)
++    : Array.isArray(rec.takes) ? rec.takes : Array.isArray(save?.takes) ? save.takes : [];
++  return new Set(rows.filter(id => TARGETS.includes(id))).size;
++}
++
++export function normalizeNightClock(value, { legacySave = null } = {}) {
++  if (value?.schema === 1 && finite(value.elapsedSeconds) && value.elapsedSeconds >= 0) {
++    const seen = new Set();
++    const lossEvents = (Array.isArray(value.lossEvents) ? value.lossEvents : []).filter(entry => {
++      const id = receiptId(entry?.id);
++      if (!id || seen.has(id) || !finite(entry.seconds) || entry.seconds <= 0) return false;
++      seen.add(id); return true;
++    }).map(entry => ({ id: entry.id, seconds: seconds(entry.seconds) }));
++    return { schema: 1, elapsedSeconds: seconds(value.elapsedSeconds), rate: rate(value.rate),
++      priorUnmeasured: value.priorUnmeasured !== false, lossEvents };
++  }
++  const count = legacyTakeCount(legacySave);
++  // Old stamps were authored by take order, not measured. Keep their latest
++  // known night position and any accumulated loss counter as lower-bound
++  // evidence. Never use Date.now or invent a historical start/finish second.
++  const authoredSeconds = count ? ((count * PER_TAKE_MIN) + (((count - 1) * 7) % 13)) * 60 : 0;
++  const legacySeconds = seconds(legacySave?.playSeconds);
++  const elapsedSeconds = Math.floor(Math.max(authoredSeconds, legacySeconds) / 60) * 60;
++  return { ...freshNightClock(), elapsedSeconds, priorUnmeasured: true };
++}
++
++export function advanceNightClock(value, foregroundSeconds, { rate: pace } = {}) {
++  const clock = normalizeNightClock(value);
++  const selectedRate = pace === undefined ? clock.rate : rate(pace);
++  return { ...clock, rate: selectedRate,
++    elapsedSeconds: Math.min(MAX_SECONDS, clock.elapsedSeconds + seconds(foregroundSeconds) * selectedRate) };
++}
++
++export function applyNightClockLoss(value, lostSeconds, eventId) {
++  const clock = normalizeNightClock(value), id = receiptId(eventId), amount = seconds(lostSeconds);
++  if (!id || amount <= 0 || clock.lossEvents.some(entry => entry.id === id)) return { clock, applied: false };
++  return { clock: { ...clock, elapsedSeconds: Math.min(MAX_SECONDS, clock.elapsedSeconds + amount),
++    lossEvents: [...clock.lossEvents, { id, seconds: amount }] }, applied: true };
++}
++
++export function nightClockReadout(save) {
++  const clock = normalizeNightClock(save?.nightClock, { legacySave: save });
++  return { label: 'TIME', value: clockString(START_MIN + Math.floor(clock.elapsedSeconds / 60)),
++    approximate: clock.priorUnmeasured, qualifier: clock.priorUnmeasured ? 'ESTIMATED' : '' };
++}
++
++export function captureNightClock(value) {
++  if (value?.schema !== 1 || !finite(value.elapsedSeconds) || value.elapsedSeconds < 0) return null;
++  const clock = normalizeNightClock(value);
++  return { schema: 1, elapsedSeconds: clock.elapsedSeconds, priorUnmeasured: clock.priorUnmeasured };
++}
++
++export const normalizeNightCapture = captureNightClock;
++
++export const NIGHT_CLOCK_PACE_POLICY = Object.freeze({
++  id: 'accepted-travel-v1', restRate: 1, travelRate: 3,
++  travelHoldSeconds: .24, attackSeconds: .35, settleSeconds: .85,
++});
++
++// No keys, camera pose or guessed movement enter this policy. Receipts have
++// already survived collision and excluded platform carry / spatial transfers.
++export function createNightClockPace(policy = NIGHT_CLOCK_PACE_POLICY) {
++  let identity = null, hold = 0;
++  const reset = () => { identity = null; hold = 0; };
++  return {
++    reset,
++    update({ runId, foregroundSeconds = 0, active = false, currentRate = 1,
++      acceptedTravelMetres = 0, slow = false } = {}) {
++      if (identity !== runId) { identity = runId; hold = 0; }
++      const dt = seconds(foregroundSeconds), from = Math.max(policy.restRate, Math.min(policy.travelRate, rate(currentRate)));
++      if (!active || !dt) { hold = 0; return { rate: slow ? policy.restRate : from, averageRate: 0, policy: policy.id }; }
++      if (slow) { hold = 0; return { rate: policy.restRate, averageRate: policy.restRate, policy: policy.id }; }
++      if (finite(acceptedTravelMetres) && acceptedTravelMetres > .00001) hold = policy.travelHoldSeconds;
++      let value = from, integral = 0;
++      const integrate = (span, target, tau) => {
++        if (!span) return;
++        const decay = Math.exp(-span / tau);
++        integral += target * span + (value - target) * tau * (1 - decay);
++        value = target + (value - target) * decay;
++      };
++      const moving = Math.min(dt, hold);
++      integrate(moving, policy.travelRate, policy.attackSeconds);
++      hold = Math.max(0, hold - dt);
++      integrate(dt - moving, policy.restRate, policy.settleSeconds);
++      return { rate: value, averageRate: integral / dt, policy: policy.id };
++    },
++  };
++}
+diff --git a/src/game/pause.js b/src/game/pause.js
+index 28f9f6844990c70a742da46e07601b2a032f9d4f..7bf762c99d777e3211e8f9bbc3bf630c9061411c 100644
+--- a/src/game/pause.js
++++ b/src/game/pause.js
+@@ -7,6 +7,7 @@ import { promptLine } from './bindings.js';
+ import * as AUDIO from '../audio/story-audio.js';
+ import { fitText } from '../render/fit-text.js';
+ import { isMapShortcut } from './map-shortcut.js';
++import {navigatorClockState} from '../render/navigator-clock.js';
+ 
+ const LOCAL_ESCAPE_SCENES = new Set(['pause', 'settings', 'god-menu', 'bag', 'combat-calibration']);
+ 
+@@ -127,7 +128,9 @@ export function makePauseScene({
+       uiText(statusX, iy + 7, `TAKES  ${live.takes ?? 0} / 5`, 'ui-secondary');
+       uiText(statusX, iy + 9, `LIGHT  ${live.light ? 'ON' : 'OFF'}`, live.light ? 'ui-amber' : 'ui-secondary');
+       uiText(statusX, iy + 11, `HUSH   ${live.hush || 'QUIET'}`, live.hush === 'CONTACT' ? 'ui-danger' : 'ui-secondary');
+-      uiText(statusX, iy + 13, `TIME   ${live.time || '00:00:00'}`, 'ui-secondary');
++      const nightClock=navigatorClockState(live.time);
++      uiText(statusX, iy + 13, `TIME   ${nightClock?.text||'--:--'}`, 'ui-secondary');
++      if(nightClock?.approximate&&body.h>=18)uiText(statusX,iy+14,nightClock.qualifier,'ui-label',.7);
+       if (live.lead && body.h >= 18) uiText(statusX, iy + 15, `LEAD   ${clip(live.lead, 20)}`, 'ui-amber');
+     }
+ 
+diff --git a/src/game/playback.js b/src/game/playback.js
+index 704fc9b600b7e71eae275e697e72fbe672f9b9b6..185a5b6c7b1946c94adec2e8f8d256ceb995c63f 100644
+--- a/src/game/playback.js
++++ b/src/game/playback.js
+@@ -3,6 +3,13 @@ import {makeTapeDamage,normalizeTapeDamage,tapeDamageEnvelope,tapeDamageGainAt,t
+ import { TOWER_PERSONAL_CUE, playTowerPersonalRecording } from '../audio/tower-personal-recording.js';
+ import { COASTAL_MEMORY_CUE, playCoastalMemoryRecording } from '../audio/coastal-memory.js';
+ import { decodeSourceDriveMedia, normalizeSourceDriveMedia, SOURCE_DRIVE_CAPTURE_KIND, sourceDriveAudioKey } from '../audio/source-drive-recording.js';
++import { captureNightClock, normalizeNightCapture } from './night-clock.js';
++
++let nightClockSource = () => null;
++export function setNightClockSource(source = null) {
++  nightClockSource = typeof source === 'function' ? source : () => null;
++}
++function captureNightStamp() { return captureNightClock(nightClockSource()); }
+ 
+ // Playback. The take contains what you did not hear.
+ //
+@@ -118,6 +125,7 @@ export function beginContinuousFieldTake({runId,place='Source · recorded journe
+   const ordinal=state.history.length+1,id=`take:${ordinal}`,roomId=`source-drive-field:${ordinal}`;
+   const captureId=globalThis.crypto?.randomUUID?.()||`${Date.now().toString(36)}-${++continuousCaptureSerial}`;
+   const take={id,ordinal,roomId,startSeconds:state.end,endSeconds:state.end,durationSeconds:.01,
++    nightStamp:captureNightStamp(),
+     status:'archived',counted:false,sealed:false,at:Date.now(),cell:null,place,contaminated:false,
+     levels:new Map(),audible:[],discrete:[],guest:null,presence:{peak:0,atSec:0},
+     continuous:{schema:1,kind:SOURCE_DRIVE_CAPTURE_KIND,key:sourceDriveAudioKey(runId,id,captureId),runId:String(runId),takeId:id,captureId,pending:true,durable:false},
+@@ -267,6 +275,7 @@ export function startTapeTake(roomId, slate = null) {
+   take.startSeconds=state.end;
+   take.endSeconds=state.end;
+   take.slate=slate;
++  take.nightStamp=captureNightStamp();
+   state.head=state.end;
+   return take;
+ }
+@@ -507,6 +516,7 @@ export function serializeTakes() {
+     ...(t.continuous ? { continuous: {...t.continuous}, fieldMetadata:{...(t.fieldMetadata||{})}, fieldEndReason:t.fieldEndReason||null, mediaUnavailable:!!t.mediaUnavailable } : {}),
+     roomId: t.roomId,
+     at: t.at,
++    ...(normalizeNightCapture(t.nightStamp) ? { nightStamp: normalizeNightCapture(t.nightStamp) } : {}),
+     durationSeconds: t.continuous?Math.max(.01,t.endSeconds-t.startSeconds):t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
+     counted: t.status? t.status==='accepted'&&!t.voided&&!normalizeTapeDamage(t.damage,t) : !t.id||!!t.sealed,
+     migrated: !!t.migrated,
+@@ -561,6 +571,7 @@ export function loadTakes(saved = []) {
+       sealed: true,
+       counted: row.continuous?false:row.counted!==false,
+       at: row.at || 0,
++      ...(normalizeNightCapture(row.nightStamp) ? { nightStamp: normalizeNightCapture(row.nightStamp) } : {}),
+       migrated: !!row.migrated,
+     };
+     const damage=normalizeTapeDamage(row.damage,take);
+diff --git a/src/game/save.js b/src/game/save.js
+index d205b34e52586efb0917d728f3b9060e0c840bc8..21851d8ba8679253a82125ee86b2863021c39c92 100644
+--- a/src/game/save.js
++++ b/src/game/save.js
+@@ -70,6 +70,7 @@ import { normalizeAcademicFloorReturns } from './academic-floor-returns.js';
+ import { normalizeEndingWrongDoorDemolition } from './ending-wrong-door.js';
+ import { normalizeSourceIV } from './source-iv.js';
+ import { freshPlayDuration, normalizePlayDuration } from './play-duration.js';
++import { freshNightClock, normalizeNightClock } from './night-clock.js';
+ 
+ const SAVE_KEY = 'chunk-surfer:save:v4';
+ const LEGACY_SAVE_KEYS = STORAGE_LEGACY_SAVE_KEYS.filter((key) => key !== SAVE_KEY);
+@@ -98,6 +99,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
+   doors: { schema: 2, states: {} },
+   playSeconds: 0,
+   playDuration: freshPlayDuration(),
++  nightClock: freshNightClock(),
+   steps: 0,
+   bagNav: null,
+   bagSheets: freshBagSheetState(),
+@@ -261,7 +263,8 @@ function normalizeHushAudioSave(value) {
+ }
+ 
+ function migrateSaveV1ToV2(data) {
+-  const next = { ...freshSave(), ...data, version: 2, playDuration: normalizePlayDuration(data?.playDuration) };
++  const next = { ...freshSave(), ...data, version: 2, playDuration: normalizePlayDuration(data?.playDuration),
++    nightClock: normalizeNightClock(data?.nightClock, { legacySave: data }) };
+   next.px = scaleCoord(data.px);
+   next.py = scaleCoord(data.py);
+   if (next.obj) {
+@@ -320,6 +323,7 @@ function normalizeSaveV4(data, meta = null) {
+     ...source,
+     version: SAVE_VERSION,
+     playDuration: normalizePlayDuration(source.playDuration),
++    nightClock: normalizeNightClock(source.nightClock, { legacySave: source }),
+     layoutRevision:Math.max(0,Math.floor(finiteNumber(source.layoutRevision,0))),
+     facing:((Math.round(finiteNumber(source.facing,0))%4)+4)%4,
+     view:Number.isFinite(Number(source?.view?.yaw))&&Number.isFinite(Number(source?.view?.pitch))?{yaw:Number(source.view.yaw),pitch:Number(source.view.pitch)}:null,
+diff --git a/src/game/source-continuation-scene.js b/src/game/source-continuation-scene.js
+index 258f76ac3cf71b6b7667249366898a1b59421301..873d83f5adf922c9ab9c29207b765e3c8b8450db 100644
+--- a/src/game/source-continuation-scene.js
++++ b/src/game/source-continuation-scene.js
+@@ -2,6 +2,7 @@ import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sou
+ import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
+ import {portalTransformPoint} from '../render/source-mesh-portals.js';
+ import {uiDraw} from '../render/ui.js';
++import {recordNightClockTravel} from './night-clock-travel.js';
+ 
+ const copy=value=>JSON.parse(JSON.stringify(value));
+ const movement=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
+@@ -32,7 +33,7 @@ function pursuitRouteTrace(state){
+ // This scene borrows the shared renderer. It never writes the original body's
+ // position, recorder, injuries, inventory, quest receipts or Contact consent.
+ export function createSourceContinuationScene({checkpoint,renderer,audio=null,studyRotation=0,
+-  onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{}}={}){
++  onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
+   if(typeof renderer?.render!=='function')throw Error('Source continuation needs its physical renderer.');
+   let state=normalizeSourceContinuation(checkpoint),ready=false,closed=false,paused=false,
+     leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=null;
+@@ -88,6 +89,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
+   function apply(input){
+     const choice=input.interact?continuationFocus(state)?.id:null;
+     const result=stepSourceContinuation(state,input);state=result.state;
++    if(result.acceptedTravelMetres>0)onAcceptedTravel(result.acceptedTravelMetres);
+     const events=result.events|| (result.event?[result.event]:[]);
+     for(const event of events){
+       if(['phase','capture','recovered','reveal-complete'].includes(event.type)||event.type==='drop'&&!['jump','step-off','portal'].includes(event.trigger)||event.type==='land'&&!['jump','step-off','portal'].includes(event.trigger)){
+diff --git a/src/game/source-continuation.js b/src/game/source-continuation.js
+index 720c285ac751e4d9aabc97c78cb24e44131e1405..4591683f63cb110d00efbd67e8b93cd40a0582cb 100644
+--- a/src/game/source-continuation.js
++++ b/src/game/source-continuation.js
+@@ -380,7 +380,7 @@ function tickHush(state,dt,events,{frozen=false}={}) {
+   const protectedRefuge=insideRefuge(state),refuge=state.phase==='catch'&&state.level===0&&state.x>C.catch.center.x+12.65?{x:state.x,z:state.z,feet:state.feet,chartId:state.chartId}:continuationRefugeAt(state);
+   if(advanceContinuationHush(state.hush,{dt,player:state,protectedRefuge,refuge,frozen,events}))beginRecovery(state,'hush-pressure',events);
+ }
+-function tick(state, input, dt, events) {
++function tick(state, input, dt, events, travel) {
+   state.elapsed += dt; state.grace = Math.max(0, state.grace - dt);
+   advancePortalTransit(state,dt);
+   if (state.recovery) { const recovery = state.recovery; recovery.elapsed = Math.min(recovery.duration, recovery.elapsed + dt);if(recovery.fade)recovery.blackoutAlpha=recoveryAlpha(recovery.elapsed/recovery.duration); Object.assign(state, carryPose(recovery));if(recovery.targetPhase&&recovery.fade&&recovery.blackoutAlpha===1&&recovery.elapsed>=recovery.duration*.5){state.phase=recovery.targetPhase;state.level=recovery.target.level;} tickWeight(state, dt, events);tickHush(state,dt,events,{frozen:true}); if (recovery.elapsed + 1e-8 >= recovery.duration) { Object.assign(state, position(recovery.target));state.phase=recovery.targetPhase||state.phase; state.lastSafe = supportedPose(state); state.recovery = null; state.velocity={x:0,z:0};state.grace = C.graceSeconds;reconnectContinuationHush(state.hush,state); events.push({ type: 'recovered', reason: recovery.reason }); } return; }
+@@ -398,6 +398,7 @@ function tick(state, input, dt, events) {
+     const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = C.walkSpeed * dt / len;
+     const movementYaw=state.phase==='catch'?0:state.yaw;
+     move(state, (Math.sin(movementYaw) * forward + Math.cos(movementYaw) * side) * amount, (-Math.cos(movementYaw) * forward + Math.sin(movementYaw) * side) * amount,dt,events);
++    if(!state.fall)travel.metres+=distance(before,state);
+     if(distance(before,state)>1e-8)state.heading=Math.atan2(state.x-before.x,-(state.z-before.z));
+     state.velocity={x:clamp((state.x-before.x)/dt,-C.walkSpeed,C.walkSpeed),z:clamp((state.z-before.z)/dt,-C.walkSpeed,C.walkSpeed)};
+     crossPortal(state,before,events);
+@@ -414,7 +415,7 @@ function tick(state, input, dt, events) {
+   tickClosure(state, dt, events); tickWeight(state, dt, events);tickHush(state,dt,events,{frozen:!!state.recovery});
+ }
+ export function stepSourceContinuation(value, input = {}) {
+-  const state = normalizeSourceContinuation(value), events = [];
++  const state = normalizeSourceContinuation(value), events = [], travel = { metres: 0 };
+   if (input.paused || input.renderReady === false || !['active', 'not-started'].includes(state.status)) return { state, event: null, events };
+   if (state.status === 'not-started') state.status = 'active';
+   const look = input.look || {}; state.yaw = angle(Number.isFinite(look.yaw) ? look.yaw : state.yaw + finite(look.dx ?? input.yawDelta)); state.pitch = clamp(Number.isFinite(look.pitch) ? look.pitch : state.pitch + finite(look.dy ?? input.pitchDelta), -1.42, 1.3);
+@@ -427,9 +428,9 @@ export function stepSourceContinuation(value, input = {}) {
+   }
+   if (state.status !== 'active') return { state, event: events.at(-1) || null, events };
+   state.accumulator += clamp(input.dt ?? 0, 0, .25);
+-  while (state.accumulator + 1e-10 >= C.fixedStep && state.status === 'active') { const phase = state.phase, authored = !!(state.recovery || state.fall); state.accumulator -= C.fixedStep; tick(state, input, C.fixedStep, events); if (phase !== state.phase || authored && !state.recovery && !state.fall) { state.accumulator = 0; break; } }
++  while (state.accumulator + 1e-10 >= C.fixedStep && state.status === 'active') { const phase = state.phase, authored = !!(state.recovery || state.fall); state.accumulator -= C.fixedStep; tick(state, input, C.fixedStep, events, travel); if (phase !== state.phase || authored && !state.recovery && !state.fall) { state.accumulator = 0; break; } }
+   state.accumulator = Math.max(0, state.accumulator);
+-  return { state, event: events.find(e => e.type === 'return' || e.type === 'complete') || events.at(-1) || null, events };
++  return { state, event: events.find(e => e.type === 'return' || e.type === 'complete') || events.at(-1) || null, events, acceptedTravelMetres: travel.metres };
+ }
+ export function sourceContinuationFrame(value) {
+   const state = normalizeSourceContinuation(value),overhead=state.phase==='catch',bodyEye=[state.x,state.feet+C.eyeHeight,state.z], player = { x: state.x, y: state.feet, z: state.z,chartId:state.chartId, yaw: overhead?state.heading:state.yaw, pitch: state.pitch, eyeHeight: C.eyeHeight, visible: overhead };
+diff --git a/src/game/source-earthfall-scene.js b/src/game/source-earthfall-scene.js
+index 123b7e89f10068f1280cf22de333c6a810be22e2..7c264e5cbc694c13082938395fba77a8fbf2d9bf 100644
+--- a/src/game/source-earthfall-scene.js
++++ b/src/game/source-earthfall-scene.js
+@@ -4,6 +4,7 @@ import {freshSourceEarthfallElleryAside,stepSourceEarthfallElleryAside,sourceEar
+ import {uiDraw} from '../render/ui.js';
+ import {normalizeSourceEarthfall,stepSourceEarthfall,sourceEarthfallFrame,sourceEarthfallFocus} from './source-earthfall.js';
+ import {createFootContactClock} from '../audio/foot-contact.js';
++import {recordNightClockTravel} from './night-clock-travel.js';
+ 
+ const copy=value=>JSON.parse(JSON.stringify(value));
+ const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
+@@ -13,7 +14,7 @@ const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
+ // body and the next room's checkpoint remain with their existing controllers.
+ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+   presentation=()=>({}),onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},
+-  onExit=()=>{},onError=()=>{},onTrace=()=>{},onFootContact=null,clearFootContacts=()=>{},enableElleryAside=typeof renderer?.renderAside==='function',
++  onExit=()=>{},onError=()=>{},onTrace=()=>{},onFootContact=null,clearFootContacts=()=>{},onAcceptedTravel=recordNightClockTravel,enableElleryAside=typeof renderer?.renderAside==='function',
+   getPlayerNoise=()=>false,onHushContact=()=>false,onCancelHushContact=()=>{}}={}){
+   if(typeof renderer?.render!=='function')throw Error('The descending Source needs its physical renderer.');
+   let state=normalizeSourceEarthfall(checkpoint),ready=false,closed=false,paused=false,
+@@ -47,16 +48,17 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       const before=state.elleryAside;
+       const playerNoise=Number(input.dt)>0&&getPlayerNoise(input.dt,{armed:!protectedStep&&!p.reducedDread&&before.gag?.elapsed>=6,phase:before.chase?.phase})===true;
+       const result=stepSourceEarthfallElleryAside(state.elleryAside,{...input,playerNoise,paused,protected:protectedStep,assetsReady:live(),gagAudioReady:audio?.asideGagReady?.()!==false,reducedMotion:!!p.reducedMotion,reducedDread:!!p.reducedDread});state.elleryAside=result.state;asideEvents=result.events;
+-      if(typeof onFootContact==='function'&&Number(input.dt)>0&&live()&&!paused&&!p.protected&&!p.suspended&&!p.hidden&&p.focused!==false&&state.elleryAside.status==='active'){
++      if((typeof onFootContact==='function'||typeof onAcceptedTravel==='function')&&Number(input.dt)>0&&live()&&!paused&&!p.protected&&!p.suspended&&!p.hidden&&p.focused!==false&&state.elleryAside.status==='active'){
+         const next=state.elleryAside,standing=sourceElleryAsideFooting(before.x,before.z,before.elapsed,before),contact=sourceElleryAsideFooting(next.x,next.z,next.elapsed,next);
+         if(standing&&contact&&Math.abs(before.feet-standing.y)<.16&&Math.abs(next.feet-contact.y)<.16&&!before.velocityY&&!next.velocityY){
+           // Once the room moves, compare against the same tick with no walking.
+           // Its support carry and forced convergence are not the player's gait.
+           const passive=next.elapsed>=ASIDE.foldStart||next.chase?.compression>0?stepSourceEarthfallElleryAside(before,{...input,forward:0,side:0,paused:false,protected:false,assetsReady:true}).state:before;
+           const distance=input.forward||input.side?Math.hypot(next.x-passive.x,next.z-passive.z):0;
++          if(distance>0&&distance<1.3)onAcceptedTravel?.(distance);
+           for(const plant of footClock.update({dt:Number(input.dt),distance,scene:footOwner,supported:true,teleported:distance>=1.3})){
+             footIndex++;
+-            onFootContact({...plant,owner:footOwner,surface:'service-concrete',profile:'physical',position:{x:next.x,z:next.z},
++            onFootContact?.({...plant,owner:footOwner,surface:'service-concrete',profile:'physical',position:{x:next.x,z:next.z},
+               distanceM:plant.distance,strideM:plant.stride,level:.12,condition:'walk',id:`${footOwner}:${state.runId}:${footIndex}`,time:next.clock});
+           }
+         }else footClock.update({dt:Number(input.dt),distance:0,scene:footOwner,supported:false});
+@@ -71,8 +73,11 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       }else if(result.events.length)save('aside-event');
+       return;
+     }
++    const beforeTravel={x:state.x,z:state.z,phase:state.phase};
+     const result=stepSourceEarthfall(state,{...input,paused,protected:protectedStep,assetsReady:live()});
+     state=result.state;
++    if(!paused&&!protectedStep&&live()&&beforeTravel.phase===state.phase&&['intact','fracturing','landed'].includes(state.phase))
++      onAcceptedTravel?.(Math.hypot(state.x-beforeTravel.x,state.z-beforeTravel.z));
+     const events=result.events||(result.event?[result.event]:[]);
+     if(events.some(event=>event.type==='catch'||event.type==='catch-return'))clear();
+     for(const event of events)onTrace({type:'event',event:copy(event),elapsed:state.elapsed});
+diff --git a/src/game/source-false-return-scene.js b/src/game/source-false-return-scene.js
+index faf966ecbdb5c016b6e77beb6de69f429cdf5579..1cc2cf993a0c54f4c96ffaf1695ddbc22f1159c2 100644
+--- a/src/game/source-false-return-scene.js
++++ b/src/game/source-false-return-scene.js
+@@ -2,6 +2,7 @@ import {normalizeSourceFalseReturn,stepSourceFalseReturn,sourceFalseReturnFocus,
+ import {uiFill,uiSize,uiText} from '../render/ui.js';
+ import {thresholdGagInspectionPlan} from './threshold-gag-inspection.js';
+ import {THRESHOLD_GAG} from '../data/threshold-gag.js';
++import {recordNightClockTravel} from './night-clock-travel.js';
+ 
+ const copy=v=>JSON.parse(JSON.stringify(v));
+ const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
+@@ -12,7 +13,7 @@ const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
+ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=null,
+   onCheckpoint=()=>{},onComplete=()=>{},onFaultReturn=()=>{},onTorch=()=>false,onExit=()=>{},onError=()=>{},onTrace=()=>{},
+   onInspectionScare=()=>false,inspectionProtected=()=>false,getPlayerNoise=()=>false,
+-  onHushContact=()=>false,hushProtected=()=>false,onCancelHushContact=()=>{}}={}){
++  onHushContact=()=>false,hushProtected=()=>false,onCancelHushContact=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
+   if(!layout||typeof renderer?.render!=='function')throw Error('The false Ellery needs its copied physical layout.');
+   let state=stepSourceFalseReturn(normalizeSourceFalseReturn(checkpoint,{spawn:layout.spawn}),{dt:0},layout).state,ready=false,closed=false,paused=false,
+     leaving=false,error=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=0;
+@@ -48,6 +49,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
+     const inspectionAuthorized=!!plan&&onInspectionScare({position:copy(plan),checkpoint:snapshot()})===true;
+     const protectedHush=!!hushProtected();if(protectedHush)cancelContact();
+     const result=stepSourceFalseReturn(state,{...input,inspectionAuthorized,inspectionProtected:protectedScare,hushProtected:protectedHush},layout);state=result.state;
++    if(result.acceptedTravelMetres>0)onAcceptedTravel(result.acceptedTravelMetres);
+     if(state.noiseTrap.phase!=='contact'&&contactPresented)cancelContact();
+     for(const event of result.events||[]){
+       if(event.type==='loop'){clear();cancelContact();}
+diff --git a/src/game/source-false-return.js b/src/game/source-false-return.js
+index d7f4df6881114ae490e45e12fa3456bc8b55d13e..f5da9a57e811e3f815a118c2bc93ada4d5372acb 100644
+--- a/src/game/source-false-return.js
++++ b/src/game/source-false-return.js
+@@ -435,7 +435,7 @@ function crossedDoor(state, from, to, d) {
+   const x = from.x + (to.x - from.x) * t - d.x, z = from.z + (to.z - from.z) * t - d.z;
+   return { tangent: Math.abs(x * -n.z + z * n.x), widthCoord: x * Math.cos(finite(d.yaw)) + z * Math.sin(finite(d.yaw)) };
+ }
+-function advanceMove(state, dx, dz, layout, events) {
++function advanceMove(state, dx, dz, layout, events, travel) {
+   const distance = Math.hypot(dx, dz), steps = Math.max(1, Math.ceil(distance / .06));
+   for (let i = 0; i < steps; i++) {
+     const from = { x: state.x, z: state.z }, to = { x: state.x + dx / steps, z: state.z + dz / steps, feet: state.feet };
+@@ -453,12 +453,14 @@ function advanceMove(state, dx, dz, layout, events) {
+     const onward = !blocked && !pursuing(state) && state.opened.length >= 5
+       ? crossings.find(d => sourceBound(state, d.id)) : null;
+     if (onward && occupiable({ ...from, feet: state.feet }, state, layout)) {
++      travel.metres+=Math.hypot(to.x-from.x,to.z-from.z);
+       state.x = to.x; state.z = to.z;
+       complete(state, onward.id, events); return true;
+     }
+     const s = support(to, state, layout);
+     if (s) to.feet = s.floor;
+     if (blocked || !s || !occupiable(to, state, layout)) { state.doorSides = oldSides; return false; }
++    travel.metres+=Math.hypot(to.x-from.x,to.z-from.z);
+     state.x = to.x; state.z = to.z; state.feet = s.floor;
+     for (const d of crossings) {
+       if (d.entry&&!pursuing(state)) { loop(state, { id: `entry:${d.id}`, arrival: layout.spawn }, events); return true; }
+@@ -479,7 +481,7 @@ function advanceMove(state, dx, dz, layout, events) {
+ }
+ 
+ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
+-  const state = normalizeSourceFalseReturn(value, { spawn: layout.spawn }), events = [];
++  const state = normalizeSourceFalseReturn(value, { spawn: layout.spawn }), events = [], travel = { metres: 0 };
+   if (state.status !== 'active' || input.paused || input.protected || input.renderReady === false || input.assetsReady === false) return { state, events };
+   seedLayout(state, layout);
+   if (!occupiable(state, state, layout,{ignoreGag:true})) {
+@@ -504,11 +506,11 @@ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
+     const held=state.noiseTrap.phase==='contact'&&!input.hushProtected;
+     const dx = held?0:(Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * WALK_SPEED * h / length;
+     const dz = held?0:(-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * WALK_SPEED * h / length;
+-    const before={x:state.x,z:state.z,feet:state.feet},transferred=advanceMove(state, dx, dz, layout, events);
++    const before={x:state.x,z:state.z,feet:state.feet},transferred=advanceMove(state, dx, dz, layout, events, travel);
+     advanceThresholdGag(state,before,h,events,{layout,reduced:!!input.reducedMotion,audioReady:input.gagAudioReady!==false});
+     advanceThresholdGagInspection(state,before,h,events,{layout,reduced:!!input.reducedMotion,protectedScare:!!input.inspectionProtected});
+     advanceNoiseTrap(state,h,input,layout,events,events.slice(eventStart));
+     if(transferred)break;
+   }
+-  return { state, events };
++  return { state, events, acceptedTravelMetres: travel.metres };
+ }
+diff --git a/src/game/source-pub.js b/src/game/source-pub.js
+index 396afdb4ac8d1ca85d1df946fba8eff56e08a563..03bc2226c7c7f11333d288ffca8ad23a980c8b46 100644
+--- a/src/game/source-pub.js
++++ b/src/game/source-pub.js
+@@ -1,5 +1,6 @@
+ import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubStations,sourcePubTask,sourcePubFloorHoles,sourcePubFallProgress} from '../data/source-pub.js';
+ import {uiSize,uiText,uiCenter,uiFill} from '../render/ui.js';
++import {recordNightClockTravel} from './night-clock-travel.js';
+ 
+ const clone=value=>JSON.parse(JSON.stringify(value)),clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0));
+ const finite=value=>typeof value==='number'&&Number.isFinite(value);
+@@ -135,7 +136,7 @@ export function stepSourcePub(value,input={}){
+ 
+ // The host retains pause/audio/save ownership. This scene holds only this
+ // room's motion, look and resumable service sequence. No global input listeners.
+-export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{}}={}){
++export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
+   let state=normalizeSourcePubCheckpoint(checkpoint,{runId,returnPose}),ready=false,closed=false,paused=false,leaving=false,error=null,loadPromise=null,drag=null,exitPrompt=false,saveClock=0;
+   const keys=new Set();
+   if(typeof renderer?.render!=='function')throw Error('A game-owned Source pub renderer is required.');
+@@ -177,8 +178,10 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
+       if(closed||paused||leaving||exitPrompt)return;
+       if(!renderReady()){clearMotion();return;}
+       const hostLook=typeof getLook==='function'?getLook():null;
++      const before={x:state.x,z:state.z,layer:state.layer,fall:!!state.fall};
+       const result=stepSourcePub(state,{dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+         side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),look:hostLook});state=result.state;
++      if(!before.fall&&!state.fall&&before.layer===state.layer)onAcceptedTravel(Math.hypot(state.x-before.x,state.z-before.z));
+       saveClock+=Math.max(0,Number(dt)||0);if(saveClock>=1){saveClock=0;save('position');}
+     },
+     view(){const live=renderReady();return{...snapshot(),ready:live,closed,paused,leaving,error,exitPrompt,focus:live?focusedSourcePubStation(state):null,orders:state.stage<SOURCE_PUB.rounds.length?sourcePubRound(state.stage).orders:null};},
+diff --git a/src/main.js b/src/main.js
+index 9e593c4545f76d031f030f0c5fcd7e2c8d1d05fb..b046778bc2abc5a9c1c384014e1bf2c354580152 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -1,4 +1,6 @@
+ import {createPlayDurationClock} from './game/play-duration.js';
++import {advanceNightClock,applyNightClockLoss,nightClockReadout,createNightClockPace} from './game/night-clock.js';
++import {recordNightClockTravel,consumeNightClockTravel} from './game/night-clock-travel.js';
+ import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from './game/work-order-state.js';
+ import { createSourceDemolitionAudio } from './audio/source-demolition.js';
+ import {createExteriorConversationPerformance,transitionExteriorConversationPerformance,sampleExteriorConversationPerformance} from './render/exterior-conversation-performance.js';
+@@ -5084,6 +5086,7 @@ function queuePlayerFootTravel(from,to,now,descriptor){
+ }
+ function enqueuePlayerFootDistance(distance,duration,descriptor){
+   if(!Number.isFinite(distance)||distance<=.00001||!descriptor.supported)return;
++  recordNightClockTravel(distance);
+   if(playerFootOwner!==descriptor.owner){
+     if(playerFootOwner)RT.clearFootContacts?.(playerFootOwner);
+     playerFootOwner=descriptor.owner;playerFootClock.reset(playerFootOwner);playerFootTravel.length=0;
+@@ -6602,12 +6605,22 @@ function noteLoopFault(err){
+ }
+ 
+ const runPlayDurationClock=createPlayDurationClock();
++const nightClockPace=createNightClockPace();
++function nightClockSlowAction(){
++  if(REC.isRecording()||REC.isListening()||PB.isPlaying()||SPEECH.isSpeaking())return true;
++  if(sourceDriveSession||getInDriveTeaserScene||sourceReturnFlashbackScene||coastalMemoryScene||openingVehicleScene||openingOvertureScene)return true;
++  const top=scenes.top?.(),walkingOwner=sourceContinuationScene||sourcePubScene;
++  if(walkingOwner?.allowsLook===false)return true;
++  return !!(top?.blocksInput&&top!==walkingOwner);
++}
+ function tickRunPlayDuration(nowMs=performance.now()){
+   const save=getSave(),run=save?.run;
+   const menu=['settings','archive','pause','title','opening-credits'].some(id=>scenes.has(id));
+   const active=storyMode&&inRogue&&run?.status==='active'&&!paused&&!menu&&gameplayInputLifecycleActive();
+-  const {record}=runPlayDurationClock.update({runId:run?.id,record:save?.playDuration,nowMs,active});
+-  if(run)save.playDuration=record;
++  const {record,addedSeconds}=runPlayDurationClock.update({runId:run?.id,record:save?.playDuration,nowMs,active});
++  const pace=nightClockPace.update({runId:run?.id,foregroundSeconds:addedSeconds,active,currentRate:save.nightClock?.rate,
++    acceptedTravelMetres:consumeNightClockTravel(),slow:active&&nightClockSlowAction()});
++  if(run){save.playDuration=record;save.nightClock={...advanceNightClock(save.nightClock,addedSeconds,{rate:pace.averageRate}),rate:pace.rate};}
+ }
+ 
+ function loop(){
+@@ -11234,6 +11247,7 @@ function enterStory({reusePreparedWorld=false,frontEndPromotion=false}={}){
+   // ids are adopted as real takes with an empty recording — the room's own
+   // floor and a guest chosen once at migration — which is what stops the
+   // machine listing a take it then refuses to play.
++  PB.setNightClockSource(()=>{tickRunPlayDuration(performance.now());return getSave().nightClock;});
+   REC.setTakeSink({
+     roomIds:()=>PB.takeRoomIds(),
+     contaminated:()=>PB.contaminatedRooms(),
+@@ -15199,11 +15213,14 @@ function wakeUp({kind='taken',sourceRoomId='',endingBound=false}={}){
+   }
+   trail=[]; revealAround(px,py); faceOpenDirection();
+   const minutes=6+Math.floor(Math.random()*9);      // the night is shorter than it was
+-  saveCommit({ playSeconds:(getSave().playSeconds||0)+minutes*60 });
++  const lostTimeEventId=lastRecoveryReceipt?.eventId||`wake:${++lastExposureSerial}`;
++  const lostTime=applyNightClockLoss(getSave().nightClock,minutes*60,lostTimeEventId);
++  saveCommit({ nightClock:lostTime.clock,
++    playSeconds:(getSave().playSeconds||0)+(lostTime.applied?minutes*60:0) });
+   takeAnItem();
+   fear=0.55;
+   const memory=normalizeHushRecovery({runId:getSave().run?.id||'',
+-    eventId:lastRecoveryReceipt?.eventId||`wake:${++lastExposureSerial}`,kind,roomId:room,
++    eventId:lostTimeEventId,kind,roomId:room,
+     sourceRoomId:sourceRoomId||lastRecoveryReceipt?.sourceRoomId||'',minutes,lostItem,lostAt,
+     lostGuess:lostItemGuess,guessLabel:lostItemGuess?.label,pending:!endingBound,
+     injured:REC.recState().injuries>0,recordingSpoiled:lastRecoveryReceipt?.committed?.recordingSpoiled===true},getSave().run?.id||'');
+@@ -16966,7 +16983,7 @@ function bagJob(){
+     label: (room)=>room===retake?`${roomLabel(room)} · RE-RECORD`:roomLabel(room),
+     // The recorder wrote a timestamp on every file and the recorder was right.
+     // What rots is the reading of it. Nobody is ever told why. See game/clock.js.
+-    stamp: (r)=>takeStamp(takes.indexOf(r)),
++    stamp: (r)=>takeStamp(takes.indexOf(r),{captured:PB.takeFor(r)?.nightStamp}),
+   });
+ }
+ 
+@@ -32062,7 +32079,7 @@ function openPauseMenu(){
+       takes:REC.recState().takes.length,
+       light:REC.lightOn(),
+       hush:hushActiveForPlayer()?(hushPressureAt()>.82?'CONTACT':'TRACKING'):'QUIET',
+-      time:(()=>{const total=Math.max(0,Math.floor(getSave().playSeconds||0));const h=Math.floor(total/3600);const m=Math.floor(total%3600/60);const s=total%60;return [h,m,s].map((v)=>String(v).padStart(2,'0')).join(':');})(),
++      time:nightClockReadout(getSave()),
+       lead:(()=>{const entry=journalPinnedEntry(bagJournal(),getSave().bagNav||{});return entry ? entry.followUp?.label||entry.title : null;})(),
+     }),
+   }));
+@@ -33019,7 +33036,7 @@ function drawStoryHud(){
+   const navigatorVisible=navigatorAvailable&&!!nav.showMap;
+   if(mapAvailable(getSave().flags,false))drawMinimap(currentFacilityMapModel(),{bounds:deck.navigator,now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions(),
+     navigationVisible:navigatorVisible,mapStatus:itemLost('map')?'PLAN MISSING':'NAVIGATION MINIMAL',
+-    telemetry:{takesEnabled:workOrderAccepted(getSave().flags),takes:rec.takes.length,total:5,injuries:rec.injuries,monitor:monitorDisplaySnapshot(),paused,
++    telemetry:{takesEnabled:workOrderAccepted(getSave().flags),takes:rec.takes.length,total:5,injuries:rec.injuries,monitor:monitorDisplaySnapshot(),paused,nightClock:nightClockReadout(getSave()),
+       notice:performance.now()<dockCommandUntil?'COME CLOSER':''},
+   });
+ 
+@@ -37320,8 +37337,8 @@ async function boot(){
+     if(gameplayWantsPointerCapture()) void pointerMode.attemptCapture('pageshow',{gesture:false});
+   }, {passive:true});
+   window.addEventListener('pagehide',()=>{
+-    holdSourceRestEndingMusic();
+     runPlayDurationClock.suspend();
++    holdSourceRestEndingMusic();
+     cancelOutskirtDoorAnswer();
+     cancelApparitionApplause('pagehide');
+     setUiCueFocused(false);
+diff --git a/src/render/minimap.js b/src/render/minimap.js
+index f7f9dd45f50d80efec0e5c5086a376da93b9a539..bfffcdd168fb7aadfdcb14b01787e759023215a7 100644
+--- a/src/render/minimap.js
++++ b/src/render/minimap.js
+@@ -9,6 +9,7 @@ import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js'
+ import { withMachinePanel, machinePanelAperture } from './presentation.js';
+ import { navigatorDisplayLayout } from './navigator-layout.js';
+ import { drawNavigatorTelemetry } from './navigator-telemetry.js';
++import {navigatorClockState,drawNavigatorClock} from './navigator-clock.js';
+ import { drawExteriorMapCommand } from './exterior-map-view.js';
+ import { themeRoleColor, UI_COLOR } from './palette.js';
+ import { buildMinimapCommands } from './map-commands.js';
+@@ -602,10 +603,10 @@ export function drawMinimap(model, opts = {}) {
+   const floor=model.floors.find((candidate)=>candidate.id===model.player.floorId);
+   const navigationVisible=opts.navigationVisible!==false;
+   const targetReadout=navigationVisible?minimapTargetReadout(model):null;
++  const nightClock=navigatorClockState(opts.telemetry?.nightClock);
+   const layout=navigatorDisplayLayout(machinePanelAperture(x0,y0,width,height),{telemetry:!!opts.telemetry});
+   withMachinePanel(x0, y0, width, height, {
+-    label: 'FIELD NAV',model:'FN-12',
+-    source:opts.source||'',
++    ...(nightClock?{wordmark:'',label:'',model:'',source:''}:{label:'FIELD NAV',model:'FN-12',source:opts.source||''}),
+     meter: false,
+     apertureBounds:layout.aperture,
+     theme: hush.cls === 'ui-danger' ? 'amber' : 'green',
+@@ -660,6 +661,7 @@ export function drawMinimap(model, opts = {}) {
+   // The LCD is physical hardware beside the VFD, outside its aperture clip and
+   // after its smoked cover. Map glow and target pulses never repaint its ink.
+   if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now});
++  if(nightClock)drawNavigatorClock({x:x0,y:y0,w:width,h:height},nightClock);
+ }
+ 
+ // Small explicit marker used only for recorder playback origin. It is not part
+diff --git a/src/render/navigator-clock.js b/src/render/navigator-clock.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b231b2941de54c3cba3cf49e6eea386e7bd15e4e
+--- /dev/null
++++ b/src/render/navigator-clock.js
+@@ -0,0 +1,70 @@
++// A supplied in-world clock reading, not session duration or local wall time.
++// This small LCD lives in the FN–12's existing metal header. It never changes
++// the map or TAKES/MONITOR aperture, housing height, motion or power authority.
++import {uiDrawHardware} from './ui.js';
++import {drawHardwarePrint} from './hardware-faceplate.js';
++import {drawSevenSegmentNumber,measureSevenSegment,drawTraceCell} from './dual-trace-display.js';
++
++export function navigatorClockState(readout){
++  const value=typeof readout==='string'?readout:readout?.value;
++  if(typeof value!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value))return null;
++  const approximate=typeof readout==='object'&&readout?.approximate===true;
++  return{value,approximate,text:(approximate?'~':'')+value,qualifier:approximate?'ESTIMATED':''};
++}
++
++export function navigatorClockLayout(housing){
++  if(!housing||!['x','y','w','h'].every(k=>Number.isFinite(housing[k]))||housing.w<26)return null;
++  const clock={x:housing.x+housing.w-8.9,y:housing.y+.85,w:7.3,h:1.02};
++  return{housing:{...housing},clock,identity:{x:housing.x+2,y:housing.y+.88,w:clock.x-housing.x-2.65,h:.95}};
++}
++
++// Pixel geometry is measured independently of font decoding. Four formed
++// digits, a true two-dot colon and one reserved estimate electrode keep their
++// places when 21:59 becomes 22:00, after midnight, or in a migrated old save.
++export function navigatorClockGeometry(housing,{cellW=8.45,cellH=20,dpr=1}={}){
++  const layout=navigatorClockLayout(housing);if(!layout)return null;
++  const toPixels=b=>({x:b.x*cellW*dpr,y:b.y*cellH*dpr,w:b.w*cellW*dpr,h:b.h*cellH*dpr});
++  const clock=toPixels(layout.clock),identity=toPixels(layout.identity),height=.64*cellH*dpr,
++    colonAdvance=height*.30,bankWidth=measureSevenSegment('00',height),digitWidth=bankWidth*2+colonAdvance,
++    right=clock.x+clock.w-3.2*dpr,top=clock.y+(clock.h-height)/2,left=right-digitWidth,
++    glyphRadius=height*.25,glyphX=clock.x+glyphRadius+3.0*dpr,glyphY=clock.y+clock.h/2;
++  return{layout,clock,identity,height,
++    hours:{x:left,y:top,w:bankWidth,h:height},
++    colon:{x:left+bankWidth,y:top,w:colonAdvance,h:height},
++    minutes:{x:left+bankWidth+colonAdvance,y:top,w:bankWidth,h:height},
++    estimate:{x:glyphX+glyphRadius+1.5*dpr,y:clock.y,w:Math.max(1,left-glyphX-glyphRadius-2.2*dpr),h:clock.h},
++    icon:{x:glyphX,y:glyphY,r:glyphRadius}};
++}
++
++export function paintNavigatorClock(ctx,housing,readout,metrics={}){
++  const state=navigatorClockState(readout),g=navigatorClockGeometry(housing,metrics);if(!ctx||!state||!g)return null;
++  const dpr=metrics.dpr||1,printDpr=dpr*Math.min(1,(metrics.cellH||20)/20),ink='#233b2b',opacity=Number.isFinite(ctx.globalAlpha)?ctx.globalAlpha:1;
++  ctx.save();ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
++  // The header remains legible etched aluminium; its new clock owns a small
++  // separate gasket and reflective polarizer, not VFD glow over the map.
++  const identity=drawHardwarePrint(ctx,'AUDIOCORP FN-12',g.identity.x+dpr,g.identity.y,
++    {width:g.identity.w-2*dpr,height:g.identity.h,color:'#333830',finish:'etched',darkPanel:false,dpr:printDpr});
++  ctx.fillStyle='#1c2922';ctx.fillRect(g.clock.x-dpr,g.clock.y-dpr,g.clock.w+2*dpr,g.clock.h+2*dpr);
++  ctx.fillStyle='#a8b99b';ctx.fillRect(g.clock.x,g.clock.y,g.clock.w,g.clock.h);
++  ctx.beginPath();ctx.rect(g.clock.x+dpr,g.clock.y+dpr,g.clock.w-2*dpr,g.clock.h-2*dpr);ctx.clip();
++  ctx.strokeStyle=ink;ctx.lineWidth=Math.max(.8*dpr,g.height*.065);ctx.globalAlpha=opacity*.80;
++  ctx.beginPath();ctx.arc(g.icon.x,g.icon.y,g.icon.r,0,Math.PI*2);ctx.stroke();
++  ctx.beginPath();ctx.moveTo(g.icon.x,g.icon.y-g.icon.r*.60);ctx.lineTo(g.icon.x,g.icon.y);ctx.lineTo(g.icon.x+g.icon.r*.52,g.icon.y+g.icon.r*.28);ctx.stroke();
++  if(state.approximate){
++    const at=g.estimate,middle=at.y+at.h/2,span=Math.min(at.w-2*dpr,g.height*.50),left=at.x+(at.w-span)/2;
++    ctx.beginPath();ctx.moveTo(left,middle+g.height*.04);
++    ctx.bezierCurveTo(left+span*.30,middle-g.height*.24,left+span*.70,middle+g.height*.24,left+span,middle-g.height*.04);ctx.stroke();
++  }
++  ctx.globalAlpha=opacity;
++  drawSevenSegmentNumber(ctx,state.value.slice(0,2),g.hours.x,g.hours.y,g.height,{color:ink,dormant:ink,lcd:true});
++  drawSevenSegmentNumber(ctx,state.value.slice(3),g.minutes.x,g.minutes.y,g.height,{color:ink,dormant:ink,lcd:true});
++  const dot=g.height*.11;
++  for(const at of[.32,.70])drawTraceCell(ctx,g.colon.x+(g.colon.w-dot)/2,g.colon.y+g.height*at-dot/2,dot,dot,ink,{chamfer:dot*.15});
++  ctx.restore();return{state,geometry:g,identity};
++}
++
++export function drawNavigatorClock(housing,readout,metrics={}){
++  const state=navigatorClockState(readout);if(!state)return null;
++  uiDrawHardware(surface=>paintNavigatorClock(surface.ctx,housing,state,{...surface,...metrics}));
++  return state;
++}
+diff --git a/test/hud-field-deck.spec.mjs b/test/hud-field-deck.spec.mjs
+index 0f3ff4b4810a2ef8ec60cc97e420142da6fa3a98..677c4860b8efb46fd2e6d696ae47c78129317fb9 100644
+--- a/test/hud-field-deck.spec.mjs
++++ b/test/hud-field-deck.spec.mjs
+@@ -6,6 +6,7 @@ import { machinePanelAperture } from '../src/render/presentation.js';
+ import { navigatorDisplayLayout } from '../src/render/navigator-layout.js';
+ import { takeSlotState } from '../src/render/field-deck.js';
+ import { mapAvailable } from '../src/game/map-ownership.js';
++import {nightClockReadout} from '../src/game/night-clock.js';
+ import {
+   controlHudPresentation,
+   fieldDeckLayout,
+@@ -51,7 +52,7 @@ test('production HUD paints one objective line before map acquisition and yields
+       activeDifficulty:{navigation:{showMap:true,showBearing:true,showDistance:true,showRoom}},
+       mapAvailable,getSave:()=>save,itemLost:()=>false,drawMinimap:(...args)=>maps.push(args),
+       currentFacilityMapModel:()=>({}),performance:{now:()=>1000},recentMischief:()=>[],recentApparitions:()=>[],
+-      workOrderAccepted:()=>false,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
++      workOrderAccepted:()=>false,nightClockReadout,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
+       storyGuidanceBearing:()=>bearing?{bearing:'SOUTHEAST',far:'VERY CLOSE'}:null,
+       uiText:(x,y,text)=>calls.push({x,y,text}),chapelTowerState:()=>({phase:'recording'}),
+       chunkSurfFinaleRouting:()=>({route:null}),SOURCE_FINALE_ROUTE:{TOWER:'tower'},CHAPEL_TOWER_PHASE:{},KEY_DEBUG:false,
+diff --git a/test/night-clock-display.spec.mjs b/test/night-clock-display.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3773245fe3b440c01fe1d7a86f71de4ea635a78c
+--- /dev/null
++++ b/test/night-clock-display.spec.mjs
+@@ -0,0 +1,81 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++import {navigatorClockState,navigatorClockLayout,navigatorClockGeometry,paintNavigatorClock} from '../src/render/navigator-clock.js';
++import {fieldDeckLayout} from '../src/render/hud-layout.js';
++import {machinePanelAperture} from '../src/render/presentation.js';
++import {navigatorDisplayLayout} from '../src/render/navigator-layout.js';
++import {navigatorTelemetryState} from '../src/render/navigator-telemetry.js';
++import {nightClockReadout,freshNightClock} from '../src/game/night-clock.js';
++
++const contains=(a,b)=>b.x>=a.x-1e-7&&b.y>=a.y-1e-7&&b.x+b.w<=a.x+a.w+1e-7&&b.y+b.h<=a.y+a.h+1e-7;
++const overlaps=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
++
++// Actual vendored Nimbus Sans advances and conservative whole-font outline
++// bounds feed the production native-ink painter. This is CPU font-table/layout
++// evidence; browser rasterization and target discovery are separate checks.
++function hardwareFont(){
++ const b=readFileSync(new URL('../public/assets/fonts/NimbusSans-Regular.otf',import.meta.url)),tables={};
++ for(let i=0;i<b.readUInt16BE(4);i++){const p=12+i*16;tables[b.toString('ascii',p,p+4)]=b.readUInt32BE(p+8);}
++ const units=b.readUInt16BE(tables.head+18),ascent=b.readInt16BE(tables.head+42),descent=-b.readInt16BE(tables.head+38),count=b.readUInt16BE(tables.hhea+34),cmap=tables.cmap;
++ let table;for(let i=0;i<b.readUInt16BE(cmap+2);i++){const p=cmap+4+i*8,o=cmap+b.readUInt32BE(p+4);if([0,3].includes(b.readUInt16BE(p))&&b.readUInt16BE(o)===4)table=o;}
++ assert.ok(table);const n=b.readUInt16BE(table+6)/2,end=table+14,start=end+n*2+2,delta=start+n*2,range=delta+n*2;
++ const glyph=code=>{for(let i=0;i<n;i++){if(code>b.readUInt16BE(end+i*2))continue;const first=b.readUInt16BE(start+i*2);if(code<first)return 0;const d=b.readInt16BE(delta+i*2),r=b.readUInt16BE(range+i*2);if(!r)return(code+d)&65535;const g=b.readUInt16BE(range+i*2+r+2*(code-first));return g?(g+d)&65535:0;}return 0;};
++ return{measure(value,size){return{width:[...String(value)].reduce((sum,ch)=>sum+b.readUInt16BE(tables.hmtx+4*Math.min(glyph(ch.codePointAt(0)),count-1)),0)/units*size,actualBoundingBoxAscent:ascent/units*size,actualBoundingBoxDescent:descent/units*size};}};
++}
++const font=hardwareFont();
++function context(){
++ const state={globalAlpha:.8,shadowBlur:6,shadowOffsetX:3,shadowOffsetY:2,font:'12px sans-serif'},draws=[],stack=[];
++ const methods={save(){stack.push({...state});},restore(){assert.ok(stack.length);for(const k of Object.keys(state))delete state[k];Object.assign(state,stack.pop());},measureText(value){const size=Number(/([\d.]+)px/.exec(state.font)?.[1]||12);return font.measure(value,size);}};
++ const ctx=new Proxy(state,{get(target,key){if(key in methods)return methods[key];if(key in target)return target[key];return(...args)=>draws.push({kind:key,args,state:{...state}});},set(target,key,value){target[key]=value;return true;}});
++ return{ctx,draws,state,stack};
++}
++
++test('clock display accepts only supplied night readings and marks estimated legacy time explicitly',()=>{
++ assert.equal(navigatorClockState(null),null);assert.equal(navigatorClockState({elapsedSeconds:20}),null);assert.equal(navigatorClockState({value:'00:12:34'}),null,'session duration is never silently presented as night time');
++ for(const value of['24:00','21:60','9:30','NaN','??:??'])assert.equal(navigatorClockState({value}),null);
++ for(const value of['21:38','23:59','00:00','06:00'])assert.deepEqual(navigatorClockState({value,approximate:false}),{value,approximate:false,text:value,qualifier:''});
++ assert.deepEqual(navigatorClockState({value:'21:38',approximate:true}),{value:'21:38',approximate:true,text:'~21:38',qualifier:'ESTIMATED'});
++ const live=nightClockReadout({nightClock:freshNightClock()});assert.equal(navigatorClockState(live).value,'21:38');
++});
++
++test('clock occupies existing header metal at every supported FN12 size and cannot resize or cover navigation/recording displays',()=>{
++ for(const cols of[40,48,64,72,80,96,128,192])for(const rows of[24,30,36,45,50,70]){
++  const housing=fieldDeckLayout({cols,rows}).navigator,aperture=machinePanelAperture(housing.x,housing.y,housing.w,housing.h),nav=navigatorDisplayLayout(aperture,{telemetry:true}),l=navigatorClockLayout(housing);
++  assert.ok(contains(housing,l.clock));assert.ok(contains(housing,l.identity));assert.ok(!overlaps(l.clock,l.identity));
++  for(const protectedBox of[nav.aperture,nav.lcd,nav.viewport,nav.footer])assert.ok(!overlaps(l.clock,protectedBox),'clock stays outside both existing display technologies');
++  assert.ok(l.clock.y+l.clock.h+.05<aperture.y,'top lip clears VFD cutout');
++  assert.deepEqual(navigatorDisplayLayout(aperture,{telemetry:true,nightClock:{value:'21:38'}}),nav,'clock does not modify the map/LCD layout');
++ }
++});
++
++test('formed HH:MM ink and native identity fit compact header at real UI scale and device pixel ratios',()=>{
++ for(const scale of[.8,1,1.25,1.5])for(const dpr of[1,1.5,2,3])for(const viewport of[{cols:40,rows:24},{cols:80,rows:45},{cols:192,rows:70}]){
++  const housing=fieldDeckLayout(viewport).navigator,metrics={cellW:8.45*scale,cellH:20*scale,dpr},g=navigatorClockGeometry(housing,metrics),clock=g.clock;
++  for(const bank of[g.hours,g.colon,g.minutes,g.estimate])assert.ok(contains(clock,bank));
++  assert.ok(!overlaps(g.hours,g.colon)&&!overlaps(g.colon,g.minutes));assert.ok(g.icon.x-g.icon.r>=clock.x+1*dpr);assert.ok(g.icon.y-g.icon.r>=clock.y);
++  const p=context(),before={...p.state},rendered=paintNavigatorClock(p.ctx,housing,{value:'23:59',approximate:true},metrics);assert.deepEqual(p.state,before);assert.equal(p.stack.length,0);
++  assert.ok(contains(g.identity,{x:rendered.identity.x,y:rendered.identity.y,w:rendered.identity.width,h:rendered.identity.height}),'actual pinned native-font advances and conservative bounds fit the reserved identity box');
++  assert.ok(rendered.identity.fontSize>=9*dpr,'identity remains native-size readable at minimum UI scale');
++  const fills=p.draws.filter(d=>d.kind==='fillText');assert.ok(fills.length);assert.ok(fills.every(d=>d.state.font.includes('Hardware Sans')));
++  for(const draw of fills){const value=draw.args[0],size=Number(/([\d.]+)px/.exec(draw.state.font)[1]),m=font.measure(value,size),x=draw.args[1],baseline=draw.args[2],bounds={x,y:baseline-m.actualBoundingBoxAscent,w:m.width,h:m.actualBoundingBoxAscent+m.actualBoundingBoxDescent};
++    assert.ok(contains(value==='~'?g.estimate:g.identity,bounds),'native identity/estimate ink cannot clip vertically or encroach on digits '+JSON.stringify({scale,dpr,value,bounds,box:g.identity}));}
++  assert.ok(p.draws.every(d=>d.state.shadowBlur===0),'reflective clock does not glow');
++ }
++});
++
++test('time changes and estimate state never animate a colon, move the banks or alter take-counter eligibility',()=>{
++ const housing=fieldDeckLayout({cols:40,rows:24}).navigator,metrics={cellW:8.45,cellH:20,dpr:1};
++ const layouts=[];for(const value of['21:38','21:59','22:00','23:59','00:00','06:00'])for(const approximate of[false,true]){const p=context(),r=paintNavigatorClock(p.ctx,housing,{value,approximate},metrics);layouts.push(r.geometry);assert.equal(r.state.text,(approximate?'~':'')+value);}
++ assert.ok(layouts.every(l=>JSON.stringify(l)===JSON.stringify(layouts[0])));
++ const make=readout=>{const p=context();paintNavigatorClock(p.ctx,housing,readout,metrics);return p.draws;};assert.deepEqual(make({value:'21:38'}),make({value:'21:38'}),'no independent wall-clock tick or flickering colon exists in the painter');
++ const unaccepted=navigatorTelemetryState({takesEnabled:false,takes:4,total:5,nightClock:{value:'23:59'}});assert.equal(unaccepted.takesEnabled,false);assert.equal(unaccepted.takes,0);assert.equal(unaccepted.total,0);assert.deepEqual(unaccepted.slots,[]);
++});
++
++test('production minimap and pause use the supplied same clock while play duration stays out of their time field',()=>{
++ const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8'),minimap=readFileSync(new URL('../src/render/minimap.js',import.meta.url),'utf8'),pause=readFileSync(new URL('../src/game/pause.js',import.meta.url),'utf8');
++ assert.match(main,/time:nightClockReadout\(getSave\(\)\)/);assert.match(main,/nightClock:nightClockReadout\(getSave\(\)\)/);
++ const hud=main.slice(main.indexOf('function drawStoryHud()'),main.indexOf('function drawStoryHud()')+6000);assert.match(hud,/mapAvailable\(getSave\(\)\.flags,false\)\)drawMinimap/,'existing device eligibility still owns HUD visibility');
++ assert.match(minimap,/navigatorClockState\(opts\.telemetry\?\.nightClock\)/);assert.match(minimap,/if\(nightClock\)drawNavigatorClock/);
++ assert.match(pause,/navigatorClockState\(live\.time\)/);assert.doesNotMatch(pause,/live\.time \|\| '00:00:00'/);
++});
+diff --git a/test/night-clock-main.spec.mjs b/test/night-clock-main.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..de521c5263b9705196a558a044974c1f9e1acad1
+--- /dev/null
++++ b/test/night-clock-main.spec.mjs
+@@ -0,0 +1,72 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import vm from 'node:vm';
++import {readFileSync} from 'node:fs';
++import {createPlayDurationClock,freshPlayDuration} from '../src/game/play-duration.js';
++import {freshNightClock,advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
++import {recordNightClockTravel,consumeNightClockTravel,clearNightClockTravel} from '../src/game/night-clock-travel.js';
++
++const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
++function body(name){const start=main.indexOf(`function ${name}(`),end=main.indexOf('\n}\n',start)+3;assert.ok(start>=0&&end>start);return main.slice(start,end);}
++function host(){
++ clearNightClockTravel();const save={run:{id:'night-main',status:'active'},playDuration:freshPlayDuration(),nightClock:freshNightClock(),playSeconds:9999};
++ const menus=new Set();let top=null,recording=false,listening=false,playing=false,speaking=false;
++ const h={getSave:()=>save,storyMode:true,inRogue:true,paused:false,focused:true,scenes:{has:id=>menus.has(id),top:()=>top},
++  REC:{isRecording:()=>recording,isListening:()=>listening},PB:{isPlaying:()=>playing},SPEECH:{isSpeaking:()=>speaking},
++  sourceDriveSession:null,getInDriveTeaserScene:null,sourceReturnFlashbackScene:null,coastalMemoryScene:null,openingVehicleScene:null,openingOvertureScene:null,sourceContinuationScene:null,sourcePubScene:null,
++  runPlayDurationClock:createPlayDurationClock(),nightClockPace:createNightClockPace(),advanceNightClock,consumeNightClockTravel,
++  gameplayInputLifecycleActive:()=>h.focused};
++ vm.createContext(h);vm.runInContext(body('nightClockSlowAction')+'\n'+body('tickRunPlayDuration'),h);
++ return {h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h),slow:()=>vm.runInContext('nightClockSlowAction()',h),
++  top:value=>{top=value;},record:value=>{recording=value;},listen:value=>{listening=value;},play:value=>{playing=value;},speak:value=>{speaking=value;}};
++}
++
++test('production clock uses accepted metres, never held keys, and keeps actual duration independent of variable night pace',()=>{
++ const f=host();let now=0;f.tick(now);
++ for(let i=0;i<180;i++){f.h.keysDown=new Set(['KeyW']);f.tick(now+=1000/60);}
++ assert.ok(Math.abs(f.save.nightClock.elapsedSeconds-3)<1e-8,'blocked held input has no accepted travel receipt');
++ for(let i=0;i<180;i++){recordNightClockTravel(.055);f.tick(now+=1000/60);}
++ assert.ok(f.save.nightClock.rate>2.99);assert.ok(f.save.nightClock.elapsedSeconds>10);
++ assert.ok(Math.abs(f.save.playDuration.seconds-6)<1e-8);assert.equal(f.save.playSeconds,9999);
++ const started=f.save.nightClock.elapsedSeconds;
++ for(let i=0;i<600;i++)f.tick(now+=1000/60);
++ assert.ok(f.save.nightClock.rate<1.0001,'rest settles smoothly back to1×');assert.ok(f.save.nightClock.elapsedSeconds>started+10);
++});
++
++test('production pause, hidden/focus and settings edges drain stale motion without spending unseen time',()=>{
++ const f=host();let now=0;f.tick(now);recordNightClockTravel(.5);f.tick(now+=1000);
++ const old=f.save.nightClock.elapsedSeconds,real=f.save.playDuration.seconds;
++ f.h.paused=true;recordNightClockTravel(1);f.tick(now+=10000);assert.equal(consumeNightClockTravel(),0);
++ f.h.paused=false;f.tick(now+=10000);assert.equal(f.save.nightClock.elapsedSeconds,old);assert.equal(f.save.playDuration.seconds,real);
++ for(const hold of ['settings','archive','focus']){
++  if(hold==='focus')f.h.focused=false;else f.menus.add(hold);
++  f.tick(now+=10000);const held=f.save.nightClock.elapsedSeconds;
++  f.h.focused=true;f.menus.clear();f.tick(now+=10000);assert.equal(f.save.nightClock.elapsedSeconds,held);
++ }
++});
++
++test('recording, listening, playback, dialogue, close inspection, van and memory force1×; custom walking owners remain eligible',()=>{
++ const f=host();
++ for(const [on,off] of [[()=>f.record(true),()=>f.record(false)],[()=>f.listen(true),()=>f.listen(false)],[()=>f.play(true),()=>f.play(false)],[()=>f.speak(true),()=>f.speak(false)]]){on();assert.equal(f.slow(),true);off();}
++ for(const key of ['sourceDriveSession','getInDriveTeaserScene','sourceReturnFlashbackScene','coastalMemoryScene','openingVehicleScene','openingOvertureScene']){f.h[key]={};assert.equal(f.slow(),true,key);f.h[key]=null;}
++ f.top({id:'inspect',blocksInput:true});assert.equal(f.slow(),true);
++ for(const id of ['source-continuation','source-earthfall','source-false-return','source-pub']){
++  const owner={id,blocksInput:true,allowsLook:true};f.h.sourceContinuationScene=id==='source-pub'?null:owner;f.h.sourcePubScene=id==='source-pub'?owner:null;f.top(owner);
++  assert.equal(f.slow(),false,id+' owns real walking despite blocking ordinary-world input');
++  owner.allowsLook=false;assert.equal(f.slow(),true,id+' contact/forced camera holds slow');
++ }
++});
++
++test('ordinary accepted foot-distance records before any muted audio and rejects unsupported movement',()=>{
++ clearNightClockTravel();const h={recordNightClockTravel,playerFootOwner:null,playerFootClock:{reset(){}},playerFootTravel:[],RT:{clearFootContacts(){},prepareFootsteps(){}}};
++ vm.createContext(h);vm.runInContext(body('enqueuePlayerFootDistance'),h);
++ h.muted=true;vm.runInContext("enqueuePlayerFootDistance(.5,.2,{supported:true,owner:'walk'})",h);assert.equal(consumeNightClockTravel(),.5);
++ vm.runInContext("enqueuePlayerFootDistance(.5,.2,{supported:false,owner:'fall'})",h);assert.equal(consumeNightClockTravel(),0);
++});
++
++test('saved variable night resumes from its recorded instant without borrowing a new process interval',()=>{
++ const f=host();f.tick(0);for(let i=1;i<=120;i++){recordNightClockTravel(.06);f.tick(i*1000/60);}
++ const saved=JSON.parse(JSON.stringify(f.save)),g=host();Object.assign(g.save,saved);g.tick(900000);
++ assert.equal(g.save.nightClock.elapsedSeconds,saved.nightClock.elapsedSeconds);assert.equal(g.save.playDuration.seconds,saved.playDuration.seconds);
++ g.record(true);recordNightClockTravel(.5);g.tick(901000);assert.equal(g.save.nightClock.elapsedSeconds,saved.nightClock.elapsedSeconds+1);assert.equal(g.save.nightClock.rate,1);
++});
+diff --git a/test/night-clock-travel.spec.mjs b/test/night-clock-travel.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a70a15b1685e49cf88cdf1fcbc778f3cc0e1b5c
+--- /dev/null
++++ b/test/night-clock-travel.spec.mjs
+@@ -0,0 +1,59 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation} from '../src/game/source-continuation.js';
++import {JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
++import {freshSourceFalseReturn,stepSourceFalseReturn} from '../src/game/source-false-return.js';
++import {createSourceFalseReturnScene} from '../src/game/source-false-return-scene.js';
++import {createSourceEarthfallScene} from '../src/game/source-earthfall-scene.js';
++import {freshSourceEarthfall} from '../src/game/source-earthfall.js';
++import {freshSourceEarthfallElleryAside,normalizeSourceEarthfallElleryAside,stepSourceEarthfallElleryAside} from '../src/game/source-earthfall-ellery-aside.js';
++import {SOURCE_PUB} from '../src/data/source-pub.js';
++import {sourcePubEntry,createSourcePubScene} from '../src/game/source-pub.js';
++import {createNightClockPace,freshNightClock,advanceNightClock} from '../src/game/night-clock.js';
++
++const renderer={initialize:async()=>true,ready:()=>true,render:()=>true,renderAside:()=>true,dispose(){}};
++test('Source II portal travel reports only accepted pre-fold walking, not displacement, fall or rest',()=>{
++ const p=JOURNEY_PORTALS[0],fresh=freshSourceContinuation();let state=normalizeSourceContinuation({...fresh,status:'active',...p.a.approach,lastSafe:{...p.a.approach,phase:'wrong-return',level:0},recoveryAnchor:{...p.a.approach,level:0,kind:'landing',supportId:'declared-visited-pad',earnedAt:0},hush:{...fresh.hush,active:false}});
++ let metres=0,jump=0;
++ for(let n=0;n<800&&!state.lastFold;n++){
++  const before=state,result=stepSourceContinuation(state,{dt:1/120,forward:1});state=result.state;
++  assert.ok(result.acceptedTravelMetres>=0&&result.acceptedTravelMetres<.1);metres+=result.acceptedTravelMetres;
++  if(state.lastFold)jump=Math.hypot(state.x-before.x,state.z-before.z,state.feet-before.feet);
++ }
++ assert.ok(state.lastFold);assert.ok(jump>5);assert.ok(metres>0&&metres<jump*.25,'the4.03m accepted approach excludes the26.9m fold displacement');
++ const falling=stepSourceContinuation(state,{dt:1/60,forward:1});assert.equal(falling.acceptedTravelMetres,0,'ballistic carriage is not walking');
++});
++
++function falseLayout(){const spawn={x:0,z:0,feet:4.8,yaw:Math.PI/2,pitch:0};return{spawn,bounds:{minX:-60,maxX:4,minZ:-2,maxZ:2},doors:[],loops:[{id:'test-loop',bounds:{minX:.1,maxX:.2,minZ:-1,maxZ:1},arrival:{...spawn,x:-50},feet:4.8}],supportAt:()=>({floor:4.8,ceil:8}),canOccupy:()=>true};}
++test('false Ellery loop excludes its reset jump; scene callbacks reject blocked held motion',async()=>{
++ const layout=falseLayout(),fresh=freshSourceFalseReturn({runId:'distance',spawn:layout.spawn});
++ const r=stepSourceFalseReturn(fresh,{dt:.1,forward:1},layout);assert.ok(r.events.some(e=>e.type==='loop'));assert.ok(r.state.x<-40);assert.ok(r.acceptedTravelMetres>0&&r.acceptedTravelMetres<1);
++ const blocked={...layout,loops:[],canOccupy:(x)=>x<=0};const accepted=[];
++ const scene=createSourceFalseReturnScene({checkpoint:fresh,layout:blocked,renderer,onAcceptedTravel:m=>accepted.push(m)});await scene.initialize();scene.key({key:'w'});scene.update(.2);assert.equal(accepted.length,0);scene.exit();
++});
++
++test('Earthfall receipts reuse supported next-versus-passive travel and ignore real sagging carry even without footstep audio',async()=>{
++ const accepted=[],make=aside=>createSourceEarthfallScene({checkpoint:{...freshSourceEarthfall({runId:'night-feet'}),elleryAside:aside},renderer,onAcceptedTravel:m=>accepted.push(m)});
++ const scene=make({...freshSourceEarthfallElleryAside({runId:'night-feet'}),yaw:0});await scene.initialize();
++ scene.key({key:'w'});for(let i=0;i<20;i++)scene.update(1/60);scene.keyup({key:'w'});assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);scene.exit();
++ let aside=normalizeSourceEarthfallElleryAside({...freshSourceEarthfallElleryAside({runId:'night-feet'}),version:3,id:'source-earthfall:ellery-aside-v3',gag:undefined,chase:undefined});
++ for(let i=0;i<216;i++)aside=stepSourceEarthfallElleryAside(aside,{dt:1/60}).state;
++ const late=make(aside);await late.initialize();const count=accepted.length,before=late.serialize().elleryAside;
++ for(let i=0;i<60;i++)late.update(1/60);
++ const after=late.serialize().elleryAside;assert.ok(Math.hypot(after.x-before.x,after.z-before.z)>.01);assert.equal(accepted.length,count);late.exit();
++});
++
++test('Source pub receipt follows actual accepted motion and stops when its body is blocked',async()=>{
++ const checkpoint=sourcePubEntry({flags:{[SOURCE_PUB.unlockFlag]:true},runId:'pub-clock',returnPose:{x:1,y:2,yaw:0,pitch:0,facing:0}}),accepted=[];
++ const scene=createSourcePubScene({checkpoint,renderer,onAcceptedTravel:m=>accepted.push(m)});await scene.initialize();scene.key({key:'w'});
++ for(let i=0;i<600;i++)scene.update(1/60);assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);
++ const blocked=accepted.reduce((a,b)=>a+b,0);for(let i=0;i<120;i++)scene.update(1/60);
++ assert.equal(accepted.reduce((a,b)=>a+b,0),blocked,'a still-held forward key at the real room boundary adds no travel');scene.keyup({key:'w'});
++ const before=accepted.reduce((a,b)=>a+b,0);scene.pause();scene.update(10);assert.equal(accepted.reduce((a,b)=>a+b,0),before);scene.exit();
++});
++
++test('variable pace integrates smoothly at different frame cadences and hard overrides return to1×',()=>{
++ const run=dt=>{const pace=createNightClockPace();let clock=freshNightClock();for(let t=0;t<3-1e-8;t+=dt){const p=pace.update({runId:'rate',foregroundSeconds:dt,active:true,currentRate:clock.rate,acceptedTravelMetres:.01});clock={...advanceNightClock(clock,dt,{rate:p.averageRate}),rate:p.rate};}return clock;};
++ const a=run(1/30),b=run(1/120);assert.ok(Math.abs(a.elapsedSeconds-b.elapsedSeconds)<1e-8);assert.ok(a.rate>2.99);
++ const pace=createNightClockPace(),slow=pace.update({runId:'rate',foregroundSeconds:1,active:true,currentRate:3,acceptedTravelMetres:1,slow:true});assert.equal(slow.rate,1);assert.equal(slow.averageRate,1);
++});
+diff --git a/test/night-clock.spec.mjs b/test/night-clock.spec.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c7830258e997b7bb44dbd5376f4cce480609eef
+--- /dev/null
++++ b/test/night-clock.spec.mjs
+@@ -0,0 +1,76 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {freshNightClock,normalizeNightClock,advanceNightClock,applyNightClockLoss,nightClockReadout,captureNightClock,normalizeNightCapture} from '../src/game/night-clock.js';
++import {takeStamp,timeOfTake} from '../src/game/clock.js';
++import * as SAVE from '../src/game/save.js';
++import * as PB from '../src/game/playback.js';
++
++test('new night starts21:38, advances fractional foreground seconds and crosses midnight without a failure',()=>{
++ let clock=freshNightClock();assert.equal(nightClockReadout({nightClock:clock}).value,'21:38');
++ clock=advanceNightClock(clock,.25);assert.equal(clock.elapsedSeconds,.25);
++ clock=advanceNightClock(clock,59.75);assert.equal(nightClockReadout({nightClock:clock}).value,'21:39');
++ clock=advanceNightClock(clock,141*60);assert.equal(nightClockReadout({nightClock:clock}).value,'00:00');
++ clock=advanceNightClock(clock,86400);assert.equal(nightClockReadout({nightClock:clock}).value,'00:00');
++ assert.equal(clock.priorUnmeasured,false);assert.equal('failed'in clock,false);
++});
++
++test('explicit pace changes fictional time only and never multiplies a consequence by pace',()=>{
++ const original=freshNightClock(),fast=advanceNightClock(original,10,{rate:3});
++ assert.equal(original.elapsedSeconds,0);assert.equal(fast.elapsedSeconds,30);assert.equal(fast.rate,3);
++ const loss=applyNightClockLoss(fast,8*60,'hush:1');assert.equal(loss.clock.elapsedSeconds,510);
++ assert.equal(loss.applied,true);assert.equal(loss.clock.rate,3);
++ const replay=applyNightClockLoss(JSON.parse(JSON.stringify(loss.clock)),14*60,'hush:1');
++ assert.equal(replay.applied,false);assert.equal(replay.clock.elapsedSeconds,510);assert.equal(replay.clock.lossEvents.length,1);
++ assert.equal(applyNightClockLoss(fast,60,'').applied,false);
++});
++
++test('legacy migration preserves elapsed/capture evidence without fabricating retrospective precision',()=>{
++ const old={playSeconds:125,rec:{takes:['main_b3','the_tub']}};
++ const clock=normalizeNightClock(null,{legacySave:old});
++ assert.equal(clock.elapsedSeconds,151*60);assert.equal(nightClockReadout({nightClock:clock}).value,'00:09');
++ assert.equal(clock.priorUnmeasured,true);assert.equal(nightClockReadout({nightClock:clock}).qualifier,'ESTIMATED');
++ const later=normalizeNightClock(null,{legacySave:{playSeconds:20000,rec:{takes:['main_b3']}}});
++ assert.equal(later.elapsedSeconds,19980,'whole-minute legacy lower bound, never Date.now');
++ const stored=advanceNightClock(clock,12.5);assert.deepEqual(normalizeNightClock(JSON.parse(JSON.stringify(stored)),{legacySave:{playSeconds:999999}}),stored,'valid canonical save never re-infers legacy penalties');
++ const irrelevant=normalizeNightClock(null,{legacySave:{rec:{tapes:[{roomId:'coastal_memory',status:'archived',counted:false},{roomId:'main_b3',status:'spoiled'}]}}});
++ assert.equal(irrelevant.elapsedSeconds,0);
++});
++
++test('new take stamps use a frozen capture instant while unstamped old files keep their original erosion',()=>{
++ let clock=advanceNightClock(freshNightClock(),121),stamp=captureNightClock(clock);
++ assert.equal(takeStamp(0,{captured:stamp}),'21:4?');
++ clock=advanceNightClock(clock,7200);assert.equal(takeStamp(0,{captured:stamp}),'21:4?');
++ assert.equal(takeStamp(0),'22:5?');assert.equal(timeOfTake(1),'00:09');
++ assert.equal(takeStamp(0,{captured:{...stamp,priorUnmeasured:true}}),'~21:4?');
++ for(const bad of [null,{}, {schema:1,elapsedSeconds:-1},{schema:1,elapsedSeconds:NaN}])assert.equal(normalizeNightCapture(bad),null);
++});
++
++test('production save normalization retains the canonical night, loss receipts and a fresh new run',async()=>{
++ const fresh=SAVE.freshSave();assert.deepEqual(fresh.nightClock,freshNightClock());
++ const old={...fresh,playSeconds:10000,rec:{takes:['main_b3']}};delete old.nightClock;
++ await SAVE.withTransientGameState({save:old},async()=>{
++  const clock=SAVE.getSave().nightClock;assert.equal(clock.priorUnmeasured,true);assert.equal(clock.elapsedSeconds,9960);
++  const loss=applyNightClockLoss(clock,360,'save-loss');SAVE.saveCommit({nightClock:loss.clock});
++  const saved=structuredClone(SAVE.getSave());
++  await SAVE.withTransientGameState({save:saved},async()=>assert.deepEqual(SAVE.getSave().nightClock,loss.clock));
++  assert.equal(SAVE.getSave().playSeconds,10000);
++ });
++});
++
++test('room and continuous cabin recordings persist capture stamps; legacy and received authored tapes stay unstamped',()=>{
++ PB.loadTakes([]);let clock=advanceNightClock(freshNightClock(),125);
++ PB.setNightClockSource(()=>clock);
++ try{
++  PB.beginTake('main_b3',{x:1,y:2});const first=PB.startTapeTake('main_b3');
++  assert.deepEqual(first.nightStamp,captureNightClock(clock));
++  PB.advanceTape('main_b3',60);PB.finishTapeTake('main_b3',{elapsed:60,tapeElapsed:60,completed:true});
++  clock=advanceNightClock(clock,300);
++  const field=PB.beginContinuousFieldTake({runId:'night-stamp',metadata:{kind:'field'}});assert.deepEqual(field.nightStamp,captureNightClock(clock));
++  PB.interruptContinuousFieldTake(field.id,{elapsedSeconds:5});
++  const saved=PB.serializeTakes();PB.loadTakes(JSON.parse(JSON.stringify(saved)));
++  assert.deepEqual(PB.tapeTakes().map(t=>t.nightStamp),saved.map(t=>t.nightStamp));
++  const legacy=[{roomId:'the_tub',durationSeconds:60,status:'accepted',counted:true,at:100}];PB.loadTakes(legacy);
++  assert.equal(PB.takeFor('the_tub').nightStamp,undefined);assert.equal(PB.serializeTakes()[0].nightStamp,undefined);
++  const received=PB.archiveAuthoredTake({roomId:'received',durationSeconds:3});assert.equal(received.nightStamp,undefined);
++ }finally{PB.setNightClockSource(null);PB.loadTakes([]);}
++});
+diff --git a/test/play-duration-main.spec.mjs b/test/play-duration-main.spec.mjs
+index 68e38e4cfd611f40e05a0186a08967cbf0f77091..5a43679468ccf22388f878d15b8573595d83931c 100644
+--- a/test/play-duration-main.spec.mjs
++++ b/test/play-duration-main.spec.mjs
+@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
+ import vm from 'node:vm';
+ import {readFileSync} from 'node:fs';
+ import {createPlayDurationClock,freshPlayDuration} from '../src/game/play-duration.js';
++import {advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
+ const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+ function body(name){const start=main.indexOf(`function ${name}(`),end=main.indexOf('\n}',start);assert.ok(start>=0&&end>start);return main.slice(start,end+2);}
+ function host(){
+  const save={run:{id:'run:first',status:'active'},playSeconds:700,playDuration:freshPlayDuration()},menus=new Set();
+  const h={getSave:()=>save,storyMode:true,inRogue:true,paused:false,focused:true,scenes:{has:id=>menus.has(id)},
+-  runPlayDurationClock:createPlayDurationClock(),gameplayInputLifecycleActive:()=>h.focused};
++    runPlayDurationClock:createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,gameplayInputLifecycleActive:()=>h.focused};
+  vm.createContext(h);vm.runInContext(body('tickRunPlayDuration'),h);
+  return{h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h)};
+ }
+diff --git a/test/play-duration.spec.mjs b/test/play-duration.spec.mjs
+index 487e969ec2bbbd82956bfc2800996d5cf10823a9..9d75a11f1d980218d8221576ad451cb9b776d39e 100644
+--- a/test/play-duration.spec.mjs
++++ b/test/play-duration.spec.mjs
+@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
+ import fs from 'node:fs';
+ import vm from 'node:vm';
+ import * as D from '../src/game/play-duration.js';
++import {advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
+ import * as SAVE from '../src/game/save.js';
+ import * as PALETTE from '../src/render/palette.js';
+ import * as BINDINGS from '../src/game/bindings.js';
+@@ -146,7 +147,7 @@ test('production main clock excludes menus, pause, native focus loss and termina
+   const start=main.indexOf('function tickRunPlayDuration('),end=main.indexOf('\n}\n',start)+3;
+   assert.ok(start>=0&&end>start);
+   const save={...SAVE.freshSave(),run:{id:'duration-host',status:'active'}},menus=new Set();
+-  const host={getSave:()=>save,runPlayDurationClock:D.createPlayDurationClock(),storyMode:true,inRogue:true,paused:false,
++  const host={getSave:()=>save,runPlayDurationClock:D.createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,storyMode:true,inRogue:true,paused:false,
+     scenes:{has:id=>menus.has(id)},focused:true,gameplayInputLifecycleActive:()=>host.focused};
+   const tick=vm.runInNewContext(`(${main.slice(start,end)})`,host);
+   let now=0;tick(now);tick(now+=1000);assert.equal(save.playDuration.seconds,1);
+diff --git a/test/run-all.mjs b/test/run-all.mjs
+index 0b45d9a08251b3aa9a0597e48a6ab8f8625501f3..6a39642fc9b91ec22fe08914a828beaa0989494b 100644
+--- a/test/run-all.mjs
++++ b/test/run-all.mjs
+@@ -172,6 +172,10 @@ const tests = [
+   'test/work-order-counter.spec.mjs',
+   'test/play-duration-main.spec.mjs',
+   'test/play-duration.spec.mjs',
++  'test/night-clock.spec.mjs',
++  'test/night-clock-main.spec.mjs',
++  'test/night-clock-travel.spec.mjs',
++  'test/night-clock-display.spec.mjs',
+   'test/app-icon-dock.spec.mjs',
+   'test/scene-dock-depth.spec.mjs',
+   'test/get-in-door-main.spec.mjs',
+diff --git a/test/source-pub-main.spec.mjs b/test/source-pub-main.spec.mjs
+index a6a195c08957129745f30e8d00bb68f486d52be9..950e52bcd9004426490edf39aedcfa3c22e904b9 100644
+--- a/test/source-pub-main.spec.mjs
++++ b/test/source-pub-main.spec.mjs
+@@ -27,6 +27,7 @@ function harness(flags=fullFlags()){
+     PB:{stopPlayback:()=>calls.push(['stop-playback'])},STORY:{stopAll:()=>calls.push(['stop-story'])},SPEECH:{clearSpeech(){},say:line=>calls.push(['say',line]),drawSpeech(){}},RT:{setBed(){}},
+     towerBellDirector:{suspend(){},resume(){}},bellPealPerformance:{suspend(){},resume(){}},windowChoreography:{leaveSource:async()=>{}},frontEndSession:{markLive(){}},frontEndPlateOverride:null,
+     ensureCtx(){},resetMotionInput:reason=>calls.push(['reset-input',reason]),cancelOutskirtDoorAnswer(){},stopOutskirtsStreetAudio(){},pauseOutskirtsLastLight(){},stopSourceShoreAudio(){},stopSourceDockDoorAudio(){},stopSourceCorridorRain(){},syncStationEdgeSound(){},syncElsewhereBeds(){},endHorizonScore(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},endBootWeather(){},pushEvent(){},updateAudio(){},ensureInteractionFocus(){},document:{hidden:false,hasFocus:()=>true},
++    gameplayInputLifecycleActive:()=>!environment.document.hidden&&environment.document.hasFocus(),
+   };
+   environment.sourcePubEntranceFrame=production('sourcePubEntranceFrame','\nfunction sourcePubEntranceFocus(',environment);
+   environment.sourcePubEntranceFocus=production('sourcePubEntranceFocus','\nfunction sourcePubEntranceInstances(',environment);
+diff --git a/test/work-order-counter.spec.mjs b/test/work-order-counter.spec.mjs
+index ebd0683dc03306b237e2d13aeaece877e308b2c3..e9444cf725fb558dbda7057eb407a35591ee1e1e 100644
+--- a/test/work-order-counter.spec.mjs
++++ b/test/work-order-counter.spec.mjs
+@@ -3,19 +3,20 @@ import assert from 'node:assert/strict';
+ import vm from 'node:vm';
+ import {readFileSync} from 'node:fs';
+ import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from '../src/game/work-order-state.js';
++import {nightClockReadout} from '../src/game/night-clock.js';
+ import {navigatorTelemetryState} from '../src/render/navigator-telemetry.js';
+ import {sampleNavigatorLcdMotion} from '../src/render/navigator-lcd-motion.js';
+ const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+ const fn=name=>{const a=main.indexOf(`function ${name}(`),b=main.indexOf('\n}',a);assert.ok(a>=0&&b>a);return main.slice(a,b+2);};
+ function telemetry(flags,takes=[]){
+- const a=main.indexOf('telemetry:{takesVisible:')+'telemetry:'.length,b=main.indexOf('},\n',a)+1;assert.ok(a>10&&b>a);
+- return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,getSave:()=>({flags}),rec:{takes,injuries:0},paused:false,
++ const a=main.indexOf('telemetry:{takesEnabled:')+'telemetry:'.length,b=main.indexOf('},\n',a)+1;assert.ok(a>10&&b>a);
++ return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,nightClockReadout,getSave:()=>({flags}),rec:{takes,injuries:0},paused:false,
+   monitorDisplaySnapshot:()=>({db:-96,segments:0}),performance:{now:()=>1000},dockCommandUntil:0});
+ }
+ test('the actual navigator submission hides takes before signing even with a packed case, plan or previewed work order',()=>{
+  for(const flags of [{},{'bag.taken':true,'map.taken':true},{'radio.work-order-read':true},{'cold.exit.prepared':true}]){
+   assert.equal(workOrderAccepted(flags),false);const raw=telemetry(flags,['main_b3']),state=navigatorTelemetryState(raw);
+-  assert.equal(raw.takesVisible,false);assert.equal(state.takes,0);assert.equal(state.total,0);assert.deepEqual(state.slots,[]);
++  assert.equal(raw.takesEnabled,false);assert.equal(state.takes,0);assert.equal(state.total,0);assert.deepEqual(state.slots,[]);
+   assert.equal(state.monitor.available,true,'the real monitor remains available before the assignment');
+  }
+  assert.equal(navigatorTelemetryState(telemetry({[WORK_ORDER_ACCEPTED_FLAG]:true})).total,5);

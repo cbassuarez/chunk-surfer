@@ -66,6 +66,25 @@ const CELLS = (m) => m / COVER.CELL_METRES;
   assert.deepEqual([found.nx, found.ny], [1, 0], 'the wall is still the cover');
 }
 
+// A second obstacle arriving must not silently change the face being used;
+// removing the original face must make that particular shelter unavailable.
+{
+  const plan = gridPlan(['#######', '#.....#', '#.....#', '#.....#', '#######']);
+  const originalSolid = plan.isSolid;
+  let east = true, north = false;
+  plan.isSolid = (x, y) => (x === 3 && y === 2) ? east
+    : (x === 2 && y === 1) ? north : originalSolid(x, y);
+  const first = resolveCover(plan, 2.5, 2.5);
+  assert.deepEqual(first.wallCell, {x:3,y:2});
+  north = true;
+  const retained = resolveCover(plan, 2.5, 2.5, {prefer:first});
+  assert.deepEqual(retained.wallCell, first.wallCell, 'keep the original face');
+  east = false;
+  assert.equal(resolveCover(plan, 2.5, 2.5, {prefer:first}), null,
+    'the original face is gone even when different cover remains');
+  assert.ok(resolveCover(plan, 2.5, 2.5), 'another face remains independently usable');
+}
+
 // ── where the corner is ─────────────────────────────────────────────────────
 // A stub of wall you can stand behind and look around one end of.
 const STUB = [
@@ -94,6 +113,17 @@ const STUB = [
   const open = coverOpenings(plan, cover);
   assert.ok(open.positive === null || open.negative === null,
     'a wall meeting a wall is a dead end for a peek, not an opening');
+}
+
+// Raised cover is real cover too; its run must not disappear merely because
+// the floorplan represents it as a high rise rather than a solid cell.
+{
+  const plan = gridPlan(['#######', '#.....#', '#.....#', '#.....#', '#######'],
+    { floor: { '2,2': 1.2, '3,2': 1.2, '4,2': 1.2 } });
+  const cover = resolveCover(plan, 2.5, 3.2);
+  assert.ok(cover);
+  assert.deepEqual(coverOpenings(plan, cover), { positive: 2, negative: 0 },
+    'a chest-high rise continues across its neighbours');
 }
 
 // ── how far the head goes ───────────────────────────────────────────────────
@@ -127,6 +157,32 @@ const STUB = [
     solidAt: (cx, cy) => cx === 1 && cy === 3,
   });
   assert.ok(blocked < CELLS(COVER.MAX_LEAN_M), 'a prop in the way shortens the lean');
+}
+
+// A wall or furniture cell cannot be crossed just because the far endpoint
+// is open: an interrupted march must stay interrupted in both directions.
+{
+  const plan = gridPlan(['#######', '#.....#', '#.#...#', '#.....#', '#######']);
+  const options = { maxLeanCells: 2.4 };
+  const wall = leanLimit(plan, 1.5, 2.5, 1, 0, options);
+  assert.ok(wall < 0.5, 'the eye stops before the intervening wall, not beyond it');
+  const furniture = leanLimit(plan, 4.5, 3.5, -1, 0, {
+    ...options, solidAt: (x, y) => x === 3 && y === 3,
+  });
+  assert.ok(furniture < 0.5, 'the eye stops before a blocking piece of furniture');
+  const cornerClip = leanLimit(plan, 1.5, 1.7, 1, 1, {
+    solidAt: (x, y) => x === 1 && y === 2,
+  });
+  assert.ok(cornerClip < CELLS(COVER.MAX_LEAN_M),
+    'a default-length diagonal lean cannot cut across the corner of a prop');
+  // This diagonal crosses only a very small corner of the obstructing cell,
+  // shorter than the old 4 cm sampling interval and before its first probe.
+  const sliver = leanLimit(plan, 1.75, 1.76, 1, 1, {
+    marginCells: 0, stepCells: 0.08, solidAt: (x, y) => x === 1 && y === 2,
+  });
+  assert.ok(sliver < CELLS(COVER.MAX_LEAN_M), 'a thin corner crossing is not skipped');
+  const shortClear = leanLimit(plan, 1.5, 1.5, 1, 0, { maxLeanCells: 0.01 });
+  assert.equal(shortClear, 0.01, 'a clear allowance shorter than one march step remains usable');
 }
 
 // ── the peek, resolved ──────────────────────────────────────────────────────

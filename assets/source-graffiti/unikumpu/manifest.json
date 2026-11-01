@@ -1,0 +1,299 @@
+{
+  "creator": "unikumpu",
+  "license": "CC0 1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "creator_statement": "https://www.reddit.com/r/unrealengine/comments/n7j1y7/need_cc0_graffiti_decals_i_thought_to_share_a_set/",
+  "creator_statement_detail": "Creator describes all 18 as original works painted in Photoshop and releases them as CC0 in the post title.",
+  "folder_url": "https://drive.google.com/drive/folders/1yvtj7Mlep48QoqoVQt9e8a_7t27exLTv",
+  "retrieved": "2026-10-29",
+  "files": [
+    {
+      "filename": "Decal_Graffiti_ASP.png",
+      "file_id": "1TWwmeotyJDvFmtEKzIsiTqbAaBPirR8J",
+      "source": "https://drive.google.com/file/d/1TWwmeotyJDvFmtEKzIsiTqbAaBPirR8J/view",
+      "sha256": "8bf05d5462a8d3a4080c2cddee5ca89c92ac773a35511524f3d7aab875615216",
+      "bytes": 77417,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_boombox.png",
+      "file_id": "11lqF39ub6Te59g3OiabrGJTVJTA8T6RW",
+      "source": "https://drive.google.com/file/d/11lqF39ub6Te59g3OiabrGJTVJTA8T6RW/view",
+      "sha256": "f5ff3618ff566f7609e6ddfbe699312d9f455bfefb97de99047549f5835ec2af",
+      "bytes": 158886,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_bunny.png",
+      "file_id": "1Cs1NwtVHFY6hTs7x4kVQ6vg11JasCR8N",
+      "source": "https://drive.google.com/file/d/1Cs1NwtVHFY6hTs7x4kVQ6vg11JasCR8N/view",
+      "sha256": "86f2194817f9b08abf28aece25511ae5b8f50f04946bbcdf705277099c05cf39",
+      "bytes": 107214,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_burn.png",
+      "file_id": "1gq5NNzCK0wfyuGyZm1tirghQnEA5Zr8Z",
+      "source": "https://drive.google.com/file/d/1gq5NNzCK0wfyuGyZm1tirghQnEA5Zr8Z/view",
+      "sha256": "ded726045f9535d10209b08e3876387a6610c941d50f4f262af188d220caa3a3",
+      "bytes": 111837,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_CAS.png",
+      "file_id": "1FDe9W-J5fgO-IF9tOjLfzpfMEZLNUMsT",
+      "source": "https://drive.google.com/file/d/1FDe9W-J5fgO-IF9tOjLfzpfMEZLNUMsT/view",
+      "sha256": "ab62f2adb04095189b7e87238bbdecc7ccc20029460ca45534f1aab116cc27d7",
+      "bytes": 26653,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_chicken.png",
+      "file_id": "1fzTm7Ij_wgvyZ1dYGFrixXGq80yzqKfz",
+      "source": "https://drive.google.com/file/d/1fzTm7Ij_wgvyZ1dYGFrixXGq80yzqKfz/view",
+      "sha256": "b6187b244456774896919a9fc0b9f2c63c5a1e0fb8858543e786ef80861a8ee7",
+      "bytes": 73793,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_dephy.png",
+      "file_id": "1s1JmDDSkeoCiKEPNuAE39a8PbzLa6xy-",
+      "source": "https://drive.google.com/file/d/1s1JmDDSkeoCiKEPNuAE39a8PbzLa6xy-/view",
+      "sha256": "3415ceb684f2f9c1ee8e4d58a3e85ebafff9e875e79f0166a92725afc2d60bb8",
+      "bytes": 103096,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_DUB.png",
+      "file_id": "1CvTIvQs84l-W-d2H8gFnljdFeNeklIRJ",
+      "source": "https://drive.google.com/file/d/1CvTIvQs84l-W-d2H8gFnljdFeNeklIRJ/view",
+      "sha256": "973f7f56e217ebc2468c8b89c731fbb8b8a3009958c379ad29dd3cb127215e30",
+      "bytes": 69787,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_GBS.png",
+      "file_id": "1GC8nG3h6Vlz63eS_QWzvGGov7CmmCyJZ",
+      "source": "https://drive.google.com/file/d/1GC8nG3h6Vlz63eS_QWzvGGov7CmmCyJZ/view",
+      "sha256": "c9fbe5dc286709dac93c538a5fc917860152207dac4401ee5b7cec2543110f10",
+      "bytes": 552353,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_imdoinggreat.png",
+      "file_id": "1SonI40RDgNTurLo-emFl7u8eJYGyMcMv",
+      "source": "https://drive.google.com/file/d/1SonI40RDgNTurLo-emFl7u8eJYGyMcMv/view",
+      "sha256": "fee1acfa29a2a548a4329bf30f441572074bc5a0347b478d065f4e931f61a29e",
+      "bytes": 65391,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_Johnny2.png",
+      "file_id": "1DnODyXunbtAr6W2H9pOyiaCaRxyFsUTZ",
+      "source": "https://drive.google.com/file/d/1DnODyXunbtAr6W2H9pOyiaCaRxyFsUTZ/view",
+      "sha256": "5dee4ef149b85728dbc9962cf005e62b2b5a2104c837760f187aa227e077c95a",
+      "bytes": 221273,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_Kurt.png",
+      "file_id": "1JqKLQrFH1XtaturPRTHoh5OHmTqD3ODZ",
+      "source": "https://drive.google.com/file/d/1JqKLQrFH1XtaturPRTHoh5OHmTqD3ODZ/view",
+      "sha256": "d4e21c23d576e2886031a1f9d503ea00e7372da7c0f2b9bdade32d6f610f8ede",
+      "bytes": 73848,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_maryjane.png",
+      "file_id": "1RZVyjPVpg-uLHgesLi6xyrpEL6zvZh0A",
+      "source": "https://drive.google.com/file/d/1RZVyjPVpg-uLHgesLi6xyrpEL6zvZh0A/view",
+      "sha256": "9eff78caeae7e782eb4cbe9e3e110d31238465a41b62e07d35ba2d24afdaacdf",
+      "bytes": 73025,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_moustache.png",
+      "file_id": "1-iVLT8kTp2Qx0LzLNI-3ugXB2UMyfJw5",
+      "source": "https://drive.google.com/file/d/1-iVLT8kTp2Qx0LzLNI-3ugXB2UMyfJw5/view",
+      "sha256": "95de736d6792bf14196fe431610cfe7dccb4bfa32b3da28acae04fa471520dae",
+      "bytes": 27716,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_PEACE.png",
+      "file_id": "1om7IeOiUU18v4Y0NFW2KNOu4OmD--kQy",
+      "source": "https://drive.google.com/file/d/1om7IeOiUU18v4Y0NFW2KNOu4OmD--kQy/view",
+      "sha256": "4114645dd8829215852eb04332027d45b467845d5736de3782c5fc09271b6d91",
+      "bytes": 62538,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_PEACE2.png",
+      "file_id": "16HFyauTZ0LH2FNdrybUCn-ezsooNc-7T",
+      "source": "https://drive.google.com/file/d/16HFyauTZ0LH2FNdrybUCn-ezsooNc-7T/view",
+      "sha256": "429e8a39c523e19363fc4877e57f793be93e886ee94c20db352617d7c7b77eea",
+      "bytes": 39666,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_RANDOM.png",
+      "file_id": "1PvU2lc_kOYJRsmiY-wYMbd7vUcSC1r5s",
+      "source": "https://drive.google.com/file/d/1PvU2lc_kOYJRsmiY-wYMbd7vUcSC1r5s/view",
+      "sha256": "a297013b0bcb240aca44ee5c5e425e27d5d2760d7b4dde537992d33c4bc75fa9",
+      "bytes": 253635,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "filename": "Decal_Graffiti_valha.png",
+      "file_id": "1PL56p1lU5n0r1nE_FG50xD7iR2B9Ciss",
+      "source": "https://drive.google.com/file/d/1PL56p1lU5n0r1nE_FG50xD7iR2B9Ciss/view",
+      "sha256": "38600133095095d750c0444cd531694cac1583da9d867bd4570fdf3477c31ab0",
+      "bytes": 392371,
+      "size": [
+        900,
+        600
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    }
+  ]
+}

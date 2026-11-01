@@ -38,6 +38,33 @@ export const WATER_BODIES = Object.freeze([
     blocks: false,
     ripples: true,
   }),
+  // WHAT IS LEFT IN A DRAINED BATH.
+  //
+  // The deep end falls to the main drain (NATATORIUM_SUMP in conservatory.js)
+  // and the ceiling over it has come down, so the bath is never quite empty:
+  // rainwater from the open courts above stands over the sump. Found as the
+  // basin cells whose floor lies below this level, so it is exactly the water
+  // the floor would keep. Clear: you see the tiles and what fell in.
+  Object.freeze({
+    id: 'natatorium-rainwater',
+    zone: ZONE.natatorium,
+    material: MATERIAL.wetTile,
+    levelM: -2.12,
+    belowLevel: true,
+    murk: 0.22,
+    active: (run) => run?.environment?.natatoriumWater !== NATATORIUM_WATER_STATES.MURKY,
+    // Drips from the broken ceiling (NATATORIUM_CEILING_BREAK), which hangs
+    // over the north edge of this water. Basin-normalised points, each with its
+    // own period so the surface never settles into one rhythm.
+    drips: Object.freeze([
+      Object.freeze({ u: 0.30, v: 0.14, periodMs: 2300, phaseMs: 0 }),
+      Object.freeze({ u: 0.55, v: 0.20, periodMs: 3700, phaseMs: 900 }),
+      Object.freeze({ u: 0.70, v: 0.12, periodMs: 1700, phaseMs: 400 }),
+      Object.freeze({ u: 0.42, v: 0.24, periodMs: 5300, phaseMs: 2100 }),
+    ]),
+    blocks: false,
+    ripples: true,
+  }),
   Object.freeze({
     id: 'park-fountain',
     zone: ZONE.dock,
@@ -53,6 +80,8 @@ export const WATER_BODIES = Object.freeze([
     murk: 0.30,
     // Always. Nobody has drained a municipal fountain since the building closed.
     active: () => true,
+    // Out in the weather: the rain dimples it.
+    outdoor: true,
     // WHERE THE WATER LANDS.
     //
     // Four falls off the lower bowl's mask spouts, on the cardinals, at a radius
@@ -91,9 +120,41 @@ export const WATER_BODIES = Object.freeze([
 // player's distance, on the audio. That is right for a drained bath, which is
 // only ever disturbed by something happening to it. It is wrong for a fountain,
 // which is disturbed by itself. These sources exist whenever the body does.
-export function waterFlowSources(body, { reduceMotion = false } = {}) {
+// A drip is an impulse, not a pressure: it is a source only for the frame or
+// two after it lands, then the simulation carries the ring outward.
+const DRIP_PULSE_MS = 70;
+export function waterDripSources(body, { now = 0, reduceMotion = false } = {}) {
+  if (!Array.isArray(body?.drips)) return [];
+  const scale = reduceMotion ? 0.22 : 1;
+  const t = Number(now) || 0;
+  return body.drips.flatMap((drip) => {
+    const since = (t + drip.phaseMs) % drip.periodMs;
+    return since < DRIP_PULSE_MS
+      ? [{ kind: 'drip', u: drip.u, v: drip.v, strength: -0.09 * scale, radius: 0.035 }]
+      : [];
+  });
+}
+
+// Wading. A body you are standing in is disturbed where you move through it,
+// in proportion to how far you moved since the last frame.
+export function waterWakeSource(body, player, previous, { reduceMotion = false } = {}) {
+  const b = body?.bounds;
+  if (!b || !player || !previous || !pointInBounds(player.x, player.y, b)) return null;
+  const moved = Math.hypot(player.x - previous.x, player.y - previous.y);
+  if (!(moved > 0.002)) return null;
+  return {
+    kind: 'wake',
+    u: (player.x - b.minX) / Math.max(1e-3, b.maxX - b.minX),
+    v: (player.y - b.minY) / Math.max(1e-3, b.maxY - b.minY),
+    strength: Math.min(0.06, moved * 0.25) * (reduceMotion ? 0.22 : 1),
+    radius: 0.06,
+  };
+}
+
+export function waterFlowSources(body, { reduceMotion = false, now = 0 } = {}) {
+  const drips = waterDripSources(body, { now, reduceMotion });
   const flow = body?.flow;
-  if (!flow) return [];
+  if (!flow) return drips;
   const scale = reduceMotion ? 0.22 : 1;
   const sources = [{
     kind: 'swell',
@@ -111,10 +172,10 @@ export function waterFlowSources(body, { reduceMotion = false } = {}) {
       radius: 0.20,
     });
   }
-  return sources;
+  return [...sources, ...drips];
 }
 
-export function computeWaterBounds(fp, { zone, material }) {
+export function computeWaterBounds(fp, { zone, material, levelM = 0, belowLevel = false }) {
   const plan = fp?.floorplan?.() || fp;
   if (!plan?.w || !plan?.h || !plan.material || !plan.zone || !plan.solid) return null;
   let minX = Infinity;
@@ -127,6 +188,7 @@ export function computeWaterBounds(fp, { zone, material }) {
       const i = y * plan.w + x;
       if (plan.solid[i]) continue;
       if (plan.zone[i] !== zone || plan.material[i] !== material) continue;
+      if (belowLevel && !(plan.floor?.[i] < levelM)) continue;
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x + 1);

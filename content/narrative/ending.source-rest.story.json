@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "ending.source-rest",
+  "title": "The Place to Rest",
+  "status": "active",
+  "entry": "start",
+  "entries": ["start"],
+  "tags": ["ending", "source", "rest"],
+  "notes": "An intentional, terminal resting arrival at No Return. No Contact battle is implied; the field and the other possible interpretation remain unresolved.",
+  "regions": [{"id":"ending.source-rest.region","title":"The Place to Rest","kind":"ending","color":"#b6aa98","nodeIds":["start"]}],
+  "nodes": {"start":{"type":"ending","speaker":"THE PLACE TO REST","lines":[
+    {"id":"start.line.1","who":"direction","text":"The place holds your weight. It is the first thing tonight that has asked for nothing in return."},
+    {"id":"start.line.2","who":"you","text":"Just until this is finished."},
+    {"id":"start.line.3","who":"direction","text":"The line you are listening to gives way to another. Nothing hurries it. There is room for each note to be itself and for the next to arrive."},
+    {"id":"start.line.4","who":"you","text":"I thought there would be more time after it."},
+    {"id":"start.line.5","who":"direction","text":"Perhaps there is a body elsewhere, quiet at last in an ordinary room. Perhaps this is the only room there has ever been. The recorder cannot tell you which."},
+    {"id":"start.line.6","who":"direction","text":"The sound continues. It does not need you to hold it up. That is not the same as saying you were never part of it."},
+    {"id":"start.line.7","who":"you","text":"I heard it."},
+    {"id":"start.line.8","who":"direction","text":"Your hand opens. The next phrase arrives, and there is no longer any need to count the breaths between its notes."},
+    {"id":"start.line.9","who":"direction","text":"NO RETURN."}
+  ]}}
+}

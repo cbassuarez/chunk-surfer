@@ -121,7 +121,7 @@ test('actual hide/show and page lifecycle handlers release stale native ownershi
     recoverInteractionAudio() {}, gameplayWantsPointerCapture: () => true,
     outskirtDoorAnswer: { cancel() {} }, cancelOutskirtDoorAnswer() {},
     towerPersonalHud: null, sourceShoreAudio: null, activeRecordingSlate: null, bellPealPerformance: null,
-    pubRoomAudio: null, sourcePubAudio: null, sourceContinuationAudio: null, architectureDoorAudio: null,
+    pubRoomAudio: null, sourcePubAudio: null, sourceContinuationAudio: null, architectureDoorAudio: null, architectureDoorEvents: {hold(){}},
   };
   vm.runInNewContext(main.slice(start, end), context);
   document.hidden = true;

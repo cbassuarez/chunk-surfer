@@ -80,7 +80,7 @@ test('actual physical, mirrored and shadow submissions share a stable pattern or
  const run=state=>{
   const calls=[],done={};
   const array=()=>new Float32Array(16);
-  const env={Math,Number,CELL,outskirtsBusInteriorLightMix,sourceBusLighting:null,camX:3,camY:4,camZ:-900,pitch:0,
+  const env={Math,Number,CELL,outskirtsBusInteriorLightMix,sourceBusLighting:null,sourceBusInterior:null,camX:3,camY:4,camZ:-900,pitch:0,
    coastalWaterUniforms:()=>({active:false}),sourceDoorLights:[],sourceVoidPhysicalLightPositions:array(),sourceVoidPhysicalLightColours:array(),sourceVoidPhysicalLightPenetration:array(),sourceVoidPhysicalLightEmergency:array(),sourceVoidPhysicalLightDirections:array(),sourceVoidPhysicalLightConeInner:array(),
    horizonState:{active:true},unravellingTorchTransmission:()=>1,sourceTowerViewInside:()=>false,stormFlash:0,
    sourceReflection:{groundY:0},visualEffectsEnabled:()=>true,pixelMeshSettings:{reduceMotion:false},localShadowLight:null,

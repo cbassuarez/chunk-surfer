@@ -147,7 +147,7 @@ export function coverOpenings(plan, cover, { limitCells = 8 } = {}) {
       // You cannot slide into rock: that is an inside corner, not an opening.
       if (solid(sx, sy)) { reach = k === 1 ? null : k - 1; break; }
       // The wall beside you gave out. That is the corner, and it is k cells away.
-      if (!solid(sx - nx, sy - ny)) { reach = k - 1; break; }
+      if (!isRealCover(plan, { x: sx, y: sy }, nx, ny, COVER.MIN_HEIGHT_M)) { reach = k - 1; break; }
     }
     out[key] = reach;
   }
@@ -177,23 +177,32 @@ export function leanLimit(plan, x, y, dirX, dirY, {
   const blocked = solidAt || ((cx, cy) => (
     cx < 0 || cy < 0 || cx >= size.w || cy >= size.h ? true : !!plan.isSolid(cx, cy)
   ));
-  const hits = (px, py) => blocked(Math.floor(px), Math.floor(py));
-
-  let safe = 0;
-  for (let t = stepCells; t <= maxLeanCells + 1e-9; t += stepCells) {
-    // Probe the margin ahead of the eye, so the camera stops short of the face
-    // rather than on it.
-    const probe = t + marginCells;
-    if (hits(x + ux * probe, y + uy * probe)) break;
-    safe = t;
+  // Traverse the actual cells crossed by the eye ray. Sampling discrete points
+  // can miss a sliver of a cell at a corner, or see a clear endpoint beyond an
+  // intervening obstruction. The short walk visits at most a few grid cells.
+  let cx = Math.floor(x), cy = Math.floor(y);
+  if (blocked(cx, cy)) return 0;
+  const stepX = Math.sign(ux), stepY = Math.sign(uy);
+  const deltaX = stepX ? 1 / Math.abs(ux) : Infinity;
+  const deltaY = stepY ? 1 / Math.abs(uy) : Infinity;
+  let nextX = stepX > 0 ? (cx + 1 - x) * deltaX
+    : stepX < 0 ? (x - cx) * deltaX : Infinity;
+  let nextY = stepY > 0 ? (cy + 1 - y) * deltaY
+    : stepY < 0 ? (y - cy) * deltaY : Infinity;
+  const extent = maxLeanCells + Math.max(0, marginCells);
+  while (Math.min(nextX, nextY) <= extent) {
+    const distance = Math.min(nextX, nextY);
+    // A simultaneous crossing enters the diagonally adjacent cell; the two
+    // side cells are only touched at a point and do not contain the eye.
+    if (nextX <= distance + 1e-12) { cx += stepX; nextX += deltaX; }
+    if (nextY <= distance + 1e-12) { cy += stepY; nextY += deltaY; }
+    if (blocked(cx, cy)) {
+      const allowance = Math.max(0, distance - Math.max(0, marginCells));
+      const quantized = stepCells > 0 ? Math.floor((allowance + 1e-12) / stepCells) * stepCells : allowance;
+      return clamp(quantized, 0, maxLeanCells);
+    }
   }
-  // The last step rarely lands exactly on maxLean; if the full extent is clear,
-  // give it, so the cap is the cap and not the cap minus a rounding error.
-  if (safe > 0 && safe < maxLeanCells
-      && !hits(x + ux * (maxLeanCells + marginCells), y + uy * (maxLeanCells + marginCells))) {
-    safe = maxLeanCells;
-  }
-  return clamp(safe, 0, maxLeanCells);
+  return maxLeanCells;
 }
 
 /**

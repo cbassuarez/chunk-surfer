@@ -1,20 +1,7 @@
-// What time it is, and how much of that you still know.
-//
-// There is no timer on this screen and there never will be. The recordist owns
-// a watch, the recorder writes a timestamp on every file, and both of them are
-// correct. What rots is the reading of them.
-//
-// The previous recordist's log does this in his own hand, and the player has
-// already watched it happen: 21:40, 22:15, 23:02, 00:20, 01:35, 02:10, 02:5?,
-// ??:??. He was not confused and he was not lying. He simply stopped being able
-// to write the number down, in a building where he had by then listened to four
-// rooms and was about to listen to a fifth.
-//
-// So the player's own bag does exactly the same thing, take by take, quietly,
-// where anybody can check it and almost nobody will. By the fifth room the
-// night has no numbers in it. Nobody is ever told why.
-//
-// This is the whole demolition clock. There is no other one, until the end.
+// Take-file timestamps and their established erosion. The live night is owned
+// by night-clock.js. New files keep its capture instant; legacy files retain
+// their authored take-order stamps, which were never measured wall-clock time.
+// Never backfill a precise capture time into an old tape.
 
 export const START_MIN = 21 * 60 + 38;      // 21:38, the service door
 export const PER_TAKE_MIN = 72;             // a room, and the walk to the next
@@ -27,7 +14,7 @@ export function clockString(minutes) {
   return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 }
 
-// The wall-clock time a take was made, if anyone could still read a clock.
+// The original authored night position, retained only for unstamped old takes.
 export function timeOfTake(index) {
   return clockString(START_MIN + (index + 1) * PER_TAKE_MIN + (index * 7) % 13);
 }
@@ -51,10 +38,13 @@ export function erode(stamp, n) {
 // fourth take. It is a property of how many rooms are now inside you.
 const EROSION = [1, 2, 3, 4, 4];
 
-export function takeStamp(index, { dead = false } = {}) {
+export function takeStamp(index, { dead = false, captured = null } = {}) {
   if (dead) return DEAD;
   if (index < 0) return '';
-  return erode(timeOfTake(index), EROSION[Math.min(index, EROSION.length - 1)]);
+  const measured = captured?.schema === 1 && typeof captured.elapsedSeconds === 'number'
+    && Number.isFinite(captured.elapsedSeconds) && captured.elapsedSeconds >= 0;
+  const stamp = measured ? clockString(START_MIN + Math.floor(captured.elapsedSeconds / 60)) : timeOfTake(index);
+  return `${measured && captured.priorUnmeasured !== false ? '~' : ''}${erode(stamp, EROSION[Math.min(index, EROSION.length - 1)])}`;
 }
 
 // The work order is printed. Print does not rot.

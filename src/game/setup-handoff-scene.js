@@ -1,5 +1,5 @@
 import { uiSize, uiScrim, uiText, uiWrap } from '../render/ui.js';
-import { withMachinePanel, drawLampButton } from '../render/presentation.js';
+import { withMachinePanel, drawLampButton, machinePanelBezelRail } from '../render/presentation.js';
 import { inputPrompt } from './bindings.js';
 
 // A real input hold, not an escapable conversation and not an automatic Bag.
@@ -19,8 +19,9 @@ export function makeSetupHandoffScene({onOpen=()=>{},cables=0,returning=false,mo
     },
     render(){
       const {cols,rows}=uiSize(),w=Math.min(80,cols-4),h=Math.min(13,rows-2),x=(cols-w)/2,y=Math.max(1,rows-h-2);
+      const rail=machinePanelBezelRail(x,y,w,h,{controlHeight:2.5});
       uiScrim(.35);
-      withMachinePanel(x,y,w,h,{label:mode==='skills'?'CHECK YOUR PATCH BAY':'BEFORE YOU LEAVE',source:'FIELD KIT',meter:false,footer:''},(body)=>{
+      withMachinePanel(x,y,w,h,{label:mode==='skills'?'CHECK YOUR PATCH BAY':'BEFORE YOU LEAVE',source:'FIELD KIT',meter:false,footer:'',apertureBounds:rail.apertureBounds,bodyWithinAperture:true},(body)=>{
       const copy=mode==='skills'
         ?returning?'Finish checking the patch bay. Your route and recordings are already saved.'
           :cables>0?`Rehearsal finished. ${cables} spare ${cables===1?'lead':'leads'} in the case. Patch your kit before the encounter.`
@@ -30,7 +31,7 @@ export function makeSetupHandoffScene({onOpen=()=>{},cables=0,returning=false,mo
       const lines=uiWrap(copy,Math.max(12,body.w));
       lines.slice(0,3).forEach((line,i)=>uiText(body.x,body.y+i,line,'ui-primary',.95));
       uiText(body.x,body.y+3,`${inputPrompt('bag')} OPEN THE FIELD CASE`,'ui-amber',1);
-      button={x:body.x,y:body.y+4.5,w:Math.min(30,body.w),h:2.5};
+      button={x:body.x,y:rail.controlY,w:Math.min(30,body.w),h:2.5};
       });
       drawLampButton(button.x,button.y,button.w,button.h,{legend:'OPEN FIELD CASE',color:'amber',lit:true,latched:false});
     },

@@ -38,6 +38,7 @@ export const FACILITY_SPACES = Object.freeze([
   S('basement-corridor','DANCE WING CORRIDOR',{x:25,y:23},{shortLabel:'CORR'}),
   S('prop-store','PROP STORE',{x:3,y:14},{shortLabel:'STORE',doorIds:['store-corridor']}),
   S('studio-b2','STUDIO B2',{x:33,y:14},{shortLabel:'B2',doorIds:['b3-b2-service','b2-corridor']}),
+  S('studio-b3-control','B3 CONTROL ROOM',{x:21.5,y:12},{shortLabel:'CTRL',doorIds:['b3-b2-service'],currentRadius:3}),
   S('studio-b1','STUDIO B1',{x:45,y:15},{shortLabel:'B1',doorIds:['b1-corridor','b1-lift-hatch']}),
   S('studio-b5','STUDIO B5',{x:15,y:29},{shortLabel:'B5',doorIds:['room5-corridor']}),
   S('plant-room','PLANT ROOM',{x:36,y:31},{shortLabel:'PLANT',doorIds:['plant-spur']}),
@@ -49,11 +50,14 @@ export const FACILITY_SPACES = Object.freeze([
   S('get-in',SCENE_DOCK_LABEL,{x:65,y:9},{shortLabel:'DOCK',doorIds:['dock-grey-exterior','dock-foyer-service','dock-inner-service']}),
   S('atrium','ATRIUM / FRONT OF HOUSE',{x:81,y:10},{shortLabel:'FOH',doorIds:['dock-foyer-service','foh-office','hall-vestibule']}),
   S('box-office','BOX OFFICE',{x:93,y:10},{shortLabel:'BOX',doorIds:['foh-office']}),
-  S('public-sanitary-core','PUBLIC TOILETS',{x:80.75,y:24.25},{shortLabel:'WC',doorIds:['public-wc-large','public-wc-standard']}),
-  S('glasshouse','GLASSHOUSE',{x:84,y:30},{shortLabel:'GLASS',doorIds:['pool-lobby','glasshouse-changing'],
-    mapPosition:freezePoint({x:84,y:30}),currentRadius:4}),
-  S('pool-changing','CHANGING ROOM',{x:94,y:30},{shortLabel:'CHANGE',doorIds:['glasshouse-changing','changing-pool'],
-    mapPosition:freezePoint({x:94,y:30}),currentRadius:2}),
+  // The toilets are in the atrium's west bay (PUBLIC_SANITARY_CORE.anchor), the
+  // glasshouse is the north-south link from the atrium, and the changing room
+  // sits at its south end before the pool.
+  S('public-sanitary-core','PUBLIC TOILETS',{x:78.5,y:10.25},{shortLabel:'WC',doorIds:['public-wc-large','public-wc-standard'],currentRadius:3}),
+  S('glasshouse','GLASSHOUSE',{x:84,y:21},{shortLabel:'GLASS',doorIds:['pool-lobby','glasshouse-changing'],
+    mapPosition:freezePoint({x:84,y:21}),currentRadius:4}),
+  S('pool-changing','CHANGING ROOM',{x:84,y:30},{shortLabel:'CHANGE',doorIds:['glasshouse-changing','changing-pool'],
+    mapPosition:freezePoint({x:84,y:30}),currentRadius:2}),
   S('ground-spine','GROUND SPINE',{x:68,y:23},{shortLabel:'SPINE'}),
   S('main-stair-ground','MAIN STAIR / GROUND',MAIN_STAIR_LAYOUT.groundHall,{shortLabel:'STAIR'}),
 
@@ -92,7 +96,9 @@ export const FACILITY_SPACES = Object.freeze([
 ]);
 
 const TARGET_DOORS = Object.freeze({
-  main_b3: Object.freeze(['b3-b2-service']),
+  // The service door now enters the control booth from B2; the live room's
+  // south opening is an un-doored corridor entrance.
+  main_b3: Object.freeze([]),
   the_tub: Object.freeze(['pool-lobby','glasshouse-changing','changing-pool']),
   amplifications: Object.freeze(['hall-vestibule','hall-rear-service','hall-stage-service']),
   soundnoisemusic: Object.freeze(['practice-west-1','practice-east-1','practice-west-2','practice-east-2','practice-side','practice-west-3','practice-east-3','practice-west-4','practice-east-4']),

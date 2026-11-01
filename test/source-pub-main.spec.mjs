@@ -27,6 +27,7 @@ function harness(flags=fullFlags()){
     PB:{stopPlayback:()=>calls.push(['stop-playback'])},STORY:{stopAll:()=>calls.push(['stop-story'])},SPEECH:{clearSpeech(){},say:line=>calls.push(['say',line]),drawSpeech(){}},RT:{setBed(){}},
     towerBellDirector:{suspend(){},resume(){}},bellPealPerformance:{suspend(){},resume(){}},windowChoreography:{leaveSource:async()=>{}},frontEndSession:{markLive(){}},frontEndPlateOverride:null,
     ensureCtx(){},resetMotionInput:reason=>calls.push(['reset-input',reason]),cancelOutskirtDoorAnswer(){},stopOutskirtsStreetAudio(){},pauseOutskirtsLastLight(){},stopSourceShoreAudio(){},stopSourceDockDoorAudio(){},stopSourceCorridorRain(){},syncStationEdgeSound(){},syncElsewhereBeds(){},endHorizonScore(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},endBootWeather(){},pushEvent(){},updateAudio(){},ensureInteractionFocus(){},document:{hidden:false,hasFocus:()=>true},
+    gameplayInputLifecycleActive:()=>!environment.document.hidden&&environment.document.hasFocus(),
   };
   environment.sourcePubEntranceFrame=production('sourcePubEntranceFrame','\nfunction sourcePubEntranceFocus(',environment);
   environment.sourcePubEntranceFocus=production('sourcePubEntranceFocus','\nfunction sourcePubEntranceInstances(',environment);

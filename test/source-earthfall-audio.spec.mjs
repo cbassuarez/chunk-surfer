@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { createSourceEarthfallAudio, sourceEarthfallVoiceMix, SOURCE_EARTHFALL_AUDIO as CONFIG } from '../src/audio/source-earthfall.js';
 import { freshSourceEarthfall, stepSourceEarthfall, sourceEarthfallFrame } from '../src/game/source-earthfall.js';
+import { SOURCE_EARTHFALL, SOURCE_EARTHFALL_CUES } from '../src/data/source-earthfall.js';
 
 const manifest = JSON.parse(fs.readFileSync('public/audio/source-demolition/manifest.json'));
 const listener = { x: 0, y: 101.62, z: -2, yaw: 0 };
@@ -14,7 +15,7 @@ const frame = (events = [], extra = {}) => ({ active: true, sequenceId: 'earth',
 
 function fixture({ context = null, manifestValue = manifest, hrtf = true, delay = true,
   noAudio = false, noDestination = false, contextKey = 'ctx', failedFile = null, wrongBytes = false,
-  rate = 48000, decode = null } = {}) {
+  rate = 48000, decode = null, asideFactory = null } = {}) {
   const gains = [], sources = [], delays = [], panners = [], filters = [], fetches = [];
   const param = () => ({ value: 0, calls: [], setTargetAtTime(...a) { this.value = a[0]; this.calls.push(['target', ...a]); },
     setValueAtTime(...a) { this.value = a[0]; this.calls.push(['set', ...a]); },
@@ -41,7 +42,7 @@ function fixture({ context = null, manifestValue = manifest, hrtf = true, delay 
     return { ok: true, arrayBuffer: async () => { const bytes = new ArrayBuffer(wrongBytes ? 8 : clip.bytes);
       new DataView(bytes).setFloat64(0, clip.duration, true); return bytes; } };
   };
-  const runtime = createSourceEarthfallAudio({ getAudio: () => pair, fetcher, urlFor: file => `/bank/${file}` });
+  const runtime = createSourceEarthfallAudio({ getAudio: () => pair, fetcher, urlFor: file => `/bank/${file}`,...(asideFactory?{createAsideDoorAudio:asideFactory}:{}) });
   return { runtime, ctx, gains, sources, delays, panners, filters, fetches, destination,
     setAudio(value = { ctx, destination }) { pair = value; } };
 }
@@ -196,7 +197,7 @@ test('a newly observed committed save treats even zero-age receipts as baseline;
   const f = fixture(); await f.runtime.ready();
   let state = freshSourceEarthfall({ runId: 'actual-audio-route' });
   f.runtime.update(sourceEarthfallFrame(state), { listener });
-  for (let i = 0; i < 720; i++) {
+  for (let i = 0; i < 60 * (SOURCE_EARTHFALL.footingLossAt + 11); i++) {
     state = stepSourceEarthfall(state, { dt: 1 / 60, forward: 1, assetsReady: true }).state;
     f.ctx.currentTime += 1 / 60;
     f.runtime.update(sourceEarthfallFrame(state), { listener: { x: state.x, y: state.feet + 1.62, z: state.z, yaw: state.yaw } });
@@ -207,7 +208,7 @@ test('a newly observed committed save treats even zero-age receipts as baseline;
   assert.equal(state.phase, 'landed', 'the same pure physics fixture must descend, contact the catch and reach the lower floor');
   for (const type of ['strain', 'fracture', 'footing-loss','stratum-0','stratum-1','stratum-2', 'catch', 'land']) {
     const receipts = f.runtime.snapshot().history.filter(item => item.type === type);
-    assert.equal(receipts.length, 1, type); assert.equal(receipts[0].reason, 'played', type);
+    assert.equal(receipts.length, 1, type); assert.equal(receipts[0].reason, type.startsWith('stratum-')?'depth-receipt-no-material-failure':'played', type);
   }
 });
 
@@ -250,4 +251,51 @@ test('invalid or failed shared material fails silent; reduced capability has an 
   const state = f.runtime.update(frame([cue('strain')]), { listener });
   assert.match(state.positionMethod, /stereo/); assert.match(state.propagationMethod, /onset travel delay only/);
   assert.ok(Math.abs(f.sources[0].starts[0][0] - (.005 + sourceEarthfallVoiceMix(earth, listener).arrivalDelay)) < 1e-10);
+});
+
+
+test('physical pre-release loading earns only the remaining recorded restraint tail at the actual dishing material',async()=>{
+ const f=fixture();await f.runtime.ready();f.runtime.update(frame(),{listener});
+ let state=freshSourceEarthfall({runId:'load-transfer-audio'});
+ while(!state.committed)state=stepSourceEarthfall(state,{dt:1/120,forward:1}).state;
+ let event;
+ while(!event){const r=stepSourceEarthfall(state,{dt:1/120});state=r.state;event=r.events.find(e=>e.type==='load-transfer');}
+ assert.ok(Math.abs(state.elapsed-SOURCE_EARTHFALL_CUES.find(cue=>cue.type==='load-transfer').at)<1/120);assert.equal(state.phase,'fracturing');
+ const physical=sourceEarthfallFrame(state);assert.deepEqual(event.position,physical.anchors.fallingMaterial);
+ f.ctx.currentTime=1.7;const view=f.runtime.update(frame([event]),{listener});
+ const tail=f.sources[0];assert.equal(tail.starts[0][1],CONFIG.initiationSeconds);assert.ok(Math.abs(tail.starts[0][2]-(2.25-CONFIG.initiationSeconds))<1e-8);
+ assert.equal(tail.playbackRate.value,1);assert.deepEqual(view.voices[0].position,event.position);
+ f.runtime.update(frame([{...event,id:'same-bearing-other-id'}]),{listener});assert.equal(f.sources.length,1,'same semantic loading cannot replay');
+ f.runtime.stop();assert.equal(f.runtime.snapshot().sourceCount,0);
+});
+
+
+test('the pre-impact return earns a second real impact without replaying old support or first-contact receipts',async()=>{
+ const f=fixture();await f.runtime.ready();f.runtime.update(frame([cue('catch')]),{listener});assert.equal(f.sources.length,1);f.runtime.stop();
+ f.ctx.currentTime=1;f.runtime.update(frame([cue('catch'),cue('catch-return')]),{listener});assert.equal(f.sources.length,2);assert.equal(f.runtime.snapshot().history.filter(e=>e.type==='catch-return'&&e.reason==='played').length,1);
+ f.runtime.update(frame([cue('catch-return',{id:'semantic-duplicate'})]),{listener});assert.equal(f.sources.length,2);
+ f.ctx.currentTime=1.5;f.runtime.update(frame([cue('land-return')]),{listener});assert.equal(f.sources.length,3);assert.equal(f.runtime.snapshot().history.filter(e=>e.type==='land-return'&&e.reason==='played').length,1);
+});
+
+test('aside door foley uses the existing native door families, actual moving anchors and bounded once-only event routing',async()=>{
+ const calls=[],door={update(input){calls.push(['update',input]);},event(event,anchor){calls.push(['event',event,anchor]);},pause(reason){calls.push(['pause',reason]);},whenReady:async()=>true,snapshot:()=>({fixture:true}),dispose(){}};
+ const audio=createSourceEarthfallAudio({createAsideDoorAudio:()=>door});await audio.prepareAside();assert.ok(calls.some(c=>c[0]==='pause'));
+ const f={active:true,runId:'aside-test',blackoutAlpha:0,eye:[65,1.62,10],yaw:.2,doors:[{fraction:.6,anchor:{x:57.25,y:1.3,z:10.25}}]},event={id:'aside-door-close-1',doorIndex:0,type:'closed'};
+ audio.updateAside(f,{events:[event]});audio.updateAside(f,{events:[event]});assert.equal(calls.filter(c=>c[0]==='event').length,1);const played=calls.find(c=>c[0]==='event');assert.equal(played[1].portal.archetype,'bay-goods-pair');assert.deepEqual(played[2],f.doors[0].anchor);
+ audio.updateAside({...f,blackoutAlpha:1},{events:[{...event,id:'muted-cue'}]});audio.updateAside(f,{events:[{...event,id:'muted-cue'}]});assert.equal(calls.filter(c=>c[0]==='event').length,1,'a muted/faded event may not catch up on return');
+ audio.stop();assert.equal(calls.at(-1)[0],'pause');audio.destroy();
+});
+
+test('Ellery bond failures have distinct physical sources, do not backlog on restore, and stop at pause',async()=>{
+  const doors={update(){},event(){},snapshot(){return{};},pause(){},dispose(){},whenReady:async()=>true};
+  const h=fixture({asideFactory:()=>doors});await h.runtime.ready();
+  const position={x:57.25,y:3.1,z:9.25};
+  const view=(age,id='masonry-bond')=>({active:true,runId:'aside-a',elapsed:8.15+age,eye:[65.15,1.62,11.65],yaw:-.75,blackoutAlpha:0,doors:[],materialEvents:[{id:'aside:a:'+id,type:id,age,position}]});
+  h.runtime.updateAside(view(0));assert.equal(h.sources.length,1);assert.equal(h.runtime.snapshot().aside.materialHistory[0].reason,'played');
+  assert.deepEqual(h.runtime.snapshot().voices[0].position,position);
+  h.runtime.updateAside(view(.04));assert.equal(h.sources.length,1,'frame observation must not replay a bond event');
+  h.runtime.updateAside(view(2,'roof-bearing'));assert.equal(h.sources.length,1);assert.equal(h.runtime.snapshot().aside.materialHistory.at(-1).reason,'stale-no-backlog');
+  h.runtime.stopAside();assert.equal(h.runtime.snapshot().graphVoices,0);
+  h.runtime.updateAside(view(0,'floor-bond'),{suspended:true});assert.equal(h.sources.length,1,'paused room cannot trigger a material voice');
+  h.runtime.destroy();
 });

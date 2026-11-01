@@ -45,7 +45,7 @@ test('a finite-speed localized wave arrives before loading and freeing a pathway
   assert.ok(getBody(arrival+.6).waveResponse>.15);
   assert.equal(getBody(release-.001).released,false);assert.equal(getBody(release+.001).released,true);
   const atWave=frame({elapsed:arrival+.2});const wave=atWave.waves.find(w=>Math.abs(w.time-start.emissionAt)<1e-6);
-  assert.ok(wave);near(wave.radius,(arrival+.2-wave.time)*wave.speed);assert.equal(wave.minimumX,75);assert.ok(wave.width>0);
+  assert.ok(wave);near(wave.radius,(arrival+.2-wave.time)*wave.speed);assert.equal(wave.minimumX,C.fallPressureMinimumX);assert.ok(wave.width>0);
   const arrivalEvent=atWave.impacts.find(e=>e.kind==='pressure-arrival'&&e.targetId===start.id);assert.ok(arrivalEvent);near(arrivalEvent.time,arrival);assert.equal(arrivalEvent.sourceId,C.fallAssembly.id);
 });
 
@@ -62,7 +62,7 @@ test('release preserves position, orientation and deformation before a causal in
 test('Missing Centre pressure travels around its absent centre rather than moving every band together',()=>{
   const emission=PEAKS.centre[0].time,at=frame({phase:'catch',elapsed:emission+1.2});
   assert.ok(at.arcs[0].waveResponse>.1);assert.equal(at.arcs[2].waveResponse,0);
-  const wave=at.waves[0];assert.equal(wave.kind,'centre-pressure');assert.deepEqual(wave.origin,{x:-142,y:35,z:-12});
+  const wave=at.waves[0];assert.equal(wave.kind,'centre-pressure');assert.deepEqual(wave.origin,ARCS[0].position);
   assert.equal(wave.bands.length,3);assert.ok(wave.bands[0].angle>wave.bands[2].angle);
   for(const band of wave.bands)near(band.angle,ARCS[0].startAngle+(at.time-wave.time)*wave.speed/band.radius);
   assert.ok(at.arcs.every(arc=>arc.endAngle-arc.startAngle<Math.PI/2));assert.ok(at.arcs.every(arc=>arc.radius-arc.width/2>50));
@@ -78,11 +78,11 @@ test('Missing Centre arrival creaks originate in material at the transformed arc
   }
 });
 
-test('remote bounds stay on their own threshold side and never enter any route envelope',()=>{
+test('remote bounds stay beyond the II side or below the overhead III stack, outside every route envelope',()=>{
   for(let time=0;time<240;time+=.8)for(const phase of['wrong-return','catch']){
     const f=frame({phase,elapsed:time});
     if(f.world==='fall')assert.ok(f.bounds.min.x>C.fallMinimumX);
-    else assert.ok(f.bounds.max.x<C.centreMaximumX);
+    else assert.ok(f.bounds.max.y<C.centreMaximumY,'the Missing Centre must remain below all playable shelves');
     for(const box of f.bounds.items)assert.ok(routeDistance(box)>5,box.id+' intrudes into a route');
   }
 });
@@ -106,7 +106,7 @@ test('long waits remain bounded and the canonical pressure source never empties 
 });
 
 test('at least two immense pathways stay within300m throughout the full waiting cycle from actual II route eyes',()=>{
-  const eyes=[{x:0,y:1.62,z:2},{x:20,y:5.82,z:-30},{x:-12,y:10.02,z:-30},{x:3.85,y:10.02,z:3},{x:-16.5,y:10.02,z:-12}];
+  const eyes=[{x:0,y:1.62,z:2},{x:20,y:5.82,z:-30},{x:-12,y:10.02,z:-30},{x:3.85,y:10.02,z:3},{x:-16.5,y:10.02,z:-12},{x:-62,y:10.02,z:-28},{x:-64,y:18.42,z:-14},{x:-106,y:18.42,z:-50},{x:-150.5,y:10.02,z:-92}];
   for(let t=0;t<C.cycleSeconds;t+=.25){
     const f=frame({elapsed:t});
     for(const eye of eyes){const visible=f.bodies.filter(body=>length(difference(body.position,eye))<C.farClip);

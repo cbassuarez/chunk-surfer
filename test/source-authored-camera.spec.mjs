@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {authoredCameraFrame} from '../src/render/authored-camera.js';
 import {cameraBasis} from '../src/render/camera-basis.js';
 import {propViewMatrix} from '../src/render/props3d.js';
+import {sourceContinuationCamera} from '../src/render/source-continuation-renderer.js';
 
 test('overhead uses an exact finite camera basis with a fixed north',()=>{
   const input={eye:[64,19,64],yaw:0,pitch:-Math.PI/2};
@@ -16,6 +17,12 @@ test('bad authored frames cannot poison ordinary rendering',()=>{
   for(const value of [null,{}, {eye:[0,NaN,0],yaw:0,pitch:0},
     {eye:[0,1,0],yaw:0,pitch:2}, {eye:[0,1,0],yaw:Infinity,pitch:0}])
     assert.equal(authoredCameraFrame(value),null);
+});
+test('Catch map camera never borrows the saved first-person bearing or moves its physical body',()=>{
+  const source={phase:'catch',level:2,player:{x:-44,z:-18,y:-4.8,yaw:1.3,pitch:.7},heading:-.4},before=structuredClone(source),camera=sourceContinuationCamera(source);
+  assert.deepEqual(source,before);assert.equal(camera.yaw,0);assert.equal(camera.pitch,-Math.PI/2);assert.equal(camera.strictOverhead,true);assert.equal(camera.aimTarget[1],source.player.y);
+  assert.ok(camera.eye[1]>source.player.y+14);assert.ok(authoredCameraFrame(camera));
+  const first=sourceContinuationCamera({...source,phase:'wrong-return'});assert.deepEqual(first.eye,[source.player.x,source.player.y+1.62,source.player.z]);assert.equal(first.yaw,1.3);assert.equal(first.pitch,.7);
 });
 
 test('the production prop view retains visible width and height at both camera poles',()=>{

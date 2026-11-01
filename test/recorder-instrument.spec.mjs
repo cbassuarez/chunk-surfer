@@ -9,6 +9,10 @@ import { drawElectronicText as renderElectronicText } from '../src/render/electr
 import { witnessEndingIds } from '../src/render/witness-material.js';
 import { drawHardwareCap as renderHardwareCap } from '../src/render/hardware-material.js';
 import { drawHardwarePrint as renderHardwarePrint } from '../src/render/hardware-faceplate.js';
+import {withSourceRestInstrumentDecay} from '../src/render/source-rest-instrument-decay.js';
+import {dualTraceSnapshot} from '../src/audio/dual-trace.js';
+import {paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber} from '../src/render/dual-trace-display.js';
+import {sourceRestInstrumentStory} from '../src/render/source-rest-instrument-story.js';
 
 test.afterEach(()=>uiSetScale(1));
 const near=(a,b,message='')=>assert.ok(Math.abs(a-b)<1e-8,`${message}: ${a} != ${b}`);
@@ -120,7 +124,8 @@ function drawingHarness({alpha=1,dpr=1,travel=0}={}){
       return renderElectronicText(target,text,x,y,options);
     },
     sampleControl:(id,options)=>{record('sampleControl',[id,options]);return{travel,lampHeat:options.lit?1:0};},hardwareMotionReduced:()=>false,
-    dbToUnit,dbForLinear,locationMarks,meterMarks,normalizeFieldKit,uiBrightness:()=>1,vfdSettings:{phosphor:'faithful'},themeForSurface:()=>({phosphor:'#8fcd87',counter:'#b4f4e6'}),
+    dbToUnit,dbForLinear,locationMarks,meterMarks,normalizeFieldKit,withSourceRestInstrumentDecay,dualTraceSnapshot,paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber,
+    uiBrightness:()=>1,vfdSettings:{phosphor:'faithful'},themeForSurface:()=>({phosphor:'#8fcd87',counter:'#b4f4e6'}),
   };
   let source=readFileSync(new URL('../src/render/recorder-instrument.js',import.meta.url),'utf8');const names=[];
   source=source.replace(/import\s*\{([^}]*)\}\s*from\s*['"][^'"]+['"];\s*/g,(_,list)=>{names.push(...list.split(',').map(value=>value.trim()).filter(Boolean));return'';});
@@ -404,4 +409,25 @@ test('layout and renderer stay callable in Node without a Canvas',()=>{
   assert.equal(recorderFaceLayout(null),null);assert.equal(drawRecorderInstrument(),null);
   const view=baseView(),expected=recorderFaceLayout(view.rect).body;
   assert.deepEqual(drawRecorderInstrument(view),expected);
+});
+
+test('Source rest scan failure reaches the complete production VFD while leaving printed controls and glass intact',()=>{
+  const normal=drawingHarness(),broken=drawingHarness(),view=baseView(),original=structuredClone(view);
+  normal.drawRecorderInstrument(view);broken.drawRecorderInstrument({...view,sourceRestPresentation:{stage:3,progress:.36}});
+  assert.equal(broken.commands.filter(c=>c.kind==='clip').length-normal.commands.filter(c=>c.kind==='clip').length,2);
+  assert.ok(broken.commands.findIndex(c=>c.kind==='clip')<broken.commands.findIndex(c=>c.kind==='electronicText'));
+  assert.ok(broken.commands.findIndex(c=>c.kind==='glass')>broken.commands.findIndex(c=>c.kind==='clip'));
+  assert.deepEqual(broken.commands.filter(c=>c.kind==='capPrint').map(c=>c.args[0]),['REC','STOP','TAKES']);
+  assert.deepEqual(broken.commands.filter(c=>c.kind==='fillText').map(c=>c.args[0]),normal.commands.filter(c=>c.kind==='fillText').map(c=>c.args[0]));
+  assert.deepEqual(view,original);assert.equal(broken.stack.length,0);
+});
+
+test('authored Source rest intrusions occupy real unit, scale and meter slots while actual measurements stay untouched',()=>{
+  const h=drawingHarness(),presentation={stage:3,progress:.36},story=sourceRestInstrumentStory(presentation),meter={db:-96,sourceId:'story-readout-test'},
+    view={...baseView(),meter,counter:story.counter,counterLabel:story.counterLabel,sourceRestFieldStory:story,sourceRestPresentation:{...presentation,voiceBanks:story.voiceBanks}};
+  h.drawRecorderInstrument(view);
+  const words=h.commands.filter(c=>c.kind==='electronicText').map(c=>c.args[0]);
+  for(const text of ['I CAN HEAR YOU',"DON'T YOU HEAR IT",'YOU','SING','LISTEN','AM','HERE','JUST'])assert.ok(words.includes(text),`${text} reaches its existing recorder field`);
+  assert.equal(view.counter,'88:88');assert.deepEqual(meter,{db:-96,sourceId:'story-readout-test'});
+  assert.deepEqual(h.commands.filter(c=>c.kind==='capPrint').map(c=>c.args[0]),['REC','STOP','TAKES']);assert.equal(h.stack.length,0);
 });

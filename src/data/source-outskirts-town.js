@@ -102,9 +102,9 @@ const contextIds=[
   'yard-former-stables','yard-rehearsal-annex','yard-baths-plant','yard-covered-stores',
   'opening-street-service-history',
   'district-west-row-a','district-west-row-b','district-east-row-a','district-east-row-b',
-  'district-north-row-a','district-north-row-b','district-north-row-c',
+  'district-north-row-a','district-north-row-c',
   'district-south-row-a','district-south-row-b','district-south-row-c',
-  'district-north-court-walls','district-south-court-walls','district-west-court-walls','district-east-court-walls',
+  'district-south-court-walls','district-west-court-walls','district-east-court-walls',
   'stationers-complete-room','pub-complete-frontage','pub-complete-interior',
 ];
 const benchBody={minX:-ARRIVAL_COURT.bench.width/2,maxX:ARRIVAL_COURT.bench.width/2,

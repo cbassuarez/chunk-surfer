@@ -1,0 +1,330 @@
+{
+  "schema": 1,
+  "asset": "public/assets/source-rest/seated-hands.glb",
+  "licence": "CC0-1.0",
+  "title": "Grounded seated hands",
+  "creator": "MakeHuman Community; project-authored contractor anatomical macro, retained finger repair and seated morphs",
+  "sourceLicenseFile": "tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
+  "sourceManifest": "tools/chunk_surfer/character-sources/makehuman/sources.json",
+  "weightsManifest": "tools/chunk_surfer/character-sources/makehuman/weights-sources.json",
+  "modifications": [
+    "Crop original retained anatomical topology to a single connected hand with a cuff-hidden wrist boundary.",
+    "Bake the repaired real three-phalange chains into relaxed, bracing and slack morph poses.",
+    "Preserve source UVs, recompute deformed normals, and place wrist-local in metres without reflection."
+  ],
+  "build": {
+    "script": "tools/chunk_surfer/build-source-rest-body.mjs",
+    "scriptSha256": "ea9bc6a8b9c4c1106f0a715ced27a4e9c7f13d777f30de0a0cdcfa5d6343cefb",
+    "command": "node tools/chunk_surfer/build-source-rest-body.mjs",
+    "inputs": [
+      {
+        "file": "public/assets/recordist-characters/contractor.json",
+        "sha256": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d"
+      },
+      {
+        "file": "public/assets/source-drive/geometry/wheel-hands.glb",
+        "sha256": "8318287a8c2045c9fc38cf93886dbb562d68e5c0b0eef8207a9f227a44891fd0"
+      },
+      {
+        "file": "tools/chunk_surfer/characters/vigil-tailoring.mjs",
+        "sha256": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/base.obj",
+        "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/default.mhskel",
+        "sha256": "99f179bce0aa850b45d4191a1d0d234c5851f881c057439470ded3bddf729a24"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/caucasian-male-young.target.gz",
+        "sha256": "ffe69537e53148edff2776204ba48cf3bf1f3cbc72966592c8a562ab80b07333"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/universal-male-young-averagemuscle-averageweight.target.gz",
+        "sha256": "e814651195c53971503d9823d6841216718a561951ef064f81d132297f4fa494"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/caucasian-male-old.target.gz",
+        "sha256": "123cb7758c86aa2aa71d80ea0c8f5f4b3e96f394180edc1682e34720c4949df6"
+      },
+      {
+        "file": "tools/chunk_surfer/character-sources/makehuman/universal-male-old-averagemuscle-averageweight.target.gz",
+        "sha256": "3721ecc3f7a6af1d7c22ef20c709b1d37402445b3d203fe31e762b12356b59a6"
+      },
+      {
+        "file": "src/render/character-asset.js",
+        "sha256": "7d0c5ad50d8e4497059bb63f4d6a1817d9e9335b8eb15300ce8da9823d9a174d"
+      }
+    ],
+    "outputs": [
+      {
+        "file": "public/assets/source-rest/seated-hands.glb",
+        "sha256": "634f089ab97b4b63b35ad29819c2a6ecf55ebfd9ca000e69ca158518b234c2ba",
+        "bytes": 313104
+      },
+      {
+        "file": "src/render/source-rest-body-data.js",
+        "sha256": "cf1b781fa5239495328d10cad0ffb5c9616087edab425299877f109ad4c986b8",
+        "bytes": 803887
+      }
+    ]
+  },
+  "handGeometry": {
+    "licence": "CC0-1.0",
+    "units": "metres",
+    "axes": "X right, Y up, Z back; hand wrist origin and fingers -Z",
+    "assetSha256": "634f089ab97b4b63b35ad29819c2a6ecf55ebfd9ca000e69ca158518b234c2ba",
+    "hands": [
+      {
+        "side": "L",
+        "vertices": 1375,
+        "triangles": 2726,
+        "bounds": [
+          [
+            -0.067556,
+            0.078899
+          ],
+          [
+            -0.073914,
+            0.022893
+          ],
+          [
+            -0.188026,
+            0.05022
+          ]
+        ],
+        "basis": {
+          "x": [
+            0.5011989567968739,
+            0.584389714734353,
+            -0.6381914031216865
+          ],
+          "y": [
+            -0.7481178761640815,
+            0.6632696420964987,
+            0.019824864108654142
+          ],
+          "z": [
+            0.43487843021868694,
+            0.4675061958796739,
+            0.7696224449329986
+          ]
+        },
+        "provenance": {
+          "licence": "CC0-1.0",
+          "creator": "MakeHuman Community; project-authored contractor anatomical macro and finger repair",
+          "donor": {
+            "file": "public/assets/recordist-characters/contractor.json",
+            "sha256": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d"
+          },
+          "repair": {
+            "file": "tools/chunk_surfer/characters/vigil-tailoring.mjs",
+            "sha256": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92",
+            "method": "canonicalAnatomy; retained anatomical knuckles, three phalanges per digit"
+          },
+          "base": {
+            "file": "tools/chunk_surfer/character-sources/makehuman/base.obj",
+            "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+          },
+          "licenceFile": "tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
+          "sourceManifest": "tools/chunk_surfer/character-sources/makehuman/sources.json",
+          "weightsManifest": "tools/chunk_surfer/character-sources/makehuman/weights-sources.json",
+          "units": "metres; canonical retained whole-body rest coordinates, Y-up, forward -Z; no wrist recentering or extra pose",
+          "selection": "All three triangle vertices have >0.05 summed influence from this hand and digit bones; retain largest vertex-connected component. Open wrist seam must be hidden/capped under cuff."
+        }
+      },
+      {
+        "side": "R",
+        "vertices": 1380,
+        "triangles": 2736,
+        "bounds": [
+          [
+            -0.078899,
+            0.067556
+          ],
+          [
+            -0.073914,
+            0.022893
+          ],
+          [
+            -0.188026,
+            0.05022
+          ]
+        ],
+        "basis": {
+          "x": [
+            0.5011989567968739,
+            -0.584389714734353,
+            0.6381914031216865
+          ],
+          "y": [
+            0.7481178761640815,
+            0.6632696420964987,
+            0.019824864108654142
+          ],
+          "z": [
+            -0.43487843021868694,
+            0.4675061958796739,
+            0.7696224449329986
+          ]
+        },
+        "provenance": {
+          "licence": "CC0-1.0",
+          "creator": "MakeHuman Community; project-authored contractor anatomical macro and finger repair",
+          "donor": {
+            "file": "public/assets/recordist-characters/contractor.json",
+            "sha256": "9d80535407f009bfd36f56548d6e1b6031fdafafa06e3d238c4eb3413a9d8a8d"
+          },
+          "repair": {
+            "file": "tools/chunk_surfer/characters/vigil-tailoring.mjs",
+            "sha256": "00d6da1da44f2f83dad33704218c2acf9a95064513c549b889fe40be30203c92",
+            "method": "canonicalAnatomy; retained anatomical knuckles, three phalanges per digit"
+          },
+          "base": {
+            "file": "tools/chunk_surfer/character-sources/makehuman/base.obj",
+            "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c"
+          },
+          "licenceFile": "tools/chunk_surfer/character-sources/makehuman/LICENSE.ASSETS.md",
+          "sourceManifest": "tools/chunk_surfer/character-sources/makehuman/sources.json",
+          "weightsManifest": "tools/chunk_surfer/character-sources/makehuman/weights-sources.json",
+          "units": "metres; canonical retained whole-body rest coordinates, Y-up, forward -Z; no wrist recentering or extra pose",
+          "selection": "All three triangle vertices have >0.05 summed influence from this hand and digit bones; retain largest vertex-connected component. Open wrist seam must be hidden/capped under cuff."
+        }
+      }
+    ]
+  },
+  "accompanyingCloth": {
+    "source": "Retained MakeHuman/contractor trousers, waistcoat and shoes; existing project-authored Source driving coat sleeves; project-authored folded cuff.",
+    "licenceNote": "The CC0 credit above identifies the retained human anatomy. Existing project-authored sleeve and cuff construction retains the project licence.",
+    "meshes": {
+      "rest-body-lap": {
+        "vertices": 3456,
+        "triangles": 6740,
+        "bounds": [
+          [
+            -0.231369,
+            0.238731
+          ],
+          [
+            -0.584091,
+            0.077358
+          ],
+          [
+            -0.586661,
+            0.100527
+          ]
+        ]
+      },
+      "rest-body-jacket": {
+        "vertices": 1365,
+        "triangles": 2517,
+        "bounds": [
+          [
+            -0.189569,
+            0.192796
+          ],
+          [
+            0.012039,
+            0.493839
+          ],
+          [
+            -0.165388,
+            0.143
+          ]
+        ]
+      },
+      "rest-body-shoe-left": {
+        "vertices": 1170,
+        "triangles": 2332,
+        "bounds": [
+          [
+            -0.229338,
+            -0.09736
+          ],
+          [
+            -0.654065,
+            -0.539212
+          ],
+          [
+            -0.734055,
+            -0.424679
+          ]
+        ]
+      },
+      "rest-body-shoe-right": {
+        "vertices": 1170,
+        "triangles": 2332,
+        "bounds": [
+          [
+            0.097361,
+            0.229339
+          ],
+          [
+            -0.654065,
+            -0.539212
+          ],
+          [
+            -0.734055,
+            -0.424679
+          ]
+        ]
+      },
+      "rest-body-upper-sleeve": {
+        "vertices": 427,
+        "triangles": 576,
+        "bounds": [
+          [
+            -0.06400000303983688,
+            0.06400000303983688
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            -0.05632000416517258,
+            0.05632000416517258
+          ]
+        ]
+      },
+      "rest-body-fore-sleeve": {
+        "vertices": 722,
+        "triangles": 896,
+        "bounds": [
+          [
+            -0.05299999937415123,
+            0.05299999937415123
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            -0.04481999948620796,
+            0.043160002678632736
+          ]
+        ]
+      },
+      "rest-body-cuff": {
+        "vertices": 80,
+        "triangles": 120,
+        "bounds": [
+          [
+            -0.038,
+            0.038
+          ],
+          [
+            0.895,
+            1
+          ],
+          [
+            -0.031,
+            0.031
+          ]
+        ]
+      }
+    }
+  }
+}

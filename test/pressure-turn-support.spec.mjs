@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parseCharacterAsset, sampleCharacterPose } from '../src/render/character-asset.js';
-import { pressureInstances } from '../src/render/pressure-volume.js';
+import { legacyPressureInstances as pressureInstances } from '../src/render/pressure-volume.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import { stepPressureGait } from '../src/game/pressure-gait.js';
 import { createPressurePerformance } from '../src/game/pressure-performance.js';
+import { hushDensityCharacter } from '../src/game/hush-density-performance.js';
 
 const bytes = readFileSync(process.env.PRESSURE_TEST_ASSET || new URL('../public/assets/pressure-character.glb', import.meta.url));
 const asset = parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
@@ -182,9 +183,7 @@ test('actual 90 and 180 degree sound turns use bounded stationary pivots with pl
   }
 });
 
-test('blocked recovery holds real supported surfaces throughout fade-out, resets only while absent, and replays the frozen pose', () => {
-  const reference = sampleCharacterPose(asset, body, { clip: 'pressure_arrest', time: 1 });
-  const soles = { L: soleVertices(reference, 'L'), R: soleVertices(reference, 'R') };
+test('blocked density stays visible and retains compression through the human scheduler reset, with deterministic replay', () => {
   for (const stepDistanceMetres of [.05, .42]) for (const progress of [.27, .45, .72]) {
     const initial = frame(progress, Math.PI / 4, { height: 1.83, floorH: -1.2, stepDistanceMetres });
     let gait = initial.actor.performance.gait, x = initial.actor.x, y = initial.actor.y;
@@ -192,9 +191,9 @@ test('blocked recovery holds real supported surfaces throughout fade-out, resets
     const incoming = () => ({ id: initial.actor.id, role: 'live-pressure', x, y, floorH: -1.2, heightM: 1.83, strength: 1, motion: 'hunt', gait });
     const present = dt => {
       const snapshot = performance.tick(dt, { primary: incoming() });
-      return { snapshot, instance: pressureInstances(snapshot.primary, null)[0] };
+      return { snapshot, character: hushDensityCharacter(snapshot.primary.performance) };
     };
-    const advance = present(.25), advancePose = sampleCharacterPose(asset, body, advance.instance.character);
+    const advance = present(.25);
     for (let n = 0; n < 50 && gait.phase !== 'recover'; n++) {
       const result = stepPressureGait(gait, { dt: .02, x, y, targetX: gait.stepTargetX, targetY: gait.stepTargetY,
         speed: 2, resolveMove: from => ({ ...from }) });
@@ -202,47 +201,27 @@ test('blocked recovery holds real supported surfaces throughout fade-out, resets
     }
     assert.equal(gait.phase, 'recover', 'the real blocked scheduler must enter recovery');
     assert.equal(gait.recoveryReset, false);
-    let previousVisibility = 1, absentAtSeam = false, sampledFade = 0;
+    let previousVisibility = advance.snapshot.primary.performance.manifestation, sawReset = false, samples = 0;
     for (let n = 0; n < 40; n++) {
       const rendered = present(.02), visibility = rendered.snapshot.primary.performance.manifestation;
       assert.equal(x, initial.actor.x); assert.equal(y, initial.actor.y);
       assert.equal(rendered.snapshot.primary.performance.heading, initial.actor.performance.heading);
-      if (!gait.recoveryReset) {
-        assert.ok(visibility <= previousVisibility + 1e-8, 'recovery brightens during withdrawal'); previousVisibility = visibility;
-        if (rendered.instance) {
-          sampledFade++;
-          assert.deepEqual(rendered.instance.character.support, advance.instance.character.support, 'fade-out changes captured support anchors');
-          const pose = sampleCharacterPose(asset, body, rendered.instance.character);
-          assert.deepEqual(pose.bones, advancePose.bones, 'the visible recovery body changes its frozen deformation');
-          assert.deepEqual(pose.morphs, advancePose.morphs);
-          for (const side of ['L', 'R']) {
-            if (side === 'R' ? progress > .58 : progress < .38) continue;
-            for (const { primitive, v } of soles[side]) assert.ok(distance(worldPoint(deform(primitive, v, pose), rendered.instance), worldPoint(deform(primitive, v, advancePose), advance.instance)) < .001, 'supported weighted surface slides during fade-out');
-          }
-          const replay = createPressurePerformance(); replay.applyFrame(JSON.parse(JSON.stringify(rendered.snapshot)));
-          const replayInstance = pressureInstances(replay.snapshot().primary, null)[0];
-          assert.deepEqual(replayInstance, rendered.instance, 'saved recovery frame reconstructs different support');
-          assert.deepEqual(sampleCharacterPose(asset, body, replayInstance.character), pose, 'saved recovery pose changes its actual palette');
-        }
-      } else {
-        if (!absentAtSeam) {
-          assert.equal(visibility, 0, 'the stance resets before the volume is completely absent');
-          assert.equal(rendered.instance, undefined); absentAtSeam = true;
-        }
-        if (rendered.instance) {
-          assert.equal(rendered.instance.character.support, undefined, 'arrested recovery keeps obsolete stride anchors');
-          assert.equal(rendered.instance.character.clip, 'pressure_arrest');
-          const pose = sampleCharacterPose(asset, body, rendered.instance.character);
-          for (const side of ['L', 'R']) for (const { primitive, v, p } of soles[side]) {
-            const actual = worldPoint(deform(primitive, v, pose), rendered.instance), expected = worldPoint(p, rendered.instance);
-            assert.ok(distance(actual, expected) < .001, 'fade-in does not use the planted arrested stance at the same collider root');
-          }
-        }
-      }
+      samples++;
+      assert.ok(visibility >= previousVisibility, 'a hidden leg-support reset withdraws the nonhuman density');
+      previousVisibility = visibility;
+      assert.equal(rendered.snapshot.primary.performance.density.phase, advance.snapshot.primary.performance.density.phase,
+        'stationary recovery spends new locomotion phase');
+      assert.equal(rendered.character.support, undefined, 'the density acquired humanoid support solving');
+      assert.equal(rendered.character.morphs, undefined);
+      if (gait.recoveryReset) sawReset = true;
+      const replay = createPressurePerformance(); replay.applyFrame(JSON.parse(JSON.stringify(rendered.snapshot)));
+      assert.deepEqual(hushDensityCharacter(replay.snapshot().primary.performance), rendered.character,
+        'saved recovery frame reconstructs different fold controls');
       if (gait.recoveryReset && gait.elapsed > .7) break;
       const result = stepPressureGait(gait, { dt: .02, x, y, targetX: gait.stepTargetX, targetY: gait.stepTargetY, speed: 2 });
       x = result.x; y = result.y; gait = result.gait;
     }
-    assert.ok(sampledFade > 5 && absentAtSeam, 'the real recovery did not expose a verifiable frozen withdrawal and zero seam');
+    assert.ok(samples > 5 && sawReset, 'the real recovery did not expose the scheduler reset');
+    assert.ok(performance.snapshot().primary.performance.density.compression > .9, 'blocked material loses its compression');
   }
 });

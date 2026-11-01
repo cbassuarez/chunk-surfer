@@ -196,6 +196,7 @@ export function projectDossierFlags(dossier) {
 
   set('id', dossier.ending);
   set('variant.centuryStay', dossier.variant === ENDING_VARIANT.CENTURY_STAY);
+  set('variant.sourceRest', dossier.variant === ENDING_VARIANT.SOURCE_REST);
   for (const arrival of Object.values(ENDING_ARRIVAL)) {
     set(`arrival.${flagKey(arrival)}`, dossier.arrival === arrival);
   }

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 import { shouldOpenPauseForEvent } from '../src/game/pause.js';
 
 import {
@@ -202,6 +203,16 @@ test('ending routing places cinematic credits between the epilogue and return re
     api.onDone();
     assert.deepEqual(calls, hasPlayback ? ['stop', 'credits'] : ['credits']);
   }
-  assert.match(source, /presentCredits\(\{context:'ending',onDone:\(\)=>showReturnReport\(summary\)\}\)/);
+  const creditsStart=source.indexOf('function openEndingCredits('),creditsEnd=source.indexOf('\nasync function revealFieldReturn(',creditsStart);
+  assert.ok(creditsStart>=0&&creditsEnd>creditsStart,'the production ending-credit host is present');
+  const summary={ending:'tower-won'},reported=[];let credits=null;
+  runInNewContext(source.slice(creditsStart,creditsEnd)+'\nopenEndingCredits(summary);',{
+    summary,ensureCtx(){},emitProgress(){},EVENT_TYPES:{CREDITS_VIEWED:'credits-viewed'},
+    presentCredits(options){credits=options;},showReturnReport(value){reported.push(value);},
+    scenes:{push(){assert.fail('an ordinary ending must not enter the Source rest final black');}},
+  });
+  assert.ok(credits);assert.equal(credits.context,'ending');assert.equal(credits.sourceRestBlack,false);
+  assert.deepEqual(reported,[],'the real host defers the return report until credits complete');
+  credits.onDone();assert.deepEqual(reported,[summary]);
   assert.doesNotMatch(source, /makeCreditsIntroScene|credits-intro/);
 });

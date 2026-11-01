@@ -13,9 +13,9 @@ export const GLASS_COURT_RAIN_FACES=Object.freeze(GLASS_COURT_PRESENCES.map(body
   // inward north pane. The eye-height band is hidden by nursery foliage.
   // These are the lowest nearby sites with all eight facial-feature rays
   // clear in the production GLB from the unobstructed walking lane.
-  x:body.x+(body.id==='glass-court-planted-stoop'?-1:0),
-  y:body.id==='glass-court-planted-stoop'?3.2:3.25,z:C.origin.z+.004,
-  width:.84,height:1.10,normal:Object.freeze([0,0,1]),
+  x:body.id==='glass-court-planted-head'?C.bounds.x0+.004:C.bounds.x1-.004,
+  y:3.2,z:body.y,
+  width:.84,height:1.10,normal:Object.freeze(body.id==='glass-court-planted-head'?[1,0,0]:[-1,0,0]),
 })));
 
 export function createGlassCourtRainPresence(){
@@ -38,12 +38,12 @@ export function createGlassCourtRainPresence(){
     const faces=GLASS_COURT_RAIN_FACES.map((face,index)=>{
       const state=states[index];
       let attended=false,distance=Infinity,gaze=0;
-      if(inside&&direction&&direction.z<-.04){
-        const ray=(face.z-eye.z)/direction.z;
-        const hx=eye.x+direction.x*ray,hy=eye.y+direction.y*ray;
+      if(inside&&direction&&direction.x*face.normal[0]<-.04){
+        const ray=(face.x-eye.x)/direction.x;
+        const hz=eye.z+direction.z*ray,hy=eye.y+direction.y*ray;
         distance=Math.hypot(eye.x-face.x,eye.y-face.y,eye.z-face.z);
-        attended=ray>0&&ray<8&&Math.abs(hx-face.x)<face.width*.7&&Math.abs(hy-face.y)<face.height*.65;
-        gaze=clamp((eye.x-face.x)/Math.max(1,distance)*.075,-.045,.045);
+        attended=ray>0&&ray<8&&Math.abs(hz-face.z)<face.width*.7&&Math.abs(hy-face.y)<face.height*.65;
+        gaze=clamp((eye.z-face.z)/Math.max(1,distance)*.075,-.045,.045);
       }
       if(dt>0){
         if(attended){state.attention=clamp(state.attention+dt,0,3.2);state.unattended=0;}
@@ -56,7 +56,7 @@ export function createGlassCourtRainPresence(){
     const motionless=reducedMotion||flashMode!=='full';
     return{coordinateSpace:'physical-metres',active:inside&&wet>.01,suspended:hold,
       clockSec:clock,motionSec:motionless?0:clock,flowAmplitude:motionless?0:1,faces,
-      shader:{active:inside&&wet>.01?1:0,faces:faces.map(f=>[f.x,f.y,f.z,f.coherence]),
+      shader:{active:inside&&wet>.01?1:0,faces:faces.map(f=>[f.z,f.y,f.x,f.coherence]),
         motion:[motionless?0:clock,faces[0]?.gaze||0,faces[1]?.gaze||0,motionless?0:1]}};
   }
   return{update,reset};

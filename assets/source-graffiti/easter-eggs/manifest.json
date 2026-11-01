@@ -1,0 +1,33 @@
+{
+  "artwork": "Original Chunk Surfer environmental messages, typeset from two open graffiti-inspired fonts",
+  "fonts": [
+    {
+      "name": "Tagger Regular",
+      "author": "Zuzanna Rogatty; Stowarzyszenie Kulturotw\u00f3rcze Miastodwa",
+      "source": "https://github.com/warszawskie-kroje/tagger",
+      "license": "SIL Open Font License 1.1",
+      "license_file": "../tagger/OFL.txt"
+    },
+    {
+      "name": "Permanent Marker",
+      "author": "Copyright 2010 Font Diner, Inc.",
+      "source": "https://github.com/google/fonts/tree/main/apache/permanentmarker",
+      "license": "Apache License 2.0",
+      "license_file": "../permanent-marker/LICENSE.txt"
+    }
+  ],
+  "outputs": [
+    {
+      "file": "ellery-listening.png",
+      "text": "ellery keeps / the echo",
+      "font": "tagger",
+      "sha256": "874e7e8f51c3988076e0c83680c1f9d7e21dc1d2912b98b948a97d9bc7f5bb30"
+    },
+    {
+      "file": "surfer-hear-you.png",
+      "text": "SURFER / YOU'RE THE ROOM TONE",
+      "font": "marker",
+      "sha256": "daf78aedf7d42692935322358fd7abfdd4d04d60269361869f86738b3078f1b7"
+    }
+  ]
+}

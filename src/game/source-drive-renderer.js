@@ -9,6 +9,7 @@ import {drawRecorderReadoutCanvas} from '../render/recorder-instrument.js';
 
 const DRIVE_ASSET_PACKS=Object.freeze([
  {key:'drive',path:'assets/source-drive/drive.glb',kind:'prop',meshes:['drive_cabin','drive_radio','drive_road','drive_recorder_body']},
+ {key:'vanBrand',path:'assets/van-brand.glb',kind:'prop',meshes:['van_brand_yard','van_brand_drive']},
  {key:'hands',path:'assets/source-drive/geometry/wheel-hands.glb',kind:'character'},
  {key:'cutStatic',path:'assets/source-drive/cut/cut-static.glb',kind:'prop',meshes:['cut_geology','cut_retaining']},
  {key:'cutLiving',path:'assets/source-drive/cut/cut-living.glb',kind:'character'},

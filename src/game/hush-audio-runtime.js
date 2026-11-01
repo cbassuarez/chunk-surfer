@@ -18,6 +18,7 @@ export function createHushAudioRuntime({
   playerSpatial,
   enrichSourceSpatial = null,
   occlusionDb = null,
+  occlusionSource = null,
   roomLossDb = null,
   maskingDb = null,
   difficulty = () => null,
@@ -85,10 +86,14 @@ export function createHushAudioRuntime({
     if (!hush.active || !hush.position) return;
     const enriched = typeof enrichSourceSpatial === 'function' ? enrichSourceSpatial(event) : event;
     const listener = { position: hush.position, roomId: hush.roomId, floorId: hush.floorId };
+    // A spatial presentation may supply the physical emitting face for the
+    // obstruction ray. Do not alter the sound event, its range or AI belief.
+    const occlusionOrigin = typeof occlusionSource === 'function'
+      ? occlusionSource(enriched, listener) || enriched.spatial : enriched.spatial;
     const propagation = propagateNoise({
       event: enriched,
       listener,
-      occlusionDb: typeof occlusionDb === 'function' ? occlusionDb(enriched.spatial, listener) : 0,
+      occlusionDb: typeof occlusionDb === 'function' ? occlusionDb(occlusionOrigin, listener) : 0,
       roomLossDb: typeof roomLossDb === 'function' ? roomLossDb(enriched.spatial, listener) : 0,
       maskingDb: typeof maskingDb === 'function' ? maskingDb(enriched.spatial, listener) : 0,
     });
@@ -119,6 +124,7 @@ export function createHushAudioRuntime({
       expiresAt: clock() + Math.max(1800, policy.certaintyHalfLife * 320),
       priority: .65,
       reason: 'ACOUSTIC_EVENT',
+      eventKind: enriched.kind,
     });
     onHeard?.({ event: enriched, propagation, audition: structuredClone(audition) });
   });
@@ -193,6 +199,8 @@ export function createHushAudioRuntime({
     effects?.applyField?.(presentationField, s, {
       monitorGain: s.monitorGain ?? 1,
       monitorOpen: ctx.monitorOpen !== false,
+      concealed: !!ctx.concealed,
+      hushRelativeSide: ctx.hushRelativeSide,
     });
     if (presentationGain > .001) effects?.maybeResidue?.(presentationField, { random });
     onField?.({ field: structuredClone(field), torchScale: effectiveTorchScale(field), audition: structuredClone(audition) });

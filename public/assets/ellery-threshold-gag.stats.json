@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "kind": "single Ellery threshold gag",
+  "pack": "ellery-threshold-gag.glb",
+  "bytes": 972076,
+  "sha256": "b83b194b731442e70dbc12acda439d809748fc26e868678784ad83eb874206ee",
+  "totalTriangles": 8758,
+  "totalPrimitives": 27,
+  "materials": 15,
+  "images": 0,
+  "metadata": {
+    "version": 1,
+    "coordinateSpace": "metres; hinge pin origin; Y up; front +Z; moving arm -X",
+    "pivot": [
+      0,
+      0,
+      0
+    ],
+    "axis": [
+      0,
+      1,
+      0
+    ],
+    "restAngle": 1.5707963267948966,
+    "stopAngle": 0,
+    "fixedMeshes": [
+      "ellery_threshold_mount",
+      "ellery_threshold_scenery"
+    ],
+    "movingMeshes": [
+      "ellery_threshold_ghost",
+      "ellery_threshold_armature"
+    ],
+    "anchors": {
+      "hinge": [
+        0,
+        0,
+        0
+      ],
+      "speaker": [
+        -0.68,
+        -0.185,
+        -0.111
+      ],
+      "release": [
+        0.015,
+        0.015,
+        -0.015
+      ],
+      "stop": [
+        -0.245,
+        0,
+        0.03
+      ],
+      "rattle": [
+        -0.47,
+        -0.02,
+        -0.055
+      ]
+    },
+    "contact": {
+      "movingArmFrontZ": 0.03,
+      "stopMinZ": 0.03,
+      "stopX": [
+        -0.28,
+        -0.21
+      ],
+      "stopY": [
+        -0.065,
+        0.065
+      ],
+      "positiveAngleClearance": true
+    },
+    "board": {
+      "centerX": -0.68,
+      "frontZ": 0.082,
+      "backZ": 0.068,
+      "thickness": 0.014,
+      "faceIsFrontOnly": true
+    },
+    "scenery": {
+      "minX": 0.19,
+      "maxX": 0.255,
+      "minZ": -1.52,
+      "maxZ": -0.02,
+      "floorY": -1.15,
+      "topY": 1.38
+    },
+    "frontalApron": {
+      "minX": -0.18,
+      "maxX": 0.3,
+      "minZ": -0.008,
+      "maxZ": 0.018,
+      "slotMinY": -0.13,
+      "slotMaxY": 0.1,
+      "breastplate": {
+        "minX": -0.18,
+        "maxX": 0.3,
+        "minY": -0.18,
+        "maxY": 0.16,
+        "minZ": 0.055,
+        "maxZ": 0.08
+      }
+    },
+    "reverseInscription": {
+      "lines": [
+        "HIS FEARFUL",
+        "MEDIOCRITY"
+      ],
+      "attribution": "ELLERY STUDENTS",
+      "handwrittenLines": [
+        "His fearful",
+        "Mediocrity"
+      ],
+      "handwrittenAttribution": "Ellery students",
+      "construction": "Original whole-word cubic brush paths with individual pen lifts, changing pressure, ink pools, retrace and dry brush; no glyph alphabet, font or texture",
+      "signatures": "two anonymous illegible curved hand flourishes; no names or date",
+      "panel": {
+        "minX": -0.943,
+        "maxX": -0.473,
+        "minY": 0.21,
+        "maxY": 0.548,
+        "frontZ": 0.018,
+        "backZ": 0.008
+      },
+      "inkZ": 0.0072,
+      "inkMaterial": 14,
+      "mainCapHeight": 0.08,
+      "attributionCapHeight": 0.035,
+      "inspectionTarget": [
+        -0.68,
+        0.36,
+        0.005
+      ],
+      "provenance": "New user-approved student mock-title; students/backstage crews are established, no maker identity or date asserted"
+    },
+    "text": "boo!",
+    "authoredFrom": "User-supplied three-view Ellery threshold gag concept; original modeled construction, not a pasted image",
+    "meshes": [
+      {
+        "name": "ellery_threshold_mount",
+        "part": "fixed",
+        "role": "jamb mounting block; fixed hinge leaf; pin and physical stop",
+        "triangles": 476,
+        "primitives": 5,
+        "bounds": {
+          "min": [
+            -0.28,
+            -0.12,
+            -0.018
+          ],
+          "max": [
+            0.20400000000000001,
+            0.12,
+            0.163
+          ]
+        }
+      },
+      {
+        "name": "ellery_threshold_scenery",
+        "part": "fixed",
+        "role": "local floor-supported scenery flat; unfinished reverse and bracing",
+        "triangles": 416,
+        "primitives": 6,
+        "bounds": {
+          "min": [
+            -0.18,
+            -1.15,
+            -1.52
+          ],
+          "max": [
+            0.45999999999999996,
+            1.38,
+            0.16499999999999998
+          ]
+        }
+      },
+      {
+        "name": "ellery_threshold_ghost",
+        "part": "moving",
+        "role": "thin white ghost; brown edge and plain reverse; attached boo! tab",
+        "triangles": 4756,
+        "primitives": 6,
+        "bounds": {
+          "min": [
+            -1.328,
+            -0.840575,
+            0.004
+          ],
+          "max": [
+            -0.23900000000000002,
+            1.135,
+            0.091
+          ]
+        }
+      },
+      {
+        "name": "ellery_threshold_armature",
+        "part": "moving",
+        "role": "wood arm; rear spine; speaker, grille and visible wiring",
+        "triangles": 3110,
+        "primitives": 10,
+        "bounds": {
+          "min": [
+            -0.7725000000000001,
+            -0.783,
+            -0.117
+          ],
+          "max": [
+            0.022485931017037945,
+            0.774,
+            0.068
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+ "pack": "source-earthfall-dust",
+ "sha256": "d276d8c8088e14526a3dfee927095277aa65a28ad4648faa315cab8cf6c9170d",
+ "source": "Procedural (this script): deterministic clusters of subdivided icosahedra",
+ "tool": "tools/chunk_surfer/build-earthfall-dust.mjs"
+}

@@ -9,6 +9,7 @@ import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js'
 import { withMachinePanel, machinePanelAperture } from './presentation.js';
 import { navigatorDisplayLayout } from './navigator-layout.js';
 import { drawNavigatorTelemetry } from './navigator-telemetry.js';
+import {navigatorClockState,drawNavigatorClock} from './navigator-clock.js';
 import { drawExteriorMapCommand } from './exterior-map-view.js';
 import { themeRoleColor, UI_COLOR } from './palette.js';
 import { buildMinimapCommands } from './map-commands.js';
@@ -196,7 +197,7 @@ function drawFloorDeltaLed(panel, delta) {
   });
 }
 
-function drawLocalTopology(command) {
+export function drawLocalTopology(command) {
   const { open, runs, transform, viewport, center, radius, fillOpen = true } = command;
   if (!Array.isArray(runs) && !(open instanceof Set)) return;
   const minX = Number(center?.x || 0) - Number(radius || 0) - 1;
@@ -229,19 +230,24 @@ function drawLocalTopology(command) {
           const x1 = Math.min(run.x1 + 1, maxX);
           const a = project({ x: x0, y: run.y });
           const b = project({ x: x1, y: run.y + 1 });
+          // A minimum is one device pixel, not one text cell. At the normal
+          // outdoor scale a metre is less than half a cell high; clamping in
+          // cell units painted over the next rows and their real walls.
           ctx.fillRect(
             a.x * cellW * dpr,
             a.y * cellH * dpr,
-            Math.max(1, b.x - a.x) * cellW * dpr,
-            Math.max(1, b.y - a.y) * cellH * dpr,
+            Math.max(1, (b.x - a.x) * cellW * dpr),
+            Math.max(1, (b.y - a.y) * cellH * dpr),
           );
         }
       } else {
         for (const key of open) {
           const [x, y] = key.split(',').map(Number);
           if (x < minX || x > maxX || y < minY || y > maxY) continue;
-          const point = project({ x, y });
-          ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr, Math.max(1, cellW * 0.48) * dpr, Math.max(1, cellH * 0.48) * dpr);
+          const point = project({ x, y }), end = project({ x: x + 1, y: y + 1 });
+          ctx.fillRect(point.x * cellW * dpr, point.y * cellH * dpr,
+            Math.max(1, (end.x - point.x) * cellW * dpr),
+            Math.max(1, (end.y - point.y) * cellH * dpr));
         }
       }
     }
@@ -276,13 +282,13 @@ function drawLocalTopology(command) {
 // either an `open` Set of "x,y" keys or horizontal `runs`; both are supported
 // because both are what the topology layer draws from.
 export function openCellLookup({ open, runs }) {
-  if (open instanceof Set) return (x, y) => open.has(`${x},${y}`);
+  if (open instanceof Set) return (x, y) => open.has(`${Math.floor(x)},${Math.floor(y)}`);
   const byRow = new Map();
   for (const run of Array.isArray(runs) ? runs : []) {
     if (!byRow.has(run.y)) byRow.set(run.y, []);
     byRow.get(run.y).push(run);
   }
-  return (x, y) => (byRow.get(y) || []).some((run) => x >= run.x0 && x <= run.x1);
+  return (x, y) => (byRow.get(Math.floor(y)) || []).some((run) => Math.floor(x) >= run.x0 && Math.floor(x) <= run.x1);
 }
 
 function pointInOrientedRect(x, y, rect) {
@@ -320,6 +326,47 @@ export function visibilityLookup(command = {}) {
   };
 }
 
+// The sight fan only samples a bounded area during one synchronous draw. Build
+// its nearby blockers once, including their rotation, rather than repeating
+// trigonometry for every blocker at every ray step. The general public lookup
+// above remains live for callers that query beyond a single fan.
+export function sightVisibilityLookup(command = {}) {
+  const origin=command.origin,reach=Math.max(2,Number(command.radius)||10);
+  if(!Number.isFinite(origin?.x)||!Number.isFinite(origin?.y)||!Number.isFinite(reach))return visibilityLookup(command);
+  const fallback=visibilityLookup(command);
+  const scale=Math.max(1,Number(command.visibilityScale)||1);
+  const coarse=openCellLookup(command);
+  const openAt=command.visibilityOpen instanceof Set
+    ?(x,y)=>command.visibilityOpen.has(`${Math.floor(x*scale)},${Math.floor(y*scale)}`)
+    :(x,y)=>coarse(Math.floor(x),Math.floor(y));
+  const near=(x,y,extent)=>!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(extent)
+    ||(Math.abs(x-origin.x)<=reach+extent+1e-9&&Math.abs(y-origin.y)<=reach+extent+1e-9);
+  const doors=(Array.isArray(command.doors)?command.doors:[])
+    .filter(door=>door&&door.state!=='open'&&door.open!==true)
+    .filter(door=>near(Number(door.position?.x),Number(door.position?.y),Math.max(.1,Number(door.apertureWidth)||1)*.5+.12));
+  const rects=(Array.isArray(command.occluders)?command.occluders:[]).map(rect=>{
+    const x=Number(rect?.x)||0,y=Number(rect?.y)||0,yaw=-(Number(rect?.yaw)||0);
+    const w=Math.max(.02,Number(rect?.w)||0)*.5,d=Math.max(.02,Number(rect?.d)||0)*.5;
+    return{x,y,w,d,c:Math.cos(yaw),s:Math.sin(yaw)};
+  }).filter(rect=>near(rect.x,rect.y,rect.w+rect.d));
+  return(x,y)=>{
+    if(Math.abs(x-origin.x)>reach||Math.abs(y-origin.y)>reach)return fallback(x,y);
+    if(!openAt(x,y))return false;
+    for(const door of doors){
+      const dx=x-Number(door.position?.x),dy=y-Number(door.position?.y);
+      const along=door.widthAxis==='y'?Math.abs(dy):Math.abs(dx);
+      const through=door.widthAxis==='y'?Math.abs(dx):Math.abs(dy);
+      if(along<=Math.max(.1,Number(door.apertureWidth)||1)*.5&&through<=.12)return false;
+    }
+    for(const rect of rects){
+      const dx=x-rect.x,dy=y-rect.y;
+      if(Math.abs(dx)>rect.w+rect.d||Math.abs(dy)>rect.w+rect.d)continue;
+      if(Math.abs(dx*rect.c-dy*rect.s)<=rect.w&&Math.abs(dx*rect.s+dy*rect.c)<=rect.d)return false;
+    }
+    return true;
+  };
+}
+
 export const SIGHT = Object.freeze({
   // Match the first-person projection (vertical focal length 1/.95 at 16:9),
   // rather than drawing an abstract awareness wedge.
@@ -343,7 +390,7 @@ export function sightPolygon({ origin, heading, isOpen, radius }) {
     for (let d = SIGHT.step; d <= reach; d += SIGHT.step) {
       const x = origin.x + dx * d;
       const y = origin.y + dy * d;
-      if (!isOpen(Math.floor(x), Math.floor(y))) break;
+      if (!isOpen(x, y)) break;
       travelled = d;
     }
     points.push({ x: origin.x + dx * travelled, y: origin.y + dy * travelled });
@@ -353,7 +400,7 @@ export function sightPolygon({ origin, heading, isOpen, radius }) {
 
 function drawSight(command) {
   const { origin, heading, transform, viewport, radius } = command;
-  const sampled = visibilityLookup(command);
+  const sampled = sightVisibilityLookup(command);
   // YOU ARE STANDING HERE, SO HERE IS OPEN.
   //
   // The viewshed used to abandon the whole cone whenever its own predicate
@@ -363,8 +410,9 @@ function drawSight(command) {
   // sight wedge for no reason the player can see or act on. The one cell we
   // KNOW is walkable is the one the body occupies: seed it open and let the
   // rays leave. Everything past the first step is still the real geometry.
-  const here = { x: Math.floor(origin.x), y: Math.floor(origin.y) };
-  const isOpen = (x, y) => (Math.floor(x) === here.x && Math.floor(y) === here.y) || sampled(x, y);
+  const visibilityScale = command.visibilityOpen instanceof Set ? Math.max(1, Number(command.visibilityScale) || 1) : 1;
+  const here = { x: Math.floor(origin.x * visibilityScale), y: Math.floor(origin.y * visibilityScale) };
+  const isOpen = (x, y) => (Math.floor(x * visibilityScale) === here.x && Math.floor(y * visibilityScale) === here.y) || sampled(x, y);
   const edge = sightPolygon({ origin, heading, isOpen, radius });
   if (edge.length < 3) return;
   const apex = transform.point(origin);
@@ -423,7 +471,7 @@ function drawLocalRoute(command){
 }
 
 const COMMAND_LAYER=Object.freeze({
-  'local-topology':0,'district-footprint':2,'district-boundary':3,sight:10,'route-local':20,'door-local':30,'connector-local':32,'district-landmark':35,
+  'local-topology':0,'plan-shape':1,'district-footprint':2,'plan-edge':3,'district-mass-edge':3,'district-boundary':3,sight:10,'route-local':20,'door-local':30,'connector-local':32,'district-landmark':35,
   waypoint:40,'waypoint-edge':40,'connector-target':40,'connector-edge':40,
   equipment:50,'equipment-edge':50,'anomaly-contact':60,'anomaly-edge':60,
   'hush-awareness':70,player:80,'hush-visible':90,'hush-visible-edge':90,
@@ -434,7 +482,7 @@ function drawCommands(commands, now) {
   const hasSight=commands.some((command)=>command.kind==='sight');
   for (const command of ordered) {
     if (command.kind === 'local-topology') drawLocalTopology(command);
-    else if(['district-footprint','district-boundary','district-landmark'].includes(command.kind))drawExteriorMapCommand(command);
+    else if(['plan-shape','plan-edge','district-footprint','district-mass-edge','district-boundary','district-landmark'].includes(command.kind))drawExteriorMapCommand(command);
     else if (command.kind === 'sight') drawSight(command);
     else if(command.kind==='route-local')drawLocalRoute(command);
     else if(command.kind==='door-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),command.state==='locked'?'╫':command.state==='closed'?'┼':'·',command.state==='locked'?'ui-danger':'ui-label',command.state==='open' ? .34 : .62);
@@ -555,10 +603,10 @@ export function drawMinimap(model, opts = {}) {
   const floor=model.floors.find((candidate)=>candidate.id===model.player.floorId);
   const navigationVisible=opts.navigationVisible!==false;
   const targetReadout=navigationVisible?minimapTargetReadout(model):null;
+  const nightClock=navigatorClockState(opts.telemetry?.nightClock);
   const layout=navigatorDisplayLayout(machinePanelAperture(x0,y0,width,height),{telemetry:!!opts.telemetry});
   withMachinePanel(x0, y0, width, height, {
-    label: 'FIELD NAV',model:'FN-12',
-    source:opts.source||'',
+    ...(nightClock?{wordmark:'',label:'',model:'',source:''}:{label:'FIELD NAV',model:'FN-12',source:opts.source||''}),
     meter: false,
     apertureBounds:layout.aperture,
     theme: hush.cls === 'ui-danger' ? 'amber' : 'green',
@@ -613,6 +661,7 @@ export function drawMinimap(model, opts = {}) {
   // The LCD is physical hardware beside the VFD, outside its aperture clip and
   // after its smoked cover. Map glow and target pulses never repaint its ink.
   if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now});
+  if(nightClock)drawNavigatorClock({x:x0,y:y0,w:width,h:height},nightClock);
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

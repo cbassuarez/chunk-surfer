@@ -3,7 +3,7 @@ import {pubQuestState} from '../src/game/pub-quest.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {pubServiceInstances,pubServiceDrinks,PUB_SERVICE_PLACEMENTS} from '../src/render/pub-service-presentation.js';
+import {pubServiceInstances,pubServiceDrinks,PUB_SERVICE_PLACEMENTS,applyPubPressureToGlass} from '../src/render/pub-service-presentation.js';
 import {reducePubQuest} from '../src/game/pub-quest.js';
 import {PUB_INTERIOR_LAYOUT} from '../src/data/exterior-pub-furnishings.js';
 import {PUB_HOSPITALITY_DRESSING} from '../src/data/pub-hospitality.js';
@@ -42,7 +42,9 @@ test('every table vessel is supported and clears the actual food and lamps',()=>
   for(const p of PUB_SERVICE_PLACEMENTS){
     const table=PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===p.tableId);
     assert.equal(table?.kind,'table');
-    assert.ok(Math.hypot(p.x-table.x,p.z-table.z)+.047<.47,'whole glass base lies on the circular table');
+    // The actual flat top is a 24-gon with radius .455m at Y.790;
+    // the .47m radius belongs to the bevel below it, not its support surface.
+    assert.ok(Math.hypot(p.x-table.x,p.z-table.z)+.047<.455*Math.cos(Math.PI/24),'whole glass envelope lies on the actual flat tabletop');
     for(const d of PUB_HOSPITALITY_DRESSING.filter(d=>d.support===p.tableId))
       assert.ok(Math.hypot(p.x-d.x,p.z-d.z)>.047+d.radius,`${p.id} overlaps ${d.id}`);
   }
@@ -60,7 +62,10 @@ test('carry follows bodily heading, stays level and never leaks into Source',()=
   assert.deepEqual(upstairs.map(p=>p.id),['pub-carried-service-tray'],'carried service remains visible on every ordinary floor');
   const source=readFileSync('src/main.js','utf8'),start=source.indexOf("if(!suppressActors&&!usingSpecialSpace())");
   const main=source.slice(start,start+1100);
-  assert.match(main,/if\(!suppressActors&&!usingSpecialSpace\(\)\)\{[\s\S]*?for\(const vessel of pubServiceInstances\(flags,\{carrier:R3\.r3dViewCamera\?\.\(\),drinksByActor,tables:group==='ground'\}\)\)/);
+  assert.match(main,/if\(!suppressActors&&!usingSpecialSpace\(\)\)\{/);
+  const call=main.match(/for\(const vessel of pubServiceInstances\(flags,\{([^}]+)\}\)\)/)?.[1];
+  assert.ok(call,'ordinary service props remain in the existing ordinary actor pass');
+  assert.match(call,/carrier:R3\.r3dViewCamera\?\.\(\)/);assert.match(call,/drinksByActor/);assert.match(call,/tables:group==='ground'/);
 });
 
 test('Mavis receives the same table water as her single animated vessel',()=>{
@@ -84,4 +89,51 @@ test('the production counter restores a bare tray once Iona clears the returned 
  context.syncPubQuestProps({refresh:false});assert.equal(tray.mesh,'pub_service_tray_loaded');
  flags={'pub.help.accepted':true,'pub.help.trayTaken':true};context.syncPubQuestProps({refresh:false});assert.equal(removed,true,'the same tray is not left on the bar while carried');
  flags={'pub.help.complete':true};context.syncPubQuestProps({refresh:false});assert.equal(removed,false);assert.equal(tray.mesh,'pub_service_tray_bare','Iona has put the glasses away, as the visible handover says');
+});
+
+test('the pub pressure only moves Ed’s unattended served water, preserving every other vessel owner',()=>{
+  const flags={'pub.help.complete':true},pressureFrame={active:true,phase:'tremor',amount:1,elapsed:.13};
+  const drinksByActor=pubServiceDrinks(flags,{timeSec:2}),base=pubServiceInstances(flags,{drinksByActor});
+  const moved=pubServiceInstances(flags,{drinksByActor,pressureFrame});
+  assert.deepEqual(moved.map(p=>p.id),base.map(p=>p.id));
+  for(const p of base){const actual=moved.find(v=>v.id===p.id);
+    if(p.id==='pub-water-ed')assert.ok(actual.matrix);else assert.deepEqual(actual,p);
+  }
+  const mavis={...base.find(p=>p.id==='pub-water-ed'),id:'pub-water-mavis'};
+  assert.strictEqual(applyPubPressureToGlass(mavis,pressureFrame),mavis);
+  assert.deepEqual(pubServiceDrinks(flags,{timeSec:2}),drinksByActor,'Mavis’s handoff clock and held vessel are untouched');
+  const carrying={'pub.help.accepted':true,'pub.help.trayTaken':true};
+  assert.deepEqual(pubServiceInstances(carrying,{carrier,pressureFrame}),pubServiceInstances(carrying,{carrier}));
+  assert.deepEqual(pubServiceInstances(flags,{source:true,pressureFrame}),[]);
+});
+
+test('off, finished and accessibility poses return the exact base glass; held elapsed cannot accumulate movement',()=>{
+  const base=pubServiceInstances({'pub.help.complete':true}).find(p=>p.id==='pub-water-ed');
+  for(const frame of[null,{}, {amount:0},{amount:NaN},{amount:1,active:false},{amount:1,phase:'finished'},
+    {amount:1,reducedMotion:true},{amount:1,reduceMotion:true},{amount:1,reduceFlash:true}])
+    assert.strictEqual(applyPubPressureToGlass(base,frame),base);
+  const frame={active:true,amount:.7,elapsed:.22,suspended:true};
+  const first=applyPubPressureToGlass(base,frame),second=applyPubPressureToGlass(base,frame);
+  assert.deepEqual(first.matrix,second.matrix);assert.equal(base.matrix,undefined,'the base instance is never mutated');
+});
+
+test('the whole glass rocks less than one degree, moves less than two millimetres and never pierces its table',()=>{
+  const base={id:'pub-water-ed',mesh:'pub_service_water_glass',x:0,y:0,z:0,yaw:0};
+  // Actual native vessel profile: ground origin, bottom radius .8×.035m,
+  // upper radius .035m and height .100m (build-pub-characters.mjs).
+  const points=[];for(const[y,radius]of[[0,.035*.8],[.1,.035]])for(let i=0;i<48;i++)
+    points.push([Math.cos(i*Math.PI/24)*radius,y,Math.sin(i*Math.PI/24)*radius]);
+  let motion=0;
+  for(let t=0;t<=.48;t+=.002){
+    const pose=applyPubPressureToGlass(base,{active:true,amount:1,elapsed:t}),m=pose.matrix;
+    assert.ok(Array.from(m).every(Number.isFinite));
+    const tilt=Math.acos(Math.max(-1,Math.min(1,m[5])));assert.ok(tilt<Math.PI/180);
+    for(const p of points){
+      const q=[0,1,2].map(row=>m[row]*p[0]+m[4+row]*p[1]+m[8+row]*p[2]+m[12+row]);
+      const distance=Math.hypot(...q.map((v,i)=>v-p[i]));motion=Math.max(motion,distance);
+      assert.ok(distance<.002,'no point of the served tumbler travels two millimetres');
+      assert.ok(q[1]>=-1e-8,'the supported base stays above the table plane');
+    }
+  }
+  assert.ok(motion>.0005,'the bounded tremor produces a physical native transform');
 });

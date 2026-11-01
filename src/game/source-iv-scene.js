@@ -1,5 +1,6 @@
 import {normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus} from './source-iv.js';
 import {uiSize,uiCenter} from '../render/ui.js';
+import {createFootContactClock} from '../audio/foot-contact.js';
 const copy=value=>JSON.parse(JSON.stringify(value));
 const movement=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
@@ -7,11 +8,13 @@ const keyOf=e=>String(e?.key||e?.code||'').toLowerCase().replace(/^key/,'');
 // This floor remains playable until its far grey door is opened and crossed.
 // A return is committed by the host only after that physical action.
 export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
-  onCheckpoint=()=>{},onComplete=()=>false,onRetry=()=>false,onSound=()=>{},onError=()=>{},onExit=()=>{},onTrace=()=>{}}={}){
+  onCheckpoint=()=>{},onComplete=()=>false,onRetry=()=>false,onSound=()=>{},onFootContact=null,clearFootContacts=()=>{},onError=()=>{},onExit=()=>{},onTrace=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('Source IV needs its physical renderer.');
   let state=normalizeSourceIV(checkpoint),ready=false,closed=false,paused=false,error=null,
-    initializing=null,drag=null,saveClock=0,traceClock=0,stepDistance=0,hold=0,dispatching=false;
-  const keys=new Set(),clear=()=>{keys.clear();drag=null;};
+    initializing=null,drag=null,saveClock=0,traceClock=0,stepDistance=0,footIndex=0,hold=0,dispatching=false;
+  const footOwner='source-IV';
+  const footClock=createFootContactClock();
+  const keys=new Set(),clear=()=>{keys.clear();drag=null;stepDistance=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
   const snapshot=()=>copy(state);
   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
   const protectedNow=()=>{const p=presentation()||{};return !!p.protected||!!p.suspended||!!p.hidden||p.focused===false;};
@@ -30,8 +33,21 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
   function apply(input){
     const before={x:state.x,z:state.z};
     const result=stepSourceIV(state,{...input,paused,protected:protectedNow(),assetsReady:live()});state=result.state;
-    stepDistance+=Math.hypot(state.x-before.x,state.z-before.z);
-    if(stepDistance>=.72){stepDistance%=.72;onSound({type:'footstep',x:state.x,z:state.z});}
+    const distance=Math.hypot(state.x-before.x,state.z-before.z);
+    if(typeof onFootContact==='function'){
+      // Looking and operating the leaf have no travel interval. They must not
+      // reset an otherwise continuous walking cycle with a zero-delta update.
+      if(Number(input.dt)>0)for(const plant of footClock.update({dt:Number(input.dt),distance,scene:footOwner,
+        active:live()&&!paused&&!protectedNow()&&state.status==='active',supported:true})){
+        footIndex++;
+        onFootContact({...plant,owner:footOwner,surface:'source-code',profile:'glazed',
+          position:{x:state.x,z:state.z},distanceM:plant.distance,strideM:plant.stride,level:.09,muffle:.65,condition:'walk',
+          id:`${footOwner}:${state.runId}:${footIndex}`,time:state.clock});
+      }
+    }else{
+      stepDistance+=distance;
+      if(stepDistance>=.72){stepDistance%=.72;footIndex++;onSound({type:'footstep',x:state.x,z:state.z});}
+    }
     for(const event of result.events){if(event.type==='door')onSound(event);trace('event',{event:copy(event)});}
     if(result.events.length||result.saveDue)save('event');
     if(state.status==='completed')clear();

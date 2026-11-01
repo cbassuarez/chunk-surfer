@@ -26,8 +26,19 @@ export async function readSourceDriveAudioEntry(key){
 }
 export async function readSourceDriveAudio(ref){return(await readSourceDriveAudioEntry(typeof ref==='string'?ref:ref?.key))?.blob||null;}
 export function invalidateSourceDriveAudio(){ storageEpoch++; }
-export function clearSourceDriveAudio(){
- invalidateSourceDriveAudio();return new Promise(resolve=>{if(!globalThis.indexedDB){resolve(false);return;}const request=indexedDB.deleteDatabase(DB);request.onsuccess=()=>resolve(true);request.onerror=()=>resolve(false);request.onblocked=()=>resolve(false);});
+export function clearSourceDriveAudio({preserveKeys=[]}={}){
+ invalidateSourceDriveAudio();
+ // An uncertain archive is a reason to retain audio, never to erase it.
+ if(!Array.isArray(preserveKeys)||preserveKeys.some(key=>typeof key!=='string'||!key))return Promise.resolve(false);
+ if(preserveKeys.length){
+  const keep=new Set(preserveKeys);
+  return openStore().then(db=>new Promise(resolve=>{
+   const tx=db.transaction(STORE,'readwrite'),request=tx.objectStore(STORE).openCursor();
+   request.onsuccess=()=>{const cursor=request.result;if(!cursor)return;if(!keep.has(String(cursor.key)))cursor.delete();cursor.continue();};
+   tx.oncomplete=()=>{db.close();resolve(true);};tx.onerror=tx.onabort=()=>{db.close();resolve(false);};
+  })).catch(()=>false);
+ }
+ return new Promise(resolve=>{if(!globalThis.indexedDB){resolve(false);return;}const request=indexedDB.deleteDatabase(DB);request.onsuccess=()=>resolve(true);request.onerror=()=>resolve(false);request.onblocked=()=>resolve(false);});
 }
 export const sourceDriveAudioStore=Object.freeze({put:storeSourceDriveAudio,get:readSourceDriveAudioEntry});
 export async function sourceDriveBlobDigest(blob){
@@ -81,10 +92,12 @@ export class SourceDriveRecording {
   const t=this.tape.tapeTransport();if(Math.abs(t.headSeconds-t.endSeconds)>.051)throw problem('FIELD_TAPE_NOT_CUED','The tape must finish cueing to its end before a new field take.');return t;
  }
  record(metadata={}){return this.operation(async()=>{
+  if(this.tape.canStartTransport?.('continuous-record')===false)throw problem('NIGHT_EXPIRED','The night has ended. A new recording cannot start.');
   if(this.active)throw problem('FIELD_ALREADY_RECORDING','Seal the current field take first.');
   if(!this.Recorder)throw problem('FIELD_CAPTURE_UNAVAILABLE','Continuous cabin recording is unavailable on this device. No take has been invented.');
   this.stopPlayback();const transport=await this.prepareAppend(),capacity=Number.isFinite(transport.capacitySeconds)?Math.max(0,transport.capacitySeconds-transport.endSeconds):Infinity;
   if(this.closing||this.disposed)throw problem('FIELD_DISPOSED','This cabin recording session has closed.');
+  if(this.tape.canStartTransport?.('continuous-record')===false)throw problem('NIGHT_EXPIRED','The night has ended. A new recording cannot start.');
   if(capacity<=0)throw problem('FIELD_TAPE_FULL','There is no blank tape remaining.');
   const mime=['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'].find(type=>this.Recorder.isTypeSupported?.(type));
   const recorder=new this.Recorder(this.sink.stream,{...(mime?{mimeType:mime}:{}),audioBitsPerSecond:192000}),chunks=[];

@@ -49,6 +49,29 @@ test('the real six-topic social picker and complete captions fit a compact panel
   }
 });
 
+test('both bouncer panels share numbered choice rows and keep the selected reply visible at constrained heights',()=>{
+  const options=Array.from({length:8},(_,i)=>({id:`reply-${i+1}`,text:`Reply ${i+1} with its own distinct words.`}));
+  const social=academicBouncerSocialPanelLayout({pending:{kind:'branch',options,index:6}},{cols:46,rows:16});
+  assert.equal(social.fits,true);
+  assert.match(social.footer,/\[1-8\] SAY/);assert.ok(social.footer.length<=social.width-4);
+  const many=academicBouncerSocialPanelLayout({pending:{kind:'branch',options:[...options,...options],index:6}},{cols:46,rows:16});
+  assert.match(many.footer,/\[1-9\]/);
+  assert.ok(social.choiceWindow.overflow,'small panel indicates more options');
+  assert.ok(social.content.some(row=>row.pickerRow&&row.choiceIndex===6&&row.selected&&row.firstLine));
+  assert.ok(!social.content.some(row=>row.choiceIndex===6&&!row.selected));
+  const huge={id:'one',text:Array(250).fill('meaningful response').join(' ')};
+  const choice={pending:{kind:'branch',options:[huge],index:0},choiceScrollOffset:0};
+  const initial=academicBouncerSocialPanelLayout(choice,{cols:46,rows:16});
+  const later=academicBouncerSocialPanelLayout({...choice,choiceScrollOffset:2},{cols:46,rows:16});
+  assert.ok(initial.choiceWindow.selectedScroll);assert.match(initial.footer,/PG↑↓/);assert.ok(initial.footer.length<=initial.width-4);
+  assert.equal(later.choiceWindow.selectedOffset,2);
+  assert.ok(later.content.some(row=>row.choiceIndex===0&&row.firstLine&&row.selected));
+  const controller=createAcademicBouncers();controller.beginAttempt();
+  const welcome=academicBouncerPanelLayout({...controller.view(),selected:0},{cols:96,rows:38});
+  assert.ok(welcome.content.some(row=>row.pickerRow&&row.firstLine&&row.choiceId));
+  assert.match(welcome.footer,/INTERJECT/);assert.match(welcome.footer,/FINISH LINE/);
+});
+
 test('old or malformed saves normalise only earned admission and known source receipts',()=>{
   assert.deepEqual(createAcademicBouncerState(null),{version:2,admitted:false,clues:clueReceipts(),social:createAcademicBouncerSocietyState()});
   const controller=createAcademicBouncers({admitted:'yes',clues:{practice:true,bathroom:1,alien:true},

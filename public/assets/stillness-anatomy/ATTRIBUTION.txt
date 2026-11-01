@@ -1,0 +1,5 @@
+Infinite, 3D Head Scan by Lee Perry-Smith, based on work at www.triplegangers.com; distributed through three.js r185. CC BY3.0. Modified for Chunk Surfer: frontal crop, connected strain deformation, reduced skull base mass, broad scanned-silhouette contact feather, low-frequency wall bow and outward-only bas-relief rasterization. No endorsement implied.
+
+License: https://creativecommons.org/licenses/by/3.0/
+Source: https://raw.githubusercontent.com/mrdoob/three.js/r185/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb
+Original license notice: https://raw.githubusercontent.com/mrdoob/three.js/r185/examples/models/gltf/LeePerrySmith/LeePerrySmith_License.txt

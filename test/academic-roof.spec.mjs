@@ -92,8 +92,8 @@ const roofLightContext=resolveLightingContext({group:'academicRoof',zone:ZONE.ac
 assert.ok(resolveLocalLights(roofLightContext,{timeSec:0,liveCircuits:new Set()})
   .some(light=>light.id==='roof-north-lower-security'&&light.intensity>0),
   'the entire ascent group can select the maintained lower facade security light');
-assert.ok(PROPS.renderInstances({group:'ground'}).some(prop=>prop.id==='district-north-car-east'),
-  'the exterior ground group has the actual north-street car for roof sightlines');
+assert.ok(PROPS.renderInstances({group:'ground'}).some(prop=>prop.id==='ellery-square-car-north-east'),
+  'the exterior ground group has a real parked car for roof sightlines');
 const physicalCell=(slice,x,z)=>{
   const i=(z*2-slice.originY)*slice.w+(x*2-slice.originX);
   return {floor:slice.floor[i],flags:slice.flags[i],zone:slice.zone[i]};

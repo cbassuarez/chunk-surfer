@@ -72,6 +72,31 @@ test('HUSH interference corrupts the whole torch contract without spending batte
   assert.equal(corrupted.power, effectiveTorchScale(field));
 });
 
+test('peeking retains only a portion of the real torch for a readable edge', () => {
+  // The staged native studio capture recorded about .87 light absorption.
+  const field = at(3.216, { occlusion:.117 });
+  const torch = { power:.8, reach:.9, spill:.05, color:[1,.94,.82], coneInner:.88, coneOuter:.94 };
+  const ordinary = applyHushTorchInterference(torch,field);
+  const half = applyHushTorchInterference(torch,field,{peek:.5});
+  const full = applyHushTorchInterference(torch,field,{peek:1});
+  assert.ok(ordinary.power < half.power && half.power < full.power);
+  assert.ok(full.power <= torch.power && full.power >= torch.power*.64);
+  assert.ok(full.reach <= torch.reach && full.reach >= torch.reach*.78);
+  assert.ok(full.spill <= torch.spill && full.spill >= torch.spill*.5);
+  assert.equal(applyHushTorchInterference({...torch,power:0},field,{peek:1}).power,0,
+    'a dark torch never becomes an invented source');
+  assert.deepEqual(applyHushTorchInterference(torch,field,{peek:0}),ordinary,
+    'other encounters keep the existing torch response');
+  const unpeeked=hushAbsenceLook({active:true,field,peek:0});
+  const peeked=hushAbsenceLook({active:true,field,peek:1});
+  assert.ok(peeked.strength<unpeeked.strength && peeked.radiusM<unpeeked.radiusM);
+  assert.ok(peeked.strength>0, 'the absence remains around the actual body');
+  const reduced=at(3.216,{occlusion:.117,settings:{hushLightFlicker:'off'}});
+  const quiet=applyHushTorchInterference(torch,reduced,{peek:1});
+  assert.equal(quiet.power,applyHushTorchInterference(torch,{...reduced,pulse:1},{peek:1}).power,
+    'peek readability does not reintroduce disabled flicker');
+});
+
 test('flicker-off keeps steady dimming and sound still collapses in the inner field', () => {
   const lowPulse = at(10, { now: 0, settings: { hushLightFlicker: 'off' } });
   const highPulse = { ...lowPulse, pulse: 1 };

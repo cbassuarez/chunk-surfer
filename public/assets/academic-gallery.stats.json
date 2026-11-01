@@ -13,7 +13,7 @@
     21
   ],
   "inputGlbSha256": {
-    "public/assets/conservatory-props.glb": "553720548062911e17af2811c781697b4074111a9a5f0c5aeba1b8ef3a8132c6",
+    "public/assets/conservatory-props.glb": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
     "public/assets/conservatory-acquisitions.glb": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336"
   },
   "materialEncoding": {
@@ -31,8 +31,8 @@
   },
   "meshes": {
     "gallery_atrium_structure": {
-      "triangles": 17572,
-      "vertices": 32549,
+      "triangles": 17599,
+      "vertices": 32616,
       "bounds": {
         "min": [
           -12,
@@ -104,7 +104,7 @@
         "majorRodDiameterM": 0.026,
         "originalSource": "academic_atrium_structure academic plaster primitive; bronze removed; independently closed inward shells corrected",
         "ornament": "wide pairedC/S panels, attached ring/rosette ties, forged collars and corner underscrolls; no monogram",
-        "retainedOutsideVoidTriangles": 516,
+        "retainedOutsideVoidTriangles": 551,
         "roofUntouched": true,
         "sourceComponentWinding": [
           {
@@ -122,9 +122,9 @@
             },
             "closed": false,
             "reversed": false,
-            "signedVolumeAfterM3": 99.03999646504721,
-            "signedVolumeBeforeM3": 99.03999646504721,
-            "triangles": 36
+            "signedVolumeAfterM3": 99.91999625166257,
+            "signedVolumeBeforeM3": 99.91999625166257,
+            "triangles": 54
           },
           {
             "bounds": {
@@ -139,11 +139,11 @@
                 -13.5
               ]
             },
-            "closed": true,
+            "closed": false,
             "reversed": false,
-            "signedVolumeAfterM3": 69.11999893188477,
-            "signedVolumeBeforeM3": 69.11999893188477,
-            "triangles": 12
+            "signedVolumeAfterM3": 67.83999908218782,
+            "signedVolumeBeforeM3": 67.83999908218782,
+            "triangles": 30
           },
           {
             "bounds": {
@@ -590,16 +590,16 @@
     "actualGameDither": "pending refreshed captures",
     "playerValidation": "pending"
   },
-  "catalogueTriangles": 31206,
-  "addedCatalogueTriangles": 29150,
+  "catalogueTriangles": 22938,
+  "addedCatalogueTriangles": 20882,
   "export": {
-    "bytes": 2285212,
-    "sha256": "fecc0437055138a51e8995b0467c19a94b3a28d87a42e604d3dff0201a1d9a3c",
+    "bytes": 2356232,
+    "sha256": "f7e62468ab61eedcb16a47dd931ef6395e2a4273ba0125193457f8b025e4e07d",
     "meshes": [
       {
         "name": "gallery_atrium_structure",
-        "triangles": 17572,
-        "vertices": 36481,
+        "triangles": 9655,
+        "vertices": 36566,
         "primitives": 1,
         "bounds": {
           "min": [
@@ -623,9 +623,9 @@
         },
         "components": [
           {
-            "triangles": 160,
+            "triangles": 187,
             "closed": false,
-            "signedVolumeM3": 184.59626352328442,
+            "signedVolumeM3": 181.63626358944563,
             "bounds": {
               "min": [
                 -12,
@@ -9619,7 +9619,7 @@
       },
       {
         "name": "gallery_floor",
-        "triangles": 1712,
+        "triangles": 1361,
         "vertices": 3283,
         "primitives": 1,
         "bounds": {
@@ -15445,8 +15445,23 @@
     "estimatedMipmappedTextureBytes": 4194300,
     "allNodeTransformsIdentity": true,
     "coreGltfOnly": true,
-    "blendSha256": "5a755f6174a58d30728600bf4567d035b297ca692d3abe1e8f76319b115efc28",
+    "blendSha256": "3f6b694bcd5f6ea690de6e1743ebb96d2fd2d50a423c20b5a724d3abde8e0883",
     "sourceSha256": "165603e842a29c741cbfc065ff93b9c4f528673066bbd057b66f26c02155b553",
-    "wrapperSha256": "4cc2f3eee948a508cff25666f975bcf9ff44a37e06015f275cb1a474688c431b"
+    "wrapperSha256": "6be5babf0945a2c772eca70d012791a2235ded185f6f4e2eca96f8a0f4f23284"
+  },
+  "courtyardRepair": {
+    "revision": 1,
+    "receipt": [
+      {
+        "mesh": "gallery_atrium_structure",
+        "changedTriangles": 8276
+      },
+      {
+        "mesh": "gallery_floor",
+        "changedTriangles": 568
+      }
+    ],
+    "source": "tools/chunk_surfer/repair-courtyard-packs.mjs",
+    "guards": "glass_court_upper_guards in glass-court.glb"
   }
 }

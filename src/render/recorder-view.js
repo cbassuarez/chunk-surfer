@@ -1,13 +1,15 @@
 // One physical recorder in every transport state. The approved instrument owns
 // the faceplate, display stack and three bottom housings; this adapter owns
 // scene layout and authored content, never a second transport illustration.
-import { uiFill, uiCellMetrics, uiCurrentScale } from './ui.js';
+import { uiFill, uiDraw, uiCellMetrics, uiCurrentScale } from './ui.js';
 import { fitText } from './fit-text.js';
-import { layoutTranscript, layoutTranscriptChoices } from './transcript.js';
+import { layoutTranscript, layoutTranscriptChoices, fitTranscriptChoices, transcriptChoiceText } from './transcript.js';
 import { obscuredGlyphAt, obscuredShape } from '../narrative/obscured-name.js';
 import { visualEffectsEnabled } from '../game/access.js';
-import { drawRecorderInstrument, recorderFaceLayout, drawRecorderDisplayText, drawRecorderCheckMeter } from './recorder-instrument.js';
+import { drawRecorderInstrument, recorderFaceLayout, recorderDisplayPalette, drawRecorderDisplayText, drawRecorderCheckMeter } from './recorder-instrument.js';
 import { registerReviewRegion } from '../game/local-text-review.js';
+import { drawTraceVfdText } from './dual-trace-display.js';
+import { uiBrightness } from './palette.js';
 
 const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
 export const TRANSPORT = Object.freeze({
@@ -76,8 +78,11 @@ export function recorderInstrumentLayout(body) {
     bayW: body.w * .51, channelsW: 0, channelsX: body.x + body.w };
 }
 export function recorderTranscriptRect(body) { return { ...body }; }
-function guideLayout(body, guide) {
-  const choices = layoutTranscriptChoices(guide, body.w), step = Math.min(1, body.h / 9);
+export function recorderGuideLayout(body, guide) {
+  const step = Math.min(1, body.h / 9);
+  const capacity = Math.max(1, Math.floor(body.h / step) - 3);
+  const choices = fitTranscriptChoices(layoutTranscriptChoices(guide, body.w), capacity,
+    { selectedOffset: guide?.choiceScrollOffset });
   return { choices, step, choiceY: body.y + body.h - choices.height * step,
     maxRows: Math.max(0, Math.floor(body.h / step - (choices.height ? choices.height + 1 : 0))) };
 }
@@ -100,7 +105,7 @@ export function recorderHitRegions(view = {}) {
     });
   }
   if (view.mode === TRANSPORT.LISTEN) {
-    const content = layout.transcriptRect, { choices, step, choiceY } = guideLayout(content, view.guide || {});
+    const content = layout.transcriptRect, { choices, step, choiceY } = recorderGuideLayout(content, view.guide || {});
     choices.rows.forEach((choice, index) => {
       if (choice.kind === 'choice') regions.push({ kind: 'choice', index: choice.choiceIndex,
         x: content.x + choices.lane.x, y: choiceY + index * step,
@@ -128,7 +133,7 @@ function drawTakeList(body, view) {
   });
 }
 function drawGuide(body, view) {
-  const guide = view.guide || {}, { choices, step, choiceY, maxRows } = guideLayout(body, guide);
+  const guide = view.guide || {}, { choices, step, choiceY, maxRows } = recorderGuideLayout(body, guide);
   const prose = (x, y, value, width, color, alpha = 1) => drawRecorderDisplayText(x, y, value,
     { width, color, alpha, lineHeight: step, size: Math.min(12, step * 16) });
   const transcript = layoutTranscript(guide, { width: body.w, maxRows, keep: 4 });
@@ -154,21 +159,40 @@ function drawGuide(body, view) {
     if (used < maxRows) { y += step; used++; }
   }
   choices.rows.forEach((row, i) => {
-    const selected = row.choiceIndex === guide.pending?.index;
-    prose(body.x + choices.lane.x, choiceY + i * step, row.text, choices.lane.w, selected ? '#e4bd78' : '#8fcd87');
-    if(row.kind==='choice'&&row.text.trim())registerReviewRegion(row.reviewTarget,
-      {x:body.x+choices.lane.x,y:choiceY+i*step,w:Math.min(row.text.length,choices.lane.w),h:step,selected});
+    const selected = row.kind === 'choice' && row.choiceIndex === guide.pending?.index;
+    // Keep the shared selection, archive and spent semantics on the recorder's
+    // own phosphor face; no borrowed physical keys inside the glass aperture.
+    const color = selected ? '#e4bd78' : row.archiveSignal ? '#a9d5e1' : '#8fcd87';
+    const text = transcriptChoiceText(row);
+    prose(body.x + choices.lane.x, choiceY + i * step, text, choices.lane.w, color, row.spent ? .48 : 1);
+    if(row.kind==='choice'&&text.trim())registerReviewRegion(row.reviewTarget,
+      {x:body.x+choices.lane.x,y:choiceY+i*step,w:Math.min(text.length,choices.lane.w),h:step,selected});
   });
 }
-function drawCheck(body, view) {
-  const check = view.check || {};
-  write(body.x, body.y, check.prompt || 'SAY: “CHECK, ONE TWO”', body.w, '#e4bd78');
-  const meterW = Math.min(38, body.w * .7);
-  drawRecorderCheckMeter(body.x, body.y + 1.5, meterW, view.roomMeter, { thresholdDb: -12 });
-  [-48, -36, -24, -12, 0].forEach((db, i) => write(body.x + i * (meterW - 2) / 4, body.y + 2.5, String(db), 4));
-  write(body.x + meterW + 1, body.y + 1.5, check.heard ? 'LEVEL OK' : check.note || '', body.w - meterW - 1, '#b4f4e6');
-  write(body.x, body.y + Math.min(4, body.h - 2), fitText(check.line || '', body.w), body.w);
-  write(body.x, body.y + body.h - 1, 'NOTHING IS RECORDING. NOTHING IS KEPT.', body.w, '#b4f4e6');
+export function recorderCheckLayout(body,{cellW,cellH}=uiCellMetrics()){
+  const pixels=Math.max(1,body.h*cellH),row=Math.min(20,Math.max(13,pixels*.10));
+  const gap=Math.min(8,pixels*.03),meterHeight=Math.max(0,pixels-3*row-4*gap);
+  const rect=(top,height)=>({x:body.x,y:body.y+top/cellH,w:body.w,h:height/cellH});
+  return {prompt:rect(0,row),meter:rect(row+gap,meterHeight),
+    line:rect(row+meterHeight+2*gap,row),privacy:rect(pixels-row,row),
+    fontSize:Math.min(12,row*.85),cellW,cellH};
+}
+function drawCheck(body,view){
+  const check=view.check||{},layout=recorderCheckLayout(body),colors=recorderDisplayPalette();
+  const prose=(rect,value,color)=>uiDraw(({ctx,dpr,cellW,cellH})=>{
+    const size=layout.fontSize,capacity=Math.max(1,Math.floor(rect.w*cellW/(size*.72+.2)));
+    ctx.save();try{
+      ctx.scale(dpr,dpr);
+      drawTraceVfdText(ctx,fitText(value,capacity),rect.x*cellW,(rect.y+rect.h/2)*cellH,
+        {fontSize:size,color,alpha:uiBrightness(),maxWidth:rect.w*cellW});
+    }finally{ctx.restore();}
+  });
+  prose(layout.prompt,check.prompt||'SAY: “CHECK, ONE TWO”',colors.meterMark);
+  drawRecorderCheckMeter(layout.meter.x,layout.meter.y,layout.meter.w,view.roomMeter,
+    {height:layout.meter.h,thresholdDb:-12,sourceId:view.meterId||'room-mic',
+      label:check.heard?'LEVEL OK':check.note||'ROOM MIC',nowMs:view.nowMs??performance.now()});
+  prose(layout.line,check.line||'',colors.label);
+  prose(layout.privacy,'NOTHING IS RECORDING. NOTHING IS KEPT.',colors.counter);
 }
 export function drawRecorderFace(view = {}) {
   if (!view.rect) return null;

@@ -10,12 +10,14 @@ import {createSourceSpaceRuntime} from '../src/game/source-space-runtime.js';
 import {BUS_BODY_CORRIDOR,busBodyCorridorCentre} from '../src/game/bus-body-corridor.js';
 
 function fixture(){
- const b=buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength),f={r:createSourceSpaceRuntime({initialState:b.state}),events:[],p:b.position,grid:{...b.position}};f.r.setPlayerPosition(f.p);f.bus=f.r.outskirtsPiece('r7-bus');
+ const b=buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength),f={events:[],saved:[],p:b.position,grid:{...b.position}};
+ f.r=createSourceSpaceRuntime({initialState:b.state,onState:(state,options)=>f.saved.push({state:JSON.parse(JSON.stringify(state)),options})});
+ f.r.setPlayerPosition(f.p);f.bus=f.r.outskirtsPiece('r7-bus');
  f.at=(x,z,origin=f.bus)=>({x:(origin.x+x*Math.cos(origin.yaw)+z*Math.sin(origin.yaw))/CELL-.5,y:(origin.z-x*Math.sin(origin.yaw)+z*Math.cos(origin.yaw))/CELL-.5});
  f.t=()=>f.r.state().outskirtsExperience.busTransit;
  f.tick=(dt=.25,yaw=0,suspended=false)=>{f.r.tickOutskirtsCharacters(dt,{viewYaw:yaw,suspended});const s=f.r.outskirtsStreetFrame({viewYaw:yaw});f.events.push(...s.events);return s;};
  f.pose=(x,z,dt=.25)=>{f.p=f.at(x,z);f.r.setPlayerPosition(f.p);f.tick(dt);};
- f.step=to=>{const from=f.p,m=f.r.geometry.canStep(from.x,from.y,to.x,to.y);assert.ok(m.ok,m.why);f.p={...(m.redirect||to)};f.r.setPlayerPosition(f.p);const result=f.r.onStep(from,f.p);f.tick();return{move:m,result};};
+ f.step=(to,dt=.25)=>{const from=f.p,m=f.r.geometry.canStep(from.x,from.y,to.x,to.y);assert.ok(m.ok,m.why);f.p={...(m.redirect||to)};f.r.setPlayerPosition(f.p);const result=f.r.onStep(from,f.p);f.tick(dt);return{move:m,result};};
  f.action=action=>f.r.outskirtsPerformAction({action,pass:7});
  f.ready=()=>{f.pose(.75,4);assert.equal(f.action('bus-exit-try').changed,true);f.pose(0,2.5,0);for(let i=0;i<7;i++)f.tick();assert.equal(f.action('bus-woman-open').changed,true);for(let i=0;i<12;i++)f.tick();assert.equal(f.r.outskirtsBusPassageFrame().bodyOpening.ready,true);};
  f.reload=()=>{const s=JSON.parse(JSON.stringify(f.r.state()));f.r=createSourceSpaceRuntime({initialState:s});f.r.setPlayerPosition(f.p);return s;};
@@ -28,6 +30,8 @@ test('front trap waits for a clear body/exit look or mid-aisle commitment, close
  f.pose(0,-2);const eye={x:(f.p.x+.5)*CELL,z:(f.p.y+.5)*CELL},entry=f.at(-1.245,-3.15);
  const yaw=Math.atan2((entry.x+.5)*CELL-eye.x,-((entry.y+.5)*CELL-eye.z));
  f.tick(.25,yaw);assert.ok(Number.isFinite(f.t().trapAt));
+ assert.equal(f.saved.at(-1).state.outskirtsExperience.busTransit.trapAt,f.t().trapAt,'escape-look trap is not saved until a later unrelated event');
+ assert.equal(f.saved.at(-1).options.immediate,true);
  const trap=f.t().trapAt;for(let i=0;i<12;i++)f.tick();
  const frame=f.r.outskirtsBusPassageFrame();assert.equal(frame.entryAngle,0);assert.deepEqual(frame.lighting.power.strips,[0,0,0,0]);assert.equal(frame.lighting.power.rear,.72);
  const before=f.events.filter(e=>e.cue==='bus-strip').map(e=>e.variant);assert.deepEqual(before,[0,1,2,3]);
@@ -76,9 +80,22 @@ test('72m ordinary half-metre grid follows both bends, saves and leaves beyond t
  for(let n=0;n<q.length&&!parents.has(key(goal));n++){const p=q[n];for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const next={x:p.x+dx,y:p.y+dy},id=key(next);if(parents.has(id)||Math.hypot(next.x-start.x,next.y-start.y)>150)continue;
    const move=f.r.geometry.canStep(p.x,p.y,next.x,next.y);if(!move.ok)continue;if(move.redirect&&move.via!=='bus-body-exit')continue;parents.set(id,key(p));points.set(id,next);q.push(next);}}
  assert.ok(parents.has(key(goal)),'body corridor has no continuous half-metre path');const path=[];for(let id=key(goal);parents.get(id)!=null;id=parents.get(id))path.push(points.get(id));
- let distance=0;for(const next of path.reverse()){const previous=f.p;f.step(next);distance+=Math.hypot(next.x-previous.x,next.y-previous.y)*CELL;if(distance>35&&distance<36)f.reload();}
+ let distance=0;for(const [i,next]of path.reverse().entries()){const previous=f.p;f.step(next,i===path.length-1?0:.25);distance+=Math.hypot(next.x-previous.x,next.y-previous.y)*CELL;if(distance>35&&distance<36)f.reload();}
  assert.ok(distance>=72);assert.equal(f.r.busInteriorFrame(),null);assert.equal(f.t().exited,true);assert.ok(Number.isFinite(f.t().crossedAt));assert.equal(JSON.stringify(f.r.state().finale),commitment);
  const exterior=f.r.outskirtsBusPassageFrame().local;assert.ok(exterior.x>2&&exterior.z>3.5);
+ const camera=()=>f.r.outskirtsBodyFrame({time:0}),baseline=camera(),position={...f.p};
+ assert.equal(baseline.expulsion,0);f.tick(.06);const peak=camera();
+ assert.ok(Math.abs(peak.expulsion-1)<1e-9);
+ assert.ok(Math.abs(peak.eyeDropM-baseline.eyeDropM-.10*peak.residue)<1e-9,'expulsion has no bounded bodily drop');
+ assert.ok(Math.abs(peak.lurch-baseline.lurch-.18*peak.residue)<1e-9,'expulsion bypasses the existing small lean adapter');
+ f.tick(.10);const partial=camera();assert.ok(partial.expulsion>0&&partial.expulsion<1);
+ f.tick(30,0,true);assert.deepEqual(camera(),partial,'pause consumes the expulsion recovery');
+ f.reload();assert.deepEqual(camera(),partial,'reload restarts or loses the partial bodily catch');
+ const reduced=f.r.outskirtsBodyFrame({time:0,reducedMotion:true});
+ assert.equal(reduced.expulsion,0);assert.equal(reduced.eyeDropM,0);assert.equal(reduced.lurch,0);
+ f.tick(.25);f.tick(.25);assert.equal(camera().expulsion,0);assert.equal(camera().eyeDropM,baseline.eyeDropM);
+ assert.deepEqual(f.p,position,'camera recovery moves the physical body');
+ assert.equal(f.events.filter(e=>e.cue==='bus-body-expel').length,1,'recovery repeats the expulsion event');
 });
 
 test('main reports the actual pre-redirect source step and useful-hand activity defers OPEN',()=>{
@@ -86,4 +103,42 @@ test('main reports the actual pre-redirect source step and useful-hand activity 
  const f=fixture();f.pose(.75,4);f.action('bus-exit-try');for(let i=0;i<7;i++)f.tick();f.pose(0,2.5);
  f.r.setOutskirtsWorldState({ticketReturned:true});f.r.outskirtsPerformAction({action:'ticket',pass:7});
  assert.equal(f.action('bus-woman-open').handled,false,'active receipt is overwritten by body opening');
+});
+
+test('front failure cannot open her and suspension/reload retain partial physical animations without replaying cues',()=>{
+ const f=fixture();f.pose(0,-1);for(let i=0;i<4;i++)f.tick();f.pose(-.75,-2.8);
+ assert.equal(f.action('bus-entry-try').changed,true);
+ assert.equal(f.t().tryAt,null,'front failure is mistaken for the required rear discovery');
+ f.pose(0,2.5);assert.equal(f.action('bus-woman-open').handled,false);
+ f.pose(.75,4);assert.equal(f.action('bus-exit-try').changed,true);f.tick(.25);
+ let before=f.r.outskirtsBusPassageFrame();f.tick(30,0,true);
+ assert.equal(f.r.outskirtsBusPassageFrame().exitAngle,before.exitAngle,'paused rear leaf continues rattling');
+ f.reload();assert.equal(f.r.outskirtsBusPassageFrame().exitAngle,before.exitAngle);
+ for(let i=0;i<7;i++)f.tick();f.pose(0,2.5);assert.equal(f.action('bus-woman-open').changed,true);
+ for(let i=0;i<6;i++)f.tick();before=f.r.outskirtsBusPassageFrame();
+ assert.ok(before.bodyOpening.progress>0&&before.bodyOpening.progress<1);
+ const cueCount=f.events.filter(e=>e.cue==='bus-body-open').length;
+ f.tick(30,0,true);assert.equal(f.r.outskirtsBusPassageFrame().bodyOpening.progress,before.bodyOpening.progress);
+ f.reload();f.tick(0);assert.equal(f.r.outskirtsBusPassageFrame().bodyOpening.progress,before.bodyOpening.progress);
+ assert.equal(f.events.filter(e=>e.cue==='bus-body-open').length,cueCount,'restoring an opening repeats its sound');
+});
+
+test('repeated corridor retreats preserve durable street receipts while footfalls retain their own cursor',()=>{
+ const f=fixture();f.ready();f.pose(0,4,0);f.step(f.at(0,4.5));
+ const interior=f.r.busInteriorFrame(),a={...f.p},b=f.at(interior.local.x,interior.along+.5,interior.origin);
+ const receipts=[...f.r.state().outskirtsExperience.actions];
+ for(let i=0;i<300;i++){f.step(i%2?a:b);if(i===149)f.reload();}
+ assert.deepEqual(f.r.state().outskirtsExperience.actions,receipts,'ordinary wet footsteps fill/evict the one-shot narrative ledger');
+ const footsteps=f.events.filter(e=>e.cue==='bus-body-step');assert.equal(footsteps.length,300);
+ assert.equal(new Set(footsteps.map(e=>e.id)).size,300,'saved footfall cursor repeats delivered sound IDs');
+ assert.equal(f.t().interior.stepIndex,300);
+});
+
+test('a migrated old completed bus does not invent a new expulsion impulse',()=>{
+ const b=buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength);b.state.outskirtsExperience={busStage:4};
+ const r=createSourceSpaceRuntime({initialState:b.state});r.setPlayerPosition(b.position);
+ for(const dt of[0,.06,.1,.25]){
+  r.tickOutskirtsCharacters(dt);const body=r.outskirtsBodyFrame({time:0});
+  assert.equal(body.expulsion,0);assert.equal(body.eyeDropM,0);assert.equal(body.lurch,0);
+ }
 });

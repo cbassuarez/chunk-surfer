@@ -9,7 +9,7 @@ export const OPENING_VEHICLE = Object.freeze({
   eye: Object.freeze([.48, 1.65, .20]),
   exitEye: Object.freeze([1.8,1.62,-.1]),
   doorHinge: Object.freeze([.945,.64,-.62]),
-  exitSeconds: 1.85,
+  exitSeconds: 2.65,
 });
 const clamp = n => Math.max(0, Math.min(1, Number(n) || 0));
 const smooth = n => { const t = clamp(n); return t * t * (3 - 2 * t); };
@@ -22,7 +22,7 @@ export function openingVehiclePoint(anchor, local, cabin = true) {
   const c = Math.cos(anchor.yaw), s = Math.sin(anchor.yaw);
   return { x: anchor.x + c*x-s*z, y: anchor.y+y, z: anchor.z+s*x+c*z };
 }
-export function openingVehicleInstances(anchor, { doorOpen = 0 } = {}) {
+export function openingVehicleInstances(anchor, { doorOpen = 0, drive = null } = {}) {
   if (!anchor) return [];
   const instances = [];
   function part(mesh, at = [0, 0, 0], pitch = 0, roll = 0, cabin = true, id = mesh, extraYaw = 0) {
@@ -31,16 +31,17 @@ export function openingVehicleInstances(anchor, { doorOpen = 0 } = {}) {
     instances.push({ id: `opening:${id}`, mesh:`opening_${mesh}`, matrix, ...point, structural: true, zone: anchor.zone, cullRadius: 4 });
   }
   part('drive_cabin'); part('drive_radio');
-  part('drive_wheel', [.48, 1.20, -.39], -.36);
-  part('drive_speed_needle', [.575,1.207,-.626], 0, .72*Math.PI);
+  part('drive_wheel', [.48, 1.20, -.39], -.36, -(drive?.steeringWheelAngle||0));
+  part('drive_speed_needle', [.575,1.207,-.626], 0, .72*Math.PI*(1-2*Math.min(1,Math.abs(drive?.speed||0)*3.6/144.84)));
   part('drive_radio_needle', [-.0422, 1.11344, -.396]);
-  part('drive_wiper', [-.52, 1.30, -1.17], .435, -1.42, true, 'wiper-left');
-  part('drive_wiper', [.45, 1.30, -1.17], .435, 1.42, true, 'wiper-right');
+  const sweep=drive?.wipers===false?0:drive?Math.sin((drive.elapsed||0)*Math.PI*1.6)*.72:0;
+  part('drive_wiper', [-.52, 1.30, -1.17], .435, -1.42+sweep, true, 'wiper-left');
+  part('drive_wiper', [.45, 1.30, -1.17], .435, 1.42+sweep, true, 'wiper-right');
   part('drive_vehicle_body', [0, 0, 0], 0, 0, false);
   instances[instances.length - 1].cabinVolume = OPENING_VEHICLE.bodyBox;
   const wheels = OPENING_VEHICLE.wheels;
   for (const side of [-1, 1]) for (const axle of [wheels.front, wheels.rear])
-    part('drive_tyre', [side*wheels.track/2, wheels.radius, axle], 0, 0, false, `tyre-${side}-${axle}`);
+    part('drive_tyre', [side*wheels.track/2, wheels.radius, axle], drive?.wheelRotation||0, 0, false, `tyre-${side}-${axle}`, axle===wheels.front?(drive?.wheelAngle||0):0);
   // The detached geometry keeps its original cabin coordinates. Rotate around
   // the real forward edge rather than around the vehicle centre.
   const angle = -clamp(doorOpen)*1.18, hinge = OPENING_VEHICLE.doorHinge;
@@ -52,14 +53,14 @@ export function openingVehicleInstances(anchor, { doorOpen = 0 } = {}) {
     x: pivot.x, y: anchor.y, z: pivot.z, structural: true, zone: anchor.zone, cullRadius: 2 });
   return instances;
 }
-export function openingVehicleExitFrame(anchor, elapsed = 0, { reducedMotion = false, startYaw = anchor?.yaw || 0 } = {}) {
-  const t = clamp(elapsed / OPENING_VEHICLE.exitSeconds), doorOpen = smooth(t/.32), step = smooth((t-.28)/.55);
+export function openingVehicleExitFrame(anchor, elapsed = 0, { reducedMotion = false, startYaw = anchor?.yaw || 0, startPitch=-.04 } = {}) {
+  const t = clamp(elapsed / OPENING_VEHICLE.exitSeconds), doorOpen = smooth(elapsed/.55)*(1-smooth((elapsed-1.65)/.65)), step = smooth((elapsed-.45)/1.1);
   const eye = OPENING_VEHICLE.eye.map((n, i) => n+(OPENING_VEHICLE.exitEye[i]-n)*step);
   eye[1] += reducedMotion ? 0 : Math.sin(step*Math.PI)*.24;
   const targetYaw = anchor.yaw + Math.PI*.80, turn = Math.atan2(Math.sin(targetYaw-startYaw), Math.cos(targetYaw-startYaw));
   return { progress: t, doorOpen, eye: openingVehiclePoint(anchor, eye),
-    yaw: startYaw+turn*smooth((t-.12)/.76), pitch: -.04-(reducedMotion?0:Math.sin(step*Math.PI)*.11),
-    fade: smooth((t-.84)/.16), done: t >= 1 };
+    yaw: startYaw+turn*smooth((elapsed-.2)/1.4), pitch: startPitch+(-.04-startPitch)*smooth(elapsed/.45)-(reducedMotion?0:Math.sin(step*Math.PI)*.11),
+    fade: smooth((elapsed-1.95)/.45), done: t >= 1 };
 }
 export function openingVehiclePending(save = {}, { debugSpawn = false, skipTutorial = false } = {}) {
   return !debugSpawn && !skipTutorial && save.flags?.['opening.vehicle.pending'] === true

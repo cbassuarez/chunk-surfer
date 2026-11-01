@@ -6,7 +6,8 @@ import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { OUTDOOR_ZONES, ZONE,CELL } from '../src/data/floorplan/legend.js';
 import {buildingWindowForExteriorObserver} from '../src/world/building-window-views.js';
-import { districtLogicalAt } from '../src/data/exterior-district.js';
+import { squareLogicalAt } from '../src/data/ellery-square.js';
+import { stationersPlace } from '../src/data/exterior-stationers.js';
 import { worldPropVisibilityKey } from '../src/game/prop-visibility.js';
 import { exteriorRoofArchitectureInstances, exteriorRooflineInstance, EXTERIOR_ROOF_ARCHITECTURE_IDS } from '../src/data/exterior-roofline.js';
 import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
@@ -19,8 +20,10 @@ const begin = source.indexOf('function render3d(){');
 const end = source.indexOf('  // Emergency lamps are a small dynamic layer.', begin);
 assert.ok(begin >= 0 && end > begin);
 const renderCacheSource = source.slice(begin, end) + '\n}';
+// Points in the stationers' design frame, placed on Ellery Square.
 const bodyAt = (x, z) => {
-  const p = districtLogicalAt(x - .25, z - .25);
+  const placed = stationersPlace(x, z);
+  const p = squareLogicalAt(placed.x - .25, placed.z - .25);
   return { x: p.x * 2, y: p.y * 2 };
 };
 const roofHosts = PROPS.renderInstances({ group: 'academicRoof', inscriptions: false });

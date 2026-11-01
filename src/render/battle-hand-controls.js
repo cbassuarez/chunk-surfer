@@ -15,11 +15,13 @@ export const FRONT_CONTROL = {
   pose: CONTROL_POSE,
 };
 
-// The radio has a narrower underside grip. Its dial approach is slightly
-// more lateral; the side PTT uses a shallower pad angle during its full travel.
+// The full-size carried walkie has a taller chassis than the previous combat
+// receiver. Its top dial needs a lateral, forward approach: this radio-only
+// bake keeps the unused digits clear without shrinking the body or hand.
+// The side PTT retains its shallower pad angle during its full travel.
 const RADIO_DIAL_CONTROL = {
-  offset: [-.14635470473207815, -.03536364667659944, .07165351673794455],
-  quaternion: [.5583021470672821, .8160679856132489, -.12333661295605197, -.08437911673942801],
+  offset: [-.13746701697448876, -.03893703229399264, .08597232301542299],
+  quaternion: [.5777483461570248, .7808323419111719, -.05824889702258799, -.23046641476360336],
   pose: CONTROL_POSE,
 };
 const SIDE_CONTROL = {

@@ -1,22 +1,22 @@
 {
   "revision": "endowed-school-hybrid-3",
-  "sha256": "5b76e9856c4a3ab7021c8ca67e8982067d0c578abc77efd1bde5d88364712d68",
-  "bytes": 4990888,
-  "baselineHeroBytes": 4529940,
-  "addedBytes": 460948,
+  "sha256": "2ff4e5a1dd6fa01ea02bd98fbcfe3aeaeedd8001f3b91472dcdd72b15bbdd580",
+  "bytes": 5040240,
+  "baselineHeroBytes": 4586756,
+  "addedBytes": 453484,
   "addedTriangles": 3368,
-  "totalTriangles": 20637,
+  "totalTriangles": 20697,
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "e17346732a88b44194e93f1e081a7a142a4b66fc1b95839c48b5215ac4937c4b",
+    "sha256": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
     "unchangedDuringBuild": true,
-    "meshCount": 607
+    "meshCount": 625
   },
   "sourceHero": {
     "name": "conservatory_west_elevation",
-    "fingerprint": "49c48d3f681d686730b5a0a001de3321316531d426db0874b51ada0b6cc6eed6",
-    "triangles": 17784,
-    "retainedTriangles": 17269,
+    "fingerprint": "0bbee88d9932239ddb772588618967329bc0c0eea822705cee68bf44d397c34f",
+    "triangles": 17829,
+    "retainedTriangles": 17329,
     "occupiedAirClips": [
       {
         "physicalMin": [
@@ -66,8 +66,8 @@
     "clip": [
       {
         "material": "chapel stone",
-        "inputTriangles": 8576,
-        "unchangedTriangles": 8222,
+        "inputTriangles": 8623,
+        "unchangedTriangles": 8269,
         "changedTriangles": 354,
         "removedTriangles": 282,
         "clippedTriangles": 108
@@ -82,18 +82,18 @@
       },
       {
         "material": "board marked concrete",
-        "inputTriangles": 552,
-        "unchangedTriangles": 392,
-        "changedTriangles": 160,
-        "removedTriangles": 30,
-        "clippedTriangles": 208
+        "inputTriangles": 613,
+        "unchangedTriangles": 484,
+        "changedTriangles": 129,
+        "removedTriangles": 57,
+        "clippedTriangles": 121
       },
       {
         "material": "black lacquer",
-        "inputTriangles": 3324,
+        "inputTriangles": 3252,
         "unchangedTriangles": 2900,
-        "changedTriangles": 424,
-        "removedTriangles": 344,
+        "changedTriangles": 352,
+        "removedTriangles": 272,
         "clippedTriangles": 120
       },
       {
@@ -146,11 +146,11 @@
       },
       {
         "material": "wired roof glass",
-        "inputTriangles": 100,
+        "inputTriangles": 109,
         "unchangedTriangles": 90,
-        "changedTriangles": 10,
-        "removedTriangles": 1,
-        "clippedTriangles": 25
+        "changedTriangles": 19,
+        "removedTriangles": 4,
+        "clippedTriangles": 33
       },
       {
         "material": "academic plaster",
@@ -198,6 +198,14 @@
       "violin",
       "speaker_cabinet",
       "organ_console",
+      "b3_mixing_console",
+      "b3_fader_cap",
+      "b3_spares_tin",
+      "b3_session_card",
+      "b3_boom_microphone",
+      "b3_folded_mic_stand",
+      "b3_stage_snake",
+      "b3_flight_case",
       "organ_pipes",
       "equipment_rack",
       "ticket_counter",
@@ -487,15 +495,31 @@
       "getin_sightline_shell",
       "scene_dock_roof_structure",
       "yard_dock_access",
+      "scene_dock_dispatch_desk",
+      "scene_dock_hand_truck",
+      "scene_dock_freight_crates",
+      "scene_dock_crate_low",
+      "scene_dock_road_case_open",
+      "scene_dock_cable_reel",
+      "scene_dock_shutter_bar",
+      "scene_dock_chandelier_cage",
+      "scene_dock_check_position",
+      "scene_dock_room_fabric",
       "district_terrace_frontage",
       "district_civic_frontage",
       "district_workshop_frontage",
       "district_passage_frontage",
       "exterior_pub_frontage",
       "exterior_pub_interior",
+      "yard_caretaker_room",
+      "yard_laundry_room",
+      "yard_stores_room",
       "district_court_walls",
       "district_outer_sprawl",
       "district_outer_streets",
+      "ellery_square_railing",
+      "ellery_square_gate_pier",
+      "ellery_square_monument",
       "yard_stable_range",
       "yard_rehearsal_range",
       "yard_baths_plant",
@@ -510,6 +534,10 @@
       "district_bench",
       "district_bin_cluster",
       "district_bollard_pair",
+      "district_bollard_row",
+      "district_litter_bin",
+      "district_street_cabinet",
+      "district_grit_bin",
       "ambient_late_bus",
       "ambient_cyclist",
       "ambient_dog_walker",
@@ -767,23 +795,13 @@
       "building_dressing_batch_ground",
       "building_dressing_batch_academic",
       "building_dressing_batch_upper",
-      "building_dressing_batch_hall",
-      "scene_dock_room_fabric",
-      "scene_dock_dispatch_desk",
-      "scene_dock_hand_truck",
-      "scene_dock_freight_crates",
-      "scene_dock_crate_low",
-      "scene_dock_road_case_open",
-      "scene_dock_cable_reel",
-      "scene_dock_shutter_bar",
-      "scene_dock_chandelier_cage",
-      "scene_dock_check_position"
+      "building_dressing_batch_hall"
     ],
     "allUnmodifiedInSourcePack": true
   },
   "meshes": {
     "conservatory_west_elevation": {
-      "triangles": 17269,
+      "triangles": 17329,
       "primitives": 13
     },
     "ellery_public_front": {
@@ -801,9 +819,9 @@
   },
   "sourceHashes": {
     "src/data/ellery-public-front.js": "dfcf9e27b72cac695fb446effea99ed417efa9a2c9287f741275ed9e4383983d",
-    "src/data/glass-court-sightlines.js": "be7bee96a84256b16762bb0147dcd6240de238920da764ac1d85645000a1d774",
+    "src/data/glass-court-sightlines.js": "7f2791f88a5d6f5ff39b59042d4a6d703791386b006b848f44df21aeb9c9fce6",
     "tools/chunk_surfer/ellery-public-front-geometry.mjs": "8bca13953cf613d1206c649b33f1852cc3db0e72561cf80b897b9f645f6c4a65",
-    "tools/chunk_surfer/build-ellery-public-front.mjs": "787a3d4974d9ed244fa4bd663d9052dd8426786a4ed27f4b667f383e760628b4"
+    "tools/chunk_surfer/build-ellery-public-front.mjs": "b16d93ea27b9e0de1dd65648a2a31a355318fabb3953a411c4b4edac11b9bb85"
   },
   "pending": [
     "root floorplan/prop/pack integration",

@@ -1,5 +1,6 @@
 import {SOURCE_SURROUNDINGS_CENTRE_ARCS} from '../data/source-surroundings.js';
 import {ZONE} from '../data/floorplan/legend.js';
+import {SOURCE_SURROUNDINGS_PRESSURE_LIMITS} from './source-surroundings-pressure.js';
 
 // Native closed solids, built once. This catalogue has no collision, route,
 // camera or light authority. A body pose moves one rigid assembly, not its parts.
@@ -150,15 +151,15 @@ function arcadeArc(definition){
   if(a1>a0)for(const key of materialOrder)for(let k=0;k<g[key].i.length;k+=3)[g[key].i[k+1],g[key].i[k+2]]=[g[key].i[k+2],g[key].i[k+1]];
   return g;
 }
-function pieces(id,g,{archetype=null,arcId=null}={}){
+function pieces(id,g,{archetype=null,arcId=null,arcRadius=0}={}){
   return materialOrder.filter(key=>g[key].i.length).map(key=>{
     const data=g[key],b=bounds(data.p);
-    return freeze({name:PREFIX+id+'-'+key,id:id+'-'+key,kind:'detail',archetype,arcId,layer:key,sourceSurroundingsSide:arcId?2:1,...materials[key],
+    return freeze({name:PREFIX+id+'-'+key,id:id+'-'+key,kind:'detail',archetype,arcId,layer:key,sourceSurroundingsSide:arcId?2:1,sourceSurroundingsPressure:true,sourceSurroundingsArcRadius:arcRadius,...materials[key],
       p:freeze(data.p),i:freeze(data.i),bounds:freeze({min:freeze(b.min),max:freeze(b.max),center:freeze(b.center)}),triangles:data.i.length/3});
   });
 }
 const bodyLibrary=freeze([['arcade',arcade],['stair',stair],['soundboard',soundboard]].flatMap(([id,build])=>pieces(id,normalizeBody(build()),{archetype:id})));
-const arcLibrary=freeze(SOURCE_SURROUNDINGS_CENTRE_ARCS.flatMap(definition=>pieces('arc-'+definition.id,arcadeArc(definition),{arcId:definition.id})));
+const arcLibrary=freeze(SOURCE_SURROUNDINGS_CENTRE_ARCS.flatMap(definition=>pieces('arc-'+definition.id,arcadeArc(definition),{arcId:definition.id,arcRadius:definition.radius})));
 const library=freeze([...bodyLibrary,...arcLibrary]);
 const byBody=new Map(['arcade','stair','soundboard'].map(id=>[id,bodyLibrary.filter(p=>p.archetype===id)]));
 const byArc=new Map(SOURCE_SURROUNDINGS_CENTRE_ARCS.map(row=>[row.id,arcLibrary.filter(p=>p.arcId===row.id)]));
@@ -232,6 +233,10 @@ export function sourceSurroundingsProps(frame,{origin={x:0,y:0,z:0}}={}){
   const props=[];
   const put=(row,piece,m,canonical=null)=>{
     const b=transformedBounds(canonical||piece.bounds,m),loading=clamp(row.loading);
+    // This is a visibility allowance only; no remote prop supplies collision
+    // or support. The GPU displacement has this same hard world-metre bound.
+    const pressureMargin=canonical?0:SOURCE_SURROUNDINGS_PRESSURE_LIMITS.displacement;
+    if(pressureMargin){b.min=b.min.map(v=>v-pressureMargin);b.max=b.max.map(v=>v+pressureMargin);b.cullRadius+=pressureMargin;}
     const matrixScale=Math.max(1,...[0,4,8].map(k=>Math.hypot(m[k],m[k+1],m[k+2])));
     props.push({id:PREFIX+frame.world+'-'+row.id+(canonical?'':'-'+piece.layer),mesh:canonical?SOURCE_SURROUNDINGS_EMITTER_ALIASES[row.mesh]:piece.name,
       x:b.center[0],y:b.center[1],z:b.center[2],matrix:m,zone:ZONE.sourceSpace,structural:true,surroundings:true,

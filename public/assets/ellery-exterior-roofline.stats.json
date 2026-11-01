@@ -85,7 +85,7 @@
   ],
   "textureBytes": 0,
   "sourceHashes": {
-    "src/data/exterior-district.js": "8c51f37f54acaefbf6f8b782ddd88627cc46d601f7526444fec3e11ceaa04706",
+    "src/data/exterior-district.js": "c119ee5db8add3772dd4472be41c2234b5a92abecaf237d36ea0a44213e8bcec",
     "src/data/exterior-roofline.js": "03b5aea3c30f8ce81aa4f9a379df31e8b5086a5cb1bda862a25baa61847019c7",
     "tools/chunk_surfer/exterior-roofline-geometry.mjs": "42611e8b4b300c39211032f0e3710c6b4385555359393b67da1ac08f9afb3025",
     "tools/chunk_surfer/build-exterior-roofline.mjs": "55a2e63a1c5420216b2534b5242dc0f87de75e514197c759152807673d5cf2f3"

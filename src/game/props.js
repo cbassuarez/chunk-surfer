@@ -25,6 +25,7 @@ let colliders=[];
 // Optional render packs activate their physical fittings only after loading.
 // This avoids invisible poles when the isolated street proof is unavailable.
 const disabledColliderGroups=new Set(['street-pilot','opening-street','glass-court']);
+const exteriorFacadeMeshes=new Set(EXTERIOR_FACADE_MESHES);
 export function setColliderGroupEnabled(group,enabled){
   if(enabled)disabledColliderGroups.delete(group);else disabledColliderGroups.add(group);
 }
@@ -252,10 +253,22 @@ export function renderInstances({group=null,inscriptions=true,batchDressing=fals
   return inscriptions?attachInscriptions(complete):complete;
 }
 
+// A dynamic renderer can select authored hosts before computing their physical
+// poses. Derived services and inscriptions belong to the static world pass.
+// Evaluate the selector every time so placed, removed and drifting props stay live.
+export function renderSelectedHosts({group=null,select}={}){
+  if(typeof select!=='function')throw new TypeError('renderSelectedHosts requires a selector');
+  return instances.filter(p=>!p.interactionProxy&&colliderActive(p)&&(!group||(p.renderGroups||[p.renderGroup]).includes(group))&&select(p)).map(renderInstance);
+}
+
 function pointInProp(mx,mz,p,pad=.20){
-  const dx=mx-p.x,dz=mz-p.y,c=Math.cos(-(p.yaw||0)),s=Math.sin(-(p.yaw||0));
+  const dx=mx-p.x,dz=mz-p.y,w=(p.w*(p.scale||1))/2+pad,d=(p.d*(p.scale||1))/2+pad;
+  // A rotated rectangle fits within this conservative square. Reject distant
+  // props before evaluating their rotation; no spatial cache can go stale.
+  if(Math.abs(dx)>w+d||Math.abs(dz)>w+d)return false;
+  const c=Math.cos(-(p.yaw||0)),s=Math.sin(-(p.yaw||0));
   const lx=dx*c-dz*s,lz=dx*s+dz*c;
-  return Math.abs(lx)<=(p.w*(p.scale||1))/2+pad && Math.abs(lz)<=(p.d*(p.scale||1))/2+pad;
+  return Math.abs(lx)<=w && Math.abs(lz)<=d;
 }
 export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
@@ -310,7 +323,7 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
     // same body centre; the authored prop anchor itself has no such offset.
     return{x:(at.x+.5)*CELL,z:(at.z+.5)*CELL,feet:floorplan.floorAt(x,y)};
   };
-  const facadeInstances=instances.filter(p=>p.id!==ignoreId&&EXTERIOR_FACADE_MESHES.includes(p.mesh)
+  const facadeInstances=instances.filter(p=>p.id!==ignoreId&&exteriorFacadeMeshes.has(p.mesh)
     &&(!p.mesh.startsWith('opening_street_')||!disabledColliderGroups.has('opening-street'))).map(renderInstance);
   const to=body(toX,toY);
   return (from

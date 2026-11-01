@@ -6,6 +6,17 @@ export function installTowerWarningReview({ stage, view, hold, materialProof, st
   const status = document.createElement('div'), telemetry = document.createElement('pre');
   telemetry.style.cssText = 'white-space:pre-wrap;color:#b8cdb7;margin:5px 0 0;max-height:190px;overflow:auto';
   let session = null, closed = false;
+  // Keep the live capture HUD small. Full retained state remains in the saved
+  // receipt; rebuilding thousands of offscreen diagnostic lines is needless
+  // capture overhead and makes the actual scene harder to inspect.
+  const reviewState=()=>{
+    const value=getState?.();if(!value?.earthfall)return value;
+    const e=value.earthfall,r=value.earthfallRendering;
+    return{earthfall:Object.fromEntries(['phase','x','z','feet','yaw','pitch','clock','elapsed','paused','ready','error','impactPass','elleryAsideCompleted','exitDoor'].map(k=>[k,e[k]])),
+      aside:e.aside?{elapsed:e.aside.elapsed,phase:e.aside.phase,blackoutAlpha:e.aside.blackoutAlpha}:null,
+      earthfallSaved:value.earthfallSaved?{status:value.earthfallSaved.status,exitReceipt:value.earthfallSaved.exitReceipt}:null,
+      earthfallRendering:r?{ready:r.ready,error:r.error,frame:r.frame,cpuSubmission:r.cpuSubmission,mainPass:r.props?.diagnostics?{draws:r.props.diagnostics.mainDrawCalls,triangles:r.props.diagnostics.triangles}:null}:null};
+  };
   const make = (label, action) => {
     const button = document.createElement('button'); button.textContent = label; button.style.cssText = 'padding:6px;margin:2px';
     button.onclick = async event => {
@@ -54,16 +65,17 @@ export function installTowerWarningReview({ stage, view, hold, materialProof, st
   for (const [id, label] of [['lyric', 'Stage old Lyric'], ['guard', 'Stage overworld guard'], ['source', 'Stage Source guard'],
     ['street-door','Street: tower approach'],['street-machine','Street: excavator'],['street-masts','Street: work lights'],['telephone-road','Telephone street'],
     ['telephone-pass-1','Street / pass 1'],['telephone-pass-4','Street / pass 4'],['telephone-pass-5','Street / pass 5'],['telephone-pass-6','Street / pass 6'],
-    ['bus-approach','Bus / approach'],['bus-entry','Bus / entry'],['bus-aisle','Bus / aisle'],['bus-notice','Bus / recognition'],['bus-passing','Bus / passing'],['bus-rear','Bus / rear bay'],['bus-exit','Bus / outside exit']]) {
+    ['bus-approach','Bus / approach'],['bus-entry','Bus / entry'],['bus-aisle','Bus / aisle'],['bus-notice','Bus / recognition'],['bus-passing','Bus / passing'],['bus-rear','Bus / rear bay'],['bus-exit','Bus / outside exit'],['earthfall','Earth Fall / entry']]) {
     make(label, async () => {
       if (session) throw Error('Stop and save the current recording before staging.');
-      await stage?.(id); telemetry.textContent = JSON.stringify(getState?.(), null, 1);
+      status.textContent='Preparing '+id+'…';
+      await stage?.(id); telemetry.textContent = JSON.stringify(reviewState(), null, 1);
       status.textContent = 'Staged ' + id + '. Ordinary movement and look remain available.';
     });
   }
   make('Begin warning', async () => { const result = await start?.(); status.textContent = result === false ? 'Warning interaction unavailable at this position.' : 'Warning requested through the ordinary interaction.'; });
   if(hold){let held=false;make('Hold / resume figure',async()=>{held=!held;await hold(held);telemetry.textContent=JSON.stringify(getState?.(),null,1);status.textContent=held?'Developer pose hold. Camera controls remain live; encounter and voice clocks are held.':'Figure and voice resumed.';});}
-  if(view)for(const[id,label]of[['bus-woman','Look at bus woman'],['near','Near inspection'],['left','Left view'],['right','Right view'],['behind','Behind figure'],['approach','Approach view']]){
+  if(view)for(const[id,label]of[['bus-woman','Look at bus woman'],['bus-forward','Look down aisle'],['bus-front','Look at front door'],['bus-handle','Look at rear handle'],['near','Near inspection'],['left','Left view'],['right','Right view'],['behind','Behind figure'],['approach','Approach view']]){
     make(label,async()=>{await view(id);telemetry.textContent=JSON.stringify(getState?.(),null,1);status.textContent='Developer camera '+id+'. Encounter state preserved; ordinary controls remain available.';});
   }
   make('Record + audio', async () => {
@@ -74,24 +86,26 @@ export function installTowerWarningReview({ stage, view, hold, materialProof, st
     // the shared context here. Staging and asynchronous rendering never do so.
     await audio.ctx.resume();
     if (closed || session) return;
-    const capture = document.createElement('canvas'); capture.width = 640; capture.height = 360;
+    const earthfallReview = !!getState?.()?.earthfall;
+    const capture = document.createElement('canvas'); capture.width = earthfallReview ? 960 : 640; capture.height = earthfallReview ? 600 : 360;
+    const captureFps = earthfallReview ? 24 : 12;
     const context = capture.getContext('2d'); paint(canvas, context, capture.width, capture.height);
     const record = session = { stream: null, sink: null, output: audio.output, meter: null, raf: 0, chunks: [], inputs: [], started: performance.now(), traceStart: getTrace?.()?.length || 0, peak: 0, squares: 0, count: 0, lastTelemetry: 0 };
     try {
-      record.stream = capture.captureStream(12); record.sink = audio.ctx.createMediaStreamDestination(); record.output.connect(record.sink);
+      record.stream = capture.captureStream(captureFps); record.sink = audio.ctx.createMediaStreamDestination(); record.output.connect(record.sink);
       for (const track of record.sink.stream.getAudioTracks()) record.stream.addTrack(track);
       record.meter = audio.ctx.createAnalyser(); record.meter.fftSize = 2048; record.output.connect(record.meter);
       const samples = new Float32Array(record.meter.fftSize);
       const mimeType = ['video/webm;codecs=vp8,opus', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
       if (!mimeType) throw Error('This browser cannot record the local WebM review.');
-      record.recorder = new MediaRecorder(record.stream, { mimeType, videoBitsPerSecond: 600000, audioBitsPerSecond: 128000 });
+      record.recorder = new MediaRecorder(record.stream, { mimeType, videoBitsPerSecond: earthfallReview ? 1800000 : 600000, audioBitsPerSecond: 128000 });
       record.recorder.ondataavailable = event => { if (event.data.size) record.chunks.push(event.data); };
       record.recorder.onstop = async () => {
         const durationSeconds = (performance.now() - record.started) / 1000;
         cleanup(record);
         const id = 'warning-route-' + new Date().toISOString().replace(/[:.]/g, '-');
         try {
-          await save(id + '.json', JSON.stringify({ durationSeconds, videoSource: 'Production canvas.r3d plus real UI canvas overlay, nearest-neighbour fit with letterboxing', videoWidth: 640, videoHeight: 360, videoFrameRate: 12,
+          await save(id + '.json', JSON.stringify({ durationSeconds, startedPerformanceMs:record.started, videoSource: 'Production canvas.r3d plus real UI canvas overlay, nearest-neighbour fit with letterboxing', videoWidth: capture.width, videoHeight: capture.height, videoFrameRate: captureFps,
             audioSource: 'Actual game output bus supplied by host; no replacement soundtrack', audioTracks: record.stream.getAudioTracks().length,
             peak: record.peak, rms: Math.sqrt(record.squares / Math.max(1, record.count)), finalState: getState?.(), inputs: record.inputs, trace: (getTrace?.() || []).slice(record.traceStart) }, null, 2), 'application/json');
           await save(id + '.webm', new Blob(record.chunks, { type: mimeType }), mimeType);
@@ -103,7 +117,7 @@ export function installTowerWarningReview({ stage, view, hold, materialProof, st
         if (session !== record || record.recorder.state !== 'recording') return;
         paint(canvas, context, capture.width, capture.height); record.meter.getFloatTimeDomainData(samples);
         for (const value of samples) { record.peak = Math.max(record.peak, Math.abs(value)); record.squares += value * value; record.count++; }
-        if (performance.now() - record.lastTelemetry > 500) { record.lastTelemetry = performance.now(); telemetry.textContent = JSON.stringify(getState?.(), null, 1); }
+        if (performance.now() - record.lastTelemetry > 500) { record.lastTelemetry = performance.now(); telemetry.textContent = JSON.stringify(reviewState(), null, 1); }
         record.raf = requestAnimationFrame(sample);
       };
       record.recorder.start(1000); sample(); status.textContent = 'Recording production raster + actual mixed audio. Stop to save locally.';

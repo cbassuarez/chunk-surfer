@@ -40,10 +40,11 @@ test('collision stops the walk and its gait without moving or deleting the body'
   assert.equal(towerWarningFrame(s).walking,false);assert.equal(s.phase,'leaving');
   s=tick(s,4);assert.ok(s.distance>0);assert.ok(s.walkSeconds>0);
 });
-test('old Lyric masonry occludes the endpoint but not the speaker or a following player',()=>{
+test('the house front swallows the endpoint even for a player pressed to the wall, never the speaker',()=>{
   assert.equal(towerWarningOccluded(listener,SPEC.position),false);
   const end=SPEC.route.at(-1);assert.equal(towerWarningOccluded(listener,end),true);
-  assert.equal(towerWarningOccluded({x:end.x,y:1.65,z:end.z-1},end),false);
+  assert.equal(towerWarningOccluded({x:end.x,y:1.65,z:SPEC.pier.plinth-.35},end),true,'he walked into the masonry; no standing place sees him inside it');
+  assert.ok(SPEC.route.at(-1).masonry&&SPEC.route.at(-1).z>SPEC.pier.face+.5,'the endpoint is inside the house, not at its door');
 });
 test('reload retains heard lines and physical departure; completion does not respawn',()=>{
   let s=tick(finishSpeech(),5),restored=freshTowerWarning(JSON.parse(JSON.stringify(s)));

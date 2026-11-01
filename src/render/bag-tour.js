@@ -2,7 +2,7 @@
 // the same rectangles that handle input, never at approximate painted props.
 import { uiFill, uiLine, uiStrokeRect, uiText, uiWrap } from './ui.js';
 import { bagPanelBounds } from './bag-layout.js';
-import { drawLampButton } from './presentation.js';
+import { drawVfdRow, vfdRowStyle } from './vfd-select.js';
 import { activeInputPromptDevice, inputPromptLabel } from '../game/bindings.js';
 import { PATCH_COLORS } from './patchbay-material.js';
 
@@ -150,9 +150,17 @@ export function drawBagGuideCallouts(options={}){
   }
   if(result.continueRegion){
     const r=result.continueRegion;
-    drawLampButton(r.x,r.y,r.w,r.h,{controlId:'bag:guide:continue',legend:guide.continueLabel,
-      code:activeInputPromptDevice()==='controller'?inputPromptLabel('tabNext'):'C',color:'green',
-      enabled:guide.continueEnabled!==false,lit:guide.continueEnabled!==false,latched:false});
+    const key=activeInputPromptDevice()==='controller'?inputPromptLabel('tabNext'):'C';
+    const enabled=guide.continueEnabled!==false;
+    const label=`[${key}] ${String(guide.continueLabel||'CONTINUE').toUpperCase()}`;
+    const lines=uiWrap(label,Math.max(1,Math.floor(r.w-2)));
+    const leading=Math.min(1,r.h/Math.max(1,lines.length));
+    const start=r.y+Math.max(0,(r.h-lines.length*leading)/2);
+    lines.forEach((line,index)=>drawVfdRow({uiFill,uiText},{
+      x:r.x,y:start+index*leading,w:r.w,label:line,role:'ui-amber',
+      style:{...vfdRowStyle({selected:enabled,disabled:!enabled}),
+        ...(index?{gutter:' '}:{})},
+    }));
   }
   return result;
 }

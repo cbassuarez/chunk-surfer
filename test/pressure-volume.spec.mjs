@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { pressureInstances } from '../src/render/pressure-volume.js';
+import { legacyPressureInstances as pressureInstances } from '../src/render/pressure-volume.js';
 import { setPressureInstances } from '../src/render/props3d.js';
 
 const body=(extra={})=>({id:'rear:7',x:8,y:-12,floorH:4.2,strength:.9,heightM:2.18,widthM:.68,

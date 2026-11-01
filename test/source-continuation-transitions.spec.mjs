@@ -51,8 +51,9 @@ test('the same ruined upper anchors survive the scene handoff at identical trans
   const next=sourceContinuationRenderFrame(freshSourceContinuation());
   const pairs=[
     [earth.props.find(p=>p.earthfallRole==='upper-ruin'),next.props.find(p=>p.upperRemnant&&p.id.includes('upper-exit-remnant'))],
-    [earth.props.find(p=>p.earthfallRole==='ellery'),next.props.find(p=>p.sourceAnchor==='earthfall-ellery')],
   ];
+  assert.equal(earth.props.find(p=>p.earthfallRole==='ellery'),undefined,'the false Ellery fell with him');
+  assert.equal(next.props.find(p=>p.id.includes('upper-ellery')),undefined,'so nothing of it stands up there afterwards');
   const upper=pairs[0];near(upper[0].z,E.passage.upperExitZ);near(upper[1].z,E.passage.upperExitZ+sourceContinuationEntranceOffset().z);
   assert.notEqual(upper[1].z,continuationDoors().find(door=>door.id==='wrong-entry-return').z,'the old upper doorway stays behind the newly extended lower entrance');
   for(const[a,b]of pairs){assert.ok(a&&b);near(a.x,b.x);near(a.y,b.y);near(a.z,b.z-sourceContinuationEntranceOffset().z);assert.ok(b.y>=100);}

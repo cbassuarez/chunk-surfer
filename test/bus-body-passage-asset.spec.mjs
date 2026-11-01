@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {parseCharacterAsset,sampleCharacterPose,CHARACTER_LIMITS} from '../src/render/character-asset.js';
+import {tissueSurfaceDescriptor} from '../src/render/prop-material-contract.js';
 import {busWomanPassageDescriptor} from '../src/render/bus-woman-passage-performance.js';
 import {OUTSKIRTS_BUS_PASSAGE as C} from '../src/data/outskirts-bus-passage.js';
 import {parseGlb} from '../tools/chunk_surfer/rebuild-tree-crowns.mjs';
@@ -26,6 +27,7 @@ test('the literal passage is a bounded real character pack with actual anatomy, 
  const names=raw.json.materials.map(m=>m.name);
  for(const name of['warm deep-brown skin','weathered navy wool','black wool cap','Wrong origin exposed muscular plane','Wrong origin fascia and selectively exposed rib','body passage attached subcutaneous margin','body passage divided cortical folds'])assert.ok(names.includes(name),name);
  assert.ok(raw.json.materials.every(m=>!m.emissiveFactor?.some(v=>v>0)),'tissue should respond to the real lamp, never glow');
+ for(const material of raw.json.materials)assert.doesNotThrow(()=>tissueSurfaceDescriptor(material.extras?.tissueSurface),'the actual renderer must accept every shipped tissue material');
 });
 
 test('closed handoff preserves the actual posed woman, including the distinct paper-holding hand',()=>{
@@ -38,6 +40,23 @@ test('closed handoff preserves the actual posed woman, including the distinct pa
    const a=vertex(primitive,v,pose),p=[C.woman.x+a[0]*co+a[2]*si,C.woman.y+a[1],C.woman.z-a[0]*si+a[2]*co];count++;if(target.has(key(p)))same++;
   }
   assert.ok(same/count>.995,`${mode}: source surface coverage${same}/${count} lost during parting`);
+ }
+});
+
+test('the split anatomy keeps solid tissue pigment and wet material response without changing ordinary skin or cloth',()=>{
+ const original=parseGlb(fs.readFileSync(new URL('../public/assets/outskirts-bus-woman-wrong-origin.glb',import.meta.url))).json.materials;
+ const roughness=new Map([['muscle',.38],['injured-skin',.65],['fascia',.45]]);let profiled=0;
+ for(let i=0;i<original.length;i++){
+  const source=original[i],material=raw.json.materials[i],role=source.extras?.characterRole;
+  if(!roughness.has(role)){assert.deepEqual(material,source,`${role} received an anatomical material override`);continue;}
+  profiled++;assert.deepEqual(material.pbrMetallicRoughness.baseColorFactor,source.pbrMetallicRoughness.baseColorFactor,'authored flesh pigment was repainted');
+  assert.equal(material.pbrMetallicRoughness.roughnessFactor,roughness.get(role));assert.equal(material.pbrMetallicRoughness.metallicFactor,0);
+  assert.equal(material.extras.materialFactors,'gltf');assert.equal(tissueSurfaceDescriptor(material.extras.tissueSurface).profile,'bus-body-passage');
+ }
+ assert.equal(profiled,3);
+ for(const[name,r]of[['body passage attached subcutaneous margin',.34],['body passage divided cortical folds',.42]]){
+  const material=raw.json.materials.find(m=>m.name===name);assert.equal(material.pbrMetallicRoughness.roughnessFactor,r);
+  assert.equal(tissueSurfaceDescriptor(material.extras.tissueSurface).preservePigment,true);assert.equal(material.emissiveFactor?.some(v=>v>0)||false,false);
  }
 });
 

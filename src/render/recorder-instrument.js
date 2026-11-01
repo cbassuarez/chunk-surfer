@@ -6,11 +6,14 @@ import { drawInstrumentPlate, drawInstrumentWell, drawInstrumentGlass, drawVfdGr
 import { sampleControl } from '../game/control-mechanics.js';
 import { drawHardwareCap, hardwareMotionReduced } from './hardware-material.js';
 import { drawHardwarePrint } from './hardware-faceplate.js';
-import { dbToUnit, dbForLinear, locationMarks, meterMarks } from './meter.js';
+import { dbForLinear, locationMarks } from './meter.js';
 import { uiBrightness, vfdSettings, themeForSurface } from './palette.js';
 import { normalizeFieldKit } from '../game/field-kit.js';
 import { drawElectronicText } from './electronic-text.js';
 import { drawWitnessChassis, witnessEndingIds } from './witness-material.js';
+import { dualTraceSnapshot } from '../audio/dual-trace.js';
+import {paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber} from './dual-trace-display.js';
+import {withSourceRestInstrumentDecay} from './source-rest-instrument-decay.js';
 
 let appearance=Object.freeze(normalizeFieldKit().cosmetics),displayAppearance=null,witnessEndings=Object.freeze([]);
 /** Saved, cosmetic-only defaults. A workbench preview never mutates these. */
@@ -100,27 +103,21 @@ export function drawRecorderDisplayText(x,y,value,{width=null,color='#8fcd87',si
 /** The level-check uses the same electrodes and scoped phosphor as the take
  * display. It reads the room snapshot, never a generated demonstration level.
  */
-export function drawRecorderCheckMeter(x,y,width,snapshot,{thresholdDb=-12}={}){
+export function drawRecorderCheckMeter(x,y,width,snapshot,{thresholdDb=-12,height=3.2,
+  sourceId='room-mic',label='ROOM MIC',nowMs=performance.now()}={}){
   const colors=recorderDisplayPalette();
-  const db=Number.isFinite(snapshot?.db)?snapshot.db:dbForLinear(finite(snapshot?.rms));
+  const model=dualTraceSnapshot(snapshot?.sourceId||sourceId,snapshot||{available:false},nowMs);
   uiDraw(({ctx,dpr,cellW,cellH})=>{
-    const px=x*cellW*dpr,py=(y+.24)*cellH*dpr,w=Math.max(0,width)*cellW*dpr;
-    if(w<=0)return;
-    const count=Math.max(8,Math.floor(w/(9*dpr*uiCurrentScale()))),lit=Math.ceil(dbToUnit(db)*count);
-    const height=.44*cellH*dpr,step=w/count,gap=Math.min(step*.28,2.4*dpr*uiCurrentScale());
+    const w=Math.max(0,width)*cellW,h=Math.max(0,height)*cellH;
+    if(!(w>0&&h>0))return;
+    const scale=Math.min(1.25,Math.max(1,uiCurrentScale()*.85),h/60);
     ctx.save();try{
-      for(let i=0;i<count;i++){
-        const on=i<lit,color=on?(snapshot?.clipped||db>=thresholdDb?colors.hot:colors.bar):colors.dormant;
-        ctx.save();if(on){ctx.globalAlpha*=uiBrightness();ctx.shadowColor=color;ctx.shadowBlur=3*dpr;}
-        else{ctx.shadowColor='transparent';ctx.shadowBlur=0;}
-        fill(ctx,px+i*step,py,step-gap,height,color,.6*dpr);ctx.restore();
-      }
-      if(Number.isFinite(snapshot?.peakDb)&&snapshot.peakDb>db){
-        const peakX=px+dbToUnit(snapshot.peakDb)*w;
-        line(ctx,peakX,py,peakX,py+height,colors.peak,dpr);
-      }
+      ctx.translate(x*cellW*dpr,y*cellH*dpr);ctx.scale(dpr,dpr);
+      paintDualTraceVfd(ctx,{x:0,y:0,w,h},model,{colors,brightness:uiBrightness(),
+        label,unit:snapshot?.unit,scale,fontSize:11*scale,warningAt:thresholdDb});
     }finally{ctx.restore();}
   });
+  return model;
 }
 
 const polygons=[[[10,1],[37,1],[42,6],[36,11],[11,11],[6,6]],[[40,8],[44,11],[42,33],[37,37],[33,32],[35,14]],[[37,39],[41,43],[39,65],[33,70],[29,65],[32,45]],[[10,65],[28,65],[34,71],[28,76],[7,76],[2,70]],[[3,39],[8,44],[6,63],[1,68],[-2,63],[0,44]],[[7,9],[11,13],[9,31],[4,36],[0,31],[2,13]],[[9,33],[32,33],[37,38],[31,43],[9,43],[4,38]]];
@@ -135,10 +132,15 @@ function digit(c,char,x,y,s,color,brightness,passive){
   });c.restore();
 }
 export function recorderOutputReading(view={}){
-  if(view.meter)return {snapshot:view.meter,label:view.meterLabel||'OUTPUT LEVEL',marks:view.meterMarks};
-  if(view.roomMeter)return {snapshot:view.roomMeter,label:'ROOM MIC',marks:null};
-  if(view.levels)return {snapshot:{db:dbForLinear(Math.max(finite(view.levels.left),finite(view.levels.right)))},label:'OUTPUT LEVEL',marks:null};
-  return {snapshot:{db:-96},label:'OUTPUT LEVEL',marks:null};
+  if(view.meter)return {snapshot:view.meter,label:view.meterLabel||'OUTPUT LEVEL',marks:view.meterMarks,
+    sourceId:view.meter.sourceId||view.meterId||view.meterSource||(view.mode==='play'?'recorder-playback':view.mode==='trace'?'recorder-trace':'recorder-take')};
+  if(view.roomMeter)return {snapshot:view.roomMeter,label:'ROOM MIC',marks:null,
+    sourceId:view.roomMeter.sourceId||view.meterId||view.meterSource||'room-mic'};
+  if(view.levels)return {snapshot:{db:dbForLinear(Math.max(finite(view.levels.left),finite(view.levels.right))),
+    sourceId:'recorder-playback',peakKind:'level',unit:'dB'},label:'OUTPUT LEVEL',marks:null,
+    sourceId:view.meterId||view.meterSource||'recorder-playback'};
+  return {snapshot:{db:-96,available:false},label:'OUTPUT LEVEL',marks:null,
+    sourceId:view.meterId||view.meterSource||'recorder-idle'};
 }
 export function recorderTransportReadout(transport) {
   if(!transport||transport.phase==='normal')return null;
@@ -148,6 +150,7 @@ export function recorderTransportReadout(transport) {
 
 function readout(c,view,g){
   const w=g.W-70,h=g.H-166,small=g.compact,b=uiBrightness();
+  const story=view.sourceRestFieldStory;
   const colors=recorderDisplayPalette(view),green=colors.label,cyan=view.counterColor||colors.counter;
   const glow=(value,x,y,size=11,color=green,tracking=.6,align='left')=>{
     // Bake electrode tiles at their final pixel resolution, not at the 11px
@@ -175,37 +178,44 @@ function readout(c,view,g){
       c.save();c.globalAlpha*=b;c.shadowColor=cyan;c.shadowBlur=3;fill(c,px,48+72*s,3*s,3*s,cyan);c.restore();px+=8*s;
     }else{digit(c,ch,px,48,s,cyan,b,colors.passive);px+=52*s;}
   }
-  if(value.includes(':'))glow('MIN',21+34*s,48+92*s,11,green,.6,'center');
-  glow('SEC',21+141*s,48+92*s,11,green,.6,'center');
+  if(value.includes(':'))glow(story?.minuteUnit??'MIN',21+34*s,48+92*s,11,green,.6,'center');
+  glow(story?.secondUnit??'SEC',21+141*s,48+92*s,11,green,.6,'center');
   if(!small){
     const sx=w*.49,sw=w-sx-22,duration=Math.max(1,finite(view.locationSeconds,45));
-    glow(fault?.detail||'LOCATION INDICATOR',sx,29,11,fault?colors.meterMark:green,.45);
+    glow(story?.locationLabel??fault?.detail??'LOCATION INDICATOR',sx,29,11,fault?colors.meterMark:green,.45);
     const minor=duration<=60?2.5:duration<=120?5:duration<=300?15:30;
     const major=duration<=60?5:duration<=120?15:duration<=300?30:60;
     for(let seconds=0;seconds<=duration;seconds+=minor){
       const xx=sx+seconds/duration*sw;
       line(c,xx,48,xx,106,colors.scale,1.1);
-      if(seconds%major===0)glow(String(seconds),xx,121,11,green,0,'center');
+      if(seconds%major===0)glow(story?story.locationTicks[Math.round(seconds/duration*(story.locationTicks.length-1))]:String(seconds),xx,121,11,green,0,'center');
     }
     line(c,sx,95,sx+sw,95,green,.9);
     c.save();c.globalAlpha*=b;c.shadowColor=colors.cursor;c.shadowBlur=4;fill(c,sx+clamp(view.progress)*sw-2,65,4,32,colors.cursor,1);c.restore();
     for(const mark of locationMarks(view.locationMarks,sw))line(c,sx+mark.x,98,sx+mark.x,105,colors.mark,.8);
-    glow('START',sx,139,11,green,.4);glow('END',sx+sw,139,11,green,.4,'right');
+    glow(story?.locationStart??'START',sx,139,11,green,.4);glow(story?.locationEnd??'END',sx+sw,139,11,green,.4,'right');
   }
-  const reading=recorderOutputReading(view),my=h-53,barW=w-40,count=Math.max(8,Math.floor(barW/9)),bw=barW/count-2.4;
-  const db=Number.isFinite(reading.snapshot?.db)?reading.snapshot.db:dbForLinear(finite(reading.snapshot?.rms));
-  const activeCount=Math.ceil(dbToUnit(db)*count);
-  glow(reading.label,20,my-12,11,green,.65);
-  for(let i=0;i<count;i++){
-    const active=i<activeCount,color=active?(i/count>.87?colors.hot:colors.bar):colors.dormant;
-    c.save();if(active){c.globalAlpha*=b;c.shadowColor=color;c.shadowBlur=3;}fill(c,20+i*barW/count,my,bw,10,color,.6);c.restore();
-  }
-  [-48,-36,-24,-12,0].forEach((n,i)=>glow(String(n),20+i*(barW-6)/4,my+28,11,green,.15));
-  const peak=reading.snapshot?.peakDb;
-  if(Number.isFinite(peak)&&peak>db){const xx=20+dbToUnit(peak)*barW;line(c,xx,my,xx,my+10,colors.peak,1);}
-  for(const mark of meterMarks(reading.marks,barW)){
-    const xx=20+mark.x;line(c,xx,my-3,xx,my+11,colors.meterMark,.8);
-    if(mark.label)glow(mark.label,xx,my-5,10,colors.meterMark,.25,'center');
+  const reading=recorderOutputReading(view);
+  const model=dualTraceSnapshot(reading.sourceId,reading.snapshot,
+    Number.isFinite(view.nowMs)?view.nowMs:performance.now());
+  const meterRect={x:20,y:h-86,w:w-40,h:82},meterOptions={label:reading.label,unit:reading.snapshot?.unit,colors,brightness:b,marks:reading.marks,
+    warningAt:Number.isFinite(view.meterThresholdDb)?view.meterThresholdDb:-6};
+  if(!story)paintDualTraceVfd(c,meterRect,model,meterOptions);
+  else{
+    const q=dualTraceVfdLayout(meterRect),f=q.fontSize,u=q.u,o=story.output;
+    // Preserve the real meter bodies beneath the intruding words. Their
+    // labels and numbers are display substitutions, not audio measurements.
+    c.save();c.beginPath();c.rect(q.body.x,q.body.y-1,q.body.w,q.peak.y+q.peak.h-q.body.y+2);c.clip();
+    paintDualTraceVfd(c,meterRect,model,meterOptions);c.restore();
+    const say=(text,x,y,size=f,color=green,align='left')=>glow(text,x,y+size*.42,size,color,.2*u,align);
+    say(o.label,q.x,q.headerY);say(o.rmsLabel,q.rmsX,q.headerY);
+    drawSevenSegmentNumber(c,o.rmsValue,q.numberX,q.digitY,q.digitH,{color:colors.bar,dormant:colors.dormant,brightness:b,glow:1.1*u});
+    say(o.unit,q.unitX,q.headerY);say(o.peakLabel,q.peakRight-40*u,q.headerY,f,colors.peak,'right');
+    drawSevenSegmentNumber(c,o.peakValue,q.peakRight,q.headerY-6*u,12*u,{color:colors.peak,dormant:colors.dormant,brightness:b,glow:1.1*u,align:'right'});
+    say(o.clip,q.clip.x+q.clip.w/2,q.clip.y+q.clip.h/2,9*u,colors.hot,'center');
+    const bodySize=text=>Math.min(f,(q.body.x-q.x-2)/Math.max(1,String(text).length*.72));
+    say(o.bodyLabel,q.x,q.bodyLabelY,bodySize(o.bodyLabel));say(o.peakBodyLabel,q.x,q.peakLabelY,bodySize(o.peakBodyLabel),colors.peak);
+    [-48,-36,-24,-12,0].forEach((db,i)=>say(o.scale[i],q.body.x+dualTraceUnit(db)*q.body.w,q.scaleY,f,green,i===0?'left':i===4?'right':'center'));
   }
   // No extra legacy status strip inside the display: status belongs in the
   // existing etched footer, leaving the approved spacing and black depth.
@@ -220,10 +230,12 @@ export function drawRecorderReadoutCanvas(ctx,{width=666,height=239,...view}={})
   try{
     ctx.scale(width/666,height/239);
     fill(ctx,0,0,666,239,'#07120d');
+    withSourceRestInstrumentDecay(ctx,{x:0,y:0,w:666,h:239},view.sourceRestPresentation,()=>{
     readout(ctx,view,{W:736,H:405,compact:false});
     const counter=String(view.counter||'00:00').replace(/^(\d):/,'0$1:');
     const units=[...counter].reduce((n,ch)=>n+advance(ch),0),scale=Math.min(1.08,666*.43/Math.max(1,units));
     drawVfdGrid(ctx,{x:17,y:44,w:units*scale+4,h:83*scale,dpr:1,reducedMotion:true});
+    });
   }finally{ctx.restore();}
   return true;
 }
@@ -269,12 +281,15 @@ export function drawRecorderInstrument(view={}, {drawContent=null}={}){
       return;
     }
     uiDraw(({ctx,dpr,cellW,cellH})=>{
+      withSourceRestInstrumentDecay(ctx,{x:g.displayRect.x*cellW*dpr,y:g.displayRect.y*cellH*dpr,
+        w:g.displayRect.w*cellW*dpr,h:g.displayRect.h*cellH*dpr},view.sourceRestPresentation,()=>{
       ctx.save();ctx.translate(g.displayRect.x*cellW*dpr,g.displayRect.y*cellH*dpr);ctx.scale(dpr*g.unit,dpr*g.unit);readout(ctx,view,g);ctx.restore();
       const counter=String(view.counter||'00:00').replace(/^(\d):/,'0$1:');
       const units=[...counter].reduce((n,ch)=>n+advance(ch),0);
       const scale=Math.min(g.compact?.79:1.08,((g.compact?g.W-110:(g.W-70)*.43))/Math.max(1,units));
       drawVfdGrid(ctx,{x:g.counterRect.x*cellW*dpr-3*g.unit*dpr,y:g.counterRect.y*cellH*dpr,
         w:(units*scale+4)*g.unit*dpr,h:83*scale*g.unit*dpr,dpr:dpr*g.unit,reducedMotion:hardwareMotionReduced()});
+      });
     });
   }),()=>uiDraw(({ctx,dpr,cellW,cellH})=>drawInstrumentGlass(ctx,{
     x:g.displayRect.x*cellW*dpr,y:g.displayRect.y*cellH*dpr,w:g.displayRect.w*cellW*dpr,h:g.displayRect.h*cellH*dpr,

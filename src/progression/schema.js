@@ -319,7 +319,7 @@ export function normalizeSettings(value) {
     ...DEFAULT_SETTINGS,
     ...source,
     controlMode: normalizeControlMode(source.controlMode),
-    mouseSensitivity: Math.max(0.2, Math.min(3, finiteOr(source.mouseSensitivity, 1))),
+    mouseSensitivity: Math.max(0.2, Math.min(10, finiteOr(source.mouseSensitivity, 1))),
     mouseInvertY: !!source.mouseInvertY,
     haptics: ['off','reduced','full'].includes(source.haptics) ? source.haptics : DEFAULT_SETTINGS.haptics,
     controlHud: ['smart','persistent'].includes(source.controlHud) ? source.controlHud : DEFAULT_SETTINGS.controlHud,
@@ -426,7 +426,7 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
   return {
     schema: RUN_SCHEMA_VERSION,
     id: runId,
-    status: ['active', 'return-committed', 'complete'].includes(source.status) ? source.status : 'active',
+    status: ['active', 'return-committed', 'complete', 'failed-night'].includes(source.status) ? source.status : 'active',
     startedAt: finiteOr(source.startedAt, Date.now()),
     completedAt: source.completedAt == null ? null : finiteOr(source.completedAt, null),
     rules: {
@@ -545,7 +545,8 @@ export function normalizeMeta(value) {
     achievements: { ...objectOr(source.achievements) },
     stats: {
       runsStarted: Math.max(0, Math.floor(finiteOr(stats.runsStarted, source.runs || 0))),
-      runsCompleted: Math.max(0, Math.floor(finiteOr(stats.runsCompleted, returns.history?.length || 0))),
+      runsCompleted: Math.max(0, Math.floor(finiteOr(stats.runsCompleted,
+        normalizeReturnHistory(returns.history).filter(id=>returns.records?.[id]?.classification!=='failed-night').length))),
       takesCompleted: Math.max(0, Math.floor(finiteOr(stats.takesCompleted, 0))),
       takesSpoiled: Math.max(0, Math.floor(finiteOr(stats.takesSpoiled, 0))),
       battlesWon: Math.max(0, Math.floor(finiteOr(stats.battlesWon, 0))),

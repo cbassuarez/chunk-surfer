@@ -30,7 +30,7 @@ test('false-return recognition follows seeing the opened porch rather than an un
 });
 test('the final leaves welcome approach but completion still requires ordinary walking through them',()=>{
   let r=advance(seed({phase:'catch',level:3,...C.catch.finalApproach}),1);assert.equal(r.state.doorOpen['catch-final'],true);assert.equal(r.state.completed,false);
-  r=advance(r.state,1,{forward:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
+  r=advance(r.state,1,{side:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
 });
 test('manual leaf reversal survives later ticks and reload instead of fighting automatic reopening',()=>{
   let r=stepSourceContinuation(seed({...onward,x:-16.5}),{interact:true});r=advance(r.state,1);r=stepSourceContinuation(r.state,{interact:true});assert.equal(r.state.doorOpen['wrong-onward'],false);

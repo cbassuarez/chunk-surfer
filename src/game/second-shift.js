@@ -66,6 +66,11 @@ export function returnFileEntries(meta) {
     // THE DOCUMENT THE ENDING LEAVES BEHIND. ENDING_REPLAY_UNLOCKS has declared
     // an archiveEntry per ending since it was written and nothing ever consumed
     // one — the names existed, the documents did not. See data/ending-archive.js.
-    document: endingArchiveDocument(ENDING_REPLAY_UNLOCKS[summary.endingId]?.archiveEntry, summary),
+    document: summary.classification==='failed-night'?{
+      title:'DEMOLITION RECORD',classification:'FAILED NIGHT',filedBy:'RETAINED FIELD RECORD',
+      body:[summary.failure?.outcome==='survived'?'The recordist cleared the failing span. The recording job ended at demolition.':'The recordist did not clear the failing span. The recording job ended at demolition.',
+        `${summary.recordings?.tapes?.length||0} tape entries retained, including incomplete and damaged attempts. No new injury or equipment loss was added.`,
+        'Retained recordings can be played from RUN HISTORY. Locally stored audio that is missing or corrupt remains unavailable.']
+    }:endingArchiveDocument(ENDING_REPLAY_UNLOCKS[summary.endingId]?.archiveEntry, summary),
   }));
 }

@@ -30,7 +30,10 @@ export function bagTabRegions(model, layout) {
       label: width < 10 ? material.shortLabel || material.label : material.label,
       color: material.color,
       countLabel: String(section.countLabel ?? ''),
-      x: left, y: strip.y, w: width, h: strip.compact ? 1.7 : BAG_TAB_CAP_HEIGHT,
+      // A selector can sit on the metal above its electronic count. Keep the
+      // count's reading row independent, and share cap geometry with picking.
+      x: left, y: Number.isFinite(strip.capY) ? strip.capY : strip.y,
+      w: width, h: strip.compact ? 1.7 : BAG_TAB_CAP_HEIGHT,
       readout: { x: left + .2, y: strip.y + 2.65, w: Math.max(0, width - .4), h: 1 },
     };
   });

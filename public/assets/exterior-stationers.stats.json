@@ -1,12 +1,12 @@
 {
-  "revision": "north-stationers-1",
-  "sha256": "03521f55df000b4cccba0151c9d56c28fee3183c5d3639a67bb0bfdb80d3a4bf",
-  "bytes": 6018932,
-  "triangles": 17998,
+  "revision": "square-stationers-1",
+  "sha256": "9824a98fc08f765474f21e158581296f25be50df4fa5ea903772f7c2449c3e77",
+  "bytes": 9958288,
+  "triangles": 15366,
   "meshes": {
-    "district_terrace_frontage_stationer": {
-      "triangles": 15998,
-      "primitives": 19
+    "ellery_square_west_terrace_stationer": {
+      "triangles": 13366,
+      "primitives": 16
     },
     "exterior_stationers_room": {
       "triangles": 2000,
@@ -27,7 +27,7 @@
   },
   "sourceFacade": {
     "file": "public/assets/exterior-frontages.glb",
-    "sha256": "a3c1702840bb780e54b0f18292ef2d63b316d70c27ad71493c8921a377b6ced5",
+    "sha256": "adb8f78bf952cb12a7f2fdfb2333ed7051b2f22a8c402e2e6e5a5e3c0503f039",
     "originalMaterialCount": 22,
     "originalImageCount": 12,
     "materialDefinitionsUnchanged": true,
@@ -35,143 +35,39 @@
   },
   "clipStats": [
     {
-      "material": 17,
-      "inputTriangles": 36,
-      "unchangedTriangles": 36,
+      "material": 12,
+      "inputTriangles": 660,
+      "unchangedTriangles": 660,
       "changedTriangles": 0,
       "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 10,
-      "inputTriangles": 1296,
-      "unchangedTriangles": 1248,
-      "changedTriangles": 48,
-      "removedTriangles": 48,
       "clippedTriangles": 0
     },
     {
       "material": 2,
-      "inputTriangles": 2760,
-      "unchangedTriangles": 2622,
-      "changedTriangles": 138,
+      "inputTriangles": 2616,
+      "unchangedTriangles": 2454,
+      "changedTriangles": 162,
       "removedTriangles": 98,
-      "clippedTriangles": 90
-    },
-    {
-      "material": 8,
-      "inputTriangles": 960,
-      "unchangedTriangles": 926,
-      "changedTriangles": 34,
-      "removedTriangles": 26,
-      "clippedTriangles": 12
-    },
-    {
-      "material": 7,
-      "inputTriangles": 1560,
-      "unchangedTriangles": 1512,
-      "changedTriangles": 48,
-      "removedTriangles": 48,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 13,
-      "inputTriangles": 228,
-      "unchangedTriangles": 216,
-      "changedTriangles": 12,
-      "removedTriangles": 12,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 16,
-      "inputTriangles": 72,
-      "unchangedTriangles": 72,
-      "changedTriangles": 0,
-      "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 4,
-      "inputTriangles": 1368,
-      "unchangedTriangles": 1308,
-      "changedTriangles": 60,
-      "removedTriangles": 60,
-      "clippedTriangles": 0
+      "clippedTriangles": 162
     },
     {
       "material": 5,
-      "inputTriangles": 2640,
-      "unchangedTriangles": 2478,
-      "changedTriangles": 162,
-      "removedTriangles": 146,
-      "clippedTriangles": 32
+      "inputTriangles": 4632,
+      "unchangedTriangles": 4380,
+      "changedTriangles": 252,
+      "removedTriangles": 178,
+      "clippedTriangles": 164
     },
     {
-      "material": 12,
-      "inputTriangles": 720,
-      "unchangedTriangles": 660,
-      "changedTriangles": 60,
-      "removedTriangles": 60,
-      "clippedTriangles": 0
+      "material": 4,
+      "inputTriangles": 1908,
+      "unchangedTriangles": 1790,
+      "changedTriangles": 118,
+      "removedTriangles": 110,
+      "clippedTriangles": 12
     },
     {
       "material": 11,
-      "inputTriangles": 288,
-      "unchangedTriangles": 264,
-      "changedTriangles": 24,
-      "removedTriangles": 24,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 0,
-      "inputTriangles": 1524,
-      "unchangedTriangles": 1434,
-      "changedTriangles": 90,
-      "removedTriangles": 32,
-      "clippedTriangles": 132
-    },
-    {
-      "material": 9,
-      "inputTriangles": 168,
-      "unchangedTriangles": 156,
-      "changedTriangles": 12,
-      "removedTriangles": 12,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 15,
-      "inputTriangles": 148,
-      "unchangedTriangles": 148,
-      "changedTriangles": 0,
-      "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 6,
-      "inputTriangles": 888,
-      "unchangedTriangles": 888,
-      "changedTriangles": 0,
-      "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 3,
-      "inputTriangles": 128,
-      "unchangedTriangles": 128,
-      "changedTriangles": 0,
-      "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 1,
-      "inputTriangles": 1368,
-      "unchangedTriangles": 1368,
-      "changedTriangles": 0,
-      "removedTriangles": 0,
-      "clippedTriangles": 0
-    },
-    {
-      "material": 14,
       "inputTriangles": 264,
       "unchangedTriangles": 264,
       "changedTriangles": 0,
@@ -179,18 +75,98 @@
       "clippedTriangles": 0
     },
     {
-      "material": 18,
-      "inputTriangles": 4,
-      "unchangedTriangles": 4,
+      "material": 7,
+      "inputTriangles": 876,
+      "unchangedTriangles": 876,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 13,
+      "inputTriangles": 156,
+      "unchangedTriangles": 156,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 10,
+      "inputTriangles": 1248,
+      "unchangedTriangles": 1152,
+      "changedTriangles": 96,
+      "removedTriangles": 96,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 9,
+      "inputTriangles": 96,
+      "unchangedTriangles": 84,
+      "changedTriangles": 12,
+      "removedTriangles": 12,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 3,
+      "inputTriangles": 60,
+      "unchangedTriangles": 60,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 1,
+      "inputTriangles": 396,
+      "unchangedTriangles": 396,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 6,
+      "inputTriangles": 288,
+      "unchangedTriangles": 288,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 17,
+      "inputTriangles": 24,
+      "unchangedTriangles": 24,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 16,
+      "inputTriangles": 48,
+      "unchangedTriangles": 48,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 8,
+      "inputTriangles": 372,
+      "unchangedTriangles": 372,
+      "changedTriangles": 0,
+      "removedTriangles": 0,
+      "clippedTriangles": 0
+    },
+    {
+      "material": 15,
+      "inputTriangles": 24,
+      "unchangedTriangles": 24,
       "changedTriangles": 0,
       "removedTriangles": 0,
       "clippedTriangles": 0
     }
   ],
   "sourceHashes": {
-    "src/data/exterior-stationers.js": "b3a01bffeb580f034740c5087fa15dc5e7be53430c2f72870ebbbe6643c84eec",
-    "tools/chunk_surfer/exterior-stationers-geometry.mjs": "3987e1ea0b8cef4709a79674b184c5d5cafc5b9965f48d0223f512b2fb96b54b",
-    "tools/chunk_surfer/build-exterior-stationers.mjs": "a24a056fe893e0a1eb06e735e0b93a2da6b3e97aea5826cb230801dff9e7428b"
+    "src/data/exterior-stationers.js": "db038a7edf875832e14d9c837104b5d265033d97e46cb4c02e7285b843738035",
+    "tools/chunk_surfer/exterior-stationers-geometry.mjs": "8f75bc41256f63caa1de03151cf5f6f17bfb88102ed94082bbecef5a657e5d43",
+    "tools/chunk_surfer/build-exterior-stationers.mjs": "1d45bee17c1e97736bb00b70856832912ab829ad07b62c9d920bae4d61c3c1cc"
   },
   "addedPrintTextureBaseLevelBytes": 772800,
   "pending": [

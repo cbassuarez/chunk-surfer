@@ -39,7 +39,7 @@ export function installSourceIVMeshes(gl,pack,{maps=null}={}){
     gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,
       extras:{sourceIV:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},
-      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,emissive:[0,0,0],aoStrength:0,
+      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),emissive:[0,0,0],aoStrength:0,
         portrait:false,alphaCut:0,materialName:'Source IV printed structure',
         ...sourceBlueprintMaterial(printed,{base:[.42,.49,.43,1]})}]});
   }

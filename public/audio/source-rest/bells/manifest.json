@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "kind": "processed-clapper-and-tuned-modal-resonance",
+  "sampleRate": 48000,
+  "seconds": 20,
+  "modes": [
+    [
+      0.5,
+      0.16,
+      5.3
+    ],
+    [
+      1,
+      0.36,
+      4.4
+    ],
+    [
+      1.0011,
+      0.07,
+      4.15
+    ],
+    [
+      1.5,
+      0.13,
+      3
+    ],
+    [
+      2,
+      0.2,
+      2.2
+    ],
+    [
+      2.998,
+      0.045,
+      1.1
+    ],
+    [
+      4.002,
+      0.025,
+      0.65
+    ],
+    [
+      5.43,
+      0.008,
+      0.3
+    ]
+  ],
+  "source": "Existing CC0 BigSoundBank3445/3446-derived tower handstroke bank; public/assets/audio/bell-tower/credits.json",
+  "treatment": "Recorded first260ms clapper attack, highpassed1800Hz and damped; original clashing sustained modes replaced with open D/A resonances. Source sample and performance recording unchanged.",
+  "license": "CC0-derived; new procedural resonance is project-authored",
+  "entries": [
+    {
+      "sample": "04",
+      "note": "D4",
+      "frequency": 293.6647679174076,
+      "sourceHumHz": 349.23,
+      "file": "rest-bell-d4.wav",
+      "url": "audio/source-rest/bells/rest-bell-d4.wav",
+      "duration": 20,
+      "channels": 1,
+      "bits": 16,
+      "encodedBytes": 1920044,
+      "sourceSha256": "9b52feb037814fc6a47c2031e5391fbc442e99ff94341a4a56ce0248a8bd0035",
+      "sha256": "c8389a71ba0cbc5734994509101c33a7610d23048b095c904fa63b433ff2e01d",
+      "peak": 0.88
+    },
+    {
+      "sample": "06",
+      "note": "A3",
+      "frequency": 220,
+      "sourceHumHz": 293.66,
+      "file": "rest-bell-a3.wav",
+      "url": "audio/source-rest/bells/rest-bell-a3.wav",
+      "duration": 20,
+      "channels": 1,
+      "bits": 16,
+      "encodedBytes": 1920044,
+      "sourceSha256": "b6515d73b8eee5c1f272a2a4c918231563aa7b55530a777ca6e2d1bf655a85b4",
+      "sha256": "59754635381a8a02186976dae85af76efa9cb9407f31ae9fa56e6f45be96e458",
+      "peak": 0.88
+    },
+    {
+      "sample": "08",
+      "note": "D3",
+      "frequency": 146.8323839587038,
+      "sourceHumHz": 233.08,
+      "file": "rest-bell-d3.wav",
+      "url": "audio/source-rest/bells/rest-bell-d3.wav",
+      "duration": 20,
+      "channels": 1,
+      "bits": 16,
+      "encodedBytes": 1920044,
+      "sourceSha256": "a3c53ce81d4e90568938801c3e5e8a68fae1391fdc6563d6df724c5227337817",
+      "sha256": "9f888dbbbde9b6b333aae7ab10a94f543c386c6f7dbb52a88b047adadda7a525",
+      "peak": 0.88
+    }
+  ]
+}

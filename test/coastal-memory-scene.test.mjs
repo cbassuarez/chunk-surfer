@@ -228,3 +228,33 @@ test('ordinary look lease and relative input update the coastal camera without b
   assert.deepEqual(scene.serialize().returnPose,source);scene.pause();const frozen=scene.lookAngles();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.4,.2),false);assert.deepEqual(scene.lookAngles(),frozen);
   scene.resume();assert.equal(scene.allowsLook,true);scene.exit();assert.equal(scene.lookBy(.4,.2),false);
 });
+
+test('coastal shared contacts follow supported walking, not placement, blocked input or resumed stride debt',async()=>{
+  const contacts=[],cleared=[],{scene}=await make({layout:{...layout,pierReturnPlane:{point:{x:0,z:-100},normal:{x:0,z:-1},halfWidth:1.5}},onFootContact:event=>contacts.push(event),clearFootContacts:owner=>cleared.push(owner)});
+  scene.key({key:'w'});for(let i=0;i<30;i++)scene.update(1/60);
+  assert.equal(contacts.length,2);assert.equal(contacts[0].surface,'coastal-earth');assert.equal(contacts[0].profile,'physical');
+  assert.ok(contacts.every(e=>e.strideM>.7&&e.strideM<.85&&e.interval>0&&e.distanceM>0));
+  assert.equal(contacts[0].footSide,'left');assert.equal(contacts[1].footSide,'right');assert.ok(contacts[0].time<.02,'first supported travel plants immediately');
+  assert.equal(scene.setPose({x:0,z:-4.76}),true);const count=contacts.length;
+  scene.key({key:'w'});for(let i=0;i<30;i++)scene.update(1/60);assert.equal(contacts.length,count,'rim blocks both body and contacts');
+  scene.setPose({x:0,z:3});scene.key({key:'w'});scene.update(.2);const beforePause=contacts.length;scene.pause();scene.resume();
+  scene.update(.2);assert.equal(contacts.length,beforePause,'resume cannot spend old travel');
+  scene.key({key:'w'});scene.update(.2);assert.equal(contacts.length,beforePause+1,'fresh supported travel plants immediately');
+  scene.update(.1);assert.equal(contacts.length,beforePause+1,'old partial-stride debt does not shorten the next interval');
+  assert.ok(cleared.every(owner=>owner==='coastal-memory'));scene.exit();assert.equal(cleared.at(-1),'coastal-memory');
+});
+
+test('coastal gait follows accepted metre speed and ends with travel rather than a fixed distance bank',async()=>{
+  const contacts=[],open={...layout,walkSpeed:2.1,musicBox:{...layout.musicBox,x:50},
+    pierReturnPlane:{point:{x:0,z:-100},normal:{x:0,z:-1},halfWidth:1.5},
+    supportAt:()=>({height:5,walkable:true,material:'coastal-earth'}),canOccupy:()=>true};
+  const {scene}=await make({layout:open,onFootContact:e=>contacts.push(e)});
+  scene.key({key:'w'});scene.update(1/60);assert.equal(contacts.length,1,'first supported travel is audible immediately');
+  for(let i=1;i<300;i++)scene.update(1/60);
+  assert.ok(contacts.length>=13&&contacts.length<=15,`2.1m/s yielded ${contacts.length} contacts in 5 seconds`);
+  assert.ok(contacts.every(e=>Math.abs(e.speed-2.1)<.001));
+  assert.ok(contacts.every(e=>Math.abs(e.strideM-e.speed*e.interval)<.00001));
+  assert.ok(contacts.every((e,i)=>i===0||e.footSide!==contacts[i-1].footSide));
+  scene.keyup({key:'w'});const count=contacts.length;for(let i=0;i<120;i++)scene.update(1/60);
+  assert.equal(contacts.length,count);scene.exit();
+});

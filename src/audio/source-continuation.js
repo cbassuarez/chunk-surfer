@@ -1,33 +1,94 @@
+import {createThresholdGagAudio} from './threshold-gag.js';
+import {thresholdGagPose} from '../data/threshold-gag.js';
 import {createContinuationMaterialAudio} from './source-continuation-materials.js';
-import {createSourceSurroundingsAudio} from './source-surroundings.js';
+import {createSourceSurroundingsAudio,sourceAcousticCoordinates} from './source-surroundings.js';
+import {SOURCE_CONTINUATION as LAYOUT,continuationSupportAt} from '../data/source-continuation.js';
+import {createFootContactClock} from './foot-contact.js';
 
 // Physical contact and machinery, through the shared world SFX bus. Recorded
 // material follows the same physical origins; synthetic resonances supplement
 // its load and contact rather than pretending to be a large room recording.
-export const SOURCE_CONTINUATION_AUDIO = Object.freeze({ maxVoices: 10, maxSources: 22, maxCombinedVoices: 15, maxCombinedSources: 27, noiseSeconds: 1.93 });
+export const SOURCE_CONTINUATION_AUDIO = Object.freeze({ maxVoices: 10, maxSources: 22, maxCombinedVoices: 19, maxCombinedSources: 31, noiseSeconds: 1.93, hushStrideMetres: 1.18 });
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
 const number = (v, fallback = 0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const body = state => ({ x: number(state?.x), y: number(state?.feet) + .95, z: number(state?.z) });
 const point = (v, fallback) => ({ x: number(v?.x, fallback.x), y: number(v?.y, fallback.y), z: number(v?.z, fallback.z) });
+const chartOf = value => number(value?.chartId,0);
+const portalEpoch = value => number(value?.portalSerial,number(value?.lastPortal?.serial,number(value?.foldSerial,number(value?.lastFold?.serial))));
+const hushFeet = state => ['wrong-return', 'catch'].includes(state?.phase) && (!state.status || state.status === 'active')
+  && state?.hush?.active && ['x', 'z', 'feet'].every(key => Number.isFinite(state.hush[key]))
+  ? { x: state.hush.x, y: state.hush.feet, z: state.hush.z } : null;
 
-// Both sections listen from the carried first-person body and its actual yaw.
-export function sourceContinuationPlacement(source, state = {}) {
-  const listener = body(state), at = point(source, listener), yaw = number(state.yaw);
-  const dx = at.x - listener.x, dy = at.y - listener.y, dz = at.z - listener.z;
-  const horizontal = Math.hypot(dx, dz), distance = Math.hypot(dx, dy, dz);
-  const front = horizontal > .01 ? (Math.sin(yaw) * dx - Math.cos(yaw) * dz) / horizontal : 1;
-  return { distance, pan: clamp((dx * Math.cos(yaw) + dz * Math.sin(yaw)) / Math.max(1.5, horizontal) * .88, -.88, .88),
-    gain: 1 / (1 + (distance / 10) ** 1.22), cutoff: clamp(6600 / (1 + distance / 19) - Math.max(0, -front) * 1500, 600, 6600) };
+// The host supplies carried first-person yaw in II and fixed screen-north yaw
+// in overhead Catch. Both listen from the operator's actual body location.
+export function sourceContinuationPlacement(source, state = {},acousticFrame=null,chartId=chartOf(state)) {
+  const at=point(source,body(state)),coordinates=sourceAcousticCoordinates(at,state,acousticFrame,{chartId,eyeHeight:.95,includePitch:false});
+  const [right,,back]=coordinates.relativeXYZ,horizontal=Math.hypot(right,back),distance=coordinates.distance,front=horizontal>.01?-back/horizontal:1;
+  return { distance, pan: clamp(right / Math.max(1.5, horizontal) * .88, -.88, .88),
+    gain: coordinates.source?1 / (1 + (distance / 10) ** 1.22):0, cutoff: clamp(6600 / (1 + distance / 19) - Math.max(0, -front) * 1500, 600, 6600) };
 }
 
-export function createSourceContinuationAudio({ getAudio = () => null, getMusicAudio = () => null, getReducedMotion = () => false, protectedAudio = () => false, fetcher, urlFor, musicFetcher, musicUrlFor } = {}) {
+export function createSourceContinuationAudio({ getAudio = () => null, getMusicAudio = () => null, getReducedMotion = () => false, protectedAudio = () => false, fetcher, urlFor, musicFetcher, musicUrlFor, gagFetcher, gagUrlFor, onFootContact = null, clearFootContacts = () => {} } = {}) {
+  const footOwner='source-continuation';
+  const footClock=createFootContactClock();
+  const gag=createThresholdGagAudio({getAudio,protectedAudio,...(gagFetcher?{fetcher:gagFetcher}:{}),...(gagUrlFor?{urlFor:gagUrlFor}:{})});
   const materials=createContinuationMaterialAudio({getAudio,protectedAudio,...(fetcher?{fetcher}:{}),...(urlFor?{urlFor}:{})});
   // Music owns a separate bounded graph. A pressure release cannot evict a
   // warning, footstep or physical door sound from the existing SFX allocator.
   const surroundings=createSourceSurroundingsAudio({getAudio:getMusicAudio,protectedAudio,...(musicFetcher?{fetcher:musicFetcher}:{}),...(musicUrlFor?{urlFor:musicUrlFor}:{})});
-  let context = null, destination = null, noiseBuffer = null, mechanism = null, active = false, disposed = false;
+  // The seat owns its streamed performance. This scene coordinates only the
+  // shared score and lifecycle; it never creates or disposes that owner.
+  let restMusicOwner=null,restMusicHeld=null,restMusicIsolated=false;
+  // II retains its whole-world isolation. III's full score can accompany
+  // walking: isolate its world only once seated or committed to the ending.
+  // Text/interface sounds remain outside this world-audio owner.
+  function isolateRestMusic(state){
+    if(!restMusicOwner)return false;
+    try{
+      const music=restMusicOwner.snapshot();
+      if(!music?.active||music.failed)return false;
+      if(state?.phase==='wrong-return')return !music.phase||music.phase===state.phase;
+      return state?.phase==='catch'&&typeof restMusicOwner.supportsPhase==='function'
+        &&restMusicOwner.supportsPhase(state.phase)&&(!music.phase||music.phase===state.phase)
+        &&!!(music.restActive||music.finishAtEnd);
+    }
+    catch{return false;}
+  }
+  function retireRestMusicOutsideII(state){
+    if(!state?.phase||state.phase==='wrong-return'||!restMusicOwner)return;
+    try{
+      // Legacy single-score owners keep their II-only retirement contract.
+      if(typeof restMusicOwner.supportsPhase==='function'&&restMusicOwner.supportsPhase(state.phase))return;
+      if(restMusicOwner.snapshot()?.active)restMusicOwner.update({active:false});
+      surroundings.setRestMusicActive(false);restMusicHeld=null;
+    }catch{surroundings.setRestMusicActive(false);}
+  }
+  function syncRestMusic(hold){
+    if(!restMusicOwner)return;
+    try{
+      if(!hold||restMusicHeld!==true)restMusicOwner.update({active:true,paused:!!hold});
+      restMusicHeld=!!hold;
+      const music=restMusicOwner.snapshot();
+      surroundings.setRestMusicActive(!hold&&!!(music?.playing||(music?.finishAtEnd&&music?.ended)));
+    }catch{
+      // An unavailable recording must never silence the original score.
+      restMusicHeld=true;surroundings.setRestMusicActive(false);
+    }
+  }
+  function detachRestMusic(owner){
+    if(!restMusicOwner||owner!==restMusicOwner)return false;
+    restMusicOwner=null;restMusicHeld=null;surroundings.setRestMusicActive(false);return true;
+  }
+  function attachRestMusic(owner){
+    if(!owner||typeof owner.update!=='function'||typeof owner.snapshot!=='function')throw Error('A Source rest music owner is required.');
+    if(restMusicOwner!==owner){if(restMusicOwner)syncRestMusic(true);restMusicOwner=owner;restMusicHeld=null;surroundings.setRestMusicActive(false);}
+    let detached=false;return()=>{if(detached)return false;detached=true;return detachRestMusic(owner);};
+  }
+  let context = null, destination = null, noiseBuffer = null, mechanism = null, active = false, disposed = false,acousticFrame=null;
   let listener = {}, lastBody = null, lastMachine = null, footTravel = 0, toothTravel = 0, lastFocus = null;
   let focusClock = -Infinity, clock = 0, eventCount = 0, played = 0, skipped = 0, footIndex = 0;
+  let lastHush = null, hushTravel = 0, hushStepIndex = 0, hushSteps = 0;
+  let hushDiagnostic = { active: false, supported: false, mode: null, source: null };
   let diagnostic = { phase: null, mode: 'silent', source: null, mix: null, mechanicalGain: 0, focus: null };
   const voices = new Set();
   function target(param, value, seconds = .055, immediate = false) {
@@ -43,13 +104,17 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     for (const node of v.nodes) try { node.disconnect(); } catch {}
     voices.delete(v);
   }
-  function stop() {
+  function silenceWorld() {
+    gag.pause();footClock.reset(footOwner);clearFootContacts?.(footOwner);
     materials.stop();
     surroundings.stop();
     for (const v of [...voices]) release(v);
-    mechanism = null; active = false; lastBody = lastMachine = lastFocus = null; footTravel = toothTravel = 0;
+    mechanism = null; active = false; lastBody = lastMachine = lastFocus = lastHush = null; footTravel = toothTravel = hushTravel = 0;
+    acousticFrame=null;
+    hushDiagnostic = { ...hushDiagnostic, active: false, supported: false, source: null };
     diagnostic = { ...diagnostic, mode: 'silent', mechanicalGain: 0, focus: null };
   }
+  function stop() { syncRestMusic(true);silenceWorld();restMusicIsolated=false; }
   function available() {
     if (disposed || protectedAudio()) { if(!disposed)stop(); return false; }
     let pair; try { pair = getAudio(); } catch { stop(); return false; }
@@ -73,8 +138,8 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     return noiseBuffer;
   }
   function sourceCount() { let count = 0; for (const voice of voices) count += voice.sources.length; return count; }
-  function record(place, gain, kind) {
-    const v = { sources: [], nodes: [], dead: false, place, gain, kind, until: Infinity };
+  function record(place, gain, kind,chartId=chartOf(listener)) {
+    const v = { sources: [], nodes: [], dead: false, place:{...place},chartId, gain, kind, until: Infinity };
     v.own = node => { v.nodes.push(node); return node; };
     v.amp = v.own(context.createGain()); v.lowpass = v.own(context.createBiquadFilter()); v.lowpass.type = 'lowpass';
     v.pan = context.createStereoPanner ? v.own(context.createStereoPanner()) : null;
@@ -82,7 +147,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     voices.add(v); position(v, true); return v;
   }
   function position(v, immediate = false) {
-    const mix = sourceContinuationPlacement(v.place, listener);
+    const mix = sourceContinuationPlacement(v.place, listener,acousticFrame,v.chartId);
     target(v.amp.gain, v.gain * mix.gain, .065, immediate);
     target(v.lowpass.frequency, mix.cutoff, .07, immediate);
     if (v.pan) target(v.pan.pan, mix.pan, .06, immediate);
@@ -107,34 +172,62 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     source.start(at); if (duration !== null) source.stop(at + duration + .025);
     return { source, amp, filter };
   }
-  function strike(place, gain, parts, kind) {
+  function strike(place, gain, parts, kind,chartId=chartOf(listener)) {
     // Input events can arrive before the first update. Reserve the one record
     // and two sources needed by the continuing mechanism in that ordering too.
     const reserve = mechanism ? 0 : 1;
     if (voices.size >= SOURCE_CONTINUATION_AUDIO.maxVoices - reserve || sourceCount() + parts.length > SOURCE_CONTINUATION_AUDIO.maxSources - reserve * 2) { skipped++; return false; }
-    const v = record(place, gain, kind), layers = parts.map(part => layer(v, part)); let remaining = layers.length;
+    const v = record(place, gain, kind,chartId), layers = parts.map(part => layer(v, part)); let remaining = layers.length;
     for (const { source } of layers) source.onended = () => { if (--remaining === 0) release(v); };
     played++; return true;
   }
   function mechanismAt(state) {
-    if (state.phase === 'catch') return point(state.counterweight, { x: -17.6, y: 3, z: -4.5 });
+    if (state.phase === 'catch') return point(state.counterweight, { x: LAYOUT.catch.hoist.start.x, y: LAYOUT.catch.top, z: LAYOUT.catch.hoist.start.z });
     if (Number.isFinite(state.closure?.frontX)) return { x: state.closure.frontX, y: 9.4, z: number(state.closure.frontZ, -12) };
     return { x: 6, y: 3.65, z: number(state.closure?.frontZ, -4.5) };
   }
   function startMechanism(place) {
-    const v = record(place, 0, 'mechanism');
+    const v = record(place, 0, 'mechanism',0);
     v.rub = layer(v, { frequency: 1150, q: 1.8, gain: .7 });
     v.resonance = layer(v, { hz: 93, frequency: 550, gain: .12 });
     return v;
   }
-  function event(event, state = listener) {
+  function event(event, state = listener,presentedFrame=acousticFrame) {
+    if(isolateRestMusic(state)){
+      if(!restMusicIsolated){silenceWorld();restMusicIsolated=true;}
+      return false;
+    }
+    retireRestMusicOutsideII(state);restMusicIsolated=false;
+    if(String(event?.type||'').startsWith('threshold-gag-')){gag.resume();return gag.event(event,state,presentedFrame);}
     if (!available()) return false;
-    listener = state || {}; const type = String(event?.type || '');
+    listener = state || {};acousticFrame=presentedFrame; const type = String(event?.type || '');
+    // A real chart crossing is a topology event, not travelled floor distance
+    // or an invented stinger. Each actor owns its own stride discontinuity.
+    if(type==='portal'||type==='fold'){lastBody=null;footTravel=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);return false;}
+    if(type==='hush-portal'||type==='hush-fold'){lastHush=null;hushTravel=0;return false;}
     const machine = mechanismAt(listener), here = body(listener);
-    const place = point(event?.position || (Number.isFinite(event?.x) ? event : null),
-      /^counterweight|^closure/.test(type) ? machine : type === 'door' && lastFocus ? point(lastFocus.position || lastFocus, here) : here);
+    const actor = hushFeet(listener), hushEvent = /^hush-(?:armed|warning|notice|drop|land|recovery|recovered)$/.test(type), hushCapture = type === 'capture' && event.reason === 'hush-pressure';
+    if (hushEvent && !actor) return false;
+    // The host transforms the Hush with its world. Prefer that authoritative
+    // pose to the controller event's untransformed position under a study turn.
+    const place = (hushEvent || hushCapture) && actor
+      ? { ...actor, y: actor.y + (['hush-land', 'hush-recovered', 'hush-armed', 'hush-warning'].includes(type) ? .03 : .95) }
+      : point(event?.position || (Number.isFinite(event?.x) ? event : null),
+        /^counterweight|^closure/.test(type) ? machine : type === 'door' && lastFocus ? point(lastFocus.position || lastFocus, here) : here);
     let gain, parts;
-    if (type === 'closure-warning') {
+    if (type === 'hush-armed' || type === 'hush-warning') {
+      gain = .058; parts = [{ frequency: 730, q: .55, gain: .8, duration: .19 }, { hz: 71, endHz: 60, frequency: 380, gain: .55, duration: .32 }];
+    } else if (type === 'hush-notice') {
+      gain = .044; parts = [{ frequency: 950, q: .65, gain: .8, duration: .48, attack: .06 }, { frequency: 2100, q: 1.2, gain: .22, duration: .21, attack: .03 }];
+    } else if (type === 'hush-recovery') {
+      gain = .038; parts = [{ frequency: 880, q: 1.2, gain: .7, duration: 1.1, attack: .08 }, { hz: 83, endHz: 141, frequency: 500, gain: .23, duration: .95, attack: .09 }];
+    } else if (type === 'hush-recovered') {
+      gain = .045; parts = [{ frequency: 390, q: .6, gain: .8, duration: .2 }, { hz: 67, endHz: 54, frequency: 300, gain: .5, duration: .28 }];
+    } else if (type === 'hush-drop') {
+      gain = .035; parts = [{ frequency: 1500, q: .6, gain: .8, duration: .24, attack: .02 }];
+    } else if (type === 'hush-land') {
+      gain = .085; parts = [{ frequency: 290, q: .45, gain: .9, duration: .21 }, { hz: 64, endHz: 45, frequency: 340, gain: .7, duration: .46 }];
+    } else if (type === 'closure-warning') {
       gain = .055; parts = [{ frequency: 2700, gain: .8, duration: .13 }, { hz: 118, endHz: 103, frequency: 800, gain: .65, duration: .95 }, { hz: 307, frequency: 1300, gain: .2, duration: .4 }];
     } else if (type === 'counterweight-lands') {
       gain = .065; parts = [{ frequency: 380, q: .5, duration: .2 }, { hz: 61, endHz: 48, frequency: 300, gain: .8, duration: .62 }, { hz: 181, frequency: 700, gain: .25, duration: .38 }];
@@ -147,7 +240,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     } else if (type === 'land') {
       gain = .038; parts = [{ frequency: 320, q: .45, duration: .18 }, { hz: 84, endHz: 63, frequency: 340, gain: .7, duration: .29 }];
     } else if (type === 'capture') {
-      gain = .042; parts = [{ frequency: event.reason === 'closing-front' ? 760 : 420, q: .5, duration: .27, attack: .014 }, { hz: 73, endHz: 51, frequency: 280, gain: .5, duration: .4 }];
+      gain = hushCapture ? .068 : .042; parts = [{ frequency: event.reason === 'closing-front' ? 760 : hushCapture ? 540 : 420, q: .5, duration: .27, attack: .014 }, { hz: 73, endHz: 51, frequency: 280, gain: .5, duration: .4 }];
     } else if (type === 'recovered') {
       gain = .020; parts = [{ frequency: 660, q: .45, duration: .42, attack: .07 }, { frequency: 1900, gain: .22, duration: .15 }];
     } else if (type === 'door' || type === 'return' || type === 'complete') {
@@ -155,14 +248,29 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     } else if (type === 'phase') {
       gain = .023; parts = [{ frequency: 460, q: 2.8, duration: .9, attack: .07 }, { hz: 107, endHz: 93, frequency: 400, gain: .24, duration: 1.1, attack: .09 }];
     } else return false;
-    materials.event(event,listener);
-    eventCount++; return strike(place, gain, parts, type);
+    const chartId=(hushEvent||hushCapture)&&actor?chartOf(listener.hush):/^counterweight|^closure/.test(type)?0:number(event?.chartId,chartOf(listener));
+    materials.event(event,listener,acousticFrame);
+    eventCount++; return strike(place, gain, parts, type,chartId);
   }
-  function update({ dt = 0, state, surroundingsState = state, focus = null, paused = false, ready = false } = {}) {
+  function update({ dt = 0, state, surroundingsState = state, focus = null, paused = false, ready = false,acousticFrame:presentedFrame=null } = {}) {
     if (paused || !ready || !state || !available()) { stop(); return false; }
-    active = true; listener = state;
-    materials.update(state);
-    surroundings.update({state:surroundingsState,ready:true,reducedMotion:!!getReducedMotion()});
+    retireRestMusicOutsideII(surroundingsState||state);
+    syncRestMusic(false);
+    if(isolateRestMusic(surroundingsState||state)){
+      if(!restMusicIsolated){silenceWorld();restMusicIsolated=true;}
+      listener=state;acousticFrame=presentedFrame;
+      diagnostic={...diagnostic,phase:state.phase,mode:'rest-recording-only',source:null,mix:null,mechanicalGain:0,focus:null};
+      return true;
+    }
+    restMusicIsolated=false;
+    active = true; listener = state;acousticFrame=presentedFrame;
+    gag.resume();gag.update(state,acousticFrame,thresholdGagPose(state));
+    materials.update(state,acousticFrame);
+    // Catch's fixed overhead camera faces raw world north. Its study turn
+    // rotates camera and world together, so the raw music listener stays north
+    // while retaining the exact shared score clock and source coordinates.
+    const surroundingsListener = surroundingsState?.phase === 'catch' ? { ...surroundingsState, yaw: 0, pitch: 0 } : surroundingsState;
+    surroundings.update({state:surroundingsListener,ready:true,reducedMotion:!!getReducedMotion(),acousticFrame});
     const delta = clamp(dt, 0, .25); clock += delta;
     for (const voice of [...voices]) if (voice !== mechanism && voice.until <= context.currentTime) release(voice);
     const place = mechanismAt(state), mode = state.phase === 'catch' ? state.counterweight?.active ? state.counterweight.mode || 'warning' : 'tension' : state.closure?.mode || 'dormant';
@@ -182,21 +290,53 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       if (travel < 1.6) toothTravel += travel; else toothTravel = 0;
       if (toothTravel > .64) {
         toothTravel %= .64;
-        strike(place, .021, [{ frequency: winding || mode === 'traversing' ? 3100 : 2150, q: 2.1, duration: .055 }, { hz: 387, frequency: 1200, gain: .22, duration: .12 }], 'ratchet');
+        strike(place, .021, [{ frequency: winding || mode === 'traversing' ? 3100 : 2150, q: 2.1, duration: .055 }, { hz: 387, frequency: 1200, gain: .22, duration: .12 }], 'ratchet',0);
       }
     } else toothTravel = 0;
     lastMachine = { ...place, phase: state.phase };
-    const here = body(state), hadBody = lastBody?.phase === state.phase;
-    if (hadBody && !state.fall && !state.recovery && !state.reveal) {
+    const here = body(state), hadBody = lastBody?.phase === state.phase&&lastBody?.runId===state.runId&&lastBody?.chartId===chartOf(state)&&lastBody?.portalEpoch===portalEpoch(state);
+    if(typeof onFootContact==='function'){
+      const supportedBody=hadBody&&!state.fall&&!state.recovery&&!state.reveal;
+      const support=supportedBody?continuationSupportAt(state.x,state.z,state):null;
+      const supported=!!support&&Math.abs(support.y-number(state.feet))<.16;
+      const travel=hadBody?Math.hypot(here.x-lastBody.x,here.z-lastBody.z):0;
+      if(!hadBody)footClock.reset(footOwner);
+      if(Number(dt)>0)for(const plant of footClock.update({dt:Number(dt),distance:travel,scene:footOwner,
+        supported,teleported:travel>=1.3})){
+        footIndex++;
+        onFootContact({...plant,owner:footOwner,surface:support.surface?.material||'cold-stone',profile:'physical',
+          construction:support.surface?.construction,position:{x:here.x,z:here.z},distanceM:plant.distance,strideM:plant.stride,level:.09,condition:'walk',
+          id:`${footOwner}:${state.runId}:${footIndex}`,time:number(state.elapsed,clock)});
+      }
+      if(!supported&&lastBody)clearFootContacts?.(footOwner);
+    }else if (hadBody && !state.fall && !state.recovery && !state.reveal) {
       const travel = Math.hypot(here.x - lastBody.x, here.z - lastBody.z);
-      if (travel < 1.3) footTravel += travel; else footTravel = 0;
+      if (travel < 1.3) footTravel += travel; else {footTravel = 0;clearFootContacts?.(footOwner);}
       if (footTravel >= .92) {
         footTravel %= .92; footIndex++;
         strike({ ...here, y: number(state.feet), x: here.x + (footIndex % 2 ? -.11 : .11) }, .019,
           [{ frequency: state.phase === 'catch' ? 430 : state.feet > 2.7 ? 650 : 310, q: .5, duration: .095 }, { hz: footIndex % 2 ? 91 : 97, endHz: 66, frequency: 300, gain: .28, duration: .13 }], 'footstep');
       }
-    } else footTravel = 0;
-    lastBody = { ...here, phase: state.phase };
+    } else {if(lastBody)clearFootContacts?.(footOwner);footTravel = 0;}
+    lastBody = { ...here, phase: state.phase,runId:state.runId,chartId:chartOf(state),portalEpoch:portalEpoch(state) };
+    const hush = state.hush, actor = hushFeet(state);
+    const supported = !!actor && !hush.fall && !hush.recovery && !['falling','recovering'].includes(hush.mode) && !state.recovery && !state.reveal;
+    const sameHush = lastHush?.phase === state.phase && lastHush?.runId === state.runId && lastHush?.id === hush?.id&&lastHush?.chartId===chartOf(hush)&&lastHush?.portalEpoch===portalEpoch(hush);
+    if (supported && lastHush?.supported && sameHush) {
+      const travel = Math.hypot(actor.x - lastHush.x, actor.y - lastHush.y, actor.z - lastHush.z);
+      // Accept physical stairs; discard relocations and vertical correction.
+      // Falling has its own explicit drop/landing events, never airborne steps.
+      if (travel < 1.3 && Math.abs(actor.y - lastHush.y) < .65) hushTravel += travel; else hushTravel = 0;
+      if (hushTravel >= SOURCE_CONTINUATION_AUDIO.hushStrideMetres) {
+        hushTravel %= SOURCE_CONTINUATION_AUDIO.hushStrideMetres; hushStepIndex++;
+        const side = hushStepIndex % 2 ? -.15 : .15, heading = number(hush.heading);
+        const foot = { x: actor.x + Math.cos(heading) * side, y: actor.y + .03, z: actor.z + Math.sin(heading) * side };
+        if (strike(foot, hush.armed ? .066 : .052,
+          [{ frequency: 900, q: .45, gain: .9, duration: .11 }, { hz: hushStepIndex % 2 ? 69 : 77, endHz: 54, frequency: 400, gain: .52, duration: .17 }], 'hush-footstep',chartOf(hush))) hushSteps++;
+      }
+    } else hushTravel = 0;
+    lastHush = actor ? { ...actor, supported, phase: state.phase, runId: state.runId, id: hush.id,chartId:chartOf(hush),portalEpoch:portalEpoch(hush) } : null;
+    hushDiagnostic = { active: !!actor, supported, mode: hush?.mode || null, source: actor ? { ...actor } : null,chartId:chartOf(hush) };
     if (hadBody && focus && !state.fall && !state.recovery && !state.reveal && focus.id !== lastFocus?.id && clock - focusClock > 1.4) {
       const at = point(focus.position || focus, here), drop = focus.type === 'drop';
       strike(at, drop ? .014 : .017, drop
@@ -208,9 +348,10 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     diagnostic = { phase: state.phase, mode, source: { ...place }, mix: { ...mechanism.mix }, mechanicalGain: gain, focus: focus?.id || null };
     return true;
   }
-  return { event, update, pause: stop, stop,
-    dispose() { stop(); materials.dispose(); surroundings.dispose(); disposed = true; noiseBuffer = null; },
-    snapshot: () => ({ active, voices: voices.size, sources: sourceCount(), combinedVoiceBound:voices.size+materials.snapshot().voices, combinedSourceBound:sourceCount()+materials.snapshot().voices, totalVoiceBound:voices.size+materials.snapshot().voices+surroundings.snapshot().voices, totalSourceBound:sourceCount()+materials.snapshot().voices+surroundings.snapshot().voices, events: eventCount, played, skipped, kind: 'source-continuation',
-      ...diagnostic, materials:materials.snapshot(), surroundings:surroundings.snapshot(), layers: [...voices].map(v => ({ kind: v.kind, source: { ...v.place }, mix: { ...v.mix }, gain: v.gain })) }),
+  return { event, update, prepare:()=>{gag.resume();return gag.prepare();},gagReady:()=>gag.snapshot().ready,pause: stop, stop,attachRestMusic,detachRestMusic,
+    setRestMusicActive:value=>surroundings.setRestMusicActive(value),
+    dispose() { stop(); if(restMusicOwner)detachRestMusic(restMusicOwner); gag.dispose();materials.dispose(); surroundings.dispose(); disposed = true; noiseBuffer = null; },
+    snapshot: () => ({ active, voices: voices.size, sources: sourceCount(), combinedVoiceBound:voices.size+materials.snapshot().voices, combinedSourceBound:sourceCount()+materials.snapshot().voices, totalVoiceBound:voices.size+materials.snapshot().voices+surroundings.snapshot().voices+gag.snapshot().voices, totalSourceBound:sourceCount()+materials.snapshot().voices+surroundings.snapshot().voices+gag.snapshot().voices, events: eventCount, played, skipped, kind: 'source-continuation',
+      ...diagnostic, restMusicIsolated,restMusic:restMusicOwner?.snapshot?.()||null,thresholdGag:gag.snapshot(),hush:{...hushDiagnostic,footsteps:hushSteps}, materials:materials.snapshot(), surroundings:surroundings.snapshot(), layers: [...voices].map(v => ({ kind: v.kind, source: { ...v.place },chartId:v.chartId, mix: { ...v.mix }, gain: v.gain })) }),
   };
 }

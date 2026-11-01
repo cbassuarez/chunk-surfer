@@ -371,7 +371,8 @@ function mainFunction(name, globals) {
   const source = readFileSync('src/main.js', 'utf8');
   const start = source.indexOf(`function ${name}(`), end = source.indexOf('\n}', start) + 2;
   assert.ok(start >= 0 && end > start);
-  return runInNewContext(`(${source.slice(start, end)})`, globals);
+  const extracted=source.slice(start,end).replaceAll('import.meta.env.DEV','false');
+  return runInNewContext(`(${extracted})`, globals);
 }
 
 test('the actual playback entry refuses recording and switches an explicit chosen take after stopping the old one', () => {
@@ -433,6 +434,7 @@ test('the raised recorder uses the same actual noise reading and recorded event 
   const snapshot = { roomId: 'the_tub', progress: .3, elapsedSec: 27, durationSec: 90,
     signalLeft: .22, signalRight: .41, markers: [{ id: 'real-event', position: .73 }] };
   const machine = mainFunction('recorderMachineState', {
+    sourceContinuationScene:null,
     chapelTapeRetakeRoom:()=>null,
     HUNTER: { takeHunterTransport: () => ({phase:'normal'}) }, takeHunter: {},
     REC: { recState: () => ({ takeElapsed: 9, spoiled: false }), isRecording: () => live.recording,
@@ -443,8 +445,8 @@ test('the raised recorder uses the same actual noise reading and recorded event 
       spoilThreshold: () => .7 },
     PB: { tapeTransport:()=>({headSeconds:99}),isPlaying: () => live.playing, playbackSnapshot: () => snapshot, hasTake: () => true,
       takeMarks: () => [{ at: .1, kind: 'event', id: 'stored' }] },
-    MIC: { micActive: () => live.microphone, micLevel: () => .12 },
-    MONITOR: { monitorSnapshotForRms: rms => ({ rms, db: 20 * Math.log10(rms) }) },
+    MIC: { micActive: () => live.microphone, micLevel: () => .12,micMeterMeasurement:()=>({rms:.12}) },
+    MONITOR: { monitorSnapshotForRms: rms => ({ rms, db: 20 * Math.log10(rms) }),monitorSnapshotForMeasurement:value=>value },
     presenceMeterLevel: () => .4, currentWorld: () => 'main_b3', recorderRefusal: () => null, usingSourceSpace: () => false,
     roomLabel: room => room.toUpperCase(), formatPlaybackTime: seconds => String(seconds),
     recordingDurationLabel: () => String(live.duration),
@@ -524,4 +526,23 @@ test('passive playback STOP reaches playback ownership rather than the recording
   assert.deepEqual(log, ['stop-playback']);
   assert.equal(globals.playbackRoom, null);
   assert.equal(globals.liveRecordingPointerControls.size, 0);
+});
+
+test('long recorder replies page without committing and reset when selection changes',()=>{
+  const chosen=[];
+  const {scene}=harness();
+  scene.beginGuide({id:'long-replies',nodes:{start:{lines:[],choices:[
+    {id:'long',text:'A long response '.repeat(180)}, {id:'short',text:'SAY LESS'},
+  ]}},onChoice:c=>chosen.push(c.id)});
+  scene.render();let guide=scene.debugState().guide;
+  assert.ok(guide.scrollMax>0,'selected reply spans more than the recorder display');
+  assert.equal(guide.view.choiceScrollOffset,0);
+  scene.key({key:'PageDown',code:'PageDown'});scene.render();guide=scene.debugState().guide;
+  assert.equal(guide.view.choiceScrollOffset,1);assert.deepEqual(chosen,[]);
+  scene.key({key:'Tab',code:'Tab',controllerAction:'tabNext'});scene.render();guide=scene.debugState().guide;
+  assert.equal(guide.view.choiceScrollOffset,2,'controller can page a long reply without committing');
+  scene.key({key:'ArrowDown',code:'ArrowDown'});scene.render();guide=scene.debugState().guide;
+  assert.equal(guide.view.pending.index,1);assert.equal(guide.view.choiceScrollOffset,0);
+  scene.key({key:'2',code:'Digit2'});assert.deepEqual(chosen,['short']);
+  scenes.clear();
 });

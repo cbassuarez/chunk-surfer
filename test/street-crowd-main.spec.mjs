@@ -11,7 +11,7 @@ import {pubQuestState} from '../src/game/pub-quest.js';
 import {pubSeatedVigilDescriptor} from '../src/render/pub-character-performance.js';
 import {exteriorVigilInstances} from '../src/render/exterior-vigil-instances.js';
 import {busWomanExteriorInstances} from '../src/render/bus-woman-exterior-performance.js';
-import {isLiveExteriorPerformer} from '../src/render/exterior-performer-visibility.js';
+import {isLiveExteriorPerformer,isExteriorPerformerInput} from '../src/render/exterior-performer-visibility.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {applyInstitutionPosters} from '../src/data/institution-poster-sites.js';
 import {hallChandelierInstances} from '../src/data/hall-chandelier-treatment.js';
@@ -28,10 +28,10 @@ const submitted={static:[],dynamic:[],groups:[],drifts:[]};
 const context={
   console,Math,Number,Set,Map,Float32Array,performance:{now:()=>12_000},ZONE,
   renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
-  isLiveExteriorPerformer,applyInstitutionPosters,
+  isLiveExteriorPerformer,isExteriorPerformerInput,applyInstitutionPosters,currentExteriorWindow:()=>null,buildingWindowInteriorInstance:()=>null,
   hallChandelierInstances,hallChandelierRendered:[{id:'stale-hall-fixture'}],
   exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:v=>v,
-  pubHospitalityReady:()=>false,pubHospitalityRenderReady:false,pubHospitalityRendered:[],
+  pubHospitalityReady:()=>false,pubHospitalityRenderReady:false,pubHospitalityRendered:[],glassCourtRenderReady:false,facilityMapSource:null,
   pubServiceInstances,pubServiceDrinks,pubQuestState,pubWaterFirstSeenAt:null,
   STREET_CROWD_IDS,STREET_CROWD_DESIGNS,STREET_CROWD_ACTOR_IDS:new Set(STREET_CROWD_IDS),streetCrowdDesign,streetCrowdInstances,streetCrowdRenderInstance,
   vigilCharacterIdForMesh,vigilCharacterDescriptor,VIGIL_ACTORS:vigilFigures(),pubActor,pubSeatedVigilDescriptor,
@@ -40,7 +40,7 @@ const context={
   streetCrowdRenderReady:false,streetCrowdSubmitted:[],vigilPosedPropIds:new Set(),vigilActionState:{active:[]},
   px:0,py:0,CELL:.5,storyMode:true,planName:'conservatory',PUB_NEW_ACTORS:[],
   usingSourceSpace:()=>false,usingStairAnomaly:()=>false,usingSpecialSpace:()=>false,FP:{isLoaded:()=>true,logicalToPhysical:(x)=>({x,z:0,y:0,renderGroup:x===100?'academic':currentViewGroup}),zoneAt:()=>ZONE.street},
-  PROPS:{setColliderGroupEnabled:()=>{},renderInstances:({group}={})=>{submitted.groups.push(group);return group==='academic'?[]:authored;},attachInscriptions:v=>v,setPropDrift:(id,drift)=>submitted.drifts.push({id,drift})},
+  PROPS:{setColliderGroupEnabled:()=>{},renderInstances:({group}={})=>{submitted.groups.push(group);return group==='academic'?[]:authored;},renderSelectedHosts:({select})=>authored.filter(select),attachInscriptions:v=>v,setPropDrift:(id,drift)=>submitted.drifts.push({id,drift})},
   R3:{r3dStreetCrowdStatus:()=>({ready}),r3dSetProps:instances=>{submitted.static=[...instances];},r3dSetDynamicProps:instances=>{submitted.dynamic=[...instances];}},
   RENDERER:'3d',shakeMode:()=>'full',getSave:()=>({settings:{shake:'full'}}),flagTest:()=>false,isOutdoorZone:()=>true,
   syncArchitecturalLocalLights:()=>{},chapelTowerState:()=>({}),CHAPEL_TOWER_PHASE:{TOWER_CLEARED:'cleared',CHAPEL_FINAL:'final',TOWER_ACTIVE:'active'},
@@ -49,12 +49,12 @@ const context={
   boothGuardRenderInstance:v=>v,worldPaperIndex:()=>-1,propEmissive:()=>null,storyGuidanceEmissive:(_v,base)=>base,
   buildingWindowForObserver:()=>null,doorRenderInstances:()=>[],
   streetPilotTime:()=>null,currentStoryGuidanceFrame:()=>({highlight:null,target:null}),storyGuidanceHighlight:{},storyGuidanceHighlightRenderKey:'false:::0.00',
-  doorLeafVisualCache:{ready:true,entries:[]},rebuildDoorLeafVisuals:()=>{},doorDynamicCombined:[],inertBellTowerInstances:null,
+  doorLeafVisualCache:{ready:true,entries:[]},rebuildDoorLeafVisuals:()=>{},doorDynamicCombined:[],doorDynamicRenderPending:false,inertBellTowerInstances:null,
   bellPealPerformance:null,bellTowerRuntime:null,presentTowerRuntimeInstances:()=>[],basementWatcherRenderInstance:()=>null,heldNoteParts:()=>[],conservatoryAdversaries:{held:null},
   academicAdversaryParts:()=>[],academicAdversaries:{frame:()=>null},
   academicGalleryPAInstances:()=>[],academicInframusicLevel:()=>0,academicFloorPopulationActors:()=>[],
   recordingHallucinationPropInstances:()=>[],dreamFigurePropInstance:()=>null,pubCharacterInstances:()=>[],currentLeafFlurryInstances:()=>[],brendanTowerInstances:()=>[],
-  escape:null,vanDoorInstances:()=>[],endingApproachPropInstances:()=>[],endingWorldPropInstances:()=>ending,
+  escape:null,chapelRetakeHauntFrame:null,vanDoorInstances:()=>[],endingApproachPropInstances:()=>[],endingWorldPropInstances:()=>ending,
   exteriorAmbientInstances:()=>[],yardBusWomanReplayTime:null,yardBusWomanClock:0,updateAcademicGhostAudio:()=>{},academicSocietyCharacterInstances:()=>[],academicSocietyActors:()=>[],academicSocietyListener:()=>null,academicFloorPopulationInstances:()=>[],academicFloorPopulation:{actorFrame:()=>[]},academicBouncerInstances:()=>[],academicBouncerActors:()=>[],
   RADIO:{radioLocation:()=>null},PLANT:{plantHissing:()=>false},towerWarningReady:false,
 };
@@ -110,4 +110,30 @@ context.refreshWorldProps();context.syncDoorDynamicProps();
 assert.equal(submitted.static.some(i=>STREET_CROWD_IDS.includes(i.id)||named.some(n=>n.id===i.id)),false,'window scenery never reinjects a frozen performer');
 assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'window has live exterior people despite its different floor group');
 assert.ok(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).every(i=>i.exteriorPortal?.id==='actual-window-boundary'&&i.noShadow),'window bodies inherit the exact scenery portal');
+
+// The outdoor door tick may defer only dynamic construction. Asset and
+// collision readiness, the pub service clock, and leaf simulation remain early;
+// the ordinary render then submits the live performers using the later state.
+currentViewGroup='ground';context.buildingWindowForObserver=()=>null;ready=false;
+context.syncDoorDynamicProps();const before=[...submitted.dynamic];
+let leafSteps=0;context.currentLeafFlurryInstances=()=>{leafSteps++;return[];};
+const colliderUpdates=[];context.PROPS.setColliderGroupEnabled=(id,on)=>colliderUpdates.push([id,on]);
+context.pubQuestState=()=>({watersServed:true});context.pubWaterFirstSeenAt=null;context.yardBusWomanClock=7;
+ready=true;context.vigilPosedPropIds.add('vigil-crowd-east-1');
+const driftCount=submitted.drifts.length;
+context.syncDoorDynamicProps({preflightOnly:true});
+assert.equal(context.doorDynamicRenderPending,true);
+assert.equal(context.streetCrowdRenderReady,true,'asset handoff happens before intervening gameplay');
+assert.deepEqual(submitted.drifts.slice(driftCount),[{id:'vigil-crowd-east-1',drift:null}]);
+assert.equal(submitted.static.some(i=>STREET_CROWD_IDS.includes(i.id)),false,'old static silhouettes are retired in preflight');
+assert.deepEqual(submitted.dynamic,before,'preflight does not submit partial dynamic props');
+assert.equal(context.pubWaterFirstSeenAt,7);assert.equal(leafSteps,1);
+assert.deepEqual(colliderUpdates.map(v=>v[0]),['street-pilot','opening-street','glass-court']);
+context.yardBusWomanClock=8;context.exteriorPeopleClock=14;context.syncDoorDynamicProps();
+assert.equal(context.doorDynamicRenderPending,false);assert.equal(context.pubWaterFirstSeenAt,7);assert.equal(leafSteps,2);
+assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'later render submits every live crowd body');
+const stable=value=>JSON.stringify(value,(_key,v)=>typeof v==='number'?Math.round(v*1e8)/1e8:v);
+const baseline=stable(submitted.dynamic);
+context.syncDoorDynamicProps({preflightOnly:true});context.syncDoorDynamicProps();
+assert.equal(stable(submitted.dynamic),baseline,'preflight followed by full render matches a full build at the same pose and clock');
 console.log(JSON.stringify({ok:true,productionAdapters:3,authoredCharacters:20,sharedRigCharacters:20,fixedEquipment:5,namedPerformersPreserved:6,readinessFallback:true,inactiveRemoval:true,endingWorker:true,remoteViewGroup:true,roofSightline:true}));

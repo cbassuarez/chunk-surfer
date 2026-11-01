@@ -96,7 +96,12 @@ test('a blocked old destination releases through a captured stationary recovery 
   assert.ok(resetVisibility < 1e-10, 'stance reset was visible');
   const packed = JSON.parse(JSON.stringify(packShadowFrames(frames))), decoded = unpackShadowFrames(packed);
   const captured = decoded.filter(f => f.pressurePresentation.primary.performance.gait.phase === 'recover');
-  assert.ok(captured.some(f => f.pressurePresentation.primary.performance.manifestation < .01));
+  assert.ok(captured.every(f => f.pressurePresentation.primary.performance.manifestation > .95),
+    'the density must not disappear for the obsolete human support reset');
+  assert.equal(new Set(captured.map(f => f.pressurePresentation.primary.performance.density.phase)).size, 1,
+    'a stationary recovery advances the density travel phase');
+  assert.ok(captured.some(f => f.pressurePresentation.primary.performance.density.compression > .85),
+    'blocked density loses its retained compression');
   for (const frame of captured) {
     const expected = frames.find(f => f.t === frame.t).pressurePresentation;
     assert.deepEqual(frame.pressurePresentation, expected, 'capture changed the recovery pose or visibility');

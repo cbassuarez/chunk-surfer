@@ -1,16 +1,19 @@
 {
   "pack": "exterior-street-fabric.glb",
   "author": "Chunk Surfer project",
-  "geometry": "Original project-native street construction; existing authored footprint retained",
+  "geometry": "Original project-native street construction; kerbs derived from the compiled floor plan",
   "sources": [
     "src/data/exterior-street-fabric.js",
     "tools/chunk_surfer/exterior-street-fabric-geometry.mjs",
     "tools/chunk_surfer/build-exterior-street-fabric.mjs",
+    "tools/chunk_surfer/street-surface-sampler.mjs",
+    "src/data/street-crossings.js",
     "src/data/street-pilot.js",
-    "src/data/exterior-foreground.js",
+    "src/data/exterior-district.js",
+    "src/data/ellery-square.js",
     "src/data/main-stair-geometry.js"
   ],
-  "sha256": "f780ccd6ac839f78c360a8b0b017e1da52300043b0f39d0df304101fff8b4bba",
+  "sha256": "88f346b7af2958f9dbfb464734bee3625d8136133832c9c9d9c9289d8243f283",
   "lettering": {
     "font": "NimbusSans-Bold.otf",
     "pipeline": "Existing pinned physical lettering pipeline",
@@ -28,7 +31,11 @@
     },
     {
       "url": "https://www.leeds.gov.uk/planning/planning-policy/supplementary-planning-documents-and-guidance/adopted-supplementary-planning-documents",
-      "use": "Current local context is2023TransportSPD; revoked StreetDesignGuide not used"
+      "use": "Leeds Transport SPD 2023: footway widths (¶291), crossings (¶292), kerb upstands (¶747) and dropped kerbs (¶748)"
+    },
+    {
+      "url": "https://www.legislation.gov.uk/uksi/2016/362/schedule/7",
+      "use": "TSRGD 2016 diagram 1018.1 double yellow lines and bus stop clearway markings"
     }
   ],
   "limitations": "Standards-informed fictional game street. No highway certification or survey-derived dimensions claimed."
