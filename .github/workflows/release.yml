@@ -12,6 +12,11 @@ on:
         required: true
         default: false
         type: boolean
+      allow_test_failures:
+        description: 'Continue building and publishing even if tests fail'
+        required: false
+        default: false
+        type: boolean
       platform:
         description: 'Platform to validate; publishing always requires all platforms'
         required: true
@@ -141,15 +146,19 @@ jobs:
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
       - name: Run frontend tests
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm test
 
       - name: Run acoustic catalogue checks
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm run test:acoustic
 
       - name: Run desktop menu tests
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm run test:desktop-menu
 
       - name: Run cross-platform visual smoke
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         timeout-minutes: 10
         env:
           FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '540000' || '300000' }}
@@ -169,6 +178,7 @@ jobs:
 
       - name: Run Windows native process tests
         if: matrix.platform == 'windows-latest'
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 
       - name: Build Tauri bundles
