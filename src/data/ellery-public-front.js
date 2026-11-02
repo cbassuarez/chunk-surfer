@@ -3,7 +3,7 @@
 import {GLASS_COURT_SIGHTLINES} from './glass-court-sightlines.js';
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
-export const ELLERY_PUBLIC_FRONT_REVISION='endowed-school-hybrid-3';
+export const ELLERY_PUBLIC_FRONT_REVISION='endowed-school-yard-clearance-4';
 export const ELLERY_PUBLIC_FRONT_PACK='/assets/ellery-public-front.glb';
 export const ELLERY_PUBLIC_FRONT=freeze({
   anchor:{x:86,z:1.25},
@@ -34,11 +34,24 @@ export const ELLERY_PUBLIC_FRONT=freeze({
   maximumAddedTriangles:4500,maximumAddedBytes:1000000,
 });
 export const ELLERY_PUBLIC_FRONT_HERO_CLIPS=freeze([ELLERY_PUBLIC_FRONT.hero.clip,ELLERY_PUBLIC_FRONT.hero.greenhouseClip]);
+// The scenic backstage range was accidentally built into the public yard.
+// Move its closed parts behind Ellery's actual wall rather than slicing them
+// open. Pipe heads follow their own service/academic roof datums.
+export const ELLERY_YARD_HERO_REPAIR=freeze({
+  backstage:{sourceMin:[-8.1,-.01,22.1],sourceMax:[.01,10.1,44.9],minimumWestReach:-1,translation:[7.2,0,0],
+    clearPhysical:{x0:41.8,x1:49.1,z0:29.6,z1:52.4}},
+  pipes:[
+    {id:'service-rainwater',sourceCenter:[-.02,0,-5.3],sourceHeight:13.15,worldZ:2.2,worldX:49,roofHeight:8.6,height:8.5},
+    {id:'academic-rainwater',sourceCenter:[-.02,0,6.3],sourceHeight:13.15,worldZ:13.8,worldX:49,roofHeight:13.8,height:13.7},
+  ],
+});
 const a=ELLERY_PUBLIC_FRONT.anchor;
 export const ELLERY_PUBLIC_FRONT_PROPS=freeze([
   {id:'ellery-actual-public-front',mesh:ELLERY_PUBLIC_FRONT.facade.mesh,x:a.x,y:a.z,yaw:0,renderOffsetZ:-.25,floorOverride:0,interactive:false,structural:true,blocks:false,renderGroups:['ground'],label:'Ellery public entrance'},
   {id:'ellery-public-forecourt',mesh:ELLERY_PUBLIC_FRONT.forecourt.mesh,x:a.x,y:a.z,yaw:0,renderOffsetZ:-.25,floorOverride:0,interactive:false,structural:true,blocks:false,renderGroups:['ground']},
-  {id:'ellery-baths-high-fanlight',mesh:ELLERY_PUBLIC_FRONT.fanlight.mesh,x:84,y:27.5,yaw:0,floorOverride:0,interactive:false,structural:true,blocks:false,renderGroups:['ground']},
+  {id:'ellery-baths-high-fanlight',mesh:ELLERY_PUBLIC_FRONT.fanlight.mesh,
+    x:(ELLERY_PUBLIC_FRONT.fanlight.x0+ELLERY_PUBLIC_FRONT.fanlight.x1)/2,y:ELLERY_PUBLIC_FRONT.fanlight.planeZ,
+    yaw:0,floorOverride:0,interactive:false,structural:true,blocks:false,renderGroups:['ground']},
 ]);
 export const ELLERY_PUBLIC_FRONT_MESHES=freeze({
   ellery_public_front:{w:24.5,d:1.0,h:9.5,blocks:false},

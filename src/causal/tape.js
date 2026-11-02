@@ -1,8 +1,9 @@
 import { normalizeOutskirtsCharacterFrame } from '../game/outskirts-experience.js';
 import { normalizePressurePresentation, interpolatePressurePresentation } from '../game/pressure-performance.js';
+import { ENDING_VARIANT, normalizeEndingVariant } from '../data/ending-variants.js';
 
 export const CAUSAL_TAPE_SCHEMA = 1;
-export const CAUSAL_TOPOLOGY_HASH = 'conservatory-night:v2';
+export const CAUSAL_TOPOLOGY_HASH = 'conservatory-night:v3';
 export const CAUSAL_SPINE_IDS = Object.freeze([
   'spine:service-threshold',
   'spine:b3-first-slate',
@@ -20,6 +21,28 @@ export const CAUSAL_ACTORS = Object.freeze([
   'building',
   'system',
 ]);
+
+const BASE_SPINE = Object.freeze(['spine:service-threshold', 'spine:b3-first-slate']);
+const SOURCE_SPINE = Object.freeze([...BASE_SPINE, 'spine:practice-wing', 'spine:first-reference', 'spine:source-threshold']);
+const CHAPEL_ENDINGS = new Set(['sacrifice', 'helped', 'inversion', 'drugged', 'surfaced']);
+const TOWER_ENDINGS = new Set(['tower-won', 'tower-lost']);
+const CONTACT_ENDINGS = new Set(['contact-won', 'contact-lost']);
+
+// Requirements follow the route that was completed. Optional causes remain
+// replayable when observed; another branch's landmark is never manufactured.
+export function causalRouteRequirements({ endingId, endingVariant = null } = {}) {
+  if (endingVariant !== null && normalizeEndingVariant(endingId, endingVariant) !== endingVariant) return null;
+  if (endingVariant === ENDING_VARIANT.CENTURY_STAY)
+    return { route: 'century-stay', causalSpine: [...BASE_SPINE], terminalEvent: 'run.finished' };
+  if (CHAPEL_ENDINGS.has(endingId))
+    return { route: 'chapel', causalSpine: [...SOURCE_SPINE, 'spine:chapel-contact'], terminalEvent: 'run.finished' };
+  if (TOWER_ENDINGS.has(endingId))
+    return { route: 'tower', causalSpine: [...SOURCE_SPINE], terminalEvent: 'run.finished' };
+  if (CONTACT_ENDINGS.has(endingId))
+    return { route: endingVariant === ENDING_VARIANT.SOURCE_REST ? 'source-rest' : 'contact',
+      causalSpine: [...SOURCE_SPINE], terminalEvent: 'run.finished' };
+  return null;
+}
 
 const ACTOR_SET = new Set(CAUSAL_ACTORS);
 const finite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -185,6 +208,7 @@ export function sealCausalTape(value = {}) {
     runId: String(value.runId || ''),
     returnSummaryId: String(value.returnSummaryId || ''),
     endingId: String(value.endingId || ''),
+    endingVariant: value.endingVariant == null ? null : String(value.endingVariant),
     durationMs: Math.max(0, Math.round(finite(value.durationMs))),
     qualification: {
       injuries: Math.max(0, Math.floor(finite(value.qualification?.injuries))),
@@ -203,13 +227,8 @@ export function sealCausalTape(value = {}) {
         id: String(interval.id || 'scene'),
       }))
       .sort((a, b) => a.start - b.start || a.end - b.end),
-    requirements: {
-      // Topology v2 is defined by the authored causal spine. Keeping this in
-      // the sealed contract (instead of trusting a caller flag) prevents a
-      // structurally incomplete current-topology tape from being promoted.
-      causalSpine: (value.topologyHash||CAUSAL_TOPOLOGY_HASH)===CAUSAL_TOPOLOGY_HASH||value.requireCausalSpine
-        ? [...CAUSAL_SPINE_IDS] : [],
-    },
+    requirements: causalRouteRequirements({ endingId: value.endingId, endingVariant: value.endingVariant ?? null })
+      || { route: 'invalid', causalSpine: [], terminalEvent: 'run.finished' },
   };
   return Object.freeze({ ...tape, contentHash: causalContentHash(tape) });
 }
@@ -219,13 +238,21 @@ export function validateCausalTape(tape, { topologyHash = CAUSAL_TOPOLOGY_HASH }
   if (tape.topologyHash !== topologyHash) return { ok: false, reason: 'TOPOLOGY_INCOMPATIBLE' };
   if (!tape.runId || !tape.returnSummaryId || !tape.endingId) return { ok: false, reason: 'TAPE_INCOMPLETE' };
   if (causalContentHash(tape) !== tape.contentHash) return { ok: false, reason: 'CHECKSUM_FAILURE' };
-  const required = tape.topologyHash===CAUSAL_TOPOLOGY_HASH
-    ? CAUSAL_SPINE_IDS
-    : Array.isArray(tape.requirements?.causalSpine) ? tape.requirements.causalSpine : [];
+  const contract = causalRouteRequirements(tape);
+  if (!contract || canonicalJson(tape.requirements) !== canonicalJson(contract))
+    return { ok: false, reason: 'CAUSAL_ROUTE_INCOMPATIBLE' };
+  const required = contract.causalSpine;
   const anchorIds = new Set((tape.anchors || []).map((anchor) => anchor.id));
   if (required.some((id) => !anchorIds.has(id))) return { ok: false, reason: 'CAUSAL_SPINE_INCOMPLETE' };
   if ((tape.shadowFrames || []).some((segment) => !segment?.base?.spaceId)) return { ok: false, reason: 'SPACE_DATA_INCOMPLETE' };
   if ((tape.anchors || []).some((anchor) => !anchor?.locus?.spaceId)) return { ok: false, reason: 'SPACE_DATA_INCOMPLETE' };
+  const terminal = (tape.events || []).find(event => {
+    const summary = event?.payload?.summary;
+    return event.type === contract.terminalEvent && event.at <= tape.durationMs
+      && summary?.id === tape.returnSummaryId && summary?.runId === tape.runId
+      && summary?.endingId === tape.endingId && (summary?.endingVariant ?? null) === tape.endingVariant;
+  });
+  if (!terminal) return { ok: false, reason: 'CAUSAL_RETURN_UNVERIFIED' };
   return { ok: true, tape };
 }
 

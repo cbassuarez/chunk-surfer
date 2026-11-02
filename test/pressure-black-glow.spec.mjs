@@ -79,7 +79,7 @@ test('core-only, glow-only and off retain their actual triangle footprint and de
     'external radiance cannot replace the world depth');
   const shader = props3dDebugShaders().pressureFragment;
   assert.match(shader, /64\.0\*uPressure\.y\+128\.0\*uPressure\.z/);
-  assert.match(shader, /dot\(vWorld-uEye,uForward\)/);
+  assert.match(shader, /dot\(natatoriumMetricPoint\(vWorld\)-natatoriumMetricPoint\(uEye\),uForward\)/);
 });
 
 test('Pressure material still enters the shared recording instead of a smooth final repaint', async () => {
@@ -96,7 +96,7 @@ test('Pressure material still enters the shared recording instead of a smooth fi
 test('material identity is emitted alongside the exact already occluded finite finish', () => {
   assert.match(PRESSURE_FINISH_FRAG, /layout\(location=0\)out vec4 o;/);
   assert.match(PRESSURE_FINISH_FRAG, /layout\(location=1\)out vec4 oIdentity;/);
-  assert.match(PRESSURE_FINISH_FRAG, /oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),0\.0,1\.0\);/);
+  assert.match(PRESSURE_FINISH_FRAG, /oIdentity=vec4\(coreMask,step\(\.000001,glowLight\),cosmic.a,cosmosMask\);/);
   const identityIndex = PRESSURE_FINISH_FRAG.indexOf('oIdentity=vec4(');
   assert.ok(identityIndex > PRESSURE_FINISH_FRAG.indexOf('float glowLight='));
   assert.ok(identityIndex < PRESSURE_FINISH_FRAG.indexOf('if(uAcquiredOnly>.5)'));

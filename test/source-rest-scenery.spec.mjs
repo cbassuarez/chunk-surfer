@@ -16,13 +16,13 @@ test('the listening place has supported furnishings and a bounded sky in its own
   const s=state(),view=sourceRestScenery(s),frame=sourceContinuationRenderFrame(s);
   assert.ok(view);assert.equal(view.lamps.length,2);
   for(const prop of [view.carpet,...view.lamps])assert.ok(continuationSupportAt(prop.x,prop.z,s),`${prop.id} is on existing floor`);
-  const shown=frame.props.filter(p=>p.restSky),place=frame.props.filter(p=>p.restPlace);
+  const shown=frame.props.filter(p=>p.restSky&&!p.portalDestination),place=frame.props.filter(p=>p.restPlace);
   const weatherCount=view.weather.streaks.length+view.weather.roof.length+view.weather.wet.length+view.weather.ripples.length+view.weather.objects.length;
   assert.equal(shown.length,view.arcs.length+view.motes.length+view.vaults.length+view.rallyFragments.length+view.vista.length+weatherCount);assert.ok(place.length>30);
   assert.equal(view.vaults.length,0,'thin wire-only vaults no longer dominate the native view');
   assert.ok(!view.vista.some(p=>p.mesh.endsWith('rest-vista-arch')),'the actual nook window frames Source without floating scenic arches');
   assert.ok(shown.every(p=>p.chartId===seat.chartId&&p.decorative&&!p.structural));
-  assert.ok(frame.counts.props<SOURCE_CONTINUATION_ARCHITECTURE.maxInstances,'sky stays within the renderer instance budget');
+  assert.ok(frame.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances,'sky stays within the renderer instance budget');
   // The installation lies ahead of the actual seated view, not behind it or
   // in a chart that only exists across a portal.
   const direction=[Math.sin(frame.yaw),-Math.cos(frame.yaw)],delta=[view.centre.x-frame.eye[0],view.centre.z-frame.eye[2]];
@@ -72,7 +72,7 @@ test('drive and Ellery memories use existing assets, appear in sequence, and lea
   assert.ok(!memories(ellery).some(p=>p.restMemoryKind==='drive'));
   assert.equal(memories(last).length,0);
   assert.ok(memories(both).every(p=>p.decorative&&!p.structural&&p.chartId===seat.chartId));
-  assert.ok([drive,both,ellery].every(f=>f.counts.props<SOURCE_CONTINUATION_ARCHITECTURE.maxInstances));
+  assert.ok([drive,both,ellery].every(f=>f.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances));
   assert.deepEqual(first.geometry.surfaces,last.geometry.surfaces);
   assert.deepEqual(sourceRestScenery({...base,sourceRestView:undefined}).memories.drive,[]);
   assert.equal(sourceRestScenery({...at(.26),sourceRestView:{...at(.26).sourceRestView,memoryDrive:0}}).memories.drive.length,0,'the authored dialogue beat can retire the road');

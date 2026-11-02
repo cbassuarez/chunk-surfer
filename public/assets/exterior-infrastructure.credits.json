@@ -1,0 +1,21 @@
+{
+  "author": "Chunk Surfer project",
+  "geometry": "Original project-native geometry",
+  "sources": [
+    "src/data/exterior-infrastructure.js",
+    "tools/chunk_surfer/exterior-infrastructure-geometry.mjs",
+    "tools/chunk_surfer/build-exterior-infrastructure.mjs"
+  ],
+  "references": [
+    {
+      "url": "https://historicengland.org.uk/advice/caring-for-heritage/streets-for-all/what-you-can-do/street-clutter-audit/",
+      "use": "Audit existing services and avoid duplicating street furniture."
+    },
+    {
+      "url": "https://historicengland.org.uk/advice/technical-advice/retrofit-and-energy-efficiency-in-historic-buildings/resilient-rainwater-systems/upgrades-or-alterations-to-rainwater-goods/",
+      "use": "Coherent retained roof outlet, hopper, iron rainwater pipe and ground receiver."
+    }
+  ],
+  "scope": "Fictional game infrastructure, no engineering certification claimed.",
+  "sha256": "622a8424cc0d8e5cb8853b2a35b791c50c5bacdedd8dd06009eec73272148dbe"
+}

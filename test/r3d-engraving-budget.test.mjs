@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {normalizeNatatoriumMetric} from '../src/render/natatorium-metric.js';
+import {cinematicTanHalfFov} from '../src/render/cinematic-lens.js';
+import {recordingEmbodimentInstances,recordingEmbodimentViewPull} from '../src/render/recording-embodiment.js';
+import {normalizeRecordingViewPull} from '../src/render/recording-view-pull.js';
 
 const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
@@ -20,14 +24,20 @@ test('rendering building and alternate scenes does not spend another engraving b
   const stop = new Error('past camera setup');
   let drains = 0;
   const ctx = vm.createContext({
-    gl: {}, P3: {setDriveStudyFrame() {}}, towerCaptureInProgress:false, horizonState:{active:false},
+    gl: {}, P3: {setDriveStudyFrame(){},setNatatoriumMetricFrame(){},setFrameCameraTanHalfFov(){}}, towerCaptureInProgress:false, horizonState:{active:false},
+    normalizeNatatoriumMetric,cinematicTanHalfFov,recordingEmbodimentInstances,recordingEmbodimentViewPull,normalizeRecordingViewPull,
+    pixelMeshSettings:{reduceMotion:false},sourceTowerView:null,sourceCrossing:null,natatoriumMetric:null,lastBuildingViewState:null,
+    driveFrameActive:false,pressureFinishReady:false,activeCameraTanHalfFov:.65,cinematicLensPass:null,
+    advanceMouseLookGlide(){},r3dCancelMouseLookGlide(){},canvas:{width:1280,height:720},recordingFaceProps:[],recordingViewPull:null,
     cameraSnapPending:false, lastT:0, performance:{now:()=>1000}, lastBeacons:null,
     authoredCameraFrame:()=>null, vfdPreviousX:null, vfdPreviousZ:null, vfdMovement:0,
     camX:0,camY:0,camZ:0,yaw:0,yawTarget:0,planYaw:0,planYawTarget:0,leanEase:0,
     pitch:0,pitchTarget:0,EYE_METERS:1.65,CELL:1,r3dResetVfdMemory(){},
     drainMarkQueue(){drains++;},
   });
-  vm.runInContext(productionFunction('r3dFrame'),ctx);
+  // This script fixture executes the shipping build branch. import.meta is
+  // build-time syntax; the DEV-only motion-study override must remain disabled.
+  vm.runInContext(productionFunction('r3dFrame').replaceAll('import.meta.env.DEV','false'),ctx);
   for (const mode of [{}, {textSpace:true}, {sourceVoidPhysical:true}]) {
     const state={px:0,py:0,floorH:0,...mode,get light(){throw stop;}};
     assert.throws(()=>ctx.r3dFrame(state),error=>error===stop);

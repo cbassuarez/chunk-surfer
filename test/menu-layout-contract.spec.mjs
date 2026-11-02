@@ -16,7 +16,8 @@ assert.match(title, /rowsPerColumn = \(\) => Math\.ceil\(items\.length \/ column
 
 const archive = fs.readFileSync('src/game/archive.js', 'utf8');
 assert.match(archive, /NO ENTRIES IN THIS CATEGORY/, 'archive has an empty category state');
-assert.match(archive, /body\.h - 13/, 'archive caps description rows to body height');
+assert.match(archive, /archiveContentLayout/, 'archive computes its text budget from the actual panel well');
+assert.match(archive, /maxDetailScroll/, 'long archive requirements and collection rows remain inspectable');
 
 const transferRoom = fs.readFileSync('src/game/transfer-room.js', 'utf8');
 assert.match(transferRoom, /let scroll = 0/, 'transfer room scrolls its register');

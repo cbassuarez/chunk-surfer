@@ -1,0 +1,19 @@
+{
+  "pack": "student-strike-records.glb",
+  "sha256": "aae5d57771ebc1d6d31a89def6ba5675e7507ebf99bf91d01b46e11eff9eb791",
+  "geometry": "Original two project-native A4 retained records",
+  "text": "Original Chunk Surfer fiction; no external institutional records",
+  "lettering": {
+    "pipeline": "Existing pinned physical lettering pipeline",
+    "font": "NimbusMonoPS-Regular.otf",
+    "manifest": "assets/fonts/manifest.json",
+    "licence": "URW AGPL-3.0 with upstream document exception; vendored licence retained"
+  },
+  "sources": [
+    "src/data/student-strike-evidence.js",
+    "tools/chunk_surfer/build-student-strike-records.mjs",
+    "tools/chunk_surfer/lettering/physical-lettering.mjs",
+    "tools/chunk_surfer/lettering/rasterize.py"
+  ],
+  "limitations": "CPU asset/data validation only; native placement and legibility pending"
+}

@@ -55,6 +55,7 @@ async function fixture({ cols = 120, rows = 40, aspect = 8.45 / 20, reducedMotio
   mock('game/scenes.js', {
     remove(scene) { state.removed.push(scene); scene.exit?.(); return scene; },
   });
+  mock('game/access.js', { visualEffectsEnabled: () => true });
   mock('render/atlas.js', {
     UI_CELL_W: 8.45, UI_CELL_H: 20, atlasConfigure: nothing, atlasDpr: () => 1, getTile: nothing,
   });

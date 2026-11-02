@@ -67,7 +67,11 @@ test('the native fragment shader and every primitive bind the scoped visibility 
   const source=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
   assert.match(source,/\$\{SOURCE_SURROUNDINGS_VISIBILITY_GLSL\}/);
   assert.match(source,/if\(!sourceSurroundingsVisible\(uSourceSurroundingsSide,sourceSurroundingsWorldPoint\(uEye\),sourceSurroundingsWorldPoint\(vWorld\),uSourceSurroundingsGate,uSourceSurroundingsGateFrame\)\)discard/);
-  assert.match(source,/for\(const p of m\.primitives\)\{gl\.uniform1i\(U\('uSourceSurroundingsSide'\),sourceSurroundingsPrimitiveSide\(p,list\[0\]\)\)/);
+  // Other material uniforms may be set first. Require the side to be bound
+  // inside the actual primitive loop, before that primitive's draw call.
+  const primitiveLoop=source.slice(source.indexOf('for(const p of m.primitives){'),source.indexOf('for(const p of m.primitives){')+10000);
+  const bind="gl.uniform1i(U('uSourceSurroundingsSide'),sourceSurroundingsPrimitiveSide(p,list[0]))";
+  assert.ok(primitiveLoop.indexOf(bind)>=0);assert.ok(primitiveLoop.indexOf(bind)<primitiveLoop.indexOf('gl.drawElementsInstanced('));
   assert.match(source,/gl\.uniform4f\(U\('uSourceSurroundingsGate'\),sourceSurroundingsGate\.x,sourceSurroundingsGate\.y,sourceSurroundingsGate\.z,sourceSurroundingsGate\.width\)/);
   assert.match(source,/gl\.uniform3f\(U\('uSourceSurroundingsGateFrame'\),sourceSurroundingsGate\.height,sourceSurroundingsGate\.normalX,sourceSurroundingsGate\.normalZ\)/);
   const reset="gl.uniform1i(U('uSourceSurroundingsSide'),0)";assert.equal(source.split(reset).length-1,2,'main/reflection entry and exit reset stale side state');

@@ -40,12 +40,14 @@ test('the dedicated radio has an authored V keycap and accepts only its own fres
 test('omnibus profile discloses microphone handling before the on/off choice', () => {
   const source = readFileSync('src/game/warning.js', 'utf8');
   const disclosureAt = source.indexOf('Room-microphone loudness during declared authored moments');
-  const privacyAt = source.indexOf('Raw audio is never stored.');
+  const privacyAt = source.indexOf('Profiling never stores raw audio.');
   const choiceAt = source.indexOf('Choose PROFILE ON or PROFILE OFF.');
   assert.ok(disclosureAt >= 0, 'missing microphone disclosure');
   assert.ok(privacyAt >= 0, 'missing raw-audio assurance');
   assert.ok(choiceAt > privacyAt && privacyAt > disclosureAt, 'disclosure and assurance must precede the choice');
   assert.doesNotMatch(source, /\[Y\s*\/\s*A\]/);
+  assert.match(source, /spoken slate with a take; that audio stays on this device/,
+    'separate consent discloses intentionally recorded slates without misrepresenting profiling');
 });
 
 test('input settings expose microphone source and test rows', () => {

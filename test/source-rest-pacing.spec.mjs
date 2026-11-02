@@ -8,16 +8,20 @@ test('a late arrival gets a complete readable arc without an enforced extra musi
   const audio=source(500),clock=createSourceRestClock(()=>audio);clock.update();
   assert.equal(clock.snapshot().heardSeconds,0);assert.equal(clock.snapshot().untilBlack,435);
   assert.equal(clock.snapshot().cueMode,'late-arrival');
-  audio.currentTime=10;audio.playedSeconds+=226.4;clock.update();
-  assert.ok(Math.abs(clock.snapshot().heardSeconds-226.4)<1e-8);
+  audio.currentTime=600;audio.playedSeconds=600;clock.update();
+  assert.equal(clock.snapshot().heardSeconds,100);
   assert.ok(clock.snapshot().progress>0&&clock.snapshot().progress<SOURCE_REST_BLACK_PROGRESS);
 });
 
-test('a moderately late arrival can still finish within the major section',()=>{
-  const audio=source(100),clock=createSourceRestClock(()=>audio);clock.update();
-  assert.equal(clock.snapshot().untilBlack,435);assert.ok(Math.abs(clock.snapshot().targetPlayhead-535)<1e-8);
-  assert.equal(clock.snapshot().cueMode,'within-major');
+test('unity-speed seating retains the preferred cue only while the real readable budget fits',()=>{
+  const audio=source(75),clock=createSourceRestClock(()=>audio);clock.update();
+  assert.equal(clock.snapshot().untilBlack,435);assert.equal(clock.snapshot().targetPlayhead,510);
+  assert.equal(clock.snapshot().cueMode,'preferred');
+  const preferredEdge=createSourceRestClock(()=>source(75));preferredEdge.update();assert.equal(preferredEdge.snapshot().cueMode,'preferred');
+  const shifted=createSourceRestClock(()=>source(76));shifted.update();assert.equal(shifted.snapshot().cueMode,'within-major');
+  assert.equal(shifted.snapshot().targetPlayhead,511);
   const edge=createSourceRestClock(()=>source(115));edge.update();assert.equal(edge.snapshot().cueMode,'within-major');
+  assert.equal(edge.snapshot().targetPlayhead,550);
   const after=createSourceRestClock(()=>source(116));after.update();assert.equal(after.snapshot().cueMode,'late-arrival','the shifted cue does not claim alignment beyond 550s');
 });
 

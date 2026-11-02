@@ -62,7 +62,7 @@ async function adapter(run,{saved,heldFresh=false}={}){
       now:1000,domFocused:true,nativeFocused:true,foreignSpeech:false,hushBusy:false,ready:true,heldReady:true,
       worldYaw:1.0824623757384937,localYaw:0,pitch:0,viewport:{cols:100,rows:40},
       document:{hidden:false,visibilityState:'visible',hasFocus:()=>c.domFocused},
-      pointerMode:{status:()=>({nativeBackend:{focused:c.nativeFocused}})},
+      pointerMode:{status:()=>({nativeBackend:{focused:c.nativeFocused}}),nativeFocus:()=>c.nativeFocused},
       R3:{r3dWorldYaw:()=>c.worldYaw,r3dLookAngles:()=>({yaw:c.localYaw,pitch:c.pitch}),
         r3dHeldNoteStatus:()=>({ready:c.heldReady})},
       academicCharacterStats:()=>({meshes:c.ready?['academic_population_unfinished_visitor']:[]}),

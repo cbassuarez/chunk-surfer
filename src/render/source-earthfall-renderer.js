@@ -6,6 +6,7 @@ import * as P3 from './props3d.js';
 import {CELL,EYE,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
 import {SOURCE_EARTHFALL as C,sourceEarthfallFracturePose,sourceEarthfallCellLayout,sourceEarthfallReleasePlan,sourceEarthfallControlledDrop,sourceEarthfallUpperHeight,SOURCE_EARTHFALL_STRATA,sourceEarthfallStratumPose,sourceEarthfallPoint,sourceEarthfallStructuralLayout,sourceEarthfallStructuralPose,SOURCE_EARTHFALL_CONSTRUCTION} from '../data/source-earthfall.js';
+import {earthfallDitherIntensity} from './source-dither-routing.js';
 import {sourceEarthfallFrame} from '../game/source-earthfall.js';
 import {sourceContinuationMeshPayload,sourceContinuationRenderFrame,prewarmSourceContinuationAssets,SOURCE_CONTINUATION_ARCHITECTURE} from './source-continuation-renderer.js';
 import {freshSourceContinuation} from '../game/source-continuation.js';
@@ -439,7 +440,7 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
     last=typeof transformFrame==='function'?transformFrame(state,presentation,physical):physical;
     renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     const torch=getTorch?.();
-    const result=renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:SOURCE_EARTHFALL_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:torch?.on?1:0,torchLook:torch?.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false})!==false;
+    const result=renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:SOURCE_EARTHFALL_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:torch?.on?1:0,torchLook:torch?.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:earthfallDitherIntensity(last.source,{upper:C.upperFloor,lower:C.lowerFloor})})!==false;
     if(diagnostics){cpuSamples.push(performance.now()-started);if(cpuSamples.length>600)cpuSamples.shift();}
     return result;
   }

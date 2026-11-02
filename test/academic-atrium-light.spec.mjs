@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {NodeIO} from '@gltf-transform/core';
 import {ACADEMIC_ATRIUM_LIGHT as A} from '../src/data/academic-atrium-light.js';
 import {ACADEMIC_ROOF,roofPointToPhysical} from '../src/data/academic-roof.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
@@ -17,9 +18,14 @@ const normalize=p=>{const l=Math.hypot(p.x,p.y,p.z);return{x:p.x/l,y:p.y/l,z:p.z
 const fromRoof=(x,z,y)=>({x:x+A.direction.x*(A.roofY-y),y,z:z+A.direction.z*(A.roofY-y)});
 FP.compile(conservatory.levels,{width:conservatory.width,height:conservatory.height,widenCorridors:conservatory.widenCorridors,connectors:conservatory.connectors||[],edgePortals:conservatory.edgePortals||[],doors:conservatory.doors||[]});
 const spans=(x,z)=>(FP.physicalSpanData().cells.get(`${Math.floor(x/CELL)},${Math.floor(z/CELL)}`)||[]);
-const bytes=fs.readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url)),jsonLength=bytes.readUInt32LE(12),json=JSON.parse(bytes.subarray(20,20+jsonLength)),bin=28+jsonLength;
-function accessor(index){const a=json.accessors[index],v=json.bufferViews[a.bufferView],n={SCALAR:1,VEC2:2,VEC3:3,VEC4:4}[a.type],offset=bin+(v.byteOffset||0)+(a.byteOffset||0),T={5126:Float32Array,5123:Uint16Array,5125:Uint32Array}[a.componentType];return new T(bytes.buffer,bytes.byteOffset+offset,a.count*n);}
-const glazing=json.meshes.find(m=>m.name==='academic_roof_glazing'),positions=material=>accessor(glazing.primitives.find(p=>json.materials[p.material].name===material).attributes.POSITION);
+const bytes=fs.readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url)),doc=await new NodeIO().readBinary(bytes);
+const glazing=doc.getRoot().listMeshes().find(m=>m.getName()==='academic_roof_glazing');
+// Courtyard clipping leaves unused vertices in the retained accessor. Only
+// indexed triangles are submitted, and the real loader owns their byte stride.
+const positions=material=>{
+ const primitive=glazing.listPrimitives().find(p=>p.getMaterial().getName()===material),p=primitive.getAttribute('POSITION').getArray();
+ return Array.from(primitive.getIndices().getArray()).flatMap(i=>Array.from(p.slice(i*3,i*3+3)));
+};
 
 test('strict building context cannot illuminate Source or a matching physical coordinate by default',()=>{
  for(const group of A.contextGroups)assert.equal(enabled({academicAtriumLight:true,group}),true);
@@ -27,37 +33,49 @@ test('strict building context cannot illuminate Source or a matching physical co
  assert.equal(sample({x:84,y:10,z:14}).strength,0);assert.ok(Object.isFrozen(A.leadPatches[0]));
 });
 
-test('aperture is exactly the retained fourth-floor glass address transformed to physical metres',()=>{
+test('aperture matches the current roof address and every submitted pane stops at the courtyard',()=>{
  const lo=roofPointToPhysical({x:ACADEMIC_ROOF.glass.x0,y:ACADEMIC_ROOF.glass.y0}),hi=roofPointToPhysical({x:ACADEMIC_ROOF.glass.x1,y:ACADEMIC_ROOF.glass.y1});
  assert.deepEqual(A.aperture,{x0:lo.x,x1:hi.x,z0:lo.y,z1:hi.y});assert.equal(A.roofY,ACADEMIC_ROOF.base);
- const glass=positions('wired roof glass');assert.equal(glass.length/3,30*24);
- for(let column=0;column<5;column++)for(let row=0;row<6;row++){
-  const i=(column*6+row)*24*3,verts=Array.from({length:24},(_,n)=>Array.from(glass.slice(i+n*3,i+n*3+3))),xs=verts.map(p=>p[0]+84),ys=verts.map(p=>p[1]+17),zs=verts.map(p=>p[2]+14.5);
-  near((Math.min(...xs)+Math.max(...xs))/2,A.panes.firstX+column*A.panes.stepX);
-  near((Math.min(...zs)+Math.max(...zs))/2,A.panes.firstZ+row*A.panes.stepZ);
-  near(Math.max(...xs)-Math.min(...xs),A.panes.width);near(Math.max(...zs)-Math.min(...zs),A.panes.depth);near(Math.max(...ys),16.998);
+ const glass=positions('wired roof glass'),panes=new Map();assert.ok(glass.length>0);
+ for(let i=0;i<glass.length;i+=9){
+  const vertices=Array.from({length:3},(_,n)=>[glass[i+n*3]+84,glass[i+n*3+1]+17,glass[i+n*3+2]+14.5]);
+  const centre=[0,1,2].map(k=>vertices.reduce((sum,p)=>sum+p[k],0)/3),column=Math.round((centre[0]-A.panes.firstX)/A.panes.stepX),row=Math.round((centre[2]-A.panes.firstZ)/A.panes.stepZ);
+  assert.ok(column>=0&&column<A.panes.columns&&row>=0&&row<A.panes.rows);
+  const cx=A.panes.firstX+column*A.panes.stepX,cz=A.panes.firstZ+row*A.panes.stepZ,key=column+':'+row;
+  const points=panes.get(key)||[];points.push(...vertices);panes.set(key,points);
+  for(const[x,y,z]of vertices){assert.ok(x>=cx-A.panes.width/2-.00001&&x<=cx+A.panes.width/2+.00001);assert.ok(z>=cz-A.panes.depth/2-.00001&&z<=cz+A.panes.depth/2+.00001);assert.ok(z>=A.aperture.z0-.00001&&z<=A.aperture.z1+.00001,'no removed south pane can be submitted');assert.ok(y>=16.95799&&y<=16.99801);}
+ }
+ const survivingRows=Math.ceil((A.aperture.z1-A.aperture.z0)/A.panes.stepZ);assert.equal(panes.size,A.panes.columns*survivingRows);
+ for(let column=0;column<A.panes.columns;column++)for(let row=0;row<survivingRows;row++){
+  const points=panes.get(column+':'+row);assert.ok(points?.length);const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]),zs=points.map(p=>p[2]),cz=A.panes.firstZ+row*A.panes.stepZ;
+  near((Math.min(...xs)+Math.max(...xs))/2,A.panes.firstX+column*A.panes.stepX);near(Math.max(...xs)-Math.min(...xs),A.panes.width);
+  near(Math.min(...zs),Math.max(A.aperture.z0,cz-A.panes.depth/2));near(Math.max(...zs),Math.min(A.aperture.z1,cz+A.panes.depth/2));near(Math.max(...ys),16.998);
  }
 });
 
-test('both opaque repairs and primary under-glass beams are measured from retained mesh vertices',()=>{
- const lead=positions('roof dull lead glazing repairs');
- // Two slender reflection rakes precede the two broad repair boxes in this primitive.
- for(let i=0;i<2;i++){
-  const start=(2+i)*24*3,verts=Array.from({length:24},(_,n)=>Array.from(lead.slice(start+n*3,start+n*3+3))),xs=verts.map(p=>p[0]+84),zs=verts.map(p=>p[2]+14.5),r=A.leadPatches[i];
-  near(Math.min(...xs),r.x0);near(Math.max(...xs),r.x1);near(Math.min(...zs),r.z0);near(Math.max(...zs),r.z1);
+test('surviving opaque repair and primary beam bounds come from actual submitted vertices',()=>{
+ const lead=positions('roof dull lead glazing repairs'),points=Array.from({length:lead.length/3},(_,i)=>[lead[i*3]+84,lead[i*3+1]+17,lead[i*3+2]+14.5]);
+ assert.ok(points.length>0);assert.ok(points.every(p=>p[2]<=A.aperture.z1+.00001),'the old south repair is not submitted over open sky');
+ for(const r of A.leadPatches){
+  for(const x of[r.x0,r.x1])for(const z of[r.z0,r.z1])assert.ok(points.some(p=>Math.hypot(p[0]-x,p[2]-z)<.00001),'each retained repair corner has a real mesh vertex');
   assert.equal(sample({x:(r.x0+r.x1)/2,y:17,z:(r.z0+r.z1)/2},active).strength,0);
  }
+ let broadFaces=0;for(let i=0;i<points.length;i+=3){const[a,b,c]=points.slice(i,i+3),area=Math.abs((b[0]-a[0])*(c[2]-a[2])-(b[2]-a[2])*(c[0]-a[0]))/2;if(area<.25)continue;broadFaces++;
+  const x=(a[0]+b[0]+c[0])/3,z=(a[2]+b[2]+c[2])/3;assert.ok(A.leadPatches.some(r=>x>=r.x0-.00001&&x<=r.x1+.00001&&z>=r.z0-.00001&&z<=r.z1+.00001),'every broad physical repair has a matching opaque light mask');
+ }assert.ok(broadFaces>=2);
  const iron=positions('roof charcoal bronze and iron');
  for(const x of A.beams.xs)for(const z of[A.beams.z0,A.beams.z1])for(const y of[A.beams.y-A.beams.halfWidth,A.beams.y+A.beams.halfWidth]){
   const distance=Math.min(...Array.from({length:iron.length/3},(_,i)=>Math.hypot(iron[i*3]+84-x,iron[i*3+1]+17-y,iron[i*3+2]+14.5-z)));
-  // Beam cross sections use a .19m square, so exact corners lie half-width sideways.
   assert.ok(distance<.096,`real primary beam missing at ${x},${y},${z}: ${distance}`);
  }
 });
 
-test('compiled atrium has an unbroken17m central void and a real .5m third-floor slab around it',()=>{
- for(const[x,z]of[[84,14],[79.5,8.5],[88.5,20.5]]){const list=spans(x,z);assert.ok(list.some(s=>s.floor===0&&s.ceil===17));assert.ok(list.some(s=>s.floor===17));assert.equal(list.some(s=>s.floor===10),false);}
- const list=spans(78.5,14);assert.ok(list.some(s=>s.floor===0&&s.ceil===9.5));assert.ok(list.some(s=>s.floor===10&&s.ceil===17));assert.equal(A.deck.top,10);assert.equal(A.deck.bottom,9.5);
+test('compiled north atrium, enclosed greenhouse and open court retain their distinct physical sections',()=>{
+ for(const[x,z]of[[84,10],[85,8.5],[88.5,13.5]]){const list=spans(x,z);assert.ok(list.some(s=>s.floor===0&&s.ceil===17));assert.ok(list.some(s=>s.floor===17));assert.equal(list.some(s=>s.floor===10),false);}
+ const sanitary=spans(79.5,8.5);assert.ok(sanitary.some(s=>s.floor===0&&s.ceil===3.5&&s.owner==='public-sanitary-core-air'),'the actual enclosed sanitary core is not misreported as an unbroken atrium');
+ for(const[x,z]of[[80,20],[90,20]]){const list=spans(x,z);assert.ok(list.some(s=>s.floor===0&&s.ceil>=40));assert.equal(list.some(s=>s.floor===10||s.floor===17),false,'the courtyard has actual sky rather than an invisible academic/roof slab');}
+ const greenhouse=spans(84,20);assert.ok(greenhouse.some(s=>s.floor===0&&Math.abs(s.ceil-5.2)<.00001));assert.equal(greenhouse.some(s=>s.floor===10||s.floor===17),false);
+ const list=spans(78.5,13.5);assert.ok(list.some(s=>s.floor===0&&s.ceil===9.5));assert.ok(list.some(s=>s.floor===10&&s.ceil===17));assert.equal(A.deck.top,10);assert.equal(A.deck.bottom,9.5);
 });
 
 test('fixed pane rays transmit while iron grid, opaque repair, beam and outside bounds refuse',()=>{
@@ -66,14 +84,15 @@ test('fixed pane rays transmit while iron grid, opaque repair, beam and outside 
  assert.equal(sample({x:82,y:17,z:13.4167},active).reason,'lead-repair');
  assert.equal(sample(fromRoof(83.10,9.0833,15),active).reason,'primary-beam');
  for(const p of[{x:84,y:17.01,z:14},{x:84,y:-.01,z:14},{x:NaN,y:10,z:14},{x:72,y:10,z:10}])assert.equal(sample(p,active).strength,0);
- const a=sample(fromRoof(84,15.5834,16),active),b=sample(fromRoof(84,15.5834,12),active);near(a.roof.x,b.roof.x);near(a.roof.z,b.roof.z);assert.deepEqual(a.pane,b.pane);
+ const a=sample(fromRoof(84,13.4167,16),active),b=sample(fromRoof(84,13.4167,12),active);near(a.roof.x,b.roof.x);near(a.roof.z,b.roof.z);assert.deepEqual(a.pane,b.pane);
 });
 
 test('light reaches actual Late Guest head and gallery top but never leaks below that opaque deck',()=>{
  const late=sample({x:78.2,y:11.6,z:6.4},active);assert.ok(late.strength>.8);assert.deepEqual(late.pane,{column:0,row:0});
  assert.ok(sample({x:78.2,y:10,z:6.4},active).strength>.8);
  assert.equal(sample({x:78.2,y:9.9,z:6.4},active).reason,'gallery-deck');
- assert.ok(sample({x:82,y:0,z:10},active).strength>.6);
+ assert.ok(sample({x:82,y:0,z:8},active).strength>.6,'a surviving north pane still reaches real atrium grade');
+ assert.equal(sample({x:82,y:0,z:10},active).reason,'outside-aperture','the removed south glazing no longer manufactures a pane-filtered shaft');
  for(const y of[0,4,9.49])assert.equal(sample(fromRoof(80,9.0833,y),active).strength,0);
 });
 

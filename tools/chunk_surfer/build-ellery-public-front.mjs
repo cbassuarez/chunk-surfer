@@ -8,6 +8,7 @@ import{elleryPublicFrontGeometry,ELLERY_PUBLIC_MATERIALS,heroFingerprint}from'./
 import{subtractTriangleBox}from'./exterior-stationers-geometry.mjs';
 import{bakeLetteringAtlases,printedSurfaceMetadata}from'./lettering/physical-lettering.mjs';
 import{printedFaceGeometry}from'./lettering/face-geometry.mjs';
+import{repairHeroYard,appendHeroRainwaterConnections}from'./ellery-yard-repair.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url)),sourcePath=process.env.ELLERY_PUBLIC_SOURCE_PACK||path.join(root,'public/assets/conservatory-props.glb');
 const out=path.join(root,'public/assets/ellery-public-front.glb'),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const sourceBytes=fs.readFileSync(sourcePath),io=new NodeIO(),doc=await io.readBinary(sourceBytes),dr=doc.getRoot();
@@ -17,6 +18,7 @@ for(const n of dr.listNodes())if(n.getMesh()!==hero)n.dispose();
 for(const m of dr.listMeshes())if(m!==hero)m.dispose();
 await doc.transform(prune({keepAttributes:true,keepExtras:true,keepSolidTextures:true}));
 const baselineBytes=(await io.writeBinary(doc)).length,buffer=dr.listBuffers()[0]||doc.createBuffer(),clip=[];
+const yardRepair=repairHeroYard(doc,hero,buffer);
 const add=(name,array,type,integer=false)=>doc.createAccessor(name).setType(type).setArray(integer?new Uint32Array(array):new Float32Array(array)).setBuffer(buffer);
 for(const p of hero.listPrimitives()){
  const position=p.getAttribute('POSITION'),normal=p.getAttribute('NORMAL'),uv=p.getAttribute('TEXCOORD_0'),index=p.getIndices().getArray();
@@ -33,7 +35,8 @@ for(const p of hero.listPrimitives()){
  if(!kept.length){hero.removePrimitive(p);p.dispose();}else if(receipt.changedTriangles){p.setAttribute('POSITION',add('trimmed-hero-position',positions,'VEC3')).setAttribute('NORMAL',add('trimmed-hero-normal',normals,'VEC3')).setAttribute('TEXCOORD_0',add('trimmed-hero-uv',uvs,'VEC2')).setIndices(add('trimmed-hero-index',kept,'SCALAR',true));}
  clip.push(receipt);
 }
-hero.setExtras({...hero.getExtras(),publicFrontRevision:REV,actualAtriumClip:C.hero.clip,actualOccupiedAirClips:HERO_CLIPS,sourceHeroFingerprint:sourceFingerprint});
+const rainwaterConnections=appendHeroRainwaterConnections(doc,hero,buffer);
+hero.setExtras({...hero.getExtras(),publicFrontRevision:REV,actualAtriumClip:C.hero.clip,actualOccupiedAirClips:HERO_CLIPS,sourceHeroFingerprint:sourceFingerprint,yardRepair,rainwaterConnections});
 const material=ELLERY_PUBLIC_MATERIALS.map(m=>dr.listMaterials().find(p=>p.getName()===m.name)||doc.createMaterial(m.name).setBaseColorFactor([...m.rgb,1]).setRoughnessFactor(m.roughness).setMetallicFactor(m.metallic).setEmissiveFactor(m.emissive||[0,0,0]));
 const models=elleryPublicFrontGeometry(),scene=dr.listScenes()[0]||doc.createScene('Ellery public face');
 const built=new Map();
@@ -46,14 +49,14 @@ for(const p of PRINT){const entry=bake.entries.get(p.id),f=printedFaceGeometry({
  built.get(C.facade.mesh).addPrimitive(doc.createPrimitive().setAttribute('POSITION',add(p.id+'-position',f.positions,'VEC3')).setAttribute('NORMAL',add(p.id+'-normal',f.normals,'VEC3')).setAttribute('TEXCOORD_0',add(p.id+'-uv',f.uvs,'VEC2')).setIndices(add(p.id+'-indices',f.indices,'SCALAR',true)).setMaterial(m));
 }
 await doc.transform(prune({keepAttributes:true,keepExtras:true,keepSolidTextures:true}));
-const output=Buffer.from(await io.writeBinary(doc)),measure=m=>m.listPrimitives().reduce((n,p)=>n+p.getIndices().getCount()/3,0),addedTriangles=models.reduce((n,m)=>n+measure(built.get(m.name)),0),addedBytes=output.length-baselineBytes;
+const output=Buffer.from(await io.writeBinary(doc)),measure=m=>m.listPrimitives().reduce((n,p)=>n+p.getIndices().getCount()/3,0),addedTriangles=models.reduce((n,m)=>n+measure(built.get(m.name)),rainwaterConnections.addedTriangles),addedBytes=output.length-baselineBytes;
 if(addedTriangles>C.maximumAddedTriangles||addedBytes>C.maximumAddedBytes)throw Error(`Public front exceeded its bounded addition: ${addedTriangles}tri,${addedBytes}B`);
 if(sha(fs.readFileSync(sourcePath))!==sha(sourceBytes))throw Error('Shared source pack changed during extraction; rerun against the new source');
-const inputs=['src/data/ellery-public-front.js','src/data/glass-court-sightlines.js','tools/chunk_surfer/ellery-public-front-geometry.mjs','tools/chunk_surfer/build-ellery-public-front.mjs'];
+const inputs=['src/data/ellery-public-front.js','src/data/glass-court-sightlines.js','tools/chunk_surfer/ellery-public-front-geometry.mjs','tools/chunk_surfer/ellery-yard-repair.mjs','tools/chunk_surfer/build-ellery-public-front.mjs'];
 const stats={revision:REV,sha256:sha(output),bytes:output.length,baselineHeroBytes:baselineBytes,addedBytes,addedTriangles,totalTriangles:dr.listMeshes().reduce((n,m)=>n+measure(m),0),sourcePack:{file:'public/assets/conservatory-props.glb',sha256:sha(sourceBytes),unchangedDuringBuild:true,meshCount:originalNames.length},sourceHero:{name:C.hero.mesh,fingerprint:sourceFingerprint,triangles:sourceTriangles,retainedTriangles:measure(hero),occupiedAirClips:HERO_CLIPS,clip},protectedMeshes:{notExported:originalNames.filter(n=>n!==C.hero.mesh),allUnmodifiedInSourcePack:true},meshes:Object.fromEntries(dr.listMeshes().map(m=>[m.getName(),{triangles:measure(m),primitives:m.listPrimitives().length}])),sourceHashes:Object.fromEntries(inputs.map(p=>[p,sha(fs.readFileSync(path.join(root,p)))])),pending:['root floorplan/prop/pack integration','native matched eye-level inspection','ordinary public-forecourt approach and unchanged service arrival','unbriefed wayfinding and atmosphere validation']};
 fs.writeFileSync(out,output);fs.writeFileSync(out.replace('.glb','.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(out.replace('.glb','.credits.json'),JSON.stringify({pack:'ellery-public-front.glb',author:'Chunk Surfer project',license:'Project-native geometry; copied hero/material image rights unchanged',sourceHero:stats.sourceHero,sourcePack:stats.sourcePack,geometry:inputs,lettering:{fonts:[...new Set(PRINT.map(p=>p.font))],manifest:'assets/fonts/manifest.json',pipelineManifest:'ellery-public-front-lettering/atlas-manifest.json',license:'Existing URW Base35 font terms retained'},basis:'Authored1888civic school hierarchy applied only to the existing front atrium; no claim of a surveyed real building.'},null,2)+'\n');
 // This pack is the final runtime owner of the scenic elevation. Keep the
 // outdoor survey with its new courtyard/forecourt openings after each bake.
 const {buildExteriorMapShell}=await import('./build-exterior-map-shell.mjs');
-buildExteriorMapShell({root,assetPath:out});
+if(process.env.ELLERY_PUBLIC_SKIP_MAP!=='1')buildExteriorMapShell({root,assetPath:out});
 console.log(JSON.stringify({bytes:stats.bytes,addedBytes,addedTriangles,totalTriangles:stats.totalTriangles,sourceHero:stats.sourceHero,meshes:stats.meshes},null,2));

@@ -19,7 +19,7 @@ function finishFall(state) {
 function crossFinal(state) {
   let result = stepSourceContinuation(state, { interact: true }); state = result.state;
   assert.equal(result.event.type, 'door'); assert.equal(state.status, 'active');
-  for (let i = 0; i < 160 && state.status === 'active'; i++) { result = stepSourceContinuation(state, { dt: 1 / 60, side: 1 }); state = result.state; }
+  for (let i = 0; i < 160 && state.status === 'active'; i++) { result = stepSourceContinuation(state, { dt: 1 / 60, forward: 1 }); state = result.state; }
   return { state, event: result.event };
 }
 
@@ -39,14 +39,14 @@ test('both Sources remain one physical construction while the journey phase chan
   assert.equal(continuationSurfaces('catch'), continuationSurfaces('wrong-return'));
   const a = sourceContinuationFrame(fresh()), b = sourceContinuationFrame(catchAt(2));
   assert.deepEqual(a.geometry.surfaces, b.geometry.surfaces); assert.equal(a.cutaway, null); assert.equal(b.cutaway, null);
-  assert.equal(a.camera.mode, 'first-person'); assert.equal(b.camera.mode, 'overhead');
-  assert.equal(a.player.visible, false); assert.equal(b.player.visible, true);assert.deepEqual(b.camera.target,[b.x,b.feet,b.z]);
+  assert.equal(a.camera.mode, 'first-person'); assert.equal(b.camera.mode, 'first-person');
+  assert.equal(a.player.visible, false); assert.equal(b.player.visible, false);assert.deepEqual(b.camera.eye,b.bodyEye);
 });
 
 test('three flights use42 real300mm treads with separate supports and no camera climb', () => {
   const steps = continuationSurfaces().filter(s => s.role === 'stair'); assert.equal(steps.length, 42);
   for (const id of new Set(steps.map(s => s.stairId))) { const rows = steps.filter(s => s.stairId === id); assert.equal(rows.length, 14); for (let k = 1; k < rows.length; k++) near(Math.abs(rows[k].y - rows[k - 1].y), .3); }
-  for (const s of [fresh(), catchAt(1)]) { const f = sourceContinuationFrame(s); near(f.bodyEye[1] - f.player.y, C.eyeHeight); near(f.camera.yaw,s.phase==='catch'?0:s.yaw); }
+  for (const s of [fresh(), catchAt(1)]) { const f = sourceContinuationFrame(s); near(f.bodyEye[1] - f.player.y, C.eyeHeight); near(f.camera.yaw,s.yaw); }
 });
 
 test('the three descent decisions use different real partial sectors instead of interchangeable square rings', () => {
@@ -86,9 +86,9 @@ test('initial exploration and waiting do not awaken a machine before the first c
   assert.equal(wait(partial, .2).counterweight.mode, 'walking');
 });
 
-test('overhead camera remains fixed during a physical fall and look never steers its body', () => {
+test('first-person look remains responsive during a physical fall without steering its body', () => {
   let a = step(catchAt(0), { interact: true }), b = structuredClone(a);
-  for (let i = 0; i < 180 && a.fall; i++) { a = step(a, { dt: 1 / 60, side: 1, forward: 1, look: { yaw: .5, pitch: -.7 } }); b = step(b, { dt: 1 / 60 }); near(a.x, b.x); near(a.z, b.z); near(a.feet, b.feet); const f = sourceContinuationFrame(a); near(f.camera.pitch,-Math.PI/2); near(f.camera.yaw,0); }
+  for (let i = 0; i < 180 && a.fall; i++) { a = step(a, { dt: 1 / 60, side: 1, forward: 1, look: { yaw: .5, pitch: -.7 } }); b = step(b, { dt: 1 / 60 }); near(a.x, b.x); near(a.z, b.z); near(a.feet, b.feet); const f = sourceContinuationFrame(a); near(f.camera.pitch,-.7); near(f.camera.yaw,.5); near(f.camera.eye[1],a.feet+C.eyeHeight); }
   assert.equal(a.fall, null); assert.equal(a.accumulator, 0);
 });
 
@@ -167,7 +167,7 @@ test('final opening alone cannot finish; actual body clearance produces one pres
   assert.ok(result.state.x > C.catch.finalDoor.x + C.bodyRadius); assert.equal(stepSourceContinuation(result.state, { dt: .2, interact: true }).event, null);
   const reverse = resumeSourceContinuation({ ...result.state, handoff: true, exitReceipt: { ...result.state.exitReceipt, delivered: true } }, { reverse: true });
   assert.equal(reverse.level, 3); near(reverse.feet, -12.6); assert.equal(reverse.exitReceipt.delivered, true); assert.equal(reverse.completed, true);
-  let again = { state: reverse }; for (let i = 0; i < 100 && again.state.status === 'active'; i++) again = stepSourceContinuation(again.state, { dt: 1 / 60, side: 1 });
+  let again = { state: reverse }; for (let i = 0; i < 100 && again.state.status === 'active'; i++) again = stepSourceContinuation(again.state, { dt: 1 / 60, forward: 1 });
   assert.equal(again.event.firstCompletion, false); assert.equal(again.event.receipt, result.event.receipt);
 });
 
@@ -221,8 +221,8 @@ test('looking back retains the exact finite former lower spine and landing while
   assert.deepEqual([spine.minX,spine.maxX,spine.minZ,spine.maxZ,spine.y,spine.thickness],[-E.passage.halfWidth,E.passage.halfWidth,5,E.catch.minZ+.5+offset,0,.55]);
   assert.deepEqual([head.minX,head.maxX,head.minZ,head.maxZ,head.y,head.thickness],[E.catch.minX,E.catch.maxX,E.catch.minZ+offset,E.catch.maxZ+offset,0,E.catch.thickness]);
   assert.equal(head.material,'earthfall-backing');assert.equal(spine.role,'inherited-earthfall');assert.equal(head.role,'inherited-earthfall');
-  const frame=sourceContinuationRenderFrame(fresh()),pieces=new Map(sourceContinuationGeometry(fresh()).map(p=>[p.name,p]));
-  for(const floor of backside){const prop=frame.props.find(p=>p.descriptorId===floor.id);assert.ok(prop,'former route is actually submitted');const payload=sourceContinuationMeshPayload(pieces.get(prop.mesh));let top=-Infinity;for(let i=0;i<payload.positions.length;i+=3){const p=payload.positions,m=prop.matrix;top=Math.max(top,m[1]*p[i]+m[5]*p[i+1]+m[9]*p[i+2]+m[13]);}near(top,0);}
+  const frame=sourceContinuationRenderFrame({...fresh(),yaw:Math.PI}),pieces=new Map(sourceContinuationGeometry(fresh()).map(p=>[p.name,p]));
+  for(const floor of backside){const prop=frame.props.find(p=>p.descriptorId===floor.id&&p.physicalKind==='surface');assert.ok(prop,'former route is actually submitted');const payload=sourceContinuationMeshPayload(pieces.get(prop.mesh));let top=-Infinity;for(let i=0;i<payload.positions.length;i+=3){const p=payload.positions,m=prop.matrix;top=Math.max(top,m[1]*p[i]+m[5]*p[i+1]+m[9]*p[i+2]+m[13]);}near(top,0);}
   assert.ok(continuationSupportAt(0,20,{feet:0}));assert.ok(continuationSupportAt(5,(head.minZ+head.maxZ)/2,{feet:0}));assert.equal(continuationSupportAt(0,head.maxZ+.01,{feet:0}),null,'the old landing remains finite');
   let s={...fresh(),x:0,z:3,feet:0,yaw:Math.PI,doorOpen:{'wrong-entry-return':true}};const events=[];
   for(let i=0;i<100&&s.status==='active';i++){const result=stepSourceContinuation(s,{dt:1/60,forward:1});s=result.state;events.push(...result.events);}

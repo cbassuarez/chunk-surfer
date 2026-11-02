@@ -6,8 +6,7 @@ import {
   promoteCausalDraft,
 } from '../platform/storage/storageService.js';
 import { getMeta, metaCommit } from '../game/save.js';
-import { emitProgress, unlockAchievement } from './runtime.js';
-import { EVENT_TYPES } from './events.js';
+import { unlockCausalTapeAchievement } from './runtime.js';
 
 const pending = new Map();
 
@@ -34,25 +33,57 @@ function patchSummary(summaryId, patch) {
   return next;
 }
 
+function markFilingFailure(summary, failure) {
+  const filed = getMeta().returns.records?.[summary?.id];
+  if (filed && filed.runId === summary?.runId) {
+    patchSummary(filed.id, { causalTape: { status: 'failed', failure } });
+  }
+  const meta = getMeta();
+  const anotherFiling = [...pending.keys()].some(id => id !== summary?.id);
+  if (meta.causalTape?.status !== 'ready' && !anotherFiling) {
+    metaCommit({ causalTape: { ...meta.causalTape, status: 'failed', failure } });
+  }
+}
+
+function markOrphanedFilings(exceptId = null) {
+  for (const summary of Object.values(getMeta().returns.records || {})) {
+    if (summary?.id !== exceptId && summary?.causalTape?.status === 'filing' && !pending.has(summary.id))
+      markFilingFailure(summary, 'CAPTURE_UNAVAILABLE');
+  }
+}
+
 function markReady(summary, tape) {
+  const promotion = unlockCausalTapeAchievement(tape);
+  if (!promotion.ok) {
+    markFilingFailure(summary, promotion.reason || 'UNVERIFIED_CAUSAL_RETURN');
+    return promotion;
+  }
   metaCommit({ causalTape: tapeDescriptor(tape) });
-  const promotion=emitProgress(EVENT_TYPES.CAUSAL_TAPE_PROMOTED,{contentHash:tape.contentHash,returnSummaryId:tape.returnSummaryId},'causal.promote');
-  const unlocked = promotion.unlocked?.includes('ACH_SECOND_TRACK')
-    || unlockAchievement('ACH_SECOND_TRACK', { runId: tape.runId, notify: true });
+  const unlocked = promotion.unlocked.includes('ACH_SECOND_TRACK');
   const current = getMeta().returns.records?.[summary.id] || summary;
   patchSummary(summary.id, {
     causalTape: { status: 'ready', contentHash: tape.contentHash },
-    unlockedAchievements: unlocked
-      ? [...new Set([...(current.unlockedAchievements || []), 'ACH_SECOND_TRACK'])]
-      : current.unlockedAchievements || [],
+    // The last delayed filing can also finish Master Copy. Keep the report's
+    // receipts in step with the profile rather than dropping that second award.
+    unlockedAchievements: [...new Set([...(current.unlockedAchievements || []), ...promotion.unlocked])],
   });
   return { ok: true, tape, unlocked };
 }
 
 export function finalizeCausalReturn(summary) {
   if (!summary || pending.has(summary.id)) return pending.get(summary?.id) || Promise.resolve({ ok: false, reason: 'NO_SUMMARY' });
+  const filed = getMeta().returns.records?.[summary.id];
+  if (!filed || filed.runId !== summary.runId || filed.developerRun === true
+    || filed.integrity?.achievements?.eligible === false) {
+    markFilingFailure(summary, 'UNVERIFIED_CAUSAL_RETURN');
+    return Promise.resolve({ ok: false, reason: 'UNVERIFIED_CAUSAL_RETURN' });
+  }
+  summary = filed;
   if (!tapeQualifies(summary.injuries)) {
     patchSummary(summary.id, { causalTape: { status: 'not-qualified', requirement: CAUSAL_REQUIREMENT } });
+    const meta = getMeta();
+    if (meta.causalTape?.status === 'filing' && !pending.size)
+      metaCommit({ causalTape: { ...meta.causalTape, status: 'none', failure: null } });
     return Promise.resolve({ ok: false, reason: 'NOT_QUALIFIED' });
   }
 
@@ -67,17 +98,13 @@ export function finalizeCausalReturn(summary) {
   }).then((result) => {
     if (!result.ok) {
       const failure=result.reason==='NOT_QUALIFIED'?'CAPTURE_UNAVAILABLE':String(result.reason||'WRITE_FAILED');
-      const meta=getMeta();
-      if(meta.causalTape?.status!=='ready')metaCommit({causalTape:{...meta.causalTape,status:'failed',failure}});
-      patchSummary(summary.id,{causalTape:{status:'failed',failure}});
+      markFilingFailure(summary, failure);
       return result;
     }
     return markReady(summary, result.tape);
   }).catch((error) => {
     const failure = String(error?.message || error || 'WRITE_FAILED').slice(0, 96);
-    const meta = getMeta();
-    if (meta.causalTape?.status !== 'ready') metaCommit({ causalTape: { ...meta.causalTape, status: 'failed', failure } });
-    patchSummary(summary.id, { causalTape: { status: 'failed', failure } });
+    markFilingFailure(summary, failure);
     return { ok: false, reason: 'TAPE_FILING_FAILED', error };
   }).finally(() => pending.delete(summary.id));
   pending.set(summary.id, task);
@@ -90,14 +117,23 @@ export function causalFilingForSummary(summaryId) {
 
 export async function reconcileSealedCausalDraft() {
   const sealed = await loadSealedCausalDraft();
-  if (!sealed?.runId || !sealed?.tape?.returnSummaryId) return { ok: false, reason: 'NO_SEALED_DRAFT' };
+  markOrphanedFilings(sealed?.tape?.returnSummaryId || null);
+  if (!sealed?.runId || !sealed?.tape?.returnSummaryId) {
+    return { ok: false, reason: 'NO_SEALED_DRAFT' };
+  }
   const summary = getMeta().returns.records?.[sealed.tape.returnSummaryId];
-  if (!summary || !tapeQualifies(summary.injuries)) return { ok: false, reason: 'RETURN_NOT_COMMITTED' };
+  if (!summary || summary.developerRun === true || summary.integrity?.achievements?.eligible === false
+    || !tapeQualifies(summary.injuries)) {
+    if (summary) markFilingFailure(summary, 'RETURN_NOT_COMMITTED');
+    return { ok: false, reason: 'RETURN_NOT_COMMITTED' };
+  }
   try {
     const tape = await promoteCausalDraft(sealed.runId);
     return markReady(summary, tape);
   } catch (error) {
-    return { ok: false, reason: String(error?.message || error) };
+    const reason = String(error?.message || error).slice(0, 96);
+    markFilingFailure(summary, reason);
+    return { ok: false, reason };
   }
 }
 
@@ -109,7 +145,7 @@ export async function inspectCausalTapeAvailability(meta = getMeta()) {
       visible: true,
       ready: false,
       status: meta.causalTape?.status === 'failed' ? 'failed' : 'qualification-required',
-      message: meta.causalTape?.status === 'failed' ? 'TAPE FILING FAILED' : 'COMPLETE A RETURN WITH ≤ 1 INJURY',
+      message: meta.causalTape?.status === 'failed' ? 'TAPE FILING FAILED' : `COMPLETE A RETURN WITH ${CAUSAL_REQUIREMENT.toUpperCase()}`,
     };
   }
   const validation = validateCausalTape(tape, { topologyHash: CAUSAL_TOPOLOGY_HASH });

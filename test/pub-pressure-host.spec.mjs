@@ -5,6 +5,12 @@ import {pubPressureAttended,pubPressureClearSight,PUB_PRESSURE_GLASS,PUB_PRESSUR
 import {pubServiceInstances} from '../src/render/pub-service-presentation.js';
 import {PUB_QUEST_FLAGS} from '../src/game/pub-quest.js';
 import {PUB_ACTORS,pubActor} from '../src/data/pub-population.js';
+import {pubPhysicalAt,pubAuthoredAt,pubPhysicalYaw} from '../src/data/exterior-pub.js';
+
+// Explicit actor lists are already physical geometry; the production helper
+// transforms only its own default authored population.
+const physicalActor=actor=>({...actor,...pubPhysicalAt({x:actor.x,z:actor.z}),yaw:pubPhysicalYaw(actor.yaw)});
+const physicalActors=PUB_ACTORS.map(physicalActor);
 
 // Rangefind the real served glass, as a camera operator would. This helper
 // chooses a view; it does not duplicate the production projection/frustum test.
@@ -74,13 +80,13 @@ test('moving the real camera changes attention without moving the glass or inven
 });
 
 test('moving Ed’s water on its table clears the original legal view while preserving the rejected placement case',()=>{
-  const eye={x:33.5,y:1.74,z:31.35},oldTarget={x:32.65,y:.97,z:32.79};
+  const eye=pubPhysicalAt({x:33.5,y:1.74,z:31.35}),oldTarget=pubPhysicalAt({x:32.65,y:.97,z:32.79});
   const blocked=lookAt(eye,oldTarget),clear=lookAt(eye);
-  const ed=pubActor('pub-patron-ed');assert.ok(ed);assert.equal(ed.posture,'seated');
+  const ed=physicalActor(pubActor('pub-patron-ed'));assert.ok(ed);assert.equal(ed.posture,'seated');
   assert.equal(pubPressureAttended(blocked,oldTarget),true,'optical framing alone admitted the rejected native view');
   assert.equal(pubPressureClearSight(blocked,oldTarget),false,'the original placement cannot spend its attempt through a patron’s back');
   assert.equal(pubPressureClearSight(blocked,oldTarget,[ed]),false,'Ed’s actual seat root accounts for the original obstruction');
-  assert.equal(pubPressureClearSight(blocked,oldTarget,PUB_ACTORS.filter(a=>a.id!==ed.id)),true,'other real patrons do not explain this obstruction');
+  assert.equal(pubPressureClearSight(blocked,oldTarget,physicalActors.filter(a=>a.id!==ed.id)),true,'other real patrons do not explain this obstruction');
   assert.notDeepEqual(PUB_PRESSURE_GLASS,oldTarget,'the fix moves the vessel rather than relocating the observer');
   assert.deepEqual(clear.eye,blocked.eye,'the previously legal camera position is retained');
   assert.equal(pubPressureAttended(clear),true,'the newly placed served glass remains properly framed');
@@ -88,7 +94,7 @@ test('moving Ed’s water on its table clears the original legal view while pres
 });
 
 test('body clearance tests only the visible segment and the patron’s occupied height',()=>{
-  const ed=pubActor('pub-patron-ed'),actors=[ed],bodyY=ed.floor+.95;
+  const ed=physicalActor(pubActor('pub-patron-ed')),actors=[ed],bodyY=ed.floor+.95;
   const eye={x:ed.x-1,y:bodyY,z:ed.z},point={x:ed.x+1,y:bodyY,z:ed.z};
   assert.equal(pubPressureClearSight({eye},point,actors),false,'a real seated patron between the observer and target blocks the sight line');
   assert.equal(pubPressureClearSight({eye:{x:ed.x+.5,y:bodyY,z:ed.z}},{x:ed.x+1.5,y:bodyY,z:ed.z},actors),true,'a patron behind the observer does not occlude');
@@ -99,7 +105,7 @@ test('body clearance tests only the visible segment and the patron’s occupied 
 });
 
 test('clear sight remains separate from framing and does not mutate camera or actor geometry',()=>{
-  const camera=lookAt({x:34.1,y:1.74,z:33.1});camera.yaw+=Math.PI;
+  const camera=lookAt(pubPhysicalAt({x:34.1,y:1.74,z:33.1}));camera.yaw+=Math.PI;
   const before=structuredClone(camera),actorsBefore=structuredClone(PUB_ACTORS);
   Object.freeze(camera.eye);Object.freeze(camera);
   assert.equal(pubPressureAttended(camera),false,'looking away fails attention even when no body intersects the ray');
@@ -108,7 +114,7 @@ test('clear sight remains separate from framing and does not mutate camera or ac
 });
 
 test('invalid sight-line and patron geometry fails closed rather than admitting a hidden or unknown target',()=>{
-  const camera=lookAt({x:34.1,y:1.74,z:33.1}),ed=pubActor('pub-patron-ed');
+  const camera=lookAt(pubPhysicalAt({x:34.1,y:1.74,z:33.1})),ed=physicalActor(pubActor('pub-patron-ed'));
   for(const value of[null,undefined,{}, {eye:null}])assert.equal(pubPressureClearSight(value),false);
   assert.equal(pubPressureClearSight(camera,null),false);
   assert.equal(pubPressureClearSight({eye:{...PUB_PRESSURE_GLASS,y:2}},PUB_PRESSURE_GLASS,[]),false,'a vertical-only segment supplies no usable horizontal body-clearance ray');
@@ -121,6 +127,19 @@ test('invalid sight-line and patron geometry fails closed rather than admitting 
   }
   for(const actors of[null,{},'unknown',[null],[{}]])assert.equal(pubPressureClearSight(camera,PUB_PRESSURE_GLASS,actors),false);
   assert.equal(pubPressureClearSight(camera,PUB_PRESSURE_GLASS,[]),true,'an explicitly empty population is known geometry, not a missing population');
+});
+
+test('the rigid quarter-turn preserves optical attention and the original patron-occlusion negative control',()=>{
+  const eye={x:33.5,y:1.74,z:31.35},target=pubAuthoredAt(PUB_PRESSURE_GLASS),authored=lookAt(eye,target);
+  const physical={...authored,eye:pubPhysicalAt(eye),yaw:pubPhysicalYaw(authored.yaw)};
+  for(const yaw of[0,.12,.5,1.3])for(const pitch of[0,.1,.9]){
+    const before={...authored,yaw:authored.yaw+yaw,pitch:authored.pitch+pitch},after={...physical,yaw:physical.yaw+yaw,pitch:physical.pitch+pitch};
+    assert.equal(pubPressureAttended(before,target),pubPressureAttended(after),`yaw${yaw},pitch${pitch}`);
+  }
+  const oldTarget={x:32.65,y:.97,z:32.79},oldCamera=lookAt(eye,oldTarget),ed=pubActor('pub-patron-ed');
+  assert.equal(pubPressureClearSight(oldCamera,oldTarget,[ed]),false);
+  assert.equal(pubPressureClearSight({eye:pubPhysicalAt(eye)},pubPhysicalAt(oldTarget),[physicalActor(ed)]),false);
+  assert.equal(pubPressureClearSight(physical,PUB_PRESSURE_GLASS,physicalActors),true);
 });
 
 test('the controller, audio and camera-attention checks are registered once beside the ordinary pub suites',()=>{

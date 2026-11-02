@@ -71,7 +71,8 @@ const failing = {
   async flush() { throw new Error('offline'); },
 };
 const failed = await syncPlatform({ platform: failing });
-assert.equal(failed.ok, true);
+assert.equal(failed.ok, false);
+assert.equal(failed.reason, 'STORE_UNCONFIRMED');
 assert.ok(saveApi.getMeta().achievements.ACH_COFFEE);
 assert.ok(saveApi.getMeta().platform.pendingAchievements.includes('ACH_COFFEE'));
 assert.ok(Object.keys(saveApi.getMeta().platform.pendingStats).length > 0);

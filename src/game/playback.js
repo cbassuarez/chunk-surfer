@@ -12,6 +12,12 @@ export function setNightClockSource(source = null) {
 function captureNightStamp() { return captureNightClock(nightClockSource()); }
 let transportGate=()=>true;
 export function setTransportGate(provider=null){transportGate=typeof provider==='function'?provider:()=>true;}
+let takeAccessGate=()=>true;
+export function setTakeAccessGate(provider=null){takeAccessGate=typeof provider==='function'?provider:()=>true;}
+export function takeAccess(take){
+  try{const access=takeAccessGate(take);return access===false?{allowed:false,message:'This recording is missing.'}:access&&typeof access==='object'?{allowed:access.allowed!==false,...access}:{allowed:true};}
+  catch{return{allowed:false,message:'This recording cannot be reached.'};}
+}
 export function canStartTransport(kind='record'){
   try{return transportGate({kind,continuing:false})!==false;}catch{return false;}
 }
@@ -77,6 +83,7 @@ const state = {
   loadContinuousMedia: null, onPlaybackError: null, lastError: null,
 };
 let continuousCaptureSerial=0;
+const archiveBeds=new WeakMap();
 
 export const PLAYBACK = {
   seconds: 22,               // default for legacy presentation-only snapshots
@@ -661,38 +668,62 @@ export function playTake(roomId, { character = 1, atHead = false, continuousOutp
   return playPreparedTake(tapeTake(roomId),{character,atHead,continuousOutput});
 }
 
-function playPreparedTake(t, { character = 1, atHead = false, continuousOutput = null } = {}) {
+function playPreparedTake(t, { character = 1, atHead = false, continuousOutput = null, archived = false, offsetSeconds = 0, paused = false } = {}) {
   const roomId=t?.roomId;
   if (!t || !t.sealed || !state.ctx || !state.bus || isPlaying()) return null;
   state.lastError=null;
+  const access=archived?{allowed:true}:takeAccess(t);
+  if(!access.allowed){
+    state.lastError={code:'SOURCE_TAKE_MISSING',message:access.message||'This recording is missing.',roomId:t.roomId,takeId:t.id};
+    state.onPlaybackError?.({...state.lastError});return null;
+  }
   if(t.continuous&&(t.mediaUnavailable||!normalizeSourceDriveMedia(t.continuous)?.durable)){
     state.lastError={code:'FIELD_MEDIA_UNAVAILABLE',message:'This interrupted field take has no stored audio. It cannot be reconstructed.',roomId:t.roomId,takeId:t.id};state.onPlaybackError?.({...state.lastError});return null;
   }
   if(!atHead&&seekTo(t.startSeconds||0,{id:t.id||roomId,character,continuousOutput}))return state.seeking;
-  if(t.continuous)return playContinuousField(t,continuousOutput||state.bus);
+  if(t.continuous)return playContinuousField(t,continuousOutput||state.bus,{archived,offsetSeconds,paused});
 
   const playbackSeconds=sourceDuration(t.durationSeconds);
+  const offset=archived?archiveOffset(offsetSeconds,playbackSeconds):0;
   const ctx = state.ctx;
   const t0 = ctx.currentTime + 0.05;
+  const timelineStart=t0-offset,remaining=playbackSeconds-offset,destination=archived&&continuousOutput||state.bus;
   const nodes = [];
+  if(archived&&(paused||remaining<=0)){
+    state.playing={roomId:t.roomId,take:t,nodes,output:destination,archiveOutput:destination,
+      slateAt:null,slateFired:true,startedAt:ctx.currentTime-offset,endsAt:paused?Infinity:ctx.currentTime,
+      durationSec:playbackSeconds,offsetSeconds:offset,elapsedOnPause:offset,paused:!!paused,
+      ended:remaining<=0,readOnlyArchive:true,guestFired:true};return state.playing;
+  }
 
   const out = ctx.createGain();
-  out.gain.setValueAtTime(0, t0);
-  out.gain.linearRampToValueAtTime(1, t0 + Math.min(.8,playbackSeconds*.1));
-  out.gain.setValueAtTime(1, t0 + Math.max(playbackSeconds*.5,playbackSeconds-1.2));
-  out.gain.linearRampToValueAtTime(0, t0 + playbackSeconds);
+  if(archived&&offset>0){
+    const attack=Math.min(.8,playbackSeconds*.1),release=Math.max(playbackSeconds*.5,playbackSeconds-1.2);
+    const gainAt=at=>at<attack?at/attack:at<release?1:Math.max(0,(playbackSeconds-at)/(playbackSeconds-release));
+    const settle=Math.min(playbackSeconds,offset+.008);
+    out.gain.setValueAtTime(0,t0);out.gain.linearRampToValueAtTime(gainAt(settle),timelineStart+settle);
+    if(attack>settle)out.gain.linearRampToValueAtTime(1,timelineStart+attack);
+    if(release>settle)out.gain.setValueAtTime(1,timelineStart+release);
+    out.gain.linearRampToValueAtTime(0,timelineStart+playbackSeconds);
+  }else{
+    out.gain.setValueAtTime(0, t0);
+    out.gain.linearRampToValueAtTime(1, t0 + Math.min(.8,playbackSeconds*.1));
+    out.gain.setValueAtTime(1, t0 + Math.max(playbackSeconds*.5,playbackSeconds-1.2));
+    out.gain.linearRampToValueAtTime(0, t0 + playbackSeconds);
+  }
   if(normalizeTapeDamage(t.damage,t)){
     const damaged=ctx.createGain(),envelope=tapeDamageEnvelope(t);
-    damaged.gain.setValueAtTime(1,t0);
-    for(const point of envelope)damaged.gain.linearRampToValueAtTime(point.gain,t0+point.at);
-    out.connect(damaged);damaged.connect(state.bus);nodes.push(damaged);
-  }else out.connect(state.bus);
+    damaged.gain.setValueAtTime(archived?tapeDamageGainAt(t,offset):1,t0);
+    for(const point of envelope)if(!archived||point.at>offset)damaged.gain.linearRampToValueAtTime(point.gain,timelineStart+point.at);
+    out.connect(damaged);damaged.connect(destination);nodes.push(damaged);
+  }else out.connect(destination);
   nodes.push(out);
-  const slateAt=t.slate?t0+Math.max(0,t.slate.atSeconds||0):null;
+  const slateTime=Math.max(0,t.slate?.atSeconds||0);
+  const slateAt=t.slate&&(!archived||slateTime>=offset)?timelineStart+slateTime:null;
 
   // the room's own floor, as it was
   const bed = ctx.createBufferSource();
-  bed.buffer = noiseBuffer(ctx, 3);
+  bed.buffer = archived?archiveBedBuffer(ctx,t):noiseBuffer(ctx, 3);
   bed.loop = true;
   const bedFilt = ctx.createBiquadFilter();
   bedFilt.type = 'lowpass';
@@ -700,7 +731,8 @@ function playPreparedTake(t, { character = 1, atHead = false, continuousOutput =
   const bedGain = ctx.createGain();
   bedGain.gain.setValueAtTime(PLAYBACK.bedGain, t0);
   bed.connect(bedFilt); bedFilt.connect(bedGain); bedGain.connect(out);
-  bed.start(t0); bed.stop(t0 + playbackSeconds);
+  if(archived)bed.start(t0,offset%bed.buffer.duration);else bed.start(t0);
+  bed.stop(t0 + remaining);
   nodes.push(bed, bedFilt, bedGain);
 
   // what you heard, at the level you heard it
@@ -713,8 +745,8 @@ function playPreparedTake(t, { character = 1, atHead = false, continuousOutput =
     const g = ctx.createGain();
     g.gain.setValueAtTime(level * 0.85, t0);
     src.connect(g); g.connect(out);
-    src.start(t0, Math.random() * Math.max(0.01, chunk.buffer.duration - 0.1));
-    src.stop(t0 + playbackSeconds);
+    src.start(t0, archived?archiveLoopOffset(t,ref,chunk.buffer.duration,offset):Math.random() * Math.max(0.01, chunk.buffer.duration - 0.1));
+    src.stop(t0 + remaining);
     nodes.push(src, g);
   }
 
@@ -741,14 +773,21 @@ function playPreparedTake(t, { character = 1, atHead = false, continuousOutput =
     filt.frequency.setValueAtTime(PLAYBACK.guestCutoff, t0);
     filt.Q.setValueAtTime(0.6, t0);
     const g = ctx.createGain();
-    const enter = t0 + shape.enterSec;
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.setValueAtTime(0.0001, enter);
-    // exponential: it does not fade in, it approaches
-    g.gain.exponentialRampToValueAtTime(shape.peak, enter + shape.riseSec);
+    const enter = timelineStart + shape.enterSec;
+    if(archived&&offset>0){
+      const through=Math.max(0,Math.min(1,(offset-shape.enterSec)/shape.riseSec));
+      g.gain.setValueAtTime(.0001*Math.pow(shape.peak/.0001,through),t0);
+      if(shape.enterSec>offset)g.gain.setValueAtTime(.0001,enter);
+      if(shape.enterSec+shape.riseSec>offset)g.gain.exponentialRampToValueAtTime(shape.peak,enter+shape.riseSec);
+    }else{
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.setValueAtTime(0.0001, enter);
+      // exponential: it does not fade in, it approaches
+      g.gain.exponentialRampToValueAtTime(shape.peak, enter + shape.riseSec);
+    }
     src.connect(filt); filt.connect(g); g.connect(out);
-    src.start(t0);
-    src.stop(t0 + playbackSeconds);
+    if(archived)src.start(t0,(offset*PLAYBACK.guestRate)%guestChunk.buffer.duration);else src.start(t0);
+    src.stop(t0 + remaining);
     nodes.push(src, filt, g);
     // Tell the game when it becomes deniable-no-longer, so the HUD can not
     // mention it. Nothing in the interface ever acknowledges the guest.
@@ -756,7 +795,10 @@ function playPreparedTake(t, { character = 1, atHead = false, continuousOutput =
   }
 
   for(const event of t.discrete||[]){
-    const playbackAt=t0+Math.min(playbackSeconds-.01,sourcePosition(event.atSec,t.durationSeconds)*playbackSeconds);
+    const eventAt=Math.min(playbackSeconds-.01,sourcePosition(event.atSec,t.durationSeconds)*playbackSeconds);
+    // Do not manufacture the tail or replay an earlier slate/cue after a seek.
+    if(archived&&eventAt<offset)continue;
+    const playbackAt=timelineStart+eventAt;
     if(event.cueId===COASTAL_MEMORY_CUE){
       const recording=playCoastalMemoryRecording({context:ctx,destination:out,when:playbackAt,gain:event.gain});
       if(recording)nodes.push(recording);
@@ -784,36 +826,86 @@ function playPreparedTake(t, { character = 1, atHead = false, continuousOutput =
     }
   }
 
-  const endsAt = t0 + playbackSeconds;
-  state.playing = { roomId:t.roomId, take:t, nodes, output:out,slateAt,slateFired:false,startedAt: t0, endsAt, durationSec:playbackSeconds, guestFired: false };
+  const endsAt = timelineStart + playbackSeconds;
+  state.playing = { roomId:t.roomId, take:t, nodes, output:out,slateAt,slateFired:false,startedAt: timelineStart, endsAt, durationSec:playbackSeconds, guestFired: archived,
+    ...(archived?{readOnlyArchive:true,archiveOutput:destination,offsetSeconds:offset,elapsedOnPause:offset,paused:false}: {}) };
   return state.playing;
 }
 
 // Playback from an archived COPY, without replacing the current tape, moving
 // its head, adding a new guest, recording, or emitting the in-world guest event.
 // The existing renderer/scheduler still plays the actual retained sources.
-export function playArchivedTake(row,{output=null}={}){
+export function playArchivedTake(row,{output=null,offsetSeconds=0,paused=false}={}){
   if(!row?.roomId||hasOpenTake()||isPlaying()||!state.ctx||!state.bus)return null;
   if(row.voided){state.lastError={code:'ARCHIVE_TAKE_ERASED',message:'This tape interval was erased. Its original audio is unavailable.',takeId:row.id};return null;}
   const t=JSON.parse(JSON.stringify(row));
+  const media=t.continuous?normalizeSourceDriveMedia(t.continuous):null;
+  if(media?.durable&&(!Number.isFinite(t.durationSeconds)||t.durationSeconds<=0||Math.abs(t.durationSeconds-media.durationSeconds)>.003)){
+    state.lastError={code:'FIELD_MEDIA_DURATION',message:'The stored field audio does not match this tape interval.',takeId:t.id};return null;
+  }
   const missing=(t.audible||[]).some(([ref,level])=>Number(level)>0&&!sampleFor(ref)?.buffer)
     ||!!t.guest?.key&&!sampleFor(t.guest.key)?.buffer;
   if(missing){state.lastError={code:'ARCHIVE_SOURCE_UNAVAILABLE',message:'A source used by this recording is unavailable.',takeId:t.id};return null;}
   Object.assign(t,{levels:new Map(),sealed:true,migrated:false,guest:t.guest?.key?{key:t.guest.key}:null,
     startSeconds:Number(t.startSeconds)||0,endSeconds:Number(t.endSeconds)||Number(t.durationSeconds)||0});
-  const playing=playPreparedTake(t,{atHead:true,continuousOutput:output});
+  const playing=playPreparedTake(t,{atHead:true,continuousOutput:output,archived:true,offsetSeconds,paused});
   if(playing){playing.readOnlyArchive=true;playing.guestFired=true;}
   return playing;
 }
 export function archivedPlaybackActive(){return state.playing?.readOnlyArchive===true;}
+export function isArchivedPlaybackOwner(handle){return !!handle&&state.playing===handle&&handle.readOnlyArchive===true;}
+
+function archiveOffset(value,duration){return Math.max(0,Math.min(duration,typeof value==='number'&&Number.isFinite(value)?value:0));}
+function archivePosition(p){
+  if(p.loading)return archiveOffset(p.requestedOffset,p.durationSec);
+  if(p.paused)return archiveOffset(p.elapsedOnPause,p.durationSec);
+  return archiveOffset(Math.max(p.offsetSeconds||0,(state.ctx?.currentTime||0)-p.startedAt),p.durationSec);
+}
+export function archivedPlaybackPosition(){
+  const p=state.playing;if(!p?.readOnlyArchive)return null;
+  return{takeId:p.take.id,roomId:p.roomId,positionSeconds:archivePosition(p),durationSeconds:p.durationSec,
+    paused:!!p.paused,loading:!!p.loading,ended:!!p.ended||!p.paused&&!p.loading&&(state.ctx?.currentTime||0)>=p.endsAt};
+}
+export function seekArchivedPlayback(seconds){
+  const p=state.playing;if(!p?.readOnlyArchive)return false;
+  const offset=archiveOffset(seconds,p.durationSec);
+  if(p.continuous){
+    p.requestedOffset=offset;p.offsetSeconds=offset;p.elapsedOnPause=offset;p.ended=false;
+    if(p.loading)return p;
+    const source=p.source;p.source=null;try{source?.stop();source?.disconnect();}catch{}
+    p.nodes=p.nodes.filter(node=>node!==source);
+    if(!p.paused)playContinuousSource(p,offset);
+    return p;
+  }
+  const row=p.take,output=p.archiveOutput,paused=p.paused;stopPlayback();
+  return playArchivedTake(row,{output,offsetSeconds:offset,paused})||false;
+}
+export function pauseArchivedPlayback(paused=true){
+  const p=state.playing;if(!p?.readOnlyArchive)return false;
+  if(p.continuous){setContinuousPlaybackPaused(!!paused);return p;}
+  if(paused&&!p.paused){
+    p.elapsedOnPause=archivePosition(p);p.paused=true;
+    for(const n of p.nodes){try{n.stop?.();}catch{}try{n.disconnect?.();}catch{}}
+    p.nodes=[];state.guestAt=0;return p;
+  }
+  if(!paused&&p.paused){
+    const row=p.take,output=p.archiveOutput,offset=p.elapsedOnPause;stopPlayback();
+    return playArchivedTake(row,{output,offsetSeconds:offset})||false;
+  }
+  return p;
+}
 
 function playContinuousSource(p,offset=0){
+  offset=archiveOffset(offset,p.durationSec);p.offsetSeconds=offset;p.elapsedOnPause=offset;
+  if(offset>=p.durationSec){p.startedAt=state.ctx.currentTime-offset;p.endsAt=state.ctx.currentTime;p.paused=false;p.ended=true;return;}
   const source=state.ctx.createBufferSource();source.buffer=p.buffer;source.loop=false;source.playbackRate.value=1;source.connect(p.output);p.nodes.push(source);p.source=source;
   const when=state.ctx.currentTime+.02;p.startedAt=when-offset;p.endsAt=when+p.durationSec-offset;p.paused=false;p.elapsedOnPause=offset;p.ended=false;
   source.onended=()=>{if(state.playing===p&&p.source===source&&!p.paused)p.ended=true;};source.start(when,offset,Math.max(0,p.durationSec-offset));
 }
-function playContinuousField(t,output){
-  const p={roomId:t.roomId,take:t,nodes:[],startedAt:state.ctx.currentTime,endsAt:Infinity,durationSec:Number(t.durationSeconds),continuous:true,loading:true,paused:false,pauseRequested:false,elapsedOnPause:0,guestFired:false};state.playing=p;
+function playContinuousField(t,output,{archived=false,offsetSeconds=0,paused=false}={}){
+  const offset=archived?archiveOffset(offsetSeconds,Number(t.durationSeconds)):0;
+  const p={roomId:t.roomId,take:t,nodes:[],startedAt:state.ctx.currentTime,endsAt:Infinity,durationSec:Number(t.durationSeconds),continuous:true,loading:true,paused:!!paused,pauseRequested:!!paused,elapsedOnPause:offset,requestedOffset:offset,offsetSeconds:offset,guestFired:!!archived,
+    ...(archived?{readOnlyArchive:true,archiveOutput:output}:{})};state.playing=p;
   p.readyPromise=(async()=>{
     try{
       if(t.mediaUnavailable||t.continuous.pending)throw Object.assign(new Error('This interrupted field take has no stored audio. It cannot be reconstructed.'),{code:'FIELD_MEDIA_UNAVAILABLE'});
@@ -824,7 +916,7 @@ function playContinuousField(t,output){
       if(state.ctx.createChannelSplitter&&state.ctx.createAnalyser){
         const split=state.ctx.createChannelSplitter(2);p.output.connect(split);p.nodes.push(split);p.meters=[0,1].map(channel=>{const analyser=state.ctx.createAnalyser();analyser.fftSize=256;split.connect(analyser,channel);p.nodes.push(analyser);return{analyser,samples:new Float32Array(256)};});
       }
-      p.loading=false;if(p.pauseRequested){p.paused=true;p.elapsedOnPause=0;}else playContinuousSource(p,0);return p;
+      p.loading=false;if(p.pauseRequested){p.paused=true;p.elapsedOnPause=p.requestedOffset;}else playContinuousSource(p,p.requestedOffset);return p;
     }catch(error){
       if(state.playing!==p)return null;
       stopPlayback();state.lastError={code:error.code||'FIELD_MEDIA_FAILED',message:error.message,roomId:t.roomId,takeId:t.id};
@@ -836,7 +928,7 @@ export function playbackError(){return state.lastError?{...state.lastError}:null
 export function setContinuousPlaybackPaused(paused){
   const now=state.ctx?.currentTime||0,s=state.seeking;
   if(s){if(paused&&s.pausedAt==null)s.pausedAt=now;else if(!paused&&s.pausedAt!=null){s.startedAt+=now-s.pausedAt;delete s.pausedAt;}}
-  const p=state.playing;if(!p?.continuous)return false;p.pauseRequested=!!paused;if(p.loading)return true;
+  const p=state.playing;if(!p?.continuous)return false;p.pauseRequested=!!paused;if(p.loading){if(p.readOnlyArchive)p.paused=!!paused;return true;}
   if(paused&&!p.paused){p.elapsedOnPause=Math.max(0,Math.min(p.durationSec,now-p.startedAt));p.paused=true;const source=p.source;p.source=null;try{source?.stop();source?.disconnect();}catch{} }
   else if(!paused&&p.paused)playContinuousSource(p,p.elapsedOnPause);return true;
 }
@@ -854,6 +946,7 @@ export function tickPlayback() {
   if (!state.playing || !state.ctx) return 'idle';
   const now = state.ctx.currentTime;
   const p = state.playing;
+  if(p.readOnlyArchive&&p.paused)return 'paused';
   if(p.continuous){
     if(p.loading)return 'loading';if(p.paused)return 'paused';
     const elapsed=Math.max(0,Math.min(p.durationSec,now-p.startedAt));if(!p.readOnlyArchive)state.head=(p.take.startSeconds||0)+elapsed;
@@ -905,11 +998,12 @@ function textSeed(value) {
 export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYBACK.seconds } = {}) {
   if (!take || !playing) return null;
   if(take.continuous){
-    const seconds=Math.max(.001,Number(duration)||Number(take.durationSeconds)||.001),elapsedSec=playing.loading?0:playing.paused?playing.elapsedOnPause:Math.max(0,Math.min(seconds,Number(now)-Number(playing.startedAt||0)));
+    const seconds=Math.max(.001,Number(duration)||Number(take.durationSeconds)||.001),elapsedSec=playing.loading?(playing.readOnlyArchive?archiveOffset(playing.requestedOffset,seconds):0):playing.paused?playing.elapsedOnPause:Math.max(playing.readOnlyArchive?playing.offsetSeconds||0:0,Math.min(seconds,Number(now)-Number(playing.startedAt||0)));
     return{roomId:String(take.roomId||''),recordedAt:Math.max(0,Number(take.at)||0),durationSec:seconds,sourceDurationSec:seconds,elapsedSec,remainingSec:Math.max(0,seconds-elapsedSec),progress:elapsedSec/seconds,sourceCount:1,eventCount:0,signalLeft:playing.loading||playing.paused?0:playing.signalLeft||0,signalRight:playing.loading||playing.paused?0:playing.signalRight||0,tapeDrift:0,markers:[],continuous:true,loading:!!playing.loading,paused:!!playing.paused};
   }
   const seconds = Math.max(.01, Number(duration) || PLAYBACK.seconds);
-  const elapsedSec = Math.max(0, Math.min(seconds, Number(now) - Number(playing.startedAt || 0)));
+  const elapsedSec = playing.readOnlyArchive&&playing.paused?archiveOffset(playing.elapsedOnPause,seconds)
+    :Math.max(playing.readOnlyArchive?playing.offsetSeconds||0:0,Math.min(seconds,Number(now)-Number(playing.startedAt||0)));
   const progress = clamp01(elapsedSec / seconds);
   const audible = Array.isArray(take.audible) ? take.audible : [];
   const discrete = Array.isArray(take.discrete) ? take.discrete : [];
@@ -923,8 +1017,8 @@ export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYB
     ? clamp01((elapsedSec - PLAYBACK.guestDelaySec) / Math.max(.01, PLAYBACK.guestRiseSec))
     : 0;
   const damageGain=tapeDamageGainAt(take,elapsedSec);
-  const signalLeft = clamp01(signalBase * (.68 + .23 * Math.sin(phase)) + lateChange * .19)*damageGain;
-  const signalRight = clamp01(signalBase * (.70 + .21 * Math.sin(phase * .83 + 1.17)) + lateChange * .22)*damageGain;
+  const signalLeft = playing.readOnlyArchive&&playing.paused?0:clamp01(signalBase * (.68 + .23 * Math.sin(phase)) + lateChange * .19)*damageGain;
+  const signalRight = playing.readOnlyArchive&&playing.paused?0:clamp01(signalBase * (.70 + .21 * Math.sin(phase * .83 + 1.17)) + lateChange * .22)*damageGain;
   return {
     roomId: String(take.roomId || ''),
     recordedAt: Math.max(0, Number(take.at) || 0),
@@ -938,6 +1032,7 @@ export function buildPlaybackSnapshot({ take, playing, now = 0, duration = PLAYB
     signalLeft,
     signalRight,
     tapeDrift: lateChange,
+    ...(playing.readOnlyArchive?{paused:!!playing.paused,readOnlyArchive:true}:{}),
     markers: discrete.map((event, index) => ({
       id: `${event?.cueId || 'event'}:${index}`,
       position: clamp01(Math.min(seconds-.01,sourcePosition(event?.atSec, take.durationSeconds)*seconds)/seconds),
@@ -960,13 +1055,29 @@ export function playbackSnapshot() {
   }),tapeSeconds:state.head,ordinal:state.playing.take.ordinal||0};
 }
 
-function noiseBuffer(ctx, seconds) {
+function archiveLoopOffset(take,ref,duration,offset){
+  const span=Math.max(.001,Number(duration)||.001),initial=textSeed(`${take.id}:${take.roomId}:${ref}`)*Math.max(.01,span-.1);
+  return(initial+offset)%span;
+}
+function archiveBedBuffer(ctx,take){
+  let cache=archiveBeds.get(ctx);if(!cache){cache=new Map();archiveBeds.set(ctx,cache);}
+  const key=JSON.stringify([take.id,take.roomId,take.startSeconds,take.endSeconds]);
+  if(!cache.has(key)){
+    let seed=Math.floor(textSeed(key)*4294967295)>>>0;
+    const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+    cache.set(key,noiseBuffer(ctx,3,random));
+    if(cache.size>32)cache.delete(cache.keys().next().value);
+  }
+  return cache.get(key);
+}
+
+function noiseBuffer(ctx, seconds, random=Math.random) {
   const sr = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.floor(sr * seconds), sr);
   const ch = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < ch.length; i++) {
-    const white = Math.random() * 2 - 1;
+    const white = random() * 2 - 1;
     last = (last + 0.018 * white) / 1.018;
     ch[i] = last * 3.2;
   }

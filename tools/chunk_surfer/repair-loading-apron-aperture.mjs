@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { ELLERY_MASSING } from '../../src/data/exterior-district.js';
 import { BUILDING_WINDOW_HOST_ORIGINS, subtractBuildingWindowBoxes } from './building-window-geometry.mjs';
 import { parseGlb, encodeGlb, meshFingerprint } from './rebuild-tree-crowns.mjs';
+import { clipCourtyardArchitecture } from './courtyard-architecture-geometry.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -40,8 +41,15 @@ export function elevationRecipe(source,{legacy=false}={}){
   let block=source.slice(start,end);
   if(!block.includes('mouthA=-4.0,mouthB=5.0'))throw Error('Apron source opening is not the reviewed revision');
   if(legacy)block=block.replace('mouthA=-4.0,mouthB=5.0','mouthA=-4.0,mouthB=3.6');
-  const context={ELLERY_MASSING,BUILDING_WINDOW_HOST_ORIGINS,subtractBuildingWindowBoxes,signAssemblies:{isCarrier:()=>false}};
+  const context={ELLERY_MASSING,BUILDING_WINDOW_HOST_ORIGINS,subtractBuildingWindowBoxes,clipCourtyardArchitecture,signAssemblies:{isCarrier:()=>false}};
   vm.runInNewContext(`const meshes=new Map();const mesh=name=>{const m={name,groups:new Map()};meshes.set(name,m);return m;};const group=(m,mat)=>{if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});return m.groups.get(mat);};${fragments.join('\n')}\n${block}\nresult=meshes.get('conservatory_west_elevation');result.materials=materials;`,context,{timeout:10000});
+  // The production builder cuts physical courts after base geometry, and
+  // again after printed faces. Reproduce both selected-mesh passes before an
+  // exact comparison; otherwise a valid later court looks like unknown stock.
+  const selected=new Map([[context.result.name,context.result]]);
+  clipCourtyardArchitecture(selected);clipCourtyardArchitecture(selected);
+  for(const g of context.result.groups.values())if(g.uvs.length!==g.positions.length/3*2)
+    g.uvs=new Array(g.positions.length/3*2).fill(0);
   return context.result;
 }
 function recipePrimitive(pack,mesh,recipe,material){

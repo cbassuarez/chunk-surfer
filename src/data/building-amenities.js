@@ -76,7 +76,7 @@ export const BUILDING_AMENITY_COLLIDERS = freeze([
     minElevation: 0, maxElevation: p.height, spaceId: 'front_atrium' })),
   ...POOL_WASH_PARTITIONS.map((p) => freeze({ ...p, kind: 'obb', yaw: 0,
     minElevation: 0, maxElevation: p.height, spaceId: 'natatorium' })),
-  freeze({ id: 'amenity-drinking-fountain-body', kind: 'obb', x: 88.5, y: 14.78, width: .70, depth: .64,
+  freeze({ id: 'amenity-drinking-fountain-body', kind: 'obb', x: 88.5, y: 13.78, width: .70, depth: .64,
     yaw: 0, minElevation: 0, maxElevation: 1.3, spaceId: 'front_atrium' }),
   freeze({ id: 'amenity-staff-locker-body', kind: 'obb', x: 18.8, y: 275.2, width: .40, depth: 1.4,
     yaw: 0, minElevation: 10, maxElevation: 11.98, spaceId: 'academic' }),
@@ -147,7 +147,7 @@ export const BUILDING_AMENITY_PROPS = freeze([
   // the separate exact OBBs above own their visible bodies, not anchor boxes.
   // The honours boards occupy14.175..16.225 and17.025..19.075 on this wall.
   // Keep the complete bowl/backplate in the existing gap, beyond SP03's edge.
-  prop('amenity-public-drinking-fountain', 'amenity_public_drinking_fountain', 88.5, 14.5, { yaw: 0, structural: true, renderGroups: ['ground'] }),
+  prop('amenity-public-drinking-fountain', 'amenity_public_drinking_fountain', 88.5, 13.5, { yaw: Math.PI, structural: true, renderGroups: ['ground'] }),
   prop('amenity-staff-coat-lockers', 'amenity_staff_coat_lockers', 18.5, 275.2, { yaw: Math.PI / 2, structural: true, floorOverride: 10, renderGroups: ['academic'] }),
 ]);
 
@@ -164,6 +164,6 @@ export const BUILDING_AMENITY_SURVEY_NODES = freeze([
   freeze({ id: 'pool-wash-approach', x: 74.55, y: 37.0, facing: 'south' }),
   freeze({ id: 'pool-shower-interior', x: 74.05, y: 38.75, facing: 'west' }),
   freeze({ id: 'staff-counter-approach', x: 17.25, y: 271.25, facing: 'east', floor: 10 }),
-  freeze({ id: 'public-drinking-fountain', x: 88.5, y: 13.75, facing: 'south' }),
+  freeze({ id: 'public-drinking-fountain', x: 88.5, y: 12.75, facing: 'south' }),
   freeze({ id: 'staff-lockers-approach', x: 17.75, y: 275.25, facing: 'east', floor: 10 }),
 ]);

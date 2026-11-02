@@ -9,11 +9,17 @@ export function usesExteriorMap({zone,height=0}={}){return zones.has(Number(zone
 // decides every candidate; empty road/yard need not rebuild its facade catalog
 // tens of thousands of times when a survey is first opened.
 export function exteriorMapOccupancyFilter({props=[],colliders=[],renderedInstances=[],canOccupy=()=>true}={}){
-  const logical=new Map(),physical=new Set(),bucket=4;
+  const logical=new Map(),world=new Map(),physical=new Set(),bucket=4;
   const index=(catalog,b)=>{for(let x=Math.floor(b.x0/bucket);x<=Math.floor(b.x1/bucket);x++)for(let y=Math.floor(b.y0/bucket);y<=Math.floor(b.y1/bucket);y++){const k=`${x},${y}`;if(!catalog.has(k))catalog.set(k,[]);catalog.get(k).push(b);}};
   const box=(x,y,w,d,yaw=0,pad=.3)=>{const c=Math.abs(Math.cos(yaw)),s=Math.abs(Math.sin(yaw)),hx=(w*c+d*s)/2+pad,hy=(w*s+d*c)/2+pad;return{x0:x-hx,x1:x+hx,y0:y-hy,y1:y+hy};};
   for(const p of props.filter(p=>p.blocks))index(logical,box(p.x,p.y,p.w*(p.scale||1),p.d*(p.scale||1),p.yaw));
   for(const p of colliders)index(logical,box(p.x,p.y,p.width,p.depth,p.yaw));
+  // Turned rooms and the separate garden drawing share physical ground while
+  // retaining different save addresses. Their real props must also enter the
+  // physical broadphase; indexing only authored addresses misses their walls.
+  const blocking=new Map(props.filter(p=>p.blocks).map(p=>[p.id,p]));
+  for(const p of renderedInstances){const source=blocking.get(p.id);if(source)index(world,box(p.x,p.z,source.w*(p.scale||1),source.d*(p.scale||1),p.yaw,.6));}
+  for(const c of colliders){const p=c.physicalCollider;if(p)index(world,box(p.x,p.y,p.w,p.d,p.yaw,.6));}
   for(const p of renderedInstances){
     const geometry=EXTERIOR_COLLISION_GEOMETRY[p.mesh];if(!geometry)continue;
     const c=Math.cos(p.yaw||0),s=Math.sin(p.yaw||0),sx=(p.scale||1)*(p.scaleX||1),sz=(p.scale||1)*(p.scaleZ||1);
@@ -27,7 +33,7 @@ export function exteriorMapOccupancyFilter({props=[],colliders=[],renderedInstan
     for(const t of geometry.triangles)if(nearHeight(Math.min(t[1],t[4],t[7]),Math.max(t[1],t[4],t[7])))stamp([[t[0],t[2]],[t[3],t[5]],[t[6],t[8]]]);
   }
   const near=(catalog,x,y)=>(catalog.get(`${Math.floor(x/bucket)},${Math.floor(y/bucket)}`)||[]).some(b=>x>=b.x0&&x<=b.x1&&y>=b.y0&&y<=b.y1);
-  return(span,at)=>near(logical,(span.logicalX+.5)*CELL,(span.logicalY+.5)*CELL)||physical.has(`${at.x},${at.y}`)?canOccupy(span,at):true;
+  return(span,at)=>near(logical,(span.logicalX+.5)*CELL,(span.logicalY+.5)*CELL)||near(world,(at.x+.5)*CELL,(at.y+.5)*CELL)||physical.has(`${at.x},${at.y}`)?canOccupy(span,at):true;
 }
 function runs(open){
   const rows=new Map();for(const key of open){const[x,y]=key.split(',').map(Number);if(!rows.has(y))rows.set(y,[]);rows.get(y).push(x);}

@@ -9,6 +9,9 @@ import { WORLD_INSCRIPTIONS, corridorInscriptionsForHosts } from '../src/data/wo
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
 import { applyInstitutionPosters } from '../src/data/institution-poster-sites.js';
 import { hallChandelierInstances } from '../src/data/hall-chandelier-treatment.js';
+import {buildingWindowInteriorInstance} from '../src/game/prop-visibility.js';
+import {openingCinematicStaticProps} from '../src/render/opening-cinematic-staging.js';
+import {vanBrandInstances} from '../src/render/van-brand.js';
 
 const matrix=Float32Array.from({length:16},(_,i)=>i+.25);
 const host={id:'one-host',mesh:'imported-host',x:12,y:3,z:7,yaw:1.3,
@@ -41,6 +44,10 @@ const hosts=[{id:'roof-gate',mesh:'gate',x:2,y:1,z:4,yaw:.2},
 const labels=hosts.map(p=>({id:`${p.id}-ink`,hostId:p.id,hostMesh:p.mesh,mesh:`lettering_overlay_${p.id}`}));
 const calls=[];
 const boundary={usingSourceSpace:()=>false,usingStairAnomaly:()=>false,syncArchitecturalLocalLights:()=>{},
+  studentStrikePresentationFrame:()=>null,studentStrikeScene:null,
+  openingObserver:()=>null,currentExteriorWindow:()=>null,buildingWindowInteriorInstance,
+  shouldStageOpeningCinematic:()=>false,openingCinematicFrame:()=>null,openingOvertureScene:null,
+  openingCinematicStaticProps,vanBrandInstances,
   renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
   applyInstitutionPosters,hallChandelierInstances,hallChandelierRendered:[{id:'stale-hall-fixture'}],
   exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:p=>p,

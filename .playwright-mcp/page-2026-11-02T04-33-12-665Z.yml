@@ -1,0 +1,69 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to main content" [ref=e3] [cursor=pointer]:
+      - /url: "#game_password_8173502"
+    - generic [ref=e4]:
+      - heading [level=1] [ref=e5]:
+        - link "itch.io itch.io logo & title" [ref=e6] [cursor=pointer]:
+          - /url: https://itch.io/
+          - generic [ref=e7]: itch.io
+          - img "itch.io logo & title" [ref=e8]
+      - generic [ref=e9]:
+        - link "Browse Games" [ref=e10] [cursor=pointer]:
+          - /url: https://itch.io/games
+        - link "Game Jams" [ref=e11] [cursor=pointer]:
+          - /url: https://itch.io/jams
+        - link "Upload Game" [ref=e12] [cursor=pointer]:
+          - /url: https://itch.io/developers
+          - generic [aria-hidden] [ref=e13]: 
+          - text: Upload Game
+        - link "Halloween Sale 2026" [ref=e14] [cursor=pointer]:
+          - /url: https://itch.io/sales
+        - link "Developer Logs" [ref=e16] [cursor=pointer]:
+          - /url: https://itch.io/devlogs
+        - link "Community" [ref=e17] [cursor=pointer]:
+          - /url: https://itch.io/community
+      - generic [ref=e18]:
+        - textbox "Search for games, jams, tags or creators" [ref=e19]
+        - button "Search" [ref=e20] [cursor=pointer]
+      - generic [ref=e24]:
+        - link "Log in" [ref=e25] [cursor=pointer]:
+          - /url: https://itch.io/login
+        - link "Register" [ref=e26] [cursor=pointer]:
+          - /url: https://itch.io/register
+  - generic [ref=e31]:
+    - heading "A password is required to view this page" [level=2] [ref=e32]
+    - generic [ref=e33]:
+      - textbox [ref=e36]:
+        - /placeholder: Required
+      - button "Submit" [ref=e38] [cursor=pointer]
+  - generic [ref=e39]:
+    - generic [ref=e40]:
+      - generic [ref=e41]:
+        - link "itch.io on Twitter" [ref=e42] [cursor=pointer]:
+          - /url: https://twitter.com/itchio
+          - generic [aria-hidden] [ref=e43]: 
+        - link "itch.io on Facebook" [ref=e45] [cursor=pointer]:
+          - /url: https://www.facebook.com/itchiogames
+          - generic [aria-hidden] [ref=e46]: 
+      - link "About" [ref=e48] [cursor=pointer]:
+        - /url: https://itch.io/docs/general/about
+      - link "FAQ" [ref=e49] [cursor=pointer]:
+        - /url: https://itch.io/docs/general/faq
+      - link "Blog" [ref=e50] [cursor=pointer]:
+        - /url: https://itch.io/blog
+      - link "Contact us" [ref=e51] [cursor=pointer]:
+        - /url: https://itch.io/support
+    - generic [ref=e52]:
+      - text: Copyright © 2026 itch corp ·
+      - link "Directory" [ref=e53] [cursor=pointer]:
+        - /url: https://itch.io/directory
+      - text: ·
+      - link "Terms" [ref=e54] [cursor=pointer]:
+        - /url: https://itch.io/docs/legal/terms
+      - text: ·
+      - link "Privacy" [ref=e55] [cursor=pointer]:
+        - /url: https://itch.io/docs/legal/privacy-policy
+      - text: ·
+      - link "Cookies" [ref=e56] [cursor=pointer]:
+        - /url: https://itch.io/docs/legal/cookie-policy

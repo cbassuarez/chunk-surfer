@@ -113,7 +113,14 @@ function railings(){
 }
 const TREES=['opening_street_tree_small','opening_street_tree_small_b','opening_street_tree_small_c'];
 export const ELLERY_SQUARE_PROPS=freeze([
-  ...S.terraces.map(t=>P(t.id,t.variantMesh||t.mesh,t.x,t.z,t.yaw,t.variantMesh?{fallbackMesh:t.mesh}:{})),
+  ...S.terraces.map(t=>{
+    // The east face lies exactly on the square's exclusive outer boundary.
+    // Its supported host is half a metre inward; its rendered pose stays put.
+    const anchorX=t.x===S.bounds.x1?t.x-.5:t.x;
+    return P(t.id,t.variantMesh||t.mesh,anchorX,t.z,t.yaw,{
+      ...(t.variantMesh?{fallbackMesh:t.mesh}:{}),...(anchorX===t.x?{}:{renderOffsetX:t.x-anchorX}),
+    });
+  }),
   ...railings(),
   P('ellery-square-monument','ellery_square_monument',S.garden.monument.x,S.garden.monument.z,0,{blocks:true}),
   // Two trees to each lawn quarter, set back from every path.

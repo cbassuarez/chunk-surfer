@@ -191,12 +191,12 @@ export function createAcademicSociety(saved={}){
     events.push(spoken('social',id,lines,{beatId:beat.id,area:beat.area,attempt,outsider:beat.outsider===true,stateChanged:false}));
     return events;
   }
-  function dialogue(actorId){return academicSocietyDialogue(actorId,state);}
-  function beginDialogue(actorId){
+  function dialogue(actorId,context={}){return academicSocietyDialogue(actorId,state,context);}
+  function beginDialogue(actorId,context={}){
     if(!BY_ID.has(actorId)||!present(actorId)||activeDialogue)return null;
     if(pendingAmbient)settleAmbient(pendingAmbient.id,{reason:'direct-conversation'});
     attention=null;activeDialogue=actorId;focusedActor=actorId;
-    return dialogue(actorId);
+    return dialogue(actorId,context);
   }
   function endDialogue(actorId,{completed=false,choices=[]}={}){
     if(activeDialogue!==actorId)return[];

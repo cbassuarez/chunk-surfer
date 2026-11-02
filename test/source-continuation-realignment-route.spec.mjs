@@ -11,6 +11,7 @@ import {freshSave, getSave, withTransientGameState} from '../src/game/save.js';
 import {freshMeta, freshRunRecord} from '../src/progression/schema.js';
 import {sourceContinuationGeometry, sourceContinuationMeshPayload, sourceContinuationRenderFrame, installSourceContinuationMeshes} from '../src/render/source-continuation-renderer.js';
 import {JOURNEY_ROUTES,JOURNEY_PORTALS,JOURNEY_SIGHTLINES} from '../src/data/source-continuation-journey.js';
+import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../src/data/source-connector-corridor.js';
 import {SOURCE_SURROUNDINGS_EMITTER_ALIASES} from '../src/render/source-surroundings-geometry.js';
 
 // Independent route acceptance: the only initial fixture is the chapter's
@@ -93,9 +94,13 @@ function verticalTriangleHeight(a, b, c, x, z) {
 
 function assertSubmittedSupport(state, context) {
   const frame = sourceContinuationRenderFrame(state);
+  // Inspect underfoot with an ordinary downward look. The forward frustum
+  // need not contain the surface directly below a human-height camera.
+  const floorView=sourceContinuationRenderFrame({...state,pitch:-1.45});
+  assert.deepEqual(floorView.eye,frame.eye,'inspection rotates the view without moving the physical eye');
   const geometries = new Map(sourceContinuationGeometry(state).map(piece => [piece.name, piece]));
   let highest = -Infinity;
-  for (const prop of frame.props.filter(p => p.physicalKind === 'surface' && !p.portalDestination)) {
+  for (const prop of floorView.props.filter(p => p.physicalKind === 'surface' && !p.portalDestination)) {
     const piece = geometries.get(prop.mesh);
     assert.ok(piece, `${context}: submitted support ${prop.mesh} has inspectable production geometry`);
     const positions = sourceContinuationMeshPayload(piece).positions;
@@ -107,17 +112,12 @@ function assertSubmittedSupport(state, context) {
   }
   assert.ok(Number.isFinite(highest), `${context}: no drawn floor exists beneath the supported body`);
   close(highest, state.feet, 2e-4, `${context}: collision and submitted top surface`);
-  if(state.phase==='catch'){
-    assert.equal(frame.strictOverhead,true,`${context}: actual overhead ownership`);assert.equal(frame.pitch,-Math.PI/2);assert.equal(frame.yaw,0);
-    assert.ok(frame.eye[1]>=state.feet+14.8,`${context}: the tight camera remains above the supported operator`);
-    close(frame.cameraAimTarget[1],state.feet,1e-6,`${context}: grounded floor is the camera reference`);
-    const body=frame.props.find(p=>p.playerBody);assert.ok(body,`${context}: overhead operator is an actual submitted mesh`);
-    close(body.x,state.x,1e-5,`${context}: physical body x`);close(body.y,state.feet,1e-5,`${context}: physical body floor`);close(body.z,state.z,1e-5,`${context}: physical body z`);
-  }else{
-    close(frame.eye[0], state.x, 1e-6, `${context}: first-person x`);
-    close(frame.eye[1], state.feet + C.eyeHeight, 1e-6, `${context}: physical eye height`);
-    close(frame.eye[2], state.z, 1e-6, `${context}: first-person z`);
-  }
+  assert.equal(frame.strictOverhead,false,`${context}: ordinary first-person ownership`);
+  close(frame.eye[0], state.x, 1e-6, `${context}: first-person x`);
+  close(frame.eye[1], state.feet + C.eyeHeight, 1e-6, `${context}: physical eye height`);
+  close(frame.eye[2], state.z, 1e-6, `${context}: first-person z`);
+  close(frame.yaw,state.yaw,1e-6,`${context}: physical look bearing`);close(frame.pitch,state.pitch,1e-6,`${context}: physical look pitch`);
+  assert.equal(frame.props.some(p=>p.playerBody),false,`${context}: first-person does not place its own standing body in the eye`);
   return frame;
 }
 
@@ -152,7 +152,7 @@ function walkTo(state, x, z, {events = [], maxFrames = 2400, context = 'walk'} =
     assert.equal(state.fall, null, `${context}: ordinary walking cannot secretly drop the body`);
     assert.equal(state.recovery, null, `${context}: this planned ordinary walk was interrupted before reaching ${x},${z}`);
     const speed=Math.min(1,distance/(C.walkSpeed*.05));
-    state = tick(state, state.phase==='catch'?{forward:-dz/distance*speed,side:dx/distance*speed}:{forward:speed,look:{yaw:Math.atan2(dx,-dz)}}, events);
+    state = tick(state, {forward:speed,look:{yaw:Math.atan2(dx,-dz)}}, events);
     assert.ok([state.x, state.z, state.feet].every(Number.isFinite), `${context}: finite physical pose`);
   }
   assert.fail(`${context}: could not walk to ${x},${z}; body at ${state.x},${state.z}, feet ${state.feet}, phase ${state.phase}`);
@@ -271,6 +271,11 @@ function walkJourney(state,events){
       for(let n=0;n<120&&(state.fall||state.bodyTransit||state.cameraTransit);n++)state=tick(state,{},events);
       assert.equal(state.fall,null,`${p.foldId}: transformed capsule settles on the actual receiving pad`);assert.equal(state.recovery,null);assertSubmittedSupport(state,p.foldId+' grounded receiving pad');
     }else{
+      if(p.chartId===CORRIDOR.chartId&&p.x===CORRIDOR.x&&p.z===CORRIDOR.endZ){
+        for(const[x,z]of[[CORRIDOR.x,-74],[CORRIDOR.bypass.centerX,-74],[CORRIDOR.bypass.centerX,-78],[CORRIDOR.x,-79]]){
+          state=walkTo(state,x,z,{events,context:'cabinet physical bypass'});assertSubmittedSupport(state,'cabinet physical bypass');
+        }
+      }
       assert.equal(state.chartId,p.chartId,'waypoints never steer between charts');state=walkTo(state,p.x,p.z,{events,context:'outward chart '+p.chartId});assertSubmittedSupport(state,'outward chart '+p.chartId);
     }
     assert.equal(state.hush.active,true,'the new end-to-end journey retains its one physical pursuer');
@@ -296,16 +301,20 @@ test('a complete ordinary controller route explores II, crosses its real door an
   const routes = layout.SOURCE_CONTINUATION_ROUTES;
   assert.ok(routes?.main && routes.groundBranch, 'the authored network exposes a main route and an optional rejoining ground route');
 
+  let hushEntered=false;
   for (const [x, z] of routes.main.slice(1)) {
     state = walkTo(state, x, z, {events, context: 'interlocked stair network'});
     assertSubmittedSupport(state, 'interlocked stair network');
-    assert.equal(state.hush.active,true,'the end-to-end route never disables its physical pursuer');
+    if(hushEntered)assert.equal(state.hush.active,true,'the end-to-end route never disables the actor after its physical arrival');
+    else if(state.hush.active){hushEntered=true;assert.ok(events.some(e=>e.type==='hush-arrival'&&e.chapter==='II'),'the active pursuer earns its actual doorway entry');}
+    else assert.ok(state.hush.arrival&&state.hush.arrival.stage!=='entered','the initial delay retains the real pending entry rather than disabling pursuit');
   }
   close(state.feet, 8.4, 1e-6, 'the full two-storey stair climb');
   assert.equal(state.phase, 'wrong-return', 'reaching the upper observation point is not a phase teleport');
   assert.ok(state.knowledge.includes('upper-return-is-different'),'II requires the actual altered return and its outgoing route');
   assert.equal(events.filter(event=>event.type==='return-recognized').length,1);
   assert.ok(state.hush.armed&&state.hush.animationClock>0,'Hush physically travelled the climbed route');
+  assert.equal(hushEntered,true);assert.equal(events.filter(e=>e.type==='hush-arrival'&&e.chapter==='II').length,1);
 
   const onward = layout.continuationDoors(state).find(door => door.id === 'wrong-onward');assert.ok(onward);
   state = tick(state, {look: {yaw: -Math.PI / 2}}, events);
@@ -345,7 +354,7 @@ test('a complete ordinary controller route explores II, crosses its real door an
   for(let frame=0;frame<25;frame++)state=tick(state,{},events);
   assert.equal(state.doorOpen['catch-final'],true,'the final approach opens its physical leaves without E');
   assert.equal(state.completed, false, 'an opening is not onward travel');
-  for (let frame = 0; frame < 150 && !state.completed; frame++) state = tick(state, {side: 1}, events);
+  for (let frame = 0; frame < 150 && !state.completed; frame++) state = tick(state, {forward: 1}, events);
   assert.equal(state.completed, true, 'the full body crosses the real final threshold');
   assert.equal(events.filter(event => event.type === 'complete').length, 1);
   assert.ok(state.x > C.catch.finalDoor.x, 'the completed body is on the onward side');
@@ -424,7 +433,7 @@ test('each off-line refuge is enterable with its leaf closed and returns only th
     state = tick(state, {interact: true}, events);
     assert.equal(state.status, 'active', 'operating the handle does not teleport or return the body');
     for (let frame = 0; frame < 20; frame++) state = tick(state, {}, events);
-    for (let frame = 0; frame < 40 && state.status === 'active'; frame++) state = tick(state, {forward:-outward.z,side:outward.x}, events);
+    for (let frame = 0; frame < 40 && state.status === 'active'; frame++) state = tick(state, {forward:1}, events);
     assert.equal(state.status, 'returned', 'walking through the actual refuge door requests return');
     const signed = (state.x - door.x) * outward.x + (state.z - door.z) * outward.z;
     assert.ok(signed > C.bodyRadius, 'the complete body clears the outward plane');
@@ -432,23 +441,25 @@ test('each off-line refuge is enterable with its leaf closed and returns only th
   }
 });
 
-test('both regions stay physical while the overhead cutaway removes the high prior world from the receiving view', () => {
+test('both regions and the high prior world stay physical in the first-person receiving view', () => {
   const entry = controller.resumeSourceContinuation(controller.freshSourceContinuation({runId: 'persistent-world'}));
   const crossed = controller.normalizeSourceContinuation({...entry, phase: 'catch', level: 0,
     x: C.catch.center.x+11.5, z: C.catch.center.z, feet: C.catch.top, lastSafe: {x: C.catch.center.x+11.5, z: C.catch.center.z, feet: C.catch.top, yaw: 0, pitch: 0, level: 0},
   });
   const frames = [sourceContinuationRenderFrame(entry), sourceContinuationRenderFrame(crossed)];
   const supports = frame => frame.geometry.surfaces.map(surface=>surface.id).sort();
-  assert.deepEqual(supports(frames[0]), supports(frames[1]), 'the overhead cutaway cannot unload the physical place behind the player');
+  assert.deepEqual(supports(frames[0]), supports(frames[1]), 'crossing cannot unload the physical place behind the player');
   for (const frame of frames) {
     const regions = new Set(frame.geometry.surfaces.map(prop=>prop.region));
     assert.ok(regions.has('wrong-return') && regions.has('catch'));
-    const ruins = frame.props.filter(prop => prop.inheritedRuins);
+    const ruins = frame.props.filter(prop => prop.inheritedRuins&&!prop.voidImage);
     if(frame.phase==='wrong-return'){
-      assert.ok(ruins.length >= 2, 'the actual door remnant and recognisable upper building survive in the first-person world');
+      assert.ok(ruins.some(prop=>prop.upperRemnant&&prop.id==='source-continuation-upper-exit-remnant'), 'the actual upper door remnant survives in the first-person world');
+      assert.equal(frame.geometry.surfaces.filter(surface=>surface.role==='inherited-earthfall').length,2,'the original lower spine and landing remain in the same physical world');
       assert.ok(ruins.every(prop => prop.y >= 99), 'the upper world keeps its real hundred-metre elevation');
     }else{
-      assert.equal(ruins.length,0,'the overhead camera cuts prior-world overhead obstructions');
+      assert.ok(ruins.some(prop=>prop.upperRemnant&&prop.id==='source-continuation-upper-exit-remnant'),'the previous construction retains its real position above the first-person player');
+      assert.ok(ruins.every(prop=>prop.y>=99),'retaining the prior world cannot lower it into the receiving route');
       assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&!p.portalDestination&&p.level===0),'the current receiving shelf remains actual submitted geometry');
       assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&!p.portalDestination&&p.level===1),'the next receiving shelf remains visible before descending');
     }

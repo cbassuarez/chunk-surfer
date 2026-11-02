@@ -10,6 +10,8 @@ import {selectChapelDamageTarget} from '../src/game/tape-damage.js';
 import {endingManifest} from '../src/data/endings.js';
 import {dueTimelineSteps} from '../src/game/ending-runtime.js';
 import {createChapelRetakeHaunt} from '../src/game/chapel-retake-haunt.js';
+import {nightDeadlineAllowsTransport} from '../src/game/night-deadline.js';
+import {holdB3RecordingForLifecycle} from '../src/game/b3-speaker-disturbance.js';
 
 const source=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -46,11 +48,11 @@ function harness({saved=null,now=1000}={}){
     encounters:{cleared:['chapel']},area:'conservatory',chunkSurf:{finale:{route:'chapel'}},settings:{flash:'full'}};
   wireStore(saved?.rec?.tapes||media());save.rec=REC.saveRecState();
   const commits=[],speech=[],events=[],thoughts=[],endings=[],hauntPulses=[];
-  const host={...D,PB,REC,selectChapelDamageTarget,CHAPEL_TAPE_DEMAND_FLAG:D.CHAPEL_TAPE_DEMAND_FLAG,CHAPEL_TAPE_DAMAGE_ACK:ACK,
+  const host={...D,PB,REC,nightDeadlineAllowsTransport,firstStrikeAudio:null,holdB3RecordingForLifecycle,b3SpeakerAudio:{pause(){}},b3Speaker:{flush(){}},tickB3Speaker(){},tickRecordingEmbodiment(){},selectChapelDamageTarget,CHAPEL_TAPE_DEMAND_FLAG:D.CHAPEL_TAPE_DEMAND_FLAG,CHAPEL_TAPE_DAMAGE_ACK:ACK,
     getSave:()=>save,saveCommit:patch=>{Object.assign(save,patch);commits.push(copy(patch));},
     ENCOUNTERS:{encounterCleared:room=>save.encounters.cleared.includes(room)},normalizeChunkSurfState:value=>value,chunkSurfFinaleRouting,SOURCE_FINALE_ROUTE:{CHAPEL:'chapel',TOWER:'tower'},
     TOWER_PERSONAL_TAKE:'tower-personal',TARGETS:ROOMS,ROOM_CELLS:Object.fromEntries(ROOMS.map((room,index)=>[room,{x:20+index,y:30}])),roomLabel:room=>LABELS[room]||room,
-    performance:{now:()=>clock},paused:false,storyMode:true,inRogue:true,usingPlan:()=>true,usingSpecialSpace:()=>false,gameplayInputLifecycleActive:()=>focused,
+    performance:{now:()=>clock},paused:false,storyMode:true,inRogue:true,usingPlan:()=>true,usingSpecialSpace:()=>false,gameplayInputLifecycleActive:()=>focused,document:{hidden:false},
     pumpDoorAudioEvents:()=>{},architectureDoorCauses:new Map(),syncArchitectureDoorAudio:()=>{},
     scenes:{blocksWorld:()=>blocked,push:scene=>thoughts.push(scene)},makeThoughtScene:options=>options,
     SPEECH:{say:line=>speech.push(copy(line))},pushEvent:line=>events.push(line),fireCue:()=>{},

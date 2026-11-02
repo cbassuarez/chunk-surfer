@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {fillCurrentPauseHost} from './helpers/current-pause-host.mjs';
 import * as D from '../src/game/chapel-tape-demand.js';
 import {chunkSurfFinaleRouting} from '../src/game/chunk-surf-state.js';
 import {endingManifest} from '../src/data/endings.js';
@@ -38,7 +39,7 @@ function harness({saved=null,now=0}={}){
     pauseOutskirtsLastLight:noop,lowerTowerPersonalRecorder:noop,stopTowerPersonalWorldSignal:noop,resetMotionInput:noop,
     stopAllVoices:noop,stopWorldLayerVoice:noop,silenceAmbientDrone:noop,setGainNode:noop,pushEvent:noop,applyAudioSettings:noop,
     startAmbientDroneAt:noop,currentAmbientTarget:noop,updateAudio:noop,resumeGameplayInput:noop};
-  vm.createContext(host);
+  fillCurrentPauseHost(host);vm.createContext(host);
   vm.runInContext(block('function chapelTapeDemandContext(){','// The last walk owns a physical progression')
     +block('function tickEndingTimeline(){','function applyEndingEvent(')
     +block('function cancelRecordingPressureAudio(){','function recordingPressureFrame(')

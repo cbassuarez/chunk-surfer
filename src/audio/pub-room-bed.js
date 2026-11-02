@@ -1,5 +1,5 @@
 import {assetUrl} from '../platform/paths.js';
-import {EXTERIOR_PUB,pubWorldFromLocal} from '../data/exterior-pub.js';
+import {EXTERIOR_PUB,pubPhysicalAt,pubPhysicalFromLocal,pubAuthoredAt} from '../data/exterior-pub.js';
 import {PUB_INTERIOR_LAYOUT} from '../data/exterior-pub-furnishings.js';
 
 export const PUB_ROOM_FILES=Object.freeze({
@@ -8,7 +8,7 @@ export const PUB_ROOM_FILES=Object.freeze({
   rain:assetUrl('audio/pub-room/rain-window.mp3'),
 });
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,Number(v)||0));
-const point=id=>pubWorldFromLocal(PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===id));
+const point=id=>pubPhysicalFromLocal(PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===id));
 export const PUB_ROOM_BED_ANCHORS=Object.freeze({music:Object.freeze(point('pub-backbar')),company:Object.freeze(point('pub-snug-table-1'))});
 const bearing=(listener,anchor)=>{
   const dx=anchor.x-(Number(listener.x)||0),dz=anchor.z-(Number(listener.z)||0),distance=Math.hypot(dx,dz),yaw=Number(listener.yaw)||0;
@@ -21,17 +21,19 @@ export function pubRoomBedFrame({listener={},inPub=false,nearPub=false,doorOpen=
   const quiet={gain:0,cutoff:300,pan:0};
   if(!inPub&&!nearPub)return{music:{...quiet},company:{...quiet},rain:{...quiet},reason:'outside'};
   busy=busy||recording;
-  const open=EXTERIOR_PUB.doors.filter(d=>Array.isArray(openDoorIds)?openDoorIds.includes(d.id):doorOpen);
+  const doors=EXTERIOR_PUB.doors.map(d=>({...d,...pubPhysicalAt(d)}));
+  const open=doors.filter(d=>Array.isArray(openDoorIds)?openDoorIds.includes(d.id):doorOpen);
   const door=open.reduce((a,d)=>!a||bearing(listener,d).distance<bearing(listener,a).distance?d:a,null);
   const room=(kind,level,cutoff)=>{
-    const at=bearing(listener,inPub?PUB_ROOM_BED_ANCHORS[kind]:door||EXTERIOR_PUB.doors.reduce((a,d)=>bearing(listener,d).distance<bearing(listener,a).distance?d:a));
+    const at=bearing(listener,inPub?PUB_ROOM_BED_ANCHORS[kind]:door||doors.reduce((a,d)=>bearing(listener,d).distance<bearing(listener,a).distance?d:a));
     return{...at,gain:level*(inPub?1:door?.18:.025)*(busy?.25:1)/(1+at.distance*.09),cutoff:inPub?cutoff:door?1500:220};
   };
   const music=room('music',.25,5200),company=room('company',.075,2400);
   let rain={...quiet};
   if(inPub){
+    const authored=pubAuthoredAt(listener);
     const paths=EXTERIOR_PUB.windows.map(w=>{
-      const at=bearing(listener,{x:clamp(listener.x,w.x-w.width/2,w.x+w.width/2),z:EXTERIOR_PUB.frontWorldZ});
+      const at=bearing(listener,pubPhysicalAt({x:clamp(authored.x,w.x-w.width/2,w.x+w.width/2),z:EXTERIOR_PUB.frontWorldZ}));
       return{...at,gain:.085/(1+at.distance*.50),cutoff:1150};
     });
     for(const d of open){const at=bearing(listener,d);paths.push({...at,gain:.16/(1+at.distance*.65),cutoff:4300});}

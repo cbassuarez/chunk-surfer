@@ -6,6 +6,7 @@ import { PAGES } from '../src/data/conservatory-script.js';
 import { WORLD_INSCRIPTIONS } from '../src/data/world-inscriptions.js';
 import { FURNITURE_INVENTORY_PAGE, furnitureRecognitionLine } from '../src/data/furniture-recognitions.js';
 import * as OBJ from '../src/game/objectives.js';
+import {STUDENT_STRIKE_DOCUMENT_IDS} from '../src/data/student-strike-evidence.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const page = PAGES.find(item => item.id === FURNITURE_INVENTORY_PAGE);
@@ -87,7 +88,7 @@ test('production hosted-page revisit reopens the filed sheet without a duplicate
   const counts = { commits: 0, cues: 0, noise: 0, beats: 0, presentations: 0 };
   const present = () => { counts.presentations++; return true; };
   const take = productionFunction('takeHostedPage', '\n// THE PRACTICE WING', {
-    OBJ, HOSTED_PAGES: new Map([[page.hosted, page]]),
+    OBJ,STUDENT_STRIKE_DOCUMENT_IDS:new Set(Object.values(STUDENT_STRIKE_DOCUMENT_IDS)), HOSTED_PAGES: new Map([[page.hosted, page]]),
     saveCommit() { counts.commits++; }, fireCue() { counts.cues++; },
     REC: { emitNoise() { counts.noise++; } }, px: 0, py: 0,
     readDocumentTracked: present, DOC: { readDocument: present }, himBeat() { counts.beats++; },

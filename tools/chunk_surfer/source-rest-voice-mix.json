@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "voiceGainDb": 3,
+  "note": "Offline balance of the independently estimated voice stem. Zero dB reconstructs the prepared original before MP3 encoding. Runtime remains one synchronized stereo stream."
+}

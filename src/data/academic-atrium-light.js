@@ -3,18 +3,19 @@
 const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
 export const ACADEMIC_ATRIUM_LIGHT=freeze({
   roofY:17,groundY:0,
-  aperture:{x0:79,x1:89,z0:8,z1:21},
+  aperture:{x0:79,x1:89,z0:8,z1:15},
   void:{x0:79,x1:89,z0:8,z1:21},
   deck:{top:10,bottom:9.5},
   panes:{columns:5,rows:6,firstX:80,firstZ:9.0833,stepX:2,stepZ:2.1667,width:1.90,depth:2.0667},
-  // Below-glass primary iron: centreY16.69, .19m square, actual13m runs.
-  beams:{xs:[79,83,87,89],y:16.69,halfWidth:.095,z0:8,z1:21},
-  leadPatches:[{x0:81.05,x1:82.95,z0:12.38335,z1:14.45005},{x0:87.05,x1:88.95,z0:16.71665,z1:18.78335}],
+  // The courtyard cut removes the former south half of these retained runs.
+  // The original pane pitch remains, including its final partial pane.
+  beams:{xs:[79,83,87,89],y:16.69,halfWidth:.095,z0:8,z1:15},
+  leadPatches:[{x0:81.05,x1:82.95,z0:12.38335,z1:14.45005}],
   direction:{x:-.20,y:-1,z:-.32},
   penumbra:.06,beamPenumbra:.04,deckPenumbra:.025,
   color:[.52,.67,.80],surfaceEnergy:.62,volumeDensity:.022,volumeColor:[.16,.205,.25],volumeCap:.30,volumeSteps:16,
   // Conservative bounding box of all projected aperture points down to grade.
-  bounds:{min:[75.6,0,2.56],max:[89,17,21]},
+  bounds:{min:[75.6,0,2.56],max:[89,17,15]},
   contextGroups:['ground','academic','academicRoof'],
   provenance:{
     roof:'src/data/academic-roof.js:ACADEMIC_ROOF.glass +roofPointToPhysical',

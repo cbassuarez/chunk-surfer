@@ -1,3 +1,4 @@
+import { finalizeCausalFixture } from './helpers/causal-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
@@ -132,7 +133,7 @@ test('finalized stored tapes retain continuing struggle and recorded gait while 
     }
     const captured = recorder.frames.length;
     assert.ok(captured >= 170, `stationary observing undersampled the character: ${captured} frames`);
-    const result = await recorder.finalize({ summary: { id: 'return:character-acceptance' }, endingId: 'sacrifice', injuries: 0, completedAt: 1 });
+    const result = await finalizeCausalFixture(recorder,{ summary: { id: 'return:outskirts-character-acceptance' }, endingId: 'sacrifice', injuries: 0, completedAt: 1 });
     assert.equal(result.ok, true);
     const stored = JSON.parse(JSON.stringify(await loadLatestCausalTape()));
     assert.equal(validateCausalTape(stored).ok, true);

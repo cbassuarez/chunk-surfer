@@ -15,7 +15,7 @@ function host(){
   REC:{isRecording:()=>recording,isListening:()=>listening},PB:{isPlaying:()=>playing},SPEECH:{isSpeaking:()=>speaking},
   sourceDriveSession:null,getInDriveTeaserScene:null,sourceReturnFlashbackScene:null,coastalMemoryScene:null,openingVehicleScene:null,openingOvertureScene:null,sourceContinuationScene:null,sourcePubScene:null,
   runPlayDurationClock:createPlayDurationClock(),nightClockPace:createNightClockPace(),advanceNightClock,consumeNightClockTravel,
-  gameplayInputLifecycleActive:()=>h.focused};
+  gameplayInputLifecycleActive:()=>h.focused,tickNightDeadline(){}};
  vm.createContext(h);vm.runInContext(body('nightClockSlowAction')+'\n'+body('tickRunPlayDuration'),h);
  return {h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h),slow:()=>vm.runInContext('nightClockSlowAction()',h),
   top:value=>{top=value;},record:value=>{recording=value;},listen:value=>{listening=value;},play:value=>{playing=value;},speak:value=>{speaking=value;}};

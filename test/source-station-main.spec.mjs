@@ -10,6 +10,10 @@ import { createStationRealm, normalizeStationRealm, stationRealmFrame, moveStati
   beginStationRealmReturn, stationRealmAtWindow } from '../src/game/station-realms.js';
 import { SOURCE_CHAPEL_OUTSKIRTS } from '../src/data/source-level.js';
 import { keyboardMotionAxes } from '../src/input/input-manager.js';
+import {createFootContactClock,resolveFootContact} from '../src/audio/foot-contact.js';
+import {resolveSourceFootingTreatment} from '../src/audio/source-footing-treatment.js';
+import {recordNightClockTravel} from '../src/game/night-clock-travel.js';
+import {MATERIAL} from '../src/data/floorplan/legend.js';
 
 // Run the production functions themselves, with browser/audio boundaries replaced.
 // A wiring or lifecycle change in main therefore changes these tests' behaviour.
@@ -140,7 +144,9 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     get(target, key) { return target[key] || ((value) => { render[key] = value; }); },
   });
   const sandbox = {
-    chunkSurfRuntime: runtime, actx: audio.context, sfxGain: destination, master: null,
+    chunkSurfRuntime: runtime, actx: audio.context, sfxGain: destination, master: null,createFootContactClock,resolveFootContact,resolveSourceFootingTreatment,recordNightClockTravel,MATERIAL,
+    activeGeometry:()=>null,usingSpecialSpace:()=>true,usingPlan:()=>false,physicalPointFor:(x,y)=>({x,z:y}),outskirtsLosing:()=>0,
+    currentStepIntervalMs:()=>100,inRogue:false,sourceReturnFlashbackScene:null,getInDriveTeaserScene:null,gameplayInputLifecycleActive:()=>!sandbox.document.hidden,
     sourceDemolitionAudio: null, sourceEarthfallAudio:null,
     sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
     chapelChoirAudio:null,chapelChoirAudioFrame:null,chapelChoirOcclusionKey:'',chapelChoirOcclusion:new Map(),
@@ -171,7 +177,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     flagTest: (key) => !!save.flags[key], flagApply(keys) { for (const key of keys) save.flags[key] = true; },
     getSave: () => save, saveCommit(patch) { commits.push(copy(patch)); Object.assign(save, patch); },
     REC: { composure: () => composure, composureCeiling: () => 20, setComposure(value) { composure = value; compositorRestores++; },
-      saveRecState: () => ({ composure }), emitStepNoise: noOp, isRecording: () => false },
+      saveRecState: () => ({ composure }),recState:()=>({slow:false,injuries:0}), emitStepNoise: noOp, isRecording: () => false },
     fireCue: (id) => cueCalls.push(id), pushEvent: (text) => events.push(text), CUES: { stopAllCues: noOp, playCue: noOp, CUE: {} },
     paused: false, document: { hidden: false, hasFocus: () => true }, hushRunActive: false,
     scenes: { blocksWorld: () => blocksWorld, blocksInput: () => blocksInput }, PRES: { isActive: () => false },
@@ -180,6 +186,7 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     electricalHumRuntime: null, fountainWaterRuntime: null, forkToneRuntime: null,
     metronomeFieldRuntime: null, plantPipeRuntime: null, stopListeningGut: null, stopListeningAudioFrame: null, personalWindowEffects: { end: noOp },
     RT: { footstep: (...args) => steps.push(args), setBed: noOp }, STORY: { stopAll: noOp }, STAB: { reportThreat: noOp },
+    b3SpeakerAudio:{stop:noOp},b3Speaker:{flush:noOp},b3HushVisit:null,recordingEmbodiment:{reset:noOp},sourceWindowMedia:{stop:async()=>false},
     mischiefNextAtMs: 0, mischiefQuietUntilMs: 0,
     recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>events.push('recording-pressure-reset')},
     setupHandoffBlocksMovement: () => false, sourceDoorArrival: null, storyMode: false,
@@ -191,10 +198,10 @@ function harness({ time = 0, walk = null, frame = null, realm = null, earned = [
     'endHorizonScore', 'stopBellTowerRuntime', 'clearInstrument', 'stopHushAudioRuntime', 'stopAllVoices',
     'stopWorldLayerVoice', 'silenceAmbientDrone', 'silenceSampleField', 'endSourceHaystackMosh',
     'endSourceBracketPresence', 'tickHorizonScore', 'speakHorizonMarker', 'syncOutskirtsNight', 'tickPayphone', 'syncSourceRender',
-    'cancelApparitionApplause']) sandbox[name] = noOp;
+    'cancelApparitionApplause','resetArchitectureDoorAudio']) sandbox[name] = noOp;
   vm.createContext(sandbox);
   vm.runInContext(production + `\nglobalThis.api={clearSourceRuntime,resetRunAudio,syncElsewhereBeds,syncStationEdgeSound,
-    syncStationErrand,homeWalkStep,tickHomeWalk,tickSourceSpace,stationFootfall,step,arrowDelta,
+    syncStationErrand,homeWalkStep,tickHomeWalk,tickSourceSpace,stationFootfall,step:(...args)=>{const result=step(...args);tickPlayerFootsteps(.1,100);return result;},arrowDelta,
     stationRealmStep,tickStationRealmHome,stationRealmLook,interactStationRealm,stationRealmActionLabel,
     stationRealmHomeActions,cycleStationRealmAction,stationRealmHomeKey,
     homeKey:(e)=>{${homeKeyWiring}},
@@ -285,7 +292,9 @@ test('production movement routes every direction into real local ground and leav
   assert.equal(h.sandbox.px, 0); assert.equal(h.sandbox.py, 0);
   assert.equal(h.realm.steps, 0, 'movement updates are not completed footfalls');
   for (let i = 0; i < 8; i += 1) h.api.step(1, 0);
-  assert.equal(h.realm.steps, 1); assert.equal(h.steps.length, 1);
+  assert.equal(h.realm.steps, 1,'the completed-stride gameplay ledger remains independent of audible starting plants');
+  assert.ok(h.steps.length>0&&h.steps.length<=11,'finite accepted travel produces at most one real contact per frame');
+  assert.ok(h.steps.every((row,i)=>row[1].id>0&&(!i||row[1].id>h.steps[i-1][1].id)&&row[1].footSide===(i%2?'right':'left')),'the actual foot clock owns unique alternating contact receipts');
   assert.equal(h.sandbox.stepCount, 1);
   h.realm.pose.x = 2.77;
   const before = { steps: h.realm.steps, stride: h.realm.strideM, sound: h.steps.length };

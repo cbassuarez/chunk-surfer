@@ -23,9 +23,11 @@ function harness({ runtime = null, look = { yaw: 1.2, pitch: -.3 }, px = 144, py
     R3: { r3dLookAngles() { calls.push('look'); return look; } },
     saveCommit(patch) { calls.push('commit'); commits.push(structuredClone(patch)); },
     stationRealmLook() { calls.push('station-look'); },
+    pressurePerformance:{snapshot:()=>({primary:null,secondary:null})},
   };
   environment.usingSourceSpace = productionFunction('usingSourceSpace', '\n// THE CAMERA SOURCE', environment);
   environment.sourceCameraPatch = productionFunction('sourceCameraPatch', '\nfunction saveSourceView(', environment);
+  environment.pressurePresentationSnapshot=productionFunction('pressurePresentationSnapshot','\nfunction pressureRenderFrame(',environment);
   return {
     save: productionFunction('saveSourceView', '\n// DROPPING THE SOURCE RUNTIME', environment),
     cameraPatch: environment.sourceCameraPatch, commits, calls,
@@ -44,7 +46,7 @@ test('active Source keeps its normal view, position and runtime-state save', () 
   const state = Object.freeze({ stage: 'white-walk', revision: 8 });
   const h = harness({ runtime: { state() { calls.push('state'); return state; } } });
   assert.equal(h.save(), true);
-  assert.deepEqual(h.commits, [{ sourceView: { yaw: 1.2, pitch: -.3, x: 144, y: -224 }, px: 144, py: -224, chunkSurf: state, area: 'source-space' }]);
+  assert.deepEqual(h.commits, [{ sourceView: { yaw: 1.2, pitch: -.3, x: 144, y: -224 }, px: 144, py: -224, chunkSurf: state, area: 'source-space',pressurePresentation:null }]);
   assert.deepEqual(calls, ['state']);
   assert.deepEqual(h.calls, ['look', 'commit']);
 });
@@ -64,7 +66,7 @@ test('active station realm keeps its dedicated look update and existing state sa
   const h = harness({ runtime: { stationRealmFrame() { return { realm: 'station' }; }, state() { h.calls.push('state'); return state; } } });
   assert.equal(h.save(), true);
   assert.deepEqual(h.calls, ['station-look', 'state', 'commit']);
-  assert.deepEqual(h.commits, [{ px: 144, py: -224, chunkSurf: state, area: 'source-space' }]);
+  assert.deepEqual(h.commits, [{ px: 144, py: -224, chunkSurf: state, area: 'source-space',pressurePresentation:null }]);
   assert.equal(Object.hasOwn(h.commits[0], 'sourceView'), false);
 });
 

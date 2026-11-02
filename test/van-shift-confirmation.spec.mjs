@@ -7,7 +7,7 @@ import { visiblePresets, cycleRuleValue, normalizeRuleValues } from '../src/prog
 import { RULE_HELP, RULE_LABELS, VALUE_LABELS } from '../src/progression/difficulty-defs.js';
 import { deriveUnlocks } from '../src/progression/unlocks.js';
 import { ENDING_IDS } from '../src/progression/schema.js';
-import { machinePanelBody } from '../src/render/presentation.js';
+import { machinePanelBody, machinePanelBezelRail } from '../src/render/presentation.js';
 
 // Run the actual scene source with drawing/audio boundaries stubbed. Production
 // hit testing and authored presets remain real; no browser or renderer needed.
@@ -17,7 +17,7 @@ const source = readFileSync(new URL('../src/game/difficulty-select.js', import.m
 function fixture({ preparation = true, confirm = () => true, size = { cols: 120, rows: 40 }, endings = [] } = {}) {
   const calls = { confirmed: [], cancelled: 0, removed: [], popped: 0, panels: [], printed: [] };
   const audio = { menuMove() {}, menuConfirm() {}, menuBack() {}, startMenuHiss() {}, stopMenuHiss() {} };
-  const context = { Promise, RULE_HELP, RULE_LABELS, VALUE_LABELS, visiblePresets, cycleRuleValue, normalizeRuleValues, deriveUnlocks, createHitRegions,
+  const context = { Promise, RULE_HELP, RULE_LABELS, VALUE_LABELS, visiblePresets, cycleRuleValue, normalizeRuleValues, deriveUnlocks, createHitRegions, machinePanelBezelRail,
     AUDIO: audio, UI_COLOR: {}, uiCenter() {}, uiLine() {}, uiScrim() {}, uiSize: () => size, uiText() {}, uiWrap: text => [String(text)], drawLocationIndicator() {}, drawVfdText() {}, drawLampButton() {}, promptLine: () => '',
     drawPrintedText: (...args) => calls.printed.push(args),
     withMachinePanel: (x,y,w,h,options,draw) => { calls.panels.push({x,y,w,h,...options}); draw(machinePanelBody(x,y,w,h,options)); },

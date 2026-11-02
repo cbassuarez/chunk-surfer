@@ -7,10 +7,12 @@ import { readFileSync } from 'node:fs';
 import * as vigil from '../src/data/exterior-vigil.js';
 import * as scenes from '../src/game/scenes.js';
 import { makeThoughtScene } from '../src/game/thoughts.js';
-import { freshSave, getSave, saveCommit, withTransientGameState } from '../src/game/save.js';
+import { freshSave, getSave,getMeta, saveCommit, withTransientGameState } from '../src/game/save.js';
 import { flagApply, flagTest } from '../src/game/flags.js';
 import { freshMeta } from '../src/progression/schema.js';
 import { choiceContentId, createReplayService } from '../src/progression/knowledge.js';
+import {deriveStudentStrikeEvidence} from '../src/data/student-strike-evidence.js';
+import {STUDENT_STRIKE_WATCHED_FLAG} from '../src/data/student-strike-dialogue.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const id = 'vigil-malcolm-vey';
@@ -33,7 +35,7 @@ function talkHarness({ replay = false } = {}) {
     vigilRecognitionFlags: vigil.vigilRecognitionFlags,
     PROPS: { propState: () => ({ inspected }), savePropState: () => ({ ...getSave().props, inspected: [...inspected] }) },
     inspectPropTracked: propId => inspected.add(propId),
-    flagTest, flagApply, saveCommit, getSave,
+    flagTest, flagApply, saveCommit, getSave,getMeta,deriveStudentStrikeEvidence,STUDENT_STRIKE_WATCHED_FLAG,
     vigilAmbient: { cancel() {} }, vigilConversationActorId: null,
     // Malcolm's optional dialogue occurs without exterior arrival audio; do
     // not synthesize an unrelated world-sound event in this dialogue harness.
@@ -47,6 +49,7 @@ function talkHarness({ replay = false } = {}) {
     applyStoryChoice: choice => flagApply(choice?.set || [], choice?.clear || []),
   };
   environment.converse = productionFunction('converse', '\n// The push bar', environment);
+  environment.currentStudentStrikeEvidence=productionFunction('currentStudentStrikeEvidence','\nfunction talkToVigilPerson(',environment);
   const talk = productionFunction('talkToVigilPerson', '\nfunction talkToExteriorLocal(', environment);
   return { open: () => talk({ id, vigilId: id }), lines, environment,
     cancel() { scenes.top()?.key({ key: 'Escape' }); },

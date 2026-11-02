@@ -4,11 +4,12 @@ import { BrowserStorage } from '../src/platform/storage/browserStorage.js';
 import { DesktopStorage, MemoryFileAdapter } from '../src/platform/storage/desktopStorage.js';
 import { CausalRecorder } from '../src/causal/recorder.js';
 import { initGameStorage, loadLatestCausalTape } from '../src/platform/storage/storageService.js';
+import { causalFixtureReturnEvent, finalizeCausalFixture } from './helpers/causal-fixture.mjs';
 
 const makeTape=(runId,endingId='sacrifice')=>sealCausalTape({
   runId,returnSummaryId:`return:${runId}`,endingId,durationMs:1000,
   qualification:{injuries:1,difficulty:'contract',completedAt:1},
-  shadowFrames:[{t:0,x:1,y:1},{t:1000,x:2,y:1}],events:[],
+  shadowFrames:[{t:0,x:1,y:1},{t:1000,x:2,y:1}],events:[causalFixtureReturnEvent(runId,endingId,{at:1000})],
   anchors:CAUSAL_SPINE_IDS.map((id,index)=>({id,at:100+index*100,order:index,verb:id.endsWith('contact')?'contact':'haunt',required:true,locus:{x:index,y:index,spaceId:id==='spine:source-threshold'?'source-space':'conservatory'}})),
 });
 
@@ -55,7 +56,7 @@ for(const injuries of Array.from({length:CAUSAL_INJURY_CEILING+1},(_,index)=>ind
   recorder.tick(.1,{x:1,y:1,roomId:'main_b3',renderGroup:'basement'});
   recordSpine(recorder);
   recorder.noteInjuries(injuries);
-  const result=await recorder.finalize({summary:{id:`return:qualified-${injuries}`},endingId:'sacrifice',injuries,completedAt:4});
+  const result=await finalizeCausalFixture(recorder,{summary:{id:`return:qualified-${injuries}`},endingId:'sacrifice',injuries,completedAt:4});
   assert.equal(result.ok,true,`${injuries} injuries finalizes`);
 }
 const retained=(await loadLatestCausalTape()).contentHash;
@@ -63,7 +64,7 @@ const discarded=new CausalRecorder();
 discarded.begin({runId:'discarded',difficulty:'contract'});
 discarded.tick(.1,{x:1,y:1});
 discarded.noteInjuries(CAUSAL_INJURY_CEILING+1);
-assert.equal((await discarded.finalize({summary:{id:'return:discarded'},endingId:'sacrifice',injuries:CAUSAL_INJURY_CEILING+1})).reason,'NOT_QUALIFIED');
+assert.equal((await finalizeCausalFixture(discarded,{summary:{id:'return:discarded'},endingId:'sacrifice',injuries:CAUSAL_INJURY_CEILING+1})).reason,'NOT_QUALIFIED');
 assert.equal((await loadLatestCausalTape()).contentHash,retained,'an injury beyond the ceiling discards only the draft and preserves the prior finalized tape');
 
 const write=globalThis.localStorage.setItem;
@@ -72,7 +73,7 @@ const failed=new CausalRecorder();
 failed.begin({runId:'failed',difficulty:'contract'});
 failed.tick(.1,{x:1,y:1});
 recordSpine(failed);
-await assert.rejects(()=>failed.finalize({summary:{id:'return:failed'},endingId:'sacrifice',injuries:0}),/write failed/);
+await assert.rejects(()=>finalizeCausalFixture(failed,{summary:{id:'return:failed'},endingId:'sacrifice',injuries:0}),/write failed/);
 globalThis.localStorage.setItem=write;
 delete globalThis.localStorage;
 

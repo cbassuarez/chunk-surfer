@@ -52,7 +52,13 @@ export function deriveStoryEvidence(ledger = {}) {
   });
 }
 
-export function canQualifyBorrowedRecordist({ ledger, hasFork = false, hasRig = false, bodyRedacted = false } = {}) {
-  const evidence = deriveStoryEvidence(ledger);
-  return evidence.strongestRouteEvidence && !!hasFork && !!hasRig && !!bodyRedacted;
+// The Chapel's two performed return proofs establish this release. Source's
+// terminal RESCUE result cannot be a prerequisite for a later living return,
+// and documentary understanding alone must never substitute for the action.
+export function canQualifyBorrowedRecordist({
+  hasFork = false, hasRig = false,
+  chapelReturnGranted = false, chapelReturnLocked = false,
+} = {}) {
+  return hasFork === true && hasRig === true
+    && chapelReturnGranted === true && chapelReturnLocked === false;
 }

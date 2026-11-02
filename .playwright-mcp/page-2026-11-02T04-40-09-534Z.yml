@@ -1,0 +1,297 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]: Preview harness — itch.io project page, downloads only
+  - generic [ref=e4]:
+    - text: AUDIOCORP ·LOCAL MONITOR ·SOURCE 4417-C
+    - heading "Chunk Surfer" [level=1] [ref=e6]
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - paragraph [ref=e9]: A downloadable game for Windows, macOS, and Linux
+        - generic [ref=e11]:
+          - link "Download Now" [ref=e12] [cursor=pointer]:
+            - /url: "#"
+          - generic [ref=e13]: Name your own price
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - paragraph [ref=e17]: ELLERY HOLDINGS ORDER 4417-C
+            - paragraph [ref=e18]:
+              - strong [ref=e19]: Five rooms. Five clean takes and you’re done… or so you think.
+            - paragraph [ref=e20]: Record the sound of empty rooms in a condemned conservatory. Stay still. Stay silent. Finish before demolition begins.
+            - blockquote [ref=e21]:
+              - text: WORK ORDER ·SOURCE 4417-C
+              - paragraph [ref=e22]:
+                - strong [ref=e23]: site
+                - generic [ref=e24]: Ellery Conservatory of Music. Condemned.
+              - paragraph [ref=e25]:
+                - strong [ref=e26]: deliver
+                - generic [ref=e27]: Five clean room-tone recordings.
+              - paragraph [ref=e28]:
+                - strong [ref=e29]: window
+                - generic [ref=e30]: One night. Demolition begins at 06:00.
+              - paragraph [ref=e31]:
+                - strong [ref=e32]: rules
+                - generic [ref=e33]: If you can hear yourself on the take, the take is not the room.
+            - paragraph [ref=e34]: "● ACCOUNT OPEN: CONTRACTOR PRESENT"
+            - separator [ref=e35]
+            - paragraph [ref=e36]: 01 / CASE — first person audio-reactive horror
+            - heading "The job is to record nothing." [level=2] [ref=e37]
+            - paragraph [ref=e38]:
+              - emphasis [ref=e39]: Chunk Surfer
+              - text: is a short first-person psychological horror game about sound recording. As a field recordist in the condemned Ellery Conservatory, your job is to capture five clean room sounds as you evade invisible entities, confront your murky past, and figure out what happened to the previous recordist who tried to do this gig first.
+            - paragraph [ref=e40]: Monitor each space, roll the recorder, then stay still and silent – or, rather, vulnerable – for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.
+            - paragraph [ref=e41]: 02 / MATERIAL — authored PBR and native distortion
+            - heading "A building that will not stay still." [level=2] [ref=e42]
+            - paragraph [ref=e43]:
+              - emphasis [ref=e44]: Chunk Surfer
+              - text: builds its unstable world from authored PBR materials, native lighting, and deliberately unsettling image treatment. The experimental local Stable Diffusion lens remains development-only, outside the downloadable game.
+            - paragraph [ref=e45]:
+              - strong [ref=e46]: "Under the hood:"
+              - text: the game renders authored textures inside its own 3D scene and combines them with native dither, pixel-mesh, and other graphic effects. No local AI model is required to play.
+            - paragraph [ref=e47]: The result is a deliberately unstable low-resolution look, with authored surfaces, native lighting and dithered graphic effects.
+            - paragraph [ref=e48]: Geometry, lighting, depth, movement, and UI remain native, with the rendering effects operating entirely in the game.
+            - paragraph [ref=e49]: 03 / FIELD — listen. record. do not move.
+            - heading "Your movement betrays you." [level=2] [ref=e50]
+            - paragraph [ref=e51]: Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again, and a loud mistake can give whatever else is in the building someone to follow.
+            - paragraph [ref=e52]: Your torch makes the conservatory visible but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.
+            - paragraph [ref=e53]: 04 / RECORD — redaction turn-based combat
+            - heading "Pick up the pieces." [level=2] [ref=e54]
+            - paragraph [ref=e55]: "Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce."
+            - blockquote [ref=e56]:
+              - paragraph [ref=e57]: a game of redaction. black out the words that change your reality to favorable odds.
+            - paragraph [ref=e58]: 05 / SOURCE — source space
+            - heading "The game’s own files become the map." [level=2] [ref=e59]
+            - paragraph [ref=e60]: The investigation eventually ruptures into literal source-code space, where the game’s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.
+            - paragraph [ref=e61]: 06 / INPUT — let your room into the game—or do not
+            - heading "Your microphone is optional. Its consequences are not cosmetic." [level=2] [ref=e62]
+            - paragraph [ref=e63]:
+              - text: When enabled,
+              - emphasis [ref=e64]: Chunk Surfer
+              - text: measures loudness locally while a take is rolling. Noise in your real room can contaminate a take or provoke an in-game response. It never records, stores, transmits, uploads, or plays back microphone audio.
+            - paragraph [ref=e65]: You can deny or revoke permission and complete the game without microphone input.
+            - paragraph [ref=e66]: 07 / RELEASE — v0.3.0 candidate
+            - heading "Prepared for the next public beta." [level=2] [ref=e67]
+            - paragraph [ref=e68]: This copy describes the v0.3.0 candidate and does not announce a published download. Confirm the version, platform checks and actual files before replacing this notice with a release announcement. Save files, settings, performance and packaging may change between beta builds.
+            - list [ref=e69]:
+              - listitem [ref=e70]:
+                - strong [ref=e71]: mac
+                - generic [ref=e72]: apple silicon
+              - listitem [ref=e73]:
+                - strong [ref=e74]: windows
+                - generic [ref=e75]: x64 + 3D graphics support
+              - listitem [ref=e76]:
+                - strong [ref=e77]: linux
+                - generic [ref=e78]: appimage / deb — x64 + 3D graphics support
+              - listitem [ref=e79]:
+                - strong [ref=e80]: beta
+                - generic [ref=e81]: unsigned
+            - paragraph [ref=e82]: Full requirements, first-launch approval steps and download sizes are in the install instructions below the downloads.
+            - heading "content warning (general horror)" [level=2] [ref=e83]
+            - paragraph [ref=e84]: CAUTION Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects.
+            - separator [ref=e85]
+            - paragraph [ref=e86]: order 4417-C remains open
+            - heading "Five rooms. Five clean takes." [level=2] [ref=e87]
+            - paragraph [ref=e88]:
+              - strong [ref=e89]: Do you take the gig?
+          - generic [ref=e90]:
+            - text: DELIVERABLES
+            - generic [ref=e91]:
+              - generic [ref=e94]:
+                - strong [ref=e95]: macOS Apple Silicon DMG
+                - generic [ref=e96]: size TBD
+                - generic [ref=e97]: macOS
+              - generic [ref=e100]:
+                - strong [ref=e101]: chunk-surfer-windows-x64.zip
+                - generic [ref=e102]: size TBD
+                - generic [ref=e103]: Windows
+              - generic [ref=e106]:
+                - strong [ref=e107]: chunk-surfer-linux-x64.AppImage
+                - generic [ref=e108]: size TBD
+                - generic [ref=e109]: Linux
+          - heading "Install instructions" [level=2] [ref=e110]
+          - generic [ref=e111]:
+            - paragraph [ref=e112]: AUDIOCORP FIELD SERVICES — DEPLOYMENT NOTES
+            - paragraph [ref=e113]:
+              - strong [ref=e114]: Unsigned beta. Your operating system will complain once. Here is how to get past it.
+            - list [ref=e115]:
+              - listitem [ref=e116]:
+                - strong [ref=e117]: mac
+                - generic [ref=e118]: apple silicon — DMG
+              - listitem [ref=e119]:
+                - strong [ref=e120]: windows
+                - generic [ref=e121]:
+                  - text: x64 + 3D graphics support —
+                  - code [ref=e122]: chunk-surfer-windows-x64.zip
+              - listitem [ref=e123]:
+                - strong [ref=e124]: linux
+                - generic [ref=e125]:
+                  - text: x64 + 3D graphics support —
+                  - code [ref=e126]: chunk-surfer-linux-x64.AppImage
+                  - text: or
+                  - code [ref=e127]: chunk-surfer-linux-x64.deb
+              - listitem [ref=e128]:
+                - strong [ref=e129]: gpu
+                - generic [ref=e130]: a 3D-capable GPU is required; integrated/edge device performance is under test
+              - listitem [ref=e131]:
+                - strong [ref=e132]: disk
+                - generic [ref=e133]: no Stable Diffusion weights are included; verify size from the release artifact
+              - listitem [ref=e134]:
+                - strong [ref=e135]: audio
+                - generic [ref=e136]: headphones strongly recommended. the game is a listening test
+            - paragraph [ref=e137]: No Stable Diffusion model or Python runtime is bundled or downloaded on first launch. The game uses authored materials.
+            - heading "macOS" [level=2] [ref=e138]
+            - list [ref=e139]:
+              - listitem [ref=e140]:
+                - text: Open the downloaded macOS Apple Silicon
+                - code [ref=e141]: .dmg
+                - text: and drag
+                - strong [ref=e142]: Chunk Surfer
+                - text: into
+                - code [ref=e143]: /Applications
+                - text: . If the download is instead a ZIP of the app, extract it completely first.
+              - listitem [ref=e144]:
+                - strong [ref=e145]: Right-click the app and choose Open
+                - text: — do not double-click it the first time. Confirm
+                - strong [ref=e146]: Open
+                - text: in the dialog.
+              - listitem [ref=e147]:
+                - text: If macOS refuses anyway, open
+                - strong [ref=e148]: System Settings → Privacy & Security
+                - text: ", scroll to the blocked-app notice, and press"
+                - strong [ref=e149]: Open Anyway
+                - text: .
+              - listitem [ref=e150]:
+                - text: "Still blocked? Clear the download quarantine flag in Terminal:"
+                - code [ref=e151]: xattr -dr com.apple.quarantine /Applications/Chunk\ Surfer.app
+            - heading "Windows" [level=2] [ref=e152]
+            - list [ref=e153]:
+              - listitem [ref=e154]:
+                - text: Unzip
+                - code [ref=e155]: chunk-surfer-windows-x64.zip
+                - text: somewhere you can write to — not inside the zip, and not
+                - code [ref=e156]: Program Files
+                - text: .
+              - listitem [ref=e157]:
+                - text: Keep all extracted files together and run
+                - code [ref=e158]: chunk-surfer.exe
+                - text: . The Microsoft Edge WebView2 Runtime must be installed.
+              - listitem [ref=e159]:
+                - text: SmartScreen will say
+                - emphasis [ref=e160]: Windows protected your PC
+                - text: . Choose
+                - strong [ref=e161]: More info
+                - text: ", then"
+                - strong [ref=e162]: Run anyway
+                - text: .
+              - listitem [ref=e163]: If the world renders incorrectly, check that your graphics driver supports the required 3D/WebGL features.
+            - heading "Linux" [level=2] [ref=e164]
+            - list [ref=e165]:
+              - listitem [ref=e166]:
+                - strong [ref=e167]: "AppImage:"
+                - text: mark it executable and run it —
+                - code [ref=e168]: chmod +x chunk-surfer-linux-x64.AppImage
+                - code [ref=e169]: ./chunk-surfer-linux-x64.AppImage
+              - listitem [ref=e170]:
+                - strong [ref=e171]: "Debian / Ubuntu:"
+                - code [ref=e172]: sudo apt install ./chunk-surfer-linux-x64.deb
+                - text: ", then launch"
+                - strong [ref=e173]: Chunk Surfer
+                - text: from your applications menu.
+              - listitem [ref=e174]: No NVIDIA CUDA driver is required for the normal authored-material game. Verify your OpenGL/WebGL support.
+            - heading "Microphone" [level=2] [ref=e175]
+            - paragraph [ref=e176]:
+              - text: The game asks for microphone permission on first launch.
+              - strong [ref=e177]: You can say no and finish the whole game.
+            - paragraph [ref=e178]: If you allow it, the game measures loudness in your room locally while a take is rolling, so real noise can contaminate a recording or provoke a response in the building. Audio is never recorded, stored, transmitted, uploaded, or played back through the game. Permission can be revoked at any time in your operating system's privacy settings, or in the game's own audio settings.
+            - heading "Controls" [level=2] [ref=e179]
+            - list [ref=e180]:
+              - listitem [ref=e181]:
+                - strong [ref=e182]: "[R]"
+                - generic [ref=e183]: listen — roll the recorder
+              - listitem [ref=e184]:
+                - strong [ref=e185]: "[F]"
+                - generic [ref=e186]: light — torch on and off
+              - listitem [ref=e187]:
+                - strong [ref=e188]: rebind
+                - generic [ref=e189]: everything is remappable in settings → controls
+            - heading "content warning (general horror)" [level=2] [ref=e190]
+            - paragraph [ref=e191]: CAUTION Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects — set these before your first session if you need them.
+            - heading "Something went wrong" [level=2] [ref=e192]
+            - paragraph [ref=e193]: This is candidate installation copy for v0.3.0. Package availability and platform acceptance must be confirmed before publication. Include the app version, operating system and a description of the problem in any report.
+            - list [ref=e194]:
+              - listitem [ref=e195]:
+                - strong [ref=e196]: report
+                - link "cbassuarez.com/contact" [ref=e198] [cursor=pointer]:
+                  - /url: https://cbassuarez.com/contact
+              - listitem [ref=e199]:
+                - strong [ref=e200]: source
+                - link "github.com/cbassuarez/chunk-surfer" [ref=e202] [cursor=pointer]:
+                  - /url: https://github.com/cbassuarez/chunk-surfer
+              - listitem [ref=e203]:
+                - strong [ref=e204]: notes
+                - link "cbassuarez.com/labs/chunk-surfer" [ref=e206] [cursor=pointer]:
+                  - /url: https://cbassuarez.com/labs/chunk-surfer/
+            - paragraph [ref=e207]:
+              - strong [ref=e208]: order 4417-C remains open.
+          - generic [ref=e209]:
+            - heading "Comments" [level=2] [ref=e210]
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - text: someone
+                - link "3 days ago" [ref=e214] [cursor=pointer]:
+                  - /url: "#"
+              - paragraph [ref=e216]: the room tone in the chapel broke me. amazing.
+        - generic [ref=e217]:
+          - table [ref=e219]:
+            - rowgroup [ref=e220]:
+              - row [ref=e221]:
+                - cell "Updated" [ref=e222]
+                - cell "2 hours ago" [ref=e223]
+              - row [ref=e224]:
+                - cell "Status" [ref=e225]
+                - cell "In development" [ref=e226]
+              - row [ref=e227]:
+                - cell "Platforms" [ref=e228]
+                - cell "Windows, macOS, Linux" [ref=e229]
+              - row [ref=e230]:
+                - cell "Author" [ref=e231]
+                - cell [ref=e232]:
+                  - link "seb suarez" [ref=e233] [cursor=pointer]:
+                    - /url: "#"
+              - row [ref=e234]:
+                - cell "Genre" [ref=e235]
+                - cell [ref=e236]:
+                  - link "Survival" [ref=e237] [cursor=pointer]:
+                    - /url: "#"
+              - row [ref=e238]:
+                - cell "Tags" [ref=e239]
+                - cell [ref=e240]:
+                  - link "Horror" [ref=e241] [cursor=pointer]:
+                    - /url: "#"
+                  - text: ","
+                  - link "First-Person" [ref=e242] [cursor=pointer]:
+                    - /url: "#"
+                  - text: ","
+                  - link "Psychological Horror" [ref=e243] [cursor=pointer]:
+                    - /url: "#"
+          - generic [ref=e244]:
+            - link [ref=e245] [cursor=pointer]:
+              - /url: "#"
+              - img "Chunk Surfer title screen" [ref=e246]
+            - link [ref=e247] [cursor=pointer]:
+              - /url: "#"
+              - img "A flashlight illuminates a dark corridor" [ref=e248]
+            - link [ref=e249] [cursor=pointer]:
+              - /url: "#"
+              - img "A transcript redaction encounter" [ref=e250]
+    - generic [ref=e251]:
+      - link "itch.io" [ref=e252] [cursor=pointer]:
+        - /url: "#"
+      - link "Community" [ref=e253] [cursor=pointer]:
+        - /url: "#"
+      - link "Profile" [ref=e254] [cursor=pointer]:
+        - /url: "#"
+      - link "Report" [ref=e255] [cursor=pointer]:
+        - /url: "#"
+      - link "Embed" [ref=e256] [cursor=pointer]:
+        - /url: "#"
+    - text: ELLERY CONSERVATORY OF MUSIC ·CONDEMNED ·DEMOLITION 06:00

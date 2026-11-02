@@ -1,4 +1,5 @@
 import { ACADEMIC_SOCIETY_CHARACTER_DESIGNS as DESIGNS } from './academic-society-character-design.js';
+import {ODETTE_STRIKE_TOPICS,odetteStrikeDialogue} from './student-strike-dialogue.js';
 
 // Authored metre coordinates on the existing +10m academic floor. These are
 // people in accessible rooms, never substitute busts or newly unlocked rooms.
@@ -195,7 +196,7 @@ export const ACADEMIC_SOCIETY_BEATS=Object.freeze([
 export const ACADEMIC_SOCIETY_TOPICS=Object.freeze({
   celeste:Object.freeze(['company','emile','need','firstevening','sabine','rules']),
   emile:Object.freeze(['music','celeste','need','audience','sabine','silence']),
-  odette:Object.freeze(['keys','company','need','agathe','lastnight','returning']),
+  odette:Object.freeze(['keys','company','need','agathe','lastnight','returning',...ODETTE_STRIKE_TOPICS]),
   lucien:Object.freeze(['company','emile','need','noe','name','likeness']),
   agathe:Object.freeze(['names','odette','mistake','need','missing']),
   noe:Object.freeze(['portraits','lucien','unfinished','need','lastline']),
@@ -327,7 +328,7 @@ export function academicSocietyBeatLines(beat,state={}){
 }
 
 /** Local hubs. A choice is tentative until the presenter finishes. */
-export function academicSocietyDialogue(actorId,state={}){
+export function academicSocietyDialogue(actorId,state={},context={}){
   if(!BY_ID[actorId])return null;
   const met=(state.met?.[actorId]||0)>0,consent=state.consent||'unasked',lent=consent==='lent';
   const asked=new Set(state.topics?.[actorId]||[]);
@@ -631,6 +632,12 @@ export function academicSocietyDialogue(actorId,state={}){
     ],back()),
     leave:n(actorId,['An interesting entrance. I shall try to leave the exit unreviewed.']),
   };
+  if(actorId==='odette'){
+    const strike=odetteStrikeDialogue({studentStrikeWatched:context.studentStrikeWatched===true,
+      studentStrikeAvailable:context.studentStrikeAvailable!==false,line:l});
+    Object.assign(nodes,strike.nodes);
+    nodes.start.choices.splice(nodes.start.choices.length-1,0,...strike.menuChoices);
+  }
   return {id:`academic-society:${actorId}`,actorId,nodes};
 }
 

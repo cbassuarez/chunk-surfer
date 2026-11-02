@@ -138,6 +138,7 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
     voices.add(v);place(v);
     const duration=Math.max(.03,Math.min(seconds,buffer.duration-offset));
     const start=ctx.currentTime+v.mix.arrival,fade=Math.min(.12,duration*.2);
+    v.until=start+duration+(domain==='retaining-case'?1.35:.52);
     envelope.gain.setValueAtTime(0,start);
     if(envelope.gain.linearRampToValueAtTime){
       envelope.gain.linearRampToValueAtTime(1,start+Math.min(.012,duration*.1));
@@ -152,6 +153,9 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
   function event(e,state=listener,presentedFrame=acousticFrame){
     if(!['wrong-return','catch'].includes(state?.phase)||!prepare())return false;
     listener=state;acousticFrame=presentedFrame;const pos=e.position||{x:finite(state.x),y:finite(state.feet),z:finite(state.z)};
+    if(e.type==='corridor-strain')return play('timber',pos,.065,{offset:.3,seconds:1.8,kind:'corridor-strain'});
+    if(e.type==='corridor-warning')return play('joint',pos,.065,{offset:.16,seconds:1,kind:'corridor-warning'});
+    if(e.type==='corridor-settled')return play('joint',pos,.08,{offset:1.15,seconds:.65,kind:'corridor-settled'});
     if(e.type==='land')return play('stone',pos,.09,{offset:.12,seconds:.75,kind:'loaded-landing'});
     if(e.type==='capture')return play('timber',pos,.12,{seconds:1.6,kind:'lining-takes-weight'});
     if(e.type==='recovered')return play('timber',pos,.045,{offset:.85,seconds:.9,kind:'lining-releases-weight'});
@@ -159,6 +163,20 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
     if(e.type==='phase')return play('timber',pos,.065,{offset:.3,seconds:1.8,kind:'case-throat'});
     if(e.type==='closure-warning')return play('joint',pos,.055,{seconds:1.8,kind:'return-bearing',chartId:0});
     return false;
+  }
+  // Tail-only maintenance during score isolation: no preparation, fetching,
+  // remnant emission or moving-counterweight contacts may start here.
+  function maintain(state,presentedFrame=null){
+    if(disposed||protectedAudio()||!['wrong-return','catch'].includes(state?.phase)){stop();return false;}
+    if(!voices.size)return false;
+    let pair;try{pair=getAudio();}catch{stop();return false;}
+    if(!pair?.ctx||pair.ctx!==ctx||pair.destination!==destination||ctx.state!=='running'){stop();return false;}
+    listener=state;acousticFrame=presentedFrame;
+    for(const v of [...voices]){
+      if(!/^corridor-(?:strain|warning|settled)$/.test(v.kind)||v.until<=ctx.currentTime)release(v);
+      else place(v);
+    }
+    return true;
   }
   function update(state,presentedFrame=null){
     if(!['wrong-return','catch'].includes(state?.phase)||!prepare()){stop();return false;}
@@ -177,7 +195,7 @@ export function createContinuationMaterialAudio({getAudio=()=>null,fetcher=globa
     }else travel=0;
     previous=w?{...w,phase:state.phase}:null;return true;
   }
-  return{update,event,stop,prepare,whenReady:()=>loading||Promise.resolve(ready),
+  return{update,event,maintain,stop,prepare,whenReady:()=>loading||Promise.resolve(ready),
     dispose(){stop();disposed=true;generation++;bank=null;loading=null;ready=false;ctx=null;destination=null;},
     snapshot:()=>({ready,loading:!!loading,error:failed,voices:voices.size,played,skipped,lastDomain,
       loadAttempts:ctx?loadPolicies.get(ctx)?.attempts||0:0,

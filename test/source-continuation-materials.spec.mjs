@@ -126,3 +126,20 @@ test('late preparation from an old context cannot overwrite the active bank gene
   await finishFirst();assert.equal(await old,false,'the superseded owner promise cannot report current readiness');assert.equal(sound.snapshot().ready,true);
   sound.update(state());sound.event({type:'land'},state({phase:'catch'}));assert.equal(second.sources.length,1);assert.equal(first.sources.length,0);sound.dispose();
 });
+
+test('isolated corridor material maintenance spatializes and expires only existing contacts without preload or emissions',async()=>{
+  const g=audio();let protectedAudio=false;
+  const sound=createContinuationMaterialAudio({getAudio:()=>g,fetcher:g.fetcher,urlFor:f=>f,protectedAudio:()=>protectedAudio});
+  const s=state({chartId:4,x:-146,z:-72,feet:8.4,elapsed:90,counterweight:{active:true,mode:'walking',x:0,y:0,z:0}});
+  sound.maintain(s);assert.equal(g.fetches.length,0,'tail maintenance does not prepare an empty material bank');
+  sound.prepare();assert.equal(await sound.whenReady(),true);
+  for(const type of ['corridor-strain','corridor-warning','corridor-settled'])assert.equal(sound.event({type,chartId:4,position:{x:-143,y:10.4,z:-77}},s),true);
+  assert.equal(sound.snapshot().voices,3);const played=sound.snapshot().played,fetches=g.fetches.length;
+  assert.ok(sound.snapshot().layers.every(v=>v.kind.startsWith('corridor-')&&v.chartId===4&&v.mix.pan>0));
+  sound.maintain({...s,yaw:Math.PI});assert.ok(sound.snapshot().layers.every(v=>v.mix.pan<0));
+  assert.equal(sound.snapshot().played,played);assert.equal(g.fetches.length,fetches,'no remnant/counterweight/preload from maintenance');
+  g.ctx.currentTime=4;sound.maintain(s);assert.equal(sound.snapshot().voices,0);assert.ok(g.sources.every(v=>v.stops.length));
+  sound.maintain({...s,elapsed:500});assert.equal(sound.snapshot().played,played);
+  sound.event({type:'corridor-warning'},s);protectedAudio=true;sound.maintain(s);assert.equal(sound.snapshot().voices,0);
+  protectedAudio=false;sound.maintain(s);assert.equal(sound.snapshot().voices,0);sound.event({type:'corridor-settled'},s);sound.stop();assert.equal(sound.snapshot().voices,0);sound.dispose();
+});

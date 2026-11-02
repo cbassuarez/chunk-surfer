@@ -69,3 +69,12 @@ test('holding phase changes does not make the new score audible; stop/dispose ar
   assert.equal(f.owner.start(),false);assert.equal(f.owner.selectPhase('wrong-return'),false);
   assert.equal(f.log.filter(x=>x[1]==='dispose').length,2);
 });
+
+
+test('natural single-pass transport does not commit an ending or isolate SourceIII walking',()=>{
+  const f=fixture();f.owner.selectPhase('catch');f.owner.start();f.couperin.state.finishAtEnd=true;
+  assert.equal(f.owner.snapshot().endingCommitted,false);f.couperin.state.ended=true;
+  f.owner.finishAfterCycle();assert.equal(f.owner.snapshot().endingCommitted,true);
+  f.owner.selectPhase('wrong-return');assert.equal(f.owner.snapshot().endingCommitted,false);
+  f.owner.finishAfterCycle();f.owner.stop();assert.equal(f.owner.snapshot().endingCommitted,false);f.owner.dispose();
+});

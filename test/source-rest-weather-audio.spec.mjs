@@ -101,6 +101,16 @@ test('recorded bells decode only three canonical stems, keep pitch, locate the m
   assert.ok(h.nodes.filter(n=>n.kind==='convolver').every(n=>n.buffer===null),'pause destroys actual reflections');
   h.bells.dispose();assert.equal(h.bells.strike(event,state),false);
 });
+test('a physical half-muffle softens the contact level and actual lowpass while retaining the same recorded pitch and tail',async()=>{
+  const open=graphHarness(),soft=graphHarness();await open.bells.prepare();await soft.bells.prepare();
+  const event={...SOURCE_REST_BELL_EVENTS[0],position:{x:10,y:2,z:0}},state={x:0,feet:0,z:0,yaw:0,pitch:0};
+  open.bells.strike(event,state);soft.bells.strike({...event,stroke:'muffled',muffle:.68},state);
+  assert.ok(soft.bells.snapshot().lastStrike.level<open.bells.snapshot().lastStrike.level);
+  assert.ok(soft.nodes.find(n=>n.kind==='filter').frequency.value<open.nodes.find(n=>n.kind==='filter').frequency.value*.2);
+  assert.equal(soft.bells.snapshot().lastStrike.stroke,'muffled');assert.equal(soft.bells.snapshot().lastStrike.muffle,.68);
+  assert.equal(soft.starts[0].node.playbackRate.value,1);assert.deepEqual(soft.starts[0].node.stopArgs,[20]);
+  assert.equal(soft.nodes.find(n=>n.kind==='convolver').buffer.length,6800);open.bells.dispose();soft.bells.dispose();
+});
 test('a late decode after disposal cannot publish or play a bell',async()=>{
   const h=graphHarness(),releases=[];h.ctx.decodeAudioData=()=>new Promise(resolve=>releases.push(resolve));
   const loading=h.bells.prepare();await flush();h.bells.dispose();for(const release of releases)release({duration:12,numberOfChannels:1});

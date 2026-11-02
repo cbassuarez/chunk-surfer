@@ -18,6 +18,7 @@ import { monitorProgramMeasurement, monitorSnapshotForRms } from '../audio/monit
 import { promptLine } from './bindings.js';
 import { bootWeather, bootWeatherAudio, drainBootFlashes, drainBootThunder, renderBootWeather, stepBootWeatherTitleTail } from './boot-weather.js';
 import { transferRoomCopy } from './post-run-copy.js';
+import { achievementCompletion } from '../progression/achievements.js';
 
 const TITLE_CONFIRM_PROMPT = 'START NEW RUN? PRESS ENTER AGAIN';
 const TITLE_MENU_TWO_COLUMN_MIN_W = 64;
@@ -116,7 +117,7 @@ export function titleStateLine(meta = {}, { activeRun = false, filed = 0 } = {})
 const TITLE_ROW_HELP = Object.freeze({
   'continue': 'RESUME THE NIGHT YOU LEFT.',
   'new-run': 'START A NEW NIGHT.',
-  'archive': 'ACHIEVEMENTS, RUN HISTORY AND ARCHIVED DOCUMENTS.',
+  'archive': 'TRACK 100% COMPLETION, DISCOVERIES AND FILED RETURNS.',
   'return-index': 'THE ENDINGS YOU HAVE REACHED, AND THE ONES YOU HAVE NOT.',
   'beta-notice': 'WHAT THIS BUILD IS, AND WHAT IT IS NOT YET.',
   'settings': 'AUDIO, DISPLAY, CONTROLS AND ACCESSIBILITY.',
@@ -124,6 +125,7 @@ const TITLE_ROW_HELP = Object.freeze({
 
 export function titleRowHelp(item, { filed = 0 } = {}) {
   if (!item) return '';
+  if (item.id === 'archive') { const progress = achievementCompletion(getMeta()); return `${progress.completed}/${progress.total} ACHIEVEMENTS · ${progress.percent.toFixed(progress.complete ? 0 : 1)}% COMPLETE. DISCOVERIES AND FILED RETURNS.`; }
   if (item.id === 'transfer-room') return transferRoomCopy({ filed }).short;
   if (item.id === 'continue' && item.disabled) return 'NO RUN IN PROGRESS.';
   return TITLE_ROW_HELP[item.id] || '';
@@ -151,7 +153,7 @@ export function makeTitleScene({
   const items = [
     { id: 'continue', label: 'continue', run: onContinue, disabled: !activeRun, stay: true },
     { id: 'new-run', label: 'new run', run: onNewGame, confirms: true, stay: true },
-    { id: 'archive', label: 'achievements', stay: true, run: onArchive },
+    { id: 'archive', label: 'archive / 100%', stay: true, run: onArchive },
     { id: 'return-index', label: 'endings', stay: true, run: onReturnIndex },
     // THE OFFICE YOU COME BACK TO. It appears the moment there is any reason to
     // go there — the first sheet you read, or the first night you finish — and

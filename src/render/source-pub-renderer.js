@@ -4,6 +4,7 @@ import * as R3 from './r3d.js';
 import * as P3 from './props3d.js';
 import {CELL,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
+import {sourcePubDitherIntensity} from './source-dither-routing.js';
 import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubFloorHoles,sourcePubFloorHeight,sourcePubTask} from '../data/source-pub.js';
 import {SOURCE_PUB_SCENOGRAPHY as SET,SOURCE_PUB_SCENOGRAPHY_ASSET,SOURCE_PUB_SCENOGRAPHY_MESHES as MESH,sourcePubDeckRectangles} from '../data/source-pub-scenography.js';
 import {PUB_ACTORS} from '../data/pub-population.js';
@@ -211,7 +212,7 @@ export function createSourcePubRenderer({onRelease=()=>{},renderer=R3,props=P3,r
     if(frame.falling||lastFrameFalling)renderer.r3dSnapCameraOnNextFrame?.();
     lastFrameFalling=frame.falling;
     renderer.r3dFrame({px:frame.eye[0]/CELL-.5,py:frame.eye[2]/CELL-.5,floorH:frame.eye[1]-SOURCE_PUB.eyeHeight,tileW:256,tileH:256,worldCount:0,
-      worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false});
+      worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:sourcePubDitherIntensity(state,SOURCE_PUB.rounds.length)});
     return true;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();onRelease();return true;}

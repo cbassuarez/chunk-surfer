@@ -2,11 +2,12 @@
 // positions, handedness and current shop identities; it does not move the town.
 import { CONSERVATORY_PROPS } from './conservatory-props.js';
 import { ARRIVAL_COURT } from './arrival-court.js';
-import { DISTRICT_BOUNDS, DISTRICT_LOGICAL_ORIGIN, buildExteriorDistrictRows } from './exterior-district.js';
+import { DISTRICT_BOUNDS, DISTRICT_LOGICAL_ORIGIN, buildExteriorDistrictRows, districtCourtFloorAt } from './exterior-district.js';
 import { EXTERIOR_FOREGROUND, foregroundArrivalGlyphAt } from './exterior-foreground.js';
 import { EXTERIOR_ROOFLINE } from './exterior-roofline.js';
 import { PLAZA_SHOPFRONTS } from './plaza-shopfronts.js';
 import { EXTERIOR_PUB, PUB_RELOCATION } from './exterior-pub.js';
+import {yardTurnPoint,YARD_TURN_YAW} from './yard-turn.js';
 import { PROP_BOUNDS } from './generated/prop-geometry.js';
 import { GLYPHS } from './floorplan/legend.js';
 import { streetPilotFloorAt } from './street-pilot.js';
@@ -66,9 +67,10 @@ export function canonicalOutskirtsExteriorPose(id){
   const districtX=snap(p.x)-DISTRICT_LOGICAL_ORIGIN.x+DISTRICT_BOUNDS.x0;
   const districtZ=snap(p.y)-DISTRICT_LOGICAL_ORIGIN.y+DISTRICT_BOUNDS.y0;
   const glyph=districtRows[Math.floor(districtZ-DISTRICT_BOUNDS.y0)]?.[Math.floor(districtX-DISTRICT_BOUNDS.x0)];
-  const districtFloor=streetPilotFloorAt(districtX,districtZ)??GLYPHS[glyph]?.floor??0;
+  const districtFloor=districtCourtFloorAt(districtX,districtZ)?.floor??streetPilotFloorAt(districtX,districtZ)??GLYPHS[glyph]?.floor??0;
   const floor=p.floorOverride??(pub?EXTERIOR_PUB.floor:district?districtFloor:foregroundArrivalGlyphAt(x,z)==='g'?.02:0);
-  return {x,z,y:floor+(p.elevation||0)+(p.renderOffsetY||0),yaw:p.yaw||0};
+  const placed=p.physicalPlacement||(pub?{...yardTurnPoint('lyric',{x,z}),yaw:(p.yaw||0)+YARD_TURN_YAW}:{x,z,yaw:p.yaw||0});
+  return {...placed,y:floor+(p.elevation||0)+(p.renderOffsetY||0)};
 }
 
 export function outskirtsTownPlacement(id,extra={}){

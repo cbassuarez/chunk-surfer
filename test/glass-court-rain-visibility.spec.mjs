@@ -53,23 +53,23 @@ function hits(from,to,predicate){
  return triangles.filter(t=>predicate(t)&&!t.min.some((n,k)=>n>hi[k]+1e-5)&&!t.max.some((n,k)=>n<lo[k]-1e-5)
   &&intersection(from,to,...t.points)!==null);
 }
-const eyeFor=face=>[face.x,1.65,C.origin.z+2.5];
-const blockers=(face,[x,y])=>hits(eyeFor(face),[face.x+x,face.y+y,face.z],t=>t.alpha==='OPAQUE');
+const eyeFor=face=>[C.origin.x+2,1.65,face.z+2.4];
+const blockers=(face,[x,y])=>hits(eyeFor(face),[face.x,face.y+y,face.z+x],t=>t.alpha==='OPAQUE');
 
-test('both expressions reach the actual inward-facing north pane within the shader tolerance',()=>{
+test('both expressions reach the actual inward-facing side pane within the shader tolerance',()=>{
  for(const face of faces)for(const [x,y]of features){
-  const from=eyeFor(face),to=[face.x+x,face.y+y,face.z];
+  const from=eyeFor(face),to=[face.x,face.y+y,face.z+x];
   const pane=hits(from,to,t=>t.mesh==='glass_court_glass'&&t.material==='court sparse glazed reflection'&&t.alpha==='MASK');
   assert.ok(pane.length,`${face.sourceId} feature(${x},${y}) lands on real sparse glazing`);
-  assert.ok(pane.some(t=>t.points.every(p=>Math.abs(p[2]-face.z)<.018)),`${face.sourceId} uses the real north plane`);
+  assert.ok(pane.some(t=>t.points.every(p=>Math.abs(p[0]-face.x)<.018)),`${face.sourceId} uses the real side plane`);
  }
 });
 
-test('all eight facial features have clear production sight rays; old eye-height sites fail the same test',()=>{
+test('all eight facial features have clear production sight rays; a solid trough blocks the same rays',()=>{
  for(const [i,face]of faces.entries()){
   for(const feature of features)assert.deepEqual(blockers(face,feature).map(t=>t.id),[],`${face.sourceId}: ${feature}`);
-  const old={...face,x:bodies[i].x,y:C.drawnFloor+1.69};
-  assert.ok(features.every(feature=>blockers(old,feature).length),`${face.sourceId}: negative control must reproduce the hidden original site`);
+  const hidden={...face,z:bodies[i].y,y:C.drawnFloor+.42};
+  assert.ok(features.every(feature=>blockers(hidden,feature).length),`${face.sourceId}: the physical trough must occlude a submerged expression`);
  }
 });
 

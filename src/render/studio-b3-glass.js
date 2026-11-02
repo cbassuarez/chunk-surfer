@@ -3,7 +3,8 @@
 // scene render and the figure never becomes an actor in the control booth.
 import {torchAngularSample,torchFalloffSample} from './torch-optics.js';
 import {localLightConeWeight} from './local-light-cone.js';
-export const B3_GLASS = Object.freeze({x:18.5,z0:8,z1:13,bottom:-2.95,top:-0.95,chairX:21.6,chairZ:10.5});
+import {B3_WINDOW,b3WindowCrossing} from '../data/studio-b3-window.js';
+export const B3_GLASS = Object.freeze({x:18.5,z0:8,z1:13,bottom:-2.95,top:-0.95,chairX:21.6,chairZ:10.5,panes:B3_WINDOW.panes});
 
 // Samples the same resolved physical slice that drives the world march. Solid
 // cells, door leaves and intersected floor/ceiling are real occluders. This is
@@ -31,11 +32,11 @@ export function b3ClearRay(plan,from,to,{propBlocks=null}={}){
 
 export function b3FigurePanePoint(eye){
   // The head is a virtual image behind the plane; project it onto that plane.
-  const target=[21.6,-2.30,10.5],dx=target[0]-eye[0];
-  if(eye[0]>=18.5||dx<=0)return null;
-  const t=(18.5-eye[0])/dx;
-  const q=[18.5,eye[1]+(target[1]-eye[1])*t,eye[2]+(target[2]-eye[2])*t];
-  return q[2]>=8.08&&q[2]<=12.92&&q[1]>=-2.87&&q[1]<=-1.03?q:null;
+  if(eye[0]>=B3_WINDOW.planeX)return null;
+  const crossing=b3WindowCrossing(eye,[B3_GLASS.chairX,-2.58,B3_GLASS.chairZ]);
+  if(!crossing)return null;
+  const pane=B3_WINDOW.panes.find(p=>p.id===crossing.paneId),q=crossing.point;
+  return q[2]>=pane.z0+.08&&q[2]<=pane.z1-.08&&q[1]>=B3_WINDOW.bottom+.08&&q[1]<=B3_WINDOW.top-.08?q:null;
 }
 
 export function b3PaneIllumination({point,eye,torch,ambient=0,lights=[],plan}={}){
@@ -68,7 +69,8 @@ export function createB3GlassMoment(){
       const here=active && eye[0]>5 && eye[0]<18.5 && eye[2]>5 && eye[2]<20 && eye[1]>-3.9 && eye[1]<-.8;
       if(!here){outside+=dt;if(outside>5){seen=away=0;armed=false;elapsed=-1;cooldown=0;}return 0;}
       outside=0;
-      const dx=18.5-eye[0],dz=10.5-eye[2],dy=-1.95-eye[1];
+      const point=b3FigurePanePoint(eye)||[18.5,-1.95,10.5];
+      const dx=point[0]-eye[0],dz=point[2]-eye[2],dy=point[1]-eye[1];
       const len=Math.hypot(dx,dy,dz)||1;
       const looking=(Math.sin(yaw)*Math.cos(pitch)*dx+Math.sin(pitch)*dy-Math.cos(yaw)*Math.cos(pitch)*dz)/len>.76;
       cooldown=Math.max(0,cooldown-dt);
@@ -115,15 +117,26 @@ void b3Glass(inout vec3 col,vec3 eye,vec3 ray,vec3 fwd,inout float sceneDepth){
   float t=(18.5-eye.x)/ray.x;
   if(t<=0.0||t*max(.001,dot(ray,fwd))>=sceneDepth-.012)return;
   vec3 q=eye+ray*t;
-  if(q.z<8.0||q.z>13.0||q.y< -2.95||q.y> -.95)return;
-  // Fresnel makes the glass read without turning the live view into a mirror.
-  float grazing=pow(1.0-clamp(abs(ray.x),0.0,1.0),2.0);
-  float rim=max(1.0-smoothstep(.0,.06,min(q.z-8.0,13.0-q.z)),
-                1.0-smoothstep(.0,.05,min(q.y+2.95,-.95-q.y)));
-  col=mix(col,vec3(.22,.27,.26),.035+.13*grazing+.10*rim);
-  // Reflected light bars, anchored to the pane rather than the camera.
-  float streak=1.0-smoothstep(.015,.035,abs(q.z-8.38-(q.y+2.0)*.17));
-  col+=vec3(.12,.14,.12)*streak*(.10+.18*grazing);
+  bool north=q.z>=8.0&&q.z<=13.0;
+  bool south=q.z>=14.0&&q.z<=17.0;
+  if((!north&&!south)||q.y< -2.95||q.y> -.95)return;
+  float z0=north?8.0:14.0,z1=north?13.0:17.0;
+  // Clear unequal studio glazing. Contrast belongs mostly to the deep frame,
+  // seals and grazing edges; the view is transmitted, never a room mirror.
+  float grazing=pow(1.0-clamp(abs(ray.x),0.0,1.0),3.0);
+  float rim=max(1.0-smoothstep(.0,.045,min(q.z-z0,z1-q.z)),
+                1.0-smoothstep(.0,.045,min(q.y+2.95,-.95-q.y)));
+  float receive=clamp(max(max(col.r,col.g),col.b),0.0,1.0);
+  col=mix(col,vec3(.17,.20,.19),.014+.048*grazing+.032*rim);
+  // Two weak glancing streaks suggest separated panes. Their brightness is
+  // bounded by the real transmitted room; a dark window cannot light itself.
+  float lineA=abs(q.y+1.24+.075*(q.z-10.5));
+  float lineB=abs(q.y+1.275+.075*(q.z-10.5));
+  float streak=(1.0-smoothstep(.006,.019,lineA))+.45*(1.0-smoothstep(.006,.016,lineB));
+  col+=vec3(.10,.12,.10)*streak*(.012+.035*grazing)*receive;
+  // Dust lies at the seals, not as a bright sheet over the live-room view.
+  float dust=pow(.5+.5*sin(q.z*119.0+q.y*43.0)*sin(q.y*167.0-q.z*31.0),7.0);
+  col=mix(col,col*.82, dust*rim*.16);
   // Sparse chinagraph sightlines belong to the glass, not the reflected room.
   // They are readable from either side, and their colour follows the ambient
   // image enough to avoid looking like a self-lit pane or a mirror.
@@ -146,21 +159,36 @@ void b3Glass(inout vec3 col,vec3 eye,vec3 ray,vec3 fwd,inout float sceneDepth){
   // A seated head, shoulders and arms at the actual chair. The actual booth
   // remains empty; all fragments below are clipped to the pane and to its
   // nearest visible depth. The figure does not own collision or threat logic.
-  float head=b3Ellipsoid(eye,ray,vec3(21.6,-2.30,10.5),vec3(.13,.20,.13));
-  float torso=b3Ellipsoid(eye,ray,vec3(21.6,-2.72,10.5),vec3(.19,.32,.28));
-  float arm1=b3Ellipsoid(eye,ray,vec3(21.43,-2.78,10.19),vec3(.25,.10,.09));
-  float arm2=b3Ellipsoid(eye,ray,vec3(21.43,-2.78,10.81),vec3(.25,.10,.09));
+  float head=b3Ellipsoid(eye,ray,vec3(21.52,-2.58,10.5),vec3(.13,.20,.13));
+  float torso=b3Ellipsoid(eye,ray,vec3(21.57,-2.98,10.5),vec3(.19,.32,.28));
+  float arm1=b3Ellipsoid(eye,ray,vec3(21.18,-3.02,10.19),vec3(.32,.085,.09));
+  float arm2=b3Ellipsoid(eye,ray,vec3(21.18,-3.02,10.81),vec3(.32,.085,.09));
   float figure=max(max(step(0.0,head),step(0.0,torso)),max(step(0.0,arm1),step(0.0,arm2)));
   // A narrow glancing edge survives the actual one-bit print where a dark
   // negative against a dark control room disappears. It is confined to the
   // figure, not the rest of the transparent pane; the booth remains readable.
-  float headOuter=b3Ellipsoid(eye,ray,vec3(21.6,-2.30,10.5),vec3(.15,.22,.15));
-  float torsoOuter=b3Ellipsoid(eye,ray,vec3(21.6,-2.72,10.5),vec3(.21,.34,.30));
-  float arm1Outer=b3Ellipsoid(eye,ray,vec3(21.43,-2.78,10.19),vec3(.27,.12,.11));
-  float arm2Outer=b3Ellipsoid(eye,ray,vec3(21.43,-2.78,10.81),vec3(.27,.12,.11));
+  float headOuter=b3Ellipsoid(eye,ray,vec3(21.52,-2.58,10.5),vec3(.15,.22,.15));
+  float torsoOuter=b3Ellipsoid(eye,ray,vec3(21.57,-2.98,10.5),vec3(.21,.34,.30));
+  float arm1Outer=b3Ellipsoid(eye,ray,vec3(21.18,-3.02,10.19),vec3(.34,.105,.11));
+  float arm2Outer=b3Ellipsoid(eye,ray,vec3(21.18,-3.02,10.81),vec3(.34,.105,.11));
   float shell=max(max(step(0.0,headOuter),step(0.0,torsoOuter)),max(step(0.0,arm1Outer),step(0.0,arm2Outer)));
   float outline=max(0.0,shell-figure);
-  col=mix(col,col*.72+vec3(.13,.14,.13),figure*uB3GlassFigure*.55);
+  vec3 bodyTone=col*.72+vec3(.13,.14,.13);
+  // The impression belongs to the actual engineer's chair: seated head,
+  // sloping shoulders and forearms reaching the unpowered desk. Eye sockets
+  // remove light rather than becoming a pair of emissive horror dots.
+  if(head>0.0){
+    vec3 hp=eye+ray*head;
+    float sockets=exp(-pow((hp.y+2.56)/.026,2.0)-pow((abs(hp.z-10.5)-.055)/.028,2.0));
+    float face=1.0-smoothstep(21.45,21.55,hp.x);
+    bodyTone*=1.0-.65*sockets*face;
+  }
+  if(torso>0.0&&head<0.0){
+    vec3 cp=eye+ray*torso;
+    float lapel=1.0-smoothstep(.008,.025,abs(abs(cp.z-10.5)-(.06+.23*clamp(cp.y+3.3,0.0,.7))));
+    bodyTone*=1.0-.28*lapel;
+  }
+  col=mix(col,bodyTone,figure*uB3GlassFigure*.55);
   col=mix(col,vec3(.43,.47,.44),outline*uB3GlassFigure*.60);
 }
 `;

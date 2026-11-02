@@ -183,12 +183,12 @@ for (const def of ACHIEVEMENT_DEFS) {
 }
 
 const achievementRun = freshRunRecord({ now: 1, id: 'run_test' });
-achievementRun.ledger.takes.rooms = ['a', 'b', 'c', 'd', 'e'];
+achievementRun.ledger.takes.rooms = ['main_b3', 'the_tub', 'amplifications', 'soundnoisemusic', 'lux_nova'];
 achievementRun.ledger.takes.completed = 5;
 const profile = freshMeta();
 assert.deepEqual(
   evaluateAchievements({
-    event: event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'e', elapsed: 45 }),
+    event: event(EVENT_TYPES.TAKE_COMPLETED, { roomId: 'lux_nova', elapsed: 45 }),
     profile,
     run: achievementRun,
   }).sort(),

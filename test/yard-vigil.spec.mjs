@@ -122,6 +122,14 @@ const hold = (state, seconds, opts = {}) => {
   // blocks one side, not both.
   assert.ok(seats.some((s) => s.x < facing.x) && seats.some((s) => s.x > facing.x),
     'every fallback is on the same side as the first choice');
+  assert.equal(seats.length,8,'the six preferred deep positions precede two narrow-roof shoulder fallbacks');
+  for(const s of seats.slice(6)){
+    const dx=(s.x-facing.x)/facing.cellsPerMetre,dy=(s.y-facing.y)/facing.cellsPerMetre;
+    assert.ok(Math.hypot(dx,dy)>=VIGIL.PLACE_MIN_M,'a narrow roof does not shorten the discovery distance');
+    const forward=dx*facing.forwardX+dy*facing.forwardY;
+    assert.ok(forward<0,'the shoulder fallbacks remain behind the settled eye');
+    assert.ok(forward/Math.hypot(dx,dy)<-.04,'fallbacks cannot appear in the forward hemisphere');
+  }
 
   // The pan is the shoulder the chair is actually over. Facing north, a chair to
   // the WEST (smaller x) is over the left shoulder and must pan left.

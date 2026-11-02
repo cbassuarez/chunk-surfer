@@ -77,7 +77,8 @@ test('actual full-body airborne crossings dispatch return, onward phase and fina
 test('swept bodies hit real ceilings, solids and closed leaves without tunneling',()=>{
   let state=at(-12,-13.98,5.4),highest=state.feet;
   state=tick(state,{dt:0,jump:true});
-  while(state.fall){state=tick(state);highest=Math.max(highest,state.feet);}
+  for(let frame=0;frame<2400&&state.fall;frame++){state=tick(state);highest=Math.max(highest,state.feet);}
+  assert.equal(state.fall,null,'the ceiling-arrested jump settles within20 simulated seconds');
   assert.ok(highest<=8.4-.35-C.bodyHeight+1e-5,'the upper cross underside stops the head');
   state=at(-17.3,-12,8.4);state=tick(state,{dt:0,jump:true,forward:1,look:{yaw:-Math.PI/2}});
   state=until(state,s=>!s.fall);assert.ok(state.x>=-18+.12+C.bodyRadius-1e-4,'a closed leaf cannot be jumped through');

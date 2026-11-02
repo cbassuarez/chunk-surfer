@@ -1,15 +1,29 @@
 // The manifestation is a skinned volume. Its geometry pass transports actual
 // coverage and view depth into acquisition; no image/card supplies its contour.
-// The body is an unlit black absence. Its neutral white radiance lives outside
-// the visible triangles, then enters the same recording as the rest of the
-// world. Surface-relief bits remain transport data, never light on the body.
+// HUSH reveals a world-fixed cosmic field. The retained human reference keeps
+// its black absence; neutral radiance remains outside either physical volume.
 // Endpoint identity only: acquisition still chooses every glow mark. Sharing
 // this operation keeps glass, exposure and phosphor from tinting that material.
+import {HUSH_COSMOS_INK_GLSL} from './hush-cosmos.js';
+
 export const PRESSURE_INK_GLSL = `
+${HUSH_COSMOS_INK_GLSL}
 vec3 pressureRecordedInk(vec3 recorded,vec2 identity){
  float white=max(recorded.r,max(recorded.g,recorded.b));
  white=mix(white,1.0,step(.5,white));
  return mix(recorded,vec3(white),step(.5,identity.g))*(1.0-step(.5,identity.r));
+}
+vec3 pressureRecordedCosmosInk(vec3 recorded,vec4 identity){
+ // A is the depth-tested cosmic material flag, not a colour-key or actor id.
+ // Only hue changes here: the recorder has already chosen the actual marks.
+ if(identity.a>.5&&identity.r>.5)return hushCosmosRecordedInk(recorded,identity.b);
+ return pressureRecordedInk(recorded,identity.rg);
+}
+vec3 pressurePreserveRecordedCosmos(vec3 presented,vec3 acquired,vec4 identity){
+ // POST may invert or tint the world. The body's already acquired decision
+ // must survive that grade, rather than treating an inversion as another bit.
+ float cosmic=step(.5,identity.a)*step(.5,identity.r);
+ return pressureRecordedCosmosInk(mix(presented,acquired,cosmic),identity);
 }
 `;
 
@@ -18,6 +32,7 @@ precision highp float;
 uniform sampler2D uSrc,uGeometry,uScene,uPropsDepth,uAcquired;
 uniform vec2 uRes,uPressureRes,uNearFar;
 uniform float uSceneDepthReady,uAcquiredOnly,uCaptureExposure;
+${HUSH_COSMOS_INK_GLSL}
 layout(location=0)out vec4 o;
 layout(location=1)out vec4 oIdentity;
 float meshDepth(vec4 g){return dot(g.rg,vec2(65280.0,255.0))*uNearFar.y/65535.0;}
@@ -37,7 +52,10 @@ void main(){
  vec4 src=texture(uSrc,uv),g=texture(uGeometry,uv);
  float front=worldDepth(uv),mass=coverage(uv,front);
  float bits=floor(g.b*255.0+.5),core=mod(floor(bits/64.0),2.0);
+ float cosmos=mod(floor(bits/32.0),2.0);
  float coreMask=step(.018,mass)*core;
+ float cosmosMask=coreMask*cosmos;
+ vec4 cosmic=hushCosmosSignalMaterial(mod(bits,32.0)/31.0);
  float nearGlow=0.0,midGlow=0.0,wideGlow=0.0,farGlow=0.0;
  for(int i=0;i<8;i++){
   float a=float(i)*.78539816339;vec2 d=vec2(cos(a),sin(a));
@@ -54,7 +72,7 @@ void main(){
  // Carry the already depth-clipped finite material support with the scene.
  // Acquisition and POST can retain black/white endpoints without resampling
  // the radial glow neighbourhood or repainting a smooth halo after recording.
- oIdentity=vec4(coreMask,step(.000001,glowLight),0.0,1.0);
+ oIdentity=vec4(coreMask,step(.000001,glowLight),cosmic.a,cosmosMask);
  // The old text-only scene keeps its own presentation outside the physical
  // material. Use its actual core/glow footprint, not an unconditional expanded
  // mesh mask. Strength already entered acquisition, so do not multiply it twice.
@@ -67,9 +85,10 @@ void main(){
  // long exposure must not change the material or introduce a coloured fringe.
  float exposure=clamp(uCaptureExposure,1.0,12.0);
  c+=vec3(glowLight*1.45/exposure);
- // Seal the complete covered core after the glow. No scene transmission,
- // normal-map relief, edge light or exposure can lift it into a grey body.
+ // Neither material transmits the room. The human reference seals black;
+ // HUSH's field replaces that sealed core before the shared acquisition.
  c*=1.0-coreMask;
+ c+=cosmic.rgb*cosmosMask/exposure;
  // Acquisition pins its pattern to the actual covered mesh surface. Preserve
  // the world's depth everywhere else, including the transparent glow support.
  float depth=mass*core>.018?1.0/(1.0+min(front,meshDepth(g))*.14):src.a;

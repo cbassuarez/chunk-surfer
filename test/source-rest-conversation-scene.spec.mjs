@@ -50,3 +50,23 @@ test('external interruption returns leave without pretending the player committe
   scenes.remove(scene);
   assert.deepEqual(result,['leave']);
 });
+
+test('the recorder verb remains available during a real choice and cannot choose or advance a reply',()=>{
+  let requests=0,result=[];
+  const scene=makeSourceRestConversationScene({story:sample,onRecorder:()=>requests++,onDone:x=>result.push(x)});
+  scenes.push(scene);const before=scene.view();
+  scenes.key({key:'r',code:'KeyR'});scenes.key({key:'r',code:'KeyR',repeat:true});
+  assert.equal(requests,1);assert.deepEqual(scene.view().pending,before.pending);assert.deepEqual(result,[]);
+  scenes.key({controllerAction:'recorder'});assert.equal(requests,2);
+});
+
+test('a same-phase return begins at the unread line without replaying prior choices',()=>{
+  let choices=0;
+  const story={id:'resume-rest',phase:'catch',entry:'start',nodes:{start:{lines:[{who:'other',text:'First.'},{who:'other',text:'Second.'}],next:'later'},
+    later:{lines:[{who:'other',text:'Still here.'}],choices:[]}}};
+  const first=makeSourceRestConversationScene({story,onChoice:()=>choices++});scenes.push(first);
+  scenes.update(1);scenes.key({key:' '});
+  const checkpoint=first.checkpoint();assert.equal(checkpoint.lineSourceId,'resume-rest:start:line:1');scenes.remove(first);
+  const resumed=makeSourceRestConversationScene({story,resumeFrom:checkpoint,onChoice:()=>choices++});scenes.push(resumed);
+  assert.equal(resumed.view().line.text,'Second.');assert.equal(choices,0);
+});

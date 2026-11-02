@@ -8,23 +8,100 @@ import { WORK_ORDER, PAGES } from '../src/data/conservatory-script.js';
 import { SOURCE_PAGES, sourcePageDocument } from '../src/data/source-pages.js';
 import { PAPER_ATLAS, PAPER_DOCUMENTS, PAPER_COMPILER_VERSION } from '../src/generated/paper-catalog.js';
 import { PAPER_FORMAT, validateBritishPaperDocument } from '../src/data/paper-system.js';
+import {STUDENT_STRIKE_BAKED_RECORDS} from '../src/generated/student-strike-records.js';
+import {STUDENT_STRIKE_DOCUMENTS,STUDENT_STRIKE_RECORD_PROPS} from '../src/data/student-strike-evidence.js';
+import {registerBakedPaper,paperRecord} from '../src/game/paper-assets.js';
+import {NodeIO} from '@gltf-transform/core';
+import sharp from 'sharp';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=(v)=>createHash('sha256').update(String(v)).digest('hex');
+const bytesSha=v=>createHash('sha256').update(v).digest('hex');
+
+// External editions use the same reader registry as the ear-room still sheet,
+// but their native faces are in an isolated pack rather than the shared atlas.
+// This explicit list is not a general exemption for missing catalog entries.
+export async function validateExternalProductionEditions({root=ROOT,
+  documents=STUDENT_STRIKE_DOCUMENTS,records=STUDENT_STRIKE_BAKED_RECORDS}={}){
+  const errors=[],prefix='external recovery paper';
+  const allowed=new Set(STUDENT_STRIKE_DOCUMENTS.map(d=>d.id));
+  const byId=new Map(records.map(r=>[r.id,r]));
+  if(byId.size!==records.length)errors.push(`${prefix}: duplicate external edition`);
+  for(const record of records)if(!allowed.has(record.id))errors.push(`${record.id}: unapproved external edition`);
+  let stats,manifest,pack;
+  try{
+    stats=JSON.parse(await readFile(path.join(root,'public/assets/student-strike-records.stats.json'),'utf8'));
+    manifest=JSON.parse(await readFile(path.join(root,'public/assets/student-strike-records/atlas-manifest.json'),'utf8'));
+    const packBytes=await readFile(path.join(root,'public/assets/student-strike-records.glb'));
+    if(bytesSha(packBytes)!==stats.sha256)errors.push(`${prefix}: native pack hash stale`);
+    pack=await new NodeIO().readBinary(packBytes);
+    for(const[source,hash]of Object.entries(stats.sourceHashes||{})){
+      if(bytesSha(await readFile(path.join(root,source)))!==hash)errors.push(`${prefix}: source hash stale (${source})`);
+    }
+    for(const source of['src/data/student-strike-evidence.js','tools/chunk_surfer/build-student-strike-records.mjs','tools/chunk_surfer/lettering/physical-lettering.mjs','tools/chunk_surfer/lettering/rasterize.py']){
+      if(!stats.sourceHashes?.[source])errors.push(`${prefix}: missing source provenance (${source})`);
+    }
+    if(JSON.stringify(stats.readerRecords)!==JSON.stringify(records))errors.push(`${prefix}: reader records differ from isolated build receipt`);
+  }catch(error){errors.push(`${prefix}: missing or invalid isolated build (${error.message})`);return errors;}
+  const textureHashes=new Set(pack.getRoot().listTextures().map(t=>bytesSha(t.getImage())));
+  const entries=new Map((manifest.entries||[]).map(e=>[e.id,e]));
+  for(const doc of documents){
+    const record=byId.get(doc.id),entry=entries.get(doc.id);
+    if(!allowed.has(doc.id)){errors.push(`${doc.id}: unapproved external document`);continue;}
+    if(!record){errors.push(`${doc.id}: missing external edition`);continue;}
+    if(record.semanticHash!==sha(JSON.stringify(doc.printLines)))errors.push(`${doc.id}: external semantic hash stale`);
+    if(!entry||JSON.stringify(entry.lines)!==JSON.stringify(doc.printLines))errors.push(`${doc.id}: physical print copy stale`);
+    if(record.format!==PAPER_FORMAT.A4.id||record.pages?.length!==1)errors.push(`${doc.id}: invalid external A4 edition`);
+    if(!Array.isArray(record.handlingVector)||record.handlingVector.length!==4)errors.push(`${doc.id}: missing external handling vector`);
+    const placement=STUDENT_STRIKE_RECORD_PROPS.find(p=>p.id===doc.hosted);
+    const mesh=pack.getRoot().listMeshes().find(m=>m.getName()===placement?.mesh);
+    const material=mesh?.listPrimitives()[0]?.getMaterial();
+    if(!material||material.getAlphaMode()!=='OPAQUE'||material.getExtras()?.printedSurface?.coverage!=='baseColorAlpha')errors.push(`${doc.id}: native physical print material missing`);
+    const page=record.pages?.[0],atlas=entry&&manifest.pages?.[entry.page];
+    if(!page||!atlas)continue;
+    if(page.atlasIndex!==-1)errors.push(`${doc.id}: external edition claims shared atlas storage`);
+    const expectedPrefix='assets/student-strike-records/';
+    if(typeof page.path!=='string'||!page.path.startsWith(expectedPrefix)||page.path.includes('..')){
+      errors.push(`${doc.id}: external reader path escapes its isolated assets`);continue;
+    }
+    try{
+      const readerPath=path.join(root,'public',page.path);
+      if((await stat(readerPath)).size<1024)errors.push(`${doc.id}: external raster implausibly small`);
+      const albedo=await readFile(path.join(root,'public/assets/student-strike-records',atlas.albedo));
+      for(const role of['albedo','normal','orm']){
+        const texture=await readFile(path.join(root,'public/assets/student-strike-records',atlas[role]));
+        if(!textureHashes.has(bytesSha(texture)))errors.push(`${doc.id}: ${role} file differs from the embedded native print`);
+      }
+      const metadata=await sharp(albedo).metadata(),[u0,v0,u1,v1]=entry.uvRect;
+      const rect={left:Math.round(u0*metadata.width),top:Math.round(v0*metadata.height),
+        width:Math.round((u1-u0)*metadata.width),height:Math.round((v1-v0)*metadata.height)};
+      const expected=await sharp(albedo).extract(rect).removeAlpha().raw().toBuffer();
+      const actual=await sharp(readerPath).removeAlpha().raw().toBuffer();
+      if(bytesSha(expected)!==bytesSha(actual))errors.push(`${doc.id}: reader raster differs from the native physical print`);
+    }catch(error){errors.push(`${doc.id}: missing or invalid external raster/material (${error.message})`);}
+  }
+  for(const id of allowed)if(!documents.some(d=>d.id===id))errors.push(`${id}: external production document omitted`);
+  return errors;
+}
+
+export async function validatePaperAssets(){
+for(const record of STUDENT_STRIKE_BAKED_RECORDS)registerBakedPaper(record);
+const externalIds=new Set(STUDENT_STRIKE_DOCUMENTS.map(d=>d.id));
 const docs=[WORK_ORDER,...PAGES,...SOURCE_PAGES.map(sourcePageDocument),{id:'source-real-still',title:'ELLERY FIELD RECORDING · TAKE SHEET',byline:'W. ELLERY / WORKS',body:[{raw:'SITE      ELLERY CONSERVATOIRE'},{raw:'ROOM      ______________________________'},{raw:'TAKE      ______'},{raw:'START     ______'},{raw:'END       ______'},{rule:true},{raw:'STATUS    ______________________________'}]}];
-const errors=[];
+const errors=await validateExternalProductionEditions();
 for(const doc of docs){
-  const record=PAPER_DOCUMENTS[doc.id];if(!record){errors.push(`${doc.id}: missing catalog record`);continue;}
+  const external=externalIds.has(doc.id);
+  const record=external?paperRecord(doc.id):PAPER_DOCUMENTS[doc.id];if(!record){errors.push(`${doc.id}: missing catalog record`);continue;}
   if(record.format!==PAPER_FORMAT.A4.id)errors.push(`${doc.id}: production paperwork is not A4`);
   const british=validateBritishPaperDocument(doc);for(const issue of british.errors)errors.push(`${doc.id}: ${issue}`);
   const semantic=sha([doc.title,doc.byline,JSON.stringify(doc.body||[])].join('\n'));
   // The real still sheet is defined by the compiler, not an authored JS document.
-  if(doc.id!=='source-real-still'&&record.semanticHash!==semantic)errors.push(`${doc.id}: semantic hash stale`);
+  if(!external&&doc.id!=='source-real-still'&&record.semanticHash!==semantic)errors.push(`${doc.id}: semantic hash stale`);
   if(!Array.isArray(record.pages)||!record.pages.length){errors.push(`${doc.id}: no raster sheets`);continue;}
   for(const [i,page] of record.pages.entries()){
-    const file=path.join(ROOT,page.path);if(!existsSync(file)){errors.push(`${doc.id}:${i}: missing ${page.path}`);continue;}
+    const file=path.join(ROOT,external?'public':'',page.path);if(!existsSync(file)){errors.push(`${doc.id}:${i}: missing ${page.path}`);continue;}
     const size=(await stat(file)).size;if(size<1024)errors.push(`${doc.id}:${i}: raster implausibly small (${size})`);
-    if(!page.materialPath||!existsSync(path.join(ROOT,page.materialPath)))errors.push(`${doc.id}:${i}: missing packed paper material map`);
+    if(!external&&(!page.materialPath||!existsSync(path.join(ROOT,page.materialPath))))errors.push(`${doc.id}:${i}: missing packed paper material map`);
   }
 }
 const atlasPath=path.join(ROOT,PAPER_ATLAS.path);if(!existsSync(atlasPath))errors.push(`missing world atlas ${PAPER_ATLAS.path}`);
@@ -51,5 +128,11 @@ for(const record of Object.values(PAPER_DOCUMENTS)){
 }
 const sourceRuntime=await readFile(path.join(ROOT,'src/game/source-space-runtime.js'),'utf8');
 if(/function pageTextInstances\(/.test(sourceRuntime))errors.push('Source still carries live text decals over physical paper');
-if(errors.length){console.error(errors.map((e)=>`[paper] ${e}`).join('\n'));process.exit(1);}
-console.log(`[paper] validated ${docs.length} production documents / ${Object.values(PAPER_DOCUMENTS).reduce((n,d)=>n+d.pages.length,0)} physical sheets`);
+return {errors,documents:docs.length,sharedSheets:Object.values(PAPER_DOCUMENTS).reduce((n,d)=>n+d.pages.length,0),externalSheets:STUDENT_STRIKE_BAKED_RECORDS.reduce((n,d)=>n+d.pages.length,0)};
+}
+
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  const result=await validatePaperAssets();
+  if(result.errors.length){console.error(result.errors.map(e=>`[paper] ${e}`).join('\n'));process.exitCode=1;}
+  else console.log(`[paper] validated ${result.documents} production documents / ${result.sharedSheets} shared physical sheets + ${result.externalSheets} isolated physical editions`);
+}

@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
 import { hallChandelierInstances, hallChandelierLights } from '../src/data/hall-chandelier-treatment.js';
+import {waterWakeSource} from '../src/game/water-bodies.js';
+import {selectW3OutlookLights,ELLERY_HYBRID_LIGHTS} from '../src/render/ellery-hybrid-lighting.js';
+import {ELLERY_PUBLIC_FRONT_LIGHTS} from '../src/data/ellery-public-front.js';
 
 const main=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
 const section=(start,end)=>{
@@ -25,7 +28,7 @@ const section=(start,end)=>{
     sourceReturnFlashbackScene:null,standingTearScene:null,
     sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
     saveAcademicGhostClub:()=>{},
-    getInDriveTeaserOrigin:null,costumeInspectionScene:null,costumeInspectionOrigin:null,
+    getInDriveTeaserOrigin:null,costumeInspectionScene:null,costumeInspectionOrigin:null,studentStrikeReturnPose:null,
     usingSourceSpace:()=>sandbox.chunkSurfRuntime!==null,
     R3:{
       r3dLookAngles:()=>({...camera}),r3dFacing:()=>2,
@@ -81,18 +84,19 @@ const section=(start,end)=>{
 // even while the real player's coordinates remain far outside the building.
 {
   const queries=[],ripples=[];
-  const body={id:'natatorium',bounds:{},levelM:1,murk:.3,ripples:true};
+  const body={id:'natatorium',bounds:{minX:0,minY:0,maxX:10,maxY:10,count:100},levelM:1,murk:.3,ripples:true};
   const sandbox={
-    px:800,py:-900,currentNatatoriumWaterRun:()=>({}),waterBodies:[body],
+    px:800,py:-900,currentNatatoriumWaterRun:()=>({}),waterBodies:[body],FP:{logicalToPhysical:(x,y)=>({x,z:y,y:0})},
     WATERBODY:{
       nearestWaterBody:(_bodies,x,y)=>{queries.push({x,y});return body;},
-      pointInBounds:(x,y)=>x===4&&y===5,waterFlowSources:()=>[],
+      pointInBounds:(x,y)=>x===4&&y===5,waterFlowSources:()=>[],waterWakeSource,
     },
     WATER:{makeNatatoriumRippleSources:({player})=>{ripples.push(player);return[];}},
     getSave:()=>({settings:{shake:'reduced'}}),floorHere:()=>12,
     natatoriumSoaked:()=>false,performance:{now:()=>100},
   };
-  const render=vm.runInNewContext(`${section('function currentWaterRenderState','// The bath specifically')}
+  const render=vm.runInNewContext(`${section('const waterWakeLast=new Map();','// The water the renderer should draw')}
+    ${section('function currentWaterRenderState','// The bath specifically')}
     currentWaterRenderState;`,sandbox);
   const water=render({audio:.5,view:{x:4,y:5,floorH:-2}});
   assert.equal(queries[0].x,4);assert.equal(queries[0].y,5);
@@ -110,8 +114,10 @@ const section=(start,end)=>{
   const rig=[{id:'practical'}];
   const chandelierContext={runId:'reprise-light-boundary',eligible:true,consumedCount:0},chandelierSaves=[];
   const sandbox={
-    activeEndingCutscene:null,escape:null,storyMode:false,
-    planName:'conservatory',usingSpecialSpace:()=>false,sourceRepriseWorldLease:null,
+    activeEndingCutscene:null,escape:null,storyMode:false,studentStrikePresentationFrame:()=>null,openingCinematicFrame:()=>null,shouldStageOpeningCinematic:()=>false,
+    openingPresentationView:()=>null,openingVehicleScene:null,towerWarningReady:false,
+    planName:'conservatory',usingSpecialSpace:()=>false,sourceRepriseWorldLease:null,usingPlan:()=>true,
+    buildingWindowForObserver:()=>null,selectW3OutlookLights,ELLERY_HYBRID_LIGHTS,ELLERY_PUBLIC_FRONT_LIGHTS,
     pubHospitalityReady:()=>false,vanDoorOpenFraction:()=>0,vanRearCargoLight:()=>null,
     exteriorHeadlightLights:()=>[],streetPilotTime:()=>0,
     px:0,py:0,getSave:()=>({settings:{flash:'full'}}),performance:{now:()=>0},

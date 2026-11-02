@@ -50,7 +50,8 @@
     "macOS": {
       "files": {
         "PlugIns/ChunkSurferDockTile.docktileplugin": "target/dock-tile/ChunkSurferDockTile.docktileplugin"
-      }
+      },
+      "entitlements": "./Entitlements.plist"
     },
     "resources": {
       "../LEGAL/EULA.md": "EULA.md",

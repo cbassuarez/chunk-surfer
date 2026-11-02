@@ -1,5 +1,5 @@
 import { ENDING_IDS } from './schema.js';
-import { lastReturnRecord } from './return-history.js';
+import { isOrdinaryReturnRecord, lastReturnRecord } from './return-history.js';
 import { secondShiftForEnding } from '../game/second-shift.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { WITNESS_EDITION_ID } from './unlocks.js';
@@ -47,7 +47,7 @@ export function returnIndexEntries(meta) {
   const last = lastReturnRecord(meta);
   const shift = secondShiftForEnding(last?.endingId);
   const records = Object.values(meta?.returns?.records || {})
-    .filter((entry) => entry && typeof entry === 'object')
+    .filter(isOrdinaryReturnRecord)
     .sort((a, b) => (Number(b.completedAt) || 0) - (Number(a.completedAt) || 0));
   return RETURN_DEFS.map((def) => {
     const filed = records.find((entry) => entry.endingId === def.id);

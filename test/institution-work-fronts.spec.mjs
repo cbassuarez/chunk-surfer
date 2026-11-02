@@ -1,3 +1,4 @@
+import {productionFunction} from './helpers/production-function.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -43,7 +44,7 @@ const meshes=new Map([['legacy_patchbay',vertices(patchbay)],['gothic_cabinet_01
 
 // Use the real renderer's matrix composer, including the visual wall clearance.
 const renderer=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
-const matrixSource=renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('function perspective(aspect)'));
+const matrixSource=['identity','multiply','modelMatrix'].map(name=>productionFunction(renderer,name)).join('\n');
 assert.ok(matrixSource.includes('function modelMatrix('));
 const modelMatrix=new Function(`${matrixSource};return modelMatrix;`)();
 const matrixPoint=(point,m)=>[0,1,2].map(axis=>m[axis]*point[0]+m[axis+4]*point[1]+m[axis+8]*point[2]+m[axis+12]);

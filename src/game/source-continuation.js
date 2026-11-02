@@ -1,6 +1,8 @@
 import { SOURCE_CONTINUATION as C, CONTINUATION_CATCH_STAGES, continuationStage, continuationRadialPoint, continuationCatchFloor, continuationSurfaces,continuationChartSurfaces,continuationChartSolids,continuationChartDoors,continuationArrivalAnchors, continuationSolids, continuationDoors, continuationProps, continuationSurfaceY, continuationSurfaceContains, continuationSupportAt, continuationDropLip, continuationDropLips, continuationRefugeAt, continuationCatchObstacles, continuationBodyClearAt } from '../data/source-continuation.js';
 import {recoverSourceRestAlcoveCheckpoint} from './source-rest-alcove-recovery.js';
-import {freshContinuationHush,normalizeContinuationHush,recordContinuationHushWalk,recordContinuationHushDrop,recordContinuationHushFold,reconnectContinuationHush,advanceContinuationHush,continuationSupportedPath,continuationWalkSegment} from './source-continuation-hush.js';
+import {freshContinuationHush,freshContinuationDoorHush,normalizeContinuationHush,recordContinuationHushWalk,recordContinuationHushDrop,recordContinuationHushFold,reconnectContinuationHush,advanceContinuationHush,continuationSupportedPath,continuationWalkSegment} from './source-continuation-hush.js';
+import {noteContinuationCatchEntry} from './source-continuation-arrival.js';
+import {freshSourceConnectorCorridor,normalizeSourceConnectorCorridor,advanceSourceConnectorCorridor} from './source-connector-corridor.js';
 import {continuationBallisticStep,continuationFreeBody} from './source-continuation-physics.js';
 import {continuationPortalCrossing,transferContinuationPortal,advancePortalTransit,continuationCameraEye,continuationCameraBasis,continuationBodyAxis} from './source-continuation-portals.js';
 import {captureContinuationVoidLoop,continuationVoidLoopForFall,normalizeContinuationSpaceWrap} from './source-continuation-void.js';
@@ -30,9 +32,9 @@ function updateAnchor(state,{landing=false}={}) {
   let kind=landing||arrival?'landing':insideRefuge(state)?'refuge':null;
   const head=continuationChartSurfaces(state).find(s=>s.role==='landing'&&Math.abs(s.y-state.feet)<.02&&continuationSurfaceContains(s,state.x,state.z));
   if(!kind&&head)kind='stair-head';if(!kind)return;
-  const current=state.recoveryAnchor;
-  if(current&&current.chartId===state.chartId&&current.phase===state.phase&&Math.hypot(current.x-state.x,current.z-state.z,current.feet-state.feet)<1e-6)return;
-  state.recoveryAnchor=earnedAnchor(state,kind,arrival?.id||head?.id||support.id);
+  const current=state.recoveryAnchor,anchorPose=arrival?.restoreAt?{...state,...arrival.restoreAt}:state;
+  if(current&&current.chartId===state.chartId&&current.phase===state.phase&&Math.hypot(current.x-anchorPose.x,current.z-anchorPose.z,current.feet-anchorPose.feet)<1e-6)return;
+  state.recoveryAnchor=earnedAnchor(anchorPose,kind,arrival?.id||head?.id||support.id);
 }
 const ACTIVE = new Set(['not-started', 'active', 'returned', 'completed']);
 const DOOR_IDS = new Set(continuationDoors().map(d => d.id));
@@ -42,7 +44,7 @@ export function freshSourceContinuation({ runId = '', returnPose = null } = {}) 
   return { version: 1, layoutVersion: C.layoutVersion, encounterId: C.encounterId, runId: String(runId), status: 'not-started', phase: 'wrong-return', direction: 'forward',
     ...C.spawn,chartId:0,foldSerial:0,lastFold:null,lastSpaceWrap:null,cameraTransit:null,bodyTransit:null, elapsed: 0, accumulator: 0, wrongLap: 0, level: 0, fall: null, recovery: null, reveal: null, grace: 0,jumpHeld:false,velocity:{x:0,z:0},
     closure: { mode: 'dormant', elapsed: 0, frontX: C.wrongReturn.closureStartX, frontZ: -12, exposure: 0 },
-    counterweight: startWeight(), hush:freshContinuationHush(), heading:0, knowledge: [], doorOpen: {}, doorMotion: {}, returnPose: pose(returnPose), exitPose: null,
+    counterweight: startWeight(), hush:freshContinuationDoorHush(), corridor:freshSourceConnectorCorridor(), heading:0, knowledge: [], doorOpen: {}, doorMotion: {}, returnPose: pose(returnPose), exitPose: null,
     completed: false, handoff: false, exitReceipt: null, lastSafe: { ...C.spawn,chartId:0, level: 0,phase:'wrong-return' },recoveryAnchor:earnedAnchor({...C.spawn,chartId:0,phase:'wrong-return',level:0,elapsed:0}), caption: null };
 }
 function validFall(value,chartId=value?.chartId??0) {
@@ -108,7 +110,7 @@ export function normalizeSourceContinuation(value, { runId, returnPose } = {}) {
     caption: null, lastSafe:{...position(value.lastSafe),phase:value.lastSafe?.phase||value.phase||'wrong-return'}, fall: validFall(value.fall,value.chartId??0), reveal: null,jumpHeld:!!value.jumpHeld,velocity:{x:clamp(value.velocity?.x??0,-60,60),z:clamp(value.velocity?.z??0,-60,60)},foldSerial:Math.max(0,Math.round(finite(value.foldSerial))),lastFold:value.lastFold?clone(value.lastFold):null,lastSpaceWrap:normalizeContinuationSpaceWrap(value.lastSpaceWrap),cameraTransit:validTransit(value.cameraTransit,true),bodyTransit:validTransit(value.bodyTransit),
     closure: { mode: ['dormant', 'primed', 'warning', 'closing', 'held'].includes(value.closure?.mode) ? value.closure.mode : 'dormant', elapsed: Math.max(0, finite(value.closure?.elapsed)), frontX: clamp(value.closure?.frontX ?? C.wrongReturn.closureStartX, C.wrongReturn.closureEndX, C.wrongReturn.closureStartX), frontZ: -12, exposure: Math.max(0, finite(value.closure?.exposure)) },
     counterweight: { active: !!w.active, level: Math.round(clamp(w.level, 0, C.catch.levels - 1)), mode: WEIGHT_MODES.has(w.mode) ? w.mode : 'warning', elapsed: Math.max(0, finite(w.elapsed)), x: clamp(w.x, C.bounds.minX, C.bounds.maxX), z: clamp(w.z, C.bounds.minZ, C.bounds.maxZ), y: clamp(w.y, C.bounds.minY, C.catch.hoist.travelY), pathIndex: Math.round(clamp(w.pathIndex, 0, 32)), fall: validFall(w.fall), cycle: Math.max(0, Math.floor(finite(w.cycle))) },
-    hush:normalizeContinuationHush(value.hush),heading:angle(finite(value.heading,value.yaw)),
+    hush:normalizeContinuationHush(value.hush||fresh.hush),corridor:normalizeSourceConnectorCorridor(value.corridor,value),heading:angle(finite(value.heading,value.yaw)),
     recoveryAnchor:anchorValid(value.recoveryAnchor)?{...position(value.recoveryAnchor),phase:value.recoveryAnchor.phase==='catch'?'catch':'wrong-return',kind:['entry','landing','stair-head','refuge'].includes(value.recoveryAnchor.kind)?value.recoveryAnchor.kind:'landing',supportId:String(value.recoveryAnchor.supportId||''),earnedAt:Math.max(0,finite(value.recoveryAnchor.earnedAt))}:null,
   };
   state.doorMotion = Object.fromEntries(Object.entries(value.doorMotion || {}).filter(([id, m]) => DOOR_IDS.has(id) && m && ['from', 'startedAt', 'duration'].every(k => Number.isFinite(m[k]))).map(([id, m]) => [id, { from: clamp(m.from, 0, 1), to: state.doorOpen[id] ? 1 : 0, startedAt: clamp(m.startedAt, 0, state.elapsed), duration: clamp(m.duration, 0, C.doorSwingSeconds),...(m.automatic===true?{automatic:true}:{}) }]));
@@ -141,7 +143,7 @@ export function resumeSourceContinuation(value, { reverse = false, runId, return
 function insideRefuge(state) {
   if (state.chartId===0&&state.phase === 'catch' && state.level === 0 && state.x > C.catch.center.x+12.65 && Math.abs(state.z-C.catch.center.z)<1.1) return true;
   const refuge = continuationRefugeAt(state);
-  return (refuge.chartId??0)===state.chartId&&Math.abs(state.feet - refuge.feet) < .4 && distance(state, refuge) < (state.phase === 'catch' || state.feet<8 ? 1.28 : 2.5);
+  return (refuge.chartId??0)===state.chartId&&Math.abs(state.feet - refuge.feet) < .4 && distance(state, refuge) < (state.phase === 'catch' || state.feet<8 ? 1.28 : state.chartId===0?3.0:2.5);
 }
 export function sourceContinuationDoorFraction(state, id) {
   const motion = state?.doorMotion?.[id]; if (!motion) return state?.doorOpen?.[id] ? 1 : 0;
@@ -203,7 +205,7 @@ function makeRecovery(state, reason) {
   if(pointDistance(from,target)<.02)return {reason,kind:state.phase==='catch'?'sling':'guided-return',from,target,path:[from,target],duration:C.recoverySeconds,elapsed:0,repaired:false,fromPhase:state.phase,targetPhase};
   if(anchor.chartId!==state.chartId)return {reason,kind:'blackout-return',from,target,path:[from,target],duration:C.recoverySeconds,elapsed:0,repaired:false,fade:true,blackoutAlpha:0,fromPhase:state.phase,targetPhase};
   if(state.phase==='wrong-return'&&targetPhase==='wrong-return'&&!state.fall) {
-    path=continuationSupportedPath(from,target)||[];kind='guided-return';
+    path=continuationSupportedPath(from,target,state)||[];kind='guided-return';
   } else if(state.phase==='catch'&&targetPhase==='catch'&&state.level===level) {
     const stage = continuationStage(level), center = C.catch.center, cruise = stage.y + C.recoveryRise;
     let theta = Math.atan2(state.z - center.z, state.x - center.x); while (theta < stage.startAngle) theta += Math.PI * 2; while (theta > stage.endAngle) theta -= Math.PI * 2;
@@ -217,7 +219,7 @@ function makeRecovery(state, reason) {
     path=[from,{...from,feet:cruise},{...target,feet:cruise},target];
   }
   path = path.filter((p, i, all) => i === 0 || pointDistance(p, all[i - 1]) > 1e-7);
-  const clear=path.length>1&&path.slice(1).every((p,i)=>kind==='guided-return'?continuationWalkSegment(path[i],p):bodySweepClear(path[i],p,state));
+  const clear=path.length>1&&path.slice(1).every((p,i)=>kind==='guided-return'?continuationWalkSegment(path[i],p,null,state):bodySweepClear(path[i],p,state));
   if(!clear)return {reason,kind:'blackout-return',from,target,path:[from,target],duration:C.recoverySeconds,elapsed:0,repaired:false,fade:true,blackoutAlpha:0,fromPhase:state.phase,targetPhase};
   return { reason,kind,from,target,path,duration:clamp(Math.max(C.recoverySeconds,pathLength(path)/C.recoverySpeed),C.recoverySeconds,C.recoveryMaximumSeconds),elapsed:0,repaired:false,fromPhase:state.phase,targetPhase};
 }
@@ -355,7 +357,7 @@ function returnCrossed(state, before) {
 function phaseCrossing(state, before, events) {
   const d = C.wrongReturn.threshold, clear = state.chartId===0&&sourceContinuationDoorFraction(state, d.doorId) >= C.doorPassFraction && state.feet>=d.y-.04&&state.feet+C.bodyHeight<=d.y+2.3+.01 && Math.abs(state.z - d.z) < d.halfWidth - C.bodyRadius;
   if (!clear) return;
-  if (state.phase === 'wrong-return' && state.x < d.x - C.bodyRadius && before.x >= d.x - C.bodyRadius) { state.phase = 'catch'; state.level = 0;if(state.fall)state.fall.voidLoop=null; learn(state, 'entered-the-spindle'); events.push({ type: 'phase', phase: 'catch', doorId: d.doorId, crossed: true }); }
+  if (state.phase === 'wrong-return' && state.x < d.x - C.bodyRadius && before.x >= d.x - C.bodyRadius) { state.phase = 'catch'; state.level = 0;if(state.fall)state.fall.voidLoop=null; learn(state, 'entered-the-spindle');noteContinuationCatchEntry(state.hush,state); events.push({ type: 'phase', phase: 'catch', doorId: d.doorId, crossed: true }); }
   else if (state.phase === 'catch' && state.level === 0 && state.x > d.x + C.bodyRadius && before.x <= d.x + C.bodyRadius) { state.phase = 'wrong-return'; events.push({ type: 'phase', phase: 'wrong-return', doorId: d.doorId, crossed: true }); }
 }
 function finalCrossed(state,before,events) {
@@ -379,13 +381,19 @@ function crossPortal(state,before,events) {
   events.push({type:'fold',...receipt});return true;
 }
 function tickHush(state,dt,events,{frozen=false}={}) {
-  const protectedRefuge=insideRefuge(state),refuge=state.phase==='catch'&&state.level===0&&state.x>C.catch.center.x+12.65?{x:state.x,z:state.z,feet:state.feet,chartId:state.chartId}:continuationRefugeAt(state);
+  const protectedRefuge=insideRefuge(state);
+  let refuge=state.phase==='catch'&&state.level===0&&state.x>C.catch.center.x+12.65?{x:state.x,z:state.z,feet:state.feet,chartId:state.chartId}:continuationRefugeAt(state);
+  // Match the widened upper listening pocket. The pursuer must settle into
+  // its existing yield/notice state, rather than freeze in follow and catch
+  // immediately when a listener steps back out.
+  if(state.phase==='wrong-return'&&state.chartId===0&&Math.abs(state.feet-C.wrongReturn.refuge.feet)<.4)refuge={...refuge,standOff:3};
   if(advanceContinuationHush(state.hush,{dt,player:state,protectedRefuge,refuge,frozen,events}))beginRecovery(state,'hush-pressure',events);
 }
 function tick(state, input, dt, events, travel) {
   state.elapsed += dt; state.grace = Math.max(0, state.grace - dt);
   advancePortalTransit(state,dt);
   if (state.recovery) { const recovery = state.recovery; recovery.elapsed = Math.min(recovery.duration, recovery.elapsed + dt);if(recovery.fade)recovery.blackoutAlpha=recoveryAlpha(recovery.elapsed/recovery.duration); Object.assign(state, carryPose(recovery));if(recovery.targetPhase&&recovery.fade&&recovery.blackoutAlpha===1&&recovery.elapsed>=recovery.duration*.5){state.phase=recovery.targetPhase;state.level=recovery.target.level;} tickWeight(state, dt, events);tickHush(state,dt,events,{frozen:true}); if (recovery.elapsed + 1e-8 >= recovery.duration) { Object.assign(state, position(recovery.target));state.phase=recovery.targetPhase||state.phase; state.lastSafe = supportedPose(state); state.recovery = null; state.velocity={x:0,z:0};state.grace = C.graceSeconds;reconnectContinuationHush(state.hush,state); events.push({ type: 'recovered', reason: recovery.reason }); } return; }
+  state.corridor=advanceSourceConnectorCorridor(state.corridor,{dt,player:state,hush:state.hush,events});
   if (state.fall) {
     let before={...state};
     const result=continuationBallisticStep(state.fall,dt,state);Object.assign(state,{x:state.fall.x,z:state.fall.z,feet:state.fall.feet});
@@ -404,7 +412,7 @@ function tick(state, input, dt, events, travel) {
   } else {
     approachDoors(state, events);
     const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = C.walkSpeed * dt / len;
-    const movementYaw=state.phase==='catch'?0:state.yaw;
+    const movementYaw=state.yaw;
     move(state, (Math.sin(movementYaw) * forward + Math.cos(movementYaw) * side) * amount, (-Math.cos(movementYaw) * forward + Math.sin(movementYaw) * side) * amount,dt,events);
     if(!state.fall)travel.metres+=distance(before,state);
     if(distance(before,state)>1e-8)state.heading=Math.atan2(state.x-before.x,-(state.z-before.z));
@@ -430,7 +438,7 @@ export function stepSourceContinuation(value, input = {}) {
   if (input.interact) interact(state, events);
   const jumping=!!input.jump&&!state.jumpHeld;state.jumpHeld=!!input.jump;
   if(jumping&&!state.fall&&!state.recovery) {
-    const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),len=Math.max(1,Math.hypot(forward,side)),yaw=state.phase==='catch'?0:state.yaw;
+    const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),len=Math.max(1,Math.hypot(forward,side)),yaw=state.yaw;
     const held=Math.hypot(forward,side)>0;
     launchFall(state,{vx:held?(Math.sin(yaw)*forward+Math.cos(yaw)*side)*C.walkSpeed/len:state.velocity.x,vz:held?(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*C.walkSpeed/len:state.velocity.z,vy:C.jumpSpeed,trigger:'jump',groundedExit:false},events);
   }
@@ -441,8 +449,8 @@ export function stepSourceContinuation(value, input = {}) {
   return { state, event: events.find(e => e.type === 'return' || e.type === 'complete') || events.at(-1) || null, events, acceptedTravelMetres: travel.metres };
 }
 export function sourceContinuationFrame(value) {
-  const state = normalizeSourceContinuation(value),overhead=state.phase==='catch',bodyEye=[state.x,state.feet+C.eyeHeight,state.z], player = { x: state.x, y: state.feet, z: state.z,chartId:state.chartId, yaw: overhead?state.heading:state.yaw, pitch: state.pitch, eyeHeight: C.eyeHeight, visible: overhead };
-  return { ...state, active: state.status === 'active', player,bodyEye,cameraBasis:continuationCameraBasis(state),camera:overhead?{mode:'overhead',target:[state.x,state.feet,state.z],yaw:0,pitch:-Math.PI/2}:{ mode: 'first-person', eye:continuationCameraEye(state), yaw: state.yaw, pitch: state.pitch },
+  const state = normalizeSourceContinuation(value),bodyEye=[state.x,state.feet+C.eyeHeight,state.z], player = { x: state.x, y: state.feet, z: state.z,chartId:state.chartId, yaw:state.yaw, pitch: state.pitch, eyeHeight: C.eyeHeight, visible:false };
+  return { ...state, active: state.status === 'active', player,bodyEye,cameraBasis:continuationCameraBasis(state),camera:{ mode: 'first-person', eye:continuationCameraEye(state), yaw: state.yaw, pitch: state.pitch },
     blackoutAlpha:state.recovery?.blackoutAlpha||0,presentation: { reveal: null, recovery: state.recovery }, focus: continuationFocus(state), geometry: { surfaces: continuationSurfaces(), solids: continuationSolids(state), doors: continuationDoors().map(d => ({ ...d, openFraction: sourceContinuationDoorFraction(state, d.id) })), props: continuationProps() },
     cutaway: null, objective: state.phase === 'wrong-return' ? 'Explore the remembered construction.' : 'Read the support before choosing a descent.' };
 }

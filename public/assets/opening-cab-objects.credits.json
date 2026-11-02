@@ -1,5 +1,5 @@
 {
-  "provenance": "Existing project-authored FC–7 and canonical instrument meshes with original physical packing sockets; new original cloth notebook and fixed interior mirror; no external downloads, textures or new narrative",
+  "provenance": "Existing project-authored equipment retained for compatibility; cab-only notebook, mirror, supported job clipboard, two written reminders and a seat-conforming recital programme. Equipment is rendered at the rear workbench, not duplicated in the cab.",
   "sources": [
     {
       "file": "public/assets/items/field-case.glb",
@@ -611,8 +611,8 @@
   },
   "limitations": [
     "Mirror silver is static, not a rendered face/reflection.",
-    "World recorder phosphor is the original idle geometry; live readings appear in its direct inspection.",
+    "World paper uses physical pen strokes; close readings use dedicated baked paper assets.",
     "Witness Edition geometry is not newly granted during the prologue."
   ],
-  "sha256": "d908c7a314386225758485d25dd51107180603617dcbbf1f07d658eaa3783aa7"
+  "sha256": "0a9d56d0ebb0d6cb9f9ab9a3f01ffc27fe9e78f1ae371ccabc3500d407ae6687"
 }

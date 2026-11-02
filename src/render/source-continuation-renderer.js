@@ -4,6 +4,7 @@ import * as R3 from './r3d.js';
 import * as P3 from './props3d.js';
 import {CELL,EYE,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
+import {sourceRecordingCassetteWorldProps} from './source-recording-cassette-model.js';
 import {SOURCE_CONTINUATION,continuationSurfaces,continuationSolids,continuationDoors,continuationProps,continuationSupportAt} from '../data/source-continuation.js';
 import * as continuationData from '../data/source-continuation.js';
 import {SOURCE_JOURNEY,JOURNEY_PROPS,JOURNEY_PORTALS} from '../data/source-continuation-journey.js';
@@ -15,7 +16,8 @@ import {sourceContinuationFrame} from '../game/source-continuation.js';
 import {sourceRestBenchProps,sourceRestCamera,sourceRestSeatForState,SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
 import {sourceRestScenery} from '../game/source-rest-scenery.js';
 import {sourceRestGeometryLibrary} from './source-rest-models.js';
-import {sourceRestHarpsichordGeometryLibrary} from './source-rest-harpsichord-models.js';
+import {sourceRestApertureFrame} from './source-rest-aperture-frame.js';
+import {sourceRestHarpsichordGeometryLibrary,sourceRestHarpsichordSeatGeometry} from './source-rest-harpsichord-models.js';
 import {sourceRestHarpsichordBoardGeometry} from './source-rest-harpsichord-board.js';
 import {sourceRestMemoryGeometryLibrary} from '../game/source-rest-memories.js';
 import {sourceRestNoteGeometryLibrary} from './source-rest-note-models.js';
@@ -23,19 +25,25 @@ import {sourceRestCubeGeometryLibrary} from './source-rest-cube-models.js';
 import {sourceRestDestructionGeometryLibrary} from './source-rest-destruction-models.js';
 import {SOURCE_REST_HAND_ASSET,SOURCE_REST_HAND_MESHES} from './source-rest-body.js';
 import {applySourceRestDestruction} from './source-rest-destruction.js';
-import {sourceRestAfflictionCamera,sourceRestAfflictionFault} from './source-rest-affliction-view.js';
+import {sourceRestImpactInView} from './source-rest-impact-view.js';
+import {sourceRestAfflictionCamera} from './source-rest-affliction-view.js';
+import {sourceRestFacultyFrame} from '../game/source-rest-vision.js';
 import {applySourceRestReturn} from './source-rest-return.js';
 import {sourceRestBellGeometryLibrary} from './source-rest-bells.js';
 import {SOURCE_REST_FLOOD_MESHES} from '../game/source-rest-flood.js';
 import {sourceRestFloodGeometryLibrary} from './source-rest-flood-models.js';
+import {sourceConnectorGeometryLibrary,sourceConnectorRenderParts} from './source-connector-corridor.js';
 import {createSourceRestNoteAsset} from '../game/source-rest-note-score.js';
 import {continuationCameraBasis,continuationCameraEye,continuationBodyBasis} from '../game/source-continuation-portals.js';
+import {continuationVoidCameraEye} from '../game/source-continuation-void.js';
+import {sourceContinuationVoidViews,sourceContinuationVoidCopies,sourceContinuationVoidInstance,sourceContinuationVoidInFrustum,sourceContinuationVoidAcousticPoint,SOURCE_VOID_VIEW_LIMITS} from './source-continuation-void.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {sourcePrintUV,sourcePrintMaps,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {sourceSurroundingsFrame} from '../game/source-surroundings.js';
 import {SOURCE_SURROUNDINGS} from '../data/source-surroundings.js';
+import {continuationDitherIntensity} from './source-dither-routing.js';
 import {sourceSurroundingsGeometryLibrary,sourceSurroundingsMeshPayload,sourceSurroundingsProps,installSourceSurroundingsEmitterAliases,SOURCE_SURROUNDINGS_REQUIRED_MESHES} from './source-surroundings-geometry.js';
 
 const PREFIX='source-continuation-';
@@ -94,7 +102,7 @@ function transformBackdropBounds(bounds,m){
 export function sourceContinuationPresentation(state,camera=sourceContinuationCamera(sourceContinuationFrame(state))){
   if(camera.restOverride)return{eye:[...camera.eye],basis:cameraBasis(camera.yaw,camera.pitch),compensation:identity()};
   const ordinary=cameraBasis(camera.yaw,camera.pitch),basis=camera.strictOverhead?ordinary:continuationCameraBasis(state),
-    eye=camera.strictOverhead?[...camera.eye]:continuationCameraEye(state),
+    eye=camera.strictOverhead?[...camera.eye]:continuationVoidCameraEye(state,continuationCameraEye(state)),
     turn=!camera.strictOverhead&&state.cameraTransit&&state.cameraTransit.elapsed<state.cameraTransit.duration?portalMultiply(basisMatrix(ordinary),portalInverse(basisMatrix(basis))):identity(),
     compensation=portalMultiply(matrix(...eye),portalMultiply(turn,matrix(...eye.map(v=>-v))));
   // R3 accepts yaw/pitch. Rotate every submitted world/clip plane about the
@@ -114,7 +122,7 @@ export function sourceContinuationPortalViews(state,{eye,basis}={}){
 }
 export function sourceContinuationAcousticFrame(state){
   const camera=sourceContinuationCamera(sourceContinuationFrame(state)),view=sourceContinuationPresentation(state,camera),chartId=chartOf(state),
-    bodyEye=continuationCameraEye(state),paths=[];
+    bodyEye=continuationVoidCameraEye(state,continuationCameraEye(state)),voidViews=sourceContinuationVoidViews(state,view),paths=[];
   // Sound follows physical apertures, including ones behind the listener.
   // Each path is simple and at most four joints; view culling never mutes a
   // continuing ensemble or a previously emitted tail in another chart.
@@ -129,7 +137,7 @@ export function sourceContinuationAcousticFrame(state){
   }
   visit(chartId,new Set([chartId]),identity(),bodyEye,0,0);
   return{defaultChartId:chartId,listener:{eye:bodyEye,...(camera.strictOverhead?cameraBasis(0,0):view.basis)},projectPoint(sourceChart,p){
-    const local=[p.x,p.y,p.z];if(sourceChart===chartId)return{x:p.x,y:p.y,z:p.z};
+    const local=[p.x,p.y,p.z];if(sourceChart===chartId)return sourceContinuationVoidAcousticPoint(voidViews,bodyEye,p);
     let best=null,distance=Infinity;for(const path of paths)if(path.chart===sourceChart){const cost=path.cost+Math.hypot(...local.map((v,k)=>v-path.last[k]));if(cost<distance){best=path;distance=cost;}}
     if(!best)return null;const q=portalTransformPoint(best.map,local);return{x:q[0],y:q[1],z:q[2]};
   }};
@@ -198,6 +206,8 @@ export function sourceContinuationEdgeGeometry(state={phase:'catch'}){
 const canonical={
   ...sourceRestGeometryLibrary(),
   ...sourceRestHarpsichordGeometryLibrary(),
+  'rest-harpsichord-seat':sourceRestHarpsichordSeatGeometry(),
+  'rest-harpsichord-seat-upholstery':sourceRestHarpsichordSeatGeometry().upholstery,
   'rest-harpsichord-soundboard':sourceRestHarpsichordBoardGeometry(),
   ...sourceRestMemoryGeometryLibrary(),
   ...sourceRestNoteGeometryLibrary(),
@@ -205,6 +215,7 @@ const canonical={
   ...sourceRestDestructionGeometryLibrary(),
   ...sourceRestBellGeometryLibrary(),
   ...sourceRestFloodGeometryLibrary(),
+  ...sourceConnectorGeometryLibrary(),
   'rest-judgment-lightning':{...cylinderGeometry(6),material:'linen',base:[.82,.89,.94,1],emissive:[1.2,1.4,1.6],roughness:1},
   block:{...solidGeometry({minX:-.5,maxX:.5,minY:0,maxY:1,minZ:-.5,maxZ:.5}),material:'metal'},
   counterweight:{...cylinderGeometry(32),material:'metal'},
@@ -298,7 +309,7 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
 
 const goods=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
 const hoist=SOURCE_CONTINUATION.catch.hoist;
-const retained=['grand_piano','open_instrument_case','ending_body_standing','source_demolition_retained'];
+const retained=['grand_piano','open_instrument_case','ending_body_standing','source_demolition_retained','academic_roof_cassette'];
 const requiredMeshes=()=>[...new Set([...meshLibrary.map(p=>p.name),...retained,...retainedDoor,...SOURCE_CONTINUATION_ARCHITECTURE.meshes,...assemblies().map(p=>p.mesh),...SOURCE_SURROUNDINGS_REQUIRED_MESHES])];
 const retainedDoor=[goods.frameMesh,goods.leafMesh,goods.freeStandingHeadMesh].filter(Boolean);
 const propKindMesh={case:'instrument_case','case-hinge':'instrument_case',piano:'grand_piano',body:'ending_body_standing'};
@@ -362,23 +373,11 @@ export function prewarmSourceContinuationAssets({renderer=R3,props=P3,resolveAss
 
 export function sourceContinuationCamera(frame,{viewportAspect=16/9}={}){
   const player=frame.player||frame,feet=finite(player.y,player.feet);
-  if(phaseOf(frame)==='catch'){
-    const center=SOURCE_CONTINUATION.catch.center,level=frame.fall?.fromLevel??frame.level,sourceFloor=catchFloor(level),floor=frame.fall?Math.min(sourceFloor,feet):sourceFloor,aspect=clamp(viewportAspect,.45,3),points=[{x:finite(player.x),z:finite(player.z)},...(continuationData.continuationDropLips?.({level})||[])];
-    const hush=frame.hush,nearHush=hush?.active&&Math.hypot(hush.x-player.x,hush.z-player.z)<18&&Math.abs(hush.feet-floor)<16;
-    if(nearHush)points.push(hush);
-    const minX=Math.min(...points.map(p=>p.x)),maxX=Math.max(...points.map(p=>p.x)),minZ=Math.min(...points.map(p=>p.z)),maxZ=Math.max(...points.map(p=>p.z));
-    // North remains screen-up. Frame the bodies and the available receiving
-    // edges, rather than spending half the picture on the previous world.
-    // A rising jump keeps the supported reference; a descent follows the body
-    // and removes passed slabs so the actual receiving geometry remains clear.
-    const aim=[mix((minX+maxX)/2,center.x,.12),floor,mix((minZ+maxZ)/2,center.z,.12)],
-      height=Math.max(14.8,(maxZ-minZ)/2/.95+5,(maxX-minX)/2/(.95*aspect)+6,nearHush?hush.feet-floor+4.5:0);
-    return{eye:[aim[0],floor+height,aim[2]],yaw:0,pitch:-Math.PI/2,strictOverhead:true,aimTarget:aim,revealProgress:null};
-  }
+
   return{eye:[finite(player.x),feet+EYE,finite(player.z)],yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
 }
 
-export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true}={}){
+export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,viewportTanHalfFov=.95,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true}={}){
   const frame=sourceContinuationFrame(state),player=frame.player||state.player||state,geometry=frame.geometry||{},surfaces=geometry.surfaces||continuationSurfaces(state),solids=geometry.solids||continuationSolids(state),doors=geometry.doors||continuationDoors(state),memoryProps=geometry.props||continuationProps(state);
   const baseCamera=sourceContinuationCamera(frame,{viewportAspect}),restSeat=state.sourceRestView&&sourceRestSeatForState(state);
   let camera=restSeat&&state.sourceRestView.seatId===restSeat.id
@@ -407,9 +406,10 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
       // The overhead traversal retains sight of its actual refuge and doors;
       // first-person keeps the complete, physically raised instrument lid.
       if(camera.strictOverhead&&part.cutawayOverhead)continue;
-      const extra={...decoration,restPlace:true,restTreatment:restScenery.treatment,
+      const extra={...decoration,restPlace:!(part.routeComposition||part.routeArchitecture),restTreatment:restScenery.treatment,
+        ...(part.routeComposition||part.routeArchitecture?{restRouteComposition:true,routeArchitecture:true,architecturalJoint:true}:{}),
         ...(part.casePart?{restHarpsichordPart:part.casePart,restHarpsichordReactive:part.reactive||null,
-          restHarpsichordRegister:part.register||null,restHarpsichordWear:!!part.wear,restHarpsichordCenter:part.localCenter||null,cullRadius:12}:{}),
+          restHarpsichordRegister:part.register||null,restHarpsichordWear:!!part.wear,restHarpsichordCenter:part.localCenter||null,cullRadius:part.cullRadius||12}:{}),
         ...(part.response?{restHarpsichordResponse:part.response}:{}),
         ...(part.exposedEdge?{restExposedSoundboardEdge:true}:{})};
       if(part.matrix)putMatrix(part.id,part.mesh,part.matrix,extra);
@@ -499,6 +499,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
       if(row.maxX-row.minX>2)put('cut-bearing-'+row.id,PREFIX+'worn-block',(row.minX+row.maxX)/2,y,row.minZ+.07,0,row.maxX-row.minX,.12,.14,{architecturalJoint:true,descriptorId:row.id,region:regionOf(row),chartId:chartOf(row)});
     }
   }
+  for(const part of sourceConnectorRenderParts(state))put(part.id,PREFIX+part.mesh,part.x,part.y,part.z,0,part.sx,part.sy,part.sz,
+    {architecture:true,region:part.region,chartId:part.chartId,connector:true,cabinet:part.cabinet,physicalKind:'solid',descriptorId:part.id,physicalBounds:part.physicalBounds});
   for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
   // The four sectors are framed as four different fabricated objects. All
   // frames are below the exact support mesh, and the spindle is continuous.
@@ -547,7 +549,7 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     put('door-lamp-'+door.id,PREFIX+'door-lamp-fixture',door.x,lampY,door.z,finite(door.yaw)+(side<0?Math.PI:0),1,1,1,{practical:true,doorId:door.id,region:regionOf(door),level:door.level});
     lights.push({id:PREFIX+'door-light-'+door.id,x:origin.x+door.x+nx*.85,y:origin.y+lampY-.3,z:origin.z+door.z+nz*.85,radius:refuge?4.3:5.2,intensity:(refuge?.65:.78)+reach*.3,color:refuge?[.79,.60,.36]:[.53,.66,.65],penetration:0,focusPractical:focused,level:door.level});
   }
-  const remembered=[...memoryProps,...sourceRestBenchProps()],rememberedIds=new Set(remembered.map(p=>p.id));for(const row of JOURNEY_PROPS)if(!rememberedIds.has(row.id))remembered.push(row);
+  const remembered=[...memoryProps,...sourceRestBenchProps(),...(state.sourceContactProps||[])],rememberedIds=new Set(remembered.map(p=>p.id));for(const row of JOURNEY_PROPS)if(!rememberedIds.has(row.id))remembered.push(row);
   for(const row of remembered){
     // The seated eye now clears the real back. Retain the occupied bench:
     // looking down or back must show the furniture carrying the body.
@@ -565,7 +567,11 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
         put('joint-lamp-'+row.id,PREFIX+'lamp',row.x+1.08,row.y+1.25,row.z,0,1,1,1,{journeyPractical:true,landmarkId:row.id,region:'wrong-return',chartId:chartOf(row)});
         lights.push({id:row.id+'-light',x:origin.x+row.x+1.04,y:origin.y+row.y+1.25,z:origin.z+row.z-.18,radius:5.5,intensity:1.3,color:[.83,.65,.36],penetration:0,attachedTo:row.id,region:'wrong-return',journeyPractical:true,chartId:chartOf(row)});
       }
-    }else if(row.mesh)put('prop-'+row.id,row.mesh,row.x,row.y,row.z,row.id==='source-rest-iii'?-finite(row.yaw):finite(row.yaw),finite(row.scaleX,row.scale??1),finite(row.scaleY,row.scale??1),finite(row.scaleZ,row.scale??1),{continuation:true,region:regionOf(row),chartId:chartOf(row),level:row.level,role:row.role,decorative:true,...(row.id==='source-rest-ii'?{restPlace:true,restSeatDetail:true}:{})});
+    }else if(row.kind==='source-recording-cassette'){
+      for(const part of sourceRecordingCassetteWorldProps(row))putMatrix('prop-'+part.id,part.mesh,part.matrix,
+        {continuation:true,region:regionOf(row),chartId:chartOf(row),level:row.level,role:'recording-return',structural:false,decorative:true,noCollision:true,noReflection:true,
+          sourceRecordingCassette:true,sourceRecordingReturn:true,recordingReceiptId:row.recordingReceiptId,locationId:row.locationId});
+    }else if(row.mesh)put('prop-'+row.id,row.mesh,row.x,row.y,row.z,row.id==='source-rest-iii'?-finite(row.yaw):finite(row.yaw),finite(row.scaleX,row.scale??1),finite(row.scaleY,row.scale??1),finite(row.scaleZ,row.scale??1),{continuation:true,region:regionOf(row),chartId:chartOf(row),level:row.level,role:row.role,decorative:true,...(row.sourceRecordingStand?{sourceRecordingStand:true,structural:false,noCollision:true}:{}),...(row.sourceRecordingReturn?{sourceRecordingReturn:true,recordingReceiptId:row.recordingReceiptId,locationId:row.locationId}:{}),...(row.role==='rest-seat'?{restPlace:true,restSeatDetail:true}:{})});
     else if(row.kind==='seam')for(let k=0;k<3;k++)put('seam-'+row.id+'-'+k,PREFIX+'worn-block',row.x,row.y+k*.28,row.z,finite(row.yaw),.18,.032,.12,{matchingSeam:true,role:row.role,region:regionOf(row)});
   }
   const closure=frame.closure||{};
@@ -695,7 +701,10 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   if(restDegradation>.42){
     const distant=restEase(.42,.78,restDegradation),ground=restEase(.63,.88,restDegradation),place=restEase(.77,.91,restDegradation);
     for(const p of props){
-      if(chartOf(p)!==chartOf(state)||p.restSky)continue;
+      // Flood animals and wrecks already follow the shared water frame. The
+      // architectural recession must not sink them away from that surface and
+      // their headlamps a second time.
+      if(chartOf(p)!==chartOf(state)||p.restSky||p.restFlood)continue;
       const amount=p.restPlace?place:p.physicalKind==='surface'?ground:(p.surroundings||p.region===phaseOf(state)||p.doorId)?distant:0;
       if(amount<=0)continue;
       const drop=(p.restPlace?3:p.physicalKind==='surface'?7:8)*amount;
@@ -703,7 +712,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     }
   }
   const destruction=applySourceRestDestruction(props,{cue:affliction,time:state.sourceRestView?.musicTime,
-    seat:restSeat||SOURCE_REST_SEATS[0],origin,reducedMotion,canLeave:affliction?.canLeave!==false});
+    seat:restSeat||SOURCE_REST_SEATS[0],origin,reducedMotion,canLeave:affliction?.canLeave!==false,
+    effectsMode:state.sourceRestView?.effectsMode||'full',reducedDread:state.sourceRestView?.reducedDread===true});
   if(!restBodyReady){destruction.body=[];destruction.diagnostics.bodyParts=0;}
   destruction.diagnostics.bodyAvailable=!!restBodyReady;
   if(destruction.diagnostics.active)props.splice(0,props.length,...destruction.props,...destruction.debris,...destruction.body);
@@ -720,8 +730,9 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
       motion:pursuer.mode==='follow'?'hunt':'idle',cue:null,reducedMotion:!!reducedMotion},
   }:null;
   const presentation=sourceContinuationPresentation({...state,chartId:chartOf(state)},camera),portalViews=sourceContinuationPortalViews(state,presentation),
+    voidViews=sourceContinuationVoidViews(state,{...presentation,aspect:viewportAspect}),
     originMatrix=matrix(origin.x,origin.y,origin.z),unanchor=matrix(-origin.x,-origin.y,-origin.z),
-    sourceExcludes=portalViews.map(v=>transformPortalPlanes(v.planes,originMatrix)),allProps=[...props],allLights=[...lights],chartId=chartOf(state);
+    sourceExcludes=[...portalViews.map(v=>v.planes),...voidViews.excludes].map(p=>transformPortalPlanes(p,originMatrix)),allProps=[...props],allLights=[...lights],chartId=chartOf(state);
   props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   lights.splice(0,lights.length,...allLights.filter(l=>chartOf(l)===chartId));
   const submitTransform=(p,m,extra={})=>{const q=transform(m,[p.x,p.y,p.z]);return{...p,...extra,matrix:multiply(m,p.matrix),x:q[0],y:q[1],z:q[2],...(p.surroundings?{sourceWorldMatrix:portalMultiply(m,p.sourceWorldMatrix||identity())}:{})};};
@@ -729,11 +740,21 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     for(const p of allProps)if(chartOf(p)===view.destinationChart)props.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
     for(const l of allLights)if(chartOf(l)===view.destinationChart){const q=transform(worldMap,[l.x,l.y,l.z]);lights.push({...l,id:l.id+':through:'+view.id,x:q[0],y:q[1],z:q[2],portalClipId:view.id});}
   }
+  // Below all real floors, exact frustum rejection releases slots for the
+  // receiving world's full visible architecture. This removes no visible
+  // canonical mesh and avoids substituting a six-piece floor miniature.
+  if(voidViews.domain){
+    const retained=props.filter(p=>p.portalDestination||sourceContinuationVoidInFrustum(p,{...presentation,aspect:viewportAspect},origin));
+    props.splice(0,props.length,...retained);
+  }
   const restReturn=applySourceRestReturn({props,lights,canonicalProps:[...allProps,...restReturnCanonical],canonicalLights:allLights,state,
     eye:presentation.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),forward:presentation.basis.forward,origin,
-    portalCount:portalViews.length,maxInstances:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances});
+    portalCount:sourceExcludes.length,maxInstances:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances});
   if(restReturn.diagnostics.active){props.splice(0,props.length,...restReturn.props);lights.splice(0,lights.length,...restReturn.lights);}
   if(restReturn.planes)sourceExcludes.push(restReturn.planes);
+  const voidCopies=sourceContinuationVoidCopies({views:voidViews,canonicalProps:allProps,canonicalLights:allLights,origin,
+    remaining:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances-props.length});
+  props.push(...voidCopies.props);lights.push(...voidCopies.lights);
   const pressureInstances=[],rawPressure=hush?pressureMeshes(hush,null,{reducedMotion}):[],hushChart=chartOf(pursuer);
   const straddles=endpoint=>{
     if(!pursuer||endpoint.chartId!==hushChart)return false;
@@ -767,8 +788,19 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
         pressureInstances.push({...base,id:p.id+':trailing:'+view.id,matrix:projected,portalFragment:'trailing',portalClipPlanes:transformPortalPlanes(front,originMatrix),portalClipId:view.id+':trailing',noShadow:true});
       }
     }
+    // Portal images share the one actor's exact captured skin and material.
+    // The ordinary surface companion is derived downstream from this same
+    // descriptor, so neither layer can cross independently of the other.
+    if(hushChart===chartId)for(const view of [...voidViews.lower,...voidViews.upper]){
+      if(pressureInstances.length>=SOURCE_VOID_VIEW_LIMITS.pressure)break;
+      const projected=sourceContinuationVoidInstance({...base,x:body[12],y:body[13],z:body[14]},view,origin),
+        at=[projected.matrix[12]-origin.x,projected.matrix[13]-origin.y+1.09,projected.matrix[14]-origin.z];
+      if(!view.planes.every(plane=>dot3(plane.slice(0,3),at)+plane[3]>=-1.4))continue;
+      pressureInstances.push({...projected,portalFragment:'void-'+view.kind});
+    }
   }
   const compensate=portalMultiply(originMatrix,portalMultiply(presentation.compensation,unanchor));
+  for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(compensate,impact.point);
   for(let i=0;i<props.length;i++){const p=submitTransform(props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));props[i]=p;}
   for(const l of lights){const q=transform(compensate,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}
   for(const p of pressureInstances){p.matrix=portalMultiply(compensate,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));}
@@ -778,20 +810,24 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   if(rotation){const cx=origin.x+center.x,cz=origin.z+center.z,rigid=multiply(matrix(cx,0,cz,rotation),matrix(-cx,0,-cz));for(const p of props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.playerBody)p.heading=angle(p.heading+rotation);}for(const l of lights){const q=transform(rigid,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}eye=transform(rigid,eye);if(aim)aim=transform(rigid,aim);if(hush){const q=transform(rigid,[(hush.x+.5)*CELL,hush.floorH,(hush.y+.5)*CELL]);hush={...hush,x:q[0]/CELL-.5,y:q[2]/CELL-.5,floorH:q[1],performance:{...hush.performance,heading:angle(hush.performance.heading+rotation)}};}worldYaw=angle(worldYaw+rotation);}
   if(rotation){const gate=surroundings.gate,q=transform(multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),[gate.x,gate.y,gate.z]);gate.x=q[0];gate.z=q[2];gate.normalX=Math.cos(rotation);gate.normalZ=Math.sin(rotation);}
   if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z));
+    for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(rigid,impact.point);
     for(const p of props){if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
     for(const p of pressureInstances){p.matrix=portalMultiply(rigid,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
   }
   surroundings.props=props.filter(p=>p.surroundings).length;
+  for(const impact of destruction.diagnostics.mistakeImpacts||[]){
+    impact.visible=!!restBodyReady&&sourceRestImpactInView(impact,{eye,yaw:worldYaw,pitch:camera.pitch,aspect:viewportAspect,tanHalfFov:viewportTanHalfFov},props);
+  }
   const near=light=>Math.hypot(light.x-eye[0],light.y-eye[1],light.z-eye[2]);
   const lookingBack=phaseOf(state)==='wrong-return'&&-Math.cos(worldYaw)>.45&&Math.abs(Math.sin(worldYaw))<.7;
-  const lightPriority=light=>light.focusPractical?4:camera.strictOverhead&&light.shelfPractical?light.level===state.level?3:light.level===state.level+1?2:0:lookingBack&&light.inheritedEarthfall?1:0;
+  const lightPriority=light=>light.voidImage?(presentation.eye[1]<SOURCE_CONTINUATION.bounds.minY+2?4:0):light.focusPractical?4:camera.strictOverhead&&light.shelfPractical?light.level===state.level?3:light.level===state.level+1?2:0:lookingBack&&light.inheritedEarthfall&&!light.voidImage?1:0;
   const selectedLights=lights.filter(light=>!hiddenAbove.includes(light.level)&&(!camera.strictOverhead||!light.inheritedEarthfall&&light.region!=='wrong-return')).sort((a,b)=>lightPriority(b)-lightPriority(a)||near(a)-near(b)).slice(0,SOURCE_CONTINUATION_ARCHITECTURE.maxLights);
-  return{phase:phaseOf(state),chartId,portals:portalViews.map(v=>({id:v.id,edgeId:v.edgeId,side:v.side,fromChart:chartId,toChart:v.destinationChart,toCurrent:v.toCurrent,aperture:v.endpoint})),pressureInstances:pressureInstances.slice(0,4),props,lights:selectedLights,eye,yaw:worldYaw,pitch:camera.pitch,authoredCamera:{eye,yaw:worldYaw,pitch:camera.pitch},strictOverhead:camera.strictOverhead,cameraAimTarget:aim,studyRotation:rotation,hush,
+  return{phase:phaseOf(state),chartId,canonicalProps:allProps.filter(p=>chartOf(p)===chartId),portals:portalViews.map(v=>({id:v.id,edgeId:v.edgeId,side:v.side,fromChart:chartId,toChart:v.destinationChart,toCurrent:v.toCurrent,aperture:v.endpoint})),pressureInstances:pressureInstances.slice(0,4),props,lights:selectedLights,eye,yaw:worldYaw,pitch:camera.pitch,authoredCamera:{eye,yaw:worldYaw,pitch:camera.pitch},strictOverhead:camera.strictOverhead,cameraAimTarget:aim,studyRotation:rotation,hush,
     revealProgress:null,recovery:frame.recovery?{kind:frame.recovery.kind,elapsed:frame.recovery.elapsed,duration:frame.recovery.duration}:null,floorH:player.y+origin.y,falling:!!frame.fall,activeLevel:state.level,
     shownLevels:[...shownLevels].sort((a,b)=>a-b),hiddenAbove,geometry:{surfaces,solids,doors},source:frame,surroundings,
     counts:{surfaces:props.filter(p=>p.physicalKind==='surface').length,solids:props.filter(p=>p.physicalKind==='solid').length,props:props.length,lights:selectedLights.length,body:props.filter(p=>p.playerBody).length,hush:pressureInstances.length?1:0,hushViews:pressureInstances.length},
     noteArchitecture:restScenery?.noteArchitecture?.diagnostics||null,...(phaseOf(state)==='catch'?{harpsichord:restScenery?.harpsichord||null}:{}),
-    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,sunset:state.sourceRestView?.weatherCue?.sunset||null,
+    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,voidLoop:voidCopies.diagnostics,sunset:state.sourceRestView?.weatherCue?.sunset||null,
     flood:restScenery?.flood?{...restScenery.flood,props:undefined,water:{...restScenery.flood.water,
       siteMatrix:multiply(matrix(origin.x,origin.y,origin.z),restScenery.flood.water.siteMatrix),
       lights:(restScenery.flood.water.lights||[]).map(l=>({...l,position:l.position.map((n,k)=>n+[origin.x,origin.y,origin.z][k])}))}}:null,
@@ -801,12 +837,13 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
 
 export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{},anchor={x:0,y:0,z:0},installMeshes=installSourceContinuationMeshes,getViewport=()=>renderer.r3dViewCamera?.(),getTorch=()=>({on:false,look:{power:0}}),getLighting=()=>null,getReducedMotion=()=>false,getFlashMode=()=> 'full',studyRotation=0}={}){
   const rangeOwner=Symbol('source-continuation-range');
-  let releaseRange=null,initialized=false,released=false,loading=null,repair=null,error=null,last=null,lastFalling=false,lastFoldSerial=0,torchFrame={on:false,look:{power:0}},lightingFrame=sourceContinuationLighting(),lightingKey='';
+  let releaseRange=null,initialized=false,released=false,loading=null,repair=null,error=null,last=null,lastRestState=null,lastViewport=null,lastFalling=false,lastFoldSerial=0,torchFrame={on:false,look:{power:0}},lightingFrame=sourceContinuationLighting(),lightingKey='';
   const customNames=meshLibrary.map(p=>p.name),required=requiredMeshes();
   const noteAsset=createSourceRestNoteAsset({resolveAsset});
   const couperinNoteAsset=createSourceRestNoteAsset({resolveAsset,url:'audio/source-rest/couperin/couperin-revoicing.json'});
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh))&&renderer.r3dHushBodyReady?.()===true;};
   function clearSource(){
+    renderer.r3dSetSourceRestFaculties?.(null);
     renderer.r3dSetStormFlash?.(0);
     renderer.r3dSetSourceWeather?.({rain:0,moon:0,clouds:0});props.setPressureSurfaceInstances?.([]);
     renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);
@@ -838,18 +875,26 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     if(serial!==lastFoldSerial){renderer.r3dResetVfdMemory?.();renderer.r3dSnapCameraOnNextFrame?.();lastFoldSerial=serial;}
     if(state.phase==='catch'&&couperinNoteAsset.snapshot().state==='unloaded')void couperinNoteAsset.load();
     const viewport=getViewport?.(),bodyCatalog=new Set(props.propMeshCatalog?.()||[]);
-    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name))});props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
+    lastViewport=viewport;
+    lastRestState={phase:state.phase,chartId:state.chartId??0,sourceRestView:state.sourceRestView};
+    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,viewportTanHalfFov:viewport?.tanHalfFov||.95,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name))});props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     const restSeat=SOURCE_REST_SEATS.find(seat=>seat.phase===state.phase),distance=restSeat?Math.hypot(state.x-restSeat.x,state.z-restSeat.z):Infinity,near=!!restSeat&&state.chartId===restSeat.chartId&&Math.abs(state.feet-restSeat.feet)<1;
     const weatherPresence=near?Math.max(0,Math.min(1,(16-distance)/10)):0,cue=state.sourceRestView?.weatherCue;
     renderer.r3dSetSourceWeather?.({rain:(cue?.rain||0)*weatherPresence,moon:(cue?.moon||0)*weatherPresence,clouds:(cue?.clouds||0)*weatherPresence,
       horizon:(cue?.horizon||0)*weatherPresence,clock:cue?.clock||0,sunset:cue?.sunset?{...cue.sunset,amount:cue.sunset.amount*weatherPresence}:null});
     const flashMode=getFlashMode(),flash=cue?.judgment?.flash||0;
     renderer.r3dSetStormFlash?.(flashMode==='off'?0:flash*Math.min(flashMode==='reduced'?.12:1,getReducedMotion()?.20:1)*weatherPresence);
-    renderer.r3dSetSourceFault?.(sourceRestAfflictionFault(last.affliction,{reducedMotion:!!getReducedMotion()}));
+    // The body's decline loses acquired colour/form; it is not an NVMe/PS2
+    // transmission fault layered over an otherwise intact world.
+    renderer.r3dSetSourceFault?.(0);
+    last.faculties=sourceRestFacultyFrame(state.sourceRestView?.degradation||0,{
+      affliction:last.affliction,reducedMotion:!!getReducedMotion(),
+      reducedDread:state.sourceRestView?.reducedDread===true,effectsMode:state.sourceRestView?.effectsMode||'full',
+    });renderer.r3dSetSourceRestFaculties?.(last.faculties);
     if(last.falling||lastFalling||last.authoredCamera)renderer.r3dSnapCameraOnNextFrame?.();lastFalling=last.falling;
     updateLighting();const heldTorch=getTorch?.();torchFrame={on:!!heldTorch?.on,look:{...(heldTorch?.look||{})}};
-    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.floorH,authoredPropRange:SOURCE_CONTINUATION_ARCHITECTURE.far,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:last.hush,hushSecondary:null,sourcePressureInstances:last.pressureInstances,audio:0,light:torchFrame.on?1:0,torchLook:torchFrame.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,coastalMemory:last.flood?.water||null,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
+    return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.floorH,authoredPropRange:SOURCE_CONTINUATION_ARCHITECTURE.far,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:last.hush,hushSecondary:null,sourcePressureInstances:last.pressureInstances,audio:0,light:torchFrame.on?1:0,torchLook:torchFrame.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:continuationDitherIntensity(state),coastalMemory:last.flood?.water||null,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
-  return{initialize,render,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,harpsichord:last.harpsichord,affliction:last.affliction,destruction:last.destruction,restReturn:last.restReturn,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
+  return{initialize,render,restApertureFrame:()=>initialized&&!released&&!repair&&!error?sourceRestApertureFrame(last,lastRestState,{anchor,viewport:lastViewport}):null,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,harpsichord:last.harpsichord,affliction:last.affliction,faculties:last.faculties,destruction:last.destruction,restReturn:last.restReturn,voidLoop:last.voidLoop,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
 }

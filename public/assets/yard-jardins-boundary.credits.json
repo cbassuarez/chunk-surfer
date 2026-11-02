@@ -1,0 +1,12 @@
+{
+  "author": "Chunk Surfer project",
+  "license": "Original project-native geometry",
+  "sources": [
+    "src/data/arrival-court.js",
+    "src/data/yard-turn.js",
+    "src/data/yard-jardins.js",
+    "tools/chunk_surfer/arrival-court-geometry.mjs",
+    "tools/chunk_surfer/build-yard-jardins-boundary.mjs"
+  ],
+  "purpose": "Same retained civic boundary and original vehicle gate, with one physically open pedestrian bay serving the garden perimeter."
+}

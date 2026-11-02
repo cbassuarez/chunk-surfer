@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_CONTINUATION as C} from '../src/data/source-continuation.js';
+import {SOURCE_CONTINUATION as C,continuationSupportAt} from '../src/data/source-continuation.js';
 import {freshSourceContinuation,stepSourceContinuation,sourceContinuationDoorFraction} from '../src/game/source-continuation.js';
 
 const seed=extra=>({...freshSourceContinuation({runId:'door-approach'}),status:'active',...extra});
@@ -30,7 +30,11 @@ test('false-return recognition follows seeing the opened porch rather than an un
 });
 test('the final leaves welcome approach but completion still requires ordinary walking through them',()=>{
   let r=advance(seed({phase:'catch',level:3,...C.catch.finalApproach}),1);assert.equal(r.state.doorOpen['catch-final'],true);assert.equal(r.state.completed,false);
-  r=advance(r.state,1,{side:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
+  assert.ok(continuationSupportAt(r.state.x,r.state.z,r.state));assert.equal(r.state.x,C.catch.finalApproach.x,'opening the leaves does not move the body');
+  // The declared approach faces east: forward walking crosses the real
+  // threshold; the former overhead screen-right control now strafes south.
+  r=advance(r.state,1,{forward:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
+  assert.ok(r.state.x>C.catch.finalDoor.x,'the body physically reaches the onward side');assert.equal(r.state.z,C.catch.finalApproach.z);assert.equal(r.state.feet,C.catch.finalApproach.feet);assert.ok(continuationSupportAt(r.state.x,r.state.z,r.state),'the crossed body remains over the real supported landing');
 });
 test('manual leaf reversal survives later ticks and reload instead of fighting automatic reopening',()=>{
   let r=stepSourceContinuation(seed({...onward,x:-16.5}),{interact:true});r=advance(r.state,1);r=stepSourceContinuation(r.state,{interact:true});assert.equal(r.state.doorOpen['wrong-onward'],false);

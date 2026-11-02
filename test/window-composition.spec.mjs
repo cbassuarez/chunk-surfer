@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { endingManifest } from '../src/data/endings.js';
+import {nightDeadlinePending} from '../src/game/night-deadline.js';
 import {
   MAX_MEDIA_SURFACES,
   WINDOW_MEDIA_PROTOCOL,
@@ -231,6 +232,7 @@ test('physical inversion enters its own host before generic media or cutscene di
   const calls=[],result={physical:true};
   const forbidden=()=>assert.fail('physical inversion must not dispatch generic ending media or a cutscene');
   const returned=runInNewContext(main.slice(start,end)+'\nplayEnding("inversion","escaped");',{
+    getSave:()=>({nightDeadline:null}),nightDeadlinePending,
     finishChapelTapeDemand:()=>calls.push('finish-tape-demand'),
     ENDING_ARRIVAL:{ESCAPED:'escaped'},
     beginWrongDoorEnding:arrival=>{calls.push(arrival);return result;},

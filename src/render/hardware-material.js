@@ -124,9 +124,13 @@ function pigmentFields(ctx, w, h, color, finish) {
 /** All coordinates and dpr are device pixels. Returns face/content geometry. */
 export function drawHardwareCap(ctx, x, y, w, h, {
   color = 'amber', finish = 'lens', travel = 0, lampHeat = 0,
+  lateral = 0,
   enabled = true, focused = false, alpha = 1, dpr = 1,
 } = {}) {
-  const g = hardwareCapGeometry(w,h,travel,{dpr,finish});
+  const shape=hardwareCapGeometry(w,h,travel,{dpr,finish});
+  // Only the captive cap rattles; its retainer and hit housing remain fixed.
+  const dx=clamp(lateral,-1,1)*Math.min(w*.03,2.2*dpr);
+  const g=dx?{...shape,face:{...shape.face,x:shape.face.x+dx},content:{...shape.content,x:shape.content.x+dx}}:shape;
   const { rim, face: f, radius, shoulder } = g, keyboard = finish === 'keycap';
   const heat = enabled && finish === 'lens' ? clamp(lampHeat,0,1) : 0;
   ctx.save(); ctx.translate(x,y); const opacity = ctx.globalAlpha * clamp(alpha,0,1); ctx.globalAlpha = opacity;

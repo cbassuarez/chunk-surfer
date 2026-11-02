@@ -3,6 +3,7 @@
 // These are conversions of the existing ranges, not additional yard islands.
 import {F,MATERIAL,ZONE} from './floorplan/legend.js';
 import {EXTERIOR_PUB} from './exterior-pub.js';
+import {yardTurnFrame} from './yard-turn.js';
 const freeze=v=>{if(v&&typeof v==='object'&&!Object.isFrozen(v)){Object.values(v).forEach(freeze);Object.freeze(v);}return v;};
 const logical=(x,z)=>({x:50+x,y:200+z});
 
@@ -54,7 +55,7 @@ export const yardRangePublicUse=id=>id===EXTERIOR_PUB.building.id?'lyric':yardPu
 // Same logical drawing as the yard: no hidden second room or jump is needed.
 // Install after loading_bay_yard so the indoor profile owns this lower span.
 const roomLevel=(room,id,x,z,rows)=>({id,replace:true,physicalReplace:true,layer:'ground',space:room.id.replaceAll('-','_'),renderGroup:'ground',
-  origin:logical(x,z),physicalOrigin:{x,y:z},base:0,rows,profile:(_x,_z,cell)=>({floor:room.floor,ceil:room.ceiling,
+  origin:logical(x,z),physicalOrigin:{x,y:z},physicalFrame:yardTurnFrame(room.buildingId),base:0,rows,profile:(_x,_z,cell)=>({floor:room.floor,ceil:room.ceiling,
     zone:room.zone,material:room.material,flags:cell.flags&F.DOOR})});
 export const YARD_PUBLIC_ROOM_LEVELS=freeze(YARD_PUBLIC_ROOMS.flatMap(room=>{
   const b=room.bounds,d=room.entrance,span=d.width>2?3:1;
@@ -69,7 +70,8 @@ export const YARD_PUBLIC_ROOM_DOORS=freeze(YARD_PUBLIC_ROOMS.map(room=>{
 }));
 
 const wall=(id,x,z,width,depth,minElevation=.12,maxElevation=3.52)=>({id,kind:'obb',...logical(x,z),width,depth,yaw:0,
-  minElevation,maxElevation,spaceId:'yard_caretaker'});
+  minElevation,maxElevation,spaceId:'yard_caretaker',physical:{x,z,width,depth},
+  physicalFrame:yardTurnFrame(id.startsWith('yard-laundry')?'yard-baths-plant':id.startsWith('yard-stores')?'yard-covered-stores':'yard-former-stables')});
 export const YARD_PUBLIC_ROOM_COLLIDERS=freeze([
   wall('yard-caretaker-back-wall',35.94,18,.12,8),
   wall('yard-caretaker-south-wall',33,14.06,6,.12),

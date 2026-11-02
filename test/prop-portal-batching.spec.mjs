@@ -8,13 +8,16 @@ import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {BUILDING_WINDOWS} from '../src/data/building-windows.js';
 import {buildingWindowInteriorInstance,shouldHideCrossEnvelopeProp} from '../src/game/prop-visibility.js';
+import {portalBatchKey} from '../src/render/source-mesh-portals.js';
 const path=process.env.PORTAL_RENDERER_FILE||new URL('../src/render/props3d.js',import.meta.url);
 const source=readFileSync(path,'utf8');
 const extracted=source.slice(source.indexOf('const SOURCE_DOOR_SCENERY='),source.indexOf('\nfunction uploadInstances('));
 const skip=source.match(/const REFLECTION_SKIP=new Set\([^;]+;/)?.[0];
 assert.ok(extracted.includes('function visibleGroups(')&&skip,'exercise the real visibleGroups body and its reflection policy');
-function batches(instances,options={}){
+function batches(instances,options={},{relief=[],pressure=[]}={}){
  const c={staticInstances:instances,dynamicInstances:[],roofWatcherInstances:[],emergencyShadowInstances:[],diagnosticInstances:[],
+  stillnessReliefDrawInstances:relief,pressureSurfaceInstances:pressure,
+  portalBatchKey,
   propDiagnosticsEnabled:false,propDiagnosticOptions:null,propInstanceVisible:()=>true,resolvedMeshName:p=>p.mesh,
   characterSnapshot:p=>p.character?{key:p.character}:null,pack:{catalog:new Map()}};
  vm.createContext(c);vm.runInContext(`${skip}\n${extracted}\nvar result=visibleGroups([0,0,0],90,${JSON.stringify(options)});`,c);return Array.from(c.result.values(),group=>Array.from(group));
@@ -46,6 +49,17 @@ test('identical portals still instance together; different planes or apertures c
 test('unclipped and folded non-W3 instances retain their original independent groups',()=>{
  const normal={id:'plain',mesh:'yard_van'},fold={id:'fold',mesh:'yard_van',outskirtsFoldVisibility:.5};
  for(const opt of [{},{reflection:true}])assert.deepEqual(batches([normal,fold],opt).map(g=>g.map(i=>i.id)),[['plain'],['fold']]);
+});
+test('runtime relief and pressure surfaces obey the same actual portal grouping as ordinary props',()=>{
+ const plane=[0,0,1,-4],portal=[0,3,84,88,1.05,3.45],otherPortal=[0,3,84,87,1.05,3.45],
+   ordinary={id:'ordinary',mesh:'board'},inside={id:'inside',mesh:'board',exteriorClipPlane:plane,exteriorPortal:portal},
+   relief={id:'relief',mesh:'board',exteriorClipPlane:[...plane],exteriorPortal:[...portal]},
+   pressure={id:'pressure',mesh:'board',exteriorClipPlane:[...plane],exteriorPortal:otherPortal};
+ for(const mode of [{},{reflection:true}]){
+  const groups=batches([ordinary,inside],mode,{relief:[relief],pressure:[pressure]});
+  assert.deepEqual(groups.map(group=>group.map(instance=>instance.id)),[['ordinary'],['inside','relief'],['pressure']]);
+  assert.ok(groups.every(group=>group.every(instance=>JSON.stringify(instance.exteriorPortal)===JSON.stringify(group[0].exteriorPortal))));
+ }
 });
 test('clip uniforms are explicitly uploaded for each group and the mesh name is decoded before material rules',()=>{
  assert.match(source,/gl\.uniform4fv\(U\('uExteriorClipPlane'\),list\[0\]\.exteriorClipPlane\|\|\[0,0,0,0\]\)/);

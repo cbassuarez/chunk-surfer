@@ -278,6 +278,16 @@ export class BrowserStorage {
     return next;
   }
 
+  async saveCausalDraftCheckpoint(runId, checkpoint) {
+    const stored = await causalGet('draft');
+    const draft = stored?.runId === runId ? stored : { runId, segments: [] };
+    const next = { ...draft, runId, schema: 1, topologyHash: checkpoint.topologyHash,
+      difficulty: checkpoint.difficulty, checkpoint,
+      segments: (draft.segments || []).slice(0, Math.max(0, Math.floor(Number(checkpoint.segmentCount) || 0))) };
+    await causalPut('draft', next);
+    return next;
+  }
+
   async sealCausalDraft(runId, tape) {
     const draft = await causalGet('draft');
     if (draft?.runId && draft.runId !== runId) throw new Error('causal draft run mismatch');

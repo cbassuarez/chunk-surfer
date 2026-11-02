@@ -3,6 +3,7 @@
 // envelope becomes part of the existing row, with an approach from the yard.
 import {F,ZONE,MATERIAL} from './floorplan/legend.js';
 import {districtLogicalAt} from './exterior-district.js';
+import {yardTurnFrame,yardTurnPoint,yardUnturnPoint,yardTurnBounds,YARD_TURN_YAW} from './yard-turn.js';
 const freeze=value=>{
   if(value&&typeof value==='object'&&!Object.isFrozen(value)){
     Object.values(value).forEach(freeze);Object.freeze(value);
@@ -47,10 +48,19 @@ export const pubExteriorLogicalAt=id=>{const p=pubExteriorAt(id);return pubLogic
 // room and join the actual full-width apron to the public paving.
 export const pubYardCellClaimed=(x,z)=>x>=31&&x<47&&z>=28&&z<35;
 export const PUB_YARD_CONNECTORS=freeze([
-  {id:'yard-to-lyric-apron',from:pubYardLogicalAt(31,27.5),to:pubLogicalAt(31,28),span:{x:16}},
+  // Cardinal physical-navigation cells now join the turned apron to its real
+  // yard neighbour. The old translation-only connector would jump east.
 ]);
 export const pubWorldFromLocal=({x,z})=>({x:EXTERIOR_PUB.rowAnchor.x+z,z:EXTERIOR_PUB.rowAnchor.z-x});
 export const pubLocalFromWorld=({x,z})=>({x:EXTERIOR_PUB.rowAnchor.z-z,z:x-EXTERIOR_PUB.rowAnchor.x});
+// Existing data stays in its saved/authored frame. Runtime physical sources
+// must request this explicit embedding rather than reinterpret those addresses.
+export const pubPhysicalAt=point=>yardTurnPoint('lyric',point);
+export const pubAuthoredAt=point=>yardUnturnPoint('lyric',point);
+export const pubPhysicalFromLocal=point=>pubPhysicalAt(pubWorldFromLocal(point));
+export const pubPhysicalYaw=yaw=>(Number(yaw)||0)+YARD_TURN_YAW;
+export const pubPhysicalExteriorAt=id=>pubPhysicalAt(pubExteriorAt(id));
+export const PUB_PHYSICAL_BOUNDS=freeze(yardTurnBounds('lyric',EXTERIOR_PUB.building.bounds));
 // A mesh envelope is independent of rain/sky classification. The renderer may
 // retain the surrounding civic meshes while this observer stays indoors.
 export const isPubMeshEnvelopeZone=zone=>Number(zone)===ZONE.pub;
@@ -58,7 +68,7 @@ export const isPubMeshEnvelopeZone=zone=>Number(zone)===ZONE.pub;
 const profile=(_x,_y,cell)=>({floor:EXTERIOR_PUB.floor,ceil:EXTERIOR_PUB.ceiling,
   zone:ZONE.pub,material:MATERIAL.woodVelvet,flags:cell.flags&F.DOOR});
 const level=(id,x,z,rows)=>freeze({id,replace:true,physicalReplace:true,layer:'ground',
-  space:'exterior_pub',renderGroup:'ground',origin:pubLogicalAt(x+PUB_RELOCATION.x,z+PUB_RELOCATION.z),physicalOrigin:{x:x+PUB_RELOCATION.x,y:z+PUB_RELOCATION.z},base:0,rows,profile});
+  space:'exterior_pub',renderGroup:'ground',origin:pubLogicalAt(x+PUB_RELOCATION.x,z+PUB_RELOCATION.z),physicalOrigin:{x:x+PUB_RELOCATION.x,y:z+PUB_RELOCATION.z},physicalFrame:yardTurnFrame('lyric'),base:0,rows,profile});
 export const PUB_LEVELS=freeze([
   {...level('pub-yard-apron',-14,106,['Y'.repeat(16)]),profile:()=>({floor:0,ceil:24,zone:ZONE.dock,material:MATERIAL.wetPaving,flags:F.SKY|F.WALLED})},
   level('exterior-pub-main-floor',-14,107,Array(5).fill('Y'.repeat(16))),
@@ -112,5 +122,5 @@ export const PUB_PHYSICAL_COLLIDERS=freeze(physical);
 export const PUB_COLLIDERS=freeze(physical.map(c=>{
   const at=pubLogicalAt(c.x,c.z),margin=EXTERIOR_PUB.collisionBodyMargin;
   return{...c,x:at.x,y:at.y,width:c.width+2*margin,depth:c.depth+2*margin,
-    physical:{x:c.x,z:c.z,width:c.width,depth:c.depth},bodyMargin:margin};
+    physical:{x:c.x,z:c.z,width:c.width,depth:c.depth},physicalFrame:yardTurnFrame('lyric'),bodyMargin:margin};
 }));

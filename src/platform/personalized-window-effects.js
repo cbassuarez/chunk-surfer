@@ -1,4 +1,6 @@
 import { isTauriRuntime } from './detect.js';
+import {sourceRestOwnedFramesValid} from '../render/source-rest-apertures.js';
+import {validateWindowArchitecturePacket,windowArchitectureCueAllowed} from '../render/window-media-architecture.js';
 import {
   MAX_MEDIA_SURFACES,
   WINDOW_MEDIA_PROTOCOL,
@@ -477,7 +479,7 @@ export function createPersonalizedWindowEffects({
     while(snapshots.size>32)snapshots.delete(snapshots.keys().next().value);
     return id;
   }
-  function snapshotData(id){return snapshots.get(String(id||''))||null;}
+  function snapshotData(id){return snapshots.get(String(id||''))||current?.sourceStudyData?.get(String(id||''))||null;}
   function releaseSnapshots(tokens=[]){for(const token of tokens)snapshots.delete(String(token));}
 
   async function assignMediaScore(session,plan,pane,label){
@@ -521,6 +523,7 @@ export function createPersonalizedWindowEffects({
   async function holdComposition(held,{effectiveAtMs=Date.now()}={}){
     const session=current,plan=session?.activeComposition;
     if(!session||!plan)return false;
+    session.sourceStudyHeld=!!held;
     const results=await Promise.all(plan.surfaces.map(pane=>{
       const label=WINDOW_MEDIA_SURFACE_LABELS[pane.index],revision=session.mediaRevisions.get(label);
       if(!revision)return Promise.resolve(null);
@@ -532,10 +535,50 @@ export function createPersonalizedWindowEffects({
     return results.length===plan.surfaces.length;
   }
 
+  function releaseStudyFrames(){
+    const session=current;if(!session)return;
+    session.sourceStudyData?.clear();
+    session.sourceStudyCurrent=[];session.sourceStudyPrevious=[];session.sourceStudyRevision=0;
+    session.sourceStudyArchitecture=null;session.sourceStudyArchitectureRevision=0;session.sourceStudyArchitectureSent=new Map();
+  }
+  async function updateStudyFrames({cueId,frames,revision}={}){
+    const session=current,plan=session?.activeComposition;
+    if(!session||plan?.purpose!=='source-study'||!String(plan.cueId).startsWith('source-rest:apertures:')||plan.cueId!==cueId||session.sourceStudyHeld||!Number.isSafeInteger(revision)||revision<1||revision<=(session.sourceStudyRevision||0)
+      ||plan.reducedMotion&&(session.sourceStudyRevision||0)>0||!sourceRestOwnedFramesValid(frames,plan.surfaces.filter(p=>p.sensitivity==='none').map(p=>p.id)))return false;
+    session.sourceStudyRevision=revision;
+    session.sourceStudyData??=new Map();
+    for(const token of session.sourceStudyPrevious||[])session.sourceStudyData.delete(token);
+    session.sourceStudyPrevious=session.sourceStudyCurrent||[];session.sourceStudyCurrent=[];
+    const payloads=frames.map(frame=>{const token=`snapshot-owned-${revision}-${Math.random().toString(36).slice(2,10)}`;session.sourceStudyData.set(token,frame.dataUrl);session.sourceStudyCurrent.push(token);const pane=plan.surfaces.find(p=>p.id===frame.surfaceId),label=WINDOW_MEDIA_SURFACE_LABELS[pane.index];return{...frame,token,pane,label};});
+    const results=await Promise.all(payloads.map(async value=>{if(!api?.emitTo)return false;try{await api.emitTo(value.label,'window-media-owned-frame',{
+      protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:value.label,sessionToken:session.token,revision:session.mediaRevisions.get(value.label),
+      cueId:plan.cueId,paneId:value.pane.id,frameRevision:revision,token:value.token,dataUrl:value.dataUrl,
+    });return true;}catch{return false;}}));
+    // A hold arriving after dispatch defers the decode in the surface. It
+    // does not retroactively reject an already issued, correctly owned frame.
+    return results.every(Boolean)&&current===session&&session.activeComposition===plan;
+  }
+
+  async function updateStudyArchitecture({cueId,revision,packet}={}){
+    const session=current,plan=session?.activeComposition;
+    if(!session||plan?.purpose!=='source-study'||!windowArchitectureCueAllowed(plan.cueId)||plan.cueId!==cueId||session.sourceStudyHeld||!Number.isSafeInteger(revision)||revision<1||revision<=(session.sourceStudyArchitectureRevision||0)||plan.reducedMotion&&(session.sourceStudyArchitectureRevision||0)>0)return false;
+    const old=session.sourceStudyArchitecture,same=old?.meshRevision===packet?.meshRevision,wire=same?{...packet,meshes:undefined}:packet,valid=validateWindowArchitecturePacket(wire,{catalogue:same?old.catalogue:null});
+    if(!valid.ok||!packet.panes.every(p=>plan.surfaces.some(s=>s.id===p.surfaceId&&s.sensitivity==='none')))return false;
+    const resident=same?old:{meshRevision:packet.meshRevision,catalogue:valid.catalogue,meshes:packet.meshes};
+    session.sourceStudyArchitecture=resident;session.sourceStudyArchitectureRevision=revision;session.sourceStudyArchitectureSent??=new Map();
+    const results=await Promise.all(packet.panes.map(async pane=>{
+      const surface=plan.surfaces.find(p=>p.id===pane.surfaceId),label=WINDOW_MEDIA_SURFACE_LABELS[surface.index],needs=session.sourceStudyArchitectureSent.get(label)!==packet.meshRevision;
+      try{if(!api?.emitTo)return false;await api.emitTo(label,'window-media-architecture',{protocol:WINDOW_MEDIA_PROTOCOL,targetLabel:label,sessionToken:session.token,revision:session.mediaRevisions.get(label),cueId:plan.cueId,paneId:pane.surfaceId,architectureRevision:revision,packet:{...wire,meshes:needs?resident.meshes:undefined,panes:[pane]}});
+        if(current===session&&session.activeComposition===plan)session.sourceStudyArchitectureSent.set(label,packet.meshRevision);return true;
+      }catch{return false;}
+    }));
+    return results.every(Boolean)&&current===session&&session.activeComposition===plan;
+  }
   async function showComposition(plan,{token:expected=null,mode='cold',handoffDurationMs=260,isCurrent=()=>true}={}){
     if(!isCurrent())return false;
     const session=current||begin({intensity:'standard'});
     if(expected&&expected!==session.token)return false;
+    if(session.activeComposition?.cueId!==plan?.cueId){releaseStudyFrames();session.sourceStudyHeld=false;}
     if(!await prepareMedia({count:plan?.surfaces?.length||1})||current!==session||!isCurrent())return false;
 
     const handoff=mode==='handoff'&&!!session.activeComposition;
@@ -748,6 +791,7 @@ export function createPersonalizedWindowEffects({
 
   async function hideComposition({releaseSnapshots=true}={}){
     const session=current;
+    releaseStudyFrames();
     const retiring=session?[...session.mediaRevisions].map(([targetLabel,revision])=>({targetLabel,revision,sessionToken:session.token})):[];
     if(session){session.activeComposition=null;session.compositionQuiesced=false;session.compositionGeneration=(session.compositionGeneration||0)+1;session.mediaRevisions.clear();session.manualMediaPanes.clear();}
     // Hiding a WebView does not clear its image sampler or JS envelope. Erase
@@ -1015,8 +1059,14 @@ export function createPersonalizedWindowEffects({
     const session=current;
     const required=typeof expected==='string'?expected:null;
     if(!session||(required&&required!==session.token))return false;
+    const architecture=session.sourceStudyArchitecture?[...session.mediaRevisions].map(([targetLabel,revision])=>({targetLabel,revision,sessionToken:session.token})):[];
+    if(architecture.length)releaseStudyFrames();
     current=null;
     clearTimers();
+    if(architecture.length){
+      await Promise.all(architecture.map(payload=>safe(()=>api?.emitTo?.(payload.targetLabel,'window-media-clear',payload))));
+      if(!current)await Promise.all([...mediaSurfaces.values()].map(surface=>safe(()=>surface.hide())));
+    }
     await Promise.all([...surfaces.values()].map((surface)=>safe(()=>surface.hide())));
     if(api?.invoke)await safe(()=>api.invoke('chunk_fireball_cast_hide_all'));
     return true;
@@ -1064,7 +1114,7 @@ export function createPersonalizedWindowEffects({
 
   return{
     begin,ensure,apply,reject,prepareFireballs,prepareMedia,arrangeMovement,beginFireballCast,syncFireballCast,showPanes,hidePanes,
-    captureSnapshot,registerSnapshot,snapshotData,releaseSnapshots,showComposition,quiesceComposition,holdComposition,snapComposition,freezeComposition,setCompositionCoherence,setFrontEndPlate,triggerComposition,hideComposition,suspendSurfaces,
+    captureSnapshot,registerSnapshot,snapshotData,releaseSnapshots,showComposition,quiesceComposition,holdComposition,snapComposition,freezeComposition,setCompositionCoherence,setFrontEndPlate,triggerComposition,hideComposition,suspendSurfaces,updateStudyFrames,updateStudyArchitecture,releaseStudyFrames,
     // Compatibility preview name; there is no channel interaction behind it.
     previewChannel,end,emergencyRestore,
     active:()=>!!current,sessionToken:()=>current?.token||null,statusLine:()=>'',
@@ -1078,6 +1128,7 @@ export function createPersonalizedWindowEffects({
       active:true,surfacesReady:current.surfacesReady,readySurfaces:current.readySurfaces,prewarmState:current.prewarmState,
       surfaceCount:surfaces.size,mediaSurfaceCount:mediaSurfaces.size,mediaReady:current.mediaReady,placementAttempts:current.placementAttempts,placementFailures:current.placementFailures,
       mediaScriptReady:mediaReadyLabels.size,mediaRevisions:Object.fromEntries(current.mediaRevisions||[]),compositionQuiesced:!!current.compositionQuiesced,activeCompositionCue:current.activeComposition?.cueId||null,
+      sourceStudyFrameCount:current.sourceStudyData?.size||0,sourceStudyFrameRevision:current.sourceStudyRevision||0,
       fireballActive:!!current.activePlan&&current.rayStates.size>0,
       fullscreen:current.fullscreen,intensity:current.intensity,reasons:[...current.prewarmReasons,...current.mediaPrewarmReasons],
     }:{active:false,surfacesReady:false,readySurfaces:0,prewarmState:'idle',surfaceCount:0,placementAttempts:0,placementFailures:0,reasons:[]},

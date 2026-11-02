@@ -126,13 +126,13 @@ test('the rigged Pressure volume transports depth and surface relief after the a
   const absencePass = renderer.indexOf('// The HUSH is not a dark decal on the walls');
   const bodyPass = renderer.indexOf('compositePressureVolume(col,zView)');
   assert.ok(bodyPass > absencePass, 'the broad light-eating field resolves before the authored body composite');
-  assert.match(renderer,/HUSH_BODY_ASSET='assets\/pressure-character\.glb'/);
+  assert.match(renderer,/HUSH_BODY_ASSET='assets\/hush-density\.glb'/);
   assert.match(renderer,/P3\.addCharacterPack\(assetUrl\(HUSH_BODY_ASSET\)\)/,'the real rig must be loaded through the character renderer');
-  const glb=await readFile(new URL('../public/assets/pressure-character.glb',import.meta.url));
+  const glb=await readFile(new URL('../public/assets/hush-density.glb',import.meta.url));
   assert.equal(glb.readUInt32LE(0),0x46546c67,'the active asset is not a GLB');
   assert.match(shaders.pressureVertex,/uCharacterBones\[aCharacterJoints\./,'Pressure must share skeletal deformation rather than rotate a card');
   assert.match(shaders.pressureFragment,/texture\(uNormalTex,vUv\)/,'actual material relief was discarded');
-  assert.match(shaders.pressureFragment,/dot\(vWorld-uEye,uForward\)/,'the transport has no physical view depth');
+  assert.match(shaders.pressureFragment,/dot\(natatoriumMetricPoint\(vWorld\)-natatoriumMetricPoint\(uEye\),uForward\)/,'the transport must share the actual presentation metric');
   assert.match(shaders.pressureFragment,/o=vec4\(depthBytes,flags\/255\.0,clamp\(uPressure\.x/,'triangle coverage is not carried independently of colour');
   const geometryPass=props.slice(props.indexOf('export function renderPressurePass'),props.indexOf('export function pressureTargets'));
   assert.match(geometryPass,/gl\.enable\(gl\.DEPTH_TEST\)/,'the volume cannot self-occlude');
@@ -177,9 +177,11 @@ test('Pressure black material, white radiance and overprints enter acquisition b
   const renderer = await readFile(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const present=renderer.slice(renderer.indexOf('function presentThroughPost('),renderer.indexOf('export function r3dSourceIdentityStatus'));
   const acquisition=renderer.slice(renderer.indexOf('function runPixelMeshPass('),renderer.indexOf('function loadImageTexture('));
-  assert.match(acquisition,/const pressureSourceTex = finishPressure\(sceneTex\);[\s\S]*?const worldTex = runBurstPass\(pressureSourceTex, now\);/,
+  assert.match(acquisition,/const pressureSourceTex = finishPressure\(sourceTexture\);[\s\S]*?const worldTex = runBurstPass\(pressureSourceTex, now\);/,
     'the actual volume and its edge must enter the same world recording');
-  assert.match(acquisition,/gl\.TEXTURE2\);\s*gl\.bindTexture\(gl\.TEXTURE_2D, pressureSourceTex\);/,
+  assert.match(acquisition,/depthSourceTex = sourceTexture === sceneTex \? pressureSourceTex : sceneTex/,
+    'colour-only lens input cannot replace the original physical view depth');
+  assert.match(acquisition,/gl\.TEXTURE2\);\s*gl\.bindTexture\(gl\.TEXTURE_2D, depthSourceTex\);/,
     'the recorded pattern must follow real mesh depth rather than the world behind it');
   assert.doesNotMatch(present,/finishPressure\(/,'the final presentation must not repaint smooth relief over the dither');
   const copy=renderer.slice(renderer.indexOf('function presentTexture('),renderer.indexOf('const sourceVoidPhysicalUniformCache'));

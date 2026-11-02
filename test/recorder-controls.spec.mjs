@@ -8,6 +8,7 @@ import { drawRecorderFace, recorderButtons, recorderControlRegions, recorderHitR
 import { recorderFaceLayout } from '../src/render/recorder-instrument.js';
 import { uiInit } from '../src/render/ui.js';
 import { controlMechanicsSnapshot, cancelControlScope } from '../src/game/control-mechanics.js';
+import {nightDeadlineAllowsTransport} from '../src/game/night-deadline.js';
 
 const press = (scene, region, type = 'pointerdown', pointerId = 7) => scene.pointer({
   type, pointerId, cellX: region.x + region.w / 2, cellY: region.y + region.h / 2,
@@ -379,6 +380,7 @@ test('the actual playback entry refuses recording and switches an explicit chose
   const log = [], state = { recording: true, playing: true, hasTake: true, lowerCalls: 0 };
   const play = mainFunction('playTakeFrom', {
     chapelTapeCaseAvailable: () => true,
+    nightDeadlineAllowsTransport,getSave:()=>({nightDeadline:null}),firstStrikeAudio:null,
     REC: { isRecording: () => state.recording },
     PB: { hasTake: () => state.hasTake, tapeTake: roomId => ({roomId,status:'accepted'}), isPlaying: () => state.playing,
       stopPlayback: () => { log.push('stop'); state.playing = false; },

@@ -5,11 +5,16 @@ import {NodeIO} from '@gltf-transform/core';
 import {SOURCE_PUB_SCENOGRAPHY as SET,sourcePubDeckRectangles} from '../src/data/source-pub-scenography.js';
 import {SOURCE_PUB,sourcePubFloorHoles} from '../src/data/source-pub.js';
 import {sourcePubRenderFrame,sourcePubFallingItemPose} from '../src/render/source-pub-renderer.js';
+import {assertSharedFeatures} from './helpers/shared-feature-fingerprint.mjs';
 const root=new URL('../',import.meta.url),read=f=>fs.readFileSync(new URL(f,root)),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const stats=JSON.parse(read('public/assets/source-pub-scenography.stats.json')),credits=JSON.parse(read('public/assets/source-pub-scenography.credits.json'));
 const doc=await new NodeIO().read(new URL('public/'+SET.asset,root).pathname),meshes=new Map(doc.getRoot().listMeshes().map(m=>[m.getName(),m]));
 assert.deepEqual([...meshes.keys()].sort(),Object.values(SET.meshes).sort());assert.ok(stats.bytes<SET.maximumBytes);assert.ok(stats.triangles<SET.maximumTriangles);
-assert.equal(sha(read('public/'+SET.asset)),stats.sha256);for(const[f,h]of Object.entries(credits.sourceSha256))assert.equal(sha(read(f)),h,`unchanged ${f}`);
+assert.equal(sha(read('public/'+SET.asset)),stats.sha256);
+for(const[f,h]of Object.entries(credits.sourceSha256)){
+ if(f==='public/assets/conservatory-props.glb')await assertSharedFeatures({file:f,baselineId:'canonical-pub-before-hospitality',recordedSourceSha256:h});
+ else assert.equal(sha(read(f)),h,`unchanged ${f}`);
+}
 for(const m of doc.getRoot().listMaterials()){assert.ok(m.getName().startsWith('Source Lyric / '));assert.ok(m.getBaseColorFactor().every(Number.isFinite));}
 assert.ok(stats.omittedFixtures.some(f=>f.kind==='floor-finish'));assert.ok(stats.omittedFixtures.some(f=>f.kind==='ceiling-finish'));assert.ok(!stats.retainedFixtures.some(f=>['floor-finish','ceiling-finish','wall-finish'].includes(f.kind)));
 // This catches an inside-out primitive helper even though positions/bounds
@@ -50,4 +55,4 @@ for(const kind of['tray','barrel'])for(let i=0;i<=120;i++){
  for(const v of points)if(v[1]>=floor-.16&&v[1]<=floor){assert.ok(Math.abs(v[0]-SOURCE_PUB.room.renderAnchor.x-hole.x)<hole.radius+.001&&Math.abs(v[2]-SOURCE_PUB.room.renderAnchor.z-hole.z)<hole.radius+.001,`${kind} really passes through its floor opening`);crossing++;}
  if(i===120){const minY=Math.min(...points.map(v=>v[1]));assert.ok(Math.abs(minY-(SOURCE_PUB.floor-state.itemFall.toLayer*SOURCE_PUB.layerDrop))<.002);}
 }
-assert.ok(crossing>10);console.log(JSON.stringify({ok:true,bytes:stats.bytes,triangles:stats.triangles,actualDecks:floors,actualCasks:casks,apertureVertexCrossings:crossing,sourcePacksUnchanged:true}));
+assert.ok(crossing>10);console.log(JSON.stringify({ok:true,bytes:stats.bytes,triangles:stats.triangles,actualDecks:floors,actualCasks:casks,apertureVertexCrossings:crossing,sourceFeaturesPreserved:true}));

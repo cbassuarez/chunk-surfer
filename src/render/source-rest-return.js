@@ -5,6 +5,7 @@ import {SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
 import {SOURCE_REST_BLACK_PROGRESS,SOURCE_REST_CUES} from '../game/source-rest-pacing.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {portalClipPlanes,portalExcludeArray,portalIdentity,portalInverse,portalMultiply,portalTransformPoint} from './source-mesh-portals.js';
+import {sourceRestGeometryLibrary} from './source-rest-models.js';
 
 export const SOURCE_REST_RETURN=Object.freeze({openStart:SOURCE_REST_CUES.ornaments-.03,openEnd:SOURCE_REST_CUES.ornaments+.05,maxProjectedProps:64,maxProjectedLights:3,
   upperWestMouth:Object.freeze({x:-15.4,zOffset:-4}),catchTangentOffset:-1.8,
@@ -19,15 +20,33 @@ const rigid=(x,y,z,yaw=0)=>{const c=Math.cos(yaw),s=Math.sin(yaw);return[c,0,s,0
 const samePlane=(a,b)=>a.length===b.length&&a.every((p,i)=>p.every((v,j)=>Math.abs(v-b[i][j])<1e-8));
 const goods=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
 const dot=(a,b)=>a.reduce((n,v,k)=>n+v*b[k],0);
+let returnModels=null;
+const indexedVertices=new Map();
+
+// Budget rejection must not close the view merely because fallen roof pieces
+// now lie wholly outside its finite opening. Only known static indexed mesh
+// geometry can prove exclusion; unfamiliar/deformed pieces stay admitted.
+export function sourceRestReturnTargetIntersectsAperture(row,toCurrent,planes){
+  if(row.character||row.surroundings||row.sourceWorldMatrix||!row.matrix||row.matrix.length!==16)return true;
+  const mesh=String(row.mesh||'').replace(/^source-continuation-/,''),models=returnModels||(returnModels=sourceRestGeometryLibrary());
+  const geometry=models[mesh];if(!geometry?.p?.length||!geometry.i?.length)return true;
+  let vertices=indexedVertices.get(mesh);
+  if(!vertices){vertices=[...new Set(geometry.i)].map(i=>geometry.p.slice(i*3,i*3+3));indexedVertices.set(mesh,vertices);}
+  const map=portalMultiply(toCurrent,row.matrix),points=vertices.map(p=>portalTransformPoint(map,p));
+  if(!points.every(p=>p.length===3&&p.every(Number.isFinite)))return true;
+  return !planes.some(plane=>points.every(p=>dot(plane.slice(0,3),p)+plane[3]<-1e-5));
+}
 
 export function sourceRestReturnConfig(seat=SOURCE_REST_SEATS[0],{origin={x:0,y:0,z:0},doorDrop=0}={}){
-  const third=seat.phase==='catch',doorId=third?'catch-return-0':'wrong-entry-return',door=continuationDoors().find(p=>p.id===doorId);
-  const normal=third?[Math.cos(.92),0,Math.sin(.92)]:[1,0,0],right=[normal[2],0,-normal[0]],height=door.height,
+  const third=seat.phase==='catch',doorId=third?`catch-return-${seat.level}`:'wrong-entry-return',door=continuationDoors().find(p=>p.id===doorId);
+  const radialAngle=Math.atan2(seat.z-SOURCE_CONTINUATION.catch.center.z,seat.x-SOURCE_CONTINUATION.catch.center.x),
+    normal=third?[Math.cos(radialAngle),0,Math.sin(radialAngle)]:[1,0,0],right=[normal[2],0,-normal[0]],height=door.height,
     width=third?SOURCE_REST_RETURN.catchMouthWidth:door.width;
   // The actual upper-west landing puts the return below/right of the sky
   // organism. The former close mouth cut away nearly half its silhouette.
-  const source=third?{x:SOURCE_CONTINUATION.catch.center.x+normal[0]*9.5+right[0]*SOURCE_REST_RETURN.catchTangentOffset,
-    z:SOURCE_CONTINUATION.catch.center.z+normal[2]*9.5+right[2]*SOURCE_REST_RETURN.catchTangentOffset}
+  const sourceRadius=Math.hypot(seat.x-SOURCE_CONTINUATION.catch.center.x,seat.z-SOURCE_CONTINUATION.catch.center.z)-3.85;
+  const source=third?{x:SOURCE_CONTINUATION.catch.center.x+normal[0]*sourceRadius+right[0]*SOURCE_REST_RETURN.catchTangentOffset,
+    z:SOURCE_CONTINUATION.catch.center.z+normal[2]*sourceRadius+right[2]*SOURCE_REST_RETURN.catchTangentOffset}
     :{x:SOURCE_REST_RETURN.upperWestMouth.x,z:seat.z+SOURCE_REST_RETURN.upperWestMouth.zOffset};
   // The Catch's real counterweight keeps its path and right-hand foreground.
   // This supported side-step exposes the return without moving that actor.
@@ -53,17 +72,20 @@ export function sourceRestReturnFrame(state,{eye,forward=null,origin={x:0,y:0,z:
 }
 
 function roomPart(p,seat){
+  // A route inlay spans the real stair lattice. It remains in the world,
+  // rather than appearing as another entire level inside the finite bay.
+  if(p.restRouteComposition)return false;
   if(seat.phase!=='catch')return!!(p.restPlace||p.restSeatDetail||String(p.id).includes('rest-alcove-')||p.descriptorId==='wrong-upper-refuge'
     ||p.restFracture&&/(window-head|west-head|ceiling-panel|ceiling-rib)/.test(p.fracturedFrom||''));
   // The physical goods door remains owned by the route. It must not be copied
   // into this instrument cavity as another door, handle or industrial lamp.
-  if(p.doorId==='catch-return-0')return false;
+  if(p.doorId===`catch-return-${seat.level}`)return false;
   return p.restReturnCanonical||p.restHarpsichordPart||(p.restPlace||p.role==='rest-seat')&&p.region==='catch'
-    ||['catch-0-case-crescent','catch-0-return-pad','catch-0-return-arm'].includes(p.descriptorId)
-    ||/source-continuation-(fabricated-catch-0|refuge-rib-0)$/.test(p.id||'');
+    ||["catch-"+seat.level+"-return-pad","catch-"+seat.level+"-return-arm"].includes(p.descriptorId)
+    ||['source-continuation-fabricated-catch-'+seat.level,'source-continuation-refuge-rib-'+seat.level].includes(p.id);
 }
 export function sourceRestReturnRoom(props,seat=SOURCE_REST_SEATS[0]){
-  return props.filter(p=>chart(p)===seat.chartId&&roomPart(p,seat)&&!p.restBody&&!p.playerBody&&!p.operatorClothing
+  return props.filter(p=>chart(p)===seat.chartId&&roomPart(p,seat)&&!p.restBody&&!p.playerBody&&!p.operatorClothing&&!p.restMistakeChip
     &&!p.portalDestination&&!p.portalFragment&&!p.portalClipPlanes&&!p.restReturnMouth);
 }
 function moved(row,map,extra={}){
@@ -118,7 +140,7 @@ function mouthProps(rows,frame,origin){
  * that aperture remain the very same instances. Returns no mutable owner. */
 export function applySourceRestReturn({props=[],lights=[],canonicalProps=props,canonicalLights=lights,state,eye,forward=null,
   origin={x:0,y:0,z:0},portalCount=0,maxInstances=760}={}){
-  const view=state?.sourceRestView,seat=SOURCE_REST_SEATS.find(p=>p.id===view?.seatId),doorId=seat?.phase==='catch'?'catch-return-0':'wrong-entry-return';
+  const view=state?.sourceRestView,seat=SOURCE_REST_SEATS.find(p=>p.id===view?.seatId),doorId=seat?.phase==='catch'?`catch-return-${seat.level}`:'wrong-entry-return';
   const door=continuationDoors().find(p=>p.id===doorId),rows=canonicalProps.filter(p=>p.doorId===doorId&&!p.portalDestination&&!p.portalClipPlanes),root=rows.find(p=>p.role==='return');
   const doorDrop=root?root.y-origin.y-door.y:0,frame=sourceRestReturnFrame(state,{eye,forward,origin,doorDrop});
   const diagnostics={active:frame.active,stage:frame.stage,opening:frame.opening,projected:false,reason:frame.reason||null,
@@ -131,24 +153,30 @@ export function applySourceRestReturn({props=[],lights=[],canonicalProps=props,c
   const closed=reason=>{diagnostics.reason=reason;return result([...props,...mouth]);};
   if(frame.opening<=.001)return closed('establishing');
   if(!frame.visible)return closed('outside-view');
-  if(portalCount>=2)return closed('portal-budget');
-  const targets=sourceRestReturnRoom(canonicalProps,frame.seat);
+  if(portalCount>=3)return closed('portal-budget');
+  let targets=sourceRestReturnRoom(canonicalProps,frame.seat);
   if(!targets.length)return closed('canonical-room-unavailable');
+  const planes=portalClipPlanes(frame.sourceAperture,eye);
+  diagnostics.candidateProps=targets.length;diagnostics.apertureRejectedProps=0;
+  if(targets.length>SOURCE_REST_RETURN.maxProjectedProps||props.length+mouth.length+targets.length>maxInstances){
+    const admitted=targets.filter(p=>sourceRestReturnTargetIntersectsAperture(p,frame.toCurrent,planes));
+    diagnostics.apertureRejectedProps=targets.length-admitted.length;targets=admitted;
+  }
   if(targets.length>SOURCE_REST_RETURN.maxProjectedProps||props.length+mouth.length+targets.length>maxInstances)return closed('instance-budget');
   if(targets.some(p=>!p.matrix||p.matrix.length!==16||Array.from(p.matrix).some(v=>!Number.isFinite(v))))return closed('invalid-canonical-matrix');
-  const planes=portalClipPlanes(frame.sourceAperture,eye),exclusions=[];
+  const exclusions=[];
   for(const p of props){
     const old=p.portalExcludePlanes?portalExcludeArray(p.portalExcludePlanes):[];
     if(old===null)return closed('invalid-portal-mask');
     const sets=Array.from({length:old.length/20},(_,i)=>Array.from({length:5},(_,j)=>old.slice(i*20+j*4,i*20+j*4+4)));
-    if(sets.length>=2&&!sets.some(p=>samePlane(p,planes)))return closed('portal-budget');
+    if(sets.length>=3&&!sets.some(p=>samePlane(p,planes)))return closed('portal-budget');
     exclusions.push(sets.some(p=>samePlane(p,planes))?sets:[...sets,planes]);
   }
   const out=props.map((p,i)=>({...p,portalExcludePlanes:exclusions[i]}));
   for(const p of targets)out.push(moved(p,frame.toCurrent,{id:p.id+':through:rest-return:'+frame.seatId,canonicalId:canonical(p),
     restReturnDestination:true,portalDestination:true,portalClipId:'rest-return:'+frame.seatId,portalClipPlanes:planes,portalExcludePlanes:null,noShadow:true}));
   const lightTargets=canonicalLights.filter(l=>chart(l)===frame.seat.chartId&&(frame.seat.phase==='catch'
-    ?l.restHarpsichordLight||l.level===0&&(l.shelfPractical||String(l.id).endsWith('door-light-catch-return-0')):l.restPlace))
+    ?l.restHarpsichordLight||l.level===frame.seat.level&&(l.shelfPractical||String(l.id).endsWith(`door-light-catch-return-${frame.seat.level}`)):l.restPlace))
     .sort((a,b)=>Math.hypot(a.x-eye[0],a.y-eye[1],a.z-eye[2])-Math.hypot(b.x-eye[0],b.y-eye[1],b.z-eye[2])).slice(0,SOURCE_REST_RETURN.maxProjectedLights);
   const outLights=[...lights,...lightTargets.map(l=>{const [x,y,z]=portalTransformPoint(frame.toCurrent,centre(l));return{...l,id:l.id+':through:rest-return:'+frame.seatId,
     canonicalId:canonical(l),x,y,z,restReturnDestination:true,portalClipId:'rest-return:'+frame.seatId};})];

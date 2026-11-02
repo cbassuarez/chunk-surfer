@@ -2,12 +2,16 @@
 // cell-centre samples only decide where phosphor is excited. The previous pass'
 // alpha stores excitation memory, never scene colour or depth.
 import { CAMERA_FORWARD_GLSL } from '../camera-basis.js';
+import {NATATORIUM_METRIC_GLSL} from '../natatorium-metric.js';
 import { FIRE_ESCAPE_INK_GLSL } from '../fire-escape-ink.js';
 import { MISSING_MAN_MATERIAL_GLSL } from '../missing-man-material.js';
 import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.js';
 import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
+import { RECORDING_VIEW_PULL_GLSL } from '../recording-view-pull.js';
+import { SOURCE_REST_FACULTIES_GLSL } from '../source-rest-faculties.js';
+import { FINAL_LOOK_GLSL } from './final-look.js';
 
 // CPU reference for the Source-only ink hook below. Water has already changed
 // illumination before recording. Keep that bit decision and the ink's measured
@@ -133,6 +137,9 @@ uniform vec4 uHushBodyPost;
 // which owns the catalogue and the CPU mirror these are tested against.
 // 0 stochastic (the isolated dots this shipped with), 1 hatch, 2 cross-hatch.
 uniform int uScreenKind;
+// A Source-only, smoothly varying transition into the clustered-dot plate.
+// Zero keeps the selected ordinary-world screen unchanged.
+uniform float uClusteredDotMix;
 // The van the camera rides in: world to van metres, the van's box, and how
 // its cab is screened (0 as the world, 1 hatch, 2 contours and lit only).
 uniform float uVehicleActive;
@@ -177,6 +184,7 @@ uniform float uRecordedPressureInkReady;
 #endif
 out vec4 o;
 ${PRESSURE_INK_GLSL}
+${FINAL_LOOK_GLSL}
 
 float hash21(vec2 p){
   p = fract(p * vec2(123.34, 345.45));
@@ -229,6 +237,7 @@ float recordingHash(vec2 p);
 float recordingHash3(vec3 p);
 
 ${CAMERA_FORWARD_GLSL}
+${NATATORIUM_METRIC_GLSL}
 
 vec3 cameraRay(vec2 frag){
   vec2 uv = (frag / uRes) * 2.0 - 1.0;
@@ -261,7 +270,7 @@ vec3 reconstructWorldMetres(vec2 frag, float packedDepth){
   float safeDepth = max(packedDepth, 1.0 / 256.0);
   float viewDepth = max(0.0, (1.0 / safeDepth - 1.0) / 0.14);
   float gridDistance = viewDepth / max(0.001, uCellMeters * dot(rd, fwd));
-  return (uCam + rd * gridDistance) * uCellMeters;
+  return natatoriumMetricRayPoint(uCam*uCellMeters,rd,gridDistance*uCellMeters);
 #endif
 }
 
@@ -348,10 +357,25 @@ vec2 rotateDir(vec2 d, float a){
   return vec2(d.x * c - d.y * s, d.x * s + d.y * c);
 }
 
+// Circular clustered thresholds grow into one another as the surface is lit.
+// The period stays in recording-plate pixels (avoiding vanishing subpixel
+// dots at distance); the screen's world-derived line orientation can reverse
+// without a seam because both coordinates change sign together.
+float clusteredDotThreshold(vec2 fragPx, vec2 dir, float periodPx){
+  vec2 n=vec2(-dir.y,dir.x);
+  vec2 q=vec2(dot(fragPx,dir),dot(fragPx,n))/max(2.0,periodPx);
+  return clamp(length(fract(q)-.5)*1.41421356237,0.0,1.0);
+}
+
 // The screen. Mirrored on the CPU in pixel-mesh/screens.js, which is where the
 // stroke morphology is actually tested.
 float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, float stochastic){
-  if(gScreenKind == 0) return stochastic;
+  float dotMix=clamp(uClusteredDotMix,0.0,1.0);
+  if(gScreenKind == 3) return clusteredDotThreshold(fragPx,dir,uScreenPeriodPx);
+  if(gScreenKind == 0){
+    if(dotMix<=0.0) return stochastic;
+    return mix(stochastic,clusteredDotThreshold(fragPx,dir,8.0),dotMix);
+  }
   // A cab changes the whole screen, not only its kind. A stochastic world's
   // zero period formerly became a two-pixel hatch inside the same vehicle.
   bool cabin=gCabinHatch&&uWorldLightTreatment>.5;
@@ -373,7 +397,9 @@ float screenThreshold(vec2 fragPx, vec2 dir, float tone, float jitterValue, floa
                      max(0.05, uScreenSharpness)));
     }
   }
-  return clamp(t, 0.0, 1.0);
+  t=clamp(t,0.0,1.0);
+  if(dotMix>0.0) t=mix(t,clusteredDotThreshold(fragPx,dir,8.0),dotMix);
+  return t;
 }
 
 float formStipple(vec3 worldMetres, float irregularity, float density, vec3 grain){
@@ -597,13 +623,18 @@ float apparitionSoftZone(vec2 uv,vec2 texel,float centre){
   return max(apparitionMark(centre),max(nearMark*.92,farMark*.42));
 }
 
+${RECORDING_VIEW_PULL_GLSL}
+${SOURCE_REST_FACULTIES_GLSL}
+
 void main(){
   vec2 frag = gl_FragCoord.xy;
+  vec3 pulledImage=recordingPulledImage(frag/uRes);
+  if(uRecordingViewPull>0.0)frag=pulledImage.xy*uRes;
   vec2 plateOffset = vec2(0.0);
 #ifdef SOURCE_DESKTOP_TRANSPARENT
   plateOffset = uSourceScreenOffset;
 #endif
-  vec2 plateFrag = frag + plateOffset;
+  vec2 plateFrag = gl_FragCoord.xy + plateOffset;
   vec2 fullUv = clamp(frag / uRes, vec2(0.001), vec2(0.999));
 #ifdef SOURCE_DESKTOP_TRANSPARENT
   float sourceCoverage = texture(uSourceCoverage,frag/uRes).a;
@@ -674,10 +705,19 @@ void main(){
   float cell = max(1.0, uCellPx);
   vec2 cellId = floor(plateFrag / cell);
   vec2 cellCenter = (cellId + 0.5) * cell - plateOffset;
-  vec2 cellUv = clamp(cellCenter / uRes, vec2(0.001), vec2(0.999));
+  vec2 memoryUv=clamp(cellCenter/uRes,vec2(.001),vec2(.999));
+  // A near hand can cover only part of a coarse acquisition cell. Its visible
+  // fragment must not borrow a warped world sample from the cell's background.
+  float fullWorldGate=uRecordingViewPull>0.0?recordingWorldGate(gl_FragCoord.xy/uRes):1.0;
+  vec3 pulledCell=fullWorldGate<=0.0?vec3(memoryUv,0.0):recordingPulledImage(memoryUv);
+  vec2 cellUv = pulledCell.xy;
 
   vec4 srcFull = texture(uSrc, fullUv);
   vec4 srcCell = texture(uSrc, cellUv);
+  // The crease belongs to the acquired image; it receives the same tone and
+  // one-bit decision as the displaced room. Near hands retain their own depth.
+  srcFull.rgb*=1.0-pulledImage.z;
+  srcCell.rgb*=1.0-pulledCell.z;
   // The plume is narrower than a display cell. Its own physically visible
   // full-resolution sample must reach the same dither instead of borrowing
   // the black torso under an adjacent cell centre.
@@ -710,6 +750,21 @@ void main(){
     c = mix((c + blurC) * 0.2,c,printedSampling);
     y = luma(c);
   }
+  // The seated loss acts on the acquired world, before its one-bit decision.
+  // Keep it after the ordinary optical blur so unmodified taps cannot restore
+  // the forms that have stopped grouping. The off path remains identical.
+  float facultyDepth=max(0.0,(1.0/max(packedDepth,.000001)-1.0)/.14);
+  float facultyDetail=sourceRestFacultyDetail(fullUv,facultyDepth);
+  if(uSourceRestFacultyState.x>.5){
+    float cellPacked=texture(uDepth,cellUv).a;
+    float cellDepth=max(0.0,(1.0/max(cellPacked,.000001)-1.0)/.14);
+    c=sourceRestFacultyColour(c,fullUv,facultyDepth);
+    srcFull.rgb=c;
+    srcCell.rgb=sourceRestFacultyColour(srcCell.rgb,cellUv,cellDepth);
+    y=uGrade.w>0.0?luma(c):luma(srcCell.rgb);
+    printedSampling*=facultyDetail;
+    solidPigment*=facultyDetail;
+  }
   if(uGrade.x > 0.0){
     // Measured off the reference: greys stay neutral through the whole stack,
     // so one curve serves every channel and the luma the dither reads.
@@ -734,8 +789,13 @@ void main(){
   vec4 sx1 = texture(uSrc, cellUv + vec2(texel.x * cell * 0.45, 0.0));
   vec4 sy0 = texture(uSrc, cellUv - vec2(0.0, texel.y * cell * 0.45));
   vec4 sy1 = texture(uSrc, cellUv + vec2(0.0, texel.y * cell * 0.45));
+  // Generated contours and neighbouring colour must not reconstruct an intact
+  // object after the acquired image has lost that relationship.
+  sx0.rgb=mix(c,sx0.rgb,facultyDetail);sx1.rgb=mix(c,sx1.rgb,facultyDetail);
+  sy0.rgb=mix(c,sy0.rgb,facultyDetail);sy1.rgb=mix(c,sy1.rgb,facultyDetail);
   float lumaEdge = abs(luma(sx1.rgb)-luma(sx0.rgb)) + abs(luma(sy1.rgb)-luma(sy0.rgb));
   float depthEdge = abs(sx1.a-sx0.a) + abs(sy1.a-sy0.a);
+  lumaEdge*=facultyDetail;depthEdge*=facultyDetail;
   float pigmentEdge=0.0;
   float printCoverageSpan=0.0;
   vec2 printLumaEndpoints=vec2(0.0);
@@ -833,7 +893,7 @@ void main(){
   excitation = clamp(excitation + uAgitation * materialSignal * 0.5, 0.0, 1.0);
   excitation *= uSignalAmount;
 
-  float prev = texture(uPrev, cellUv).a;
+  float prev = texture(uPrev, memoryUv).a;
   prev *= mix(1.0, 0.68, clamp(uMovement, 0.0, 1.0));
   float safeDt = clamp(uDt, 0.0, 0.25);
   float attack = 1.0 - exp(-safeDt * 14.0);
@@ -1077,11 +1137,35 @@ void main(){
   // neither. Density still shifts the threshold either way, so a louder bank
   // still earns its extra marks.
   float stippleThreshold = formStipple(pinMetres, uRecordingIrregularity, markDensity, markGrain);
-  if(gScreenKind != 0){
+  if(gScreenKind != 0 || uClusteredDotMix > 0.0){
     float hatched = screenThreshold(plateFrag, screenDir, halfTone,
       recordingScreenPhase(pinMetres), stippleThreshold);
-    stippleThreshold = clamp(hatched - (markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
+    // The stochastic rank already includes the density correction. Fade the
+    // second correction in with the dots so the first nonzero Source amount
+    // cannot cause a sudden jump from the pure-stipple baseline.
+    float densityWeight=gScreenKind==0?clamp(uClusteredDotMix,0.0,1.0):1.0;
+    float screened=clamp(hatched - densityWeight*(markDensity - 0.22) * uMarkDensityGain, 0.0, 1.0);
+    // Fine surface variations are too small to carry a whole hatch or dot.
+    // Keep a bounded stipple around those variations, but do not rewrite
+    // printed type, silhouettes, near-black metal or the vehicle controls.
+    float fineDetail=smoothstep(.035,.16,lumaEdge)*(1.0-smoothstep(.003,.03,depthEdge))
+      *(1.0-printedSampling)*(1.0-inCab)*(1.0-quietMetalEdge)*(1.0-apparitionZone);
+    stippleThreshold=mix(screened,stippleThreshold,.78*clamp(fineDetail,0.0,1.0));
   }
+  // A very slow interference between the recording plate and the surface.
+  // Apply it to the acquisition threshold, so it changes the distribution of
+  // existing bits rather than washing coloured bands over the finished frame.
+  // Printed marks, cab controls, silhouettes and near-black metal keep their
+  // own readability. No clock drives it; reduced-motion and flash controls soften it.
+  float interferenceWindow=smoothstep(.12,.34,halfTone)*(1.0-smoothstep(.68,.88,halfTone));
+  float interferenceSafe=(1.0-printedSampling)*(1.0-inCab)*(1.0-apparitionZone)
+    *(1.0-quietMetalEdge)*(1.0-smoothstep(.035,.14,depthEdge))
+    *(1.0-step(.5,uGrade.x))*captureBlackProtect;
+  float interferenceAccessibility=(1.0-.65*clamp(uReduceMotion,0.0,1.0))
+    *(1.0-.65*clamp(uReduceFlash,0.0,1.0));
+  stippleThreshold=clamp(stippleThreshold+.09*interferenceWindow*interferenceSafe
+    *interferenceAccessibility*finalScreenInterference(plateFrag,screenDir,pinMetres,
+      gScreenKind==0?6.5:uScreenPeriodPx),0.0,1.0);
   float captureBit = step(stippleThreshold, halfTone) * hasCapturedLight;
   captureBit = max(captureBit, step(0.82, formTone) * hasCapturedLight);
   if(solidPigment>.5&&printEndpointsReady>.5){
@@ -1164,10 +1248,13 @@ void main(){
   float chromaRange = max(max(broadColor.r, broadColor.g), broadColor.b)
     - min(min(broadColor.r, broadColor.g), broadColor.b);
   float chromaPresence = smoothstep(0.025, 0.16, chromaRange) * captureBlackProtect;
-  vec3 captureDark = sourceBlueprintRecordedInk(vec3(0.0015, 0.0050, 0.0045),uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);
-  vec3 neutralLightInk = vec3(0.835, 0.945, 0.885);
-  float inkChroma = (0.160 + clamp(uPaletteChroma, 0.0, 0.60) * 0.36) * chromaPresence;
-  vec3 captureLight = clamp(neutralLightInk + sourceChroma * inkChroma, 0.62, 1.0);
+  vec3 captureDark = sourceBlueprintRecordedInk(FINAL_CARBON_INK,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);
+  vec3 neutralLightInk = FINAL_LIMESTONE_INK;
+  // Living Materials: the selected preview used paletteChroma .60 and a 1.8x
+  // ink response: 1.8 * (.160 + .60 * .36) = .6768. Keep that response across
+  // look profiles; the physical material and lighting still decide its hue.
+  float inkChroma = 0.67680 * chromaPresence;
+  vec3 captureLight = clamp(neutralLightInk + sourceChroma * inkChroma, 0.28, 1.0);
   captureLight *= luma(neutralLightInk) / max(0.001, luma(captureLight));
   captureLight = clamp(captureLight, 0.0, 1.0);
   captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);
@@ -1299,9 +1386,14 @@ void main(){
     float hi=max(raw.r,max(raw.g,raw.b)),lo=min(raw.r,min(raw.g,raw.b));
     float neutral=1.0-step(.0001,hi-lo);
     finalColor=pressureRecordedInk(finalColor,vec2(neutral*(1.0-step(.000001,hi)),neutral));
+    // The external Hush material uses the same fixed world field. Neutral
+    // human reference/hulls retain the existing endpoint treatment.
+    float cosmic=step(raw.g*1.25,min(raw.r,raw.b))*step(.006,min(raw.r,raw.b));
+    float heat=smoothstep(.28,.85,hi);
+    finalColor=pressureRecordedCosmosInk(finalColor,vec4(cosmic,0.0,heat,cosmic));
   }
 #else
-  if(uRecordedPressureInkReady>.5)finalColor=pressureRecordedInk(finalColor,texture(uRecordedPressureInk,fullUv).rg);
+  if(uRecordedPressureInkReady>.5)finalColor=pressureRecordedCosmosInk(finalColor,texture(uRecordedPressureInk,fullUv));
 #endif
 
   if(uDebugSource == 1.0) finalColor = c;
@@ -1315,6 +1407,12 @@ void main(){
   // The absence is the zero-light endpoint of this acquisition, not a glow
   // or transparent hole. No generated contour/excitation memory belongs in it.
   if(uDebugSource<.5){finalColor*=1.0-missingCore;mem*=1.0-missingCore;}
+  // Missing parts of the visual field remain absent after negative grading,
+  // light ink, contours and phosphor memory. Interface text is a separate pass.
+  if(uDebugSource<.5){
+    float facultyVisibility=sourceRestFacultyVisibility(fullUv,facultyDepth);
+    finalColor*=facultyVisibility;mem*=facultyVisibility;
+  }
 
 #ifdef SOURCE_DESKTOP_TRANSPARENT
   // The WebView surface expects premultiplied display colour. Excitation must

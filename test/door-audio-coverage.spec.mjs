@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_DOORS } from '../src/data/conservatory-doors.js';
+import { pubPhysicalExteriorAt } from '../src/data/exterior-pub.js';
 import { CELL } from '../src/data/floorplan/legend.js';
 import * as FP from '../src/world/floorplan.js';
 import { pointInDoorSweep } from '../src/game/door-runtime.js';
@@ -31,8 +32,30 @@ function resetFloorplan() {
 }
 function interact(portal) {
   const alongX = portal.widthAxis === 'x';
-  const x = portal.cx - (alongX ? 0 : 3), y = portal.cy - (alongX ? 3 : 0);
-  const hit = FP.interactDoor(x, y, alongX ? [0, 1] : [1, 0], new Set(['master', 'chapel']));
+  // The retained Lyric doors now face the turned public apron. Three cells
+  // outside their old logical plane leaves that one-metre apron and lands on
+  // a different, unturned circulation sheet. Stand on its actual authored
+  // public approach instead; its local +Y look points physically into the pub.
+  const pub = portal.id === 'pub-west-entry' || portal.id === 'pub-east-entry';
+  const publicApproach = pub ? pubPhysicalExteriorAt(portal.id) : null;
+  const observer = pub ? FP.logicalAtPhysical(publicApproach.x / CELL - .5, publicApproach.z / CELL - .5, {group:'ground',floor:0}) : {
+    x: portal.cx - (alongX ? 0 : 3), y: portal.cy - (alongX ? 3 : 0),
+  };
+  if (pub) {
+    assert.ok(observer, 'the physical public approach resolves to its real logical ground');
+    assert.ok(FP.cellAt(observer.x, observer.y), 'the public observer has actual compiled ground');
+    const physical = FP.logicalToPhysical(observer.x, observer.y);
+    assert.ok(Math.abs((physical.x + .5) * CELL - publicApproach.x) < 1e-6);
+    assert.ok(Math.abs((physical.z + .5) * CELL - publicApproach.z) < 1e-6);
+    assert.equal(FP.usesPhysicalNavigationAt(observer.x, observer.y), true,
+      'the observer belongs to the real turned apron, not its obsolete outside address');
+    assert.equal(FP.physicalQuarterTurnsAt(observer.x, observer.y), 3,
+      'compiled cardinal bases normalize the authored −90° turn to three quarter turns');
+  }
+  const facing = alongX ? [0, 1] : [1, 0];
+  assert.notEqual(FP.doorNear(observer.x, observer.y, facing.map(v => -v))?.portal?.id, portal.id,
+    'looking away cannot activate this doorway; a real neighboring pair may remain behind the observer');
+  const hit = FP.interactDoor(observer.x, observer.y, facing, new Set(['master', 'chapel']));
   assert.equal(hit?.id, portal.id, 'the full real leaf resolves to its authored portal');
   assert.equal(hit.ok, true);
   return hit;

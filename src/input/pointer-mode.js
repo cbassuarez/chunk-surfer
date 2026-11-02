@@ -1096,6 +1096,9 @@ export function createPointerModeController({
     isTrueLocked,
     isNativeCaptured,
     isDragLookActive,
+    // Lifecycle callers can be part of a scene's allowsLook getter. Reading
+    // status() there would ask getState() for that same getter recursively.
+    nativeFocus: () => native.focused,
     status,
     wantsCapture,
   };

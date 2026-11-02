@@ -10,7 +10,8 @@ import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
 import {CONSERVATORY_PROPS} from '../src/data/conservatory-props.js';
-import {EXTERIOR_PUB,pubLocalFromWorld,pubWorldFromLocal,pubLogicalAt} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubLocalFromWorld,pubWorldFromLocal,pubLogicalAt,pubPhysicalAt,pubAuthoredAt} from '../src/data/exterior-pub.js';
+import {YARD_TURN_YAW} from '../src/data/yard-turn.js';
 import {PUB_INTERIOR_LAYOUT as layout} from '../src/data/exterior-pub-furnishings.js';
 import {PUB_ACTORS,PUB_NEW_ACTORS,PUB_MIGRATIONS,PUB_SERVICE_TRAY,pubActor,pubApproach} from '../src/data/pub-population.js';
 import {VIGIL_VOICES,VIGIL_LINKED_CHAPELS_FLAG,vigilFigures,vigilParts,vigilConversation,vigilRecognitionFlags} from '../src/data/exterior-vigil.js';
@@ -20,7 +21,7 @@ PROPS.propsInit(FP);
 const rendered=new Map(PROPS.renderInstances({inscriptions:false}).map(p=>[p.id,p]));
 const runtimeAt=(x,z)=>{const at=pubLogicalAt(x,z);return{x:Math.floor((at.x-.25)*2),y:Math.floor((at.y-.25)*2)};};
 const key=at=>`${at.x},${at.y}`;
-const worldAt=at=>{const p=FP.logicalToPhysical(at.x,at.y);return{x:p.x*.5,z:p.z*.5};};
+const worldAt=at=>{const p=FP.logicalToPhysical(at.x,at.y),old=pubAuthoredAt({x:(p.x+.5)*.5,z:(p.z+.5)*.5});return{x:old.x-.25,z:old.z-.25};};
 const near=(a,b,message)=>assert.ok(Math.abs(a-b)<1e-7,`${message}: ${a} != ${b}`);
 
 function flood(start){
@@ -48,8 +49,8 @@ test('nine people occupy The Lyric, with exactly two stable vigil identities rel
     const prop=PROPS.propById(actor.id);assert.ok(prop,`${actor.id} survives physical floor compilation`);
     assert.equal(prop.zone,ZONE.pub);assert.equal(prop.pubActorId,actor.id);
     const render=rendered.get(actor.id);assert.ok(render);
-    near(render.x,actor.x,`${actor.id} exact X after raster projection`);near(render.z,actor.y,`${actor.id} exact Z after raster projection`);
-    near(render.y,actor.floor,`${actor.id} stands on the parquet surface`);near(render.yaw,actor.yaw,`${actor.id} preserves its furniture heading`);
+    const actual=pubPhysicalAt(actor);near(render.x,actual.x,`${actor.id} exact X after raster projection`);near(render.z,actual.z,`${actor.id} exact Z after raster projection`);
+    near(render.y,actor.floor,`${actor.id} stands on the parquet surface`);near(Math.sin(render.yaw-actor.yaw),Math.sin(YARD_TURN_YAW),`${actor.id} turns with its furniture heading`);
     assert.equal(prop.action,actor.migrated?'exterior-vigil':actor.role==='bartender'?'pub-bartender':'pub-patron');
     assert.equal(pubActor(actor.id),actor);
     if(!actor.migrated)continue;

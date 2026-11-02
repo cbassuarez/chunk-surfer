@@ -24,6 +24,7 @@ export const SCREEN_KIND = Object.freeze({
   STOCHASTIC: 0,
   HATCH: 1,
   CROSSHATCH: 2,
+  CLUSTERED_DOTS: 3,
 });
 
 // periodPx is a SCREEN-SPACE stroke period. That is the whole trick behind marks
@@ -49,6 +50,9 @@ const SCREEN_DATA = {
   crosshatch: { kind: SCREEN_KIND.CROSSHATCH, periodPx: 6.5, angles: [0, Math.PI / 3, (2 * Math.PI) / 3], bands: [0.34, 0.62], sharpness: 1.25, grainFollow: 0.85, jitter: 0.26 },
   // The same hand, held tighter — for the states that should feel worked over.
   crosshatchTight: { kind: SCREEN_KIND.CROSSHATCH, periodPx: 4.25, angles: [0, Math.PI / 3, (2 * Math.PI) / 3], bands: [0.28, 0.55], sharpness: 1.4, grainFollow: 0.8, jitter: 0.3 },
+  // Circular groups of ink on the same stable screen-space plate used by the
+  // line screens. Source blends toward these instead of hard-switching.
+  clusteredDots: { kind: SCREEN_KIND.CLUSTERED_DOTS, periodPx: 8, angles: [0, 0, 0], bands: [1, 1], sharpness: 1, grainFollow: 0, jitter: 0 },
 };
 
 export const SCREENS = Object.freeze(Object.fromEntries(
@@ -102,12 +106,22 @@ export function strokeDistance(x, y, dirRadians, periodPx, phase = 0) {
 //
 // Returns a threshold in 0..1; a cell is lit when tone >= threshold, which is
 // the same comparison the shader makes.
-export function screenThreshold(id, x, y, dirRadians, tone, jitterValue = 0) {
+export function clusteredDotThreshold(x, y, dirRadians, periodPx = 8) {
+  const c = Math.cos(dirRadians), s = Math.sin(dirRadians), period = Math.max(2, periodPx);
+  const a = fract((x * c + y * s) / period) - .5;
+  const b = fract((-x * s + y * c) / period) - .5;
+  return Math.min(1, Math.hypot(a, b) * Math.SQRT2);
+}
+
+export function screenThreshold(id, x, y, dirRadians, tone, jitterValue = 0, dotMix = 0) {
   const s = getScreen(id);
+  const dot = clusteredDotThreshold(x, y, dirRadians, s.kind === SCREEN_KIND.CLUSTERED_DOTS ? s.periodPx : 8);
+  const mix = (value) => value + (dot - value) * Math.max(0, Math.min(1, dotMix));
+  if (s.kind === SCREEN_KIND.CLUSTERED_DOTS) return dot;
   if (s.kind === SCREEN_KIND.STOCHASTIC) {
     // The ordered matrix stands in for the blue-noise texture the shader samples:
     // both are isotropic rank tables, which is exactly the property under test.
-    return BAYER_4[(Math.abs(Math.floor(y)) % 4) * 4 + (Math.abs(Math.floor(x)) % 4)];
+    return mix(BAYER_4[(Math.abs(Math.floor(y)) % 4) * 4 + (Math.abs(Math.floor(x)) % 4)]);
   }
   const phase = (jitterValue - 0.5) * s.jitter;
   const shape = (d) => Math.pow(Math.min(1, Math.max(0, d)), s.sharpness);
@@ -122,5 +136,5 @@ export function screenThreshold(id, x, y, dirRadians, tone, jitterValue = 0) {
       threshold = Math.min(threshold, shape(strokeDistance(x, y, dirRadians + s.angles[2], s.periodPx, phase)));
     }
   }
-  return threshold;
+  return mix(threshold);
 }

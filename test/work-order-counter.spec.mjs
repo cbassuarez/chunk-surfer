@@ -6,11 +6,14 @@ import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from '../src/game/work-order
 import {nightClockReadout} from '../src/game/night-clock.js';
 import {navigatorTelemetryState} from '../src/render/navigator-telemetry.js';
 import {sampleNavigatorLcdMotion} from '../src/render/navigator-lcd-motion.js';
+import {EVENT_TYPES} from '../src/progression/events.js';
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const fn=name=>{const a=main.indexOf(`function ${name}(`),b=main.indexOf('\n}',a);assert.ok(a>=0&&b>a);return main.slice(a,b+2);};
 function telemetry(flags,takes=[]){
- const a=main.indexOf('telemetry:{takesEnabled:')+'telemetry:'.length,b=main.indexOf('},\n',a)+1;assert.ok(a>10&&b>a);
- return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,nightClockReadout,getSave:()=>({flags}),rec:{takes,injuries:0},paused:false,
+ const a=main.indexOf('telemetry:{takesEnabled:')+'telemetry:'.length;assert.ok(a>10);
+ let depth=0,b=a;for(;b<main.length;b++){if(main[b]==='{')depth++;else if(main[b]==='}'&&--depth===0){b++;break;}}
+ assert.equal(depth,0,'the complete actual telemetry object is extracted independently of its caller closing brace');
+ return vm.runInNewContext(`(${main.slice(a,b)})`,{workOrderAccepted,nightClockReadout,getSave:()=>({flags}),save:{flags},rec:{takes,injuries:0},paused:false,
   monitorDisplaySnapshot:()=>({db:-96,segments:0}),performance:{now:()=>1000},dockCommandUntil:0});
 }
 test('the actual navigator submission hides takes before signing even with a packed case, plan or previewed work order',()=>{
@@ -23,15 +26,17 @@ test('the actual navigator submission hides takes before signing even with a pac
  assert.equal(workOrderAccepted({prologueDone:true}),true,'legacy signed handover survives reload');
 });
 test('the production signature line durably accepts the job before the existing physical key handover',()=>{
- const save={flags:{}},writes=[];
+ const save={flags:{}},writes=[],progress=[];
  const h={WORK_ORDER_ACCEPTED_FLAG,getSave:()=>save,flagTest:k=>save.flags[k]===true,
   flagSet:k=>{save.flags[k]=true;},saveCommit:p=>writes.push(JSON.parse(JSON.stringify(p))),
   noteExteriorConversation:()=>{},setBoothPresentationPose:()=>{},boothPoseForLine:()=> 'idle',
-  flagApply:keys=>keys.forEach(k=>{save.flags[k]=true;}),syncPrologueKeyring:()=>{},STORY:{stopOpeningSceneBed:()=>{}}};
+  flagApply:keys=>keys.forEach(k=>{save.flags[k]=true;}),syncPrologueKeyring:()=>{},STORY:{stopOpeningSceneBed:()=>{}},
+  EVENT_TYPES,emitProgress:(type,payload,source)=>progress.push({type,payload,source})};
  vm.createContext(h);vm.runInContext(fn('guardConversationLine'),h);
  h.line={sourceId:'threshold.line.2'};vm.runInContext('guardConversationLine(line)',h);assert.equal(workOrderAccepted(save.flags),false);
  h.line={sourceId:'threshold.line.3'};vm.runInContext('guardConversationLine(line)',h);assert.equal(workOrderAccepted(save.flags),true);assert.equal(writes.length,1);
  vm.runInContext('guardConversationLine(line)',h);assert.equal(writes.length,1,'duplicate line callback is idempotent');
+ assert.equal(progress.length,1);assert.equal(progress[0].type,EVENT_TYPES.WORK_ORDER_ACCEPTED);
  assert.equal(workOrderAccepted(JSON.parse(JSON.stringify(writes[0].flags))),true);
 });
 test('unaccepted task digits and slots cannot retain an earned-take flash when their bank goes dark',()=>{

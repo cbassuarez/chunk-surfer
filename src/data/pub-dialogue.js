@@ -1,5 +1,6 @@
 // The Lyric speaks in wet coats, glasses and local inconveniences. Helping
 // earns no immediate prize. Every agreement and handover is a chosen action.
+import {studentStrikeEvidenceOpening} from './student-strike-evidence.js';
 const iona = text => ({ who: 'unknown', voiceSpeaker: 'pub-iona', sourceLabel: 'IONA REED', text });
 const d = text => ({ who: 'direction', text });
 const n = (lines, choices) => ({ speaker: 'IONA REED', lines, ...(choices ? { choices } : {}) });
@@ -7,7 +8,7 @@ const c = (id, text, goto = 'done', pubQuestAction = null) => ({ id: `pub-iona.$
 const leave = () => c('leave', 'Leave Iona to the bar.');
 const back = () => c('back', 'Ask about something else.', 'start');
 
-export function buildPubBartenderDialogue(s, favors) {
+export function buildPubBartenderDialogue(s, favors, {studentStrikeEvidence={}}={}) {
   const next = s.complete ? !s.favors.opener.returned ? s.favors.opener : !s.favors.orderbook.returned ? s.favors.orderbook : null : null;
   const greeting = s.complete ? [
     d('Iona has found time to put the clean glasses away. She looks up when you come to the bar.'),
@@ -104,6 +105,60 @@ export function buildPubBartenderDialogue(s, favors) {
   // evidence of knowledge, while acceptance remains its existing own action.
   if (!s.accepted && !s.complete) tree.start.choices = tree.start.choices.map(choice => ({ ...choice, pubKnowledge: 'service' }));
   tree.offer.choices = tree.offer.choices.map(choice => ({ ...choice, pubKnowledge: 'service-details' }));
+  const evidenceOpening=studentStrikeEvidenceOpening(studentStrikeEvidence);
+  if(evidenceOpening){
+    const player=text=>({who:'me',voiceSpeaker:'me',sourceLabel:'YOU',text,say:false});
+    const ask=(id,text,spokenText,goto)=>({...c(`strike-${id}`,text,goto),spokenText});
+    const strikeBack=()=>c('strike-back','The students.','strike-questions');
+    const topic=ask('topic','The students’ refusal.',evidenceOpening,'strike');
+    tree.start.choices.splice(-1,0,topic);
+    tree.strike=n([
+      player(evidenceOpening),
+      iona(studentStrikeEvidence.concealment
+        ? 'Then somebody knew while other people were still being asked whether they had seen him.'
+        : 'The ringing room. People used to come in with the rope marks still on their hands.'),
+      iona('I can keep a room warm. I cannot put right what they did across the road by putting a signature on a petition.'),
+    ]);
+    tree.strike.goto='strike-questions';
+    tree['strike-questions']=n([], [
+      ...(studentStrikeEvidence.strikeDemand?[ask('refusal','Before another rehearsal.',
+        'They asked for acknowledgment before another rehearsal. Was that too much to ask?','strike-refusal')]:[]),
+      ask('preserve','What are they saving?', 'What are the people outside trying to save?','strike-preserve'),
+      ask('trade','And your trade?', 'What happens to the pub if Ellery comes down?','strike-trade'),back(),leave(),
+    ]);
+    tree['strike-refusal']=n([
+      player('They asked for acknowledgment before another rehearsal. Was that too much to ask?'),
+      iona('No. I would have wanted it written down. I would not tell somebody to sit at a piano first.'),
+      iona('Some stopped eating as well. You can take a plate upstairs. You cannot make someone accept it.'),
+    ],[strikeBack(),leave()]);
+    tree['strike-preserve']=n([
+      player('What are the people outside trying to save?'),
+      iona('Their lessons. A view from a window. Somewhere they used to go with somebody. You would get a different answer from each chair.'),
+      iona('Keeping a room and asking people to start playing in it again are different requests. The petition puts them on the same sheet.'),
+      d('A room, a window, a chair. It is a comfortable list to despise. I can keep doing that without deciding what I owe anyone inside.'),
+    ],[ask('challenge','That is too easy.', 'I keep making this about their comforts. The students were asking for something else.','strike-challenge'),
+      ask('demolition','Would demolition help?', 'Would bringing it down help the people who are still there?','strike-demolition'),strikeBack(),leave()]);
+    tree['strike-challenge']=n([
+      player('I keep making this about their comforts. The students were asking for something else.'),
+      iona('Then ask for that. You do not have to sign the rest.'),
+      d('Yes. Separate questions. I can be very precise about separate questions while the four hundred pounds stays one sum.'),
+    ],[strikeBack(),leave()]);
+    tree['strike-demolition']=n([
+      player('Would bringing it down help the people who are still there?'),
+      iona('I do not know. I would like somebody who says they know to tell me how they found out.'),
+      iona('And I would like whoever wants another concert to ask the people who already said no.'),
+    ],[strikeBack(),leave()]);
+    tree['strike-trade']=n([
+      player('What happens to the pub if Ellery comes down?'),
+      iona('Fewer people one month. Builders the next, perhaps. New neighbours after that, if anything gets built. Nobody has promised me the order.'),
+      iona('I have wages on Friday whichever version wins. That is why I ask about Friday. It is not the only day I know exists.'),
+    ],[ask('trade-challenge','People died.', 'People died in there. This cannot just be about keeping the bar open.','strike-trade-challenge'),strikeBack(),leave()]);
+    tree['strike-trade-challenge']=n([
+      player('People died in there. This cannot just be about keeping the bar open.'),
+      iona('I did not say it was. There are people who need somewhere warm tonight as well.'),
+      d('A practical answer. I like practical answers. Mine is that I am only here to do a job.'),
+    ],[strikeBack(),leave()]);
+  }
   return tree;
 }
 

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
-import {EXTERIOR_PUB as PUB,pubLogicalAt,pubWorldFromLocal,pubExteriorLogicalAt,PUB_YARD_CONNECTORS,pubYardCellClaimed} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB as PUB,pubLogicalAt,pubPhysicalFromLocal,pubPhysicalAt,pubPhysicalYaw,pubExteriorLogicalAt,PUB_YARD_CONNECTORS,pubYardCellClaimed} from '../src/data/exterior-pub.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {PUB_ACTORS} from '../src/data/pub-population.js';
 import {PUB_LIGHT_ANCHORS} from '../src/data/exterior-pub-furnishings.js';
@@ -17,6 +17,8 @@ const start=[conservatory.spawn.x*2,conservatory.spawn.y*2];
 const runtime=p=>[Math.floor(p.x*2),Math.floor(p.y*2)];
 const packed=fs.readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url));
 const gltf=JSON.parse(packed.subarray(20,20+packed.readUInt32LE(12)));
+const sameHeading=(actual,expected)=>assert.ok(Math.abs(Math.atan2(Math.sin(actual-expected),Math.cos(actual-expected)))<1e-12,
+  `physical heading ${actual} must equal ${expected} modulo one turn`);
 
 test('the Lyric inhabits the existing accessible rehearsal range, retaining that row and roof',()=>{
   assert.deepEqual(PUB.bounds,{x0:31,x1:47,z0:29.05,z1:34.45});
@@ -26,8 +28,9 @@ test('the Lyric inhabits the existing accessible rehearsal range, retaining that
   const row=PROPS.renderInstances({inscriptions:false}).find(p=>p.id===range.id);
   const facade=PROPS.renderInstances({inscriptions:false}).find(p=>p.id==='pub-complete-frontage');
   assert.ok(row,'the retained range cannot disappear because its old yard cell was masked by its own new room');
-  assert.deepEqual([row.x,row.z,row.yaw],[39,34,0]);
-  assert.deepEqual([facade.x,facade.z,facade.yaw],[39,29.05,-Math.PI/2]);
+  const rowAt=pubPhysicalAt({x:range.physical.x,z:range.physical.y}),facadeAt=pubPhysicalAt(PUB.facadeAnchor);
+  assert.deepEqual([row.x,row.z],[rowAt.x,rowAt.z]);sameHeading(row.yaw,pubPhysicalYaw(0));
+  assert.deepEqual([facade.x,facade.z],[facadeAt.x,facadeAt.z]);sameHeading(facade.yaw,pubPhysicalYaw(-Math.PI/2));
   assert.equal(range.height,PUB.building.roofHeight);
   const mesh=gltf.meshes.find(m=>m.name==='exterior_pub_frontage');assert.ok(mesh,'the real movable shell is present');
   const signs=m=>(m.extras?.lettering||[]).filter(s=>s.id?.startsWith('pub-lyric-fascia-'));
@@ -60,10 +63,10 @@ test('ordinary movement reaches both Lyric doors within the block, enters and re
 test('pub logical save addresses, people, lights and service move together while the public apron gets a real seam',()=>{
   const d=PUB.doors[0];assert.deepEqual(pubLogicalAt(d.x,d.z),{x:35.25,y:445.25});
   const rendered=PROPS.renderInstances({inscriptions:false});
-  for(const actor of PUB_ACTORS){const actual=rendered.find(p=>p.id===actor.id),w=pubWorldFromLocal(actor.local);assert.ok(actual,actor.id);assert.ok(Math.abs(actual.x-w.x)<1e-9&&Math.abs(actual.z-w.z)<1e-9,actor.id);}
-  for(const lamp of PUB_LIGHT_ANCHORS){const actual=CONSERVATORY_LIGHTS.find(l=>l.id===lamp.id),w=pubWorldFromLocal(lamp);assert.ok(actual,lamp.id);assert.equal(actual.x,w.x);assert.equal(actual.z,w.z);}
-  assert.equal(PUB_YARD_CONNECTORS.length,1,'the stable room component meets the yard at its broad paved apron');
-  assert.deepEqual(PUB_YARD_CONNECTORS[0].span,{x:16});
+  for(const actor of PUB_ACTORS){const actual=rendered.find(p=>p.id===actor.id),w=pubPhysicalFromLocal(actor.local);assert.ok(actual,actor.id);assert.ok(Math.abs(actual.x-w.x)<1e-9&&Math.abs(actual.z-w.z)<1e-9,actor.id);sameHeading(actual.yaw,pubPhysicalYaw(actor.yaw));}
+  for(const lamp of PUB_LIGHT_ANCHORS){const actual=CONSERVATORY_LIGHTS.find(l=>l.id===lamp.id),w=pubPhysicalFromLocal(lamp);assert.ok(actual,lamp.id);assert.equal(actual.x,w.x);assert.equal(actual.z,w.z);}
+  assert.equal(PUB_YARD_CONNECTORS.length,0,'the cardinal physical apron joins its real neighbor without the obsolete translation-only connector');
+  for(const door of PUB.doors){const point=runtime(pubExteriorLogicalAt(door.id));assert.equal(FP.usesPhysicalNavigationAt(...point),true);assert.equal(FP.physicalQuarterTurnsAt(...point),3);}
   assert.equal(pubYardCellClaimed(39,31),true,'the hidden yard copy beneath the inhabited room cannot be walked through');
   for(const[x,z]of[[26,86],[33,88],[40,89]])assert.equal(pubYardCellClaimed(x,z),false,'the retired tower-side footprint cannot retain hidden pub collision');
 });

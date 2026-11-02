@@ -25,7 +25,11 @@ test('the approved seated body changes only body instances, retaining the Source
   for(const [p,t]of[[.3,160],[.7,465]]){
     const s=fixture(SOURCE_REST_SEATS[0],p,t),f=render(s),off=sourceContinuationRenderFrame(s,{reducedMotion:true,flashMode:'off',restBodyReady:false});
     assert.equal(f.props.filter(p=>p.restBody).length,12);assert.ok(!off.props.some(p=>p.restBody));
-    assert.deepEqual(f.props.filter(p=>!p.restBody),off.props);
+    // Finite void images share a 760-instance budget with the twelve body
+    // pieces. Compare the actual canonical world, not spare image slots that
+    // legitimately become available when the body is hidden.
+    assert.deepEqual(f.canonicalProps.filter(p=>!p.restBody),off.canonicalProps.filter(p=>!p.restBody));
+    assert.ok(f.props.length<=760&&off.props.length<=760);
     for(const key of ['lights','eye','yaw','pitch','noteArchitecture','flood','sunset','restReturn'])assert.deepEqual(f[key],off[key],key);
   }
 });
@@ -53,11 +57,11 @@ test('III destination lies behind both manuals and the same rigid mapping preser
 test('III case mouth uses actual bevelled wood and hinge meshes without aliasing goods doors, handles or lamps',()=>{
   const f=render(fixture(SOURCE_REST_SEATS[1])),mouth=f.props.filter(p=>p.restReturnMouth);
   assert.equal(f.restReturn.projected,true);assert.equal(mouth.length,7);
-  assert.ok(mouth.every(p=>p.restHarpsichordPart&&p.interactive===false&&p.canonicalDoorId==='catch-return-0'));
+  assert.ok(mouth.every(p=>p.restHarpsichordPart&&p.interactive===false&&p.canonicalDoorId===`catch-return-${SOURCE_REST_SEATS[1].level}`));
   assert.deepEqual(new Set(mouth.map(p=>p.mesh)),new Set(['source-continuation-rest-oak','source-continuation-rest-copper']));
   assert.ok(mouth.every(p=>!p.doorId&&!p.portalClipPlanes&&!p.portalExcludePlanes));
-  assert.ok(f.props.some(p=>p.doorId==='catch-return-0'&&!p.restReturnDestination),'real route door remains present');
-  assert.ok(!f.props.some(p=>p.restReturnDestination&&p.doorId==='catch-return-0'),'no copied industrial door inside case');
+  assert.ok(f.props.some(p=>p.doorId===`catch-return-${SOURCE_REST_SEATS[1].level}`&&!p.restReturnDestination),'real route door remains present');
+  assert.ok(!f.props.some(p=>p.restReturnDestination&&p.doorId===`catch-return-${SOURCE_REST_SEATS[1].level}`),'no copied industrial door inside case');
   assert.ok(f.props.some(p=>p.restReturnDestination&&p.canonicalId==='source-continuation-prop-source-rest-iii'),'canonical occupied bench retained');
   assert.ok(f.restReturn.projectedProps<=SOURCE_REST_RETURN.maxProjectedProps);
   for(const p of f.props)if(p.portalExcludePlanes)assert.ok(portalExcludeArray(p.portalExcludePlanes).length<=40);
@@ -65,8 +69,15 @@ test('III case mouth uses actual bevelled wood and hinge meshes without aliasing
 
 test('new case and separate board metadata are canonical targets without recursively cloning projected fragments',()=>{
   const seat=SOURCE_REST_SEATS[1],part=id=>({id,chartId:0,region:'catch',mesh:id,restHarpsichordPart:true});
-  const casePart=part('case'),board=part('board'),fragment={...part('ghost'),portalDestination:true},goods={id:'goods',chartId:0,doorId:'catch-return-0',restReturnCanonical:true};
+  const casePart=part('case'),board=part('board'),fragment={...part('ghost'),portalDestination:true},goods={id:'goods',chartId:0,doorId:`catch-return-${SOURCE_REST_SEATS[1].level}`,restReturnCanonical:true};
   assert.deepEqual(sourceRestReturnRoom([casePart,board,fragment,goods],seat),[casePart,board]);
+});
+
+test('finite return omits bodily contact chips and whole-route inlays while retaining actual falling timber',()=>{
+  const seat=SOURCE_REST_SEATS[0],base={chartId:0,region:seat.phase,restPlace:true};
+  const chip={...base,id:'contact-chip',restMistakeChip:true},route={...base,id:'full-stair-inlay',restRouteComposition:true},
+    wood={...base,id:'falling-window-timber',restFracture:true,fracturedFrom:'window-head'};
+  assert.deepEqual(sourceRestReturnRoom([chip,route,wood],seat).map(p=>p.id),['falling-window-timber']);
 });
 
 test('case lid follows the existing narrative opening and remains frozen during a wall-clock hold',()=>{

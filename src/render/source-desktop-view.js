@@ -5,6 +5,7 @@ import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { normalizePressurePresentation } from '../game/pressure-performance.js';
 import { hushDensityFromCaptured, normalizeHushDensityPose } from '../game/hush-density-performance.js';
 import { pressureInstances, pressureSurfaceInstances } from './pressure-volume.js';
+import {installHushCosmosMaterial,HUSH_COSMOS} from './hush-cosmos.js';
 import { assetUrl } from '../platform/paths.js';
 import { createSourceDesktopDither } from './source-desktop-dither.js';
 import { ensureWorldLetteringFonts } from './world-lettering-fonts.js';
@@ -289,8 +290,8 @@ export function finishSourceDesktopPressure(THREE, root, { own = value => value 
     for (const mesh of meshes) {
       mesh.frustumCulled = false;
       if (mesh.name === 'hush_density_core') {
-        const material = own(new THREE.MeshBasicMaterial({ color: 0x000000,
-          side: THREE.DoubleSide, depthTest: true, depthWrite: true, fog: false, toneMapped: false }));
+        const material = own(installHushCosmosMaterial(new THREE.MeshBasicMaterial({ color: 0xffffff,
+          side: THREE.DoubleSide, depthTest: true, depthWrite: true, fog: false, toneMapped: false })));
         mesh.material = material; cores.push(material);
       } else if (mesh.name === 'hush_density_return') {
         // This is the real, fitted surface supplied by the same production
@@ -550,7 +551,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       dither:dither?.debug(),
       pressureAsset: SOURCE_DESKTOP_PRESSURE_ASSET,
       skinnedMeshes: bodyMeshCount, bones: bodySampler?.debug().joints || 0, animationClips, modelIds,
-      pressureFinish: { core: 'opaque-neutral-black', surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
+      pressureFinish: { core: 'world-fixed-purple-cosmos', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
         surfaceMeshes: bodySurfaces.length,
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },

@@ -21,6 +21,7 @@ assert.equal(createHash('sha256').update(bytes).digest('hex'),manifest.packSha25
 for(const[file,hash]of Object.entries({...manifest.sourceHashes,...manifest.giltRevision?.sourceHashes,...manifest.currentAssetReconciliation?.sourceHashes}))assert.equal(createHash('sha256').update(fs.readFileSync(file)).digest('hex'),hash,'Production lettering generator changed without rebuilding: '+file);
 const expected={
  exterior_pub_frontage:['PUBLIC HOUSE','THE LYRIC'],
+ yard_stable_range:['CARETAKER'],yard_baths_plant:['BATHS / LAUNDRY'],yard_covered_stores:['COVERED STORES'],
  yard_van:['04 / LIGHTING','01 / MONITORING','02 / MICROPHONE','03 / AMPLIFIER','SERVICE / FACEPLATES'],
  tower_rope_mat_tenor:['8/\nTENOR'],ending_returned_ledger:['','ALAN'],
  scene_dock_sign_foh:['FRONT OF HOUSE'],scene_dock_sign_services:['STUDIOS / PLANT'],
@@ -49,6 +50,11 @@ assert.deepEqual(manifest.entries.filter(e=>e.id.startsWith('pub-lyric-fascia-')
  {id:'pub-lyric-fascia-east',mesh:'exterior_pub_frontage',copy:'PUBLIC HOUSE'},
  {id:'pub-lyric-fascia-west',mesh:'exterior_pub_frontage',copy:'THE LYRIC'},
 ],'both authored pub fascia copies occupy their stable exact physical faces');
+assert.deepEqual(manifest.entries.filter(e=>e.process==='painted service room lettering').map(({id,mesh,copy})=>({id,mesh,copy})),[
+ {id:'yard-caretaker-sign',mesh:'yard_stable_range',copy:'CARETAKER'},
+ {id:'yard-laundry-sign',mesh:'yard_baths_plant',copy:'BATHS / LAUNDRY'},
+ {id:'yard-stores-sign',mesh:'yard_covered_stores',copy:'COVERED STORES'},
+],'the three occupied service ranges retain their exact physical entrance labels');
 assert.equal(manifest.entries.length,Object.values(expected).reduce((n,a)=>n+a.length,0));
 assert.equal(new Set(manifest.entries.map(e=>e.mesh)).size,Object.keys(expected).length);
 for(const [mesh,copies]of Object.entries(expected))assert.deepEqual(manifest.entries.filter(e=>e.mesh===mesh).map(e=>e.copy).sort(),copies.sort(),mesh+' authored content changed');

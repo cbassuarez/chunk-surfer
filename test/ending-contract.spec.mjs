@@ -7,6 +7,8 @@ import {
   ENDING_ARRIVAL,
   ENDING_AUDIO_TODO,
   ENDING_MANIFEST,
+  CENTURY_STAY_MANIFEST,
+  SOURCE_REST_MANIFEST,
   endingArrivalPassage,
   endingCodaVariant,
   endingContractErrors,
@@ -40,7 +42,10 @@ for (const id of ENDING_IDS) {
 // ending and every arrival that is not an ending's front door has a passage.
 {
   const reached = new Set();
-  for (const m of Object.values(ENDING_MANIFEST)) for (const a of m.arrivals) reached.add(a);
+  // Alternate arrivals retain their canonical ending identity. In particular,
+  // the optional listening death is RESTED, not a fabricated Contact defeat.
+  for (const m of [...Object.values(ENDING_MANIFEST), CENTURY_STAY_MANIFEST, SOURCE_REST_MANIFEST])
+    for (const a of m.arrivals) reached.add(a);
   for (const arrival of Object.values(ENDING_ARRIVAL)) {
     assert.ok(reached.has(arrival), `${arrival} reaches at least one ending`);
   }

@@ -8,6 +8,9 @@ import { drawReturnExposure, returnExposureIdentity, returnExposureLayout } from
 import { uiWrap } from '../src/render/ui.js';
 import { freshMeta } from '../src/progression/schema.js';
 import { withTransientGameState } from '../src/game/save.js';
+import { createHitRegions } from '../src/render/hit-regions.js';
+import { POST_RUN_ACTIONS, dispatchPostRunAction, transferRoomCopy } from '../src/game/post-run-copy.js';
+import { promptLine } from '../src/game/bindings.js';
 
 const summary = (endingId = 'tower-lost', extra = {}) => ({
   id: 'return:last-exposure-test', runId: 'last-exposure-test', endingId,
@@ -141,15 +144,67 @@ test('VIEW RUN is optional and closes back to the retained ending without consum
   });
 });
 
-test('filing cannot be bypassed and its completion preserves the actual ending', () => {
-  let status = 'filing', title = 0;
-  const scene = makeReturnReportScene({ summary: summary('contact-won'), getCausalStatus: () => ({ status }), onTitle: () => title++ });
-  scene.update(3);
-  press(scene, 'Enter'); press(scene, 'Escape');
-  assert.equal(scene.view().stage, 'filing'); assert.equal(title, 0);
-  status = 'ready'; scene.update(0);
-  assert.equal(scene.view().stage, 'residue');
-  assert.equal(scene.view().title, 'THE END');
+test('pending optional playback leaves VIEW RUN and title available without granting awards or losing the completed account', async () => {
+  const record = summary('contact-won'), before = structuredClone(record);
+  await withState(record, async (scope) => {
+    let title = 0;
+    const scene = makeReturnReportScene({ summary: record, getCausalStatus: () => ({ status: 'filing' }), onTitle: () => title++ });
+    scenes.push(scene); scene.update(3);
+    assert.equal(scene.view().stage, 'residue'); assert.equal(scene.view().title, 'THE END');
+    press(scene, 'ArrowDown'); press(scene, 'Enter');
+    assert.equal(scene.view().stage, 'details'); assert.equal(scope.writes.length, 0);
+    assert.ok(scope.meta.presentation.pendingReports.includes(record.id));
+    press(scene, 'Escape'); press(scene, 'Escape'); press(scene, 'Enter');
+    assert.equal(title, 1); assert.equal(scope.meta.presentation.pendingReports.includes(record.id), false);
+    assert.deepEqual(scope.meta.returns.records[record.id], before, 'acknowledging the report retains the actual completed night');
+    assert.deepEqual(scope.meta.achievements, {}); assert.deepEqual(record, before);
+  });
+});
+
+test('NEW GAME remains deliberately confirmable while optional playback is still preparing', async () => {
+  const record = summary('contact-won');
+  await withState(record, async (scope) => {
+    let replay = 0;
+    const scene = makeReturnReportScene({ summary: record, getCausalStatus: () => ({ status: 'filing' }), onReopen: () => replay++ });
+    scenes.push(scene); scene.update(3);
+    press(scene, 'ArrowDown'); press(scene, 'ArrowDown'); press(scene, 'Enter');
+    assert.equal(scene.view().stage, 'restart-confirm'); assert.equal(scene.view().restartChoice, 'cancel');
+    assert.equal(replay, 0); assert.ok(scope.meta.presentation.pendingReports.includes(record.id));
+    press(scene, 'ArrowRight'); press(scene, 'Enter');
+    assert.equal(replay, 1); assert.equal(scope.meta.presentation.pendingReports.includes(record.id), false);
+    assert.equal(scope.meta.returns.records[record.id].endingId, 'contact-won'); assert.deepEqual(scope.meta.achievements, {});
+  });
+});
+
+test('the visible account follows background playback failure and readiness without replacing its ending or awarding anything itself', async () => {
+  const record = summary('contact-won'), before = structuredClone(record);
+  await withState(record, async (scope) => {
+    let status = 'filing'; const drawn = [];
+    // Execute the production scene and its drawDetails callback with a glyph
+    // sink. This observes the actual rows rendered on a retained account.
+    const create = vm.runInNewContext(`(${makeReturnReportScene.toString()})`, {
+      scenes, createHitRegions, returnExposureIdentity, returnAccountLines, uiWrap,
+      POST_RUN_ACTIONS, dispatchPostRunAction, transferRoomCopy, promptLine, filedCount: () => 0,
+      chunk: (values, size) => { const out = []; for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size)); return out; },
+      AUDIO: { menuConfirm() {}, menuBack() {}, menuMove() {}, menuPage() {} },
+      uiSize: () => ({ cols: 120, rows: 200 }), uiFill() {}, drawReturnExposure() {}, drawVfdText() {},
+      uiText: (_x, _y, text) => drawn.push(text), UI_COLOR: { primary: '#eee' },
+      withMachinePanel: (x, y, w, h, _options, draw) => draw({ x, y, w, h }),
+      consumeReturnReport: () => { throw Error('viewing an account must not consume it'); },
+    });
+    const scene = create({ summary: record, getCausalStatus: () => ({ status }) });
+    scenes.push(scene); scene.update(3); press(scene, 'ArrowDown'); press(scene, 'Enter');
+    const render = () => { drawn.length = 0; scene.render(); return drawn.join(' '); };
+    let text = render(); assert.match(text, /PREPARING IN THE BACKGROUND/); assert.doesNotMatch(text, /THE OTHER SIDE/);
+    status = 'failed'; scene.update(0); text = render();
+    assert.doesNotMatch(text, /PREPARING IN THE BACKGROUND|THE OTHER SIDE/);
+    assert.equal(scene.view().stage, 'details'); assert.equal(scene.view().endingTitle, 'OPEN CHANNEL');
+    status = 'ready'; scene.update(0); text = render();
+    assert.match(text, /THE OTHER SIDE/); assert.doesNotMatch(text, /PREPARING IN THE BACKGROUND/);
+    assert.equal(scene.view().stage, 'details'); assert.equal(scene.view().endingTitle, 'OPEN CHANNEL');
+    assert.equal(scene.view().consumed, false); assert.equal(scope.writes.length, 0);
+    assert.deepEqual(scope.meta.achievements, {}); assert.deepEqual(record, before);
+  });
 });
 
 test('optional account keeps equipment, unfinished rooms and complete unlock instructions at narrow widths', () => {
@@ -219,6 +274,10 @@ test('credits ignore inherited/repeated confirmation and release website ownersh
   const scene = makeCreditsScene({ onWebsite: () => website++ });
   scene.key({ key: 'Enter', repeat: true });
   assert.equal(website, 0);
+  press(scene,'Enter');
+  assert.equal(website,0,'ordinary credit advance cannot open an external website');
+  for(let i=0;i<scene.view().controls.length&&scene.view().focus!=='website';i++)press(scene,'Tab');
+  assert.equal(scene.view().focus,'website','the website is an explicit focus target');
   scene.key({ key: 'Enter' }); scene.key({ key: 'Enter' });
   assert.equal(website, 1);
   scene.keyup({ key: 'Enter' }); scene.key({ key: 'Enter' });

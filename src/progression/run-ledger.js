@@ -26,6 +26,10 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
       if (p.contaminated === true) addUnique(next.takes.contaminated, p.roomId);
       else next.takes.contaminated = next.takes.contaminated.filter((id) => id !== p.roomId);
       break;
+    case EVENT_TYPES.MANIFEST_SLOT_COMPLETED:
+      // Keep one canonical manifest while preserving the actual tape count.
+      if (p.roomId === 'lux_nova') addUnique(next.takes.rooms, p.roomId);
+      break;
     case EVENT_TYPES.TAKE_SPOILED:
       next.takes.spoiled += 1;
       break;
@@ -37,9 +41,13 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
       break;
     case EVENT_TYPES.BATTLE_STARTED:
       next.battles.started += 1;
+      // Keep the last result: ordinary encounters use a previous loss to avoid
+      // applying another permanent injury on each retry. `active` distinguishes
+      // an in-progress checkpoint from a closed attempt without erasing it.
       next.battles.results[p.id] = {
         ...(next.battles.results[p.id] || {}),
         started: (next.battles.results[p.id]?.started || 0) + 1,
+        active: true,
       };
       break;
     case EVENT_TYPES.BATTLE_FINISHED: {
@@ -48,6 +56,7 @@ export function reduceRunLedger(ledger = freshLedger(), event) {
       if (p.result === 'win' && p.firstPass === true) next.battles.firstPassWon += 1;
       next.battles.results[p.id] = {
         ...(next.battles.results[p.id] || {}),
+        active: false,
         result: p.result,
         attempts: Math.max(1, Number(p.attempts) || 1),
         turns: Math.max(0, Math.floor(Number(p.turns) || 0)),

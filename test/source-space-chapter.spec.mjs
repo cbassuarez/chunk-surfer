@@ -8,6 +8,7 @@ import {
 } from '../src/game/chunk-surf-state.js';
 import { SOURCE_LANDMARK_OFFSETS, createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { SOURCE_BRAIDED_REVIEW_WALK, SOURCE_DIVIDE_GAP_FLOOR, sourceDivideSupportAt } from '../src/data/source-braided-divide.js';
+import { freshSourceContinuation } from '../src/game/source-continuation.js';
 
 const ORIGIN={x:0,y:-252};
 // Derived from the real landmark table rather than re-hardcoded. These were
@@ -230,8 +231,11 @@ function walk(runtime,points,{verifyFollowerSupport=false}={}){
   const battles=new Set();
   for(let cycle=0;cycle<3;cycle++){
     if(cycle){
-      closeOn(runtime);
-      assert.ok(runtime.beginHushContact(),'each new fight requires a separate voluntary return conversation');
+      // Explicit chapter staging verifies the canonical battle/ending handoff,
+      // not an earned traversal of II/III (the continuation suites own that).
+      const chapter=['I','II','III'][cycle];
+      runtime.setContinuationCheckpoint({...freshSourceContinuation({runId:'chapter-contract'}),status:'active',phase:chapter==='III'?'catch':'wrong-return'});
+      assert.ok(runtime.beginHushContact(null,{chapter,locallyAvailable:true,runId:'chapter-contract'}),'each Source requires a separate voluntary local conversation');
       assert.equal(runtime.resolveHushContactChoice('contact.confirm').handled,false,'the earlier fight cannot supply consent');
       assert.equal(runtime.resolveHushContactChoice('contact.warning').combat,false);
       assert.equal(runtime.resolveHushContactChoice('contact.confirm').combat,true);

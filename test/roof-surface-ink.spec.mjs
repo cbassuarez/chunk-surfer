@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { ROOF_SURFACE_INK_BYTE, ROOF_SURFACE_INK_TAG, ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_BYTE, ROOF_GLASS_INK_TAG, ROOF_GLASS_INK_GLSL } from '../src/render/roof-surface-ink.js';
 import { FIRE_ESCAPE_INK_BYTE } from '../src/render/fire-escape-ink.js';
 import { PIXEL_MESH_FRAG } from '../src/render/pixel-mesh/shader.js';
+import {primitiveMaterialRoleBinding,tracePrimitiveMaterialRole} from './helpers/prop-material-role-binding.mjs';
 
 test('subdued roof ink survives RGBA8 without claiming iron, grain or apparitions',()=>{
   assert.equal(Math.round(ROOF_SURFACE_INK_TAG*255),ROOF_SURFACE_INK_BYTE);
@@ -34,8 +35,10 @@ test('only real supported panes retain reflection and depth, with charcoal suppo
 test('roof ink belongs to real winning materials and does not dim their neighbours',()=>{
   const source=path=>readFileSync(new URL(path,import.meta.url),'utf8');
   const props=source('../src/render/props3d.js'),world=source('../src/render/r3d.js');
-  assert.match(props,/U\('uRoofSurface'\),p\.materialRole==='weathered-surface'\?1:0/,
-    'every draw resets the role, including Ren and glass');
+  const roles=['weathered-surface','weathered-surface','quiet-metal','margin',null,'weathered-surface',null],
+    trace=tracePrimitiveMaterialRole(props,'uRoofSurface',roles.map(materialRole=>({name:'actual-draw',p:{materialRole}})));
+  assert.deepEqual(trace.values,[1,1,0,0,0,1,0],'every actual primitive state resets for Ren, glass and unmarked surfaces');
+  assert.equal(tracePrimitiveMaterialRole(props,'uRoofSurface',[{name:'ordinary-opaque',p:{}}],{initial:1}).values[0],0,'a fresh pass cannot inherit the preceding renderer’s marked state');
   const winning=world.slice(world.indexOf('if(propView < archView + 0.015'),world.indexOf('// Feather the BLACK mesh'));
   assert.match(winning,/roofSurfaceInkTag\(prop\.a\)>\.5\?ROOF_SURFACE_INK_TAG:0\.0/);
   assert.match(world,/bool wiredPane=roofGlassInkTag\(prop\.a\)>\.5/,
@@ -51,9 +54,8 @@ test('roof ink belongs to real winning materials and does not dim their neighbou
 test('only real academic roof panes receive glass identity, regardless of torch colour',()=>{
   const props=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
   const world=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
-  const binding=props.match(/U\('uRoofGlass'\),([^;]+)\);/);
-  assert.ok(binding,'every primitive draw explicitly resets glass ownership');
-  const owned=new Function('name','p',`return ${binding[1]};`);
+  const binding=primitiveMaterialRoleBinding(props,'uRoofGlass');
+  const owned=new Function('name','p',`return ${binding.expression};`);
   const bytes=readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url));
   const glb=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString().trim());
   const owners=new Set();let sharedElsewhere=0;

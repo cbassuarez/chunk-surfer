@@ -8,6 +8,7 @@ import { SOURCE_EARTHFALL as C } from '../src/data/source-earthfall.js';
 import { freshSourceEarthfall } from '../src/game/source-earthfall.js';
 import { freshSave, getSave, saveCommit, withTransientGameState } from '../src/game/save.js';
 import { freshRunRecord } from '../src/progression/schema.js';
+import {completedEndingDemolition} from './helpers/ending-demolition-route.mjs';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const runId = 'wrong-door-scene-test';
@@ -21,15 +22,7 @@ function advance(state, seconds, input = {}) {
   return state;
 }
 function completed() {
-  let state = advance(initial(), .25, { forward: 1 });
-  state = advance(state, C.footingLossAt + 7);
-  assert.equal(state.physical.phase, 'landed');
-  state = advance(state, (C.passage.exitZ + 1.4 - state.physical.z) / -C.walkSpeed, { forward: 1 });
-  state = step(state, { interact: true }).state;
-  state = advance(state, C.door.openSeconds);
-  state = advance(state, .6, { forward: 1 });
-  assert.equal(state.status, 'ready-for-source-IV');
-  return state;
+  return completedEndingDemolition({runId,returnPose:initial().returnPose});
 }
 function harness(options = {}) {
   const checkpoints = [], errors = [], trace = [], returns = [], completes = [], exits = [], draws = [];

@@ -192,7 +192,7 @@ export const CONSERVATORY_DOORS = Object.freeze([
     at:{x:84,y:27},hinge:'right',swing:'dry-out',widthAxis:'x',activeLeaves:[0,1],
   }),
   D('changing-pool', DOOR_ARCHETYPE.POOL_GLAZED_PAIR, null, {
-    at:{x:84,y:32},hinge:'right',swing:'pool-in',widthAxis:'x',activeLeaves:[0,1],
+    at:{x:84,y:31},hinge:'right',swing:'pool-in',widthAxis:'x',activeLeaves:[0,1],
   }),
   D('hall-rear-service', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '197,73', { open: true, hinge: 'left', swing: 'escape', widthAxis:'y' }),
   D('upper-bridge-west', DOOR_ARCHETYPE.SERVICE_FIRE_SINGLE, '154,111', { open: true, hinge: 'right', swing: 'escape', widthAxis:'y' }),

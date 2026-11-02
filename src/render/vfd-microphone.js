@@ -26,6 +26,8 @@ export const VFD_MIC_DOTS = Object.freeze({
 });
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const frames = new Map();
+const MAX_FRAMES = 64;
 
 // How bright each sound arc is at time t: a crest that leaves the capsule and
 // fades as it goes. Reduced motion is a still picture of the same thing.
@@ -67,10 +69,18 @@ function grid(cols, rows) {
  * One frame of the microphone. `live` enables the sound illustration; `t` is
  * seconds. Returns VFD_MIC_DOTS.rows rows of VFD_MIC_DOTS.cols levels.
  */
-export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false } = {}) {
+export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false, mode = 'neutral' } = {}) {
+  live = !!live && !['standby', 'requesting', 'blocked'].includes(mode);
+  const seconds = Number.isFinite(Number(t)) ? Math.max(0, Number(t)) : 0,
+    requesting = mode === 'requesting', blocked = mode === 'blocked',
+    animated = !reduced && (live || requesting),
+    tick = animated ? Math.floor((seconds % (requesting ? 2.8 : 20)) * 16) : 0,
+    key = `${mode}:${!!live}:${!!reduced}:${tick}`;
+  if (frames.has(key)) return frames.get(key);
+  t = tick / 16;
   const { cols, rows } = VFD_MIC_DOTS;
   const { levels, row, arc, line, centre } = grid(cols, rows);
-  const body = live ? 1 : 0.72;
+  const body = live ? 1 : requesting ? 0.875 : blocked ? 0.56 : 0.72;
   const { half, top, bottom } = CAPSULE;
 
   // The capsule's rim: top cap, the right side, bottom cap (mirrored for the left).
@@ -81,7 +91,11 @@ export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false } = {})
   // The grille: every other dot row inside the rim, clear of it by one dot. A
   // brighter slat walks down it while live is true — the module being
   // addressed, not a reading.
-  const sweep = live && !reduced ? ((t * 0.55) % 1) * (bottom + half - (top - half) + 6) + (top - half) - 3 : -99;
+  // A permission request addresses the grille from base to crown; it never
+  // emits sound arcs or pretends that a pre-consent signal has been measured.
+  // Static reduced-motion has the same complete grille and cradle.
+  const sweep = requesting && !reduced ? bottom + half + 3 - (t / 2.8) * (bottom + half - (top - half) + 6)
+    : live && !reduced ? ((t * 0.55) % 1) * (bottom + half - (top - half) + 6) + (top - half) - 3 : -99;
   const firstRow = row(top - half) + 2;
   for (let j = firstRow; j <= row(bottom + half) - 2; j += 2) {
     const lit = levels[j].map((v, i) => (v > 0 ? i : -1)).filter((i) => i >= 0);
@@ -89,7 +103,7 @@ export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false } = {})
     if (!right.length) continue;
     const edge = Math.min(...right) - centre;
     const y = j / VFD_MIC_SCALE + BOUNDS.y0;
-    const level = (live ? 0.46 : 0.3) + 0.5 * clamp01(1 - Math.abs(y - sweep) / 1.1);
+    const level = (live ? 0.46 : requesting ? 0.32 : 0.3) + 0.5 * clamp01(1 - Math.abs(y - sweep) / 1.35);
     for (let i = centre - edge + 2; i <= centre + edge - 2; i++) levels[j][i] = Math.max(levels[j][i], level);
   }
 
@@ -98,6 +112,10 @@ export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false } = {})
   line(CX + CRADLE.r, CRADLE.armTop, CX + CRADLE.r, bottom, body);
   line(CX, bottom + CRADLE.r, CX, STEM_BOTTOM, body);
   line(CX, FOOT.y, CX + FOOT.half, FOOT.y, body);
+  if (blocked) {
+    // One unambiguous crossed capsule; failure never keeps a busy animation.
+    line(CX - 2.8, top + .5, CX + 2.8, bottom + 1.5, .875);
+  }
 
   // Sound, both sides, fading toward the ends of each arc.
   vfdMicWaveLevels(t, { live, reduced }).forEach((amount, k) => {
@@ -106,5 +124,8 @@ export function vfdMicrophoneFrame({ t = 0, live = true, reduced = false } = {})
   });
 
   // A 16-step duty, like everything else on the glass.
-  return levels.map((r) => r.map((v) => Math.round(v * 16) / 16));
+  const result = Object.freeze(levels.map((r) => Object.freeze(r.map((v) => Math.round(v * 16) / 16))));
+  if (frames.size >= MAX_FRAMES) frames.delete(frames.keys().next().value);
+  frames.set(key, result);
+  return result;
 }

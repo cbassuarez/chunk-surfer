@@ -38,6 +38,23 @@ function fixture(extra = {}) {
   return { host, tape, acoustics, renderer, calls, joints, commits, statuses, session: createSourceDriveSession(host) };
 }
 
+test('drive listening is earned at actual knob contact; automatic playback and turning the radio off do not count',async()=>{
+  const events=[],f=fixture({onEvent:event=>events.push(event)});
+  await f.session.start();
+  const pump=async()=>{for(let i=0;i<150;i++){f.session.update(1/60);await Promise.resolve();}};
+  await pump();
+  const listening=()=>events.filter(event=>event.type==='radio-listening');
+  assert.equal(listening().length,0,'the already-running arrival station is involuntary');
+  f.session.key({key:'2'});
+  assert.equal(listening().length,0,'a queued hand reach is not a completed operation');
+  await pump();assert.equal(listening().length,1);assert.equal(listening()[0].station,'company');
+  f.session.key({key:'o'});await pump();
+  assert.equal(f.session.status().state.radioOn,false);assert.equal(listening().length,1);
+  f.session.key({key:'o'});await pump();
+  assert.equal(f.session.status().state.radioOn,true);assert.equal(listening().length,2);
+  await f.session.dispose();
+});
+
 test('the host owns initialization, one frame and one physical tape; no alternate context or renderer is created', async () => {
   const f = fixture();
   await Promise.all([f.session.initialize(), f.session.initialize()]);

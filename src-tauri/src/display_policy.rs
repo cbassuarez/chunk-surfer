@@ -28,6 +28,14 @@ const MONITOR_MARGIN_Y: f64 = 112.0;
 // `fullscreen` is retained as native-or-simple so an older caller reading it
 // gets a more useful answer than it used to, not a different-shaped one.
 #[derive(Debug, Clone, Serialize)]
+pub struct WindowLogicalRect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct WindowMetrics {
     pub logical_width: f64,
     pub logical_height: f64,
@@ -40,6 +48,11 @@ pub struct WindowMetrics {
     // traffic-light button, or Cmd+Ctrl+F — which no amount of internal
     // bookkeeping would know about.
     pub fills_screen: bool,
+    // Both rectangles use this monitor's logical coordinate scale. Keeping the
+    // content origin (rather than the outer titlebar) makes a projected Source
+    // string agree on either side of a neighbouring native pane.
+    pub content_rect: WindowLogicalRect,
+    pub work_area: Option<WindowLogicalRect>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -279,6 +292,12 @@ pub fn chunk_window_metrics(app: AppHandle) -> Result<WindowMetrics, String> {
     let window = main_window(&app)?;
     let size = window.inner_size().map_err(|err| err.to_string())?;
     let scale = window.scale_factor().unwrap_or(1.0);
+    let position = window.inner_position().map_err(|err| err.to_string())?;
+    let work_area = window.current_monitor().ok().flatten().map(|monitor| {
+        let work = monitor.work_area();
+        WindowLogicalRect { x: work.position.x as f64 / scale, y: work.position.y as f64 / scale,
+            width: work.size.width as f64 / scale, height: work.size.height as f64 / scale }
+    });
 
     let native_fullscreen = window.is_fullscreen().unwrap_or(false);
     let simple_fullscreen = simple_fullscreen_active();
@@ -292,6 +311,9 @@ pub fn chunk_window_metrics(app: AppHandle) -> Result<WindowMetrics, String> {
         native_fullscreen,
         simple_fullscreen,
         fills_screen,
+        content_rect: WindowLogicalRect { x: position.x as f64 / scale, y: position.y as f64 / scale,
+            width: size.width as f64 / scale, height: size.height as f64 / scale },
+        work_area,
     })
 }
 

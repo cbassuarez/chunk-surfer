@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { TEST_FILES, EXTERNAL_TEST_FILES, runTests } from './run-all.mjs';
+import { TEST_FILES, EXTERNAL_TEST_FILES, VM_MODULE_TEST_FILES, runTests } from './run-all.mjs';
 
 test('npm test covers every portable top-level test exactly once',()=>{
   const discovered=readdirSync('test').filter(name=>/\.(?:spec|test)\.mjs$/.test(name)).map(name=>'test/'+name).sort();
@@ -44,4 +44,17 @@ test('a leaked or killed test child can never be reported as successful',()=>{
     assert.equal(runTests(['stuck.mjs'],{spawn:()=>result,log:message=>{if(message.startsWith('all '))success=true;},error:x=>errors.push(x)}),1);
     assert.equal(success,false);assert.match(errors[0],/FAILED stuck\.mjs:/);
   }
+});
+
+test('only actual SourceTextModule fixtures receive their required Node runtime flag',()=>{
+  const expected=TEST_FILES.filter(file=>/\bnew\s+vm\.SourceTextModule\s*\(/.test(readFileSync(file,'utf8')));
+  assert.deepEqual([...VM_MODULE_TEST_FILES].sort(),expected.sort(),
+    'register module fixtures explicitly; ordinary tests must not inherit experimental runtime flags');
+  const calls=[];
+  assert.equal(runTests([...VM_MODULE_TEST_FILES,'ordinary.mjs'],{
+    spawn:(...args)=>{calls.push(args);return{status:0};},log(){},error(){},
+  }),0);
+  assert.deepEqual(calls.map(args=>args[1]),[
+    ...VM_MODULE_TEST_FILES.map(file=>['--experimental-vm-modules',file]),['ordinary.mjs'],
+  ]);
 });

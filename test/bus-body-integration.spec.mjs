@@ -71,7 +71,7 @@ test('an interrupted extension load remains unready and can complete a later exp
 test('the complete production movement interval gives the coach and living footing a physical pace while retaining quiet/injury costs',()=>{
  let place='outside',quiet=1,pressureCalls=0;
  const pressure=1.5020966498722041,context={MOVE_MS,CELL,CHUNK_SURF_PHASE,performance:{now:()=>1000},
-  usingStairAnomaly:()=>false,isIntroActive:()=>false,usingSourceSpace:()=>true,storyMoveScale:()=>quiet,
+  usingStairAnomaly:()=>false,openingVehicleScene:null,openingOvertureScene:null,isIntroActive:()=>false,usingSourceSpace:()=>true,storyMoveScale:()=>quiet,
   outskirtsStepIndex:0,outskirtsLosing:()=>.212,storyMode:true,PLANT:{heavyWrenchDragging:()=>false},
   worldBoundaryFriction:0,WORLD_BOUNDARY_FRICTION:{maxMult:2},shakeMode:()=> 'full',SCALED_MOVE_MIN:n=>Math.max(1,Math.round(n/2)),
   clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),chunkSurfRuntime:{lastReceptionFrame:()=>null,towerLandFrame:()=>null,

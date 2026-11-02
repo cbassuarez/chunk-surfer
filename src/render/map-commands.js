@@ -151,6 +151,26 @@ function localTopology(floor, transform, viewport, center, radius) {
   };
 }
 
+// The street plan's names were printed on the full sheet but absent from its
+// local navigator. Keep only labels which fit, separated from the player and
+// one another, rather than clipping long streets into meaningless fragments.
+export function exteriorMinimapLabels(plan,transform,viewport,protectedPoints=[]){
+  const occupied=protectedPoints.filter(Boolean).map(point=>({x:point.x-1.2,y:point.y-.65,w:2.4,h:1.3}));
+  const overlaps=(a,b)=>a.x<b.x+b.w+.35&&a.x+a.w+.35>b.x&&a.y<b.y+b.h+.2&&a.y+a.h+.2>b.y;
+  const candidates=(plan?.labels||[]).map(label=>{
+    const point=transform.point(label),text=String(label.text||'').toUpperCase(),w=text.length*.59,h=.68;
+    return{kind:'district-label',point,text,viewport,box:{x:point.x-w/2,y:point.y-h/2,w,h},
+      rank:Math.hypot(point.x-(viewport.x+viewport.w/2),(point.y-(viewport.y+viewport.h/2))*2)+(label.size==='place'?-2:0)};
+  }).filter(c=>c.text&&insideRect({x:c.box.x,y:c.box.y},viewport,.15)&&insideRect({x:c.box.x+c.box.w,y:c.box.y+c.box.h},viewport,.15))
+    .sort((a,b)=>a.rank-b.rank);
+  const accepted=[];
+  for(const candidate of candidates){
+    if(occupied.some(box=>overlaps(box,candidate.box)))continue;
+    accepted.push(candidate);occupied.push(candidate.box);if(accepted.length===3)break;
+  }
+  return accepted;
+}
+
 export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, aspect = 1 } = {}) {
   if (!model?.player?.resolved || !model.player.position) return [{ kind: 'compass-fallback' }];
   const floor = mapFloor(model, model.player.floorId);
@@ -231,6 +251,13 @@ export function buildMinimapCommands({ model, viewport, radius = 18, now = 0, as
       commands.push({kind:'district-landmark',id:space.id,point,label:space.shortLabel||space.label,
         showLabel:policy.showRoom!==false,viewport});
     }
+    const player=transform.point(model.player.position),target=model.waypoint?.position?transform.point(model.waypoint.position):null;
+    if(policy.showRoom!==false)commands.push(...exteriorMinimapLabels(authoredPlan,transform,viewport,[player,target]));
+    // Heading-up navigation needs a true north reference; it rotates with the
+    // supplied player heading, not with any guessed street/building direction.
+    const north=transform.point({x:model.player.position.x,y:model.player.position.y-10}),dx=north.x-player.x,dy=north.y-player.y;
+    const length=Math.hypot(dx,dy/aspect)||1,point={x:viewport.x+viewport.w-1.2,y:viewport.y+1.1};
+    commands.push({kind:'district-north',point,tip:{x:point.x+dx/length*.7,y:point.y+dy/length*.7},viewport});
   }
 
   const playerPoint=transform.point(model.player.position);

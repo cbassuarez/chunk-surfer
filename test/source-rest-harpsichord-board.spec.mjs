@@ -23,10 +23,10 @@ const vertices=g=>Array.from({length:g.p.length/3},(_,k)=>({x:g.p[k*3],y:g.p[k*3
 const triangle=(g,k,points)=>g.i.slice(k*3,k*3+3).map(index=>points[index]);
 
 test('board uses the actual native radial right/up/back frame, independent of the seated viewing yaw',()=>{
-  near(frame.yaw,-.6507963267948966);near(frame.origin.y,8.4);
+  near(frame.yaw,Math.atan2(SOURCE_CONTINUATION.catch.center.x-seat.x,seat.z-SOURCE_CONTINUATION.catch.center.z));near(frame.origin.y,seat.feet);
   assert.equal(frame.origin.x,seat.x);assert.equal(frame.origin.z,seat.z);
-  assert.notEqual(frame.yaw,seat.view.yaw,'the deliberate camera composition cannot rotate physical support');
-  const forward=world({z:-13.35});near(forward.x,SOURCE_CONTINUATION.catch.center.x);near(forward.z,SOURCE_CONTINUATION.catch.center.z);
+  assert.equal(frame.level,seat.level,'the veneer follows the actual earned support, never a default top shelf');
+  const radius=Math.hypot(seat.x-SOURCE_CONTINUATION.catch.center.x,seat.z-SOURCE_CONTINUATION.catch.center.z),forward=world({z:-radius});near(forward.x,SOURCE_CONTINUATION.catch.center.x);near(forward.z,SOURCE_CONTINUATION.catch.center.z);
   for(const p of[{x:0,y:0,z:0},{x:2.7,y:.02,z:-6.2},{x:-2.8,y:.006,z:1.35}]){
     const q=local(world(p));for(const key of['x','y','z'])near(q[key],p[key]);
   }
@@ -55,7 +55,7 @@ test('every complete triangle lies within a single actual convex support cell at
   let tested=0;
   for(const section of g.sections){
     const support=supports.get(section.supportId),cells=actualCells(support);
-    assert.equal(support.y,8.4);assert.equal(support.phase,'catch');assert.equal(support.level,0);
+    assert.equal(support.y,seat.feet);assert.equal(support.phase,'catch');assert.equal(support.level,seat.level);
     for(let k=section.firstTriangle;k<section.firstTriangle+section.triangleCount;k++){
       const vertices=triangle(g,k,points).map(world),projection=vertices.map(p=>[p.x,p.z]);
       // Convexity proves the whole triangle, including the nearest point to
@@ -64,21 +64,25 @@ test('every complete triangle lies within a single actual convex support cell at
       for(const weights of[[1/3,1/3,1/3],[.02,.49,.49],[.49,.02,.49],[.49,.49,.02]]){
         const x=vertices.reduce((n,p,j)=>n+p.x*weights[j],0),z=vertices.reduce((n,p,j)=>n+p.z*weights[j],0);
         assert.ok(continuationSurfaceContains(support,x,z));
-        const physical=continuationSupportAt(x,z,{phase:'catch',chartId:0,level:0,feet:8.4});
-        assert.ok(physical);near(physical.y,8.4);
+        const physical=continuationSupportAt(x,z,{phase:'catch',chartId:seat.chartId,level:seat.level,feet:seat.feet});
+        assert.ok(physical);near(physical.y,seat.feet);
       }
       tested++;
     }
   }
-  assert.equal(tested,g.i.length/3);assert.deepEqual(g.supportIds.sort(),['catch-0-case-crescent','catch-0-return-arm','catch-0-return-pad']);
+  assert.equal(tested,g.i.length/3);assert.ok(g.supportIds.includes(`catch-${seat.level}-return-pad`));
+  assert.ok(g.supportIds.every(id=>id.startsWith(`catch-${seat.level}-`)));
 });
 
 test('unsupported near corner and inner-radius tip are visibly cut away instead of becoming a false extension',()=>{
   const g=sourceRestHarpsichordBoardGeometry();
-  for(const point of[[3,1.35],[-1.5,-7.4]]){
+  const probes=outline.flatMap((a,k)=>{const b=outline[(k+1)%outline.length];return Array.from({length:10},(_,j)=>a.map((v,n)=>v+(b[n]-v)*j/9));}),
+    unsupported=probes.filter(point=>{const p=world({x:point[0],z:point[1]});return!continuationSupportAt(p.x,p.z,{phase:'catch',chartId:seat.chartId,level:seat.level,feet:seat.feet});});
+  assert.ok(unsupported.length>0,'the current footprint reaches real unsupported space');
+  for(const point of unsupported){
     assert.ok(inside(point,outline),'the ideal instrument silhouette would reach this point');
     const p=world({x:point[0],z:point[1]});
-    assert.equal(continuationSupportAt(p.x,p.z,{phase:'catch',chartId:0,level:0,feet:8.4}),null);
+    assert.equal(continuationSupportAt(p.x,p.z,{phase:'catch',chartId:seat.chartId,level:seat.level,feet:seat.feet}),null);
     assert.ok(g.sections.every(section=>!inside(point,section.polygon)),'the wooden veneer stops short of unsupported space');
   }
   assert.ok(g.sections.some(section=>inside([0,0],section.polygon)),'the real supported listening pocket receives wood');

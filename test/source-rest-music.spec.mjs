@@ -19,7 +19,7 @@ function harness({play}={}){
 test('a real interaction starts one full stereo stream through the game music bus',async()=>{
   const h=harness();assert.equal(h.music.start(),true);
   assert.equal(h.elements.length,1);assert.equal(h.elements[0].plays,1,'play is called synchronously during the gesture');
-  assert.equal(h.elements[0].src,'/game/'+SOURCE_REST_MUSIC_URL);assert.equal(h.elements[0].loop,true);
+  assert.equal(h.elements[0].src,'/game/'+SOURCE_REST_MUSIC_URL);assert.equal(h.elements[0].loop,false);
   assert.deepEqual(h.connections.map(x=>x.out),[{id:'music-bus'}]);
   assert.equal(h.music.snapshot().playing,false,'the old source must remain until play is confirmed');
   await flush();assert.equal(h.music.snapshot().playing,true);assert.equal(h.music.snapshot().duration,787);
@@ -72,38 +72,35 @@ test('waiting media reports a held performance and resumes its original element 
   assert.equal(el.plays,1);assert.equal(h.elements.length,1);h.music.dispose();
 });
 
-test('a full first pass stays completed through a natural loop, but a backwards seek does not count',async()=>{
+test('a natural end completes once, while a backwards seek cannot claim a completed pass',async()=>{
   const h=harness();h.music.start();await flush();const el=h.elements[0];
   el.currentTime=786.9;h.ctx.currentTime=786.9;el.emit('timeupdate');
   el.currentTime=.02;h.ctx.currentTime=786.92;el.emit('timeupdate');
-  assert.equal(h.music.snapshot().completedFirstPass,false,'an instantaneous seek is not a full pass');
-  el.currentTime=786.9;h.ctx.currentTime=1573.8;el.emit('timeupdate');
-  el.currentTime=.02;h.ctx.currentTime=1573.92;el.emit('timeupdate');
+  assert.equal(h.music.snapshot().completedFirstPass,false,'a backwards seek is not completion');assert.equal(el.loop,false);
+  el.currentTime=787;el.paused=true;el.ended=true;el.emit('ended');
   assert.equal(h.music.snapshot().completedFirstPass,true);h.music.update({active:true,paused:true});
   assert.equal(h.music.snapshot().completedFirstPass,true,'pause does not lose the completed pass');
   h.music.stop();assert.equal(h.music.snapshot().completedFirstPass,false);h.music.dispose();
 });
 
-test('a long frame stall still recognizes the wrap when clock and playback agree',async()=>{
+test('a delayed natural-end event counts only performed time, never a wrapped second pass or post-end wait',async()=>{
   const h=harness();h.music.start();await flush();const el=h.elements[0];
   el.currentTime=50;h.ctx.currentTime=50;el.emit('timeupdate');
-  el.currentTime=90;h.ctx.currentTime=877;el.emit('timeupdate');
-  assert.equal(h.music.snapshot().completedFirstCycle,true);h.music.dispose();
+  el.currentTime=787;h.ctx.currentTime=1000;el.paused=true;el.ended=true;el.emit('ended');
+  assert.equal(h.music.snapshot().completedFirstCycle,true);assert.equal(h.music.snapshot().playedSeconds,787);
+  assert.equal(h.music.snapshot().audibleWallSeconds,787);h.music.dispose();
 });
 
-test('the audible clock advances across a continuous approach and loop, but not during holds or seeks',async()=>{
+test('the source clock advances across one continuous approach, excludes holds/seeks and cannot wrap',async()=>{
   const h=harness();h.music.start();await flush();const el=h.elements[0];
-  h.ctx.currentTime=10;el.currentTime=10;h.music.update({active:true});
-  assert.equal(h.music.snapshot().playedSeconds,10);
-  h.music.update({active:true,paused:true});h.ctx.currentTime=110;
-  h.music.update({active:true,paused:false});await flush();
-  h.ctx.currentTime=112;el.currentTime=12;h.music.update({active:true});
-  assert.equal(h.music.snapshot().playedSeconds,12,'the held interval adds no music');
-  el.currentTime=400;h.ctx.currentTime=112.1;h.music.update({active:true});
-  assert.equal(h.music.snapshot().playedSeconds,12,'a seek is not listening');
+  h.ctx.currentTime=10;el.currentTime=10;h.music.update({active:true});assert.equal(h.music.snapshot().playedSeconds,10);
+  h.music.update({active:true,paused:true});h.ctx.currentTime=110;h.music.update({active:true,paused:false});await flush();
+  h.ctx.currentTime=112;el.currentTime=12;h.music.update({active:true});assert.equal(h.music.snapshot().playedSeconds,12);
+  el.currentTime=400;h.ctx.currentTime=112.1;h.music.update({active:true});assert.equal(h.music.snapshot().playedSeconds,12,'a seek is not listening');
   h.ctx.currentTime=498.1;el.currentTime=786;h.music.update({active:true});
-  h.ctx.currentTime=500.1;el.currentTime=1;h.music.update({active:true});
-  assert.equal(h.music.snapshot().playedSeconds,400,'a natural wrap keeps the same accumulated clock');
+  h.ctx.currentTime=499.1;el.currentTime=787;el.ended=true;el.paused=true;el.emit('ended');
+  assert.equal(h.music.snapshot().playedSeconds,399);const plays=el.plays;
+  h.ctx.currentTime=500.1;el.currentTime=1;h.music.update({active:true});assert.equal(h.music.snapshot().playedSeconds,399);assert.equal(el.plays,plays);
   h.music.dispose();
 });
 
@@ -142,7 +139,7 @@ test('the ending retains the same performance through a pause, then never restar
   for(let i=0;i<10;i++)h.music.update({active:true});
   assert.equal(el.plays,2,'the end event does not restart the performance');assert.equal(h.elements.length,1);
   h.music.stop();assert.equal(h.music.snapshot().ended,false);
-  h.music.start();await flush();assert.equal(h.elements.length,2);assert.equal(h.elements[1].loop,true,'a new sitting gets a fresh looping player');
+  h.music.start();await flush();assert.equal(h.elements.length,2);assert.equal(h.elements[1].loop,false,'an explicit new programme is also single-pass');
   h.music.dispose();
 });
 

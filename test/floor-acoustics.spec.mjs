@@ -24,7 +24,7 @@ PROPS.propsInit(FP);
 const surface = (sprung, soft) => (soft > 0 ? sprung * (1 - soft * (1 - NOISE.carpet)) : sprung);
 
 const TEXTILES = [
-  'atrium-waiting-rug', 'b2-drugget-run', 'hall-stage-drugget', 'main-stair-runner',
+  'b2-drugget-run', 'hall-stage-drugget', 'main-stair-runner',
   'academic-corridor-runner', 'chapel-nave-runner', 'store-rolled-rug', 'occupation-arrival-mat',
 ];
 const PROJECT_TEXTILE_MESHES = new Set(['textile_stair_runner_fitted', 'occupation_entry_mat']);
@@ -64,6 +64,8 @@ test('every textile is actually in the building', () => {
   for (const id of TEXTILES) {
     assert.ok(PROPS.propById(id), `${id} survives propsInit`);
   }
+  assert.equal(PROPS.propById('atrium-waiting-rug'),null,
+    'the explicitly retired atrium rug does not cover the new open courtyard');
 });
 
 test('a runner is soft along its whole length, not only at its origin cell', () => {

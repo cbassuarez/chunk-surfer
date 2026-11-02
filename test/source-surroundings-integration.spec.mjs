@@ -9,6 +9,8 @@ import {sourceSurroundingsFrame} from '../src/game/source-surroundings.js';
 import {standingTearRepertoireById} from '../src/data/standing-tear-memory-score.js';
 import {CREDITS} from '../src/data/credits.js';
 import {SOURCE_CONTINUATION} from '../src/data/source-continuation.js';
+import {sourceContinuationAcousticFrame} from '../src/render/source-continuation-renderer.js';
+import {continuationCameraBasis} from '../src/game/source-continuation-portals.js';
 import * as scenes from '../src/game/scenes.js';
 
 const state=(extra={})=>({...resumeSourceContinuation(freshSourceContinuation({runId:'audio-wrapper'})),elapsed:2,...extra});
@@ -76,11 +78,34 @@ test('the actual rotated Catch scene passes raw surroundings state separately, k
   const g=audioGraph(),sound=wrapper(g),updates=[],checkpoint=state({phase:'catch',x:centre.x+11,z:centre.z,feet:8.4,level:0,yaw:.2,pitch:-.1,elapsed:2}),rotation=Math.PI/2;
   const audio={...sound,update:args=>{updates.push(args);return sound.update(args);}},renderer={initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}};
   const scene=createSourceContinuationScene({checkpoint,renderer,audio,studyRotation:rotation});await scene.initialize();scene.update(.016);await settle();g.ctx.currentTime+=.016;scene.update(.016);
-  const args=updates.at(-1);assert.ok(args);assert.notEqual(args.state,args.surroundingsState);assert.deepEqual(args.surroundingsState,scene.serialize());assert.ok(Math.abs(args.state.yaw-rotation)<1e-8,'overhead sound follows the screen compass, independent of the saved first-person look');
+  const args=updates.at(-1);assert.ok(args);assert.notEqual(args.state,args.surroundingsState);assert.deepEqual(args.surroundingsState,scene.serialize());
+  assert.ok(Math.abs(args.state.yaw-(args.surroundingsState.yaw+rotation))<1e-8,'a fallback study rotates the actual first-person heading with the body');
+  assert.equal(args.state.pitch,args.surroundingsState.pitch);
   assert.notEqual(args.state.x,args.surroundingsState.x);const score=sourceSurroundingsFrame(args.surroundingsState).score;
-  const expected=sourceSurroundingsPlacement(score.position,{...args.surroundingsState,yaw:0,pitch:0}),wrong=sourceSurroundingsPlacement(score.position,args.state);
+  const expected=sourceSurroundingsPlacement(score.position,args.surroundingsState),wrong=sourceSurroundingsPlacement(score.position,args.state);
   assert.deepEqual(sound.snapshot().surroundings.music.placement,expected);assert.notDeepEqual(expected.relativeXYZ,wrong.relativeXYZ,'a rotated listener against unrotated source would point at the wrong physical material');
   assert.equal(sound.snapshot().surroundings.score.phase,score.phase);scene.pause();assert.equal(sound.snapshot().surroundings.voices,0);scene.exit();sound.dispose();
+});
+
+test('the production acoustic frame follows the real Catch head and projects the score only once',async()=>{
+  const centre=SOURCE_CONTINUATION.catch.center,g=audioGraph(),sound=wrapper(g),updates=[],
+    checkpoint=state({phase:'catch',chartId:0,x:centre.x+11,z:centre.z,feet:8.4,level:0,yaw:.7,pitch:-.3,elapsed:2});
+  const audio={...sound,update:args=>{updates.push(args);return sound.update(args);}},
+    renderer={initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){},acousticFrame:sourceContinuationAcousticFrame};
+  const scene=createSourceContinuationScene({checkpoint,renderer,audio});
+  try{
+    await scene.initialize();scene.update(.016);await settle();g.ctx.currentTime+=.016;scene.update(.016);
+    const args=updates.at(-1),saved=scene.serialize(),basis=continuationCameraBasis(saved);
+    assert.equal(args.state,args.surroundingsState,'the canonical renderer owns chart projection; no fallback body rotation is applied');
+    assert.deepEqual(args.surroundingsState,saved);
+    assert.deepEqual(args.acousticFrame.listener.eye,[saved.x,saved.feet+SOURCE_CONTINUATION.eyeHeight,saved.z]);
+    for(const axis of ['right','up','forward'])assert.deepEqual(args.acousticFrame.listener[axis],basis[axis]);
+    const score=sourceSurroundingsFrame(saved).score;
+    assert.deepEqual(sound.snapshot().surroundings.music.placement,sourceSurroundingsPlacement(score.position,saved,args.acousticFrame));
+    assert.notDeepEqual(args.acousticFrame.listener.forward,[0,0,-1],'there is no inherited fixed overhead compass');
+    assert.equal(sound.snapshot().surroundings.score.phase,score.phase);
+    scene.pause();assert.equal(sound.snapshot().surroundings.voices,0);
+  }finally{scene.exit();sound.dispose();}
 });
 
 test('the actual host observer silences a frozen Source beneath an overlay and resumes from its held score',async()=>{

@@ -113,6 +113,8 @@ test('actual hide/show and page lifecycle handlers release stale native ownershi
   const context = {
     document, window: { addEventListener: (name, fn) => callbacks.set(name, fn) },
     runPlayDurationClock: { suspend() {} },
+    firstStrikeScene:null,firstStrikeAudio:null,sourceRestBreath:null,sourceRestWeather:null,holdSourceRestEndingMusic(){},paused:false,
+    openingArrivalAudio:null,openingCabRadio:null,STORY:{pauseOpeningOvertureScore(){},resumeOpeningOvertureScore(){}},pubPressureAudio:null,
     pointerMode: { release: reason => releases.push(reason), attemptCapture: reason => attempts.push(reason) },
     scenes: { top: () => null, pointer() {} },
     setUiCueFocused() {}, cancelLastExposure() {}, cancelApparitionApplause() {}, cancelOutskirtDoorAnswer() {}, stopTowerPersonalWorldSignal() {},

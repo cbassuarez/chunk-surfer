@@ -3,6 +3,7 @@
 import {ZONE} from '../data/floorplan/legend.js';
 import {resolveLightingContext} from '../data/conservatory-lights.js';
 import {PUB_ACTORS} from '../data/pub-population.js';
+import {pubPhysicalAt,pubPhysicalYaw} from '../data/exterior-pub.js';
 import {pubCharacterInstances} from './pub-character-performance.js';
 import {streetCrowdInstances} from './street-crowd-performance.js';
 import {vigilCharacterDescriptor} from './vigil-character-performance.js';
@@ -570,7 +571,7 @@ const SCENES=freeze({
   chamber:{group:'academic',zone:ZONE.academic},b3:{group:'basement',zone:ZONE.studio},
 });
 const PUB_IDS=new Set(['pub-bartender-iona','pub-patron-mavis','pub-patron-ed','pub-patron-bert','pub-patron-farah','pub-patron-nell','pub-patron-arthur']);
-const PUB_CAST=PUB_ACTORS.filter(actor=>PUB_IDS.has(actor.id));
+const PUB_CAST=PUB_ACTORS.filter(actor=>PUB_IDS.has(actor.id)).map(actor=>({...actor,...pubPhysicalAt(actor),yaw:pubPhysicalYaw(actor.yaw)}));
 const ROOM_AMBIENT=freeze({b3:.10,chamber:.11});
 const STUDY_KEYS=freeze({
   b3:[{id:'Exit/booth bounce proposal',position:[22.4,-1.35,12.5],color:[1,.80,.58],intensity:3.2,radius:9,penetration:.08},{id:'Live-room work-light bounce',position:[13,-1.15,14],color:[.73,.83,1],intensity:3.4,radius:12,penetration:.08}],
@@ -597,11 +598,12 @@ export function openingCinematicLighting(frame,{ordinaryContext=null,ordinaryLig
   const {set}=profile(frame),scene=SCENES[set],base=resolveLightingContext(scene);
   const spec=stageValue(frame,'lightingOverride')||stageValue(frame,'lightOverride')||{};
   const disabled=new Set(spec.disableProposalLights||[]);
-  const keys=(STUDY_KEYS[set]||[]).filter(l=>!disabled.has(l.id)).map(l=>({...copyLight(l),x:l.position[0],y:l.position[1],z:l.position[2],photographyProposal:true}));
-  const replacements=(spec.replaceProposalLights||[]).map(l=>({id:l.name,x:l.positionM[0],y:l.positionM[1],z:l.positionM[2],color:[...l.color],intensity:clamp(l.powerWProxy/60,.25,6),radius:Math.max(5,(l.sizeM||1)*4+4),penetration:.12,photographyProposal:true}));
+  const physicalLight=l=>set==='pub'?pubPhysicalAt(l):l;
+  const keys=(STUDY_KEYS[set]||[]).filter(l=>!disabled.has(l.id)).map(l=>({...copyLight(l),...physicalLight({x:l.position[0],y:l.position[1],z:l.position[2]}),photographyProposal:true}));
+  const replacements=(spec.replaceProposalLights||[]).map(l=>({id:l.name,...physicalLight({x:l.positionM[0],y:l.positionM[1],z:l.positionM[2]}),color:[...l.color],intensity:clamp(l.powerWProxy/60,.25,6),radius:Math.max(5,(l.sizeM||1)*4+4),penetration:.12,photographyProposal:true}));
   const observer=eye||frame.camera?.eye||frame.eye||[0,0,0];
   const score=l=>Math.hypot(l.x-observer[0],l.y-observer[1],l.z-observer[2])/Math.max(1,Number(l.radius)||4);
-  const fixtures=(NATIVE_FIXTURES[set]||[]).filter(l=>!disabled.has(l.id)).map(copyLight).sort((a,b)=>score(a)-score(b));
+  const fixtures=(NATIVE_FIXTURES[set]||[]).filter(l=>!disabled.has(l.id)).map(l=>{const copy=copyLight(l);return l.id.startsWith('pub-')||l.id==='district-south-pub-spill'?pubPhysicalAt(copy):copy;}).sort((a,b)=>score(a)-score(b));
   // The reviewed edit used eight slots, even though the native renderer now
   // supports twelve. Reserve the authored shot keys before nearest fixtures.
   const authored=[...replacements,...keys].slice(0,8),scales=stageValue(frame,'lightScales')||{};

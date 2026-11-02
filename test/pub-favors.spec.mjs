@@ -8,7 +8,7 @@ import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js
 import { PUB_FAVOR_PROPS, PUB_FAVOR_MESHES, pubFavorFixture } from '../src/data/pub-favors.js';
 import { PUB_SERVICE_TRAY } from '../src/data/pub-population.js';
 import { PUB_INTERIOR_LAYOUT } from '../src/data/exterior-pub-furnishings.js';
-import { pubLocalFromWorld } from '../src/data/exterior-pub.js';
+import { pubLocalFromWorld,pubPhysicalAt,pubAuthoredAt } from '../src/data/exterior-pub.js';
 import { BUILDING_AMENITY_PROPS } from '../src/data/building-amenities.js';
 import { buildBuildingAmenities } from '../tools/chunk_surfer/building-amenities-geometry.mjs';
 import { PROP_BOUNDS } from '../src/data/generated/prop-geometry.js';
@@ -49,10 +49,10 @@ test('all three interactive objects have one authored home and real nonblocking 
 
 test('the service tray rests on the actual counter and targets its public edge', () => {
   const fixture = pubFavorFixture('pub-service-tray'), render = rendered(fixture.id);
-  near(render.x, PUB_SERVICE_TRAY.x, 'tray world X');
-  near(render.z, PUB_SERVICE_TRAY.y, 'tray world Z');
+  near(render.x, pubPhysicalAt({x:PUB_SERVICE_TRAY.x,z:PUB_SERVICE_TRAY.y}).x, 'tray world X');
+  near(render.z, pubPhysicalAt({x:PUB_SERVICE_TRAY.x,z:PUB_SERVICE_TRAY.y}).z, 'tray world Z');
   near(render.y, .12 + 1.14, 'tray counter height');
-  const local = pubLocalFromWorld({ x: render.x, z: render.z });
+  const local = pubLocalFromWorld(pubAuthoredAt({ x: render.x, z: render.z }));
   const counter = PUB_INTERIOR_LAYOUT.furniture.find(f => f.id === 'pub-counter').bounds;
   const b = bounds(fixture.mesh);
   for (const x of [local.x + b.min[0], local.x + b.max[0]]) assert.ok(x >= counter.x0 && x <= counter.x1);

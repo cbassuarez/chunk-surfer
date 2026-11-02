@@ -68,7 +68,8 @@ test('both supported phases sit and leave through the same body owner and phase-
       f.narrative({progress:.48,locked:false});f.settle();
       assert.equal(f.api.view().mode,'seated');assert.equal(f.frame.affliction.active,true);assert.equal(f.frame.affliction.embodied,true);
       assert.equal(f.frame.affliction.canLeave,true);assert.equal(f.scene.allowsLook,true);
-      assert.equal(f.instruments.at(-1).phase,seat.phase,'the same existing instrument receives the real phase');
+      assert.equal(f.instruments.length,0,'no device appears until the player explicitly requests it');
+      assert.equal(f.api.recorderFrame().phase,seat.phase,'the external presenter receives the real phase');
       assert.ok(f.progressCalls.some(([p,active,,phase])=>p===.48&&active&&phase===seat.phase));
       assert.deepEqual(f.scene.serialize(),before,'rest writes no body position, checkpoint or progression');
       f.decide('leave');const standing=f.render().affliction;

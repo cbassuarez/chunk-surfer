@@ -27,15 +27,17 @@ test('release documentation retains the actual four channels and portable runtim
   assert.doesNotMatch(prep,/Butler TODO: add channel/);
 });
 
-test('storefront candidate copy excludes live SD claims and keeps measured package size pending',()=>{
+test('storefront release copy describes the ordinary game and current installation contract',()=>{
   const description=read('docs/storefront-copy-itch.html'),install=read('docs/storefront-install-itch.html');
-  assert.match(description,/development-only, outside the downloadable game/);
-  assert.match(description,/No local AI model is required to play/);
-  assert.doesNotMatch(description,/only 3D psychological horror game with a local Stable Diffusion|neither 8bit nor diffused|Now out for public beta testing/);
-  assert.match(description,/candidate and does not announce a published download/);
-  assert.match(install,/No Stable Diffusion model or Python runtime is bundled or downloaded on first launch/);
+  assert.doesNotMatch(description,/Stable Diffusion|neither 8bit nor diffused|redaction turn-based combat/);
+  assert.match(description,/TAKE THE JOB/);
+  assert.match(description,/spoken (?:take )?slates and voicemail/);
+  assert.doesNotMatch(description,/never records, stores|audio is never recorded/i);
+  assert.match(read('docs/storefront-itch.css'),new RegExp('v'+quoted(version)+' / PUBLIC BETA'));
   assert.match(install,/Microsoft Edge WebView2 Runtime/);
   assert.match(install,/Open the downloaded macOS Apple Silicon <code>\.dmg<\/code>/);
+  assert.match(install,/<td>R<\/td><td>Open recorder<\/td>/);
+  assert.match(install,/Extract <code>chunk-surfer-windows-x64\.zip<\/code> completely/);
   assert.doesNotMatch(install,/your GPU driver is not exposing CUDA|proprietary NVIDIA driver is required|model weights ship inside/);
   assert.match(copy,/Replace with measurements from the actual lean release files/);
 });
@@ -43,7 +45,8 @@ test('storefront candidate copy excludes live SD claims and keeps measured packa
 test('the offline storefront preview contains both current hand-authored paste fragments exactly',()=>{
   const preview=read('docs/storefront-itch-preview.html');
   for(const file of ['docs/storefront-copy-itch.html','docs/storefront-install-itch.html']){
-    const source=read(file),start=source.indexOf('<p class="custom-index">');assert.ok(start>=0);
-    assert.ok(preview.includes(source.slice(start).trim()),file+' has drifted from its offline preview');
+    const source=read(file).replace(/^\s*<!--[\s\S]*?-->\s*/, '').trim();
+    assert.ok(source.length>0);
+    assert.ok(preview.includes(source),file+' has drifted from its offline preview');
   }
 });

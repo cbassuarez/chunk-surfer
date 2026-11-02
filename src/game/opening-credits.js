@@ -1,6 +1,8 @@
 import * as scenes from './scenes.js';
-import { uiFill, uiSize, uiText, uiWrap } from '../render/ui.js';
+import { uiSize, uiWrap } from '../render/ui.js';
+import { renderCreditSignal, renderCreditSignalGround, drawCreditSignalText } from '../render/credit-signal.js';
 import { createHitRegions } from '../render/hit-regions.js';
+import { inputPrompt } from './bindings.js';
 import { creditAtmosphereFrame } from './credit-visual.js';
 import { attachBootWeatherAudio, bootWeather, bootWeatherAudio, bootWeatherOpeningEnvelope, drainBootFlashes, drainBootThunder, renderBootWeather, stepBootWeather } from './boot-weather.js';
 
@@ -9,7 +11,7 @@ export const OPENING_CREDITS_SKIP_CONFIRM_SECONDS = 0.45;
 export const OPENING_CREDITS_SKIP_GUARD_SECONDS = 0.12;
 
 const SKIP_IDLE_LABEL = 'SKIP  ▶▶';
-const SKIP_ARMED_LABEL = 'CLICK AGAIN  ▶▶';
+const SKIP_ARMED_LABEL = 'PRESS AGAIN  ▶▶';
 const SKIP_COMMITTED_LABEL = '▶▶';
 const SKIP_HINT_LABEL = 'DOUBLE CLICK';
 
@@ -23,6 +25,12 @@ const QUOTE_LINES = Object.freeze([
   "'is a virtue which renders us agreeable",
   "to our fellow-creatures.'",
 ]);
+export const OPENING_CREDIT_GROUPS = Object.freeze({
+  creator: Object.freeze({ label: 'A GAME BY', names: Object.freeze(['SEBASTIAN SUAREZ-SOLIS']), year: '2026' }),
+  sound: Object.freeze({ label: 'SOUND DESIGN', names: Object.freeze(['SEBASTIAN SUAREZ-SOLIS', 'PAUL YORKE']) }),
+  quote: Object.freeze({ lines: QUOTE_LINES }),
+  attribution: Object.freeze({ lines: Object.freeze(['SAMUEL BUTLER · EREWHON', 'THE BOOK OF THE MACHINES']) }),
+});
 
 function wallClockSeconds() {
   const monotonic = globalThis.performance?.now?.();
@@ -122,6 +130,18 @@ export function openingCreditFrame(time, duration = OPENING_CREDITS_DURATION) {
   };
 }
 
+export function openingCreditSignalGroups(frame = openingCreditFrame(0)) {
+  return [
+    { id: 'creator', kind: 'names', label: OPENING_CREDIT_GROUPS.creator.label,
+      lines: [...OPENING_CREDIT_GROUPS.creator.names], attribution: [OPENING_CREDIT_GROUPS.creator.year],
+      alpha: frame.creator, attributionAlpha: frame.creator },
+    { id: 'sound', kind: 'names', label: OPENING_CREDIT_GROUPS.sound.label,
+      lines: [...OPENING_CREDIT_GROUPS.sound.names], attribution: [], alpha: frame.sound },
+    { id: 'quote', kind: 'quote', label: '', lines: [...OPENING_CREDIT_GROUPS.quote.lines],
+      attribution: [...OPENING_CREDIT_GROUPS.attribution.lines], alpha: frame.quote, attributionAlpha: frame.attribution },
+  ];
+}
+
 function fitLine(text, width) {
   const s = String(text ?? '');
   const w = Math.max(1, Math.floor(width));
@@ -214,8 +234,8 @@ export function openingCreditSkipLayout({ cols = 80, rows = 30, label = SKIP_IDL
   };
 }
 
-// This is part of app boot, not an optional credits page. It deliberately owns
-// every key and ends only on its authored clock before the title menu is made.
+// This is part of app boot, not an optional credits page. It owns every input;
+// repeat launches may skip deliberately only when the local boot flag permits.
 export function makeOpeningCreditsScene({
   onDone,
   duration = OPENING_CREDITS_DURATION,
@@ -228,6 +248,9 @@ export function makeOpeningCreditsScene({
   // slams in late.
   openAudio = null,
   skipUnlocked = false,
+  renderSignal = renderCreditSignal,
+  renderGround = renderCreditSignalGround,
+  renderText = drawCreditSignalText,
 } = {}) {
   let time = 0;
   let done = false;
@@ -237,6 +260,7 @@ export function makeOpeningCreditsScene({
   const hits = createHitRegions();
   let skipArmedAt = null;
   let skipCommittedAt = null;
+  let skipHeldInput = null;
 
   function wallNow() {
     const at = Number(now());
@@ -251,6 +275,18 @@ export function makeOpeningCreditsScene({
 
   function clearSkipArm() {
     skipArmedAt = null;
+  }
+
+  function clearSkipInput() {
+    skipHeldInput = null;
+    if (skipCommittedAt == null) clearSkipArm();
+  }
+
+  function skipInputToken(e = {}) {
+    if (e.controllerAction === 'confirm') return 'controller:confirm';
+    if (e.key === 'Enter' || e.code === 'Enter') return 'keyboard:Enter';
+    if (e.key === ' ' || e.code === 'Space') return 'keyboard:Space';
+    return null;
   }
 
   function pressSkip() {
@@ -294,7 +330,9 @@ export function makeOpeningCreditsScene({
     },
     // The bed is deliberately NOT stopped here. It belongs to the launch and
     // goes out under the menu hiss on the other side of the cut (title.js).
-    exit() { document.body.classList.remove('opening-credits-screen'); },
+    exit() { clearSkipInput(); document.body.classList.remove('opening-credits-screen'); },
+    blur() { clearSkipInput(); },
+    resume() { clearSkipInput(); },
     update(dt) {
       // Credits are part of boot, not an attention prompt. Use real elapsed
       // time when an unfocused/background WebView throttles its frame clock,
@@ -345,7 +383,19 @@ export function makeOpeningCreditsScene({
       }
       if (time >= duration) finish('completed');
     },
-    key() { return true; },
+    key(e = {}) {
+      const token = skipInputToken(e);
+      if (token && skipUnlocked && !done && skipCommittedAt == null
+        && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && skipHeldInput == null) {
+        skipHeldInput = token;
+        pressSkip();
+      }
+      return true;
+    },
+    keyup(e = {}) {
+      if (skipInputToken(e) === skipHeldInput) skipHeldInput = null;
+      return true;
+    },
     pointer(e) {
       if (!skipUnlocked || done) return true;
       if (e?.type === 'pointermove') {
@@ -367,22 +417,23 @@ export function makeOpeningCreditsScene({
           unlocked: !!skipUnlocked,
           armed: skipIsArmed(),
           committed: skipCommittedAt != null,
+          inputHeld: skipHeldInput != null,
         },
       };
     },
 
     render() {
-      const { cols, rows } = uiSize();
+      const size = uiSize(), cols = Math.max(20, size.cols), rows = Math.max(8, size.rows);
       const frame = openingCreditFrame(time, duration);
-      const layout = openingCreditLayout({ cols, rows, frame });
+      // Boot can inherit a bright remembered room. Every frame is a new opaque
+      // controlled field; the existing weather crosses it before the reading
+      // plane protects the fixed VFD groups. World light never sets text ink.
+      renderGround({ resolve: 0 });
       const weather = bootWeather();
       if (weather) renderBootWeather(weather, { alpha: weather.presentationAlpha });
-      for (const entry of layout.entries) {
-        if (entry.alpha <= 0.01 || !entry.text) continue;
-        let cls = entry.cls;
-        if (entry.key === 'creator' && entry.text.includes('SEBASTIAN')) cls = 'ui-primary';
-        if (entry.key === 'sound' && entry.text !== 'SOUND DESIGN') cls = 'ui-primary';
-        uiText(entry.x, entry.y, entry.text, cls, entry.alpha);
+      for (const group of openingCreditSignalGroups(frame)) {
+        if (group.alpha <= 0.01) continue;
+        renderSignal({ ...group, time: frame.authoredTime, background: false, readingPlane: true });
       }
 
       hits.reset();
@@ -405,19 +456,17 @@ export function makeOpeningCreditsScene({
           onClick: pressSkip,
         });
 
-        if (!committed && hovered && !armed) {
+        if (!committed) {
+          const hint = hovered && !armed ? SKIP_HINT_LABEL : `${inputPrompt('confirm')} TWICE`;
           const hintX = clamp(
-            skip.right - SKIP_HINT_LABEL.length + 1,
+            skip.right - hint.length + 1,
             0,
-            Math.max(0, skip.cols - SKIP_HINT_LABEL.length),
+            Math.max(0, skip.cols - hint.length),
           );
-          uiFill(Math.max(0,hintX-1),Math.max(0,skip.hintY-.25),SKIP_HINT_LABEL.length+2,1.5,'rgba(3,4,6,.90)');
-          uiText(hintX, skip.hintY, SKIP_HINT_LABEL, 'ui-primary', 1);
+          renderText(hint, hintX, skip.hintY, { fontPx: 12, color: '#899b91', alpha: hovered || armed ? 1 : .72 });
         }
 
-        uiFill(Math.max(0,skip.x-1),Math.max(0,skip.y-.25),skip.text.length+2,1.5,'rgba(3,4,6,.92)');
-        const cls=armed||committed?'ui-amber':'ui-primary';
-        uiText(skip.x,skip.y,skip.text,cls,1);
+        renderText(skip.text, skip.x, skip.y, { fontPx: 12, color: armed || committed ? '#d9c69a' : '#c6d4c9', alpha: 1 });
       }
     },
   };

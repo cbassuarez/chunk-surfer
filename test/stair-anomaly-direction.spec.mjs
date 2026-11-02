@@ -9,7 +9,7 @@ import {
   STAIR_ANOMALY_STATUS, freshStairAnomalyLedger, normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger, reduceStairAnomaly, stairAnomalyEntryCrossed, stairAnomalyTriggerMatches,
 } from '../src/game/stair-anomaly.js';
-import { STAIR_ANOMALY_ENTRY, createStairAnomalyRuntime } from '../src/game/stair-anomaly-runtime.js';
+import { STAIR_ANOMALY_ENTRY, STAIR_ANOMALY_MODULE_CELLS, createStairAnomalyRuntime } from '../src/game/stair-anomaly-runtime.js';
 
 // Compile only the actual authored basement flight and landings. This tests its
 // real direction without compiling unrelated floors, exterior or scene assets.
@@ -70,7 +70,7 @@ function entryHarness() {
   vm.createContext(h);
   vm.runInContext(production('stairTriggerCrossed'), h, { filename: 'src/main.js:stairTriggerCrossed' });
   const start = main.indexOf('function step(dx,dy){');
-  const end = main.indexOf('  // Your feet are the loudest thing in this building.', start);
+  const end = main.indexOf('  const stairFootContact=mainStairMoveTouches', start);
   assert.ok(end > start);
   // Execute the real production path through all acceptance checks and entry.
   // The ordinary footstep/audio tail is irrelevant to whether entry happened.
@@ -188,8 +188,10 @@ test('legacy downward or inverted environments migrate to ascent and retain atmo
     const ledger = { status: 'active', stage: 2, progress: .57, checkpoint: 2 };
     const runtime = createStairAnomalyRuntime({ environment: stored, initialLedger: ledger });
     assert.deepEqual(runtime.state(), ledger);
-    assert.equal(runtime.checkpointPosition().y, -200);
-    assert.ok(runtime.geometry.floorAt(0, -201) > runtime.geometry.floorAt(0, -200), 'resume continues climbing');
+    assert.equal(runtime.checkpointPosition().y, -STAIR_ANOMALY_MODULE_CELLS*2);
+    const restored=runtime.restorePosition({x:1,y:-228,facing:0});
+    assert.equal(restored.y,-64,'a former400-tread save retains proportional progress on the shortened flight');
+    assert.ok(runtime.geometry.floorAt(0, restored.y-1) > runtime.geometry.floorAt(0, restored.y), 'resume continues climbing');
     assert.equal(normalizeStairAnomalyLedger({ status: 'completed' }).status, 'completed');
   }
 });
@@ -201,7 +203,7 @@ function lifecycleHarness(ledger = freshStairAnomalyLedger(), area = 'conservato
     stairDarkSince: 0, stairEscapeHinted: false, stairAnomalyEnteredAt: 0, renderMove: null, motionRig: null, trail: [],
     activations: [], commits: [], STAIR_ANOMALY_STATUS, STAIR_ANOMALY_ENTRY,
     normalizeStairAnomalyEnvironment, normalizeStairAnomalyLedger, reduceStairAnomaly,
-    clock: 10_000, timers: [], speeches: [],
+    clock: 10_000, timers: [], speeches: [],snapCount:0,
     performance: { now: () => h.clock }, getSave: () => h.save,
     usingSpecialSpace: () => !!h.stairAnomalyRuntime,
     usingStairAnomaly: () => !!h.stairAnomalyRuntime,
@@ -211,7 +213,7 @@ function lifecycleHarness(ledger = freshStairAnomalyLedger(), area = 'conservato
     STAIR_ESCAPE: { dark: 20_000 }, SPEECH: { say: line => h.speeches.push(line), sayAll: lines => h.speeches.push(...lines) },
     fireCue: () => {}, setTimeout: (callback, delay) => { h.timers.push({ callback, delay }); },
     scenes: { remove: () => {} }, PRES: { loadPresenceState: () => {}, savePresenceState: () => ({ active: false }) },
-    R3: { r3dSetFacing: () => {}, r3dSetLocalLights: () => {}, r3dSetPlan: () => {}, r3dSetProps: () => {} },
+    R3: { r3dSetFacing: () => {},r3dFacing:()=>0,r3dSnapCameraOnNextFrame:()=>{h.snapCount++;}, r3dSetLocalLights: () => {}, r3dSetPlan: () => {}, r3dSetProps: () => {} },
     FP: { toRuntimePoint: FP.toRuntimePoint, physicalRenderPlanFor: () => ({ rgba: [], w: 1, h: 1, material: [], key: 'restored', group: 'ground' }) },
     r3dCache: {}, worldRenderInstances: () => [], syncDoorDynamicProps: () => {}, revealAround: () => {}, updateAudio: () => {},
   };
@@ -257,8 +259,27 @@ test('ordinary completion and the darkness escape both save a spent upward encou
     assert.equal(h.save.run.ledger.stairAnomaly.status, 'completed', 'the alternate escape must retire its active ledger too');
     assert.deepEqual({ x: h.save.px, y: h.save.py }, FP.toRuntimePoint({ x: 60, y: 23 }));
     assert.equal(h.stairAnomalyRuntime, null);
+    assert.equal(h.snapCount,1,'the unrelated destination floor snaps the camera instead of easing through the intervening building');
     assert.equal(h.resumeStairAnomalyFromSave(), false);
     assert.equal(h.finishStairAnomaly(), false, 'second completion has no side effects');
+  }
+});
+
+test('production activation restores actual runtime coordinates and snaps the relocated eye once',()=>{
+  for(const [ledger,position,expected]of[
+    [freshStairAnomalyLedger(),{x:0,y:0,facing:0},0],
+    [{status:'active',stage:2,progress:.57,checkpoint:2},{x:1,y:-228,facing:0},-64],
+    [{status:'active',stage:1,progress:.25,checkpoint:1},{x:0,y:-160,facing:0},-28],
+  ]){
+    const h=lifecycleHarness(ledger,'stair-anomaly');
+    h.createStairAnomalyRuntime=createStairAnomalyRuntime;
+    h.PRES.despawn=()=>{};h.onStairAnomalyStage=()=>{};
+    h.applyLookProfile=()=>{};h.syncStairAnomalyRender=()=>{};
+    vm.runInContext(production('activateStairAnomaly'),h,{filename:'src/main.js:activateStairAnomaly'});
+    h.activateStairAnomaly(ledger,{position,fresh:false});
+    assert.equal(h.py,expected);assert.equal(h.stairAnomalyRuntime.player().y,expected);
+    assert.equal(h.snapCount,1);assert.equal(h.motionRig,null);assert.equal(h.renderMove,null);
+    assert(h.stairAnomalyRuntime.geometry.canStep(h.px,h.py,h.px,h.py-1).ok,'restored body has a real next tread');
   }
 });
 

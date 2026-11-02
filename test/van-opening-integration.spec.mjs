@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import {vanRearStockState} from '../src/data/van-rear-stock.js';
+import { nightClockReadout } from '../src/game/night-clock.js';
 import { freshSave } from '../src/game/save.js';
 import { freshMeta, freshRunRecord } from '../src/progression/schema.js';
 import { prepareVanDifficultyFinalization } from '../src/progression/van-preparation.js';
@@ -292,7 +293,7 @@ test('the actual HUD never renders a plan or minimal-signal legend before acquir
     [true,false,true,'map'],[true,false,false,'minimal'],[true,true,true,'missing'],
   ]){
     const flags={'van.preparation.v1':true,'bag.taken':true,...(owned?{'map.taken':true}:{})},calls=[];
-    const context={mapAvailable,getSave:()=>({flags}),itemLost:()=>lost,flagTest:id=>!!flags[id],
+    const context={modules:{enabled:false},nightClockReadout,mapAvailable,getSave:()=>({flags}),itemLost:()=>lost,flagTest:id=>!!flags[id],
       currentStoryGuidanceFrame:()=>({point:{x:1,y:1},target:{id:'story:yard-van'}}),
       activeDifficulty:{navigation:{showMap}},deck:{navigator:{},objective:{x:0,y:0}},
       // The combined navigator paints mapStatus whenever navigation is hidden.

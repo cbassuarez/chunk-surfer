@@ -67,8 +67,10 @@ export function mapConsoleControls(layout, model, nav) {
   const selected = (model?.spaces || []).find(s => s.id === nav?.selectedByFloor?.[nav?.floorId]);
   const personal = model?.playerWaypoint;
   const marked = !!personal?.spaceId && personal.spaceId === selected?.id;
-  row(4, 0, ['SET TARGET'], ['set-target'], ['amber'], [], [!!selected && selected.waypointable !== false && !marked]);
-  row(4, 1, ['CLEAR', 'FILE'], ['clear-target', 'read-file'], ['white', 'white'], [], [!!personal, !!roomHistory(selected)||!!selected?.objective?.notes?.length]);
+  if(model?.policy?.readOnly!==true){
+    row(4, 0, ['SET TARGET'], ['set-target'], ['amber'], [], [!!selected && selected.waypointable !== false && !marked]);
+    row(4, 1, ['CLEAR', 'FILE'], ['clear-target', 'read-file'], ['white', 'white'], [], [!!personal, !!roomHistory(selected)||!!selected?.objective?.notes?.length]);
+  }
   if(layout.dense){
     const order=['select-floor','view-stack','view-floor','center-player','reset-view','rotate-left','rotate-right','zoom-out','zoom-in','set-target','clear-target','read-file'];
     controls.sort((a,b)=>order.indexOf(a.action)-order.indexOf(b.action));

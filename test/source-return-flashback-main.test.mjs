@@ -33,7 +33,7 @@ function harness(saved=null,{metricsGate=null}={}){
   bellPealPerformance:{suspend:()=>calls.push('peal-suspend'),resume:()=>calls.push('peal-resume')},RT:{setBed(){}},
   ensureCtx(){},stopTake(){},resetMotionInput:()=>calls.push('motion-clear'),stopAllVoices(){},stopWorldLayerVoice(){},silenceSampleField(){},silenceAmbientDrone(){},
   godSyncBuildingRender:()=>calls.push('building-sync'),syncDoorDynamicProps(){},updateAudio:()=>calls.push('world-audio-resume'),ensureInteractionFocus(){},
-  shakeMode:()=> 'full',uiSize:()=>({rows:30,cols:80}),uiFill:(...args)=>covers.push(args),openPauseMenu:()=>{env.paused=true;},pushEvent(){},console,
+  shakeMode:()=> 'full',uiSize:()=>({rows:30,cols:80}),uiPhysicalSize:()=>({rows:30,cols:80}),uiFill:(...args)=>covers.push(args),openPauseMenu:()=>{env.paused=true;},pushEvent(){},console,
   BINDINGS:{inputPrompt:()=> 'QUIET'},VIGIL_LINKED_CHAPELS_FLAG:'linked',flagTest:()=>false,vigilBelfryRecognition:()=>[],
   GOD_LOCATION_HOOKS,godHookPoint:()=>({x:512,y:714}),applySourceDoorCarry(){},CHAPEL_OUTER_CHECKPOINT,
   ensureTowerBellDirector:()=>({setTransitionProgress(){},snapshot:()=>null}),

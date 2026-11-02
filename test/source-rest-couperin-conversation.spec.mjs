@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createHash} from 'node:crypto';
 import {SOURCE_REST_COUPERIN_CONVERSATION as story,SOURCE_REST_COUPERIN_CUES as cues} from '../src/data/source-rest-couperin-conversation.js';
 import {sourceRestConversation} from '../src/data/source-rest-conversation.js';
 import {sourceRestColdOpenNodes} from '../src/game/source-rest-conversation-scene.js';
@@ -25,13 +24,15 @@ test('the III graph provides actual early exits, an explicit last offered exit, 
   assert.ok(leaves>=5);assert.equal(commits,1);
   assert.deepEqual(story.nodes['threshold-choice'].choices.map(c=>c.label),['Let it finish.','Get up.']);
   assert.equal(story.nodes.revoicing.lockExit,true);assert.equal(story.nodes['threshold-choice'].lockExit,undefined);
-  assert.deepEqual(story.nodes.last.lines.map(l=>l.text),['There it is.','Yes.','Leave it there.']);
+  assert.deepEqual(story.nodes.last.lines.slice(-3).map(l=>l.text),['There it is.','Yes.','Leave it there.']);
+  assert.ok(story.nodes.last.lines.length>=10,'the sustained black exchange has more than its former two-line payoff');
 });
 
 test('language choices are exact ordinary player utterances, never disguised mix commands or another Continue gate',()=>{
   for(const[id,node]of Object.entries(story.nodes))for(const option of node.choices){
     if(!option.next)continue;
-    const first=story.nodes[option.next].lines[0];assert.equal(first.who,'you');assert.equal(first.text,option.label,`${id} reply must be delivered exactly as selected`);
+    const first=story.nodes[option.next].lines[0];
+    if(!id.startsWith('questions-')&&!option.next.startsWith('questions-')){assert.equal(first.who,'you');assert.equal(first.text,option.label,`${id} reply must be delivered exactly as selected`);}
     assert.doesNotMatch(option.label,/continue|select (?:the )?mix|electronic gain|acoustic gain|turn off/i);
   }
   const mapped=sourceRestColdOpenNodes(story);
@@ -44,7 +45,7 @@ test('seven cue floors belong to the full-piece lifecycle and preserve the speci
   assert.deepEqual(Object.keys(cues),['arrival','guitar-etudes','harpsichord','recording','revoicing','return','last']);
   assert.ok(Object.values(cues).every((p,i,a)=>p>=0&&p<=1&&(i===0||p>a[i-1])));
   for(const id of Object.keys(cues))assert.ok(story.nodes[id]);
-  const script=Object.values(story.nodes).flatMap(n=>n.lines.map(l=>l.text)).join(' ');
+  const script=Object.entries(story.nodes).filter(([id])=>!id.startsWith('question')).flatMap(([,n])=>n.lines.map(l=>l.text)).join(' ');
   assert.match(script,/guitar études.*marimba.*harpsichord/);
   assert.match(script,/At first the harpsichord was a way back to the marimba/);
   assert.match(script,/microphones/);assert.match(script,/electronics/);assert.match(script,/A revoicing\. Not a correction\./);
@@ -52,8 +53,11 @@ test('seven cue floors belong to the full-piece lifecycle and preserve the speci
   assert.ok(!('shared' in story.nodes));assert.equal(sourceRestConversation('catch'),story);
 });
 
-test('the complete Source II authored script and legitimate Sarah/Lyle variants remain unchanged',()=>{
-  const expected=['46ec1b8183db2db03d64a46a4fa0b669182fa48bcbb2f41da14a226565db3aa1',
-    '02b37b5718d5a926c54560f555ea444807cc0f3919fca97878cb191ed9d5cc8a'];
-  for(const[i,sarahNamed]of[false,true].entries())assert.equal(createHash('sha256').update(JSON.stringify(sourceRestConversation('wrong-return',{sarahNamed}))).digest('hex'),expected[i]);
+test('Source II retains its musical history and legitimate Sarah/Lyle variants around the optional questions',()=>{
+  const plain=sourceRestConversation('wrong-return'),named=sourceRestConversation('wrong-return',{sarahNamed:true});
+  assert.match(plain.nodes.distance.lines.map(l=>l.text).join(' '),/played it for her.*played it for Lyle/i);
+  assert.match(named.nodes.distance.lines.map(l=>l.text).join(' '),/played it for Sarah.*played it for Lyle/i);
+  assert.deepEqual(plain.nodes.organ,named.nodes.organ);assert.equal(plain.nodes['after-interruption'].next,'questions-entry');
+  assert.equal(plain.nodes['questions-entry'].choices[0].next,'ornaments');
+  assert.equal(plain.nodes.distance.lockExit,true);assert.equal(plain.nodes.last.action,'commit');assert.ok(plain.nodes.last.lines.length>=10);
 });

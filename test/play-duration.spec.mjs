@@ -11,11 +11,16 @@ import * as TIPS from '../src/game/settings-tips.js';
 import * as DISPLAY from '../src/platform/display-policy.js';
 import * as DIFFICULTY from '../src/progression/difficulty-defs.js';
 import * as PSYCH from '../src/game/psychological-profile.js';
-import { achievementEntries } from '../src/progression/achievements.js';
+import { achievementEntries,achievementCompletion } from '../src/progression/achievements.js';
+import { completionCollections } from '../src/progression/completion.js';
+import * as ARCHIVE_MODEL from '../src/game/archive-model.js';
+import {fitText,fitLines} from '../src/render/fit-text.js';
 import { returnFileEntries } from '../src/game/second-shift.js';
 import { returnDefinition } from '../src/progression/report.js';
 import { endingHintForEnding } from '../src/game/post-run-copy.js';
 import {shouldOpenPauseForEvent} from '../src/game/pause.js';
+import * as ACHIEVEMENT_DECK from '../src/render/achievement-deck.js';
+import {uiCellMetrics,uiWithHardwareLayer,uiWithClip} from '../src/render/ui.js';
 
 const copy=x=>JSON.parse(JSON.stringify(x));
 
@@ -82,13 +87,15 @@ test('production save boundaries preserve measurement and do not backfill prior 
 
 function renderSurface(name,save,cols=100){
   const calls=[],hits=[];let popped=0;
-  const context={...D,...PALETTE,...BINDINGS,...TIPS,...DISPLAY,...DIFFICULTY,...PSYCH,
+  const context={...D,...PALETTE,...BINDINGS,...TIPS,...DISPLAY,...DIFFICULTY,...PSYCH,...ARCHIVE_MODEL,...ACHIEVEMENT_DECK,
+    uiCellMetrics,uiWithHardwareLayer,uiWithClip,fitText,fitLines,achievementCompletion,completionCollections,
     getSave:()=>save,saveCommit:patch=>Object.assign(save,patch),clearSave:()=>{},clearAllData:()=>{},
     scenes:{pop:()=>{popped++;}},AUDIO:{menuBack:()=>{}},achievementEntries,returnFileEntries,returnDefinition,endingHintForEnding,
     formatFps:()=> '60',performance:{now:()=>1000},
     uiSize:()=>({cols,rows:42}),uiFill:()=>{},uiLine:()=>{},uiScrim:()=>{},uiCenter:()=>{},
     uiText:(x,y,text)=>calls.push({x,y,text:String(text)}),uiWrap:(text,width)=>String(text).match(new RegExp(`.{1,${Math.max(1,Math.floor(width))}}`,'g'))||[],
-    drawVfdText:(x,y,text)=>calls.push({x,y,text:String(text)}),
+    drawVfdText:(x,y,text)=>calls.push({x,y,text:String(text)}),drawAchievementIcon:()=>{},
+    drawAchievementVfd:(text,x,y)=>calls.push({x,y,text:String(text)}),drawAchievementRule:()=>{},drawAchievementDeckControl:()=>{},drawAchievementCell:()=>{},
     drawVfdRow:(_,row)=>calls.push({x:row.x,y:row.y,text:row.label}),vfdRowStyle:()=>({}),
     createHitRegions:()=>({reset:()=>{},add:entry=>hits.push(entry),isHovered:()=>false}),
     withMachinePanel:(x,y,w,h,options,draw)=>draw({x:x+3,y:y+4,w:w-6,h:h-7}),
@@ -142,13 +149,21 @@ test('compact play-time readouts retain the full counter and the legacy qualifie
   }
 });
 
+test('current Achievements keeps measured time visible in the actual compact detail renderer',()=>{
+  const save={...SAVE.freshSave(),playSeconds:99999,playDuration:{schema:1,seconds:3661,priorUnmeasured:true}},h=renderSurface('archive',save,40);
+  h.scene.key({key:'Enter',code:'Enter'});h.calls.length=0;h.scene.render();
+  assert.equal(h.scene.view().detailOpen,true);
+  assert.ok(h.calls.some(call=>call.text==='SINCE UPDATE 01:01:01'));
+  assert.ok(!h.calls.some(call=>call.text.includes('27:46:39')));
+});
+
 test('production main clock excludes menus, pause, native focus loss and terminal runs while counting dialogue/cinematics',()=>{
   const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   const start=main.indexOf('function tickRunPlayDuration('),end=main.indexOf('\n}\n',start)+3;
   assert.ok(start>=0&&end>start);
   const save={...SAVE.freshSave(),run:{id:'duration-host',status:'active'}},menus=new Set();
   const host={getSave:()=>save,runPlayDurationClock:D.createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,storyMode:true,inRogue:true,paused:false,
-    scenes:{has:id=>menus.has(id)},focused:true,gameplayInputLifecycleActive:()=>host.focused};
+    scenes:{has:id=>menus.has(id)},focused:true,gameplayInputLifecycleActive:()=>host.focused,tickNightDeadline:()=>{}};
   const tick=vm.runInNewContext(`(${main.slice(start,end)})`,host);
   let now=0;tick(now);tick(now+=1000);assert.equal(save.playDuration.seconds,1);
   for(const menu of ['settings','archive','pause','title','opening-credits']){

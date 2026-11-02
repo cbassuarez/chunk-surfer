@@ -28,7 +28,8 @@ test('B3 live room and its control booth communicate only via the B2 service doo
   FP.setDoorOpen('b3-b2-service',true);
   assert.equal(reachable([56,24],[44,20]),true,'B2 service leaf opens into the booth');
   assert.equal(reachable([30,41],[44,20]),true,'booth is reachable through B2 from the corridor');
-  assert.equal(FP.isSolid(36,30),true,'west partition is solid outside the window');
+  assert.equal(FP.isSolid(36,27),true,'the pier between the two observation panes remains solid');
+  assert.equal(FP.isSolid(36,35),true,'west partition is solid beyond the south observation pane');
   assert.equal(FP.isSolid(42,36),true,'south partition has no B3 door');
 });
 

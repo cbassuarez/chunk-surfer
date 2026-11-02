@@ -5,6 +5,7 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { normalizeChunkSurfState, reduceChunkSurf, SOURCE_HUSH_VICTORIES_REQUIRED } from '../src/game/chunk-surf-state.js';
 import { sourceCombatBattle } from '../src/data/combat-definitions.js';
 import { createCombatState, resolveCombatResult, combatResult } from '../src/game/combat-state.js';
+import { freshSourceContinuation } from '../src/game/source-continuation.js';
 
 function meeting({ state = null, onComplete = () => {} } = {}) {
   const built = buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT, { seed: 4417, hasRig: true });
@@ -16,8 +17,10 @@ function meeting({ state = null, onComplete = () => {} } = {}) {
   return runtime;
 }
 
-function commit(runtime) {
-  const contact = runtime.beginHushContact();
+function commit(runtime, chapter = 'I') {
+  if (chapter !== 'I') runtime.setContinuationCheckpoint({ ...freshSourceContinuation({ runId: 'three-contact-test' }),
+    status: 'active', phase: chapter === 'III' ? 'catch' : 'wrong-return' });
+  const contact = runtime.beginHushContact(null, { chapter, locallyAvailable: chapter !== 'I', runId: 'three-contact-test' });
   assert.ok(contact, 'each fight must begin with another available, local conversation');
   assert.equal(runtime.resolveHushContactChoice('contact.confirm').handled, false, 'old consent cannot start this fight');
   assert.equal(runtime.resolveHushContactChoice('contact.warning').combat, false);
@@ -40,13 +43,15 @@ function fixtureWin(request) {
     channels: metrics.source.channels, turns: metrics.turns, won: metrics.won };
 }
 
-test('three separately warned contacts and complete battle results are required; one three-movement win cannot finish Source', () => {
+test('three separately warned chapter contacts and complete battle results are required; one three-movement win cannot finish Source', () => {
   const completions = [];
   let runtime = meeting({ onComplete: completion => completions.push(completion) });
   const ids = [];
   assert.equal(SOURCE_HUSH_VICTORIES_REQUIRED, 3);
   for (let cycle = 1; cycle <= 3; cycle++) {
-    const { request, contact } = commit(runtime);
+    const chapter = ['I', 'II', 'III'][cycle - 1];
+    const { request, contact } = commit(runtime, chapter);
+    assert.equal(request.chapter, chapter);
     assert.equal(contact.contactCycle, cycle);
     assert.equal(request.contactCycle, cycle);
     assert.equal(request.victories, cycle - 1);
@@ -70,6 +75,8 @@ test('three separately warned contacts and complete battle results are required;
       assert.equal(runtime.state().sourceContacts.combatCommitted, false);
       assert.equal(runtime.finalEncounterRequest(), null, 'no automatic next battle');
       assert.equal(runtime.hushMode().contactAvailable, true);
+      assert.equal(runtime.sourceContactStatus(chapter).battleAvailable, false, 'one chapter cannot award another fight');
+      assert.equal(runtime.sourceContactStatus(chapter).repeatAvailable, true);
       const saved = JSON.parse(JSON.stringify(runtime.state()));
       runtime = meeting({ state: saved, onComplete: completion => completions.push(completion) });
       assert.equal(runtime.state().finalEncounter.victories, cycle, 'reload must not replay or erase a victory');
@@ -123,7 +130,7 @@ test('a loss after a partial victory remains a loss and never counts as the seco
   const runtime = meeting({ onComplete: completion => completions.push(completion) });
   const first = commit(runtime).request;
   runtime.resolveFinalEncounter(fixtureWin(first));
-  const second = commit(runtime).request;
+  const second = commit(runtime, 'II').request;
   const lost = runtime.failFinalEncounter({ battleAttemptId: second.battleAttemptId });
   assert.equal(lost.handled, true);
   assert.equal(runtime.state().finalEncounter.victories, 1);
@@ -141,7 +148,7 @@ test('an active fight reload retains its identity while legacy completed saves s
   assert.equal(resumed.finalEncounterRequest().contactCycle, 1);
   assert.equal(resumed.beginHushContact(), null, 'reload resumes this consent, not a second conversation');
   const oldActive = JSON.parse(JSON.stringify(runtime.state()));
-  for (const field of ['victories', 'attempt', 'activeBattleId', 'lastBattleId']) delete oldActive.finalEncounter[field];
+  for (const field of ['victories', 'chapterWins', 'activeChapter', 'attempt', 'activeBattleId', 'lastBattleId']) delete oldActive.finalEncounter[field];
   const migrated = meeting({ state: oldActive });
   assert.equal(migrated.finalEncounterRequest().battleAttemptId, first.battleAttemptId);
   assert.equal(migrated.state().finalEncounter.victories, 0, 'old conversations do not invent wins');

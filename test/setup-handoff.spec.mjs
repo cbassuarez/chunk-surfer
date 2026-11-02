@@ -8,7 +8,8 @@ import {
   setupHandoffObjective, setupHandoffStage, setupSkillsReady, setupHandoffBlocksMovement,
 } from '../src/game/setup-handoff.js';
 import { makeSetupHandoffScene, makeSetupLevelHoldScene } from '../src/game/setup-handoff-scene.js';
-import { machinePanelBody } from '../src/render/presentation.js';
+import { machinePanelBody, machinePanelBezelRail } from '../src/render/presentation.js';
+import { nightDeadlineAllowsTransport } from '../src/game/night-deadline.js';
 import { uiSize } from '../src/render/ui.js';
 
 const calibrated = () => ({ 'setup.levels': true, 'bag.taken': true });
@@ -328,8 +329,9 @@ test('the rendered hold button accepts a left press but not pointer movement or 
   // production uiSize + machine-body calculation rather than a guessed target.
   scene.render();
   const { cols, rows } = uiSize(), w = Math.min(80, cols - 4), h = Math.min(13, rows - 2);
-  const body = machinePanelBody((cols - w) / 2, Math.max(1, rows - h - 2), w, h);
-  const point = { cellX: body.x + Math.min(30, body.w) / 2, cellY: body.y + 4.5 + 1.25 };
+  const x=(cols-w)/2,y=Math.max(1,rows-h-2),rail=machinePanelBezelRail(x,y,w,h,{controlHeight:2.5});
+  const body = machinePanelBody(x,y,w,h,{apertureBounds:rail.apertureBounds,bodyWithinAperture:true});
+  const point = { cellX: body.x + Math.min(30, body.w) / 2, cellY: rail.controlY + 1.25 };
   scene.pointer({ type: 'pointermove', ...point });
   scene.pointer({ type: 'pointerdown', button: 2, ...point });
   scene.pointer({ type: 'pointerdown', button: 0, cellX: -100, cellY: -100 });
@@ -485,6 +487,7 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
 test('rolling a calibration never starts a dream, summons Presence or publishes a room start', () => {
   let dreams=0;
   const context={
+    nightDeadlineAllowsTransport,getSave:()=>({}),firstStrikeAudio:null,
     cancelApparitionApplause(){},rollMetronomeRestart(){},ensureTapeAudio(){},PB:{isPlaying:()=>false,cueTapeEnd:()=>false},PLANT:{plantRecordingBlocked:()=>false},REC:{isSlating:()=>false,recState:()=>({takes:[]}),startRecording:()=>true},
     takeRoom:'loading_dock',LEVEL_CHECK_ROOM:'loading_dock',armedTakeContamination:null,px:0,py:0,
     PROPS:{savePropState:()=>({})},saveCommit(){},ensureCtx(){},params:()=>new URLSearchParams('nomic=1'),

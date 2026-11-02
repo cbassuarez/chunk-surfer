@@ -130,7 +130,8 @@ test('the selected real goods closer advances both leaves while every other door
 });
 
 test('an empty or unknown selection is inert and default door ticking retains its ordinary behavior',()=>{
- FP.resetDoors();FP.runDoorCloserCycle(grey);FP.setDoorOpen('pool-lobby',false);FP.interactDoor(165,52,[0,1],new Set());const before=liveDoors();
+ FP.resetDoors();FP.runDoorCloserCycle(grey);FP.setDoorOpen('pool-lobby',false);
+ const pool=door('pool-lobby');FP.interactDoor(pool.cx,Math.min(...pool.cells.map(c=>c.y))-2,[0,1],new Set());const before=liveDoors();
  assert.equal(FP.runDoorCloserCycle('absent-door'),false);const nonCloser=FP.doorState().find(p=>p.closer==='none');assert.ok(nonCloser);assert.equal(FP.runDoorCloserCycle(nonCloser.id),false);assert.deepEqual(liveDoors(),before);
  assert.deepEqual([...FP.tickDoors(1,{onlyIds:[]})],[]);assert.deepEqual(liveDoors(),before);assert.deepEqual([...FP.tickDoors(1,{onlyIds:['absent-door']})],[]);assert.deepEqual(liveDoors(),before);
  FP.tickDoors(.2,{playerX:118.5,playerY:20.5});assert.ok(door(grey).openFraction<before[grey].runtime.openFraction);assert.ok(door('pool-lobby').openFraction>before['pool-lobby'].runtime.openFraction,'omitting onlyIds still advances ordinary doors');

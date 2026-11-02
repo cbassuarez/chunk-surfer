@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "asset": "assets/b3-studio-props.glb",
+  "sha256": "8b322a9f05d673166a244e6796fe0ed6e24802f0793e6abd10e800cb90e27ff4",
+  "sources": [
+    {
+      "id": "console-timber",
+      "file": "assets/third-party/b3-studio/console-timber.glb",
+      "creator": "3D Assets / 3DAssets.dev",
+      "licence": "CC0-1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://3dassets.dev/assets/music-recording-studio-and-instruments-mixing-desk-e0b0e6e8",
+      "downloadUrl": "https://cdn.3dassets.dev/assets/33804/v1/model.glb",
+      "sha256": "007704fc03fc9e13c01d259f6961651faa520af05108301b42e8390379b2d58d",
+      "provenance": "Creator reports AI-assisted procedural modeling; source downloaded from its public permanent GLB URL.",
+      "sourcePoster": "assets/third-party/b3-studio/console-timber-source-poster.webp",
+      "sourcePosterSha256": "435bde8a2abb3d203b348014a6400d3aaacfedeb3001ca1a70da3068a48f4d52",
+      "sourcePosterUrl": "https://cdn.3dassets.dev/assets/33804/v1/poster.webp"
+    },
+    {
+      "id": "engineer-chair",
+      "file": "assets/third-party/b3-studio/engineer-chair.glb",
+      "creator": "3D Assets / 3DAssets.dev",
+      "licence": "CC0-1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://3dassets.dev/assets/music-recording-studio-and-instruments-desk-chair-8eb962c8",
+      "downloadUrl": "https://cdn.3dassets.dev/assets/33809/v1/model.glb",
+      "sha256": "7c86f1430a3ec86201caa5a542ea43d9a66e2b3c72d066a77309987fc2c43bde",
+      "provenance": "Creator reports AI-assisted procedural modeling; source downloaded from its public permanent GLB URL.",
+      "sourcePoster": "assets/third-party/b3-studio/engineer-chair-source-poster.webp",
+      "sourcePosterSha256": "a2ae2341869f0df4251c00e6ecbf920a3d54a18a0ef53891ea092c79cb77c25e",
+      "sourcePosterUrl": "https://cdn.3dassets.dev/assets/33809/v1/poster.webp"
+    },
+    {
+      "id": "outboard-frame",
+      "file": "assets/third-party/b3-studio/outboard-frame.glb",
+      "creator": "3D Assets / 3DAssets.dev",
+      "licence": "CC0-1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://3dassets.dev/assets/music-recording-studio-and-instruments-outboard-rack-o-57403c57",
+      "downloadUrl": "https://cdn.3dassets.dev/assets/33807/v1/model.glb",
+      "sha256": "c86b22a59dc4b96c7ff600ab4820e4b5df4521c9bf2db85a037ad9388b2d9c78",
+      "provenance": "Creator reports AI-assisted procedural modeling; source downloaded from its public permanent GLB URL.",
+      "sourcePoster": "assets/third-party/b3-studio/outboard-frame-source-poster.webp",
+      "sourcePosterSha256": "8d8baba0398af730f7bd4374fe9b5a8b82a5222089dc17a8d865b5dc58d6bf92",
+      "sourcePosterUrl": "https://cdn.3dassets.dev/assets/33807/v1/poster.webp"
+    },
+    {
+      "id": "patch-panel",
+      "file": "assets/third-party/b3-studio/patch-panel.glb",
+      "creator": "3D Assets / 3DAssets.dev",
+      "licence": "CC0-1.0",
+      "licenceUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "sourceUrl": "https://3dassets.dev/assets/music-recording-studio-and-instruments-patch-bay-panel-b7f9dcb6",
+      "downloadUrl": "https://cdn.3dassets.dev/assets/33810/v1/model.glb",
+      "sha256": "4e2dff369891bec42c17ea8b850e161da7183cc49090ada865f6071f997f7614",
+      "provenance": "Creator reports AI-assisted procedural modeling; source downloaded from its public permanent GLB URL.",
+      "sourcePoster": "assets/third-party/b3-studio/patch-panel-source-poster.webp",
+      "sourcePosterSha256": "06627d0a57b3b2405ca628e8dbf1cd69436b9afffab5f9766e2ee8fc51da95a8",
+      "sourcePosterUrl": "https://cdn.3dassets.dev/assets/33810/v1/poster.webp"
+    }
+  ],
+  "modifications": "Only selected CC0 structural groups retained. B3 channel strips, moving caps, master section, mechanical meter bridge, empty jack mouths, outboard equipment, chair cleanup and double-rebate window surround are project-authored adaptations. No source textures or emissive displays retained.",
+  "provenance": "Public creator labels sources CC0 and AI-assisted; native material/scene acceptance remains separate."
+}

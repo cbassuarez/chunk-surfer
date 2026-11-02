@@ -236,7 +236,13 @@ console.log('academic gallery contracts passed');
   assert.ok(reach([20, 3], [8, 4]), 'the vestibule reaches the chamber room');
   assert.ok(reach([8, 4], [9, 15]), 'the chamber room is the head of the corridor');
   assert.ok(reach([9, 15], [12, 28]), 'the corridor reaches the south corridor');
-  assert.ok(reach([12, 28], [40, 15]), 'and the south corridor comes back into the gallery');
+  // The courtyard removed x27..43 in this band. The surviving east gallery
+  // is the return route; asking to stand at x40 instead tested the open void.
+  assert.ok(reach([12, 28], [44, 15]), 'the south corridor rejoins the supported east gallery');
+  assert.ok(reach([44, 15], [25, 5]), 'the east gallery completes the circuit back to its north approach');
+  const openCourt = at(40, 15);
+  assert.notEqual(FP.floorAt(openCourt.x, openCourt.y), 10, 'the courtyard stays open below gallery height');
+  assert.ok(!reach([12, 28], [40, 15]), 'the return route never requires walking across the courtyard void');
   // The breach still lets you into the south-east room, which is why that room
   // has no leaf on its front any more.
   assert.ok(reach([12, 28], [16, 25]), 'the breach is still the way into the south-east room');

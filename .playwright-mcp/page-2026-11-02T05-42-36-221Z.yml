@@ -1,0 +1,897 @@
+- generic [ref=f18e1]:
+  - generic [ref=f18e2]:
+    - link "Skip to main content" [ref=f18e3] [cursor=pointer]:
+      - /url: "#edit_game_7148095"
+    - generic [ref=f18e4]:
+      - heading [level=1] [ref=f18e5]:
+        - link "itch.io itch.io logo" [ref=f18e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f18e7]: itch.io
+          - img "itch.io logo" [ref=f18e8]
+      - generic [ref=f18e9]:
+        - link "Browse" [ref=f18e10] [cursor=pointer]:
+          - /url: /games
+        - link "Halloween Sale 2026" [ref=f18e11] [cursor=pointer]:
+          - /url: /sales
+        - link "Developer Logs" [ref=f18e13] [cursor=pointer]:
+          - /url: /devlogs
+        - link "Jams" [ref=f18e14] [cursor=pointer]:
+          - /url: /jams
+        - link "Dashboard" [ref=f18e15] [cursor=pointer]:
+          - /url: /dashboard
+        - link "Feed" [ref=f18e17] [cursor=pointer]:
+          - /url: /my-feed
+        - link "Community" [ref=f18e18] [cursor=pointer]:
+          - /url: /community
+      - generic [ref=f18e19]:
+        - textbox "Search for games, jams, tags or creators" [ref=f18e21]
+        - button "Search" [ref=f18e22] [cursor=pointer]
+      - generic [ref=f18e26]:
+        - link "8" [ref=f18e27] [cursor=pointer]:
+          - /url: /notifications
+        - link "seb" [ref=f18e28] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - button "Account Menu" [ref=f18e32] [cursor=pointer]
+  - generic [ref=f18e37]:
+    - generic [ref=f18e39]:
+      - link "Dashboard" [ref=f18e40] [cursor=pointer]:
+        - /url: /dashboard
+      - text: »
+      - link "CHUNK SURFER" [ref=f18e41] [cursor=pointer]:
+        - /url: https://cbassuarez.itch.io/chunk-surfer
+    - generic [ref=f18e43]:
+      - generic [ref=f18e44]:
+        - link "Edit game" [ref=f18e45]:
+          - /url: /game/edit/4768870
+        - link "Devlog" [ref=f18e46] [cursor=pointer]:
+          - /url: /dashboard/game/4768870/devlog
+        - link "Metadata" [ref=f18e50] [cursor=pointer]:
+          - /url: /game/classification/4768870
+        - link "Analytics" [ref=f18e51] [cursor=pointer]:
+          - /url: /game/summary/4768870
+        - link "Distribute" [ref=f18e52] [cursor=pointer]:
+          - /url: /game/widget/4768870
+        - link "Interact" [ref=f18e53] [cursor=pointer]:
+          - /url: /game/email/4768870
+        - button "More" [ref=f18e55] [cursor=pointer]
+      - generic [ref=f18e59]:
+        - link "View page" [ref=f18e60] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io/chunk-surfer
+        - button "Save" [ref=f18e61] [cursor=pointer]
+    - generic [ref=f18e63]:
+      - generic [ref=f18e64]:
+        - generic [ref=f18e65]:
+          - generic [ref=f18e67]:
+            - generic [ref=f18e68]: Title
+            - textbox "Title" [ref=f18e69]: CHUNK SURFER
+          - generic [ref=f18e71]:
+            - generic [ref=f18e72]: Project URL
+            - generic [ref=f18e73]:
+              - generic [ref=f18e74]: https://cbassuarez.itch.io/
+              - textbox "Project URL https://cbassuarez.itch.io/" [ref=f18e75]: chunk-surfer
+          - generic [ref=f18e77]:
+            - generic [ref=f18e78]: Short description or tagline
+            - paragraph [ref=f18e79]: Shown when we link to your project. Avoid duplicating your project's title
+            - textbox "Short description or tagline Shown when we link to your project. Avoid duplicating your project's title" [ref=f18e80]:
+              - /placeholder: Optional
+              - text: a haunting at Ellory Conservatory
+          - generic [ref=f18e81]:
+            - generic [ref=f18e82]: Classification
+            - paragraph [ref=f18e83]: What are you uploading?
+            - generic [ref=f18e85] [cursor=pointer]:
+              - generic [ref=f18e86]: Games — A piece of software you can play
+              - textbox [ref=f18e87]
+          - generic [ref=f18e88]:
+            - generic [ref=f18e89]: Kind of project
+            - generic [ref=f18e92] [cursor=pointer]:
+              - generic [ref=f18e93]: Downloadable — You only have files to be downloaded
+              - textbox [ref=f18e94]
+            - generic [ref=f18e95]: Tip You can add additional downloadable files for any of the types above
+          - generic [ref=f18e96]:
+            - generic [ref=f18e97]: Release status
+            - generic [ref=f18e100] [cursor=pointer]:
+              - generic [ref=f18e101]: In development — Project is in active development (or in early access)
+              - textbox [ref=f18e102]
+          - generic [ref=f18e103]:
+            - heading "Pricing" [level=2] [ref=f18e104]
+            - generic [ref=f18e106]:
+              - generic [ref=f18e107]:
+                - checkbox " $0 or donate" [ref=f18e108] [cursor=pointer]:
+                  - generic [ref=f18e109]: 
+                  - generic [ref=f18e110]: $0 or donate
+                - checkbox " Paid" [ref=f18e111] [cursor=pointer]:
+                  - generic [ref=f18e112]: 
+                  - generic [ref=f18e113]: Paid
+                - checkbox " No payments" [checked] [ref=f18e114] [cursor=pointer]:
+                  - generic [ref=f18e115]: 
+                  - generic [ref=f18e116]: No payments
+              - paragraph [ref=f18e118]: The project's files will be freely available and no donations can be made
+          - generic [ref=f18e119]:
+            - heading "Uploads" [level=2] [ref=f18e120]
+            - text: →
+            - generic [ref=f18e122]:
+              - generic [ref=f18e123]:
+                - generic [ref=f18e124]:
+                  - generic [ref=f18e125]:
+                    - button "More…" [ref=f18e126] [cursor=pointer]
+                    - button "Delete file" [ref=f18e127] [cursor=pointer]
+                  - generic [ref=f18e128]:
+                    - generic [ref=f18e129]:
+                      - strong [ref=f18e130]: CHUNK SURFER for Windows
+                      - generic [ref=f18e131]: chunk-surfer-win-beta.zip
+                    - button " win-beta" [ref=f18e133] [cursor=pointer]:
+                      - generic [ref=f18e134]: 
+                      - text: win-beta
+                    - generic [ref=f18e135]:
+                      - text: 488mb
+                      - generic [ref=f18e136]:
+                        - text: ·
+                        - link "Change display name" [ref=f18e137] [cursor=pointer]:
+                          - /url: "#"
+                      - generic [ref=f18e138]:
+                        - generic [ref=f18e139]: Move
+                        - button "Move up" [disabled] [ref=f18e140]
+                        - button "Move down" [ref=f18e143] [cursor=pointer]
+                    - generic [ref=f18e146]:
+                      - generic [ref=f18e147]: 5 Downloads,
+                      - text: Today at 1:59 AM
+                    - generic [ref=f18e148]:
+                      - generic [ref=f18e149]:
+                        - generic [ref=f18e150]: Executable
+                        - combobox [ref=f18e154]:
+                          - option "Executable" [selected]
+                          - option "Other"
+                          - option "Soundtrack"
+                          - option "Source code"
+                          - option "Book or Document"
+                          - option "Video"
+                          - option "Mod"
+                          - option "Graphical assets"
+                          - option "Audio assets"
+                          - option "Documentation or Instructions"
+                      - generic [ref=f18e155]:
+                        - generic [ref=f18e156]: for
+                        - generic [ref=f18e157] [cursor=pointer]:
+                          - checkbox "" [checked] [ref=f18e158]
+                          - generic "Download for Windows" [ref=f18e159]: 
+                        - generic [ref=f18e160] [cursor=pointer]:
+                          - checkbox "" [ref=f18e161]
+                          - generic "Download for Linux" [ref=f18e162]: 
+                        - generic [ref=f18e163] [cursor=pointer]:
+                          - checkbox "" [ref=f18e164]
+                          - generic "Download for Mac OS X" [ref=f18e165]: 
+                        - generic [ref=f18e166] [cursor=pointer]:
+                          - checkbox "" [ref=f18e167]
+                          - generic "Download for Android" [ref=f18e168]: 
+                    - generic [ref=f18e170]:
+                      - checkbox "Hide this file and prevent it from being downloaded" [ref=f18e171]
+                      - text: Hide this file and prevent it from being downloaded
+                - generic [ref=f18e172]:
+                  - generic [ref=f18e173]:
+                    - button "More…" [ref=f18e174] [cursor=pointer]
+                    - button "Delete file" [ref=f18e175] [cursor=pointer]
+                  - generic [ref=f18e176]:
+                    - generic [ref=f18e177]:
+                      - strong [ref=f18e178]: CHUNK SURFER for macOS (Silicon)
+                      - generic [ref=f18e179]: chunk-surfer-mac-arm64-beta.zip
+                    - button " mac-arm64-beta" [ref=f18e181] [cursor=pointer]:
+                      - generic [ref=f18e182]: 
+                      - text: mac-arm64-beta
+                    - generic [ref=f18e183]:
+                      - text: 495mb
+                      - generic [ref=f18e184]:
+                        - text: ·
+                        - link "Change display name" [ref=f18e185] [cursor=pointer]:
+                          - /url: "#"
+                      - generic [ref=f18e186]:
+                        - generic [ref=f18e187]: Move
+                        - button "Move up" [ref=f18e188] [cursor=pointer]
+                        - button "Move down" [ref=f18e191] [cursor=pointer]
+                    - generic [ref=f18e194]:
+                      - generic [ref=f18e195]: 6 Downloads,
+                      - text: Today at 1:59 AM
+                    - generic [ref=f18e196]:
+                      - generic [ref=f18e197]:
+                        - generic [ref=f18e198]: Executable
+                        - combobox [ref=f18e202]:
+                          - option "Executable" [selected]
+                          - option "Other"
+                          - option "Soundtrack"
+                          - option "Source code"
+                          - option "Book or Document"
+                          - option "Video"
+                          - option "Mod"
+                          - option "Graphical assets"
+                          - option "Audio assets"
+                          - option "Documentation or Instructions"
+                      - generic [ref=f18e203]:
+                        - generic [ref=f18e204]: for
+                        - generic [ref=f18e205] [cursor=pointer]:
+                          - checkbox "" [ref=f18e206]
+                          - generic "Download for Windows" [ref=f18e207]: 
+                        - generic [ref=f18e208] [cursor=pointer]:
+                          - checkbox "" [ref=f18e209]
+                          - generic "Download for Linux" [ref=f18e210]: 
+                        - generic [ref=f18e211] [cursor=pointer]:
+                          - checkbox "" [checked] [ref=f18e212]
+                          - generic "Download for Mac OS X" [ref=f18e213]: 
+                        - generic [ref=f18e214] [cursor=pointer]:
+                          - checkbox "" [ref=f18e215]
+                          - generic "Download for Android" [ref=f18e216]: 
+                    - generic [ref=f18e218]:
+                      - checkbox "Hide this file and prevent it from being downloaded" [ref=f18e219]
+                      - text: Hide this file and prevent it from being downloaded
+                - generic [ref=f18e220]:
+                  - generic [ref=f18e221]:
+                    - button "More…" [ref=f18e222] [cursor=pointer]
+                    - button "Delete file" [ref=f18e223] [cursor=pointer]
+                  - generic [ref=f18e224]:
+                    - generic [ref=f18e225]:
+                      - strong [ref=f18e226]: CHUNK SURFER for Linux (Debian)
+                      - generic [ref=f18e227]: chunk-surfer-linux-deb-beta.zip
+                    - button " linux-deb-beta" [ref=f18e229] [cursor=pointer]:
+                      - generic [ref=f18e230]: 
+                      - text: linux-deb-beta
+                    - generic [ref=f18e231]:
+                      - text: 489mb
+                      - generic [ref=f18e232]:
+                        - text: ·
+                        - link "Change display name" [ref=f18e233] [cursor=pointer]:
+                          - /url: "#"
+                      - generic [ref=f18e234]:
+                        - generic [ref=f18e235]: Move
+                        - button "Move up" [ref=f18e236] [cursor=pointer]
+                        - button "Move down" [ref=f18e239] [cursor=pointer]
+                    - generic [ref=f18e242]:
+                      - generic [ref=f18e243]: 0 Downloads,
+                      - text: Today at 1:00 AM
+                    - generic [ref=f18e244]:
+                      - generic [ref=f18e245]:
+                        - generic [ref=f18e246]: Executable
+                        - combobox [ref=f18e250]:
+                          - option "Executable" [selected]
+                          - option "Other"
+                          - option "Soundtrack"
+                          - option "Source code"
+                          - option "Book or Document"
+                          - option "Video"
+                          - option "Mod"
+                          - option "Graphical assets"
+                          - option "Audio assets"
+                          - option "Documentation or Instructions"
+                      - generic [ref=f18e251]:
+                        - generic [ref=f18e252]: for
+                        - generic [ref=f18e253] [cursor=pointer]:
+                          - checkbox "" [ref=f18e254]
+                          - generic "Download for Windows" [ref=f18e255]: 
+                        - generic [ref=f18e256] [cursor=pointer]:
+                          - checkbox "" [checked] [ref=f18e257]
+                          - generic "Download for Linux" [ref=f18e258]: 
+                        - generic [ref=f18e259] [cursor=pointer]:
+                          - checkbox "" [ref=f18e260]
+                          - generic "Download for Mac OS X" [ref=f18e261]: 
+                        - generic [ref=f18e262] [cursor=pointer]:
+                          - checkbox "" [ref=f18e263]
+                          - generic "Download for Android" [ref=f18e264]: 
+                    - generic [ref=f18e266]:
+                      - checkbox "Hide this file and prevent it from being downloaded" [ref=f18e267]
+                      - text: Hide this file and prevent it from being downloaded
+                - generic [ref=f18e268]:
+                  - generic [ref=f18e269]:
+                    - button "More…" [ref=f18e270] [cursor=pointer]
+                    - button "Delete file" [ref=f18e271] [cursor=pointer]
+                  - generic [ref=f18e272]:
+                    - generic [ref=f18e273]:
+                      - strong [ref=f18e274]: CHUNK SURFER for Linux (AppImage)
+                      - generic [ref=f18e275]: chunk-surfer-linux-appimage-beta.zip
+                    - button " linux-appimage-beta" [ref=f18e277] [cursor=pointer]:
+                      - generic [ref=f18e278]: 
+                      - text: linux-appimage-beta
+                    - generic [ref=f18e279]:
+                      - text: 563mb
+                      - generic [ref=f18e280]:
+                        - text: ·
+                        - link "Change display name" [ref=f18e281] [cursor=pointer]:
+                          - /url: "#"
+                      - generic [ref=f18e282]:
+                        - generic [ref=f18e283]: Move
+                        - button "Move up" [ref=f18e284] [cursor=pointer]
+                        - button "Move down" [disabled] [ref=f18e287]
+                    - generic [ref=f18e290]:
+                      - generic [ref=f18e291]: 0 Downloads,
+                      - text: Today at 1:00 AM
+                    - generic [ref=f18e292]:
+                      - generic [ref=f18e293]:
+                        - generic [ref=f18e294]: Executable
+                        - combobox [ref=f18e298]:
+                          - option "Executable" [selected]
+                          - option "Other"
+                          - option "Soundtrack"
+                          - option "Source code"
+                          - option "Book or Document"
+                          - option "Video"
+                          - option "Mod"
+                          - option "Graphical assets"
+                          - option "Audio assets"
+                          - option "Documentation or Instructions"
+                      - generic [ref=f18e299]:
+                        - generic [ref=f18e300]: for
+                        - generic [ref=f18e301] [cursor=pointer]:
+                          - checkbox "" [ref=f18e302]
+                          - generic "Download for Windows" [ref=f18e303]: 
+                        - generic [ref=f18e304] [cursor=pointer]:
+                          - checkbox "" [checked] [ref=f18e305]
+                          - generic "Download for Linux" [ref=f18e306]: 
+                        - generic [ref=f18e307] [cursor=pointer]:
+                          - checkbox "" [ref=f18e308]
+                          - generic "Download for Mac OS X" [ref=f18e309]: 
+                        - generic [ref=f18e310] [cursor=pointer]:
+                          - checkbox "" [ref=f18e311]
+                          - generic "Download for Android" [ref=f18e312]: 
+                    - generic [ref=f18e314]:
+                      - checkbox "Hide this file and prevent it from being downloaded" [ref=f18e315]
+                      - text: Hide this file and prevent it from being downloaded
+              - generic [ref=f18e316]:
+                - button "Upload files" [ref=f18e317] [cursor=pointer]
+                - generic [ref=f18e318]: or
+                - link "Choose from Dropbox" [ref=f18e320] [cursor=pointer]:
+                  - /url: "#"
+                - generic [ref=f18e322]:
+                  - button "Add External file" [ref=f18e323] [cursor=pointer]
+                  - generic [ref=f18e324]: "?"
+            - paragraph [ref=f18e325]:
+              - text: "File size limit: 1 GB."
+              - link "Contact us" [ref=f18e326] [cursor=pointer]:
+                - /url: /support
+              - text: if you need more space
+          - heading "Details" [level=2] [ref=f18e327]
+          - generic [ref=f18e328]:
+            - generic [ref=f18e329]: Description — This will make up the content of your game page.
+            - application [ref=f18e330]:
+              - toolbar [ref=f18e332]:
+                - listitem [ref=f18e333]:
+                  - button "HTML" [ref=f18e334] [cursor=pointer]:
+                    - generic [ref=f18e335]: 
+                - listitem [ref=f18e336]:
+                  - button "Format" [ref=f18e337] [cursor=pointer]:
+                    - generic [ref=f18e338]: 
+                - listitem [ref=f18e339]:
+                  - button "Bold" [ref=f18e340] [cursor=pointer]:
+                    - generic [ref=f18e341]: 
+                - listitem [ref=f18e342]:
+                  - button "Italic" [ref=f18e343] [cursor=pointer]:
+                    - generic [ref=f18e344]: 
+                - listitem [ref=f18e345]:
+                  - button "Strikethrough" [ref=f18e346] [cursor=pointer]:
+                    - generic [ref=f18e347]: 
+                - listitem [ref=f18e348]:
+                  - button "Spoiler" [ref=f18e349] [cursor=pointer]
+                - listitem [ref=f18e352]:
+                  - button "Lists" [ref=f18e353] [cursor=pointer]:
+                    - generic [ref=f18e354]: 
+                - listitem [ref=f18e355]:
+                  - button "Table" [ref=f18e356] [cursor=pointer]:
+                    - generic [ref=f18e357]: 
+                - listitem [ref=f18e358]:
+                  - button "Link" [ref=f18e359] [cursor=pointer]:
+                    - generic [ref=f18e360]: 
+                - listitem [ref=f18e361]:
+                  - button "Align" [ref=f18e362] [cursor=pointer]:
+                    - generic [ref=f18e363]: 
+                - listitem [ref=f18e364]:
+                  - button "Video" [ref=f18e365] [cursor=pointer]:
+                    - generic [ref=f18e366]: 
+                - listitem [ref=f18e367]:
+                  - button "Collapsible section" [ref=f18e368] [cursor=pointer]:
+                    - generic [ref=f18e369]: 
+                - listitem [ref=f18e370]:
+                  - button "Add image" [ref=f18e371] [cursor=pointer]:
+                    - generic [ref=f18e372]: 
+              - textbox [ref=f18e866]: "<p class=\"custom-index\">ELLERY HOLDINGS ORDER 4417-C</p> <p class=\"custom-lede\"><strong>Five rooms. Five clean takes and you’re done&hellip; or so you think.</strong></p> <p>Record the sound of empty rooms in a condemned conservatory. Stay still. Stay silent. Finish before demolition begins.</p> <blockquote class=\"custom-workorder\"> <strong class=\"custom-label\">site</strong> <span class=\"custom-value\">Ellery Conservatory of Music. Condemned.</span><br> <strong class=\"custom-label\">deliver</strong> <span class=\"custom-value\">Five clean room-tone recordings.</span><br> <strong class=\"custom-label\">window</strong> <span class=\"custom-value\">One night. Demolition begins at 06:00.</span><br> <strong class=\"custom-label\">rules</strong> <span class=\"custom-value\">If you can hear yourself on the take, the take is not the room.</span></blockquote> <p class=\"custom-status\">ACCOUNT OPEN: CONTRACTOR PRESENT</p> <hr class=\"custom-break\"> <p class=\"custom-index\">01 / CASE &mdash; first person audio-reactive horror</p> <h2>The job is to record nothing.</h2> <p><em>Chunk Surfer</em> is a short first-person psychological horror game about sound recording. As a field recordist in the condemned Ellery Conservatory, your job is to capture five clean room sounds as you evade invisible entities, confront your murky past, and figure out what happened to the previous recordist who tried to do this gig first.</p> <p>Monitor each space, roll the recorder, then stay still and silent – or, rather, vulnerable – for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.</p> <p class=\"custom-index\">02 / MATERIAL &mdash; offline shader diffusion over traditional PBR maps</p> <h2>Stable Diffusion in game shader stack.</h2> <p><em>Chunk Surfer</em> is perhaps the first 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play: GPU-budgeted local Stable Diffusion designed as neural rendering shaders for video games.</p> <p><strong>Technical jargon:</strong> it does not redraw the camera image or replace the game’s regular 3D texture maps. Instead, it layers machine learning hallucinations over authored PBR materials; every 5–15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6–12 seconds. This is real-time AI texture crossfading rather than full-screen frame generation. On top of traditional PBR maps sits this hallucination engine, which itself sits under an 8-bit mesh.</p> <p>The result is a unique low-resolution look that is neither 8bit nor diffused nor traditional PBR texturing, but a mix of the three.</p> <p>Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player’s GPU. No image is uploaded to a cloud service.</p> <p class=\"custom-index\">03 / FIELD &mdash; listen. record. do not move.</p> <h2>Your movement betrays you.</h2> <p>Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again, and a loud mistake can give whatever else is in the building someone to follow.</p> <p>Your torch makes the conservatory visible but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.</p> <p class=\"custom-index\">04 / RECORD &mdash; redaction turn-based combat</p> <h2>Pick up the pieces.</h2> <p>Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce.</p> <blockquote class=\"custom-quote\"> a game of redaction. black out the words that change your reality to favorable odds.</blockquote> <p class=\"custom-index\">05 / SOURCE &mdash; source space</p> <h2>The game’s own files become the map.</h2> <p>The investigation eventually ruptures into literal source-code space, where the game’s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.</p> <p class=\"custom-index\">06 / INPUT &mdash; let your room into the game&mdash;or do not</p> <h2>Your microphone is optional. Its consequences are not cosmetic.</h2> <p>When enabled, <em>Chunk Surfer</em> measures loudness locally while a take is rolling. Noise in your real room can contaminate a take or provoke an in-game response. It never records, stores, transmits, uploads, or plays back microphone audio.</p> <p>You can deny or revoke permission and complete the game without microphone input.</p> <p class=\"custom-index\">07 / RELEASE &mdash; public beta</p> <h2>Now out for public beta testing.</h2> <p>This game is in its nascent stages. Expect some bugs. Dialog is very likely to change, story is not. Expected bugs list and feedback links incoming soon.</p> <ul class=\"custom-spec\"> <li><strong class=\"custom-label\">mac</strong> <span class=\"custom-value\">apple silicon</span></li> <li><strong class=\"custom-label\">windows</strong> <span class=\"custom-value\">x64 + nvidia cuda</span></li> <li><strong class=\"custom-label\">linux</strong> <span class=\"custom-value\">appimage / deb &mdash; x64 + nvidia cuda</span></li> <li><strong class=\"custom-label\">beta</strong> <span class=\"custom-value\">unsigned</span></li> </ul> <p class=\"custom-notice\">Full requirements, first-launch approval steps and download sizes are in the install instructions below the downloads.</p> <h2 class=\"custom-warning-heading\">content warning (general horror)</h2> <p class=\"custom-warning\">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects.</p> <hr class=\"custom-break\"> <p class=\"custom-index\">order 4417-C remains open</p> <h2 class=\"custom-closer\">Five rooms. Five clean takes.</h2> <p class=\"custom-signoff\"><strong>Do you take the gig?</strong></p>"
+          - generic [ref=f18e435]:
+            - generic [ref=f18e436]:
+              - generic [ref=f18e437]: Genre
+              - paragraph [ref=f18e438]: Select the category that best describes your game. You can pick additional genres with tags below
+              - combobox "Genre" [ref=f18e440] [cursor=pointer]: Adventure
+            - generic [ref=f18e441]:
+              - generic [ref=f18e442]:
+                - text: Tags
+                - generic [ref=f18e443]:
+                  - text: —
+                  - link "Tips for choosing tags" [ref=f18e444] [cursor=pointer]:
+                    - /url: /docs/creators/quality-guidelines#tags
+              - paragraph [ref=f18e445]: Any other keywords someone might search to find your game. Max of 10.
+              - paragraph [ref=f18e446]: Avoid using the genre or platforms provided above.
+              - generic [ref=f18e449]:
+                - generic [ref=f18e450] [cursor=pointer]:
+                  - text: 3d
+                  - link "×" [ref=f18e451]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e452] [cursor=pointer]:
+                  - text: atmospheric
+                  - link "×" [ref=f18e453]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e454] [cursor=pointer]:
+                  - text: audio
+                  - link "×" [ref=f18e455]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e456] [cursor=pointer]:
+                  - text: experimental
+                  - link "×" [ref=f18e457]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e458] [cursor=pointer]:
+                  - text: exploration
+                  - link "×" [ref=f18e459]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e460] [cursor=pointer]:
+                  - text: first-person
+                  - link "×" [ref=f18e461]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e462] [cursor=pointer]:
+                  - text: horror
+                  - link "×" [ref=f18e463]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e464] [cursor=pointer]:
+                  - text: itchfunding
+                  - link "×" [ref=f18e465]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e466] [cursor=pointer]:
+                  - text: psychological-horror
+                  - link "×" [ref=f18e467]:
+                    - /url: javascript:void(0)
+                - generic [ref=f18e468] [cursor=pointer]:
+                  - text: singleplayer
+                  - link "×" [ref=f18e469]:
+                    - /url: javascript:void(0)
+                - textbox [ref=f18e470]
+            - generic [ref=f18e471]:
+              - generic [ref=f18e472]:
+                - text: AI generation disclosure
+                - generic [ref=f18e473]: New
+                - generic [ref=f18e474]:
+                  - text: —
+                  - link "Learn more →" [ref=f18e475] [cursor=pointer]:
+                    - /url: /docs/creators/quality-guidelines#ai-disclosure
+                - paragraph [ref=f18e476]: Please disclose if this project contains content produced by generative AI tools such as LLMs, ChatGPT, Midjourney, Stable Diffusion, etc., even if you hand-edited it.
+              - list [ref=f18e477]:
+                - listitem [ref=f18e478]:
+                  - generic [ref=f18e479]:
+                    - radio "Yes — This project contains the output of Generative AI" [checked] [ref=f18e480]
+                    - text: "Yes"
+                    - generic [ref=f18e481]: — This project contains the output of Generative AI
+                - listitem [ref=f18e482]:
+                  - generic [ref=f18e483]:
+                    - radio "No — This project does not contain the output of Generative AI" [ref=f18e484]
+                    - text: "No"
+                    - generic [ref=f18e485]: — This project does not contain the output of Generative AI
+              - generic [ref=f18e486]:
+                - generic [ref=f18e487]: What kind of AI generated content is used?
+                - generic [ref=f18e488]:
+                  - paragraph [ref=f18e489]: Classification of AI-Generated content is mandatory. Your classification will be used to add additional filtering tags to your project.
+                  - list [ref=f18e490]:
+                    - listitem [ref=f18e491] [cursor=pointer]:
+                      - generic [ref=f18e492]:
+                        - checkbox "Graphics" [ref=f18e493]
+                        - generic [ref=f18e494]: Graphics
+                    - listitem [ref=f18e495] [cursor=pointer]:
+                      - generic [ref=f18e496]:
+                        - checkbox "Sounds" [ref=f18e497]
+                        - generic [ref=f18e498]: Sounds
+                    - listitem [ref=f18e499] [cursor=pointer]:
+                      - generic [ref=f18e500]:
+                        - checkbox "Text & Dialog" [ref=f18e501]
+                        - generic [ref=f18e502]: Text & Dialog
+                    - listitem [ref=f18e503] [cursor=pointer]:
+                      - generic [ref=f18e504]:
+                        - checkbox "Code" [checked] [ref=f18e505]
+                        - generic [ref=f18e506]: Code
+          - generic [ref=f18e509]:
+            - generic [ref=f18e510]:
+              - text: App store links
+              - paragraph [ref=f18e511]: If your project is available on any other stores we'll link to it.
+            - generic [ref=f18e513]:
+              - button "Steam" [ref=f18e514] [cursor=pointer]:
+                - generic [ref=f18e515]: 
+                - text: Steam
+              - button "Apple App Store" [ref=f18e516] [cursor=pointer]:
+                - generic [ref=f18e517]: 
+                - text: Apple App Store
+              - button "Google Play" [ref=f18e518] [cursor=pointer]:
+                - generic [ref=f18e519]: 
+                - text: Google Play
+              - button "Amazon App Store" [ref=f18e520] [cursor=pointer]:
+                - generic [ref=f18e521]: 
+                - text: Amazon App Store
+              - button "Windows Store" [ref=f18e522] [cursor=pointer]:
+                - generic [ref=f18e523]: 
+                - text: Windows Store
+          - generic [ref=f18e525]:
+            - generic [ref=f18e526]: Custom noun
+            - paragraph [ref=f18e527]: You can change how itch.io refers to your project by providing a custom noun.
+            - paragraph [ref=f18e528]: "Leave blank to default to: 'game'."
+            - 'textbox "Custom noun You can change how itch.io refers to your project by providing a custom noun. Leave blank to default to: ''game''." [ref=f18e529]':
+              - /placeholder: Optional
+          - generic [ref=f18e530]:
+            - generic [ref=f18e531]:
+              - text: Download & install instructions
+              - paragraph [ref=f18e532]: This text will be shown to someone when they are downloading your game through their browser. Include any information about how to install and run what they are downloading.
+              - paragraph [ref=f18e533]: If your game requires any libraries or programs to be installed first you should also include that information
+            - application [ref=f18e534]:
+              - toolbar [ref=f18e536]:
+                - listitem [ref=f18e537]:
+                  - button "HTML" [ref=f18e538] [cursor=pointer]:
+                    - generic [ref=f18e539]: 
+                - listitem [ref=f18e540]:
+                  - button "Format" [ref=f18e541] [cursor=pointer]:
+                    - generic [ref=f18e542]: 
+                - listitem [ref=f18e543]:
+                  - button "Bold" [ref=f18e544] [cursor=pointer]:
+                    - generic [ref=f18e545]: 
+                - listitem [ref=f18e546]:
+                  - button "Italic" [ref=f18e547] [cursor=pointer]:
+                    - generic [ref=f18e548]: 
+                - listitem [ref=f18e549]:
+                  - button "Strikethrough" [ref=f18e550] [cursor=pointer]:
+                    - generic [ref=f18e551]: 
+                - listitem [ref=f18e552]:
+                  - button "Spoiler" [ref=f18e553] [cursor=pointer]
+                - listitem [ref=f18e556]:
+                  - button "Lists" [ref=f18e557] [cursor=pointer]:
+                    - generic [ref=f18e558]: 
+                - listitem [ref=f18e559]:
+                  - button "Table" [ref=f18e560] [cursor=pointer]:
+                    - generic [ref=f18e561]: 
+                - listitem [ref=f18e562]:
+                  - button "Link" [ref=f18e563] [cursor=pointer]:
+                    - generic [ref=f18e564]: 
+                - listitem [ref=f18e565]:
+                  - button "Align" [ref=f18e566] [cursor=pointer]:
+                    - generic [ref=f18e567]: 
+                - listitem [ref=f18e568]:
+                  - button "Video" [ref=f18e569] [cursor=pointer]:
+                    - generic [ref=f18e570]: 
+                - listitem [ref=f18e571]:
+                  - button "Collapsible section" [ref=f18e572] [cursor=pointer]:
+                    - generic [ref=f18e573]: 
+                - listitem [ref=f18e574]:
+                  - button "Add image" [ref=f18e575] [cursor=pointer]:
+                    - generic [ref=f18e576]: 
+              - generic "Rich text editor" [ref=f18e577]:
+                - paragraph [ref=f18e578]
+                - heading "DOWNLOAD and INSTALLATION" [level=1] [ref=f18e579]
+                - paragraph [ref=f18e580]:
+                  - strong [ref=f18e581]: Chunk Surfer is currently in beta.
+                  - text: Features, compatibility, performance, and system requirements may change during development.
+                - paragraph [ref=f18e582]:
+                  - text: For the intended audio experience,
+                  - strong [ref=f18e583]: headphones are strongly recommended
+                  - text: .
+                - paragraph [ref=f18e584]: Chunk Surfer supports keyboard and mouse as well as full controller input.
+                - heading "WINDOWS" [level=2] [ref=f18e585]
+                - paragraph [ref=f18e586]:
+                  - text: Download the
+                  - strong [ref=f18e587]:
+                    - text: Windows
+                    - code [ref=f18e588]: .exe
+                    - text: installer
+                  - text: .
+                - paragraph [ref=f18e589]:
+                  - strong [ref=f18e590]: Requirements
+                - list [ref=f18e591]:
+                  - listitem [ref=f18e592]: Windows 11, 64-bit
+                  - listitem [ref=f18e593]: 8 GB RAM minimum
+                  - listitem [ref=f18e594]: 5 GB available storage
+                  - listitem [ref=f18e595]: Modern integrated or dedicated graphics hardware
+                  - listitem [ref=f18e596]: Current graphics drivers recommended
+                - paragraph [ref=f18e597]:
+                  - strong [ref=f18e598]: Installation
+                - list [ref=f18e599]:
+                  - listitem [ref=f18e600]: Download the Windows installer.
+                  - listitem [ref=f18e601]:
+                    - text: Double-click the downloaded
+                    - code [ref=f18e602]: .exe
+                    - text: .
+                  - listitem [ref=f18e603]: Follow the installation prompts.
+                  - listitem [ref=f18e604]: Launch Chunk Surfer from the Start menu or desktop shortcut.
+                - paragraph [ref=f18e605]: Because this is a beta build, Windows may display an unknown-publisher or security warning. Only continue when the installer was downloaded directly from the official Chunk Surfer itch.io page.
+                - heading "macOS" [level=3] [ref=f18e606]
+                - paragraph [ref=f18e607]:
+                  - text: This build supports
+                  - strong [ref=f18e608]: Apple Silicon Macs only
+                  - text: .
+                - paragraph [ref=f18e609]: Supported processors include Apple M-series chips. Intel Macs are not currently supported.
+                - paragraph [ref=f18e610]:
+                  - strong [ref=f18e611]: Requirements
+                - list [ref=f18e612]:
+                  - listitem [ref=f18e613]: Apple Silicon Mac
+                  - listitem [ref=f18e614]: macOS 11 Big Sur or later
+                  - listitem [ref=f18e615]: 8 GB RAM minimum
+                  - listitem [ref=f18e616]: 5 GB available storage
+                - paragraph [ref=f18e617]:
+                  - strong [ref=f18e618]: Installation
+                - list [ref=f18e619]:
+                  - listitem [ref=f18e620]:
+                    - text: Download the macOS
+                    - code [ref=f18e621]: .dmg
+                    - text: .
+                  - listitem [ref=f18e622]: Double-click the downloaded disk image.
+                  - listitem [ref=f18e623]:
+                    - text: Drag
+                    - strong [ref=f18e624]: Chunk Surfer
+                    - text: into the
+                    - strong [ref=f18e625]: Applications
+                    - text: folder.
+                  - listitem [ref=f18e626]: Eject the Chunk Surfer disk image.
+                  - listitem [ref=f18e627]: Open Chunk Surfer from Applications.
+                - heading "Current unsigned-beta notice" [level=4] [ref=f18e628]
+                - paragraph [ref=f18e629]: The current beta may not yet be signed and notarized by Apple. macOS may therefore prevent it from opening normally.
+                - paragraph [ref=f18e630]: "After attempting to open the game:"
+                - list [ref=f18e631]:
+                  - listitem [ref=f18e632]:
+                    - text: Open
+                    - strong [ref=f18e633]: System Settings
+                    - text: .
+                  - listitem [ref=f18e634]:
+                    - text: Select
+                    - strong [ref=f18e635]: Privacy & Security
+                    - text: .
+                  - listitem [ref=f18e636]: Scroll to the Security section.
+                  - listitem [ref=f18e637]: Find the message concerning Chunk Surfer.
+                  - listitem [ref=f18e638]:
+                    - text: Select
+                    - strong [ref=f18e639]: Open Anyway
+                    - text: .
+                  - listitem [ref=f18e640]: Confirm that you want to open the application.
+                - paragraph [ref=f18e641]: Only override this warning when the game was downloaded directly from the official Chunk Surfer itch.io page.
+                - paragraph [ref=f18e642]: This section will be removed once the macOS release is signed and notarized.
+                - heading "LINUX (AppImage)" [level=3] [ref=f18e643]
+                - paragraph [ref=f18e644]: The AppImage is the recommended Linux download for most players.
+                - paragraph [ref=f18e645]:
+                  - strong [ref=f18e646]: Requirements
+                - list [ref=f18e647]:
+                  - listitem [ref=f18e648]: 64-bit Linux system
+                  - listitem [ref=f18e649]: Ubuntu 26.04 LTS or a compatible modern distribution
+                  - listitem [ref=f18e650]: 8 GB RAM minimum
+                  - listitem [ref=f18e651]: 7.5 GB available storage
+                  - listitem [ref=f18e652]: Modern integrated or dedicated graphics hardware
+                  - listitem [ref=f18e653]: Current graphics drivers recommended
+                - paragraph [ref=f18e654]:
+                  - strong [ref=f18e655]: Installation
+                - list [ref=f18e656]:
+                  - listitem [ref=f18e657]:
+                    - text: Download the
+                    - code [ref=f18e658]: .AppImage
+                    - text: .
+                  - listitem [ref=f18e659]: Open a terminal in the download folder.
+                  - listitem [ref=f18e660]: "Make the file executable:"
+                - generic [ref=f18e661]: chmod +x ./Chunk-Surfer*.AppImage
+                - list [ref=f18e662]:
+                  - listitem [ref=f18e663]: "Launch the game:"
+                - generic [ref=f18e664]: ./Chunk-Surfer*.AppImage
+                - paragraph [ref=f18e665]:
+                  - text: Many Linux file managers also allow you to right-click the AppImage, open
+                  - strong [ref=f18e666]: Properties
+                  - text: ", enable"
+                  - strong [ref=f18e667]: Allow executing file as program
+                  - text: ", and then double-click it."
+                - heading "LINUX (DEBIAN PACKAGE)" [level=3] [ref=f18e668]
+                - paragraph [ref=f18e669]:
+                  - text: The
+                  - code [ref=f18e670]: .deb
+                  - text: package is intended for Ubuntu, Debian, and compatible Debian-based distributions.
+                - paragraph [ref=f18e671]: "Install it by opening the downloaded package in your software installer, or run:"
+                - generic [ref=f18e672]: sudo apt install ./chunk-surfer*.deb
+                - paragraph [ref=f18e673]: After installation, launch Chunk Surfer from your application menu.
+                - paragraph [ref=f18e674]: Players using another Linux distribution should generally choose the AppImage instead.
+                - heading "AUDIO" [level=2] [ref=f18e675]
+                - paragraph [ref=f18e676]: Headphones are strongly recommended.
+                - paragraph [ref=f18e677]: No specific Bluetooth, audio-interface, or sample-rate compatibility problems are currently known. During the beta, please report any device-specific audio issues.
+                - paragraph [ref=f18e678]: "When reporting an audio problem, include:"
+                - list [ref=f18e679]:
+                  - listitem [ref=f18e680]: Operating system and version
+                  - listitem [ref=f18e681]: Headphone, speaker, or audio-interface model
+                  - listitem [ref=f18e682]: Connection type, such as wired, Bluetooth, USB, or HDMI
+                  - listitem [ref=f18e683]: Sample rate, when known
+                  - listitem [ref=f18e684]: Whether the problem occurs immediately or after playing for a while
+                - heading "CONTROLLERS" [level=2] [ref=f18e685]
+                - paragraph [ref=f18e686]: Chunk Surfer supports full controller input as well as keyboard and mouse.
+                - paragraph [ref=f18e687]: Controller support can vary by operating system, driver, connection type, and controller model. Please include those details when reporting an input problem.
+                - heading "PERMISSIONS" [level=2] [ref=f18e688]
+                - paragraph [ref=f18e689]: Chunk Surfer may request optional operating-system permissions.
+                - paragraph [ref=f18e690]: These permissions are not required for normal gameplay. You may deny them and continue playing.
+                - paragraph [ref=f18e691]: Permissions can be reviewed or changed later through your operating system’s privacy or application settings.
+                - heading "SAVING PROGRESS" [level=2] [ref=f18e692]
+                - paragraph [ref=f18e693]: Chunk Surfer saves progress automatically to local application data.
+                - list [ref=f18e694]:
+                  - listitem [ref=f18e695]: There is no manual save button.
+                  - listitem [ref=f18e696]: Progress is stored on the current computer.
+                  - listitem [ref=f18e697]: Cloud saves are not currently available.
+                  - listitem [ref=f18e698]: Saves do not automatically transfer between computers or operating systems.
+                  - listitem [ref=f18e699]: Avoid deleting local application data unless you intend to reset your progress.
+                - paragraph [ref=f18e700]: Because this is a beta, save compatibility between major builds is not guaranteed. Any update that intentionally resets or changes save data will be identified in the release notes.
+                - heading "UPDATING the GAME" [level=2] [ref=f18e701]
+                - paragraph [ref=f18e702]: Players using the itch.io desktop app may receive updates through the app when a compatible build is available.
+                - paragraph [ref=f18e703]: Players who download directly from the website should return to this page to download new beta releases.
+                - paragraph [ref=f18e704]: Unless a release note says otherwise, installing an update over the existing version should preserve local progress. During the beta, keeping a copy of important save data is recommended before installing major updates.
+                - heading "TROUBLESHOOTING" [level=2] [ref=f18e705]
+                - paragraph [ref=f18e706]: "Before reporting a problem:"
+                - list [ref=f18e707]:
+                  - listitem [ref=f18e708]: Confirm that you downloaded the correct build for your operating system.
+                  - listitem [ref=f18e709]: Restart the game.
+                  - listitem [ref=f18e710]: Restart your computer.
+                  - listitem [ref=f18e711]: Confirm that your graphics drivers and operating system are current.
+                  - listitem [ref=f18e712]: Disconnect unnecessary controllers or audio devices and try again.
+                  - listitem [ref=f18e713]: Re-download the build if the installer or archive may be incomplete.
+                - paragraph [ref=f18e714]: "When reporting a bug, please include:"
+                - list [ref=f18e715]:
+                  - listitem [ref=f18e716]: Operating system and version
+                  - listitem [ref=f18e717]: Computer model or hardware specifications
+                  - listitem [ref=f18e718]:
+                    - text: "Download used: Windows, macOS, AppImage, or"
+                    - code [ref=f18e719]: .deb
+                  - listitem [ref=f18e720]: Game version
+                  - listitem [ref=f18e721]: Keyboard/mouse or controller
+                  - listitem [ref=f18e722]: What you expected to happen
+                  - listitem [ref=f18e723]: What happened instead
+                  - listitem [ref=f18e724]: Steps that reproduce the problem
+                  - listitem [ref=f18e725]: Screenshot, video, or error message when available
+                - paragraph [ref=f18e726]: Thank you for helping test Chunk Surfer.
+          - generic [ref=f18e728]:
+            - generic [ref=f18e729]: Community
+            - paragraph [ref=f18e730]: Build a community for your project by letting people post to your page.
+            - list [ref=f18e731]:
+              - listitem [ref=f18e732]:
+                - generic [ref=f18e733]:
+                  - radio "Community Build a community for your project by letting people post to your page. Disabled Comments — Add a nested comment thread to the bottom of the project page Discussion board — Add a dedicated community page with categories, threads, replies & more" [ref=f18e734]
+                  - text: Disabled
+              - listitem [ref=f18e735]:
+                - generic [ref=f18e736]:
+                  - radio "Comments — Add a nested comment thread to the bottom of the project page" [checked] [ref=f18e737]
+                  - text: Comments — Add a nested comment thread to the bottom of the project page
+              - listitem [ref=f18e738]:
+                - generic [ref=f18e739]:
+                  - radio "Discussion board — Add a dedicated community page with categories, threads, replies & more" [ref=f18e740]
+                  - text: Discussion board — Add a dedicated community page with categories, threads, replies & more
+          - generic [ref=f18e742]:
+            - generic [ref=f18e743]: Visibility & access
+            - paragraph [ref=f18e744]:
+              - text: Use Draft to review your page before making it public.
+              - link "Learn more about access modes" [ref=f18e745] [cursor=pointer]:
+                - /url: /docs/creators/access-control
+            - list [ref=f18e746]:
+              - listitem [ref=f18e747]:
+                - generic [ref=f18e748]:
+                  - radio "Draft — Only those who can edit the project can view the page" [ref=f18e749]
+                  - text: Draft
+                  - generic [ref=f18e750]: — Only those who can edit the project can view the page
+              - listitem [ref=f18e751]:
+                - generic [ref=f18e752]:
+                  - radio "Restricted — Only owners & authorized people can view the page" [checked] [ref=f18e753]
+                  - text: Restricted
+                  - generic [ref=f18e754]: — Only owners & authorized people can view the page
+              - listitem [ref=f18e755]:
+                - generic [ref=f18e756]:
+                  - radio "Public — Anyone can view the page" [ref=f18e757]
+                  - text: Public
+                  - generic [ref=f18e758]: — Anyone can view the page
+            - generic [ref=f18e759]:
+              - generic [ref=f18e760]: Restricted access settings
+              - paragraph [ref=f18e762]: Only people who own the project can view the page. You can give access by generating a download key. The page will be unlisted in browse and search.
+              - generic [ref=f18e763]:
+                - generic [ref=f18e764]:
+                  - checkbox "Also allow a password to view page ?" [checked] [ref=f18e765]
+                  - text: Also allow a password to view page
+                  - generic [ref=f18e766]: "?"
+                - textbox "Password" [ref=f18e767]: bebby
+        - generic [ref=f18e768]:
+          - generic [ref=f18e770]:
+            - generic [ref=f18e773]:
+              - button "Replace Cover Image" [ref=f18e774] [cursor=pointer]
+              - button "Remove Image" [ref=f18e775] [cursor=pointer]
+            - paragraph [ref=f18e776]: "The cover image is used whenever itch.io wants to link to your project from another part of the site. Required (Minimum: 315x250, Recommended: 630x500)"
+          - generic [ref=f18e777]:
+            - generic [ref=f18e778]: Gameplay video or trailer
+            - paragraph [ref=f18e779]: Provide a link to YouTube or Vimeo.
+            - textbox "eg. https://www.youtube.com/watch?v=5JEaA47sPjQ" [ref=f18e780]
+          - generic [ref=f18e781]:
+            - generic [ref=f18e782]: Screenshots
+            - paragraph [ref=f18e783]: Screenshots will appear on your game's page. Optional but highly recommended. Upload 3 to 5 for best results.
+            - generic [ref=f18e785]:
+              - generic [ref=f18e786]:
+                - generic [ref=f18e789]:
+                  - button "Move down" [ref=f18e790] [cursor=pointer]
+                  - button "Delete" [ref=f18e791] [cursor=pointer]
+                - generic [ref=f18e794]:
+                  - button "Move up" [ref=f18e795] [cursor=pointer]
+                  - button "Move down" [ref=f18e796] [cursor=pointer]
+                  - button "Delete" [ref=f18e797] [cursor=pointer]
+                - generic [ref=f18e800]:
+                  - button "Move up" [ref=f18e801] [cursor=pointer]
+                  - button "Move down" [ref=f18e802] [cursor=pointer]
+                  - button "Delete" [ref=f18e803] [cursor=pointer]
+                - generic [ref=f18e806]:
+                  - button "Move up" [ref=f18e807] [cursor=pointer]
+                  - button "Move down" [ref=f18e808] [cursor=pointer]
+                  - button "Delete" [ref=f18e809] [cursor=pointer]
+                - generic [ref=f18e812]:
+                  - button "Move up" [ref=f18e813] [cursor=pointer]
+                  - button "Move down" [ref=f18e814] [cursor=pointer]
+                  - button "Delete" [ref=f18e815] [cursor=pointer]
+                - generic [ref=f18e818]:
+                  - button "Move up" [ref=f18e819] [cursor=pointer]
+                  - button "Move down" [ref=f18e820] [cursor=pointer]
+                  - button "Delete" [ref=f18e821] [cursor=pointer]
+                - generic [ref=f18e824]:
+                  - button "Move up" [ref=f18e825] [cursor=pointer]
+                  - button "Move down" [ref=f18e826] [cursor=pointer]
+                  - button "Delete" [ref=f18e827] [cursor=pointer]
+                - generic [ref=f18e830]:
+                  - button "Move up" [ref=f18e831] [cursor=pointer]
+                  - button "Move down" [ref=f18e832] [cursor=pointer]
+                  - button "Delete" [ref=f18e833] [cursor=pointer]
+                - generic [ref=f18e836]:
+                  - button "Move up" [ref=f18e837] [cursor=pointer]
+                  - button "Move down" [ref=f18e867] [cursor=pointer]
+                  - button "Delete" [ref=f18e838] [cursor=pointer]
+                - generic [ref=f18e870]:
+                  - button "Move up" [ref=f18e871] [cursor=pointer]
+                  - button "Move down" [ref=f18e872] [cursor=pointer]
+                  - button "Delete" [ref=f18e873] [cursor=pointer]
+                - generic [ref=f18e875]:
+                  - button "Move up" [ref=f18e876] [cursor=pointer]
+                  - button "Move down" [ref=f18e877] [cursor=pointer]
+                  - button "Delete" [ref=f18e878] [cursor=pointer]
+                - generic [ref=f18e880]:
+                  - button "Move up" [ref=f18e881] [cursor=pointer]
+                  - button "Move down" [ref=f18e882] [cursor=pointer]
+                  - button "Delete" [ref=f18e883] [cursor=pointer]
+                - generic [ref=f18e885]:
+                  - button "Move up" [ref=f18e886] [cursor=pointer]
+                  - button "Move down" [ref=f18e887] [cursor=pointer]
+                  - button "Delete" [ref=f18e888] [cursor=pointer]
+                - generic [ref=f18e890]:
+                  - button "Move up" [ref=f18e891] [cursor=pointer]
+                  - button "Move down" [ref=f18e892] [cursor=pointer]
+                  - button "Delete" [ref=f18e893] [cursor=pointer]
+                - generic [ref=f18e895]:
+                  - button "Move up" [ref=f18e896] [cursor=pointer]
+                  - button "Delete" [ref=f18e897] [cursor=pointer]
+              - button "Add screenshots" [active] [ref=f18e840] [cursor=pointer]
+      - generic [ref=f18e841]:
+        - button "Save" [ref=f18e842] [cursor=pointer]
+        - link "View page" [ref=f18e843] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io/chunk-surfer
+        - link "Delete game" [ref=f18e845] [cursor=pointer]:
+          - /url: "#"
+  - generic [ref=f18e846]:
+    - generic [ref=f18e847]:
+      - generic [ref=f18e848]:
+        - link "itch.io on Twitter" [ref=f18e849] [cursor=pointer]:
+          - /url: https://twitter.com/itchio
+          - generic [aria-hidden] [ref=f18e850]: 
+        - link "itch.io on Facebook" [ref=f18e852] [cursor=pointer]:
+          - /url: https://www.facebook.com/itchiogames
+          - generic [aria-hidden] [ref=f18e853]: 
+      - link "About" [ref=f18e855] [cursor=pointer]:
+        - /url: /docs/general/about
+      - link "FAQ" [ref=f18e856] [cursor=pointer]:
+        - /url: /docs/general/faq
+      - link "Blog" [ref=f18e857] [cursor=pointer]:
+        - /url: /blog
+      - link "Contact us" [ref=f18e858] [cursor=pointer]:
+        - /url: /support
+    - generic [ref=f18e859]:
+      - text: Copyright © 2026 itch corp ·
+      - link "Directory" [ref=f18e860] [cursor=pointer]:
+        - /url: /directory
+      - text: ·
+      - link "Terms" [ref=f18e861] [cursor=pointer]:
+        - /url: /docs/legal/terms
+      - text: ·
+      - link "Privacy" [ref=f18e862] [cursor=pointer]:
+        - /url: /docs/legal/privacy-policy
+      - text: ·
+      - link "Cookies" [ref=f18e863] [cursor=pointer]:
+        - /url: /docs/legal/cookie-policy
+  - generic "Give us feedback!" [ref=f18e864] [cursor=pointer]: Feedback
+  - generic [ref=f18e865]: Click to view options, type to filter or enter custom tag

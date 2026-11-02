@@ -11,6 +11,7 @@ import { roomHistoryText } from '../src/data/room-history.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
 import { fitText } from '../src/render/fit-text.js';
 import { uiWrap } from '../src/render/ui.js';
+import {readOnlyBagMap} from '../src/game/bag-model.js';
 
 // A bag content region, at the sizes the field case actually gets.
 const bag = (w, h, mode = 'wide') => ({
@@ -127,6 +128,24 @@ test('short keyboard rails preserve F6, Enter and close in both room and control
     'an offline instrument only offers its working close action');
 });
 
+test('public survey legends offer only available actions without spending narrow rail space on SET or FILE',()=>{
+  const selected={...model.spaces[0],attached:{id:'attached-sheet'}};
+  for(const device of['keyboard','controller']){
+    setActiveInputDevice(device);
+    for(const width of[40,48,64,80,96])for(const consoleFocused of[false,true]){
+      const actions=mapActionRail(selected,{width,floorCount:5,consoleFocused,readOnly:true});
+      const text=actions.map(([key,label])=>`[${key}] ${label}`).join('   ');
+      assert.ok(text.length<=width);
+      assert.ok(!actions.some(([,label])=>['SET','FILE','SHEET'].includes(label)));
+      const exitLabel=device==='controller'&&consoleFocused?'ROOMS':'CLOSE';
+      assert.ok(actions.some(([,label])=>label===exitLabel));
+      assert.ok(actions.some(([,label])=>label==='CONTROLS'||label==='ROOMS'));
+      if(consoleFocused)assert.ok(actions.some(([,label])=>label==='PRESS'),'confirm still works on actual view controls');
+    }
+  }
+  setActiveInputDevice('keyboard');
+});
+
 // Run the actual view against a recording drawing backend. Geometry, control
 // generation, selection and prompts remain the production implementations.
 function consoleHarness() {
@@ -203,4 +222,23 @@ test('map and readout paint behind separate glass while physical controls remain
   assert.deepEqual(commands.filter(c => c.kind === 'annunciator').map(c => c.text), ['PLAN', 'TARGET']);
   assert.equal(result.hits.length, 17, 'only the map aperture and sixteen physical controls are hit targets');
   assert.ok(!result.hits.some(hit => /annunciator|indication/i.test(hit.id)), 'passive status lamps are not fake buttons');
+});
+
+test('rendered public preview omits target and file caps, hits and indications while keeping the survey operable',()=>{
+  const preview=readOnlyBagMap({...model,architecture:{levels:[{}]},progress:{done:0,total:5}});
+  for(const [w,h]of SIZES){
+    const harness=consoleHarness(),result=harness.drawMapView({model:preview,
+      nav:{...nav,roomFile:{spaceId:'space:b3',page:0}},bagLayout:{...bag(w,h),actionRail:{w}}});
+    const buttons=harness.commands.filter(c=>c.kind==='button');
+    assert.ok(!buttons.some(c=>['SET TARGET','CLEAR','FILE'].includes(c.state.legend)));
+    assert.ok(!result.hits.some(hit=>['set-target','clear-target','read-file','file-document'].includes(hit.action)));
+    assert.ok(!result.actions.some(([,label])=>['SET','FILE','SHEET'].includes(label)));
+    for(const action of['center-player','reset-view','zoom-in','zoom-out','rotate-left','rotate-right'])
+      assert.ok(result.hits.some(hit=>hit.action===action&&hit.enabled!==false),action+' remains usable');
+    assert.ok(result.hits.some(hit=>hit.kind==='map-pan'),'physical map pan area remains');
+    assert.ok(harness.commands.some(command=>command.kind==='architecture'),'preview still draws the actual survey');
+    assert.ok(!harness.commands.some(c=>c.kind==='annunciator'&&c.text==='TARGET'));
+    const labels=harness.commands.filter(c=>c.kind==='text').map(c=>c.text).join('\n');
+    assert.doesNotMatch(labels,/ROOM FILE|◆ TARGET/);
+  }
 });

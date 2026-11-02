@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createPubRoomAudio,PUB_ROOM_SOUND_ANCHORS,pubRoomSpatial} from '../src/audio/pub-room.js';
-import {pubWorldFromLocal} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubPhysicalAt,pubPhysicalFromLocal,pubPhysicalYaw,pubWorldFromLocal} from '../src/data/exterior-pub.js';
 import {PUB_INTERIOR_LAYOUT} from '../src/data/exterior-pub-furnishings.js';
 class Param{constructor(){this.value=0;}setTargetAtTime(v){this.value=v;}}
 class Context{
@@ -13,14 +13,22 @@ class Context{
   createBufferSource(){const node=this.node('source');node.start=()=>{node.startGain=node.connections[0]?.connections[0]?.gain?.value;node.started=true;node.end=this.currentTime+node.buffer.duration;};node.stop=()=>{if(node.stopped)return;node.stopped=true;node.onended?.();};this.sources.push(node);return node;}
   advance(dt){this.currentTime+=dt;for(const node of this.sources)if(node.started&&!node.stopped&&!node.loop&&node.end<=this.currentTime)node.stop();}
 }
-function fixture(){let ctx=new Context(),destination=ctx.destination;const audio=createPubRoomAudio({getAudio:()=>({ctx,destination})}),listener={x:-8,z:109,yaw:0};
+function fixture(){let ctx=new Context(),destination=ctx.destination;const audio=createPubRoomAudio({getAudio:()=>({ctx,destination})}),listener={...pubPhysicalAt(EXTERIOR_PUB.interiorAnchor),yaw:pubPhysicalYaw(0)};
   const tick=(n,options={})=>{for(let i=0;i<n;i++){ctx.advance(.1);audio.update({dt:.1,listener,inPub:true,...options});}};
   return{audio,tick,ctx:()=>ctx,replace:()=>{ctx=new Context();destination=ctx.destination;},listener};}
 test('pub sounds use real furniture positions and turn with the listener',()=>{
-  assert.deepEqual(PUB_ROOM_SOUND_ANCHORS.stove,pubWorldFromLocal(PUB_INTERIOR_LAYOUT.furniture.find(f=>f.kind==='stove')));
+  assert.deepEqual(PUB_ROOM_SOUND_ANCHORS.stove,pubPhysicalFromLocal(PUB_INTERIOR_LAYOUT.furniture.find(f=>f.kind==='stove')));
   const anchor=PUB_ROOM_SOUND_ANCHORS.glass,a=pubRoomSpatial({x:anchor.x-3,z:anchor.z,yaw:0},anchor),b=pubRoomSpatial({x:anchor.x-3,z:anchor.z,yaw:Math.PI},anchor);
   assert.ok(a.pan>0&&b.pan<0);assert.equal(a.distance,3);
   const shut=pubRoomSpatial({},anchor,{inPub:false}),open=pubRoomSpatial({},anchor,{inPub:false,doorOpen:true});assert.ok(shut.gain<open.gain&&shut.cutoff<open.cutoff);
+});
+test('the quarter-turned room preserves measured contact distance, stereo bearing and attenuation',()=>{
+  const local=PUB_INTERIOR_LAYOUT.furniture.find(f=>f.kind==='stove'),authoredAnchor=pubWorldFromLocal(local);
+  const authoredListener={x:authoredAnchor.x+1.3,z:authoredAnchor.z+2.1,yaw:.47};
+  const physicalListener={...pubPhysicalAt(authoredListener),yaw:pubPhysicalYaw(authoredListener.yaw)};
+  const before=pubRoomSpatial(authoredListener,authoredAnchor),after=pubRoomSpatial(physicalListener,PUB_ROOM_SOUND_ANCHORS.stove);
+  for(const key of['distance','pan','gain','cutoff'])assert.ok(Math.abs(before[key]-after[key])<1e-12,key);
+  assert.notDeepEqual(PUB_ROOM_SOUND_ANCHORS.stove,authoredAnchor,'the sound actually moved with its furniture');
 });
 test('the ordinary bed and sparse contacts stay bounded over a long visit',()=>{
   const h=fixture();h.tick(3000);const snapshot=h.audio.snapshot();assert.ok(snapshot.createdContacts>=12);assert.ok(snapshot.voices<=3);assert.ok(snapshot.nodes<=12);assert.ok(snapshot.cachedBuffers<=4);
@@ -53,7 +61,7 @@ test('the module has no gameplay, speech, lighting or external scheduler authori
 });
 
 test('performed service contacts follow their real table, stay bounded and cannot queue through pause or Source',()=>{
-  const h=fixture(),at={x:h.listener.x+1,z:h.listener.z};
+  const h=fixture(),at={x:h.listener.x+Math.cos(h.listener.yaw),z:h.listener.z+Math.sin(h.listener.yaw)};
   assert.equal(h.audio.contact(at),false);h.tick(1);
   assert.equal(h.audio.contact(at),true);
   assert.ok(h.ctx().nodes.filter(n=>n.kind==='panner').at(-1).pan.value>0);

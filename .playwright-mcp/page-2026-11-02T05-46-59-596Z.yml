@@ -1,0 +1,549 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - link "Skip to main content" [ref=f2e3] [cursor=pointer]:
+      - /url: "#maincontent"
+    - generic [ref=f2e4]:
+      - heading [level=1] [ref=f2e5]:
+        - link "itch.io itch.io logo" [ref=f2e6] [cursor=pointer]:
+          - /url: https://itch.io/
+          - generic [ref=f2e7]: itch.io
+          - img "itch.io logo" [ref=f2e8]
+      - link "Dashboard" [ref=f2e10] [cursor=pointer]:
+        - /url: https://itch.io/dashboard
+      - generic [ref=f2e11]:
+        - text: "Manage:"
+        - link "Edit game" [ref=f2e12] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870
+        - link "Analytics" [ref=f2e13] [cursor=pointer]:
+          - /url: https://itch.io/game/summary/4768870
+        - link "Widget" [ref=f2e14] [cursor=pointer]:
+          - /url: https://itch.io/game/widget/4768870
+        - button " Edit theme" [active] [ref=f2e15] [cursor=pointer]:
+          - generic [ref=f2e16]: 
+          - text: Edit theme
+        - link "Restricted" [ref=f2e18] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870#published
+      - generic [ref=f2e19]:
+        - link "8" [ref=f2e20] [cursor=pointer]:
+          - /url: https://itch.io/notifications
+        - link "seb" [ref=f2e21] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - button "Account Menu" [ref=f2e25] [cursor=pointer]
+  - generic [ref=f2e28]:
+    - generic [ref=f2e377]:
+      - generic [ref=f2e378]:
+        - heading "Color" [level=3] [ref=f2e379]
+        - generic [ref=f2e380]:
+          - generic [ref=f2e381]: BG
+          - generic [ref=f2e382]:
+            - textbox "BG" [ref=f2e383]:
+              - /placeholder: Color
+              - text: "#000"
+            - generic [ref=f2e384] [cursor=pointer]
+        - generic [ref=f2e385]:
+          - generic [ref=f2e386]: BG 2
+          - generic [ref=f2e387]:
+            - textbox "BG 2" [ref=f2e388]:
+              - /placeholder: Color
+              - text: "#1b1b1b"
+            - generic [ref=f2e389] [cursor=pointer]
+        - generic [ref=f2e390]:
+          - generic [ref=f2e391]: Text
+          - generic [ref=f2e392]:
+            - textbox "Text" [ref=f2e393]:
+              - /placeholder: Color
+              - text: "#fff"
+            - generic [ref=f2e394] [cursor=pointer]
+        - generic [ref=f2e395]:
+          - generic [ref=f2e396]: Link
+          - generic [ref=f2e397]:
+            - textbox "Link" [ref=f2e398]:
+              - /placeholder: Color
+              - text: "#D58B2A"
+            - generic [ref=f2e399] [cursor=pointer]
+        - group [ref=f2e401]:
+          - button "More options..." [ref=f2e403] [cursor=pointer]
+          - generic [ref=f2e404]:
+            - generic [ref=f2e405]:
+              - generic [ref=f2e406]: Headers
+              - generic [ref=f2e407]:
+                - textbox "Headers" [ref=f2e408]:
+                  - /placeholder: Color
+                  - text: "#D58B2A"
+                - generic [ref=f2e409] [cursor=pointer]
+            - generic [ref=f2e410]:
+              - generic [ref=f2e411]: Buttons
+              - generic [ref=f2e412]:
+                - textbox "Buttons" [ref=f2e413]:
+                  - /placeholder: Color
+                  - text: "#212a31"
+                - generic [ref=f2e414] [cursor=pointer]
+            - generic [ref=f2e415]:
+              - generic [ref=f2e416]: BG2 Alpha
+              - button "BG2 Alpha" [ref=f2e420]
+      - generic [ref=f2e421]:
+        - heading "Text" [level=3] [ref=f2e422]
+        - generic [ref=f2e423]:
+          - generic [ref=f2e424]: Font
+          - generic [ref=f2e425]:
+            - generic [ref=f2e426]: IBM Plex Mono
+            - combobox "Font IBM Plex Mono" [ref=f2e430]:
+              - option "Select Google Font..."
+              - option "Serif"
+              - option "Sans Serif"
+              - option "Pixel"
+              - option "Anonymous Pro"
+              - option "Lato"
+              - option "IBM Plex Mono" [selected]
+              - option "Doto"
+        - generic [ref=f2e431]:
+          - generic [ref=f2e432]: Size
+          - generic [ref=f2e433]:
+            - generic [ref=f2e434]: Medium
+            - combobox "Size Medium" [ref=f2e438]:
+              - option "Small"
+              - option "Medium" [selected]
+              - option "Large"
+              - option "Very Large"
+        - group [ref=f2e440]:
+          - button "More options..." [ref=f2e442] [cursor=pointer]
+          - generic [ref=f2e444]:
+            - generic [ref=f2e445]: Header font
+            - generic [ref=f2e446]:
+              - generic [ref=f2e447]: Doto
+              - combobox "Header font Doto" [ref=f2e451]:
+                - option "Default font"
+                - option "Select Google Font..."
+                - option "Serif"
+                - option "Sans Serif"
+                - option "Pixel"
+                - option "Anonymous Pro"
+                - option "Lato"
+                - option "IBM Plex Mono"
+                - option "Doto" [selected]
+      - generic [ref=f2e452]:
+        - heading "Layout" [level=3] [ref=f2e453]
+        - generic [ref=f2e454]:
+          - generic [ref=f2e455]: Screenshots
+          - generic [ref=f2e456]:
+            - generic [ref=f2e457]: Auto
+            - combobox "Screenshots Auto" [ref=f2e461]:
+              - option "Auto (sidebar)" [selected]
+              - option "Sidebar"
+              - option "Hidden"
+      - generic [ref=f2e462]:
+        - heading "Images" [level=3] [ref=f2e463]
+        - generic [ref=f2e464]:
+          - generic [ref=f2e465]: Banner
+          - generic [ref=f2e467]:
+            - generic [ref=f2e471]:
+              - generic [ref=f2e472]: Align
+              - generic [ref=f2e473]:
+                - generic [ref=f2e474]: Center
+                - combobox "Align Center" [ref=f2e478]:
+                  - option "Center" [selected]
+                  - option "Left"
+                  - option "Right"
+            - button "Remove image" [ref=f2e480] [cursor=pointer]
+        - generic [ref=f2e481]:
+          - generic [ref=f2e482]: Background
+          - button "Background" [ref=f2e483] [cursor=pointer]: Upload
+      - generic [ref=f2e484]:
+        - heading "Misc" [level=3] [ref=f2e485]
+        - generic [ref=f2e486]:
+          - generic [ref=f2e487]: Custom CSS
+          - button "↗" [ref=f2e489] [cursor=pointer]
+          - button "Readme" [ref=f2e490] [cursor=pointer]
+        - textbox [ref=f2e491]: "/* =========================================================================== CHUNK SURFER — itch.io project page theme Paste into: itch.io -> Edit game -> Theme -> Custom CSS Companion markup: docs/storefront-copy-itch.html The page is the same machine as the game: an AUDIOCORP faceplate. Matte chassis, one black-glass display per block, silkscreen legends for labels, lit amber phosphor for values. Two rules govern everything below, quoted from src/render/presentation.js:1-10 — 1. NO GRADIENTS. A VFD is flat black glass. 2. TEXT IS A DOT MATRIX, not a segment font. Gradients appear here only as flat two-stop fills (a hard-edged shape, not a ramp) and as the front-glass vignette, which is an optical falloff in the glass rather than a painted surface. Rules from itch.io's CSS guide that shape this file: - Everything is scoped inside #wrapper. That also wins the specificity fight: itch's generated theme is scoped to .view_game_page (0-1-0), so #wrapper (1-0-0) beats it without !important. - Classes we author must start with `custom-` or the sanitizer strips them. - Selectors off itch's stable list (.buy_row, .uploads, .upload, .game_info_panel_widget, ...) are cosmetic only here. If itch renames one, the page degrades to plain-but-correct — no layout depends on them. - No external resources. Everything below is pure CSS. The game ships no webfonts, so the page runs the same system mono stack the game does. - The footer is styled, never hidden. =========================================================================== */ /* --------------------------------------------------------------------------- 1. TOKENS The --cs-vfd-* block is lifted from styles.css:8-11 so the storefront and the running game read from one palette (src/render/palette.js, `amber` theme — the menus/documents/title-screen machine). The --itchio_* vars then drive any control we don't reach individually, so nothing lands off-theme. --------------------------------------------------------------------------- */ #wrapper{ --cs-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,\"Liberation Mono\",monospace; --cs-vfd-phosphor:#F2A81E; /* the lit segment */ --cs-vfd-dim:rgba(242,168,30,.055); /* dormant phosphor — the VFD tell */ --cs-vfd-counter:#FFD070; /* numeric 7-seg readout */ --cs-vfd-silkscreen:#8C7C54; /* printed legend, unlit */ --cs-vfd-wordmark:#C7B27E; /* stamped brand text */ --cs-vfd-glass:#050505; /* the display itself */ --cs-vfd-danger:#FF6A5A; /* reserved to the circuit that pays for it */ --cs-chassis:#101010; /* matte bezel */ --cs-hairline:#242424; /* bezel seam */ --cs-field:#07090A; /* the dark the unit sits in */ --cs-body:#B6AFA2; /* warm neutral prose, 7.6:1 on chassis */ --itchio_link_color:#F2A81E; --itchio_button_color:#050505; --itchio_button_fg_color:#F2A81E; --itchio_button_hover_color:#F2A81E; --itchio_button_active_color:#C7B27E; --itchio_button_border_color:#8C7C54; --itchio_button_shadow_color:transparent; /* a faceplate casts no soft shadow */ --itchio_border_color:#242424; --itchio_border_radius:0; /* punched apertures are square */ } /* --------------------------------------------------------------------------- 2. CHASSIS --------------------------------------------------------------------------- */ #wrapper{ background:var(--cs-field); color:var(--cs-body); font-family:var(--cs-mono); -webkit-font-smoothing:antialiased; } /* itch puts `family_sans-serif` on #inner_column; the ID selector overrides it. */ #wrapper #inner_column{ position:relative; font-family:var(--cs-mono); background:var(--cs-chassis); border:1px solid var(--cs-hairline); border-radius:0; } /* The stamped faceplate strips. #inner_column contains the header, the game page and itch's footer, so ::before and ::after are the literal top and bottom edges of the unit. Each carries one punched screw head per end, transcribed from the faceplate hardware in presentation.js:52-101 — #8a887f at alpha .16 with a dark slot. */ #wrapper #inner_column::before, #wrapper #inner_column::after{ display:block; color:var(--cs-vfd-silkscreen); font:700 10px/1.15 var(--cs-mono); letter-spacing:.24em; text-align:center; text-transform:uppercase; padding:10px 44px; background-repeat:no-repeat; background-image: linear-gradient(rgba(5,5,5,.55),rgba(5,5,5,.55)), /* slot, left screw */ radial-gradient(circle at 50% 50%,rgba(138,136,127,.16) 0 46%,transparent 48%), linear-gradient(rgba(5,5,5,.55),rgba(5,5,5,.55)), /* slot, right screw */ radial-gradient(circle at 50% 50%,rgba(138,136,127,.16) 0 46%,transparent 48%); background-size:7px 1px,10px 10px,7px 1px,10px 10px; background-position:left 17px center,left 15px center,right 17px center,right 15px center; } #wrapper #inner_column::before{ content:\"AUDIOCORP \\00B7 LOCAL MONITOR \\00B7 SOURCE 4417-C\"; border-bottom:1px solid var(--cs-hairline); } #wrapper #inner_column::after{ content:\"ELLERY CONSERVATORY OF MUSIC \\00B7 CONDEMNED \\00B7 DEMOLITION 06:00\"; border-top:1px solid var(--cs-hairline); } /* The display treatment, lifted from .cs-machine-glass (styles.css:76-84). One black pane, one black border, one near-invisible inner hairline where the glass meets the bezel. */ #wrapper .custom-workorder, #wrapper .custom-warning, #wrapper .uploads, #wrapper .game_info_panel_widget{ background:var(--cs-vfd-glass); border:1px solid #000; box-shadow:inset 0 0 0 1px rgba(255,255,255,.018); border-radius:0; } /* --------------------------------------------------------------------------- 3. FRONT GLASS The scanline pitch and the vignette falloff are transcribed from the baked overlays in src/render/canvas.js:75-109 at the game's own alphas: a 1x4 pattern (2px clear, 2px at .55) composited at .16, and a radial falloff ending at rgba(0,0,0,.42). z-index 100 is deliberate. itch's own stacking tops out at 3 for page content, while .content_warning_widget is 999, .lightbox 1001 and .popup_details 1002 — so the glass sits over the page and under every popup. pointer-events:none means it can never intercept a click either way. --------------------------------------------------------------------------- */ #wrapper::before, #wrapper::after{ content:\"\"; position:fixed; inset:0; z-index:100; pointer-events:none; } #wrapper::before{ background:radial-gradient(ellipse at 50% 42%,transparent 38%,rgba(0,0,0,.42) 100%); } #wrapper::after{ opacity:.16; background-image:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.55) 2px 4px); } /* --------------------------------------------------------------------------- 4. THE WORDMARK --------------------------------------------------------------------------- */ #wrapper #header{ padding:34px 24px 26px; border-bottom:1px solid var(--cs-hairline); background:var(--cs-vfd-glass); } #wrapper #header h1.game_title{ position:relative; display:inline-block; margin:0; color:var(--cs-vfd-phosphor); font-family:var(--cs-mono); font-size:clamp(26px,5.4vw,48px); font-weight:700; line-height:1.1; letter-spacing:.16em; text-transform:uppercase; /* Halation in the front glass, verbatim from .cs-machine-phosphor (styles.css:88). Spatial bloom only — a VFD dot stops emitting the moment it is no longer addressed, so there is never a temporal trail. */ text-shadow: 0 0 3px var(--cs-vfd-phosphor), 0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent); } /* Rule 2, literally. A dark screen with transparent holes is laid over the lit glyphs, so the type is addressed dots rather than continuous strokes. The screen is the same near-black as the glass behind it, so it is invisible everywhere except where it punches the phosphor. The cell is sized in em so the matrix scales with the clamp() above and stays ~7 rows to the cap. */ #wrapper #header h1.game_title::after{ content:\"\"; position:absolute; inset:-.08em -.04em; pointer-events:none; background-image:radial-gradient(circle at 50% 50%,transparent 0 40%,var(--cs-vfd-glass) 44%); background-size:.105em .105em; } /* itch hides the h1 when a banner image is uploaded. We recommend publishing without one so the wordmark above carries the page, but if a banner is used it gets the glass treatment rather than floating loose on the bezel. */ #wrapper #header.has_image img{ border:1px solid #000; box-shadow:inset 0 0 0 1px rgba(255,255,255,.018); border-radius:0; } /* --------------------------------------------------------------------------- 5. THE BUY ROW AND EVERY BUTTON A button is an aperture in the faceplate with a dormant segment behind it. Hover addresses the segment fully. Transitions are 90ms linear because the machine quantizes brightness rather than easing it (presentation.js:31). --------------------------------------------------------------------------- */ #wrapper .header_buy_row{ padding:14px 0 4px; } #wrapper .header_buy_row > p{ margin:0 0 10px; color:var(--cs-vfd-silkscreen); font-size:11px; letter-spacing:.18em; text-transform:uppercase; } #wrapper .button, #wrapper .buy_btn, #wrapper .download_btn, #wrapper .donate_btn{ display:inline-block; background:var(--cs-vfd-glass); border:1px solid var(--cs-vfd-phosphor); border-radius:0; box-shadow:none; color:var(--cs-vfd-phosphor); font-family:var(--cs-mono); font-size:12px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 55%,transparent); padding:10px 20px; transition:background 90ms linear,color 90ms linear; } #wrapper .button:hover, #wrapper .buy_btn:hover, #wrapper .download_btn:hover, #wrapper .donate_btn:hover{ background:var(--cs-vfd-phosphor); color:var(--cs-vfd-glass); text-shadow:none; } #wrapper .button:active, #wrapper .buy_btn:active, #wrapper .download_btn:active, #wrapper .donate_btn:active{ background:var(--cs-vfd-wordmark); color:var(--cs-vfd-glass); } #wrapper .button:focus-visible, #wrapper .buy_btn:focus-visible, #wrapper .download_btn:focus-visible, #wrapper .donate_btn:focus-visible{ outline:2px solid var(--cs-vfd-counter); outline-offset:2px; } #wrapper .buy_message, #wrapper .buy_message .dollars{ color:var(--cs-vfd-counter); font-family:var(--cs-mono); letter-spacing:.06em; } #wrapper .buy_message .sub{color:var(--cs-vfd-silkscreen);} /* --------------------------------------------------------------------------- 6. BODY COPY The game reserves phosphor for readouts, never for prose. So does the page: paragraphs run in a warm neutral, and only labels, values and emphasis are allowed to be lit. These rules deliberately target .user_formatted as well as .formatted_description. .user_formatted is the class itch puts on every block of author-written rich text, so the Install instructions field inherits the same grammar without us having to guess the name of the container itch drops it into — a name that is not on itch's stable list. --------------------------------------------------------------------------- */ #wrapper .formatted_description, #wrapper .user_formatted{ color:var(--cs-body); font-family:var(--cs-mono); font-size:15px; line-height:1.62; } #wrapper .formatted_description p, #wrapper .user_formatted p{ max-width:68ch; margin:0 0 1.15em; } #wrapper .formatted_description a, #wrapper .user_formatted a{ color:var(--cs-vfd-phosphor); text-decoration:underline; text-underline-offset:3px; } #wrapper .formatted_description strong, #wrapper .user_formatted strong{ color:var(--cs-vfd-phosphor); font-weight:700; } /* The game has no italics. It changes brightness. This also sidesteps the weak synthetic obliques most monospace stacks fall back to. */ #wrapper .formatted_description em, #wrapper .user_formatted em{ color:var(--cs-vfd-counter); font-style:normal; } #wrapper .formatted_description h2, #wrapper .user_formatted h2{ max-width:68ch; margin:1.9em 0 .8em; color:var(--cs-vfd-wordmark); font-family:var(--cs-mono); font-size:17px; font-weight:700; line-height:1.35; letter-spacing:.06em; text-transform:none; /* the site's headings are sentences, not legends */ } #wrapper .formatted_description hr, #wrapper .custom-break{ max-width:68ch; margin:2.6em 0; height:0; border:0; border-top:1px solid var(--cs-hairline); background:none; } /* The numbered case legend — \"01 / CASE — first person audio-reactive horror\". It carries the section break, so the heading under it sits tight. */ #wrapper .custom-index{ max-width:68ch; margin:2.9em 0 0; padding-top:13px; border-top:1px solid var(--cs-hairline); /* the faceplate stamping line */ color:var(--cs-vfd-silkscreen); font-size:10px; font-weight:700; letter-spacing:.24em; line-height:1.5; text-transform:uppercase; } #wrapper .custom-index + h2{margin-top:.55em;} #wrapper .custom-index:first-child{margin-top:0;padding-top:0;border-top:0;} /* An addressed status line. The bullet is the lit indicator beside it. */ #wrapper .custom-status{ color:var(--cs-vfd-phosphor); font-size:11px; font-weight:700; letter-spacing:.2em; text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 50%,transparent); } #wrapper .custom-status::before{content:\"\\25CF\\00A0\\00A0\";} #wrapper .custom-lede{ color:var(--cs-vfd-counter); font-size:18px; line-height:1.5; letter-spacing:.02em; } #wrapper .custom-lede strong{color:inherit;} #wrapper .custom-signoff{ color:var(--cs-vfd-phosphor); font-size:16px; letter-spacing:.06em; } #wrapper .custom-signoff strong{color:inherit;} #wrapper .custom-closer{ font-size:22px; color:var(--cs-vfd-phosphor); text-shadow: 0 0 3px var(--cs-vfd-phosphor), 0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent); } #wrapper .custom-notice{ color:var(--cs-vfd-silkscreen); font-size:14px; } /* The redaction pull-quote. Dormant phosphor rather than lit: it is a line about blacking things out, so it sits at the dim end of the driver. */ #wrapper .custom-quote{ max-width:68ch; margin:1.6em 0 2em; padding:2px 0 2px 16px; border-left:2px solid var(--cs-vfd-phosphor); background:var(--cs-vfd-dim); quotes:none; } #wrapper .custom-quote p{ margin:0; padding:10px 0; color:var(--cs-vfd-counter); font-size:15px; line-height:1.5; } /* Filenames and shell commands are machine text: lit, on its own glass. */ #wrapper .formatted_description code, #wrapper .user_formatted code{ padding:1px 5px; background:rgba(242,168,30,.07); border:1px solid rgba(242,168,30,.18); color:var(--cs-vfd-phosphor); font-family:var(--cs-mono); font-size:.9em; word-break:break-word; } /* Numbered install steps. The counter is a readout, so it takes the counter colour and a fixed-width column, like every other value on the page. */ #wrapper .custom-steps{ max-width:68ch; margin:1.1em 0 2em; padding:0; list-style:none; counter-reset:cs-step; } #wrapper .custom-steps > li{ display:grid; grid-template-columns:3.2em minmax(0,1fr); gap:0 .6em; margin:0; padding:10px 0; border-bottom:1px solid #1a1a1a; font-size:14px; line-height:1.6; list-style:none; } #wrapper .custom-steps > li::before{ counter-increment:cs-step; content:counter(cs-step,decimal-leading-zero); color:var(--cs-vfd-counter); font-weight:700; letter-spacing:.1em; } /* --------------------------------------------------------------------------- 7. THE WORK ORDER The hero readout: silkscreen legend on the left, lit value on the right, the same grammar the in-game panels use (.cs-machine-header, styles.css:58-75). --------------------------------------------------------------------------- */ #wrapper .custom-workorder{ max-width:68ch; margin:2em 0; padding:18px 20px 20px; quotes:none; } #wrapper .custom-workorder::before{ content:\"WORK ORDER \\00B7 SOURCE 4417-C\"; display:block; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(140,124,84,.22); color:var(--cs-vfd-silkscreen); font-size:10px; font-weight:700; letter-spacing:.26em; } #wrapper .custom-workorder p{ display:grid; grid-template-columns:7.5em minmax(0,1fr); gap:0 1em; max-width:none; margin:0; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.035); font-size:14px; line-height:1.5; } #wrapper .custom-workorder p:last-child{border-bottom:0;padding-bottom:0;} #wrapper .custom-workorder .custom-label{ color:var(--cs-vfd-silkscreen); font-size:11px; font-weight:700; letter-spacing:.2em; line-height:1.9; } #wrapper .custom-workorder .custom-value{ color:var(--cs-vfd-phosphor); text-transform:uppercase; text-shadow: 0 0 3px var(--cs-vfd-phosphor), 0 0 10px color-mix(in srgb,var(--cs-vfd-phosphor) 28%,transparent); } /* --------------------------------------------------------------------------- 8. SPEC ROWS Reference data, not the order — same grammar one brightness tier down. --------------------------------------------------------------------------- */ #wrapper .custom-spec{ max-width:68ch; margin:1.4em 0 2em; padding:0; list-style:none; border-top:1px solid #1a1a1a; } #wrapper .custom-spec li{ display:grid; grid-template-columns:7.5em minmax(0,1fr); gap:0 1em; margin:0; padding:9px 0; border-bottom:1px solid #1a1a1a; font-size:14px; line-height:1.55; list-style:none; } /* Labels stay lowercase — the site's legends are lowercase and clipped, and forcing caps here would fight the voice rather than match it. */ #wrapper .custom-spec .custom-label{ color:var(--cs-vfd-silkscreen); font-size:12px; font-weight:700; letter-spacing:.16em; line-height:1.8; } #wrapper .custom-spec .custom-value{color:var(--cs-body);} #wrapper .custom-spec .custom-value a{word-break:break-word;} /* --------------------------------------------------------------------------- 9. THE ONE RED THING Red belongs to the circuit that pays for it. On this page that circuit is the strobe and jumpscare warning, and nothing else. Shadow verbatim from .cs-machine-danger (styles.css:93). --------------------------------------------------------------------------- */ #wrapper h2.custom-warning-heading{ max-width:68ch; margin:2.9em 0 0; padding-top:13px; border-top:1px solid rgba(255,106,90,.35); color:var(--cs-vfd-danger); font-size:11px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; } #wrapper .custom-warning{ max-width:68ch; margin:.9em 0 2em; padding:16px 18px; border-color:rgba(255,106,90,.4); color:#F0C7C0; font-size:14px; } #wrapper .custom-warning::before{ content:\"CAUTION\"; display:block; margin-bottom:10px; color:var(--cs-vfd-danger); font-size:10px; font-weight:700; letter-spacing:.26em; text-shadow: 0 0 3px color-mix(in srgb,var(--cs-vfd-danger) 62%,transparent), 0 0 10px color-mix(in srgb,var(--cs-vfd-danger) 24%,transparent); } /* --------------------------------------------------------------------------- 10. DELIVERABLES The download list is already a table of labels and numeric values, which is what a VFD is for. File sizes take the counter colour, because a size is a numeric readout and the machine has always drawn those in #FFD070. --------------------------------------------------------------------------- */ #wrapper .uploads{ margin:2em 0; padding:18px 20px; } #wrapper .uploads::before{ content:\"DELIVERABLES\"; display:block; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(140,124,84,.22); color:var(--cs-vfd-silkscreen); font-size:10px; font-weight:700; letter-spacing:.26em; } #wrapper .uploads > p{ color:var(--cs-vfd-silkscreen); font-size:13px; line-height:1.55; } #wrapper .upload{ padding:9px 0; border-bottom:1px solid rgba(255,255,255,.035); } #wrapper .upload:last-child{border-bottom:0;} #wrapper .upload_name .name{ color:var(--cs-vfd-phosphor); font-family:var(--cs-mono); font-size:13px; font-weight:700; letter-spacing:.02em; text-shadow:0 0 3px color-mix(in srgb,var(--cs-vfd-phosphor) 45%,transparent); } #wrapper .upload_name .file_size, #wrapper .upload_name .file_size span{ color:var(--cs-vfd-counter); font-family:var(--cs-mono); font-size:12px; letter-spacing:.06em; } #wrapper .upload_name .download_platforms{ color:var(--cs-vfd-silkscreen); opacity:.8; } #wrapper .upload_date, #wrapper .upload .file_size + span{ color:var(--cs-vfd-silkscreen); } /* --------------------------------------------------------------------------- 11. INFO PANEL Status / Platforms / Author / Genre / Tags is the same label-and-value grammar as the work order, so it gets the same treatment for free. --------------------------------------------------------------------------- */ #wrapper .game_info_panel_widget{ padding:14px 16px; font-family:var(--cs-mono); font-size:13px; } #wrapper .game_info_panel_widget td{ padding:5px 0; vertical-align:top; } #wrapper .game_info_panel_widget td:first-child{ padding-right:14px; color:var(--cs-vfd-silkscreen); font-size:11px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; white-space:nowrap; } #wrapper .game_info_panel_widget td:last-child{color:var(--cs-body);} #wrapper .game_info_panel_widget a{ color:var(--cs-vfd-phosphor); text-decoration:none; } #wrapper .game_info_panel_widget a:hover{text-decoration:underline;text-underline-offset:3px;} /* --------------------------------------------------------------------------- 12. SCREENSHOTS Each still is its own display: black border, the bezel hairline, and the panel drop from .cs-machine-panel (styles.css:56). A half-strength scanline screen sits on the frame so the shots belong to the same glass as the page. --------------------------------------------------------------------------- */ #wrapper .screenshot_list .screenshot{ position:relative; display:block; margin-bottom:14px; border:1px solid #000; box-shadow:inset 0 0 0 1px rgba(255,255,255,.018),0 18px 80px rgba(0,0,0,.72); border-radius:0; line-height:0; } #wrapper .screenshot_list .screenshot::after{ content:\"\"; position:absolute; inset:0; pointer-events:none; opacity:.08; background-image:repeating-linear-gradient(to bottom,transparent 0 2px,rgba(0,0,0,.55) 2px 4px); } #wrapper .screenshot_list img{ display:block; max-width:100%; border-radius:0; } /* --------------------------------------------------------------------------- 13. COMMENTS AND FOOTER Light touch. Readability wins over theme in a comment thread, and the itch footer stays fully visible and legible — that is a condition of using custom CSS at all. --------------------------------------------------------------------------- */ #wrapper .game_comments_widget{ font-family:var(--cs-mono); font-size:14px; } #wrapper .game_comments_widget .post_body{color:var(--cs-body);} #wrapper .game_comments_widget .post_author, #wrapper .game_comments_widget a{color:var(--cs-vfd-phosphor);} #wrapper .game_comments_widget .post_date, #wrapper .game_comments_widget .post_date a{color:var(--cs-vfd-silkscreen);} #wrapper .footer{ padding:16px 0 18px; border-top:1px solid var(--cs-hairline); color:var(--cs-vfd-silkscreen); font-family:var(--cs-mono); font-size:12px; } #wrapper .footer a{ color:var(--cs-vfd-wordmark); text-decoration:none; } #wrapper .footer a:hover{ color:var(--cs-vfd-phosphor); text-decoration:underline; text-underline-offset:3px; } /* --------------------------------------------------------------------------- 14. THE MACHINE RUNNING Three behaviours, all quoted from the game, all gated behind an explicit motion preference. The page carries a strobe content warning, so nothing here may move for a reader who has asked for stillness. --------------------------------------------------------------------------- */ @media (prefers-reduced-motion:no-preference){ /* Filament warm-up, from src/game/title.js:287-303. Sixteen steps because the machine quantizes brightness and never tweens it (presentation.js:31: pwm16 rounds to sixteenths). Brightness, not opacity — a filament comes up to temperature, it does not fade in. */ #wrapper #header h1.game_title{ animation: cs-vfd-warmup 420ms steps(16,end) both, cs-vfd-blank 4.25s steps(1,end) 620ms infinite; } /* Periodic blanking, same source: 35ms at .68 every 4.25s. */ @keyframes cs-vfd-warmup{ from{filter:brightness(.06);} to {filter:brightness(1);} } @keyframes cs-vfd-blank{ 0%,.8% {opacity:.68;} .9%,100% {opacity:1;} } /* Dormant-driver flicker on the lit values, verbatim from styles.css:95-98. */ #wrapper .custom-workorder .custom-value{ animation:cs-vfd-dom-flicker-low 2.8s steps(2,end) infinite; } @keyframes cs-vfd-dom-flicker-low{ 0%,91%,100%{opacity:1} 92%{opacity:.93} 94%{opacity:.98} } } /* --------------------------------------------------------------------------- 15. RESPONSIVE Below 560px the label columns stack, the faceplate legends shorten, and the screw heads come off — at that size they read as dirt on the screen rather than as hardware. --------------------------------------------------------------------------- */ @media (max-width:760px){ #wrapper #header{padding:24px 16px 20px;} #wrapper .formatted_description{font-size:14px;} } @media (max-width:560px){ #wrapper #inner_column::before, #wrapper #inner_column::after{ padding:9px 14px; background-image:none; letter-spacing:.14em; font-size:9px; } #wrapper #inner_column::before{content:\"AUDIOCORP \\00B7 SOURCE 4417-C\";} #wrapper #inner_column::after{content:\"ELLERY CONSERVATORY \\00B7 CONDEMNED\";} #wrapper #header h1.game_title{letter-spacing:.1em;} #wrapper .custom-workorder p, #wrapper .custom-spec li{ grid-template-columns:minmax(0,1fr); gap:2px 0; } #wrapper .custom-workorder .custom-label, #wrapper .custom-spec .custom-label{line-height:1.4;} /* The step number keeps its column — it is the thing you scan for when you are following instructions on a phone. */ #wrapper .custom-steps > li{grid-template-columns:2.4em minmax(0,1fr);} #wrapper .custom-index{letter-spacing:.18em;} #wrapper .custom-closer{font-size:19px;} #wrapper .custom-workorder, #wrapper .custom-warning, #wrapper .uploads{padding-left:14px;padding-right:14px;} } /* --------------------------------------------------------------------------- 16. WHEN THE GLASS HAS TO COME OFF High-contrast and forced-colours readers get the layout without the optics: no scanlines, no vignette, no dot screen, and prose lifted to the game's --cs-white. The instrument still reads as an instrument. --------------------------------------------------------------------------- */ @media (prefers-contrast:more){ #wrapper{--cs-body:#EAF2F0;} #wrapper::before, #wrapper::after, #wrapper #header h1.game_title::after, #wrapper .screenshot_list .screenshot::after{display:none;} #wrapper .formatted_description h2{color:#EAF2F0;} #wrapper .custom-workorder .custom-label, #wrapper .custom-spec .custom-label, #wrapper .uploads > p, #wrapper .custom-notice{color:#D8CFB8;} } @media (forced-colors:active){ #wrapper::before, #wrapper::after, #wrapper #header h1.game_title::after, #wrapper .screenshot_list .screenshot::after{display:none;} #wrapper #header h1.game_title{text-shadow:none;} #wrapper .custom-workorder .custom-value, #wrapper .upload_name .name, #wrapper .button{text-shadow:none;} }"
+      - button "Save" [ref=f2e493] [cursor=pointer]
+    - generic [ref=f2e29]:
+      - text: →
+      - generic [ref=f2e45]:
+        - text: AUDIOCORP ·LOCAL MONITOR ·SOURCE 4417-C
+        - generic [ref=f2e46]:
+          - img "CHUNK SURFER" [ref=f2e47]
+          - heading "CHUNK SURFER" [level=1] [ref=f2e48]
+        - generic [ref=f2e50]:
+          - generic [ref=f2e51]:
+            - generic [ref=f2e52]:
+              - generic [ref=f2e53]:
+                - paragraph [ref=f2e54]: AUDIOCORP / WORK ORDER 4417-C
+                - generic [ref=f2e55]:
+                  - paragraph [ref=f2e56]:
+                    - strong [ref=f2e58]: TAKE THE JOB.
+                  - paragraph [ref=f2e59]: Report to condemned Ellery Conservatory as the field recordist. Capture five clean room tones before demolition at 06:00.
+              - generic [ref=f2e60]:
+                - link [ref=f2e61] [cursor=pointer]:
+                  - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOS5qcGc=/original/9tNIpz.jpg
+                  - img "Columns and stairs frame suspended cabinets inside looping structures above an orange horizon." [ref=f2e62]
+                - paragraph [ref=f2e63]: FIND A WAY THROUGH.
+              - generic [ref=f2e64]:
+                - paragraph [ref=f2e65]: 01 / FIELD CAPTURE
+                - generic [ref=f2e66]:
+                  - heading "ARRIVE. LISTEN. RECORD." [level=2] [ref=f2e67]
+                  - paragraph [ref=f2e68]:
+                    - text: Step out of the van. Check in. Choose your equipment and bring a light. Open the room in your headphones, check the level, then press
+                    - strong [ref=f2e69]: REC
+                    - text: and hold still. Keep your footsteps, handling, and breath off the take. Press
+                    - strong [ref=f2e70]: STOP
+                    - text: when it is usable. Open
+                    - strong [ref=f2e71]: TAKES
+                    - text: to hear what came back.
+                  - paragraph [ref=f2e72]: Mind the torch battery. Keep the beam and your noise off anything you would rather leave alone.
+              - generic [ref=f2e73]:
+                - link [ref=f2e74] [cursor=pointer]:
+                  - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNS5qcGc=/original/F3mu%2Fa.jpg
+                  - img "The field recorder shows its tape counter, level display, and REC, STOP, and TAKES controls beside a navigator map and room-level LCD." [ref=f2e75]
+                - paragraph [ref=f2e76]: OPEN THE RECORDER. CHECK THE ROOM.
+              - generic [ref=f2e77]:
+                - paragraph [ref=f2e78]: 02 / ENCOUNTERS
+                - generic [ref=f2e79]:
+                  - heading "READ THE MOVE. ANSWER." [level=2] [ref=f2e80]
+                  - paragraph [ref=f2e81]:
+                    - text: Patch your techniques before the encounter.
+                    - strong [ref=f2e82]: EXPOSE
+                    - text: what hides.
+                    - strong [ref=f2e83]: MONITOR
+                    - text: a broadcast, capture it, then use
+                    - strong [ref=f2e84]: PLAYBACK
+                    - text: .
+                    - strong [ref=f2e85]: HOLD
+                    - text: against a blow or time a parry to turn it back. Earn another action with a good read. Watch the battery and your composure.
+              - generic [ref=f2e86]:
+                - paragraph [ref=f2e87]: 03 / PEOPLE AND RECORDS
+                - generic [ref=f2e88]:
+                  - heading "TALK. READ. CALL." [level=2] [ref=f2e89]
+                  - paragraph [ref=f2e90]: Go across the road. Speak to the people keeping the pub warm. Help with an errand. Meet the people still occupying the school. Ask about a performance. Read the retained records. Follow the letters and phone calls. Hear what has been left out of the account, including your own.
+              - generic [ref=f2e91]:
+                - link [ref=f2e92] [cursor=pointer]:
+                  - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNC5qcGc=/original/oOt8l3.jpg
+                  - img "The view from the van looks past its dashboard and windscreen toward Ellery's gate and the buildings across the street." [ref=f2e93]
+                - paragraph [ref=f2e94]: STEP OUT. CHECK IN.
+              - generic [ref=f2e95]:
+                - paragraph [ref=f2e96]: 04 / ONWARD AND RETURN
+                - generic [ref=f2e97]:
+                  - heading "KEEP GOING. KEEP LISTENING." [level=2] [ref=f2e98]
+                  - paragraph [ref=f2e99]: Climb through instruments large enough to become buildings. Cross rooms joined at impossible angles. Find the next landing. Take the wheel and drive into the storm.
+                  - paragraph [ref=f2e100]: Sit with a performance. Let the conversation run. Hear the hands, the mistakes, and the space after a note. Decide how long to remain. Get up while you still can.
+                  - paragraph [ref=f2e101]:
+                    - text: Choose what to carry out. Reach an ending and check
+                    - strong [ref=f2e102]: ARCHIVE / 100%
+                    - text: for discoveries and filed returns. Finish a run; if it qualifies, play through that same night from another side.
+              - generic [ref=f2e103]:
+                - link [ref=f2e104] [cursor=pointer]:
+                  - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNy5qcGc=/original/uMkj4D.jpg
+                  - img "A narrow walking route passes beneath the strings and wooden structure of an enormous harpsichord." [ref=f2e105]
+                - paragraph [ref=f2e106]: FIND THE NEXT LANDING.
+              - generic [ref=f2e107]:
+                - generic [ref=f2e108]:
+                  - link [ref=f2e109] [cursor=pointer]:
+                    - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNi5qcGc=/original/eE0fjK.jpg
+                    - img "Rain falls across a rooftop overlook facing the city beneath a grey-purple sky." [ref=f2e110]
+                  - paragraph [ref=f2e111]: LOOK OUT OVER THE CITY.
+                - generic [ref=f2e112]:
+                  - link [ref=f2e113] [cursor=pointer]:
+                    - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOC5qcGc=/original/7rL9JL.jpg
+                    - img "An amber listening conversation overlays impossible architecture, with prompts to get up, open the recorder, or pause." [ref=f2e114]
+                  - paragraph [ref=f2e115]: LISTEN. GET UP WHILE YOU CAN.
+              - generic [ref=f2e116]:
+                - paragraph [ref=f2e117]: BEFORE YOU PLAY
+                - generic [ref=f2e118]:
+                  - heading "SET THE INPUT." [level=2] [ref=f2e119]
+                  - paragraph [ref=f2e120]: MICROPHONE OPTIONAL · LOCAL PROFILE OPTIONAL
+                  - paragraph [ref=f2e121]: Microphone permission is optional. With permission, room loudness is measured locally. You can choose to record spoken slates and voicemail; those recordings stay on your device. There is no speech recognition or automatic audio upload.
+                  - paragraph [ref=f2e122]:
+                    - text: A separate optional local profile permits disclosed personalization using names, computer details, and in-game responses. Optional effects can move the game window, open game-owned windows, and create files in the game's local data folder. The complete game remains available without microphone input or profiling. Disable modules, restore the window, or erase profile data in
+                    - strong [ref=f2e123]: SETTINGS
+                    - text: .
+                  - paragraph [ref=f2e124]: Use keyboard and mouse or a controller. Adjust text speed, flashes, screen shake, controller bindings, recording forgiveness, navigation help, combat assistance, and escape timers in Settings.
+                  - heading "CONTENT WARNING" [level=2] [ref=f2e125]
+                  - paragraph [ref=f2e126]: CAUTION Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Reduce visual effects in Settings. Optional desktop effects may move the game window and open additional windows.
+            - generic [ref=f2e127]:
+              - link "More information" [ref=f2e129] [cursor=pointer]:
+                - /url: javascript:void(0)
+              - text: 
+            - generic [ref=f2e132]:
+              - text: DELIVERABLES
+              - heading "Download" [level=2] [ref=f2e133]
+              - generic [ref=f2e134]:
+                - generic [ref=f2e135]:
+                  - link "Download" [ref=f2e136] [cursor=pointer]:
+                    - /url: javascript:void(0);
+                  - generic [ref=f2e137]:
+                    - generic [ref=f2e138]:
+                      - strong [ref=f2e139]: CHUNK SURFER for Windows
+                      - generic [ref=f2e140]: 488 MB
+                      - generic [aria-hidden] [ref=f2e142]: 
+                    - generic [ref=f2e143]:
+                      - text: Version 0.3.0
+                      - generic "01 November 2026 @ 07:59 UTC" [ref=f2e145]:
+                        - generic [aria-hidden] [ref=f2e146]: 
+                        - text: 21 hours ago
+                - generic [ref=f2e147]:
+                  - link "Download" [ref=f2e148] [cursor=pointer]:
+                    - /url: javascript:void(0);
+                  - generic [ref=f2e149]:
+                    - generic [ref=f2e150]:
+                      - strong [ref=f2e151]: CHUNK SURFER for macOS (Silicon)
+                      - generic [ref=f2e152]: 494 MB
+                      - generic [aria-hidden] [ref=f2e154]: 
+                    - generic [ref=f2e155]:
+                      - text: Version 0.3.0
+                      - generic "01 November 2026 @ 07:59 UTC" [ref=f2e157]:
+                        - generic [aria-hidden] [ref=f2e158]: 
+                        - text: 21 hours ago
+                - generic [ref=f2e159]:
+                  - link "Download" [ref=f2e160] [cursor=pointer]:
+                    - /url: javascript:void(0);
+                  - generic [ref=f2e161]:
+                    - generic [ref=f2e162]:
+                      - strong [ref=f2e163]: CHUNK SURFER for Linux (Debian)
+                      - generic [ref=f2e164]: 489 MB
+                      - generic [aria-hidden] [ref=f2e166]: 
+                    - generic [ref=f2e167]:
+                      - text: Version 0.3.0
+                      - generic "01 November 2026 @ 08:00 UTC" [ref=f2e169]:
+                        - generic [aria-hidden] [ref=f2e170]: 
+                        - text: 21 hours ago
+                - generic [ref=f2e171]:
+                  - link "Download" [ref=f2e172] [cursor=pointer]:
+                    - /url: javascript:void(0);
+                  - generic [ref=f2e173]:
+                    - generic [ref=f2e174]:
+                      - strong [ref=f2e175]: CHUNK SURFER for Linux (AppImage)
+                      - generic [ref=f2e176]: 562 MB
+                      - generic [aria-hidden] [ref=f2e178]: 
+                    - generic [ref=f2e179]:
+                      - text: Version 0.3.0
+                      - generic "01 November 2026 @ 08:00 UTC" [ref=f2e181]:
+                        - generic [aria-hidden] [ref=f2e182]: 
+                        - text: 21 hours ago
+            - generic [ref=f2e183]:
+              - heading "Install instructions" [level=2] [ref=f2e184]
+              - generic [ref=f2e185]:
+                - paragraph [ref=f2e186]: CHUNK SURFER / INSTALLATION
+                - paragraph [ref=f2e187]:
+                  - strong [ref=f2e188]: INSTALL THE BETA.
+                - paragraph [ref=f2e189]: v0.3.0 PUBLIC BETA · UNSIGNED
+                - paragraph [ref=f2e190]: Choose the package for your computer. Follow the steps below.
+                - list [ref=f2e191]:
+                  - listitem [ref=f2e192]:
+                    - strong [ref=f2e193]: macOS
+                    - generic [ref=f2e194]: Apple Silicon · DMG
+                  - listitem [ref=f2e195]:
+                    - strong [ref=f2e196]: windows
+                    - generic [ref=f2e197]:
+                      - text: x64 ·
+                      - code [ref=f2e198]: chunk-surfer-windows-x64.zip
+                      - text: · Microsoft Edge WebView2 Runtime required
+                  - listitem [ref=f2e199]:
+                    - strong [ref=f2e200]: linux
+                    - generic [ref=f2e201]:
+                      - text: x64 ·
+                      - code [ref=f2e202]: chunk-surfer-linux-x64.AppImage
+                      - text: or
+                      - code [ref=f2e203]: chunk-surfer-linux-x64.deb
+                  - listitem [ref=f2e204]:
+                    - strong [ref=f2e205]: audio
+                    - generic [ref=f2e206]: Headphones recommended. A microphone is optional.
+                - paragraph [ref=f2e207]: These beta packages are unsigned, so your operating system may block the first launch. Use the approval steps below for the copy you downloaded from this page. Download sizes appear beside each file.
+                - heading "macOS" [level=2] [ref=f2e208]
+                - list [ref=f2e209]:
+                  - listitem [ref=f2e210]:
+                    - text: Open the downloaded macOS Apple Silicon
+                    - code [ref=f2e211]: .dmg
+                    - text: and drag
+                    - strong [ref=f2e212]: Chunk Surfer
+                    - text: into
+                    - strong [ref=f2e213]: Applications
+                    - text: .
+                  - listitem [ref=f2e214]:
+                    - text: Launch
+                    - strong [ref=f2e215]: Chunk Surfer
+                    - text: from Applications. If macOS blocks it, open
+                    - strong [ref=f2e216]: System Settings → Privacy & Security
+                    - text: and use
+                    - strong [ref=f2e217]: Open Anyway
+                    - text: for Chunk Surfer, then confirm the launch.
+                  - listitem [ref=f2e218]: If you enable microphone input, also allow access in the macOS permission prompt. You can continue playing if you decline.
+                - heading "Windows" [level=2] [ref=f2e219]
+                - list [ref=f2e220]:
+                  - listitem [ref=f2e221]:
+                    - text: Extract
+                    - code [ref=f2e222]: chunk-surfer-windows-x64.zip
+                    - text: completely into a folder you can write to.
+                  - listitem [ref=f2e223]:
+                    - text: Keep all extracted files together and run
+                    - code [ref=f2e224]: chunk-surfer.exe
+                    - text: . Do not launch it from inside the ZIP.
+                  - listitem [ref=f2e225]:
+                    - text: The
+                    - strong [ref=f2e226]: Microsoft Edge WebView2 Runtime
+                    - text: must be installed. If it is missing, install it from Microsoft and launch the game again.
+                  - listitem [ref=f2e227]:
+                    - text: If SmartScreen shows
+                    - emphasis [ref=f2e228]: Windows protected your PC
+                    - text: ", use"
+                    - strong [ref=f2e229]: More info → Run anyway
+                    - text: for this downloaded beta.
+                - heading "Linux" [level=2] [ref=f2e230]
+                - list [ref=f2e231]:
+                  - listitem [ref=f2e232]:
+                    - strong [ref=f2e233]: "AppImage:"
+                    - text: "make the file executable and run it:"
+                    - code [ref=f2e234]: chmod +x chunk-surfer-linux-x64.AppImage
+                    - code [ref=f2e235]: ./chunk-surfer-linux-x64.AppImage
+                  - listitem [ref=f2e236]:
+                    - strong [ref=f2e237]: "Debian / Ubuntu:"
+                    - text: install with
+                    - code [ref=f2e238]: sudo apt install ./chunk-surfer-linux-x64.deb
+                    - text: ", then open"
+                    - strong [ref=f2e239]: Chunk Surfer
+                    - text: from your applications menu.
+                - paragraph [ref=f2e240]: The game needs working 3D graphics support. If you see a blank or incorrectly rendered world, include your GPU and graphics-driver details in a bug report. Compatibility and performance on additional hardware are still being tested.
+                - heading "Controls" [level=2] [ref=f2e241]
+                - paragraph [ref=f2e242]: "Keyboard and mouse or a controller can be used for normal play. Controller buttons can be remapped in Settings. These are the default on-foot keyboard controls; driving and other scenes show their own prompts:"
+                - table [ref=f2e243]:
+                  - rowgroup [ref=f2e244]:
+                    - row [ref=f2e245]:
+                      - columnheader "Key" [ref=f2e246]
+                      - columnheader "Action" [ref=f2e247]
+                  - rowgroup [ref=f2e248]:
+                    - row [ref=f2e249]:
+                      - cell "WASD / arrow keys" [ref=f2e250]
+                      - cell "Move" [ref=f2e251]
+                    - row [ref=f2e252]:
+                      - cell "Shift" [ref=f2e253]
+                      - cell "Quiet movement" [ref=f2e254]
+                    - row [ref=f2e255]:
+                      - cell "C" [ref=f2e256]
+                      - cell "Hide" [ref=f2e257]
+                    - row [ref=f2e258]:
+                      - cell "F" [ref=f2e259]
+                      - cell "Light" [ref=f2e260]
+                    - row [ref=f2e261]:
+                      - cell "B" [ref=f2e262]
+                      - cell "Bag" [ref=f2e263]
+                    - row [ref=f2e264]:
+                      - cell "M" [ref=f2e265]
+                      - cell "Map" [ref=f2e266]
+                    - row [ref=f2e267]:
+                      - cell "R" [ref=f2e268]
+                      - cell "Open recorder" [ref=f2e269]
+                    - row [ref=f2e270]:
+                      - cell "V" [ref=f2e271]
+                      - cell "Radio" [ref=f2e272]
+                    - row [ref=f2e273]:
+                      - cell "E" [ref=f2e274]
+                      - cell "Interact" [ref=f2e275]
+                    - row [ref=f2e276]:
+                      - cell "P" [ref=f2e277]
+                      - cell "Playback" [ref=f2e278]
+                    - row [ref=f2e279]:
+                      - cell "Esc" [ref=f2e280]
+                      - cell "Menu / pause" [ref=f2e281]
+                - paragraph [ref=f2e282]:
+                  - text: The recorder has
+                  - strong [ref=f2e283]: REC
+                  - text: ","
+                  - strong [ref=f2e284]: STOP
+                  - text: ", and"
+                  - strong [ref=f2e285]: TAKES
+                  - text: controls. Opening it does not pause the room. Follow the prompts on the machine when starting a recording or saving a usable take.
+                - heading "Microphone and local recordings" [level=2] [ref=f2e286]
+                - paragraph [ref=f2e287]: Microphone permission is optional. With permission, the game measures room loudness locally so real noise can affect play. You can also choose to record spoken take slates and voicemail. These recordings stay on your device; the game does not recognize speech or automatically upload audio. You can complete the game without a microphone.
+                - paragraph [ref=f2e288]:
+                  - text: Use
+                  - strong [ref=f2e289]: Settings → Input
+                  - text: to select an input and test its level. Operating-system privacy settings control the app’s microphone permission.
+                - heading "Local profile and desktop effects" [level=2] [ref=f2e290]
+                - paragraph [ref=f2e291]: The separate profile choice permits disclosed local personalization using names, computer details, and in-game responses. Optional desktop effects can move the game window, open additional game-owned windows, and create field-return files in the game’s local data folder. Profile data is processed locally and is not uploaded.
+                - paragraph [ref=f2e292]: You can play the complete game with the profile off. Settings let you disable individual modules, restore the game window, and erase the profile data.
+                - heading "Content warning and accessibility" [level=2] [ref=f2e293]
+                - paragraph [ref=f2e294]: CAUTION Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Set your preferred effects before starting.
+                - paragraph [ref=f2e295]: Settings include text speed and instant text, flash/strobe and screen-shake reduction, controller configuration, recording forgiveness, navigation help, combat assistance, and escape-timer adjustments.
+                - heading "Saved data and uninstalling" [level=2] [ref=f2e296]
+                - paragraph [ref=f2e297]:
+                  - text: Removing the app normally leaves local progress, settings, and recordings on this device. To remove them too, first open
+                  - strong [ref=f2e298]: Settings → Memory → Erase all data & restart
+                  - text: in the game and confirm. Wait for the restart, then quit and remove the app or package. Exported copies and operating-system backups are not removed by this reset.
+                - heading "Report a problem" [level=2] [ref=f2e299]
+                - paragraph [ref=f2e300]: Include the game version, operating system, CPU/GPU, controller model if relevant, and the steps that led to the problem. A diagnostic report from the in-game About/Support panel also helps.
+                - list [ref=f2e301]:
+                  - listitem [ref=f2e302]:
+                    - strong [ref=f2e303]: bugs
+                    - link "Report a bug" [ref=f2e305] [cursor=pointer]:
+                      - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=bug
+                  - listitem [ref=f2e306]:
+                    - strong [ref=f2e307]: feedback
+                    - link "Send playtest feedback" [ref=f2e309] [cursor=pointer]:
+                      - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=feedback
+                - paragraph [ref=f2e310]:
+                  - strong [ref=f2e311]: CHUNK SURFER / v0.3.0 PUBLIC BETA
+            - generic [ref=f2e312]:
+              - heading "Development log" [level=2] [ref=f2e313]
+              - list [ref=f2e314]:
+                - listitem [ref=f2e315]:
+                  - link "Initial beta" [ref=f2e316] [cursor=pointer]:
+                    - /url: https://cbassuarez.itch.io/chunk-surfer/devlog/1586760/initial-beta
+                  - generic "15 July 2026 @ 01:43 UTC" [ref=f2e318]:  Jul 15, 2026
+            - generic [ref=f2e320]:
+              - heading "Comments" [level=2] [ref=f2e494]
+              - textbox "Write your comment…" [ref=f2e495]
+          - generic [ref=f2e326]:
+            - link [ref=f2e327] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOS5qcGc=/original/9tNIpz.jpg
+            - link [ref=f2e329] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNS5qcGc=/original/F3mu%2Fa.jpg
+            - link [ref=f2e331] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNC5qcGc=/original/oOt8l3.jpg
+            - link [ref=f2e333] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNy5qcGc=/original/uMkj4D.jpg
+            - link [ref=f2e335] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNi5qcGc=/original/eE0fjK.jpg
+            - link [ref=f2e337] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOC5qcGc=/original/7rL9JL.jpg
+            - link [ref=f2e339] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjcyNy5wbmc=/original/C56R7X.png
+            - link [ref=f2e341] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNC5wbmc=/original/L9QG27.png
+            - link [ref=f2e343] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNy5wbmc=/original/msYG9g.png
+            - link [ref=f2e345] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczOS5wbmc=/original/wA5QRg.png
+            - link [ref=f2e347] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg4MjI2OC5wbmc=/original/jpQ9c7.png
+            - link [ref=f2e349] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNi5wbmc=/original/NHheR2.png
+            - link [ref=f2e351] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNS5wbmc=/original/sxauwR.png
+            - link [ref=f2e353] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczOC5wbmc=/original/Jk1sBm.png
+            - link [ref=f2e355] [cursor=pointer]:
+              - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg4MzEzMS5wbmc=/original/XJmgu9.png
+        - generic [ref=f2e357]:
+          - link [ref=f2e358] [cursor=pointer]:
+            - /url: https://itch.io/
+          - link "itch.io" [ref=f2e361] [cursor=pointer]:
+            - /url: https://itch.io/
+          - generic [ref=f2e362]: ·
+          - link "View all by seb" [ref=f2e363] [cursor=pointer]:
+            - /url: https://cbassuarez.itch.io
+          - generic [ref=f2e364]: ·
+          - link "Report" [ref=f2e365] [cursor=pointer]:
+            - /url: javascript:void(0);
+          - generic [ref=f2e366]: ·
+          - link "Embed" [ref=f2e367] [cursor=pointer]:
+            - /url: javascript:void(0);
+          - generic [ref=f2e368]: ·
+          - generic [ref=f2e369]: Updated 18 seconds ago
+          - generic [ref=f2e370]:
+            - link "Games" [ref=f2e371] [cursor=pointer]:
+              - /url: https://itch.io/games
+            - text: ›
+            - link "Adventure" [ref=f2e372] [cursor=pointer]:
+              - /url: https://itch.io/games/genre-adventure
+            - text: ›
+            - link "Free" [ref=f2e373] [cursor=pointer]:
+              - /url: https://itch.io/games/free
+        - text: ELLERY CONSERVATORY OF MUSIC ·CONDEMNED ·DEMOLITION 06:00

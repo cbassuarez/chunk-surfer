@@ -63,10 +63,11 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   let won=reloaded;
   for(let cycle=0;cycle<3;cycle++){
     if(cycle){
-      const encounter=nextSourceContact(won.sourceContacts,{victories:won.finalEncounter.victories});
+      const chapter=['I','II','III'][cycle];
+      const encounter=nextSourceContact(won.sourceContacts,{victories:won.finalEncounter.victories,chapter});
       for(const id of ['contact.warning','contact.confirm'])
         won=dispatch(won,'SOURCE_CONTACT_RESOLVED',{contact:resolveSourceContact(won.sourceContacts,encounter,id)});
-      won=dispatch(won,'CONTACT_COMMITTED');
+      won=dispatch(won,'CONTACT_COMMITTED',{chapter});
     }
     won=dispatch(won,'FINAL_ENCOUNTER_RESOLVED',{result:{outcome:SOURCE_FINAL_OUTCOME.CONTAIN,won:true,battleAttemptId:won.finalEncounter.activeBattleId}});
     won=dispatch(won,'SOURCE_COMPLETED');

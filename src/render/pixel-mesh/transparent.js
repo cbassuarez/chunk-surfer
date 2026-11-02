@@ -61,7 +61,7 @@ export function createTransparentPixelMesh(THREE, renderer, {
     ['uRecordingTemporalSmear', recording.temporalSmear], ['uRecordingScenePinning', recording.scenePinning],
     ['uRecordingFearGain', recording.fearGain], ['uRecordingAudioGain', recording.audioGain],
     ['uDebugSource', 0], ['uForceSignal', 0], ['uMovement', 0], ['uHushBodyPost', new THREE.Vector4()],
-    ['uScreenKind', screen.kind], ['uScreenPeriodPx', screen.periodPx], ['uScreenAngles', new THREE.Vector3(...screen.angles)],
+    ['uScreenKind', screen.kind], ['uClusteredDotMix', 0], ['uScreenPeriodPx', screen.periodPx], ['uScreenAngles', new THREE.Vector3(...screen.angles)],
     ['uScreenBands', new THREE.Vector2(...screen.bands)], ['uScreenSharpness', screen.sharpness],
     ['uScreenGrainFollow', screen.grainFollow], ['uScreenJitter', screen.jitter],
     ['uSourceCoverage', sceneTarget.texture], ['uSourceProjectionInverse', new THREE.Matrix4()],

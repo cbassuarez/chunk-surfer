@@ -18,8 +18,8 @@ const doors=FP.doorState();
 assert.equal(doors.length,CONSERVATORY_DOORS.length,'the compiled door set exactly matches the authored schedule');
 assert.equal(new Set(doors.map((door)=>door.id)).size,doors.length,'all door IDs are stable and unique');
 assert.ok(doors.every((door)=>door.archetype!=='legacy'),'every portal has exactly one explicit definition');
-assert.equal(doors.filter((door)=>door.leafCount===2).length,12,'public, both baths separation doors, hall, chapel, freight, cathedral and pub entries are explicit pairs');
-assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door','changing-pool','chapel-c17','dock-grey-exterior','dock-inner-service','front-main','glasshouse-changing','hall-vestibule','pool-lobby','pub-east-entry','pub-west-entry']);
+assert.equal(doors.filter((door)=>door.leafCount===2).length,13,'public, baths, hall, chapel, freight, cathedral, pub and covered-store entries are explicit pairs');
+assert.deepEqual(doors.filter((door)=>door.leafCount===2).map((door)=>door.id).sort(),['brendan-south-porch','brendan-west-door','changing-pool','chapel-c17','dock-grey-exterior','dock-inner-service','front-main','glasshouse-changing','hall-vestibule','pool-lobby','pub-east-entry','pub-west-entry','yard-stores-entry']);
 const poolDoor=doors.find((door)=>door.id==='pool-lobby');
 assert.equal(poolDoor.archetype,DOOR_ARCHETYPE.POOL_GLAZED_PAIR);
 assert.equal(poolDoor.aperture.width,2,'the municipal baths admits a school group through a real two-metre pair');
@@ -44,20 +44,21 @@ assert.equal(doorWinsWorldInteraction({aimScore:.20},{aimScore:.50,portal:{id:'p
 // acknowledgements, never reversals; closing is available only at the endpoint.
 {
   FP.resetDoors();
-  const first=FP.interactDoor(165,52,[0,1],new Set());
+  const approachY=Math.min(...poolDoor.cells.map(cell=>cell.y))-2;
+  const first=FP.interactDoor(165,approachY,[0,1],new Set());
   assert.equal(first.id,'pool-lobby');assert.equal(first.opened,true);
   for(const x of[166,167,168,169,170]){
-    const repeat=FP.interactDoor(x,52,[0,1],new Set());
+    const repeat=FP.interactDoor(x,approachY,[0,1],new Set());
     assert.equal(repeat.id,'pool-lobby',`the usable target spans the pair at x=${x}`);
     assert.equal(repeat.opening,true);assert.equal(repeat.closed,undefined);
   }
-  FP.tickDoors(.2,{playerX:168,playerY:52});
+  FP.tickDoors(.2,{playerX:168,playerY:approachY});
   const partial=FP.doorState().find((door)=>door.id==='pool-lobby');
   assert.equal(partial.state,DOOR_STATE.OPENING);assert.ok(partial.openFraction>0&&partial.openFraction<1);
-  assert.equal(FP.interactDoor(168,52,[0,1],new Set()).opening,true,'opening input remains idempotent in motion');
-  FP.tickDoors(2,{playerX:168,playerY:52});
+  assert.equal(FP.interactDoor(168,approachY,[0,1],new Set()).opening,true,'opening input remains idempotent in motion');
+  FP.tickDoors(2,{playerX:168,playerY:approachY});
   assert.equal(FP.doorState().find((door)=>door.id==='pool-lobby').state,DOOR_STATE.OPEN);
-  assert.equal(FP.interactDoor(168,52,[0,1],new Set()).closed,true,'only the fully open endpoint accepts deliberate closing');
+  assert.equal(FP.interactDoor(168,approachY,[0,1],new Set()).closed,true,'only the fully open endpoint accepts deliberate closing');
 }
 assert.ok(doors.filter((door)=>door.leafCount===1).every((door)=>door.aperture.width>=.9&&door.aperture.width<=1.05),'single apertures do not infer leaves from portal cell count');
 assert.deepEqual(doors.find((door)=>door.id==='chapel-c17').activeLeaves,[1],'C-17 releases only the right leaf');
@@ -73,7 +74,7 @@ assert.match(mainSource,/doorHud\.portal\.id==='front-main'\?'CHECK CHAINED ENTR
   'the HUD never advertises the sealed boundary as a generic locked door');
 for(const id of ['tower-hatch','bell-chamber-entry','organ-loft-service','organ-loft-nave'])assert.equal(doors.find((door)=>door.id===id).archetype,DOOR_ARCHETYPE.TOWER_SERVICE_SINGLE);
 for(const door of doors.filter((entry)=>entry.id.startsWith('academic-')))assert.equal(door.archetype,DOOR_ARCHETYPE.ACADEMIC_WIRED_GLASS);
-assert.equal(FP.sealedDoorways().length,1,'the x glyph is masonry with a surviving frame scar');
+assert.equal(FP.sealedDoorways().length,0,'the current public-room overlay retires the old ground-plan scar at92,11');
 assert.ok(CONSERVATORY_DOORS.every((door)=>DOOR_ARCHETYPES[door.archetype].head),'all leaf-height gaps have an authored transom, panel, tympanum or infill');
 assert.ok(CONSERVATORY_DOORS.every((door)=>DOOR_ARCHETYPES[door.archetype].aperture.height>=3.4));
 for(const door of doors){
@@ -148,8 +149,8 @@ advanceDoor(closer,practiceDef,.5,{sweepOccupied:true});assert.equal(closer.open
 advanceDoor(closer,practiceDef,.5,{sweepOccupied:false});assert.ok(closer.openFraction<1);
 assert.equal(pointInDoorSweep({cx:10,cy:10,widthAxis:'x',leaf:{width:1}},10.2,10.1),true);
 assert.equal(pointInDoorSweep({cx:10,cy:10,widthAxis:'x',leaf:{width:1}},20,20),false);
-assert.equal(pointInDoorSweep(poolDoor,166.8,53.2),true,'the left glazed leaf sector is occupied');
-assert.equal(pointInDoorSweep(poolDoor,168.2,53.2),true,'the right glazed leaf sector is occupied');
+assert.equal(pointInDoorSweep(poolDoor,poolDoor.cx-.7,poolDoor.cy-1.3),true,'the left glazed leaf sector is occupied');
+assert.equal(pointInDoorSweep(poolDoor,poolDoor.cx+.7,poolDoor.cy-1.3),true,'the right glazed leaf sector is occupied');
 assert.equal(pointInDoorSweep(poolDoor,poolDoor.cx,poolDoor.cy+1.8),false,
   'space outside the paired swept sectors no longer pauses the closer as a broad square did');
 assert.deepEqual(stableDoorEndpoint(closer).state,DOOR_STATE.CLOSED);
@@ -206,13 +207,15 @@ assert.equal(FP.doorState().length,portalsBefore-1,'it stops being a portal');
 assert.equal(FP.sealedDoorways().length,scarsBefore+1,'and starts being a scar, which is a mesh the pack already has');
 const scar=FP.sealedDoorways().find((entry)=>entry.cx===grey.cx&&entry.cy===grey.cy);
 assert.ok(scar,'the scar stands exactly where the door stood');
-// Indistinguishable from a doorway that was bricked up before he was born: the
-// authored 'x' glyph on the concert hall's staff door is the reference.
-const authoredScar=FP.sealedDoorways().find((entry)=>entry.id==='sealed:195,33');
+// Compare the current retired door with an independently compiled active x
+// glyph; the former staff-door scar is no longer in the public-room overlay.
+const referenceFP=await import('../src/world/floorplan.js?door-scar-reference');
+referenceFP.compile([{id:'scar-reference',origin:{x:0,y:0},base:0,rows:['#####','#FxF#','#####']}],{width:5,height:3});
+const authoredScar=referenceFP.sealedDoorways()[0];
 const authoredCell={x:Math.round(authoredScar.cx),y:Math.round(authoredScar.cy)};
 for(const {x,y} of grey.cells){
   assert.ok(FP.isSolid(x,y),'the throat is masonry now');
-  assert.equal(FP.flagsAt(x,y),FP.flagsAt(authoredCell.x,authoredCell.y),'...and reads exactly as an authored bricked doorway does');
+  assert.equal(FP.floorplan().flags[y*FP.planSize().w+x],referenceFP.floorplan().flags[authoredCell.y*referenceFP.planSize().w+authoredCell.x],'...and reads exactly as an authored bricked doorway does');
   assert.equal(FP.cellAt(x,y),null,'nothing stands in it');
 }
 // Probed AT THE DOOR rather than at an offset from the spawn: these used to

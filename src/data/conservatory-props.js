@@ -12,6 +12,7 @@ import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js
 import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
+import {B3_STUDIO_PROPS_MESHES} from './b3-studio-props.js';
 import { CATHEDRAL_DESCENT_BLOCKERS, CHURCH_COLLIDERS } from './st-brendans.js';
 import { VEGETATION_FALLBACKS, VEGETATION_MESHES } from './vegetation.js';
 import { ACADEMIC_ROOF_MESHES, ACADEMIC_ROOF_PROPS } from './academic-roof.js';
@@ -24,6 +25,8 @@ import { BUILDING_WINDOW_MESHES, BUILDING_WINDOW_PROPS } from './building-window
 import { STREET_PILOT } from './street-pilot.js';
 import { EXTERIOR_FOREGROUND, foregroundYardLogicalPoint } from './exterior-foreground.js';
 import { EXTERIOR_PUB, PUB_COLLIDERS, pubWorldFromLocal, pubLogicalAt } from './exterior-pub.js';
+import {yardTurnPoint,YARD_TURN_YAW} from './yard-turn.js';
+import {YARD_JARDINS_PROPS} from './yard-jardins.js';
 import { PUB_INTERIOR_LAYOUT, PUB_FURNITURE_COLLIDERS } from './exterior-pub-furnishings.js';
 import { PUB_NEW_ACTORS, PUB_MESHES, pubActor, pubFacePoint } from './pub-population.js';
 import { PUB_FAVOR_MESHES, PUB_FAVOR_PROPS } from './pub-favors.js';
@@ -39,6 +42,8 @@ import { GLASS_COURT, GLASS_COURT_MESHES, GLASS_COURT_PROPS, GLASS_COURT_COLLIDE
 import { GLASS_COURT_PRESENCES } from './glass-court-presences.js';
 import {EXTERIOR_FRONTAGE_DRESSING,EXTERIOR_FRONTAGE_INSPECTABLES} from './exterior-frontages.js';
 import {EXTERIOR_STREET_FABRIC_MESHES,EXTERIOR_STREET_FABRIC_PROPS,STREET_PARKING_BAYS} from './exterior-street-fabric.js';
+import {EXTERIOR_INFRASTRUCTURE_MESHES,EXTERIOR_INFRASTRUCTURE_PROPS} from './exterior-infrastructure.js';
+import {STUDENT_STRIKE_RECORD_MESHES,STUDENT_STRIKE_RECORD_PROPS} from './student-strike-evidence.js';
 import {EXTERIOR_GRAFFITI_MESHES,EXTERIOR_GRAFFITI_HOSTS} from './exterior-graffiti.js';
 import {ELLERY_PUBLIC_FRONT_MESHES,ELLERY_PUBLIC_FRONT_PROPS} from './ellery-public-front.js';
 import { DEMOLITION_EXCAVATOR } from './demolition-machinery.js';
@@ -78,7 +83,7 @@ const pubDP = (entry,extra={}) => {
     structural:true,blocks:false,floorOverride:actor?.floor??EXTERIOR_PUB.floor+.012,
     renderOffsetX:entry.x-Math.round(entry.x*2)/2,
     renderOffsetZ:entry.y-Math.round(entry.y*2)/2,
-    renderGroups:['ground'],worldAligned:true,pubActorId:actor?.id||entry.pubActorId||null,
+    renderGroups:['ground'],worldAligned:false,pubActorId:actor?.id||entry.pubActorId||null,
     pubPosture:actor?.posture||null,inspectAt:{x:target.x,y:target.y},...extra,
   });
 };
@@ -145,10 +150,13 @@ const DOCK_REEL = [{worldId:'dock_reel',fileLabel:'01'}];
 const DOCK_SHUTTER = [{worldId:'dock_shutter',fileLabel:'01'}];
 
 export const PROP_MESH = Object.freeze({
+  ...B3_STUDIO_PROPS_MESHES,
   ...YARD_PUBLIC_ROOM_MESHES,
   ...SCENE_DOCK_MESHES,
   ...GLASS_COURT_MESHES,
   ...EXTERIOR_STREET_FABRIC_MESHES,
+  ...EXTERIOR_INFRASTRUCTURE_MESHES,
+  ...STUDENT_STRIKE_RECORD_MESHES,
   ...EXTERIOR_GRAFFITI_MESHES,
   ...ELLERY_PUBLIC_FRONT_MESHES,
   ...Object.fromEntries(EXTERIOR_FRONTAGE_DRESSING.map(row=>[row.mesh,{w:.32,d:64,h:4.4,blocks:false}])),
@@ -507,6 +515,9 @@ const BASEBOARD_PROPS = Object.entries(BASEBOARDS).map(([group, b]) =>
 
 export const CONSERVATORY_PROPS = [
   ...YARD_PUBLIC_ROOM_PROPS,
+  ...YARD_JARDINS_PROPS,
+  ...EXTERIOR_INFRASTRUCTURE_PROPS,
+  ...STUDENT_STRIKE_RECORD_PROPS,
   ...EXTERIOR_STREET_FABRIC_PROPS.map(p=>DP(p.id,p.mesh,64,-1,0,{...p,worldAligned:true,renderOffsetZ:47})),
   ...ELLERY_PUBLIC_FRONT_PROPS,
   // An inspection belongs to one existing display inside the combined row
@@ -733,9 +744,11 @@ export const CONSERVATORY_PROPS = [
     interactive:false,structural:true,blocks:true,
   })),
   P('conservatoire-construction-generator','demolition_generator',94.5,226.0,Math.PI/2,{
+    physicalPlacement:{x:28.75,z:63.25,yaw:Math.PI/2},
     interactive:false,structural:true,blocks:true,
   }),
   P('conservatoire-construction-light-tower','demolition_light_tower',94.4,212.8,0,{
+    physicalPlacement:{x:41,z:15,yaw:0},
     interactive:false,structural:true,blocks:true,
   }),
   P('conservatoire-construction-barrier','demolition_heras_fence',97.2,215.4,Math.PI/2,{
@@ -838,7 +851,9 @@ export const CONSERVATORY_PROPS = [
   DP('district-north-row-a','district_terrace_frontage',18,-14,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
   // Rows b and c used to stand where Ellery Square now opens. Row c keeps its
   // shops on North Street, starting at the square's north-east corner.
-  DP('district-north-row-c','district_terrace_frontage',ELLERY_SQUARE.northRowC.x,ELLERY_SQUARE.northRowC.z,Math.PI/2,{interactive:false,structural:true,renderOffsetZ:-1.05}),
+  // The old logical anchor now overlaps the tower page. Borrow the retained
+  // eastern footway while keeping the entire frontage at its canonical pose.
+  DP('district-north-row-c','district_terrace_frontage',142.5,ELLERY_SQUARE.northRowC.z,Math.PI/2,{interactive:false,structural:true,renderOffsetX:ELLERY_SQUARE.northRowC.x-142.5,renderOffsetZ:-1.05}),
   DP('district-south-row-a','district_civic_frontage',18,106,-Math.PI/2,{interactive:false,structural:true,renderOffsetZ:1.05}),
   P('pub-complete-frontage','exterior_pub_frontage',pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,EXTERIOR_PUB.facadeAnchor.z).x,pubLogicalAt(EXTERIOR_PUB.facadeAnchor.x,EXTERIOR_PUB.facadeAnchor.z).y,EXTERIOR_PUB.row.yaw,{
     interactive:false,structural:true,blocks:false,floorOverride:EXTERIOR_PUB.floor,
@@ -874,7 +889,7 @@ export const CONSERVATORY_PROPS = [
   DP('district-south-yard-bins','district_bin_cluster',88,120,Math.PI,{interactive:false,structural:true}),
   DP('district-west-court-bollards','district_bollard_pair',-16,24,Math.PI/2,{interactive:false,structural:true}),
   DP('district-east-court-bollards','district_bollard_pair',144,16,Math.PI/2,{interactive:false,structural:true}),
-  DP('district-north-court-bollards','district_bollard_pair',78,-16,0,{interactive:false,structural:true}),
+  DP('district-north-court-bollards','district_bollard_pair',78,-14,0,{interactive:false,structural:true,renderOffsetZ:-2}),
   DP('district-south-court-bollards','district_bollard_pair',86,108,0,{interactive:false,structural:true}),
   // The compact shelter is an open waiting area. A solid bounding box would
   // close its seat and eat the protected walking strip beside the roof edge.
@@ -929,6 +944,7 @@ export const CONSERVATORY_PROPS = [
     ?[pubLogicalAt(range.physical.x,range.physical.y).x,pubLogicalAt(range.physical.x,range.physical.y).y]
     :[50+range.physical.x,200+range.physical.y]),0,{
     structural:true,blocks:!yardRangePublicUse(range.id),label:range.use,
+    physicalPlacement:{...yardTurnPoint(range.id,{x:range.physical.x,z:range.physical.y}),yaw:YARD_TURN_YAW},
     ...(yardRangePublicUse(range.id)?{floorOverride:0,renderGroups:['ground']}:{}),
     inspect:inspect(
       `${range.use.replace(/^./,(c)=>c.toUpperCase())}. The ${range.year} work is still legible under every later patch.`,
@@ -1148,7 +1164,7 @@ export const CONSERVATORY_PROPS = [
   P('box-office-chair','chair',93.55,10.05,0,{inspect:inspect('A staff chair tucked under the ticket desk, not abandoned in the queue path.','Its casters have made a small grey ring.')}),
   P('box-office-program-stack','program_stack',89.65,9.92,Math.PI/2,{on:'box-office-counter',scale:.8,renderOffsetX:.35,renderOffsetY:-.0208,inspect:inspect('A stack of folded programmes for a season that never opened.','The top programme has curled at both corners.')}),
   P('box-office-cash-terminal','cash_terminal',89.65,10.72,Math.PI/2,{on:'box-office-counter',scale:.6,renderOffsetX:.35,renderOffsetY:-.012,inspect:inspect('A dead card terminal beside a cash drawer. The receipt paper is still threaded.','No signal. No float.')}),
-  P('box-office-ledger','rekey_ledger',92.25,12.25,Math.PI,{mount:'wall',elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
+  P('box-office-ledger','rekey_ledger',92.25,11.5,Math.PI,{mount:'wall',mountNormal:{nx:0,ny:-1},elevation:1.1,interaction:'action',action:'rekey-ledger',inspect:inspect('A rekey ledger: REPLACEMENT LOCK — CHAPEL — CABINET C-17.','CHAPEL. REPLACEMENT LOCK. C-17.')}),
   P('box-office-key-cabinet','chapel_key_cabinet',96.25,9.45,Math.PI/2,{
     mount:'wall',elevation:1.0,blocks:false,structural:true,
     interaction:'action',action:'key-cabinet-board',label:'key cabinet',
@@ -1390,7 +1406,7 @@ export const CONSERVATORY_PROPS = [
   // the only reason a painting can touch a wall in a service corridor and look
   // like it was always meant to. Its measured rear meets the wall's west face;
   // the painted +Z face looks west into the room rather than through the wall.
-  P('deadend-ground-painting','portrait_frame',74.0,23.5,Math.PI/2,{
+  P('deadend-ground-painting','portrait_frame',74.0,21.5,Math.PI/2,{
     mount:'wall',mountNormal:{nx:-1,ny:0},elevation:1.55,scale:2.2,portraitIndex:1,
     inspect:inspect('A large canvas, hung high on a picture rail that has no business being in a service corridor. It is the atrium\'s rail — the panelling comes through the wall here, half a metre of plaster between this room and the public one. The painting has been given the better half.','Too big for the room and hung too high, on somebody else\'s rail.'),
   }),
@@ -1467,10 +1483,12 @@ export const CONSERVATORY_PROPS = [
   // sitting in the soil since somebody worked on a head out here (see PIN_HOSTS).
   P('academic-garden-planter-west','academic_planter',80.5,11.0,.08,{renderGroups:['ground','academic'],
     inspect:inspect('Dry soil in a stone planter, packed hard and full of old leaf. Something black is coiled half down in it.','The soil keeps the shape your hand left in it.')}),
-  P('academic-garden-planter-east','academic_planter',86.7,17.6,-.08,{renderGroups:['ground','academic'],interactive:false}),
-  P('academic-garden-basin','academic_dry_basin',83.6,14.6,0,{renderGroups:['ground','academic'],interactive:false}),
+  P('academic-garden-planter-east','academic_planter',91.0,20.0,-.08,{renderGroups:['ground','academic'],interactive:false}),
+  // The ruined ground garden now opens beside the longitudinal baths link.
+  // Keep its basin in the west court, clear of the Ellery-side door landing.
+  P('academic-garden-basin','academic_dry_basin',79.5,19.0,0,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-tree-west','academic_dead_tree',80.4,11.0,-.18,{renderGroups:['ground','academic'],interactive:false,elevation:.66}),
-  P('academic-garden-tree-east','academic_dead_tree_b',86.8,17.6,.28,{fallbackMesh:VEGETATION_FALLBACKS.academic_dead_tree_b,renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
+  P('academic-garden-tree-east','academic_dead_tree_b',91.1,20.0,.28,{fallbackMesh:VEGETATION_FALLBACKS.academic_dead_tree_b,renderGroups:['ground','academic'],interactive:false,elevation:.66,scale:.82}),
   P('academic-garden-leaves-north','academic_leaf_litter',83.0,9.0,.22,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-garden-leaves-south','academic_leaf_litter',84.8,19.1,-.18,{renderGroups:['ground','academic'],interactive:false}),
   P('academic-light-emergency-west','tower_bulkhead',28.5,248.0,Math.PI/2,{
@@ -1630,14 +1648,14 @@ export const CONSERVATORY_PROPS = [
   P('b3-session-boom-2','b3_boom_microphone',14.6,13.8,-.38,{interactive:false}),
   P('b3-session-folded-mic','b3_folded_mic_stand',8.4,9.2,.15,{interactive:false}),
   P('b3-session-snake','b3_stage_snake',15.8,9.3,.1,{inspect:inspect('The numbered stage box and its heavy multicore, coiled for the control room. The free end is unplugged.','They meant to wire it up again.')}),
-  P('b3-control-console','b3_mixing_console',20.4,10.5,-Math.PI/2,{action:'b3-console',label:'mixing console',inspectAt:{x:20.7,y:11.5},interactionPriority:2.5,inspect:inspect('A sixteen-channel mixing desk facing the live room. Faders, equalisation, the meter bridge and master controls are all where the engineer left them.','No pilot lights. No mains. The positions still mean something.')}),
+  P('b3-control-console','b3_mixing_console',20.4,10.5,-Math.PI/2,{action:'b3-console',label:'mixing console',inspectAt:{x:20.85,y:10.5},interactionHeight:.93,interactionPriority:4,inspect:inspect('A sixteen-channel mixing desk facing the live room. Faders, equalisation, the meter bridge and master controls are all where the engineer left them.','No pilot lights. No mains. The positions still mean something.')}),
   // Sixteen separate caps occupy the actual tracks. The console's local +Z
   // is physical +X at this yaw. `syncB3FaderProps` moves the caps visually,
   // leaving the console, interaction point and collision untouched.
   ...Array.from({length:16},(_,i)=>P(`b3-console-fader-${String(i+1).padStart(2,'0')}`,'b3_fader_cap',20.4,10.5,-Math.PI/2,{
     elevation:.918,renderOffsetX:.1225,renderOffsetZ:.97-i*.112,blocks:false,interactive:false,
   })),
-  P('b3-rack-1','equipment_rack',23.5,15.8,Math.PI/2,{inspect:inspect('The rack is powered down. Three channels are still labelled in pencil.','No mains. No pilot lights.')}),
+  P('b3-rack-1','b3_outboard_rack',23.5,15.8,Math.PI/2,{fallbackMesh:'equipment_rack',inspect:inspect('The rack is powered down. Three channels are still labelled in pencil.','No mains. No pilot lights.')}),
   // The closed spares tin sits on the desk's low shelf, under the operator edge.
   P('b3-spare-cell-tin','b3_spares_tin',20.5,10.0,0,{elevation:.18,renderOffsetX:.27,renderOffsetZ:-.20,blocks:false,action:'take-b3-spare-cell',interaction:'action',interactionPriority:2,label:'spare torch cell',inspectAt:{x:20.77,y:9.8},inspect:inspect('A closed metal spares tin on the shelf beneath the console, labelled for torch cells. One usable cell is inside.','The spares tin under the console.')}),
   // The note lies on the console, not on a school desk or suspended in space.
@@ -1654,9 +1672,13 @@ export const CONSERVATORY_PROPS = [
   // Carpet in widths, three by three, wall to wall. softFloor in the mesh table.
   ...[9.1,15.3,21.5].flatMap((x,col)=>[8.3,12.9,17.5].map((y,row)=>P(`b3-carpet-${col*3+row+1}`,'textile_studio_carpet',x,y,0,{interactive:false,structural:true}))),
   // Between two panel centres: standing in a panel's own cell takes its wall.
-  P('b3-patchbay','legacy_patchbay',23.5,8.0,Math.PI/2,{inspectAt:{x:22.0,y:8.0},inspect:inspect('A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.','You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.')}),
+  P('b3-patchbay','b3_patchbay',23.5,8.0,Math.PI/2,{fallbackMesh:'legacy_patchbay',inspectAt:{x:22.0,y:8.0},inspect:inspect('A patchbay with every cable pulled, coiled and hung beside it. Somebody left this room tidy.','You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.')}),
   P('b3-cable-coil','cable_coil',22.8,8.8,.4,{interactive:false,blocks:false}),
-  P('b3-chair','chair',21.6,10.5,-Math.PI/2,{inspect:inspect('The engineer’s chair, facing the mixing desk and the room beyond the glass.','Somebody worked in here for a long time, and then one day they did not come back.')}),
+  P('b3-chair','b3_engineer_chair',21.6,10.5,-Math.PI/2,{fallbackMesh:'chair',inspect:inspect('The engineer’s chair, facing the mixing desk and the room beyond the glass.','Somebody worked in here for a long time, and then one day they did not come back.')}),
+  // Air-side anchors survive placement; rendered frames straddle the actual
+  // collision-preserving partition instead of becoming inaccessible wall props.
+  P('b3-window-surround','b3_window_surround',19.0,10.5,0,{renderOffsetX:-.5,blocks:false,interactive:false,structural:true}),
+  P('b3-window-south-surround','b3_window_south_surround',19.0,15.5,0,{renderOffsetX:-.5,blocks:false,interactive:false,structural:true}),
   // The stand the first-take tree talks about: folded down and leant into the
   // south-west corner, on the bare stretch of west wall below the foam. The
   // Goldberg sheet is clipped to it (sheet-music.js `host`): inspecting it, or
@@ -2250,7 +2272,7 @@ export const CONSERVATORY_PROPS = [
   // one van beat, along with the case, the order and the badge. Two [E] targets
   // a foot apart made the opening a hunt for the second one.
   P('van-adjustable-spanner','adjustable_spanner',64.6,208.0,.18,{elevation:1.14,interactive:false,structural:true,label:'blue-handled adjustable spanner'}),
-  P('getin-heavy-stillson','stillson_wrench',70.8,4.25,.08,{elevation:.86,renderOffsetX:-.20,renderOffsetZ:-.25,action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
+  P('getin-heavy-stillson','stillson_wrench',70.5,4.25,.08,{elevation:.86,renderOffsetX:.30,renderOffsetZ:-.25,action:'plant-heavy-wrench',label:'oversized Stillson wrench',interactionPriority:4,inspect:inspect('A Stillson nearly two metres long, left across the maintenance rack.','Too large for the field case. It will have to travel on the floor.')}),
 
   // ── THE VIGIL ────────────────────────────────────────────────────────────
   //

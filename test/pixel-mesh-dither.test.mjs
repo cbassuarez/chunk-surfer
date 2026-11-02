@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BAYER_4, ditherCoverage, orderedDither } from '../src/render/pixel-mesh/dither.js';
 import {
-  SCREEN_IDS, getScreen, isScreen, screenThreshold, screenUniforms, strokeDistance,
+  SCREEN_IDS, clusteredDotThreshold, getScreen, isScreen, screenThreshold, screenUniforms, strokeDistance,
 } from '../src/render/pixel-mesh/screens.js';
 
 test('ordered dither is deterministic', () => {
@@ -111,4 +111,28 @@ test('stroke distance is sign-invariant, because the grain is a line field', () 
   for (const t of [0.13, 0.5, 0.87]) {
     assert.ok(Math.abs(strokeDistance(7, 11, t, 6) - strokeDistance(7, 11, t + Math.PI, 6)) < 1e-9);
   }
+});
+
+test('clustered dots are circular, grow with light, and respect reversed grain', () => {
+  assert.equal(getScreen('clusteredDots').kind, 3);
+  assert.equal(clusteredDotThreshold(4, 4, 0, 8), 0, 'a cluster has a bright center');
+  assert.ok(clusteredDotThreshold(0, 0, 0, 8) > .999, 'its cell corner remains dark until fully lit');
+  assert.ok(coverage('clusteredDots', .7) > coverage('clusteredDots', .25));
+  for (const angle of [.13, .5, .87]) {
+    assert.ok(Math.abs(clusteredDotThreshold(7.3, 11.7, angle, 8)
+      - clusteredDotThreshold(7.3, 11.7, angle + Math.PI, 8)) < 1e-9);
+  }
+  const along = meanRun('clusteredDots', .5, 0, 1, 0);
+  const across = meanRun('clusteredDots', .5, 0, 0, 1);
+  assert.ok(Math.max(along, across) / Math.min(along, across) < 1.1, 'clusters should not become hatching');
+});
+
+test('the Source threshold moves continuously from the base screen to dots', () => {
+  const p = [7.3, 11.7, .3, .5, .5];
+  const base = screenThreshold('crosshatch', ...p, 0);
+  const dot = screenThreshold('clusteredDots', ...p, 0);
+  const middle = screenThreshold('crosshatch', ...p, .5);
+  assert.ok(Math.abs(screenThreshold('crosshatch', ...p, 1) - dot) < 1e-9);
+  assert.ok(Math.abs(middle - (base + dot) / 2) < 1e-9);
+  assert.ok(Math.abs(screenThreshold('crosshatch', ...p, -.5) - base) < 1e-9);
 });

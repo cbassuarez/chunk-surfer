@@ -28,5 +28,5 @@ test('warning and every registered resisted STOP press have literal instrument e
  assert.equal(recorderTransportReadout({phase:'normal'}),null);
  assert.equal(recorderTransportReadout({phase:'drag'}).label,'BRAKE DRAG');
  assert.equal(recorderTransportReadout({phase:'drag',quietReleased:true}).label,'BRAKE FREE');
- for(let tries=1;tries<8;tries++)assert.deepEqual(recorderTransportReadout({phase:'seized',tries,needs:8}),{label:'STOP HELD',detail:`STOP ${tries}/8`,held:true});
+ for(let tries=1;tries<8;tries++)assert.deepEqual(recorderTransportReadout({phase:'seized',tries,needs:8}),{label:'STOP HELD',detail:'LOCATION INDICATOR',held:true});
 });

@@ -1,0 +1,1524 @@
+{
+  "kind": "chunk-surfer-original-achievement-icons",
+  "version": 3,
+  "count": 38,
+  "artVersion": 2,
+  "renderer": {
+    "kind": "actual-achievement-resin-canvas",
+    "entry": "src/render/achievement-deck.js:drawAchievementAnnunciator",
+    "material": "src/render/achievement-resin.js",
+    "context": "CanvasRenderingContext2D",
+    "colorSpace": "srgb",
+    "webgl": false,
+    "deviceScale": "PNG size divided by 64",
+    "momentary": true,
+    "semanticTones": {
+      "all": {
+        "pigment": "#e4ddbf",
+        "signal": "#eee4be",
+        "ink": "#292a20",
+        "name": "ivory"
+      },
+      "work": {
+        "pigment": "#e9b25e",
+        "signal": "#efc48a",
+        "ink": "#322514",
+        "name": "amber"
+      },
+      "disclosures": {
+        "pigment": "#8edbb7",
+        "signal": "#b0e8ce",
+        "ink": "#173126",
+        "name": "mint"
+      },
+      "returns": {
+        "pigment": "#87afe6",
+        "signal": "#aecdf6",
+        "ink": "#1a283e",
+        "name": "blue"
+      },
+      "method": {
+        "pigment": "#b69ae4",
+        "signal": "#d2bdf4",
+        "ink": "#302242",
+        "name": "violet"
+      }
+    }
+  },
+  "design": "Original solid service emblems inside the shipping illuminated resin keys, with canonical category colors, real frame material and no latched travel.",
+  "sizes": [
+    256,
+    64
+  ],
+  "format": "Opaque sRGB PNG; SVG files are transparent neutral vector masters only.",
+  "sourceHashes": {
+    "src/render/achievement-deck.js": "fc58338321653d55665ec9138c9712b454a757781e8f7e96913b8cbd877d082a",
+    "src/render/achievement-icons.js": "7f8e80f07419bbe1d2857c16ba75459719cbdc1fa5adab08d842364c9b6874c9",
+    "src/render/hardware-material.js": "27ccc83672c2d0ac7a8b4e860b16a54c735cc6faa9f6d584e52d474dd40f4de8",
+    "src/render/instrument-material.js": "0d4160aacd7623e6340e032ff9b3039d1184bd03ecd8522f2cb6047707b1f2f4",
+    "src/progression/achievement-defs.js": "0eee4663cd1a91ae1806d5f5f0e012cd08d95cc5f872b9a1554ca389f72d1ba6",
+    "src/render/achievement-resin.js": "5196292c5924990d57744baf2bd43b4d467f07515e0113aafe12114e04cc2ebc",
+    "src/data/achievement-presentation.js": "b2a3b2cb3088a118ebbd302ecdc25366dded3e93b6ab333b897f35f3ee901173",
+    "public/assets/fonts/NimbusSans-Regular.otf": "7c25be4d78155523080ab85b10277150657ff7dabbcad7037bdd536c9b6d0d08",
+    "public/assets/fonts/NimbusSans-Bold.otf": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67",
+    "public/assets/fonts/NimbusMonoPS-Regular.otf": "4f225ca8e13acb16f733ce741693105e527d5f7a5443901b9ecc190fca4e149b"
+  },
+  "fontProvenance": {
+    "sources": [
+      "public/assets/fonts/NimbusSans-Regular.otf",
+      "public/assets/fonts/NimbusSans-Bold.otf",
+      "public/assets/fonts/NimbusMonoPS-Regular.otf"
+    ],
+    "note": "These are the actual instrument UI typefaces. The emblem subjects themselves are original filled vector geometry and use no font glyphs."
+  },
+  "records": [
+    {
+      "id": "ACH_WORK_ORDER",
+      "name": "4417-C",
+      "icon": "ACH_WORK_ORDER",
+      "hidden": false,
+      "category": "work",
+      "meaning": "Folded Ellery contract with a punched 4417C job identifier and acceptance line.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_work_order-locked-64.png",
+            "bytes": 4684,
+            "sha256": "9d70fcb89db7ef99ee392ccf49af1083a31a9c196682f7ab1f4a42a9fa5849f7"
+          },
+          "256": {
+            "path": "ach_work_order-locked-256.png",
+            "bytes": 41052,
+            "sha256": "91b736346e6b7761725e342197ffb21e579b1686cb364cccdde4cd398c58082e"
+          },
+          "svg": "ach_work_order-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_work_order-unlocked-64.png",
+            "bytes": 5077,
+            "sha256": "bb6ea6b9793ba3c1c5732dbf228238a3c66c0574ec18156b04295571ea9125ab"
+          },
+          "256": {
+            "path": "ach_work_order-unlocked-256.png",
+            "bytes": 46876,
+            "sha256": "48e471fd64a1c29dcb53d547371616fe4256e0fc235744eca91b8b224a3054e1"
+          },
+          "svg": "ach_work_order-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_FIRST_TAKE",
+      "name": "A Clean Minute",
+      "icon": "ACH_FIRST_TAKE",
+      "hidden": false,
+      "category": "work",
+      "meaning": "An intact cassette with one recording lamp: first accepted clean minute.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_first_take-locked-64.png",
+            "bytes": 4821,
+            "sha256": "10b1681202409ff26b5464d47cd9e82105d8ffc3d4662ddad3b43882afa36866"
+          },
+          "256": {
+            "path": "ach_first_take-locked-256.png",
+            "bytes": 43833,
+            "sha256": "3c478a3f1c3bcb0e36568ada6ddb86164b92dcc6ffd718ea22ce22aef36c534d"
+          },
+          "svg": "ach_first_take-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_first_take-unlocked-64.png",
+            "bytes": 5284,
+            "sha256": "31288b825ba8f0862dcf276db7ba55f52f5f1383e68cf2cc3c03a23ae47311d0"
+          },
+          "256": {
+            "path": "ach_first_take-unlocked-256.png",
+            "bytes": 50183,
+            "sha256": "4047bbb2db82a4f4bbfd2dcb24bbe2b690badb78114a8320234013ff1737722e"
+          },
+          "svg": "ach_first_take-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_HUSH_MET",
+      "name": "It Is Still Here",
+      "icon": "ACH_HUSH_MET",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "Dense HUSH pressure mass with resisting tendrils and an asymmetric compressed void; no human mask.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_hush_met-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_hush_met-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_hush_met-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_hush_met-unlocked-64.png",
+            "bytes": 5162,
+            "sha256": "3d163a630985b42e03b50efaa8608ecb5c264c2c232f6f6d8273f298e1562060"
+          },
+          "256": {
+            "path": "ach_hush_met-unlocked-256.png",
+            "bytes": 48823,
+            "sha256": "f3d21ff3bf0346c4089f059b4f20b59a7668c62028a3a53c9440ed3a07a923fb"
+          },
+          "svg": "ach_hush_met-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_PLAYBACK",
+      "name": "Contains What You Did Not Hear",
+      "icon": "ACH_PLAYBACK",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "A playback cassette whose second reel contains an absent figure, not a generic play-button badge.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_playback-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_playback-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_playback-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_playback-unlocked-64.png",
+            "bytes": 5244,
+            "sha256": "b1b57a2d4bd3eef3c4279d57af57989c42137aa245713af9e9640171016b898c"
+          },
+          "256": {
+            "path": "ach_playback-unlocked-256.png",
+            "bytes": 49761,
+            "sha256": "3bb08f9488a8c32e3b2e9e0719652a8161afd258d015626e35a4b6070fabab53"
+          },
+          "svg": "ach_playback-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_CHAPEL_KEY",
+      "name": "C-17",
+      "icon": "ACH_CHAPEL_KEY",
+      "hidden": false,
+      "category": "work",
+      "meaning": "Heavy institutional chapel key with an asymmetric multi-bit ward and punched key head.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_chapel_key-locked-64.png",
+            "bytes": 4983,
+            "sha256": "65c8ba1e6a0b664acf9a24fbb3ad825ba30baba8f7208d0ec2f22234d57c92c8"
+          },
+          "256": {
+            "path": "ach_chapel_key-locked-256.png",
+            "bytes": 46870,
+            "sha256": "4dc9357bcf5b06bc467b16941ae8254e01c730835a121918201a356e275eb9da"
+          },
+          "svg": "ach_chapel_key-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_chapel_key-unlocked-64.png",
+            "bytes": 5344,
+            "sha256": "f7f3f150936129694b7b7c64406f863181464bae0436a5b3d81b15a9a1b04497"
+          },
+          "256": {
+            "path": "ach_chapel_key-unlocked-256.png",
+            "bytes": 53158,
+            "sha256": "9598489ac69b09ce4e52ece2ac6a9cfd19721635958cbf6124b8f655263ea837"
+          },
+          "svg": "ach_chapel_key-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_FIVE_ROOMS",
+      "name": "Five Rooms",
+      "icon": "ACH_FIVE_ROOMS",
+      "hidden": false,
+      "category": "work",
+      "meaning": "A section through five recording rooms under the same institutional roof.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_five_rooms-locked-64.png",
+            "bytes": 4373,
+            "sha256": "b0031f93c921877702aa283c409be3903096642290bba52ef383963454577104"
+          },
+          "256": {
+            "path": "ach_five_rooms-locked-256.png",
+            "bytes": 37827,
+            "sha256": "922d519b30d2672fc70c503eb8247e45b62c4e26728392924f06870db7f24c75"
+          },
+          "svg": "ach_five_rooms-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_five_rooms-unlocked-64.png",
+            "bytes": 4814,
+            "sha256": "4b9643618104bff7e5ca89c04888cd369cee677ce85464e88ca6823ebe71941a"
+          },
+          "256": {
+            "path": "ach_five_rooms-unlocked-256.png",
+            "bytes": 43283,
+            "sha256": "d49f8a1b758f86c14b71b83e1357988967120252e7dc9776ffd07f7bee3ef80f"
+          },
+          "svg": "ach_five_rooms-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_NAME_SARAH",
+      "name": "Say Her Name",
+      "icon": "ACH_NAME_SARAH",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "A physical personal-name plate punched SARAH; gives the name a human object rather than a speech bubble.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_name_sarah-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_name_sarah-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_name_sarah-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_name_sarah-unlocked-64.png",
+            "bytes": 5220,
+            "sha256": "a5a461d10496f5bb64c7f3f379017907630e3a9ab42564c608cb7d1c0db4a8df"
+          },
+          "256": {
+            "path": "ach_name_sarah-unlocked-256.png",
+            "bytes": 47673,
+            "sha256": "96513be60222211114527ee76c881cd53dd9d17916871c006e152efb2b122a4e"
+          },
+          "svg": "ach_name_sarah-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_COFFEE",
+      "name": "It's Not Good, But It's Hot",
+      "icon": "ACH_COFFEE",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "The guard’s institutional enamel mug, its negative triangular service mark, handle and rising heat.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_coffee-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_coffee-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_coffee-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_coffee-unlocked-64.png",
+            "bytes": 5293,
+            "sha256": "3570e1e6da366fe168f96c565beed69ccc80a91e5f29d4516457fcd787fe70e2"
+          },
+          "256": {
+            "path": "ach_coffee-unlocked-256.png",
+            "bytes": 51219,
+            "sha256": "22a372ac8c7a4a4470f82cf18d83c1caaeb05a287d17d8b2dd95e5dce2182fe4"
+          },
+          "svg": "ach_coffee-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_DO_NOT_DISTURB",
+      "name": "Do Not Disturb",
+      "icon": "ACH_DO_NOT_DISTURB",
+      "hidden": true,
+      "category": "method",
+      "meaning": "A worried portable check-in crossed by a physical do-not-disturb stroke.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_do_not_disturb-locked-64.png",
+            "bytes": 4605,
+            "sha256": "a1331f7f9618f8f097cb3db8a0e3f41714775f432bc7dece376fc3759440b3f2"
+          },
+          "256": {
+            "path": "ach_do_not_disturb-locked-256.png",
+            "bytes": 40384,
+            "sha256": "3e2ed86597b703b2113a2dc2c0cf23aae97a1efe21042cd803217189b87b532a"
+          },
+          "svg": "ach_do_not_disturb-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_do_not_disturb-unlocked-64.png",
+            "bytes": 5295,
+            "sha256": "974b2a3962b1c6a8415d4f9a1c03c5a2eb0276bb1b7c88ed28f648fe7366b38a"
+          },
+          "256": {
+            "path": "ach_do_not_disturb-unlocked-256.png",
+            "bytes": 50335,
+            "sha256": "d699aa45707d8d2c0331c8d60c5842a6b6fafdccb4a7e12311d68e5bda406f11"
+          },
+          "svg": "ach_do_not_disturb-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_RADIO_SILENCE",
+      "name": "Radio Silence",
+      "icon": "ACH_RADIO_SILENCE",
+      "hidden": false,
+      "category": "method",
+      "meaning": "A portable radio with one continuous cut through every use path; absence rather than a ringing alert.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_radio_silence-locked-64.png",
+            "bytes": 4922,
+            "sha256": "67a1fe3366950a379b8a6e40313ab45d22bdef1ecaab44497ae75062760afb71"
+          },
+          "256": {
+            "path": "ach_radio_silence-locked-256.png",
+            "bytes": 45776,
+            "sha256": "7033c5e2f6e0e89f912602822eeb473d5f9b084722066e7d4ae4daa82834563e"
+          },
+          "svg": "ach_radio_silence-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_radio_silence-unlocked-64.png",
+            "bytes": 5360,
+            "sha256": "68534248f9fd3cc636384b152b30c72076f1823565975edc98c0f7ca886b0712"
+          },
+          "256": {
+            "path": "ach_radio_silence-unlocked-256.png",
+            "bytes": 52273,
+            "sha256": "7be40be8ed10f2fe7623a4903764f6f0fe9415fa8dec821a1f9edc3f61b7e69d"
+          },
+          "svg": "ach_radio_silence-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_CATALOGUE",
+      "name": "Serviceable",
+      "icon": "ACH_CATALOGUE",
+      "hidden": false,
+      "category": "method",
+      "meaning": "Service inspection case with eight physical inspection compartments and a handle.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_catalogue-locked-64.png",
+            "bytes": 4554,
+            "sha256": "ea87f351de66a2399190d430250d9add321914bf346554850fa0da39c9e79c70"
+          },
+          "256": {
+            "path": "ach_catalogue-locked-256.png",
+            "bytes": 40295,
+            "sha256": "19eca8c27a2a5775dde61aa8e650fb08cb97bc2a9e20009b654f651b028f0ea7"
+          },
+          "svg": "ach_catalogue-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_catalogue-unlocked-64.png",
+            "bytes": 5001,
+            "sha256": "6bdc3d10baf17c17383c6e17247e091cc33bccdb5e3519a919dcd632a170ed73"
+          },
+          "256": {
+            "path": "ach_catalogue-unlocked-256.png",
+            "bytes": 46316,
+            "sha256": "d86a4c3dc13371966587a1153e5d03afc5dddb2ee0484bdfeb89712f59c6ba4c"
+          },
+          "svg": "ach_catalogue-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_LIGHT_OFF",
+      "name": "Whatever That Was",
+      "icon": "ACH_LIGHT_OFF",
+      "hidden": true,
+      "category": "method",
+      "meaning": "A switched-off field torch with its beam materially interrupted before the figure can arrive.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_light_off-locked-64.png",
+            "bytes": 4605,
+            "sha256": "a1331f7f9618f8f097cb3db8a0e3f41714775f432bc7dece376fc3759440b3f2"
+          },
+          "256": {
+            "path": "ach_light_off-locked-256.png",
+            "bytes": 40384,
+            "sha256": "3e2ed86597b703b2113a2dc2c0cf23aae97a1efe21042cd803217189b87b532a"
+          },
+          "svg": "ach_light_off-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_light_off-unlocked-64.png",
+            "bytes": 5187,
+            "sha256": "68535a3d3354e7abf4b440e96a9a57e8babe048d5164fe507b4a15885e6cbb2d"
+          },
+          "256": {
+            "path": "ach_light_off-unlocked-256.png",
+            "bytes": 51619,
+            "sha256": "ef5ef73aac2d63a551ef3f50acd3afb32570ccf9241fa143593fd936fa2421b4"
+          },
+          "svg": "ach_light_off-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_RELEASE_RECORD",
+      "name": "Release Record",
+      "icon": "ACH_RELEASE_RECORD",
+      "hidden": false,
+      "category": "method",
+      "meaning": "Release docket with a large punched archival seal and entry rules.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_release_record-locked-64.png",
+            "bytes": 4564,
+            "sha256": "b1f49b086f1ef14779ba610d88ad8a95df821176118d2124ec5dc4734176ca56"
+          },
+          "256": {
+            "path": "ach_release_record-locked-256.png",
+            "bytes": 40716,
+            "sha256": "0709349cfbb7dd96eb9fe986deb803f942a6fc2f40de309e347e94eb044cb0e2"
+          },
+          "svg": "ach_release_record-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_release_record-unlocked-64.png",
+            "bytes": 4972,
+            "sha256": "543cc8c5861b7e83be506387cfbe6c627d7289cc59855aeb31cc01737d0aa3f6"
+          },
+          "256": {
+            "path": "ach_release_record-unlocked-256.png",
+            "bytes": 46344,
+            "sha256": "78c623f0fa5b3f9126316f2a5f23bbb50364932080ad82adc46249225803c4da"
+          },
+          "svg": "ach_release_record-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_ALL_PLAYBACK",
+      "name": "Playback Log",
+      "icon": "ACH_ALL_PLAYBACK",
+      "hidden": false,
+      "category": "disclosures",
+      "meaning": "Three separately recorded playback cassettes filed in one layered log.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_all_playback-locked-64.png",
+            "bytes": 4827,
+            "sha256": "576347592246c660fd5aedf27bf0fdcd1bf6406d89a7c7c5f848efd7f14137d5"
+          },
+          "256": {
+            "path": "ach_all_playback-locked-256.png",
+            "bytes": 41784,
+            "sha256": "1d4aa0d6ce02043ed32fa9e1a77431a6c8d025af82f2392c5e5dd76e22e67498"
+          },
+          "svg": "ach_all_playback-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_all_playback-unlocked-64.png",
+            "bytes": 5339,
+            "sha256": "6583532035450f39c305057945422c0ac5fe94a04e412a6a2306a2f6b8c49894"
+          },
+          "256": {
+            "path": "ach_all_playback-unlocked-256.png",
+            "bytes": 47645,
+            "sha256": "addd6011bc2846c53c93848ed8a3f9e3cf282c34aa8277d01b3293f2c0fffec9"
+          },
+          "svg": "ach_all_playback-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_SACRIFICE",
+      "name": "The Seal",
+      "icon": "ACH_END_SACRIFICE",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "A recordist becomes the load-bearing living seal between two walls of the school.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_sacrifice-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_sacrifice-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_sacrifice-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_sacrifice-unlocked-64.png",
+            "bytes": 4577,
+            "sha256": "db1a88102689af94e339778639476bd984a5d6dcf251dc419c468e10c9a8844e"
+          },
+          "256": {
+            "path": "ach_end_sacrifice-unlocked-256.png",
+            "bytes": 41770,
+            "sha256": "b501bfd46faa5b3e390b0a6664222e7e22aa9a71e5bedbb001cbc777df0124e9"
+          },
+          "svg": "ach_end_sacrifice-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_CENTURY_STAY",
+      "name": "A Hundred More Years",
+      "icon": "ACH_CENTURY_STAY",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "An architectural hourglass/keystone held between cornice and foundation: a century of voluntary support.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_century_stay-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_century_stay-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_century_stay-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_century_stay-unlocked-64.png",
+            "bytes": 5179,
+            "sha256": "07ad63d42d8d4c4cd725027d2a7d430b24e735b05237943cf5987b21bf2efafc"
+          },
+          "256": {
+            "path": "ach_century_stay-unlocked-256.png",
+            "bytes": 49299,
+            "sha256": "e579b84214d98761f4c3f94c10b71f85d11846857e5bcbaf750d96e4c337b48c"
+          },
+          "svg": "ach_century_stay-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_HELPED",
+      "name": "He Tried to Help",
+      "icon": "ACH_END_HELPED",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "The guard’s warm mug above an offered supporting hand; help stays specific to this return.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_helped-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_helped-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_helped-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_helped-unlocked-64.png",
+            "bytes": 5227,
+            "sha256": "2187b611f5e94b1cabfe42165697a9ad44b70491f3ac97f3f095a3725c4f24f5"
+          },
+          "256": {
+            "path": "ach_end_helped-unlocked-256.png",
+            "bytes": 50476,
+            "sha256": "fc421911c93e5fe00d3ead2750453b2185dceb9e86c650d172f170eaa2c10f9c"
+          },
+          "svg": "ach_end_helped-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_INVERSION",
+      "name": "The Other Door",
+      "icon": "ACH_END_INVERSION",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "A solid exit frame containing a second door turned against its own frame: inversion without generic arrows.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_inversion-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_inversion-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_inversion-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_inversion-unlocked-64.png",
+            "bytes": 5058,
+            "sha256": "034134e1eb1f25a4f7ce4cbe6de941ed966866c6744eb2349f8753e42ccda9d5"
+          },
+          "256": {
+            "path": "ach_end_inversion-unlocked-256.png",
+            "bytes": 46873,
+            "sha256": "8cd347636ba9d5350ed4bd12616602ee9ed2b6f2e3c6c57b85638e3c08593f98"
+          },
+          "svg": "ach_end_inversion-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_DRUGGED",
+      "name": "Cold, Bitter, Gone",
+      "icon": "ACH_END_DRUGGED",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "The service mug tipped and losing a heavy final drop: cold, bitter, gone.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_drugged-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_drugged-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_drugged-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_drugged-unlocked-64.png",
+            "bytes": 5189,
+            "sha256": "163459f502a16f8a0c99e2ad042a0ee890d2c3a9a9b3cedfc41bd07e6abade26"
+          },
+          "256": {
+            "path": "ach_end_drugged-unlocked-256.png",
+            "bytes": 49871,
+            "sha256": "4e7bb7c61f458add5324ad85bef9c17eb552c2d8d9909909d2f6a6cca664b956"
+          },
+          "svg": "ach_end_drugged-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_SURFACED",
+      "name": "The Other Recordist",
+      "icon": "ACH_END_SURFACED",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "Two independent recording heads and two signature lines in one broken-rig cassette: The Second Signature.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_surfaced-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_surfaced-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_surfaced-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_surfaced-unlocked-64.png",
+            "bytes": 5292,
+            "sha256": "7fea429cf0c5ea52ec01cc052437e3584044b8cd5728dbadbd662e4bfc7722a9"
+          },
+          "256": {
+            "path": "ach_end_surfaced-unlocked-256.png",
+            "bytes": 46741,
+            "sha256": "3e9591239e4d4f5d8fd9455a9371f4b06b98b59606d4c4c4052e98a392b32ae6"
+          },
+          "svg": "ach_end_surfaced-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_CONTACT-WON",
+      "name": "Open Channel",
+      "icon": "ACH_END_CONTACT-WON",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "An open signal channel bridging the Source fault; the physical gap remains visible.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_contact-won-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_contact-won-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_contact-won-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_contact-won-unlocked-64.png",
+            "bytes": 5497,
+            "sha256": "5739e8f6a7e15ea64498b4c5ac1336d58bb9bd5dfa7008ec1cffea3b6e940855"
+          },
+          "256": {
+            "path": "ach_end_contact-won-unlocked-256.png",
+            "bytes": 52297,
+            "sha256": "9aa9a6e2930fa354a179b8f76fe9fc0a704f695e387aca93894318fceb05aa24"
+          },
+          "svg": "ach_end_contact-won-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_CONTACT-LOST",
+      "name": "No Return",
+      "icon": "ACH_END_CONTACT-LOST",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "The same fault-side channel broken into disconnected banks and fragmented carrier arcs.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_contact-lost-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_contact-lost-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_contact-lost-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_contact-lost-unlocked-64.png",
+            "bytes": 5428,
+            "sha256": "e27562eefc10695e4771faaef1e198292889933a0a36f594947def8b6232e2c8"
+          },
+          "256": {
+            "path": "ach_end_contact-lost-unlocked-256.png",
+            "bytes": 51957,
+            "sha256": "18a32c433a9627a159a9133d9a399695859abfc65a746c29810f289ebe965061"
+          },
+          "svg": "ach_end_contact-lost-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_TOWER-WON",
+      "name": "Exit Through the Gift Shop",
+      "icon": "ACH_END_TOWER-WON",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "Recognizable bell tower with a traversable lower door and intact bell aperture.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_tower-won-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_tower-won-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_tower-won-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_tower-won-unlocked-64.png",
+            "bytes": 5134,
+            "sha256": "6a130fcbc0a274054a30529e5d53e8754699d371e5ce509e5bc752c417d73f40"
+          },
+          "256": {
+            "path": "ach_end_tower-won-unlocked-256.png",
+            "bytes": 48864,
+            "sha256": "7f6166d39b46223a6268f1f7834c01f88f85403242ddd5e3451f3be6fe961c0a"
+          },
+          "svg": "ach_end_tower-won-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_END_TOWER-LOST",
+      "name": "The Full Peal",
+      "icon": "ACH_END_TOWER-LOST",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "The matching tower fractured through its load path; a fallen bell occupies the exit.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_end_tower-lost-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_end_tower-lost-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_end_tower-lost-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_end_tower-lost-unlocked-64.png",
+            "bytes": 5236,
+            "sha256": "fec658d23faca3f4ac309e56a7e9234e3a3d9a0b4b18e003460cf4ed0970ff1f"
+          },
+          "256": {
+            "path": "ach_end_tower-lost-unlocked-256.png",
+            "bytes": 50018,
+            "sha256": "aac5888effdd80c3e23d2712cdf70fba8ca2cde8bb3324620581bca03e0dcaa3"
+          },
+          "svg": "ach_end_tower-lost-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_ALL_ENDINGS",
+      "name": "All Returns Filed",
+      "icon": "ACH_ALL_ENDINGS",
+      "hidden": true,
+      "category": "returns",
+      "meaning": "Nine physical return-file slots in one records drawer; every current ending accounted for.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_all_endings-locked-64.png",
+            "bytes": 4547,
+            "sha256": "d46c38a9c70fab0b1dfef358b2f6a33ed82ba38629cbbbf97222f126edf9e516"
+          },
+          "256": {
+            "path": "ach_all_endings-locked-256.png",
+            "bytes": 40412,
+            "sha256": "c68144c9e7423f69188fb9e4b909a2d98abba8b0d08f84f471d12f677df5bc38"
+          },
+          "svg": "ach_all_endings-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_all_endings-unlocked-64.png",
+            "bytes": 5073,
+            "sha256": "eaffce41ec7ae21dd571015691f94bfd41be4d411dfdf17587c674f7bb43eee0"
+          },
+          "256": {
+            "path": "ach_all_endings-unlocked-256.png",
+            "bytes": 44929,
+            "sha256": "5620b2e62ee84f3accbb4ab7ef8ceb070ce46ee0d8519442ec9fc3654f1dc745"
+          },
+          "svg": "ach_all_endings-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_UNINJURED",
+      "name": "No Handling Noise",
+      "icon": "ACH_UNINJURED",
+      "hidden": false,
+      "category": "method",
+      "meaning": "An anatomically ordered open recordist hand with broad palm and clear finger web cuts.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_uninjured-locked-64.png",
+            "bytes": 4652,
+            "sha256": "821649d26c076e612d32d7a46182b521955533e92b54c8a30281f37316601b9c"
+          },
+          "256": {
+            "path": "ach_uninjured-locked-256.png",
+            "bytes": 42924,
+            "sha256": "f2ded9552f65f1a8749d2e18cbb5c6913a07b9ea5938db1323d9a2dbc09f2c6d"
+          },
+          "svg": "ach_uninjured-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_uninjured-unlocked-64.png",
+            "bytes": 4966,
+            "sha256": "534e79f87512ae82011ce75c6fc52c97fabbc28a3074b46c597b999d88d1ce92"
+          },
+          "256": {
+            "path": "ach_uninjured-unlocked-256.png",
+            "bytes": 48248,
+            "sha256": "6fd9c948d25fec4abd811d80b04c79ccd966639b9069a9f5959bb909705bbb99"
+          },
+          "svg": "ach_uninjured-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_SECOND_TRACK",
+      "name": "The Other Side",
+      "icon": "ACH_SECOND_TRACK",
+      "hidden": false,
+      "category": "method",
+      "meaning": "Two discrete transport tracks around the same causal cassette; no generic repeat icon.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_second_track-locked-64.png",
+            "bytes": 4835,
+            "sha256": "622a4ffbc3bf26f7cc7b90498c96cf7fc9f4576b5d806abcfeec4ba36043e3e2"
+          },
+          "256": {
+            "path": "ach_second_track-locked-256.png",
+            "bytes": 42805,
+            "sha256": "13d6cc23cd5295eaa3b654d1a31a866ff2f500f4f5a17fbda17a74f7f122053c"
+          },
+          "svg": "ach_second_track-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_second_track-unlocked-64.png",
+            "bytes": 5392,
+            "sha256": "7156c8ffb553efee1690b57f18c025632ff6299e7122bb39276670125ee407a6"
+          },
+          "256": {
+            "path": "ach_second_track-unlocked-256.png",
+            "bytes": 49559,
+            "sha256": "9fe08f9c88194f9c67fc02b8abf53f524fd60f835fd05963befecc0262a0d839"
+          },
+          "svg": "ach_second_track-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_UNBROKEN",
+      "name": "Unbroken",
+      "icon": "ACH_UNBROKEN",
+      "hidden": false,
+      "category": "method",
+      "meaning": "A continuous closed loop of real tape ribbon, with one uninterrupted centre cut.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_unbroken-locked-64.png",
+            "bytes": 5365,
+            "sha256": "c00dc799a6de9b5346b6c87ce66af00d6bfa087f429cca9d01bbb9866c404343"
+          },
+          "256": {
+            "path": "ach_unbroken-locked-256.png",
+            "bytes": 49450,
+            "sha256": "6faecc47adad9a494317370f6b343b7eab6206975937cbf54c5c5460bf30f936"
+          },
+          "svg": "ach_unbroken-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_unbroken-unlocked-64.png",
+            "bytes": 5803,
+            "sha256": "1d3e52f61caa12c1ebb021a53cb8d73cb354ad5e2fe97790e7f7c3ae3fe87afd"
+          },
+          "256": {
+            "path": "ach_unbroken-unlocked-256.png",
+            "bytes": 56142,
+            "sha256": "3d73f99edfe2bd0e27a3a3dcf6c03b2023b30bb27bbfa9f2c7eb8da0549b0acb"
+          },
+          "svg": "ach_unbroken-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_FIRST_PASS",
+      "name": "Nothing There",
+      "icon": "ACH_FIRST_PASS",
+      "hidden": false,
+      "category": "method",
+      "meaning": "Three signal adversaries above one unbroken first-pass traverse: three distinct clean victories.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_first_pass-locked-64.png",
+            "bytes": 4800,
+            "sha256": "324558fe287b3a265f42b7695e46ddfc2d8155089b3129231d951bd4b9e884a9"
+          },
+          "256": {
+            "path": "ach_first_pass-locked-256.png",
+            "bytes": 42464,
+            "sha256": "075deca73b4822a47e0bf4084179bc2ab601e1d849e2dae5b8bb7ac6e4e68a2c"
+          },
+          "svg": "ach_first_pass-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_first_pass-unlocked-64.png",
+            "bytes": 5227,
+            "sha256": "21c152482ed9c0f4c7bdad996467d048a3b4f4af24303b804cd478f3ac5a0d5f"
+          },
+          "256": {
+            "path": "ach_first_pass-unlocked-256.png",
+            "bytes": 48316,
+            "sha256": "940914fc4c4d56b7cfbb2cf229036c73c5788dc85af95db06baf450d77addd42"
+          },
+          "svg": "ach_first_pass-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_DEAD_AIR",
+      "name": "Dead Air",
+      "icon": "ACH_DEAD_AIR",
+      "hidden": false,
+      "category": "method",
+      "meaning": "A dead monitoring aperture whose only surviving carrier is a flat, broken trace.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_dead_air-locked-64.png",
+            "bytes": 4624,
+            "sha256": "9fad611fc1c06d7e2b8bae82863ec5c6c586c85f651761c2c88456ef0e299364"
+          },
+          "256": {
+            "path": "ach_dead_air-locked-256.png",
+            "bytes": 40827,
+            "sha256": "2bb64d2079a95ad50806306f7053e6086f4b4aca005cfb9dc3f444e1f3abb90c"
+          },
+          "svg": "ach_dead_air-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_dead_air-unlocked-64.png",
+            "bytes": 5092,
+            "sha256": "141c61f45b44957be5c80e6694e7f43f5301ed7abf0b6bd1fc31460bcb1045d2"
+          },
+          "256": {
+            "path": "ach_dead_air-unlocked-256.png",
+            "bytes": 46709,
+            "sha256": "29b3f1beff228fc8b5ba2d8e64b98be24893479d4f2f6843de6b1d6c4a5478b1"
+          },
+          "svg": "ach_dead_air-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_ONE_TORCH",
+      "name": "The Whole Night on One Torch",
+      "icon": "ACH_ONE_TORCH",
+      "hidden": false,
+      "category": "method",
+      "meaning": "One enduring torch and one beam, with no building feed or battery-replacement symbol.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_one_torch-locked-64.png",
+            "bytes": 4719,
+            "sha256": "3f9de4c81fa23af37c548534b656d4f67a96579d27d58e01390e8cd983bee18a"
+          },
+          "256": {
+            "path": "ach_one_torch-locked-256.png",
+            "bytes": 43450,
+            "sha256": "7557c0c297b0df1ca20fa0cc8b2ce133c8160e515f7b953983bc4587cf09791a"
+          },
+          "svg": "ach_one_torch-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_one_torch-unlocked-64.png",
+            "bytes": 5042,
+            "sha256": "fd8827dbcd2ce9320a52eb9ec57f5332d532c55873df9e89687faceb0e7aa715"
+          },
+          "256": {
+            "path": "ach_one_torch-unlocked-256.png",
+            "bytes": 49501,
+            "sha256": "7e5577675bc768d5a2a32796594fae797c94f7501cd26fdf7dc7e1094152debe"
+          },
+          "svg": "ach_one_torch-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_BUILDING_ALIVE",
+      "name": "The Building, Briefly Alive",
+      "icon": "ACH_BUILDING_ALIVE",
+      "hidden": false,
+      "category": "method",
+      "meaning": "Ellery’s recognizable roof and five live distribution apertures.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_building_alive-locked-64.png",
+            "bytes": 4718,
+            "sha256": "efd20084cb6230fc434526bf4b68b3735978daea738358ef74705b3762e0675d"
+          },
+          "256": {
+            "path": "ach_building_alive-locked-256.png",
+            "bytes": 41412,
+            "sha256": "4659edfd41950fbd38fc79a6deea35bd1e9b0dda76ee56d6c992cc1363802a3d"
+          },
+          "svg": "ach_building_alive-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_building_alive-unlocked-64.png",
+            "bytes": 5157,
+            "sha256": "b41408fed387b520c95af3c611fe3c297724ebb2b0dd4865250324499c506ea3"
+          },
+          "256": {
+            "path": "ach_building_alive-unlocked-256.png",
+            "bytes": 47137,
+            "sha256": "8846ac1b039555f5475e0fde094fc397bf88f70daf5664e27674d176cbd36a71"
+          },
+          "svg": "ach_building_alive-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_FIELD_NOTES",
+      "name": "Paper Trail",
+      "icon": "ACH_FIELD_NOTES",
+      "hidden": false,
+      "category": "work",
+      "meaning": "A folded field docket over a second filed sheet: the paper trail as handled material.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_field_notes-locked-64.png",
+            "bytes": 4608,
+            "sha256": "1e9d02f9cdabc484ee29a8092761a463577eff7ca71f9bb1597f5913c2de4772"
+          },
+          "256": {
+            "path": "ach_field_notes-locked-256.png",
+            "bytes": 38863,
+            "sha256": "fcddde9fa23d6b990e3cea576736fb7526b83f1ffb73d3ffc1e7c02d09230af2"
+          },
+          "svg": "ach_field_notes-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_field_notes-unlocked-64.png",
+            "bytes": 5060,
+            "sha256": "bce6c8d2fd9f785f022467af17d25047af06a5298f5b0251796afa1349f8b4a7"
+          },
+          "256": {
+            "path": "ach_field_notes-unlocked-256.png",
+            "bytes": 44039,
+            "sha256": "fbf24c43628c8311a670056515eaa9864636b6dee1d5cc6f494bf5ff44ad8013"
+          },
+          "svg": "ach_field_notes-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_FIELD_LEADS",
+      "name": "Loose Ends",
+      "icon": "ACH_FIELD_LEADS",
+      "hidden": false,
+      "category": "work",
+      "meaning": "Four literal optional leads: garden leaf, gallery frame, tower roof, and city seat.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_field_leads-locked-64.png",
+            "bytes": 4942,
+            "sha256": "b33f53aadb0b35d8c9caf599b6b09a670d82c2a0a5ae3bdbbe95d96a6158abc0"
+          },
+          "256": {
+            "path": "ach_field_leads-locked-256.png",
+            "bytes": 42615,
+            "sha256": "e963101065393fd3807ce1360103c9cb595708abb7788fc12848bea4c9c3f9fb"
+          },
+          "svg": "ach_field_leads-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_field_leads-unlocked-64.png",
+            "bytes": 5428,
+            "sha256": "fa8164149f56c9c03b861b3e8cf4712cfc9994e65b84e1275f364794a75e37a2"
+          },
+          "256": {
+            "path": "ach_field_leads-unlocked-256.png",
+            "bytes": 48873,
+            "sha256": "02b337b0043c2add625aa9b15bf2bf3e1d1aa4f911947e9901fe5d8118306ee1"
+          },
+          "svg": "ach_field_leads-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_OFF_AIR",
+      "name": "Between Stations",
+      "icon": "ACH_OFF_AIR",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "Portable receiver with its hidden channel thirteen cut directly into the tuning window.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_off_air-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_off_air-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_off_air-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_off_air-unlocked-64.png",
+            "bytes": 5232,
+            "sha256": "9dc62569ff36aa9463b51a7f935ba2d80a44fc0845331b7bb03b23f0dfa4e59a"
+          },
+          "256": {
+            "path": "ach_off_air-unlocked-256.png",
+            "bytes": 49188,
+            "sha256": "9ff3aa4eccc6cf2f209ca80d8692d9d20222af98dd070210277cecc904223684"
+          },
+          "svg": "ach_off_air-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_CALL_YOURSELF",
+      "name": "Hold the Line",
+      "icon": "ACH_CALL_YOURSELF",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "Two distinct telephone handsets make a closed impossible circuit back to the van.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_call_yourself-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_call_yourself-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_call_yourself-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_call_yourself-unlocked-64.png",
+            "bytes": 5195,
+            "sha256": "9e6e269a915c6b19f2837955ed30dbc290317c7ccb39848d923470025d5583b9"
+          },
+          "256": {
+            "path": "ach_call_yourself-unlocked-256.png",
+            "bytes": 50579,
+            "sha256": "764c5bdb42a332233974bef01adb6af56f0a34754e1d473773ae0a5c0e9b4126"
+          },
+          "svg": "ach_call_yourself-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_HIDDEN_EXCHANGES",
+      "name": "Private Lines",
+      "icon": "ACH_HIDDEN_EXCHANGES",
+      "hidden": true,
+      "category": "disclosures",
+      "meaning": "Portable radio and hanging handset joined by one private cable: both hidden exchanges.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_hidden_exchanges-locked-64.png",
+            "bytes": 4577,
+            "sha256": "ad2996c3a59812ddf9b122917141f1e6face13c51a6bd1040fcb38df9cb4d4c8"
+          },
+          "256": {
+            "path": "ach_hidden_exchanges-locked-256.png",
+            "bytes": 40403,
+            "sha256": "1e4dc786533618dfb1cb18a5b6c688c4f0e8f031f383ed23b05b2f35850a26a6"
+          },
+          "svg": "ach_hidden_exchanges-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_hidden_exchanges-unlocked-64.png",
+            "bytes": 5194,
+            "sha256": "74bde9944ae54a4597907612dd522b478d038d2cfed27dfd8092dc0ee24ca270"
+          },
+          "256": {
+            "path": "ach_hidden_exchanges-unlocked-256.png",
+            "bytes": 49196,
+            "sha256": "2d41e0cdd67e46aa0818c2254a2460af7407bff90b05070ba60f33a6fdb6bdca"
+          },
+          "svg": "ach_hidden_exchanges-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    },
+    {
+      "id": "ACH_COMPLETE_ARCHIVE",
+      "name": "Master Copy",
+      "icon": "ACH_COMPLETE_ARCHIVE",
+      "hidden": false,
+      "category": "method",
+      "meaning": "A master cassette in its fitted archival case, with a physical sealed ribbon instead of a generic trophy.",
+      "files": {
+        "locked": {
+          "64": {
+            "path": "ach_complete_archive-locked-64.png",
+            "bytes": 4566,
+            "sha256": "39744400782670371b939974ff96e842c76b63a2090c6c1ede5b1507944fcc6f"
+          },
+          "256": {
+            "path": "ach_complete_archive-locked-256.png",
+            "bytes": 40427,
+            "sha256": "0e48963f4827629b945d967838c501f0cb18ff3ade0328d5a2127a542f6f7d62"
+          },
+          "svg": "ach_complete_archive-locked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        },
+        "unlocked": {
+          "64": {
+            "path": "ach_complete_archive-unlocked-64.png",
+            "bytes": 5029,
+            "sha256": "8b125c6858da0e879f1101299991f5ced160fd5e572c1c6a6a3f99e20dcb84e1"
+          },
+          "256": {
+            "path": "ach_complete_archive-unlocked-256.png",
+            "bytes": 46125,
+            "sha256": "50f0724001659bd4d722b6ab5005bd0958e9981cb6b922c6cefd65a0992c945c"
+          },
+          "svg": "ach_complete_archive-unlocked.svg",
+          "svgRole": "neutral-vector-mask; platform artwork is the actual Canvas PNG"
+        }
+      }
+    }
+  ],
+  "limits": [
+    "These are local production artwork bakes, not Steam AppID or live overlay verification.",
+    "No save or achievement state was read or modified."
+  ]
+}

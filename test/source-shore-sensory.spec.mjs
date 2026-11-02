@@ -12,6 +12,7 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
 import { reduceChunkSurf, normalizeChunkSurfState, CHUNK_SURF_PHASE } from '../src/game/chunk-surf-state.js';
 import { freshSave, getSave, saveCommit, withTransientGameState } from '../src/game/save.js';
+import {createPressurePerformance,normalizePressurePresentation} from '../src/game/pressure-performance.js';
 
 const shore = (details = {}) => ({ active: true, outside: true, proper: false,
   distanceFromRoomMetres: 100, distanceToBankMetres: 100, distanceToLiftMetres: 100,
@@ -266,7 +267,7 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
     const restored = createSourceSpaceRuntime({ initialState: JSON.parse(JSON.stringify(getSave().chunkSurf)) });
     const look = { yaw: 0, pitch: 0 };
     const context = vm.createContext({
-      CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,
+      CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,normalizePressurePresentation,pressurePerformance:createPressurePerformance(),
       stopOutskirtsStreetAudio() {}, resetOutskirtsLastLight() {}, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
       normalizeChunkSurfState, reduceChunkSurf, chapelTowerState: () => ({ phase: 'none' }), getSave,
       PRES: { isActive: () => false, despawn() {} }, createSourceSpaceRuntime: () => restored,
@@ -279,7 +280,7 @@ test('a real mid-rise save restores exact yaw and pitch without replacing the or
       applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
       CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },
     });
-    vm.runInContext(mainFunction('activateSourceSpace'), context);
+    vm.runInContext(mainFunction('pressurePresentationSnapshot')+'\n'+mainFunction('activateSourceSpace'), context);
     context.activateSourceSpace(restored.state(), { position: body, resume: true });
     assert.deepEqual(look, desired);
     assert.equal(context.px, body.x); assert.equal(context.py, body.y);
@@ -297,7 +298,7 @@ test('away from the shore a Source save resumes facing the way it was taken, and
     const look = { yaw: 0, pitch: 0 };
     await withTransientGameState({ save: { ...freshSave(), sourceView } }, async () => {
       const context = vm.createContext({
-        CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,
+        CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,normalizePressurePresentation,pressurePerformance:createPressurePerformance(),
         stopOutskirtsStreetAudio() {}, resetOutskirtsLastLight() {}, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
         normalizeChunkSurfState, reduceChunkSurf, chapelTowerState: () => ({ phase: 'none' }), getSave,
         PRES: { isActive: () => false, despawn() {} }, createSourceSpaceRuntime: () => runtime,
@@ -310,7 +311,7 @@ test('away from the shore a Source save resumes facing the way it was taken, and
         applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
         CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },
       });
-      vm.runInContext(mainFunction('activateSourceSpace'), context);
+      vm.runInContext(mainFunction('pressurePresentationSnapshot')+'\n'+mainFunction('activateSourceSpace'), context);
       context.activateSourceSpace(runtime.state(), { position: body, resume: true });
     });
     return look;

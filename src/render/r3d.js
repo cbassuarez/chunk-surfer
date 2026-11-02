@@ -14,8 +14,13 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
+import {NATATORIUM_METRIC_GLSL,NATATORIUM_METRIC_IDENTITY,normalizeNatatoriumMetric,natatoriumMetricUniform,natatoriumMetricZ} from './natatorium-metric.js';
+import { recordingEmbodimentInstances,recordingEmbodimentViewPull } from './recording-embodiment.js';
+import {normalizeRecordingViewPull} from './recording-view-pull.js';
+import {normalizeSourceRestFaculties,sourceRestFacultyUniforms} from './source-rest-faculties.js';
 import { OPENING_OVERTURE } from '../data/opening-overture.js';
 import {GLASS_COURT_RAIN_GLSL} from './glass-court-weather.js';
+import {B3_STUDIO_PROPS_ASSET,B3_STUDIO_PROPS_MESHES} from '../data/b3-studio-props.js';
 import { B3_GLASS_GLSL, createB3GlassMoment, b3FigurePanePoint, b3ClearRay, b3PaneIllumination } from './studio-b3-glass.js';
 import {OUTSKIRTS_BUS_RAIN_GLSL,outskirtsBusRainUniforms,outskirtsBusInteriorLightMix} from './outskirts-bus-weather.js';
 import {GLASS_COURT} from '../data/glass-court.js';
@@ -55,6 +60,7 @@ import { PRINTED_SURFACE_GLSL } from './printed-surface.js';
 import { ST_BRENDANS_STONE_GLSL } from './st-brendans-surface.js';
 import { createSourceSurfaceLetteringBaker } from './source-surface-lettering.js';
 import { isScreen, screenUniforms } from './pixel-mesh/screens.js';
+import {screenForWorld,targetSourceDither,advanceSourceDither} from './source-dither-routing.js';
 import { MARK_FIELD_SIZE, MARK_FIELD_SOURCE, deriveMarkField } from './mark-field.js';
 import { FRONT_END_GRADE, NEUTRAL_GRADE, getLookProfile } from './look-profiles.js';
 import { LIGHT_KIND } from '../data/conservatory-lights.js';
@@ -140,6 +146,7 @@ let whitePointScaleOverride=null;
 // the look profile decides, which is the ordinary case.
 let lightingScreenId=null;
 let screenOverrideId=null;
+let sourceDitherMix=0;
 let windowGeometryMotion=false;
 let windowGeometryResizePending=false;
 const HUSH_AMBIENT_COLOR=new Float32Array([.26,.76,.54]);
@@ -443,7 +450,7 @@ float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
 
 `;
 
-const MARCH_FRAG = COMMON_GLSL + TORCH_OPTICS_GLSL + WORLD_LIGHT_TREATMENT_GLSL + STILLNESS_FACES_GLSL + STILLNESS_RELIEF_PROXY_GLSL + `
+const MARCH_FRAG = COMMON_GLSL + TORCH_OPTICS_GLSL + WORLD_LIGHT_TREATMENT_GLSL + STILLNESS_FACES_GLSL + STILLNESS_RELIEF_PROXY_GLSL + NATATORIUM_METRIC_GLSL + `
 uniform vec2  uRes;
 uniform float uTime;
 uniform vec3  uCam;          // eye (x, height, z=world y)
@@ -622,6 +629,16 @@ layout(location=1) out vec4 oMark;
 const float H_MIN = -8.0;
 const float H_RANGE = 32.0;
 const float CELL_METERS = ${CELL.toFixed(6)};
+vec3 metricCellRayPoint(vec3 ro,vec3 rd,float t){
+  return natatoriumMetricRayPoint(ro*CELL_METERS,rd,t*CELL_METERS)/CELL_METERS;
+}
+float metricNextZ(ivec2 cell,ivec2 stp,vec3 ro,vec3 rd){
+  if(abs(rd.z)<.000001)return 1e30;
+  float boundary=(float(cell.y)+max(float(stp.y),0.0))*CELL_METERS;
+  return (natatoriumMetricZ(boundary)-natatoriumMetricZ(ro.z*CELL_METERS))/(CELL_METERS*rd.z);
+}
+vec3 metricCellOffset(vec3 ro,vec3 rd,float t){return metricCellRayPoint(ro,rd,t);}
+
 const float PROC_CEIL = ${ (3.2 / CELL).toFixed(6) };
 const int FLAG_SOLID   = 1;
 const int FLAG_DOOR    = 2;
@@ -1797,6 +1814,7 @@ WaterRay waterWalk(vec3 ro, vec3 rd, int steps){
   vec2 drd=1.0/max(abs(rd.xz),vec2(1e-5));
   ivec2 stp=ivec2(rd.x<0.0?-1:1, rd.z<0.0?-1:1);
   vec2 sideT=(vec2(cell)+max(vec2(stp),0.0)-ro.xz)/(rd.xz+1e-9);
+  if(natatoriumMetricActive())sideT.y=metricNextZ(cell,stp,ro,rd);
   Cell cur=cellShapeAtI(cell);
   float tEnter=0.0;
   for(int i=0;i<48;i++){
@@ -1822,7 +1840,7 @@ WaterRay waterWalk(vec3 ro, vec3 rd, int steps){
       h.cell=nc.solid?cell:nxt;h.sky=((nc.solid?cur.flags:nc.flags)&FLAG_SKY)!=0;return h;
     }
     cell=nxt;cur=nc;tEnter=tExit;
-    if(xSide)sideT.x+=drd.x;else sideT.y+=drd.y;
+    if(xSide)sideT.x+=drd.x;else sideT.y=natatoriumMetricActive()?metricNextZ(cell,stp,ro,rd):sideT.y+drd.y;
   }
   return h;
 }
@@ -1885,7 +1903,7 @@ float waterCaustic(vec2 p){
   return k*k;
 }
 vec3 waterShadeSeen(WaterRay h, vec3 ro, vec3 rd){
-  vec3 p=ro+rd*h.t,pM=p*CELL_METERS;
+  vec3 p=metricCellRayPoint(ro,rd,h.t),pM=p*CELL_METERS;
   Cell c=cellShapeAtI(h.cell);c.mat=MAT_SERVICE;c.place=1.0;cellMaterialAtI(h.cell,c);
   vec3 albedo=architecturalSurface(c.mat,h.surf,pM,h.n,materialBase(c.mat,h.surf,vec3(.62),vec3(.30,.36,.36),.5));
   // The same material bank tile the dry neighbour wears.
@@ -1902,20 +1920,22 @@ vec3 waterShadeSeen(WaterRay h, vec3 ro, vec3 rd){
 // What the surface mirrors. A ray that leaves through open sky gets the same
 // night the eye gets; indoors there is always a ceiling to find.
 vec3 waterReflection(vec3 wp, vec3 R, bool sky){
-  WaterRay h=waterWalk(wp+R*.02,R,40);
+  vec3 origin=metricCellOffset(wp,R,.02);
+  WaterRay h=waterWalk(origin,R,40);
   if(!h.hit)return sky?nightSky(normalize(R)):vec3(0.0);
-  return waterShadeSeen(h,wp+R*.02,R);
+  return waterShadeSeen(h,origin,R);
 }
 // What lies under it, lit through the water and gathered by the ripples.
 vec3 waterRefraction(vec3 wp, vec3 T, out float pathM){
-  vec3 ro=wp+T*.02;
+  vec3 ro=metricCellOffset(wp,T,.02);
   WaterRay h=waterWalk(ro,T,24);
   if(!h.hit){pathM=4.0;return vec3(0.0);}
   pathM=h.t*CELL_METERS;
-  vec3 pM=(ro+T*h.t)*CELL_METERS;
+  vec3 canonicalHit=metricCellRayPoint(ro,T,h.t);
+  vec3 pM=canonicalHit*CELL_METERS;
   float depthM=max(0.0,uWaterParams.y-pM.y);
   float absorb=mix(.35,2.6,clamp(uWaterParams.z,0.0,1.0));
-  float caustic=mix(waterCaustic((ro+T*h.t).xz),1.0,uWaterParams.w);
+  float caustic=mix(waterCaustic(canonicalHit.xz),1.0,uWaterParams.w);
   return waterShadeSeen(h,ro,T)*exp(-depthM*absorb)*mix(1.0,caustic,.85);
 }
 // Each lamp in the room, seen in the water: a tight bright image the ripples
@@ -1972,7 +1992,7 @@ void main(){
   //
   // Wall normals come from the DDA's entry face, never from fract(pos): that
   // was the salt-and-pepper flicker.
-  const float MAXD = 90.0 / CELL_METERS;
+  float MAXD = (natatoriumMetricActive()?320.0:90.0) / CELL_METERS;
   float tHit = -1.0;
   int surf = 0;                 // 1 wall · 2 floor · 3 ceiling
   int hitZone = 0;
@@ -1997,6 +2017,7 @@ void main(){
   vec2 drd = 1.0 / max(abs(rd.xz), vec2(1e-5));
   ivec2 stp = ivec2(rd.x < 0.0 ? -1 : 1, rd.z < 0.0 ? -1 : 1);
   vec2 sideT = (vec2(cell) + max(vec2(stp), 0.0) - ro.xz) / (rd.xz + 1e-9);
+  if(natatoriumMetricActive())sideT.y=metricNextZ(cell,stp,ro,rd);
 
   Cell cur = eyeCell;
   float tEnter = 0.0;
@@ -2049,7 +2070,7 @@ void main(){
         if(min(sideT.x, sideT.y) >= tClear) break;
         tEnter = min(sideT.x, sideT.y);
         cell = ahead;
-        if(xs) sideT.x += drd.x; else sideT.y += drd.y;
+        if(xs) sideT.x += drd.x; else sideT.y=natatoriumMetricActive()?metricNextZ(cell,stp,ro,rd):sideT.y+drd.y;
         walked = true;
         marchStep++;
         if(marchStep >= 192 || tEnter > MAXD) break;
@@ -2067,7 +2088,7 @@ void main(){
         // Standing water only stands where the floor is below it: rainwater in
         // a sloping sump feathers out instead of floating over the dry tiles.
         if(waterY > cur.f + 1e-3 && tw >= tEnter && tw <= tExit){
-          vec3 wp = ro + rd * tw;
+          vec3 wp = metricCellRayPoint(ro,rd,tw);
           if(inWaterBounds(wp.xz)){
             tHit = tw; surf = 4; n = vec3(0.0, ro.y<waterY?-1.0:1.0, 0.0); hitZone = cur.zone; hitCell = cell; hitSky = (cur.flags & FLAG_SKY) != 0; break;
           }
@@ -2117,7 +2138,7 @@ void main(){
     }
 
     cell = nxt; cur = nc; tEnter = tExit;
-    if(xSide) sideT.x += drd.x; else sideT.y += drd.y;
+    if(xSide) sideT.x += drd.x; else sideT.y=natatoriumMetricActive()?metricNextZ(cell,stp,ro,rd):sideT.y+drd.y;
     marchStep++;
   }
   if(surf != 0){
@@ -2180,9 +2201,9 @@ void main(){
 
     }
   } else {
-    vec3 pos = ro + rd * tHit;
+    vec3 pos = metricCellRayPoint(ro,rd,tHit);
     vec3 posM = pos * CELL_METERS;
-    vec3 receiverPlanePoint=(ro+rd*receiverTHit)*CELL_METERS;
+    vec3 receiverPlanePoint=metricCellRayPoint(ro,rd,receiverTHit)*CELL_METERS;
     vec3 receiverPosM=anatomicalRelief?posM-receiverNormal*dot(posM-receiverPlanePoint,receiverNormal):posM;
     vec3 roM = ro * CELL_METERS;
     bool brendanStone=uUsePlan>.5&&hitZone==${ZONE.church}&&hitMat==MAT_CHAPEL&&surf!=4;
@@ -3218,9 +3239,9 @@ void main(){
   if(unravellingAmount>0.0){
     c=mix(c,texture(uUnravellingScene,uv).rgb,unravellingAmount*(1.0-pressureIdentityMask(uv)));
   }
-  // Preserve the acquired marks, with a sealed black core and neutral white
-  // radiance. Glass, emergency red and the negative plate cannot relight it.
-  if(uPressureInkReady>.5)c=pressureRecordedInk(c,texture(uPressureInk,uv).rg);
+  // Preserve acquired cosmic marks (or the human reference's sealed black
+  // core) through glass, emergency colour and the negative plate.
+  if(uPressureInkReady>.5)c=pressurePreserveRecordedCosmos(c,texture(uSrc,uv).rgb,texture(uPressureInk,uv));
   // The informant's negative interior is an opaque world material. Exact
   // depth-winning marks keep optical glass from drawing a reflection on it;
   // nearer Pressure geometry keeps its existing physical priority.
@@ -4329,6 +4350,9 @@ let datamoshSourceTex=null,datamoshSourceFbo=null,datamoshTexA=null,datamoshTexB
 let datamoshActive=false,datamoshProgress=0,datamoshReducedMotion=false,lastPostSourceFbo=null;
 let sourceFaultTexA=null,sourceFaultTexB=null,sourceFaultFboA=null,sourceFaultFboB=null,sourceFaultFlip=false,sourceFaultWarm=false;
 let sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,overflow:0,overflowHead:0,overflowLane:0,overflowDirection:1,overflowRun:0,reduceMotion:false,flashMode:'full'};
+let sourceRestFaculties=normalizeSourceRestFaculties(null);
+export function r3dSetSourceRestFaculties(value=null){sourceRestFaculties=normalizeSourceRestFaculties(value);return{...sourceRestFaculties};}
+export function r3dSourceRestFacultyStatus(){return{...sourceRestFaculties};}
 let surfAlbedoTex=null, surfNormalTex=null, surfMaterialTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 // The engraving, derived from each generated tile as it arrives (see
 // render/mark-field.js). It is a strict parallel of the dream arrays — same
@@ -4367,6 +4391,21 @@ let hushBodyReady=false,hushBodyLoadError=null,hushBodyPackLoad=null,hushBodyPac
 const pubStatus={characters:false,props:false,error:null};
 let pubHospitalityLoadGeneration=0,pubHospitalityError=null;
 let basePropPackLoad=null,authoredPropPackLoad=null;
+let busStudioAssetState={bus:false,studio:false,errors:[]};
+async function loadBusStudioPacks(status){
+  for(const [key,path]of [['bus','assets/bus-refinement.glb'],['studio',B3_STUDIO_PROPS_ASSET]]){
+    try{await P3.addPropPack(assetUrl(path));status[key]=true;}
+    catch(error){status.errors.push({pack:key,error:String(error?.message||error)});console.warn('Optional bus/studio model pack unavailable; retaining base props',path,error);}
+  }
+}
+
+export function r3dBusStudioAssetsStatus(){
+  const meshes=new Set(P3.propMeshCatalog());
+  return{...busStudioAssetState,errors:[...busStudioAssetState.errors],
+    studioMeshes:Object.keys(B3_STUDIO_PROPS_MESHES).filter(name=>meshes.has(name)),
+    busMeshes:['ambient_late_bus','outskirts_bus','outskirts_bus_passage'].filter(name=>meshes.has(name))};
+}
+
 let hallChandelierReady=false;
 export function r3dHallChandelierReady(){return hallChandelierReady;}
 export async function r3dBasePropsReady(){
@@ -4444,6 +4483,7 @@ let streetPilotReady=false;
 let openingStreetReady=false;
 let glassCourtReady=false;
 let streetFabricReady=false;
+let yardJardinsBoundaryReady=false;
 let elleryPublicFrontReady=false;
 let chapelTapeDemandReady=false,chapelTapeDemandError=null,chapelTapeDemandLoadGeneration=0;
 export function r3dChapelTapeDemandReady(){return chapelTapeDemandReady;}
@@ -4536,6 +4576,26 @@ export function r3dPrepareHushBody(){
     throw error;
   }).finally(()=>{if(generation===hushBodyPackBase)hushBodyPackLoad=null;});
   return hushBodyPackLoad;
+}
+// Alan is a human continuation of the chapel performance, using the same
+// skinned opaque material, depth, shadow and final dither path as other people.
+const RECORDIST_RELEASE_MESHES=['recordist_release_alan','recordist_release_rig_hand','recordist_release_fork_hand','recordist_release_rig_seated'];
+let recordistReleaseLoad=null,recordistReleaseGeneration=null;
+export function r3dRecordistReleaseReady(){
+  const resident=P3.characterStats().meshes;
+  return RECORDIST_RELEASE_MESHES.every(name=>resident.includes(name));
+}
+export function r3dPrepareRecordistRelease(){
+  if(r3dRecordistReleaseReady())return Promise.resolve(true);
+  if(recordistReleaseLoad&&recordistReleaseGeneration===basePropPackLoad)return recordistReleaseLoad;
+  const generation=basePropPackLoad;recordistReleaseGeneration=generation;
+  recordistReleaseLoad=(async()=>{
+    if(!await r3dBasePropsReady())throw Error('The human character renderer is not ready.');
+    await P3.addCharacterPack(assetUrl('assets/alan-recordist.glb'),{allowedMeshes:RECORDIST_RELEASE_MESHES});
+    if(generation!==basePropPackLoad||!r3dRecordistReleaseReady())throw Error('Alan could not be installed in the current world renderer.');
+    return true;
+  })().finally(()=>{if(generation===recordistReleaseGeneration)recordistReleaseLoad=null;});
+  return recordistReleaseLoad;
 }
 export const HUSH_BODY_MODES=Object.freeze(['live','core','glow','off']);
 
@@ -5532,7 +5592,7 @@ export function r3dSetScreenOverride(id=null){
 }
 export function r3dScreen(){
   return{override:screenOverrideId,zone:lightingScreenId,
-    effective:screenOverrideId??lightingScreenId??currentLook().vfd.screen??'stochastic'};
+    effective:screenForWorld(screenOverrideId),sourceDitherMix};
 }
 export function r3dSetWhitePointScaleOverride(v=null){
   whitePointScaleOverride=v==null?null:Math.max(.002,Math.min(4,Number(v)||0));
@@ -5588,6 +5648,7 @@ let yaw = 0, yawTarget = 0, pitch = 0, pitchTarget = 0;
 // right answer to that; distorting the ring to hide it is not.
 let planYaw = 0, planYawTarget = 0;
 let camX = 0, camZ = 0, camY = EYE_METERS / CELL;
+let natatoriumMetric=NATATORIUM_METRIC_IDENTITY;
 // The peek. A lateral offset on the EYE, in cells, eased so the head moves like
 // a head. main.js clamps it against the geometry (game/cover.js) and hands the
 // clamped value down; nothing in here decides how far you may lean.
@@ -6574,10 +6635,18 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   gl.uniform1i(pixelMeshU('uRecordedPressureInk'),6);
   gl.uniform1f(pixelMeshU('uRecordedPressureInkReady'),pressureFinishReady?1:0);
 
-  // THE SCREEN. The dial overrules the room, the room overrules the look, and
-  // the look is what an ordinary frame uses.
-  const screen = screenUniforms(screenOverrideId ?? lightingScreenId ?? look.vfd.screen ?? 'stochastic');
+  // Crosshatch is the common world plate. A deliberate debug/user override
+  // remains available; stale room screen suggestions no longer replace it.
+  // Only active Source frames receive the additional clustered-dot screen.
+  const sourceDitherActive=!!state?.textSpace||!!state?.sourceVoidPhysical;
+  const ditherDt=lastPixelMeshAt>0?Math.max(0,Math.min(.25,now-lastPixelMeshAt)):1/60;
+  const sourceDitherTarget=targetSourceDither(state,{active:sourceDitherActive,override:screenOverrideId});
+  sourceDitherMix=sourceDitherActive?advanceSourceDither(sourceDitherMix,sourceDitherTarget,ditherDt,{
+    reducedMotion:!!effectiveSettings.reduceMotion,reducedFlash:!!effectiveSettings.reduceFlash,
+  }):0;
+  const screen = screenUniforms(screenForWorld(screenOverrideId));
   gl.uniform1i(pixelMeshU('uScreenKind'), screen.kind);
+  gl.uniform1f(pixelMeshU('uClusteredDotMix'), sourceDitherMix);
   gl.uniform1f(pixelMeshU('uScreenPeriodPx'), screen.periodPx);
   gl.uniform3f(pixelMeshU('uScreenAngles'), screen.angles[0], screen.angles[1], screen.angles[2]);
   gl.uniform2f(pixelMeshU('uScreenBands'), screen.bands[0], screen.bands[1]);
@@ -6642,6 +6711,7 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   // whole climb smears.
   gl.uniform1f(pixelMeshU('uYaw'), homeAcquisition?.yaw??yaw + planYaw);
   gl.uniform1f(pixelMeshU('uCameraTanHalfFov'),activeCameraTanHalfFov);
+  gl.uniform4fv(pixelMeshU('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));
   // The van the camera rides in. Only while the eye is inside its box: a van
   // seen from the yard is part of the world and keeps the world's marks.
   const cabin=P3.cabinVolume(),worldToVan=cabin?invertRigidMatrix(cabin.matrix):null;
@@ -6659,6 +6729,11 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   const dt = lastPixelMeshAt > 0 ? Math.max(0, Math.min(0.25, now - lastPixelMeshAt)) : 1 / 60;
   lastPixelMeshAt = now;
   gl.uniform1f(pixelMeshU('uDt'), dt);
+  // Owned by the seated Source-rest acquisition, before the final dither.
+  // No second frame buffer or independently timed fault pass is involved.
+  const faculty=sourceRestFacultyUniforms(sourceRestFaculties);
+  gl.uniform4fv(pixelMeshU('uSourceRestFaculties'),faculty.uSourceRestFaculties);
+  gl.uniform4fv(pixelMeshU('uSourceRestFacultyState'),faculty.uSourceRestFacultyState);
   gl.uniform1f(pixelMeshU('uCellPx'), resolvePixelMeshCellScenePx());
   gl.uniform1f(pixelMeshU('uBaseRetention'), look.vfd.baseRetention);
   gl.uniform1f(pixelMeshU('uPaletteAmount'), look.vfd.paletteAmount);
@@ -6673,6 +6748,14 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   gl.uniform1f(pixelMeshU('uFear'), fearLevel);
   gl.uniform1f(pixelMeshU('uReduceFlash'), effectiveSettings.reduceFlash ? 1 : 0);
   gl.uniform1f(pixelMeshU('uReduceMotion'), effectiveSettings.reduceMotion ? 1 : 0);
+  // Read the same current-eye anatomical grips as the near-face props. Other
+  // scene owners and reduced-motion output always receive literal zero.
+  const facePull=state?.recordingEmbodiment?.active&&!effectiveSettings.reduceMotion&&recordingViewPullEnabled?recordingViewPull:null,
+    gripLeft=facePull?.left,gripRight=facePull?.right;
+  gl.uniform4f(pixelMeshU('uRecordingGripLeft'),gripLeft?.anchor[0]||0,gripLeft?.anchor[1]||0,gripLeft?.strength||0,0);
+  gl.uniform4f(pixelMeshU('uRecordingGripRight'),gripRight?.anchor[0]||0,gripRight?.anchor[1]||0,gripRight?.strength||0,0);
+  gl.uniform4f(pixelMeshU('uRecordingPullDirections'),gripLeft?.pull[0]||0,gripLeft?.pull[1]||0,gripRight?.pull[0]||0,gripRight?.pull[1]||0);
+  gl.uniform1f(pixelMeshU('uRecordingViewPull'),facePull?.active?facePull.strength:0);
   gl.uniform1f(pixelMeshU('uRecordingCaptureMix'), look.recording.captureMix);
   gl.uniform1f(pixelMeshU('uRoofSkyRecovery'), lightingRoofSkyRecovery);
   // The march writes this exact far-plane depth when a ray reaches the sky.
@@ -6852,8 +6935,14 @@ export function r3dInit(mapEl) {
   resize();
   // The mandatory bus is route geometry, not optional dressing: a base-ready
   // promise must never expose its colliders with the old solid side skin.
+  const busStudioState={bus:false,studio:false,errors:[]};busStudioAssetState=busStudioState;
   basePropPackLoad=P3.loadPropPack(assetUrl('assets/conservatory-props.glb'))
-    .then(async pack=>{await P3.addPropPack(assetUrl('assets/outskirts-bus-passage.glb'));await P3.addPropPack(assetUrl('assets/van-brand.glb'));return pack;});
+    .then(async pack=>{
+      await P3.addPropPack(assetUrl('assets/outskirts-bus-passage.glb'));
+      await P3.addPropPack(assetUrl('assets/van-brand.glb'));
+      await loadBusStudioPacks(busStudioState);
+      return pack;
+    });
   authoredPropPackLoad=basePropPackLoad
     .then((pack)=>{
       SHORE.sourceShoreSetHardwarePack(pack);
@@ -6955,6 +7044,8 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl(EXTERIOR_STREET_FABRIC.pack))
       .then(()=>{streetFabricReady=EXTERIOR_STREET_FABRIC.meshNames.every(name=>P3.propMeshCatalog().includes(name));})
       .catch(err=>console.warn('Street fabric unavailable; retaining existing road section',err)))
+    .then(()=>P3.addPropPack(assetUrl('assets/exterior-infrastructure.glb'))
+      .catch(err=>console.warn('Connected exterior services unavailable',err)))
     .then(()=>P3.addPropPack(assetUrl(ELLERY_PUBLIC_FRONT_PACK))
       .then(()=>{elleryPublicFrontReady=Object.keys(ELLERY_PUBLIC_FRONT_MESHES).every(name=>P3.propMeshCatalog().includes(name));}))
     .then(()=>P3.addPropPack(assetUrl(EXTERIOR_ROOFLINE_PACK))
@@ -6963,6 +7054,9 @@ export function r3dInit(mapEl) {
       .catch(err=>console.warn('stationers pack unavailable; retaining original closed frontage',err)))
     .then(()=>P3.addPropPack(assetUrl('assets/opening-street.glb'))
       .then(()=>{openingStreetReady=true;}))
+    .then(()=>P3.addPropPack(assetUrl('assets/yard-jardins-boundary.glb'))
+      .then(()=>{yardJardinsBoundaryReady=true;})
+      .catch(err=>{yardJardinsBoundaryReady=false;console.warn('Yard pedestrian boundary unavailable',err);}))
     // One optional north-street proof. Unique mesh names keep the wider fleet
     // and arrival street unchanged if this small pack is unavailable.
     .then(()=>P3.addPropPack(assetUrl('assets/street-pilot.glb'))
@@ -6982,6 +7076,8 @@ export function r3dInit(mapEl) {
     .then(()=>P3.addPropPack(assetUrl('assets/academic-gallery.glb'))
       .then(()=>{academicGalleryReady=true;academicGalleryError=null;})
       .catch((err)=>{academicGalleryReady=false;academicGalleryError=String(err?.message||err);console.warn('academic gallery unavailable; retaining existing assemblies',err);}))
+    .then(()=>P3.addPropPack(assetUrl('assets/student-strike-records.glb'))
+      .catch(err=>console.warn('Recovery-site record surfaces unavailable',err)))
     // The ear room (data/stop-listening.js). Optional: without it the room is
     // only its sound and its words, which is less, but not broken.
     .then(()=>P3.addPropPack(assetUrl('assets/stop-listening.glb')).catch((err)=>console.warn('ear room pack unavailable',err)))
@@ -7178,7 +7274,7 @@ export function r3dLookAngles(){return{yaw:yawTarget,pitch:pitchTarget,facing};}
 export function r3dEyePoint(){return{x:camX,y:camY,z:camZ,lean:leanEase};}
 // Physical eye and eased angles used by this frame, for picking world surfaces.
 export function r3dViewCamera(){return{eye:{x:camX*CELL,y:camY*CELL,z:camZ*CELL},yaw:yaw+planYaw,pitch,
-  tanHalfFov:activeCameraTanHalfFov,lens:r3dCinematicLensStatus(),
+  tanHalfFov:activeCameraTanHalfFov,lens:r3dCinematicLensStatus(),natatoriumMetric:{...natatoriumMetric},
   width:canvas?.clientWidth||canvas?.width||1,height:canvas?.clientHeight||canvas?.height||1};}
 // Project a physical world point (metres) through the same basis and 0.95 FOV
 // used by the raymarcher. UI attached to architecture can then follow the thing
@@ -7188,7 +7284,7 @@ const vehicleInteriorStatus={loaded:false,error:null};
 export function r3dVehicleInteriorStatus(){return {...vehicleInteriorStatus};}
 export function r3dProjectWorld(point={}){
   const tx=(Number(point.x)||0)/CELL,ty=(Number(point.y)||0)/CELL,tz=(Number(point.z)||0)/CELL;
-  const dx=tx-camX,dy=ty-camY,dz=tz-camZ,worldYaw=yaw+planYaw;
+  const dx=tx-camX,dy=ty-camY,dz=(natatoriumMetricZ(tz*CELL,natatoriumMetric)-natatoriumMetricZ(camZ*CELL,natatoriumMetric))/CELL,worldYaw=yaw+planYaw;
   const {forward,right,up}=cameraBasis(worldYaw,pitch);
   const depth=dx*forward[0]+dy*forward[1]+dz*forward[2];
   if(depth<=.01)return{x:.5,y:.5,depth,visible:false};
@@ -7405,9 +7501,15 @@ export function r3dSetPlan(rgba, w, h, material = null, options = {}) {
 }
 
 export function r3dSetProps(instances) { P3.setPropInstances(instances); }
-let ordinaryDynamicProps=[],nightWarningProps=[];
-export function r3dSetDynamicProps(instances) { ordinaryDynamicProps=Array.isArray(instances)?instances:[];P3.setDynamicPropInstances([...ordinaryDynamicProps,...nightWarningProps]); }
-export function r3dSetNightWarningProps(instances=[]) { nightWarningProps=Array.isArray(instances)?instances:[];P3.setDynamicPropInstances([...ordinaryDynamicProps,...nightWarningProps]);return nightWarningProps.length; }
+let ordinaryDynamicProps=[],nightWarningProps=[],recordingFaceProps=[];
+let recordingViewPull=normalizeRecordingViewPull(null);
+let recordingViewPullEnabled=true;
+export function r3dSetRecordingViewPullEnabled(value=true){recordingViewPullEnabled=value!==false;return recordingViewPullEnabled;}
+function submitWorldDynamicProps(){P3.setDynamicPropInstances([...ordinaryDynamicProps,...nightWarningProps,...recordingFaceProps]);}
+export function r3dRecordingEmbodimentStatus(){return{count:recordingFaceProps.length,viewPullEnabled:recordingViewPullEnabled,viewPull:structuredClone(recordingViewPull),
+  instances:recordingFaceProps.map(p=>({mesh:p.mesh,matrix:Array.from(p.matrix),diagnostics:{...p.diagnostics}}))};}
+export function r3dSetDynamicProps(instances) { ordinaryDynamicProps=Array.isArray(instances)?instances:[];submitWorldDynamicProps(); }
+export function r3dSetNightWarningProps(instances=[]) { nightWarningProps=Array.isArray(instances)?instances:[];submitWorldDynamicProps();return nightWarningProps.length; }
 export function r3dRoofWatcherPresentation() { return P3.roofWatcherPresentation(); }
 export function r3dSetDiagnosticProps(instances) { P3.setDiagnosticPropInstances(instances); }
 export function r3dSetPropDiagnostics(enabled,options=null) { return P3.setPropDiagnostics(enabled,options); }
@@ -7594,6 +7696,7 @@ export function r3dStreetPilotReady() { return streetPilotReady; }
 export function r3dOpeningStreetReady() { return openingStreetReady; }
 export function r3dGlassCourtReady() { return glassCourtReady; }
 export function r3dStreetFabricReady() { return streetFabricReady; }
+export function r3dYardJardinsReady() { return yardJardinsBoundaryReady; }
 export function r3dElleryPublicFrontReady() { return elleryPublicFrontReady; }
 export function r3dStationersReady() { return ['ellery_square_west_terrace_stationer','exterior_stationers_room'].every(name=>P3.propMeshCatalog().includes(name)); }
 export function r3dAcademicGalleryStatus() { return {ready:academicGalleryReady,error:academicGalleryError}; }
@@ -7768,6 +7871,9 @@ function updateWaterField(water, dt) {
 //          hush:{x,y,strength}|null, dockHauntingFade:0..1, audio:0..1 }
 export function r3dFrame(state) {
   P3.setGlassCourtRainFrame?.(state.glassCourtRain?.shader||null);
+  natatoriumMetric=normalizeNatatoriumMetric(!pixelMeshSettings.reduceMotion&&!state.authoredCamera&&!state.textSpace&&!state.sourceVoidPhysical&&!state.driveStudy?.active&&!horizonState.active&&!towerCaptureInProgress&&!sourceTowerView&&!sourceCrossing
+    ?state.natatoriumCoffeeMetric:null);
+  P3.setNatatoriumMetricFrame(natatoriumMetric);
   if(!towerCaptureInProgress&&!state.textSpace&&!state.sourceVoidPhysical&&!horizonState.active)lastBuildingViewState=state;
   driveFrameActive=state?.driveStudy?.active===true;
   if(!driveFrameActive)P3.setDriveStudyFrame(null);
@@ -7830,6 +7936,17 @@ export function r3dFrame(state) {
   // The drive already supplies the physical cabin/head suspension response.
   // Easing that eye again lets the driver drift through the moving cabin.
   camY = authoredCamera || snapCamera || driveFrameActive || state.resolvedStairFloor===true ? floorGoal : camY + (floorGoal - camY) * (1 - Math.exp(-dt * 14));
+  // Resolve the close presence against this exact eye, after lean and look.
+  // It shares ordinary world depth/material and the final acquisition pass.
+  const faceProps=recordingEmbodimentInstances(state.recordingEmbodiment,{
+    eye:[camX*CELL,camY*CELL,camZ*CELL],yaw:worldYaw,pitch,
+    tanHalfFov:activeCameraTanHalfFov,width:canvas.width,height:canvas.height,
+  });
+  recordingViewPull=normalizeRecordingViewPull(recordingEmbodimentViewPull(state.recordingEmbodiment,{
+    eye:[camX*CELL,camY*CELL,camZ*CELL],yaw:worldYaw,pitch,
+    tanHalfFov:activeCameraTanHalfFov,width:canvas.width,height:canvas.height,
+  }));
+  if(faceProps.length||recordingFaceProps.length){recordingFaceProps=faceProps;submitWorldDynamicProps();}
   // A flashlight snaps. The only easing is a filament's breath on the way out.
   const lightGoal = typeof state.light === 'number'
     ? Math.max(0, Math.min(1, state.light))
@@ -8036,6 +8153,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uTime'), now);
   bindStillnessPresentation(gl,U);
   gl.uniform3f(U('uCam'), camX, camY, camZ);
+  gl.uniform4fv(U('uNatatoriumMetric'),natatoriumMetricUniform(natatoriumMetric));
   gl.uniform1f(U('uYaw'), worldYaw);
   gl.uniform1f(U('uPitch'), pitch);
   gl.uniform1f(U('uCameraTanHalfFov'),activeCameraTanHalfFov);
@@ -8575,6 +8693,7 @@ export function r3dDepthCanvas(size = 512) {
 export { BIOME_RGB, WORLD_RGB };
 
 export function r3dSourceDemolitionStats(){return P3.sourceDemolitionStats();}
+export function r3dExteriorInfrastructureReady(){return ['lyric_service_camera','lyric_extract_stack','lyric_service_bins','ellery_academic_rainwater','ellery_school_rainwater','ellery_baths_rainwater'].every(mesh=>P3.propMeshCatalog().includes(mesh));}
 // Explicit offline frame-review tools can compile the exact production source
 // without booting a second world or changing any gameplay/render state.
 export function r3dLightingShaderSources(){return {vertex:VERT,march:MARCH_FRAG};}

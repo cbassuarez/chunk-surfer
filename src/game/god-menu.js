@@ -30,7 +30,7 @@ export function godTabLines(names, width) {
   return lines;
 }
 
-export function makeGodMenuScene({ tabs = [], onClose = () => {}, onError = (error) => console.error('[god-menu]', error) } = {}) {
+export function makeGodMenuScene({ tabs = [], onClose = () => {}, beforeInvoke = () => true, onError = (error) => console.error('[god-menu]', error) } = {}) {
   validateGodTabs(tabs);
   let pending = false, closed = false;
   const availableTabs = tabs.filter((tab) => Array.isArray(tab?.rows) && tab.rows.length);
@@ -78,6 +78,15 @@ export function makeGodMenuScene({ tabs = [], onClose = () => {}, onError = (err
     const handler = adjustment == null ? (row.activate || (() => row.adjust(1))) : () => row.adjust?.(adjustment);
     try {
       pending = true;
+      // The host must make a mutating review unranked before either its state
+      // change or a closeMenu callback can hand control to another scene.
+      const allowed = beforeInvoke(row, { adjustment });
+      if (allowed && typeof allowed.then === 'function') {
+        // A rejected async guard must not also become an unhandled rejection.
+        void Promise.resolve(allowed).catch(() => {});
+        throw new TypeError('God-menu action guard must be synchronous');
+      }
+      if (allowed === false) { pending = false; return; }
       if (adjustment == null && row.closeMenu) close();
       const result = handler();
       if (result && typeof result.then === 'function') {

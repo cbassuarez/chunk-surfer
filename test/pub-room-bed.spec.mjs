@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {createPubRoomBed,pubRoomBedFrame,PUB_ROOM_FILES,PUB_ROOM_BED_ANCHORS} from '../src/audio/pub-room-bed.js';
 import {createPubRoomAudio} from '../src/audio/pub-room.js';
-import {EXTERIOR_PUB} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubPhysicalAt,pubPhysicalYaw} from '../src/data/exterior-pub.js';
 class Param{constructor(){this.value=0;}setTargetAtTime(v){this.value=v;}setValueAtTime(v){this.value=v;}cancelScheduledValues(){}}
 class Context{
   constructor(){this.currentTime=0;this.sampleRate=8000;this.state='running';this.nodes=[];this.sources=[];this.destination=this.node('sfx');this.music=this.node('music');}
@@ -15,17 +15,26 @@ class Context{
   decodeAudioData(){return Promise.resolve({duration:37});}
 }
 function fixture(options={}){let ctx=new Context();const getAudio=()=>({ctx,destination:ctx.destination,musicDestination:ctx.music});
-  const audio=createPubRoomBed({getAudio,fetchImpl:async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(16)}),...options}),listener={x:EXTERIOR_PUB.bounds.x0+4,z:EXTERIOR_PUB.bounds.z0+2,yaw:0},input={listener,inPub:true};
+  const audio=createPubRoomBed({getAudio,fetchImpl:async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(16)}),...options}),listener={...pubPhysicalAt({x:EXTERIOR_PUB.bounds.x0+4,z:EXTERIOR_PUB.bounds.z0+2}),yaw:pubPhysicalYaw(0)},input={listener,inPub:true};
   return{audio,getAudio,input,get ctx(){return ctx;},replace(){const previous=ctx;ctx=new Context();return previous;},async ready(){audio.update(input);await audio.whenReady();return audio.update(input);}};}
 test('rain remains at real facade glass, brightens near an actually open door, and never doubles outdoor weather',()=>{
-  const d=EXTERIOR_PUB.doors[0],listener={x:d.x,z:EXTERIOR_PUB.frontWorldZ+1,yaw:0};
+  const d=EXTERIOR_PUB.doors[0],listener={...pubPhysicalAt({x:d.x,z:EXTERIOR_PUB.frontWorldZ+1}),yaw:pubPhysicalYaw(0)};
   const closed=pubRoomBedFrame({listener,inPub:true,doorOpen:false}),open=pubRoomBedFrame({listener,inPub:true,openDoorIds:[d.id]});
   assert.ok(open.rain.gain>closed.rain.gain);assert.ok(open.rain.cutoff>closed.rain.cutoff);
   assert.equal(pubRoomBedFrame({listener,nearPub:true,doorOpen:true}).rain.gain,0);
   const recording=pubRoomBedFrame({listener,inPub:true,recording:true});
   assert.ok(recording.rain.gain>0&&recording.rain.gain<closed.rain.gain);
   assert.ok(recording.music.gain>0&&recording.music.gain<closed.music.gain);
-  const far=pubRoomBedFrame({listener:{...listener,z:EXTERIOR_PUB.bounds.z1-1},inPub:true,openDoorIds:[d.id]});assert.ok(far.rain.gain<open.rain.gain);
+  const far=pubRoomBedFrame({listener:{...pubPhysicalAt({x:d.x,z:EXTERIOR_PUB.bounds.z1-1}),yaw:listener.yaw},inPub:true,openDoorIds:[d.id]});assert.ok(far.rain.gain<open.rain.gain);
+});
+test('door and window transmissions retain their independently measured physical ranges after the turn',()=>{
+  const window=EXTERIOR_PUB.windows[1],byWindow={...pubPhysicalAt({x:window.x,z:EXTERIOR_PUB.frontWorldZ+.9}),yaw:pubPhysicalYaw(0)};
+  const glass=pubRoomBedFrame({listener:byWindow,inPub:true,openDoorIds:[]});
+  assert.ok(Math.abs(glass.rain.distance-.9)<1e-12);assert.ok(Math.abs(glass.rain.pan)<1e-12);
+  const door=EXTERIOR_PUB.doors[0],outside={...pubPhysicalAt({x:door.x,z:door.z-1.75}),yaw:pubPhysicalYaw(Math.PI)};
+  const leak=pubRoomBedFrame({listener:outside,nearPub:true,openDoorIds:[door.id]});
+  assert.ok(Math.abs(leak.music.distance-1.75)<1e-12);assert.ok(Math.abs(leak.company.distance-1.75)<1e-12);
+  assert.ok(Math.abs(leak.music.pan)<1e-12);assert.equal(leak.rain.gain,0,'outdoor weather retains its single owner');
 });
 test('music sits at backbar and company at snug; bearings turn and dialogue ducks without relocating them',()=>{
   const a=PUB_ROOM_BED_ANCHORS.music,listener={x:a.x-2,z:a.z,yaw:0};

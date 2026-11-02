@@ -20,6 +20,18 @@ test('the actual revoicing mix transfers response between choirs without alterin
   assert.deepEqual(acoustic.diagnostics.activeNoteIds,electronic.diagnostics.activeNoteIds);
   assert.equal(acoustic.time,electronic.time);
 });
+test('monumental strings make distinct register decisions legible with bounded travel from the same notes and mix',()=>{
+  const low=sourceRestHarpsichordResponse({score,currentTime:2.2}),high=sourceRestHarpsichordResponse({score,currentTime:4.2,electronic:.8}),
+    reduced=sourceRestHarpsichordResponse({score,currentTime:4.2,electronic:.8,reducedMotion:true});
+  assert.ok(low.architecture.acousticLift[0]>0);assert.deepEqual(low.architecture.acousticLift.slice(1),[0,0]);
+  assert.ok(high.architecture.electronicLift[2]>0);
+  for(const value of[...high.architecture.acousticLift,...high.architecture.electronicLift])assert.ok(value>=0&&value<=.18);
+  assert.equal(high.architecture.maximumTravel,.04);
+  assert.ok(high.architecture.maximumTravel+.032/2<.17/2,'moving wire endpoints stay within the fixed far-bearing depth');
+  assert.ok(2.245+high.architecture.maximumTravel+.005/2<2.12+.20,'the highest near wire stays engaged in its real tuning pin');
+  assert.ok(reduced.architecture.acousticLift.every(value=>value===0));assert.ok(reduced.architecture.electronicLift.every(value=>value===0));
+  assert.deepEqual(high.diagnostics.activeNoteIds,reduced.diagnostics.activeNoteIds);
+});
 test('reduced motion removes mechanical displacement; unavailable analysis uses measured audio without invented notes',()=>{
   const reduced=sourceRestHarpsichordResponse({score,currentTime:4.2,signal:.5,electronic:.8,reducedMotion:true});
   for(const key of ['acousticLift','electronicLift','bridgeLift','lidAngle'])assert.equal(reduced[key],0);

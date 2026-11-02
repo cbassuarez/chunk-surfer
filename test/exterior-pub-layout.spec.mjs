@@ -10,16 +10,19 @@ import {DOOR_STATE,pointInDoorSweep} from '../src/game/door-runtime.js';
 import {CONSERVATORY_PROPS} from '../src/data/conservatory-props.js';
 import {addBourgeoisPubFrontage} from '../tools/chunk_surfer/exterior-frontage-geometry.mjs';
 import {EXTERIOR_PUB as PUB,PUB_LEVELS,PUB_DOORS,PUB_PHYSICAL_COLLIDERS,PUB_COLLIDERS,
-  pubWorldFromLocal,pubLocalFromWorld,isPubMeshEnvelopeZone,pubLogicalAt} from '../src/data/exterior-pub.js';
+  PUB_RELOCATION,pubPhysicalAt,pubAuthoredAt,pubWorldFromLocal,pubLocalFromWorld,isPubMeshEnvelopeZone,pubLogicalAt} from '../src/data/exterior-pub.js';
 FP.compile(conservatory.levels,conservatory);
+// Local route drawings retain the original pub coordinates; lift them into
+// the current authored frame before testing the physical quarter embedding.
+const authored=(x,z)=>x<15&&z>95?{x:x+PUB_RELOCATION.x,z:z+PUB_RELOCATION.z}:{x,z};
 const at=(x,z)=>{
-  const p=pubLogicalAt(x,z);return{x:p.x*2,y:p.y*2};
+  const point=authored(x,z),p=pubLogicalAt(point.x,point.z);return{x:p.x*2,y:p.y*2};
 };
-const physical=p=>{const q=FP.logicalToPhysical(p.x,p.y);return{x:q.x*.5,z:q.z*.5};};
-const blocks=(x,z,height=PUB.floor)=>PUB_PHYSICAL_COLLIDERS.some(c=>height>=c.minElevation-.05&&height<=c.maxElevation+.05
+const physical=p=>{const q=FP.logicalPointToPhysical(p.x,p.y);return pubAuthoredAt({x:q.x*.5,z:q.z*.5});};
+const blocks=(x,z,height=PUB.floor,bodyHeight=0)=>PUB_PHYSICAL_COLLIDERS.some(c=>height+bodyHeight>=c.minElevation-.05&&height<=c.maxElevation+.05
   &&Math.abs(x-c.x)<=c.width/2+PUB.collisionBodyMargin&&Math.abs(z-c.z)<=c.depth/2+PUB.collisionBodyMargin);
 const canOccupy=p=>{
-  if(FP.isSolid(p.x,p.y))return false;const q=physical(p);return !blocks(q.x,q.z,FP.floorAt(p.x,p.y));
+  if(FP.isSolid(p.x,p.y))return false;const at=FP.logicalToPhysical(p.x,p.y),q=pubAuthoredAt({x:(at.x+.5)*.5,z:(at.z+.5)*.5});return !blocks(q.x,q.z,FP.floorAt(p.x,p.y),1.8);
 };
 const key=p=>`${p.x},${p.y}`;
 function flood(start,occupancy=canOccupy){
@@ -50,8 +53,8 @@ test('pub doors compile at the exact shell planes with ordinary unkeyed schedule
       assert.equal(door.archetype,'public-glazed-pair');assert.equal(door.open,false);assert.deepEqual(door.activeLeaves,[0,1]);assert.equal(door.aperture.width,1.95);
     }
   }
-  assert.deepEqual(pubWorldFromLocal({x:-.2,z:-30.75}),{x:-12.75,z:107.25});
-  assert.deepEqual(pubWorldFromLocal({x:-.2,z:-22.75}),{x:-4.75,z:107.25});
+  assert.deepEqual(pubWorldFromLocal({x:-.2,z:-30.75}),authored(-12.75,107.25));
+  assert.deepEqual(pubWorldFromLocal({x:-.2,z:-22.75}),authored(-4.75,107.25));
   const world=pubWorldFromLocal(PUB.interiorOriginLocal);
   assert.ok(Math.abs(world.x-PUB.interiorAnchor.x)<1e-9&&Math.abs(world.z-PUB.interiorAnchor.z)<1e-9);
   const local=pubLocalFromWorld(world);assert.ok(Math.abs(local.x+2.7)<1e-9&&Math.abs(local.z+24)<1e-9);
@@ -159,7 +162,7 @@ test('pub floor retains the row lots and only replaces its declared outdoor door
       const extent={x0:prior.x0,x1:prior.x1+1,z0:prior.y0,z1:prior.y1+1};
       if(level.id==='pub-street-apron'){
         assert.equal(level.replace,true,'the declared doorstep explicitly replaces the last south pavement strip');
-        assert.deepEqual(r,{x0:-14,x1:2,z0:106,z1:107},'only the sixteen-by-one-metre corner pavement strip is replaced');
+        assert.deepEqual(r,{x0:31,x1:47,z0:28,z1:29},'only the sixteen-by-one-metre corner pavement strip is replaced');
         if(intersects(r,extent))assert.ok(['south-street','west-street'].includes(prior.id),'the doorstep cannot claim a remote street or secondary court');
       }else assert.equal(intersects(r,extent),false,`${level.id} preserves ${prior.id}`);
     }
@@ -174,15 +177,15 @@ test('actual pub shell surfaces and apertures meet the runtime floor, doors and 
   const source=CONSERVATORY_PROPS.find(p=>p.id==='pub-complete-frontage');
   assert.ok(source);PROPS.propsInit(FP,[source]);
   const owner=PROPS.renderInstances({inscriptions:false})[0];
-  assert.ok(Math.abs(owner.x-PUB.facadeAnchor.x)<1e-9&&Math.abs(owner.z-PUB.facadeAnchor.z)<1e-9);
-  assert.ok(Math.abs(owner.y-PUB.floor)<1e-6);assert.equal(owner.yaw,-Math.PI/2);
+  assert.ok(Math.abs(owner.x-pubPhysicalAt(PUB.facadeAnchor).x)<1e-9&&Math.abs(owner.z-pubPhysicalAt(PUB.facadeAnchor).z)<1e-9);
+  assert.ok(Math.abs(owner.y-PUB.floor)<1e-6);assert.ok(Math.abs(Math.cos(owner.yaw)+1)<1e-8);
   const materials=[],api={materials,addBox(){},addBeam(){},addCylinder(){},addQuad(){}},m={name:source.mesh};
   const contains=(part,p)=>part.kind==='box'&&p.every((v,i)=>Math.abs(v-part.center[i])<part.size[i]/2-1e-8);
   for(const [deed,z]of[-28,-20].entries()){
     const shell=addBourgeoisPubFrontage(api,m,{z,h:12.8,unitW:8,depth:5.4});
     const rear=shell.parts.find(p=>p.id==='pub-real-rear-wall'),ceiling=shell.parts.find(p=>p.id==='pub-ground-ceiling');
     assert.ok(Math.abs(pubWorldFromLocal({x:rear.center[0]-rear.size[0]/2,z}).z-PUB.bounds.z1)<1e-9);
-    assert.ok(Math.abs(pubWorldFromLocal({x:rear.center[0]+rear.size[0]/2,z}).z-112.25)<1e-9);
+    assert.ok(Math.abs(pubWorldFromLocal({x:rear.center[0]+rear.size[0]/2,z}).z-(112.25+PUB_RELOCATION.z))<1e-9);
     assert.ok(Math.abs(owner.y+ceiling.center[1]-ceiling.size[1]/2-PUB.ceiling)<1e-6);
     const walls=shell.parts.filter(p=>p.id.startsWith('pub-ground-split-shell'));
     assert.ok(walls.length>0);
@@ -240,7 +243,7 @@ test('integrated prop collision prevents closed-door bypasses and permits public
   staffGrid.push(...Array.from({length:6},(_,i)=>bodyAt(-7.25,108.75+i*.5)),
     ...Array.from({length:13},(_,i)=>bodyAt(-6.75+i*.5,111.25)));
   for(let i=0;i<staffGrid.length;i++){
-    const q=staffGrid[i];assert.ok(runtimeOccupancy(q),'normal quarter-grid body fits every return and staff-aisle standing point');
+    const q=staffGrid[i];assert.ok(runtimeOccupancy(q),`normal quarter-grid body fits return and staff aisle ${q.x},${q.y}`);
     if(i)assert.ok(FP.canStep(staffGrid[i-1].x,staffGrid[i-1].y,q.x,q.y,{keys:new Set()}).ok,'ordinary half-metre steps reach the full staff aisle');
   }
   FP.setDoorOpen(PUB.wc.door.id,true);
@@ -255,7 +258,7 @@ test('integrated prop collision prevents closed-door bypasses and permits public
 
 
 test('street and pub render slices retain mesh-owned ground without ray walls or parquet occlusion',()=>{
-  const index=(slice,x,z)=>(Math.floor(z*2)-slice.originY)*slice.w+Math.floor(x*2)-slice.originX;
+  const index=(slice,x,z)=>{const p=pubPhysicalAt(authored(x,z));return(Math.floor(p.z*2)-slice.originY)*slice.w+Math.floor(p.x*2)-slice.originX;};
   const close=(a,b,label)=>assert.ok(Math.abs(a-b)<1e-6,`${label}: ${a} != ${b}`);
   for(const observer of[at(-12.75,106.25),at(-8.75,108.75)]){
     const slice=FP.physicalRenderPlanFor(observer.x,observer.y);
@@ -273,7 +276,7 @@ test('street and pub render slices retain mesh-owned ground without ray walls or
       assert.equal(isOutdoorZone(FP.zoneAt(p.x,p.y)),false);
     }
     for(const[x,z]of[[-12,105],[-10,105]]){
-      const q=districtLogicalAt(x,z),i=index(slice,x,z),p={x:q.x*2,y:q.y*2};assert.equal(slice.solid[i],0,'the street remains visible through the real front openings');
+      const i=index(slice,x,z),world=pubPhysicalAt(authored(x,z)),p=FP.logicalAtPhysical(world.x*2-.5,world.z*2-.5,{group:'ground',floor:0});assert.ok(p);assert.equal(slice.solid[i],0,'the yard remains visible through the real front openings');
       close(slice.floor[i],FP.floorAt(p.x,p.y),'street support stays at its authored grade');
     }
     assert.equal(slice.solid[index(slice,-6,103)],0,'the perpendicular south street remains open in front of the pub');

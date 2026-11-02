@@ -1,3 +1,4 @@
+import {productionFunction} from './helpers/production-function.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -31,7 +32,7 @@ function packedPositions(name){
   });
 }
 const renderer=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
-const matrixSource=renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('function perspective(aspect)'));
+const matrixSource=['identity','multiply','modelMatrix'].map(name=>productionFunction(renderer,name)).join('\n');
 assert.ok(matrixSource.includes('function modelMatrix('));
 const modelMatrix=new Function(`${matrixSource};return modelMatrix;`)();
 const matrixPoint=(p,m)=>[0,1,2].map(axis=>m[axis]*p[0]+m[4+axis]*p[1]+m[8+axis]*p[2]+m[12+axis]);

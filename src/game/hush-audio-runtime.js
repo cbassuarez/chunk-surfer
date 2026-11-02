@@ -81,7 +81,9 @@ export function createHushAudioRuntime({
   }
 
   const unsubscribe = onAcousticEvent((event) => {
-    if (!enabled) return;
+    // A held instrument permits movement without giving HUSH a new memory to
+    // act on later. Discard the event at arrival; field/meter ticks stay live.
+    if (!enabled || context?.()?.instrumentHold) return;
     const hush = publicPresence();
     if (!hush.active || !hush.position) return;
     const enriched = typeof enrichSourceSpatial === 'function' ? enrichSourceSpatial(event) : event;

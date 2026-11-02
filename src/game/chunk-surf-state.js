@@ -21,6 +21,8 @@ import {
   normalizeSourceContactState,
   sourceBossExposed,
 } from './source-contact.js';
+import { sourceContactChapter, sourceContactChapterWins, sourceContactChapterWon } from './source-contact-chapters.js';
+import { normalizeSourceRecordingCustody } from './source-recording-custody.js';
 
 export const CHUNK_SURF_PHASE = Object.freeze({
   HALL: 'hall',
@@ -248,6 +250,7 @@ export function freshChunkSurfState({
     interactivePageSlot: null,
     haystackDialogue: null,
     sourceContacts: normalizeSourceContactState(),
+    sourceRecordingCustody: normalizeSourceRecordingCustody(),
     // The Scene Dock survives the transformation as a real room. Its FOH leaf
     // is the one deliberate interaction between that room and Source: closed
     // on arrival, opened by the player, and durable across a reload.
@@ -293,7 +296,7 @@ export function freshChunkSurfState({
     pursuitBeat: null,
     pursuitsCleared: [],
     finalEncounter: {
-      victories: 0, attempt: 0, activeBattleId: null, lastBattleId: null,
+      victories: 0, chapterWins: [], activeChapter: null, attempt: 0, activeBattleId: null, lastBattleId: null,
       status: SOURCE_FINAL_STATUS.LOCKED,
       outcome: null,
       won: null,
@@ -333,11 +336,12 @@ export const SOURCE_HUSH_VICTORIES_REQUIRED = 3;
 const hushBattleId = (seed, attempt) => `source-contact:${Number(seed) || 4417}:${attempt}`;
 function normalizeHushBattles(raw, { seed, terminalWin = false, committed = false } = {}) {
   const count = value => Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
-  const victories = Math.min(SOURCE_HUSH_VICTORIES_REQUIRED, Math.max(0,
-    count(raw?.victories) || (terminalWin ? SOURCE_HUSH_VICTORIES_REQUIRED : 0)));
+  const chapterWins = sourceContactChapterWins(raw?.chapterWins, { victories: count(raw?.victories), terminalWin });
+  const victories = chapterWins.length;
   const attempt = Math.max(victories, committed ? 1 : 0, count(raw?.attempt));
   return {
-    victories, attempt,
+    victories, chapterWins, activeChapter: committed ? (sourceContactChapter(raw?.activeChapter)
+      || ['I', 'II', 'III'].find(id => !chapterWins.includes(id)) || 'III') : null, attempt,
     activeBattleId: committed ? (typeof raw?.activeBattleId === 'string' && raw.activeBattleId
       ? raw.activeBattleId : hushBattleId(seed, attempt)) : null,
     lastBattleId: typeof raw?.lastBattleId === 'string' ? raw.lastBattleId : null,
@@ -399,12 +403,14 @@ function normalizeHorizon(value = null) {
 
 // The service-court meeting is optional until the bust commits another route.
 // Equipment changes the fight's possibilities, never permission to enter it.
-export function sourceBossAvailable(value) {
+export function sourceBossAvailable(value, { chapter = 'I' } = {}) {
   const state = normalizeChunkSurfState(value);
   // Combat still requires the separate warned commitment event.
   return state.firstLiftCompleted && !state.finale?.bust?.decision
     && (!state.finale?.route || state.finale.route === SOURCE_FINALE_ROUTE.CONTACT)
-    && !state.completed && state.finalEncounter.victories < SOURCE_HUSH_VICTORIES_REQUIRED;
+    && !state.completed && !!sourceContactChapter(chapter)
+    && !sourceContactChapterWon(state.finalEncounter, chapter)
+    && state.finalEncounter.victories < SOURCE_HUSH_VICTORIES_REQUIRED;
 }
 
 // Compatibility name retained for callers and legacy tests while the state is
@@ -526,6 +532,7 @@ export function normalizeChunkSurfState(value = null, fallback = {}) {
     dockMoved: true,
     interactivePageSlot: value.interactivePageSlot == null ? null : Math.max(0, Math.floor(Number(value.interactivePageSlot) || 0)),
     sourceContacts: normalizeSourceContactState(value.sourceContacts),
+    sourceRecordingCustody: normalizeSourceRecordingCustody(value.sourceRecordingCustody),
     bellField: value.bellField && typeof value.bellField === 'object' ? value.bellField : null,
     routeDoorsErased: unique(value.routeDoorsErased).slice(-64),
     routeDoorsOpened: unique(value.routeDoorsOpened).slice(-64),
@@ -814,9 +821,11 @@ export function reduceChunkSurf(value, event = {}) {
         finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.READY },
       };
 
-    case 'CONTACT_COMMITTED':
+    case 'CONTACT_COMMITTED': {
+      const chapter = sourceContactChapter(event.chapter || state.sourceContacts.chapter) || 'I';
       if (![CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase)
-        || !sourceBossAvailable(state)
+        || !sourceBossAvailable(state, { chapter })
+        || chapter !== state.sourceContacts.chapter
         || !state.sourceContacts.warningSeen || !state.sourceContacts.combatCommitted
         || state.sourceContacts.lastChoiceId !== 'contact.confirm'
         || state.finalEncounter.activeBattleId
@@ -827,6 +836,7 @@ export function reduceChunkSurf(value, event = {}) {
         phase: CHUNK_SURF_PHASE.FINAL,
         finalEncounter: {
           ...state.finalEncounter, status: SOURCE_FINAL_STATUS.READY,
+          activeChapter: chapter,
           attempt: state.finalEncounter.attempt + 1,
           activeBattleId: hushBattleId(state.seed, state.finalEncounter.attempt + 1),
         },
@@ -837,6 +847,7 @@ export function reduceChunkSurf(value, event = {}) {
           result: null,
         },
       };
+    }
 
     case 'FINAL_ENCOUNTER_RESOLVED': {
       if (state.phase !== CHUNK_SURF_PHASE.FINAL || state.finalEncounter.status === SOURCE_FINAL_STATUS.LOCKED) return state;
@@ -845,8 +856,11 @@ export function reduceChunkSurf(value, event = {}) {
       if (contact && (event.result?.won !== true
         || state.finale.stage !== SOURCE_FINALE_STAGE.CONTACT_COMMITTED
         || !state.finalEncounter.activeBattleId
-        || event.result?.battleAttemptId !== state.finalEncounter.activeBattleId)) return state;
-      const victories = contact ? state.finalEncounter.victories + 1 : state.finalEncounter.victories;
+        || event.result?.battleAttemptId !== state.finalEncounter.activeBattleId
+        || !sourceContactChapter(state.finalEncounter.activeChapter)
+        || state.finalEncounter.chapterWins.includes(state.finalEncounter.activeChapter))) return state;
+      const chapterWins = contact ? sourceContactChapterWins([...state.finalEncounter.chapterWins, state.finalEncounter.activeChapter]) : state.finalEncounter.chapterWins;
+      const victories = chapterWins.length;
       if (contact && victories < SOURCE_HUSH_VICTORIES_REQUIRED) {
         return {
           ...state,
@@ -858,7 +872,7 @@ export function reduceChunkSurf(value, event = {}) {
           sourceContacts: normalizeSourceContactState({ ...state.sourceContacts,
             combatCommitted: false, warningSeen: false, lastChoiceId: null }),
           finalEncounter: { ...state.finalEncounter,
-            status: SOURCE_FINAL_STATUS.LOCKED, victories,
+            status: SOURCE_FINAL_STATUS.LOCKED, victories, chapterWins, activeChapter: null,
             lastBattleId: state.finalEncounter.activeBattleId, activeBattleId: null },
           finale: { ...state.finale, route: null, stage: SOURCE_FINALE_STAGE.UNCOMMITTED, result: null },
         };
@@ -876,7 +890,7 @@ export function reduceChunkSurf(value, event = {}) {
         bestEligible: rescuedRecordist,
         finalEncounter: {
           ...state.finalEncounter,
-          victories,
+          victories, chapterWins, activeChapter: null,
           lastBattleId: contact ? state.finalEncounter.activeBattleId : state.finalEncounter.lastBattleId,
           activeBattleId: null,
           status: SOURCE_FINAL_STATUS.RESOLVED,
@@ -912,7 +926,7 @@ export function reduceChunkSurf(value, event = {}) {
       return { ...state, phase: CHUNK_SURF_PHASE.LANDSCAPE,
         sourceContacts: normalizeSourceContactState({ ...state.sourceContacts,
           combatCommitted: false, warningSeen: false, lastChoiceId: null }),
-        finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.LOCKED, activeBattleId: null },
+        finalEncounter: { ...state.finalEncounter, status: SOURCE_FINAL_STATUS.LOCKED, activeBattleId: null, activeChapter: null },
         finale: { ...state.finale, route: null, stage: SOURCE_FINALE_STAGE.UNCOMMITTED, result: null } };
 
     // Walking onward leaves HUSH unresolved. The player can return until the
@@ -956,7 +970,7 @@ export function reduceChunkSurf(value, event = {}) {
         bestEligible: false,
         finalEncounter: {
           ...state.finalEncounter,
-          activeBattleId: null,
+          activeBattleId: null, activeChapter: null,
           status: SOURCE_FINAL_STATUS.RESOLVED,
           outcome: SOURCE_FINAL_OUTCOME.SUBMIT,
           won: false,

@@ -56,7 +56,17 @@ test('biome eligibility matches the actual albedo consumer and special material 
   assert.ok(albedoStart>=0&&albedoEnd>albedoStart);
   const albedo=source.slice(albedoStart,albedoEnd);
   assert.match(albedo,/if\(sourceVoidMaterial\)[\s\S]*?else if\(sourceMaterial\)[\s\S]*?else if\(hitMat==MAT_ROOF_GLASS\)[\s\S]*?else\{[\s\S]*?albedo=materialBase\(hitMat, surf, tint, biome, rdv\)/);
-  assert.match(albedo,/albedo=brendanStone\?brendanStoneSurface\(surf,posM,n\):architecturalSurface\(hitMat,surf,posM,n,albedo\)/);
+  const surfaceExpression=albedo.match(/albedo\s*=\s*(brendanStone\?[^;]+);/)?.[1];
+  assert.ok(surfaceExpression,'the actual material-specific albedo expression exists');
+  const resolveSurface=new Function('brendanStone','surf','receiverPosM','anatomicalRelief','receiverNormal','n','hitMat','albedo',
+    'brendanStoneSurface','architecturalSurface',`return (${surfaceExpression});`);
+  const receiver={x:4,y:2,z:-7},receiverNormal={x:0,y:0,z:1},normal={x:0,y:1,z:0},base={r:.3,g:.4,b:.5};
+  for(const stone of [false,true])for(const relief of [false,true]){
+    const calls=[],capture=kind=>(...args)=>{calls.push({kind,args});return kind;};
+    assert.equal(resolveSurface(stone,2,receiver,relief,receiverNormal,normal,17,base,capture('stone'),capture('architecture')),stone?'stone':'architecture');
+    assert.deepEqual(calls,[stone?{kind:'stone',args:[2,receiver,relief?receiverNormal:normal]}
+      :{kind:'architecture',args:[17,2,receiver,relief?receiverNormal:normal,base]}]);
+  }
 });
 
 test('the actual CPU upload uses the float32 values sent to WebGL for active detection',()=>{

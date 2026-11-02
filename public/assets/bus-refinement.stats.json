@@ -1,0 +1,120 @@
+{
+  "revision": "municipal-coachwork-r1",
+  "generator": "tools/chunk_surfer/build-bus-refinement.mjs",
+  "sourceHashes": {
+    "public/assets/conservatory-props.glb": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
+    "public/assets/outskirts-bus-passage.glb": "edc677b62870d326153b2d6e78cab4eea2dd03beb21a497a8c3a10d6fa38a0cb",
+    "public/assets/bus-graffiti.glb": "a89f5475c41d33c115ffcba840e725d2e15701aee5748b380f4d80b3f6789cac",
+    "src/data/outskirts-bus-passage.js": "5288eadcb11b1703a91a6cf01a1a51cebf234f17842a1167d12395bed2ccf185",
+    "src/game/outskirts-geometry.js": "6dc7ff7eed3d4ec65abaa44f7aab98d6b1fa75e17fe4c266d47840ed34bf6599"
+  },
+  "meshes": {
+    "ambient_late_bus": {
+      "triangles": 10114,
+      "primitives": 8,
+      "bounds": {
+        "min": [
+          -1.3829760456085205,
+          0.019999999552965164,
+          -4.692999839782715
+        ],
+        "max": [
+          1.3829760456085205,
+          3.1125000000000003,
+          4.679999828338623
+        ]
+      },
+      "sourceTriangles": 4812,
+      "retainedTriangles": 4260,
+      "replacedTriangles": 552,
+      "movedTyreVertices": 2070,
+      "smoothRoofVertices": 210,
+      "modelledSeatRows": [
+        -2.1,
+        -1.2200000000000002,
+        -0.3400000000000001,
+        0.54,
+        1.42,
+        2.3000000000000003,
+        3.18
+      ],
+      "seatWidth": 0.75,
+      "seatCentreX": 0.77
+    },
+    "outskirts_bus": {
+      "triangles": 10006,
+      "primitives": 16,
+      "bounds": {
+        "min": [
+          -1.4112000465393066,
+          0.019999999552965164,
+          -4.692999839782715
+        ],
+        "max": [
+          1.4112000465393066,
+          3.1125000000000003,
+          4.679999828338623
+        ]
+      },
+      "sourceTriangles": 4812,
+      "retainedTriangles": 4260,
+      "replacedTriangles": 552,
+      "movedTyreVertices": 2070,
+      "smoothRoofVertices": 210,
+      "modelledSeatRows": [
+        -2.1,
+        -1.2200000000000002,
+        -0.3400000000000001,
+        0.54,
+        1.42,
+        2.3000000000000003,
+        3.18
+      ],
+      "seatWidth": 0.75,
+      "seatCentreX": 0.77
+    },
+    "outskirts_bus_passage": {
+      "triangles": 10288,
+      "primitives": 14,
+      "bounds": {
+        "min": [
+          -1.659999966621399,
+          0,
+          -4.692999839782715
+        ],
+        "max": [
+          1.659999966621399,
+          3.1125000000000003,
+          4.679999828338623
+        ]
+      },
+      "sourceTriangles": 6652,
+      "retainedTriangles": 6268,
+      "replacedTriangles": 384,
+      "movedTyreVertices": 0,
+      "smoothRoofVertices": 222,
+      "modelledSeatRows": [
+        -2.1,
+        -1.22,
+        -0.34,
+        0.54,
+        1.42
+      ],
+      "seatWidth": 0.56,
+      "seatCentreX": 0.84
+    }
+  },
+  "totalTriangles": 30408,
+  "newTextureBytes": 0,
+  "sharedRouteAndCollisionUnchanged": true,
+  "acquisition": "Four free CC BY3 source buses acquired and inspected. Rejected as weaker or geographically inappropriate; this pack derives from the project’s existing coach and actual route geometry, with original modelled refinements.",
+  "pending": [
+    "native final-dither inspection",
+    "ordinary street/bus passage full-route movement acceptance"
+  ],
+  "bytes": 3249508,
+  "sha256": "5f2a08083c914c498a9201c4cf78082f4a661fb93bde213a84feb0c8940df4bf",
+  "textureCount": 6,
+  "materialCount": 17,
+  "textureSource": "Existing destination/registration textures retained; no new texture images."
+}

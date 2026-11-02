@@ -43,6 +43,10 @@ function harness({ context = audioContext(), complete = true, replayId = 'guard-
     const recordingPressureVoices=new Set();
     const actx=context,sfxGain=context?.createGain(),master=null,dialogGain=null,sfxDirectGain=null,musicGain=null,whisperBed=null;
     const noOp=()=>{},ensureCtx=noOp,STORY={},fireCue=noOp,CR={fx:{}},createReplayService=()=>null;
+    const runPlayDurationClock={suspend:noOp},FEAR={setHeartbeatPaused:noOp},gameplayInputLifecycleActive=()=>true,b3SpeakerAudio={pause:noOp},b3Speaker={flush:noOp};
+    const openingVehicleScene=null,openingOvertureScene=null,studentStrikeScene=null,firstStrikeScene=null,sourceRecordingInspectionScene=null,
+      sourceRestBreath=null,sourceRestWeather=null,pubPressureAudio=null,bodyGain=null,architectureDoorAudio=null,architectureDoorEvents={hold:noOp},towerPersonalHud=null;
+    const cancelLastExposure=noOp;
     const storyMode=false,inRogue=false,syncChapelTapeDemandTimelineHold=noOp,getInDriveTeaserScene=null,sourceReturnFlashbackScene=null;
     const pubRoomAudio=null,sourcePubAudio=null,sourceContinuationAudio=null,towerWarningAudio=null,sourceDriveSession=null;
     const sourcePubScene=null,sourceContinuationScene=null,standingTearScene=null,coastalMemoryScene=null,saveAcademicGhostClub=noOp;

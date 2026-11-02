@@ -11,13 +11,14 @@ export const ARRIVAL_COURT=freeze({
   runs:[
     {id:'gate-north',axis:'z',fixed:27.5,from:1.5,to:4.5,panels:1,trimFrom:.30,trimTo:.02},
     {id:'gate-south',axis:'z',fixed:27.5,from:10.5,to:22,panels:3,trimFrom:.02,trimTo:.30},
-    {id:'north-return',axis:'x',fixed:1.5,from:27.5,to:45,panels:5,trimFrom:.30,trimTo:.30},
+    {id:'north-return',axis:'x',fixed:1.5,from:27.5,to:41.5,panels:4,trimFrom:.30,trimTo:.30},
   ],
   piers:[
     {id:'gate-north',x:27.5,z:4.85,depth:.62,width:.70,height:2.70,gate:true},
     {id:'gate-south',x:27.5,z:10.15,depth:.62,width:.70,height:2.70,gate:true},
     {id:'north-corner',x:27.5,z:1.5,depth:.58,width:.58,height:1.97},
     {id:'north-return-end',x:45,z:1.5,depth:.58,width:.58,height:1.97},
+    {id:'jardins-north-opening',x:41.5,z:1.5,depth:.58,width:.58,height:1.97},
     {id:'south-end',x:27.5,z:22,depth:.58,width:.58,height:1.97},
   ],
   foldedLeaves:[{id:'north',x:27.03,z0:2.85,z1:5.15},{id:'south',x:27.03,z0:9.85,z1:12.15}],

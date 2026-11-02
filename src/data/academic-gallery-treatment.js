@@ -70,6 +70,9 @@ export function academicGalleryPlacement(prop){
   // emergency circuit ownership remain the same.
   if(prop.id==='academic-light-emergency-west')return{...prop,y:243.5,yaw:0,renderOffsetZ:-.5,floorOverride:10};
   if(prop.id==='academic-light-emergency-east-failing')return{...prop,renderOffsetX:.50,floorOverride:10};
+  // The courtyard removes the floor beneath the old structural origin. Host
+  // the same roof mesh on the supported north lip, preserving its world pose.
+  if(prop.id==='academic-roof-structure')return{...prop,y:282.5,renderOffsetZ:1,floorOverride:17};
   if(prop.id==='academic-roof-glazing')return{...prop,renderGroups:['academicRoof','academic']};
   if(prop.id==='academic-skylight'||/^academic-frieze-west-[1-3]$/.test(prop.id||''))return{...prop,renderGroups:['ground']};
   if(/^academic-bust-plinth-[1-6]$/.test(prop.id||''))return{...prop,blocks:true,w:.68,d:.68,h:1.11};

@@ -12,7 +12,9 @@ import {
   exteriorRoofArchitectureInstances,
   exteriorRooflineInstance,
 } from '../src/data/exterior-roofline.js';
-import { shouldHideCrossEnvelopeProp, worldPropVisibilityKey } from '../src/game/prop-visibility.js';
+import { shouldHideCrossEnvelopeProp, worldPropVisibilityKey, buildingWindowInteriorInstance } from '../src/game/prop-visibility.js';
+import { shouldStageOpeningCinematic, openingCinematicStaticProps } from '../src/render/opening-cinematic-staging.js';
+import { vanBrandInstances } from '../src/render/van-brand.js';
 import { propInstanceVisible } from '../src/render/props3d.js';
 import { applyInstitutionPosters } from '../src/data/institution-poster-sites.js';
 import { hallChandelierInstances, HALL_CHANDELIER_TREATMENT } from '../src/data/hall-chandelier-treatment.js';
@@ -39,6 +41,13 @@ assert.ok(functionSource.startsWith('function worldRenderInstances('));
 assert.ok(functionSource.endsWith('}'));
 function worldFor(zone, group = 'ground') {
   const scope = {
+    studentStrikePresentationFrame: () => null,
+    openingObserver: () => null,
+    currentExteriorWindow: () => null,
+    openingCinematicFrame: () => null,
+    shouldStageOpeningCinematic, openingCinematicStaticProps, vanBrandInstances,
+    openingOvertureScene: null,
+    buildingWindowInteriorInstance,
     usingSourceSpace: () => false,
     usingStairAnomaly: () => false,
     syncArchitecturalLocalLights: () => {},

@@ -28,6 +28,7 @@ assert.equal(saveApi.getMeta().platform.pendingStats.STAT_RUNS_STARTED, 1);
 assert.equal(runtime.beginRunProgression().ok, true);
 
 runtime.emitProgress(EVENT_TYPES.DOCUMENT_READ, { id: 'work-order' }, 'test', { at: 1100 });
+runtime.emitProgress(EVENT_TYPES.WORK_ORDER_ACCEPTED, {}, 'test', { at: 1101 });
 for (const [i, roomId] of ['main_b3', 'the_tub', 'amplifications', 'soundnoisemusic', 'lux_nova'].entries()) {
   runtime.emitProgress(EVENT_TYPES.TAKE_COMPLETED, { roomId, elapsed: 45 }, 'test', { at: 1200 + i });
 }
@@ -36,9 +37,9 @@ for (const [i, id] of ['natatorium', 'practice', 'hall'].entries()) {
   runtime.emitProgress(EVENT_TYPES.BATTLE_FINISHED, { id, result: 'win', attempts: 1, firstPass: true }, 'test', { at: 1301 + i * 2 });
 }
 runtime.emitProgress(EVENT_TYPES.CONFESSION_COMMITTED, { kind: 'name', value: 'Sarah' }, 'test', { at: 1400 });
-runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'the_tub' }, 'test', { at: 1410 });
-runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'amplifications' }, 'test', { at: 1420 });
-runtime.emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id: 'soundnoisemusic' }, 'test', { at: 1430 });
+runtime.emitProgress(EVENT_TYPES.DISCLOSURE_HEARD, { id: 'the_tub' }, 'test', { at: 1410 });
+runtime.emitProgress(EVENT_TYPES.DISCLOSURE_HEARD, { id: 'amplifications' }, 'test', { at: 1420 });
+runtime.emitProgress(EVENT_TYPES.DISCLOSURE_HEARD, { id: 'soundnoisemusic' }, 'test', { at: 1430 });
 runtime.emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'test', { at: 1440 });
 
 assert.ok(saveApi.getMeta().achievements.ACH_WORK_ORDER);

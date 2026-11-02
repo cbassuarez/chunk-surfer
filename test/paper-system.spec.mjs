@@ -7,7 +7,10 @@ import {
   normalizePhysicalDocument, validateBritishPaperDocument,
 } from '../src/data/paper-system.js';
 import { PAPER_ATLAS, PAPER_DOCUMENTS, PAPER_AMBIENT_IDS } from '../src/generated/paper-catalog.js';
-import { ambientPaperDocumentId, paperAtlasIndex, paperAssetProbe, paperPageCount } from '../src/game/paper-assets.js';
+import { ambientPaperDocumentId, paperAtlasIndex, paperAssetProbe, paperPageCount, registerBakedPaper, paperRecord } from '../src/game/paper-assets.js';
+import {STUDENT_STRIKE_BAKED_RECORDS} from '../src/generated/student-strike-records.js';
+for(const record of STUDENT_STRIKE_BAKED_RECORDS)registerBakedPaper(record);
+const externalIds=new Set(STUDENT_STRIKE_BAKED_RECORDS.map(record=>record.id));
 
 assert.deepEqual(PAPER_FORMAT.A4.canonicalPx,[2480,3508]);
 assert.equal(PAPER_FORMAT.A4.widthMm,210);assert.equal(PAPER_FORMAT.A4.heightMm,297);
@@ -20,10 +23,10 @@ for(const doc of production){
   const physical=normalizePhysicalDocument(doc);assert.equal(physical.format,'A4',`${doc.id} is A4`);
   assert.equal(validateBritishPaperDocument(doc).ok,true,`${doc.id} keeps British paper language`);
   const probe=paperAssetProbe(doc);assert.equal(probe.resolved,true,`${doc.id} has a baked physical edition`);
-  assert.ok(paperPageCount(doc)>=1);assert.ok(paperAtlasIndex(doc.id)>=0);
-  for(const page of PAPER_DOCUMENTS[doc.id].pages){assert.ok(existsSync(page.path),`${page.path} exists`);assert.ok(statSync(page.path).size>1024,`${page.path} is not an empty placeholder`);assert.ok(page.materialPath&&existsSync(page.materialPath),`${doc.id} has a packed print material map`);}
+  assert.ok(paperPageCount(doc)>=1);assert.ok(externalIds.has(doc.id)?paperAtlasIndex(doc.id)===-1:paperAtlasIndex(doc.id)>=0);
+  for(const page of paperRecord(doc.id).pages){const file=externalIds.has(doc.id)?'public/'+page.path:page.path;assert.ok(existsSync(file),`${file} exists`);assert.ok(statSync(file).size>1024,`${file} is not an empty placeholder`);if(!externalIds.has(doc.id))assert.ok(page.materialPath&&existsSync(page.materialPath),`${doc.id} has a packed print material map`);}
 }
-assert.equal(Object.keys(PAPER_DOCUMENTS).length,production.length+1,'the catalog includes every production document plus the real still sheet');
+assert.equal(Object.keys(PAPER_DOCUMENTS).length,production.length-externalIds.size+1,'the shared catalog plus isolated editions includes every production document and the real still sheet');
 assert.ok(PAPER_DOCUMENTS['source-real-still']);
 assert.equal(PAPER_DOCUMENTS['work-order'].pages.length,3,'the authored work-order packet remains three physical sheets');
 assert.ok(PAPER_DOCUMENTS['work-order'].processes.includes('biro'),'authored manual marks survive the offline paper process');

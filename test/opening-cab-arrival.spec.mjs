@@ -5,16 +5,17 @@ import {NodeIO} from '@gltf-transform/core';
 import {Ray,Vector3} from 'three';
 import {createHash} from 'node:crypto';
 import {OPENING_CAB_GEOMETRY} from '../src/data/opening-cab-object-geometry.js';
-import {OPENING_CAB_OBJECTS,OPENING_CAB_PLACEMENT} from '../src/data/opening-cab-objects.js';
+import {OPENING_CAB_OBJECTS,OPENING_CAB_VISIBLE_OBJECTS,OPENING_CAB_PLACEMENT,OPENING_CAB_PAPERS} from '../src/data/opening-cab-objects.js';
 import * as scenes from '../src/game/scenes.js';
 import {makeOpeningVehicleScene} from '../src/game/opening-vehicle-scene.js';
 import {createOpeningArrivalDrive,stepOpeningArrivalDrive,openingArrivalSnapshot} from '../src/game/opening-arrival-drive.js';
-import {openingCabInstances,openingCabFocus,openingCabInspectionModel,openingCabInspectionLayout,makeOpeningCabInspectionScene,openingCabTargets,OPENING_CAB_REQUIRED_MESHES} from '../src/game/opening-cab-inspection.js';
+import {openingCabInstances,openingCabFocus,openingCabInspectionModel,openingCabInspectionLayout,makeOpeningCabInspectionScene,openingCabTargets,openingCabDoorTarget,OPENING_CAB_REQUIRED_MESHES} from '../src/game/opening-cab-inspection.js';
 import {OPENING_VEHICLE,openingVehiclePoint} from '../src/data/opening-vehicle.js';
 import {WORK_ORDER} from '../src/data/conservatory-script.js';
 import {STORY_TARGET} from '../src/game/story-guidance.js';
 import {freshFieldKit} from '../src/game/field-kit.js';
 import {TECHNIQUE_DEFS} from '../src/game/combat-progression.js';
+import {aimOpeningCabDoor} from './helpers/opening-cab-aim.mjs';
 
 const target={x:16,y:0,z:8,yaw:Math.PI/2,zone:1,group:'ground'};
 const copy=v=>JSON.parse(JSON.stringify(v));
@@ -42,10 +43,10 @@ test('the actual scene advances vehicle physics during the fade before the first
   s.exit();
 });
 
-test('fresh brake input immediately owns the inherited acceleration, and blur/pause never replay it',()=>{
-  const s=ready(),initial=s.view().drive.speed;s.key({code:'Space'});for(let n=0;n<60;n++)s.update(1/60);assert.ok(s.view().drive.speed<initial);s.keyup({code:'Space'});
-  s.blur();const paused=copy(s.serialize());s.update(1);assert.deepEqual(s.serialize(),paused);s.resume();s.update(.1);assert.equal(s.view().drive.throttle,0);s.exit();
-  const resumed=ready({checkpoint:{...paused,reveal:.2}});assert.equal(resumed.view().drive.speed,0);resumed.update(.1);assert.equal(resumed.view().drive.throttle,0);assert.equal(resumed.view().drive.speed,0);resumed.exit();
+test('the final approach owns its pedals while blur and checkpoint recovery retain no player input',()=>{
+  const s=ready(),initial=s.view();s.key({code:'Space'});s.key({code:'KeyA'});for(let n=0;n<60;n++)s.update(1/60);assert.ok(s.view().anchor.x>initial.anchor.x);near(s.view().anchor.yaw,initial.anchor.yaw);
+  s.blur();const paused=copy(s.serialize());s.update(1);assert.deepEqual(s.serialize(),paused);s.resume();s.update(.1);assert.ok(s.view().drive.elapsed>paused.drive.elapsed);s.exit();
+  const resumed=ready({checkpoint:{...paused,reveal:.2}});assert.equal(resumed.view().drive.speed,0);assert.equal(resumed.view().drive.throttle,0);resumed.update(.1);assert.ok(resumed.view().drive.speed>0,'the authored approach resumes without waiting for a pedal');resumed.exit();
 });
 
 test('asset preparation holds a black view, then the newly revealed body already has motion; no loading-time physics is fabricated',()=>{
@@ -54,13 +55,13 @@ test('asset preparation holds a black view, then the newly revealed body already
   const at=s.view().anchor;s.update(.1);assert.ok(s.view().drive.elapsed>0);assert.ok(Math.hypot(s.view().anchor.x-at.x,s.view().anchor.z-at.z)>0);s.exit();
 });
 
-test('parked E can exit immediately without inspecting anything, while looking at the actual paper invokes only the optional host',()=>{
+test('parked interaction follows the actual paper or door handle, never an empty-view exit shortcut',()=>{
   let inspect=0,doors=0;const s=ready({checkpoint:stationaryCheckpoint(),onInspect:value=>{inspect++;assert.equal(value.id,'job-papers');assert.equal(value.sectionId,undefined);return true;},onDoor:()=>doors++});
   const frame=s.view(),paper=openingCabInstances(frame.anchor)[0],aim=lookAt(frame,{x:paper.x,y:paper.y+.02,z:paper.z});
   s.lookBy(aim.yaw-frame.yaw,aim.pitch-frame.pitch);assert.equal(s.view().focus?.type,'inspect');s.key({code:'KeyE'});
   assert.equal(inspect,1);assert.equal(doors,0);assert.equal(s.view().phase,'parked');s.key({code:'KeyE',repeat:true});assert.equal(inspect,1);
-  const looked=s.view();s.lookBy(target.yaw-looked.yaw,-.04-looked.pitch);s.key({code:'KeyE'});assert.equal(doors,1);assert.equal(s.view().phase,'exiting');s.exit();
-  const direct=ready({checkpoint:stationaryCheckpoint(),onDoor:()=>doors++});direct.key({controllerAction:'interact'});assert.equal(direct.view().phase,'exiting');assert.equal(doors,2);direct.exit();
+  const looked=s.view();s.lookBy(target.yaw-looked.yaw,-.04-looked.pitch);s.key({code:'KeyE'});assert.equal(doors,0);assert.equal(s.view().phase,'parked');aimOpeningCabDoor(s);s.key({code:'KeyE'});assert.equal(doors,1);assert.equal(s.view().phase,'exiting');s.exit();
+  const direct=ready({checkpoint:stationaryCheckpoint(),onDoor:()=>doors++});direct.key({controllerAction:'interact'});assert.equal(direct.view().phase,'parked');aimOpeningCabDoor(direct);direct.key({controllerAction:'interact'});assert.equal(direct.view().phase,'exiting');assert.equal(doors,2);direct.exit();
 });
 
 test('paper interaction follows the cabin in world space and is unavailable while moving or beyond the actual page',()=>{
@@ -72,17 +73,17 @@ test('paper interaction follows the cabin in world space and is unavailable whil
   }
 });
 
-test('missing physical cab objects suppress inspection in the real owner without blocking an immediate parked E exit',()=>{
+test('missing physical cab objects suppress inspection while preserving the actual door handle as the exit',()=>{
   let inspected=0,exited=0;
   const s=ready({checkpoint:stationaryCheckpoint(),getCabState:()=>({ready:false}),onInspect:()=>{inspected++;return true;},onDoor:()=>exited++});
   const frame=s.view(),paper=openingCabTargets(frame.anchor).find(t=>t.id==='job-papers'),aim=lookAt(frame,paper.position);
   s.lookBy(aim.yaw-frame.yaw,aim.pitch-frame.pitch);assert.equal(s.view().focus,null);s.key({key:'e'});
-  assert.equal(inspected,0);assert.equal(exited,1);assert.equal(s.view().phase,'exiting');s.exit();
+  assert.equal(inspected,0);assert.equal(exited,0);assert.equal(s.view().phase,'parked');aimOpeningCabDoor(s);s.key({key:'e'});assert.equal(exited,1);assert.equal(s.view().phase,'exiting');s.exit();
 });
 
-test('the real parked owner invokes the individual selected instruments and never routes them through the work order',()=>{
+test('the real parked owner invokes each genuine cab belonging without routing it through the work order',()=>{
   const fieldKit={headphones:'closed',microphone:'wide',recorder:'headroom',flashlight:'throw',cosmetics:{faceplate:'olive',buttons:'signal',flashlightHousing:'ivory'}};
-  for(const id of['recorder','headphones','microphone','flashlight','amp','notebook','self-check']){
+  for(const id of['notebook','self-check']){
     const received=[];const s=ready({checkpoint:stationaryCheckpoint(),getCabState:()=>({ready:true,fieldKit}),onInspect:value=>{received.push(value);return true;}});
     const frame=s.view(),aim=lookAt(frame,openingCabTargets(frame.anchor,{fieldKit}).find(t=>t.id===id).position);
     s.lookBy(aim.yaw-frame.yaw,aim.pitch-frame.pitch);assert.equal(s.view().focus?.id,id);s.key({key:'e'});
@@ -135,28 +136,52 @@ test('separate cab objects expose their own truthful live facts without granting
   assert.match(openingCabInspectionModel(state,'headphones').instrument.description,/15%/);assert.equal('timeRemaining' in notes,false);assert.deepEqual(state,before);
 });
 
-test('every physical object has its own reachable seated target, following the cabin and the actually selected hardware',()=>{
+test('cab belongings have reachable seated targets while all preparation equipment stays at the existing rear workbench',()=>{
+  const ids=['job-papers','notebook','self-check','practice-note','first-take-note','recital-programme','radio'];
+  assert.deepEqual(OPENING_CAB_VISIBLE_OBJECTS.map(object=>object.id),ids);
+  assert.deepEqual(OPENING_CAB_OBJECTS.filter(object=>object.location==='rear-workbench').map(object=>object.id),
+    ['recorder','headphones','microphone','flashlight','amp']);
   for(const yaw of[0,Math.PI/2,-1.1,Math.PI])for(const fieldKit of[freshFieldKit(),{headphones:'closed',microphone:'directional',recorder:'headroom',flashlight:'throw',cosmetics:{faceplate:'olive',buttons:'signal',flashlightHousing:'ivory'}},{headphones:'open',microphone:'wide',recorder:'low-draw',flashlight:'flood',cosmetics:{faceplate:'black',buttons:'sea-glass',flashlightHousing:'olive'}}]){
     const anchor={...target,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),instances=openingCabInstances(anchor,{fieldKit}),meshNames=new Set(instances.map(p=>p.mesh));
+    assert.deepEqual(openingCabTargets(anchor,{fieldKit}).map(object=>object.id),ids);
+    assert.equal(instances.length,7,'the job paper and six dressing meshes are separate from the resident dashboard receiver');
+    assert.ok(instances.every(p=>!p.mesh.includes('field_')&&!p.mesh.includes('headphones')&&!p.mesh.includes('microphone')&&!p.mesh.includes('flashlight')),
+      'moving inspection targets also removes the visible duplicate kit and case');
     for(const object of openingCabTargets(anchor,{fieldKit})){
       const frame=lookAt({phase:'parked',anchor,eye},object.position),focus=openingCabFocus(frame,{fieldKit});assert.equal(focus?.id,object.id,object.id+' must remain a distinct physical target');
       const turn=Math.atan2(Math.sin(frame.yaw-yaw),Math.cos(frame.yaw-yaw));assert.ok(Math.abs(turn)<2.4);assert.ok(frame.pitch>=-1.2&&frame.pitch<=.75);
-      assert.ok(object.meshIds.every(mesh=>meshNames.has(mesh)));assert.equal(openingCabFocus({...frame,phase:'driving'},{fieldKit}),null);assert.equal(openingCabFocus(frame,{fieldKit,ready:false}),null);
+      if(object.id==='radio')assert.deepEqual(object.meshIds,['opening_drive_radio']);
+      else assert.ok(object.meshIds.every(mesh=>meshNames.has(mesh)));
+      assert.equal(openingCabFocus({...frame,phase:'driving'},{fieldKit}),null);
+      assert.equal(openingCabFocus(frame,{fieldKit,ready:false})?.id||null,object.id==='radio'?'radio':null);
     }
-    const selected=instances.filter(p=>p.objectId==='flashlight');assert.ok(selected.every(p=>p.mesh.includes('_'+(fieldKit.flashlight||'reference')+'_')));
     assert.ok(instances.every(p=>p.id.startsWith('opening:')),'production opening-owner filtering retains every separate object');
+  }
+});
+
+test('the physical right-hand exit remains reachable even if optional cab objects have not loaded',()=>{
+  for(const yaw of[0,Math.PI/2,-1.1,Math.PI]){
+    const anchor={...target,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),handle=openingCabDoorTarget(anchor).position,
+      frame=lookAt({phase:'parked',anchor,eye},handle),turn=Math.atan2(Math.sin(frame.yaw-yaw),Math.cos(frame.yaw-yaw));
+    assert.ok(Math.abs(turn)<2.4&&frame.pitch>=-1.2&&frame.pitch<=.75,"the actual driver's head can reach the exit handle");
+    for(const ready of[true,false]){
+      const focus=openingCabFocus(frame,{ready});assert.equal(focus?.type,'exit');assert.equal(focus.id,'driver-door');
+      assert.deepEqual(focus.position,handle);
+      assert.equal(openingCabFocus({...frame,yaw:frame.yaw+.4},{ready}),null,'the physical handle remains a deliberate look target');
+    }
+    assert.equal(openingCabFocus({...frame,phase:'driving'},{ready:false}),null,'no object or door interaction while moving');
   }
 });
 
 test('each direct close-up is fixed to its world object; tabs, number keys and arrows never traverse other belongings',()=>{
   const state=freeze({flags:{},fieldKit:freshFieldKit(),recordist:{injuries:0,battery:1},build:{unspent:0,techniques:[]},workOrder:WORK_ORDER,journal:[],guidance:STORY_TARGET.van});
-  for(const object of OPENING_CAB_OBJECTS){let closed=0,papers=0,inspections=[],rotations=0,disposed=0;
-    const s=makeOpeningCabInspectionScene({id:object.id,getState:()=>state,onClose:()=>closed++,makeReader:(value,options)=>{papers++;assert.equal(value,WORK_ORDER);assert.equal(typeof options.onSceneClose,'function');return{enter(){},view:()=>({reading:false}),key(){},render(){},update(){}};},makeInspection:value=>{inspections.push(value.id);return{draw(){},key(){rotations++;},dispose(){disposed++;}};}});
+  for(const object of OPENING_CAB_VISIBLE_OBJECTS.filter(object=>object.kind!=='radio')){let closed=0,papers=0,inspections=[],rotations=0,disposed=0;
+    const s=makeOpeningCabInspectionScene({id:object.id,getState:()=>state,onClose:()=>closed++,makeReader:(value,options)=>{papers++;assert.equal(value,object.id==='job-papers'?WORK_ORDER:OPENING_CAB_PAPERS.find(paper=>paper.id===object.documentId));assert.equal(typeof options.onSceneClose,'function');return{enter(){},view:()=>({reading:false}),key(){},render(){},update(){}};},makeInspection:value=>{inspections.push(value.id);return{draw(){},key(){rotations++;},dispose(){disposed++;}};}});
     s.enter();s.render();const original=copy(s.view().model);assert.equal(s.view().objectId,object.id);assert.equal(s.view().readOnly,true);assert.equal(typeof s.selectSection,'undefined');
     for(const key of['Tab','1','2','3','4','ArrowDown','ArrowLeft'])s.key({key});s.key({controllerAction:'tabNext'});s.render();assert.equal(s.view().objectId,object.id);assert.deepEqual(s.view().model,original);
     assert.equal(papers,object.kind==='document'?1:0);assert.equal(inspections.length,object.kind==='instrument'?1:0);if(object.kind==='instrument')assert.equal(rotations,2);
     assert.deepEqual(s.view().hitRegions.map(h=>h.id),['cab-object:close']);
-    s.key({key:'e',repeat:true});assert.equal(closed,0);s.key({key:'e'});assert.equal(closed,1);s.key({key:'e'});assert.equal(closed,1);assert.equal(disposed,object.kind==='instrument'?1:0);
+    s.key({code:'KeyE',repeat:true});assert.equal(closed,0);s.key({code:'KeyE'});assert.equal(closed,1);s.key({code:'KeyE'});assert.equal(closed,1);assert.equal(disposed,object.kind==='instrument'?1:0);
   }
   assert.equal(state.flags['bag.taken'],undefined);assert.equal(state.flags['work-order.accepted'],undefined);assert.equal(state.flags['radio.work-order-read'],undefined);
 });
@@ -180,7 +205,7 @@ test('the actual instrument description and live facts use readable light ink on
 test('a direct object freezes the parked cabin and E returns to the same owner without inspection prerequisites for exit',()=>{
   scenes.clear();const cab=ready({checkpoint:stationaryCheckpoint()});scenes.push(cab);const initial=copy(cab.serialize());
   const object=makeOpeningCabInspectionScene({id:'self-check',getState:()=>({recordist:{injuries:0}})});scenes.push(object);scenes.update(2);assert.deepEqual(cab.serialize(),initial);
-  object.key({key:'e'});assert.equal(scenes.top(),cab);assert.equal(cab.view().phase,'parked');assert.equal(cab.view().drive.throttle,0);cab.key({key:'e'});assert.equal(cab.view().phase,'exiting');scenes.clear();
+  object.key({key:'e'});assert.equal(scenes.top(),cab);assert.equal(cab.view().phase,'parked');assert.equal(cab.view().drive.throttle,0);cab.key({key:'e'});assert.equal(cab.view().phase,'parked');aimOpeningCabDoor(cab);cab.key({key:'e'});assert.equal(cab.view().phase,'exiting');scenes.clear();
 });
 
 test('the close control activates only on matching press/release and its layout remains within the viewport',()=>{
@@ -200,10 +225,10 @@ test('the separate cab pack contains the actual declared models, bounded geometr
   assert.equal(stats.registration.case.yaw,-Math.PI/2,'the original open face is physically turned toward the seated driver');
 });
 
-test('canonical instruments are visually unobstructed from the seated eye in the actual exported cabin geometry',async()=>{
+test('the notebook and mirror are visually unobstructed from the seated eye in the actual exported cabin geometry',async()=>{
   const io=new NodeIO(),doc=await io.read(new URL('../public/assets/source-vehicle-interior.glb',import.meta.url).pathname),pack=await io.read(new URL('../public/assets/opening-cab-objects.glb',import.meta.url).pathname),anchor={x:0,y:0,z:0,yaw:0},eye=new Vector3(...OPENING_VEHICLE.eye),selected=new Set(openingCabInstances(anchor).map(p=>p.mesh)),triangles=[];
   for(const d of[doc,pack])for(const m of d.getRoot().listMeshes())if(d===doc?m.getName()==='opening_drive_cabin':selected.has(m.getName()))for(const primitive of m.listPrimitives()){const p=primitive.getAttribute('POSITION'),idx=primitive.getIndices().getArray();for(let i=0;i<idx.length;i+=3)triangles.push({mesh:m.getName(),points:[0,1,2].map(k=>new Vector3(...p.getElement(idx[i+k],[])))});}
-  for(const target of openingCabTargets(anchor).filter(t=>t.kind==='instrument'||t.id==='notebook')){const end=new Vector3(...target.localPoint),ray=new Ray(eye,end.clone().sub(eye).normalize());let nearest=null;
+  for(const target of openingCabTargets(anchor).filter(t=>['notebook','self-check'].includes(t.id))){const end=new Vector3(...target.localPoint),ray=new Ray(eye,end.clone().sub(eye).normalize());let nearest=null;
     for(const row of triangles){const hit=ray.intersectTriangle(...row.points,false,new Vector3());if(hit){const distance=hit.distanceTo(eye);if(!nearest||distance<nearest.distance)nearest={mesh:row.mesh,distance};}}
     assert.ok(nearest,target.id);assert.ok(target.meshIds.includes(nearest.mesh),target.id+' is occluded by '+nearest.mesh);assert.ok(nearest.distance<=eye.distanceTo(end)+.02);
   }

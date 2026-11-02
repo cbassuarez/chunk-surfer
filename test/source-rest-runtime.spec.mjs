@@ -29,6 +29,7 @@ function fixture(seat=SOURCE_REST_SEATS[0],options={}){
   const original={rendererRender:renderer.render,update:scene.update,key:scene.key,lookBy:scene.lookBy,allowsLook:Object.getOwnPropertyDescriptor(scene,'allowsLook')};
   const api=installSourceRest(scene,renderer,{stack:manager,makeConversation,paintPrompt:()=>prompts++,conversationOptions:{getMusicState:()=>music},
     enableStudies:!!options.enableStudies,drawRestInstrumentInStudies:!!options.drawRestInstrumentInStudies,
+    getRecorderVisible:()=>!!options.recorderVisible,
     drawRestInstrument:payload=>{renderEvents.push('instrument');instruments.push(payload);},
     onCommit:context=>{assert.equal(stack.length,0,'overlay is removed before ending handoff');commits++;options.onCommit?.(context);return options.commitResult;}});
   return{scene,renderer,api,stack,held,original,renderEvents,instruments,get render(){return lastRender},get updates(){return updates},get audioFrames(){return audioFrames},get prompts(){return prompts},get commits(){return commits},
@@ -43,24 +44,24 @@ test('both actual protected seating pockets offer rest without taking an existin
     const blocked=fixture(seat,{normalFocus:{id:'door'}});assert.equal(blocked.api.focus(),null);blocked.scene.key({key:'e'});assert.equal(blocked.stack.length,0);blocked.api.dispose();}
 });
 
-test('the real Source II rest draws its read-only instrument after the world and before the existing subtitles',()=>{
+test('the real Source II rest keeps the recorder put away and exposes its canonical frame only for an explicit presentation',()=>{
   const f=fixture();f.scene.render();assert.equal(f.instruments.length,0,'no floating instrument before sitting');
   f.api.sit();for(let i=0;i<8;i++)f.scene.update(.2);f.setNarrative({progress:.26});f.scene.update(.1);
   f.renderEvents.length=0;f.scene.render();f.stack.at(-1).render();
-  assert.deepEqual(f.renderEvents,['world','instrument','subtitles']);
-  const p=f.instruments.at(-1);assert.equal(p.phase,'wrong-return');assert.equal(p.mode,'seated');assert.equal(p.study,false);
+  assert.deepEqual(f.renderEvents,['world','subtitles']);
+  assert.equal(f.instruments.length,0);
+  const p=f.api.recorderFrame();assert.equal(p.phase,'wrong-return');assert.equal(p.mode,'seated');
   assert.equal(p.presentation.stage,2);assert.equal(p.transitionProgress,1);assert.equal(p.narrativeProgress,.26);
   assert.equal(p.conversationView.line.text,'Listen.');assert.equal(p.conversationView.restLocked,false);
-  assert.ok(Number.isFinite(p.cols)&&Number.isFinite(p.rows));
   const before=f.instruments.length;f.setNarrative({progress:.70});f.scene.update(.1);f.scene.render();
   assert.equal(f.instruments.length,before,'quiet corners return after the instrument presentation erodes');
   f.decide('leave');f.scene.render();assert.equal(f.instruments.length,before,'standing does not create a second device owner');f.api.dispose();
 });
 
-test('Source III shares the real seated instrument while isolated studies still require explicit opt-in',()=>{
+test('Source III also leaves its device put away while isolated studies require explicit opt-in',()=>{
   const catchSeat=fixture(SOURCE_REST_SEATS[1]);catchSeat.api.sit();for(let i=0;i<8;i++)catchSeat.scene.update(.2);catchSeat.scene.render();
-  assert.equal(catchSeat.instruments.length,1);assert.equal(catchSeat.instruments[0].phase,'catch');
-  assert.equal(catchSeat.instruments[0].mode,'seated');assert.equal(catchSeat.instruments[0].study,false);catchSeat.api.dispose();
+  assert.equal(catchSeat.instruments.length,0);assert.equal(catchSeat.api.recorderFrame().phase,'catch');
+  assert.equal(catchSeat.api.recorderFrame().mode,'seated');catchSeat.api.dispose();
   const study=fixture(SOURCE_REST_SEATS[0],{enableStudies:true});study.api.studyFrame({musicTime:100,degradation:.26});
   assert.equal(study.instruments.length,0);study.api.dispose();
   const opted=fixture(SOURCE_REST_SEATS[0],{enableStudies:true,drawRestInstrumentInStudies:true});opted.api.studyFrame({musicTime:100,degradation:.26});
@@ -78,6 +79,13 @@ test('sitting releases held movement, keeps Source and its one audio owner ticki
     f.decide('leave');assert.equal(f.api.view().mode,'standing');for(let i=0;i<8;i++)f.scene.update(.2);
     assert.equal(f.api.view().mode,'idle');assert.equal(f.scene.allowsLook,seat.phase!=='catch');assert.equal(f.scene.lookBy(0,0),'original-look');
     f.scene.render();assert.equal(f.render.sourceRestView.seatId,undefined);assert.equal(f.commits,0);f.api.dispose();}
+});
+
+test('a healthy seated listener can examine the high string architecture before faculties decline',()=>{
+  const f=fixture(SOURCE_REST_SEATS[1]);f.api.sit();for(let i=0;i<8;i++)f.scene.update(.2);
+  f.scene.lookBy(0,2);assert.equal(f.scene.lookAngles().pitch,1.25);
+  f.scene.setLook({pitch:1.1});assert.ok(Math.abs(f.scene.lookAngles().pitch-1.1)<1e-9);
+  f.api.dispose();
 });
 
 test('commit is delivered once only after dialogue removal and holds the seated view until released',async()=>{

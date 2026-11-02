@@ -1,3 +1,4 @@
+import { finalizeCausalFixture } from './helpers/causal-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { packShadowFrames, unpackShadowFrames, shadowFrameAt, CAUSAL_SPINE_IDS, validateCausalTape } from '../src/causal/tape.js';
@@ -114,7 +115,7 @@ test('a stationary observer records and actually stores continuing Pressure, wit
     // Presence/cue changes must be captured even inside the normal 100ms interval.
     recorder.tick(.001, frame(0, presentation(10.001, null)));
     assert.equal(recorder.frames.at(-1).pressurePresentation.primary, null);
-    const result = await recorder.finalize({ summary: { id: 'return:pressure-character-acceptance' }, endingId: 'sacrifice', completedAt: 44 });
+    const result = await finalizeCausalFixture(recorder,{ summary: { id: 'return:pressure-character-acceptance' }, endingId: 'sacrifice', completedAt: 44 });
     assert.equal(result.ok, true);
     const saved = await loadLatestCausalTape();
     assert.equal(validateCausalTape(saved).ok, true);

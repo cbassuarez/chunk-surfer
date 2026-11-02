@@ -44,6 +44,21 @@ test('ordinary deferred soundtrack starts also obey stopAll cancellation',async(
   f.audio.startSoundtrack();f.audio.stopAll();await f.load();assert.equal(f.sources.length,0);
 }));
 
+test('release credits use one finite performance while the ordinary title retains its loop',async()=>fixture(async f=>{
+  const loaded=f.audio.preload(f.audio.STORY_AUDIO.credits);
+  f.requests.find(row=>row.url===f.audio.STORY_AUDIO.credits).resolve({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)});
+  await loaded;
+  const credits=f.audio.startSoundtrack({track:'credits',fade:0});
+  assert.equal(credits.src.loop,false);
+  assert.equal(f.audio.startSoundtrack({track:'credits'}),credits,'reading controls cannot stack a second performance');
+  credits.src.onended();
+  assert.equal(credits.src.disconnected,true);
+  const title=f.audio.preload(f.audio.STORY_AUDIO.title);await f.load();await title;
+  const ordinary=f.audio.startSoundtrack({track:'title',fade:0});
+  assert.equal(ordinary.src.loop,true);
+  assert.notEqual(ordinary.src,credits.src);
+}));
+
 test('a reloaded montage begins at its saved elapsed offset and cannot overwrite a paused owned position',async()=>fixture(async f=>{
   const preparing=f.audio.prepareOpeningOvertureScore();await f.load();await preparing;f.audio.startOpeningOvertureScore({offset:31.25});assert.equal(f.sources[0].starts[0][1],33.57);
   f.ctx.currentTime=12;f.audio.pauseOpeningOvertureScore();f.audio.startOpeningOvertureScore({offset:0});assert.equal(f.audio.openingOvertureScoreState().positionSeconds,33.25);assert.equal(f.audio.openingOvertureScoreState().paused,true);f.audio.resumeOpeningOvertureScore();assert.equal(f.sources[1].starts[0][1],35.57);

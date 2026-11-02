@@ -24,9 +24,11 @@ test('the hidden alcove uses the original upper-refuge floor and a fully support
 test('the actual return screen conceals the seat from the ordinary crossing but the seated window is open',()=>{
   assert.ok(blocked([0,seat.feet+1.62,-14],[seat.x,seat.feet+.78,seat.z]),'the main crossing cannot see straight to the seat');
   assert.equal(blocked([seat.x,seat.feet+1.04,seat.z],[-3.7,seat.feet+1.04,seat.z]),false,'the western view passes through the real window opening');
-  const frame=sourceContinuationRenderFrame(state),walls=frame.props.filter(p=>p.role==='rest-alcove');
+  const frame=sourceContinuationRenderFrame(state),walls=frame.canonicalProps.filter(p=>p.role==='rest-alcove');
   assert.equal(walls.length,SOURCE_REST_ALCOVE_SOLIDS.length);
   assert.ok(walls.every(p=>p.restPlace&&p.physicalBounds),'every visible screen has exact collision and stays through early departure');
+  for(const solid of SOURCE_REST_ALCOVE_SOLIDS){const wall=walls.find(p=>p.descriptorId===solid.id);assert.ok(wall);assert.deepEqual(wall.physicalBounds,{min:[solid.minX,solid.minY,solid.minZ],max:[solid.maxX,solid.maxY,solid.maxZ]});}
+  for(const visible of frame.props.filter(p=>p.role==='rest-alcove'&&!p.portalDestination))assert.deepEqual(visible.physicalBounds,walls.find(p=>p.id===visible.id).physicalBounds,'view-frustum rejection changes submitted visibility, never the canonical screen');
   const before=sourceContinuationRenderFrame({...state,sourceRestView:{seatId:seat.id,progress:1,degradation:0}}),early=sourceContinuationRenderFrame({...state,sourceRestView:{seatId:seat.id,progress:1,degradation:.5}});
   for(const p of before.props.filter(p=>p.role==='rest-alcove'))assert.deepEqual(early.props.find(q=>q.id===p.id).matrix,p.matrix,'the solid screen cannot vanish while getting up remains available');
 });

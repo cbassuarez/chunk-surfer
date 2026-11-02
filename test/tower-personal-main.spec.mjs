@@ -15,6 +15,12 @@ import { createTowerPersonalMonitor } from '../src/audio/tower-personal-monitor.
 import { ordinaryTakeCount } from '../src/game/chapel-tower-state.js';
 import * as REAL_REC from '../src/game/recordist.js';
 import * as REAL_PB from '../src/game/playback.js';
+import {nightDeadlineAllowsTransport} from '../src/game/night-deadline.js';
+import {createPressurePerformance} from '../src/game/pressure-performance.js';
+import {freshRunRecord} from '../src/progression/schema.js';
+import {EVENT_TYPES} from '../src/progression/events.js';
+import {reduceRunLedger} from '../src/progression/run-ledger.js';
+import {fillCurrentPauseHost} from './helpers/current-pause-host.mjs';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -24,6 +30,7 @@ function section(from, to) {
   return main.slice(begin, end);
 }
 const personalFunctions = [
+  section('function pressurePresentationSnapshot(){','\nfunction pressureRenderFrame('),
   section('var towerPersonalRecorderHeld=false', '\nlet homeWindowCanvas=null;'),
   section('function enterTowerLandNow(', '\nfunction finishHomeWalk('),
   section('function openRecorder(){', '\nfunction recorderMachineState(){'),
@@ -42,7 +49,7 @@ function personalHarness() {
   const sandbox = {
     px: 10, py: 20, stepCount: 2, CELL: .5, renderMove: {}, motionRig: {}, trail: [{ x: 9, y: 20 }], storyMode: true, paused: false,
     // Source personal-space fixtures do not have the chapel's loose case.
-    chapelTapeCaseAvailable:()=>true,
+    chapelTapeCaseAvailable:()=>true,nightDeadlineAllowsTransport,firstStrikeAudio:null,pressurePerformance:createPressurePerformance(),
     playbackRoom: null, pendingTapeRoll: false,
     actx: { currentTime: 5, state: 'running', destination: {},
       createChannelSplitter: () => ({ connect: noOp, disconnect: noOp }),
@@ -121,7 +128,7 @@ function personalHarness() {
     endSourceHaystackMosh: noOp, endSourceBracketPresence: noOp, syncSourceCorridorRain: noOp,
     syncSourceRender: (options) => renders.push(options), revealAround: noOp,
   };
-  vm.createContext(sandbox);
+  fillCurrentPauseHost(sandbox);vm.createContext(sandbox);
   vm.runInContext(personalFunctions + '\nglobalThis.api={openRecorder,toggleTowerPersonalRecorder,playTakeFrom,tickTowerPersonal,enterTowerLandNow,leaveTowerLandNow,lowerTowerPersonalRecorder,reconcileTowerPersonalTake,applyTowerPersonalTraversal,drawTowerPersonalQuiet,towerPersonalEvent,towerPersonalFocusLabel,tickTowerPersonalWorldSignal,stopTowerPersonalWorldSignal,held:()=>towerPersonalRecorderHeld};', sandbox);
   return { sandbox, saved, snapshots, poses, ticks, playback, scenePushes, spoken, events, renders, returnPose, audioOrder,
     get audio() { return heldAudio; },
@@ -401,7 +408,7 @@ test('handover captions remain available when audio cannot sound', () => {
 
 test('the personal cadence walks the actual cell size at 1.35 metres per second and retains quiet movement', () => {
   let slow = false;
-  const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,
+  const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,openingVehicleScene:null,openingOvertureScene:null,
     usingStairAnomaly: () => false, isIntroActive: () => false, usingSourceSpace: () => true,
     outskirtsStepIndex: 0, PLANT: { heavyWrenchDragging: () => false }, worldBoundaryFriction: 0,
     REC: { recState: () => ({ slow }) }, chunkSurfRuntime: { towerLandFrame: () => ({ active: true, walkMetresPerSecond: 1.35 }) },
@@ -504,13 +511,13 @@ test('the real renderer option excludes personal rooms from the physical Source 
 });
 
 test('personal rain suppression is a frame override and returning restores the global amount including zero', () => {
-  const option = main.match(/^\s*rainAmount:(usingSourceSpace\(\)[^\n]*),$/m)?.[1];
+  const option = main.match(/^\s*rainAmount:([^\n]+),$/m)?.[1];
   const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const uniform = renderer.match(/gl\.uniform1f\(U\('uRainAmount'\),([^\n]+)\);/)?.[1];
   assert.ok(option, 'the live frame rain option is present');
   assert.ok(uniform, 'the real rain uniform resolves the frame override');
   let source = true, personal = true;
-  const sandbox = { usingSourceSpace: () => source,
+  const sandbox = { usingSourceSpace: () => source,worldView:null,shouldStageOpeningCinematic:()=>false,openingCinematicFrame:()=>null,
     chunkSurfRuntime: { towerLandFrame: () => ({ active: personal }) } };
   const frameRain = () => vm.runInNewContext(option, sandbox);
   const renderedRain = (override, global) => vm.runInNewContext(uniform, { state: { rainAmount: override }, rainAmount: global });
@@ -624,6 +631,7 @@ test('Source activation cannot reconcile the authored tape before story restores
 });
 
 const cathedralFunctions = [
+  section('function trackFinalBattleProgress(', '\nfunction tickSourceFinalEncounter(){'),
   section('function cathedralFightReady(){', '\nfunction tickFinale(){'),
   section('function openCathedralFirstPhase(){', "\n// ── ST BRENDAN'S TOWER"),
   section('function openBattle(', '\n// The run\'s own number'),
@@ -631,7 +639,7 @@ const cathedralFunctions = [
 ].join('\n');
 
 test('arriving and waiting under the lantern preserves the reward until the player starts the fight', () => {
-  const save = { chunkSurf: normalizeChunkSurfState({ phase: CHUNK_SURF_PHASE.BELLS,
+  const save = { run:freshRunRecord({id:'personal-cathedral-test',now:1}),chunkSurf: normalizeChunkSurfState({ phase: CHUNK_SURF_PHASE.BELLS,
     station: { personal: { completed: true } },
     finale: { route: SOURCE_FINALE_ROUTE.TOWER, stage: SOURCE_FINALE_STAGE.CATHEDRAL, cathedral: { alarm: 4 } } }) };
   const scenes = [], combats = [], commits = [];
@@ -641,6 +649,7 @@ test('arriving and waiting under the lantern preserves the reward until the play
     SOURCE_FINALE_ROUTE, SOURCE_FINALE_STAGE, normalizeChunkSurfState, chunkSurfFinaleRouting, reduceChunkSurf, cathedralBellCombatBattle,
     usingSpecialSpace: () => false, usingSourceSpace: () => false,
     getSave: () => save, saveCommit(patch) { Object.assign(save, copy(patch)); commits.push(copy(save)); },
+    EVENT_TYPES,emitProgress(type,payload,source){save.run.ledger=reduceRunLedger(save.run.ledger,{type,payload,source,seq:save.run.ledger.seq+1});},
     brendanAuthoredAt: () => ({ level: 'ground', x: 1, y: 2 }), churchCrossingAt: () => true,
     GOD_LOCATION_HOOKS: { 'cathedral-crossing': 'crossing' }, godHookPoint: () => ({ x: 1, y: 2 }),
     scenes: { blocksWorld: () => false, push(scene) { scenes.push(scene); return scene; } },
@@ -694,7 +703,7 @@ test('an active ending presenter cannot be replaced by a saved extraction checkp
 test('held personal movement uses the authored cadence in cardinal and diagonal directions without catch-up bursts', () => {
   for (const direction of [[0, -1], [1, -1]]) {
     const steps = [];
-    const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,
+    const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,openingVehicleScene:null,openingOvertureScene:null,busRecoilGlide:null,
       usingStairAnomaly: () => false, isIntroActive: () => false, usingSourceSpace: () => true,
       outskirtsStepIndex: 0, PLANT: { heavyWrenchDragging: () => false }, worldBoundaryFriction: 0,
       REC: { recState: () => ({ slow: false }) }, chunkSurfRuntime: {

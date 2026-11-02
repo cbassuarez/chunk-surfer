@@ -56,7 +56,10 @@ export function buildGlassCourtGeometry(court){
     {id:'west-head-glimpse',eye:[2,1.62,3],target:[.35,1.68,3],headBand:[1.5,1.9]},
     {id:'east-head-glimpse',eye:[2,1.62,9],target:[3.65,1.68,9],headBand:[1.5,1.9]},
   ];
-  const clearRays=figures.flatMap(f=>[-.055,0,.055].map(dx=>({from:[f.eye[0]+dx,f.eye[1],f.eye[2]],to:[f.target[0]+dx,f.target[1],f.target[2]]})));
+  const clearRays=figures.flatMap(f=>[
+    ...[-.055,0,.055].map(dx=>({from:[f.eye[0]+dx,f.eye[1],f.eye[2]],to:[f.target[0]+dx,f.target[1],f.target[2]]})),
+    ...[-.025,0,.025].map(dz=>({from:[f.eye[0],f.eye[1],f.eye[2]+dz],to:[f.target[0],f.target[1],f.target[2]+dz]})),
+  ]);
   let windowLeavesOmitted=0;
   function part(mesh,id,role,material,points,indices,uvs=null,{keepWindows=false}={}){
     if(keepWindows&&clearRays.some(ray=>indices.some((_,i)=>i%3===0&&courtRayTriangle(ray.from,ray.to,...indices.slice(i,i+3).map(k=>points[k]))!==null))){windowLeavesOmitted++;return;}
@@ -181,22 +184,24 @@ export function buildGlassCourtGeometry(court){
     for(const h of[.12,.57,1.13])beam(guards,`${tier}-guard-rail:${n}:${h}`,'void-safety-guard',M.iron,[start[0],start[1]+h,start[2]],[end[0],end[1]+h,end[2]],h===.12?.10:.07);
     const count=Math.ceil(length/1.25);for(let k=0;k<=count;k++){const q=lerp(start,end,k/count);box(guards,`${tier}-guard-post:${n}:${k}`,'void-safety-guard',M.metal,[q[0],q[1]+.59,q[2]],[.075,1.18,.075]);}
   }
-  // Changing is an independent five-metre buffer within the pool's entrance.
+  // The independent changing buffer leaves a real cross-deck before the
+  // unchanged starting blocks and basin. Geometry follows its shared bounds.
+  const changing=court.changing,changingZ=(changing.z0+changing.z1)/2,changingLength=changing.z1-changing.z0;
   for(const p of court.partitionSegments){box(vestibule,p.id,'changing-wall',M.wall,[p.x,p.height/2,p.z],[p.width,p.height,p.depth]);box(vestibule,p.id+':skirting','changing-wall',M.blue,[p.x,.10,p.z],[p.width,.20,p.depth]);}
-  for(const z of[12,17])box(vestibule,`changing-header:${z}`,'changing-wall',M.wall,[2,3.45,z],[2.12,.10,.18]);
-  box(vestibule,'changing-ceiling','changing-ceiling',M.wall,[2,3.47,14.5],[6,.14,5]);
-  box(vestibule,'changing-floor','floor',M.paving,[2,-.006,14.5],[6,.024,5]);
-  box(vestibule,'changing-west-bench','changing-furniture',M.wood,[-.60,.45,14.5],[.48,.08,2.4]);
-  for(const z of[13.5,15.5])beam(vestibule,`bench-bracket:${z}`,'changing-furniture',M.iron,[-.8,.05,z],[-.6,.42,z],.06);
+  for(const z of[changing.z0,changing.z1])box(vestibule,`changing-header:${z}`,'changing-wall',M.wall,[2,3.45,z],[2.12,.10,.18]);
+  box(vestibule,'changing-ceiling','changing-ceiling',M.wall,[2,3.47,changingZ],[6,.14,changingLength]);
+  box(vestibule,'changing-floor','floor',M.paving,[2,-.006,changingZ],[6,.024,changingLength]);
+  box(vestibule,'changing-west-bench','changing-furniture',M.wood,[-.60,.45,changingZ],[.48,.08,2.4]);
+  for(const z of[changingZ-1,changingZ+1])beam(vestibule,`bench-bracket:${z}`,'changing-furniture',M.iron,[-.8,.05,z],[-.6,.42,z],.06);
   // Each ventilation circuit has its own actual external termination.
   for(const[x,label]of[[.18,'glasshouse-supply'],[3.82,'glasshouse-extract']]){
     box(frame,label+':trunk','ventilation',M.metal,[x,3.73,6],[.18,.18,11.9]);
     for(const z of[2,5,8,11])box(frame,`${label}:outlet:${z}`,'ventilation',M.iron,[x,3.61,z],[.25,.045,.55]);
     box(frame,label+':end-flange','ventilation',M.metal,[x,3.73,.02],[.36,.36,.06]);
   }
-  box(vestibule,'changing-extract-trunk','ventilation',M.metal,[4.6,3.65,14.5],[.18,.18,4.8]);
-  box(vestibule,'changing-extract-exterior-flange','ventilation',M.metal,[5.02,3.65,14.5],[.06,.36,.40]);
-  beam(vestibule,'changing-extract-neck','ventilation',M.metal,[4.6,3.65,14.5],[5.02,3.65,14.5],.18);
+  box(vestibule,'changing-extract-trunk','ventilation',M.metal,[4.6,3.65,changingZ],[.18,.18,changingLength-.2]);
+  box(vestibule,'changing-extract-exterior-flange','ventilation',M.metal,[5.02,3.65,changingZ],[.06,.36,.40]);
+  beam(vestibule,'changing-extract-neck','ventilation',M.metal,[4.6,3.65,changingZ],[5.02,3.65,changingZ],.18);
   for(const lamp of court.lamps){const{x,y,z,id}=lamp,host=id.includes('changing')?vestibule:frame;
     if(id.includes('light')||id.includes('fluorescent')){box(host,`housing:${id}`,'fluorescent-fixture',M.iron,[x,y+.075,z],[1.30,.055,.16]);for(const dz of[-.04,.04])cylinder(host,`tube:${id}:${dz}`,'fluorescent-fixture',M.tube,[x,y,z+dz],.018,.018,1.18,8,'x');for(const dx of[-.5,.5])beam(host,`drop:${id}:${dx}`,'overhead-frame',M.metal,[x+dx,y+.10,z],[x+dx,id.includes('changing')?3.39:roofHeight(x+dx)-.09,z],.014);}
     else cylinder(frame,'exit-globe','side-stock',M.opal,[x,y,z],.125,.125,.23,12);
@@ -213,22 +218,34 @@ export function buildGlassCourtGeometry(court){
       for(let k=0;k<9;k++){const a=k*2.399+random()*.4,at=.8+k*.16;leaf(`broadleaf:${bi}:${n}:${k}`,[x,at,z],[clamp(x+Math.cos(a)*.36,b.x0+.03,b.x1-.03),Math.min(2.7,at+.30+random()*.3),z+Math.sin(a)*.4],.25+random()*.12,k%3?M.deep:M.jade,{band:b,keepWindows:true});}
       if(n%2===0){cylinder(nursery,`pot:${bi}:${n}`,'nursery-stock',M.pot,[x,.90,z],.085,.13,.24,8);rim(nursery,`pot-rim:${bi}:${n}`,M.pot,[x,1.026,z],.14,.115,.025);}
     }
+    // A rooted pair of folded fronds stands in front of each existing body.
+    // The bed centre alone left the figures exposed behind sideways leaves.
+    // Petioles meet the nearest real stem; the narrow gap reveals only a
+    // partial head, while walking past restores overlapping living foliage.
+    const figure=figures[bi],front=bi?b.x0+.04:b.x1-.04;
+    const stemZ=b.z0+.35+Math.round((figure.target[2]-b.z0-.35)/.65)*.65;
+    for(const side of[-1,1]){
+      const z=figure.target[2]+side*.20;
+      beam(plants,`body-frond-petiole:${bi}:${side}`,'central-stem',M.stem,[cx,1.12,stemZ],[front,1.18,z],.016);
+      leaf(`body-frond:${bi}:${side}`,[front,1.18,z],[front+(bi?-.01:.01),1.82,z],.32,M.deep,{band:b,keepWindows:true});
+    }
     for(let z=1;z<11.5;z+=1.5){let prev=[cx,3.65,z];for(let k=1;k<=7;k++){const q=[cx+Math.sin(k*.7)*.04,3.65-k*.19,z+Math.sin(k*.6)*.05];beam(plants,`vine:${bi}:${z}:${k}`,'hanging-vine',M.stem,prev,q,.008);leaf(`vine-leaf:${bi}:${z}:${k}`,q,[q[0]+(bi?-.10:.10),q[1]-.12,q[2]+.10],.12,M.vine,{central:false,role:'hanging-vine',simple:true,keepWindows:false});prev=q;}}
   }
   const counter=court.counter;
   box(fixtures,'rehosted-attendant-counter','rehosted-admission-counter',M.wood,[counter.x,counter.height/2,counter.z],[counter.width,counter.height,counter.depth]);
   box(fixtures,'rehosted-attendant-worktop','rehosted-admission-counter',M.ivory,[counter.x,1.08,counter.z],[counter.width+.06,.06,counter.depth+.08]);
-  cylinder(fixtures,'folded-turnstile-shaft','rehosted-folded-turnstile',M.metal,[4.3,.78,16.6],.075,.075,1.48,12);
-  for(const dz of[-.06,0,.06])beam(fixtures,'folded-turnstile-arm:'+dz,'rehosted-folded-turnstile',M.metal,[4.3,.84,16.6+dz],[4.3,.12,16.75+dz],.035);
+  const foldedGateZ=changing.z1-.30;
+  cylinder(fixtures,'folded-turnstile-shaft','rehosted-folded-turnstile',M.metal,[4.3,.78,foldedGateZ],.075,.075,1.48,12);
+  for(const dz of[-.06,0,.06])beam(fixtures,'folded-turnstile-arm:'+dz,'rehosted-folded-turnstile',M.metal,[4.3,.84,foldedGateZ+dz],[4.3,.12,foldedGateZ+.15+dz],.035);
   box(fixtures,'rehosted-radiator','rehosted-service-hardware',M.ivory,[-.75,.66,12.8],[.24,1.14,1.0]);
-  box(fixtures,'rehosted-service-box','rehosted-service-hardware',M.metal,[-.85,1.62,16.0],[.24,1.04,.70]);
+  box(fixtures,'rehosted-service-box','rehosted-service-hardware',M.metal,[-.85,1.62,changing.z1-1],[.24,1.04,.70]);
   box(fixtures,'rehosted-boot-scraper','rehosted-service-hardware',M.iron,[.1,.08,12.7],[.7,.12,.5]);
   for(const[n,s]of court.signs.entries()){
     const normal=s.normal,basis=[[1,0,0],[0,1,0],[0,0,1]],c=[s.x,s.y,s.z],front=c.map((v,k)=>v+normal[k]*.017);
     box(vestibule,'sign-substrate:'+s.id,'physical-wayfinding',M.blue,c,[s.width+.025,s.height+.025,.025],basis);
     box(vestibule,'sign-face:'+s.id,'physical-wayfinding',M['sign'+n],front,[s.width,s.height,.003],basis,{normalizedUv:true,signFace:true});
   }
-  const report={meshNames:names,localBounds:{x0:-12,x1:16,z0:-.2,z1:17.1},floorDatum:0,eaves:court.eaves,ridge:court.ridge,plantingBands:court.plantingBands,
+  const report={meshNames:names,localBounds:{x0:-12,x1:16,z0:-.2,z1:changing.z1+.1},floorDatum:0,eaves:court.eaves,ridge:court.ridge,plantingBands:court.plantingBands,
     clearLane:{...court.clearLane,width:court.clearLane.x1-court.clearLane.x0},doors:court.doors,changing:court.changing,
     mouthPolicy:'Two centred greenhouse end doors followed by a separate ventilated changing room and pool door.',
     facadeAdded:true,rearDoorAdded:true,plantsAdded:true,apparitionsAdded:false,glassPolicy:'MASK sparse wet glass on two exterior long faces; no BLEND.',

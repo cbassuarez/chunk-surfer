@@ -169,19 +169,19 @@ export function createRadioContactAudio({getAudio=()=>null,getControlAudio=null,
     }catch(_){}
     return false;
   }
-  async function egg({onComplete}={}){
+  async function egg({onComplete,quiet=false}={}){
     if(eggStarted||eggRequested||!audio())return false;
     eggRequested=true;const token=epoch;
     const ready=await warm();
     if(!ready||token!==epoch||disposed||paused||protectedNow()||!audio()||token!==epoch){
       if(token===epoch)eggRequested=false;return false;
     }
-    const voice=buildVoice({buffer:decoded,...RADIO_CONTACT_EGG,onComplete,isEgg:true});
+    const voice=buildVoice({buffer:decoded,...RADIO_CONTACT_EGG,gain:quiet?0:RADIO_CONTACT_EGG.gain,onComplete,isEgg:true});
     eggRequested=false;
     if(!voice)return false;
     eggVoice=voice;eggStarted=true;return true;
   }
-  function stopEgg(){invalidate();if(eggVoice)disconnect(eggVoice,{cancel:true});}
+  function stopEgg({retry=false}={}){invalidate();if(eggVoice)disconnect(eggVoice,{cancel:true});if(retry&&!completed)eggStarted=false;}
   function pause(){if(disposed||paused)return false;paused=true;invalidate();clear();return true;}
   function resume(){if(disposed||!paused)return false;paused=false;return true;}
   function stop(){if(disposed)return;disposed=true;invalidate();clear();decoded=null;controlBuffer=null;context=null;destination=null;}

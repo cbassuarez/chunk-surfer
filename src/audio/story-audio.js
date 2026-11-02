@@ -1,4 +1,4 @@
-import {createStaticTexture,STATIC_TEXTURE} from './static-texture.js';
+import {createFrontEndStatic} from './front-end-static.js';
 import { assetUrl } from '../platform/paths.js';
 import { runtimeParams } from '../platform/launch.js';
 import { authoredCue } from './authored-cues.js';
@@ -121,6 +121,7 @@ let openingBed = null; // { src, hp, lp, gain, startedAt, downbeatAt, stopping, 
 let openingBedWanted = false, openingBedGeneration = 0;
 let typing = null;     // { gain, hp, lp, active, timer, targetGain }
 let menuHiss = null;
+let menuStaticOptions = null;
 
 export function storyAudioInit(audioCtx, destination, buses = {}) {
   if (ctx && ctx !== audioCtx) {
@@ -136,6 +137,13 @@ export function storyAudioInit(audioCtx, destination, buses = {}) {
     sfx: buses.sfx || destination,
     music: buses.music || destination,
     menu: buses.menu || buses.sfx || destination,
+  };
+  // The optional static bus is post-limiter/post-programme, shared with the
+  // ending's carrier. Legacy callers retain their already-scaled menu bus.
+  menuStaticOptions = {
+    context:ctx,destination:buses.static||audioBuses.menu,
+    getSfxLevel:buses.static?(buses.getStaticSfxLevel||(()=>1)):(()=>1),
+    getHeld:buses.getStaticHeld||(()=>false),
   };
   configureUiCues({context:ctx,destination:audioBuses.menu});
 }
@@ -257,7 +265,9 @@ export function startSoundtrack({ track = 'title', gain = null, fade = 2.8, at =
   const startAt = Math.max(now, Number.isFinite(Number(at)) ? Number(at) : now);
   const src = ctx.createBufferSource();
   src.buffer = buf;
-  src.loop = true;
+  // The release credits use one performance. Pausing to read its source record
+  // may outlast the piece; that is quiet, rather than an audible loop splice.
+  src.loop = track !== 'credits';
   if (openingOwner !== null && openingOwner === openingOverture?.epoch) {
     src.loopStart = openingOverture.sourceOffsetSeconds;
     src.loopEnd = buf.duration;
@@ -945,12 +955,19 @@ export const confirm = () => { click({ freq: 900, gain: 0.055, dur: 0.03 }); cli
 // loop supplies the constant transport hiss; selection and confirmation are
 // short, mechanical head/relay sounds rather than arcade bleeps.
 export function startMenuHiss(){
-  if(!ctx||!bus||menuHiss)return;
-  menuHiss=createStaticTexture({context:ctx,destination:outBus('menu'),gain:STATIC_TEXTURE.menuGain});
+  if(!ctx||!bus)return false;
+  if(!menuHiss)menuHiss=createFrontEndStatic(menuStaticOptions);
+  return menuHiss?.start()||false;
+}
+export function adoptMenuHiss(carrier){
+  if(!ctx||!bus||!carrier)return false;
+  if(!menuHiss)menuHiss=createFrontEndStatic(menuStaticOptions);
+  return menuHiss?.adopt(carrier)||false;
 }
 export function stopMenuHiss(){
   if(!menuHiss)return;const owner=menuHiss;menuHiss=null;owner.stop({fade:.12});
 }
+export function menuHissSnapshot(){return menuHiss?.snapshot()||{active:false,adopted:false,carrier:null};}
 // Shared semantic controls. Results are emitted only after an action succeeds.
 export function menuMove(options){ return uiCue(UI_CUE.MOVE,options); }
 export function menuConfirm(options){ return uiCue(UI_CUE.CONFIRM,options); }
@@ -963,12 +980,12 @@ export function menuPatch(options){ return uiCue(UI_CUE.PATCH,{profile:'patch',.
 export function menuUnpatch(options){ return uiCue(UI_CUE.UNPATCH,{profile:'patch',...options}); }
 export function menuLatch(on,options){ return uiCue(on?UI_CUE.ON:UI_CUE.OFF,options); }
 
-export function stopAll() {
+export function stopAll({preserveMenuHiss=false}={}) {
   stopTyping({ fade: 0.04 });
   stopTapeHiss({ fade: 0.2 });
   stopOpeningSceneBed({ fade: 0.2 });
   stopBoothTone({ fade: 0.4 });
   stopRain({ fade: 0.4 });
   fadeSoundtrack({ fade: 0.5 });
-  stopMenuHiss();
+  if(!preserveMenuHiss)stopMenuHiss();
 }

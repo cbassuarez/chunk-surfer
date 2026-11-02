@@ -7,9 +7,13 @@ export const OPENING_VEHICLE = Object.freeze({
   wheels: Object.freeze({ front: -1.3, rear: 1.535, track: 1.66, radius: .33 }),
   bodyBox: Object.freeze({ min: Object.freeze([-.985,0,-2.272]), max: Object.freeze([.985,2.024,2.546]) }),
   eye: Object.freeze([.48, 1.65, .20]),
-  exitEye: Object.freeze([1.8,1.62,-.1]),
+  // Ahead of the hinge, clear of the closing leaf's actual swept sector.
+  exitEye: Object.freeze([1.8,1.62,-.95]),
   doorHinge: Object.freeze([.945,.64,-.62]),
-  exitSeconds: 2.65,
+  exitSeconds: 3.15,
+  exitRevision: 2,
+  exitStepAt: 1.55,
+  exitDoorCloseAt: 2.3,
 });
 const clamp = n => Math.max(0, Math.min(1, Number(n) || 0));
 const smooth = n => { const t = clamp(n); return t * t * (3 - 2 * t); };
@@ -53,14 +57,30 @@ export function openingVehicleInstances(anchor, { doorOpen = 0, drive = null } =
     x: pivot.x, y: anchor.y, z: pivot.z, structural: true, zone: anchor.zone, cullRadius: 2 });
   return instances;
 }
-export function openingVehicleExitFrame(anchor, elapsed = 0, { reducedMotion = false, startYaw = anchor?.yaw || 0, startPitch=-.04 } = {}) {
-  const t = clamp(elapsed / OPENING_VEHICLE.exitSeconds), doorOpen = smooth(elapsed/.55)*(1-smooth((elapsed-1.65)/.65)), step = smooth((elapsed-.45)/1.1);
-  const eye = OPENING_VEHICLE.eye.map((n, i) => n+(OPENING_VEHICLE.exitEye[i]-n)*step);
-  eye[1] += reducedMotion ? 0 : Math.sin(step*Math.PI)*.24;
+export function openingVehicleExitFrame(anchor, elapsed = 0, { reducedMotion = false, startYaw = anchor?.yaw || 0, startPitch=-.04, lookYaw=0, lookPitch=0 } = {}) {
+  const t = clamp(elapsed / OPENING_VEHICLE.exitSeconds), doorOpen = smooth(elapsed/.55)*(1-smooth((elapsed-1.65)/.65));
+  // Open the actual leaf first. Then lean through its opening, plant a foot
+  // outside the sill, and rise onto the street. A single horizontal slide with
+  // an upward sine made this read as a camera being lifted out of the cabin.
+  const beats = [
+    {at:0,eye:OPENING_VEHICLE.eye},
+    {at:.40,eye:OPENING_VEHICLE.eye},
+    {at:.85,eye:[.69,1.55,.31]},
+    {at:OPENING_VEHICLE.exitStepAt,eye:[1.35,1.45,-.55]},
+    {at:2.15,eye:OPENING_VEHICLE.exitEye},
+  ];
+  const next = beats.findIndex(beat=>elapsed<beat.at), end = next<0?beats.length-1:next,
+    a = beats[Math.max(0,end-1)], b = beats[end], u = b.at>a.at?smooth((elapsed-a.at)/(b.at-a.at)):1;
+  const eye = a.eye.map((n,i)=>n+(b.eye[i]-n)*u);
+  if(reducedMotion)eye[1]=OPENING_VEHICLE.eye[1]+(OPENING_VEHICLE.exitEye[1]-OPENING_VEHICLE.eye[1])*smooth((elapsed-.4)/1.75);
   const targetYaw = anchor.yaw + Math.PI*.80, turn = Math.atan2(Math.sin(targetYaw-startYaw), Math.cos(targetYaw-startYaw));
   return { progress: t, doorOpen, eye: openingVehiclePoint(anchor, eye),
-    yaw: startYaw+turn*smooth((elapsed-.2)/1.4), pitch: startPitch+(-.04-startPitch)*smooth(elapsed/.45)-(reducedMotion?0:Math.sin(step*Math.PI)*.11),
-    fade: smooth((elapsed-1.95)/.45), done: t >= 1 };
+    yaw: startYaw+turn*smooth((elapsed-.2)/1.95)+lookYaw,
+    pitch:Math.max(-1.2,Math.min(.75,startPitch+(-.04-startPitch)*smooth(elapsed/.65)+lookPitch)),
+    exitBeat:elapsed<.4?'door':elapsed<.85?'lean':elapsed<OPENING_VEHICLE.exitStepAt?'sill':elapsed<2.15?'stand':elapsed<2.65?'outside':'cut',
+    // The player sees the settled street and closing door before the existing
+    // overture edit. Black covers only that edit, never the physical egress.
+    fade:smooth((elapsed-2.65)/.35),done:t>=1 };
 }
 export function openingVehiclePending(save = {}, { debugSpawn = false, skipTutorial = false } = {}) {
   return !debugSpawn && !skipTutorial && save.flags?.['opening.vehicle.pending'] === true

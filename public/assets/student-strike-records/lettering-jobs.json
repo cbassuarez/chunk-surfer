@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "pageSize": 2048,
+  "jobs": [
+    {
+      "id": "student-strike-ellery-recovery",
+      "lines": [
+        "ELLERY / INTERNAL RETAINED COPY",
+        "RECOVERY / EXTERNAL REGISTER",
+        "",
+        "SITE: THIRD-FLOOR CHAMBER ROOM",
+        "SUBJECT: THE SURFER",
+        "BODY REMOVED FROM THIS ROOM",
+        "",
+        "Internal incident sheet: RECOVERED.",
+        "External register: retain MISSING.",
+        "Do not circulate an amended entry",
+        "without the Director’s authorisation.",
+        "",
+        "MEDICAL FINDING: NOT ATTACHED",
+        "",
+        "ATTACHED: STUDENTS’ NOTICE",
+        "Acknowledge that his body was",
+        "recovered here. Until then, we will",
+        "not rehearse or perform. We will",
+        "not play over what happened.",
+        "",
+        "RECEIVED / NO REPLY FILED"
+      ],
+      "widthM": 0.21,
+      "heightM": 0.297,
+      "category": "record",
+      "font": "NimbusMonoPS-Regular.otf",
+      "process": "typed retained office paper",
+      "polarity": "dark-on-light",
+      "rasterWidthPx": 960,
+      "rasterHeightPx": 1358,
+      "capHeightM": 0.0036,
+      "palette": {
+        "ground": [
+          0.84,
+          0.82,
+          0.75
+        ],
+        "ink": [
+          0.035,
+          0.037,
+          0.032
+        ]
+      },
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "handled",
+        "exposure": "interior"
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "handled",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    },
+    {
+      "id": "student-strike-tower-recovery",
+      "lines": [
+        "ELLERY / SITE HANDOVER COPY",
+        "RECOVERY TRANSFER / TOWER",
+        "",
+        "SITE: TOWER / RINGING ROOM",
+        "SUBJECTS: STUDENTS",
+        "IDENTIFICATIONS RETAINED",
+        "",
+        "Students’ bodies removed from",
+        "the ringing room. Filed with the",
+        "later Ellery recoveries, separately",
+        "from the Surfer’s earlier recovery.",
+        "",
+        "Names checked against the register.",
+        "Refusal to rehearse is not",
+        "a medical finding.",
+        "",
+        "CAUSE OF DEATH: NOT ENTERED",
+        "REHEARSAL STATUS: SUSPENDED",
+        "",
+        "Keep with the room handover.",
+        "Do not substitute the public",
+        "missing-person register."
+      ],
+      "widthM": 0.21,
+      "heightM": 0.297,
+      "category": "record",
+      "font": "NimbusMonoPS-Regular.otf",
+      "process": "typed retained office paper",
+      "polarity": "dark-on-light",
+      "rasterWidthPx": 960,
+      "rasterHeightPx": 1358,
+      "capHeightM": 0.0036,
+      "palette": {
+        "ground": [
+          0.84,
+          0.82,
+          0.75
+        ],
+        "ink": [
+          0.035,
+          0.037,
+          0.032
+        ]
+      },
+      "finishSupport": {
+        "kind": "carrier",
+        "edgeWear": true,
+        "contact": "handled",
+        "exposure": "interior"
+      },
+      "finish": {
+        "substrate": "paper stock",
+        "coating": "absorbed print or pen ink",
+        "roughness": 0.88,
+        "inkRoughness": 0.82,
+        "fieldM": 0.095,
+        "variation": 0.027,
+        "roughnessVariation": 0.035,
+        "microReliefM": 0.000004,
+        "deposit": 0.025,
+        "edgeLoss": 0,
+        "sequence": [
+          "paper fibre direction survives printing",
+          "gentle stock tone varies across the sheet",
+          "actual handled lower region has restrained contact polishing"
+        ],
+        "limits": [
+          "no added foxing, water damage or yellow vignette without a supported cause"
+        ],
+        "version": 1,
+        "profile": "paper-print",
+        "support": {
+          "kind": "carrier",
+          "edgeWear": true,
+          "contact": "handled",
+          "exposure": "interior"
+        },
+        "fabricationReliefM": 0.000007,
+        "fabricationReliefAssumption": "Authored thin applied pigment relief; not missing substrate",
+        "coverageInvariant": "identical pigment bytes; finish never changes glyph coverage",
+        "source": "tools/chunk_surfer/lettering/finish-profiles.mjs",
+        "basis": "NPS Preservation Brief 25; CCI metal/wood guidance; project condition study; authored conservative material inference"
+      },
+      "reliefM": 0.000007
+    }
+  ]
+}

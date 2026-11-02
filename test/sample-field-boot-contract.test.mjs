@@ -24,5 +24,6 @@ test('returning to title revokes and silences sample playback', () => {
   const block=slice('function returnToTitle','function showReturnReport');
   assert.match(block,/sampleFieldEnabled=false/);
   assert.match(block,/silenceSampleField\(\)/);
-  assert.match(block,/STORY\.stopAll\(\)/);
+  assert.match(block,/STORY\.stopAll\(\{preserveMenuHiss:true\}\)/,
+    'the story stops while the continuous title static retains its owner');
 });

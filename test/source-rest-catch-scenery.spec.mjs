@@ -5,7 +5,7 @@ import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
 import {sourceRestWeather} from '../src/game/source-rest-weather.js';
 import {sourceRestWeatherCue} from '../src/game/source-rest-weather-score.js';
 import {sourceRestGeometryLibrary} from '../src/render/source-rest-models.js';
-import {SOURCE_REST_HARPSICHORD,SOURCE_REST_HARPSICHORD_PARTS,sourceRestHarpsichordGeometryLibrary} from '../src/render/source-rest-harpsichord-models.js';
+import {SOURCE_REST_HARPSICHORD,SOURCE_REST_HARPSICHORD_PARTS,sourceRestHarpsichordGeometryLibrary,sourceRestHarpsichordSeatGeometry} from '../src/render/source-rest-harpsichord-models.js';
 import {sourceRestHarpsichordBoardGeometry,sourceRestHarpsichordBoardLocalToWorld} from '../src/render/source-rest-harpsichord-board.js';
 import {sourceContinuationRenderFrame} from '../src/render/source-continuation-renderer.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
@@ -14,7 +14,8 @@ import {continuationSupportAt,continuationSolids,continuationSurfaces} from '../
 import {portalTransformPoint} from '../src/render/source-mesh-portals.js';
 
 const seat=SOURCE_REST_SEATS[1],first=SOURCE_REST_SEATS[0],models={...sourceRestGeometryLibrary(),...sourceRestHarpsichordGeometryLibrary(),
-  'rest-harpsichord-soundboard':sourceRestHarpsichordBoardGeometry()};
+  'rest-harpsichord-soundboard':sourceRestHarpsichordBoardGeometry(),
+  'rest-harpsichord-seat-upholstery':sourceRestHarpsichordSeatGeometry().upholstery};
 const fixture=()=>({status:'active',phase:seat.phase,chartId:seat.chartId,level:seat.level,feet:seat.feet,...seat.approach,
   sourceRestView:{seatId:seat.id,mode:'seated',progress:1,degradation:.3,musicTime:12,audibleSeconds:12,musicSignal:.4,
     weatherCue:sourceRestWeatherCue({active:true,seated:true,progress:.3,musicTime:12,audibleSeconds:12,stormAge:-1})}});
@@ -33,7 +34,7 @@ function actualTriangles(v){return v.place.flatMap(part=>{
 
 test('the bounded real instrument and clipped soundboard use resident native meshes without new rooms or floors',()=>{
   const s=fixture(),v=sourceRestCatchScenery(s);
-  assert.equal(v.treatment,'escherian-harpsichord-case');assert.equal(v.place.length,SOURCE_REST_HARPSICHORD_PARTS.length+1);
+  assert.equal(v.treatment,'escherian-harpsichord-case');assert.equal(v.place.length,SOURCE_REST_HARPSICHORD_PARTS.length+2);
   assert.equal(SOURCE_REST_HARPSICHORD_PARTS.length,SOURCE_REST_HARPSICHORD.maxParts);
   assert.ok(v.place.length+v.lamps.length*2<=40);
   assert.equal(v.upholstery.enabled,false);assert.equal(v.carpet.existingFloor,true);
@@ -57,7 +58,7 @@ test('original support queries and the central approach remain intact rather tha
   }
   for(const p of v.lamps)for(const dx of[-.12,.12])for(const dz of[-.12,.12])assert.ok(continuationSupportAt(p.x+dx,p.z+dz,s));
   assert.equal(JSON.stringify({surfaces:continuationSurfaces(s),solids:continuationSolids(s)}),before);
-  const triangles=actualTriangles(v);
+  const triangles=actualTriangles({...v,place:v.place.filter(part=>part.casePart!=='seat-upholstery')});
   for(const x of[-.35,0,.35])for(const y of[.12,.95,1.85]){
     const a=sourceRestHarpsichordBoardLocalToWorld({x,y,z:1.8}),b=sourceRestHarpsichordBoardLocalToWorld({x,y,z:-.3});
     for(const t of triangles)assert.equal(segmentHitsTriangle(Object.values(a),Object.values(b),t.triangle),false,`${t.id} blocks sampled central approach`);
@@ -68,7 +69,7 @@ test('representative inner Return rays clear actual curved and batched instrumen
   const v=sourceRestCatchScenery(fixture()),aperture=sourceRestReturnConfig(seat).sourceAperture;
   const triangles=actualTriangles(v),centre=[aperture.x,aperture.y,aperture.z],targets=[centre,...[-1,1].map(sign=>centre.map((n,k)=>n+aperture.right[k]*aperture.halfWidth*.35*sign))];
   for(const side of[-.18,0,.18]){
-    const eye=[seat.x+Math.cos(seat.view.yaw)*side,seat.feet+1.04,seat.z+Math.sin(seat.view.yaw)*side];
+    const eye=[seat.x+Math.cos(seat.view.yaw)*side,seat.feet+1.27,seat.z+Math.sin(seat.view.yaw)*side];
     for(const target of targets)for(const t of triangles)assert.equal(segmentHitsTriangle(eye,target,t.triangle),false,`${t.id} blocks inner Return view`);
   }
 });
@@ -82,7 +83,8 @@ test('weather is the exact standard Source particle field rigidly placed around 
   const mapped=p=>{const forward=first.x-p[0],right=first.z-p[2];return[seat.x+f[0]*forward+r[0]*right,p[1]+seat.feet-first.feet,seat.z+f[1]*forward+r[1]*right];};
   for(const name of['streaks','roof'])for(let i=0;i<source[name].length;i++)for(const end of['a','b'])target[name][i][end].forEach((v,k)=>close(v,mapped(source[name][i][end])[k]));
   close(target.time,source.time);close(target.gust,source.gust);assert.deepEqual(target.cue,source.cue);
-  assert.ok(Math.abs(physicalYaw-seat.view.yaw)>.3,'turning the default view does not rotate the physical roof or weather');
+  assert.deepEqual(sourceRestCatchWeather({...s,sourceRestView:{...s.sourceRestView,look:{yaw:seat.view.yaw+.7,pitch:.3}}}),target,
+    'turning the player\'s look cannot rotate the physical roof or weather');
   assert.ok(target.streaks.every(p=>Math.hypot(p.a[0]-seat.x,p.a[2]-seat.z)>2.5));
   assert.equal(JSON.stringify(s),before);
 });
@@ -101,9 +103,13 @@ test('quiet weather stays quiet, supplied clocks are deterministic and reduced m
   assert.equal(v.flood,null);
 });
 
-test('the listening construction belongs only to the existing top Catch refuge and never mutates state',()=>{
+test('the instrument spans all Catch levels while its supported resting origin stays on the earned refuge',()=>{
   const s=fixture(),before=JSON.stringify(s);
-  for(const patch of[{phase:'wrong-return'},{chartId:1},{level:1},{feet:2.4}])assert.equal(sourceRestCatchScenery({...s,...patch}),null);
-  assert.equal(sourceRestCatchWeather({...s,level:1}),null);
+  for(const patch of[{phase:'wrong-return'},{chartId:1}])assert.equal(sourceRestCatchScenery({...s,...patch}),null);
+  for(const [level,feet]of[[0,8.4],[1,2.4],[2,-4.8],[3,-12.6]]){
+    const view=sourceRestCatchScenery({...s,level,feet});assert.ok(view);assert.equal(view.harpsichord.seatLevel,seat.level);
+    assert.equal(view.harpsichord.architecturalCourses,122);assert.ok(view.place.every(part=>part.level===seat.level));
+    assert.ok(sourceRestCatchWeather({...s,level,feet}));assert.deepEqual(view.place.map(part=>part.matrix),sourceRestCatchScenery(s).place.map(part=>part.matrix));
+  }
   sourceRestCatchScenery(s);assert.equal(JSON.stringify(s),before);
 });

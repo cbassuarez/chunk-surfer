@@ -6,7 +6,7 @@ import {SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
 const seat=SOURCE_REST_SEATS.find(item=>item.phase==='catch'),center=SOURCE_CONTINUATION.catch.center;
 const yaw=Math.atan2(center.x-seat.x,seat.z-center.z),c=Math.cos(yaw),s=Math.sin(yaw);
 export const SOURCE_REST_HARPSICHORD_BOARD_FRAME=Object.freeze({
-  origin:Object.freeze({x:seat.x,y:seat.feet,z:seat.z}),yaw,
+  origin:Object.freeze({x:seat.x,y:seat.feet,z:seat.z}),yaw,level:seat.level,
   right:Object.freeze([c,0,s]),up:Object.freeze([0,1,0]),back:Object.freeze([-s,0,c]),
 });
 // Wide near keyboard end, a straight spine and an asymmetrical bent cheek

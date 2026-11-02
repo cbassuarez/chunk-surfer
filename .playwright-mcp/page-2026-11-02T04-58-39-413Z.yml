@@ -1,0 +1,20 @@
+- complementary "Local world integration review" [ref=f8e5]:
+  - strong [ref=f8e6]: DEV · silent world integration
+  - combobox "Review placement" [ref=f8e7]:
+    - option "Pre-shift map"
+    - option "Lyric · camera / extract"
+    - option "Ellery · record"
+    - option "Tower · record"
+    - option "Iona" [selected]
+    - option "Ruth"
+    - option "Denise"
+    - option "Pool · no coffee"
+    - option "Pool · coffee"
+  - button "Stage selected" [ref=f8e8]
+  - button "Show map" [ref=f8e9]
+  - button "Snapshot" [ref=f8e10]
+  - button "Save evidence" [ref=f8e11]
+  - button "Record silent" [ref=f8e12]
+  - button "Stop" [ref=f8e13]
+  - button "Pause" [ref=f8e14]
+  - status [ref=f8e15]: Explicit placement; use the ordinary game afterward.

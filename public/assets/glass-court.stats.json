@@ -37,7 +37,7 @@
     "outdoorCourts": [
       {
         "id": "west",
-        "x0": 74,
+        "x0": 75,
         "x1": 82,
         "z0": 15,
         "z1": 27
@@ -50,12 +50,13 @@
         "z1": 27
       }
     ],
-    "serviceArch": {
-      "x0": 49,
-      "x1": 74,
-      "z0": 19,
-      "z1": 22,
-      "ceiling": 4
+    "westCourtWall": {
+      "x": 74,
+      "z0": 15,
+      "z1": 27,
+      "door": {
+        "z": 23
+      }
     },
     "elleryFace": {
       "x0": 74,
@@ -112,7 +113,7 @@
       "x0": -1,
       "x1": 5,
       "z0": 12,
-      "z1": 17,
+      "z1": 16,
       "ceiling": 3.4,
       "wallThickness": 0.14
     },
@@ -120,18 +121,18 @@
       {
         "id": "changing-west",
         "x": -1,
-        "z": 14.5,
+        "z": 14,
         "width": 0.14,
-        "depth": 5,
+        "depth": 4,
         "height": 3.4,
         "kind": "wall"
       },
       {
         "id": "changing-east",
         "x": 5,
-        "z": 14.5,
+        "z": 14,
         "width": 0.14,
-        "depth": 5,
+        "depth": 4,
         "height": 3.4,
         "kind": "wall"
       },
@@ -154,18 +155,18 @@
         "kind": "wall"
       },
       {
-        "id": "changing-end-17-0",
+        "id": "changing-end-16-0",
         "x": 0,
-        "z": 17,
+        "z": 16,
         "width": 2,
         "depth": 0.14,
         "height": 3.4,
         "kind": "wall"
       },
       {
-        "id": "changing-end-17-1",
+        "id": "changing-end-16-1",
         "x": 4,
-        "z": 17,
+        "z": 16,
         "width": 2,
         "depth": 0.14,
         "height": 3.4,
@@ -187,14 +188,14 @@
       },
       "D2": {
         "x": 2,
-        "z": 17,
+        "z": 16,
         "x0": 1,
         "x1": 3
       }
     },
     "counter": {
       "x": 4.45,
-      "z": 14.5,
+      "z": 14,
       "width": 0.9,
       "depth": 3.1,
       "height": 1.06
@@ -283,7 +284,7 @@
         "copy": "CHANGING / SHOWERS",
         "x": 0.1,
         "y": 1.65,
-        "z": 11.9,
+        "z": 11.86,
         "width": 1,
         "height": 0.3,
         "normal": [
@@ -297,7 +298,7 @@
         "copy": "POOL / WET DECK",
         "x": 4,
         "y": 1.65,
-        "z": 16.9,
+        "z": 15.9,
         "width": 0.85,
         "height": 0.3,
         "normal": [
@@ -431,7 +432,7 @@
     "x0": -12,
     "x1": 16,
     "z0": -0.2,
-    "z1": 17.1
+    "z1": 16.1
   },
   "floorDatum": 0,
   "eaves": 4,
@@ -476,7 +477,7 @@
     },
     "D2": {
       "x": 2,
-      "z": 17,
+      "z": 16,
       "x0": 1,
       "x1": 3
     }
@@ -485,7 +486,7 @@
     "x0": -1,
     "x1": 5,
     "z0": 12,
-    "z1": 17,
+    "z1": 16,
     "ceiling": 3.4,
     "wallThickness": 0.14
   },
@@ -549,7 +550,7 @@
       ]
     }
   ],
-  "windowLeavesOmitted": 0,
+  "windowLeavesOmitted": 1,
   "lamps": [
     {
       "id": "glass-court-fluorescent-2",
@@ -654,8 +655,8 @@
   "maximumBytes": 5242880,
   "sourceSha256": {
     "tools/chunk_surfer/build-glass-court.mjs": "a5abae7566bedcb3105198efb44a4bde683a08b1547acf6061191a5ba1c78ec1",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "e779455cf69089bb21a4f5db5edec18272964b9426e08406489189344196b18a",
-    "src/data/glass-court.js": "f7e2592d655d12f93b7a253a7b69d36202503846738c88cbbd4e7c29bd08c747",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "fba3331e0903fd7e03a715553c1ac607e6b6cf0a77371e25d8f27bfd3f9160bf",
+    "src/data/glass-court.js": "78cf4c048058233394987327b054b1b6e9f2a05a97f70fefafb9b390bbbe745a",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -663,7 +664,7 @@
     "tools/chunk_surfer/lettering/fonts/NimbusSansNarrow-Bold.otf": "6d7cec07f5a9035e208532dab35a51312aef4a7f26eb524dd614c9fcd97c3264"
   },
   "protectedAssetSha256": {
-    "public/assets/conservatory-props.glb": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
+    "public/assets/conservatory-props.glb": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
     "public/assets/conservatory-landing-fittings.glb": "6b7860a05b66c00ef789612e60df57df2e8f99fa5d4a9b5472058fdc11024200"
   },
   "meshes": {
@@ -12909,7 +12910,7 @@
           11.130619049072266
         ]
       },
-      "triangles": 11584,
+      "triangles": 11716,
       "parts": [
         {
           "id": "stem:0:0",
@@ -13784,27 +13785,6 @@
           "closed": true
         },
         {
-          "id": "broadleaf:0:3:5",
-          "role": "central-broadleaf",
-          "material": "court broadleaf deep",
-          "materialIndex": 13,
-          "startTriangle": 588,
-          "triangles": 28,
-          "bounds": {
-            "min": [
-              0.3145802617073059,
-              1.5974669456481934,
-              2.6791279315948486
-            ],
-            "max": [
-              0.6220260858535767,
-              1.9483743906021118,
-              3.009704113006592
-            ]
-          },
-          "closed": true
-        },
-        {
           "id": "broadleaf:0:3:6",
           "role": "central-broadleaf",
           "material": "court broadleaf jade",
@@ -13830,7 +13810,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 616,
+          "startTriangle": 588,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -13851,7 +13831,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 644,
+          "startTriangle": 616,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -13943,7 +13923,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 672,
+          "startTriangle": 644,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -13964,7 +13944,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 700,
+          "startTriangle": 672,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14006,7 +13986,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 728,
+          "startTriangle": 700,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14027,7 +14007,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 756,
+          "startTriangle": 728,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14069,7 +14049,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 784,
+          "startTriangle": 756,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14090,7 +14070,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 812,
+          "startTriangle": 784,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14182,7 +14162,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 840,
+          "startTriangle": 812,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14203,7 +14183,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 868,
+          "startTriangle": 840,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14245,7 +14225,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 896,
+          "startTriangle": 868,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14266,7 +14246,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 924,
+          "startTriangle": 896,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14308,7 +14288,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 952,
+          "startTriangle": 924,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14329,7 +14309,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 980,
+          "startTriangle": 952,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14421,7 +14401,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1008,
+          "startTriangle": 980,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14442,7 +14422,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1036,
+          "startTriangle": 1008,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14484,7 +14464,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1064,
+          "startTriangle": 1036,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14505,7 +14485,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1092,
+          "startTriangle": 1064,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14547,7 +14527,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1120,
+          "startTriangle": 1092,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14568,7 +14548,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1148,
+          "startTriangle": 1120,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14660,7 +14640,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1176,
+          "startTriangle": 1148,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14681,7 +14661,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1204,
+          "startTriangle": 1176,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14723,7 +14703,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1232,
+          "startTriangle": 1204,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14744,7 +14724,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1260,
+          "startTriangle": 1232,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14786,7 +14766,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1288,
+          "startTriangle": 1260,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14807,7 +14787,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1316,
+          "startTriangle": 1288,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14899,7 +14879,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1344,
+          "startTriangle": 1316,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14920,7 +14900,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1372,
+          "startTriangle": 1344,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14962,7 +14942,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1400,
+          "startTriangle": 1372,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -14983,7 +14963,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1428,
+          "startTriangle": 1400,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15025,7 +15005,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1456,
+          "startTriangle": 1428,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15046,7 +15026,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1484,
+          "startTriangle": 1456,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15138,7 +15118,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1512,
+          "startTriangle": 1484,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15159,7 +15139,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1540,
+          "startTriangle": 1512,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15201,7 +15181,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1568,
+          "startTriangle": 1540,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15222,7 +15202,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1596,
+          "startTriangle": 1568,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15264,7 +15244,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1624,
+          "startTriangle": 1596,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15285,7 +15265,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1652,
+          "startTriangle": 1624,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15377,7 +15357,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1680,
+          "startTriangle": 1652,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15398,7 +15378,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1708,
+          "startTriangle": 1680,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15440,7 +15420,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1736,
+          "startTriangle": 1708,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15461,7 +15441,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1764,
+          "startTriangle": 1736,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15503,7 +15483,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1792,
+          "startTriangle": 1764,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15524,7 +15504,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1820,
+          "startTriangle": 1792,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15616,7 +15596,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1848,
+          "startTriangle": 1820,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15637,7 +15617,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1876,
+          "startTriangle": 1848,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15679,7 +15659,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1904,
+          "startTriangle": 1876,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15700,7 +15680,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1932,
+          "startTriangle": 1904,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15742,7 +15722,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1960,
+          "startTriangle": 1932,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15763,7 +15743,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 1988,
+          "startTriangle": 1960,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15855,7 +15835,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2016,
+          "startTriangle": 1988,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15876,7 +15856,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2044,
+          "startTriangle": 2016,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15918,7 +15898,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2072,
+          "startTriangle": 2044,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15939,7 +15919,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2100,
+          "startTriangle": 2072,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -15981,7 +15961,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2128,
+          "startTriangle": 2100,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16002,7 +15982,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2156,
+          "startTriangle": 2128,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16094,7 +16074,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2184,
+          "startTriangle": 2156,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16115,7 +16095,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2212,
+          "startTriangle": 2184,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16157,7 +16137,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2240,
+          "startTriangle": 2212,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16178,7 +16158,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2268,
+          "startTriangle": 2240,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16220,7 +16200,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2296,
+          "startTriangle": 2268,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16241,7 +16221,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2324,
+          "startTriangle": 2296,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16333,7 +16313,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2352,
+          "startTriangle": 2324,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16354,7 +16334,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2380,
+          "startTriangle": 2352,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16396,7 +16376,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2408,
+          "startTriangle": 2380,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16417,7 +16397,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2436,
+          "startTriangle": 2408,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16459,7 +16439,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2464,
+          "startTriangle": 2436,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16480,7 +16460,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2492,
+          "startTriangle": 2464,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16572,7 +16552,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2520,
+          "startTriangle": 2492,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16593,7 +16573,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2548,
+          "startTriangle": 2520,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16635,7 +16615,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2576,
+          "startTriangle": 2548,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16656,7 +16636,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2604,
+          "startTriangle": 2576,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16698,7 +16678,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2632,
+          "startTriangle": 2604,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16719,7 +16699,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2660,
+          "startTriangle": 2632,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -16736,11 +16716,153 @@
           "closed": true
         },
         {
+          "id": "body-frond-petiole:0:-1",
+          "role": "central-stem",
+          "material": "court plant stems",
+          "materialIndex": 17,
+          "startTriangle": 192,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.31997746229171753,
+              1.1121352910995483,
+              2.792238235473633
+            ],
+            "max": [
+              0.6150225400924683,
+              1.1878646612167358,
+              2.957761764526367
+            ]
+          },
+          "closed": true,
+          "obb": {
+            "center": [
+              0.4675,
+              1.15,
+              2.875
+            ],
+            "size": [
+              0.016,
+              0.016,
+              0.32760494501762344
+            ],
+            "basis": [
+              [
+                -0.46574643283262324,
+                0,
+                -0.8849182223819818
+              ],
+              [
+                -0.1620704880998134,
+                0.9830854607107138,
+                0.08530025689463885
+              ],
+              [
+                0.8699502383416967,
+                0.18314741859825145,
+                -0.457868546495631
+              ]
+            ]
+          }
+        },
+        {
+          "id": "body-frond:0:-1",
+          "role": "central-broadleaf",
+          "material": "court broadleaf deep",
+          "materialIndex": 13,
+          "startTriangle": 2660,
+          "triangles": 28,
+          "bounds": {
+            "min": [
+              0.5920022130012512,
+              1.1799453496932983,
+              2.640000104904175
+            ],
+            "max": [
+              0.6234995722770691,
+              1.8202812671661377,
+              2.9600000381469727
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "body-frond-petiole:0:1",
+          "role": "central-stem",
+          "material": "court plant stems",
+          "materialIndex": 17,
+          "startTriangle": 204,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              0.3187843859195709,
+              1.1120983362197876,
+              2.9431612491607666
+            ],
+            "max": [
+              0.6162156462669373,
+              1.1879016160964966,
+              3.206838846206665
+            ]
+          },
+          "closed": true,
+          "obb": {
+            "center": [
+              0.4675,
+              1.15,
+              3.075
+            ],
+            "size": [
+              0.016,
+              0.016,
+              0.38382938918222503
+            ],
+            "basis": [
+              [
+                0.6594378183081359,
+                0,
+                -0.7517591128712748
+              ],
+              [
+                -0.1175145729939462,
+                0.9877065499154949,
+                -0.10308295876661948
+              ],
+              [
+                0.7425173997416199,
+                0.15631945257718272,
+                0.6513310524049297
+              ]
+            ]
+          }
+        },
+        {
+          "id": "body-frond:0:1",
+          "role": "central-broadleaf",
+          "material": "court broadleaf deep",
+          "materialIndex": 13,
+          "startTriangle": 2688,
+          "triangles": 28,
+          "bounds": {
+            "min": [
+              0.5920022130012512,
+              1.1799453496932983,
+              3.0399999618530273
+            ],
+            "max": [
+              0.6234995722770691,
+              1.8202812671661377,
+              3.359999895095825
+            ]
+          },
+          "closed": true
+        },
+        {
           "id": "vine:0:1:1",
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 192,
+          "startTriangle": 216,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -16811,7 +16933,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 204,
+          "startTriangle": 228,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -16882,7 +17004,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 216,
+          "startTriangle": 240,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -16953,7 +17075,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 228,
+          "startTriangle": 252,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17024,7 +17146,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 240,
+          "startTriangle": 264,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17095,7 +17217,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 252,
+          "startTriangle": 276,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17166,7 +17288,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 264,
+          "startTriangle": 288,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17237,7 +17359,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 276,
+          "startTriangle": 300,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17308,7 +17430,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 288,
+          "startTriangle": 312,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17379,7 +17501,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 300,
+          "startTriangle": 324,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17450,7 +17572,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 312,
+          "startTriangle": 336,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17521,7 +17643,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 324,
+          "startTriangle": 348,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17592,7 +17714,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 336,
+          "startTriangle": 360,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17663,7 +17785,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 348,
+          "startTriangle": 372,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17734,7 +17856,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 360,
+          "startTriangle": 384,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17805,7 +17927,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 372,
+          "startTriangle": 396,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17876,7 +17998,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 384,
+          "startTriangle": 408,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -17947,7 +18069,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 396,
+          "startTriangle": 420,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18018,7 +18140,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 408,
+          "startTriangle": 432,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18089,7 +18211,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 420,
+          "startTriangle": 444,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18160,7 +18282,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 432,
+          "startTriangle": 456,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18231,7 +18353,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 444,
+          "startTriangle": 468,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18302,7 +18424,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 456,
+          "startTriangle": 480,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18373,7 +18495,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 468,
+          "startTriangle": 492,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18444,7 +18566,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 480,
+          "startTriangle": 504,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18515,7 +18637,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 492,
+          "startTriangle": 516,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18586,7 +18708,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 504,
+          "startTriangle": 528,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18657,7 +18779,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 516,
+          "startTriangle": 540,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18728,7 +18850,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 528,
+          "startTriangle": 552,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18799,7 +18921,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 540,
+          "startTriangle": 564,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18870,7 +18992,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 552,
+          "startTriangle": 576,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -18941,7 +19063,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 564,
+          "startTriangle": 588,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19012,7 +19134,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 576,
+          "startTriangle": 600,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19083,7 +19205,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 588,
+          "startTriangle": 612,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19154,7 +19276,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 600,
+          "startTriangle": 624,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19225,7 +19347,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 612,
+          "startTriangle": 636,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19296,7 +19418,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 624,
+          "startTriangle": 648,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19367,7 +19489,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 636,
+          "startTriangle": 660,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19438,7 +19560,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 648,
+          "startTriangle": 672,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19509,7 +19631,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 660,
+          "startTriangle": 684,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19580,7 +19702,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 672,
+          "startTriangle": 696,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19651,7 +19773,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 684,
+          "startTriangle": 708,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19722,7 +19844,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 696,
+          "startTriangle": 720,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19793,7 +19915,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 708,
+          "startTriangle": 732,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19864,7 +19986,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 720,
+          "startTriangle": 744,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -19935,7 +20057,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 732,
+          "startTriangle": 756,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20006,7 +20128,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 744,
+          "startTriangle": 768,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20077,7 +20199,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 756,
+          "startTriangle": 780,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20148,7 +20270,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 768,
+          "startTriangle": 792,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20219,7 +20341,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 780,
+          "startTriangle": 804,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20290,7 +20412,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2688,
+          "startTriangle": 2716,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20311,7 +20433,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2716,
+          "startTriangle": 2744,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20353,7 +20475,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2744,
+          "startTriangle": 2772,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20374,7 +20496,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2772,
+          "startTriangle": 2800,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20416,7 +20538,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2800,
+          "startTriangle": 2828,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20437,7 +20559,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2828,
+          "startTriangle": 2856,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20458,7 +20580,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 792,
+          "startTriangle": 816,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20529,7 +20651,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2856,
+          "startTriangle": 2884,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20550,7 +20672,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2884,
+          "startTriangle": 2912,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20592,7 +20714,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2912,
+          "startTriangle": 2940,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20613,7 +20735,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2940,
+          "startTriangle": 2968,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20655,7 +20777,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2968,
+          "startTriangle": 2996,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20676,7 +20798,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 2996,
+          "startTriangle": 3024,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20697,7 +20819,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 804,
+          "startTriangle": 828,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -20768,7 +20890,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3024,
+          "startTriangle": 3052,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20789,7 +20911,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3052,
+          "startTriangle": 3080,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20831,7 +20953,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3080,
+          "startTriangle": 3108,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20852,7 +20974,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3108,
+          "startTriangle": 3136,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20894,7 +21016,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3136,
+          "startTriangle": 3164,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20915,7 +21037,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3164,
+          "startTriangle": 3192,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -20936,7 +21058,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 816,
+          "startTriangle": 840,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -21007,7 +21129,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3192,
+          "startTriangle": 3220,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21028,7 +21150,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3220,
+          "startTriangle": 3248,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21070,7 +21192,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3248,
+          "startTriangle": 3276,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21091,7 +21213,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3276,
+          "startTriangle": 3304,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21133,7 +21255,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3304,
+          "startTriangle": 3332,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21154,7 +21276,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3332,
+          "startTriangle": 3360,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21175,7 +21297,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 828,
+          "startTriangle": 852,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -21246,7 +21368,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3360,
+          "startTriangle": 3388,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21267,7 +21389,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3388,
+          "startTriangle": 3416,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21309,7 +21431,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3416,
+          "startTriangle": 3444,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21330,7 +21452,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3444,
+          "startTriangle": 3472,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21372,7 +21494,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3472,
+          "startTriangle": 3500,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21393,7 +21515,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3500,
+          "startTriangle": 3528,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21414,7 +21536,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 840,
+          "startTriangle": 864,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -21485,7 +21607,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3528,
+          "startTriangle": 3556,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21506,7 +21628,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3556,
+          "startTriangle": 3584,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21548,7 +21670,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3584,
+          "startTriangle": 3612,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21569,7 +21691,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3612,
+          "startTriangle": 3640,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21611,7 +21733,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3640,
+          "startTriangle": 3668,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21632,7 +21754,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3668,
+          "startTriangle": 3696,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21653,7 +21775,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 852,
+          "startTriangle": 876,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -21724,7 +21846,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3696,
+          "startTriangle": 3724,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21745,7 +21867,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3724,
+          "startTriangle": 3752,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21787,7 +21909,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3752,
+          "startTriangle": 3780,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21808,7 +21930,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3780,
+          "startTriangle": 3808,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21850,7 +21972,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3808,
+          "startTriangle": 3836,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21871,7 +21993,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3836,
+          "startTriangle": 3864,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21892,7 +22014,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 864,
+          "startTriangle": 888,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -21963,7 +22085,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3864,
+          "startTriangle": 3892,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -21984,7 +22106,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3892,
+          "startTriangle": 3920,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22026,7 +22148,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3920,
+          "startTriangle": 3948,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22047,7 +22169,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3948,
+          "startTriangle": 3976,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22089,7 +22211,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 3976,
+          "startTriangle": 4004,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22110,7 +22232,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4004,
+          "startTriangle": 4032,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22131,7 +22253,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 876,
+          "startTriangle": 900,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -22202,7 +22324,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4032,
+          "startTriangle": 4060,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22223,7 +22345,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4060,
+          "startTriangle": 4088,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22265,7 +22387,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4088,
+          "startTriangle": 4116,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22286,7 +22408,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4116,
+          "startTriangle": 4144,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22328,7 +22450,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4144,
+          "startTriangle": 4172,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22349,7 +22471,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4172,
+          "startTriangle": 4200,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22370,7 +22492,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 888,
+          "startTriangle": 912,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -22441,7 +22563,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4200,
+          "startTriangle": 4228,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22462,7 +22584,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4228,
+          "startTriangle": 4256,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22504,7 +22626,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4256,
+          "startTriangle": 4284,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22525,7 +22647,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4284,
+          "startTriangle": 4312,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22567,7 +22689,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4312,
+          "startTriangle": 4340,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22588,7 +22710,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4340,
+          "startTriangle": 4368,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22609,7 +22731,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 900,
+          "startTriangle": 924,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -22680,7 +22802,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4368,
+          "startTriangle": 4396,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22701,7 +22823,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4396,
+          "startTriangle": 4424,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22743,7 +22865,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4424,
+          "startTriangle": 4452,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22764,7 +22886,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4452,
+          "startTriangle": 4480,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22806,7 +22928,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4480,
+          "startTriangle": 4508,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22827,7 +22949,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4508,
+          "startTriangle": 4536,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22848,7 +22970,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 912,
+          "startTriangle": 936,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -22919,7 +23041,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4536,
+          "startTriangle": 4564,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22940,7 +23062,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4564,
+          "startTriangle": 4592,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -22982,7 +23104,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4592,
+          "startTriangle": 4620,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23003,7 +23125,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4620,
+          "startTriangle": 4648,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23045,7 +23167,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4648,
+          "startTriangle": 4676,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23066,7 +23188,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4676,
+          "startTriangle": 4704,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23087,7 +23209,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 924,
+          "startTriangle": 948,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -23158,7 +23280,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4704,
+          "startTriangle": 4732,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23179,7 +23301,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4732,
+          "startTriangle": 4760,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23221,7 +23343,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4760,
+          "startTriangle": 4788,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23242,7 +23364,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4788,
+          "startTriangle": 4816,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23284,7 +23406,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4816,
+          "startTriangle": 4844,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23305,7 +23427,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4844,
+          "startTriangle": 4872,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23326,7 +23448,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 936,
+          "startTriangle": 960,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -23397,7 +23519,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4872,
+          "startTriangle": 4900,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23418,7 +23540,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4900,
+          "startTriangle": 4928,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23460,7 +23582,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4928,
+          "startTriangle": 4956,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23481,7 +23603,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4956,
+          "startTriangle": 4984,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23523,7 +23645,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 4984,
+          "startTriangle": 5012,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23544,7 +23666,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5012,
+          "startTriangle": 5040,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23565,7 +23687,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 948,
+          "startTriangle": 972,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -23636,7 +23758,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5040,
+          "startTriangle": 5068,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23657,7 +23779,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5068,
+          "startTriangle": 5096,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23699,7 +23821,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5096,
+          "startTriangle": 5124,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23720,7 +23842,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5124,
+          "startTriangle": 5152,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23762,7 +23884,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5152,
+          "startTriangle": 5180,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23783,7 +23905,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5180,
+          "startTriangle": 5208,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23804,7 +23926,7 @@
           "role": "central-stem",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 960,
+          "startTriangle": 984,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -23875,7 +23997,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5208,
+          "startTriangle": 5236,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23896,7 +24018,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5236,
+          "startTriangle": 5264,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23938,7 +24060,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5264,
+          "startTriangle": 5292,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -23959,7 +24081,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5292,
+          "startTriangle": 5320,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -24001,7 +24123,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5320,
+          "startTriangle": 5348,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -24022,7 +24144,7 @@
           "role": "central-broadleaf",
           "material": "court broadleaf deep",
           "materialIndex": 13,
-          "startTriangle": 5348,
+          "startTriangle": 5376,
           "triangles": 28,
           "bounds": {
             "min": [
@@ -24039,11 +24161,153 @@
           "closed": true
         },
         {
+          "id": "body-frond-petiole:1:-1",
+          "role": "central-stem",
+          "material": "court plant stems",
+          "materialIndex": 17,
+          "startTriangle": 996,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              3.3883519172668457,
+              1.1121716499328613,
+              8.791999816894531
+            ],
+            "max": [
+              3.6766481399536133,
+              1.1878284215927124,
+              8.807999610900879
+            ]
+          },
+          "closed": true,
+          "obb": {
+            "center": [
+              3.5324999999999998,
+              1.15,
+              8.8
+            ],
+            "size": [
+              0.016,
+              0.016,
+              0.2912473175842137
+            ],
+            "basis": [
+              [
+                0,
+                0,
+                1
+              ],
+              [
+                0.20601048104984154,
+                0.9785497849867489,
+                0
+              ],
+              [
+                -0.9785497849867489,
+                0.20601048104984154,
+                0
+              ]
+            ]
+          }
+        },
+        {
+          "id": "body-frond:1:-1",
+          "role": "central-broadleaf",
+          "material": "court broadleaf deep",
+          "materialIndex": 13,
+          "startTriangle": 5404,
+          "triangles": 28,
+          "bounds": {
+            "min": [
+              3.376500368118286,
+              1.1799453496932983,
+              8.640000343322754
+            ],
+            "max": [
+              3.4079978466033936,
+              1.8202812671661377,
+              8.960000038146973
+            ]
+          },
+          "closed": true
+        },
+        {
+          "id": "body-frond-petiole:1:1",
+          "role": "central-stem",
+          "material": "court plant stems",
+          "materialIndex": 17,
+          "startTriangle": 1008,
+          "triangles": 12,
+          "bounds": {
+            "min": [
+              3.3829216957092285,
+              1.1120589971542358,
+              8.794568061828613
+            ],
+            "max": [
+              3.6820783615112305,
+              1.1879409551620483,
+              9.205431938171387
+            ]
+          },
+          "closed": true,
+          "obb": {
+            "center": [
+              3.5324999999999998,
+              1.15,
+              9
+            ],
+            "size": [
+              0.016,
+              0.016,
+              0.49479793855673926
+            ],
+            "basis": [
+              [
+                0.814420756754799,
+                0,
+                0.5802747891877957
+              ],
+              [
+                0.07036506144876589,
+                0.9926205817531302,
+                -0.0987579809807238
+              ],
+              [
+                -0.5759926988202646,
+                0.12126162080426602,
+                0.8084108053617728
+              ]
+            ]
+          }
+        },
+        {
+          "id": "body-frond:1:1",
+          "role": "central-broadleaf",
+          "material": "court broadleaf deep",
+          "materialIndex": 13,
+          "startTriangle": 5432,
+          "triangles": 28,
+          "bounds": {
+            "min": [
+              3.376500368118286,
+              1.1799453496932983,
+              9.039999961853027
+            ],
+            "max": [
+              3.4079978466033936,
+              1.8202812671661377,
+              9.359999656677246
+            ]
+          },
+          "closed": true
+        },
+        {
           "id": "vine:1:1:1",
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 972,
+          "startTriangle": 1020,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24114,7 +24378,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 984,
+          "startTriangle": 1032,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24185,7 +24449,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 996,
+          "startTriangle": 1044,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24256,7 +24520,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1008,
+          "startTriangle": 1056,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24327,7 +24591,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1020,
+          "startTriangle": 1068,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24398,7 +24662,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1032,
+          "startTriangle": 1080,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24469,7 +24733,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1044,
+          "startTriangle": 1092,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24540,7 +24804,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1056,
+          "startTriangle": 1104,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24611,7 +24875,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1068,
+          "startTriangle": 1116,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24682,7 +24946,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1080,
+          "startTriangle": 1128,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24753,7 +25017,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1092,
+          "startTriangle": 1140,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24824,7 +25088,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1104,
+          "startTriangle": 1152,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24895,7 +25159,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1116,
+          "startTriangle": 1164,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -24966,7 +25230,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1128,
+          "startTriangle": 1176,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25037,7 +25301,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1140,
+          "startTriangle": 1188,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25108,7 +25372,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1152,
+          "startTriangle": 1200,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25179,7 +25443,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1164,
+          "startTriangle": 1212,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25250,7 +25514,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1176,
+          "startTriangle": 1224,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25321,7 +25585,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1188,
+          "startTriangle": 1236,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25392,7 +25656,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1200,
+          "startTriangle": 1248,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25463,7 +25727,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1212,
+          "startTriangle": 1260,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25534,7 +25798,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1224,
+          "startTriangle": 1272,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25605,7 +25869,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1236,
+          "startTriangle": 1284,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25676,7 +25940,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1248,
+          "startTriangle": 1296,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25747,7 +26011,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1260,
+          "startTriangle": 1308,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25818,7 +26082,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1272,
+          "startTriangle": 1320,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25889,7 +26153,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1284,
+          "startTriangle": 1332,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -25960,7 +26224,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1296,
+          "startTriangle": 1344,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26031,7 +26295,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1308,
+          "startTriangle": 1356,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26102,7 +26366,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1320,
+          "startTriangle": 1368,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26173,7 +26437,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1332,
+          "startTriangle": 1380,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26244,7 +26508,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1344,
+          "startTriangle": 1392,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26315,7 +26579,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1356,
+          "startTriangle": 1404,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26386,7 +26650,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1368,
+          "startTriangle": 1416,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26457,7 +26721,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1380,
+          "startTriangle": 1428,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26528,7 +26792,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1392,
+          "startTriangle": 1440,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26599,7 +26863,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1404,
+          "startTriangle": 1452,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26670,7 +26934,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1416,
+          "startTriangle": 1464,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26741,7 +27005,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1428,
+          "startTriangle": 1476,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26812,7 +27076,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1440,
+          "startTriangle": 1488,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26883,7 +27147,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1452,
+          "startTriangle": 1500,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -26954,7 +27218,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1464,
+          "startTriangle": 1512,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27025,7 +27289,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1476,
+          "startTriangle": 1524,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27096,7 +27360,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1488,
+          "startTriangle": 1536,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27167,7 +27431,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1500,
+          "startTriangle": 1548,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27238,7 +27502,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1512,
+          "startTriangle": 1560,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27309,7 +27573,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1524,
+          "startTriangle": 1572,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27380,7 +27644,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1536,
+          "startTriangle": 1584,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27451,7 +27715,7 @@
           "role": "hanging-vine",
           "material": "court plant stems",
           "materialIndex": 17,
-          "startTriangle": 1548,
+          "startTriangle": 1596,
           "triangles": 12,
           "bounds": {
             "min": [
@@ -27529,7 +27793,7 @@
         "max": [
           5.070000171661377,
           3.8299999237060547,
-          17.09000015258789
+          16.09000015258789
         ]
       },
       "triangles": 536,
@@ -27550,7 +27814,7 @@
             "max": [
               -0.9300000071525574,
               3.4000000953674316,
-              17
+              16
             ]
           },
           "closed": true,
@@ -27558,12 +27822,12 @@
             "center": [
               -1,
               1.7,
-              14.5
+              14
             ],
             "size": [
               0.14,
               3.4,
-              5
+              4
             ],
             "basis": [
               [
@@ -27600,7 +27864,7 @@
             "max": [
               -0.9300000071525574,
               0.20000000298023224,
-              17
+              16
             ]
           },
           "closed": true,
@@ -27608,12 +27872,12 @@
             "center": [
               -1,
               0.1,
-              14.5
+              14
             ],
             "size": [
               0.14,
               0.2,
-              5
+              4
             ],
             "basis": [
               [
@@ -27650,7 +27914,7 @@
             "max": [
               5.070000171661377,
               3.4000000953674316,
-              17
+              16
             ]
           },
           "closed": true,
@@ -27658,12 +27922,12 @@
             "center": [
               5,
               1.7,
-              14.5
+              14
             ],
             "size": [
               0.14,
               3.4,
-              5
+              4
             ],
             "basis": [
               [
@@ -27700,7 +27964,7 @@
             "max": [
               5.070000171661377,
               0.20000000298023224,
-              17
+              16
             ]
           },
           "closed": true,
@@ -27708,12 +27972,12 @@
             "center": [
               5,
               0.1,
-              14.5
+              14
             ],
             "size": [
               0.14,
               0.2,
-              5
+              4
             ],
             "basis": [
               [
@@ -27935,7 +28199,7 @@
           }
         },
         {
-          "id": "changing-end-17-0",
+          "id": "changing-end-16-0",
           "role": "changing-wall",
           "material": "court changing mineral wall",
           "materialIndex": 18,
@@ -27945,12 +28209,12 @@
             "min": [
               -1,
               0,
-              16.93000030517578
+              15.930000305175781
             ],
             "max": [
               1,
               3.4000000953674316,
-              17.06999969482422
+              16.06999969482422
             ]
           },
           "closed": true,
@@ -27958,7 +28222,7 @@
             "center": [
               0,
               1.7,
-              17
+              16
             ],
             "size": [
               2,
@@ -27985,7 +28249,7 @@
           }
         },
         {
-          "id": "changing-end-17-0:skirting",
+          "id": "changing-end-16-0:skirting",
           "role": "changing-wall",
           "material": "court old enamel blue",
           "materialIndex": 19,
@@ -27995,12 +28259,12 @@
             "min": [
               -1,
               0,
-              16.93000030517578
+              15.930000305175781
             ],
             "max": [
               1,
               0.20000000298023224,
-              17.06999969482422
+              16.06999969482422
             ]
           },
           "closed": true,
@@ -28008,7 +28272,7 @@
             "center": [
               0,
               0.1,
-              17
+              16
             ],
             "size": [
               2,
@@ -28035,7 +28299,7 @@
           }
         },
         {
-          "id": "changing-end-17-1",
+          "id": "changing-end-16-1",
           "role": "changing-wall",
           "material": "court changing mineral wall",
           "materialIndex": 18,
@@ -28045,12 +28309,12 @@
             "min": [
               3,
               0,
-              16.93000030517578
+              15.930000305175781
             ],
             "max": [
               5,
               3.4000000953674316,
-              17.06999969482422
+              16.06999969482422
             ]
           },
           "closed": true,
@@ -28058,7 +28322,7 @@
             "center": [
               4,
               1.7,
-              17
+              16
             ],
             "size": [
               2,
@@ -28085,7 +28349,7 @@
           }
         },
         {
-          "id": "changing-end-17-1:skirting",
+          "id": "changing-end-16-1:skirting",
           "role": "changing-wall",
           "material": "court old enamel blue",
           "materialIndex": 19,
@@ -28095,12 +28359,12 @@
             "min": [
               3,
               0,
-              16.93000030517578
+              15.930000305175781
             ],
             "max": [
               5,
               0.20000000298023224,
-              17.06999969482422
+              16.06999969482422
             ]
           },
           "closed": true,
@@ -28108,7 +28372,7 @@
             "center": [
               4,
               0.1,
-              17
+              16
             ],
             "size": [
               2,
@@ -28185,7 +28449,7 @@
           }
         },
         {
-          "id": "changing-header:17",
+          "id": "changing-header:16",
           "role": "changing-wall",
           "material": "court changing mineral wall",
           "materialIndex": 18,
@@ -28195,12 +28459,12 @@
             "min": [
               0.9399999976158142,
               3.4000000953674316,
-              16.90999984741211
+              15.90999984741211
             ],
             "max": [
               3.059999942779541,
               3.5,
-              17.09000015258789
+              16.09000015258789
             ]
           },
           "closed": true,
@@ -28208,7 +28472,7 @@
             "center": [
               2,
               3.45,
-              17
+              16
             ],
             "size": [
               2.12,
@@ -28250,7 +28514,7 @@
             "max": [
               5,
               3.5399999618530273,
-              17
+              16
             ]
           },
           "closed": true,
@@ -28258,12 +28522,12 @@
             "center": [
               2,
               3.47,
-              14.5
+              14
             ],
             "size": [
               6,
               0.14,
-              5
+              4
             ],
             "basis": [
               [
@@ -28300,7 +28564,7 @@
             "max": [
               5,
               0.006000000052154064,
-              17
+              16
             ]
           },
           "closed": true,
@@ -28308,12 +28572,12 @@
             "center": [
               2,
               -0.006,
-              14.5
+              14
             ],
             "size": [
               6,
               0.024,
-              5
+              4
             ],
             "basis": [
               [
@@ -28345,12 +28609,12 @@
             "min": [
               -0.8399999737739563,
               0.4099999964237213,
-              13.300000190734863
+              12.800000190734863
             ],
             "max": [
               -0.36000001430511475,
               0.49000000953674316,
-              15.699999809265137
+              15.199999809265137
             ]
           },
           "closed": true,
@@ -28358,7 +28622,7 @@
             "center": [
               -0.6,
               0.45,
-              14.5
+              14
             ],
             "size": [
               0.48,
@@ -28385,7 +28649,7 @@
           }
         },
         {
-          "id": "bench-bracket:13.5",
+          "id": "bench-bracket:13",
           "role": "changing-furniture",
           "material": "court painted iron",
           "materialIndex": 0,
@@ -28395,12 +28659,12 @@
             "min": [
               -0.8263912200927734,
               0.03573448956012726,
-              13.470000267028809
+              12.970000267028809
             ],
             "max": [
               -0.5736088156700134,
               0.43426552414894104,
-              13.529999732971191
+              13.029999732971191
             ]
           },
           "closed": true,
@@ -28408,7 +28672,7 @@
             "center": [
               -0.7,
               0.235,
-              13.5
+              13
             ],
             "size": [
               0.06,
@@ -28435,7 +28699,7 @@
           }
         },
         {
-          "id": "bench-bracket:15.5",
+          "id": "bench-bracket:15",
           "role": "changing-furniture",
           "material": "court painted iron",
           "materialIndex": 0,
@@ -28445,12 +28709,12 @@
             "min": [
               -0.8263912200927734,
               0.03573448956012726,
-              15.470000267028809
+              14.970000267028809
             ],
             "max": [
               -0.5736088156700134,
               0.43426552414894104,
-              15.529999732971191
+              15.029999732971191
             ]
           },
           "closed": true,
@@ -28458,7 +28722,7 @@
             "center": [
               -0.7,
               0.235,
-              15.5
+              15
             ],
             "size": [
               0.06,
@@ -28500,7 +28764,7 @@
             "max": [
               4.690000057220459,
               3.740000009536743,
-              16.899999618530273
+              15.899999618530273
             ]
           },
           "closed": true,
@@ -28508,12 +28772,12 @@
             "center": [
               4.6,
               3.65,
-              14.5
+              14
             ],
             "size": [
               0.18,
               0.18,
-              4.8
+              3.8
             ],
             "basis": [
               [
@@ -28545,12 +28809,12 @@
             "min": [
               4.989999771118164,
               3.4700000286102295,
-              14.300000190734863
+              13.800000190734863
             ],
             "max": [
               5.050000190734863,
               3.8299999237060547,
-              14.699999809265137
+              14.199999809265137
             ]
           },
           "closed": true,
@@ -28558,7 +28822,7 @@
             "center": [
               5.02,
               3.65,
-              14.5
+              14
             ],
             "size": [
               0.06,
@@ -28595,12 +28859,12 @@
             "min": [
               4.599999904632568,
               3.559999942779541,
-              14.40999984741211
+              13.90999984741211
             ],
             "max": [
               5.019999980926514,
               3.740000009536743,
-              14.59000015258789
+              14.09000015258789
             ]
           },
           "closed": true,
@@ -28608,7 +28872,7 @@
             "center": [
               4.81,
               3.65,
-              14.5
+              14
             ],
             "size": [
               0.18,
@@ -29129,12 +29393,12 @@
             "min": [
               -0.4124999940395355,
               1.4874999523162842,
-              11.887499809265137
+              11.84749984741211
             ],
             "max": [
               0.612500011920929,
               1.8125,
-              11.912500381469727
+              11.8725004196167
             ]
           },
           "closed": true,
@@ -29142,7 +29406,7 @@
             "center": [
               0.1,
               1.65,
-              11.9
+              11.86
             ],
             "size": [
               1.025,
@@ -29179,12 +29443,12 @@
             "min": [
               -0.4000000059604645,
               1.5,
-              11.881500244140625
+              11.841500282287598
             ],
             "max": [
               0.6000000238418579,
               1.7999999523162842,
-              11.884499549865723
+              11.844499588012695
             ]
           },
           "closed": true,
@@ -29192,7 +29456,7 @@
             "center": [
               0.1,
               1.65,
-              11.883000000000001
+              11.843
             ],
             "size": [
               1,
@@ -29229,12 +29493,12 @@
             "min": [
               3.5625,
               1.4874999523162842,
-              16.887500762939453
+              15.887499809265137
             ],
             "max": [
               4.4375,
               1.8125,
-              16.912500381469727
+              15.912500381469727
             ]
           },
           "closed": true,
@@ -29242,7 +29506,7 @@
             "center": [
               4,
               1.65,
-              16.9
+              15.9
             ],
             "size": [
               0.875,
@@ -29279,12 +29543,12 @@
             "min": [
               3.575000047683716,
               1.5,
-              16.881500244140625
+              15.881500244140625
             ],
             "max": [
               4.425000190734863,
               1.7999999523162842,
-              16.88450050354004
+              15.884499549865723
             ]
           },
           "closed": true,
@@ -29292,7 +29556,7 @@
             "center": [
               4,
               1.65,
-              16.883
+              15.883000000000001
             ],
             "size": [
               0.85,
@@ -37147,7 +37411,7 @@
         "max": [
           2.930000066757202,
           2.140000104904175,
-          1.8271321058273315
+          0.9271321296691895
         ]
       },
       "triangles": 144,
@@ -37163,12 +37427,12 @@
             "min": [
               2,
               0,
-              -2.049999952316284
+              -2.549999952316284
             ],
             "max": [
               2.9000000953674316,
               1.059999942779541,
-              1.0499999523162842
+              0.550000011920929
             ]
           },
           "closed": true,
@@ -37176,7 +37440,7 @@
             "center": [
               2.45,
               0.53,
-              -0.5
+              -1
             ],
             "size": [
               0.9,
@@ -37213,12 +37477,12 @@
             "min": [
               1.9700000286102295,
               1.0499999523162842,
-              -2.0899999141693115
+              -2.5899999141693115
             ],
             "max": [
               2.930000066757202,
               1.1100000143051147,
-              1.090000033378601
+              0.5899999737739563
             ]
           },
           "closed": true,
@@ -37226,7 +37490,7 @@
             "center": [
               2.45,
               1.08,
-              -0.5
+              -1
             ],
             "size": [
               0.96,
@@ -37263,12 +37527,12 @@
             "min": [
               2.2249999046325684,
               0.03999999910593033,
-              1.524999976158142
+              0.625
             ],
             "max": [
               2.375,
               1.5199999809265137,
-              1.6749999523162842
+              0.7749999761581421
             ]
           },
           "closed": true
@@ -37284,12 +37548,12 @@
             "min": [
               2.2825000286102295,
               0.11643080413341522,
-              1.5228677988052368
+              0.6228678226470947
             ],
             "max": [
               2.317500114440918,
               0.8435692191123962,
-              1.70713210105896
+              0.8071321845054626
             ]
           },
           "closed": true,
@@ -37297,28 +37561,28 @@
             "center": [
               2.3,
               0.48,
-              1.615000000000002
+              0.7149999999999999
             ],
             "size": [
               0.035,
               0.035,
-              0.7354590403278755
+              0.7354590403278757
             ],
             "basis": [
               [
                 0,
-                -0.20395425411199922,
-                -0.9789804197376055
+                -0.20395425411200155,
+                -0.9789804197376051
               ],
               [
-                1.0000000000000002,
+                1.0000000000000004,
                 0,
                 0
               ],
               [
                 0,
-                -0.9789804197376054,
-                0.2039542541119992
+                -0.9789804197376051,
+                0.20395425411200155
               ]
             ]
           }
@@ -37334,12 +37598,12 @@
             "min": [
               2.2825000286102295,
               0.11643080413341522,
-              1.5828678607940674
+              0.6828678250312805
             ],
             "max": [
               2.317500114440918,
               0.8435692191123962,
-              1.7671321630477905
+              0.8671321868896484
             ]
           },
           "closed": true,
@@ -37347,28 +37611,28 @@
             "center": [
               2.3,
               0.48,
-              1.6750000000000007
+              0.7749999999999986
             ],
             "size": [
               0.035,
               0.035,
-              0.7354590403278755
+              0.7354590403278757
             ],
             "basis": [
               [
                 0,
-                -0.20395425411199922,
-                -0.9789804197376055
+                -0.20395425411200155,
+                -0.9789804197376051
               ],
               [
-                1.0000000000000002,
+                1.0000000000000004,
                 0,
                 0
               ],
               [
                 0,
-                -0.9789804197376054,
-                0.2039542541119992
+                -0.9789804197376051,
+                0.20395425411200155
               ]
             ]
           }
@@ -37384,12 +37648,12 @@
             "min": [
               2.2825000286102295,
               0.11643080413341522,
-              1.6428678035736084
+              0.7428678274154663
             ],
             "max": [
               2.317500114440918,
               0.8435692191123962,
-              1.8271321058273315
+              0.9271321296691895
             ]
           },
           "closed": true,
@@ -37397,28 +37661,28 @@
             "center": [
               2.3,
               0.48,
-              1.7349999999999994
+              0.8350000000000009
             ],
             "size": [
               0.035,
               0.035,
-              0.7354590403278755
+              0.7354590403278757
             ],
             "basis": [
               [
                 0,
-                -0.20395425411199922,
-                -0.9789804197376055
+                -0.20395425411200155,
+                -0.9789804197376051
               ],
               [
-                1.0000000000000002,
+                1.0000000000000004,
                 0,
                 0
               ],
               [
                 0,
-                -0.9789804197376054,
-                0.2039542541119992
+                -0.9789804197376051,
+                0.20395425411200155
               ]
             ]
           }
@@ -37484,12 +37748,12 @@
             "min": [
               -2.9700000286102295,
               1.100000023841858,
-              0.6499999761581421
+              -0.3499999940395355
             ],
             "max": [
               -2.7300000190734863,
               2.140000104904175,
-              1.350000023841858
+              0.3499999940395355
             ]
           },
           "closed": true,
@@ -37497,7 +37761,7 @@
             "center": [
               -2.85,
               1.62,
-              1
+              0
             ],
             "size": [
               0.24,
@@ -37576,7 +37840,7 @@
       ]
     }
   },
-  "totalTriangles": 18688,
+  "totalTriangles": 18820,
   "textures": {
     "glass": {
       "width": 128,
@@ -37621,8 +37885,8 @@
       "coverage": 0.04762098524305555
     }
   },
-  "bytes": 2072440,
-  "sha256": "bb78b086f52316cc5d8dabbf5971fc650e518d9bdadd787782013322dfa7ba23",
+  "bytes": 2085908,
+  "sha256": "6672a3830c6b083b6639062e7ae8966b973645f7d233d07d47cce28ce836ff37",
   "lettering": {
     "inputSha256": "fb19f8eea64f636c5dfc1a7177f55bfa0102b8134c1a96e0cece90d29acb2910",
     "entries": [

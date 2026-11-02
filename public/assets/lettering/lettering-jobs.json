@@ -9093,14 +9093,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-pool",
@@ -9189,14 +9189,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-foh",
@@ -9285,14 +9285,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-practice",
@@ -9381,14 +9381,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-academic",
@@ -9477,14 +9477,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "power_box_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/dda0321fbf1d1cec0197-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/dda0321fbf1d1cec0197-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-services-panel-plant",
@@ -9574,14 +9574,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "sofa_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/216882b703a68a61f6a4-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/216882b703a68a61f6a4-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/216882b703a68a61f6a4-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/216882b703a68a61f6a4-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/216882b703a68a61f6a4-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-sofa-01",
@@ -9670,14 +9670,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "arm_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
       },
       "reliefM": 0.000007,
       "seed": "deadend-ground-armchair",
@@ -9766,14 +9766,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "arm_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/2dc386db3b7ebb3ad776-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-armchair-01",
@@ -9862,14 +9862,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "classic_console_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/e3d5344354716afb74a5-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/e3d5344354716afb74a5-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/e3d5344354716afb74a5-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/e3d5344354716afb74a5-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/e3d5344354716afb74a5-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-foyer-console-01",
@@ -10128,14 +10128,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-1",
@@ -10224,14 +10224,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-2",
@@ -10320,14 +10320,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-3",
@@ -10416,14 +10416,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-4",
@@ -10512,14 +10512,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-5",
@@ -10608,14 +10608,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-6",
@@ -10704,14 +10704,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-7",
@@ -10800,14 +10800,14 @@
       "substrate": {
         "asset": "conservatory-acquisitions.glb",
         "mesh": "green_chair_01",
-        "albedoPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
-        "normalPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
-        "ormPath": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
+        "albedoPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-albedo.png",
+        "normalPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-normal.png",
+        "ormPath": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-orm.png",
         "roughnessFactor": 1,
         "metallicFactor": 1,
         "normalScale": 1,
         "sourceAssetSha256": "3b3ec24011c73f6a69290ccc458c5c80c4e59ccb3c1c5194f960ed158888d336",
-        "projectionReport": "/Users/seb/chunk-surfer/public/assets/lettering/substrates/748cfa6311eb1e56f3df-report.json"
+        "projectionReport": "/private/tmp/chunk-surfer-release-props-rebuilt/lettering/substrates/748cfa6311eb1e56f3df-report.json"
       },
       "reliefM": 0.000007,
       "seed": "acq-practice-chair-8",

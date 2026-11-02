@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {drawAchievementResinKey,ACHIEVEMENT_RESIN_TONES} from '../src/render/achievement-resin.js';
+import {achievementPresentationCategory} from '../src/data/achievement-presentation.js';
 
 // Execute the production modules' real synchronous functions with recording
 // Canvas/import boundaries. No second implementation of the scope logic and
@@ -34,6 +36,7 @@ function recordingContext(theme){
     clip(){state.clips.push(path.map(part=>[...part]));},
     mark(label,...args){record(label,args);},
     createLinearGradient(...args){return{args,stops:[],addColorStop(...stop){this.stops.push(stop);}};},
+    createRadialGradient(...args){return{args,stops:[],addColorStop(...stop){this.stops.push(stop);}};},
   };
   const ctx=new Proxy(state,{
     get(target,key){if(key in methods)return methods[key];if(key in target)return target[key];return(...args)=>record(key,args);},
@@ -70,7 +73,14 @@ function harness({dpr=1,absent=false}={}){
     fitText:value=>String(value),
     monitorSnapshot:()=>({}),
   });
-  return{...probe,ui,presentation,palette};
+  const achievementDeck=moduleUnderTest('../src/render/achievement-deck.js',{
+    ...ui,drawInstrumentPlate:mark('plate'),drawInstrumentWell:mark('well'),drawInstrumentGlass:mark('glass'),
+    drawHardwarePrint:(ctx,text,x,y,options)=>ctx.mark('print',text,options),
+    drawAchievementResinKey:(ctx,x,y,w,h,options)=>{ctx.mark('cap',options);return{content:{x:x+3,y:y+3,w:w-6,h:h-6}};},ACHIEVEMENT_RESIN_TONES,achievementPresentationCategory,
+    hardwareMotionReduced:()=>true,drawElectronicText:(ctx,text)=>ctx.mark('vfd',text),measureElectronicText:text=>String(text).length*10,
+    drawAchievementIconToCanvas:(ctx,id,options)=>ctx.mark('emblem',id,options),
+  });
+  return{...probe,ui,presentation,palette,achievementDeck};
 }
 
 const shell={label:'MONITOR',wordmark:'AUDIOCORP',meter:false,footer:'RETURN',theme:'green'};
@@ -86,6 +96,44 @@ test('hardware is queued until the cover paints and the aperture clip unwinds',(
   assert.equal(h.commands[0].state.clips.length,1);
   assert.deepEqual(h.commands[0].state.clips[0],[['rect',3*8.45,4*20,20*8.45,8*20]]);
   assert.ok(h.commands.slice(1).every(command=>command.state.clips.length===0));assert.equal(h.stack.length,0);
+});
+
+test('MASTER INDEX header controls remain above its real cover and outside its body clip',()=>{
+ const h=harness(),frame={x:2,y:2,w:100,h:30};
+ h.achievementDeck.withAchievementDeck(frame,{label:'MASTER INDEX',completion:{completed:1,total:38}},body=>{
+  h.achievementDeck.drawAchievementDeckControl({x:4,y:4.95,w:25,h:1.55},'ACHIEVEMENTS 38',{selected:true});
+  h.achievementDeck.drawAchievementVfd('SELECTED REQUIREMENT',body.x,body.y+3);
+ });
+ const caps=h.commands.filter(command=>command.kind==='cap'),vfd=h.commands.find(command=>command.kind==='vfd'&&command.args[0]==='SELECTED REQUIREMENT');
+ assert.equal(caps.length,1);assert.equal(caps[0].state.clips.length,0,'the physical tab is outside the display aperture');
+ assert.equal(vfd.state.clips.length,1,'emitted copy stays inside its well');
+ assert.ok(h.commands.indexOf(caps[0])>h.commands.findLastIndex(command=>command.kind==='glass'),'cover then mechanical controls');
+ assert.equal(h.stack.length,0);
+});
+
+test('cast resin has five distinct semantic pigments; only actual actuation changes its depth',()=>{
+ assert.equal(new Set(Object.values(ACHIEVEMENT_RESIN_TONES).map(tone=>tone.pigment)).size,5);
+ assert.deepEqual(Object.values(ACHIEVEMENT_RESIN_TONES).map(tone=>tone.name),['ivory','amber','mint','blue','violet']);
+ const h=harness(),r={category:'method',dpr:2};
+ const off=drawAchievementResinKey(h.ctx,20,30,180,70,{...r,light:.18}),selected=drawAchievementResinKey(h.ctx,20,30,180,70,{...r,light:.92});
+ assert.equal(off.travel,0);assert.equal(selected.travel,0);assert.equal(off.face.y,selected.face.y);assert.ok(selected.light>off.light);
+ const down=drawAchievementResinKey(h.ctx,20,30,180,70,{...r,light:.92,pressed:true}),released=drawAchievementResinKey(h.ctx,20,30,180,70,{...r,light:.92});
+ assert.ok(down.travel>0);assert.ok(down.content.y>selected.content.y);assert.equal(released.travel,0);assert.equal(released.content.y,selected.content.y);
+ assert.equal(h.stack.length,0);
+});
+
+test('actual resin legends keep opaque ink across lighting states and unearned focus stays dimmer than earned',()=>{
+ const h=harness(),r={x:4,y:5,w:18,h:2};
+ for(const category of Object.keys(ACHIEVEMENT_RESIN_TONES)){
+  for(const selected of[false,true])h.achievementDeck.drawAchievementDeckControl(r,'CATEGORY',{category,selected});
+  const labels=h.commands.filter(c=>c.kind==='print'&&c.args[0]==='CATEGORY').slice(-2);
+  assert.deepEqual(labels.map(c=>c.args[1].color),[ACHIEVEMENT_RESIN_TONES[category].ink,ACHIEVEMENT_RESIN_TONES[category].ink]);
+  for(const state of[{unlocked:false,selected:false},{unlocked:false,selected:true},{unlocked:true,selected:false},{unlocked:true,selected:true}])h.achievementDeck.drawAchievementAnnunciator(h.ctx,'ACH_WORK_ORDER',{x:10,y:20,w:64,h:64,category,...state});
+  const emblems=h.commands.filter(c=>c.kind==='emblem').slice(-4),lamps=h.commands.filter(c=>c.kind==='cap').slice(-4);
+  assert.ok(emblems.every(c=>c.args[1].color===ACHIEVEMENT_RESIN_TONES[category].ink&&c.args[1].alpha===1));
+  assert.ok(lamps[1].args[0].light>lamps[0].args[0].light);assert.ok(lamps[1].args[0].light<lamps[2].args[0].light);
+  assert.ok(lamps.every(c=>c.args[0].pressed===false));
+ }
 });
 
 test('nested hardware rises above both covers but retains the caller’s non-aperture clip',()=>{

@@ -17,6 +17,9 @@ test('source runtime omits existing roof architecture from ground; explicit sele
   assert.ok(EXTERIOR_ROOF_ARCHITECTURE_IDS.every(id=>!ground.some(p=>p.id===id)),'test preserves the original visibility failure');
   const restored=exteriorRoofArchitectureInstances(roof,{zone:ZONE.dock});
   assert.deepEqual(restored.map(p=>p.id),EXTERIOR_ROOF_ARCHITECTURE_IDS);
+  const structure=restored.find(p=>p.id==='academic-roof-structure'),host=PROPS.propById(structure.id);
+  assert.equal(FP.isSolid(host.rx,host.ry),false,'the courtyard cannot discard the complete roof at an unsupported origin');
+  assert.deepEqual([structure.x,structure.z],[85,15.5],'moving its logical host must preserve the existing mesh placement');
   assert.ok(restored.every(p=>p.structural&&!p.character));
   assert.equal(restored.some(p=>/ren|cassette|seal|shortcut|sit/.test(p.id)),false);
   for(const zone of[ZONE.street,ZONE.civicCourt,ZONE.dock])assert.equal(exteriorRoofArchitectureInstances(roof,{zone}).length,3);

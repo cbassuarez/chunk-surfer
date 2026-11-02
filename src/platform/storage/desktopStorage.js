@@ -343,6 +343,16 @@ export class DesktopStorage {
     return next;
   }
 
+  async saveCausalDraftCheckpoint(runId, checkpoint) {
+    const stored = await this.loadCausalDraft();
+    const draft = stored?.runId === runId ? stored : { runId, segments: [] };
+    const next = { ...draft, runId, schema: 1, topologyHash: checkpoint.topologyHash,
+      difficulty: checkpoint.difficulty, checkpoint,
+      segments: (draft.segments || []).slice(0, Math.max(0, Math.floor(Number(checkpoint.segmentCount) || 0))) };
+    await this.writeEnvelopeSafe(CAUSAL_PATHS.draft, next, { schemaVersion: 1, baseDir: this.adapter.baseData });
+    return next;
+  }
+
   async sealCausalDraft(runId, tape) {
     const draft = await this.loadCausalDraft();
     if (draft?.runId && draft.runId !== runId) throw new Error('causal draft run mismatch');

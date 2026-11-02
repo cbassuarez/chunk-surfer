@@ -2,183 +2,157 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
+import { uiWithLayoutSize, uiWrap } from '../src/render/ui.js';
 import { shouldOpenPauseForEvent } from '../src/game/pause.js';
+import { CREDITS } from '../src/data/credits.js';
+import { createCreditProgram, creditRecordPages, creditRecognitionCards, creditCardMinimumSeconds, isCreditRecognitionLine, CREDIT_PROGRAM_BLACK_HOLD } from '../src/game/credit-program.js';
+import { CLOSING_QUOTE, END_CREDITS_CLOSING_HOLD, END_CREDITS_OPENING_DURATION,
+  closingQuoteAlpha, closingQuoteBlock, makeCreditsScene } from '../src/game/credits.js';
+import * as CREDIT_RENDER from '../src/render/credit-signal.js';
+import { creditSignalLayout, creditRecordLayout } from '../src/render/credit-signal.js';
+const fixture = Array.from({ length: 8 }, (_, i) => ({ heading: `Section ${i + 1}`, lines: [`Person ${i} A`, `Person ${i} B`, `Person ${i} C`] }));
+const press = (scene, event) => { scene.key(event); scene.keyup(event); };
 
-import {
-  CLOSING_QUOTE,
-  END_CREDITS_CLOSING_HOLD,
-  END_CREDITS_OPENING_DURATION,
-  closingQuoteAlpha,
-  closingQuoteBlock,
-  creditRollLayout,
-  makeCreditsScene,
-  positionedCreditEntries,
-} from '../src/game/credits.js';
-
-const creditsFixture = Array.from({ length: 8 }, (_, index) => ({
-  heading: `Section ${index + 1}`,
-  lines: [`Line ${index + 1} A`, `Line ${index + 1} B`, `Line ${index + 1} C`],
-}));
-
-test('credits use one cinematic scene with a fixed opening card and fractional roll', () => {
-  const scene = makeCreditsScene({ credits: creditsFixture, initialCols: 80, initialRows: 30 });
-  assert.equal(scene.id, 'credits');
-  assert.equal(scene.blocksInput, true);
-  assert.equal(scene.blocksWorld, true);
-  assert.equal(scene.view().phase, 'opening');
-
-  scene.update(END_CREDITS_OPENING_DURATION - 0.01);
-  assert.equal(scene.view().phase, 'opening');
-  scene.update(0.37);
-  assert.equal(scene.view().phase, 'roll');
-  assert.ok(scene.view().scroll > 0);
-  assert.notEqual(scene.view().scroll, Math.floor(scene.view().scroll));
+test('programme recognises all actual credited creators without promoting process notes', () => {
+  const expected = {0:[0],1:[0,1,2,3,4,5,6,7,8],2:[0,1,2,3,4],3:[0,1],4:[0,4],5:[0],6:[0,1,2,3,4,5,6,7,8,9,13],7:[0,1,2,3,4,5],8:[1,2,5,8],9:[0,2,6],10:[0],11:[0,1,2,3,4,5,6,7,8,9,10],12:[0,4,8,12,16,20,24,28],13:[0,4,8,12,16,20,24,28,32,36,40,44],14:[0,4],15:[0,3,6,9,12,15],16:[0],17:[0,4,8,12,16],18:[0,4,8]};
+  const cards = creditRecognitionCards();
+  for (const [section, indices] of Object.entries(expected)) for (const line of indices)
+    assert.ok(cards.some(card => card.sectionIndex === Number(section) && card.sourceLineIndices.includes(line)), `section ${section} line ${line} recognised`);
+  const all = cards.flatMap(card => card.lines).join('\n');
+  for (const name of ['Kristen Browne', 'Triplegangers', 'Dr. W.E. Burr', 'William Heise', 'Walter Murch', 'Sean Cullen', 'Lucy Hattemer', 'Kipp Teague', 'Victor Eijkhout', 'Paul Yorke'])
+    assert.ok(all.toLowerCase().includes(name.toLowerCase()), name);
+  assert.equal(isCreditRecognitionLine('Adapted: excerpts and downmix'), false);
+  assert.equal(isCreditRecognitionLine('https://creativecommons.org/licenses/by/4.0/'), false);
+  assert.ok(cards.some(card => card.label === 'Website'));
+  assert.ok(cards.some(card => card.label === 'Copyright'));
 });
 
-test('credit roll positions change continuously rather than snapping by rows', () => {
-  const layout = creditRollLayout({ cols: 80, rows: 30, credits: creditsFixture });
-  const atOne = positionedCreditEntries(layout, 1.10);
-  const atTwo = positionedCreditEntries(layout, 1.35);
-  assert.equal(atOne.length, atTwo.length);
-  assert.ok(Math.abs((atTwo[0].y - atOne[0].y) + 0.25) < 1e-9);
-  assert.notEqual(atTwo[0].y, Math.round(atTwo[0].y));
-});
-
-test('menu credits preserve pause, manual navigation, website, and back controls', () => {
-  let done = 0;
-  let website = 0;
-  const scene = makeCreditsScene({
-    credits: creditsFixture,
-    context: 'menu',
-    initialCols: 80,
-    initialRows: 30,
-    onDone: () => { done += 1; },
-    onWebsite: () => { website += 1; },
+test('complete source record preserves every canonical line and source identity', () => {
+  const sections = creditRecordPages({ capacity: 3, wrapLine: value => value.match(/.{1,17}/gu) || [''] });
+  assert.equal(sections.length, CREDITS.length);
+  assert.equal(sections.reduce((sum, section) => sum + section.sourceLines.length, 0), 252);
+  sections.forEach((section, index) => {
+    assert.deepEqual(section.sourceLines, [...CREDITS[index].lines]);
+    for (const [lineIndex, text] of section.sourceLines.entries()) {
+      const fragments = section.pages.flatMap(page => page.fragments).filter(part => part.sourceLineIndex === lineIndex);
+      assert.equal(fragments.map(part => part.text).join(''), text);
+      assert.ok(fragments.every(part => part.sourceText === text));
+    }
+    assert.ok(section.pages.every(page => page.lines.length <= 3));
   });
-
-  scene.key({ key: 'End' });
-  assert.equal(scene.view().phase, 'closing');
-  assert.equal(scene.view().paused, true);
-  scene.key({ code: 'Space' });
-  assert.equal(scene.view().paused, false);
-  scene.update(END_CREDITS_CLOSING_HOLD + 1);
-  assert.equal(done, 0, 'menu credits remain on the closing card');
-
-  scene.key({ key: 'Home' });
-  assert.equal(scene.view().scroll, 0);
-  scene.key({ key: 'ArrowUp' });
-  assert.equal(scene.view().scroll, 0);
-  scene.key({ key: 'ArrowDown' });
-  assert.equal(scene.view().scroll, 3);
-  scene.key({ key: 'PageDown' });
-  assert.equal(scene.view().scroll, 13);
-
-  scene.key({ key: 'Enter' });
-  assert.equal(website, 1);
-  scene.key({ key: 'Escape' });
-  assert.equal(done, 1);
-  scene.key({ key: 'Escape' });
-  assert.equal(done, 1);
 });
 
-test('the advertised Escape skip reaches ending credits before the run-level pause and finishes once',()=>{
-  let completed=0,blacked=0,pauses=0;
-  const scene=makeCreditsScene({context:'ending',onDone:()=>completed++,onBlack:()=>blacked++});
-  assert.equal(scene.handlesEscape,true);
-  // Main's actual pause policy runs before scene.key; test that order rather
-  // than bypassing the global interception by calling credits.key directly.
+test('fixed cards have a readable minimum, and small viewports add pages instead of clipping', () => {
+  for (const size of [{cols:38,rows:20},{cols:80,rows:30},{cols:151,rows:45}]) {
+    const scene = makeCreditsScene({ ...{initialCols:size.cols,initialRows:size.rows} });
+    press(scene,{key:'Home'});
+    for (let i = 0; i < scene.view().cards; i++) {
+      const item = scene.view().content;
+      const layout = creditSignalLayout({...size,label:item.label,lines:item.lines,kind:item.kind});
+      assert.ok(layout.fits, `${size.cols} x ${size.rows}: ${item.label}`);
+      assert.ok(scene.view().cardDuration >= creditCardMinimumSeconds(item));
+      for (const run of layout.runs) assert.ok(run.x >= 0 && run.y >= 0);
+      press(scene,{key:'ArrowRight'});
+    }
+  }
+  const compact = makeCreditsScene({initialCols:38,initialRows:20});
+  const wide = makeCreditsScene({initialCols:151,initialRows:45});
+  assert.ok(compact.view().cards > wide.view().cards);
+  assert.ok(createCreditProgram({ credits: fixture }).totalSeconds >= 196.008 - 1e-7);
+});
+
+test('menu fixed-card controls pause, navigate, inspect and require deliberate website focus', () => {
+  let website = 0, done = 0;
+  const scene = makeCreditsScene({credits:fixture,onWebsite:()=>website++,onDone:()=>done++});
+  assert.equal(scene.view().phase,'opening');
+  scene.update(END_CREDITS_OPENING_DURATION+.2);
+  assert.equal(scene.view().phase,'card');
+  press(scene,{key:'Enter'}); assert.equal(website,0); assert.equal(scene.view().paused,true);
+  press(scene,{key:'ArrowRight'}); assert.equal(scene.view().card,1);
+  const before = scene.view().cardElapsed; scene.update(100); assert.equal(scene.view().cardElapsed,before);
+  press(scene,{key:'r'}); assert.equal(scene.view().phase,'record');
+  const record = scene.view(); scene.update(100); assert.equal(scene.view().elapsed,record.elapsed);
+  press(scene,{key:'PageDown'}); assert.equal(scene.view().section,record.section+1);
+  press(scene,{key:'Escape'}); assert.equal(scene.view().phase,'card'); assert.equal(done,0);
+  // Return from RECORD focuses RECORD. The next explicit focus is WEBSITE.
+  press(scene,{key:'Tab'}); assert.equal(scene.view().focus,'website');
+  press(scene,{key:'Enter'}); assert.equal(website,1);
+  press(scene,{key:'Escape'}); assert.equal(done,1);
+  press(scene,{key:'Escape'}); assert.equal(done,1);
+});
+
+test('held confirms cannot accidentally open a site or issue repeated callbacks', () => {
+  let websites=0,done=0;const scene=makeCreditsScene({onWebsite:()=>websites++,onDone:()=>done++});
+  scene.key({key:'Enter',repeat:true});assert.equal(scene.view().paused,false);
+  scene.key({key:'Escape',repeat:true});assert.equal(done,0);
+  press(scene,{key:'Escape'});press(scene,{key:'Escape'});assert.equal(done,1);assert.equal(websites,0);
+});
+
+test('Escape reaches credit scene before global pause and finishes once',()=>{
+  let completed=0,blacked=0,pauses=0;const scene=makeCreditsScene({context:'ending',onDone:()=>completed++,onBlack:()=>blacked++});
   for(const event of [{key:'Escape'},{code:'Escape'}]){
-    if(shouldOpenPauseForEvent({storyMode:true,...event,topSceneId:scene.id,localEscape:!!scene.handlesEscape}))pauses++;
+    if(shouldOpenPauseForEvent({storyMode:true,...event,topSceneId:scene.id,localEscape:scene.handlesEscape}))pauses++;
     else scene.key(event);
   }
   assert.equal(pauses,0);assert.equal(completed,1);assert.equal(blacked,1);
 });
 
-// The ending does not cut from the roll to a stats panel. After the closing hold
-// it answers its own opening Butler quote, goes out to a full black taking the
-// audio with it, and only then hands over to the run summary.
-test('ending credits close on the Butler quote, then black, then the summary', () => {
-  let completed = 0;
-  let quoted = 0;
-  let blacked = 0;
-  const scene = makeCreditsScene({
-    credits: creditsFixture,
-    context: 'ending',
-    initialCols: 80,
-    initialRows: 30,
-    onDone: () => { completed += 1; },
-    onQuote: () => { quoted += 1; },
-    onBlack: () => { blacked += 1; },
-  });
-  scene.key({ key: 'End' });
-  scene.key({ code: 'Space' });          // paused: the quote must still arrive
-  scene.update(END_CREDITS_CLOSING_HOLD - 0.01);
-  assert.equal(quoted, 0);
-  scene.update(0.01);
-  assert.equal(quoted, 1, 'the closing hold hands to the quote, not to the summary');
-  assert.equal(scene.view().phase, 'quote');
-  assert.equal(completed, 0, 'the summary does not arrive under the quote');
-
-  // Reading it is not scrubbing it: the roll keys are dead here.
-  scene.key({ key: 'ArrowDown' });
-  scene.key({ key: 'End' });
-  assert.equal(scene.view().phase, 'quote');
-
-  const quoteSeconds = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold + CLOSING_QUOTE.fadeOut;
-  scene.update(quoteSeconds - 0.01);
-  assert.equal(blacked, 0);
-  scene.update(0.02);
-  assert.equal(blacked, 1, 'the fade out ends on black, where the hiss is waiting');
-  assert.equal(completed, 0, 'and the black is held for a beat');
-  scene.update(2);
-  assert.equal(completed, 1);
-  assert.equal(quoted, 1);
-  assert.equal(blacked, 1);
-
-  // Skipping still leaves a silent room behind it.
-  let skipped = 0;
-  let skipBlack = 0;
-  const skippable = makeCreditsScene({
-    context: 'ending',
-    onDone: () => { skipped += 1; },
-    onBlack: () => { skipBlack += 1; },
-  });
-  skippable.key({ key: 'Escape' });
-  assert.equal(skipped, 1);
-  assert.equal(skipBlack, 1, 'a skipped ending must not leave the credits piece playing');
+test('ending closes with pausable Butler quote, then held black, with exactly-once ordered handoff',()=>{
+  const calls=[];const scene=makeCreditsScene({credits:fixture,context:'ending',onQuote:()=>calls.push('quote'),onBlack:()=>calls.push('black'),onDone:()=>calls.push('done')});
+  press(scene,{key:'End'});press(scene,{code:'Space'});scene.update(END_CREDITS_CLOSING_HOLD);
+  assert.equal(scene.view().phase,'quote');assert.deepEqual(calls,['quote']);
+  press(scene,{code:'Space'});const elapsed=scene.view().elapsed;scene.update(100);assert.equal(scene.view().elapsed,elapsed);
+  press(scene,{code:'Space'});scene.update(CLOSING_QUOTE.fadeIn+CLOSING_QUOTE.hold+CLOSING_QUOTE.fadeOut);
+  assert.equal(scene.view().phase,'black');assert.deepEqual(calls,['quote','black']);
+  scene.update(1.6);assert.deepEqual(calls,['quote','black','done']);scene.update(100);assert.equal(calls.length,3);
 });
 
-// The quote itself: up from nothing, held long enough to read twice, out to black.
-test('the closing quote fades up, holds, and goes out to nothing', () => {
-  assert.equal(closingQuoteAlpha(0), 0);
-  assert.ok(closingQuoteAlpha(CLOSING_QUOTE.fadeIn * 0.5) > 0);
-  assert.equal(closingQuoteAlpha(CLOSING_QUOTE.fadeIn), 1);
-  assert.equal(closingQuoteAlpha(CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold * 0.5), 1);
-  const end = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold + CLOSING_QUOTE.fadeOut;
-  assert.ok(closingQuoteAlpha(end) < 0.001, 'it ends on true black');
-  assert.ok(CLOSING_QUOTE.hold >= 4, 'long enough to read twice');
-
-  // It is the twin of the opening card, so it carries the same attribution.
-  const block = closingQuoteBlock(46);
-  assert.ok(block.quote.length >= 3);
-  assert.ok(block.attribution.some((line) => /EREWHON/.test(line)));
-  assert.ok(block.attribution.some((line) => /BOOK OF THE MACHINES/.test(line)));
-  for (const line of block.lines) assert.ok(line.length <= 46, `"${line}" fits the column`);
-  // Narrow viewports must not clip it.
-  for (const line of closingQuoteBlock(24).lines) assert.ok(line.length <= 24);
+test('closing quote uses whole-word wrapping and fades to true black',()=>{
+  assert.equal(closingQuoteAlpha(0),0);assert.equal(closingQuoteAlpha(CLOSING_QUOTE.fadeIn),1);
+  assert.equal(closingQuoteAlpha(CLOSING_QUOTE.fadeIn+CLOSING_QUOTE.hold+CLOSING_QUOTE.fadeOut),0);
+  for(const width of [24,46])for(const line of closingQuoteBlock(width).lines)assert.ok(line.length<=width);
+});
+test('pointer controls activate on a matched release, with exact visible picking and black-frame silence',()=>{
+  let website=0;const scene=makeCreditsScene({context:'ending',onWebsite:()=>website++});
+  uiWithLayoutSize({cols:114,rows:30},()=>scene.render());
+  const hit=scene.view().hitRegions.find(item=>item.id==='website');assert.ok(hit);
+  const x=hit.x+hit.w/2,y=hit.y+hit.h/2;
+  scene.pointer({type:'pointerdown',cellX:x,cellY:y});assert.equal(website,0);
+  scene.pointer({type:'pointerup',cellX:0,cellY:0});assert.equal(website,0);
+  scene.pointer({type:'pointerdown',cellX:x,cellY:y});scene.pointer({type:'pointerup',cellX:x,cellY:y});assert.equal(website,1);assert.equal(scene.view().paused,true,'external navigation freezes the current reading place');
+  press(scene,{key:'End'});press(scene,{code:'Space'});scene.update(END_CREDITS_CLOSING_HOLD+11.8);
+  assert.equal(scene.view().phase,'black');uiWithLayoutSize({cols:114,rows:30},()=>scene.render());assert.deepEqual(scene.view().hitRegions,[]);
 });
 
-test('credit roll layout stays inside compact and wide viewports', () => {
-  for (const size of [{ cols: 34, rows: 12 }, { cols: 144, rows: 64 }]) {
-    const layout = creditRollLayout({ ...size, credits: creditsFixture });
-    assert.ok(layout.maxWidth <= size.cols - 2);
-    assert.ok(layout.maxScroll > 0);
-    assert.ok(layout.entries.length > 0);
-    for (const entry of layout.entries) {
-      assert.ok(entry.x >= 0);
-      assert.ok(entry.x + entry.text.length <= size.cols);
-    }
-  }
+test('actual resize restarts the current readable hold and preserves source-line anchors',()=>{
+  const scene=makeCreditsScene({initialCols:114,initialRows:30});
+  press(scene,{key:'Home'});press(scene,{code:'Space'});scene.update(3);
+  const before=scene.view();assert.ok(before.cardElapsed>0);
+  scene.resize(80,30);const resized=scene.view();
+  assert.equal(resized.content.sectionIndex,before.content.sectionIndex);assert.equal(resized.cardElapsed,0);
+  assert.ok(resized.cardDuration>=creditCardMinimumSeconds(resized.content));
+  scene.update(.5);const unchanged=scene.view();scene.resize(80,30);assert.deepEqual(scene.view(),unchanged,'a repeated same-size render cannot reset the hold');
+  press(scene,{key:'r'});press(scene,{key:'PageDown'});press(scene,{key:'ArrowRight'});
+  const anchor=scene.view().content.fragments[0];scene.resize(38,20);
+  assert.ok(scene.view().content.fragments.some(part=>part.sourceLineIndex===anchor.sourceLineIndex),'record resizing retains the current original source line');
+});
+
+test('actual scene renders manually selected and paused zero-fade cards at full readable light',()=>{
+  const calls=[];
+  const source=readFileSync('src/game/credits.js','utf8').replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
+  const factory=runInNewContext(source+'\nmakeCreditsScene;',{
+    uiSize:()=>({cols:80,rows:30}),uiCellMetrics:()=>({cellW:8.45,cellH:20}),uiWrap,CREDITS,
+    ...CREDIT_RENDER,renderCreditSignal:payload=>{calls.push(payload);return{};},renderCreditSignalControls:()=>[],
+    createCreditProgram,creditRecordPages,CREDIT_PROGRAM_BLACK_HOLD,AUDIO:{},
+  });
+  const scene=factory({credits:fixture,context:'ending'});
+  press(scene,{key:'Home'});scene.render();assert.equal(calls.at(-1).alpha,1,'manual Home is readable at time zero');
+  press(scene,{key:'ArrowRight'});scene.render();assert.equal(calls.at(-1).alpha,1,'manual arrow is readable at time zero');
+  press(scene,{code:'Space'});scene.render();assert.equal(calls.at(-1).alpha,0,'natural unpaused entrance retains its fade');
+  scene.update(.325);scene.render();assert.ok(calls.at(-1).alpha>0&&calls.at(-1).alpha<1,'natural entrance interpolates');
+  press(scene,{key:'End'});press(scene,{code:'Space'});scene.update(END_CREDITS_CLOSING_HOLD);
+  assert.equal(scene.view().phase,'quote');scene.render();assert.equal(calls.at(-1).alpha,0,'unpaused quotation starts from black');
+  press(scene,{code:'Space'});scene.render();assert.equal(calls.at(-1).alpha,1,'pausing the quotation at fade zero exposes its complete text');
 });
 
 test('ending routing places cinematic credits between the epilogue and return report', () => {

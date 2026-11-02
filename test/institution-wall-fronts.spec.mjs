@@ -1,3 +1,4 @@
+import {productionFunction} from './helpers/production-function.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -39,7 +40,7 @@ const subtract=(a,b)=>a.map((n,i)=>n-b[i]);
 const dot=(a,b)=>a.reduce((sum,n,i)=>sum+n*b[i],0);
 const unit=v=>v.map(n=>n/Math.hypot(...v));
 const renderer=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
-const matrixSource=renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('function perspective(aspect)'));
+const matrixSource=['identity','multiply','modelMatrix'].map(name=>productionFunction(renderer,name)).join('\n');
 assert.ok(matrixSource.includes('function modelMatrix('));
 const modelMatrix=new Function(`${matrixSource};return modelMatrix;`)();
 const transform=(p,m)=>[0,1,2].map(axis=>m[axis]*p[0]+m[axis+4]*p[1]+m[axis+8]*p[2]+m[axis+12]);

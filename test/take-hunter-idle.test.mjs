@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import * as HUNTER from '../src/game/take-hunter.js';
 import { createRecordingPressurePerformance } from '../src/game/recording-pressure.js';
+import { holdB3RecordingForLifecycle } from '../src/game/b3-speaker-disturbance.js';
 
 const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function production(name,next){
@@ -15,6 +16,7 @@ function harness(){
   const events=[],calls=[],rec={takes:[],takeTapeElapsed:0,spoiled:false};
   const pressure=createRecordingPressurePerformance({emit:event=>{events.push(event);return true;}});
   const h={HUNTER,storyMode:true,paused:false,takeHunter:HUNTER.freshTakeHunter(),takeHunterClosing:false,
+    holdB3RecordingForLifecycle,takeOrigin:null,recordableRoomAt:()=> 'main_b3',px:0,py:0,document:{hidden:false,hasFocus:()=>true},
     environmentalTenorFired:true,takeRoom:'main_b3',spoilPendingMs:0,
     gameplayInputLifecycleActive:()=>true,chapelTapeRetakeRoom:()=>null,usingSpecialSpace:()=>false,
     REC:{isRecording:()=>recording,isSlating:()=>false,isStalled:()=>false,isAssistPaused:()=>false,
@@ -25,7 +27,7 @@ function harness(){
     recordingPressurePerformance:pressure,STORY:{setTapeHissPressure(){}},TAKE_HISS:{},
     SPEECH:{say:line=>calls.push(line.text)},maybeIndependentBattle:()=>calls.push('between-takes'),
     maybeBattle:()=>calls.push('recording-battle'),tickNatatoriumDread:()=>calls.push('dread'),
-    tickChapelRetakeHaunt:()=>{},tickInstrument:()=>{},tickPracticeMetronomes:()=>{},tickPracticeStudent:()=>{},
+    tickChapelRetakeHaunt:()=>{},tickB3Speaker:()=>{},tickRecordingEmbodiment:()=>{},tickInstrument:()=>{},tickPracticeMetronomes:()=>{},tickPracticeStudent:()=>{},
     tickStopListening:()=>calls.push('listening'),tickDreamFigure:()=>{},tickTakeSelfAudioMask:()=>{},tickMic:()=>{roomReads++;},
     tickRecordingHallucinations:()=>{},tickRecordingSlate:()=>{},currentFearPressure:()=>({tapeHiss:0})};
   vm.createContext(h);

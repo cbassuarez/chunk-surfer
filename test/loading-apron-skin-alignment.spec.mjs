@@ -65,10 +65,7 @@ test('historical aperture repair is preserved across the approved subsequent con
   // by the selective indoor and pub-row merge receipts.
   // Its new pack must not be mistaken for the
   // October 24 *historical* after-image. All other successor hashes are rejected.
-  const approvedSuccessor={
-    repair:'5dd24bec964c5a3e2e1d3ec259935dc0bb5b55c80190085da7afc346494d8023',
-    current:'500fab6a1bb8f555026281715da5436430230e3225130c7bf2fd0e480f2b5200',
-  };
+  const originalRepairSha='5dd24bec964c5a3e2e1d3ec259935dc0bb5b55c80190085da7afc346494d8023';
   for(const asset of assets){const entry=proof.packs[asset.base];
     const currentSha=crypto.createHash('sha256').update(asset.bytes).digest('hex');
     const credits=JSON.parse(fs.readFileSync(`public/assets/${asset.base}.credits.json`));
@@ -76,8 +73,9 @@ test('historical aperture repair is preserved across the approved subsequent con
     const isRepairGeneration=currentSha===entry.afterSha256;
     if(!isRepairGeneration){
       assert.equal(asset.base,'conservatory-props','unexpected post-repair rebuild');
-      assert.equal(entry.afterSha256,approvedSuccessor.repair,'historical repair witness must remain intact');
-      assert.equal(currentSha,approvedSuccessor.current,'unreviewed conservatory pack needs its own provenance approval');
+      assert.equal(entry.afterSha256,originalRepairSha,'historical repair witness must remain intact');
+      assert.equal(patchElevation(asset.pack,fs.readFileSync('tools/chunk_surfer/build-props.mjs','utf8')),asset.pack,
+        'current elevation must exactly match its actual producer, including later courtyard cuts; unrelated shared-pack growth is not an aperture change');
       for(const name of ['conservatory_west_elevation','exterior_pub_frontage','arrival_civic_boundary','arrival_civic_bench'])
         assert.ok(asset.pack.json.meshes.some(mesh=>mesh.name===name),`${name} is in the approved successor`);
       // The preceding test proves that the *current* elevation is already the

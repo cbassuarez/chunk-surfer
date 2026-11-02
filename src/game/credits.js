@@ -1,463 +1,265 @@
-import { uiSize, uiText, uiWrap } from '../render/ui.js';
-import { drawVfdText } from '../render/presentation.js';
-import { CREDITS, flattenCredits } from '../data/credits.js';
-import { activeInputPromptDevice, promptLine } from './bindings.js';
-import { creditAtmosphereFrame, renderCreditAtmosphere } from './credit-visual.js';
+import { uiSize, uiCellMetrics, uiWrap } from '../render/ui.js';
+import { CREDITS } from '../data/credits.js';
+import { creditSignalLayout, wrapCreditSignalText, renderCreditSignal, renderCreditSignalControls, renderCreditRecord, creditRecordLayout, warmCreditRecordFont } from '../render/credit-signal.js';
+import { createCreditProgram, creditRecordPages, CREDIT_PROGRAM_BLACK_HOLD } from './credit-program.js';
 import * as AUDIO from '../audio/story-audio.js';
 
-const AUTO_SCROLL_ROWS_PER_SEC = 0.72;
-// A late arrival can run out of score before the roll; never trade legibility
-// for a mathematically exact ending cue.
-const MAX_MUSIC_SCROLL_ROWS_PER_SEC = 2.5;
-const KEY_SCROLL_ROWS = 3;
-const PAGE_SCROLL_ROWS = 10;
 export const END_CREDITS_OPENING_DURATION = 3.8;
-export const END_CREDITS_CLOSING_HOLD = 4.0;
-
-// The last thing the game says.
-//
-// The opening credits open on Butler being charmed: the glory of the machines is
-// that they cannot talk, and silence is a virtue that makes us agreeable. Five
-// rooms later the player has spent a night with a machine that kept what they
-// could not hear, so the ending answers that passage with the one that follows
-// it — the same book, the same voice, no longer charmed. It is the twin, and it
-// is the last card before black.
-const CLOSING_QUOTE_LINES = Object.freeze([
-  'There is no security against the ultimate',
-  'development of mechanical consciousness,',
-  'in the fact of machines possessing little',
-  'consciousness now.',
-]);
-const CLOSING_ATTRIBUTION = Object.freeze(['SAMUEL BUTLER · EREWHON', 'THE BOOK OF THE MACHINES']);
-
-// The quote fades up, is held long enough to be read twice, and goes out to a
-// full black. The audio leaves with it; the hiss bed is what is waiting on the
-// other side (see onBlack).
-export const CLOSING_QUOTE = Object.freeze({ fadeIn: 2.4, hold: 6.4, fadeOut: 3.0 });
-const CLOSING_QUOTE_SECONDS = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold + CLOSING_QUOTE.fadeOut;
-
-// 0 at the start and the end, 1 across the hold.
+export const END_CREDITS_CLOSING_HOLD = 4;
+export const CLOSING_QUOTE = Object.freeze({ fadeIn: 2.4, hold: 6.4, fadeOut: 3 });
+const QUOTE_SECONDS = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold + CLOSING_QUOTE.fadeOut;
+const QUOTE = 'There is no security against the ultimate development of mechanical consciousness, in the fact of machines possessing little consciousness now.';
+const ATTRIBUTION = ['SAMUEL BUTLER · EREWHON', 'THE BOOK OF THE MACHINES'];
+const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Number(n) || 0));
+const smooth = n => { const t = clamp(n, 0, 1); return t * t * (3 - 2 * t); };
 export function closingQuoteAlpha(elapsed) {
   const t = Math.max(0, Number(elapsed) || 0);
-  if (t < CLOSING_QUOTE.fadeIn) return smooth01(t / CLOSING_QUOTE.fadeIn);
-  const outAt = CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold;
-  if (t < outAt) return 1;
-  return 1 - smooth01((t - outAt) / CLOSING_QUOTE.fadeOut);
+  return t < CLOSING_QUOTE.fadeIn ? smooth(t / CLOSING_QUOTE.fadeIn)
+    : t < CLOSING_QUOTE.fadeIn + CLOSING_QUOTE.hold ? 1
+      : 1 - smooth((t - CLOSING_QUOTE.fadeIn - CLOSING_QUOTE.hold) / CLOSING_QUOTE.fadeOut);
 }
-
 export function closingQuoteBlock(width = 46) {
-  const w = Math.max(18, Math.floor(width));
-  const quote = CLOSING_QUOTE_LINES.flatMap((line) => wrap(line, w));
-  const attribution = CLOSING_ATTRIBUTION.flatMap((line) => wrap(line, w));
+  const wrap = text => uiWrap(text, Math.max(18, Math.floor(width)));
+  const quote = wrap(QUOTE), attribution = ATTRIBUTION.flatMap(wrap);
   return { quote, attribution, lines: [...quote, '', ...attribution] };
 }
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, Number(value) || 0));
-}
-
-function clamp01(value) {
-  return clamp(value, 0, 1);
-}
-
-function smooth01(value) {
-  const t = clamp01(value);
-  return t * t * (3 - 2 * t);
-}
-
-function centerX(text, cols) {
-  return Math.max(0, Math.floor((cols - String(text).length) / 2));
-}
-
-function fit(text, width) {
-  const value = String(text ?? '');
-  const w = Math.max(1, Math.floor(width));
-  return value.length <= w ? value : value.slice(0, w);
-}
-
-function wrap(text, width) {
-  const lines = uiWrap(text, Math.max(1, Math.floor(width)));
-  return lines.length ? lines : [''];
-}
-
-export function creditRollLayout({ cols = 80, rows = 30, credits = CREDITS } = {}) {
-  const c = Math.max(20, Math.floor(cols));
-  const r = Math.max(8, Math.floor(rows));
-  const maxWidth = clamp(c - 6, Math.min(18, c - 2), Math.min(72, c - 2));
-  const entries = [];
-  let offset = 0;
-
-  for (const item of flattenCredits(credits)) {
-    if (!item || item.kind === 'blank') {
-      offset += 2.2;
-      continue;
-    }
-    if (item.kind === 'heading') {
-      if (entries.length) offset += 0.8;
-      for (const line of wrap(String(item.text || '').toUpperCase(), maxWidth)) {
-        entries.push({
-          kind: 'heading',
-          text: line,
-          x: centerX(line, c),
-          offset,
-          cls: 'ui-amber',
-        });
-        offset += 1.35;
-      }
-      offset += 0.75;
-      continue;
-    }
-    for (const line of wrap(item.text, maxWidth)) {
-      entries.push({
-        kind: 'line',
-        text: line,
-        x: centerX(line, c),
-        offset,
-        cls: 'ui-primary',
-      });
-      offset += 1.35;
-    }
-  }
-
-  const contentHeight = offset;
-  const startY = Math.max(3, r - 5);
-  const closingOffset = contentHeight + Math.max(8, r * 0.72);
-  const centerRow = Math.floor(r * 0.46);
-  const maxScroll = Math.max(0, startY + closingOffset - centerRow);
-  return {
-    cols: c,
-    rows: r,
-    maxWidth,
-    entries,
-    contentHeight,
-    startY,
-    closingOffset,
-    centerRow,
-    maxScroll,
-  };
-}
-
-export function positionedCreditEntries(layout, scroll = 0) {
-  const amount = clamp(scroll, 0, layout.maxScroll);
-  return layout.entries.map((entry) => ({
-    ...entry,
-    y: layout.startY + entry.offset - amount,
-  }));
-}
-
-function openingCardAlpha(elapsed, duration) {
-  return smooth01(elapsed / 0.75) * (1 - smooth01((elapsed - duration + 0.85) / 0.85));
-}
-
-export function makeCreditsScene({
-  credits = CREDITS,
-  context = 'menu',
-  onDone,
-  onWebsite,
-  // Fired once as the closing quote begins to fade up (take the music away), and
-  // once when it has faded to full black (bring the hiss bed up under nothing).
-  onQuote,
-  onBlack,
-  // A specific ending may retain its own live music owner through the roll.
-  // The usual credits piece and its release remain the default everywhere.
-  suppressSoundtrack = false,
-  // The Source II rest lets the performance and silence have the last word.
-  // It has no closing quotation or return-report transition.
-  quietEnding = false,
-  soundtrack = AUDIO,
-  // Optional live playhead for an ending which carries a performance into the
-  // roll. The regular credits remain on their authored fixed speed.
-  getMusicPosition = null,
-  // A retained ending's presentation follows the same real lifecycle hold as
-  // its audio. Ordinary credits keep their existing independent UI clock.
-  getPresentationHeld = null,
-  openingDuration = END_CREDITS_OPENING_DURATION,
-  closingHold = END_CREDITS_CLOSING_HOLD,
-  initialCols = 80,
-  initialRows = 30,
-} = {}) {
+export function makeCreditsScene({ credits = CREDITS, context = 'menu', onDone, onWebsite, onQuote, onBlack,
+  suppressSoundtrack = false, quietEnding = false, soundtrack = AUDIO, getMusicPosition = null,
+  getPresentationHeld = null, openingDuration = END_CREDITS_OPENING_DURATION,
+  closingHold = END_CREDITS_CLOSING_HOLD, initialCols = 80, initialRows = 30 } = {}) {
   const presentationContext = context === 'ending' ? 'ending' : 'menu';
-  let layout = creditRollLayout({ cols: initialCols, rows: initialRows, credits });
-  let elapsed = 0;
-  let scroll = 0;
-  let paused = false;
-  let closingElapsed = 0;
-  let done = false;
-  let quoteElapsed = null;    // null until the closing quote starts
-  let blackFired = false;
-  let quoteFired = false;
-  let manualEnd = false;
-  let quietFittedRate = null,quietMusicEnded = false;
-  const heldActions = new Set();
+  let cols = initialCols, rows = initialRows, cellW = 8.45, cellH = 20;
+  let programme, record, phase = 'opening', card = 0, cardElapsed = 0, cardDuration = 0;
+  let elapsed = 0, phaseElapsed = 0, paused = false, done = false, quoteFired = false, blackFired = false;
+  let reader = false, section = 0, page = 0, focus = 'pause', pointerDown = null, manualEnd = false;
+  let cachedSize = '', hits = [];
+  const held = new Set();
+  const metrics = () => ({ cols, rows, cellW, cellH });
+  const finalSeconds = () => quietEnding ? 0 : QUOTE_SECONDS + CREDIT_PROGRAM_BLACK_HOLD;
 
-  function remainingMusic(){
-    quietMusicEnded=false;
-    if(typeof getMusicPosition!=='function'||manualEnd||presentationContext!=='ending')return null;
-    let state;try{state=getMusicPosition();}catch{return null;}
-    const duration=Number(state?.duration),time=Number(state?.currentTime);
-    // Only an actual completed performance may carry its fitted roll cadence
-    // into the remaining credits. A failed, paused or missing stream may not.
-    quietMusicEnded=quietEnding&&!!state&&!state.failed&&!state.paused&&Number.isFinite(duration)&&duration>0
-      &&Number.isFinite(time)&&time>=0&&(state.ended===true||time>=duration);
-    if(!state||typeof state.duration!=='number'||typeof state.currentTime!=='number'
-      ||state.playing!==true||state.paused||state.failed||!Number.isFinite(duration)||duration<=0
-      ||!Number.isFinite(time)||time<0||time>=duration)return null;
-    return duration-time;
+  function refresh(nextCols = cols, nextRows = rows, nextCellW = cellW, nextCellH = cellH) {
+    cols = Math.max(20, Math.floor(nextCols)); rows = Math.max(8, Math.floor(nextRows));
+    cellW = Number(nextCellW) || 8.45; cellH = Number(nextCellH) || 20;
+    const key = `${cols}:${rows}:${cellW}:${cellH}`;
+    if (key === cachedSize) return;
+    cachedSize = key;
+    const oldCard = programme?.cards[card], oldId = oldCard?.id;
+    const recordAnchor = record?.[section]?.pages[page]?.fragments[0];
+    programme = createCreditProgram({ credits, quiet: quietEnding, openingSeconds: openingDuration,
+      closingSeconds: closingHold, quoteSeconds: QUOTE_SECONDS, paginate(item) {
+        const measured = creditSignalLayout({ ...metrics(), label: item.label, lines: item.lines, kind: item.kind || 'body' });
+        const width = measured.bodyWidthPx || measured.box.w * cellW;
+        const lines = item.lines.flatMap(line => wrapCreditSignalText(line, width, measured.bodyFontPx));
+        const capacity = Math.max(1, measured.maxBodyLines);
+        const pages = [];
+        for (let i = 0; i < lines.length; i += capacity) pages.push(lines.slice(i, i + capacity));
+        return pages.length ? pages : [[]];
+      } });
+    if (oldId) {
+      let found = programme.cards.findIndex(item => item.id === oldId);
+      if (found < 0) found = programme.cards.findIndex(item => item.id.split('-page-')[0] === oldId.split('-page-')[0]);
+      if (found >= 0) card = found;
+    }
+    card = clamp(card, 0, Math.max(0, programme.cards.length - 1));
+    if (phase === 'card') { phaseElapsed = 0; cardElapsed = 0; cardDuration = durationFor(card); }
+    record = creditRecordPages({ credits,
+      capacity(item) { return Math.max(1, creditRecordLayout({ ...metrics(), heading: item.heading, lines: [] }).maxBodyLines); },
+      wrapLine(text, item) {
+        const measured = creditRecordLayout({ ...metrics(), heading: item.heading, lines: [] });
+        return wrapCreditSignalText(text, measured.bodyWidthPx || measured.box.w * cellW,
+          measured.bodyFontPx, { uppercase: false });
+      } });
+    section = clamp(section, 0, Math.max(0, record.length - 1));
+    if (recordAnchor) {
+      const pages = record[section]?.pages || [];
+      let found = pages.findIndex(item => item.fragments.some(fragment => fragment.sourceLineIndex === recordAnchor.sourceLineIndex && fragment.fragmentIndex === recordAnchor.fragmentIndex));
+      if (found < 0) found = pages.findIndex(item => item.fragments.some(fragment => fragment.sourceLineIndex === recordAnchor.sourceLineIndex));
+      if (found >= 0) page = found;
+    }
+    page = clamp(page, 0, Math.max(0, (record[section]?.pages.length || 1) - 1));
   }
+  refresh();
 
-  function fireQuote() {
-    if (quoteFired || presentationContext !== 'ending') return;
-    quoteFired = true;
-    onQuote?.();
+  function musicState() {
+    if (manualEnd || presentationContext !== 'ending' || typeof getMusicPosition !== 'function') return null;
+    let state; try { state = getMusicPosition(); } catch { return null; }
+    if (!state || state.failed || state.paused || typeof state.duration !== 'number' || typeof state.currentTime !== 'number'
+      || !Number.isFinite(state.duration) || state.duration <= 0 || !Number.isFinite(state.currentTime) || state.currentTime < 0) return null;
+    if (state.ended === true || state.currentTime >= state.duration) return { remaining: 0, ended: true };
+    return state.playing === true ? { remaining: state.duration - state.currentTime, ended: false } : null;
   }
-
-  function refreshLayout(cols, rows) {
-    layout = creditRollLayout({ cols, rows, credits });
-    scroll = clamp(scroll, 0, layout.maxScroll);
-    return layout;
+  function durationFor(index) {
+    const item = programme.cards[index]; if (!item) return 0;
+    const music = musicState();
+    if (!music) return item.duration;
+    if (music.ended) return item.minHold;
+    const nominal = programme.cards.slice(index).reduce((sum, current) => sum + current.duration, 0);
+    const budget = Math.max(0, music.remaining - closingHold - finalSeconds());
+    return Math.max(item.minHold, item.duration * budget / Math.max(.001, nominal));
   }
-
-  function phase() {
-    if (quoteElapsed != null) return 'quote';
-    if (elapsed < openingDuration && scroll <= 0.001) return 'opening';
-    if (scroll >= layout.maxScroll - 0.001) return 'closing';
-    return 'roll';
+  function fireQuote() { if (!quoteFired && presentationContext === 'ending') { quoteFired = true; onQuote?.(); } }
+  function fireBlack() { if (!blackFired) { blackFired = true; onBlack?.(); } }
+  function finish() { if (!done) { done = true; fireQuote(); fireBlack(); onDone?.(); } return true; }
+  function enterCard(index, manual = false) {
+    card = clamp(index, 0, Math.max(0, programme.cards.length - 1));
+    phase = 'card'; phaseElapsed = 0; cardElapsed = 0; cardDuration = durationFor(card);
+    if (manual) { paused = true; manualEnd = false; }
   }
-
-  function finish() {
-    if (done) return true;
-    done = true;
-    // A skip shares the same sound-owner release as the natural quote. It does
-    // not force the player to watch the quote they deliberately skipped.
-    fireQuote();
-    // Skipping still hands over a silent room: whoever asked for the summary
-    // early should not get the credits music playing under it.
-    if (!blackFired) { blackFired = true; onBlack?.(); }
-    onDone?.();
-    return true;
+  function moveCard(delta) {
+    if (!programme.cards.length) return;
+    enterCard(phase === 'opening' ? 0 : phase === 'closing' || phase === 'quote' || phase === 'black'
+      ? programme.cards.length - 1 : card + delta, true);
   }
-
-  function beginQuote() {
-    if (quoteElapsed != null) return;
-    quoteElapsed = 0;
-    paused = false;
-    fireQuote();
+  function openRecord() { reader = true; section = programme.cards[card]?.sectionIndex || 0; page = 0; focus = 'programme'; }
+  function moveSection(delta) { section = clamp(section + delta, 0, Math.max(0, record.length - 1)); page = 0; }
+  function movePage(delta) {
+    const pages = record[section]?.pages || [];
+    if (page + delta < 0 && section > 0) { section--; page = record[section].pages.length - 1; }
+    else if (page + delta >= pages.length && section < record.length - 1) { section++; page = 0; }
+    else page = clamp(page + delta, 0, Math.max(0, pages.length - 1));
   }
-
-  function enterRoll() {
-    elapsed = Math.max(elapsed, openingDuration);
+  function actions() {
+    return reader ? [
+      { id: 'section-prev', label: 'PREV SECTION', disabled: section === 0 },
+      { id: 'page-prev', label: 'PREV', disabled: section === 0 && page === 0 },
+      { id: 'page-next', label: 'NEXT', disabled: section === record.length - 1 && page === (record[section]?.pages.length || 1) - 1 },
+      { id: 'section-next', label: 'NEXT SECTION', disabled: section === record.length - 1 },
+      { id: 'programme', label: 'PROGRAMME' }, { id: 'website', label: 'WEBSITE' },
+      { id: 'back', label: presentationContext === 'ending' ? 'SKIP' : 'BACK' },
+    ] : [
+      { id: 'prev', label: 'PREV', disabled: phase === 'opening' },
+      { id: 'pause', label: paused ? 'RESUME' : 'PAUSE' },
+      { id: 'next', label: 'NEXT', disabled: phase === 'black' },
+      { id: 'record', label: 'RELEASE RECORD' }, { id: 'website', label: 'WEBSITE' },
+      { id: 'back', label: presentationContext === 'ending' ? 'SKIP' : 'BACK' },
+    ];
   }
-
-  function userScroll(delta) {
-    enterRoll();
-    scroll = clamp(scroll + delta, 0, layout.maxScroll);
-    if(scroll<layout.maxScroll)manualEnd=false;
-    closingElapsed = 0;
-    paused = true;
+  function activate(id) {
+    if (actions().find(item => item.id === id)?.disabled) return;
+    if (id === 'back') finish();
+    else if (id === 'website') { paused = true; onWebsite?.(); }
+    else if (id === 'record') openRecord();
+    else if (id === 'programme') { reader = false; focus = 'pause'; }
+    else if (id === 'pause') paused = !paused;
+    else if (id === 'prev') moveCard(-1);
+    else if (id === 'next') {
+      if (phase === 'card' && card === programme.cards.length - 1 || phase === 'closing' || phase === 'quote') {
+        phase = 'closing'; phaseElapsed = 0; manualEnd = true; paused = true;
+      } else moveCard(1);
+    } else if (id === 'section-prev') moveSection(-1);
+    else if (id === 'section-next') moveSection(1);
+    else if (id === 'page-prev') movePage(-1);
+    else if (id === 'page-next') movePage(1);
   }
-
+  function moveFocus(delta) {
+    const available = actions().filter(item => !item.disabled);
+    let index = available.findIndex(item => item.id === focus);
+    index = (index + delta + available.length) % available.length;
+    focus = available[index]?.id || 'pause';
+  }
   return {
-    id: 'credits',
-    handlesEscape: true,
-    blocksInput: true,
-    blocksWorld: true,
-    lensPreset: 'calm',
-
-    // The roll has its own piece, played through the shared soundtrack slot so
-    // it displaces the title bed rather than stacking on top of it. Fading out
-    // on the way is what stops the ending from cutting to silence mid-bar.
-    enter() { if(!suppressSoundtrack)soundtrack.startSoundtrack({ track: 'credits', fade: 2.2 }); },
-    exit() { if(!suppressSoundtrack)soundtrack.fadeSoundtrack({ fade: 3.2 }); },
-    resume() { heldActions.clear(); },
-
+    id: 'credits', handlesEscape: true, blocksInput: true, blocksWorld: true, lensPreset: 'calm',
+    enter() { void warmCreditRecordFont(); if (!suppressSoundtrack) soundtrack.startSoundtrack({ track: 'credits', fade: 2.2 }); },
+    exit() { if (!suppressSoundtrack) soundtrack.fadeSoundtrack({ fade: 3.2 }); held.clear(); pointerDown = null; },
+    resume() { held.clear(); pointerDown = null; },
     update(dt = 0) {
-      if (done) return;
-      if(quietEnding&&typeof getPresentationHeld==='function'){
-        let held=false;try{held=!!getPresentationHeld();}catch{}
-        if(held)return;
-      }
-      const delta = Math.max(0, Number(dt) || 0);
-      // Once the quote is up, nothing else moves and pausing does not hold it:
-      // this is the ending playing itself out, not a roll you are scrubbing.
-      if (quoteElapsed != null) {
-        quoteElapsed += delta;
-        if (!blackFired && quoteElapsed >= CLOSING_QUOTE_SECONDS) { blackFired = true; onBlack?.(); }
-        // A beat of held black after the fade, so the summary does not arrive on
-        // top of the last frame of the quote.
-        if (quoteElapsed >= CLOSING_QUOTE_SECONDS + 1.6) finish();
-        return;
-      }
-      if (paused) return;
-      const before = elapsed;
-      elapsed += delta;
-      if (elapsed < openingDuration) return;
-      const rollDelta = before < openingDuration ? Math.max(0, elapsed - openingDuration) : delta;
-      const remaining = remainingMusic(),finalSeconds=quietEnding?0:CLOSING_QUOTE_SECONDS+1.6;
-      let closingDelta=rollDelta;
-      if (scroll < layout.maxScroll) {
-        // Sampled media time is at the end of this update. Add rollDelta back
-        // to find its starting budget. A quiet ending has no quotation to
-        // reserve; its real ending sound may continue under a readable roll.
-        const rows=layout.maxScroll-scroll;
-        const budget=remaining===null?null:remaining+rollDelta-closingHold-finalSeconds;
-        const rate=budget===null?(quietMusicEnded&&quietFittedRate!==null?quietFittedRate:AUTO_SCROLL_ROWS_PER_SEC)
-          :Math.min(MAX_MUSIC_SCROLL_ROWS_PER_SEC,rows/Math.max(.001,budget));
-        if(quietEnding&&remaining!==null)quietFittedRate=rate;
-        const used=rate>0?Math.min(rollDelta,rows/rate):0;
-        scroll = Math.min(layout.maxScroll, scroll + rollDelta * rate);
-        if (scroll < layout.maxScroll) return;
-        if(remaining!==null)closingDelta=Math.max(0,rollDelta-used);
-      }
-      closingElapsed += closingDelta;
-      // The ending does not cut from "thank you for listening" to a stats screen.
-      // It answers its own opening quote first, and goes to black doing it.
-      if (presentationContext === 'ending' && closingElapsed >= closingHold
-        &&(quietEnding||remaining===null||remaining<=finalSeconds+delta)) {
-        if(quietEnding)finish();else beginQuote();
+      if (done || reader || paused) return;
+      if (typeof getPresentationHeld === 'function') { try { if (getPresentationHeld()) return; } catch {} }
+      let remaining = Math.max(0, Number(dt) || 0); elapsed += remaining;
+      // Consume bounded phase transitions, not the browser's frame count. A
+      // stall cannot skip callbacks or leave the final frame stranded.
+      for (let guard = 0; remaining > 0 && guard < programme.cards.length + 8 && !done; guard++) {
+        let duration = phase === 'opening' ? openingDuration : phase === 'card' ? cardDuration
+          : phase === 'closing' ? closingHold : phase === 'quote' ? QUOTE_SECONDS : CREDIT_PROGRAM_BLACK_HOLD;
+        if (phase === 'closing' && !manualEnd) {
+          const music = musicState();
+          if (music && !music.ended) duration = Math.max(duration, phaseElapsed + music.remaining - finalSeconds());
+        }
+        const used = Math.min(remaining, Math.max(0, duration - phaseElapsed));
+        phaseElapsed += used; if (phase === 'card') cardElapsed = phaseElapsed; remaining -= used;
+        if (phaseElapsed < duration - 1e-7) break;
+        if (phase === 'opening') enterCard(0);
+        else if (phase === 'card') {
+          if (card < programme.cards.length - 1) enterCard(card + 1);
+          else { phase = 'closing'; phaseElapsed = 0; }
+        } else if (phase === 'closing') {
+          if (presentationContext === 'menu') break;
+          if (quietEnding) { finish(); break; }
+          phase = 'quote'; phaseElapsed = 0; fireQuote();
+        } else if (phase === 'quote') { phase = 'black'; phaseElapsed = 0; fireBlack(); }
+        else finish();
       }
     },
-
     key(e = {}) {
       if (done) return true;
-      const raw = e.key || '';
-      const code = e.code || '';
-      const k = raw.toLowerCase();
-      const action = code || raw;
-      const discrete = raw === 'Enter' || code === 'Enter' || raw === ' ' || code === 'Space'
-        || raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace';
-      // A narrative advance still held at entry cannot open a website, skip,
-      // pause or confirm. Arrow/page scrolling remains intentionally repeatable.
-      if (discrete) {
-        if (e.repeat || heldActions.has(action)) return true;
-        heldActions.add(action);
+      const key = e.key || '', code = e.code || '', lower = key.toLowerCase();
+      const token = e.controllerAction || code || key;
+      const directional = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(key);
+      if (!directional) { if (e.repeat || held.has(token)) return true; held.add(token); }
+      if (key === 'Escape' || code === 'Escape' || key === 'Backspace' || e.controllerAction === 'back') {
+        if (reader) { reader = false; focus = 'record'; } else finish(); return true;
       }
-
-      if (raw === 'Escape' || code === 'Escape' || raw === 'Backspace' || code === 'Backspace') return finish();
-      // The closing quote is not scrollable and cannot be paused. The only thing
-      // left to do to it is skip it, which Escape already does.
-      if (quoteElapsed != null) return true;
-      if (raw === 'ArrowUp' || k === 'w' || code === 'KeyW') { userScroll(-KEY_SCROLL_ROWS); return true; }
-      if (raw === 'ArrowDown' || k === 's' || code === 'KeyS') { userScroll(KEY_SCROLL_ROWS); return true; }
-      if (raw === 'PageUp') { userScroll(-PAGE_SCROLL_ROWS); return true; }
-      if (raw === 'PageDown') { userScroll(PAGE_SCROLL_ROWS); return true; }
-      if (raw === 'Home') {
-        enterRoll();
-        scroll = 0;
-        manualEnd = false;
-        closingElapsed = 0;
-        paused = true;
+      if (key === 'Tab' || e.controllerAction === 'tabPrev' || e.controllerAction === 'tabNext') { moveFocus(e.shiftKey || e.controllerAction === 'tabPrev' ? -1 : 1); return true; }
+      if (key === 'ArrowUp' || key === 'ArrowDown') { moveFocus(key === 'ArrowUp' ? -1 : 1); return true; }
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        const delta = key === 'ArrowLeft' ? -1 : 1;
+        if (reader) movePage(delta); else moveCard(delta); return true;
+      }
+      if (key === 'PageUp' || key === 'PageDown') {
+        const delta = key === 'PageUp' ? -1 : 1;
+        if (reader) moveSection(delta); else moveCard(delta); return true;
+      }
+      if (key === 'Home') { if (reader) { section = 0; page = 0; } else enterCard(0, true); return true; }
+      if (key === 'End') {
+        if (reader) { section = Math.max(0, record.length - 1); page = Math.max(0, (record[section]?.pages.length || 1) - 1); }
+        else { phase = 'closing'; phaseElapsed = 0; manualEnd = true; paused = true; }
         return true;
       }
-      if (raw === 'End') {
-        enterRoll();
-        scroll = layout.maxScroll;
-        closingElapsed = 0;
-        manualEnd = true;
-        paused = true;
-        return true;
-      }
-      if (raw === ' ' || code === 'Space') {
-        paused = !paused;
-        return true;
-      }
-      if (raw === 'Enter' || code === 'Enter') {
-        onWebsite?.();
-        return true;
-      }
+      if (lower === 'r' && !e.controller) { if (reader) { reader = false; focus = 'record'; } else openRecord(); return true; }
+      if (key === ' ' || code === 'Space') { if (!reader) paused = !paused; return true; }
+      if (key === 'Enter' || code === 'Enter' || e.controllerAction === 'confirm') activate(focus);
       return true;
     },
-
-    keyup(e = {}) { heldActions.delete(e.code || e.key || ''); return true; },
-
-    resize(cols, rows) { return refreshLayout(cols, rows); },
-
-    view() {
-      return {
-        id: 'credits',
-        context: presentationContext,
-        phase: phase(),
-        paused,
-        elapsed,
-        scroll,
-        maxScroll: layout.maxScroll,
-        lines: layout.entries.length,
-        closingElapsed,
-        done,
-      };
+    keyup(e = {}) { held.delete(e.controllerAction || e.code || e.key || ''); return true; },
+    pointer(e = {}) {
+      const hit = hits.find(item => !item.disabled && e.cellX >= item.x && e.cellX < item.x + item.w && e.cellY >= item.y && e.cellY < item.y + item.h);
+      if (e.type === 'pointermove' && hit) focus = hit.id;
+      if (e.type === 'pointerdown') { pointerDown = hit?.id || null; if (hit) focus = hit.id; }
+      if (e.type === 'pointerup') { const id = pointerDown; pointerDown = null; if (hit && id === hit.id) activate(id); }
+      if (e.type === 'pointercancel') pointerDown = null;
+      return true;
     },
-
+    resize(nextCols, nextRows) { refresh(nextCols, nextRows); },
+    view() { return { id: 'credits', context: presentationContext, phase: reader ? 'record' : phase,
+      programmePhase: phase, paused, elapsed, card, cards: programme.cards.length, cardElapsed, cardDuration,
+      programmeSeconds: programme.totalSeconds, section, sections: record.length, page,
+      pages: record[section]?.pages.length || 0, focus, done,
+      hitRegions: hits.map(item => ({id:item.id,x:item.x,y:item.y,w:item.w,h:item.h,disabled:!!item.disabled})),
+      sourceLines: record.reduce((sum, item) => sum + item.sourceLines.length, 0),
+      content: reader ? record[section]?.pages[page] : programme.cards[card], controls: actions() }; },
     render() {
-      const { cols, rows } = uiSize();
-      refreshLayout(cols, rows);
-
-      // ── the closing quote ────────────────────────────────────────────────
-      // Nothing else is on screen. No atmosphere, no footer, no prompt: the
-      // machine has stopped talking, which was the opening quote's whole point.
-      if (quoteElapsed != null) {
-        const alpha = closingQuoteAlpha(quoteElapsed);
-        if (alpha <= 0.001) return;
-        const width = clamp(cols - (cols >= 96 ? 28 : 6), Math.min(22, cols - 2), Math.min(52, cols - 2));
-        const block = closingQuoteBlock(width);
-        const top = Math.max(1, Math.round((rows - block.lines.length) / 2));
-        block.quote.forEach((line, i) => {
-          uiText(centerX(line, cols), top + i, line, 'ui-secondary', alpha * 0.92);
-        });
-        block.attribution.forEach((line, i) => {
-          uiText(centerX(line, cols), top + block.quote.length + 1 + i, line, 'ui-amber', alpha * 0.7);
-        });
-        return;
+      const size = uiSize(), metric = uiCellMetrics();
+      if (size.cols > 0 && size.rows > 0) refresh(size.cols, size.rows, metric.cellW || metric.w, metric.cellH || metric.h);
+      if (reader) {
+        const current = record[section], currentPage = current?.pages[page];
+        renderCreditRecord({ heading: current?.heading || 'RELEASE RECORD', lines: currentPage?.lines || [],
+          sectionLabel: `RELEASE RECORD · ${section + 1}/${record.length}`, pageLabel: `PAGE ${page + 1}/${current?.pages.length || 1}` });
+      } else if (phase === 'quote') {
+        renderCreditSignal({ label: '', lines: [QUOTE], attribution: ATTRIBUTION, kind: 'quote', alpha: paused ? 1 : closingQuoteAlpha(phaseElapsed), quiet: quietEnding });
+      } else if (phase === 'black' || done) renderCreditSignal({ lines: [], alpha: 0, quiet: true });
+      else if (phase === 'opening') renderCreditSignal({ label: 'RELEASE CREDITS', lines: ['CHUNK SURFER'],
+        attribution: ['A HAUNTING AT ELLERY CONSERVATOIRE'], kind: 'names', alpha: smooth(phaseElapsed / .75), quiet: quietEnding });
+      else if (phase === 'closing') renderCreditSignal({ label: 'END OF RECORD', lines: ['THANK YOU FOR LISTENING.'],
+        attribution: ['CBASSUAREZ.COM'], kind: 'names', quiet: quietEnding });
+      else {
+        const item = programme.cards[card], fade = paused ? 1 : Math.min(smooth(cardElapsed / .65), smooth((cardDuration - cardElapsed) / .65));
+        renderCreditSignal({ label: item?.label || '', lines: item?.lines || [], kind: item?.kind || 'body', alpha: fade,
+          time: elapsed, transition: 1 - fade, quiet: quietEnding });
       }
-
-      renderCreditAtmosphere(creditAtmosphereFrame(elapsed + scroll * 0.08, {
-        alpha: 1,
-        intensity: phase() === 'opening' ? 0.78 : 0.62,
-      }));
-
-      if (phase() === 'opening') {
-        const alpha = openingCardAlpha(elapsed, openingDuration);
-        const scale = cols < 54 ? 1.35 : cols < 92 ? 1.78 : 2.05;
-        const title = 'CHUNK SURFER';
-        drawVfdText(Math.max(0, (cols - title.length * scale) / 2), Math.max(1, rows * 0.34), title, {
-          scale,
-          theme: 'amber',
-          alpha,
-        });
-        uiText(centerX('RELEASE CREDITS', cols), Math.round(rows * 0.55), 'RELEASE CREDITS', 'ui-amber', alpha * 0.88);
-        uiText(
-          centerX('A HAUNTING AT ELLERY CONSERVATOIRE', cols),
-          Math.round(rows * 0.55) + 2,
-          fit('A HAUNTING AT ELLERY CONSERVATOIRE', cols - 2),
-          'ui-secondary',
-          alpha * 0.72,
-        );
-      } else {
-        for (const entry of positionedCreditEntries(layout, scroll)) {
-          if (entry.y < -1.5 || entry.y > rows - 2.5) continue;
-          uiText(entry.x, entry.y, entry.text, entry.cls, entry.kind === 'heading' ? 0.96 : 0.84);
-        }
-
-        const closingY = layout.startY + layout.closingOffset - scroll;
-        if (closingY > -5 && closingY < rows + 4) {
-          const thanks = 'THANK YOU FOR LISTENING.';
-          const scale = cols < 54 ? 1.05 : cols < 92 ? 1.28 : 1.45;
-          const alpha = smooth01((scroll - layout.maxScroll + 5) / 5);
-          drawVfdText(Math.max(0, (cols - thanks.length * scale) / 2), closingY - 2, thanks, {
-            scale,
-            theme: 'amber',
-            alpha,
-          });
-          uiText(centerX('CBASSUAREZ.COM', cols), closingY + 2, 'CBASSUAREZ.COM', 'ui-secondary', alpha * 0.82);
-        }
-      }
-
-      const footer = activeInputPromptDevice() === 'controller'
-        ? promptLine([
-            { action: 'select', label: 'SCROLL' },
-            { action: 'confirm', label: 'WEBSITE' },
-            { action: 'back', label: presentationContext === 'ending' ? 'SKIP' : 'BACK' },
-          ])
-        : `[↑↓] SCROLL · [SPACE] ${paused ? 'RESUME' : 'PAUSE'} · [ENTER] WEBSITE · [ESC] ${presentationContext === 'ending' ? 'SKIP' : 'BACK'}`;
-      uiText(centerX(fit(footer, cols - 4), cols), rows - 2, fit(footer, cols - 4), 'ui-label', 0.52);
+      // Controls retain their own fixed coordinates; website is an intentional
+      // focus target, never the default action for narrative advance.
+      hits = phase === 'black' || done ? [] : renderCreditSignalControls(actions(), { activeId: focus }) || [];
     },
   };
 }

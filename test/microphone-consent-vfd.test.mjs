@@ -55,6 +55,7 @@ async function fixture({ cols = 120, rows = 40, aspect = 8.45 / 20, reducedMotio
   mock('game/scenes.js', {
     remove(scene) { state.removed.push(scene); scene.exit?.(); return scene; },
   });
+  mock('game/access.js', { visualEffectsEnabled: () => true });
   mock('render/atlas.js', {
     UI_CELL_W: 8.45, UI_CELL_H: 20, atlasConfigure: nothing, atlasDpr: () => 1, getTile: nothing,
   });
@@ -262,7 +263,7 @@ test('copy scrolls independently of the profile choices and the etched legends',
   const beforeActions = cardLabels.profile.map((label) => ({ ...f.region(label) }));
   const beforePrinted = f.state.printed.map(({ text }) => text);
   assert.equal(selectedLabel(f), 'PROFILE OFF');
-  for (let i = 0; i < 100; i++) tap(f, scene, 'ArrowDown', { repeat: true });
+  for (let i = 0; i < 100; i++) tap(f, scene, 'PageDown', { repeat: true });
   f.render(scene);
   assert.notEqual(f.state.text.map((entry) => entry.text).join('\n'), beforeText);
   assert.ok(f.state.text.some(({ text }) => text.includes('Choose PROFILE ON')), 'final explanation remains reachable');
@@ -271,7 +272,7 @@ test('copy scrolls independently of the profile choices and the etched legends',
     const after = f.region(label);
     for (const coordinate of ['x', 'y', 'w', 'h']) assert.equal(after[coordinate], beforeActions[index][coordinate]);
   }
-  tap(f, scene, 'ArrowLeft');
+  tap(f, scene, 'ArrowUp');
   f.render(scene);
   assert.equal(selectedLabel(f), 'PROFILE ON');
   assert.deepEqual(f.state.printed.map(({ text }) => text), beforePrinted, 'selection does not change metal lettering');
@@ -280,7 +281,7 @@ test('copy scrolls independently of the profile choices and the etched legends',
 test('microphone artwork stays neutral while Allow is merely selected', async () => {
   const f = await fixture();
   const scene = f.makeScene();
-  tap(f, scene, 'ArrowLeft');
+  tap(f, scene, 'ArrowUp');
   f.render(scene);
   assert.equal(selectedLabel(f), 'ALLOW MICROPHONE');
   assert.ok(f.state.microphoneFrames.length > 0);
@@ -379,7 +380,7 @@ test('controller selection and confirmation use the same visible choices and con
   let allow = 0, done = 0;
   const scene = f.makeScene({ onMicAllow: () => { allow++; return { state: 'on', active: true }; }, onDone: () => done++ });
   assert.ok(f.state.text.some(({ text }) => text.includes('CROSS')), 'confirm hint follows the active controller');
-  tap(f, scene, 'ArrowLeft', { controller: true, controllerAction: 'move_left' });
+  tap(f, scene, 'ArrowUp', { controller: true, controllerAction: 'move_up' });
   f.render(scene);
   assert.equal(selectedLabel(f), 'ALLOW MICROPHONE');
   tap(f, scene, 'Enter', { controller: true, controllerAction: 'confirm' });
@@ -611,4 +612,40 @@ test('permission phase changes preserve the coordinates of the player choices', 
     assert.deepEqual(geometry('TRY AGAIN'), initialAllow, 'retry occupies the original affirmative slot');
     assert.deepEqual(geometry('PLAY WITHOUT MIC'), initialDecline, 'failure opt-out stays in place');
   }
+});
+
+test('permission replies reuse the ordinary numbered vertical picker and direct numbers commit once', async () => {
+  const f = await fixture();let allow=0,done=0;
+  const scene=f.makeScene({onMicAllow:()=>{allow++;return{state:'on',active:true};},onDone:()=>done++}),
+    first=f.region('ALLOW MICROPHONE'),second=f.region('PLAY WITHOUT MIC');
+  assert.equal(first.x,second.x);assert.ok(second.y>first.y);assert.equal(first.w,second.w);
+  const one=drawn(f,'1'),two=drawn(f,'2');assert.equal(one.x,two.x);assert.equal(two.y-one.y,1);
+  drawn(f,'YOU / REPLY ▐');assert.equal(selectedLabel(f),'PLAY WITHOUT MIC');
+  tap(f,scene,'ArrowUp');f.render(scene);assert.equal(selectedLabel(f),'ALLOW MICROPHONE');
+  tap(f,scene,'ArrowDown');f.render(scene);assert.equal(selectedLabel(f),'PLAY WITHOUT MIC');
+  tap(f,scene,'1');await flush();assert.deepEqual({allow,done},{allow:1,done:1});
+  tap(f,scene,'1');assert.deepEqual({allow,done},{allow:1,done:1});
+});
+
+test('pending permission addresses the grille without claiming a live microphone or animating reduced motion', async () => {
+  for(const reducedMotion of[false,true]){
+    const f=await fixture({reducedMotion}),pending=deferred(),scene=f.makeScene({onMicAllow:()=>pending.promise});
+    tap(f,scene,'y');f.render(scene);const initial=f.state.sprites.at(-1).levels;
+    for(let i=0;i<4;i++)scene.update(.25);f.render(scene);const later=f.state.sprites.at(-1).levels;
+    assert.ok(f.state.microphoneFrames.every(frame=>frame.live===false));
+    assert.equal(f.state.microphoneFrames.at(-1).mode,'requesting');
+    if(reducedMotion)assert.deepEqual(later,initial);else assert.notDeepEqual(later,initial);
+    for(const levels of[initial,later])assert.ok(levels.every(row=>row.slice(0,11).every(value=>value===0)&&row.slice(-11).every(value=>value===0)),'no pre-consent sound arcs');
+    tap(f,scene,'n');pending.resolve({state:'on',active:true});await flush();
+  }
+});
+
+test('controller shoulders scroll the disclosure while the D-pad keeps ownership of the reply column', async () => {
+  const f=await fixture({cols:75,rows:20});f.bindings.setActiveInputDevice('controller',{viable:true,controllerFamily:'xbox'});
+  const scene=f.makeScene(cardOptions.profile),before=f.state.text.map(row=>row.text).join('\n');
+  assert.equal(selectedLabel(f),'PROFILE OFF');
+  tap(f,scene,'Tab',{controller:true,controllerAction:'tabNext'});f.render(scene);
+  assert.notEqual(f.state.text.map(row=>row.text).join('\n'),before);assert.equal(selectedLabel(f),'PROFILE OFF');
+  tap(f,scene,'ArrowUp',{controller:true,controllerAction:'move_up'});f.render(scene);assert.equal(selectedLabel(f),'PROFILE ON');
+  assert.ok(f.state.text.some(row=>/LB|RB/.test(row.text)),'scroll hints use the active controller family');
 });

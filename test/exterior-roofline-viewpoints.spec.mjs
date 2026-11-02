@@ -11,7 +11,11 @@ test('legal school and hall gap cameras see the intended actual crown through th
   const school=audit.views.find(v=>v.id==='school-gap-qualified-candidate'),hall=audit.views.find(v=>v.id==='hall-gap-qualified-candidate');
   for(const v of[school,hall]){assert.equal(v.bodyOccupancy,true);assert.deepEqual(v.inside,[]);assert.ok(v.targetProjection.inside);assert.ok(v.targetProjection.pixel[1]>350&&v.targetProjection.pixel[1]<450);assert.ok(v.closureVisible&&v.closureSkyExposed);assert.ok(v.nearestArchitecturalHit.f>.995);}
   assert.equal(school.nearestArchitecturalHit.id,'ellery-west-roofline-closure');assert.equal(hall.nearestArchitecturalHit.id,'bay-west-elevation');
-  assert.equal(audit.ordinaryRouteBetweenCandidates.result,'PASS');assert.deepEqual(audit.ordinaryRouteBetweenCandidates.failures,[]);assert.equal(audit.ordinaryRouteBetweenCandidates.samples,37);
+  const route=audit.ordinaryRouteBetweenCandidates;
+  assert.equal(route.result,'PASS');assert.deepEqual(route.failures,[]);assert.equal(route.z0,44);assert.equal(route.z1,64);
+  assert.ok(route.samples>41&&route.metres<24,'the real route detours around the existing bench instead of passing through it');
+  for(let i=1;i<route.points.length;i++)assert.ok(Math.abs(Math.hypot(route.points[i].x-route.points[i-1].x,route.points[i].z-route.points[i-1].z)-.5)<1e-6,'every production movement edge remains one ordinary half-metre step');
+  assert.ok(route.points.some(p=>p.x!==25),'the original straight line is no longer silently treated as empty');
 });
 test('actual facade and roof closure anchors retain the outdoor sky and their expected source positions',()=>{
   const facade=audit.instances.find(i=>i.id==='bay-west-elevation'),closure=audit.instances.find(i=>i.id==='ellery-west-roofline-closure');

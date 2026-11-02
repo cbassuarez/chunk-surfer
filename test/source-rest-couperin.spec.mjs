@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {createSourceRestCouperin,sourceRestCouperinMix,SOURCE_REST_COUPERIN_URL,SOURCE_REST_COUPERIN_DURATION} from '../src/audio/source-rest-couperin.js';
+import {createSourceRestCouperin,sourceRestCouperinMix,advanceSourceRestCouperinBlend,SOURCE_REST_COUPERIN_BLEND,SOURCE_REST_COUPERIN_URL,SOURCE_REST_COUPERIN_DURATION} from '../src/audio/source-rest-couperin.js';
 
 class Param{
   constructor(value=1){this.value=value;this.events=[];}
@@ -60,6 +60,33 @@ test('one decoder splits two stems into one shared room, never an unattenuated b
   assert.equal(f.media.src,'/'+SOURCE_REST_COUPERIN_URL);assert.equal(f.owner.snapshot().playing,true);
   assert.equal(f.owner.snapshot().revoicing.sampleLocked,true);
   assert.equal(f.owner.snapshot().reverbSeconds,6.8);assert.equal(f.errors.length,0);
+});
+test('a narrative jump becomes a slow audio-clock transition while the original human and room remain present',async()=>{
+  const f=fixture();f.owner.start();await flush();const convolver=f.nodes.find(n=>n.kind==='convolver'),room=convolver.buffer,count=f.nodes.length;
+  f.ctx.currentTime=1/60;f.media.currentTime=1/60;f.owner.update({progress:.54});const first=f.owner.snapshot().revoicing;
+  assert.ok(first.electronic<=SOURCE_REST_COUPERIN_BLEND.maximumAmountPerSecond/60+1e-9);assert.ok(first.targetElectronic>.6);assert.ok(first.acousticGain>.99);
+  for(let n=2;n<=60*60;n++){f.ctx.currentTime=n/60;f.media.currentTime=n/60;f.owner.update({progress:.54});}
+  const audible=f.owner.snapshot().revoicing;assert.ok(audible.electronic>.5&&audible.electronic<.72);assert.ok(audible.acousticGain>.42);assert.ok(Math.abs(audible.acousticGain**2+audible.electronicGain**2-1)<1e-12);
+  assert.equal(convolver.buffer,room,'ordinary mix changes retain the same room tail');assert.equal(f.nodes.length,count);assert.equal(f.media.playCount,1);
+});
+test('gain automation does not restart at game frame rate or repeatedly reopen an already open output gate',async()=>{
+  const f=fixture();f.owner.start();await flush();const gains=f.nodes.filter(n=>n.kind==='gain'),acoustic=gains[0],electronic=gains[1],gate=gains[4];
+  const unchanged=acoustic.gain.events.length+electronic.gain.events.length,open=gate.gain.events.length;
+  for(let n=1;n<=120;n++){f.ctx.currentTime=n/60;f.media.currentTime=n/60;f.owner.update({progress:0});}
+  assert.equal(acoustic.gain.events.length+electronic.gain.events.length,unchanged);assert.equal(gate.gain.events.length,open);
+  const before=electronic.gain.events.filter(e=>e[0]==='ramp').length;
+  for(let n=121;n<=180;n++){f.ctx.currentTime=n/60;f.media.currentTime=n/60;f.owner.update({progress:.54});}
+  const ramps=electronic.gain.events.filter(e=>e[0]==='ramp').length-before;assert.ok(ramps>0&&ramps<=11,'one smooth control transition per tenth-second, rather than 60 cancelled ramps');
+});
+test('a long pause cannot spend the missing time moving to a different blend on resume',async()=>{
+  const f=fixture();f.owner.start();await flush();for(let n=1;n<=300;n++){f.ctx.currentTime=n/60;f.media.currentTime=n/60;f.owner.update({progress:.54});}
+  const before=f.owner.snapshot().revoicing.electronic;f.owner.update({paused:true});f.ctx.currentTime+=100;f.owner.update({paused:false,progress:.8});await flush();
+  assert.equal(f.owner.snapshot().revoicing.electronic,before);f.ctx.currentTime+=1/60;f.owner.update({progress:.8});assert.ok(f.owner.snapshot().revoicing.electronic-before<=SOURCE_REST_COUPERIN_BLEND.maximumAmountPerSecond/60+1e-9);
+});
+test('the blend director is stable across update rates and bounds both progress jumps and stalled updates',()=>{
+  const run=rate=>{let x=0;for(let n=0;n<rate*20;n++)x=advanceSourceRestCouperinBlend(x,.72,1/rate);return x;};
+  assert.ok(Math.abs(run(60)-run(15))<.001);assert.equal(advanceSourceRestCouperinBlend(.3,.72,0),.3);assert.equal(advanceSourceRestCouperinBlend(.3,.72,NaN),.3);
+  assert.ok(advanceSourceRestCouperinBlend(0,.72,100)<=.25*SOURCE_REST_COUPERIN_BLEND.maximumAmountPerSecond+1e-9);
 });
 
 test('pause freezes audible position/progress and retires wet tails; resume does not seek or catch up',async()=>{

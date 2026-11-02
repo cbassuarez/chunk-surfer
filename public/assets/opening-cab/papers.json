@@ -1,0 +1,32 @@
+{
+  "scope": "Dedicated cab papers; existing external-baked-paper reader; no shared atlas or catalogue rewrite",
+  "papers": [
+    {
+      "id": "opening-cab-practice-note",
+      "path": "assets/opening-cab/opening-cab-practice-note.webp",
+      "materialPath": "assets/opening-cab/opening-cab-practice-note-material.webp",
+      "sha256": "3904b5ff7023132992e27733e7c094ea6ce1150f992aab288fa5c9eb1b660f1e",
+      "semanticSha256": "add9ebe799542f5ad756a70a2a8eb1d59656fbcd898b08c788e261ed11acb92e",
+      "width": 1050,
+      "height": 1485
+    },
+    {
+      "id": "opening-cab-first-take-note",
+      "path": "assets/opening-cab/opening-cab-first-take-note.webp",
+      "materialPath": "assets/opening-cab/opening-cab-first-take-note-material.webp",
+      "sha256": "0e6df12752f879e9fa975e0778ac70afa8a230db88d55d6fdd02ce46fd840548",
+      "semanticSha256": "585fefb89ca5b5f472ce9bbb63d44e00a80430811108a583f6ae8ebd8f421d50",
+      "width": 1050,
+      "height": 1485
+    },
+    {
+      "id": "opening-cab-recital-programme",
+      "path": "assets/opening-cab/opening-cab-recital-programme.webp",
+      "materialPath": "assets/opening-cab/opening-cab-recital-programme-material.webp",
+      "sha256": "e07095078e521106763ba1221b94a51ff2217b5cf3f6484749576874622f5f8f",
+      "semanticSha256": "f5111387a21ceadfae2356acc33b154b0dcbff6f50123733cc621302e2cda412",
+      "width": 1050,
+      "height": 1485
+    }
+  ]
+}

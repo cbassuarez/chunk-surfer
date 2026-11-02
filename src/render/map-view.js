@@ -82,11 +82,11 @@ function drawSelection(model,nav,layout,status) {
 
 export function drawMapView({model,nav,bagLayout,now=0}) {
   const layout=mapLayoutFromBag(bagLayout),status=mapConsoleStatus(model);
-  const offline=!!model.offlineReason;
+  const offline=!!model.offlineReason,readOnly=model.policy?.readOnly===true;
   const controls=mapConsoleControls(layout,model,nav).map(c=>offline?{...c,enabled:false,lit:false}:c);
   well(layout.mapWindow);
   const selected=selectedMapSpace(nav,model);
-  const file=nav.roomFile&&nav.roomFile.spaceId===selected?.id?roomHistoryText(selected):[];
+  const file=!readOnly&&nav.roomFile&&nav.roomFile.spaceId===selected?.id?roomHistoryText(selected):[];
   let drawing;
   if(file.length&&!offline){
     const v=layout.mapViewport,lines=file.flatMap(text=>[...uiWrap(text,Math.max(8,Math.floor(v.w))), '']);
@@ -110,7 +110,8 @@ export function drawMapView({model,nav,bagLayout,now=0}) {
   if(!layout.dense)uiText(header.x,header.y,clip(model.context==='exterior'?'ELLERY / STREET SURVEY':'ELLERY / SI–1 SURVEY',header.w*.58),'ui-secondary',.9);
   const progress=`${model.progress?.done||0}/${model.progress?.total||0} TAKES`;
   if(!layout.dense&&!offline)uiText(header.x+Math.max(0,header.w-progress.length),header.y,progress,'ui-secondary',.9);
-  if(!layout.dense&&!offline)uiText(legend.x,legend.y,clip(file.length?`ROOM FILE · PAGE ${drawing.filePage+1}/${drawing.filePages}`:model.context==='exterior'?'▲ YOU   ◇ LANDMARK   ◆ TARGET':'▲ YOU   ◇ ROOM   ◆ TARGET',legend.w),'ui-secondary',.9);
+  if(!layout.dense&&!offline)uiText(legend.x,legend.y,clip(file.length?`ROOM FILE · PAGE ${drawing.filePage+1}/${drawing.filePages}`:
+    (model.context==='exterior'?'▲ YOU   ◇ LANDMARK':'▲ YOU   ◇ ROOM')+(readOnly?'':'   ◆ TARGET'),legend.w),'ui-secondary',.9);
   if(!file.length&&!layout.dense&&!offline&&legend.w>48)uiText(legend.x+legend.w-20,legend.y,model.context==='exterior'?'DISTRICT / GROUND':'ORTHO / CUTAWAY','ui-secondary',.8);
   if(offline){
     const v=layout.mapViewport;
@@ -132,12 +133,12 @@ export function drawMapView({model,nav,bagLayout,now=0}) {
   const ay=ag.y+(layout.mode==='wide'?.6:0);
   if(!layout.dense){
     annunciator({x:ag.x,y:ay,w:lw,h:ag.keyH},'PLAN',status.plan);
-    annunciator({x:ag.x+lw+gap,y:ay,w:lw,h:ag.keyH},'TARGET',status.target);
+    if(!readOnly)annunciator({x:ag.x+lw+gap,y:ay,w:lw,h:ag.keyH},'TARGET',status.target);
   }
   drawSelection(model,nav,layout,status);
   for(const c of controls) drawLampButton(c.x,c.y,c.w,c.h,{controlId:c.id,legend:c.label,color:c.color,
     enabled:c.enabled,lit:c.lit,latched:false,focused:nav.focusedControlId===c.id,finish:c.color==='white'?'opaque':'lens'});
-  const actions=mapActionRail(selectedMapSpace(nav,model),{roomFile:!!file.length,floorCount:model.floors?.length||1,width:bagLayout.actionRail?.w,consoleFocused:!!nav.focusedControlId,offline});
+  const actions=mapActionRail(selectedMapSpace(nav,model),{roomFile:!!file.length,floorCount:model.floors?.length||1,width:bagLayout.actionRail?.w,consoleFocused:!!nav.focusedControlId,offline,readOnly});
   return {...drawing,layout,selected:selectedMapSpace(nav,model),actions,status,
     hits:offline?[]:[...(!file.length?[{id:'bag:map:viewport',kind:'map-pan',...layout.mapViewport}]:[]),...(drawing.hits||[]),...controls]};
 }

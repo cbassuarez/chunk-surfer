@@ -7,6 +7,7 @@
 // the opening route. Malcolm's chapel line buys recognition, never access.
 
 import {pubMigration,pubApproach,pubFacePoint} from './pub-population.js';
+import {studentStrikeEvidenceOpening} from './student-strike-evidence.js';
 
 const freeze=(value)=>Object.freeze(value);
 function deepFreeze(value){
@@ -124,7 +125,7 @@ export const VIGIL_VOICES=deepFreeze({
     slate:'YARD / FACING THE PRACTICE WING',speaker:'THE WOMAN AT THE WINDOW',
     art:plate('vigilLeila','Flask beneath the taped window'),detailArt:plate('vigilLeilaWindow','Third window, second floor','PRACTICE WING'),
     mesh:'vigil_leila_hart',parts:[part('vigil_part_leila_flask','flask')],cluster:'west-elevation',
-    actionSet:['flask-check','window-look'],place:freeze({x:40,y:43,yaw:1.40}),voice:freeze({pitch:1.06,rate:1.05,grain:'close'}),
+    actionSet:['flask-check','window-look'],place:freeze({x:42,y:25,yaw:1.40}),voice:freeze({pitch:1.06,rate:1.05,grain:'close'}),
     tree:{
       start:{speaker:'THE WOMAN AT THE WINDOW',art:plate('vigilLeilaWindow','Third window, second floor','PRACTICE WING'),lines:lines(
         {who:'THE WOMAN AT THE WINDOW',text:'Third window along, second floor. The black tape is mine. They charged me for taking it down.'},
@@ -162,7 +163,7 @@ export const VIGIL_VOICES=deepFreeze({
     slate:"ST BRENDAN'S / SOUTH PORCH",speaker:'THE MAN WITH THE OLD KEYS',
     art:plate('vigilOwen','Umbrella below the porch light'),detailArt:plate('vigilOwenKeys','Keys without the porch key','ST BRENDAN’S'),
     mesh:'vigil_owen_pryce',parts:[part('vigil_part_owen_umbrella','umbrella')],cluster:'south-porch',
-    actionSet:['umbrella-settle','key-check'],place:freeze({x:35.6,y:65,yaw:-1.45}),voice:freeze({pitch:.88,rate:.94,grain:'dry'}),
+    actionSet:['umbrella-settle','key-check'],place:freeze({x:30,y:65,yaw:-1.45}),voice:freeze({pitch:.88,rate:.94,grain:'dry'}),
     tree:{
       start:{speaker:'THE MAN WITH THE OLD KEYS',art:plate('vigilOwenKeys','Keys without the porch key','ST BRENDAN’S'),lines:lines(
         {who:'THE MAN WITH THE OLD KEYS',text:'That lock was changed after I left. Same escutcheon, new barrel. They did not bother changing the paint around it.'},
@@ -335,12 +336,12 @@ export const VIGIL_CROWD=freeze([
   crowd('verge-2','vigil_figure_umbrella_a',17.60,29.80,1.45,'park-railing',['umbrella-settle'],'facing the building'),
   crowd('verge-3','vigil_figure_flask_b',17.60,42.20,1.50,'park-railing',['cup-handoff'],'the second flask'),
   crowd('verge-4','vigil_figure_pamphlets_b',17.60,44.80,1.55,'park-railing',['page-turn'],'photocopies under a coat'),
-  crowd('knot-1','vigil_figure_camera_a',38.20,40.60,1.50,'west-elevation',['camera-check'],'tripod facing the practice wing'),
-  crowd('knot-2','vigil_figure_umbrella_b',41.40,45.80,1.35,'west-elevation',['umbrella-settle'],'umbrella held for somebody else'),
-  crowd('knot-3','vigil_figure_seated_a',43.80,41.60,1.60,'west-elevation',['chair-settle'],'chair and blanket'),
-  crowd('knot-4','vigil_figure_placard_a',36.40,45.80,1.45,'west-elevation',['placard-lower'],'SAVE THE 1908 CHAPEL',[part('vigil_part_sign_chapel','sign')]),
+  crowd('knot-1','vigil_figure_camera_a',42.00,47.70,1.50,'west-elevation',['camera-check'],'tripod facing the practice wing'),
+  crowd('knot-2','vigil_figure_umbrella_b',42.00,46.50,1.35,'west-elevation',['umbrella-settle'],'umbrella held for somebody else'),
+  crowd('knot-3','vigil_figure_seated_a',42.00,45.70,1.60,'west-elevation',['chair-settle'],'chair and blanket'),
+  crowd('knot-4','vigil_figure_placard_a',30.80,46.60,1.45,'west-elevation',['placard-lower'],'SAVE THE 1908 CHAPEL',[part('vigil_part_sign_chapel','sign')]),
   crowd('porch-1','vigil_figure_umbrella_a',37.40,62.60,-1.50,'south-porch',['umbrella-settle'],'watching the porch'),
-  crowd('porch-2','vigil_figure_flask_b',38.80,66.60,-1.40,'south-porch',['cup-handoff'],'WHO SIGNED THIS OFF?',[part('vigil_part_sign_signed','leaning-sign')]),
+  crowd('porch-2','vigil_figure_flask_b',32.00,68.60,-1.40,'south-porch',['cup-handoff'],'WHO SIGNED THIS OFF?',[part('vigil_part_sign_signed','leaning-sign')]),
   crowd('porch-3','vigil_figure_camera_b',40.60,63.80,-1.55,'south-porch',['camera-check'],'camera on the locked door'),
 ]);
 export const VIGIL_STATIC_PARTS=deepFreeze([
@@ -400,14 +401,79 @@ export function vigilBelfryRecognition(linkedChapels=false){
     {who:'you',text:'His pencil line. Chapel to chapel. I had been standing at the other end.'},
   ]:[];
 }
-export function vigilConversation(id,{phase='first',revisited=false}={}){
+export function vigilConversation(id,{phase='first',revisited=false,studentStrikeEvidence={}}={}){
   const entry=vigilVoice(id);if(!entry)return null;
   const requested=revisited&&phase==='first'?'immediate-revisit':phase;
   const startAt=requested==='returned'?'return':requested==='immediate-revisit'?'revisit':'start';
   // The map is still in his hands on return. An unreceived answer can be
   // revisited, then return to this night's short hub rather than greet again.
-  const tree=id==='vigil-malcolm-vey'&&startAt==='return'
+  let tree=id==='vigil-malcolm-vey'&&startAt==='return'
     ?{...entry.tree,line:{...entry.tree.line,goto:'return'}}:entry.tree;
+  const evidenceOpening=studentStrikeEvidenceOpening(studentStrikeEvidence);
+  if(evidenceOpening&&['vigil-ruth-mallory','vigil-denise-okafor'].includes(id)){
+    const player=text=>({who:'me',voiceSpeaker:'me',sourceLabel:'YOU',text,say:false});
+    const spoken=(text)=>({who:entry.name,text});
+    const node=(content,extra={})=>({speaker:entry.name,art:entry.detailArt,lines:content,...extra});
+    const ask=(key,text,spokenText,goto)=>({text,spokenText,goto,hideWhenAsked:false,
+      knowledgeId:`exterior-vigil:${id}:student-strike:${key}`});
+    const back={text:'Ask about something else.',goto:startAt,hideWhenAsked:false};
+    const topic=ask('topic','The recovery records.',evidenceOpening,'student-strike');
+    if(!studentStrikeEvidence.records?.length)topic.text='The students’ refusal.';
+    // Preserve the original replay identities when inserting one optional
+    // subject. Each phase keeps its own unchanged, ordinary leave path.
+    tree={...tree};
+    for(const key of['start','revisit','return']){
+      const original=tree[key];if(!original?.choices)continue;
+      const choices=original.choices.map((c,i)=>({...c,
+        knowledgeId:c.knowledgeId||c.id||`exterior-vigil:${id}:${key}:choice:${i}`}));
+      choices.splice(-1,0,topic);tree[key]={...original,choices};
+    }
+    if(id==='vigil-ruth-mallory'){
+      tree['student-strike']=node([
+        player(evidenceOpening),
+        spoken('That should have been dealt with. Properly. I do not see why the rest of us should lose the building over it.'),
+        {who:'direction',text:'Her thumb returns to the rota. The column after six is headed LESSONS / RESTART.'},
+      ],{choices:[
+        ...(studentStrikeEvidence.strikeDemand?[ask('demand','They already said no.',
+          'They asked for acknowledgment before rehearsal. Your sheet has them starting again.','student-strike-demand')]:[]),
+        ask('preservation','What does keeping it mean?',
+          'What would you actually have happen if the machines turn back?','student-strike-preservation'),back,
+      ]});
+      tree['student-strike-demand']=node([
+        player('They asked for acknowledgment before rehearsal. Your sheet has them starting again.'),
+        spoken('It is a proposal. You have to give people something to come back to.'),
+        spoken('My daughter had a lesson here on Saturdays. We made a morning of it. I would like the next families to have that.'),
+      ],{choices:[ask('refusal','And if they refuse again?',
+        'What if the students still do not want to play?','student-strike-refusal'),back]});
+      tree['student-strike-refusal']=node([
+        player('What if the students still do not want to play?'),
+        spoken('Then we ask what would make them feel able. We cannot keep every room shut indefinitely.'),
+        {who:'direction',text:'There it is: a timetable with room for everything except an answer that stays no. I can hear it in hers more easily than in my own.'},
+      ],{choices:[back]});
+      tree['student-strike-preservation']=node([
+        player('What would you actually have happen if the machines turn back?'),
+        spoken('Lessons, the bells, people in and out. It is not much of a square with every door shut.'),
+        spoken('Of course somebody would have to make it safe first. I am not proposing we personally run the place.'),
+      ],{choices:[back]});
+    }else{
+      tree['student-strike']=node([
+        player(evidenceOpening),
+        spoken(studentStrikeEvidence.elleryRecovery
+          ? 'Keep the instruction as well as the recovery entry. Otherwise somebody can call the missing label a clerical delay.'
+          : studentStrikeEvidence.towerRecovery
+            ? 'Keep the room name with the receipt. Do not let them file the bodies under a building nobody can point to.'
+            : 'An account to keep with the official entry. Not to replace it. The disagreement is part of what they did.'),
+        spoken('And a transfer receipt does not tell us why somebody died. Neither does a photograph.'),
+      ],{choices:[ask('archive','Still save the rooms?',
+        'Do you still want the rooms preserved after that?','student-strike-archive'),back]});
+      tree['student-strike-archive']=node([
+        player('Do you still want the rooms preserved after that?'),
+        spoken('I asked for an hour to photograph them. I did not ask the students to give another recital.'),
+        {who:'direction',text:'She aligns the sleeves. The empty room is something she can keep. An occupied one might refuse the photograph.'},
+        spoken('Bricks coming down will not amend the record. Keeping them up will not amend it either.'),
+      ],{choices:[back]});
+    }
+  }
   return{tree,startAt,phase:requested,slate:entry.slate,speaker:entry.speaker,art:entry.art};
 }
 export function vigilObservation(id){return VIGIL_OBSERVATIONS.find((entry)=>entry.id===String(id||''))||null;}

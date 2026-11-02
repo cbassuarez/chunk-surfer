@@ -59,6 +59,13 @@ test('VIEW RECORDINGS enters the selected failed run without autoplay and plays 
   const scene=makeArchiveScene({meta:{returns:{history:[summary.id],records:{[summary.id]:summary}}},summaryId:summary.id,recordings:true});
   assert.equal(PB.isPlaying(),false);const ledger=PB.serializeTakes();scene.key({key:'Enter'});assert.equal(PB.archivedPlaybackActive(),true);
   assert.deepEqual(PB.serializeTakes(),ledger);scene.key({key:'Escape'});assert.equal(PB.isPlaying(),false);
+  // A controller's ordinary confirm can inspect the filed run and enter its
+  // retained recordings too; neither step starts playback without consent.
+  scene.key({key:'Enter',controller:true,controllerAction:'confirm'});
+  scene.key({key:'Enter',controller:true,controllerAction:'confirm'});
+  assert.equal(scene.view().recordingMode,true);assert.equal(PB.isPlaying(),false);
+  scene.key({key:'Enter',controller:true,controllerAction:'confirm'});assert.equal(PB.archivedPlaybackActive(),true);
+  scene.key({key:'Escape',controller:true,controllerAction:'back'});assert.equal(PB.isPlaying(),false);
 });
 
 // The same cursor/delete interface used by IndexedDB, with durable byte rows.

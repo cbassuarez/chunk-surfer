@@ -11,6 +11,7 @@ import { PLAN_SCALE } from '../data/floorplan/legend.js';
 import {normalizeSourceDriveCheckpoint} from './source-drive-session.js';
 import {normalizeSourceReturnFlashbackCheckpoint} from './source-return-flashback.js';
 import {normalizeSourcePubCheckpoint} from './source-pub.js';
+import {normalizeRecordistRelease} from './recordist-release.js';
 import { clearSlateAudio } from '../audio/take-slate.js';
 import { clearSourceDriveAudio } from '../audio/source-drive-recording.js';
 import {
@@ -28,6 +29,7 @@ import { normalizeRuleValues } from '../progression/difficulty.js';
 import { DIFFICULTY_PRESETS } from '../progression/difficulty-defs.js';
 import { ACHIEVEMENT_BY_ID } from '../progression/achievement-defs.js';
 import { queueChangedStats } from '../progression/stat-defs.js';
+import { completionLedgerFromSave } from '../progression/completion-ledger.js';
 import { witnessEditionStatus, WITNESS_EDITION_ID } from '../progression/unlocks.js';
 import {
   firstStored,
@@ -126,6 +128,7 @@ export const freshSave = ({ settings = DEFAULT_SETTINGS, run = null } = {}) => (
   // ending has not committed the return yet. Reload starts this cutscene over;
   // it never tries to restore a half-read line or half-fired effect.
   endingCutscene: null,
+  recordistRelease: null,
   endingWrongDoor: null,
   sourceIV: null,
   roofRen: freshRoofRenState(),
@@ -346,6 +349,7 @@ function normalizeSaveV4(data, meta = null) {
     cameraRevision:Math.max(0,Math.floor(finiteNumber(source.cameraRevision,0))),
     checkpointRevision:Math.max(0,Math.floor(finiteNumber(source.checkpointRevision,0))),
     flags: normalizeFieldKitOwnership(source.flags),
+    recordistRelease: normalizeRecordistRelease(source.recordistRelease,{runId:run?.id||''}),
     takes: Array.isArray(source.takes) ? source.takes : [],
     items: Array.isArray(source.items) ? source.items : [],
     props: { ...base.props, ...(source.props && typeof source.props === 'object' ? source.props : {}) },
@@ -580,6 +584,8 @@ export function metaCommit(patch = {}) {
 }
 
 export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null, prepareInVan = false } = {}) {
+  const completionReceipt=completionLedgerFromSave(meta.completion,save,{at:now});
+  if(completionReceipt.changed)metaCommit({completion:completionReceipt.completion});
   const pendingArchive=pendingNightArchivePatch(save,meta);if(pendingArchive)metaCommit(pendingArchive);
   if(!transientState())void clearSourceDriveAudio({preserveKeys:retainedNightMediaKeys(meta)});
   const settings = normalizeSettings(save?.settings);

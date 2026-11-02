@@ -144,7 +144,7 @@ export function recorderOutputReading(view={}){
 }
 export function recorderTransportReadout(transport) {
   if(!transport||transport.phase==='normal')return null;
-  if(transport.phase==='seized')return {label:'STOP HELD',detail:`STOP ${transport.tries}/${transport.needs}`,held:true};
+  if(transport.phase==='seized')return {label:'STOP HELD',detail:'LOCATION INDICATOR',held:true};
   return {label:transport.quietReleased?'BRAKE FREE':'BRAKE DRAG',detail:transport.quietReleased?'STOP READY':'STOP READY',held:false};
 }
 
@@ -241,7 +241,8 @@ export function drawRecorderReadoutCanvas(ctx,{width=666,height=239,...view}={})
 }
 function button(ctx,slot,label,key,color,state,dpr){
   const cap=drawHardwareCap(ctx,slot.x,slot.y,slot.w,slot.h,{
-    color,finish:'lens',travel:state.travel,lampHeat:state.lampHeat,
+    color:state.rejected?'amber':color,finish:'lens',travel:clamp(state.travel+(state.rejectTravel||0)),
+    lateral:state.lateral||0,lampHeat:state.rejected?Math.max(.75,state.lampHeat):state.lampHeat,
     enabled:key.enabled!==false,focused:!!(key.focused||key.selected),dpr,
   });
   const content=cap.content;

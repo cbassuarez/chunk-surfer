@@ -2,6 +2,7 @@ import {freshBootWeatherState,stepBootWeather} from './boot-weather.js';
 import {windAt} from '../world/wind.js';
 import {sourceRestJudgmentFrame} from './source-rest-judgment.js';
 import {sourceRestFloodFrame,SOURCE_REST_STORM} from './source-rest-flood.js';
+import {createSourceRestFuneralDirector} from './source-rest-funeral-director.js';
 const clamp=n=>Math.max(0,Math.min(1,Number(n)||0)),smooth=(a,b,n)=>{const t=clamp((n-a)/(b-a));return t*t*(3-2*t);};
 // Sunset remains the place. One late, bounded storm is an event laid over it,
 // measured in actual audible seconds so a held choice cannot strand the flood.
@@ -29,11 +30,19 @@ export function sourceRestWeatherCue({active=true,seated=false,progress=0,nodeId
 
 export function createSourceRestWeatherScore({seed=7193}={}){
   let fields=null,entryAt=null,sitAt=null,interruptionAt=null,lastClock=null,lastReduced=false,stormAt=null;
+  const funeral=createSourceRestFuneralDirector();
   function resetFields(reducedMotion){fields=Object.fromEntries(['rain'].map((kind,n)=>[kind,freshBootWeatherState(kind,{seed:seed+n*107,reducedMotion})]));lastReduced=reducedMotion;}
   function update(input={}){
     const clock=Math.max(0,Number(input.audibleSeconds??input.musicTime)||0),active=input.active!==false,reducedMotion=!!input.reducedMotion;
+    const bells=funeral.update({phase:input.phase||'wrong-return',mediaTime:input.musicTime??clock,audioTime:input.audioTime,
+      playbackRate:input.playbackRate,active:input.funeralActive??active,hold:input.held??input.hold,progress:input.progress,cycle:input.cycle});
+    const withBells=cue=>({...cue,funeral:bells,musicDuck:bells.musicDuck,judgment:{...cue.judgment,
+      // The carrier also admits global funeral contacts when the listener is
+      // beyond local weather. Its empty storm arrays and sunset stay local.
+      active:!!cue.judgment?.active||bells.active&&!bells.held,
+      bells:bells.bells,bellEvents:bells.bellEvents,bellContacts:true,funeralPhase:bells.phase}});
     if(!fields||lastReduced!==reducedMotion)resetFields(reducedMotion);
-    if(!active){entryAt=sitAt=interruptionAt=lastClock=null;for(const field of Object.values(fields))field.particles=[];return{...sourceRestWeatherCue({...input,active:false,audibleSeconds:clock}),particles:[]};}
+    if(!active){entryAt=sitAt=interruptionAt=lastClock=null;for(const field of Object.values(fields))field.particles=[];return withBells({...sourceRestWeatherCue({...input,active:false,audibleSeconds:clock}),particles:[]});}
     if(entryAt===null)entryAt=clock;if(input.seated&&sitAt===null)sitAt=clock;
     if(input.nodeId==='interruption'&&interruptionAt===null)interruptionAt=clock;
     if(input.seated&&Number(input.progress)>=SOURCE_REST_STORM.triggerProgress&&stormAt===null)stormAt=clock;
@@ -61,7 +70,7 @@ export function createSourceRestWeatherScore({seed=7193}={}){
       const visibility=kind==='rain'?Math.max(presence,cue.drips*.20):presence>.01?presence:.20;
       if(visibility>.005)particles.push({...particle,kind,visibility,wind:field.wind,reverse:kind==='rain'&&cue.reverse});
     }
-    return{...cue,particles};
+    return withBells({...cue,particles});
   }
   return Object.freeze({update});
 }

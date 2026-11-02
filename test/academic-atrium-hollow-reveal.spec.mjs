@@ -40,18 +40,22 @@ test('ordinary residents and Source retain exactly their ordinary material colou
 });
 
 test('executed production per-primitive uniform resets after each hollow rather than leaking into the next batch',()=>{
- const statement=props.match(/gl\.uniform1f\(U\('uAcademicHollow'\),academicAtriumHollowKind\(m\.name\)\);/)?.[0];assert.ok(statement);
+ const statement=props.match(/setMaterialScalar\('uAcademicHollow',academicAtriumHollowKind\(m\.name\)\);/)?.[0];assert.ok(statement);
  const primitiveLoop=props.indexOf('for(const p of m.primitives){',props.indexOf('export function renderPropPass'));
  assert.ok(props.indexOf(statement,primitiveLoop)>primitiveLoop);
  const normalizer=props.match(/function groupMeshName\(key\)\{[^\n]+\}/)?.[0];assert.ok(normalizer);
  const groupMeshName=Function(normalizer+';return groupMeshName;')();
- const calls=[],draw=Function('gl','U','academicAtriumHollowKind','m',statement),gl={uniform1f:(u,v)=>calls.push([u,v])};
+ const cache=props.match(/const materialScalars = new Map\(\);\s+const setMaterialScalar = \(name,value\) => \{[\s\S]*?\n  \};/)?.[0];assert.ok(cache);
+ const calls=[],gl={uniform1f:(u,v)=>calls.push([u,v])};
+ const makePass=()=>Function('gl','U','academicAtriumHollowKind',cache+';return m=>{'+statement+'};')(gl,n=>n,kind);
+ const draw=makePass();
  // Actual character batches append a NUL-separated pose key. The lookup must
  // use the resolved mesh object, never this rendering-group identity.
  for(const [i,name]of[meshes[0],'academic_population_listener',meshes[1],'academic_character_celeste'].entries()){
-  const group=name+'\0pose-'+i,resolved={name:groupMeshName(group)};draw(gl,n=>n,kind,resolved);
+  const group=name+'\0pose-'+i,resolved={name:groupMeshName(group)};draw(resolved);draw(resolved);
  }
  assert.deepEqual(calls,[['uAcademicHollow',1],['uAcademicHollow',0],['uAcademicHollow',2],['uAcademicHollow',0]]);
+ makePass()({name:'academic_population_listener'});assert.deepEqual(calls.at(-1),['uAcademicHollow',0]);assert.equal(calls.length,5,'a new actual program pass explicitly resets even the first ordinary body');
 });
 
 test('shader changes only colour on retained fragments; source guard, empty apertures and depth ownership remain intact',()=>{

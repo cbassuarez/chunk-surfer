@@ -1,12 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { PUB_FRONT_SKY, PUB_FRONT_SKY_GLSL, pubFrontSkyEligible, pubFrontSkySurface } from '../src/render/pub-front-material.js';
-import { EXTERIOR_PUB, pubWorldFromLocal } from '../src/data/exterior-pub.js';
+import { PUB_FRONT_SKY, PUB_FRONT_SKY_GLSL, pubFrontSkyEligible, pubFrontSkySurface, pubFrontFasciaEligible } from '../src/render/pub-front-material.js';
+import { EXTERIOR_PUB, pubPhysicalFromLocal, pubPhysicalAt } from '../src/data/exterior-pub.js';
 import { ZONE } from '../src/data/floorplan/legend.js';
 
 const outward = { x: 0, y: 0, z: -1 };
 const inward = { x: 0, y: 0, z: 1 };
+const turnedNormal=normal=>({x:normal.z,y:normal.y,z:-normal.x});
+function traceActualScalarBinding(source,uniform,frames,bindings,{primitive=false}={}){
+  const call=source.match(new RegExp("setMaterialScalar\\('"+uniform+"',[^;]+\\);"));
+  const group=source.indexOf('for(const [key,list] of groups)'),loop=source.indexOf('for(const p of m.primitives){',group),draw=source.indexOf('gl.drawElementsInstanced',loop);
+  assert.ok(call&&call.index>group&&call.index<draw,'the actual draw group binds '+uniform);
+  assert.equal(call.index>loop,primitive,'the binding belongs to its real group/primitive ownership');
+  const begin=source.indexOf('const materialScalars = new Map();'),end=source.indexOf('// The atlas and morph bindings use different units',begin);
+  assert.ok(begin>=0&&end>begin);
+  let value=1;const gl={uniform1f(_name,next){value=next;}},U=name=>name;
+  return new Function('gl','U','frames','read',...Object.keys(bindings),source.slice(begin,end)+
+    '\nreturn frames.map(({name,list,p})=>{'+call[0]+'return read();});')(gl,U,frames,()=>value,...Object.values(bindings));
+}
 
 test('only the ordinary Lyric facade instance can receive this local sky treatment', () => {
   for (const zone of [ZONE.street, ZONE.civicCourt, ZONE.dock, ZONE.pub])
@@ -26,29 +38,35 @@ test('both actual printed fascia faces receive the missing outdoor incident ligh
   const signs = facade.extras.lettering.filter(entry => entry.id.startsWith('pub-lyric-fascia-'));
   assert.equal(signs.length, 2);
   for (const sign of signs) {
-    const p = pubWorldFromLocal({ x: sign.center[0], z: sign.center[2]-24 });
+    const p = pubPhysicalFromLocal({ x: sign.center[0], z: sign.center[2]-24 });
     const point = { ...p, y: EXTERIOR_PUB.floor + sign.center[1] };
-    assert.equal(pubFrontSkySurface(point, outward), true, sign.id);
-    assert.equal(pubFrontSkySurface(point, inward), false, `${sign.id}: the back face stays indoors`);
-    assert.equal(pubFrontSkySurface(point, outward, false), false, 'a Source copy cannot enable the treatment by coordinates alone');
+    assert.equal(pubFrontSkySurface(point, turnedNormal(outward)), true, sign.id);
+    assert.equal(pubFrontSkySurface(point, turnedNormal(inward)), false, `${sign.id}: the back face stays indoors`);
+    assert.equal(pubFrontSkySurface(point, turnedNormal(outward), false), false, 'a Source copy cannot enable the treatment by coordinates alone');
   }
 });
 
-test('the two pub deeds retain exposed front, return and roof planes while the adjacent shops stay unchanged', () => {
-  assert.equal(pubFrontSkySurface({ x: -10, y: 1.74, z: 107.1 }, outward), true);
-  assert.equal(pubFrontSkySurface({ x: -14, y: 2, z: 109.8 }, { x: -1, y: 0, z: 0 }), true);
-  assert.equal(pubFrontSkySurface({ x: -10, y: 14, z: 110 }, { x: 0, y: 1, z: 0 }), true);
-  for (const point of [{ x: 10, y: 3.77, z: 106.74 }, { x: 30, y: 6, z: 106.7 }, { x: -10, y: 2, z: 99 }, { x: -10, y: 20, z: 107 }])
-    assert.equal(pubFrontSkySurface(point, outward), false);
-  assert.equal(pubFrontSkySurface({ x: -10, y: 3.52, z: 109.8 }, { x: 0, y: -1, z: 0 }), false, 'ordinary interior ceiling remains unlit by this helper');
-  assert.equal(pubFrontSkySurface({ x: -10, y: .12, z: 109.8 }, { x: 0, y: 1, z: 0 }), false, 'ordinary interior floor remains unlit by this helper');
+test('the turned pub retains exposed front, return and roof planes while adjacent shops and its retired footprint stay unchanged', () => {
+  const {bounds,floor,frontWorldZ}=EXTERIOR_PUB,x=(bounds.x0+bounds.x1)/2,z=(bounds.z0+bounds.z1)/2;
+  const sample=(point,normal)=>pubFrontSkySurface(pubPhysicalAt(point),turnedNormal(normal));
+  assert.equal(sample({x,y:1.74,z:frontWorldZ-.15},outward),true);
+  assert.equal(sample({x:bounds.x0,y:2,z},{x:-1,y:0,z:0}),true);
+  assert.equal(sample({x,y:14,z},{x:0,y:1,z:0}),true);
+  for(const point of[{x:bounds.x1+5,y:3.77,z:frontWorldZ-.5},{x:bounds.x1+25,y:6,z:frontWorldZ-.5},{x,y:2,z:frontWorldZ-9},{x,y:20,z:frontWorldZ}])
+    assert.equal(sample(point,outward),false);
+  assert.equal(sample({x,y:EXTERIOR_PUB.ceiling,z},{x:0,y:-1,z:0}),false,'ordinary interior ceiling remains unlit by this helper');
+  assert.equal(sample({x,y:floor,z},{x:0,y:1,z:0}),false,'ordinary interior floor remains unlit by this helper');
+  assert.equal(pubFrontSkySurface({x:-10,y:1.74,z:107.1},outward),false,'the old off-block Lyric footprint is not another outdoor light receiver');
 });
 
 test('the real prop fragment pass uses the bounded surface test inside its existing sky term', () => {
   const source = fs.readFileSync(new URL('../src/render/props3d.js', import.meta.url), 'utf8');
   assert.match(source, /\$\{PUB_FRONT_SKY_GLSL\}/);
   assert.match(source, /uSkyExposed>\.5\|\|pubFrontSkySurface\(uPubFrontSky,vWorld,n\)/);
-  assert.match(source, /uniform1f\(U\('uPubFrontSky'\),pubFrontSkyEligible\(name,list\)\?1:0\)/);
+  const frames=[{name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.pub}]},{name:'source_pub_interior',list:[{zone:ZONE.pub}]},
+    {name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.dock}]},{name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.sourceSpace}]}];
+  assert.deepEqual(traceActualScalarBinding(source,'uPubFrontSky',frames,{pubFrontSkyEligible}),[1,0,1,0],
+    'cached sky state resets for unrelated meshes and Source copies before their actual draw');
   assert.ok(PUB_FRONT_SKY_GLSL.includes(`point.x<${PUB_FRONT_SKY.x0}`));
   assert.doesNotMatch(PUB_FRONT_SKY_GLSL, /emissive|uAmbientIntensity|uLight|printedCoverage/);
 });
@@ -89,7 +107,11 @@ test('matte cream pigment increases diffuse reflectance while clear stock and ex
 
 test('the real material pass uses the scoped finish before ordinary illumination and preserves the print coverage', () => {
   const source = fs.readFileSync(new URL('../src/render/props3d.js', import.meta.url), 'utf8');
-  assert.match(source, /uniform1f\(U\('uPubFasciaPaint'\),pubFrontFasciaEligible\(name,p,list\)\?1:0\)/);
+  const p={materialName:'physical print: institution: aged gilt pub fascia lettering',printedSurface:{coverage:'baseColorAlpha',polarity:'light-on-dark',process:'aged gilt pub fascia lettering',emission:'none'}};
+  const frames=[{name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.pub}],p},{name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.pub}],p:{}},
+    {name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.pub}],p},{name:PUB_FRONT_SKY.mesh,list:[{zone:ZONE.sourceSpace}],p}];
+  assert.deepEqual(traceActualScalarBinding(source,'uPubFasciaPaint',frames,{pubFrontFasciaEligible},{primitive:true}),[1,0,1,0],
+    'cached fascia finish is evaluated and reset for each actual primitive');
   assert.ok(source.indexOf('${PUB_FASCIA_PAINT_GLSL}') < source.indexOf('vec3 col=base*surfaceIncident'));
   assert.match(source, /printedSurfaceTag\(printedCoverage,printPolarity\)/, 'the finish does not replace the existing authored coverage marks');
 });

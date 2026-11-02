@@ -10,7 +10,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {ZONE} from '../src/data/floorplan/legend.js';
-import {EXTERIOR_PUB,pubExteriorAt,pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubPhysicalExteriorAt,pubPhysicalAt,pubExteriorLogicalAt} from '../src/data/exterior-pub.js';
 import {SOUTH_ROW_SHOPS} from '../src/data/plaza-shopfronts.js';
 import {exteriorMapFootprints,exteriorMapTargets,exteriorInstitutionCells} from '../src/data/exterior-map.js';
 import {GLASS_COURT} from '../src/data/glass-court.js';
@@ -48,10 +48,10 @@ test('street, pub, bay and van targets are standing points in the actual compile
   assert.ok(floor.bounds.minX<-14&&floor.bounds.maxX>142,'entire walked ring, not the indoor room crop');
 });
 test('Lyric shell and entrance follow the relocated canonical pub, including stable logical save coordinates',()=>{
-  const doorway=pubExteriorAt(EXTERIOR_PUB.doors[0].id),target=source.spaces.find(s=>s.id==='outside:lyric'),shape=source.district.footprints.find(s=>s.id==='lyric');
+  const doorway=pubPhysicalExteriorAt(EXTERIOR_PUB.doors[0].id),target=source.spaces.find(s=>s.id==='outside:lyric'),shape=source.district.footprints.find(s=>s.id==='lyric');
   assert.deepEqual(target.position,{x:doorway.x,y:doorway.z});assert.deepEqual(target.logical,pubExteriorLogicalAt(EXTERIOR_PUB.doors[0].id));
-  assert.equal(shape.points[0].x,EXTERIOR_PUB.building.bounds.x0);assert.equal(shape.points[2].y,EXTERIOR_PUB.building.bounds.z1);
-  assert.ok(target.position.y<EXTERIOR_PUB.frontWorldZ,'marker is on the outside apron, not in furniture');
+  const corners=[pubPhysicalAt({x:EXTERIOR_PUB.building.bounds.x0,z:EXTERIOR_PUB.building.bounds.z0}),pubPhysicalAt({x:EXTERIOR_PUB.building.bounds.x1,z:EXTERIOR_PUB.building.bounds.z1})];assert.equal(Math.min(...shape.points.map(p=>p.x)),Math.min(...corners.map(p=>p.x)));assert.equal(Math.max(...shape.points.map(p=>p.y)),Math.max(...corners.map(p=>p.z)));
+  assert.ok(target.position.x<pubPhysicalAt({x:EXTERIOR_PUB.doors[0].x,z:EXTERIOR_PUB.frontWorldZ}).x,'marker is on the outside apron, not in furniture');
 });
 test('Bindery and Lyric have named, truthful street-map and minimap addresses',()=>{
   const bindery=source.spaces.find(s=>s.id==='outside:bindery'),lyric=source.spaces.find(s=>s.id==='outside:lyric');
@@ -110,7 +110,11 @@ test('the two accessible baths courts stay open on the survey around one narrow 
     const point={x:(court.x0+court.x1)/2,y:(court.z0+court.z1)/2};
     assert.ok(floor.open.has(`${Math.floor(point.x)},${Math.floor(point.y)}`),`${court.id} court is actual clear ground`);
     assert.ok(!masses.some(shape=>covers(shape,point)),`${court.id} court is not painted over by the retired atrium roof`);
-    assert.ok(findGridRoute(floor,van.position,point),`${court.id} court connects to the actual exterior walking ground`);
+    // The external survey omits the enclosed route from the van through
+    // Ellery. Each court must retain its own real entrance-side circulation;
+    // an outdoor line across the omitted interior would promise a false route.
+    const entrance=court.id==='west'?{x:76,y:23.5}:{x:93,y:23.5};
+    assert.ok(findGridRoute(floor,entrance,point),`${court.id} court connects to its actual court-side approach`);
   }
   const links=source.district.footprints.filter(shape=>shape.id==='baths-greenhouse-link');
   assert.equal(links.length,1);
@@ -127,7 +131,8 @@ test('Ellery massing comes from the actual rendered exterior shell, with no inte
   assert.equal(regenerated.asset,'public/assets/ellery-public-front.glb','the final runtime mesh replacement owns the street silhouette');
   const covers=(x,y)=>masses.some(f=>x>=f.points[0].x&&x<f.points[2].x&&y>=f.points[0].y&&y<f.points[2].y);
   assert.ok(covers(72,63),'rendered1888schoolpavilion is an exterior mass even without an indoor ground room');
-  assert.ok(covers(84,23),'rendered1967academicblock is retained');
+  assert.equal(covers(84,23),false,'the former centre of the academic block is now an actual open sky court');
+  assert.ok(covers(75,23),'the retained west wing still has its actual roofed mass');
   assert.ok(covers(105,75),'rendered1908chapel envelope is retained');
   const first=[...physical.cells].find(([,spans])=>spans.some(s=>s.zone===ZONE.street));
   const noIndoorPlan=captureExteriorMapSource({physical:{cells:new Map([first])},projectLogical});

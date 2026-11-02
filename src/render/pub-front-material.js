@@ -1,7 +1,7 @@
 // The Lyric's existing two deeds stand outdoors but share a mesh with six
 // closed shops. Give only their outward-facing skin the sky already used by
 // the yard; this is incident light, never an emissive sign or exposure change.
-import { EXTERIOR_PUB } from '../data/exterior-pub.js';
+import { EXTERIOR_PUB,pubAuthoredAt } from '../data/exterior-pub.js';
 import { ZONE } from '../data/floorplan/legend.js';
 
 export const PUB_FRONT_SKY = Object.freeze({
@@ -27,6 +27,7 @@ export function pubFrontSkyEligible(mesh, instances = []) {
 // From inside, the two-sided renderer turns a wall normal toward the room;
 // it must not make that interior face an outdoor hemisphere receiver.
 export function pubFrontSkySurface(point, normal, enabled = true) {
+  point=pubAuthoredAt(point);normal={...normal,x:-normal.z,z:normal.x};
   const c = PUB_FRONT_SKY;
   if (!enabled || point.x < c.x0 || point.x > c.x1 || point.z < c.z0 || point.z > c.z1
     || point.y < c.floor || point.y > c.top) return false;
@@ -40,6 +41,9 @@ export function pubFrontSkySurface(point, normal, enabled = true) {
 const f = number => Number.isInteger(number) ? `${number}.0` : String(number);
 export const PUB_FRONT_SKY_GLSL = `
 bool pubFrontSkySurface(float enabled, vec3 point, vec3 normal) {
+  // Test the retained source-frame skin after the whole room's cardinal turn.
+  point.xz=vec2(39.0-(point.z-34.0),34.0+(point.x-39.0));
+  normal.xz=vec2(-normal.z,normal.x);
   if(enabled<.5||point.x<${f(PUB_FRONT_SKY.x0)}||point.x>${f(PUB_FRONT_SKY.x1)}
     ||point.z<${f(PUB_FRONT_SKY.z0)}||point.z>${f(PUB_FRONT_SKY.z1)}
     ||point.y<${f(PUB_FRONT_SKY.floor)}||point.y>${f(PUB_FRONT_SKY.top)})return false;

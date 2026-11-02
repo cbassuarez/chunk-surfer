@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Chunk Surfer — shipping instrument skin export</title>
+<style>body{margin:24px;background:#050906;color:#d6d4bc;font:14px system-ui}canvas{max-width:100%;height:auto;display:block;margin:18px 0}h2{font-size:14px}</style>
+<h1>Shipping instrument surfaces</h1>
+<p>Direct production painters. No game state, invented readings, or animation.</p>
+<main></main>
+<script type="module">
+import {plate,well,glass,cap} from '/src/dev/achievement-system-materials.js';
+import {vfdGlyph} from '/src/render/vfd-font.js';
+import {paintNavigatorTelemetry} from '/src/render/navigator-lcd.js';
+import {navigatorTelemetryLayout} from '/src/render/navigator-lcd.js';
+const output={};
+const make=(id,w,h,paint)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.dataset.id=id;paint(c.getContext('2d'),w,h);const label=document.createElement('h2');label.textContent=id;document.querySelector('main').append(label,c);output[id]=c.toDataURL('image/webp',.98);};
+make('plate',768,512,(c,w,h)=>plate(c,{x:0,y:0,w,h,dpr:1,finish:'aluminum',seed:'AUDIOCORP:CASE SELECT:4417-C',fasteners:true,screwRadius:3.3,screwInset:6.3}));
+make('glass',768,512,(c,w,h)=>well(c,{x:8,y:8,w:w-16,h:h-16,dpr:1,depth:1}));
+make('glass-cover',768,512,(c,w,h)=>glass(c,{x:0,y:0,w,h,dpr:1,depth:1,reflection:.45,grid:false,reducedMotion:true}));
+for(const color of ['white','amber','red'])for(const pressed of [false,true])make('cap-'+color+(pressed?'-pressed':''),180,56,(c,w,h)=>cap(c,{x:0,y:0,w,h,color,finish:'lens',travel:pressed?1:0,lampHeat:0,enabled:true,focused:false,dpr:1}));
+// Exact fixed-lens stack from map-view.js:annunciator. The actual legend is
+// semantic HTML on itch; the exported cell contains no invented light reading.
+make('annunciator',180,36,(c,w,h)=>{c.fillStyle='#424a3e';c.fillRect(0,0,w,h);c.fillStyle='#080e0a';c.fillRect(1,1,w-2,h-2);const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#c4d99c');g.addColorStop(.65,'#e2edb6');g.addColorStop(1,'#9eaf7e');c.fillStyle=g;c.fillRect(3,3,w-6,h-6);c.strokeStyle='#e7ebcc70';c.lineWidth=.6;c.strokeRect(3,3,w-6,h-6);});
+// Extract only the production LCD's optical stack, stopping before its
+// telemetry, labels, digits and meters. Retain every optical drawing command.
+const lcdSource=paintNavigatorTelemetry.toString();
+const lcdOptics=lcdSource.slice(lcdSource.indexOf('const layout='),lcdSource.indexOf('box(layout.divider'));
+const gradient=(ctx,x0,y0,x1,y1,stops)=>{const value=ctx.createLinearGradient(x0,y0,x1,y1);for(const [at,color]of stops)value.addColorStop(at,color);return value;};
+const optics=new Function('ctx','lcd','state','cellW','cellH','dpr','motion','navigatorTelemetryLayout','gradient',lcdOptics.replace(/^\s*const layout=/,'const layout=')+'ctx.restore();');
+make('lcd',384,80,(c,w,h)=>optics(c,{x:4,y:4,w:w-8,h:h-8},{},1,1,1,null,navigatorTelemetryLayout,gradient));
+const codes=[...Array.from({length:224},(_,i)=>i+32),183,8211,8212,8216,8217,8220,8221,8226,8230,8592,8593,8594,8595,9654,9664,9670,9671,9679];
+window.__itchSkin={assets:output,glyphs:Object.fromEntries([...new Set(codes)].map(code=>[code,vfdGlyph(String.fromCodePoint(code))])),source:'production Canvas painters; source glyph ROM',ready:true};
+</script>

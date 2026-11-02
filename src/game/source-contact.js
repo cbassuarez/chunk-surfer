@@ -1,5 +1,6 @@
 import { authoringDocumentsById } from '../narrative/generated-content.js';
 import { evaluateCondition } from '../narrative/conditions.js';
+import { sourceContactChapter } from './source-contact-chapters.js';
 
 // Save compatibility only. These were once three required answers. Reading
 // them may still change old saves' scenery, but never gates meeting or combat.
@@ -9,7 +10,7 @@ export const SOURCE_CONTACT_INSIGHTS = Object.freeze([
   'borrowed-body-return',
 ]);
 export const SOURCE_CONTACT_ACTION = Object.freeze({
-  QUESTION: 'question', WARN: 'warn', RETURN: 'return', AWAY: 'away', COMBAT: 'combat',
+  QUESTION: 'question', WARN: 'warn', RETURN: 'return', AWAY: 'away', COMBAT: 'combat', REPEAT: 'repeat-contact',
 });
 export const SOURCE_CONTACT_CANCEL_CHOICE = 'contact.leave';
 // Compatibility export only. Conversation history changes what can be said;
@@ -38,7 +39,7 @@ const whole = (value) => Math.max(0, Math.floor(Number(value) || 0));
 export function freshSourceContactState() {
   return {
     schema: 2, captures: 0, talks: 0, radioCalls: 0, lastTalk: null, insights: [], seenBeats: [], lastChoiceId: null,
-    met: false, questions: [], beats: [], tells: [], warningSeen: false, combatCommitted: false,
+    met: false, questions: [], beats: [], tells: [], warningSeen: false, combatCommitted: false, chapter: 'I',
   };
 }
 
@@ -64,6 +65,7 @@ export function normalizeSourceContactState(value = null) {
     tells: unique(value.tells).filter((id) => SOURCE_CONTACT_TELLS.includes(id)),
     warningSeen: value.warningSeen === true,
     combatCommitted: value.combatCommitted === true,
+    chapter: sourceContactChapter(value.chapter) || 'I',
   };
 }
 
@@ -130,7 +132,7 @@ function contactDocument() {
   return document;
 }
 
-export function sourceContactDialogue(value = null, { context = null, live = null, victories = 0 } = {}) {
+export function sourceContactDialogue(value = null, { context = null, live = null, victories = 0, chapter = 'I', repeatContact = false } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const now = live?.now instanceof Set ? live.now : new Set();
@@ -162,7 +164,7 @@ export function sourceContactDialogue(value = null, { context = null, live = nul
   };
   // The shared embodied conversation presenter consumes these authored nodes.
   // Copy mutable arrays so replay/presentation cannot edit the source document.
-  return Object.fromEntries(Object.entries(contactDocument().nodes).map(([id, node]) => {
+  const nodes = Object.fromEntries(Object.entries(contactDocument().nodes).map(([id, node]) => {
     const lines = (node.lines || []).map(gated);
     return [id, {
       ...node,
@@ -172,18 +174,42 @@ export function sourceContactDialogue(value = null, { context = null, live = nul
       ...(node.choices ? { choices: node.choices.map(choice) } : {}),
     }];
   }));
+  // Keep the authored questions and embodied presenter. Only the consequence
+  // at this hand changes after this particular Source's battle was won.
+  if (chapter !== 'I') for (const node of Object.values(nodes)) {
+    if (node.speaker === 'AT THE SERVICE COURT') node.speaker = 'CONTACT';
+    for (const line of node.lines) {
+      if (line.id === 'return.line.8') line.text = line.text.replace('Same court, take two.', 'The same hand, another place.');
+      if (line.id === 'approach.line.1') line.text = 'A human outline waits a few paces away, on the same footing. The way past it is open.';
+      if (line.id === 'approach.line.3') line.text = '-18 on the needle, and steady. Nothing in that outline is making a sound.';
+    }
+  }
+  if (repeatContact) {
+    nodes.warning.lines = [{ id: 'warning.repeat', who: 'you', signalRole: 'human',
+      text: 'I already broke free of it here. This will not be another fight. If I touch it again, it will take one available recording. I will have to find that recording here or in the next Source to hear it again. If none remain, it has nothing to take. I can still lower my hand.' }];
+    nodes.warning.revisitLines = nodes.warning.lines.map(line => ({ ...line }));
+    const confirm = nodes.warning.choices.find(entry => entry.id === 'contact.confirm');
+    confirm.text = 'MAKE CONTACT — LET IT TAKE A RECORDING.';
+    confirm.sourceContactAction = SOURCE_CONTACT_ACTION.REPEAT;
+    nodes.contact.lines = [{ id: 'contact.repeat', who: 'direction', signalRole: 'unattributed',
+      text: 'Its fingers close. The tape does not move.', body: 'lean-in' }];
+  }
+  return nodes;
 }
 
-export function nextSourceContact(value = null, { context = null, victories = 0 } = {}) {
+export function nextSourceContact(value = null, { context = null, victories = 0, chapter = 'I', repeatContact = false } = {}) {
   const state = normalizeSourceContactState(value);
   const facts = context?.lead ? context : sourceHushContext(context || {});
   const live = { now: new Set() };
-  const nodes = sourceContactDialogue(state, { context: facts, live, victories });
+  chapter = sourceContactChapter(chapter) || 'I';
+  const nodes = sourceContactDialogue(state, { context: facts, live, victories, chapter, repeatContact });
   const startAt = state.met ? 'return' : 'approach';
   const node = nodes[startAt];
   return {
     id: startAt,
     contactCycle: Math.min(3, whole(victories) + 1),
+    chapter,
+    repeatContact: !!repeatContact,
     startAt,
     speaker: node.speaker,
     lines: node.lines,
@@ -237,5 +263,6 @@ export function resolveSourceContact(value, encounter, choiceId) {
     lastChoiceId: choice.id,
     warningSeen: state.warningSeen || choice.sourceContactAction === SOURCE_CONTACT_ACTION.WARN,
     combatCommitted: choice.sourceContactAction === SOURCE_CONTACT_ACTION.COMBAT,
+    chapter: sourceContactChapter(encounter.chapter) || state.chapter,
   });
 }

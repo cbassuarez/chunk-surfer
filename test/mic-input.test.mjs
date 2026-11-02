@@ -175,7 +175,7 @@ test('production entry paths require a run decision before opening the mic', () 
   assert.match(newRun, /roomMicRunConsent=null;\s*MIC\.micStop\(\)/);
   const selected = part('function enterSelectedRun(', 'function setGameChrome(');
   assert.match(selected, /askMic:true/);
-  assert.match(selected, /onMicAllow:.*chooseRoomMicForRun\(true\)/);
+  assert.match(selected, /onMicAllow:\(input\)=>chooseRoomMicForRun\(true,input\)/);
   assert.match(selected, /onMicDeny:.*chooseRoomMicForRun\(false\)/);
   const resume = part('function requestFrontEndContinue(', 'function requestFrontEndNewRun(');
   assert.match(resume, /roomMicRunConsent===null/);

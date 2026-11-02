@@ -7,11 +7,14 @@ const freeze=Object.freeze;
 export const SOURCE_REST_SEATS=freeze([
   freeze({id:'source-rest-ii',phase:'wrong-return',chartId:SOURCE_REST_ALCOVE.chartId,level:0,...SOURCE_REST_ALCOVE.seat,feet:SOURCE_REST_ALCOVE.feet,yaw:Math.PI,
     approach:SOURCE_REST_ALCOVE.approach,discovery:SOURCE_REST_ALCOVE.discovery,view:freeze({yaw:-Math.PI/2,pitch:-.04})}),
-  freeze({id:'source-rest-iii',phase:'catch',chartId:0,level:0,...radial(13.35,.92),feet:8.4,yaw:Math.PI-.92,
-    approach:freeze(radial(13.02,.92)),view:freeze({yaw:-.9707963267948966,pitch:-.10})}),
+  // The counterarc is earned by descending through the case, not a chair
+  // offered beside its entrance. It keeps the existing refuge and return.
+  freeze({id:'source-rest-iii',phase:'catch',chartId:0,level:2,...radial(11.85,4.13),feet:-4.8,yaw:Math.PI-4.13,
+    approach:freeze(radial(11.52,4.13)),view:freeze({yaw:4.13-Math.PI/2+.35,pitch:.27})}),
 ]);
 export const SOURCE_REST_MESH='yard_look_bench';
 export const SOURCE_REST_II_MESH='source-continuation-rest-settle-frame';
+export const SOURCE_REST_III_MESH='source-continuation-rest-harpsichord-seat';
 export const SOURCE_REST_II_SCALE_Z=.78;
 // The authored bench spans 3.18m on local Z. Shortening just that axis keeps
 // its familiar seat, back and arms while fitting the actual refuge platform.
@@ -36,7 +39,7 @@ export function sourceRestSeatForState(state){
     &&(s.phase!=='catch'||s.level===state.level)&&Math.abs((Number(state.feet)||0)-s.feet)<.4)||null;
 }
 export function sourceRestBenchProps(){
-  return SOURCE_REST_SEATS.map(s=>({id:s.id,mesh:s.phase==='wrong-return'?SOURCE_REST_II_MESH:SOURCE_REST_MESH,phase:s.phase,region:s.phase,chartId:s.chartId,level:s.level,
+  return SOURCE_REST_SEATS.map(s=>({id:s.id,mesh:s.phase==='wrong-return'?SOURCE_REST_II_MESH:SOURCE_REST_III_MESH,phase:s.phase,region:s.phase,chartId:s.chartId,level:s.level,
     x:s.x,y:s.feet,z:s.z,yaw:s.yaw,scaleX:SOURCE_REST_SCALE.x,scaleY:SOURCE_REST_SCALE.y,scaleZ:s.phase==='wrong-return'?SOURCE_REST_II_SCALE_Z:SOURCE_REST_SCALE.z,
     role:'rest-seat',structural:false,interactive:true}));
 }
@@ -46,7 +49,7 @@ export function sourceRestFocus(state){
   // offer a long conversation to a person just outside the protected pocket.
   if(!sourceRestPositionProtected(state))return null;
   const dx=seat.x-state.x,dz=seat.z-state.z,distance=Math.hypot(dx,dz);
-  if(!Number.isFinite(distance)||distance>SOURCE_REST_FOCUS_DISTANCE)return null;
+  if(!Number.isFinite(distance)||distance>(seat.phase==='wrong-return'?1.05:SOURCE_REST_FOCUS_DISTANCE))return null;
   // A real return door wins at its existing interaction distance.
   if(continuationDoors().some(d=>(d.chartId??0)===seat.chartId&&d.phase===seat.phase
       &&Math.abs(d.y-seat.feet)<.55&&Math.hypot(d.x-state.x,d.z-state.z)<=1.7))return null;
@@ -68,7 +71,7 @@ export function sourceRestApproachProtected(seat){
   return !!seat&&sourceRestPositionProtected({...seat,...seat.approach});
 }
 export function sourceRestPositionProtected(state){
-  if(!state)return false;const refuge=continuationRefugeAt(state),radius=state.phase==='catch'||state.feet<8?1.28:2.5;
+  if(!state)return false;const refuge=continuationRefugeAt(state),radius=state.phase==='catch'||state.feet<8?1.28:(state.chartId??0)===0?3.0:2.5;
   return (refuge.chartId??0)===(state.chartId??0)&&Math.abs(refuge.feet-state.feet)<.4
     &&Math.hypot(refuge.x-state.x,refuge.z-state.z)<radius;
 }

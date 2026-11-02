@@ -4,6 +4,8 @@
 // https://www.vam.ac.uk/__data/assets/pdf_file/0009/178497/Catalogue_Keyboard_Instruments.pdf
 // https://www.metmuseum.org/art/collection/search/503614
 // All vertices share the listener's meaningful local origin: Xright,Yup,Zback.
+import {SOURCE_CONTINUATION,CONTINUATION_CATCH_STAGES,continuationRadialPoint} from '../data/source-continuation.js';
+import {SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
 const freeze=v=>{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;};
 const TAU=Math.PI*2,hingeX=-2.8,hingeY=1.68,lidAngle=63*Math.PI/180;
 const rawOutline=[[-2.8,1.35],[-2.8,-7.4],[-1.5,-7.4],[.4,-6.35],[2.25,-3.25],[2.95,-.7],[3,1.35]];
@@ -15,6 +17,8 @@ export const SOURCE_REST_HARPSICHORD=freeze({
   route:{minX:-.50,maxX:.50,minZ:-.40,maxZ:1.85,headClearance:1.95},
   sideBreak:{minZ:-5.7,maxZ:-.5,minX:0,thresholdTop:.055,reason:'existing Catch entry and counterweight passage'},
   strings:{choirs:2,stringsPerChoir:61,minimumWidth:.014,maximumWidth:.018,minimumY:2.04,maximumY:2.25},
+  architecture:{registerBays:3,pitchCourses:122,principalCourses:30,minimumCourseWidth:.022,maximumCourseWidth:.24,
+    upperHeight:18.2,maximumCullRadius:32,anchorOwner:'actual Catch stage outer supports',additionalInstances:0},
   maxParts:20,triangleBudget:16000,additionalLights:0,supportFloor:false,
 });
 const descriptions=[
@@ -35,6 +39,11 @@ const box=(x0,x1,y0,y1,z0,z1)=>({p:[x0,y0,z0,x1,y0,z0,x1,y0,z1,x0,y0,z1,x0,y1,z0
   i:[0,2,3,0,1,2,4,7,6,4,6,5,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0]});
 const join=pieces=>{const p=[],i=[];for(const piece of pieces){const start=p.length/3;p.push(...piece.p);i.push(...piece.i.map(n=>n+start));}return{p,i};};
 const transformed=(g,fn)=>({p:g.p.flatMap((_,k)=>k%3?[]:fn(g.p.slice(k,k+3))),i:[...g.i]});
+const smooth=(a,b,value)=>{const t=Math.max(0,Math.min(1,(value-a)/(b-a)));return t*t*(3-2*t);};
+// The hinge spine stays tall and supported. The distant cheek falls away from
+// the eye into an actual opening, so the grand string bays own the view.
+const openCheek=point=>[point[0],point[1]-Math.max(0,point[1]-.10)/1.55*.70
+  *smooth(1.8,6.5,-point[2])*smooth(-2.65,-2.35,point[0]),point[2]];
 const area=polygon=>polygon.reduce((n,a,k)=>{const b=polygon[(k+1)%polygon.length];return n+a[0]*b[1]-b[0]*a[1];},0)/2;
 const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 function triangulate(polygon){
@@ -134,6 +143,31 @@ function stringData(choir){return Array.from({length:61},(_,k)=>{
       short?start[2]+(longZ-start[2])*.73:longZ],register=k<20?'low':k<40?'mid':'high',width=k<20?.018:k<40?.016:.014;
   return{midi:36+k,choir,register,start,end,width};
 });}
+// Each monumental course continues a real near string at its bridge. The far
+// pins are rooted in the existing three Catch shelves: from the earned seat,
+// bass crosses the void to the top case, middle to the soundboard, and treble
+// rises from the nearby counterarc. They are one instrument seen at two scales.
+export function sourceRestHarpsichordCourses(choir='acoustic'){
+  const seat=SOURCE_REST_SEATS.find(item=>item.phase==='catch'),centre=SOURCE_CONTINUATION.catch.center,
+    angle=Math.atan2(seat.z-centre.z,seat.x-centre.x),
+    yaw=angle-Math.PI/2,c=Math.cos(yaw),s=Math.sin(yaw),synthetic=choir==='electronic';
+  const local=(x,y,z)=>{const dx=x-seat.x,dz=z-seat.z;return[c*dx+s*dz,y-seat.feet,-s*dx+c*dz];};
+  return stringData(choir).map((string,index)=>{
+    const register=index<20?0:index<40?1:2,ordinal=index-register*20,count=register===2?21:20,
+      t=ordinal/(count-1),stage=CONTINUATION_CATCH_STAGES[register],
+      range=[[-.82,1.18],[.58,2.80],[2.88,4.61]][register],
+      bearing=range[0]+(range[1]-range[0])*t+(synthetic?.012:0),
+      radius=(register===1?11.1:stage.outerRadius-.12)-(synthetic?.13:0),ground=continuationRadialPoint(radius,bearing),
+      rise=[4.55,10.55,8.4][register]+Math.sin(t*Math.PI)*.30,
+      foot=local(ground.x,stage.y,ground.z),end=local(ground.x,stage.y+rise,ground.z);
+    const principal=ordinal%5===0||ordinal===count-1;
+    return{midi:string.midi,choir,register:string.register,start:[...string.end],end,foot,principal,
+      ...(register<2?{guide:[string.end[0],12.6,string.end[2]-2.0]}:{}),
+      width:(principal?[.24,.20,.15]:[.030,.025,.022])[register],thickness:synthetic?.028:.032,
+      support:{id:`catch-${stage.level}-${stage.id}`,level:stage.level,y:stage.y,x:ground.x,z:ground.z,halfFootprint:.08},
+      nearString:{start:[...string.start],end:[...string.end]}};
+  });
+}
 function manualData(){
   const keys=[],width=2.16/36,start=-2.72;
   for(let manual=0;manual<2;manual++){
@@ -153,15 +187,35 @@ export function sourceRestHarpsichordGeometryLibrary(){
     casePart:part.casePart,reactive:part.reactive,register:part.register,wear:part.wear,pivot:part.pivot,localOrigin:[0,0,0],bounds:bounds(geometry),triangles:geometry.i.length/3,...extra};};
   // The open rear has a real central walking gap. Its two-manual bay sits to
   // the left, rather than pretending a player can pass through a keydesk.
-  const broken=brokenBentside(openPath),caseWalls=[...broken.kept.map(path=>strip(path,.105,.045,1.62)),
+  const architecture=['acoustic','electronic'].map(sourceRestHarpsichordCourses),
+    bearings=architecture[0].filter((row,index)=>[0,10,19,20,30,39,40,50,60].includes(index))
+      .filter(row=>!(row.foot[1]<1.95&&row.foot[0]>-.18&&row.foot[2]>SOURCE_REST_HARPSICHORD.sideBreak.minZ-.18
+        &&row.foot[2]<SOURCE_REST_HARPSICHORD.sideBreak.maxZ+.18)),
+    posts=bearings.flatMap(row=>[box(row.foot[0]-.05,row.foot[0]+.05,row.foot[1],row.end[1]+.10,row.foot[2]-.05,row.foot[2]+.05),
+      box(row.foot[0]-.08,row.foot[0]+.08,row.foot[1],row.foot[1]+.18,row.foot[2]-.08,row.foot[2]+.08)]),
+    broken=brokenBentside(openPath),caseWalls=[...broken.kept.map(path=>strip(path,.105,.045,1.62)),
     ...broken.removed.map(path=>strip(path,.145,.020,SOURCE_REST_HARPSICHORD.sideBreak.thresholdTop)),box(.72,2.75,.06,.28,1.27,1.38),
     box(-2.8,-.52,.05,.15,1.48,1.59),box(-2.8,-.52,1.26,1.36,1.51,1.59)];
-  add('case',join(caseWalls),'wood',[.25,.17,.105],{construction:'thin bent case; broad broken bentside and exposed closed endgrain',sideBreak:SOURCE_REST_HARPSICHORD.sideBreak});
+  add('case',join([transformed(join(caseWalls),openCheek),...posts]),'wood',[.25,.17,.105],{construction:'thin bent case; lowered far cheek; exposed endgrain; monumental register bearing posts rooted in existing shelves',
+    sideBreak:SOURCE_REST_HARPSICHORD.sideBreak,architecturalBearings:bearings.map(row=>({foot:[...row.foot],head:[...row.end],support:{...row.support}}))});
   const inner=openPath.map(([x,z])=>{const dx=-.3-x,dz=-2.6-z,d=Math.hypot(dx,dz)||1;return[x+dx/d*.073,z+dz/d*.073];});
-  add('lining',join(brokenBentside(inner).kept.map(path=>strip(path,.025,.27,1.50))),'case-lining',[.40,.255,.19]);
+  const ribs=architecture[0].filter((row,index)=>[0,10,19,20,30,39,40,50,60].includes(index)).flatMap(row=>{
+    const start=[row.start[0],Math.max(2.38,row.start[1]+.18),row.start[2]],end=row.end.map((value,k)=>value-(k===1?.27:0));
+    return row.guide?[beam(start,row.guide,.13,.18),beam(row.guide,end,.13,.18)]:[beam(start,end,.13,.18)];
+  });
+  add('lining',join([transformed(join(brokenBentside(inner).kept.map(path=>strip(path,.025,.27,1.50))),openCheek),...ribs]),'case-lining',[.40,.255,.19],
+    {architecturalRibs:9,construction:'exposed soundboard ribs share the actual string-bearing directions'});
   const trim=broken.kept.flatMap(path=>[strip(path,.145,1.625,1.663),strip(path,.125,.10,.135)]);
   for(const z of[-.9,-3.8,-6.4]){trim.push(box(-2.90,-2.66,1.48,1.67,z-.15,z+.15));trim.push(beam([-2.80,1.63,z-.18],[-2.80,1.63,z+.18],.065,.065));}
-  add('beading',join(trim),'worn-metal',[.64,.46,.245],{roughness:.78});
+  const registerRows=Array.from({length:3},(_,k)=>architecture[0].filter(row=>row.register===['low','mid','high'][k])),
+    fret=[];
+  for(const rows of registerRows){
+    const anchors=rows.filter((_,index)=>index%4===0||index===rows.length-1);
+    for(let k=1;k<anchors.length;k++)for(const inset of[.12,.35,.61])fret.push(beam(
+      anchors[k-1].end.map((value,j)=>value-(j===1?inset:0)),anchors[k].end.map((value,j)=>value-(j===1?inset:0)),.055,.055));
+  }
+  add('beading',join([transformed(join(trim),openCheek),...fret]),'worn-metal',[.64,.46,.245],{roughness:.78,registerFret:3,
+    construction:'three stepped, nested bentside frets tied to the real upper bearings'});
   const choirs=['acoustic','electronic'].map(stringData),bridges=[];
   for(const [k,strings]of choirs.entries()){
     bridges.push(strip(strings.filter((_,j)=>j%3===0||j===60).map(n=>[n.end[0],n.end[2]]),k?.10:.13,k?1.96:1.97,k?2.13:2.055));
@@ -171,18 +225,28 @@ export function sourceRestHarpsichordGeometryLibrary(){
     }
   }
   bridges.push(box(-2.57,2.61,2.145,2.195,-.765,-.675));
+  for(const choir of architecture)for(const register of['low','mid','high']){
+    const rows=choir.filter(row=>row.register===register).filter((_,index)=>index%4===0||index===(register==='high'?20:19));
+    for(let k=1;k<rows.length;k++)bridges.push(beam(rows[k-1].end,rows[k].end,.16,.17));
+  }
   add('bridges',join(bridges),'piano-wood',[.56,.335,.16],{bridgeCount:2,swept:true});
   for(const [k,strings]of choirs.entries())for(const register of['low','mid','high']){
     const rows=strings.filter(n=>n.register===register);
-    add('strings-'+(k?'electronic':'acoustic')+'-'+register,join(rows.map(n=>beam(n.start,n.end,n.width,.005))),
-      'worn-metal',k?[.43,.57,.53]:[.70,.61,.43],{strings:rows.map(n=>({...n,start:[...n.start],end:[...n.end]})),stringWidthMinimum:Math.min(...rows.map(n=>n.width)),roughness:.82});
+    const courses=architecture[k].filter(row=>row.register===register);
+    add('strings-'+(k?'electronic':'acoustic')+'-'+register,
+      join([...rows.map(n=>beam(n.start,n.end,n.width,.005)),...courses.flatMap(n=>n.guide
+        ?[beam(n.start,n.guide,n.width,n.thickness),beam(n.guide,n.end,n.width,n.thickness)]
+        :[beam(n.start,n.end,n.width,n.thickness)])]),
+      'worn-metal',k?[.43,.57,.53]:[.70,.61,.43],{strings:rows.map(n=>({...n,start:[...n.start],end:[...n.end]})),
+        architecturalStrings:courses,courseWidthMinimum:Math.min(...courses.map(row=>row.width)),
+        stringWidthMinimum:Math.min(...rows.map(n=>n.width)),roughness:.82});
   }
   add('wrestplank',join([box(-2.80,2.94,2.0,2.175,-.97,-.58),box(-2.84,-2.70,1.50,2.05,-.99,-.57),
     box(2.90,3.00,1.50,2.05,-.45,-.28),box(2.79,3.01,2.0,2.175,-.97,-.28)]),'piano-wood',[.46,.285,.155]);
   const pins=[];
-  for(const strings of choirs)for(const n of strings){pins.push(cylinder(n.start[0],2.12,n.start[2]+.055,.023,.13));pins.push(cylinder(n.end[0],n.end[1]-.025,n.end[2]-.035,.019,.075));
+  for(const strings of choirs)for(const n of strings){pins.push(cylinder(n.start[0],2.12,n.start[2]+.055,.023,.20,4));pins.push(cylinder(n.end[0],n.end[1]-.025,n.end[2]-.035,.019,.075,5));
     pins.push(box(n.start[0]-.012,n.start[0]+.012,1.97,2.145,n.start[2]-.08,n.start[2]-.055));}
-  add('pins-jacks',join(pins),'dark-metal',[.205,.235,.205],{tuningPins:122,hitchPins:122,jacks:122});
+  add('pins-jacks',join(pins),'dark-metal',[.205,.235,.205],{tuningPins:122,hitchPins:122,jacks:122,tuningHeads:'square'});
   add('manual-bed',join([box(-2.76,-.52,.68,.885,1.075,1.56),box(-2.76,-.52,.925,1.085,.705,1.16),
     box(-2.79,-2.73,.68,1.29,.67,1.59),box(-.55,-.50,.68,1.29,.67,1.59),box(-2.76,-.52,.59,.68,1.15,1.48)]),'wood',[.235,.15,.085],{manuals:2,walkingGap:[-.50,.72]});
   const keys=manualData();
@@ -207,4 +271,45 @@ export function sourceRestHarpsichordGeometryLibrary(){
   const total=Object.values(out).reduce((n,p)=>n+p.triangles,0);
   if(Object.keys(out).length!==SOURCE_REST_HARPSICHORD.maxParts||total>SOURCE_REST_HARPSICHORD.triangleBudget)throw Error('Harpsichord geometry exceeds its bounded part/triangle budget.');
   cached=freeze(out);return cached;
+}
+
+// Bench-space matches the previous physical furniture: +X is forward, Z is
+// its long axis (the host retains the existing .55 Z scale). The .6075m pad
+// plane keeps every existing pelvis/contact/eye calculation authoritative.
+export function sourceRestHarpsichordSeatGeometry(){
+  const timber=[],cloth=[],padTop=.6075;
+  const rounded=(x0,x1,z0,z1,y0,y1,r=.035)=>slab(roundedOutline([[x0,z0],[x1,z0],[x1,z1],[x0,z1]],r),y0,y1);
+  timber.push(rounded(-.34,.35,-1.53,1.53,.425,.53,.055));
+  for(const x of[-.24,.24])for(const z of[-1.30,1.30]){
+    timber.push(rounded(x-.07,x+.07,z-.105,z+.105,0,.075));
+    timber.push(box(x-.042,x+.042,.065,.45,z-.055,z+.055));
+  }
+  for(let n=0;n<11;n++){
+    const z=-1.40+n*.28;
+    timber.push(beam([-.285,.50,z],[-.355,.96,z],.055,.06));
+    timber.push(beam([-.355,.96,z],[-.305,1.16,z],.055,.06));
+  }
+  for(const y of[.76,1.13])timber.push(beam([-.325,y,-1.49],[-.325,y,1.49],.062,.062));
+  for(const sign of[-1,1]){
+    const z=sign*1.43;
+    timber.push(beam([.27,.48,z],[.29,.73,z],.075,.075));
+    timber.push(beam([.29,.73,z],[-.31,.87,z],.075,.065));
+    timber.push(beam([-.31,.87,z],[-.34,1.10,z],.075,.065));
+    cloth.push(rounded(-.245,.315,z-.09,z+.09,.73,.775,.055));
+  }
+  // Three upholstered panels have real recessed divisions. No buttons or
+  // decorative seams rise above the contact surface beneath the player.
+  for(let n=0;n<3;n++){
+    const z0=-1.31+n*(2.62/3),z1=-1.31+(n+1)*(2.62/3);
+    cloth.push(rounded(-.275,.305,z0+.006,z1-.006,.535,padTop,.05));
+    cloth.push(rounded(-.292,.318,z0+.003,z1-.003,.535,.551,.04));
+  }
+  cloth.push(rounded(-.335,-.245,-1.31,1.31,.68,1.085,.035));
+  const wood=join(timber),upholstery=join(cloth),triangles=(wood.i.length+upholstery.i.length)/3,
+    total=Object.values(sourceRestHarpsichordGeometryLibrary()).reduce((sum,g)=>sum+g.triangles,0)+triangles;
+  if(total>SOURCE_REST_HARPSICHORD.triangleBudget)throw Error('Instrument and purpose-built settle exceed shared triangle budget.');
+  return{...wood,material:'wood',base:[.31,.19,.095,1],roughness:.91,bounds:bounds(wood),triangles:wood.i.length/3,
+    seatHeight:padTop,forward:'+X',retainedScaleZ:.55,upholstery:{...upholstery,material:'linen',base:[.085,.105,.095,1],roughness:.96,
+      bounds:bounds(upholstery),triangles:upholstery.i.length/3,seatHeight:padTop},
+    diagnostics:{purpose:'case settle; bentwood ribs and dark canvas panels',instrumentAndSeatTriangles:total,additionalBatches:2}};
 }

@@ -364,6 +364,12 @@
           "who": "you",
           "signalRole": "human",
           "text": "It's protecting it. Or it's keeping it."
+        },
+        {
+          "id": "identity-smaller.line.5",
+          "who": "hands",
+          "signalRole": "human",
+          "text": "You are waiting for the smaller hand. The other one does not get to answer for both."
         }
       ],
       "goto": "ask"
@@ -1563,6 +1569,12 @@
           "who": "you",
           "signalRole": "human",
           "text": "He can. It won't let him."
+        },
+        {
+          "id": "consent-return.line.6",
+          "who": "me",
+          "signalRole": "human",
+          "text": "If I get him out, I want to hear him answer for himself."
         }
       ],
       "goto": "consent"

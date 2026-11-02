@@ -1,0 +1,107 @@
+{
+  "source": "production Canvas painters; source glyph ROM",
+  "input": "artifacts/itch-realignment/skin-export.json",
+  "inputSha256": "a8479f18ea06562baececb2f23652968eec56f518a5e7ffd4b71733a2df0f496",
+  "rasterProcess": "Base64 decoded without resampling, recoloring or image editing.",
+  "rasters": {
+    "plate.webp": {
+      "bytes": 47722,
+      "sha256": "51ace064f38848bf68dd7be6d99791e09576bb36f1d34878c151c7a48ddc23da"
+    },
+    "glass.webp": {
+      "bytes": 8326,
+      "sha256": "f4adb8d3bb8dd6403e3f1683fe7c00c3f7e40c14c6a0c5349e68e2682316cc4e"
+    },
+    "glass-cover.webp": {
+      "bytes": 51862,
+      "sha256": "8606692d946bd7f32c449bc92e498f2a043ffd13917a0fab5d6aa11b7fdb6b9d"
+    },
+    "annunciator.webp": {
+      "bytes": 936,
+      "sha256": "6565aab4369a57094aed621d4e8ef87929f3e56c34571fd43141c21f7e8a65c1"
+    },
+    "lcd.webp": {
+      "bytes": 2568,
+      "sha256": "838fa0b6f457741befcc50ac765791ce68c9f91b8df9fb8792bb1da0194a7f28"
+    },
+    "cap-white.webp": {
+      "bytes": 1816,
+      "sha256": "255216c83d347ed4454454de16531d76280bbddd680f198641b807983e117b7e"
+    },
+    "cap-white-pressed.webp": {
+      "bytes": 1602,
+      "sha256": "e15ed0f826308086874f03314ceb635956ef414872ddbf9e6b16cfb91a7a11f4"
+    },
+    "cap-amber.webp": {
+      "bytes": 2010,
+      "sha256": "0f662ccbae7ee54e9a347a80d102ca5e6b05272fc405ec485094770ac52cce00"
+    },
+    "cap-amber-pressed.webp": {
+      "bytes": 1654,
+      "sha256": "611894c9062f9cdc8adf29fbb0541f89507d84a0bbb9f7c1fd722826c3dff205"
+    },
+    "cap-red.webp": {
+      "bytes": 1984,
+      "sha256": "04a74d1b0bf3263e383a0891fa6860402c70fe1ecc63b7f3df82dc4e30a85697"
+    },
+    "cap-red-pressed.webp": {
+      "bytes": 1626,
+      "sha256": "0a5ad56c21394ad7afc6b67977b1d159d6d875f3d8851442a0543d874e74234c"
+    }
+  },
+  "fonts": [
+    {
+      "family": "ChunkVFD",
+      "mode": "vfd",
+      "unitsPerEm": 1000,
+      "advance": 720,
+      "mappedCodepoints": 241,
+      "unsupportedCodepointsMappedToNotdef": 110,
+      "uniqueGlyphsIncludingNotdef": 92,
+      "ttfBytes": 94640,
+      "woffBytes": 3740
+    },
+    {
+      "family": "ChunkLCD",
+      "mode": "lcd",
+      "unitsPerEm": 1000,
+      "advance": 720,
+      "mappedCodepoints": 241,
+      "unsupportedCodepointsMappedToNotdef": 110,
+      "uniqueGlyphsIncludingNotdef": 92,
+      "ttfBytes": 28220,
+      "woffBytes": 3260
+    },
+    {
+      "family": "Hardware Sans",
+      "weight": "400",
+      "source": "assets/fonts/NimbusSans-Regular.otf",
+      "bytes": 82264,
+      "sha256": "7c25be4d78155523080ab85b10277150657ff7dabbcad7037bdd536c9b6d0d08"
+    },
+    {
+      "family": "Hardware Sans",
+      "weight": "600 700",
+      "source": "assets/fonts/NimbusSans-Bold.otf",
+      "bytes": 83264,
+      "sha256": "7f33328e6b4d4cd21b45fa625791928c9407dc702db6780e56b09ca9a3ecaa67"
+    }
+  ],
+  "fontSources": [
+    "src/render/vfd-font.js",
+    "src/render/electronic-text.js"
+  ],
+  "fontGeometry": {
+    "characterMatrix": "5 columns by 7 rows; exported production ROM only",
+    "vfd": "10 percent cell padding; radius = min(stepX, stepY) * .42; eight quadratic arcs per lit circle",
+    "lcd": "10 percent cell padding; .08 pitch inset; .84 pitch rectangular lit pixels",
+    "notdef": "Existing electronic-text.js TOFU [31,17,17,17,17,17,31]"
+  },
+  "limits": [
+    "Fonts preserve lit glyph geometry, not Canvas additive glow, dormant dots, view-dependent glass or electrical state.",
+    "The VFD Canvas painter's minimum 0.7*dpr dot radius is size-dependent; scalable font outlines use the proportional production radius.",
+    "TrueType integer rounding and quadratic circle approximation are sub-font-unit outline transport limits.",
+    "All unsupported codepoints exported as null map to the existing .notdef fallback; no new letterforms are authored.",
+    "The raster skins are static exports at their exported dimensions and state; browser layout, focus and genuine interaction states require separate validation."
+  ]
+}

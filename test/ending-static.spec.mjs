@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createEndingStaticMix,endingStaticFrame,ENDING_STATIC} from '../src/audio/ending-static.js';
 import {staticTextureBuffer,STATIC_TEXTURE} from '../src/audio/static-texture.js';
+import {createFrontEndStatic} from '../src/audio/front-end-static.js';
 const duration=716.397868;
 function fixture(){
  const nodes=[],sources=[],timers=new Set(),ctx={currentTime:0,state:'running',sampleRate:8000},state={eligible:true,currentTime:510,duration,playing:true,ended:false};let sfx=1;
@@ -86,4 +87,46 @@ test('a transferred codec failure releases current noise without pretending the 
 test('failure before a decoded duration has no invented noise and cannot hold the programme forever',()=>{
  const h=fixture();h.state.duration=0;h.state.failed='decode rejected';h.state.playing=false;h.update(0,10);assert.equal(h.mix.snapshot().phase,'failed-release');assert.equal(h.sources.length,0);
  h.update(0,14.1);assert.equal(h.mix.snapshot().phase,'spent');assert.equal(h.mix.snapshot().mediaEnded,false);h.mix.dispose();
+});
+
+test('credits release into the same live front-end carrier without a zero or phase restart',()=>{
+ const h=fixture();h.update(duration,100);h.state.ended=true;h.state.playing=false;
+ const original=h.mix.snapshot().carrier,source=h.sources[0],buffer=source.buffer;
+ h.mix.finish({seconds:4,toMenu:true});
+ h.update(duration,102);assert.ok(h.mix.snapshot().staticGain>STATIC_TEXTURE.menuGain);
+ h.update(duration,104);assert.equal(h.mix.snapshot().phase,'front-end-ready');
+ assert.equal(h.mix.snapshot().staticGain,STATIC_TEXTURE.menuGain);assert.equal(source.stopAt,undefined);
+ const carrier=h.mix.takeCarrier(),timers=new Set();
+ const front=createFrontEndStatic({context:h.ctx,destination:h.output,scheduleTimer:fn=>{timers.add(fn);return fn;},cancelTimer:fn=>timers.delete(fn)});
+ assert.equal(front.adopt(carrier),true);h.mix.reset();h.state.eligible=false;
+ h.ctx.currentTime=108;front.start();front.update();h.mix.update();
+ const after=front.snapshot().carrier;
+ assert.equal(after.startedAt,original.startedAt);assert.equal(after.phase,.5);
+ assert.equal(h.sources.length,1);assert.equal(source.starts.length,1);assert.equal(source.buffer,buffer);
+ assert.equal(after.target,STATIC_TEXTURE.menuGain);assert.equal(after.disposed,false);assert.equal(source.stopAt,undefined);
+ assert.ok(!carrier.g.gain.events.some(e=>(e[0]==='ramp'||e[0]==='value')&&e[1]===0),'handoff contains no scheduled zero');
+ assert.equal(h.mix.snapshot().carriers,1);assert.equal(timers.size,1);front.dispose();h.mix.dispose();
+});
+
+test('front-end adoption keeps SFX and output protections on the inherited carrier, not a second bus multiplier',()=>{
+ const h=fixture();h.update(duration,20);const carrier=h.mix.takeCarrier();let held=false,sfx=.3;
+ const front=createFrontEndStatic({context:h.ctx,destination:h.output,getHeld:()=>held,getSfxLevel:()=>sfx,scheduleTimer:()=>1,cancelTimer:()=>{}});
+ assert.equal(front.adopt(carrier),true);assert.equal(front.snapshot().carrier.outputLevel,.3);
+ held=true;front.update();assert.equal(front.snapshot().carrier.outputLevel,0);
+ held=false;sfx=0;front.update();assert.equal(front.snapshot().carrier.outputLevel,0);
+ sfx=.7;front.update();assert.equal(front.snapshot().carrier.outputLevel,.7);
+ assert.deepEqual(carrier.gate.links,[h.output],'the inherited source keeps exactly the same post-programme destination');
+ const other=fixture(),foreign=other.mix;other.update(duration,20);
+ assert.equal(front.adopt(foreign.takeCarrier()),false,'different contexts cannot claim a continuous transport');
+ assert.equal(h.sources.length,1);front.dispose();h.mix.dispose();other.sources[0].onended?.();foreign.dispose();
+});
+
+test('an early skip retains one carrier until actual media end and pause cannot finish its handoff',()=>{
+ const h=fixture();h.update(682,20);const source=h.sources[0];h.mix.finish({toMenu:true});
+ h.update(708,46);assert.equal(h.mix.snapshot().releaseAge,null);
+ h.state.ended=true;h.state.playing=false;h.update(duration,54);h.state.hidden=true;h.update(duration,55);
+ const before=h.mix.snapshot().releaseAge;h.update(duration,100);assert.equal(h.mix.snapshot().releaseAge,before);
+ h.state.hidden=false;h.update(duration,101);h.update(duration,105);
+ assert.equal(h.mix.snapshot().phase,'front-end-ready');assert.equal(h.sources.length,1);assert.equal(source.stopAt,undefined);
+ const carrier=h.mix.takeCarrier();h.mix.reset();assert.equal(carrier.snapshot().disposed,false);carrier.dispose();h.mix.dispose();
 });

@@ -383,7 +383,10 @@ test('main, the runtime and the renderer are wired to the voices, the body and t
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
   const r3d = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const runtime = readFileSync(new URL('../src/game/source-space-runtime.js', import.meta.url), 'utf8');
-  assert.match(main, /beginHushContact\?\.\(sourceHushContactFacts\(\)\)/, 'the talk opens without the night\'s facts');
+  assert.match(main, /beginHushContact\?\.\(sourceHushContactFacts\(\),\{chapter,locallyAvailable,runId:getSave\(\)\.run\?\.id\}\)/,
+    'the talk must carry the night\'s facts, real chapter/local body proof and active run identity');
+  assert.match(main, /resolveHushContactChoice\?\.\(choiceId,\{takes:PB\.serializeTakes\(\),\s*destination:sourceContinuationRecordingDestination\(chapter==='I'\?'II':'III'\)\}\)/,
+    'a confirmed repeat Contact must use actual tape rows and a supported destination, not a fictional take');
   assert.match(main, /onBody:\(cue\)=>R3\.r3dHushPose\?\.\(cue\)/, 'body cues never reach the renderer');
   assert.match(main, /sourceCombatBattle\(\{bodyReturn:request\.bodyReturnAssist,tells:request\.tells\}\)/, 'the fight never hears the tells');
   assert.match(runtime, /tells: \[\.\.\.\(state\.sourceContacts\?\.tells \|\| \[\]\)\]/);

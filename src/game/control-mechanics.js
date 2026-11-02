@@ -4,6 +4,7 @@
 export const CONTROL_TIMING = Object.freeze({ press: 70, release: 120, minimumPress: 90, warm: 140, cool: 230 });
 export const CONTROL_REGISTRY_LIMIT = 256;
 export const CONTROL_LATCH_TRAVEL = .8;
+export const CONTROL_REJECTION_MS = 240;
 const controls = new Map();
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const clock = () => globalThis.performance?.now?.() ?? Date.now();
@@ -21,6 +22,7 @@ function entryFor(id, now, create = true) {
       travel: { from: 0, to: 0, at: now, duration: 1 },
       heat: { from: 0, to: 0, at: now, duration: 1 },
       lastAt: now,
+      rejectedAt: null,
     };
     controls.set(id, entry);
   } else if (entry) {
@@ -46,11 +48,12 @@ function travelAt(entry, now) {
   return clamp01(curve(entry.travel, now));
 }
 
-export function pressControl(id, { held = true, now } = {}) {
+export function pressControl(id, { held = true, now, rejected = false } = {}) {
   const at = instant(now);
   const entry = entryFor(id, at);
   if (!entry) return false;
   const time = timeFor(entry, at);
+  entry.rejectedAt = rejected ? time : null;
   const from = travelAt(entry, time);
   // Keyboard repeat must not restart the plunge on every repeat event.
   if (!entry.held) {
@@ -109,10 +112,18 @@ export function sampleControl(id, { lit = false, latched = false, enabled = true
       duration: heatTarget ? CONTROL_TIMING.warm : CONTROL_TIMING.cool };
   }
   const travel = travelAt(entry, time);
-  return {
+  const result = {
     travel: reducedMotion ? (enabled && (entry.held || entry.travel.to === 1) ? 1 : latch ? CONTROL_LATCH_TRAVEL : 0) : travel,
     lampHeat: reducedMotion ? heatTarget : clamp01(curve(entry.heat, time)),
   };
+  if(enabled&&entry.rejectedAt!==null&&time-entry.rejectedAt<CONTROL_REJECTION_MS){
+    const p=clamp01((time-entry.rejectedAt)/CONTROL_REJECTION_MS);
+    return {...result,rejected:true,
+      lateral:reducedMotion?0:Math.sin(p*Math.PI*6)*(1-p)*(1-p),
+      rejectTravel:reducedMotion?0:Math.sin(p*Math.PI)*.045*(1-p),
+      travel:reducedMotion?Math.max(result.travel,.72):result.travel};
+  }
+  return result;
 }
 
 // Deterministic diagnostics for lifecycle tests; never drawn in game imagery.

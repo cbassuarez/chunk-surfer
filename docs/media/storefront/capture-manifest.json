@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-01 America/Denver",
+  "sourceVersion": "0.3.0",
+  "gitHeadAtReview": "34e7a2079cd7780082469693c1562a449e6d4a3a",
+  "sourceState": "Shared dirty working tree; source browser preview, not immutable release artifacts. No-HMR Vite session used for capture.",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "mode": "Current production renderers in a development browser; microphone/profile disabled; developer placements marked below.",
+  "imageProcessing": "Browser JPEG screenshots at quality 90; arrival retained from initial quality-82 capture. No recoloring, compositing, AI generation, filters or postprocessing.",
+  "omittedOverlay": "Only the local DEV world-integration toolbar was hidden. In-game HUD, controls and subtitles remain.",
+  "limits": [
+    "Not packaged-native or uninterrupted-route acceptance.",
+    "No trailer or audio listening acceptance claimed.",
+    "Recheck captures against the exact release and approved spoiler scope before upload."
+  ],
+  "shots": [
+    {
+      "file": "source-vista.jpg",
+      "placement": "__sourceRestReview.stage(wrong-return,vista)",
+      "bytes": 679279,
+      "sha256": "5e857735bae4438093ad6104c373d3dcfbe233aedcd38eb32e93232fcf9be444"
+    },
+    {
+      "file": "recorder.jpg",
+      "placement": "warp-studio, field-ready, setup flags, R; actual idle recorder",
+      "bytes": 99104,
+      "sha256": "0c920b7b2fd3e178cfc1759b51302eefbdbabdb5796da3cf9007300fb8de4ba9"
+    },
+    {
+      "file": "arrival.jpg",
+      "placement": "fresh new-run opening-vehicle, ordinary entry",
+      "bytes": 393195,
+      "sha256": "05284a3dffad81dc96d035ca1eb95ce5098f5090661039a248d7f07b1e22adc8"
+    },
+    {
+      "file": "harpsichord.jpg",
+      "placement": "__sourceRestReview.stage(catch,vista)",
+      "bytes": 741020,
+      "sha256": "e02810c653005c093bcfd9eca974380a0924681c1d9e46de56bedc5307dfc605"
+    },
+    {
+      "file": "listening.jpg",
+      "placement": "__sourceRestReview.stage(wrong-return,seated)",
+      "bytes": 562818,
+      "sha256": "08770d6666d14b3ebe55a441b434f264f7f310221a9fd53fb5219cdbcfcc597d"
+    },
+    {
+      "file": "roof.jpg",
+      "placement": "godRow(roof-city-seat-sit)",
+      "bytes": 297902,
+      "sha256": "1285b3380f23675b1326bb31dc2bbae912985c4d08a4af1ac60b76ebc03aa8e0"
+    }
+  ]
+}

@@ -4,14 +4,14 @@ import {GLASS_COURT as C} from '../src/data/glass-court.js';
 import {GLASS_COURT_PRESENCES as bodies} from '../src/data/glass-court-presences.js';
 import {createGlassCourtRainPresence,GLASS_COURT_RAIN_FACES as faces} from '../src/game/glass-court-rain-presence.js';
 
-const visitor={eye:{x:faces[0].x,y:faces[0].y,z:C.origin.z+2.5},forward:{x:0,y:0,z:-1},ready:true,dtSec:.05};
+const visitor={eye:{x:C.origin.x+2,y:faces[0].y,z:faces[0].z},forward:{x:-1,y:0,z:0},ready:true,dtSec:.05};
 const stare=(controller,n=70,options={})=>{let frame;for(let i=0;i<n;i++)frame=controller.update({...visitor,...options});return frame;};
 
-test('wet expressions belong to the two existing bodies and their real north panes',()=>{
+test('wet expressions belong to the two existing bodies and their real side panes',()=>{
  assert.equal(faces.length,bodies.length);
  for(const [i,f] of faces.entries()){
-  assert.equal(f.sourceId,bodies[i].id);assert.ok(Math.abs(f.x-bodies[i].x)<=1);
-  assert.ok(Math.abs(f.z-C.origin.z)<.01);assert.ok(f.y-f.height/2>C.drawnFloor+1.68&&f.y+f.height/2<C.drawnFloor+3.89);
+  assert.equal(f.sourceId,bodies[i].id);assert.ok(Math.abs(f.z-bodies[i].y)<=1);
+  assert.ok(Math.abs(f.x-(i===0?C.bounds.x0:C.bounds.x1))<.01);assert.ok(f.y-f.height/2>C.drawnFloor+1.68&&f.y+f.height/2<C.drawnFloor+3.89);
   assert.equal(bodies[i].blocks,false);assert.equal(bodies[i].interactive,false);
  }
 });
@@ -22,12 +22,12 @@ test('a glance remains rain; sustained attention forms a particular body’s exp
  const frame=stare(controller);
  assert.equal(frame.coordinateSpace,'physical-metres');assert.ok(frame.faces[0].coherence>.98);
  assert.equal(frame.faces[0].phase,'recognised');assert.equal(frame.faces[1].coherence,0);
- assert.deepEqual(frame.shader.faces[0].slice(0,3),[faces[0].x,faces[0].y,faces[0].z]);
+ assert.deepEqual(frame.shader.faces[0].slice(0,3),[faces[0].z,faces[0].y,faces[0].x]);
 });
 
 test('outside remains ordinary glass, including a recently observed expression',()=>{
  const controller=createGlassCourtRainPresence();stare(controller);
- for(const eye of[{x:faces[0].x,y:faces[0].y,z:C.origin.z-.5},{x:C.bounds.x1+1,y:1.7,z:C.origin.z+2}]){
+ for(const eye of[{x:C.bounds.x0-.5,y:faces[0].y,z:faces[0].z},{x:C.bounds.x1+1,y:1.7,z:C.origin.z+2}]){
   const frame=controller.update({...visitor,eye});assert.equal(frame.active,false);
   assert.equal(frame.shader.active,0);assert.ok(frame.faces.every(f=>f.coherence===0));
  }

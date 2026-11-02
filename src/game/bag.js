@@ -12,7 +12,7 @@ import { withMachinePanel, drawLampButton, machinePanelBezelRail } from '../rend
 import { drawInstrumentPlate } from '../render/instrument-material.js';
 import { drawPrintedText } from '../render/keycap.js';
 import { bagTabRegions, bagTabButtonState, BAG_TABS_HEIGHT, BAG_TAB_CAP_HEIGHT } from '../render/bag-tabs.js';
-import { buildBagModel, bagEntry, bagSection, EMPTY_JOB, normalizeBagSectionId } from './bag-model.js';
+import { buildBagModel, bagEntry, bagSection, EMPTY_JOB, normalizeBagSectionId, readOnlyBagMap } from './bag-model.js';
 import {
   currentBagEntry,
   ensureBagSelectionVisible,
@@ -54,6 +54,9 @@ function cloneMapNav(value) {
 }
 
 export function makeBagScene({
+  sectionIds = null,
+  sceneId = 'bag',
+  readOnly = false,
   equipment = [],
   job = EMPTY_JOB,
   map = null,
@@ -100,15 +103,18 @@ export function makeBagScene({
   getMonitorSource = null,
   embeddedHost = false,
 } = {}) {
+  const mapOnly=Array.isArray(sectionIds)&&sectionIds.length>0&&sectionIds.every(id=>normalizeBagSectionId(id)==='map');
+  const readOnlyMap=mapOnly&&readOnly===true;
   const equipmentSource = typeof getEquipment === 'function' ? getEquipment : () => equipment;
   const loadoutSource = typeof getLoadout === 'function' ? getLoadout : () => loadout;
   const jobSource = typeof getJob === 'function' ? getJob : () => job;
   const journalSource = typeof getJournal === 'function' ? getJournal : () => journal;
-  const mapSource = typeof getMap === 'function' ? getMap : () => map;
+  const liveMapSource = typeof getMap === 'function' ? getMap : () => map;
+  const mapSource = ()=>readOnlyMap?readOnlyBagMap(liveMapSource()):liveMapSource();
   const mapUnavailableSource = typeof getMapUnavailableReason === 'function' ? getMapUnavailableReason : () => '';
   const hintSource = typeof getHint === 'function' ? getHint : () => hint;
   const focusSource = typeof getFocus === 'function' ? getFocus : () => focus;
-  const guideSource = typeof getGuide === 'function' ? getGuide : () => guide;
+  const guideSource = mapOnly?()=>null:typeof getGuide === 'function' ? getGuide : () => guide;
   const buildSource = typeof getBuild === 'function' ? getBuild : () => null;
   const rigSource = typeof hasRig === 'function' ? hasRig : () => false;
   const sheetInsightSource=typeof getSheetInsights==='function'?getSheetInsights:()=>null;
@@ -133,12 +139,12 @@ export function makeBagScene({
   // Omitted memory supports case-local callers. An explicit null comes from
   // a save with no navigation record, including a fresh run: never borrow the
   // previous run's tracking or seen-update receipts for that save.
-  const sourceMemory = memory === undefined ? rememberedNav : memory;
+  const sourceMemory = memory === undefined ? (mapOnly?null:rememberedNav) : memory;
   const journalReview = createJournalReview(sourceMemory?.journalReview);
   let model = buildBagModel({
     equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
     mapUnavailableReason: mapUnavailableSource(),
-    build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
+    build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),sectionIds,
   });
   let nav = sourceMemory ? repairBagSelection(sourceMemory, model) : initialBagState(model, focus || {});
   let mapNav = initialMapNav({ model: model.map, preferredRoomId: focus?.entryId?.replace(/^room:/, '') || null });
@@ -199,7 +205,7 @@ export function makeBagScene({
     // zoom trap on the next opening or pretend to be progression data.
     const { viewMode, rotation, zoom, panX, panY, focusedControlId, ...savedMap } = cloneMapNav(mapNav);
     nav = reduceBagNav({ ...nav, journalReview: journalReview.memory() }, { type: 'SET_MAP_NAV', map: savedMap }, model);
-    rememberedNav = {
+    const nextMemory = {
       ...nav,
       selected: { ...nav.selected },
       scroll: { ...nav.scroll },
@@ -207,8 +213,8 @@ export function makeBagScene({
       mode: 'browse',
       pendingAction: null,
     };
-    rememberedSheetPages={...sheetPages};
-    onRemember(rememberedNav);
+    if(!mapOnly){rememberedNav=nextMemory;rememberedSheetPages={...sheetPages};}
+    onRemember(nextMemory);
   }
 
   function applyFocus(nextFocus) {
@@ -318,7 +324,7 @@ export function makeBagScene({
     model = buildBagModel({
       equipment: equipmentSource(), job: jobSource(), journal: journalReview.decorate(journalSource()), map: mapSource(), loadout: loadoutSource(),
       mapUnavailableReason: mapUnavailableSource(),
-      build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),
+      build: workingBuild, settledBuild, hasRig: rigSource(), sheetInsights:sheetInsightSource(),sectionIds,
     });
     nav = reduceBagNav(nav, { type: 'MODEL_REFRESH' }, model);
     mapNav = reduceMapNav(mapNav, { type: 'MODEL_REFRESH' }, model.map);
@@ -382,6 +388,7 @@ export function makeBagScene({
     const top=currentRoute();
     if(top===route)routes.pop();
     syncActionPresentation();
+    if(readOnlyMap)return;
     const doc=route.document;
     const tree=sheetDialogueFor(doc?.id);
     if(tree&&!sheetInsightComplete(sheetInsightSource(),doc.id))openImportantSheetDialogue(doc);
@@ -391,7 +398,7 @@ export function makeBagScene({
     if(!doc)return false;
     // Progression observes the inspection immediately, exactly as it did when
     // the old document scene was pushed. Presentation now stays inside the bag.
-    readDocument(doc);
+    if(!readOnlyMap)readDocument(doc);
     const route={type:'sheet-reader',document:doc,reader:null};
     route.reader=makeEmbeddedDocumentReader(doc,{
       initialPage:sheetPages[doc.id]||0,
@@ -412,6 +419,7 @@ export function makeBagScene({
   }
 
   function applyChosenSkills() {
+    if(!bagSection(model,'skills'))return;
     if (skillsApplied) return;
     skillsApplied = true;
     if (!buildIsDirty() || typeof onApplySkills !== 'function') return;
@@ -426,6 +434,7 @@ export function makeBagScene({
 
   function setSection(sectionId) {
     const normalized = normalizeBagSectionId(sectionId);
+    if(!bagSection(model,normalized))return false;
     if(!guideAllowsSection(normalized)){refuseGuided();return false;}
     cancelPatchDrag();
     mapDrag=null;
@@ -703,6 +712,7 @@ export function makeBagScene({
 
   function mapAction(action, payload = {}) {
     if(nav.sectionId!=='map'||currentRoute().type!=='root')return false;
+    if(readOnlyMap&&['set-target','clear-target'].includes(action))return false;
     const guided=lockedGuide();
     if(guided&&!(guided.kind==='action'&&guided.action==='mark'&&(action==='set-target'
       ||action==='select-space'&&payload.spaceId===selectedMapSpace(mapNav,model.map)?.id))){refuseGuided();return false;}
@@ -776,6 +786,7 @@ export function makeBagScene({
 
   function execute(entry, actionId, {confirmed=false}={}) {
     if (!entry || !actionId) return false;
+    if(readOnlyMap&&['mark','unmark','mark-waypoint','clear-waypoint','set-target','clear-target','confirm-waypoint'].includes(actionId))return false;
     const targetSpace=nav.sectionId==='map'?selectedMapSpace(mapNav,model.map):null;
     const descriptor=actionFor(entry,actionId);
     if(descriptor?.enabled===false){notice=descriptor.reason||'UNAVAILABLE';noticeUntil=t+2.4;AUDIO.menuDenied?.();return false;}
@@ -1177,7 +1188,7 @@ export function makeBagScene({
   }
 
   const scene = {
-    id: 'bag',
+    id: sceneId,
     blocksInput: true,
     blocksWorld: true,
     allowsLook: false,
@@ -1195,13 +1206,13 @@ export function makeBagScene({
     // bag there is nothing to back out of, so Escape keeps its ordinary
     // meaning and opens the menu; a controller's `back` still closes the bag
     // there, which is what backInput is for.
-    get handlesEscape() { return currentRoute().type !== 'root'||nav.sectionId==='map'&&!!(mapNav.focusedControlId||mapNav.roomFile); },
+    get handlesEscape() { return mapOnly||currentRoute().type !== 'root'||nav.sectionId==='map'&&!!(mapNav.focusedControlId||mapNav.roomFile); },
     get modalActions() { return currentRoute().type!=='root' ? [] : nav.sectionId==='map'
       ? ['mapFloorPrev','mapFloorNext','mapLocate','mapFile','mapConsole']
       : nav.sectionId==='journal' ? ['mapFile','mapFloorPrev','mapFloorNext'] : []; },
 
     enter() {
-      preloadItemPortraits();
+      if(!mapOnly)preloadItemPortraits();
       resetBagControls();
       if (typeof window !== 'undefined') window.addEventListener('blur', resetBagControls);
       motion.openedAt = t;
@@ -1482,7 +1493,7 @@ export function makeBagScene({
         outer.x,outer.y,outer.w,outer.h,{edge:'top',controlHeight:BAG_TAB_CAP_HEIGHT});
       let layout;
       withMachinePanel(outer.x, outer.y, outer.w, outer.h, {
-        label: 'FIELD CASE / 4417-C',
+        label: mapOnly?'SURVEY INDICATOR / SI-1':'FIELD CASE / 4417-C',
         source: getMonitorSource?.() || 'FIELD LIVE',
         footer: '', meter: true, theme: 'amber',
         // Sockets, plugs, cables, and switches are exposed hardware. The case
@@ -1516,7 +1527,7 @@ export function makeBagScene({
       } else { patchLayout=null; patchLayoutKey=''; cancelPatchDrag(); }
       const selected=currentBagEntry(nav,model);
       const sectionLabel=model.sections.find((section)=>section.id===nav.sectionId)?.label||nav.sectionId;
-      const breadcrumb=`FIELD CASE / ${sectionLabel}${route.type==='item-actions'&&selected?` / ${selected.title} / ACTIONS`:''}`;
+      const breadcrumb=`${mapOnly?'SURVEY INDICATOR':'FIELD CASE'} / ${sectionLabel}${route.type==='item-actions'&&selected?` / ${selected.title} / ACTIONS`:''}`;
       const liveHint = guided ? '' : (notice || (nav.sectionId === 'kit'
         // Short enough to survive the hint row. The long version ran to 97
         // characters and was cut at "INSPE…", which hid the very verbs it was

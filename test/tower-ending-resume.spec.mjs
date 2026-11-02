@@ -57,7 +57,7 @@ function resumedEnding({ id = 'tower-won', arrival = 'carried', checkpoint = tru
     },
     expressTowerResistance: () => false, drawTowerResistancePrompt: noop,
     // This checkpoint has no ongoing Chapel tape-demand owner.
-    finishChapelTapeDemand: noop, restoreChapelTapeDemandDeparture: noop,
+    finishChapelTapeDemand: noop, restoreChapelTapeDemandDeparture: noop,resumeRecordistReleaseFromSave:()=>false,
     document: { documentElement: { dataset: {} } },
   };
   vm.createContext(context);

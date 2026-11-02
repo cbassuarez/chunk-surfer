@@ -2,6 +2,7 @@ import test from'node:test';import assert from'node:assert/strict';import fs fro
 import{ELLERY_PUBLIC_FRONT as C,ELLERY_PUBLIC_FORECOURT_LEVEL as LEVEL,ELLERY_PUBLIC_FRONT_PROPS,ELLERY_PUBLIC_FRONT_LETTERING as COPY,ELLERY_PUBLIC_FRONT_HERO_CLIPS as HERO_CLIPS}from'../src/data/ellery-public-front.js';
 import{GLASS_COURT_SIGHTLINES}from'../src/data/glass-court-sightlines.js';
 import{elleryPublicFrontGeometry,heroFingerprint}from'../tools/chunk_surfer/ellery-public-front-geometry.mjs';
+import{heroConnectedParts,heroPartRepair}from'../tools/chunk_surfer/ellery-yard-repair.mjs';
 const source=process.env.ELLERY_PUBLIC_SOURCE_PACK||new URL('../public/assets/conservatory-props.glb',import.meta.url),io=new NodeIO();
 const before=await io.readBinary(fs.readFileSync(source)),bytes=fs.readFileSync(new URL('../public/assets/ellery-public-front.glb',import.meta.url)),after=await io.readBinary(bytes),stats=JSON.parse(fs.readFileSync(new URL('../public/assets/ellery-public-front.stats.json',import.meta.url))),models=elleryPublicFrontGeometry();
 const contains=(p,q)=>p.kind==='box'&&q.every((v,k)=>Math.abs(v-p.center[k])<p.size[k]/2-1e-6);
@@ -22,15 +23,21 @@ test('hero trimming leaves no scenic surface through the real atrium or greenhou
  const a=before.getRoot().listMeshes().find(m=>m.getName()===C.hero.mesh),b=after.getRoot().listMeshes().find(m=>m.getName()===C.hero.mesh);
  assert.equal(heroFingerprint(a),stats.sourceHero.fingerprint,'only a changed hero requires extraction again, not unrelated main-pack edits');
  const out=new Map();for(const p of b.listPrimitives()){const ix=p.getIndices().getArray();for(let i=0;i<ix.length;i+=3){const t=triangle(p,[ix[i],ix[i+1],ix[i+2]]);assert.ok(outside(t,1e-4),'no retained triangle crosses either actual occupied-air clip');const k=triKey(p.getMaterial().getName(),t);out.set(k,(out.get(k)||0)+1);}}
- let protectedCount=0,originalIntrusions=0;
+ // Only explicitly owned connected components may change outside the old
+ // occupied-air clips. Other triangles inside the broad repair envelope keep
+ // their exact attributes too; a bounding-box exemption would be too broad.
+ const ownership=heroConnectedParts(a),repairedTriangles=new Set();
+ for(const row of ownership.primitives){const p=row.primitive,ix=p.getIndices().getArray();for(let i=0;i<ix.length;i+=3){if(!heroPartRepair(ownership.parts.get(row.parts[ix[i]])))continue;repairedTriangles.add(triKey(p.getMaterial().getName(),triangle(p,[ix[i],ix[i+1],ix[i+2]])));}}
+ let protectedCount=0,originalIntrusions=0,ownedRepairs=0;
  for(const p of a.listPrimitives()){
   const ix=p.getIndices().getArray(),m=p.getMaterial();
-  for(let i=0;i<ix.length;i+=3){const t=triangle(p,[ix[i],ix[i+1],ix[i+2]]);if(!outside(t,-1e-5)){originalIntrusions++;continue;}const k=triKey(m.getName(),t);assert.ok(out.get(k)>0,'every wholly protected source triangle survives without changing position, normal, UV or winding');out.set(k,out.get(k)-1);protectedCount++;}
+  for(let i=0;i<ix.length;i+=3){const t=triangle(p,[ix[i],ix[i+1],ix[i+2]]);if(!outside(t,-1e-5)){originalIntrusions++;continue;}const k=triKey(m.getName(),t);if(repairedTriangles.has(k)){ownedRepairs++;continue;}assert.ok(out.get(k)>0,'every wholly protected source triangle survives without changing position, normal, UV or winding');out.set(k,out.get(k)-1);protectedCount++;}
   const other=b.listPrimitives().find(q=>q.getMaterial().getName()===m.getName())?.getMaterial();if(!other)continue;
   for(const get of['getBaseColorFactor','getMetallicFactor','getRoughnessFactor','getEmissiveFactor','getExtras'])assert.deepEqual(other[get](),m[get]());
   for(const get of['getBaseColorTexture','getNormalTexture','getMetallicRoughnessTexture'])assert.deepEqual(other[get]()?.getImage(),m[get]()?.getImage());
  }
  assert.ok(protectedCount>16000,'the bounded repair retains the overwhelming majority of the original scenic work');
+ assert.equal(ownedRepairs,484,'only the 420 backstage and 64 pipe source triangles have explicit ownership outside the clips');
  assert.ok(originalIntrusions>0,'the original source mesh actually contains the intrusion caught by this check');
 });
 

@@ -13,17 +13,17 @@ const geometryPath=stage?path.join(stage,'scene-dock-geometry.mjs'):path.join(ro
 const geometryURL=sourceURL(fs.readFileSync(geometryPath,'utf8').replace("'../../src/data/scene-dock-dressing.js'",JSON.stringify(dataURL)));
 const {buildSceneDockDressing}=await import(geometryURL);
 const builder=fs.readFileSync(path.join(root,'tools/chunk_surfer/build-props.mjs'),'utf8');
-function productionFunction(name){
- const begin=builder.indexOf(`function ${name}(`);assert.ok(begin>=0,name);
- let i=builder.indexOf('{',begin),depth=0,quote=null,line=false,block=false,escape=false;
- for(;i<builder.length;i++){
-  const c=builder[i],next=builder[i+1];
+function productionFunction(name,source=builder){
+ const begin=source.indexOf(`function ${name}(`);assert.ok(begin>=0,name);
+ let i=source.indexOf('{',begin),depth=0,quote=null,line=false,block=false,escape=false;
+ for(;i<source.length;i++){
+  const c=source[i],next=source[i+1];
   if(line){if(c==='\n')line=false;continue;}
   if(block){if(c==='*'&&next==='/'){block=false;i++;}continue;}
   if(quote){if(escape)escape=false;else if(c==='\\')escape=true;else if(c===quote)quote=null;continue;}
   if(c==='/'&&next==='/'){line=true;i++;continue;}if(c==='/'&&next==='*'){block=true;i++;continue;}
   if(c==='"'||c==="'"||c==='`'){quote=c;continue;}
-  if(c==='{')depth++;else if(c==='}'&&--depth===0)return builder.slice(begin,i+1);
+  if(c==='{')depth++;else if(c==='}'&&--depth===0)return source.slice(begin,i+1);
  }
  throw Error('Unclosed production geometry helper '+name);
 }
@@ -31,7 +31,7 @@ const meshes=new Map(),parts=[];
 function mesh(name){const m={name,groups:new Map()};meshes.set(name,m);return m;}
 function group(m,mat){if(!m.groups.has(mat))m.groups.set(mat,{positions:[],normals:[],indices:[],uvs:[]});return m.groups.get(mat);}
 const names=['addBox','addBeam','addCylinder','addCylinderX'];
-const helpers=new Function('group','signAssemblies','BUILDING_WINDOW_HOST_ORIGINS',names.map(productionFunction).join('\n')+'\nreturn{'+names.join(',')+'};')(group,{isCarrier:()=>false},{});
+const helpers=new Function('group','signAssemblies','BUILDING_WINDOW_HOST_ORIGINS',names.map(name=>productionFunction(name)).join('\n')+'\nreturn{'+names.join(',')+'};')(group,{isCarrier:()=>false},{});
 function bounds(vertices){const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<vertices.length;i++){
  const k=i%3;min[k]=Math.min(min[k],vertices[i]);max[k]=Math.max(max[k],vertices[i]);}return{min,max};}
 const api={mesh,MAT:new Proxy({},{get:(_,key)=>String(key)})};
@@ -112,11 +112,9 @@ if(!stage){
  const {MESH_SURFACE,PROP_BOUNDS}=await import(pathToFileURL(path.join(root,'src/data/generated/prop-geometry.js')).href);
  const {sourceLandingPropPlacements}=await import(pathToFileURL(path.join(root,'src/data/source-landing.js')).href);
  const renderer=fs.readFileSync(path.join(root,'src/render/props3d.js'),'utf8');
- const renderMath=renderer.slice(renderer.indexOf('function identity(){'),renderer.indexOf('\nfunction perspective('));
+ const renderMath=['identity','multiply','modelMatrix'].map(name=>productionFunction(name,renderer)).join('\n');
  const ordinaryMatrix=new Function(renderMath+';return modelMatrix;')();
- const sourceRuntime=fs.readFileSync(path.join(root,'src/game/source-space-runtime.js'),'utf8');
- const sourceMath=sourceRuntime.slice(sourceRuntime.indexOf('function mul(a, b)'),sourceRuntime.indexOf('\nfunction treeOffsets(')).replace('export function sourceMatrix','function sourceMatrix');
- const sourceMatrix=new Function(sourceMath+';return sourceMatrix;')();
+ const {sourceMatrix}=await import(pathToFileURL(path.join(root,'src/game/source-space-runtime.js')).href);
  const point=(m,v)=>[0,1,2].map(k=>m[k]*v[0]+m[4+k]*v[1]+m[8+k]*v[2]+m[12+k]);
  const local=(m,v)=>{const d=v.map((x,k)=>x-m[12+k]);return[0,1,2].map(k=>(d[0]*m[k*4]+d[1]*m[k*4+1]+d[2]*m[k*4+2])/(m[k*4]**2+m[k*4+1]**2+m[k*4+2]**2));};
  const verts=b=>[b.min[0],b.max[0]].flatMap(x=>[b.min[1],b.max[1]].flatMap(y=>[b.min[2],b.max[2]].map(z=>[x,y,z])));

@@ -9,7 +9,7 @@ const finite=(n,d=0)=>Number.isFinite(Number(n))?Number(n):d;
 const clamp=n=>Math.max(0,Math.min(1,finite(n)));
 const EPS=1e-7;
 export const SOURCE_REST_WEATHER_AUDIO=Object.freeze({
-  bellSamples:Object.freeze(['04','06','08']),bellEncodedByteLimit:2000000,bellGain:.17,bellWet:.16,bellReflectionSeconds:6.8,maxBellTails:6,maxClockStep:.5,
+  bellSamples:Object.freeze(['04','06','08']),bellEncodedByteLimit:2000000,bellGain:.23,bellWet:.16,bellReflectionSeconds:6.8,maxBellTails:6,maxClockStep:.5,
 });
 
 
@@ -111,7 +111,7 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
     const position=sourceAcousticCoordinates(v.position,state,acousticFrame),d=position.distance;
     const target=position.source?1/(1+d/70):0,now=finite(ctx.currentTime);
     const set=(param,value)=>{if(!param)return;if(v.placed&&param.setTargetAtTime)param.setTargetAtTime(value,now,.04);else if(param.setValueAtTime)param.setValueAtTime(value,now);else param.value=value;};
-    set(v.spatial.gain,target);set(v.filter?.frequency,Math.max(2200,10500/(1+d/95)));
+    set(v.spatial.gain,target);set(v.filter?.frequency,Math.max(750,Math.max(2200,10500/(1+d/95))*2**(-4*v.muffle)));
     if(v.hrtf){if(v.pan.positionX){set(v.pan.positionX,position.relativeXYZ[0]);set(v.pan.positionY,position.relativeXYZ[1]);set(v.pan.positionZ,position.relativeXYZ[2]);}else v.pan.setPosition?.(...position.relativeXYZ);}
     else set(v.pan?.pan,Math.max(-.9,Math.min(.9,position.relativeXYZ[0]/Math.max(1,d))));
     v.placed=true;v.placement={distance:d,relativeXYZ:position.relativeXYZ,gain:target};
@@ -123,12 +123,12 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
     const source=ctx.createBufferSource(),envelope=ctx.createGain(),spatial=ctx.createGain(),filter=ctx.createBiquadFilter?.(),
       hrtf=ctx.createPanner?.(),pan=hrtf||ctx.createStereoPanner?.(),nodes=[source,envelope,spatial];
     source.buffer=buffer;source.loop=false;if(source.playbackRate)source.playbackRate.value=1;
-    const now=finite(ctx.currentTime),level=SOURCE_REST_WEATHER_AUDIO.bellGain*clamp(event.energy??1);
+    const now=finite(ctx.currentTime),muffle=clamp(event.muffle),level=SOURCE_REST_WEATHER_AUDIO.bellGain*clamp(event.energy??1)*(1-.15*muffle);
     envelope.gain.setValueAtTime?.(level,now);if(!envelope.gain.setValueAtTime)envelope.gain.value=level;
     // The processed stem owns its complete20s modal decay. Playback rate stays
     // at1; no runtime transposition changes the recorded clapper timing.
     envelope.gain.setValueAtTime?.(level,now+buffer.duration-.3);envelope.gain.linearRampToValueAtTime?.(0,now+buffer.duration);
-    let tail=source;if(filter){filter.type='lowpass';nodes.push(filter);tail.connect(filter);tail=filter;}
+    let tail=source;if(filter){filter.type='lowpass';if(filter.Q)filter.Q.value=.55;nodes.push(filter);tail.connect(filter);tail=filter;}
     tail.connect(envelope).connect(spatial);tail=spatial;
     if(pan){nodes.push(pan);if(hrtf){pan.panningModel='HRTF';pan.distanceModel='inverse';pan.rolloffFactor=0;pan.refDistance=1;pan.maxDistance=10000;}tail.connect(pan);tail=pan;}
     tail.connect(destination);
@@ -139,13 +139,13 @@ export function createSourceRestBellAudio({context:ctx,destination,fetcher=(...a
       const wet=ctx.createGain();wet.gain.value=SOURCE_REST_WEATHER_AUDIO.bellWet;
       tail.connect(convolver).connect(wet).connect(destination);nodes.push(convolver,wet);
     }
-    const v={source,nodes,envelope,level,spatial,filter,pan,hrtf:!!hrtf,position:{...event.position},convolver,dead:false};
+    const v={source,nodes,envelope,level,muffle,spatial,filter,pan,hrtf:!!hrtf,position:{...event.position},convolver,dead:false};
     place(v,state,acousticFrame);live.add(v);
     // A struck tail remains owned and bounded until the source plus its room
     // ends. Pause/dispose disconnect this chain immediately, including its tail.
     source.onended=()=>{v.sourceEnded=true;};v.until=now+buffer.duration+(convolver?SOURCE_REST_WEATHER_AUDIO.bellReflectionSeconds:0);
     try{source.start(now);source.stop(now+buffer.duration);}catch{release(v);return false;}
-    played++;lastStrike={id:event.id,bellId:event.bellId,sample:event.sample,note:row.note,frequency:row.frequency,at:event.at,level,position:{...event.position},placement:{...v.placement}};
+    played++;lastStrike={id:event.id,bellId:event.bellId,sample:event.sample,note:row.note,frequency:row.frequency,at:event.at,level,muffle,stroke:event.stroke||'open',position:{...event.position},placement:{...v.placement}};
     return true;
   }
   function fade(seconds=.75){const at=finite(ctx.currentTime);for(const v of live){const p=v.envelope?.gain;if(p){p.cancelAndHoldAtTime?.(at);p.cancelScheduledValues?.(at);p.setValueAtTime?.(finite(p.value,v.level),at);p.linearRampToValueAtTime?.(0,at+seconds);}try{v.source.stop(at+seconds);}catch{}v.until=Math.min(v.until,at+seconds+SOURCE_REST_WEATHER_AUDIO.bellReflectionSeconds);}}
@@ -203,7 +203,7 @@ export function createSourceRestWeather({getAudio=()=>null,makeVoice=createBootW
     // Seeking, a suspended source, or a large scene-frame gap must not deliver
     // an accumulated volley of judgment when the player returns.
     const discontinuity=lastClock!==null&&(delta<-.001||delta>SOURCE_REST_WEATHER_AUDIO.maxClockStep);
-    if(discontinuity){if(delta<0){thunder?.stop();thunder=null;bells?.pause();prepared.clear();seen.clear();}skipped++;}
+    if(discontinuity){if(delta<0){thunder?.stop();thunder=null;bells?.pause();prepared.clear();if(!judgment.bellContacts)seen.clear();}skipped++;}
     const from=lastClock===null||discontinuity?clock-EPS:lastClock-EPS;
     lastClock=clock;
     thunder??=makeThunder({context,destination:environment.input});
@@ -220,7 +220,10 @@ export function createSourceRestWeather({getAudio=()=>null,makeVoice=createBootW
     }
     for(const event of judgment.bellEvents||[]){
       const at=finite(event.at),id='bell:'+event.id;
-      if(at<from||at>clock+EPS||seen.has(id))continue;
+      // The funeral director has already admitted these exact new contacts.
+      // Do not window them again using a differently sampled media clock.
+      // Legacy pure judgment cues retain their original clock-window path.
+      if(seen.has(id)||!judgment.bellContacts&&(at<from||at>clock+EPS))continue;
       seen.add(id);if(bellOwner.strike(event,state,acousticFrame)!==false){playedBells++;trace({type:'rest-bell',id:event.id,at,clock,bellId:event.bellId,position:event.position});}
       else trace({type:'rest-bell-unavailable',id:event.id,at,clock});
     }

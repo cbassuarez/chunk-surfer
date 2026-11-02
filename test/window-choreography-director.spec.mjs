@@ -462,6 +462,7 @@ test('main samples Source leakage only from the runtime frame after movement cro
     const preparePayphoneRoadLoop=()=>{}; // No payphone owner in this crossing fixture.
 
     const sourceCameraPatch=()=>({});
+    const pressurePresentationSnapshot=()=>null;
     const saveCommit=()=>trace.push('save'),updateAudio=()=>trace.push('audio');
     return ()=>{${sourceBranch}};
   `);

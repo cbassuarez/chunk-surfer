@@ -31,16 +31,20 @@ test('main wires recording hallucinations into the secondary HUSH body path', ()
 
 test('secondary false HUSH accepts a stronger dedicated look without changing primary HUSH', () => {
   const source = readFileSync('src/render/r3d.js', 'utf8');
-  assert.match(source, /P3\.setPressureInstances\(pressureInstances\(incomingHush,incomingHushSecondary,/);
+  assert.match(source, /pressureInstances\(incomingHush,incomingHushSecondary,/);
+  assert.match(source, /P3\.setPressureInstances\(resolvedPressureDraws\)/,
+    'the world and secondary actor retain the shared resolved pressure pass');
+  assert.match(source, /P3\.setPressureSurfaceInstances\(pressureSurfaceInstances\(resolvedPressureDraws\)\)/,
+    'the same resolved actors supply both volume and surface reception');
   const primary = { x: 2, y: 3, strength: .9, heightM: 1.83, widthM: .58 };
   const [alone] = pressureInstances(primary, null);
   const [first, second] = pressureInstances(primary, { x: 6, y: 3, strength: .9, heightM: 2.3, widthM: .9, glow: 2.6, mode: 'glow' });
   assert.deepEqual(first, alone, 'the secondary look leaves the primary volume untouched');
   assert.ok(Math.abs(second.scale / first.scale - 2.3 / 1.83) < 1e-9, 'the secondary carries its own height');
-  assert.equal(second.pressure.glow, 2.6);
+  assert.equal(second.pressure.glow, 1, 'the current density renderer normalizes the luminous mode');
   assert.equal(second.pressure.mode, 'glow');
-  assert.notEqual(first.pressure.glow, 2.6);
-  assert.equal(first.pressure.mode, 'live');
+  assert.equal(first.pressure.glow, 0);
+  assert.equal(first.pressure.mode, 'core');
 });
 
 // THE BEAT WAS FIRING AND NOBODY EVER SAW IT.

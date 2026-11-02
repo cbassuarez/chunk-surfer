@@ -84,6 +84,10 @@ export async function appendCausalDraftSegment(runId, segment, header = {}) {
   if (!storage?.appendCausalDraftSegment) throw new Error('causal storage unavailable');
   return storage.appendCausalDraftSegment(runId, segment, header);
 }
+export async function saveCausalDraftCheckpoint(runId, checkpoint) {
+  if (!storage?.saveCausalDraftCheckpoint) throw new Error('causal storage unavailable');
+  return storage.saveCausalDraftCheckpoint(runId, checkpoint);
+}
 export async function sealCausalDraft(runId, tape) {
   if (!storage?.sealCausalDraft) throw new Error('causal storage unavailable');
   return storage.sealCausalDraft(runId, tape);

@@ -11,7 +11,7 @@ function fixture({ presentation = {}, rejectClosest = false, sealGate = null } =
   const calls = [], renders = [], inputs = [], controls = [], errors = [];
   const context = { id: 'existing-game-context' }, destination = { id: 'existing-monitor' }, filtered = { id: 'existing-filtered-monitor-and-REC-bus' };
   const state = { time: 4.8, wallMs: 0, distance: 100, speed: 8, held: false, paused: true, returning: false, finished: false,
-    presentation, rejectClosest, raw: null, recording: false, effectDisposed: false };
+    presentation, rejectClosest, raw: null, recording: false, effectDisposed: false,look:{yaw:0,pitch:-.035} };
   const counts = { effectPlay: 0, effectDispose: 0, audioDispose: 0, rendererDispose: 0, controllerDispose: 0,
     tapeDispose: 0, seal: 0, restore: 0, done: 0, close: 0, committed: 0, pause: 0 };
   const mark = (type, detail) => calls.push({ type, detail });
@@ -20,7 +20,7 @@ function fixture({ presentation = {}, rejectClosest = false, sealGate = null } =
     update(dt) { if (!state.paused) state.time += dt; },
     frame() {
       const body = identity(); body[14] = 32 - state.distance;
-      const look = { yaw: 0, pitch: -.035 }, eye = [31.6, 1.62, body[14] + .15];
+      const look = {...state.look}, eye = [31.6, 1.62, body[14] + .15];
       const frame = { timeSec: state.time, phase: state.returning ? 'return' : 'free-drive', controlsEnabled: !state.paused && !state.returning,
         paused: state.paused, worldOwner: state.returning ? 'return' : 'drive', finished: state.finished, coverAlpha: state.returning ? 1 : 0,
         vehiclePose: { distance: state.distance, speed: state.speed, bodyMatrix: body }, look,
@@ -31,7 +31,8 @@ function fixture({ presentation = {}, rejectClosest = false, sealGate = null } =
       state.raw = frame; return frame;
     },
     input(action, down) { inputs.push([action, down]); },
-    lookDelta(dx, dy) { mark('look', [dx, dy]); }, setLook(value) { mark('set-look', value); },
+    snapshot(){return{look:{...state.look}};},
+    lookDelta(dx, dy) { mark('look', [dx, dy]); }, setLook(value) {state.look={...value};mark('set-look', value);return true;},
     selectStation(value) { mark('station', value); }, power() { mark('power'); },
     toggleWipers() { mark('wipers'); }, toggleHeadlights() { mark('lamps'); },
     operate(kind, callback) { controls.push({ kind, callback }); return true; }, setRecordingView() {},
@@ -197,11 +198,12 @@ test('ordinary pedals, mouse look, cabin controls and tape contact remain live a
   for (const [key, action] of [['w', 'forward'], ['s', 'reverse'], ['a', 'left'], ['d', 'right'], [' ', 'brake']]) {
     h.scene.key({ key }); h.scene.keyup({ key }); assert.deepEqual(h.inputs.slice(-2), [[action, true], [action, false]]);
   }
-  h.scene.pointer({ type: 'pointermove', pointerLocked: true, movementX: 15, movementY: -8 });
-  assert.deepEqual(h.calls.at(-1), { type: 'look', detail: [15, -8] });
-  h.scene.pointer({ type: 'pointerdown', button: 2, clientX: 10, clientY: 10 });
-  h.scene.pointer({ type: 'pointermove', clientX: 30, clientY: 15 }); h.scene.pointer({ type: 'pointerup', clientX: 30, clientY: 15 });
-  assert.ok(h.calls.some(c => c.type === 'look' && c.detail[0] === 20 && c.detail[1] === 5));
+  assert.equal(h.scene.lookBy(.15,-.08),true,'the shared look owner accepts normalized mouse/controller deltas');
+  assert.deepEqual(h.state.look,{yaw:.15,pitch:-.115});
+  h.scene.pointer({ type: 'pointerdown', button: 0, clientX: 10, clientY: 10 });
+  assert.equal(h.scene.lookBy(.2,.05),true);
+  h.scene.pointer({ type: 'pointermove', clientX: 30, clientY: 15 }); h.scene.pointer({ type: 'pointerup', button:0, clientX: 30, clientY: 15 });
+  assert.ok(h.calls.some(c => c.type === 'set-look' && Math.abs(c.detail.yaw-.35)<1e-12));
   h.scene.key({ key: '2' }); h.scene.key({ key: 'o' }); h.scene.key({ key: 'v' }); h.scene.key({ key: 'l' });
   assert.ok(h.calls.some(c => c.type === 'station' && c.detail === 'company')); for (const type of ['power', 'wipers', 'lamps']) assert.ok(h.calls.some(c => c.type === type));
   h.scene.key({ key: 'r' }); assert.equal(h.state.recording, false); assert.equal(h.controls.at(-1).kind, 'record');
@@ -216,7 +218,7 @@ test('ordinary pedals, mouse look, cabin controls and tape contact remain live a
 test('a pending cabin operation and pointer drag defer the scare instead of competing with the player', async () => {
   const h = fixture(); await h.prepare();
   h.scene.key({ key: '2' }); h.advance(2); assert.equal(h.scene.view().bumperIntrusion.phase, 'waiting');
-  h.scene.pointer({ type: 'pointerdown', button: 2, clientX: 0, clientY: 0 }); h.advance(2);
+  h.scene.pointer({ type: 'pointerdown', button: 0, clientX: 0, clientY: 0 }); h.advance(2);
   assert.equal(h.scene.view().bumperIntrusion.phase, 'waiting'); h.scene.pointer({ type: 'pointercancel' });
   h.until(() => h.scene.view().bumperIntrusion.phase === 'approach'); h.scene.exit(); await flush();
 });

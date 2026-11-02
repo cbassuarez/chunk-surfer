@@ -11,7 +11,8 @@ test('the Scene Dock crossing owns the title but does not spend the missing-door
   const end = main.indexOf('function noteArrivalThoughts', start);
   const body = main.slice(start, end);
   assert.match(body, /SPEECH\.clearSpeech\(\)/, 'yard chatter cannot leak across the cut');
-  assert.match(body, /makeWorldTitleScene\(/, 'the physical crossing opens the world title');
+  assert.match(body, /makeArrivalTitleScene\(/, 'the physical crossing opens the arrival adapter for the world title');
+  assert.match(readFileSync('src/game/coldopen.js','utf8'), /export function makeArrivalTitleScene\(options = \{\}\)\s*\{[\s\S]*?makeWorldTitleScene\(/, 'the arrival adapter retains the actual world title');
   assert.match(body, /restore:\(pose\)=>restoreOpeningEntryPose\(pose\)/,
     'the title returns the head to the entered pose instead of forcing the door beat');
   assert.match(body, /onDone:\(\)=>beginGetInDriveTeaser\(\)/,
@@ -99,7 +100,9 @@ test('the mandatory booth route is a concise handoff with optional depth left in
   // paperwork, the man who asked after the last recordist and the man who asked
   // how the night runs are each sent in with different words. Per-trunk pacing
   // is enforced properly by the reveal-seconds budget below.
-  const perNode={start:130,descent:60,threshold:150};
+  // Include the retained guard recognition line; the complete-route and
+  // per-trunk reveal-time budgets below still limit compulsory exposition.
+  const perNode={start:140,descent:60,threshold:150};
   for(const [index,id] of ['start','descent','threshold'].entries()){
     const count=wordsOf(spine[index].filter((line)=>!line.when));
     assert.ok(count<=perNode[id],`${id} carries ${count} unavoidable words (budget ${perNode[id]})`);

@@ -11,6 +11,7 @@ import { stationersPlace } from '../src/data/exterior-stationers.js';
 import { worldPropVisibilityKey } from '../src/game/prop-visibility.js';
 import { exteriorRoofArchitectureInstances, exteriorRooflineInstance, EXTERIOR_ROOF_ARCHITECTURE_IDS } from '../src/data/exterior-roofline.js';
 import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
+import {B3_GLASS_SEEN_FLAG,B3_GLASS_LEFT_FLAG,createB3GlassVisitTracker,inB3Rooms} from '../src/game/studio-b3-glass-visits.js';
 
 FP.compile(conservatory.levels, conservatory);
 PROPS.propsInit(FP);
@@ -45,11 +46,13 @@ function makeFrameHost(position) {
   const chandelierContext = { runId: 'visibility-cache', eligible: false, consumedCount: 0 }, chandelierEvents = [];
   const initialSlice = FP.physicalRenderPlanFor(position.x, position.y);
   const scope = {
-    FP, px: position.x, py: position.y,
+    FP,CELL, px: position.x, py: position.y,
     apparitionApplauseBlocked: () => false,
     ensureLensStarted() {}, params: () => new URLSearchParams(), sourceDoorArrival: null,
     usingSourceSpace: () => false, towerViewCaptureWanted: false,
-    scenes: { worldView: () => null }, openingVehicleScene: null,
+    scenes: { worldView: () => null,blocksWorld:()=>false }, openingVehicleScene: null,studentStrikeScene:null,
+    openingPresentationView:()=>null,paused:false,document:{hidden:false,hasFocus:()=>true},
+    b3GlassVisitTracker:createB3GlassVisitTracker(),B3_GLASS_SEEN_FLAG,B3_GLASS_LEFT_FLAG,inB3Rooms,flagTest:()=>false,flagSet(){},
     currentEndingApproach: () => null, activeEndingCutscene: null, escape: null,
     usingSpecialSpace: () => false, usingPlan: () => true, usingStairAnomaly: () => false,
     storyMode: false, renderedPlayerPoint: () => ({}),

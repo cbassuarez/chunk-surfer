@@ -8,8 +8,8 @@
   "scope": "Existing dry north pool approach, indoor greenhouse and changing vestibule. Rehosts the original admission fittings without changing their instance. No new exterior connection, actors, triggers, rewards or mechanics.",
   "sourceSha256": {
     "tools/chunk_surfer/build-glass-court.mjs": "a5abae7566bedcb3105198efb44a4bde683a08b1547acf6061191a5ba1c78ec1",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "e779455cf69089bb21a4f5db5edec18272964b9426e08406489189344196b18a",
-    "src/data/glass-court.js": "f7e2592d655d12f93b7a253a7b69d36202503846738c88cbbd4e7c29bd08c747",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "fba3331e0903fd7e03a715553c1ac607e6b6cf0a77371e25d8f27bfd3f9160bf",
+    "src/data/glass-court.js": "78cf4c048058233394987327b054b1b6e9f2a05a97f70fefafb9b390bbbe745a",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -18,8 +18,8 @@
   },
   "pack": {
     "file": "public/assets/glass-court.glb",
-    "bytes": 2072440,
-    "sha256": "bb78b086f52316cc5d8dabbf5971fc650e518d9bdadd787782013322dfa7ba23"
+    "bytes": 2085908,
+    "sha256": "6672a3830c6b083b6639062e7ae8966b973645f7d233d07d47cce28ce836ff37"
   },
   "meshes": [
     {
@@ -88,7 +88,7 @@
     },
     {
       "name": "glass_court_plants",
-      "triangles": 11584,
+      "triangles": 11716,
       "bounds": {
         "min": [
           0.024135403335094452,
@@ -114,7 +114,7 @@
         "max": [
           5.070000171661377,
           3.8299999237060547,
-          17.09000015258789
+          16.09000015258789
         ]
       }
     },
@@ -146,7 +146,7 @@
         "max": [
           2.930000066757202,
           2.140000104904175,
-          1.8271321058273315
+          0.9271321296691895
         ]
       }
     }

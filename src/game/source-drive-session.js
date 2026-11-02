@@ -296,7 +296,20 @@ export function createSourceDriveSession(host = {}) {
     if (!handControl) return;
     const reach = wheelHandDiagnostics()?.reach;
     if (reach?.kind !== handControl.kind) return;
-    if (!handControl.contacted && reach.atContact) { handControl.contacted = true; Promise.resolve().then(handControl.fn).catch(report); }
+    if (!handControl.contacted && reach.atContact) {
+      handControl.contacted = true;
+      const control=handControl;
+      Promise.resolve().then(async()=>{
+        const before={on:s.radioOn,volume:s.volume};
+        await control.fn();
+        // Default arrival playback is involuntary. Count an actual deliberate
+        // receive operation when the animated hand reaches the control; turning
+        // the set down/off remains a way to decline listening.
+        const listening=s.radioOn&&s.volume>0&&(control.kind==='tune'
+          ||control.kind==='power'&&(!before.on||s.volume>before.volume));
+        if(listening)event('radio-listening',{station:s.station,volume:s.volume});
+      }).catch(report);
+    }
     if (reach.complete) { handControl = null; if (queuedControl) { const q = queuedControl; queuedControl = null; operate(q.kind, q.fn, q.preset); } }
   }
   function readout() {

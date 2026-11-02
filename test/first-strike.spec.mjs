@@ -71,4 +71,52 @@ test('Source renderer keeps room-memory final dither with the text-space path; o
 
 test('scene waits for a real terminal render before one durable completion and reload never applies injury',async()=>{const e=entry();let calls=0,rendered=0,saves=[];const cp=freshFirstStrike(e);cp.elapsed=41.99;cp.phase='settling';const renderer={initialize:()=>true,ready:()=>true,render(){rendered++;return true;},dispose(){}},s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer,audio:{ready:()=>false,update(){},stop(){}},onCheckpoint:v=>saves.push(v),onComplete:({outcome,checkpoint})=>{assert.ok(rendered);assert.equal(outcome,'enclosed');assert.equal('injuries' in checkpoint,false);calls++;return true;}});await s.initialize();s.update(.1);assert.equal(calls,0);s.render();await Promise.resolve();await Promise.resolve();assert.equal(calls,1);s.render();await Promise.resolve();assert.equal(calls,1);assert.equal(s.serialize().completionDelivered,true);s.exit();});
 
+test('terminal outcome waits through pause, hidden focus and protected ownership until a fresh active draw',async()=>{
+ for(const gate of['pause','paused','hidden','focused','protected']){
+  const e=entry(),cp={...freshFirstStrike(e),elapsed:41.99,phase:'settling'},presentation={focused:true};let completions=0;
+  const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>true},presentation:()=>presentation,onComplete:()=>{completions++;return true;}});
+  await s.initialize();s.update(.1);assert.equal(s.serialize().outcome,'enclosed');
+  if(gate==='pause')s.pause();else presentation[gate]=gate==='focused'?false:true;
+  s.render();await Promise.resolve();await Promise.resolve();assert.equal(completions,0,gate+' cannot deliver a held outcome');
+  if(gate==='pause')s.resume();else presentation[gate]=gate==='focused'?true:false;
+  s.update(.1);await Promise.resolve();assert.equal(completions,0,'a resumed update is not a final rendered frame');
+  s.render();await Promise.resolve();await Promise.resolve();assert.equal(completions,1);assert.equal(s.serialize().completionDelivered,true);s.exit();
+ }
+});
+
+test('a final draw loses delivery authority if protection starts before its queued host callback',async()=>{
+ const e=entry(),cp={...freshFirstStrike(e),elapsed:41.99,phase:'settling'},presentation={protected:false};let completions=0;
+ const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>true},presentation:()=>presentation,onComplete:()=>{completions++;return true;}});
+ await s.initialize();s.update(.1);s.render();presentation.protected=true;
+ await Promise.resolve();await Promise.resolve();assert.equal(completions,0);assert.equal(s.view().leaving,false);assert.equal(s.view().error,null);
+ presentation.protected=false;await Promise.resolve();assert.equal(completions,0,'releasing ownership alone does not reuse a stale frame');
+ s.render();await Promise.resolve();await Promise.resolve();assert.equal(completions,1);s.exit();
+});
+
+test('pause then resume or scene exit before queued delivery cannot reuse the earlier final draw',async()=>{
+ for(const interrupt of['pause-resume','exit']){
+  const e=entry(),cp={...freshFirstStrike(e),elapsed:42,phase:'terminal',outcome:'survived',safeReached:'clear-edge'};let completions=0;
+  const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>true},onComplete:()=>{completions++;return true;}});
+  await s.initialize();s.render();if(interrupt==='exit')s.exit();else{s.pause();s.resume();}
+  await Promise.resolve();await Promise.resolve();assert.equal(completions,0,interrupt);
+  if(interrupt!=='exit'){s.render();await Promise.resolve();await Promise.resolve();assert.equal(completions,1);s.exit();}
+ }
+});
+
+test('an interrupted terminal render can be retried visibly without resetting the outcome or deadlocking readiness',async()=>{
+ const e=entry(),cp={...freshFirstStrike(e),elapsed:42,phase:'terminal',outcome:'enclosed'};let rendering=false,completions=0;
+ const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>rendering},onComplete:()=>{completions++;return true;}});
+ await s.initialize();s.render();await Promise.resolve();assert.equal(completions,0);assert.match(s.view().error,/interrupted/);assert.equal(s.view().ready,false);
+ rendering=true;s.key({key:'e'});await s.initialize();assert.equal(s.view().ready,true);assert.equal(s.serialize().outcome,'enclosed');assert.equal(s.serialize().elapsed,42);assert.equal(completions,0);
+ s.render();await Promise.resolve();await Promise.resolve();assert.equal(completions,1);assert.equal(s.serialize().completionDelivered,true);s.exit();
+});
+
+test('a rejected host filing retries only after a fresh final draw and never applies a second structural sequence',async()=>{
+ const e=entry(),cp={...freshFirstStrike(e),elapsed:42,phase:'terminal',outcome:'survived',safeReached:'shelter'};let attempts=0;const saves=[],events=[];
+ const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>true},onCheckpoint:cp=>saves.push(cp),onTrace:e=>events.push(e),onComplete:()=>++attempts>1});
+ await s.initialize();s.render();await Promise.resolve();await Promise.resolve();await Promise.resolve();assert.equal(attempts,1);assert.match(s.view().error,/not yet been committed/);assert.equal(s.serialize().completionDelivered,false);
+ s.key({key:'e'});await s.initialize();assert.equal(attempts,1);s.update(.1);assert.equal(events.filter(event=>event.type==='event').length,0);
+ s.render();await Promise.resolve();await Promise.resolve();assert.equal(attempts,2);assert.equal(s.serialize().completionDelivered,true);assert.ok(saves.every(cp=>cp.elapsed===42&&cp.outcome==='survived'));s.exit();
+});
+
 test('unsupported or changed restored construction holds visibly for retry rather than reseating the body',async()=>{const e=entry(),cp=freshFirstStrike(e);cp.x=90;const s=createFirstStrikeScene({entry:e,checkpoint:cp,renderer:{initialize:()=>true,ready:()=>true,render:()=>true}});assert.equal(await s.initialize(),false);assert.equal(s.serialize().x,90);assert.match(s.view().error,/footing/);s.exit();});

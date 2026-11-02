@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { FIRE_ESCAPE_INK_BYTE, FIRE_ESCAPE_INK_TAG, FIRE_ESCAPE_INK_GLSL } from '../src/render/fire-escape-ink.js';
 import { ROOF_SURFACE_INK_TAG, ROOF_GLASS_INK_TAG } from '../src/render/roof-surface-ink.js';
 import { PIXEL_MESH_FRAG } from '../src/render/pixel-mesh/shader.js';
+import {tracePrimitiveMaterialRole} from './helpers/prop-material-role-binding.mjs';
 
 const file=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 const pack=readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url));
@@ -57,8 +58,10 @@ test('quiet ink identity stays separate from grain planes and apparition coverag
 
 test('material identity is transported only by the winning prop and controls its final ink',()=>{
   const props=file('../src/render/props3d.js'),world=file('../src/render/r3d.js');
-  assert.match(props,/gl\.uniform1f\(U\('uQuietFireEscape'\),p\.materialRole==='quiet-metal'\?1:0\)/,
-    'the per-primitive role resets on every draw');
+  const roles=['quiet-metal','quiet-metal',null,'weathered-surface','margin',null,'quiet-metal',null],
+    trace=tracePrimitiveMaterialRole(props,'uQuietFireEscape',roles.map(materialRole=>({name:'actual-draw',p:{materialRole}})));
+  assert.deepEqual(trace.values,[1,1,0,0,0,0,1,0],'each draw receives its actual role without leaking onto Ren, roof or an unmarked neighbour');
+  assert.deepEqual(trace.writes.map(([,value])=>value),[1,0,1,0],'pass-local upload caching cannot suppress a real role transition');
   const expression=props.match(/o=vec4\(col,([^;]+)\);/)[1];
   const outputTag=new Function('uQuietFireEscape','uRoofSurface','uRoofGlass','FIRE_ESCAPE_INK_TAG','ROOF_SURFACE_INK_TAG','ROOF_GLASS_INK_TAG',`return ${expression};`);
   for(const [iron,roof,glass,expected]of[[1,0,0,FIRE_ESCAPE_INK_TAG],[0,1,0,ROOF_SURFACE_INK_TAG],[0,0,1,ROOF_GLASS_INK_TAG],[0,0,0,1],[1,0,1,FIRE_ESCAPE_INK_TAG]])

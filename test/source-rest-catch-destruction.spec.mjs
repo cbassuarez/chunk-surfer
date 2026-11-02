@@ -8,18 +8,22 @@ import {sourceRestReturnRoom} from '../src/render/source-rest-return.js';
 import {sourceContinuationRenderFrame} from '../src/render/source-continuation-renderer.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {SOURCE_REST_SEATS,sourceRestEyeHeight} from '../src/game/source-rest-seat.js';
+import {continuationSupportAt} from '../src/data/source-continuation.js';
+import {sourceRestReturnConfig} from '../src/render/source-rest-return.js';
 
 const seat=SOURCE_REST_SEATS[1];
 const state={...freshSourceContinuation(),...seat.approach,status:'active',phase:seat.phase,chartId:seat.chartId,level:seat.level,feet:seat.feet};
 state.hush.active=false;
-const physical=sourceContinuationRenderFrame(state).props.filter(p=>p.descriptorId==='catch-0-case-crescent'||p.id==='source-continuation-prop-source-rest-iii'||p.doorId==='catch-return-0');
 // The real seated submission keeps the actual authored matrices, native mesh
 // names, material identity, wear flags and each lid's meaningful local centre.
 // Do not reconstruct batched curved geometry as old unit boxes with sx/sy/sz.
 const presented={...state,sourceRestView:{seatId:seat.id,mode:'seated',progress:1,degradation:.3,
   look:{...seat.view},musicTime:400,audibleSeconds:400,musicSignal:0}};
-const dressing=sourceContinuationRenderFrame(presented,{reducedMotion:true,flashMode:'off'}).props
-  .filter(p=>p.restPlace&&p.region==='catch'&&!p.portalDestination&&!p.restReturnMouth);
+const canonical=sourceContinuationRenderFrame(presented,{reducedMotion:true,flashMode:'off'}).canonicalProps;
+const supportId=continuationSupportAt(seat.x,seat.z,state).id,doorId=sourceRestReturnConfig(seat).doorId;
+const physical=canonical.filter(p=>p.descriptorId===supportId||p.id==='source-continuation-prop-source-rest-iii'||p.doorId===doorId);
+const physicalIds=new Set(physical.map(p=>p.id));
+const dressing=canonical.filter(p=>p.restPlace&&p.region==='catch'&&!p.portalDestination&&!p.restReturnMouth&&!physicalIds.has(p.id));
 const input=[...physical,...dressing];
 const cue=(progress,more={})=>({...sourceRestCouperinAffliction({active:true,progress,currentTime:400,playedSeconds:400}),embodied:true,bodyProgress:1,...more});
 const apply=(progress,options={})=>applySourceRestDestruction(input,{cue:cue(progress),time:400,seat,canLeave:false,...options});
@@ -58,12 +62,13 @@ test('usable shelter is exactly preserved whenever the actual authored exit rema
 
 test('late commitment releases only three actual timber lid members and preserves case, manuals, bench, door and support',()=>{
   const before=structuredClone(input),early=apply(.6),late=apply(.94),byId=new Map(late.props.map(p=>[p.id,p]));
+  assert.equal(new Set(input.map(p=>p.id)).size,input.length,'one coherent canonical frame never mixes a seat with its separately clipped copy');
   assert.ok(input.every(p=>p.matrix?.length===16&&Array.from(p.matrix).every(Number.isFinite)));
   assert.equal(input.filter(p=>p.restHarpsichordWear).length,3);
   assert.equal(early.diagnostics.detachedStructures,0);assert.equal(late.diagnostics.detachedStructures,3);
   assert.equal(late.props.length,input.length);assert.equal(late.debris.length,0);assert.equal(late.body.length,12);
   assert.ok(physical.some(p=>p.physicalKind==='surface'),'test includes the actual physical crescent');
-  assert.ok(physical.some(p=>p.role==='rest-seat'));assert.ok(physical.some(p=>p.doorId==='catch-return-0'));
+  assert.ok(physical.some(p=>p.role==='rest-seat'));assert.ok(physical.some(p=>p.doorId===doorId));
   assert.ok(input.some(p=>p.restHarpsichordPart==='case'));assert.ok(input.some(p=>p.restHarpsichordPart==='manual-bed'));
   for(const p of input){
     const q=byId.get(p.id);

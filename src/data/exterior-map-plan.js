@@ -14,6 +14,8 @@ import {EXTERIOR_NEIGHBOURHOOD} from './exterior-frontages.js';
 import {CONSERVATORY_PROPS} from './conservatory-props.js';
 import {CHURCH} from './st-brendans.js';
 import {EXTERIOR_PUB} from './exterior-pub.js';
+import {yardTurnBounds} from './yard-turn.js';
+import {YARD_JARDINS} from './yard-jardins.js';
 const freeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 const rect=(x0,y0,x1,y1)=>[{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1}];
 const ring=(cx,cy,r,n=20)=>Array.from({length:n},(_,i)=>({x:cx+Math.cos(i/n*Math.PI*2)*r,y:cy+Math.sin(i/n*Math.PI*2)*r}));
@@ -35,6 +37,8 @@ function ground(){
   const out=[],S=ELLERY_SQUARE,g=S.garden,park=EXTERIOR_FOREGROUND.garden;
   // The yard and the forecourt are paved; streets and courts sit over them.
   out.push({id:'yard',role:'paving',points:rect(-1,ELLERY_BLOCK.y0,ELLERY_X0,ELLERY_BLOCK.y1+1)});
+  for(const bed of YARD_JARDINS.beds)out.push({id:`jardins-${bed.id}`,role:'garden',points:rect(bed.x0,bed.z0,bed.x1,bed.z1)});
+  const n=YARD_JARDINS.northWalk;out.push({id:'jardins-north-walk',role:'path',points:rect(n.x0,n.z0,n.x1,n.z1)});
   const f=ELLERY_PUBLIC_FRONT.forecourt;out.push({id:'ellery-forecourt',role:'paving',points:rect(f.x0,f.z0,f.x1,f.z1)});
   for(const s of DISTRICT_STREETS)out.push({id:s.id,role:'street',points:rect(s.x0,s.y0,s.x1+1,s.y1+1)});
   out.push({id:'ellery-square-esplanade',role:'paving',points:rect(S.esplanade.x0,S.esplanade.z0,S.esplanade.x1,S.esplanade.z1)});
@@ -67,7 +71,8 @@ function buildings(){
   }
   for(const r of YARD_SERVICE_RANGES){
     const pub=r.id===EXTERIOR_PUB.building?.id;
-    out.push({id:r.id,role:pub?'pub':'outbuilding',points:rect(r.physical.x-r.w/2,r.physical.y-r.d/2,r.physical.x+r.w/2,r.physical.y+r.d/2)});
+    const b=yardTurnBounds(r.id,{x0:r.physical.x-r.w/2,x1:r.physical.x+r.w/2,z0:r.physical.y-r.d/2,z1:r.physical.y+r.d/2});
+    out.push({id:r.id,role:pub?'pub':'outbuilding',points:rect(b.x0,b.z0,b.x1,b.z1)});
   }
   for(const room of CHURCH.rooms)out.push({id:`church:${room.id}`,role:'church',points:rect(room.x0,room.y0,room.x1+1,room.y1+1)});
   return out;

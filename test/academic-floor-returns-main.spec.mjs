@@ -42,7 +42,7 @@ async function adapter(run,{returns=0,admitted=true,legacy=false}={}){
   return withTransientGameState({save:{...freshSave(),academicSociety:legacy?{visits:8}:null,
     ...(legacy?{academicFloorReturns:null}:{academicFloorReturns:{visits:returns+1,returns,guardsDeparted:returns>=3,presence:'inside'}})}},async scope=>{
     PROPS.propsInit(FP);PROPS.loadPropState({});
-    const c={FP,PROPS,CELL,getSave,saveCommit,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_FLOOR_POPULATION,
+    const c={studentStrikeScene:null,studentStrikeNarrationLine:()=>null,FP,PROPS,CELL,getSave,saveCommit,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_FLOOR_POPULATION,
       ACADEMIC_FLOOR_POPULATION_BEATS,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_ADVERSARY_SOCIAL_REPLIES,
       academicFloorReturnRegion,academicFloorActorPresent,academicFloorProtectedActorIds,
       academicFloorReturns:createAcademicFloorReturns(getSave().academicFloorReturns),academicFloorReturnsSavedKey:'',

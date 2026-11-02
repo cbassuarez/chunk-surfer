@@ -3,15 +3,16 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {SOURCE_REST_SEATS,sourceRestBenchProps} from '../src/game/source-rest-seat.js';
 import {SOURCE_REST_ALCOVE,SOURCE_REST_ALCOVE_SOLIDS} from '../src/data/source-rest-alcove.js';
-import {SOURCE_CONTINUATION,continuationDoors,continuationSupportAt,continuationFolds} from '../src/data/source-continuation.js';
+import {SOURCE_CONTINUATION,continuationDoors,continuationSupportAt,continuationFolds,continuationStage} from '../src/data/source-continuation.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {sourceRestAfflictionFrame} from '../src/game/source-rest-affliction.js';
 import {sourceRestWeatherCue} from '../src/game/source-rest-weather-score.js';
 import {parseSourceRestNoteScore} from '../src/game/source-rest-note-score.js';
 import {sourceContinuationRenderFrame,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
 import {sourceRestCubeGeometryLibrary} from '../src/render/source-rest-cube-models.js';
-import {SOURCE_REST_RETURN,sourceRestReturnConfig,sourceRestReturnFrame,sourceRestReturnRoom,applySourceRestReturn} from '../src/render/source-rest-return.js';
-import {portalCorners,portalTransformPoint,portalInverse,portalMultiply,portalExcludeArray,portalClipPlanes} from '../src/render/source-mesh-portals.js';
+import {SOURCE_REST_RETURN,sourceRestReturnConfig,sourceRestReturnFrame,sourceRestReturnRoom,applySourceRestReturn,sourceRestReturnTargetIntersectsAperture} from '../src/render/source-rest-return.js';
+import {sourceRestGeometryLibrary} from '../src/render/source-rest-models.js';
+import {portalCorners,portalTransformPoint,portalInverse,portalMultiply,portalExcludeArray,portalClipPlanes,portalIdentity} from '../src/render/source-mesh-portals.js';
 
 const noteScore=parseSourceRestNoteScore(JSON.parse(readFileSync(new URL('../public/audio/source-rest/seb-bach-chaconne-notes.json',import.meta.url),'utf8')));
 const close=(a,b,epsilon=2e-5)=>assert.ok(Math.abs(a-b)<epsilon,`${a} != ${b}`);
@@ -46,7 +47,7 @@ test('II uses its genuine door opening and III its authored case opening on the 
     for(const corner of portalCorners(c.sourceAperture)){
       const support=continuationSupportAt(corner[0],corner[2],s,{minY:seat.feet-.02,maxY:seat.feet+.02});
       assert.ok(support,`unsupported ${seat.id} mouth corner ${corner}`);close(support.y,seat.feet);
-      assert.equal(support.id,seat.phase==='catch'?'catch-0-case-crescent':'wrong-upper-west');
+      assert.equal(support.id,seat.phase==='catch'?`catch-${seat.level}-${continuationStage(seat.level).id}`:'wrong-upper-west');
     }
     pointClose(portalTransformPoint(c.toCurrent,centre(c.destinationAperture)),centre(c.sourceAperture));
     // Pure translation preserves handedness and scale; this is never a mirror.
@@ -91,13 +92,15 @@ test('existing narrative progress stages physical standard-hinge opening without
   assert.equal(SOURCE_REST_RETURN.openStart,.12);
 });
 
-test('production Source II projects the same 51 shelter instances and preserves every other scene layer',()=>{
-  const s=fixture(),before=render(noReturn(s)),after=render(s),current=new Map(after.props.filter(p=>!p.restReturnDestination&&!p.restReturnMouth).map(p=>[p.id,p]));
-  assert.equal(after.restReturn.projected,true);assert.equal(after.restReturn.projectedProps,51);
-  assert.equal(current.size,before.props.length);
+test('production Source II projects the complete bounded current shelter and preserves every other scene layer',()=>{
+  const s=fixture(),before=render(noReturn(s)),after=render(s),current=new Map(after.canonicalProps.map(p=>[p.id,p]));
+  const targets=sourceRestReturnRoom(before.canonicalProps,SOURCE_REST_SEATS[0]);
+  assert.equal(after.restReturn.projected,true);assert.equal(after.restReturn.projectedProps,targets.length);assert.ok(targets.length>50&&targets.length<=SOURCE_REST_RETURN.maxProjectedProps);
+  assert.deepEqual(new Set(after.props.filter(p=>p.restReturnDestination).map(p=>p.canonicalId)),new Set(targets.map(p=>p.id)),'the finite copy includes every actual canonical shelter member');
+  assert.equal(current.size,before.canonicalProps.length);
   assert.ok(before.props.some(p=>p.angelAssemblyId));assert.ok(before.props.some(p=>p.restNoteArchitecture));
   assert.ok(before.props.some(p=>p.restBody));assert.ok(before.props.some(p=>p.restVista));
-  for(const original of before.props){
+  for(const original of before.canonicalProps){
     const p=current.get(original.id);assert.ok(p,`removed live scene layer ${original.id}`);
     assert.deepEqual(p.matrix,original.matrix,`moved live scene layer ${original.id}`);
     assert.equal(p.mesh,original.mesh);
@@ -105,12 +108,12 @@ test('production Source II projects the same 51 shelter instances and preserves 
   assert.deepEqual(after.noteArchitecture,before.noteArchitecture);assert.deepEqual(after.sunset,before.sunset);assert.deepEqual(after.flood,before.flood);
   pointClose(after.eye,before.eye);assert.equal(after.yaw,before.yaw);assert.equal(after.pitch,before.pitch);
   assert.equal(after.props.some(p=>p.restReturnDestination&&(p.restBody||p.playerBody||p.angelAssemblyId||p.restNoteArchitecture)),false);
-  assert.equal(after.lights.length,8);assert.ok(after.props.length<SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
+  assert.equal(after.lights.length,8);assert.ok(after.props.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
 });
 
 test('Source III returns the actual occupied bench while retaining its real seat beneath the corrected eye',()=>{
   const seat=SOURCE_REST_SEATS[1],s=fixture(seat),f=render(s),bench=sourceRestBenchProps().find(p=>p.id===seat.id);
-  assert.equal(f.restReturn.projected,true);assert.equal(f.restReturn.canonicalDoorId,'catch-return-0');
+  assert.equal(f.restReturn.projected,true);assert.equal(f.restReturn.canonicalDoorId,`catch-return-${seat.level}`);
   assert.equal(f.restReturn.portalSlots,f.portals.length+1,'one Return aperture adds to the existing view-dependent journey apertures');
   assert.ok(f.restReturn.portalSlots<=2);
   const returned=f.props.find(p=>p.restReturnDestination&&p.canonicalId==='source-continuation-prop-source-rest-iii');
@@ -119,21 +122,21 @@ test('Source III returns the actual occupied bench while retaining its real seat
   const c=sourceRestReturnConfig(seat);
   pointClose(centre(returned),portalTransformPoint(c.toCurrent,[bench.x,bench.y,bench.z]));
   for(const p of f.props.filter(p=>p.restReturnDestination))assert.ok(p.portalClipPlanes?.length===5);
-  assert.ok(f.props.some(p=>p.restReturnDestination&&p.descriptorId==='catch-0-case-crescent'));
-  assert.equal(f.lights.length,8);assert.ok(f.props.length<SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
+  assert.ok(f.props.some(p=>p.restReturnDestination&&p.descriptorId===`catch-${seat.level}-return-pad`),'the finite case retains real support rather than duplicating an entire old Catch level');
+  assert.equal(f.lights.length,8);assert.ok(f.props.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
 });
 
 test('Source III return clears the genuine near counterweight without moving its path or inventing new support',()=>{
   const seat=SOURCE_REST_SEATS[1],s=fixture(seat),config=sourceRestReturnConfig(seat),barrel=s.counterweight,radius=SOURCE_CONTINUATION.catch.counterweightRadius,
-    right=[Math.cos(.92-Math.PI/2),0,Math.sin(.92-Math.PI/2)],normal=[Math.cos(.92),0,Math.sin(.92)],eye=[seat.x,seat.feet+1.04,seat.z];
+    right=config.sourceAperture.right,normal=config.sourceAperture.normal,eye=[seat.x,seat.feet+1.04,seat.z];
   const distanceToRay=target=>{
     const d=[target[0]-eye[0],target[2]-eye[2]],r=[barrel.x-eye[0],barrel.z-eye[2]],t=Math.max(0,Math.min(1,(r[0]*d[0]+r[1]*d[1])/(d[0]*d[0]+d[1]*d[1])));
     return Math.hypot(r[0]-d[0]*t,r[1]-d[1]*t);
   };
   for(const point of[...portalCorners(config.sourceAperture),centre(config.sourceAperture)])assert.ok(distanceToRay(point)>radius+.35,'the actual barrel must not mask the finite return aperture');
-  const destination=config.destinationAperture,relative=[destination.x-SOURCE_CONTINUATION.catch.center.x,0,destination.z-SOURCE_CONTINUATION.catch.center.z];
-  close(relative.reduce((sum,v,k)=>sum+v*normal[k],0),15.2);
-  close(relative.reduce((sum,v,k)=>sum+v*right[k],0),-.2);
+  const destination=config.destinationAperture,relative=[destination.x-seat.x,0,destination.z-seat.z];
+  close(relative.reduce((sum,v,k)=>sum+v*normal[k],0),SOURCE_REST_RETURN.catchDestination.back);
+  close(relative.reduce((sum,v,k)=>sum+v*right[k],0),SOURCE_REST_RETURN.catchDestination.tangent);
   const before=JSON.stringify(s.counterweight),f=render(s);
   assert.equal(f.restReturn.projected,true);assert.ok(f.restReturn.portalSlots<=2);assert.equal(JSON.stringify(s.counterweight),before);
 });
@@ -151,7 +154,7 @@ test('genuine doors, support, progression and free look remain authoritative thr
 });
 
 test('actual model transforms, canonical metadata and lights remain one-way rigid instances under nonzero anchor',()=>{
-  const seat=SOURCE_REST_SEATS[0],s=fixture(seat),anchor={x:26,y:12,z:-13},baseline=render(noReturn(s),{anchor}),f=render(s,{anchor}),canonical=new Map(baseline.props.map(p=>[p.id,p]));
+  const seat=SOURCE_REST_SEATS[0],s=fixture(seat),anchor={x:26,y:12,z:-13},baseline=render(noReturn(s),{anchor}),f=render(s,{anchor}),canonical=new Map(baseline.canonicalProps.map(p=>[p.id,p]));
   const transform=sourceRestReturnConfig(seat,{origin:anchor}).toCurrent;
   for(const q of f.props.filter(p=>p.restReturnDestination)){
     const p=canonical.get(q.canonicalId);assert.ok(p,`missing source ${q.canonicalId}`);
@@ -165,13 +168,13 @@ test('actual model transforms, canonical metadata and lights remain one-way rigi
 
 test('Return respects existing clipping capacity and fails closed rather than cutting an unsupported hole',()=>{
   const s=fixture(),baseline=render(noReturn(s)),args={props:baseline.props,lights:baseline.lights,state:s,eye:baseline.eye};
-  for(const patch of[{portalCount:2},{maxInstances:baseline.props.length+1}]){
+  for(const patch of[{portalCount:3},{maxInstances:baseline.props.length+1}]){
     const result=applySourceRestReturn({...args,...patch});assert.equal(result.diagnostics.projected,false);
     assert.equal(result.planes,null);
     for(const p of baseline.props)assert.deepEqual(result.props.find(q=>q.id===p.id).portalExcludePlanes,p.portalExcludePlanes);
   }
   const third=fixture(SOURCE_REST_SEATS[1]),f=render(third);
-  for(const p of f.props)if(p.portalExcludePlanes)assert.ok(portalExcludeArray(p.portalExcludePlanes).length<=40);
+  for(const p of f.props)if(p.portalExcludePlanes)assert.ok(portalExcludeArray(p.portalExcludePlanes).length<=60);
   assert.deepEqual(f.portals,render(noReturn(third)).portals,'Return never registers a physical journey edge');
 });
 
@@ -208,11 +211,45 @@ test('the supported upper-west return and primary semiangel remain simultaneousl
 test('live structural damage and drift are shared by returned instances rather than an intact frozen duplicate',()=>{
   const s=fixture(SOURCE_REST_SEATS[0],.78);s.sourceRestView.musicTime=467;s.sourceRestView.audibleSeconds=467;
   s.sourceRestView.affliction={...sourceRestAfflictionFrame({active:true,currentTime:467,playedSeconds:467,progress:.78}),embodied:true,bodyProgress:1,canLeave:false};
-  const f=render(s),current=new Map(f.props.filter(p=>!p.portalDestination&&!p.restReturnMouth).map(p=>[p.id,p]));
+  const f=render(s),current=new Map(f.canonicalProps.map(p=>[p.id,p]));
   assert.equal(f.restReturn.projected,true);assert.ok(f.restReturn.sourceAperture.y<9.925);
   const copies=f.props.filter(p=>p.restReturnDestination);assert.ok(copies.some(p=>p.restDrift>0));
   assert.ok(copies.some(p=>p.restDetached||p.restFracture),'the rear view includes actually failed shelter pieces');
   for(const p of copies){const q=current.get(p.canonicalId);assert.ok(q);assert.equal(p.fractureState,q.fractureState);assert.equal(p.restDrift,q.restDrift);}
+  const targets=sourceRestReturnRoom(f.canonicalProps,SOURCE_REST_SEATS[0]),copied=new Set(copies.map(p=>p.canonicalId)),omitted=targets.filter(p=>!copied.has(p.id));
+  assert.ok(targets.length>SOURCE_REST_RETURN.maxProjectedProps);assert.ok(copies.length<=SOURCE_REST_RETURN.maxProjectedProps);assert.ok(f.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
+  assert.equal(f.restReturn.apertureRejectedProps,omitted.length);assert.ok(omitted.length>0);
+  const door=continuationDoors().find(p=>p.id===f.restReturn.canonicalDoorId),root=f.canonicalProps.find(p=>p.doorId===door.id&&p.role==='return'),config=sourceRestReturnConfig(SOURCE_REST_SEATS[0],{doorDrop:root.y-door.y}),planes=portalClipPlanes(config.sourceAperture,f.eye),models=sourceRestGeometryLibrary();
+  for(const row of omitted){
+    const geometry=models[row.mesh.replace('source-continuation-','')];assert.ok(geometry,'unknown geometry is never rejected for budget');
+    const map=portalMultiply(config.toCurrent,row.matrix),vertices=[...new Set(geometry.i)].map(i=>portalTransformPoint(map,geometry.p.slice(i*3,i*3+3)));
+    assert.ok(planes.some(plane=>vertices.every(p=>plane[0]*p[0]+plane[1]*p[1]+plane[2]*p[2]+plane[3]<-1e-5)),'every omitted submitted triangle lies wholly outside a real aperture plane');
+  }
+});
+
+test('finite target rejection retains boundary-straddling, unknown and deformed geometry',()=>{
+  const geometry=sourceRestGeometryLibrary()['rest-oak'],xs=[...new Set(geometry.i)].map(i=>geometry.p[i*3]),max=Math.max(...xs),min=Math.min(...xs),planes=[[1,0,0,0]],map=portalIdentity();
+  const row=x=>{const matrix=portalIdentity();matrix[12]=x;return{mesh:'source-continuation-rest-oak',matrix};};
+  assert.equal(sourceRestReturnTargetIntersectsAperture(row(-max-.1),map,planes),false);
+  assert.equal(sourceRestReturnTargetIntersectsAperture(row(-(min+max)/2),map,planes),true,'a crossing triangle cannot be removed by centre-point rejection');
+  assert.equal(sourceRestReturnTargetIntersectsAperture(row(-max),map,planes),true,'touching the finite boundary remains admitted');
+  assert.equal(sourceRestReturnTargetIntersectsAperture({...row(-max-10),mesh:'unrecognized-future-mesh'},map,planes),true);
+  assert.equal(sourceRestReturnTargetIntersectsAperture({...row(-max-10),character:{}},map,planes),true);
+  const moved=portalIdentity();moved[12]=max+.2;assert.equal(sourceRestReturnTargetIntersectsAperture(row(-max-.1),moved,planes),true,'the current Return transform participates in admission');
+});
+
+test('more than64 known in-aperture targets still fail closed under the unchanged caps',()=>{
+  const s=fixture(),base=render(noReturn(s)),config=sourceRestReturnConfig(SOURCE_REST_SEATS[0]),planes=portalClipPlanes(config.sourceAperture,base.eye),inverse=portalInverse(config.toCurrent);
+  const doorRows=base.canonicalProps.filter(p=>p.doorId===config.doorId),geometry=sourceRestGeometryLibrary()['rest-oak'];
+  const targets=Array.from({length:65},(_,i)=>{
+    const centre=[config.sourceAperture.x,config.sourceAperture.y-.05,config.sourceAperture.z].map((v,k)=>v-config.sourceAperture.normal[k]*2+config.sourceAperture.right[k]*(i%13-6)*.14+config.sourceAperture.up[k]*(Math.floor(i/13)-2)*.14),position=portalTransformPoint(inverse,centre),matrix=portalIdentity();
+    matrix[0]=matrix[5]=matrix[10]=.1;position.forEach((v,k)=>matrix[12+k]=v);
+    const map=portalMultiply(config.toCurrent,matrix);assert.ok([...new Set(geometry.i)].every(j=>inside(planes,portalTransformPoint(map,geometry.p.slice(j*3,j*3+3)))),'all actual fixture triangles are inside the finite opening');
+    return{id:'in-aperture:'+i,mesh:'source-continuation-rest-oak',matrix,x:position[0],y:position[1],z:position[2],restPlace:true,chartId:0,region:'wrong-return'};
+  });
+  const result=applySourceRestReturn({props:doorRows,canonicalProps:[...doorRows,...targets],lights:[],state:s,eye:base.eye});
+  assert.equal(result.diagnostics.projected,false);assert.equal(result.diagnostics.reason,'instance-budget');assert.equal(result.diagnostics.apertureRejectedProps,0);assert.equal(result.planes,null);
+  assert.equal(SOURCE_REST_RETURN.maxProjectedProps,64);assert.equal(SOURCE_CONTINUATION_ARCHITECTURE.maxInstances,760);
 });
 
 test('non-listening disposal is a strict no-op on props and lights and never needs a cleanup owner',()=>{

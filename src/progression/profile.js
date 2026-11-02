@@ -1,5 +1,6 @@
 import { ENDING_IDS, PROFILE_EXPORT_VERSION, normalizeMeta, normalizeSettings } from './schema.js';
 import { ACHIEVEMENT_BY_ID } from './achievement-defs.js';
+import { mergeCompletionLedgers } from './completion-ledger.js';
 
 const objectOr = (value) => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const uniqueKnown = (values, known) => [...new Set((Array.isArray(values) ? values : []).filter((id) => known.includes(id)))];
@@ -42,6 +43,7 @@ export function exportProfile(meta, settings, { build = 'LOCAL', now = Date.now(
     meta: {
       endingsSeen: cleanMeta.endingsSeen,
       achievements: cleanMeta.achievements,
+      completion: cleanMeta.completion,
       stats: cleanMeta.stats,
       knowledge: cleanMeta.knowledge,
       challengeCompletions: cleanMeta.challengeCompletions,
@@ -90,6 +92,7 @@ export function mergeImportedProfile(localMeta, localSettings, imported) {
       ...local,
       endingsSeen: uniqueKnown([...local.endingsSeen, ...incoming.endingsSeen], ENDING_IDS),
       achievements,
+      completion: mergeCompletionLedgers(local.completion, incoming.completion),
       stats: maxStats(local.stats, incoming.stats),
       knowledge: mergeKnowledge(local.knowledge, incoming.knowledge),
       challengeCompletions: {

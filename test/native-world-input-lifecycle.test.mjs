@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import { InputManager, movementCodeForEvent, keyboardCodeRole, keyboardMotionAxes } from '../src/input/input-manager.js';
 import { shouldOpenPauseForEvent } from '../src/game/pause.js';
+import { createStudentStrikeInputGate } from '../src/game/student-strike-host.js';
 
 const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 function productionFunction(name) {
@@ -18,7 +19,7 @@ function harness() {
     KEY_DEBUG: false, SUPPRESS_BROWSER_CHROME: false, IS_TAURI: true, RENDERER: '3d',
     storyMode: true, hushRunActive: false, inRogue: true, paused: false,
     domFocused: true, nativeFocused: true, now: 1000, top: null, consumeScene: false,
-    motionInput: new InputManager(), motionFocusSuspended: false, renderMove: null,
+    motionInput: new InputManager(), motionFocusSuspended: false, renderMove: null,busRecoilGlide:null,
     nextMoveAtMs: 0, nextTurnAtMs: 0, lastLoopMs: 0, motionResetReason: '',
     lastUnexpectedPointerUnlockAt: 0, suppressBagReopenUntilRelease: false,
     heldPropPlay: null, stationInteractionDown: false, moves: [], looks: [], actions: [], captures: [],
@@ -27,7 +28,7 @@ function harness() {
   Object.assign(h, {
     document: { hidden: false, visibilityState: 'visible', hasFocus: () => h.domFocused },
     performance: { now: () => h.now },
-    pointerMode: { status: () => ({ nativeBackend: { focused: h.nativeFocused } }) },
+    pointerMode: { nativeFocus: () => h.nativeFocused, status: () => ({ nativeBackend: { focused: h.nativeFocused } }) },
     scenes: {
       top: () => h.top, depth: () => h.top ? 1 : 0,
       blocksInput: () => !!h.top?.blocksInput, tracksMotion: () => !!h.top?.tracksMotion,
@@ -47,8 +48,9 @@ function harness() {
     controllerGameplayAxes: () => h.stick,
     R3: { r3dLook: (x, y) => h.looks.push([x, y]), r3dLookAngles: () => ({yaw:0,pitch:0}) },
     noteExteriorArrivalControl() {},
-    costumeInspectionScene: null,
+    costumeInspectionScene: null, studentStrikeScene: null, studentStrikeInputGate: createStudentStrikeInputGate(),
     towerWarningAudio: null,
+    FEAR: {setHeartbeatPaused() {}},b3SpeakerAudio:{pause() {}},b3Speaker:{flush() {}},
     isMapShortcut: () => false, // These tests exercise lifecycle holds, not map navigation.
 
     shouldOpenPauseForEvent, movementKey: movementCodeForEvent, movementRole: keyboardCodeRole,

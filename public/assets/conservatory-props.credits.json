@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
+    "sha256": "cd3bea5f19e871543e9864dd54d5bb8c54e16b907ed46b4ad37cc01868f922af",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 890649,
-    "bytes": 64421752
+    "triangles": 890425,
+    "bytes": 64405332
   },
   "meshes": [
     {
@@ -9576,7 +9576,7 @@
           14.875
         ]
       },
-      "triangles": 12288,
+      "triangles": 11800,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11550,7 +11550,7 @@
           121.5
         ]
       },
-      "triangles": 3936,
+      "triangles": 4104,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11592,7 +11592,7 @@
           33
         ]
       },
-      "triangles": 2220,
+      "triangles": 2244,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11613,7 +11613,7 @@
           50.5
         ]
       },
-      "triangles": 1296,
+      "triangles": 1308,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -11676,7 +11676,7 @@
           16
         ]
       },
-      "triangles": 1260,
+      "triangles": 1248,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13064,7 +13064,7 @@
           30.15
         ]
       },
-      "triangles": 31372,
+      "triangles": 31324,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",
@@ -13085,7 +13085,7 @@
           80.5
         ]
       },
-      "triangles": 34144,
+      "triangles": 34264,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

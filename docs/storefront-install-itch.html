@@ -1,90 +1,111 @@
 <!--
-  FILE 2 of 2 — the INSTALL INSTRUCTIONS.
-  Paste target: itch.io -> Edit game -> Install instructions
-                (the separate field below Description; itch renders it under the
-                 download list on the page and inside the itch app).
-  Companion files: docs/storefront-copy-itch.html (Description field)
-                   docs/storefront-itch.css       (Theme -> Custom CSS)
+  FILE 2 of 2 — INSTALL INSTRUCTIONS.
+  Paste into itch.io → Edit game → Install instructions. Itch displays this
+  separate field below the download list and inside the itch app.
+  Description: docs/storefront-copy-itch.html
+  Theme → Custom CSS: docs/storefront-itch.css
 
-  itch drops this field into its own .user_formatted container, and the class
-  name of that container is not on itch's stable list. Every rule that styles
-  this block therefore hangs off the `custom-` hooks below rather than off the
-  container, so it themes correctly wherever itch decides to put it.
-
-  Deliberately no hard-coded download sizes: itch already prints the real size
-  next to every file, and a number typed here goes stale the next build.
+  Proposed instrument-interface revision; user acceptance is still pending.
+  Public wording assumes v0.3.0. Check package names, signing, architecture,
+  and first-launch behavior against the exact release before publishing.
+  File sizes are shown by itch beside the uploaded packages.
 -->
 
-<p class="custom-index">AUDIOCORP FIELD SERVICES &mdash; DEPLOYMENT NOTES</p>
+<p class="custom-index">CHUNK SURFER / INSTALLATION</p>
 
-<p class="custom-lede"><strong>Unsigned beta. Your operating system will complain once. Here is how to get past it.</strong></p>
+<p class="custom-lede custom-vfd"><strong>INSTALL THE BETA.</strong></p>
 
-<ul class="custom-spec">
-  <li><strong class="custom-label">mac</strong> <span class="custom-value">apple silicon &mdash; DMG</span></li>
-  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 + 3D graphics support &mdash; <code>chunk-surfer-windows-x64.zip</code></span></li>
-  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 + 3D graphics support &mdash; <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
-  <li><strong class="custom-label">gpu</strong> <span class="custom-value">a 3D-capable GPU is required; integrated/edge device performance is under test</span></li>
-  <li><strong class="custom-label">disk</strong> <span class="custom-value">no Stable Diffusion weights are included; verify size from the release artifact</span></li>
-  <li><strong class="custom-label">audio</strong> <span class="custom-value">headphones strongly recommended. the game is a listening test</span></li>
-</ul>
+<p class="custom-lcd">v0.3.0 PUBLIC BETA · UNSIGNED</p>
 
-<p class="custom-notice">No Stable Diffusion model or Python runtime is bundled or downloaded on first launch. The game uses authored materials.</p>
-
-<h2>macOS</h2>
-
-<ol class="custom-steps">
-  <li>Open the downloaded macOS Apple Silicon <code>.dmg</code> and drag <strong>Chunk Surfer</strong> into <code>/Applications</code>. If the download is instead a ZIP of the app, extract it completely first.</li>
-  <li><strong>Right-click the app and choose Open</strong> &mdash; do not double-click it the first time. Confirm <strong>Open</strong> in the dialog.</li>
-  <li>If macOS refuses anyway, open <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll to the blocked-app notice, and press <strong>Open Anyway</strong>.</li>
-  <li>Still blocked? Clear the download quarantine flag in Terminal:<br>
-    <code>xattr -dr com.apple.quarantine /Applications/Chunk\ Surfer.app</code></li>
-</ol>
-
-<h2>Windows</h2>
-
-<ol class="custom-steps">
-  <li>Unzip <code>chunk-surfer-windows-x64.zip</code> somewhere you can write to &mdash; not inside the zip, and not <code>Program Files</code>.</li>
-  <li>Keep all extracted files together and run <code>chunk-surfer.exe</code>. The Microsoft Edge WebView2 Runtime must be installed.</li>
-  <li>SmartScreen will say <em>Windows protected your PC</em>. Choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
-  <li>If the world renders incorrectly, check that your graphics driver supports the required 3D/WebGL features.</li>
-</ol>
-
-<h2>Linux</h2>
-
-<ol class="custom-steps">
-  <li><strong>AppImage:</strong> mark it executable and run it &mdash;<br>
-    <code>chmod +x chunk-surfer-linux-x64.AppImage</code><br>
-    <code>./chunk-surfer-linux-x64.AppImage</code></li>
-  <li><strong>Debian / Ubuntu:</strong> <code>sudo apt install ./chunk-surfer-linux-x64.deb</code>, then launch <strong>Chunk Surfer</strong> from your applications menu.</li>
-  <li>No NVIDIA CUDA driver is required for the normal authored-material game. Verify your OpenGL/WebGL support.</li>
-</ol>
-
-<h2>Microphone</h2>
-
-<p>The game asks for microphone permission on first launch. <strong>You can say no and finish the whole game.</strong></p>
-
-<p class="custom-notice">If you allow it, the game measures loudness in your room locally while a take is rolling, so real noise can contaminate a recording or provoke a response in the building. Audio is never recorded, stored, transmitted, uploaded, or played back through the game. Permission can be revoked at any time in your operating system's privacy settings, or in the game's own audio settings.</p>
-
-<h2>Controls</h2>
+<p>Choose the package for your computer. Follow the steps below.</p>
 
 <ul class="custom-spec">
-  <li><strong class="custom-label">[R]</strong> <span class="custom-value">listen &mdash; roll the recorder</span></li>
-  <li><strong class="custom-label">[F]</strong> <span class="custom-value">light &mdash; torch on and off</span></li>
-  <li><strong class="custom-label">rebind</strong> <span class="custom-value">everything is remappable in settings &rarr; controls</span></li>
+  <li><strong class="custom-label">macOS</strong> <span class="custom-value">Apple Silicon · DMG</span></li>
+  <li><strong class="custom-label">windows</strong> <span class="custom-value">x64 · <code>chunk-surfer-windows-x64.zip</code> · Microsoft Edge WebView2 Runtime required</span></li>
+  <li><strong class="custom-label">linux</strong> <span class="custom-value">x64 · <code>chunk-surfer-linux-x64.AppImage</code> or <code>chunk-surfer-linux-x64.deb</code></span></li>
+  <li><strong class="custom-label">audio</strong> <span class="custom-value">Headphones recommended. A microphone is optional.</span></li>
 </ul>
 
-<h2 class="custom-warning-heading">content warning (general horror)</h2>
+<p class="custom-notice">These beta packages are unsigned, so your operating system may block the first launch. Use the approval steps below for the copy you downloaded from this page. Download sizes appear beside each file.</p>
 
-<p class="custom-warning">Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects &mdash; set these before your first session if you need them.</p>
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">macOS</span></h2>
 
-<h2>Something went wrong</h2>
+<ol class="custom-steps">
+  <li>Open the downloaded macOS Apple Silicon <code>.dmg</code> and drag <strong>Chunk Surfer</strong> into <strong>Applications</strong>.</li>
+  <li>Launch <strong>Chunk Surfer</strong> from Applications. If macOS blocks it, open <strong>System Settings &rarr; Privacy &amp; Security</strong> and use <strong>Open Anyway</strong> for Chunk Surfer, then confirm the launch.</li>
+  <li>If you enable microphone input, also allow access in the macOS permission prompt. You can continue playing if you decline.</li>
+</ol>
 
-<p>This is candidate installation copy for v0.3.0. Package availability and platform acceptance must be confirmed before publication. Include the app version, operating system and a description of the problem in any report.</p>
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Windows</span></h2>
+
+<ol class="custom-steps">
+  <li>Extract <code>chunk-surfer-windows-x64.zip</code> completely into a folder you can write to.</li>
+  <li>Keep all extracted files together and run <code>chunk-surfer.exe</code>. Do not launch it from inside the ZIP.</li>
+  <li>The <strong>Microsoft Edge WebView2 Runtime</strong> must be installed. If it is missing, install it from Microsoft and launch the game again.</li>
+  <li>If SmartScreen shows <em>Windows protected your PC</em>, use <strong>More info &rarr; Run anyway</strong> for this downloaded beta.</li>
+</ol>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Linux</span></h2>
+
+<ol class="custom-steps">
+  <li><strong>AppImage:</strong> make the file executable and run it:<br><code>chmod +x chunk-surfer-linux-x64.AppImage</code><br><code>./chunk-surfer-linux-x64.AppImage</code></li>
+  <li><strong>Debian / Ubuntu:</strong> install with <code>sudo apt install ./chunk-surfer-linux-x64.deb</code>, then open <strong>Chunk Surfer</strong> from your applications menu.</li>
+</ol>
+
+<p class="custom-notice">The game needs working 3D graphics support. If you see a blank or incorrectly rendered world, include your GPU and graphics-driver details in a bug report. Compatibility and performance on additional hardware are still being tested.</p>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Controls</span></h2>
+
+<p>Keyboard and mouse or a controller can be used for normal play. Controller buttons can be remapped in Settings. These are the default on-foot keyboard controls; driving and other scenes show their own prompts:</p>
+
+<table>
+  <thead><tr><th>Key</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td>WASD / arrow keys</td><td>Move</td></tr>
+    <tr><td>Shift</td><td>Quiet movement</td></tr>
+    <tr><td>C</td><td>Hide</td></tr>
+    <tr><td>F</td><td>Light</td></tr>
+    <tr><td>B</td><td>Bag</td></tr>
+    <tr><td>M</td><td>Map</td></tr>
+    <tr><td>R</td><td>Open recorder</td></tr>
+    <tr><td>V</td><td>Radio</td></tr>
+    <tr><td>E</td><td>Interact</td></tr>
+    <tr><td>P</td><td>Playback</td></tr>
+    <tr><td>Esc</td><td>Menu / pause</td></tr>
+  </tbody>
+</table>
+
+<p>The recorder has <strong>REC</strong>, <strong>STOP</strong>, and <strong>TAKES</strong> controls. Opening it does not pause the room. Follow the prompts on the machine when starting a recording or saving a usable take.</p>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Microphone and local recordings</span></h2>
+
+<p>Microphone permission is optional. With permission, the game measures room loudness locally so real noise can affect play. You can also choose to record spoken take slates and voicemail. These recordings stay on your device; the game does not recognize speech or automatically upload audio. You can complete the game without a microphone.</p>
+
+<p>Use <strong>Settings &rarr; Input</strong> to select an input and test its level. Operating-system privacy settings control the app&rsquo;s microphone permission.</p>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Local profile and desktop effects</span></h2>
+
+<p>The separate profile choice permits disclosed local personalization using names, computer details, and in-game responses. Optional desktop effects can move the game window, open additional game-owned windows, and create field-return files in the game&rsquo;s local data folder. Profile data is processed locally and is not uploaded.</p>
+
+<p>You can play the complete game with the profile off. Settings let you disable individual modules, restore the game window, and erase the profile data.</p>
+
+<h2 class="custom-warning-heading">Content warning and accessibility</h2>
+
+<p class="custom-warning">Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Set your preferred effects before starting.</p>
+
+<p>Settings include text speed and instant text, flash/strobe and screen-shake reduction, controller configuration, recording forgiveness, navigation help, combat assistance, and escape-timer adjustments.</p>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Saved data and uninstalling</span></h2>
+
+<p>Removing the app normally leaves local progress, settings, and recordings on this device. To remove them too, first open <strong>Settings &rarr; Memory &rarr; Erase all data &amp; restart</strong> in the game and confirm. Wait for the restart, then quit and remove the app or package. Exported copies and operating-system backups are not removed by this reset.</p>
+
+<h2 class="custom-vfd custom-marquee"><span class="custom-marquee-text">Report a problem</span></h2>
+
+<p>Include the game version, operating system, CPU/GPU, controller model if relevant, and the steps that led to the problem. A diagnostic report from the in-game About/Support panel also helps.</p>
 
 <ul class="custom-spec">
-  <li><strong class="custom-label">report</strong> <span class="custom-value"><a href="https://cbassuarez.com/contact">cbassuarez.com/contact</a></span></li>
-  <li><strong class="custom-label">source</strong> <span class="custom-value"><a href="https://github.com/cbassuarez/chunk-surfer">github.com/cbassuarez/chunk-surfer</a></span></li>
-  <li><strong class="custom-label">notes</strong> <span class="custom-value"><a href="https://cbassuarez.com/labs/chunk-surfer/">cbassuarez.com/labs/chunk-surfer</a></span></li>
+  <li><strong class="custom-label">bugs</strong> <span class="custom-value"><a href="https://github.com/cbassuarez/chunk-surfer/issues/new?labels=bug">Report a bug</a></span></li>
+  <li><strong class="custom-label">feedback</strong> <span class="custom-value"><a href="https://github.com/cbassuarez/chunk-surfer/issues/new?labels=feedback">Send playtest feedback</a></span></li>
 </ul>
 
-<p class="custom-signoff"><strong>order 4417-C remains open.</strong></p>
+<p class="custom-signoff"><strong>CHUNK SURFER / v0.3.0 PUBLIC BETA</strong></p>

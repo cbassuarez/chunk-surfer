@@ -31,6 +31,7 @@
 
 import { TUNING_FORK_ENGRAVING_LINE } from './tuning-fork-discovery.js';
 import { ROOF_PASSWORD_PAGE } from './roof-password.js';
+import { STUDENT_STRIKE_DOCUMENTS } from './student-strike-evidence.js';
 
 export const WORK_ORDER = {
   id: 'work-order',
@@ -1083,6 +1084,7 @@ export const SQUELCH_LINES = [
 
 export const PAGES = [
   ROOF_PASSWORD_PAGE,
+  ...STUDENT_STRIKE_DOCUMENTS,
   {
     // In the credenza drawer in the ground-floor dead end. Its `at` is the
     // credenza's own cell: hostedPageFor grants it on inspecting the furniture
@@ -1125,7 +1127,7 @@ export const PAGES = [
     ],
   },
   {
-    id:'student-monitoring-notes',at:{x:104,y:16},room:'soundnoisemusic',decay:.26,
+    id:'student-monitoring-notes',at:{x:68,y:62},room:'soundnoisemusic',decay:.26,
     title:'THE SECOND PERFORMANCE',byline:'STUDENT MONITORING BOOK · TRANSFER LABEL ATTACHED',
     body:[
       {raw:'TRANSFER   CHUNK SURFER'},

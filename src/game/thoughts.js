@@ -391,6 +391,7 @@ export function makeThoughtScene({
 const had = new Set();
 export function thoughtHad(id) { return had.has(id); }
 export function markThought(id) { had.add(id); }
+export function unmarkThought(id) { return had.delete(id); }
 export function resetThoughts() { had.clear(); }
 export function loadThoughtState(saved = {}) {
   had.clear();

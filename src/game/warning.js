@@ -4,12 +4,13 @@
 import * as scenes from './scenes.js';
 import { uiSize, uiFill, uiText, uiWrap, uiCellMetrics } from '../render/ui.js';
 import { withMachinePanel, drawVfdText, drawVfdSprite, machinePanelBody, machinePanelAperture } from '../render/presentation.js';
-import { UI_COLOR, activeTheme } from '../render/palette.js';
-import { drawVfdRow, vfdRowStyle } from '../render/vfd-select.js';
+import { UI_COLOR } from '../render/palette.js';
+import { layoutTranscriptChoices, drawTranscriptChoices } from '../render/transcript.js';
 import { createHitRegions } from '../render/hit-regions.js';
 import { fitText } from '../render/fit-text.js';
 import { vfdMicrophoneFrame, VFD_MIC_DOTS } from '../render/vfd-microphone.js';
-import { promptLine } from './bindings.js';
+import { promptLine, activeInputPromptDevice } from './bindings.js';
+import { hardwareMotionReduced } from '../render/hardware-material.js';
 
 const WARNINGS = [
   'This game contains flashing lights and high-contrast patterns.',
@@ -57,9 +58,8 @@ const MICROPHONE = [
 // Reserve the decision and its input legend before fitting the copy. The true
 // aperture is smaller than machinePanelBody, especially without a metal footer.
 const TITLE_ROWS = 3;
-const ACTION_ROWS = 3; // blank separation, choices, input legend
+const ACTION_ROWS = 5; // separation, ordinary picker heading, two numbered replies, legend
 const GLASS_CLEARANCE = 0.65;
-let idleMicFrame = null;
 
 const cardClass = (line) => /^(THIS GAME|Choose PROFILE|REQUESTING|MICROPHONE|NO MICROPHONE)/.test(line)
   ? 'ui-amber'
@@ -126,24 +126,26 @@ export function warningCardLayout(card, { cols, rows, footer = '', aspect, lines
   if (compact) baseline = baseline.filter(row => row.text);
   let out = lines ? warningCardRows(lines, textW - 2) : baseline;
   if (compact) out = out.filter(row => row.text);
-  const titleRows = compact ? 2 : TITLE_ROWS;
+  // The compact card already names MICROPHONE in its physical header. Spend
+  // the repeated title's rows on the complete disclosure and vertical replies.
+  const titleRows = compact ? 0 : TITLE_ROWS;
   const wanted = Math.max(titleRows + Math.max(out.length, baseline.length), art ? art.h : 0) + ACTION_ROWS;
-  const h = Math.max(chrome + titleRows + ACTION_ROWS + 1, Math.min(rows - 2, wanted + chrome));
+  const h = Math.max(chrome + titleRows + ACTION_ROWS + 1, compact ? rows - 2 : Math.min(rows - 2, wanted + chrome));
   const y = Math.max(0, Math.floor((rows - h) / 2));
   const body = machinePanelBody(x, y, w, h, { footer });
   const aperture = machinePanelAperture(x, y, w, h);
-  const actionY = safeBottom(aperture) - 2;
-  const visible = Math.max(1, actionY - 1 - (body.y + titleRows));
-  const actionW = Math.floor((body.w - 3) / 2);
+  const actionY = safeBottom(aperture) - 3;
+  const visible = Math.max(1, actionY - 2 - (body.y + titleRows));
   const actions = [0, 1].map(index => ({
-    index, x: body.x + index * (actionW + 3), y: actionY - 0.25,
-    w: index ? body.w - actionW - 3 : actionW, h: 1.4, textY: actionY,
+    index, x: body.x, y: actionY + index - 0.15,
+    w: body.w, h: 1, textY: actionY + index,
   }));
   return {
     x, y, w, h, body, aperture, art, compact, titleRows, textX, textW, out, visible,
     actions: card === 'warning' ? [actions[1]] : actions,
     textRect: { x: body.x + textX, y: body.y + titleRows, w: textW, h: visible },
-    hint: { x: body.x, y: actionY + 1, w: body.w },
+    choiceY: actionY - 1,
+    hint: { x: body.x, y: actionY + 2, w: body.w },
     scrollMax: Math.max(0, out.length - visible),
   };
 }
@@ -167,6 +169,7 @@ export function makeWarningScene({
   let scroll = 0, scrollMax = 0;
   let phase = 'choice', micResult = null, requestGeneration = 0, ownsMicRequest = false;
   let revision = 0, armedPointer = null, lastLayout = null, wheelRemainder = 0;
+  let artTime = 0;
 
   const card = () => cards[index];
   const keyToken = e => e.controllerAction ? `pad:${e.controllerAction}` : e.code || e.key;
@@ -348,19 +351,20 @@ export function makeWarningScene({
 
   function inputLegend(width, count) {
     const parts = [
-      ...(count > 1 ? [{ action: 'set', label: 'CHOOSE' }] : []),
+      ...(count > 1 ? [{ action: 'select', label: 'CHOOSE' }] : []),
       { action: 'confirm', label: count > 1 ? 'CONFIRM' : 'SELECT' },
     ];
     const essential = promptLine(parts);
-    const more = scrollMax ? promptLine([{ action: 'select', label: 'MORE' }]) : '';
+    const more = scrollMax ? activeInputPromptDevice()==='controller'
+      ? promptLine([{action:'tabPrev',label:'PREV'},{action:'tabNext',label:'MORE'}]) : 'PGUP / PGDN MORE' : '';
     if (!more) return fitText(essential, width);
     if (essential.length + more.length + 3 <= width) return `${essential} · ${more}`;
     // Direction glyphs work for keys and a D-pad; the actual confirm button
     // still comes from the active controller family/remapping.
     return fitText([
-      ...(count > 1 ? ['←→ CHOOSE'] : []),
+      ...(count > 1 ? ['↑↓ CHOOSE'] : []),
       promptLine([{ action: 'confirm', label: count > 1 ? 'CONFIRM' : 'SELECT' }]),
-      '↑↓ MORE',
+      more,
     ].join(' · '), width);
   }
 
@@ -387,7 +391,8 @@ export function makeWarningScene({
         onMicDeny();
       }
     },
-    update() {
+    update(dt = 0) {
+      artTime += Math.max(0, Math.min(.25, Number(dt) || 0));
       // micInit may return early for a request already in flight. Observing its
       // snapshot covers that case without launching a second native prompt.
       if (closed || phase !== 'requesting' || !getMicSnapshot) return;
@@ -405,9 +410,8 @@ export function makeWarningScene({
       const page = Math.max(1, (lastLayout?.visible || 5) - 1);
       e.preventDefault?.();
       armedPointer = null;
-      const scrollBy = direction === 'ArrowUp' || key === 'w' || ['up', 'move_up'].includes(e.controllerAction) ? -1
-        : direction === 'ArrowDown' || key === 's' || ['down', 'move_down'].includes(e.controllerAction) ? 1
-          : direction === 'PageUp' ? -page : direction === 'PageDown' ? page : 0;
+      const scrollBy = direction === 'PageUp' || e.controllerAction==='tabPrev' ? -page
+        : direction === 'PageDown' || e.controllerAction==='tabNext' ? page : 0;
       if (scrollBy) {
         scrollCopy(scrollBy);
         return true;
@@ -417,20 +421,22 @@ export function makeWarningScene({
         return true;
       }
       const items = choices();
-      if (['ArrowLeft', 'ArrowRight', 'Tab'].includes(direction)
-        || ['left', 'right', 'move_left', 'move_right'].includes(e.controllerAction)) {
-        selected = (selected + 1) % items.length;
+      const previous = direction === 'ArrowUp' || key === 'w' || ['up', 'move_up'].includes(e.controllerAction),
+        following = direction === 'ArrowDown' || key === 's' || ['down', 'move_down'].includes(e.controllerAction);
+      if (previous || following || direction === 'Tab') {
+        selected = (selected + (previous || e.shiftKey ? -1 : 1) + items.length) % items.length;
         return true;
       }
+      const direct = /^[1-9]$/.test(key) && Number(key) <= items.length ? Number(key) - 1 : -1;
       const yes = key === 'y' || code === 'KeyY';
       const no = key === 'n' || code === 'KeyN' || direction === 'Escape' || e.controllerAction === 'back';
       const confirm = direction === 'Enter' || code === 'Enter' || key === ' ' || code === 'Space' || e.controllerAction === 'confirm';
-      if (!(yes || no || confirm || card() === 'warning' && key === 'z')) return true;
-      if (card() === 'warning' && !(confirm || key === 'z')) return true;
+      if (!(yes || no || confirm || direct >= 0 || card() === 'warning' && key === 'z')) return true;
+      if (card() === 'warning' && !(confirm || key === 'z' || direct >= 0)) return true;
       if (e.repeat || heldActivation.has(keyToken(e))) return true;
       if (phase === 'requesting' && yes) return true;
       heldActivation.add(keyToken(e));
-      activate(card() === 'warning' ? 'continue' : no ? 'deny' : yes ? 'allow' : items[Math.min(selected, items.length - 1)].id);
+      activate(card() === 'warning' ? 'continue' : no ? 'deny' : yes ? 'allow' : items[direct >= 0 ? direct : Math.min(selected, items.length - 1)].id);
       return true;
     },
     keyup(e) { heldActivation.delete(keyToken(e)); return true; },
@@ -494,11 +500,11 @@ export function makeWarningScene({
         if (art) {
           const contentHeight = layout.actions[0].textY - 1 - panel.y;
           const top = panel.y + Math.max(0, Math.floor((contentHeight - art.h) / 2));
-          idleMicFrame ||= vfdMicrophoneFrame({ live: false, reduced: true });
-          drawVfdSprite(panel.x, top, art.w, art.h, idleMicFrame);
+          drawVfdSprite(panel.x, top, art.w, art.h, vfdMicrophoneFrame({t:artTime,live:false,
+            mode:phase==='requesting'?'requesting':phase==='failure'?'blocked':'standby',reduced:hardwareMotionReduced()}));
         }
         const tx = panel.x + textX;
-        drawVfdText(tx, panel.y, currentCard === 'warning' ? 'BEFORE YOU START' : currentCard === 'profile' ? 'CONSENT REQUIRED' : 'YOUR MICROPHONE', { max: textW });
+        if(layout.titleRows)drawVfdText(tx, panel.y, currentCard === 'warning' ? 'BEFORE YOU START' : currentCard === 'profile' ? 'CONSENT REQUIRED' : 'YOUR MICROPHONE', { max: textW });
         out.slice(scroll, scroll + visible).forEach((row, i) => {
           if (row.text) uiText(tx, layout.textRect.y + i, row.text, row.cls, 1, textW - 2);
         });
@@ -518,13 +524,13 @@ export function makeWarningScene({
           hits.add({ ...region, id, kind: 'warning-choice', label: item.label, selected: i === selected,
             onHover: () => { if (revision === renderedRevision) selected = i; },
             onClick: () => { if (revision === renderedRevision) activate(item.id); } });
-          drawVfdRow({ uiFill, uiText, theme: activeTheme }, {
-            x: region.x, y: region.textY, w: region.w,
-            label: fitText(item.label, region.w - 2),
-            style: vfdRowStyle({ selected: i === selected, hovered: hits.isHovered(id) }),
-            role: i === selected ? 'ui-primary' : 'ui-secondary',
-          });
         });
+        const reply = layoutTranscriptChoices({pending:{kind:currentCard==='warning'?'say':'branch',index:selected,
+          options:items.map(item=>({text:item.label}))}},layout.body.w,{lane:{x:0,w:layout.body.w,align:'left'}});
+        // A pending OS prompt retains the opt-out's original physical row.
+        // Its displayed number still matches the sole available input choice.
+        if(items.length===1)reply.rows.splice(1,0,{kind:'label',text:'',selected:false});
+        drawTranscriptChoices(reply,{x:layout.body.x,y:layout.choiceY,width:layout.body.w});
         uiText(layout.hint.x, layout.hint.y, inputLegend(layout.hint.w, items.length), 'ui-secondary', 0.75, layout.hint.w);
       });
     },

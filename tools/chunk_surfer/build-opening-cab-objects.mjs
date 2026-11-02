@@ -4,12 +4,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {Document,NodeIO} from '@gltf-transform/core';
 import {ALL_EXTENSIONS} from '@gltf-transform/extensions';
 import {BoxGeometry,CylinderGeometry,Matrix4,Vector3,Matrix3} from 'three';
 import {importPropMesh} from './lib/glb-import.mjs';
-import {OPENING_CAB_PLACEMENT as C} from '../../src/data/opening-cab-objects.js';
+import {OPENING_CAB_PLACEMENT as C,OPENING_CAB_PAPERS} from '../../src/data/opening-cab-objects.js';
 import {FLASHLIGHT_HOUSING_COLORS} from '../../src/game/field-kit.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -82,6 +83,60 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  mirror.push(shape(new BoxGeometry(.046,.014,.044),C.mirror.mount,frame));
  add('opening_cab_mirror','self-check',mirror,null);
 
+ // The paper is already a real world sheet. Add only its thin, supported
+ // clipboard and spring clip; job acceptance stays with the existing guard.
+ const coalesce=groups=>{const merged=new Map();for(const group of groups){const key=JSON.stringify(group.material);let out=merged.get(key);if(!out){out={positions:[],normals:[],indices:[],material:group.material};merged.set(key,out);}const offset=out.positions.length/3;out.positions.push(...group.positions);out.normals.push(...group.normals);out.indices.push(...group.indices.map(index=>index+offset));}return[...merged.values()];};
+ const clip=[],cp=C.clipboard.point,[cw,ch,cd]=C.clipboard.size;
+ clip.push(shape(new BoxGeometry(cw,ch,cd),cp,material('clipboard / rubbed fibreboard','#776952')));
+ clip.push(shape(new BoxGeometry(.090,.004,.033),[cp[0],cp[1]+ch/2+.002,cp[2]-cd/2+.022],steel));
+ clip.push(shape(new BoxGeometry(.070,.004,.010),[cp[0],cp[1]+ch/2+.006,cp[2]-cd/2+.037],frame));
+ if(C.clipboard.yaw){const m=new Matrix4().makeTranslation(...cp).multiply(new Matrix4().makeRotationY(-C.clipboard.yaw)).multiply(new Matrix4().makeTranslation(...cp.map(v=>-v))),n=new Matrix3().getNormalMatrix(m);for(const g of clip){for(let i=0;i<g.positions.length;i+=3)g.positions.splice(i,3,...new Vector3().fromArray(g.positions,i).applyMatrix4(m).toArray());for(let i=0;i<g.normals.length;i+=3)g.normals.splice(i,3,...new Vector3().fromArray(g.normals,i).applyMatrix3(n).toArray());}}
+ add('opening_cab_clipboard','job-papers',coalesce(clip));
+
+ // Continuous pen strokes, not a luminous display or unlabelled filler marks.
+ const strokes={
+  A:['0,1 .5,0 1,1','.22,.57 .78,.57'],B:['0,1 0,0 .65,0 1,.22 .65,.48 0,.48','.65,.48 1,.72 .7,1 0,1'],C:['1,.12 .72,0 .2,0 0,.25 0,.8 .22,1 .8,1 1,.88'],
+  D:['0,1 0,0 .55,0 1,.28 1,.72 .55,1 0,1'],E:['1,0 0,0 0,1 1,1','0,.48 .78,.48'],F:['1,0 0,0 0,1','0,.48 .8,.48'],G:['1,.16 .75,0 .22,0 0,.25 0,.8 .22,1 1,1 1,.55 .55,.55'],
+  H:['0,0 0,1','1,0 1,1','0,.5 1,.5'],I:['.15,0 .85,0','.5,0 .5,1','.15,1 .85,1'],J:['.12,0 1,0','1,0 1,.8 .8,1 .2,1 0,.8'],K:['0,0 0,1','1,0 0,.58 1,1'],L:['0,0 0,1 1,1'],
+  M:['0,1 0,0 .5,.57 1,0 1,1'],N:['0,1 0,0 1,1 1,0'],O:['.2,0 .8,0 1,.25 1,.8 .8,1 .2,1 0,.75 0,.22 .2,0'],P:['0,1 0,0 .75,0 1,.22 .75,.5 0,.5'],
+  Q:['.2,0 .8,0 1,.25 1,.8 .8,1 .2,1 0,.75 0,.22 .2,0','.6,.7 1.1,1.1'],R:['0,1 0,0 .75,0 1,.22 .75,.5 0,.5','.55,.5 1,1'],S:['1,.12 .75,0 .22,0 0,.24 .2,.47 .78,.55 1,.78 .78,1 .2,1 0,.88'],
+  T:['0,0 1,0','.5,0 .5,1'],U:['0,0 0,.78 .22,1 .78,1 1,.78 1,0'],V:['0,0 .5,1 1,0'],W:['0,0 .22,1 .5,.48 .78,1 1,0'],X:['0,0 1,1','1,0 0,1'],Y:['0,0 .5,.5 1,0','.5,.5 .5,1'],Z:['0,0 1,0 0,1 1,1'],"'":['.5,0 .35,.25'],'.':['.45,.94 .55,1']};
+ const pen=material('cab paper / old blue biro','#263d4a',.96),print=material('recital programme / faded ink','#3b3831',.96);
+ function lettering(lines,at,{vertical=false,width=.075,height=.0068,ink=pen}={}){
+  const groups=[],longest=Math.max(...lines.map(line=>line.length)),advance=Math.min(height*.78,width/Math.max(1,longest)),top=-height*lines.length*.9;
+  const project=(u,v)=>vertical?[at[0]+u,at[1]-v,at[2]+.0008]:[at[0]+u,at[1]+.0008,at[2]+v];
+  for(const[lineIndex,line]of lines.entries())for(const[index,char]of [...line].entries()){
+   const x=-line.length*advance/2+index*advance,y=top+lineIndex*height*1.8+(index%3-1)*height*.035;
+   for(const path of strokes[char]||[]){const points=path.split(' ').map(p=>p.split(',').map(Number));for(let i=1;i<points.length;i++){
+    const a=[x+points[i-1][0]*advance*.72,y+points[i-1][1]*height],b=[x+points[i][0]*advance*.72,y+points[i][1]*height],dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);if(!length)continue;
+    const ox=-dy/length*.00032,oy=dx/length*.00032,positions=[project(a[0]+ox,a[1]+oy),project(a[0]-ox,a[1]-oy),project(b[0]-ox,b[1]-oy),project(b[0]+ox,b[1]+oy)];
+    groups.push({positions:positions.flat(),normals:Array.from({length:4},()=>vertical?[0,0,1]:[0,1,0]).flat(),indices:[0,2,1,0,3,2],material:ink});
+   }}
+  }return groups;
+ }
+ function sticky(name,id,definition,placement,vertical=false){
+  const p=placement.point,[w,h,d]=placement.size,groups=[shape(new BoxGeometry(w,h,d),p,material(name+' / worn adhesive paper',definition.stock))];
+  groups.push(...lettering(definition.worldLines,vertical?[p[0],p[1],p[2]+d/2]:[p[0],p[1]+h/2,p[2]],{vertical,width:w*.86}));
+  if(!vertical){const m=new Matrix4().makeTranslation(...p).multiply(new Matrix4().makeRotationY(-placement.yaw)).multiply(new Matrix4().makeTranslation(...p.map(v=>-v))),n=new Matrix3().getNormalMatrix(m);for(const g of groups){for(let i=0;i<g.positions.length;i+=3)g.positions.splice(i,3,...new Vector3().fromArray(g.positions,i).applyMatrix4(m).toArray());for(let i=0;i<g.normals.length;i+=3)g.normals.splice(i,3,...new Vector3().fromArray(g.normals,i).applyMatrix3(n).toArray());}}
+  add(name,id,coalesce(groups));
+ }
+ sticky('opening_cab_practice_note','practice-note',OPENING_CAB_PAPERS[0],C.practiceNote);
+ sticky('opening_cab_first_take_note','first-take-note',OPENING_CAB_PAPERS[1],C.firstTakeNote,true);
+
+ // The programme lies on the original passenger cushion. Sample the actual
+ // exported seat, then give the paper a shallow retained centre crease.
+ const cabinDoc=await io.read(path.join(root,'public/assets/source-vehicle-interior.glb')),seatTriangles=[];
+ for(const primitive of cabinDoc.getRoot().listMeshes().find(mesh=>mesh.getName()==='opening_drive_cabin').listPrimitives()){
+  const p=primitive.getAttribute('POSITION'),ids=primitive.getIndices().getArray();for(let i=0;i<ids.length;i+=3)seatTriangles.push([0,1,2].map(k=>p.getElement(ids[i+k],[])));
+ }
+ function seatHeight(x,z){let result=-Infinity;for(const[a,b,c]of seatTriangles){const den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);if(Math.abs(den)<1e-10)continue;const u=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/den,v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/den,w=1-u-v,y=u*a[1]+v*b[1]+w*c[1];if(Math.min(u,v,w)>=-1e-6&&y>.88&&y<1.1)result=Math.max(result,y);}if(!Number.isFinite(result))throw Error('Programme has no real passenger-seat support');return result;}
+ const pp=C.programme.point,[pw,,pd]=C.programme.size,programme=[],paperMat=material('recital programme / creased warm stock',OPENING_CAB_PAPERS[2].stock),prx=Math.cos(C.programme.yaw),prz=Math.sin(C.programme.yaw);
+ const programmePoint=(u,v)=>{const x=pp[0]+prx*u-prz*v,z=pp[2]+prz*u+prx*v;return[x,seatHeight(x,z)+.0022+.0035*(1-Math.min(1,Math.abs(u)/(pw*.5))),z];};
+ for(let j=0;j<8;j++)for(let i=0;i<6;i++){const left=-pw/2+i*pw/6,right=left+pw/6,front=-pd/2+j*pd/8,back=front+pd/8,points=[programmePoint(left,front),programmePoint(left,back),programmePoint(right,back),programmePoint(right,front)];programme.push({positions:points.flat(),normals:Array.from({length:4},()=>[0,1,0]).flat(),indices:[0,1,2,0,2,3],material:paperMat});}
+ const writing=lettering(OPENING_CAB_PAPERS[2].worldLines,[0,0,0],{width:pw*.85,height:.009,ink:print});
+ for(const g of writing)for(let i=0;i<g.positions.length;i+=3){const u=g.positions[i],v=g.positions[i+2],p=programmePoint(u,v);g.positions.splice(i,3,p[0],p[1]+.0009,p[2]);}
+ programme.push(...writing);add('opening_cab_recital_programme','recital-programme',coalesce(programme));
+
  const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene('Separate opening cab belongings'),palette=new Map(),records=[];
  const accessor=(name,data,type)=>doc.createAccessor(name).setType(type).setArray(type==='SCALAR'?new Uint32Array(data):new Float32Array(data)).setBuffer(buffer);
  for(const row of rows){if(!row.groups.length)continue;const mesh=doc.createMesh(row.name);let triangles=0;
@@ -96,9 +151,34 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  // Pick the actual exposed silver face rather than the stem's broad box.
  targets['self-check']={bounds:{min:[mp[0]-mw/2,mp[1]-mh/2,mp[2]+md/2],max:[mp[0]+mw/2,mp[1]+mh/2,mp[2]+md/2+.004]},point:[mp[0],mp[1],mp[2]+md/2+.002]};
  const bytes=Buffer.from(await io.writeBinary(doc)),totalTriangles=records.reduce((n,r)=>n+r.triangles,0),stats={schema:1,asset:'assets/opening-cab-objects.glb',sha256:sha(bytes),bytes:bytes.length,totalTriangles,materials:palette.size,meshes:records,targets,sources,registration,
-  limits:{maxBytes:4000000,maxStoredTriangles:42000,maxDisplayedTriangles:16000},provenance:'Existing project-authored FC–7 and canonical instrument meshes with original physical packing sockets; new original cloth notebook and fixed interior mirror; no external downloads, textures or new narrative',limitations:['Mirror silver is static, not a rendered face/reflection.','World recorder phosphor is the original idle geometry; live readings appear in its direct inspection.','Witness Edition geometry is not newly granted during the prologue.']};
+  limits:{maxBytes:4000000,maxStoredTriangles:42000,maxDisplayedTriangles:16000},provenance:'Existing project-authored equipment retained for compatibility; cab-only notebook, mirror, supported job clipboard, two written reminders and a seat-conforming recital programme. Equipment is rendered at the rear workbench, not duplicated in the cab.',limitations:['Mirror silver is static, not a rendered face/reflection.','World paper uses physical pen strokes; close readings use dedicated baked paper assets.','Witness Edition geometry is not newly granted during the prologue.']};
  if(bytes.length>stats.limits.maxBytes||totalTriangles>stats.limits.maxStoredTriangles)throw Error('Cab-only pack exceeded bounded resource budget '+JSON.stringify({bytes:bytes.length,totalTriangles}));
- if(write){fs.mkdirSync(path.join(root,'public/assets'),{recursive:true});fs.writeFileSync(path.join(root,'public',stats.asset),bytes);fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.credits.json'),JSON.stringify({provenance:stats.provenance,sources:stats.sources,registration:stats.registration,limitations:stats.limitations,sha256:stats.sha256},null,2)+'\n');fs.writeFileSync(path.join(root,'src/data/opening-cab-object-geometry.js'),'// Generated by build-opening-cab-objects.mjs; final exported geometry bounds.\nexport const OPENING_CAB_GEOMETRY='+JSON.stringify({sha256:stats.sha256,meshes:records,targets},null,2)+';\n');}
+ if(write){
+  const folder=path.join(root,'public/assets/opening-cab');fs.mkdirSync(folder,{recursive:true});
+  const escape=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'),papers=[];
+  for(const paper of OPENING_CAB_PAPERS){
+   const recital=paper.id.endsWith('programme'),body=paper.body.filter(Boolean),size=8.1,leading=17;
+   const handwritten=(lines,top,height=13)=>lines.map((line,row)=>[...line].flatMap((char,index)=>{
+    const advance=Math.min(height*.75,170/line.length),left=105-line.length*advance/2+index*advance,
+      base=top+row*height*2.1+(index%3-1)*height*.025;
+    return(strokes[char.toUpperCase()]||[]).flatMap(path=>{const points=path.split(' ').map(point=>point.split(',').map(Number));return points.slice(1).map((b,k)=>{
+      const a=points[k],at=p=>[left+(p[0]+p[1]*.06)*advance*.74,base+p[1]*height];const[x1,y1]=at(a),[x2,y2]=at(b);
+      return`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#283b43" stroke-width=".48"/>`;
+    });});
+   }).join('')).join('');
+   const printed=recital?`<g data-process="offset-1c">${body.slice(0,-1).map((line,i)=>`<text x="105" y="${66+i*leading}" text-anchor="middle" font-family="Nimbus Roman" font-size="${size}" fill="#3b3831">${escape(line)}</text>`).join('')}</g>`:'',
+     writing=`<g data-process="biro">${handwritten(recital?[body.at(-1)]:paper.worldLines,recital?192:82,recital?7.2:13)}</g>`,
+     handling=recital?'<line x1="104" y1="10" x2="106" y2="286" stroke="#61584a" stroke-opacity=".18" stroke-width=".35"/><line x1="106" y1="10" x2="108" y2="286" stroke="#eee6cd" stroke-opacity=".35" stroke-width=".35"/>':'<line x1="8" y1="16" x2="203" y2="17" stroke="#61584a" stroke-opacity=".12" stroke-width="2"/><line x1="188" y1="281" x2="203" y2="273" stroke="#61584a" stroke-opacity=".12" stroke-width=".6"/>';
+   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><rect id="paper-stock" width="210" height="297" fill="${paper.stock}"/>${printed}${writing}<g data-process="handling">${handling}</g></svg>`;
+   const input=path.join(folder,paper.id+'.svg'),output=path.join(folder,paper.id+'.webp'),materialOutput=path.join(folder,paper.id+'-material.webp');fs.writeFileSync(input,svg);
+   const python=process.env.PAPER_PYTHON||(fs.existsSync(path.join(root,'.paper-venv/bin/python'))?path.join(root,'.paper-venv/bin/python'):'python3'),
+     raster=spawnSync(python,[path.join(root,'scripts/paper/rasterize_svg.py'),input,output,'1050','1485',materialOutput],{encoding:'utf8'});
+   if(raster.status!==0)throw Error('Cab paper raster failed: '+(raster.stderr||raster.stdout));
+   papers.push({id:paper.id,path:path.relative(path.join(root,'public'),output),materialPath:path.relative(path.join(root,'public'),materialOutput),sha256:sha(fs.readFileSync(output)),semanticSha256:sha(JSON.stringify(paper.body)),width:1050,height:1485});
+  }
+  fs.writeFileSync(path.join(folder,'papers.json'),JSON.stringify({scope:'Dedicated cab papers; existing external-baked-paper reader; no shared atlas or catalogue rewrite',papers},null,2)+'\n');
+  fs.mkdirSync(path.join(root,'public/assets'),{recursive:true});fs.writeFileSync(path.join(root,'public',stats.asset),bytes);fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.stats.json'),JSON.stringify(stats,null,2)+'\n');fs.writeFileSync(path.join(root,'public/assets/opening-cab-objects.credits.json'),JSON.stringify({provenance:stats.provenance,sources:stats.sources,registration:stats.registration,limitations:stats.limitations,sha256:stats.sha256},null,2)+'\n');fs.writeFileSync(path.join(root,'src/data/opening-cab-object-geometry.js'),'// Generated by build-opening-cab-objects.mjs; final exported geometry bounds.\nexport const OPENING_CAB_GEOMETRY='+JSON.stringify({sha256:stats.sha256,meshes:records,targets},null,2)+';\n');
+ }
  return{bytes,stats};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){const{stats}=await buildOpeningCabObjects();console.log(JSON.stringify({sha256:stats.sha256,bytes:stats.bytes,triangles:stats.totalTriangles,meshes:stats.meshes.length,targets:stats.targets},null,2));}

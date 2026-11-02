@@ -24,7 +24,7 @@ let instances=[];
 let colliders=[];
 // Optional render packs activate their physical fittings only after loading.
 // This avoids invisible poles when the isolated street proof is unavailable.
-const disabledColliderGroups=new Set(['street-pilot','opening-street','glass-court']);
+const disabledColliderGroups=new Set(['street-pilot','opening-street','glass-court','exterior-infrastructure']);
 const exteriorFacadeMeshes=new Set(EXTERIOR_FACADE_MESHES);
 export function setColliderGroupEnabled(group,enabled){
   if(enabled)disabledColliderGroups.delete(group);else disabledColliderGroups.add(group);
@@ -66,7 +66,19 @@ export function propsInit(fp, placements=CONSERVATORY_PROPS, {bounds=PROP_BOUNDS
   instances=placements.map(p=>instantiateProp(fp,p)).filter((p)=>!fp.isSolid(p.rx,p.ry));
   colliders=STRUCTURAL_COLLIDERS.map(c=>({...c,rx:rt(c.x),ry:rt(c.y)}));
   resolveContacts(fp);
+  colliders=colliders.map(c=>({...c,physicalCollider:projectCollider(c)}));
   return instances;
+}
+function projectCollider(c){
+  const authored=c.physical,frame=c.physicalFrame;
+  if(authored){
+    let x=authored.x,z=authored.z,yaw=c.yaw||0;
+    if(frame){const a=frame.quarterTurns*Math.PI/2,co=Math.cos(a),si=Math.sin(a),dx=x-frame.source.x,dz=z-frame.source.z;x=frame.target.x+dx*co-dz*si;z=frame.target.z+dx*si+dz*co;yaw+=a;}
+    return{...c,x,y:z,w:c.width??authored.width,d:c.depth??authored.depth,yaw};
+  }
+  const lx=c.x/CELL,ly=c.y/CELL;
+  const at=(floorplan.logicalPointToPhysical||floorplan.logicalToPhysical)?.(lx,ly);if(!at||!at.renderGroup)return null;
+  return{...c,x:at.x*CELL,y:at.z*CELL,w:c.width,d:c.depth,yaw:(c.yaw||0)+(floorplan.arcYawOffset?.(lx,ly,at.x,at.z)||0)};
 }
 
 function instantiateProp(fp,p){
@@ -236,11 +248,15 @@ export function attachInscriptions(finalHosts){return propInscriptionAttachments
 // offsets and stretched court walls. The collision must not guess at a second
 // placement from the logical footprint.
 function renderInstance(p){
-    const at=floorplan.logicalToPhysical?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);
+    const at=(floorplan.logicalPointToPhysical||floorplan.logicalToPhysical)?.(p.rx,p.ry),waterlineOffset=(p.elevation||0)+(p.renderOffsetY||0);
+    const basis=at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0;
+    const turns=floorplan.physicalQuarterTurnsAt?.(p.rx,p.ry)||0;
+    const a=turns*Math.PI/2,c=Math.cos(a),s=Math.sin(a),ox=p.renderOffsetX||0,oz=p.renderOffsetZ||0;
+    const offsetX=ox*c-oz*s,offsetZ=ox*s+oz*c;
     return{id:p.id,mesh:p.mesh,fallbackMesh:p.fallbackMesh||null,
-      x:(at?at.x*CELL:p.x)+(p.renderOffsetX||0),y:(p.floor??0)+waterlineOffset,
-      z:(at?at.z*CELL:p.y)+(p.renderOffsetZ||0),
-      yaw:(p.yaw||0)+(!p.worldAligned&&at?floorplan.arcYawOffset?.(p.rx,p.ry,at.x+.5,at.z+.5)||0:0),
+      x:p.physicalPlacement?.x??((at?at.x*CELL:p.x)+offsetX),y:(p.floor??0)+waterlineOffset,
+      z:p.physicalPlacement?.z??((at?at.z*CELL:p.y)+offsetZ),
+      yaw:p.physicalPlacement?.yaw??((p.yaw||0)+(!p.worldAligned?basis:0)),
       scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,
       portraitIndex:p.portraitIndex||0,structural:!!p.structural,
       waterlineBody:p.waterlineBody||null,waterlineOffset};
@@ -273,6 +289,8 @@ function pointInProp(mx,mz,p,pad=.20){
 export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
   const mx=meters(toX+.5),mz=meters(toY+.5);
   const floor=floorplan?.floorAt?.(toX,toY)??0;
+  const at=floorplan?.logicalToPhysical?.(toX,toY),physicalNavigation=!!(floorplan?.nearPhysicalNavigationAt?.(toX,toY)||floorplan?.usesPhysicalNavigationAt?.(toX,toY)||from&&(floorplan?.nearPhysicalNavigationAt?.(from.x,from.y)||floorplan?.usesPhysicalNavigationAt?.(from.x,from.y)));
+  const physicalX=at?(at.x+.5)*CELL:mx,physicalZ=at?(at.z+.5)*CELL:mz;
   // Old pool saves can predate these partitions or the planted bed. Permit
   // only an outward step from an overlap, using the existing same-side test.
   const overlapRecoveryZone=zone=>isOutdoorZone(zone)||zone===ZONE.glasshouse||zone===ZONE.poolChanging;
@@ -284,12 +302,22 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
     return pointInProp(mx,mz,p,pad);
   };
   if(colliders.some((c)=>{
-    if(!colliderActive(c)||floor<c.minElevation-.05||floor>c.maxElevation+.05)return false;
+    if(!colliderActive(c)||(physicalNavigation?floor+1.8<c.minElevation-.05:floor<c.minElevation-.05)||floor>c.maxElevation+.05)return false;
+    if(physicalNavigation)return!!c.physicalCollider&&pointInProp(physicalX,physicalZ,c.physicalCollider,0);
     const box={...c,w:c.width,d:c.depth};
     return blocked(box,0);
   }))return false;
   if(instances.some((p)=>{
     if(p.id===ignoreId)return false;
+    if(physicalNavigation&&p.blocks&&colliderActive(p)){
+      const pose=renderInstance(p),base=pose.y,top=base+(p.h||.55)*(p.scale||1)*(p.scaleY||1);
+      if(base>floor+1.8||top<floor+.05)return false;
+      return pointInProp(physicalX,physicalZ,{...p,x:pose.x,y:pose.z,yaw:pose.yaw},.20);
+    }
+    if(p.physicalPlacement&&p.blocks&&colliderActive(p)){
+      const at=floorplan.logicalToPhysical(toX,toY),world=renderInstance(p);
+      return pointInProp((at.x+.5)*CELL,(at.z+.5)*CELL,{...p,x:world.x,y:world.z,yaw:world.yaw},.20);
+    }
     if(p.collisionMask==='hall-seating'){
       const inside=Math.abs(mx-p.x)<=12.75&&Math.abs(mz-p.y)<=9.25;if(!inside)return false;
       // THE AISLES ARE THE FLOORPLAN'S, NOT THIS FUNCTION'S.
@@ -313,7 +341,7 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
       if(Math.abs(mz-(p.y+1))<.85)return false;
       return !(mz<p.y-7.7);
     }
-    return p.blocks&&blocked(p,.20);
+    return !physicalNavigation&&!p.physicalPlacement&&p.blocks&&colliderActive(p)&&blocked(p,.20);
   }))return false;
   const outside=(x,y)=>isExteriorObserver({zone:floorplan?.zoneAt?.(x,y)});
   if(!outside(toX,toY)&&!(from&&outside(from.x,from.y)))return true;
@@ -342,12 +370,15 @@ export function propCanOccupy(toX,toY,{ignoreId=null,from=null}={}){
 export function tallBlockingPropAt(cx,cy,minHeight=0.95){
   const mx=meters(cx+.5),mz=meters(cy+.5);
   const floor=floorplan?.floorAt?.(cx,cy)??0;
-  if(colliders.some((c)=>colliderActive(c)&&floor>=c.minElevation-.05&&floor<=c.maxElevation+.05
+  const physicalNavigation=!!(floorplan?.nearPhysicalNavigationAt?.(cx,cy)||floorplan?.usesPhysicalNavigationAt?.(cx,cy)),at=physicalNavigation?floorplan.logicalToPhysical(cx,cy):null;
+  const physicalX=at?(at.x+.5)*CELL:mx,physicalZ=at?(at.z+.5)*CELL:mz;
+  if(colliders.some((c)=>colliderActive(c)&&(physicalNavigation?floor+1.8>=c.minElevation-.05:floor>=c.minElevation-.05)&&floor<=c.maxElevation+.05
       &&(Number.isFinite(c.coverHeight)?c.coverHeight:c.maxElevation-floor)>=minHeight
-      &&pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0)))return true;
+      &&(physicalNavigation?c.physicalCollider&&pointInProp(physicalX,physicalZ,c.physicalCollider,0):pointInProp(mx,mz,{...c,w:c.width,d:c.depth},0))))return true;
   return instances.some((p)=>{
-    if(!p.blocks)return false;
+    if(!p.blocks||!colliderActive(p))return false;
     if(((p.h||0)*(p.scale||1)+(p.elevation||0))<minHeight)return false;
+    if(physicalNavigation||p.physicalPlacement){const at=floorplan.logicalToPhysical(cx,cy),world=renderInstance(p);if(world.y>floor+1.8||world.y+(p.h||0)*(p.scale||1)<floor+.05)return false;return pointInProp((at.x+.5)*CELL,(at.z+.5)*CELL,{...p,x:world.x,y:world.z,yaw:world.yaw},0);}
     return pointInProp(mx,mz,p,0);
   });
 }
@@ -419,22 +450,35 @@ export function propWithinVerticalReach(px,py,p){
   return Math.abs(playerFloor-p.floor)<=reach;
 }
 export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight=1.58}={}){
-  const mx=meters(px+.5),mz=meters(py+.5);
+  const physicalNavigation=!!(floorplan?.nearPhysicalNavigationAt?.(px,py)||floorplan?.usesPhysicalNavigationAt?.(px,py));
+  const at=physicalNavigation?floorplan.logicalToPhysical(px,py):null;
+  const mx=at?(at.x+.5)*CELL:meters(px+.5),mz=at?(at.z+.5)*CELL:meters(py+.5);
   // `facing` is deliberately still accepted for the deterministic suites and
   // the 2D fallback. In first person the caller supplies the continuous look
   // yaw: using the old quarter-turn body direction made the interaction cone
   // cover several neighboring props even when the reticle was plainly on one.
-  const heading=Number.isFinite(yaw)?yaw:Number(facing||0)*Math.PI/2;
+  const heading=(Number.isFinite(yaw)?yaw:Number(facing||0)*Math.PI/2)+(at?(floorplan.arcYawOffset?.(px,py,at.x+.5,at.z+.5)||0):0);
   const f=[Math.sin(heading),-Math.cos(heading)];
   const eyeY=(floorplan?.floorAt?.(px,py)||0)+(Number(eyeHeight)||1.58);
   let best=null,bestScore=Infinity;
   for(const p of instances){
     if(p.interactive===false)continue;
     if(!propWithinVerticalReach(px,py,p))continue;
-    const interactionX=p.interactionX??p.x,interactionY=p.interactionY??p.y;
+    const target=physicalNavigation?(floorplan.logicalPointToPhysical||floorplan.logicalToPhysical)(
+      (p.interactionX??p.x)/CELL,(p.interactionY??p.y)/CELL):null;
+    const interactionX=target?target.x*CELL:p.interactionX??p.x,interactionY=target?target.z*CELL:p.interactionY??p.y;
     const dx=interactionX-mx,dz=interactionY-mz,d=Math.hypot(dx,dz);if(d>maxMeters+(Math.max(p.w,p.d)||0)/2)continue;
     const dot=(dx*f[0]+dz*f[1])/Math.max(.001,d);if(dot<.72)continue;
-    if(!clearLine(mx,mz,interactionX,interactionY,floorplan?.floorAt?.(px,py)||0))continue;
+    if(physicalNavigation){
+      // Follow the same physical support as movement. A logical straight line
+      // between two coordinate islands passes through unrelated rooms.
+      const count=Math.max(1,Math.ceil(d*4));let clear=true;
+      for(let n=1;n<count;n++){
+        const t=n/count,q=floorplan.logicalAtPhysical((mx+(interactionX-mx)*t)/CELL-.5,(mz+(interactionY-mz)*t)/CELL-.5,{group:p.renderGroup||at.renderGroup,floor:floorplan.floorAt(px,py)});
+        if(!q||floorplan.isSolid(q.x,q.y)||floorplan.isCollisionOnly?.(q.x,q.y)||floorplan.hasFlag?.(q.x,q.y,F.CLOSED)){clear=false;break;}
+      }
+      if(!clear)continue;
+    }else if(!clearLine(mx,mz,interactionX,interactionY,floorplan?.floorAt?.(px,py)||0))continue;
     const ang=Math.abs(wrapAngle(Math.atan2(dx,-dz)-heading));
     // Rank by reticle alignment before proximity. The angular footprint keeps
     // a broad road case forgiving while preventing its edge from stealing a
@@ -445,7 +489,7 @@ export function pickProp(px,py,facing,maxMeters=2,{yaw=null,pitch=null,eyeHeight
     let verticalPenalty=0;
     if(Number.isFinite(pitch)){
       const h=Math.max(.12,(p.h||.55)*(p.scale||1));
-      const targetY=(p.floor||0)+(p.elevation||0)+h*.5;
+      const targetY=(p.floor||0)+(p.elevation||0)+(Number.isFinite(p.interactionHeight)?p.interactionHeight:h*.5);
       const targetPitch=Math.atan2(targetY-eyeY,Math.max(.05,d));
       verticalPenalty=Math.abs(targetPitch-pitch)/Math.max(.12,Math.atan2(h*.5+.08,Math.max(.05,d)))*.24;
     }

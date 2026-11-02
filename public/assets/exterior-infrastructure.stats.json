@@ -1,0 +1,150 @@
+{
+  "revision": "ellery-connected-services-1",
+  "bytes": 368616,
+  "sha256": "622a8424cc0d8e5cb8853b2a35b791c50c5bacdedd8dd06009eec73272148dbe",
+  "triangles": 4540,
+  "meshes": [
+    {
+      "name": "lyric_service_camera",
+      "triangles": 432,
+      "bounds": {
+        "min": [
+          -0.250358198209283,
+          2.03,
+          -0.5649092663645237
+        ],
+        "max": [
+          0.28,
+          3.6742911975953065,
+          0
+        ]
+      },
+      "parts": 12,
+      "origin": {
+        "x": 35.5,
+        "z": 29.05
+      }
+    },
+    {
+      "name": "lyric_extract_stack",
+      "triangles": 408,
+      "bounds": {
+        "min": [
+          -0.79,
+          2.04,
+          -0.39
+        ],
+        "max": [
+          0,
+          10.005,
+          0.61
+        ]
+      },
+      "parts": 28,
+      "origin": {
+        "x": 31,
+        "z": 35.8
+      }
+    },
+    {
+      "name": "lyric_service_bins",
+      "triangles": 664,
+      "bounds": {
+        "min": [
+          -0.36,
+          0.0049999999999999906,
+          -0.788
+        ],
+        "max": [
+          0.36,
+          1.1225,
+          0.8275
+        ]
+      },
+      "parts": 22,
+      "origin": {
+        "x": 34.5,
+        "z": 27.1
+      }
+    },
+    {
+      "name": "ellery_academic_rainwater",
+      "triangles": 1140,
+      "bounds": {
+        "min": [
+          -0.41750000000000004,
+          0,
+          -0.28500000000000003
+        ],
+        "max": [
+          0.46,
+          13.815000000000001,
+          0.28500000000000003
+        ]
+      },
+      "parts": 45,
+      "origin": {
+        "x": 48.82,
+        "z": 29.1
+      }
+    },
+    {
+      "name": "ellery_school_rainwater",
+      "triangles": 948,
+      "bounds": {
+        "min": [
+          -0.41750000000000004,
+          0,
+          -0.28500000000000003
+        ],
+        "max": [
+          0.46,
+          10.815000000000001,
+          0.28500000000000003
+        ]
+      },
+      "parts": 39,
+      "origin": {
+        "x": 48.82,
+        "z": 62.3
+      }
+    },
+    {
+      "name": "ellery_baths_rainwater",
+      "triangles": 948,
+      "bounds": {
+        "min": [
+          -0.41750000000000004,
+          0,
+          -0.28500000000000003
+        ],
+        "max": [
+          0.46,
+          9.615,
+          0.28500000000000003
+        ]
+      },
+      "parts": 39,
+      "origin": {
+        "x": 48.82,
+        "z": 79.1
+      }
+    }
+  ],
+  "sourceHashes": {
+    "src/data/exterior-infrastructure.js": "71b5e67e976ecc0e192995aed0415d757018193e4d9cdcf1ee65564b44483cf4",
+    "tools/chunk_surfer/exterior-infrastructure-geometry.mjs": "cfa7ff3476e35a894e3622aef3ddd4983e98aef3e3d0c37ab25491212000fbd0",
+    "tools/chunk_surfer/build-exterior-infrastructure.mjs": "7223585dc12ea88f3a05e1d2f759f2746c07412f9ad1d3346cca872d96949fce"
+  },
+  "protectedAssetsUnchanged": true,
+  "protectedHashes": {
+    "public/assets/conservatory-props.glb": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
+    "public/assets/exterior-frontages.glb": "adb8f78bf952cb12a7f2fdfb2333ed7051b2f22a8c402e2e6e5a5e3c0503f039",
+    "public/assets/exterior-street-fabric.glb": "88f346b7af2958f9dbfb464734bee3625d8136133832c9c9d9c9289d8243f283",
+    "public/assets/ellery-exterior-roofline.glb": "6ef7591d074c83124e5065f5250e137a63b374f9a581aaac6bbef3f788dba9d7"
+  },
+  "pending": [
+    "Final game renderer placement and route check",
+    "Human readability at ordinary camera distance"
+  ]
+}

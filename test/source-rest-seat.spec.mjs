@@ -5,7 +5,7 @@ import {continuationDoors,continuationSupportAt,continuationRadialPoint,continua
 import {sourceContinuationCanOccupy,continuationFocus,freshSourceContinuation,sourceContinuationFrame} from '../src/game/source-continuation.js';
 import {sourceContinuationCamera} from '../src/render/source-continuation-renderer.js';
 import {sourceRestGeometryLibrary} from '../src/render/source-rest-models.js';
-import {SOURCE_REST_SEATS,SOURCE_REST_MESH,SOURCE_REST_II_MESH,sourceRestEyePosition,sourceRestBenchProps,sourceRestFocus,sourceRestSeatForState,
+import {SOURCE_REST_SEATS,SOURCE_REST_MESH,SOURCE_REST_II_MESH,SOURCE_REST_III_MESH,sourceRestEyePosition,sourceRestBenchProps,sourceRestFocus,sourceRestSeatForState,
  sourceRestSeatGeometry,sourceRestSeatHasSupport,sourceRestApproachProtected,sourceRestCamera} from '../src/game/source-rest-seat.js';
 const state=s=>({...s,...s.approach,status:'active',yaw:s.phase==='catch'?0:Math.PI/2});
 
@@ -26,7 +26,7 @@ test('the bespoke II settle and retained III bench occupy their actual chart ref
  assert.ok(pack.meshes[SOURCE_REST_MESH]?.triangles>0,'bench has real catalog geometry');
  const props=sourceRestBenchProps();assert.equal(props.length,2);
  for(const seat of SOURCE_REST_SEATS){
-  const p=props.find(v=>v.id===seat.id);assert.equal(p.mesh,seat.phase==='wrong-return'?SOURCE_REST_II_MESH:SOURCE_REST_MESH);assert.equal(p.chartId,seat.chartId);assert.equal(p.region,seat.phase);
+  const p=props.find(v=>v.id===seat.id);assert.equal(p.mesh,seat.phase==='wrong-return'?SOURCE_REST_II_MESH:SOURCE_REST_III_MESH);assert.equal(p.chartId,seat.chartId);assert.equal(p.region,seat.phase);
   assert.ok(sourceRestSeatHasSupport(seat),`${seat.id}: all corners and approach have floor`);
   assert.ok(sourceRestApproachProtected(seat),`${seat.id}: player can sit inside existing refuge`);
   const st=state(seat),geo=sourceRestSeatGeometry(seat);
@@ -46,10 +46,10 @@ test('seat prompt is local, phase- and chart-specific and cannot take a door han
   assert.equal(sourceRestFocus({...s,cameraTransit:{elapsed:0,duration:1}}),null);
   assert.equal(sourceRestFocus({...s,x:s.x-5}),null);
  }
- const door=continuationDoors().find(d=>d.id==='catch-return-0'),seat=SOURCE_REST_SEATS[1];
+ const door=continuationDoors().find(d=>d.id===`catch-return-${SOURCE_REST_SEATS[1].level}`),seat=SOURCE_REST_SEATS[1];
  const byDoor={...state(seat),x:door.x,z:door.z};assert.equal(sourceRestFocus(byDoor),null);
- assert.equal(continuationFocus(byDoor)?.id,'catch-return-0');
- const exposed={...state(seat),...continuationRadialPoint(12.70,.92)};
+ assert.equal(continuationFocus(byDoor)?.id,`catch-return-${seat.level}`);
+ const exposed={...state(seat),...continuationRadialPoint(11.20,4.13)};
  assert.ok(Math.hypot(exposed.x-seat.x,exposed.z-seat.z)<.72,'physically close to bench');
  assert.equal(sourceRestFocus(exposed),null,'outside actual refuge despite being in reach');
 });

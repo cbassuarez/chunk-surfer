@@ -10,7 +10,7 @@ function exteriorWalk(FP,PROPS,start,goal,bounds){
   for(let count=0;open.length&&count<40000;count++){
     open.sort((a,b)=>cost.get(key(b))+heuristic(b)-cost.get(key(a))-heuristic(a));
     const p=open.pop(),pk=key(p);
-    if(pk===key(goal)){
+    if(pk===key(goal)||(heuristic(p)<1e-6&&Math.abs(FP.floorAt(...p)-FP.floorAt(...goal))<.01)){
       const path=[];for(let k=pk;k;k=prev.get(k))path.push(k.split(',').map(Number));
       return path.reverse();
     }

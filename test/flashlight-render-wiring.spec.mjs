@@ -19,7 +19,7 @@ test('actual live and tower-capture battery state honor the global effects-off s
   const start=main.indexOf('function towerViewCaptureState('),end=main.indexOf('\nfunction captureBrendanTowerView(',start);
   assert.ok(start>=0&&end>start);
   const evaluate=(settings,timeSec,capture)=>{
-    const sandbox={getSave:()=>({settings}),flashMode:()=>settings.fx===false?'off':settings.flash||'full',storyMode:true,
+    const sandbox={getSave:()=>({settings}),flashMode:()=>settings.fx===false?'off':settings.flash||'full',storyMode:true,worldView:null,
       hushSensory:false,towerTableauShot:false,sourceRepriseSensory:false,costumeInspectionSensory:false,
       REC:{lightOn:()=>true,batteryLevel:()=>.08},resolveTorchLook,performance:{now:()=>timeSec*1000},currentPerception:()=>({torch:1}),
       WORLD_TILE_W:256,WORLD_TILE_H:256,worldsConfig:[],R3:{WORLD_RGB:{}},currentMoveIntervalMs:()=>100};
@@ -54,7 +54,7 @@ function presentationHarness({on=true,battery=1,missing=false,perception=.4,flas
   return{sandbox,result,calls};
 }
 
-test('the actual special-view helper preserves battery, perception, fitted optics and HUSH without reviving an unavailable lamp',()=>{
+test('the actual special-view helper preserves carried optics without leaking the parked body’s HUSH field or reviving an unavailable lamp',()=>{
   for(const battery of[0,.08,.3,1])for(const on of[false,true])for(const missing of[false,true])for(const flashlight of['reference','throw','flood'])for(const absorption of[0,.6])for(const effects of[false,true]){
     const{result,calls}=presentationHarness({battery,on,missing,flashlight,absorption,effects});
     assert.deepEqual(calls.map(call=>call.name),['battery','fitted optics','HUSH'],'state is composed in the same order as the real world');
@@ -63,8 +63,9 @@ test('the actual special-view helper preserves battery, perception, fitted optic
     assert.equal(result.on,on&&!missing);assert.equal(result.look,calls[2].result);
     assert.equal(result.look.health,base.health);assert.equal(result.look.band,base.band);assert.equal(result.look.perception,base.perception);
     close(fitted.reach,base.reach*fieldKitEffects({flashlight}).flashlightReachScale);
-    assert.ok(result.look.power<=fitted.power+1e-12,'a detached view cannot restore battery/perception/HUSH power');
-    assert.ok(result.look.reach<=fitted.reach+1e-12,'HUSH cannot restore a shorter fitted low-battery throw');
+    assert.equal(calls[2].args[1].active,false,'detached physical viewpoints do not borrow the parked Source-I body’s field');
+    assert.equal(result.look.power,fitted.power,'the detached camera retains the carried battery/perception power');
+    assert.equal(result.look.reach,fitted.reach,'the detached camera retains the fitted low-battery throw');
     if(!on||missing||battery===0)assert.equal(result.look.power,0,'unavailable light remains zero in every special-view callback');
   }
   const before=presentationHarness({battery:.08,effects:false,timeSec:2}).result.look;

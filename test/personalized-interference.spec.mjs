@@ -167,11 +167,11 @@ assert.match(warningSource, /askProfile/, 'the durable omnibus is gated, not sho
 assert.match(warningSource, /onProfileOn/);
 assert.match(warningSource, /THIS GAME MEASURES YOU PSYCHOLOGICALLY/);
 assert.match(warningSource, /Steam display name only—never Steam ID, friends, or account enumeration/);
-assert.match(warningSource, /four combat panes or up to eight silent media panes/);
-assert.match(warningSource, /move the main frame/);
-assert.match(warningSource, /Double-Escape or Settings restores/);
+assert.match(warningSource, /four combat panes, and up to eight silent media panes/);
+assert.match(warningSource, /Authored main-frame motion/);
+assert.match(warningSource, /Settings can disable any module, restore the game window/);
 assert.match(warningSource, /They never show personal data/);
-assert.match(warningSource, /PROFILE OFF requests nothing/);
+assert.match(warningSource, /PROFILE OFF enables none of these profiling modules/);
 const mainSourceForConsent = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 assert.match(mainSourceForConsent, /consentVersion!==PSYCH_PROFILE_CONSENT_VERSION/);
 
@@ -323,8 +323,12 @@ await windowEffects.emergencyRestore();
 assert.equal(emergencyCount, 1);
 
 const identityRust = readFileSync(new URL('../src-tauri/src/identity.rs', import.meta.url), 'utf8');
-assert.match(identityRust, /SteamAPI_ISteamFriends_GetPersonaName/);
+const steamOwnerRust = readFileSync(new URL('../src-tauri/src/steam_achievements.rs', import.meta.url), 'utf8');
+assert.match(identityRust, /crate::steam_achievements::persona_name/);
+assert.match(steamOwnerRust, /SteamAPI_ISteamFriends_GetPersonaName/);
+assert.doesNotMatch(identityRust, /SteamAPI_Init|SteamAPI_Shutdown/, 'identity never initializes or shuts down a second Steam owner');
 assert.doesNotMatch(identityRust, /GetSteamID|GetFriend|Enumerate|PersonaState/);
+assert.doesNotMatch(steamOwnerRust, /GetSteamID|GetFriend|Enumerate|PersonaState/);
 const tauriBundle = readFileSync(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8');
 assert.match(tauriBundle, /steamworks-runtime\/.*steamworks\//s);
 const gitignore = readFileSync(new URL('../.gitignore', import.meta.url), 'utf8');

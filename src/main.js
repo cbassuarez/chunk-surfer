@@ -64,8 +64,11 @@ import {createSourcePubScene,normalizeSourcePubCheckpoint,sourcePubEntry} from '
 import {createSourcePubRenderer} from './render/source-pub-renderer.js';
 import {createSourceContinuationScene} from './game/source-continuation-scene.js';
 import {installSourceRest} from './game/source-rest-runtime.js';
+import {sourceRestMistakeImpactReceipt} from './game/source-rest-affliction.js';
 import {sourceRestInterfaceMachine} from './game/source-rest-interface.js';
 import {drawSourceRestInstrument} from './render/source-rest-instrument.js';
+import {createSourceRestRecorderWindow} from './platform/source-rest-recorder-window.js';
+import {createSourceRestMediaPresentation} from './platform/source-rest-media.js';
 import {createSourceRestScores} from './audio/source-rest-scores.js';
 import {createEndingStaticMix} from './audio/ending-static.js';
 import {createSourceRestBreath} from './audio/source-rest-breath.js';
@@ -86,6 +89,10 @@ import {resumeSourceContinuationHandoff} from './game/source-continuation-handof
 import {sourceEarthfallNeeded} from './game/source-earthfall-entry.js';
 import {continuationFromEarthfall} from './game/source-continuation-entry.js';
 import {SOURCE_CONTINUATION as SOURCE_CONTINUATION_LAYOUT} from './data/source-continuation.js';
+import {sourceContinuationRecordingDestination,sourceContinuationRecordingReturnProps} from './game/source-continuation-contact.js';
+import {sourceRecordingHeld} from './game/source-recording-custody.js';
+import {makeSourceRecordingInspectionHost} from './game/source-recording-inspection-host.js';
+import {createSourceRecordingCassetteRenderer,prewarmSourceRecordingCassetteMeshes,releaseSourceRecordingCassetteLabels} from './render/source-recording-cassette.js';
 import {freshEndingWrongDoorDemolition} from './game/ending-wrong-door.js';
 import {createEndingWrongDoorScene} from './game/ending-wrong-door-scene.js';
 import {createEndingWrongDoorRenderer} from './render/ending-wrong-door-renderer.js';
@@ -142,9 +149,12 @@ import { F as CELL_FLAGS, ZONE, CELL, MATERIAL, EYE as BODY_EYE_M, isOutdoorZone
 import { BUST_RELIQUARY_RIG } from './data/bust-reliquary-rig.js';
 import * as MUT from './world/mutate.js';
 import * as scenes from './game/scenes.js';
-import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiFill, uiCenter, uiDraw, uiLine, uiPointFromClient, uiWrap, uiAttenuate, uiWithAlpha, uiCellMetrics } from './render/ui.js';
+import { uiInit, uiSetScale, uiClear, uiText, uiSize, uiPhysicalSize, uiFill, uiCenter, uiDraw, uiLine, uiPointFromClient, uiWrap, uiAttenuate, uiWithAlpha, uiCellMetrics } from './render/ui.js';
+import {beginFaceplateModuleFrame,endFaceplateModuleFrame,faceplateModuleStatus} from './render/faceplate-modules.js';
+import {faceplateUsesCurrentRunModules} from './render/faceplate-module-state.js';
 import { fitText } from './render/fit-text.js';
 import { returnDefinition } from './progression/report.js';
+import { lastReturnRecord } from './progression/return-history.js';
 import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, withMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { UI_COLOR, applyVfdSettings, vfdSettings } from './render/palette.js';
 import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta, freshSave, hasActiveRun, withTransientGameState, normalizeSourceReturnFlashbackPending, savedFlagMatches } from './game/save.js';
@@ -155,7 +165,7 @@ import { offeredVanPreparation, prepareVanCaseTake, vanWorkbenchNotesTree, persi
 import { packedWorkbenchGroups } from './game/bench-preparation.js';
 import { makeWitnessInspectionScene } from './game/witness-inspection.js';
 import { makeItemInspectionScene } from './game/item-inspection-scene.js';
-import { normalizeEquipment } from './game/bag-model.js';
+import { normalizeEquipment,readOnlyBagMap } from './game/bag-model.js';
 import { setRecorderAppearance } from './render/recorder-instrument.js';
 import { saveGameQueued, saveProfileQueued, currentStorage, discardCausalDraft, exportAllData, deleteAllUserData, exportDiagnosticsForSupport, loadHushRunSession, loadLatestCausalTape, promoteCausalDraft, sealCausalDraft } from './platform/storage/storageService.js';
 import { flagApply, flagTest, flagGet, flagSet, flagClear } from './game/flags.js';
@@ -235,7 +245,7 @@ import {PUB_PRESSURE_STARTED,PUB_PRESSURE_GLASS,pubPressureAttended,pubPressureC
 import {createDoorAudio,doorSoundSpatial} from './audio/door-audio.js';
 import {createDoorAudioEventPolicy} from './audio/door-events.js';
 import {pubHospitalityReady,pubHospitalityInstance,pubHospitalityInput} from './game/pub-hospitality.js';
-import {EXTERIOR_PUB,pubWorldFromLocal} from './data/exterior-pub.js';
+import {EXTERIOR_PUB,PUB_PHYSICAL_BOUNDS,pubPhysicalAt,pubPhysicalFromLocal,pubPhysicalYaw} from './data/exterior-pub.js';
 import { PUB_BARTENDER_ID, PUB_TRAY_PROP, PUB_FAVORS, pubQuestState, reducePubQuest, pubQuestDialogue, pubTrayDialogue, pubServiceChoice, pubServiceDialogue, pubFavorDialogue, pubQuestStatus } from './game/pub-quest.js';
 import './audio/pub-voices.js';
 import { VIGIL_LINKED_CHAPELS_FLAG, vigilBelfryRecognition, vigilRecognitionFlags, vigilConversation, vigilFigures } from './data/exterior-vigil.js';
@@ -301,6 +311,9 @@ import * as STAB from './game/stabs.js';
 import * as OBJ from './game/objectives.js';
 import * as DOC from './game/document.js';
 import { ambientPaperDocumentId, paperAtlasIndex, registerBakedPaper } from './game/paper-assets.js';
+import {STUDENT_STRIKE_BAKED_RECORDS} from './generated/student-strike-records.js';
+import {deriveStudentStrikeEvidence,STUDENT_STRIKE_DOCUMENT_IDS as STUDENT_STRIKE_IDS} from './data/student-strike-evidence.js';
+const STUDENT_STRIKE_DOCUMENT_IDS=new Set(Object.values(STUDENT_STRIKE_IDS));
 import * as RADIO from './game/radio.js';
 import { makeRadioScene } from './game/radio-scene.js';
 import { createRadioSceneAudio } from './audio/radio-scene-audio.js';
@@ -433,7 +446,7 @@ import {
   resolveBagItemAction,
   resolveBagOwnership,
 } from './game/bag-items.js';
-import { makeArrivalScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
+import { makeArrivalScene, makeArrivalTitleScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningVehicleScene } from './game/opening-vehicle-scene.js';
 import { OPENING_CAB_ASSET, OPENING_CAB_REQUIRED_MESHES, openingCabInstances, openingCabTargets, makeOpeningCabInspectionScene } from './game/opening-cab-inspection.js';
 import { openingVehicleInstances, openingVehiclePending, openingVehiclePoint } from './data/opening-vehicle.js';
@@ -441,8 +454,17 @@ import { vanBrandInstances } from './render/van-brand.js';
 import { makeOpeningOvertureScene } from './game/opening-overture-scene.js';
 import { OPENING_OVERTURE, OPENING_OVERTURE_SHOTS } from './data/opening-overture.js';
 import { openingOvertureBirdInstances } from './render/opening-overture.js';
+import {createStudentStrikeScene} from './game/student-strike-scene.js';
+import {captureStudentStrikeReturnPose,studentStrikeSavePatch,createStudentStrikeInputGate} from './game/student-strike-host.js';
+import {STUDENT_STRIKE_FILM,STUDENT_STRIKE_CUES} from './data/student-strike-film.js';
+import {odetteStrikeWatchRequested,STUDENT_STRIKE_WATCHED_FLAG} from './data/student-strike-dialogue.js';
+import {studentStrikeFrame} from './game/student-strike-timeline.js';
+import {prepareStudentStrikeAssets,studentStrikeStaticProps,studentStrikeDynamicProps,studentStrikeLighting,studentStrikeWorldView,studentStrikeGate} from './render/student-strike-staging.js';
+import {createStudentStrikeAudio} from './audio/student-strike.js';
 import { shouldStageOpeningCinematic, openingCinematicLighting, openingCinematicActors, openingCinematicStaticProps, prepareOpeningCinematicAssets, openingCinematicGate } from './render/opening-cinematic-staging.js';
 import { createOpeningArrivalAudio } from './audio/opening-arrival.js';
+import { createOpeningCabRadio } from './audio/opening-cab-radio.js';
+import { OPENING_CAB_RADIO_STATIONS } from './data/opening-cab-radio-source.js';
 import { openingArrivalWorldView, openingParkedPlacement, openingDriveColliders } from './game/opening-arrival-world.js';
 import { CONSERVATORY_PROPS as OPENING_AUTHORED_PROPS } from './data/conservatory-props.js';
 import { makeOpeningCreditsScene } from './game/opening-credits.js';
@@ -575,12 +597,15 @@ import {
 } from './input/input-manager.js';
 import { createPointerModeController } from './input/pointer-mode.js';
 import { makeControllerSettingsScene } from './game/controller-settings.js';
-import { makeThoughtScene, thoughtHad, markThought,
+import { makeThoughtScene, thoughtHad, markThought, unmarkThought,
          loadThoughtState, saveThoughtState } from './game/thoughts.js';
 import * as WATER from './game/natatorium-water.js';
 import * as DREAD from './game/natatorium-dread.js';
+import {createNatatoriumCoffeeStretch} from './game/natatorium-coffee-stretch.js';
 import * as HUNTER from './game/take-hunter.js';
 import {createRecordingPressurePerformance} from './game/recording-pressure.js';
+import {createRecordingEmbodiment} from './game/recording-embodiment.js';
+import {prewarmRecordingEmbodimentMeshes,installRecordingEmbodimentMaterials} from './render/recording-embodiment.js';
 import {playRecordingPressure} from './audio/recording-pressure.js';
 import { pressControl, releaseControl, cancelControlScope } from './game/control-feedback.js';
 import { pressControl as pressPromptControl, releaseControl as releasePromptControl } from './game/control-mechanics.js';
@@ -697,6 +722,9 @@ import { tuningForkCancellationThoughts } from './game/tuning-fork-discovery.js'
 import { createPlantPipeRuntime, plantPipeAt } from './audio/plant-pipe.js';
 import { createStopListeningGutRuntime } from './audio/stop-listening-gut.js';
 import { createChapelServiceRuntime } from './audio/chapel-service.js';
+import {beginRecordistRelease,normalizeRecordistRelease,recordistReleaseView} from './game/recordist-release.js';
+import {makeRecordistReleaseScene} from './game/recordist-release-scene.js';
+import {recordistReleaseProps,recordistReleaseCarriedProps,recordistReleaseRestingProps} from './render/recordist-release.js';
 import { createChapelChoirRuntime } from './audio/chapel-choir.js';
 import { CHAPEL_CHOIR_AUDIO_DIR, CHAPEL_CHOIR_SCORE } from './data/chapel-choir.js';
 import { createChapelMurmurRuntime } from './audio/chapel-murmur.js';
@@ -792,6 +820,7 @@ import {
   applyCurrentRuleChange,
   assertProgressionInvariants,
   beginRunProgression,
+  markDeveloperRun,
   commitReturn,
   currentDifficulty,
   emitProgress,
@@ -800,17 +829,18 @@ import {
   progressionInit,
   progressionEvents,
   progressionSnapshot,
+  reconcileProfileAchievements,
   unlockAchievement,
 } from './progression/runtime.js';
 import { causalRecorder } from './causal/recorder.js';
-import { CAUSAL_REQUIREMENT, CAUSAL_SPINE_IDS, sealCausalTape, tapeQualifies } from './causal/tape.js';
+import { CAUSAL_REQUIREMENT, CAUSAL_SPINE_IDS, CAUSAL_TOPOLOGY_HASH, sealCausalTape, tapeQualifies } from './causal/tape.js';
 import { defineCausalSpaceAdapter } from './causal/spaces.js';
 import { finalizeCausalReturn, inspectCausalTapeAvailability, reconcileSealedCausalDraft } from './progression/causal-progression.js';
 import { EVENT_TYPES } from './progression/events.js';
 import { createReplayService } from './progression/knowledge.js';
 import { deriveUnlocks, witnessEditionStatus } from './progression/unlocks.js';
 import { consumeNotice, noticePolicy, peekNotice } from './progression/notifications.js';
-import { syncPlatform } from './progression/platform-sync.js';
+import { syncPlatform, requestPlatformSync, configurePlatformReconciliation } from './progression/platform-sync.js';
 import { exportProfile, mergeImportedProfile } from './progression/profile.js';
 import { currentPlatform } from './platform/index.js';
 import { deriveStoryEvidence, canQualifyBorrowedRecordist } from './game/story-evidence.js';
@@ -1067,10 +1097,9 @@ windowChoreography=createWindowChoreographyDirector({
   getReducedMotion:()=>(getSave().settings?.shake||'full')!=='full',
   getCompositionContext:()=>{
     const meta=getMeta();
-    const latestId=meta.returns?.history?.at?.(-1);
     return{
       introduced:!!meta.windowChoreographyIntroduced,
-      lastEndingId:meta.returns?.records?.[latestId]?.endingId||'',
+      lastEndingId:lastReturnRecord(meta)?.endingId||'',
       reduceDread:!!getSave().settings?.reduceDread,
       flashMode:flashMode(),
     };
@@ -1503,7 +1532,7 @@ function ensureCtx({resume=true}={}){
       limiter.attack.setValueAtTime(0.001, actx.currentTime);
       limiter.release.setValueAtTime(0.06, actx.currentTime);
         // DEV evidence can retain the live mix/clock while routing no samples to speakers.
-        const silentOpening=import.meta.env.DEV&&(params().has('openingReview')||params().has('stillnessReview')||params().has('pubPressureReview'))&&params().has('silentReview');
+        const silentOpening=import.meta.env.DEV&&(params().has('openingReview')||params().has('stillnessReview')||params().has('pubPressureReview')||params().has('studentStrikeReview')||params().has('worldIntegrationReview')||params().has('yardSourceReview'))&&params().has('silentReview');
         openingSilentDestination=silentOpening?actx.createMediaStreamDestination():null;
         outputMonitor=MONITOR.monitorInit(actx, openingSilentDestination||actx.destination);
 
@@ -1541,10 +1570,12 @@ function ensureCtx({resume=true}={}){
         endingStaticMix?.dispose();
         endingStaticMix=createEndingStaticMix({context:actx,destination:outGain,
           getSfxLevel:()=>getSave().settings?.sfx??1,
-          onFinished:()=>releaseSourceRestEndingMusic(),
+          onFinished:()=>releaseSourceRestEndingMusic({toMenu:true}),
           getState:()=>{
-            const state=sourceRestEndingMusic?.snapshot?.(),top=scenes.top(),creditHold=top?.id==='credits'&&!!top.view?.().paused;
-            return{eligible:!!sourceRestEndingMusic,currentTime:state?.currentTime??0,duration:state?.duration??0,
+            const rest=sourceContinuationScene?.sourceRest?.view?.(),liveRest=rest&&['sitting','seated','committed'].includes(rest.mode);
+            const owner=sourceRestEndingMusic||(liveRest?sourceRestLiveMusic:null);
+            const state=owner?.snapshot?.(),top=scenes.top(),creditHold=top?.id==='credits'&&!!top.view?.().paused;
+            return{eligible:!!owner,currentTime:state?.currentTime??0,duration:state?.duration??0,
               playing:!!state?.playing,ended:!!state?.ended,paused:paused||creditHold||!!state?.paused,
               hidden:document.hidden||!gameplayInputLifecycleActive(),buffering:!!state?.buffering,protected:!!state?.protected,failed:state?.failed};
           }});
@@ -1560,6 +1591,9 @@ function ensureCtx({resume=true}={}){
           sfx: sfxGain,
           music: musicGain,
           menu: menuGain,
+          static:outGain,
+          getStaticSfxLevel:()=>getSave().settings?.sfx??1,
+          getStaticHeld:()=>document.hidden||!gameplayInputLifecycleActive()||REC.isRecording()||REC.isListening()||PB.isPlaying(),
         });
         battleMusicInit(actx, musicGain);
         configureUiCues({context:actx,destination:menuGain,getQuiet:()=>!paused&&(REC.isRecording()||REC.isListening())});
@@ -4746,7 +4780,11 @@ function step(dx,dy){
   // of becoming a sideways shove into its balustrade.
   const stairMotion=beginRenderStep(nx,ny,nowMs,{logicalFrameTurn:planEdgeTurn,footfall:deferredStairFootfall});
   if(planEdgeTurn&&RENDERER==='3d'){
-    if(stairMotion)R3.r3dShiftLookFrame(planEdgeTurn);
+    const embeddedFrame=!usingSpecialSpace()&&(FP.usesPhysicalNavigationAt?.(px,py)||FP.usesPhysicalNavigationAt?.(nx,ny));
+    // A physical embedding changes the coordinate frame, not the viewed world.
+    // Shift both current/target look immediately; easing only the target would
+    // produce a quarter-turn camera jolt as the new room basis takes effect.
+    if(stairMotion||embeddedFrame)R3.r3dShiftLookFrame(planEdgeTurn);
     else{
       const look=R3.r3dLookAngles?.()||{yaw:0,pitch:0};
       R3.r3dSetLookAngles?.({yaw:look.yaw+planEdgeTurn,pitch:look.pitch,immediate:false});
@@ -5390,10 +5428,11 @@ function setGameplayPaused(next, { announce=true }={}){
   if(storyMode&&inRogue)syncChapelTapeDemandTimelineHold();
   getInDriveTeaserScene?.setPaused(paused||!gameplayInputLifecycleActive());
   if(openingVehicleScene){
-    if(paused){openingVehicleScene.suspend?.();openingArrivalAudio?.stop();}
+    if(paused){openingVehicleScene.suspend?.();openingArrivalAudio?.stop();openingCabRadio?.pause();}
     else if(gameplayInputLifecycleActive())openingVehicleScene.resume?.();
   }
   if(openingOvertureScene){if(paused)openingOvertureScene.pause();else if(gameplayInputLifecycleActive())openingOvertureScene.resume();}
+  if(studentStrikeScene){if(paused)studentStrikeScene.pause();else if(gameplayInputLifecycleActive())studentStrikeScene.resume();}
   if(paused)STORY.pauseOpeningOvertureScore?.();else if(gameplayInputLifecycleActive())STORY.resumeOpeningOvertureScore?.();
   if(sourceReturnFlashbackScene){if(paused||!gameplayInputLifecycleActive())sourceReturnFlashbackScene.pause();else sourceReturnFlashbackScene.resume();}
   if(paused){sourceRestBreath?.pause();sourceRestWeather?.pause();architectureDoorAudio?.pause();architectureDoorEvents.hold();cancelLastExposure();cancelRecordingPressureAudio();pubRoomAudio?.pause();pubPressureAudio?.pause();sourcePubAudio?.pause();sourceContinuationAudio?.pause();towerWarningAudio?.pause();}
@@ -5403,6 +5442,7 @@ function setGameplayPaused(next, { announce=true }={}){
   if(firstStrikeScene){if(paused)firstStrikeScene.pause();else if(gameplayInputLifecycleActive())firstStrikeScene.resume();}
   if(standingTearScene){if(paused)standingTearScene.pause();else standingTearScene.resume();}
   if(coastalMemoryScene){if(paused)coastalMemoryScene.pause();else coastalMemoryScene.resume();}
+  if(sourceRecordingInspectionScene){if(paused)sourceRecordingInspectionScene.pause();else sourceRecordingInspectionScene.resume();}
   if(paused){
     academicGhostDispatch?.cancel(); academicGhostDispatch=null;
     if(storyMode&&inRogue)saveAcademicGhostClub();
@@ -6414,27 +6454,34 @@ function renderBoot(){
   if(KEYMETER_EL){ KEYMETER_EL.innerHTML=''; KEYMETER_EL.style.display='none'; }
 }
 
+function achievementNoticePresentationPolicy(){
+  const top=scenes.top();
+  return noticePolicy({
+    recording:REC.isRecording(),playback:PB.isPlaying(),
+    battle:!!activeBattleId,finale:finaleActive||!!pendingReturnReport(),
+    dialoguePending:!!top?.view?.()?.pending,
+    blocked:!!(top?.blocksInput||top?.blocksWorld),
+    withdrawn:scenes.suppressesHud()||(usingSourceSpace()&&sourcePlayerSensoryMix()<.999),
+    paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),
+    threat:hushPressureAt(),platformKind:currentPlatform().kind,
+  });
+}
+
 function tickProgressionNotices(){
+  const top=scenes.top();
+  const pendingPlatform=(getMeta().platform?.pendingAchievements?.length||0)>0||Object.keys(getMeta().platform?.pendingStats||{}).length>0;
+  if(pendingPlatform&&['title','archive','return-report','pause'].includes(top?.id))requestPlatformSync({delayMs:1000});
+  const policy=achievementNoticePresentationPolicy();
+  if(policy==='defer') return;
+  if(pendingPlatform)requestPlatformSync({delayMs:1000});
   const notice=peekNotice();
   if(!notice || scenes.has(`achievement-notice:${notice.id}`)) return;
-  const top=scenes.top();
-  if(top?.blocksInput || top?.blocksWorld) return;
-  const dialoguePending=!!top?.view?.()?.pending;
-  const policy=noticePolicy({
-    recording:REC.isRecording(),
-    battle:!!activeBattleId,
-    finale:finaleActive || !!pendingReturnReport(),
-    dialoguePending,
-    threat:hushPressureAt(),
-    platformKind:currentPlatform().kind,
-  });
-  if(policy==='defer') return;
   if(policy==='pulse'){
     pushEvent('// archive updated.');
     consumeNotice(notice.id);
     return;
   }
-  scenes.push(makeAchievementNoticeScene({notice}));
+  scenes.push(makeAchievementNoticeScene({notice,isHeld:()=>achievementNoticePresentationPolicy()==='defer'}));
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
@@ -6555,8 +6602,8 @@ function ensureCausalCapture(){
   const run=getSave()?.run;
   const handoffComplete=flagTest('prologueDone')&&!scenes.has('cold-open')&&!scenes.has('world-title')&&!scenes.has('after-title');
   const eligible=storyMode&&inRogue&&planName==='conservatory'&&run?.status==='active'&&handoffComplete;
-  if(eligible&&!causalRecorder.active&&(!causalRecorder.discarded||causalRecorder.runId!==run.id)){
-    causalRecorder.begin({runId:run.id,difficulty:run.rules?.startedPreset||'contract'});
+  if(eligible&&(causalRecorder.runId!==run.id||!causalRecorder.active&&!causalRecorder.discarded)){
+    causalRecorder.begin({runId:run.id,difficulty:run.rules?.startedPreset||'contract',resume:true});
     causalRecorder.recordEvent({actor:'building',type:'building.initial-state',payload:{doors:FP.saveDoorState(),power:normalizePowerState(getSave().power)}});
   }
   return eligible&&causalRecorder.active;
@@ -6567,7 +6614,7 @@ function tickCausalCapture(dt){
   // Source reprises render an old Conservatory pose while the live body stays
   // frozen in Source space. Recording that borrowed camera as a new causal pose
   // would let the recreation contaminate the night it is recreating.
-  if((scenes.top()?.id||'').startsWith('source-reprise:'))return;
+  if((scenes.top()?.id||'').startsWith('source-reprise:')||studentStrikeScene)return;
   ensureCausalCapture();
   if(!causalRecorder.active||paused)return;
   const topId=scenes.top()?.id||'';
@@ -6913,6 +6960,7 @@ function loop(){
     }
     const modalControllerActions = (() => {
       const id = modal?.id || '';
+      if (id === 'b3-console') return ['recorder'];
       if (id.startsWith('battle:')) return ['recorder'];
       if (id.startsWith('source-reprise:')) return ['recorder'];
       if (id === 'setup-field-case' || id === 'bag') return ['bag'];
@@ -6959,6 +7007,7 @@ function loop(){
       tickAcademicCrowdDread(dt);
       tickAcademicBouncers(dt);
       tickAcademicSocietyPresentation(dt);
+      tickNatatoriumCoffeeStretch(dt);
       if(!scenes.blocksWorld()){
         maybeSpawnScheduledKey();
         updateHorrorTick();
@@ -7019,6 +7068,7 @@ function loop(){
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
       if(!paused&&(sourcePubScene||sourceContinuationScene))SPEECH.updateSpeech(dt);
+      if(sourceContinuationScene&&!paused&&gameplayInputLifecycleActive())tickSourceFinalEncounter();
       if(!paused&&!sourceDriveSession&&!sourcePubScene&&!sourceContinuationScene&&!coastalMemoryScene&&!getInDriveTeaserScene&&!sourceReturnFlashbackScene&&!firstStrikeScene){
         tickPlayback();
         // The cold open and the beats after the title own the voice themselves.
@@ -7082,6 +7132,7 @@ function loop(){
     // real elapsed time for this one physical encounter; its pause/focus and
     // residency gates still prevent catch-up across an interrupted view.
     scenes.update(sourceContinuationScene?.id==='source-earthfall'||firstStrikeScene?Math.min(.25,Math.max(0,rawGapMs/1000)):dt);
+    tickOpeningCabRadio();
     tickStillnessDread(dt,{away:rawGapMs>AWAY_GAP_MS});
     syncStillnessRelief();
     if(frontEndSession){
@@ -7107,6 +7158,7 @@ function loop(){
     // Audio-thread pulse timing continues through drawing stalls; presentation
     // levels and Source withdrawal still follow the current live scene state.
     syncHeartbeatPresentation();
+    beginFaceplateModuleFrame(sharedFaceplateContext(),uiPhysicalSize());
     uiClear();
     beginReviewFrame();
     if(!inRogue && RENDERER==='3d') drawBootText();
@@ -7117,6 +7169,7 @@ function loop(){
     }
     applyDockHauntingHudFade();
     scenes.render();
+    uiWithAlpha(dockHauntingFrame&&!dockHauntingFrame.resolved?dockHauntingVisibilityFrame().hudAlpha:1,()=>endFaceplateModuleFrame());
     tickSourceWindowMedia(dt);
     tickSourceRestEndingMusic();
     updateDevelopmentWindowMarker();
@@ -7459,14 +7512,13 @@ let towerWarningSaveSeconds=0,towerWarningTraceSeconds=0,towerWarningTrace=[];
 const exteriorConversationTracks=new Map();
 function exteriorActorHeadYaw(id){
   const booth=id==='yard-booth-guard';
-  const actorId=booth?`yard-booth-guard-${boothPresentationPose}`:id,authored=PROPS.propById?.(actorId);
-  const at=authored?FP.logicalToPhysical(authored.rx,authored.ry):null;
-  const prop=authored?{x:at.x*CELL+(authored.renderOffsetX||0),z:at.z*CELL+(authored.renderOffsetZ||0),yaw:authored.yaw||0}
-    :PROPS.renderInstances({group:'ground',inscriptions:false}).find(instance=>instance.id===actorId);
+  const actorId=booth?`yard-booth-guard-${boothPresentationPose}`:id;
+  // The rendered root includes room embedding, exact prop offsets and basis.
+  const prop=PROPS.renderInstances({group:'ground',inscriptions:false}).find(instance=>instance.id===actorId);
   if(!prop)return 0;
   const origin=booth?BOOTH_GUARD_STAGE.origin:[0,0,0],c=Math.cos(prop.yaw||0),s=Math.sin(prop.yaw||0);
   const actorX=prop.x+origin[0]*c-origin[2]*s,actorZ=prop.z+origin[0]*s+origin[2]*c;
-  const p=FP.logicalToPhysical(px,py),target=Math.atan2(p.x*CELL-actorX,-(p.z*CELL-actorZ));
+  const p=FP.logicalToPhysical(px,py),target=Math.atan2((p.x+.5)*CELL-actorX,-((p.z+.5)*CELL-actorZ));
   const yaw=(prop.yaw||0)+(booth?Math.PI:0);
   return Math.max(-.48,Math.min(.48,Math.atan2(Math.sin(yaw-target),Math.cos(yaw-target))));
 }
@@ -7504,7 +7556,7 @@ function doorTransform(x,y,z,yaw=0,scaleX=1){const c=Math.cos(yaw),s=Math.sin(ya
 function doorLeafMatrix(door,center,leafIndex,fraction){
   const pair=door.leafCount===2,left=pair?leafIndex===0:door.hinge!=='right';
   const hingeLocal=left?-door.aperture.width/2:door.aperture.width/2;
-  const yaw=door.widthAxis==='x'?0:Math.PI/2,hingeX=center.x*CELL+Math.cos(yaw)*hingeLocal,hingeZ=center.z*CELL+Math.sin(yaw)*hingeLocal;
+  const yaw=(door.widthAxis==='x'?0:Math.PI/2)+(Number(center.yawOffset)||0),hingeX=center.x*CELL+Math.cos(yaw)*hingeLocal,hingeZ=center.z*CELL+Math.sin(yaw)*hingeLocal;
   const inward=String(door.swing).includes('in')?-1:1,angle=(left?-1:1)*inward*Math.PI*.49*fraction;
   return doorMatMultiply(doorTransform(hingeX,center.y,hingeZ,yaw),doorTransform(0,0,0,angle,left?1:-1));
 }
@@ -7518,7 +7570,7 @@ function writeDoorLeafMatrix(entry){
   // effective opening changes; an inactive leaf always remains closed.
   if(entry.fractionCached&&Object.is(entry.cachedFraction,fraction))return;
   entry.cachedFraction=fraction;entry.fractionCached=true;
-  const hingeLocal=left?-definition.aperture.width/2:definition.aperture.width/2,yaw=portal.widthAxis==='x'?0:Math.PI/2;
+  const hingeLocal=left?-definition.aperture.width/2:definition.aperture.width/2,yaw=(portal.widthAxis==='x'?0:Math.PI/2)+(Number(center.yawOffset)||0);
   const inward=String(definition.swing).includes('in')?-1:1,angle=(left?-1:1)*inward*Math.PI*.49*fraction,theta=yaw+angle,reflect=left?1:-1,c=Math.cos(theta),s=Math.sin(theta);
   matrix[0]=c*reflect;matrix[1]=0;matrix[2]=s*reflect;matrix[3]=0;matrix[4]=0;matrix[5]=1;matrix[6]=0;matrix[7]=0;matrix[8]=-s;matrix[9]=0;matrix[10]=c;matrix[11]=0;
   matrix[12]=center.x*CELL+Math.cos(yaw)*hingeLocal;matrix[13]=center.y;matrix[14]=center.z*CELL+Math.sin(yaw)*hingeLocal;matrix[15]=1;
@@ -7526,7 +7578,8 @@ function writeDoorLeafMatrix(entry){
 function rebuildDoorLeafVisuals(){
   doorLeafVisualCache.ready=true;doorLeafVisualCache.entries.length=0;
   FP.forEachDoor((portal)=>{
-    const center=FP.logicalToPhysical(portal.cx,portal.cy);
+    const center=FP.logicalPointToPhysical?.(portal.cx,portal.cy)||FP.logicalToPhysical(portal.cx,portal.cy);
+    center.yawOffset=FP.arcYawOffset?.(portal.cx,portal.cy,center.x,center.z)||0;
     // A threshold is visible from whichever room can see it, not only from the
     // logical render group that happened to author its centre cell. The prop
     // pass already distance-culls every instance and composites it against the
@@ -7545,12 +7598,13 @@ function doorRenderInstances({leaves=false}={}){
   if(!FP.isLoaded())return[];
   const out=[];
   for(const door of FP.doorState()){
-    const center=FP.logicalToPhysical(door.cx,door.cy);
+    const center=FP.logicalPointToPhysical?.(door.cx,door.cy)||FP.logicalToPhysical(door.cx,door.cy);
+    center.yawOffset=FP.arcYawOffset?.(door.cx,door.cy,center.x,center.z)||0;
     // Frames, heads and leaves share the same world-space visibility contract:
     // submit them all, then let distance and depth decide what can be seen.
     // Render-group ownership is a loading concern for room dressing; applying
     // it to boundary architecture creates a discontinuity before every seam.
-    const yaw=door.widthAxis==='x'?0:Math.PI/2,zone=FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy));
+    const yaw=(door.widthAxis==='x'?0:Math.PI/2)+center.yawOffset,zone=FP.zoneAt(Math.floor(door.cx),Math.floor(door.cy));
     if(!leaves){
       const matrix=doorTransform(center.x*CELL,center.y,center.z*CELL,yaw);
       out.push({id:`door-frame:${door.id}`,doorId:door.id,mesh:door.frameMesh,matrix,zone,structural:true});
@@ -7568,8 +7622,9 @@ function doorRenderInstances({leaves=false}={}){
     }
   }
   if(!leaves)for(const scar of FP.sealedDoorways()){
-    const center=FP.logicalToPhysical(scar.cx,scar.cy);
-    out.push({id:scar.id,mesh:'door_sealed_scar',matrix:doorTransform(center.x*CELL,center.y,center.z*CELL,scar.widthAxis==='x'?0:Math.PI/2),zone:FP.zoneAt(scar.cx,scar.cy),structural:true});
+    const center=FP.logicalPointToPhysical?.(scar.cx,scar.cy)||FP.logicalToPhysical(scar.cx,scar.cy);
+    const yaw=(scar.widthAxis==='x'?0:Math.PI/2)+(FP.arcYawOffset?.(scar.cx,scar.cy,center.x,center.z)||0);
+    out.push({id:scar.id,mesh:'door_sealed_scar',matrix:doorTransform(center.x*CELL,center.y,center.z*CELL,yaw),zone:FP.zoneAt(scar.cx,scar.cy),structural:true});
   }
   return out;
 }
@@ -7825,12 +7880,28 @@ let pubHospitalityRenderReady=false,pubHospitalityRendered=[],pubHospitalityLoca
 let glassCourtRenderReady=false;
 let brendanPresencePlan=null,brendanPresencePlacements=[],brendanPresenceLights=[],brendanPresenceSubmitted=[];
 let doorDynamicRenderPending=false;
+let exteriorInfrastructureAvailable=null;
 function flushDeferredDoorDynamicProps(){if(doorDynamicRenderPending)syncDoorDynamicProps();}
 function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()/1000,suppressActors=false,preflightOnly=false}={}){
+  const strikeFrame=studentStrikePresentationFrame();
+  if(strikeFrame){
+    streetCrowdSubmitted=[];brendanPresenceSubmitted=[];
+    const actors=studentStrikeDynamicProps(strikeFrame,studentStrikeAudio?.snapshot().actorId||'');
+    doorDynamicCombined.length=0;doorDynamicCombined.push(...(actors||[]));
+    R3.r3dSetDynamicProps(doorDynamicCombined);doorDynamicRenderPending=false;return;
+  }
   PROPS.setColliderGroupEnabled('street-pilot',streetPilotTime()!==null);
   PROPS.setColliderGroupEnabled('opening-street',R3.r3dOpeningStreetReady?.()===true);
   const courtReady=R3.r3dGlassCourtReady?.()===true;
   PROPS.setColliderGroupEnabled('glass-court',courtReady);
+  const infrastructureReady=R3.r3dExteriorInfrastructureReady?.()===true;
+  PROPS.setColliderGroupEnabled('exterior-infrastructure',infrastructureReady);
+  if(infrastructureReady!==exteriorInfrastructureAvailable){
+    exteriorInfrastructureAvailable=infrastructureReady;
+    r3dCache.physicalKey='';r3dCache.physicalGroup='';
+    exteriorMapSource=null;exteriorMapCache={key:'',model:null};
+    if(FP.isLoaded()&&!usingSpecialSpace())R3.r3dSetProps(worldRenderInstances(FP.logicalToPhysical(logicalX,logicalY).renderGroup));
+  }
   if(usingSourceSpace()||usingStairAnomaly()||!FP.isLoaded()){streetCrowdSubmitted=[];brendanPresenceSubmitted=[];R3.r3dSetDynamicProps([]);doorDynamicRenderPending=false;return;}
   const group=FP.logicalToPhysical(logicalX,logicalY).renderGroup;
   const openingFrame=openingCinematicFrame();
@@ -7944,7 +8015,7 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
     const drinksByActor=pubServiceDrinks(flags,{timeSec:yardBusWomanClock-(pubWaterFirstSeenAt??yardBusWomanClock)});
     const pressureFrame={...pubPressureFrame,reducedMotion:shakeMode()!=='full'||flashMode()!=='full'};
     for(const vessel of pubServiceInstances(flags,{carrier:R3.r3dViewCamera?.(),drinksByActor,tables:group==='ground',pressureFrame}))doorDynamicCombined[count++]=vessel;
-    if(group==='ground')for(const actor of pubCharacterInstances(PUB_NEW_ACTORS,{timeSec:yardBusWomanClock,reducedMotion:shakeMode()!=='full',zone:ZONE.pub,drinksByActor}))doorDynamicCombined[count++]=actor;
+    if(group==='ground')for(const actor of pubCharacterInstances(PUB_NEW_ACTORS.map(actor=>({...actor,...pubPhysicalAt(actor),yaw:pubPhysicalYaw(actor.yaw)})),{timeSec:yardBusWomanClock,reducedMotion:shakeMode()!=='full',zone:ZONE.pub,drinksByActor}))doorDynamicCombined[count++]=actor;
   }
   // LEAVES, WHEREVER THERE IS SKY OVER YOU. Submitted through this same dynamic
   // pass as the apparitions and the bells, so they inherit the prop pack's
@@ -7976,6 +8047,7 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   }
   if(openingOvertureScene&&openingCinematicFrame()?.birdsVisible===true)for(const bird of openingOvertureBirdInstances(openingOvertureScene.view().elapsed,{reducedMotion:shakeMode()!=='full'})){openingAllowed?.add(bird.id);doorDynamicCombined[count++]=bird;}
   for(const instance of endingApproachPropInstances())doorDynamicCombined[count++]=instance;
+  for(const instance of currentRecordistReleaseProps(timeSec))doorDynamicCombined[count++]=instance;
   if(chapelRetakeHauntFrame?.active&&!usingSpecialSpace()){
     const at=FP.logicalToPhysical(logicalX,logicalY),camera=R3.r3dViewCamera?.();
     for(const instance of chapelRetakeHauntInstances(chapelRetakeHauntFrame,{plan:FP,group,logicalOrigin:chapelRetakeHauntOrigin,
@@ -8442,6 +8514,12 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
   const effectsMode=settings.flash||'full';
   const physical=FP.logicalToPhysical(logicalX,logicalY);
   const context=resolveLightingContext({group,zone:FP.zoneAt(logicalX,logicalY),spaceId:physical.spaceId});
+  const strikeFrame=studentStrikePresentationFrame();
+  if(strikeFrame){
+    const authored=studentStrikeLighting(strikeFrame,{ordinaryContext:context});
+    R3.r3dSetLightingContext?.(authored.context);R3.r3dSetLocalLights?.(authored.lights);
+    R3.r3dSetEmergencyShadows?.([]);apparitionDirector.suspend();lastEmergencyShadowFrame=null;return;
+  }
   const openingFrame=openingCinematicFrame();
   if(shouldStageOpeningCinematic(openingFrame)){
     const authored=openingCinematicLighting(openingFrame,{ordinaryContext:context,ordinaryLights:[],eye:openingFrame.eye});
@@ -8714,6 +8792,12 @@ function applySourceLighting(){
 
 let renderedWorldPropVisibilityKey='';
 function worldRenderInstances(group=null){
+  const strikeFrame=studentStrikePresentationFrame();
+  if(strikeFrame){
+    const view=studentStrikeScene?.worldView();
+    syncArchitecturalLocalLights(group,{logicalX:view?.x??px,logicalY:view?.y??py,suppressActors:true});
+    return studentStrikeStaticProps(strikeFrame)||[];
+  }
   if(usingSourceSpace()){
     // Source keeps one recorded field. Its surviving fixtures carry their
     // original light locally; the room we left cannot tint the whole field.
@@ -8997,6 +9081,8 @@ function finishStairAnomaly(){
   saveCommit({run,px,py,area:'conservatory',presence:PRES.savePresenceState()});
   const plan=FP.physicalRenderPlanFor(px,py);R3.r3dSetPlan(plan.rgba,plan.w,plan.h,plan.material,{ambient:plan.ambient,originX:plan.originX,originY:plan.originY});r3dCache.physicalKey=plan.key;r3dCache.physicalGroup=plan.group;r3dCache.fogSize=-1;
   R3.r3dSetProps(worldRenderInstances(plan.group));syncDoorDynamicProps();revealAround(px,py);updateAudio();
+  // This is a different physical floor, not a step to ease the eye between.
+  R3.r3dSnapCameraOnNextFrame?.();
   // Symmetric fade back out onto the ordinary stair — the return teleport lands
   // under the black, so stepping off the impossible flight never flashes either.
   CR.fx.flash(460,'rgba(0,0,0,0.98)');
@@ -9019,10 +9105,11 @@ function activateStairAnomaly(ledger,{position=null,fresh=false}={}){
     onStage:onStairAnomalyStage,
     onComplete:finishStairAnomaly,
   });
-  const at=position||stairAnomalyRuntime.checkpointPosition();
+  const at=stairAnomalyRuntime.restorePosition(position);
   px=Number(at?.x)||0;py=Number(at?.y)||0;R3.r3dSetFacing(Number.isFinite(at?.facing)?at.facing:STAIR_ANOMALY_ENTRY.facing);
   stairAnomalyRuntime.setPlayerPosition({x:px,y:py,facing:R3.r3dFacing()});
   renderMove=null;motionRig=null;trail=[];applyLookProfile('explore',{transitionMs:180});syncStairAnomalyRender({force:true});
+  R3.r3dSnapCameraOnNextFrame?.();
   return stairAnomalyRuntime;
 }
 
@@ -9267,14 +9354,14 @@ const architectureDoorEvents=createDoorAudioEventPolicy();
 const architectureDoorCauses=new Map();
 function doorsForAudio(){const doors=[];if(FP.isLoaded())FP.forEachDoor(door=>doors.push(door));return doors;}
 function doorAudioAnchor(portal){
-  const at=FP.logicalToPhysical(portal.cx,portal.cy);
+  const at=FP.logicalPointToPhysical?.(portal.cx,portal.cy)||FP.logicalToPhysical(portal.cx,portal.cy);
   return{x:at.x*CELL,y:at.y+(portal.id.startsWith('pub-')?2.05:1.05),z:at.z*CELL};
 }
 function syncArchitectureDoorAudio(dt=0){
   architectureDoorAudio ||= createDoorAudio({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
   const active=storyMode&&inRogue&&FP.isLoaded()&&!usingSpecialSpace()&&!sourcePubScene&&!sourceContinuationScene&&!sourceDriveSession&&!coastalMemoryScene;
   const at=active?FP.logicalToPhysical(px,py):null;
-  const listener=at?{x:at.x*CELL,y:at.y+1.65,z:at.z*CELL,yaw:R3.r3dWorldYaw?.()??mapHeading()}:{};
+  const listener=at?{x:(at.x+.5)*CELL,y:at.y+1.65,z:(at.z+.5)*CELL,yaw:R3.r3dWorldYaw?.()??mapWorldHeading()}:{};
   const nearDoors=active?doorsForAudio().filter(p=>{const a=doorAudioAnchor(p);return Math.hypot(a.x-listener.x,a.y-listener.y,a.z-listener.z)<18;}):[];
   architectureDoorAudio.update({dt,active,listener,nearDoors,paused,blurred:!gameplayInputLifecycleActive(),
     occlusion:portal=>{
@@ -10829,7 +10916,7 @@ function beginSourceReturnFlashback(destination,{checkpoint=null}={}){
   scene=makeSourceReturnFlashbackScene({destination,checkpoint:prior,returnPose,context:actx,destinationAudio:sfxGain||master,
     reducedMotion:shakeMode()!=='full',isHeld:()=>paused||!gameplayInputLifecycleActive()||document.hidden,
     onCheckpoint:value=>{if(sourceReturnFlashbackScene===scene)commitSourceReturnFlashback(value);},
-    paintCover:alpha=>{if(alpha>0){const {cols,rows}=uiSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.max(0,Math.min(1,alpha))})`);}},
+    paintCover:alpha=>{if(alpha>0){const {cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.max(0,Math.min(1,alpha))})`);}},
     onRestore:restore,
     onDone:()=>{
       if(sourceReturnFlashbackScene!==scene)return;
@@ -11211,6 +11298,8 @@ function nightSeedForRun(run){
 
 let buildingLoadPromise=null;
 function loadBuilding(){
+  if(studentStrikeScene)retireStudentStrike();
+  natatoriumCoffeeStretch.reset();natatoriumCoffeeBody=null;
   const task=loadBuildingRuntime();
   // Await every in-flight build before a debug relocation. An older import
   // may finish after a newer one; waiting only for the last task is not enough.
@@ -11404,14 +11493,14 @@ function resetRunAudio(reason='run-reset'){
   if(towerBellDirector||bellTowerRuntime||bellTowerAudio)stopBellTowerRuntime();
   SPEECH.clearSpeech();
   CUES.stopAllCues(0.06);
-  cancelRecordingPressureAudio();recordingPressurePerformance.reset();
+  cancelRecordingPressureAudio();recordingPressurePerformance.reset();recordingEmbodiment.reset();
   clearInstrument();
   stopHushAudioRuntime();
   stopAllVoices();
   stopWorldLayerVoice();
   silenceAmbientDrone();
   silenceSampleField();
-  STORY.stopAll();
+  STORY.stopAll({preserveMenuHiss:reason==='return-to-title'});
   RT.setBed(0, 0.1);
   electricalHumRuntime?.update?.({gain:0,pan:0});
   fountainWaterRuntime?.update?.({gain:0,pan:0});
@@ -11473,6 +11562,8 @@ function enterStory({reusePreparedWorld=false,frontEndPromotion=false}={}){
   // machine listing a take it then refuses to play.
   PB.setNightClockSource(()=>{tickRunPlayDuration(performance.now());return getSave().nightClock;});
   PB.setTransportGate(()=>{const admitted=nightDeadlineAllowsTransport(getSave().nightDeadline);if(admitted)firstStrikeAudio?.stop();return admitted;});
+  PB.setTakeAccessGate(take=>sourceRecordingHeld(getSave().chunkSurf?.sourceRecordingCustody,take,{runId:getSave().run?.id})
+    ?{allowed:false,message:'HUSH has this recording. Recover the displaced interval in Source.'}:true);
   REC.setTakeSink({
     roomIds:()=>PB.takeRoomIds(),
     contaminated:()=>PB.contaminatedRooms(),
@@ -11687,7 +11778,37 @@ function enterStory({reusePreparedWorld=false,frontEndPromotion=false}={}){
 }
 
 // ── the van ─────────────────────────────────────────────────────────────────
-let openingVehicleScene=null,openingOvertureScene=null,openingArrivalAudio=null;
+let openingVehicleScene=null,openingOvertureScene=null,openingArrivalAudio=null,openingCabRadio=null;
+let openingCabRadioListeningIntent=null;
+function openingCabRadioState(){
+  const frame=openingVehicleScene?.view(),top=scenes.top({includeOverlay:true});
+  return{active:!!frame&&!frame.completed,paused,focused:gameplayInputLifecycleActive(),
+    ready:!!frame&&frame.phase!=='loading',
+    protected:!!top&&top!==openingVehicleScene&&top.id!=='opening-cab-inspection',
+    projectionGain:frame?.phase==='exiting'?Math.max(0,Math.min(1,1-(frame.elapsed-.6)/1.4)):1};
+}
+function recordOpeningCabRadioListening(){
+  if(!openingCabRadioListeningIntent)return;
+  const radio=openingCabRadio?.snapshot();
+  if(radio?.stationId!==openingCabRadioListeningIntent){openingCabRadioListeningIntent=null;return;}
+  if(!radio.playing||!radio.on||!(radio.volume>0))return;
+  openingCabRadioListeningIntent=null;
+  emitProgress(EVENT_TYPES.RADIO_USED,{id:'radio',kind:'listening'},'main.openingCabRadioListening');
+}
+function actOnOpeningCabRadio(action={}){
+  if(!openingCabRadio)return false;
+  const before=openingCabRadio.snapshot(),after=openingCabRadio.action(action);
+  const deliberate=after.on&&after.volume>0&&(
+    action.type==='power'&&!before.on||
+    action.type==='station'&&after.stationId!==before.stationId||
+    action.type==='volume'&&after.volume>before.volume);
+  if(deliberate)openingCabRadioListeningIntent=after.stationId;
+  else if(!after.on||after.volume<=0)openingCabRadioListeningIntent=null;
+  recordOpeningCabRadioListening();return true;
+}
+function tickOpeningCabRadio(){
+  openingCabRadio?.update();recordOpeningCabRadioListening();
+}
 let openingCabAssetLoad=null,openingCabAssetError=null;
 function openingCabAssetStatus(){
   const catalog=new Set(P3.propMeshCatalog());
@@ -11796,6 +11917,11 @@ function beginOpeningVehicleArrival({god=false}={}){
   STORY.stopOpeningOvertureScore?.({fade:0});
   STORY.stopOpeningSceneBed?.({fade:0});STORY.fadeSoundtrack?.({fade:0});STORY.stopRain?.({fade:.15});
   openingArrivalAudio=createOpeningArrivalAudio({getAudio:()=>{ensureCtx();return actx&&sfxGain?{ctx:actx,destination:sfxGain}:null;}});
+  openingCabRadio?.dispose();openingCabRadioListeningIntent=null;
+  openingCabRadio=createOpeningCabRadio({stations:OPENING_CAB_RADIO_STATIONS,
+    getAudio:()=>{ensureCtx();return actx&&musicGain?{ctx:actx,destination:musicGain}:null;},
+    getState:openingCabRadioState,onError:error=>console.warn('Cab radio unavailable',error)});
+  void openingCabRadio.prepare();
   void openingArrivalAudio.prepare();void STORY.prepareOpeningOvertureScore?.();void R3.r3dPrepareOpeningOverture?.();
   void prepareOpeningCabObjects();
   openingDriveEnvironmentCache=null;let preparedScore=false,lastAudioSeconds=0;
@@ -11810,10 +11936,11 @@ function beginOpeningVehicleArrival({god=false}={}){
     getCabState:()=>({fieldKit:getSave().fieldKit,ready:openingCabAssetStatus().loaded}),
     onInspect:({id})=>{
       if(openingVehicleScene!==scene||!scene.view().canExit||scenes.top()?.id!==scene.id)return false;
-      scenes.push(makeOpeningCabInspectionScene({id,getState:()=>({
+      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,getState:()=>({
         build:combatBuild(),job:bagJob(),journal:bagJournal(),workOrder:WORK_ORDER,
         fieldKit:getSave().fieldKit,flags:getSave().flags,guidance:currentStoryGuidanceTarget(),
         recordist:{...REC.recState(),composure:REC.composure(),composureCeiling:REC.composureCeiling()},
+        cabRadio:(()=>{const radio=openingCabRadio?.snapshot();return radio?{...radio,stations:radio.availableStations,selectedStation:radio.stationId}:null;})(),
       })}));return true;
     },
     onUpdate:frame=>{const seconds=(frame.drive?.elapsed||0)+(frame.phase==='exiting'?frame.elapsed:0),dt=Math.max(0,Math.min(.1,seconds-lastAudioSeconds));lastAudioSeconds=seconds;
@@ -11838,11 +11965,12 @@ function beginOpeningVehicleArrival({god=false}={}){
     },
     onExit:({completed})=>{if(!completed)openingArrivalCheckpoint({drive:scene.serialize?.()});
       if(openingVehicleScene===scene)openingVehicleScene=null;openingArrivalAudio?.dispose();openingArrivalAudio=null;
+      openingCabRadio?.dispose();openingCabRadio=null;openingCabRadioListeningIntent=null;
       if(FP.isLoaded())refreshWorldProps();},
   });
   const update=scene.update;scene.update=dt=>{if(!paused&&gameplayInputLifecycleActive())update(dt);};
   scene.focus=()=>{if(!paused)scene.resume?.();};
-  openingVehicleScene=scene;scenes.push(scene);if(FP.isLoaded())refreshWorldProps();return true;
+  openingVehicleScene=scene;scenes.push(scene);openingCabRadio.start();if(FP.isLoaded())refreshWorldProps();return true;
 }
 
 // The first interaction in the game, and the only one that cannot go wrong.
@@ -12337,10 +12465,13 @@ function tickVigilAmbient(dt){
 // A conversation opening also drops whatever the crowd was saying: the band does
 // not carry an overheard stage direction underneath somebody who is talking to
 // you (see vigilAmbient).
+function currentStudentStrikeEvidence(){
+  return deriveStudentStrikeEvidence(getSave().run?.ledger,{studentStrikeWatched:flagTest(STUDENT_STRIKE_WATCHED_FLAG),documentsKnown:getMeta().knowledge?.documents});
+}
 function talkToVigilPerson(prop){
   const revisited=PROPS.propState().inspected.has(prop.id);
   const phase=!revisited?'first':flagTest('title.shown')?'returned':'immediate-revisit';
-  const conversation=vigilConversation(prop.vigilId||prop.id,{phase});
+  const conversation=vigilConversation(prop.vigilId||prop.id,{phase,studentStrikeEvidence:currentStudentStrikeEvidence()});
   if(!conversation)return false;
   vigilAmbient?.cancel();
   vigilConversationActorId=prop.id;
@@ -12384,8 +12515,8 @@ function currentPubHospitalityInput(){
   const loaded=FP.isLoaded(),special=usingSpecialSpace()||!!sourcePubScene||!!sourceContinuationScene||!!sourceDriveSession;
   const at=loaded?FP.logicalToPhysical(px,py):null;
   const input=pubHospitalityInput({enabled:storyMode&&inRogue&&loaded,special,
-    listener:at?{x:at.x*CELL,z:at.z*CELL,yaw:R3.r3dWorldYaw?.()??mapHeading()}:null,
-    zoneIsPub:loaded&&FP.zoneAt(px,py)===ZONE.pub,bounds:EXTERIOR_PUB.bounds,
+    listener:at?{x:(at.x+.5)*CELL,z:(at.z+.5)*CELL,yaw:R3.r3dWorldYaw?.()??mapWorldHeading()}:null,
+    zoneIsPub:loaded&&FP.zoneAt(px,py)===ZONE.pub,bounds:PUB_PHYSICAL_BOUNDS,
     busy:!!scenes.top()||!!SPEECH.speaking()||REC.isRecording()||!!activeBattleId,
     recording:REC.isRecording(),
     paused:paused||!gameplayInputLifecycleActive(),
@@ -12472,14 +12603,14 @@ function commitPubChoice(choice,prop){
   if(JSON.stringify(before)!==JSON.stringify(result.flags)){
     saveCommit({flags:result.flags});if(choice.pubQuestAction)syncPubQuestProps();
     if(result.effects.some(effect=>['take-tray','serve-waters','collect-empties','return-tray'].includes(effect.type))){
-      const actor=pubActor(prop.id),at=actor?{x:actor.x,z:actor.z}:pubWorldFromLocal(PUB_SERVICE_TRAY.local);
+      const actor=pubActor(prop.id),at=actor?pubPhysicalAt(actor):pubPhysicalFromLocal(PUB_SERVICE_TRAY.local);
       pubRoomAudio?.contact?.(at);
     }else if(result.effects.length)fireCue('bag',{gainScale:.25});
   }
 }
 function interactPub(prop){
   let tree,slate='THE LYRIC',startAt='start';
-  if(prop.id===PUB_BARTENDER_ID){tree=pubQuestDialogue(getSave().flags);slate='THE LYRIC / IONA REED';}
+  if(prop.id===PUB_BARTENDER_ID){tree=pubQuestDialogue(getSave().flags,{studentStrikeEvidence:currentStudentStrikeEvidence()});slate='THE LYRIC / IONA REED';}
   else if(prop.id===PUB_TRAY_PROP){tree=pubTrayDialogue(getSave().flags);slate='THE LYRIC / SERVICE TRAY';}
   else if(prop.pubFavorId){tree=pubFavorDialogue(prop.pubFavorId,getSave().flags);slate='BORROWED FROM THE LYRIC';}
   else {
@@ -12623,6 +12754,7 @@ function guardConversationLine(line) {
   // about the grey door; he already has the key for it in his hand.
   if(line?.sourceId==='threshold.line.3'&&!flagTest(WORK_ORDER_ACCEPTED_FLAG)){
     flagSet(WORK_ORDER_ACCEPTED_FLAG);saveCommit({flags:getSave().flags});
+    emitProgress(EVENT_TYPES.WORK_ORDER_ACCEPTED, {}, 'main.guardContract');
   }
   if(line?.sourceId==='threshold.line.5'){
     if(!flagTest('prologueDone')){
@@ -13318,7 +13450,7 @@ function beginGetInDriveTeaser({onDone=()=>TUT.startTutorial()}={}){
     createRecording:options=>new SourceDriveRecording({...options,playbackDestination:sfxGain||master,runId:getSave().run?.id||'opening',tape:PB}),
     onTapeChanged:()=>saveCommit({rec:REC.saveRecState()}),
     isHeld:()=>paused||!gameplayInputLifecycleActive(),
-    paintCover:alpha=>{const{cols,rows}=uiSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${alpha.toFixed(4)})`);},
+    paintCover:alpha=>{const{cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${alpha.toFixed(4)})`);},
     paintOverlay:({frame,radio,error})=>{
       const{cols,rows}=uiSize();
       if(frame.controlsEnabled&&frame.timeSec<8){uiFill(2,rows-3,cols-4,2,'rgba(0,0,0,.78)');uiCenter(rows-2,`W / S PEDALS   A / D STEER   SPACE BRAKE   ${BINDINGS.activeInputPromptDevice()==='controller'?'RIGHT STICK':'MOUSE'} · LOOK`,'t-chunk');}
@@ -13375,8 +13507,8 @@ function beginGetInArrivalTitle(){
   // title when the player receives control in the Scene Dock.
   SPEECH.clearSpeech();
   const entryPose=R3.r3dLookAngles?.()||null;
-  scenes.push(makeWorldTitleScene({
-    duration:flagTest('opening.overture.completed')?0:12,
+  scenes.push(makeArrivalTitleScene({
+    duration:12,
     audio: STORY,
     cue: fireCue,
     // HE LOOKS BACK. The title used to cut from whatever was under the cursor on
@@ -14611,17 +14743,15 @@ function recordAction({beginGuide=null}={}){
       const attempt=HUNTER.tryCancelTake(takeHunter);
       takeHunter=attempt.state;
       if(attempt.resisted){
+        // One registered refusal in either presenter, without another sound
+        // or a retry recipe. The captive STOP cap answers locally.
+        pressPromptControl('recording:stop',{held:false,rejected:true});
+        pressPromptControl('recorder:stop',{held:false,rejected:true});
         recordingPressurePerformance.stopPress(recordingPressureFrame());
-        // The cap travels, the brake pulls against it, and the readout registers
-        // the press. This is a mechanical refusal, never a swallowed input.
-        if(attempt.tries===1||attempt.tries===4)SPEECH.say({who:'you',text:attempt.tries===1
-          ? 'The key went down. The brake did not. Again. Or go quiet and let it release.'
-          : 'It is moving under my thumb. Keep pressing.'},
-          {id:'take:hunter-cancel',replace:true});
         return;
       }
       // It let go. Whatever was coming loses the take along with him.
-      SPEECH.say({who:'you',text:'There. Off. And whatever that was goes with it.'},
+      SPEECH.say({who:'you',text:'There. Off.'},
         {id:'take:hunter-cancel',replace:true});
     }
     stopTake(); return;
@@ -14914,7 +15044,8 @@ function recorderMachineState(){
 function recorderTapeRows(){
   return PB.tapeTakes().map((take,index)=>{
     const {roomId}=take;
-    const playable=!!take.sealed;
+    const held=!PB.takeAccess(take).allowed;
+    const playable=!!take.sealed&&!held;
     const dirty=take.contaminated;
     return {
       roomId,
@@ -14922,8 +15053,8 @@ function recorderTapeRows(){
       ordinal:String(index+1).padStart(2,'0'),
       label:take.continuous?.kind==='continuous-cabin'?'THE CUT · FIELD RECORDING':roomId===TOWER_PERSONAL_TAKE?'THE PREVIOUS RECORDIST':roomLabel(roomId)||roomId.toUpperCase(),
       playable,
-      warn:!!take.damage||dirty||!['accepted','archived'].includes(take.status),
-      status: take.damage?(PB.hasTake(roomId)?'DAMAGED · REPLACED':'DAMAGED · RE-RECORD'):take.status==='abandoned'?'SHORT':take.status==='spoiled'?'SPOILED':dirty?takeContaminationLabel(take):playable?'PLAY':'NO PRINT',
+      warn:held||!!take.damage||dirty||!['accepted','archived'].includes(take.status),
+      status: held?'MISSING · SOURCE':take.damage?(PB.hasTake(roomId)?'DAMAGED · REPLACED':'DAMAGED · RE-RECORD'):take.status==='abandoned'?'SHORT':take.status==='spoiled'?'SPOILED':dirty?takeContaminationLabel(take):playable?'PLAY':'NO PRINT',
     };
   });
 }
@@ -15412,7 +15543,7 @@ function makeTakenAftermathScene(onBlack){
     },
     key(){return true;},pointer(){return true;},
     render(){
-      const {cols,rows}=uiSize();uiFill(0,0,cols,rows,'#000');
+      const {cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,'#000');
       if(t<.2&&flashMode()==='full'&&lastExposureFrame)uiDraw(({ctx})=>{
         ctx.globalAlpha=.08*(1-t/.2);ctx.drawImage(lastExposureFrame,0,0,ctx.canvas.width,ctx.canvas.height);
       });
@@ -15848,6 +15979,7 @@ function openDebugHushBrush(seed=4417){
 }
 
 function onPresenceCatch(attemptOrCount,{takeBreak=false,forced=false,silent=false,reason=null}={}){
+  if(REC.isRecording()&&REC.isStalled())return false;
   if(PRES.presenceTableauActive())return false;
   const attempt=attemptOrCount&&typeof attemptOrCount==='object'?attemptOrCount:null;
   const approach=hushContactApproach(attempt,{forced});
@@ -16822,10 +16954,12 @@ function interact(){
       if(escape.ledgerSignatures===0){
         escape.ledgerSignatures=1;
         advanceActiveEndingCutscene({interaction:'sign-returned-player'});
+        rememberChapelTapeDemandDeparture({commit:true});
         SPEECH.say({who:'direction',text:'The guard opens RETURNED and puts the pen under your hand. You write your name across the ruled column.'});
       }else{
         escape.ledgerSignatures=2;
         advanceActiveEndingCutscene({interaction:'sign-returned-alan'});
+        rememberChapelTapeDemandDeparture({commit:true});
         SPEECH.say({who:'direction',text:'He turns the ledger one line down and writes ALAN beside the weight you are still carrying.'});
         completeSurfacedExit();
       }
@@ -17641,6 +17775,20 @@ function openMapFromBag(){
 
 function openFieldMap(){
   if(scenes.top()?.id==='bag')return openMapFromBag();
+  if(scenes.top()?.id==='field-map'){scenes.remove(scenes.top());return true;}
+  if(!storyMode||!inRogue||REC.isRecording())return false;
+  if(!flagTest('bag.taken')){
+    const acquired=mapAcquired(getSave().flags),preview=!acquired;
+    scenes.push(makeBagScene({sectionIds:['map'],sceneId:'field-map',readOnly:preview,
+      focus:{sectionId:'map'},memory:null,getJob:bagJob,
+      getMap:()=>preview||mapAvailable(getSave().flags,itemLost('map'))?currentFacilityMapModel():null,
+      getMapUnavailableReason:()=>itemLost('map')?'Recover your Survey Indicator to bring the plan back online.':'',
+      getHint:()=>preview?'PUBLIC PLAN / READ ONLY':'SURVEY INDICATOR / SI–1',
+      ...(preview?{}:{markRoom,markSpace:markMapSpace,setMapTarget,clearMapTarget}),
+      onClearInput:()=>resetMotionInput('field-map-close',{stopRenderMove:true}),
+    }));
+    return true;
+  }
   openBag({focus:{sectionId:'map'}});
   return scenes.top()?.id==='bag';
 }
@@ -17902,6 +18050,7 @@ function syncMarbleHeadProps(){
 // rule is game/stop-listening.js; this is where it meets the plan, the props,
 // the save and his voice.
 registerBakedPaper({...STOP_LISTENING_SHEET_DOCUMENT,pages:[{path:STOP_LISTENING_SHEET_DOCUMENT.path}]});
+for(const record of STUDENT_STRIKE_BAKED_RECORDS)registerBakedPaper(record);
 const STOP_LISTENING_DOC=Object.freeze({id:STOP_LISTENING_SHEET_DOCUMENT.id,title:'ROOM TONE / TAKE SHEET',byline:'W. ELLERY / WORKS'});
 let stopListeningStagedKey='';
 let stopListeningArrivalDueMs=0;
@@ -18614,6 +18763,7 @@ function takeHostedPin(propId){
   if(!host || flagTest(host.flag)) return false;
   flagApply([host.flag]);
   saveCommit({flags:getSave().flags});
+  emitProgress(EVENT_TYPES.ITEM_OBTAINED, {id:host.flag}, 'main.fieldLead');
   fireCue('bag');
   REC.emitNoise(.03,px,py,'patch lead pocketed',{
     spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'pin',playerGenerated:true,deliberate:true,
@@ -18639,7 +18789,7 @@ function takeHostedPage(propId){
   if(!page) return false;
   if(new Set(OBJ.objState().read).has(page.id)){
     // Revisit the paper where it was found without finding it a second time.
-    DOC.readDocument(page);
+    readDocumentTracked(page);
     return true;
   }
   OBJ.markPageRead?.(page.id);
@@ -18649,7 +18799,8 @@ function takeHostedPage(propId){
     spoils:false,kind:'handling_noise',sourceKind:'equipment',sourceId:'page',playerGenerated:true,deliberate:true,
   });
   readDocumentTracked(page);
-  himBeat();
+  // Recovery evidence is independent of the previous recordist's arc.
+  if(!STUDENT_STRIKE_DOCUMENT_IDS.has(page.id))himBeat();
   return true;
 }
 
@@ -18814,29 +18965,47 @@ function presentRadio(id,nodes,{terminal=false,dead=false,onDone,onCancel,onChoi
   if(voiceOutput)voiceOutput.gain.value=.75;if(equipmentOutput)equipmentOutput.gain.value=.75;
   const sound=terminal?createRadioSceneAudio({getAudio:()=>({ctx:actx,destination:equipmentOutput||sfxDirectGain||master})}):null;
   let scene=null;
-  const protectedInstrument=()=>REC.isMonitoring()||PB.isPlaying()||paused||document.hidden||!document.hasFocus()||!scene||scenes.top()!==scene;
+  const protectedInstrument=()=>REC.isMonitoring()||PB.isPlaying()||paused||document.hidden||!gameplayInputLifecycleActive()||!scene||scenes.top()!==scene;
   const contactAudio=createRadioContactAudio({getAudio:()=>({ctx:actx,destination:equipmentOutput||sfxDirectGain||master}),getControlAudio:()=>({ctx:actx,destination:sfxDirectGain||master}),getProtected:protectedInstrument});
-  const eggHeard=()=>flagTest('radio.hidden-channel.heard');
-  const canEgg=()=>!terminal&&!dead&&!protectedInstrument()&&!eggHeard()&&!itemLost('radio')&&!RADIO.isDropped()&&RADIO.radioPhase()===RADIO.RADIO_PHASE.LIVE
-    &&Number(getSave().settings?.volume??1)>0&&Number(getSave().settings?.sfx??1)>0&&STAB.externalScareBudgetReady();
+  const eggHeard=()=>!!getMeta().completion?.secrets?.['off-air'];
+  const canEgg=()=>!terminal&&!dead&&!protectedInstrument()&&!eggHeard()&&!itemLost('radio')&&!RADIO.isDropped()&&RADIO.radioPhase()===RADIO.RADIO_PHASE.LIVE;
   const mixToken=Symbol(id);
+  let listeningRecorded=false,instrumentVolume=.75;
+  const noteDeliberateListening=()=>{
+    if(listeningRecorded||terminal||dead)return;
+    listeningRecorded=true;
+    emitProgress(EVENT_TYPES.RADIO_USED,{id:'radio',kind:'listening'},'main.radioDeliberateListening');
+  };
   if(terminal)setRadioSceneMix(mixToken,.55);
   scene=makeRadioScene({id,nodes,startAt,terminal,dead,audio:STORY,
     getAudio:()=>({ctx:actx,destination:voiceOutput||dialogGain||master}),cue:fireCue,
     getInstrumentProtected:protectedInstrument,eggHeard,canEgg,
     onInstrumentControl:(kind,detail)=>{
+      if(kind==='channel'&&instrumentVolume>0)noteDeliberateListening();
       // Conversation confirmation already has its established feedback. Knobs,
       // PTT and an invalid hardware press own one additional physical contact.
       if(!['confirm','previous','next','battery'].includes(detail?.id)&&!String(detail?.id||'').startsWith('key:'))contactAudio.control(kind,detail);
     },
-    onVolume:value=>{for(const output of [voiceOutput,equipmentOutput])if(output){output.gain.cancelScheduledValues(actx.currentTime);output.gain.setTargetAtTime(value,actx.currentTime,.012);}},
-    onTuneAway:()=>contactAudio.stopEgg(),
+    onVolume:value=>{
+      if(value>instrumentVolume&&value>0)noteDeliberateListening();
+      instrumentVolume=value;
+      for(const output of [voiceOutput,equipmentOutput])if(output){output.gain.cancelScheduledValues(actx.currentTime);output.gain.setTargetAtTime(value,actx.currentTime,.012);}
+    },
+    onTuneAway:()=>contactAudio.stopEgg({retry:true}),
     onEgg:async()=>{
       if(!canEgg()||!await contactAudio.warm()||!canEgg())return false;
       const instrument=scene.view().radio.instrument;
-      if(instrument.channel!==13||instrument.volume<=0||!STAB.reserveExternalScare())return false;
-      const started=await contactAudio.egg({onComplete:()=>scene?.radioEggEnded?.()});
-      if(started)flagSet('radio.hidden-channel.heard');
+      if(instrument.channel!==13||instrument.volume<=0)return false;
+      noteDeliberateListening();
+      // An explicit channel discovery stays available with reduced dread or
+      // an exhausted ambient startle budget. Its caption and full timing carry
+      // the quiet version; accessibility never blocks the completion record.
+      const quiet=!!getSave().settings?.reduceDread||!STAB.externalScareBudgetReady()||!STAB.reserveExternalScare();
+      const started=await contactAudio.egg({quiet,onComplete:()=>{
+        scene?.radioEggEnded?.();
+        flagSet('radio.hidden-channel.heard');
+        emitProgress(EVENT_TYPES.SECRET_DISCOVERED,{id:'off-air'},'main.radioHiddenTransmissionComplete');
+      }});
       return started;
     },
     replay:createReplayService(`conversation:radio:${id}`),
@@ -19844,7 +20013,7 @@ function payphoneAnswerVan(){
   const line=phoneWorldLine();
   const end=()=>{line?.stopBreathing?.();line?.farClear?.();saveCommit({flags:getSave().flags});};
   const opened=converse('payphone:van',PAYPHONE_STORY,{
-    startAt:'van-answer',onDone:end,onCancel:end,
+    startAt:'van-answer',onDone:()=>{emitProgress(EVENT_TYPES.SECRET_DISCOVERED,{id:'call-yourself'},'main.vanPhoneExchangeComplete');end();},onCancel:end,
     cue:(name)=>{
       const text=String(name||'');
       if(!text.startsWith('phone:'))return false;
@@ -20642,6 +20811,7 @@ let sourceEarthfallAudio=null;
 // The Source II performance can outlive the borrowed Source scene. Its same
 // media element is handed to the ending and credits; no second copy is played.
 let sourceRestEndingMusic=null;
+let sourceRestLiveMusic=null;
 let sourceRestBreath=null;
 let sourceRestWeather=null;
 let sourceRestReviewTreatment='loggia';
@@ -20652,7 +20822,8 @@ function tickSourceRestEndingMusic(){
   sourceRestEndingMusic?.update?.({active:true,paused:paused||creditHold||document.hidden||!gameplayInputLifecycleActive()});
   endingStaticMix?.update();
 }
-function releaseSourceRestEndingMusic(){
+function releaseSourceRestEndingMusic({toMenu=false}={}){
+  if(toMenu){const carrier=endingStaticMix?.takeCarrier?.();if(carrier&&!STORY.adoptMenuHiss?.(carrier))carrier.dispose();}
   const owner=sourceRestEndingMusic;sourceRestEndingMusic=null;
   if(!owner){endingStaticMix?.reset();return false;}owner.stop();owner.dispose();endingStaticMix?.reset();return true;
 }
@@ -20671,6 +20842,7 @@ function commitSourceContinuation(){
   saveCommit({chunkSurf:chunkSurfRuntime.state(),area:'source-space'});return true;
 }
 function releaseSourceContinuation({restore=true,position=null}={}){
+  releaseSourceRecordingCassetteLabels({props:P3});
   const scene=sourceContinuationScene,renderer=sourceContinuationRenderer;
   const at=position||scene?.serialize?.().returnPose;
   sourceContinuationScene=null;sourceContinuationRenderer=null;
@@ -20732,8 +20904,13 @@ function tickSourceWindowMedia(dt){
   }
   const ownerHeld=paused||document.hidden||!gameplayInputLifecycleActive()||!sourceMediaReady
     ||!!(scene&&scenes.isFrozen(scene));
-  const held=ownerHeld||!!(scene&&scenes.top()!==scene);
   if(owner==='source-continuation'&&ownerHeld)sourceContinuationAudio?.pause?.();
+  const rest=scene?.sourceRest?.view?.();
+  if(scene?.syncRestPresentation){
+    scene.syncRestPresentation({held:ownerHeld});
+    if(rest&&['sitting','seated','committed'].includes(rest.mode))return;
+  }
+  const held=ownerHeld||!!(scene&&scenes.top()!==scene);
   sourceWindowMedia.update({owner,frame:sourceMediaFrame,traces:relevant,dt,held});
 }
 function standingTearPhysical(x=px,y=py){
@@ -20788,7 +20965,7 @@ async function beginStandingTear({returnPose,checkpoint=null,entryPose=null}={})
   let scene;
   scene=createStandingTearScene({renderer,audio,checkpoint,runId:getSave().run?.id||'',returnPose,
     getLook:()=>R3.r3dLookAngles(),isPaused:()=>paused,isHidden:()=>document.hidden,inputActive:gameplayInputLifecycleActive,
-    paintCover:alpha=>{if(alpha>.0001){const{cols,rows}=uiSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.min(1,alpha)})`);}},
+    paintCover:alpha=>{if(alpha>.0001){const{cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.min(1,alpha)})`);}},
     onTrace:value=>{if(standingTearScene===scene){standingTearMediaTraces.push(value);if(standingTearMediaTraces.length>500)standingTearMediaTraces.splice(0,100);}},
     onCheckpoint:value=>{if(standingTearScene===scene&&value.runId===(getSave().run?.id||''))saveCommit({standingTear:value});},
     onRestore:({returnPose:pose})=>restoreStandingTearOperator(pose),
@@ -21083,6 +21260,13 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
   RT.setBed(0,.05);void windowChoreography?.leaveSource?.('source-continuation');
   frontEndSession?.markLive?.();frontEndPlateOverride=null;R3.r3dSetFrontEndPlate?.('gameplay');endBootWeather?.();
   const renderer=createSourceContinuationRenderer({studyRotation:sourceContinuationStudyRotation,getTorch:sourcePresentationTorch,getReducedMotion:()=>shakeMode()!=='full',getFlashMode:flashMode});sourceContinuationRenderer=renderer;
+  const initializeContinuation=renderer.initialize.bind(renderer);
+  renderer.initialize=async()=>{
+    const ready=await initializeContinuation();if(ready===false)return false;
+    const recordings=sourceContinuationRecordingReturnProps(entry.checkpoint,sourceRecordingDisplayCustody()).filter(row=>row.kind==='source-recording-cassette').map(row=>row.recording);
+    if(!recordings.length){releaseSourceRecordingCassetteLabels({props:P3});return true;}
+    return prewarmSourceRecordingCassetteMeshes({renderer:R3,props:P3,recordings});
+  };
   for(const surface of ['stone','wood','carpet'])RT.prepareFootsteps?.({surface,profile:'physical'});
   sourceContinuationAudio ||= createSourceContinuationAudio({
     onFootContact:playSceneFootContact,clearFootContacts:clearSceneFootContacts,
@@ -21094,6 +21278,7 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
   const restMusic=createSourceRestScores({getAudio:()=>actx&&musicGain?{ctx:actx,destination:musicGain}:null,
     protectedAudio:()=>REC.isRecording()||REC.isListening()||PB.isPlaying(),
     onError:error=>{console.error('[source-rest-music]',error);pushEvent('// The recording could not be played.');}});
+  sourceRestLiveMusic=restMusic;
   restMusic.selectPhase(entry.checkpoint.phase);
   sourceRestBreath?.dispose();
   const restBreath=createSourceRestBreath({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
@@ -21102,12 +21287,31 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
   void restWeather.prepare?.();
   sourceContinuationAudio.attachRestMusic?.(restMusic);
   let scene,restMusicTransferred=false;
+  const restRecorder=createSourceRestRecorderWindow({
+    getFrame:()=>{const frame=scene?.sourceRest?.recorderFrame?.();return frame?{...frame,
+      ownerId:`${getSave().run?.id||'run'}:source-listening`,machine:recorderMachineState(),vfdSettings:getSave().settings}:null;},
+    getFaceplateSnapshot:()=>sharedFaceplateContext({explicitSourceRest:true}),
+    getHeld:()=>paused||document.hidden||!gameplayInputLifecycleActive()||!!(scene&&scenes.isFrozen(scene)),
+    getEnabled:()=>!!currentPsychProfileSettings().modules.windowChoreography,
+    requestNativePresentation:options=>windowChoreography.requestSourceRestRecorder(options),
+    drawContainedFallback:frame=>drawSourceRestInstrument({...frame,...uiSize()}),
+    onError:error=>console.warn('[source-rest-recorder]',error),
+  });
+  const restMedia=createSourceRestMediaPresentation({director:windowChoreography,getFrame:()=>renderer.restApertureFrame?.(),
+    beforeBegin:()=>sourceWindowMedia.stop(),
+    getSettings:()=>({reducedMotion:shakeMode()!=='full',flashMode:flashMode(),
+      effectsMode:visualEffectsEnabled()?flashMode():'off',reduceDread:!!getSave().settings?.reduceDread}),
+  });
   scene=createSourceContinuationScene({checkpoint:entry.checkpoint,renderer,audio:sourceContinuationAudio,studyRotation:sourceContinuationStudyRotation,
     onTorch:()=>{
       if(itemLost('torch')||!REC.lightOn()&&REC.batteryLevel()<=0||!REC.lightOn()&&flagTest('van.bench.v2')&&!flagTest('kit.fitted')&&!flagTest('van.packed.flashlight'))return false;
       const on=REC.toggleLight();CUES.playCue(CUES.CUE.light,{gain:.5,rate:on?1:.92});saveCommit({rec:REC.saveRecState()});return true;
     },
     onInstrumentTick:dt=>{if(flagTest('torch.metered')&&REC.drainLight(dt))CUES.playCue(CUES.CUE.light,{gain:.5,rate:.72});},
+    getContactStatus:chapter=>chunkSurfRuntime?.sourceContactStatus?.(chapter),
+    getRecordingCustody:sourceRecordingDisplayCustody,
+    onContact:({chapter,checkpoint})=>openSourceHushContact({chapter,locallyAvailable:true,checkpoint}),
+    onRecoverRecording:request=>openSourceRecordingCassette(request),
     onCheckpoint:value=>{if(sourceContinuationScene===scene&&chunkSurfRuntime?.setContinuationCheckpoint(value))saveCommit({chunkSurf:chunkSurfRuntime.state(),rec:REC.saveRecState(),area:'source-space'});},
     onTrace:value=>{sourceContinuationTrace.push(value);if(sourceContinuationTrace.length>6000)sourceContinuationTrace.splice(0,1000);},
     onError:error=>pushEvent(`// ${error?.message||error}`),
@@ -21122,7 +21326,8 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
       if(sourceContinuationScene!==scene)return false;
       return deliverSourceContinuationHandoff(chunkSurfRuntime.completeContinuation(value));
     },
-    onExit:()=>{restWeather.dispose();if(sourceRestWeather===restWeather)sourceRestWeather=null;restBreath.dispose();if(sourceRestBreath===restBreath)sourceRestBreath=null;
+    onExit:()=>{restRecorder.dispose();void restMedia.stop('scene-exit');if(sourceRestLiveMusic===restMusic)sourceRestLiveMusic=null;
+      restWeather.dispose();if(sourceRestWeather===restWeather)sourceRestWeather=null;restBreath.dispose();if(sourceRestBreath===restBreath)sourceRestBreath=null;
       if(!restMusicTransferred){sourceContinuationAudio?.detachRestMusic?.(restMusic);restMusic.dispose();}
       if(sourceContinuationScene!==scene)return;sourceContinuationScene=null;sourceContinuationRenderer=null;
       r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;if(chunkSurfRuntime)syncSourceRender({force:true});},
@@ -21135,20 +21340,38 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
       :recorderMachineState()}),
     getReducedMotion:()=>shakeMode()!=='full',
     getStudyTreatment:()=>import.meta.env.DEV?sourceRestReviewTreatment:'loggia',
+    getReducedDread:()=>!!getSave().settings?.reduceDread,getEffectsMode:()=>visualEffectsEnabled()?flashMode():'off',
     getStudyMemory:()=>import.meta.env.DEV&&params().has('sourceRestReview')?sourceRestReviewMemory:null,
+    onImpact:input=>{
+      const save=getSave(),key=`source.rest-material.${input.phase}`,prior=save.flags?.[key]||{},
+        receipt=sourceRestMistakeImpactReceipt(prior,{...input,composure:REC.composure(),floor:REC.COMPOSURE_FLOOR,
+          held:input.held||paused||document.hidden||!gameplayInputLifecycleActive(),
+          protected:input.protected||REC.isRecording()||REC.isListening()||PB.isPlaying(),
+          effectsMode:visualEffectsEnabled()?flashMode():'off',reducedDread:!!save.settings?.reduceDread});
+      if(!receipt.event)return false;
+      REC.setComposure(receipt.event.after);
+      saveCommit({flags:{...(save.flags||{}),[key]:receipt.state},rec:REC.saveRecState()});
+      return true;
+    },
+    renderRecorderFallback:()=>restRecorder.renderFallback(),
     conversationOptions:{audio:STORY,getAudio:()=>({ctx:actx,destination:dialogGain||master}),cue:fireCue,fx:CR.fx,getMusicState:()=>restMusic.snapshot(),
+      getPresentationActive:()=>!paused&&!document.hidden&&gameplayInputLifecycleActive(),
       sarahNamed:flagGet('confession.kind')==='name'&&flagGet('confession.value')==='Sarah',
       onPause:()=>openPauseMenu(),
+      onRecorder:()=>void restRecorder.toggle(),getRecorderState:()=>restRecorder.state(),
       onRestProgress:(progress,active,weatherCue,phase)=>{
         const s=scene?.view?.(),selectedPhase=phase||s?.phase||entry.checkpoint.phase;
-        restMusic.selectPhase(selectedPhase);
-        restMusic.setRestProgress(progress,active,{faculty:scene?.sourceRest?.view?.().affliction?.facultyLoss});
+        const seat=SOURCE_REST_SEATS.find(place=>place.phase===selectedPhase),nearSeat=!!seat&&s?.chartId===seat.chartId
+          &&Math.abs(s.feet-seat.feet)<1.5&&Math.hypot(s.x-seat.x,s.z-seat.z)<=8;
+        if(restMusic.selectPhase(selectedPhase)&&!sourceRestEndingMusic)endingStaticMix?.reset();
+        restMusic.setRestProgress(progress,active,{nearSeat,faculty:scene?.sourceRest?.view?.().affliction?.facultyLoss,
+          decisionHeld:!!scenes.top()?.view?.()?.restDecisionHeld});
+        const duck=weatherCue?.musicDuck,gain=Number.isFinite(duck?.gain)?duck.gain:1;
+        restMusic.setProgrammeDuck(gain,{seconds:gain<1?(duck?.attackSeconds??.08):(duck?.recoverySeconds??2.8)});
         const music=restMusic.snapshot(),audible=!paused&&!document.hidden&&gameplayInputLifecycleActive()&&music.playing;
         restBreath.update({progress,audible:active&&audible});
-        const seat=SOURCE_REST_SEATS.find(value=>value.phase===selectedPhase);
-        const near=!!seat&&s?.phase===seat.phase&&s.chartId===seat.chartId&&Math.abs(s.feet-seat.feet)<1&&Math.hypot(s.x-seat.x,s.z-seat.z)<14;
         const camera=renderer.diagnostics?.()?.frame;
-        restWeather.update({active:audible&&near,hold:!audible,progress:active?progress:0,cue:weatherCue,
+        restWeather.update({active:audible&&['wrong-return','catch'].includes(selectedPhase),hold:!audible,progress:active?progress:0,cue:weatherCue,
           state:camera?{...s,camera:{eye:camera.eye,yaw:camera.yaw,pitch:camera.pitch}}:s});}},
     onChange:rest=>{
       persistNightRestLock(scene,rest);
@@ -21180,9 +21403,17 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
     restMusic.finishAfterCycle();
     sourceContinuationAudio?.detachRestMusic?.(restMusic);restMusicTransferred=true;return restMusic;
   };
+  scene.syncRestPresentation=({held=false}={})=>{
+    const rest=scene.sourceRest.view(),music=restMusic.snapshot();
+    restRecorder.update();
+    restMedia.update({owner:`${getSave().run?.id||'run'}:source-listening`,phase:scene.view().phase,rest,music,held});
+    endingStaticMix?.update();
+  };
+  scene.sourceRestRecorder=restRecorder;
+  scene.sourceRestMedia=restMedia;
   const update=scene.update;
   const syncSourceRestPerformance=()=>{
-    const view=scene.view();restMusic.selectPhase(view.phase);
+    const view=scene.view();if(restMusic.selectPhase(view.phase)&&!sourceRestEndingMusic)endingStaticMix?.reset();
     const music=restMusic.snapshot();
     if(restMusic.supportsPhase(view.phase)&&view.ready&&!music.active)restMusic.start();
     else if(!restMusic.supportsPhase(view.phase)&&music.active)restMusic.stop();
@@ -21352,6 +21583,10 @@ async function beginSourceDriveJourney({checkpoint=null,review=false}={}){
       releaseSourceDrive({restore:false});showReturnReport(summary);return true;
     },
     onStatus:value=>{if(sourceDriveSession===owner)sourceDriveStatus=value;},
+    onEvent:event=>{
+      if(sourceDriveSession===owner&&event.type==='radio-listening')
+        emitProgress(EVENT_TYPES.RADIO_USED,{id:'radio',kind:'listening'},'main.driveRadioListening');
+    },
     onStart:async()=>{ensureCtx();await actx?.resume?.();},
     onError:error=>{console.error('[source-drive]',error);pushEvent(`// ${error?.message||error}`);},
     onPauseRequested:()=>openPauseMenu(),
@@ -21577,6 +21812,21 @@ const pressurePerformance=createPressurePerformance();
 let hushMotionStudyDriver=null,hushMotionStudyEnabled=false,hushMotionStudyOutput=null;
 R3.r3dSetPressureCueSink?.((cue)=>pressurePerformance.cue(cue));
 let recordingPressureVisualOrigin=null;
+const recordingEmbodiment=createRecordingEmbodiment();
+let recordingEmbodimentReady=false,recordingEmbodimentLoading=null;
+function tickRecordingEmbodiment(dt){
+  const rec=REC.recState(),recording=storyMode&&!usingSpecialSpace()&&REC.isRecording()&&!rec.spoiled;
+  if(recording&&recordingEmbodimentReady&&P3.installAuthoredPropMeshes(installRecordingEmbodimentMaterials)===false)recordingEmbodimentReady=false;
+  if(recording&&!recordingEmbodimentReady&&!recordingEmbodimentLoading)
+    recordingEmbodimentLoading=prewarmRecordingEmbodimentMeshes({renderer:R3,props:P3})
+      .then(ready=>{recordingEmbodimentReady=ready===true;}).catch(()=>false).finally(()=>{recordingEmbodimentLoading=null;});
+  const take=PB.takeFor(takeRoom||currentWorld()),settings=getSave().settings||{};
+  recordingEmbodiment.update(dt,{recording,takeId:take?.id,takeProgress:REC.takeProgress(),
+    transport:HUNTER.takeHunterTransport(takeHunter),
+    tutorial:TUT.tutorialActive(),slating:REC.isSlating(),stalled:REC.isStalled()||REC.isAssistPaused(),
+    lightOn:REC.lightOn(),effectsMode:settings.flash||'full',reducedMotion:shakeMode()!=='full',reducedDread:!!settings.reduceDread,
+    suspended:paused||!gameplayInputLifecycleActive()||scenes.blocksWorld(),enabled:recordingEmbodimentReady});
+}
 let fear=0;
 const stillnessDread=createStillnessDread();
 function tickStillnessDread(dt,{away=false}={}){
@@ -22670,19 +22920,53 @@ function tickSourceSpace(dt){
       })) PRES.spawnBehind(px,py,-forward[0],-forward[1]);
     }else if(!hushPresent&&PRES.isActive())PRES.despawn();
   }
-  if(!sourceFinalCombatOpen&&performance.now()>=sourceFinalCombatRetryAt&&!scenes.blocksInput()){
+  tickSourceFinalEncounter();
+  syncSourceRender();
+}
+
+// These terminal fights own their own checkpoint/retry flows rather than
+// openEncounterBattle. Keep one durable entry receipt for the current attempt:
+// a restored checkpoint continues it, while an explicit abort/loss closes it.
+function trackFinalBattleProgress(id,{resumed=false,source}={}){
+  const runId=getSave().run?.id;
+  const prior=getSave().run?.ledger?.battles?.results?.[id];
+  if(prior?.active!==true&&(!resumed||prior?.active===false))
+    emitProgress(EVENT_TYPES.BATTLE_STARTED,{id},source);
+  let finished=false;
+  return(result,metrics={})=>{
+    if(finished||!runId||getSave().run?.id!==runId)return false;
+    finished=true;
+    emitProgress(EVENT_TYPES.BATTLE_FINISHED,{
+      id,result,attempts:Math.max(1,Number(metrics.attempts)||1),
+      firstPass:result==='win'&&Number(metrics.missedCounters??0)===0,
+      turns:Number(metrics.turns)||0,damageTaken:Number(metrics.damageTaken)||0,
+      perfectCounters:Number(metrics.perfectCounters)||0,torchSpent:Number(metrics.torchSpent)||0,
+      toolsUsed:metrics.toolsUsed||{},source:metrics.source||null,
+    },source);
+    return true;
+  };
+}
+
+function tickSourceFinalEncounter(){
+  const localOwner=sourceContinuationScene&&scenes.top()===sourceContinuationScene;
+  if(!sourceFinalCombatOpen&&performance.now()>=sourceFinalCombatRetryAt&&(!scenes.blocksInput()||localOwner)){
     const request=chunkSurfRuntime.finalEncounterRequest();
     if(request?.adapter==='combat-v1'){
       const battleRuntime=chunkSurfRuntime;
+      const battleOwner=sourceContinuationScene;
       const currentAttempt=()=>chunkSurfRuntime===battleRuntime
+        &&sourceContinuationScene===battleOwner
         &&battleRuntime.state().finalEncounter.activeBattleId===request.battleAttemptId;
       sourceFinalCombatOpen=true;
-      const sourcePressurePresentation=pressurePresentationSnapshot();
+      const sourcePressurePresentation=sourceContinuationScene?null:pressurePresentationSnapshot();
       PRES.despawn();
       const replayManifest=beginSourceContactBattle(currentSourceReplayManifest(),request.battleAttemptId,{preserveLegacy:request.victories===0});
       commitSourceReplayManifest(replayManifest);
       const replayCheckpoint=replayManifest.encounter;
       const resumeSource=replayCheckpoint.continuation?.source||null;
+      const finishBattle=trackFinalBattleProgress(`source-contact-${request.chapter}`,{
+        resumed:!!replayCheckpoint.continuation,source:'main.sourceContactBattle',
+      });
       const battle=applyRigAdvantage(sourceCombatBattle({bodyReturn:request.bodyReturnAssist,tells:request.tells}),{hasRig:request.rigAvailable});
       // The review stop can preview a later peel. Ordinary contact dissolves
       // the shell at the opening, independently of composure damage.
@@ -22705,7 +22989,9 @@ function tickSourceSpace(dt){
         skipEncounterStart:!!replayCheckpoint.continuation,
         onWin:(metrics={})=>{
           if(!currentAttempt())return;
+          if(!finishBattle('win',metrics))return;
           sourceFinalCombatOpen=false;
+          sourceContinuationScene?.releaseContact?.();
           const resolved=chunkSurfRuntime?.resolveFinalEncounter({
             battleAttemptId:request.battleAttemptId,
             outcome:metrics.source?.outcome,
@@ -22726,16 +23012,20 @@ function tickSourceSpace(dt){
         // Contact is the declared point of no return.  The runtime resolves the
         // terminal ending here; it never manufactures the old loss-to-Horizon
         // route for a new run.
-        onLose:()=>{
+        onLose:(metrics={})=>{
           if(!currentAttempt())return;
+          if(!finishBattle('lose',metrics))return;
           sourceFinalCombatOpen=false;
+          sourceContinuationScene?.releaseContact?.();
           chunkSurfRuntime?.failFinalEncounter({battleAttemptId:request.battleAttemptId});
           renderMove=null;motionRig=null;trail=[];
           PRES.despawn();
         },
         onAbort:()=>{
           if(!currentAttempt())return;
+          if(!finishBattle('abort'))return;
           sourceFinalCombatOpen=false;sourceFinalCombatRetryAt=performance.now()+1000;
+          sourceContinuationScene?.releaseContact?.();
           const cancelled=chunkSurfRuntime?.cancelFinalEncounter?.({battleAttemptId:request.battleAttemptId});
           if(cancelled?.handled)commitSourceReplayManifest({...currentSourceReplayManifest(),encounter:null});
         },
@@ -22744,7 +23034,6 @@ function tickSourceSpace(dt){
       else openBattle(battle,battleOptions);
     }
   }
-  syncSourceRender();
 }
 
 let stairAnomalyEnteredAt=0;
@@ -22834,25 +23123,68 @@ function sourceHushContactFacts(){
   };
 }
 
-function openSourceHushContact(){
-  if(!usingSourceSpace())return false;
-  const encounter=chunkSurfRuntime.beginHushContact?.(sourceHushContactFacts());
+let sourceRecordingInspectionScene=null,sourceRecordingInspectionRenderer=null;
+function sourceRecordingDisplayCustody(){
+  const custody=chunkSurfRuntime?.sourceRecordingCustody?.();if(!custody)return null;
+  return{...custody,recordings:custody.recordings.map(row=>{
+    const take=PB.tapeTake(row.takeId);return{...row,slate:take?.slate||null,nightStamp:take?.nightStamp||null};
+  })};
+}
+function openSourceRecordingCassette(request){
+  if(sourceRecordingInspectionScene||nightDeadlinePending(getSave().nightDeadline)||REC.isRecording()||REC.isListening()||PB.isPlaying())return false;
+  const owner=sourceContinuationScene,runtime=chunkSurfRuntime;
+  if(!owner||!runtime)return false;
+  ensureTapeAudio();
+  const renderer=createSourceRecordingCassetteRenderer({renderer:R3,props:P3,getTorch:sourcePresentationTorch});
+  let inspection;
+  inspection=makeSourceRecordingInspectionHost({request,owner,runtime,renderer,playback:PB,
+    getOwner:()=>sourceContinuationScene,getRuntime:()=>chunkSurfRuntime,getRunId:()=>getSave().run?.id,getTakes:()=>PB.serializeTakes(),
+    presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),recorderAvailable:flagTest('bag.taken')&&!itemLost('recorder'),
+      protected:REC.isRecording()||REC.isListening(),deadlinePending:nightDeadlinePending(getSave().nightDeadline),reducedMotion:shakeMode()!=='full'}),
+    onCommit:result=>{
+      saveCommit({chunkSurf:runtime.state(),rec:REC.saveRecState()});
+      const recordings=sourceContinuationRecordingReturnProps(owner.serialize(),sourceRecordingDisplayCustody()).filter(row=>row.kind==='source-recording-cassette').map(row=>row.recording);
+      void prewarmSourceRecordingCassetteMeshes({renderer:R3,props:P3,recordings}).catch(()=>false);
+      SPEECH.say({who:'you',text:`${result.recording?.place||roomLabel(result.recording?.roomId)||'My recording'}. Back on the tape.`});
+    },
+    onError:error=>pushEvent(`// ${error?.message||error}`),
+    onTrace:value=>{sourceContinuationTrace.push({...value,sequence:'cassette-inspection'});if(sourceContinuationTrace.length>6000)sourceContinuationTrace.splice(0,1000);},
+    onExit:()=>{if(sourceRecordingInspectionScene===inspection){sourceRecordingInspectionScene=null;sourceRecordingInspectionRenderer=null;ensureInteractionFocus();}},
+  });
+  if(!inspection){renderer.dispose();return false;}
+  sourceRecordingInspectionScene=inspection;sourceRecordingInspectionRenderer=renderer;scenes.push(inspection);return true;
+}
+
+function openSourceHushContact({chapter='I',locallyAvailable=false,checkpoint=null}={}){
+  if(!usingSourceSpace()&&!sourceContinuationScene||REC.isRecording()||REC.isListening()||PB.isPlaying())return false;
+  if(nightDeadlinePending(getSave().nightDeadline))return false;
+  if(checkpoint)chunkSurfRuntime?.setContinuationCheckpoint?.(checkpoint);
+  const contactRuntime=chunkSurfRuntime,contactOwner=sourceContinuationScene;
+  const currentContact=()=>chunkSurfRuntime===contactRuntime&&sourceContinuationScene===contactOwner;
+  const encounter=chunkSurfRuntime.beginHushContact?.(sourceHushContactFacts(),{chapter,locallyAvailable,runId:getSave().run?.id});
   if(!encounter)return false;
   void windowChoreography?.beginSourceContact?.();
   const caughtActor=PRES.presenceState();
   caughtActor.hasTarget=false;caughtActor.velocityX=0;caughtActor.velocityY=0;caughtActor.speed=0;
-  let resolved=false;
+  let resolved=false,committedCombat=false;
   scenes.push(makeSourceContactScene({
     encounter,audio:STORY,getAudio:()=>({ctx:actx,destination:dialogGain||master}),cue:fireCue,fx:CR.fx,
     replay:createReplayService('source-hush-dialogue'),
     onBody:(cue)=>R3.r3dHushPose?.(cue),
     onChoice:(choiceId)=>{
-      const result=chunkSurfRuntime?.resolveHushContactChoice?.(choiceId);
+      if(!currentContact())return;
+      const result=chunkSurfRuntime?.resolveHushContactChoice?.(choiceId,{takes:PB.serializeTakes(),
+        destination:sourceContinuationRecordingDestination(chapter==='I'?'II':'III')});
       if(result?.terminal)resolved=true;
+      if(result?.combat)committedCombat=true;
+      if(result?.recordingContact?.handled){const row=result.recordingContact.recording;
+        SPEECH.say({who:'you',text:row?`${row.place||roomLabel(row.roomId)||'A recording'}. The counter reaches it, but there is nothing to play. It is somewhere in Source ${row.destination.chapter}.`:'It finds no available recording to take.'});}
       if(result?.handled)saveCommit({px,py,chunkSurf:chunkSurfRuntime.state(),area:'source-space'});
     },
     onResolve:()=>{
+      if(!currentContact())return;
       if(!resolved)chunkSurfRuntime?.cancelHushContact?.();
+      if(!committedCombat)sourceContinuationScene?.releaseContact?.();
       // Combat starts on the following world tick after the dialog relinquishes input.
       armHeldMovement(performance.now());
     },
@@ -23290,6 +23622,7 @@ function inAcademicSociety(){
 }
 function academicReturnProtection(){
   const dialogueActorIds=[];
+  if(studentStrikeScene)dialogueActorIds.push('odette');
   if(academicSocietyDialogueScene){
     dialogueActorIds.push(academicSociety.view().activeDialogue,academicFloorPopulation.view().activeDialogue,
       academicSocietyDialogueLine?.actorId,academicSocietyDialogueLine?.toActorId);
@@ -23362,8 +23695,8 @@ function academicFloorReturnsReview(){
 function academicSocietyListener(){return {x:FP.toAuthoredCoord(px),y:FP.toAuthoredCoord(py)};}
 function academicSocietyActors(){
   const hit=PROPS.pickProp(px,py,R3.r3dFacing(),3.2,{yaw:mapHeading(),pitch:R3.r3dLookAngles?.()?.pitch});
-  const line=academicBouncerDialogueLine||academicSocietyDialogueLine||SPEECH.speaking();
-  const voicing=academicBouncerSocialScene?!!academicBouncerSocialScene.view?.()?.voice
+  const line=studentStrikeNarrationLine()||academicBouncerDialogueLine||academicSocietyDialogueLine||SPEECH.speaking();
+  const voicing=studentStrikeScene?studentStrikeAudio?.snapshot().actorId==='odette':academicBouncerSocialScene?!!academicBouncerSocialScene.view?.()?.voice
     :academicSocietyDialogueScene?!!academicSocietyDialogueScene.view?.()?.voice:SPEECH.isVoicing();
   return academicSociety.actorFrame({listener:academicSocietyListener(),
     performanceTimeSec:academicSocietyPresentation.view().timeSec,
@@ -23383,7 +23716,8 @@ function tickAcademicSocietyPresentation(dt){
     nativeFocused:pointerMode.status()?.nativeBackend?.focused,documentFocused:document.hasFocus(),
     blocked:scenes.blocksInput()||scenes.blocksWorld(),
     ownsTopScene:(!!academicSocietyDialogueScene&&scenes.top({includeOverlay:true})===academicSocietyDialogueScene)
-      ||(!!academicBouncerSocialScene&&scenes.top({includeOverlay:true})===academicBouncerSocialScene),
+      ||(!!academicBouncerSocialScene&&scenes.top({includeOverlay:true})===academicBouncerSocialScene)
+      ||(!!studentStrikeScene&&studentStrikeScene.view().phase==='returning'&&scenes.top({includeOverlay:true})===studentStrikeScene),
   });
 }
 function saveAcademicGhostClub(){saveCommit({academicSociety:academicSociety.save(),academicFloorPopulation:academicFloorPopulation.save(),academicBouncers:academicBouncers.save(),academicFloorReturns:academicFloorReturns.save()});}
@@ -23516,12 +23850,111 @@ function updateAcademicGhostAudio(){
   academicGhostGain.gain.setTargetAtTime(gain,actx.currentTime,.035);
   academicGhostAudioFrame={propId:prop.id,pan,gain,active:true};
 }
+let studentStrikeScene=null,studentStrikeAudio=null,studentStrikeReturnPose=null,studentStrikeLastReturn=null;
+const studentStrikeInputGate=createStudentStrikeInputGate();
+function studentStrikePresentationFrame(){
+  const view=studentStrikeScene?.worldView();
+  return view?.studentStrike?studentStrikeScene?.view()?.frame||null:null;
+}
+function studentStrikeNarrationLine(){
+  const state=studentStrikeScene?.view();if(!state||state.phase==='loading'||state.phase==='restoring')return null;
+  const cue=STUDENT_STRIKE_CUES.find(c=>state.elapsed>=c.start&&state.elapsed<c.end);
+  return cue?{...cue,academicSociety:cue.actorId==='odette',toPlayer:cue.actorId==='odette',voiceSpeaker:cue.actorId==='odette'?'society-odette':'academic-listener'}:null;
+}
+function paintStudentStrikeSubtitle(cue,frame){
+  uiDraw(({ctx})=>{
+    const w=ctx.canvas.width,h=ctx.canvas.height,gate=studentStrikeGate(frame,{width:w,height:h});
+    ctx.save();ctx.fillStyle='#000';for(const bar of gate?.bars||[])ctx.fillRect(bar.x,bar.y,bar.width,bar.height);
+    if(cue?.text){
+      const pictureH=frame?.nativeReturn?h:Math.min(h,w/2),pictureY=(h-pictureH)/2;
+      let font=Math.max(14,Math.min(30,pictureH*.05)),lines=[];
+      const text=cue.displaySpeaker?`${cue.speaker}: ${cue.text}`:cue.text;
+      const wrap=()=>{lines=[];let line='';for(const word of text.split(/\s+/u)){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>w*.84){lines.push(line);line=word;}else line=next;}if(line)lines.push(line);};
+      do{ctx.font=`600 ${font}px Arial, sans-serif`;wrap();if(lines.length<=2||font<=12)break;font--;}while(true);
+      const row=font*1.25,pad=font*.6,boxW=Math.max(...lines.map(line=>ctx.measureText(line).width))+pad*2,boxH=lines.length*row+pad*.8;
+      const y=pictureY+pictureH-pictureH*.058-boxH;
+      ctx.fillStyle='rgba(5,7,5,.94)';ctx.fillRect((w-boxW)/2,y,boxW,boxH);
+      ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';lines.forEach((line,i)=>ctx.fillText(line,w/2,y+pad*.4+row*(i+.5)));
+    }
+    ctx.restore();
+  });
+}
+function clearStudentStrikePresentation(pose,{restoreView=true}={}){
+  if(restoreView&&pose){R3.r3dSetLookAngles?.({yaw:pose.yaw,pitch:pose.pitch,immediate:true});R3.r3dSnapCameraOnNextFrame?.();}
+  resetMotionInput('student-strike-release',{stopRenderMove:true});
+  studentStrikeInputGate.returnToPlayer();standingTearInputGate.arm();
+  r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;
+  R3.r3dSetFear(presentedFearPressure().visualDread);
+  if(FP.isLoaded()&&!usingSpecialSpace())refreshWorldProps();
+  updateAudio();
+}
+function retireStudentStrike({restoreView=true}={}){
+  const scene=studentStrikeScene,pose=studentStrikeReturnPose;
+  if(!scene&&!pose)return false;
+  studentStrikeScene=null;studentStrikeAudio?.dispose();studentStrikeAudio=null;studentStrikeReturnPose=null;
+  if(scene)scenes.remove(scene);
+  clearStudentStrikePresentation(pose,{restoreView});return true;
+}
+function beginStudentStrike(){
+  if(studentStrikeScene||!inAcademicSociety()||!academicActorPresent('odette')||usingSpecialSpace()||RENDERER!=='3d'||scenes.blocksInput())return false;
+  if(REC.isRecording()||REC.isListening()||PB.isPlaying()||activeBattleId)return false;
+  const camera=R3.r3dViewCamera?.(),physical=FP.logicalToPhysical(px,py);
+  const look=camera?{yaw:camera.yaw-planYawOffset(),pitch:camera.pitch}:R3.r3dLookAngles();
+  R3.r3dSetLookAngles?.({...look,immediate:true});
+  const pose=captureStudentStrikeReturnPose({x:px,y:py,floor:physical.y,renderGroup:physical.renderGroup,
+    yaw:look.yaw,pitch:look.pitch,facing:R3.r3dFacing(),camera});
+  studentStrikeReturnPose=pose;studentStrikeInputGate.begin();standingTearInputGate.arm();
+  saveCommit({...studentStrikeSavePatch(pose),cameraRevision:(getSave().cameraRevision||0)+1});
+  resetMotionInput('student-strike-enter',{stopRenderMove:true});
+  academicGhostDispatch?.cancel();academicPopulationDispatch?.cancel();academicBouncerSocialDispatch?.cancel();
+  academicInframusic.pause('student-strike');pubRoomAudio?.pause();pubPressureAudio?.pause();
+  studentStrikeAudio=createStudentStrikeAudio({getAudio:()=>actx?{ctx:actx,destination:dialogGain||master}:null});
+  const audio=studentStrikeAudio;let scene;
+  scene=createStudentStrikeScene({returnPose:pose,durationSeconds:STUDENT_STRIKE_FILM.durationSeconds,returnAtSeconds:59,
+    sampleFilm:seconds=>studentStrikeFrame(seconds,{returnPose:pose,reducedMotion:shakeMode()!=='full'}),
+    prepare:async()=>{await R3.r3dBasePropsReady();await Promise.all([prepareStudentStrikeAssets(),audio.prepare(STUDENT_STRIKE_CUES)]);return true;},
+    toWorldView:frame=>{const camera=R3.r3dViewCamera?.();return studentStrikeWorldView(frame,{aspect:(camera?.width||innerWidth)/(camera?.height||innerHeight)});},
+    getPresentationReady:()=>R3.r3dPresentationReady?.()===true,
+    isPaused:()=>paused,isHidden:()=>document.hidden,inputActive:gameplayInputLifecycleActive,
+    onShot:()=>{r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();},
+    onPause:()=>audio.pause(),onResume:()=>{},
+    paintCover:alpha=>{if(alpha>0){const{cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.min(1,alpha)})`);}},
+    getNarration:frame=>STUDENT_STRIKE_FILM.captions.find(cue=>frame.seconds>=cue.start&&frame.seconds<cue.end)||null,
+    paintSubtitle:(cue,meta)=>paintStudentStrikeSubtitle(cue,meta.frame),
+    onRestore:async({returnPose:entry,isCurrent})=>{
+      if(studentStrikeScene!==scene||isCurrent&&!isCurrent())return false;
+      px=entry.x;py=entry.y;trail=[];renderMove=null;motionRig=null;
+      resetMotionInput('student-strike-restore',{stopRenderMove:true});
+      R3.r3dSetFear(presentedFearPressure().visualDread);
+      R3.r3dSetLookAngles?.({yaw:entry.yaw,pitch:entry.pitch,immediate:true});R3.r3dCancelMouseLookGlide?.();
+      r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;refreshWorldProps();
+      R3.r3dSnapCameraOnNextFrame?.();
+      saveCommit({...studentStrikeSavePatch(entry),cameraRevision:(getSave().cameraRevision||0)+1});
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      return studentStrikeScene===scene&&Math.abs(FP.logicalToPhysical(px,py).y-entry.floor)<.001;
+    },
+    onDone:result=>{
+      if(studentStrikeScene!==scene)return;
+      studentStrikeLastReturn={...result,actual:{x:px,y:py,floor:FP.logicalToPhysical(px,py).y,...R3.r3dLookAngles()},audio:audio.snapshot()};
+      studentStrikeScene=null;studentStrikeAudio=null;studentStrikeReturnPose=null;audio.dispose();scenes.remove(scene);
+      clearStudentStrikePresentation(pose);
+      if(result.completed&&!result.error){flagSet(STUDENT_STRIKE_WATCHED_FLAG);saveCommit({flags:getSave().flags});}
+    },
+    onExit:()=>{audio.dispose();if(studentStrikeScene===scene){studentStrikeScene=null;studentStrikeAudio=null;studentStrikeReturnPose=null;clearStudentStrikePresentation(pose);}},
+    onError:error=>console.warn('[student-strike]',error),
+  });
+  const update=scene.update;scene.update=dt=>{update(dt);const state=scene.view();audio.update({time:state.elapsed,frame:state.frame,
+    active:studentStrikeScene===scene&&(state.phase==='playing'||state.phase==='returning'&&state.reason==='complete'),paused:paused||document.hidden||!gameplayInputLifecycleActive()||scenes.isFrozen(scene)});};
+  const render=scene.render;scene.render=()=>{paintStudentStrikeSubtitle(null,scene.view().frame);render();};
+  studentStrikeScene=scene;scenes.push(scene);return true;
+}
 function talkToAcademicPerson(actorId){
   if(!inAcademicSociety()||!academicActorPresent(actorId)||scenes.blocksInput())return false;
   academicBouncerSocialDispatch?.cancel();academicBouncerSocialDispatch=null;
   // Establish this floor visit even if E is pressed on the arrival frame.
   academicSociety.tick(0,{onAcademicFloor:true,suspended:true,listener:academicSocietyListener(),activeActorIds:academicActiveActorIds()});
-  const dialogue=academicSociety.beginDialogue(actorId);if(!dialogue)return false;
+  const dialogue=academicSociety.beginDialogue(actorId,{studentStrikeWatched:flagTest(STUDENT_STRIKE_WATCHED_FLAG),
+    studentStrikeAvailable:!REC.isRecording()&&!REC.isListening()&&!PB.isPlaying()&&!activeBattleId});if(!dialogue)return false;
   academicGhostDispatch?.cancel();academicGhostDispatch=null;
   const choices=[];let closed=false;
   const close=completed=>{
@@ -23533,7 +23966,7 @@ function talkToAcademicPerson(actorId){
     onChoice:choice=>choices.push(choice),
     onLine:line=>{academicSocietyDialogueLine={...line,academicSociety:true};updateAcademicGhostAudio();},
     getAudio:()=>({ctx:actx,destination:academicGhostSpeechDestination()||dialogGain||master}),
-    onDone:()=>close(true),onCancel:()=>close(false),
+    onDone:()=>{close(true);if(odetteStrikeWatchRequested(actorId,choices))queueMicrotask(()=>beginStudentStrike());},onCancel:()=>close(false),
   });
   academicSocietyDialogueScene=scene;
   if(!scene)close(false);
@@ -24019,6 +24452,7 @@ function tickYardVigil(dt){
     // lead by his foot that belongs to somebody who left before dinner.
     flagSet(VIGIL.FLAG);
     saveCommit({flags:getSave().flags,yardVigil});
+    emitProgress(EVENT_TYPES.ITEM_OBTAINED,{id:VIGIL.FLAG},'main.citySeatLead');
   }
 }
 const vigilLastCell={x:-1,y:-1};
@@ -24559,6 +24993,9 @@ function hushFearProximityAt(x=px,y=py){
 }
 
 function offerHushSoundTarget(offer){
+  // Permitted movement while silencing an authored instrument cannot queue a
+  // fresh pursuit to be delivered when the held take resumes.
+  if(REC.isRecording()&&REC.isStalled())return false;
   const confinement=basementWatcherConfinement();
   if(confinement&&!basementWatcherRoomContainsRuntime(confinement.id,offer?.position))return false;
   return PRES.offerSoundTarget(offer);
@@ -25253,6 +25690,9 @@ function tickHushNoisePerception(dt){
   const now=performance.now();
   const snapshot=MONITOR.monitorSnapshot(now);
   monitorExposureSnapshot=snapshot;
+  // Keep the live meter honest, but freeze belief, tape observations and
+  // contact decisions for the interval in which the instrument owns control.
+  if(REC.isRecording()&&REC.isStalled())return;
   const signalLive=hushActiveForPlayer();
   const enabled=storyMode&&!usingSpecialSpace()&&!TUT.tutorialActive()&&signalLive;
   noteMeterDivergence();
@@ -25326,6 +25766,7 @@ function monitorDisplaySnapshot(){
 }
 
 function tickPresence(dt){
+  if(REC.isRecording()&&REC.isStalled())return;
   if(usingStairAnomaly())return;
   if(!storyMode || !PRES.isActive()) return;
   if(chapelTowerState().phase===CHAPEL_TOWER_PHASE.TOWER_ACTIVE)return;
@@ -25547,6 +25988,10 @@ function godRecordingHallucination(kind='hard'){
 
 function tickRecordingHallucinations(dt){
   const now=performance.now();
+  if(recordingEmbodiment.snapshot().viewPull?.active){
+    recordingFalseHush=null;recordingHallucinations.clear();
+    recordingHallucinationWhy={...recordingHallucinationWhy,reason:'near-field-presence',placed:false};return;
+  }
   if(now<recordingHallucinationProbeUntil){
     if(recordingFalseHush&&now>=recordingFalseHush.expiresAtMs)recordingFalseHush=null;
     return;
@@ -25616,6 +26061,11 @@ function openB3Console(){
   const scene=makeB3ConsoleScene({getState:()=>b3Speaker.snapshot(),isRecording:()=>REC.isRecording()&&!REC.isSlating()&&!REC.isStalled(),onRecord:()=>recordAction(),
     onFader:(channel,value)=>{b3Speaker.setFader(channel,value);b3FadersDirty=true;},
     onPower:on=>b3Speaker.setPower(on),
+    onLookMode:(looking,{gesture=false}={})=>{
+      resetMotionInput('b3-console-look',{stopRenderMove:true});
+      ensureInteractionFocus();syncPointerMode('b3-console-look');
+      if(looking&&gesture)void ensurePointerLock('b3-console-look');
+    },
     onControl:kind=>{const now=performance.now();if((kind==='power'||kind==='fader')&&now-b3ControlCueAt>=120){b3ControlCueAt=now;CUES.playCue(CUES.CUE.keys,{gain:.12,rate:kind==='power'?.65:1.15});}},
     onClose:()=>{b3Speaker.flush();b3ConsoleScene=null;ensureInteractionFocus();syncPointerMode('b3-console-close');},
   });
@@ -25700,7 +26150,7 @@ function tickB3HushVisit(dt,speaker,audio,physical){
   // the desk itself remains a naturally occluded viewpoint.
   const x=(physical.x+.5)*CELL,z=(physical.z+.5)*CELL;
   const inBooth=x>=19&&x<25&&z>=6&&z<18;
-  const result=visit.step({dt,eligible,suspended:paused||!gameplayInputLifecycleActive()||(typeof document.hasFocus==='function'&&!document.hasFocus())||!actx||actx.state!=='running'||PRES.presenceTableauActive()||!!activeBattleId,inBooth,
+  const result=visit.step({dt,eligible,suspended:paused||!gameplayInputLifecycleActive()||!actx||actx.state!=='running'||PRES.presenceTableauActive()||!!activeBattleId,inBooth,
     signal:activeAudio?speaker.intensity:0,seen:flagTest('b3.speakers.visit.complete'),player:{x:px,y:py}});
   if(result.phase==='idle'&&eligible&&inBooth)b3VisitRetryAt=performance.now()+700;
 }
@@ -25709,7 +26159,7 @@ function tickB3Speaker(dt){
   if(!storyMode||!usingPlan()||usingSpecialSpace()){b3SpeakerAudio.pause();return;}
   const present=FP.logicalToPhysical(px,py),source=FP.toRuntimePoint({x:B3_SPEAKER_SOURCE.x,y:B3_SPEAKER_SOURCE.z});
   const local=present?.renderGroup==='basement'&&Math.abs((present?.y??0)+4)<.3;
-  const focused=gameplayInputLifecycleActive()&&(typeof document.hasFocus!=='function'||document.hasFocus());
+  const focused=gameplayInputLifecycleActive();
   if(local&&actx?.state==='running'&&!b3SpeakerAudio.state().ready)void b3SpeakerAudio.preload();
   const rec=REC.recState(),room=takeRoom||recordableRoomAt(px,py);
   const snapshot=b3Speaker.step({dt,enabled:!REC.hasTake('main_b3'),recording:REC.isRecording(),
@@ -25742,7 +26192,7 @@ function tickB3Speaker(dt){
   if(b3FadersDirty&&performance.now()>=b3FaderRefreshAt){
     if(syncB3FaderProps(PROPS,snapshot.fader)>0){
       b3FadersDirty=false;b3FaderRefreshAt=performance.now()+120;
-      if(local)syncBuildingRender({reveal:false});
+      if(local)R3.r3dSetProps(worldRenderInstances('basement'));
     }
   }
 }
@@ -25753,7 +26203,7 @@ function tickRecorder(dt){
   // hear or see it. Preserve the current room even if the body moved away.
   const recordingRoom=takeRoom||(takeOrigin?recordableRoomAt(takeOrigin.x,takeOrigin.y):recordableRoomAt(px,py));
   if(holdB3RecordingForLifecycle({recording:REC.isRecording(),roomId:recordingRoom,paused,
-    focused:gameplayInputLifecycleActive()&&(typeof document.hasFocus!=='function'||document.hasFocus()),hidden:document.hidden})){
+    focused:gameplayInputLifecycleActive(),hidden:document.hidden})){
     b3SpeakerAudio.pause();b3Speaker.flush();return;
   }
   // The repair cannot finish offscreen while its threats are held. Keep the
@@ -25773,6 +26223,7 @@ function tickRecorder(dt){
   // down when the take ends, and it has to run on the frame the take stops.
   tickChapelRetakeHaunt();
   tickTakeHunter(dt);
+  tickRecordingEmbodiment(dt);
   tickInstrument();
   tickPracticeMetronomes(dt);
   tickPracticeStudent();
@@ -25898,7 +26349,7 @@ let takeHunterArmedAt=0;
 function armTakeHunter(cause){
   // Never during the tutorial, and never before the night's work has begun —
   // the same rule the rest of the hunt already keeps.
-  if(!storyMode||TUT.tutorialActive()||!REC.isRecording()||!nightWorkBegun())return;
+  if(!storyMode||TUT.tutorialActive()||!REC.isRecording()||REC.isStalled()||!nightWorkBegun())return;
   const now=performance.now();
   if(now-takeHunterArmedAt<600)return;
   takeHunterArmedAt=now;
@@ -25909,7 +26360,7 @@ function armTakeHunter(cause){
   // line for each: "answers that", then "stopped when the tape did". Decide once
   // the recordist has finished deciding, which is the end of this same call.
   queueMicrotask(()=>{
-    if(!REC.isRecording()||REC.recState().spoiled)return;
+    if(!REC.isRecording()||REC.isStalled()||REC.recState().spoiled)return;
     const before=takeHunter.active;
     takeHunter=HUNTER.armTakeHunter(takeHunter,{cause});
     if(before)return;
@@ -25924,6 +26375,12 @@ function armTakeHunter(cause){
 
 function tickTakeHunter(dt){
   const recording=storyMode&&REC.isRecording();
+  // The instrument holds this same take while its controls send the player
+  // away. It also holds the hunter: no approach, quiet recovery, brake warning
+  // or contact time may accrue from permitted footsteps or the HUSH's source.
+  // resumeTake clears that held envelope before normal authority returns.
+  const presented=!paused&&gameplayInputLifecycleActive()&&!scenes.suppressesHud();
+  if(recording&&(REC.isStalled()||!presented))return;
   // WHAT IT STEERS BY IS SOUND — his own noise envelope and the real room's
   // microphone, whichever is louder. Silence is the counterplay, which is the
   // same verb the whole game is about.
@@ -25933,7 +26390,6 @@ function tickTakeHunter(dt){
   const listening=recording&&takeHunter.active;
   const mic=listening&&MIC.micActive()&&MIC.micMaySpoil()?MIC.micEffectiveMeasurement().effective.rms:0;
   const heard=listening?Math.max(REC.currentNoise(),mic):0;
-  const presented=!paused&&gameplayInputLifecycleActive()&&!scenes.suppressesHud();
   const oldTransport=HUNTER.takeHunterTransport(takeHunter);
   const result=HUNTER.stepTakeHunter(takeHunter,presented?dt:0,{recording,heard});
   const wasClosing=takeHunterClosing;
@@ -27081,12 +27537,7 @@ function endingApproachPropInstances(){
       elevation:piece.elevationM,scale:piece.scale,yaw:(active.origin.yaw||0)+piece.yaw,
     }),
   ).filter(Boolean);
-  if(escape?.kind==='surfaced'){
-    const carry={origin:{x:px,y:py,yaw:R3.r3dLookAngles?.().yaw||0,forward:R3.r3dDelta(1)}};
-    out.push(endingPropInstance('ending-carried-alan','ending_body_prone',endingLogicalOffset(carry,.58,.24),{
-      yaw:carry.origin.yaw+Math.PI/2,elevation:.54,scale:.88,
-    }));
-  }
+
   return out;
 }
 const isNamed=()=> flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
@@ -27170,6 +27621,7 @@ function applyFinaleConsequences(metrics={}){
 // and retained traces. HUSH remains nonverbal and unseen; on the far side of
 // the turn-based performance the run hands to the existing ending choice.
 function beginConfrontation(){
+  void R3.r3dPrepareRecordistRelease?.().catch(error=>console.warn('[recordist-release] prewarm',error));
   const route=normalizeChunkSurfState(getSave().chunkSurf).finale?.route;
   if(route&&route!==SOURCE_FINALE_ROUTE.CHAPEL){
     SPEECH.say({who:'direction',text:'This run already belongs to another return. The chapel has no choice left to offer it.'});
@@ -27187,7 +27639,9 @@ function beginConfrontation(){
   const kind=flagGet('confession.kind')||'nothing';
   const value=flagGet('confession.value')||null;
   const listened=Math.max(1,getSave().run?.ledger?.reference?.breadth||1);
+  const firstChapelSlot=!REC.hasTake('lux_nova');
   REC.addTake('lux_nova'); saveCommit({ rec:REC.saveRecState() });   // the chapel is done, however it ends
+  if(firstChapelSlot&&REC.hasTake('lux_nova'))emitProgress(EVENT_TYPES.MANIFEST_SLOT_COMPLETED,{roomId:'lux_nova'},'main.chapelManifestSlot');
   openEncounterBattle('chapel',chapelBoss({ kind, value, listened }), {
     onWin: (metrics)=>{ applyFinaleConsequences(metrics);commitChapelTapeDemand(reduceChapelTapeDemand(chapelTapeDemandState(),{type:'arm'},chapelTapeDemandContext()));openEndingChoice(); },
     // Taken → you stay, which is the sacrifice. It is NOT the same as agreeing to
@@ -27224,14 +27678,10 @@ function openEndingChoice(){
   const hasRig = flagTest('has.interface');
   const canInvert = canInvertEnding();
   const hasFork=finaleHasFork();
-  const bodyRedacted=flagTest(CHUNK_SURF_FLAGS.correctRedaction);
-  const chapelProof=flagTest(CHUNK_SURF_FLAGS.bestEligible)
-    && finaleGrant('route.surfaced')
-    && !finaleLock('route.surfaced');
-  const evidenceProof=canQualifyBorrowedRecordist({
-    ledger:getSave().run?.ledger,hasFork,hasRig,bodyRedacted,
+  const canSurface=canQualifyBorrowedRecordist({hasFork,hasRig,
+    chapelReturnGranted:finaleGrant('route.surfaced'),
+    chapelReturnLocked:finaleLock('route.surfaced'),
   });
-  const canSurface = hasRig&&hasFork&&(chapelProof||evidenceProof);
   presentFinale(endingChoice({
     hasRig,
     canInvert,
@@ -27253,7 +27703,122 @@ function openEndingChoice(){
   });
 }
 
+let recordistReleaseScene=null;
+function recordistReleaseContext(view){
+  const camera=R3.r3dViewCamera?.(),eye=camera?.eye,target=view?.target;
+  let inRange=false,facing=false;
+  if(eye&&target){
+    const dx=target.x-eye.x,dy=target.y-eye.y,dz=target.z-eye.z,d=Math.hypot(dx,dy,dz);
+    const yaw=camera.yaw,pitch=camera.pitch,cp=Math.cos(pitch);
+    const dot=(dx*Math.sin(yaw)*cp+dy*Math.sin(pitch)-dz*Math.cos(yaw)*cp)/Math.max(.001,d);
+    const spans=FP.physicalSpanData?.()?.cells;
+    inRange=d<=1.70&&Math.hypot(dx,dz)>=.35&&Math.hypot(dx,dz)<=.90;
+    facing=dot>=.90&&(!spans||chapelLineOfSight(spans,eye,target));
+  }
+  return {runId:getSave().run?.id,inRange,facing,hasRig:flagTest('has.interface'),hasFork:finaleHasFork(),
+    paused,focused:gameplayInputLifecycleActive(),hidden:document.hidden,
+    blocked:usingSpecialSpace()||scenes.blocksWorld()||scenes.blocksInput()||getSave().run?.status!=='active'};
+}
+function playRecordistReleaseFork(){
+  ensureCtx();if(!actx)return;
+  // A real fork operation, scored once at contact. It is not another enemy
+  // information event and never uses the portable radio's signal authority.
+  const start=actx.currentTime,out=actx.createGain(),tone=actx.createOscillator();
+  tone.type='sine';tone.frequency.value=440;
+  out.gain.setValueAtTime(.0001,start);out.gain.exponentialRampToValueAtTime(.07,start+.008);
+  out.gain.exponentialRampToValueAtTime(.0001,start+2.2);
+  tone.connect(out).connect(sfxGain||master);tone.start(start);tone.stop(start+2.25);
+  tone.onended=()=>{tone.disconnect();out.disconnect();};
+}
+function recordistReleaseOrigin(){
+  // An actual clear piece of the chapel aisle, not the camera or a wall. The
+  // borrowed recordist remains here while the player gets close and operates.
+  const player=FP.logicalToPhysical(px,py);
+  const candidates=[{x:92,y:72},{x:92,y:74},{x:92,y:70},{x:90,y:72},{x:94,y:72}]
+    .map(at=>FP.toRuntimePoint(at)).filter(at=>
+      [[0,0],[.45,0],[-.45,0],[0,.45],[0,-.45]].every(([dx,dz])=>
+        !FP.isSolid(at.x+D(dx),at.y+D(dz))&&PROPS.propCanOccupy(at.x+D(dx),at.y+D(dz))))
+    .map(at=>FP.logicalToPhysical(at.x,at.y)).filter(at=>at.renderGroup===player.renderGroup
+      &&Math.abs(at.y-player.y)<=.35&&Math.hypot(at.x-player.x,at.z-player.z)*CELL>=1.1)
+    .sort((a,b)=>Math.hypot(a.x-player.x,a.z-player.z)-Math.hypot(b.x-player.x,b.z-player.z));
+  const at=candidates[0];
+  if(!at)throw Error('No supported clear position for the recordist in this chapel.');
+  return {x:at.x*CELL,y:at.y,z:at.z*CELL,yaw:Math.atan2(-(player.x-at.x),-(player.z-at.z))};
+}
+function startRecordistReleaseScene(){
+  if(recordistReleaseScene)return true;
+  const owner=getSave().run?.id;
+  const scene=makeRecordistReleaseScene({
+    getState:()=>getSave().recordistRelease,
+    commitState:state=>{
+      if(getSave().run?.id!==owner)return false;
+      saveCommit({recordistRelease:state,px,py});return true;
+    },
+    getContext:recordistReleaseContext,
+    assetsReady:()=>R3.r3dRecordistReleaseReady?.()===true,
+    requestAssets:()=>R3.r3dPrepareRecordistRelease?.(),
+    onCue:cue=>{
+      if(cue.id==='rig-seated')fireCue('bag',{gainScale:.45});
+      else if(cue.id==='fork-struck')playRecordistReleaseFork();
+      else if(cue.id==='body-released')SPEECH.say({who:'recordist',text:'Wait. Let me have that breath.'});
+      else if(cue.id==='carry-ready')fireCue('bag',{gainScale:.32});
+    },
+    onCarry:()=>{
+      if(getSave().run?.id!==owner)return;
+      recordistReleaseScene=null;scenes.remove(scene);beginSurfacedCarry();
+    },
+    onError:error=>console.warn('[recordist-release]',error),
+  });
+  const exit=scene.exit.bind(scene);
+  scene.exit=()=>{exit();if(recordistReleaseScene===scene)recordistReleaseScene=null;};
+  recordistReleaseScene=scene;scenes.push(scene);return true;
+}
 function endSurfaced(){
+  if(getSave().run?.status!=='active')return false;
+  if(!canQualifyBorrowedRecordist({hasRig:flagTest('has.interface'),hasFork:finaleHasFork(),
+    chapelReturnGranted:finaleGrant('route.surfaced'),chapelReturnLocked:finaleLock('route.surfaced')}))return false;
+  const runId=getSave().run?.id;
+  let state=normalizeRecordistRelease(getSave().recordistRelease,{runId});
+  if(!state){
+    try{state=beginRecordistRelease({runId,origin:recordistReleaseOrigin()});}
+    catch(error){console.error('[recordist-release]',error);pushEvent('// THE RECORDIST HAS NO CLEAR FOOTING.');return false;}
+    saveCommit({recordistRelease:state,px,py});
+  }
+  if(recordistReleaseView(state).carryReady){
+    if(!restoreChapelTapeDemandDeparture())beginSurfacedCarry();
+    return true;
+  }
+  finaleActive=true;applyLensPreset('explore');
+  return startRecordistReleaseScene();
+}
+function resumeRecordistReleaseFromSave(){
+  if(getSave().run?.status!=='active'||!storyMode||usingSpecialSpace())return false;
+  const state=normalizeRecordistRelease(getSave().recordistRelease,{runId:getSave().run.id});
+  if(!state)return false;
+  void R3.r3dPrepareRecordistRelease?.().catch(error=>console.warn('[recordist-release] resume',error));
+  if(recordistReleaseView(state).carryReady){
+    if(restoreChapelTapeDemandDeparture())return true;
+    // The lift is durable even if interruption occurred before departure was
+    // filed. Resume at the saved player position, never back at the body.
+    beginSurfacedCarry();return true;
+  }
+  finaleActive=true;return startRecordistReleaseScene();
+}
+function currentRecordistReleaseProps(timeSec){
+  if(!R3.r3dRecordistReleaseReady?.()||usingSpecialSpace())return[];
+  const state=recordistReleaseScene?.serialize()||normalizeRecordistRelease(getSave().recordistRelease,{runId:getSave().run?.id});
+  if(!state)return[];
+  const player=FP.logicalToPhysical(px,py),camera=R3.r3dViewCamera?.();
+  const yaw=camera?.yaw??mapWorldHeading();
+  const carryPose={x:player.x*CELL+Math.sin(yaw)*.64+Math.cos(yaw)*.14,y:player.y,
+    z:player.z*CELL-Math.cos(yaw)*.64+Math.sin(yaw)*.14,yaw:-yaw};
+  if(recordistReleaseScene)return recordistReleaseProps(state,{carryPose,includeTools:true,
+    player:camera?.eye?{eye:[camera.eye.x,camera.eye.y,camera.eye.z],yaw}:null});
+  if(escape?.kind==='surfaced')return recordistReleaseCarriedProps({origin:carryPose,time:timeSec});
+  return[];
+}
+
+function beginSurfacedCarry({resuming=false}={}){
   const objective=endingManifest(CHUNK_SURF_ENDING_ID)?.objective;
   const exitCell=FP.toRuntimePoint(MAIN_EXIT_CELL);
   // `pace` is the whole difference between a carry and a stroll; it divides into
@@ -27262,7 +27827,7 @@ function endSurfaced(){
   startActiveEndingCutscene(endingManifest(CHUNK_SURF_ENDING_ID)?.cutscene,{restart:true});
   startEndingTimeline(objective?.timeline,{duringObjective:true});
   applyLensPreset('explore');
-  beginChapelTapeDeparture('surfaced');
+  if(!resuming)beginChapelTapeDeparture('surfaced');
   SPEECH.say({who:'recordist',text:'The tower is quiet. Do not let the chapel choose another cut. Walk me to the public door.'});
 }
 
@@ -27270,6 +27835,7 @@ function askAlanWhileCarrying(){
   const topics=['ask.source','ask.takes','ask.surrender','ask.long','ask.her'];
   const nodeId=topics[escape.alanQuestion%topics.length];
   escape.alanQuestion+=1;
+  rememberChapelTapeDemandDeparture({commit:true});
   const dossier=currentEndingDossier('surfaced',ENDING_ARRIVAL.CARRIED);
   const tree=runtimeEndingTree('ending.surfaced',endingStoryContext(dossier));
   const lines=tree[nodeId]?.lines||[];
@@ -27526,7 +28092,10 @@ function endingWorldPropInstances(timeSec=performance.now()/1000){
       yaw:Math.PI/2,elevation:1.58,scale:1.24,noShadow:true,emissive:[.50,.56,.54,.16],
     }));
     const body=ledger?{x:ledger.rx-D(2.1),y:ledger.ry-D(.9)}:endingLogicalOffset(active,-1.2,.5);
-    add(endingPropInstance('ending-surfaced-alan','ending_body_prone',body,{yaw:yaw+.15,scale:.96,noShadow:true,emissive:[.28,.34,.38,.10]}));
+    if(R3.r3dRecordistReleaseReady?.()){
+      const at=FP.logicalToPhysical(body.x,body.y);
+      for(const actor of recordistReleaseRestingProps({origin:{x:at.x*CELL,y:at.y,z:at.z*CELL,yaw:-yaw+.15},time:timeSec}))add(actor);
+    }
     const witness=ledger?{x:ledger.rx-D(1.9),y:ledger.ry+D(1.3)}:endingLogicalOffset(active,-.8,-.5);
     add(endingPropInstance('ending-surfaced-player','ending_body_standing',witness,{yaw:yaw+Math.PI,scale:.97,noShadow:true,emissive:[.28,.34,.38,.10]}));
   }
@@ -28259,6 +28828,7 @@ function playEnding(endingId,arrival,{variant=null}={}){
 
 let sourceRestEndingResumePending=false;
 function resumeEndingCutsceneFromSave(){
+  if(!getSave().endingCutscene&&resumeRecordistReleaseFromSave())return true;
   const restCheckpoint=getSave().endingCutscene;
   if(restCheckpoint?.endingId==='contact-lost'&&restCheckpoint.variant===ENDING_VARIANT.SOURCE_REST
       &&restCheckpoint.arrival===ENDING_ARRIVAL.RESTED&&getSave().run?.status==='active'){
@@ -28494,18 +29064,22 @@ function prepareCathedralRetry(){
 }
 function openCathedralSecondPhase(continuation=null,checkpoint=null){
   cathedralFinalCombatOpen=true;
+  const finishBattle=trackFinalBattleProgress('cathedral-phase-2',{
+    resumed:!!checkpoint,source:'main.cathedralSecondPhase',
+  });
   const carriedDamage=Math.max(0,Number(continuation?.damageTaken)||0);
   pushCombat(cathedralBellCombatBattle({phase:2,carriedDamage}),{
     continuation,checkpoint,onCheckpoint:cathedralFightCheckpoint,
     onMovementCompleted:cathedralStaging,
-    onWin:()=>{
+    onWin:(metrics={})=>{
+      if(!finishBattle('win',metrics))return;
       cathedralFinalCombatOpen=false;
       const next=reduceChunkSurf(normalizeChunkSurfState(getSave().chunkSurf),{type:'CATHEDRAL_FIGHT_WON'});
       saveCommit({chunkSurf:next,px,py,area:'conservatory'});
       startCathedralCarry();
     },
-    onLose:resolveCathedralLoss,
-    onAbort:()=>{cathedralFinalCombatOpen=false;},
+    onLose:(metrics={})=>{if(finishBattle('lose',metrics))resolveCathedralLoss();},
+    onAbort:()=>{if(finishBattle('abort'))cathedralFinalCombatOpen=false;},
   });
 }
 
@@ -28521,11 +29095,15 @@ function openCathedralFirstPhase(){
   if(fight?.phase===2){openCathedralSecondPhase(fight.continuation,fight.checkpoint);return true;}
   cathedralFinalCombatOpen=true;
   const resumed=!!fight?.checkpoint;
+  const finishBattle=trackFinalBattleProgress('cathedral-phase-1',{
+    resumed,source:'main.cathedralFirstPhase',
+  });
   (resumed?pushCombat:openBattle)(cathedralBellCombatBattle({phase:1,alarm:source.finale.cathedral?.alarm||0,
     personalOpening:!!source.finale.cathedral?.personalOpening,coastalOpening:!!source.finale.cathedral?.coastalOpening}),{
     checkpoint:fight?.checkpoint||null,onCheckpoint:cathedralFightCheckpoint,
     onMovementCompleted:cathedralStaging,
     onWin:(metrics={})=>{
+      if(!finishBattle('win',metrics))return;
       cathedralFinalCombatOpen=false;
       stageCathedral('bell-fallen');
       // Commit the next phase before its dialogue can be interrupted by reload.
@@ -28536,8 +29114,8 @@ function openCathedralFirstPhase(){
         {who:'direction',text:'The Surfer lifts his hands. The bells answer harder. Nothing you spent in the first phase comes back.'},
       ],{slate:'THE SURFER',replayId:'cathedral-surfer-arrival',embodied:true,onDone:()=>openCathedralSecondPhase(metrics.continuation)});
     },
-    onLose:resolveCathedralLoss,
-    onAbort:()=>{cathedralFinalCombatOpen=false;},
+    onLose:(metrics={})=>{if(finishBattle('lose',metrics))resolveCathedralLoss();},
+    onAbort:()=>{if(finishBattle('abort'))cathedralFinalCombatOpen=false;},
   });
   return true;
 }
@@ -28885,6 +29463,7 @@ function tickFinale(){
       const ledger=PROPS.propById('yard-booth-guard-ledger');
       if(ledger){
         escape.stage='service-road';escape.exitCell={x:ledger.rx,y:ledger.ry};
+        rememberChapelTapeDemandDeparture({commit:true});
         SPEECH.say({who:'recordist',text:'Not here. The gate. He has a RETURNED column and I have waited eleven weeks to use it.'});
       }
     }
@@ -29064,6 +29643,19 @@ function maybeIndependentBattle(){
 // copy, since it is the one that does not claim a take is running.
 const NATATORIUM_APPROACH_ENCOUNTER='natatorium-approach';
 let natatoriumDread=DREAD.freshNatatoriumDread();
+const natatoriumCoffeeStretch=createNatatoriumCoffeeStretch();
+let natatoriumCoffeeBody=null;
+function tickNatatoriumCoffeeStretch(dt){
+  const inBuilding=storyMode&&inRogue&&planName==='conservatory'&&usingPlan()&&!usingSpecialSpace()&&FP.isLoaded();
+  const physical=inBuilding?FP.logicalToPhysical(px,py):null;
+  const body=physical?{x:physical.x*CELL+CELL/2,z:physical.z*CELL+CELL/2}:null;
+  const jump=!!(body&&natatoriumCoffeeBody&&Math.hypot(body.x-natatoriumCoffeeBody.x,body.z-natatoriumCoffeeBody.z)>2.5);
+  natatoriumCoffeeStretch.tick(dt,{inside:!!physical&&physical.renderGroup==='ground'&&FP.zoneAt(px,py)===ZONE.natatorium,
+    coffeeTaken:flagTest('drank.coffee'),bodyX:body?.x??0,bodyZ:body?.z??0,runKey:getSave().run?.id,
+    eligible:inBuilding&&!activeBattleId&&!scenes.blocksInput()&&!scenes.blocksWorld()&&!activeEndingCutscene&&!buildingLoadPromise,
+    paused:paused||document.hidden||R3.r3dPresentationReady?.()!==true,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full',discontinuous:jump});
+  natatoriumCoffeeBody=body;
+}
 
 function natatoriumDreadInput(){
   if(planName!=='conservatory'||!usingPlan()||usingSpecialSpace())return null;
@@ -29112,10 +29704,21 @@ function tickNatatoriumDread(dt){
 const PLAYBACK_DIALOGS={ the_tub:natatoriumPlayback, amplifications:hallPlayback, soundnoisemusic:practicePlayback };
 function maybePlaybackDialog(room){
   const factory=PLAYBACK_DIALOGS[room];
-  if(!factory || thoughtHad(`playback-${room}`)) return;
+  const completedFlag=`playback.disclosure.complete.${room}`;
+  // The archive receipt is cross-run evidence, not authority to suppress a
+  // later night's performance or its current confession-dependent writing.
+  if(!factory || flagTest(completedFlag)) return;
+  if(thoughtHad(`playback-${room}`))unmarkThought(`playback-${room}`);
   const named = flagGet('confession.kind')==='name' && flagGet('confession.value')==='Sarah';
   emitProgress(EVENT_TYPES.PLAYBACK_DISCOVERED, { id:room }, 'main.maybePlaybackDialog');
-  think(`playback-${room}`, factory(named));
+  think(`playback-${room}`, factory(named), {onDone:()=>{
+    flagSet(completedFlag);saveCommit({flags:getSave().flags});
+    emitProgress(EVENT_TYPES.DISCLOSURE_HEARD,{id:room},'main.playbackDisclosureComplete');
+  },onCancel:()=>{
+    // A cancelled disclosure remains available on the next playback. Its
+    // opening is a discovery, but its unfinished performance is not a receipt.
+    unmarkThought(`playback-${room}`);saveCommit({thoughts:saveThoughtState()});
+  }});
 }
 
 let spoilPendingMs=0;
@@ -29167,7 +29770,7 @@ function saveTick(dt){
   // this four-second autosave lands under pause or a settings overlay.
   const sourceRuntime=chunkSurfRuntime||sourceRepriseWorldLease?.runtime;
   const ordinaryCamera=storyMode&&!sourceRuntime&&!usingStairAnomaly()&&!towerActive;
-  const borrowedCamera=getInDriveTeaserOrigin||(costumeInspectionScene&&costumeInspectionOrigin?costumeInspectionOrigin:null);
+  const borrowedCamera=studentStrikeReturnPose||getInDriveTeaserOrigin||(costumeInspectionScene&&costumeInspectionOrigin?costumeInspectionOrigin:null);
   const savedLook=ordinaryCamera?(borrowedCamera||R3.r3dLookAngles?.()):null;
   saveCommit({ px:towerCheckpoint?towerCheckpoint.x:px, py:towerCheckpoint?towerCheckpoint.y:py, steps:stepCount, area:sourceRuntime?'source-space':usingStairAnomaly()?'stair-anomaly':towerActive?'bell-tower':storyMode?'conservatory':getSave().area,
     ...(ordinaryCamera&&savedLook?{view:{yaw:savedLook.yaw,pitch:savedLook.pitch},facing:borrowedCamera?borrowedCamera.facing:R3.r3dFacing(),cameraRevision:(getSave().cameraRevision||0)+1,checkpointRevision:(getSave().checkpointRevision||0)+1}:{}),
@@ -29940,6 +30543,7 @@ function initHushAudioRuntime(){
     context:()=>({
       allowMischief:storyMode&&basementWatcherSignalAllowedAt()&&chapelTowerState().phase!==CHAPEL_TOWER_PHASE.TOWER_ACTIVE&&!scenes.blocksInput()&&!REC.isRecording()&&!finaleActive&&!activeBattleId,
       recording:REC.isRecording(),
+      instrumentHold:REC.isRecording()&&REC.isStalled(),
       blocked:scenes.blocksInput(),
       // Pressed into cover. This never tells the HUSH where he is — it withholds
       // the two intents that are about a person rather than a place.
@@ -30271,7 +30875,7 @@ function mapHeading(){
   return Number.isFinite(angles?.yaw) ? angles.yaw : R3.r3dFacing()*Math.PI/2;
 }
 // How far the world is turned under the player where they are standing. Zero
-// everywhere but the spiral. Read at the RENDERED position rather than the cell,
+// on the turned yard rooms and spiral. Read at the RENDERED position rather than the cell,
 // because px/py are integers and a per-cell angle would snap a whole tread at a
 // time; derived from the smoothed point it is continuous for free.
 function planYawOffset(){
@@ -30469,6 +31073,7 @@ async function importProgressionProfile(){
     return false;
   }
   metaCommit(merged.meta);
+  reconcileProfileAchievements();
   saveCommit({settings:merged.settings});
   syncControllerSettingsFromSave();
   pushEvent('// profile imported. current run unchanged.');
@@ -30981,6 +31586,7 @@ function godResetFx(){
 }
 
 function godClearSpecialWorlds(){
+  retireStudentStrike();
   retireStandingTear();
   clearStairEnvironmentalTimers();
   endSourceHaystackMosh();
@@ -31076,8 +31682,10 @@ function godEnsureTestRun(){
   setGameplayPaused(false,{announce:false});
   if(!getSave().run){
     newGame({preset:'contract'});
+    markDeveloperRun();
     beginRunProgression();
   }
+  markDeveloperRun();
   flagApply(['prologueDone']);
   saveCommit({flags:getSave().flags});
   if(!storyMode) enterStory();
@@ -31232,6 +31840,7 @@ function godResetEarRoom(){
 }
 
 function godReleaseViewForWarp(){
+  markDeveloperRun();
   towerEndingPlayback?.stop();towerEndingPlayback=null;
   // Remove from the top without resuming the scene below between removals.
   // A resumed tableau may acquire the camera again or open a successor scene.
@@ -31788,7 +32397,7 @@ async function godBuildingScene(hookId,open){
   if(hookId&&!await godWarpToHook(hookId))return false;
   return open();
 }
-function godFlags(set=[],clear=[]){flagApply(set,clear);saveCommit({flags:getSave().flags});return true;}
+function godFlags(set=[],clear=[]){markDeveloperRun();flagApply(set,clear);saveCommit({flags:getSave().flags});return true;}
 // The van on the arrival road, before the prologue. The test run is put back to
 // before he got out, which takes the master key off the ring until the lodge.
 function godOpeningVehicle(){
@@ -31948,7 +32557,7 @@ function godTabs(){
     {id:'session',name:'SESSION',rows:[
       section('Run'),
       {id:'test-run',label:'ENTER / RESET TEST RUN',value:()=>ready()?'READY':'[START]',danger:!ready(),closeMenu:true,activate:godEnsureTestRun},
-      {id:'resume',label:'CLOSE GOD MENU',value:'[RESUME]',activate:closeGodMenu},
+      {id:'resume',label:'CLOSE GOD MENU',value:'[RESUME]',readOnly:true,activate:closeGodMenu},
       ...(typeof localTextReviewRows==='function'?localTextReviewRows():[]),
       section('Recording hallucinations'),
       {id:'recording-hallucination-peripheral',label:'FALSE HUSH / PERIPHERAL',value:'[SHOW]',closeMenu:true,activate:()=>godRecordingHallucination('peripheral')},
@@ -32347,7 +32956,12 @@ function openGodMenu(){
   if(scenes.top()?.id==='god-menu'){closeGodMenu();return true;}
   godMenuWasPaused=paused;
   setGameplayPaused(true,{announce:false});
-  scenes.push(makeGodMenuScene({tabs:godTabs(),onClose:closeGodMenu,onError:error=>pushEvent(`// god: ${error?.message||error}.`)}));
+  scenes.push(makeGodMenuScene({tabs:godTabs(),onClose:closeGodMenu,
+    beforeInvoke:row=>{
+      if(row.readOnly!==true)markDeveloperRun(`GOD_MENU:${row.id}`);
+      return true;
+    },
+    onError:error=>pushEvent(`// god: ${error?.message||error}.`)}));
   return true;
 }
 
@@ -32381,7 +32995,10 @@ function openPauseMenu(){
   setGameplayPaused(true,{announce:false});
   scenes.push(makePauseScene({
     onResume: closePauseMenu,
-    onWithdraw:standingTearScene?()=>{const owner=standingTearScene;closePauseMenu();owner.withdraw();}:null,
+    onWithdraw:studentStrikeScene?()=>{const owner=studentStrikeScene;closePauseMenu();if(owner.view().phase==='restore-failed')void owner.retryRestore();else owner.withdraw();}
+      :standingTearScene?()=>{const owner=standingTearScene;closePauseMenu();owner.withdraw();}:null,
+    withdrawLabel:studentStrikeScene?(studentStrikeScene.view().phase==='restore-failed'?'RETRY RETURN':'RETURN TO ODETTE'):undefined,
+    withdrawDetail:studentStrikeScene?'Return to where you were standing.':undefined,
     onSettings: ()=>openSettingsFromPause('display'),
     onObjectives: ()=>openBag({focus:{sectionId:'kit'}}),
     onJournal: ()=>openBag({focus:{sectionId:'journal'}}),
@@ -32411,7 +33028,7 @@ function openArchive(request={}){
 function presentCredits({context='menu',onDone=()=>{},sourceRestBlack=false}={}){
   void windowChoreography.credits();
   const restState=sourceRestEndingMusic?.snapshot?.();
-  const restPerformance=context==='ending'&&restState?.active&&!restState.failed&&!restState.ended?sourceRestEndingMusic:null;
+  const restPerformance=context==='ending'&&restState?.active&&!restState.failed&&(!restState.ended||sourceRestBlack)?sourceRestEndingMusic:null;
   if(context==='ending'&&sourceRestEndingMusic&&!restPerformance)releaseSourceRestEndingMusic();
   let finished=false;
   const finish=()=>{
@@ -32419,8 +33036,8 @@ function presentCredits({context='menu',onDone=()=>{},sourceRestBlack=false}={})
     finished=true;
     if(scenes.top()?.id==='credits')scenes.pop();
     else scenes.remove('credits');
-    if(restPerformance&&!sourceRestBlack)releaseSourceRestEndingMusic();
-    else if(restPerformance&&sourceRestBlack)endingStaticMix?.finish({seconds:4});
+    if(restPerformance&&!sourceRestBlack)releaseSourceRestEndingMusic({toMenu:true});
+    else if(restPerformance&&sourceRestBlack)endingStaticMix?.finish({seconds:4,toMenu:true});
     onDone();
   };
   scenes.push(makeCreditsScene({
@@ -32440,9 +33057,9 @@ function presentCredits({context='menu',onDone=()=>{},sourceRestBlack=false}={})
       CUES.stopAllCues(1.2);
     },
     onBlack:()=>{
-      STORY.stopAll();
+      STORY.stopAll({preserveMenuHiss:true});
       CUES.stopAllCues(0.4);
-      if(context==='ending'&&!restPerformance&&!sourceRestBlack) STORY.startTapeHiss({ gain:TAKE_HISS.min*0.9, fade:3.4 });
+      if(context==='ending'&&!restPerformance&&!sourceRestBlack) STORY.startMenuHiss();
     },
   }));
 }
@@ -32458,10 +33075,30 @@ function openEndingCredits(summary,{sourceRestBlack=false}={}){
   emitProgress(EVENT_TYPES.CREDITS_VIEWED, {}, 'main.openEndingCredits');
   presentCredits({context:'ending',sourceRestBlack,onDone:()=>{
     if(!sourceRestBlack){showReturnReport(summary);return;}
-    // No report, labels, or instructions arrive after this final black.
-    scenes.push({id:'source-rest-final-black',blocksInput:true,blocksWorld:true,handlesEscape:true,
-      key(){return true;},exit(){releaseSourceRestEndingMusic();},
-      render(){uiDraw(({ctx})=>{ctx.save();ctx.fillStyle='#000';ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();});}});
+    // Give the ending's static its last breath, then file this same return.
+    // This is a bounded presentation, not another terminal state. The durable
+    // report stays queued for crash recovery until the player acts on it.
+    let elapsed=0,finished=false;
+    const finish=()=>{
+      if(finished)return;
+      finished=true;scenes.remove(black);
+      releaseSourceRestEndingMusic({toMenu:true});showReturnReport(summary);
+    };
+    const black={id:'source-rest-final-black',blocksInput:true,blocksWorld:true,handlesEscape:true,
+      update(dt){
+        if(finished||paused||!gameplayInputLifecycleActive())return;
+        elapsed+=Math.max(0,Number(dt)||0);if(elapsed>=4)finish();
+      },
+      key(event={}){
+        const key=event.code||event.key;
+        if(!event.repeat&&elapsed>=.15&&(['Escape','Enter','Space',' ','KeyE','e','E'].includes(key)
+          ||['confirm','interact','back'].includes(event.controllerAction)))finish();
+        return true;
+      },
+      pointer(event={}){if(event.type==='pointerup'&&elapsed>=.15)finish();return true;},
+      exit(){if(finished)return;finished=true;releaseSourceRestEndingMusic({toMenu:true});},
+      render(){uiDraw(({ctx})=>{ctx.save();ctx.fillStyle='#000';ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();});}};
+    scenes.push(black);
   }});
 }
 
@@ -32776,7 +33413,8 @@ function makeTitle({wantFullscreen=false}={}){
 }
 
 function returnToTitle(){
-  releaseSourceRestEndingMusic();
+  retireStudentStrike({restoreView:false});
+  releaseSourceRestEndingMusic({toMenu:true});
   if(openingVehicleScene)scenes.remove(openingVehicleScene);
   if(openingOvertureScene)scenes.remove(openingOvertureScene);
   resetArchitectureDoorAudio('title');
@@ -32821,7 +33459,7 @@ function returnToTitle(){
   // contracts of their own (test/sample-field-boot-contract) and are checked
   // against this function's body. Both calls are idempotent.
   silenceSampleField();
-  STORY.stopAll();
+  STORY.stopAll({preserveMenuHiss:true});
   resetRunAudio('return-to-title');
   FEAR.setFear(0);
   if(RENDERER==='3d'&&FP.isLoaded()){
@@ -32927,6 +33565,7 @@ function finishFrontEndRunStart({matched=false,mismatch=false}={}){
 }
 
 function beginNewGameFlow({mismatch=false}={}){
+  retireStudentStrike({restoreView:false});
   roomMicRunConsent=null;
   MIC.micStop();
   if(openingVehicleScene)scenes.remove(openingVehicleScene);
@@ -33312,12 +33951,31 @@ function teachRow(rows, bias=0, lift=0){
   return Math.max(3, band-1.4-lift+bias);
 }
 
+function sharedFaceplateContext({explicitSourceRest=false}={}){
+  const save=getSave(),top=scenes.top({includeOverlay:true}),id=top?.id||'game';
+  const faceplateModal=faceplateUsesCurrentRunModules(top);
+  const modal=!!top?.blocksInput&&faceplateModal||explicitSourceRest;
+  const roof=FP.isLoaded()&&!usingSpecialSpace()&&FP.logicalToPhysical(px,py).renderGroup==='academicRoof';
+  const film=top?.faceplate===false||!!(openingVehicleScene||openingOvertureScene||studentStrikeScene||activeEndingCutscene||standingTearScene||sourceDriveSession||coastalMemoryScene||sourceReturnFlashbackScene||firstStrikeScene);
+  const enabled=storyMode&&inRogue&&save.run?.status==='active'&&(!film||modal)&&!towerWarningOwnsMoment()
+    &&(!top?.suppressesHud||faceplateModal)&&(!scenePresentationHidesWorld()||faceplateModal)
+    &&(!usingSpecialSpace()||modal)&&(!roof||modal)&&(!frontEndSession||frontEndSession.state===FRONT_END_STATE.LIVE);
+  if(!enabled)return{enabled:false,runId:save.run?.id||'',sceneId:id};
+  const rec=REC.recState(),preview=!flagTest('bag.taken')&&!mapAcquired(save.flags),available=preview||mapAvailable(save.flags,itemLost('map'));
+  return{enabled:true,runId:save.run.id,sceneId:id,scope:'current',map:preview?readOnlyBagMap(currentFacilityMapModel()):currentFacilityMapModel(),
+    now:performance.now(),held:paused||document.hidden||!gameplayInputLifecycleActive()||scenes.blocksWorld(),
+    nightClock:nightClockReadout(save),navigationVisible:available&&(preview||!!activeDifficulty.navigation.showMap),
+    mapStatus:preview?'PUBLIC PLAN':itemLost('map')?'PLAN MISSING':'NAVIGATION MINIMAL',
+    mischief:recentMischief(),apparitions:recentApparitions(),telemetry:{takesEnabled:workOrderAccepted(save.flags),takes:rec.takes.length,total:5,
+      injuries:rec.injuries,monitor:monitorDisplaySnapshot(),notice:performance.now()<dockCommandUntil?'COME CLOSER':''}};
+}
 function drawStoryHud(){
   if(!storyMode||paused||scenes.blocksWorld()||scenes.suppressesHud()||!usingSourceSpace()||!chunkSurfRuntime?.towerLandFrame?.()?.active)towerPersonalHud?.setAttribute?.('hidden','');
   if(!storyMode || scenes.blocksWorld() || scenes.suppressesHud()) return;
   if(towerWarningOwnsMoment()){drawTowerWarningSubtitle();return;}
   const { cols, rows }=uiSize();
-  const deck=fieldDeckLayout({cols,rows});
+  const modules=faceplateModuleStatus();
+  const deck=modules?.enabled?{objective:{x:2,y:2,w:Math.max(1,cols-4)},prompt:{x:2,y:rows-2,w:Math.max(1,cols-4)},navigator:null}:fieldDeckLayout({cols,rows});
   const rec=REC.recState();
   if(usingSourceSpace()){
     const focus=chunkSurfRuntime.focusAt(px,py,R3.r3dFacing(),PRES.publicSnapshot());
@@ -33351,7 +34009,7 @@ function drawStoryHud(){
   const nav=activeDifficulty.navigation;
   const navigatorAvailable=mapAvailable(getSave().flags,itemLost('map'));
   const navigatorVisible=navigatorAvailable&&!!nav.showMap;
-  if(mapAvailable(getSave().flags,false))drawMinimap(currentFacilityMapModel(),{bounds:deck.navigator,now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions(),
+  if(!modules?.enabled&&mapAvailable(getSave().flags,false))drawMinimap(currentFacilityMapModel(),{bounds:deck.navigator,now:performance.now(),mischief:recentMischief(),apparitions:recentApparitions(),
     navigationVisible:navigatorVisible,mapStatus:itemLost('map')?'PLAN MISSING':'NAVIGATION MINIMAL',
     telemetry:{takesEnabled:workOrderAccepted(getSave().flags),takes:rec.takes.length,total:5,injuries:rec.injuries,monitor:monitorDisplaySnapshot(),paused,nightClock:nightClockReadout(getSave()),
       notice:performance.now()<dockCommandUntil?'COME CLOSER':''},
@@ -33465,7 +34123,9 @@ function drawStoryHud(){
   } else
   // Paper at your feet outranks everything the corner has to say. It is the only
   // thing in the building anyone has left behind on purpose.
-  if(chapelTapeDemandBlocksProgress(chapelTapeDemandState())&&!usingSpecialSpace()){
+  if(recordistReleaseScene?.view().inRange){
+    contextualPromptActive=true;
+  } else if(chapelTapeDemandBlocksProgress(chapelTapeDemandState())&&!usingSpecialSpace()){
     contextualPromptActive=true;
     const demand=chapelTapeDemandState(),spatial=demand.catch?.mode==='spatial';
     const grip=spatial?chapelTapeDemandInteraction(demand,chapelTapeDemandPhysical({x:px,y:py})):null;
@@ -33694,7 +34354,9 @@ const liveRecordingPointerControls=new Map();
 function takePanelRect({cols,rows,progress=0}){
   // He talks during takes, so the monitor band is a normal neighbour rather
   // than an edge case, and the machine gives way to it.
-  return liveTakePanelRect({cols,rows,progress,clearBottom:SPEECH.speechPanelRows(),expanded:REC.isSlating()||REC.isStalled()});
+  const desk=b3ConsoleScene?.view?.();
+  const deskClearance=desk&&!desk.looking&&Number.isFinite(desk.layout?.y)?rows-desk.layout.y+.6:0;
+  return liveTakePanelRect({cols,rows,progress,clearBottom:Math.max(SPEECH.speechPanelRows(),deskClearance),expanded:REC.isSlating()||REC.isStalled()});
 }
 
 function liveRecordingControlHit(event){
@@ -34486,9 +35148,11 @@ function installProbe(){
       cx:door.cx,cy:door.cy,widthAxis:door.widthAxis,cells:door.cells.map((cell)=>({...cell})),
     })),
     openCredits:()=>{ openCredits(); return true; },
-    endingCredits:(endingId='sacrifice')=>{
-      const summary=commitReturn(endingId,{rec:REC.saveRecState()});
-      openEndingCredits(summary);
+    endingCredits:(endingId='sacrifice',{sourceRestBlack=false}={})=>{
+      const summary=commitReturn(endingId,{rec:REC.saveRecState(),
+        endingVariant:sourceRestBlack?ENDING_VARIANT.SOURCE_REST:undefined});
+      void finalizeCausalReturn(summary);
+      openEndingCredits(summary,{sourceRestBlack});
       return summary;
     },
     cell:(x,y)=>activeGeometry()?.cellAt(x,y),
@@ -34497,6 +35161,7 @@ function installProbe(){
     glassCourt:()=>({ready:R3.r3dGlassCourtReady?.()===true,sheltered:glassCourtShelteredAtPlayer(),skyOverhead:skyOverhead(),rain:lastGlassCourtRainFrame,
       floor:FP.isLoaded()?FP.floorAt(px,py):null,eye:R3.r3dEyePoint?.(),windPresence:currentWindPresence}),
     studioB3Glass:()=>R3.r3dStudioB3GlassStatus?.(),
+    busStudioAssets:()=>R3.r3dBusStudioAssetsStatus?.(),
     exteriorAssetsReady:async()=>{await R3.r3dAuthoredPropsReady();return{glassCourt:R3.r3dGlassCourtReady(),publicFront:R3.r3dElleryPublicFrontReady()};},
     exteriorInspection:()=>({physical:FP.logicalToPhysical(px,py),zone:FP.zoneAt(px,py),camera:R3.r3dViewCamera(),
       rendered:PROPS.renderInstances({group:'ground',inscriptions:false}),submittedIds:R3.r3dPropInstanceIds(),catalog:R3.r3dPropCatalog(),
@@ -35391,7 +36056,7 @@ function installProbe(){
     // always one of these three answering no.
     interference:()=>battleInterference.debug(),
     battleState:()=>{ const v=scenes.top()?.battleView?.(); return v||null; },
-    openingArrival:()=>({vehicle:openingVehicleScene?.view()||null,montage:openingOvertureScene?.view()||null,audio:openingArrivalAudio?.snapshot(),score:STORY.openingOvertureScoreState?.(),saved:getSave().openingArrival}),
+    openingArrival:()=>({vehicle:openingVehicleScene?.view()||null,montage:openingOvertureScene?.view()||null,audio:openingArrivalAudio?.snapshot(),radio:openingCabRadio?.snapshot(),score:STORY.openingOvertureScoreState?.(),saved:getSave().openingArrival}),
     openingArrivalStart:async()=>{ensureCtx();await actx?.resume?.();await godEnsureTestRun();scenes.clear();flagSet('opening.vehicle.pending');for(const flag of ['opening.vehicle.exited','opening.overture.completed','opening.overture.pending','prologueDone'])flagClear(flag);syncPrologueKeyring();openingArrivalCheckpoint({phase:'drive',drive:null,montage:null,parkedAnchor:null,returnView:null});R3.r3dSetOutputPixelRatio?.(1);return beginOpeningVehicleArrival({god:true});},
     coldOpen:()=>{godColdOpen();return true;},
     encounters:()=>({
@@ -35543,6 +36208,7 @@ async function bootScenes(){
   const qp=params();
   await saveLoadAsync({ gameVersion: qp.get('build') || 'LOCAL' });
   progressionInit({build:qp.get('build') || 'LOCAL'});
+  configurePlatformReconciliation(()=>reconcileProfileAchievements({notify:false}));
   await reconcileSealedCausalDraft();
   await refreshHushAvailability();
   syncControllerSettingsFromSave();
@@ -35602,15 +36268,52 @@ async function bootScenes(){
         floorReview:async returns=>{if(!await godEnsureTestRun())return false;while(buildingLoadPromise){if(!await buildingLoadPromise)return false;}return godAcademicFloorReturnsReview(returns);},
         floorState:academicFloorReturnsReview});
     }
+    if(import.meta.env.DEV&&params().get('completionPass')==='1'){
+      const {installCompletionPass}=await import('./dev/completion-pass.js');
+      const observer=installCompletionPass({runtime:()=>({position:{x:px,y:py},heading:mapHeading(),planName,
+        inputMode:completionControlRelay?'test-normal-input-relay':completionInputRelay?'test-relative-look-relay':'ordinary-physical-input',causalTopology:CAUSAL_TOPOLOGY_HASH,
+        look:R3.r3dLookAngles?.(),recorder:{phase:REC.recState().phase,elapsed:REC.recState().takeElapsed,
+          stalled:REC.recState().stalled,spoiled:REC.recState().spoiled,spoilReason:REC.recState().spoilReason,
+          injuries:REC.recState().injuries,takes:[...REC.recState().takes]},
+        scene:scenes.top()?.id||null,view:scenes.top()?.view?.()||null,paused,storyMode,inRogue,
+        diagnostics:{monotonicMs:performance.now(),
+          focus:{document:document.hasFocus(),native:IS_TAURI?pointerMode.nativeFocus():null,
+            active:gameplayInputLifecycleActive(),hidden:document.hidden,visibility:document.visibilityState},
+          audio:{state:actx?.state||null,time:actx?.currentTime??null},
+          radio:{phase:RADIO.radioPhase(),dropped:RADIO.isDropped(),lost:itemLost('radio'),
+            monitoring:REC.isMonitoring(),playback:PB.isPlaying(),
+            offAirHeard:!!getMeta().completion?.secrets?.['off-air'],
+            instrumentAudio:scenes.top()?.radioInstrumentAudioSnapshot?.()||null},
+          relay:completionControlRelay?.status?.()||null}})});
+      if(params().get('completionInput')==='1'){
+        const {installCompletionInputRelay}=await import('./dev/completion-input-relay.js');
+        completionInputRelay=installCompletionInputRelay({onInput:observer.noteInput});
+        const {installCompletionControlRelay}=await import('./dev/completion-control-relay.js');
+        completionControlRelay=installCompletionControlRelay({
+          getContext:()=>({runId:getSave().run?.id||null,sceneId:scenes.top()?.id||null,
+            focused:gameplayInputLifecycleActive(),hidden:document.hidden||document.visibilityState==='hidden',paused}),
+          onKeyDown:onKey,onKeyUp,onControllerDown:controllerPress,onControllerUp:controllerRelease,
+          onLook:input=>completionInputRelay.pulse(input),clearLook:()=>completionInputRelay.clear(),
+          onInput:observer.noteInput,
+        });
+      }
+    }
+    if(import.meta.env.DEV&&params().has('achievementReview')){
+      const {installAchievementReview}=await import('./dev/achievement-review.js');
+      installAchievementReview({prepare:()=>{
+        frontEndSession?.markLive?.();frontEndPlateOverride=null;
+        R3.r3dSetFrontEndPlate?.('gameplay');endBootWeather?.();
+      }});
+    }
     if(import.meta.env.DEV&&(params().has('hushMotionReview')||params().has('vanBrandReview'))){
-      const vanReview=params().has('vanBrandReview');
+      const vanReview=params().has('vanBrandReview'),loopReview=params().has('sourceIILoopReview');
       const {installHushMotionReview}=await import('./dev/hush-motion-review.js');
       const {createTractionPerformance}=await import('../artifacts/hush-motion-study/traction-performance.js');
       hushMotionStudyDriver=createTractionPerformance();
-      const hushStudySnapshot=()=>({study:{enabled:hushMotionStudyEnabled,output:hushMotionStudyOutput},presence:PRES.publicSnapshot(),performance:pressurePerformance.snapshot(),continuation:sourceContinuationScene?.view(),
-        body:R3.r3dHushBodyStatus(),source:chunkSurfRuntime?{phase:chunkSurfRuntime.state().phase,follow:chunkSurfRuntime.hushFollowFrame?.(),sensory:chunkSurfRuntime.sourceSensoryFrame?.()}:null,
-        position:{x:px,y:py,...R3.r3dLookAngles()},paused,focused:gameplayInputLifecycleActive(),hidden:document.hidden,recording:REC.isRecording()});
-      installHushMotionReview({reviewTitle:vanReview?'DEV · VAN SERVICE PAINT':'DEV · HUSH MOTION',stages:vanReview?[{id:'van-left',label:'Parked van · left flank'},{id:'van-right',label:'Parked van · right flank'}]:[{id:'ordinary',label:'Presence · basement corridor'},{id:'proper',label:'Source · continuous approach'},{id:'II',label:'Source II · follower'}],
+      const hushStudySnapshot=()=>{const body=R3.r3dHushBodyStatus();return{study:{enabled:hushMotionStudyEnabled,output:hushMotionStudyOutput},presence:PRES.publicSnapshot(),performance:pressurePerformance.snapshot(),continuation:sourceContinuationScene?.view(),continuationRender:sourceContinuationRenderer?.diagnostics?.(),
+        body:loopReview?{ready:body?.ready,error:body?.error,asset:body?.asset,geometry:body?.geometry,character:{poses:body?.character?.poses,poseErrors:body?.character?.poseErrors}}:body,source:chunkSurfRuntime?{phase:chunkSurfRuntime.state().phase,follow:chunkSurfRuntime.hushFollowFrame?.(),sensory:chunkSurfRuntime.sourceSensoryFrame?.()}:null,
+        position:{x:px,y:py,...R3.r3dLookAngles()},paused,focused:gameplayInputLifecycleActive(),hidden:document.hidden,recording:REC.isRecording()};};
+      installHushMotionReview({reviewTitle:vanReview?'DEV · VAN SERVICE PAINT':loopReview?'DEV · SOURCE II SPACE':'DEV · HUSH MOTION',stages:vanReview?[{id:'van-left',label:'Parked van · left flank'},{id:'van-right',label:'Parked van · right flank'}]:loopReview?[{id:'II',label:'Source II · fixed spatial loop'}]:[{id:'ordinary',label:'Presence · basement corridor'},{id:'proper',label:'Source · continuous approach'},{id:'II',label:'Source II · follower'}],
         stage:async id=>{releaseSourceContinuation({restore:false});if(!await godEnsureTestRun())throw Error('Test run unavailable.');
           while(buildingLoadPromise)if(!await buildingLoadPromise)throw Error('Building unavailable.');godReleaseViewForWarp();ensureCtx();
           if(id==='ordinary'){await godWarpToHook('basement-corridor');const yaw=R3.r3dLookAngles().yaw;let draw=0;const random=()=>draw++===0?.1:.5;
@@ -35631,7 +36334,7 @@ async function bootScenes(){
           if(!vanReview)await R3.r3dPrepareHushBody();resetMotionInput('hush-motion-review-stage',{stopRenderMove:true});ensureInteractionFocus();return hushStudySnapshot();},
         snapshot:hushStudySnapshot,ensureAudio:async()=>{ensureCtx();await actx?.resume();},
         captureAudio:()=>{if(!actx||!outGain)throw Error('Audio unavailable.');const sink=actx.createMediaStreamDestination();outGain.connect(sink);return{context:actx,source:outGain,stream:sink.stream,dispose:()=>{outGain.disconnect(sink);sink.stream.getTracks().forEach(track=>track.stop());}};},
-        getCanvases:()=>[...document.querySelectorAll('#wrap canvas')],captureMetadata:()=>({runtime:IS_TAURI?'native-current-game':'browser-current-game',earnedProgression:false,study:vanReview?'FIELD RECORDING SERVICES: actual parked vehicle and fitted opaque paint. Explicit observer staging; no manufactured gameplay.':'Production HUSH density replacement; unchanged hearing and contact. Explicit section staging, ordinary controls and logged review actions.'}),
+        getCanvases:()=>[...document.querySelectorAll('#wrap canvas')],captureMetadata:()=>({runtime:IS_TAURI?'native-current-game':'browser-current-game',earnedProgression:false,study:vanReview?'FIELD RECORDING SERVICES: actual parked vehicle and fitted opaque paint. Explicit observer staging; no manufactured gameplay.':loopReview?'Production Source II fixed spatial loop. Explicit entry staging and observer-only look actions; ordinary controls afterward.':'Production HUSH density replacement; unchanged hearing and contact. Explicit section staging, ordinary controls and logged review actions.'}),
         actions:[{id:'treatment',label:'Current / interrupted study',run:()=>{hushMotionStudyEnabled=!hushMotionStudyEnabled;hushMotionStudyDriver.reset();hushMotionStudyOutput=null;R3.r3dSetHushMotionStudyInstance(null);return hushStudySnapshot();}},
           {id:'face',label:'Face HUSH · observer only',run:()=>{if(sourceContinuationScene){const frame=sourceContinuationScene.view();if(!frame.hush?.active)throw Error('No active continuation HUSH.');sourceContinuationScene.setLook({yaw:Math.atan2(frame.hush.x-frame.x,-(frame.hush.z-frame.z)),pitch:0});return hushStudySnapshot();}
             const actor=pressurePerformance.snapshot().primary;if(!actor)throw Error('No visible HUSH actor.');
@@ -35647,6 +36350,7 @@ async function bootScenes(){
             const from=usingSourceSpace()?{x:px,z:py}:FP.logicalToPhysical(px,py),to=usingSourceSpace()?{x:actor.x,z:actor.y}:FP.logicalToPhysical(actor.x,actor.y);
             R3.r3dSetLookAngles({yaw:Math.atan2(to.x-from.x,-(to.z-from.z)),pitch:0,immediate:true});R3.r3dSnapCameraOnNextFrame();return hushStudySnapshot();}},
           {id:'sound',label:'Offer test sound here',run:()=>{PRES.offerSoundTarget({position:{x:px,y:py},level:.7,confidence:1,priority:1,reason:'ACOUSTIC_EVENT',eventKind:'HUSH_STUDY',expiresAt:performance.now()+20000});return hushStudySnapshot();}},
+          {id:'floor',label:'Look down · observer only',run:()=>{if(!sourceContinuationScene)throw Error('Stage Source II first.');const s=sourceContinuationScene.view();sourceContinuationScene.setLook({yaw:s.yaw,pitch:-1.05});return hushStudySnapshot();}},
           {id:'pause',label:'Pause / resume',run:()=>{setGameplayPaused(!paused,{announce:false});return hushStudySnapshot();}},
           {id:'stall',label:'Stall · 800ms',run:()=>{const start=performance.now();while(performance.now()-start<800){}return hushStudySnapshot();}}]});
     }
@@ -36006,9 +36710,10 @@ async function bootScenes(){
         return {fixture:true,earnedProgression:false,active:true,state:s,
           rest:scene.sourceRest?.view?.()||null,focus:scene.sourceRest?.focus?.()||null,
           audio:sourceContinuationAudio?.snapshot?.()||null,
+          media:scene.sourceRestMedia?.snapshot?.()||null,
           render:sourceContinuationRenderer?.diagnostics?.()||null};
       };
-      window.__sourceRestReview={inspect,frame:study=>{if(study)sourceContinuationScene?.sourceRest?.studyFrame?.(study);else sourceContinuationScene?.render?.();return inspect();},memory:type=>{if(![null,'drive','ellery','practice','recital'].includes(type))throw Error('Unknown memory study');
+      window.__sourceRestReview={inspect,architecture:()=>({presenter:sourceContinuationScene?.sourceRestMedia,frame:sourceContinuationRenderer?.restApertureFrame?.()}),frame:study=>{if(study)sourceContinuationScene?.sourceRest?.studyFrame?.(study);else sourceContinuationScene?.render?.();return inspect();},memory:type=>{if(![null,'drive','ellery','practice','recital'].includes(type))throw Error('Unknown memory study');
         sourceRestReviewMemory=type?{drive:type==='drive'?1:0,ellery:type==='ellery'?1:0,listener:['practice','recital'].includes(type)?type:null,listenerStage:.5}:null;return inspect();},
         treatment:id=>{if(!['loggia','practice-bay','tidal-seat'].includes(id))throw Error('Unknown place study');sourceRestReviewTreatment=id;return inspect();},stage:async(phase='wrong-return',reviewMode='near')=>{
         if(!['wrong-return','catch'].includes(phase))throw Error('Choose wrong-return or catch.');
@@ -36169,6 +36874,7 @@ async function bootScenes(){
       openAudio:()=>{
         ensureCtx();
         if(!actx||actx.state!=='running'||!sfxGain)return null;
+        STORY.startMenuHiss();
         return createBootWeatherAudio({context:actx,destination:sfxGain,kind:weather});
       },
     }));
@@ -36603,9 +37309,10 @@ function render3d(){
   if(sourceDoorArrival)tickSourceDoorArrival();
   if(usingSourceSpace()&&chunkSurfRuntime.edgeDoorFrame?.()?.moving)syncSourceRender();
   if(towerViewCaptureWanted&&usingSourceSpace()&&!scenes.worldView())captureBrendanTowerView();
-  const worldView=scenes.worldView()||openingPresentationView(),viewX=worldView?.x??px,viewY=worldView?.y??py;
+  const worldView=scenes.worldView()||studentStrikeScene?.worldView()||openingPresentationView(),viewX=worldView?.x??px,viewY=worldView?.y??py;
+  if(worldView?.studentStrike)R3.r3dSetFear(0);
   const approach=currentEndingApproach();
-  const cinematic=!!activeEndingCutscene&&!escape||!!worldView?.openingPresentation;
+  const cinematic=!!activeEndingCutscene&&!escape||!!worldView?.openingPresentation||!!worldView?.studentStrike;
   if(Number.isFinite(worldView?.yaw)||Number.isFinite(worldView?.pitch)) R3.r3dSetLookAngles({yaw:worldView?.yaw,pitch:worldView?.pitch,immediate:true});
   const physical=usingSpecialSpace()?activeGeometry().logicalToPhysical(viewX,viewY):usingPlan()?FP.logicalToPhysical(viewX,viewY):{x:viewX,z:viewY,y:worldView?.floorH??floorHere(),renderGroup:''};
   const b3PriorGlass=R3.r3dStudioB3GlassStatus?.();
@@ -36698,7 +37405,7 @@ function render3d(){
     // Source recompiles exposure along with geometry. The old room remains
     // readable even if the real torch was off or empty when the fight began;
     // this synthetic beam is another proof that the place is not exact.
-    on:worldView?.openingPresentation||hushSensory||towerTableauShot?false:sourceRepriseSensory||costumeInspectionSensory?true:storyMode?REC.lightOn():true,
+    on:worldView?.openingPresentation||worldView?.studentStrike||hushSensory||towerTableauShot?false:sourceRepriseSensory||costumeInspectionSensory?true:storyMode?REC.lightOn():true,
     battery:hushSensory?0:sourceRepriseSensory||costumeInspectionSensory?1:storyMode?REC.batteryLevel():1,
     timeSec:performance.now()/1000,
     reducedEffects:flashMode()!=='full',
@@ -36739,16 +37446,17 @@ function render3d(){
     ?Math.sin(Math.min(1,(performance.now()-renderMove.startedAt)/Math.max(1,renderMove.durationMs))*Math.PI)*.05*outskirtsLosing()
     :0;
   R3.r3dFrame({
+    natatoriumCoffeeMetric:!worldView?natatoriumCoffeeStretch.view().metric:null,
     glassCourtRain:glassCourtRainFrame(),
     studioB3Glass:storyMode&&planName==='conservatory'&&!usingSpecialSpace()&&(!worldView||worldView.openingOverture&&worldView.shotId==='room-b3')&&physical.renderGroup==='basement',
     studioB3GlassReturned:b3GlassReturned,
-    studioB3Suspended:paused||document.hidden||!document.hasFocus()||scenes.blocksWorld(),
+    studioB3Suspended:paused||!gameplayInputLifecycleActive()||scenes.blocksWorld(),
     studioB3Plan:slice,
     studioB3PropBlocks:(x,y,z)=>{const p=FP.logicalAtPhysical(x/CELL,z/CELL,{group:'basement',floor:-4});return !!p&&PROPS.tallBlockingPropAt(p.x,p.y,Math.max(0,y+4));},
     px:rendered.x, py:rendered.z, yawOffset:planYawOffset(),
-    authoredCamera:worldView?.openingPresentation?worldView.authoredCamera:undefined,
-    cinematicLensStage:worldView?.openingPresentation?worldView.cinematicLensStage:undefined,
-    authoredPropRange:worldView?.openingOverture?260:90,
+    authoredCamera:worldView?.openingPresentation||worldView?.studentStrike?worldView.authoredCamera:undefined,
+    cinematicLensStage:worldView?.openingPresentation||worldView?.studentStrike?worldView.cinematicLensStage:undefined,
+    authoredPropRange:worldView?.openingOverture?260:worldView?.studentStrike?160:90,
     recordingOriginOffset:usingSourceSpace()&&!worldView&&chunkSurfRuntime.horizonFrame?.()?.active
       ?{z:-(chunkSurfRuntime.payphoneRoadLoopFrame?.()?.shiftMetres||0)}:undefined,
     // The peek. Cells, already clamped against the geometry by tickCover — the
@@ -36763,6 +37471,7 @@ function render3d(){
     key:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(firstKey),
     door:worldView?.suppressActors||usingSpecialSpace()?null:mapPoint(door),
     hush:renderedHush,
+    recordingEmbodiment:!worldView&&storyMode&&!usingSpecialSpace()?recordingEmbodiment.snapshot():null,
     // Render-only second manifestation used by the Source hall bracket. It has
     // no Presence state, HUSH field, navigation, focus target, or audio emitter.
     hushSecondary:renderedHushSecondary,
@@ -36774,7 +37483,7 @@ function render3d(){
     // other impossible/special spaces.
     hushBodyAllowed:pressureFrame.allowed&&hushBodySpaceAllowed,
     audio:waterAudio,
-    light:worldView?.openingPresentation||hushSensory?false:sourceRepriseSensory||costumeInspectionSensory?true:storyMode?REC.lightOn():true,
+    light:worldView?.openingPresentation||worldView?.studentStrike||hushSensory?false:sourceRepriseSensory||costumeInspectionSensory?true:storyMode?REC.lightOn():true,
     torchLook,
     sensoryProfile:worldView?.sensoryProfile||'story',
     plan: usingPlan(),
@@ -36788,7 +37497,7 @@ function render3d(){
     sourceRainShelter:usingSourceSpace()?chunkSurfRuntime.outskirtsBusPassageFrame?.()?.rainShelter??null:null,
     sourceBusLighting:usingSourceSpace()?chunkSurfRuntime.outskirtsBusPassageFrame?.()?.lighting??null:null,
     sourceBusInterior:usingSourceSpace()?chunkSurfRuntime.busInteriorFrame?.()??null:null,
-    rainAmount:shouldStageOpeningCinematic(openingCinematicFrame())?0:usingSourceSpace()&&chunkSurfRuntime.towerLandFrame?.()?.active?0:undefined,
+    rainAmount:worldView?.studentStrike||shouldStageOpeningCinematic(openingCinematicFrame())?0:usingSourceSpace()&&chunkSurfRuntime.towerLandFrame?.()?.active?0:undefined,
     glassCourtRainShelter:usingPlan()&&!usingSpecialSpace()&&R3.r3dGlassCourtReady?.()===true,
     floorH: worldView?.floorH??((Number.isFinite(rendered.floorH)?rendered.floorH:usingSpecialSpace()?(activeGeometry().renderedFloorAt?.(viewX,viewY,rendered.x,rendered.z)??activeGeometry().floorAt(viewX,viewY)):usingPlan()?FP.renderedFloorAt(viewX,viewY,rendered.x,rendered.z):floorHere())-(worldView?0:approach.camera.eyeDropM+coverEyeDropM())-(outskirtsBody?outskirtsBody.eyeDropM+outskirtsStride:0)),
     resolvedStairFloor:rendered.mainStair===true&&!worldView,
@@ -36796,6 +37505,7 @@ function render3d(){
     water:usingSpecialSpace()?{active:false}:currentWaterRenderState({audio:waterAudio,view:worldView}),
   });
   if(worldView?.openingOverture&&R3.r3dPresentationReady?.())openingOvertureScene?.presented();
+  if(worldView?.studentStrike&&R3.r3dPresentationReady?.())studentStrikeScene?.presented();
   // How hard the world boils: the dread the player is under, the coffee onset,
   // and whatever the last impact asked for. One number, three sources, and it
   // drives boil rate, generated structure, and phosphor excitation together.
@@ -36971,6 +37681,8 @@ function enterRogue(){
 
 // ── Keys ──────────────────────────────────────────────────────────────────────
 const ARROW_KEYS=new Set(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']);
+let completionInputRelay=null;
+let completionControlRelay=null;
 const CONTROLLER_KEY=Object.freeze({
   move_up:['ArrowUp','ArrowUp'], move_down:['ArrowDown','ArrowDown'],
   move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
@@ -36996,7 +37708,9 @@ function controllerEvent(action, repeat=false){
     timeStamp:performance.now(),preventDefault(){},stopPropagation(){},controller:true,controllerAction:action};
 }
 function controllerGameplayAxes(){
-  return standingTearInputGate.update(CONTROLLER.controllerSnapshot())?CONTROLLER.controllerMotionAxes():{moveX:0,moveY:0,turnX:0,lookY:0};
+  const axes=standingTearInputGate.update(CONTROLLER.controllerSnapshot())?CONTROLLER.controllerMotionAxes():{moveX:0,moveY:0,turnX:0,lookY:0};
+  const relative=completionInputRelay?.axes?.();
+  return relative?{...axes,turnX:axes.turnX+relative.turnX,lookY:axes.lookY+relative.lookY}:axes;
 }
 function controllerPress(action,repeat=false){
   if(!['menu','back'].includes(action)&&!standingTearInputGate.update(CONTROLLER.controllerSnapshot()))return;
@@ -37015,7 +37729,7 @@ function gameplayInputLifecycleActive(){
   // A key OS window can still have an occluded WebView. Hidden always holds
   // gameplay; confirmed native focus only replaces delayed DOM focus truth.
   if(document.hidden||document.visibilityState==='hidden')return false;
-  const nativeFocus=IS_TAURI?pointerMode.status()?.nativeBackend?.focused:null;
+  const nativeFocus=IS_TAURI?pointerMode.nativeFocus():null;
   return nativeFocus==null
     ? (typeof document.hasFocus!=='function'||document.hasFocus())
     : nativeFocus;
@@ -37173,6 +37887,9 @@ function onKey(e){
     if(escapePressed&&topSceneId==='pause')scenes.key(e);
     e.preventDefault();
     return;
+  }
+  if(!studentStrikeInputGate.keyDown(e,{captured:!!studentStrikeScene})){
+    e.preventDefault();return;
   }
   // A keypress IS a user gesture, so it is allowed to take the pointer lock. If
   // you are playing the game from the keyboard, the pointer belongs to the game:
@@ -37358,6 +38075,7 @@ function onKey(e){
   }
 }
 function onKeyUp(e){
+  studentStrikeInputGate.keyUp(e);
   if(typeof localTextReviewUi!=='undefined'&&localTextReviewUi?.key(e))return;
   if(e.key==='e'||e.key==='E'||e.code==='KeyE')chapelTapeTugHeld=false;
   if(e.key==='e'||e.key==='E'||e.code==='KeyE')stationInteractionDown=false;
@@ -37379,7 +38097,7 @@ function onBlur(){
   firstStrikeScene?.pause();firstStrikeAudio?.stop();
   sourceRestBreath?.pause();sourceRestWeather?.pause();
   if(typeof holdSourceRestEndingMusic==='function')holdSourceRestEndingMusic();
-  openingArrivalAudio?.stop();STORY.pauseOpeningOvertureScore?.();
+  openingArrivalAudio?.stop();openingCabRadio?.pause();STORY.pauseOpeningOvertureScore?.();
   architectureDoorAudio?.pause('blurred');architectureDoorEvents.hold();
   runPlayDurationClock.suspend();
   cancelLastExposure();
@@ -37483,7 +38201,7 @@ function scenePointerPayload(e){
 
 function onMapWheel(e){
   const top=scenes.top();
-  if((top?.id!=='bag'&&top?.id!=='roof-word-lock'&&top?.id!=='warning')||!pointerEventHitsGameplaySurface(e))return;
+  if((top?.id!=='bag'&&top?.id!=='roof-word-lock'&&top?.id!=='warning'&&top?.id!=='source-recording-inspection')||!pointerEventHitsGameplaySurface(e))return;
   // Each instrument tests its visible control before consuming the wheel.
   top.pointer?.({...scenePointerPayload(e),type:'wheel',deltaY:e.deltaY,
     deltaMode:e.deltaMode,preventDefault:()=>e.preventDefault()});
@@ -37655,7 +38373,7 @@ async function boot(){
     if(document.hidden){
       sourceRestBreath?.pause();sourceRestWeather?.pause();
       holdSourceRestEndingMusic();
-      openingArrivalAudio?.stop();STORY.pauseOpeningOvertureScore?.();
+      openingArrivalAudio?.stop();openingCabRadio?.pause();STORY.pauseOpeningOvertureScore?.();
       architectureDoorAudio?.pause('hidden');architectureDoorEvents.hold();
       cancelLastExposure();
       pubRoomAudio?.pause();pubPressureAudio?.pause();sourcePubAudio?.pause();sourceContinuationAudio?.pause();
@@ -37840,6 +38558,199 @@ async function boot(){
     await bootScenes();
     raf=requestAnimationFrame(loop);
     const qp=params();
+    if(import.meta.env.DEV&&qp.has('yardSourceReview')){
+      const {installYardSourceReview}=await import('./dev/yard-source-review.js');
+      const {YARD_TURN_REVIEW}=await import('./data/yard-turn.js');
+      const {freshSourceContinuation,normalizeSourceContinuation}=await import('./game/source-continuation.js');
+      const {SOURCE_CONNECTOR_REVIEW_POSES,SOURCE_CONNECTOR_REVIEW_STATES}=await import('./data/source-connector-corridor.js');
+      let reviewPlacement=null;
+      const hold=value=>{setGameplayPaused(value,{announce:false});if(sourceContinuationScene)value?sourceContinuationScene.pause?.():sourceContinuationScene.resume?.();};
+      installYardSourceReview({
+        stage:async id=>{
+          ensureCtx();await actx?.resume?.();reviewPlacement=id;
+          if(id.startsWith('source-')){
+            releaseSourceContinuation({restore:false});
+            if(!await godEnsureTestRun())return false;
+            while(buildingLoadPromise)if(!await buildingLoadPromise)return false;
+            godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL,{apertureComplete:true});
+            const entry=chunkSurfRuntime.sourceContinuationEntry('forward',{runId:getSave().run?.id||''});if(!entry)return false;
+            let checkpoint={...freshSourceContinuation({runId:entry.checkpoint.runId,returnPose:entry.checkpoint.returnPose}),status:'active'};
+            if(id==='source-iii-door'){
+              const at={x:-151.5,z:-92,feet:8.4,chartId:4,level:0,phase:'wrong-return'};
+              checkpoint=normalizeSourceContinuation({...checkpoint,...at,yaw:-Math.PI/2,lastSafe:{...at,yaw:-Math.PI/2,pitch:0},doorOpen:{'journey-catch-gate':true},
+                hush:{...checkpoint.hush,active:true,armed:true,warningAnnounced:true,mode:'follow',elapsed:40,x:-149.8,z:-92,feet:8.4,chartId:4,
+                  trail:[{kind:'walk',...at}],lastRecorded:at}});
+            }
+            if(id==='source-corridor'||id==='source-corridor-entry'){
+              const pose=id==='source-corridor-entry'?{...SOURCE_CONNECTOR_REVIEW_POSES[0],x:-153,z:-61,yaw:Math.PI/2}:SOURCE_CONNECTOR_REVIEW_POSES[0],at={x:pose.x,z:pose.z,feet:pose.feet,chartId:pose.chartId,level:0,phase:'wrong-return'};
+              checkpoint=normalizeSourceContinuation({...checkpoint,...at,yaw:pose.yaw,pitch:pose.pitch,
+                lastSafe:{...at,yaw:pose.yaw,pitch:pose.pitch},recoveryAnchor:{id:'dev-corridor-approach',...at},
+                corridor:{...SOURCE_CONNECTOR_REVIEW_STATES.approach},
+                hush:{...checkpoint.hush,active:true,armed:true,warningAnnounced:true,mode:'follow',elapsed:90,x:id==='source-corridor-entry'?-158:-151,z:-61,feet:8.4,chartId:4,
+                  trail:[{kind:'walk',x:-146,z:-61,feet:8.4,chartId:4,level:0,phase:'wrong-return'},{kind:'walk',...at}],lastRecorded:at}});
+            }
+            if(!chunkSurfRuntime.setContinuationCheckpoint(checkpoint))return false;
+            hold(true);const scene=await beginSourceContinuation({checkpoint,skipFalseReturn:true,skipEarthfall:true});
+            if(!scene)return false;scene.pause?.();
+            if(id==='source-ii-door')scene.setLook?.({yaw:Math.PI,pitch:0});
+            return true;
+          }
+          return godBuildingScene(null,async()=>{
+            scenes.clear();SPEECH.clearSpeech();hold(false);godReleaseViewForWarp();
+            godFlags(['combat.trained',SETUP_HANDOFF.closed,SETUP_HANDOFF.arrived,SETUP_HANDOFF.skillsDone,SETUP_HANDOFF.skillsClosed]);
+            godInventory().fieldReady();PRES.despawn();await R3.r3dBasePropsReady();
+            const view=YARD_TURN_REVIEW.find(view=>view.id===id);if(!view)return false;
+            const point=FP.logicalAtPhysical(view.at.x/CELL-.5,view.at.z/CELL-.5,{group:'ground',floor:0});
+            if(!point||FP.isSolid(point.x,point.y)||!PROPS.propCanOccupy(point.x,point.y))throw Error('No supported observer at '+id);
+            const physical=FP.logicalToPhysical(point.x,point.y),basis=FP.arcYawOffset(point.x,point.y,physical.x,physical.z)||0;
+            const yaw=Math.atan2(view.target.x-view.at.x,-(view.target.z-view.at.z))-basis;
+            if(!godStandAtPhysical(point,yaw,'yard-source-review'))return false;
+            R3.r3dSetLookAngles({yaw,pitch:Math.atan2(view.target.y-(FP.floorAt(point.x,point.y)+1.62),Math.hypot(view.target.x-view.at.x,view.target.z-view.at.z)),immediate:true});
+            R3.r3dSnapCameraOnNextFrame?.();return true;
+          });
+        },
+        map:openFieldMap,pause:hold,resume:()=>{
+          hold(false);if(reviewPlacement==='source-ii-door')sourceContinuationScene?.setLook?.({yaw:Math.PI,pitch:0});
+        },
+        faceRoute:()=>{hold(false);sourceContinuationScene?.setLook?.({yaw:0,pitch:0});},
+        faceHush:()=>{hold(false);const s=sourceContinuationScene?.view?.();if(s?.hush?.active)sourceContinuationScene.setLook({yaw:Math.atan2(s.hush.x-s.x,-(s.hush.z-s.z)),pitch:0});},
+        inspect:()=>{
+          const source=sourceContinuationScene?.serialize?.(),h=source?.hush,physical=FP.isLoaded()?FP.logicalToPhysical(px,py):null;
+          const state=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
+          return{silentOutput:!!openingSilentDestination,scene:scenes.top()?.id||null,
+            body:physical?{x:px,y:py,physical:{x:(physical.x+.5)*CELL,z:(physical.z+.5)*CELL},floor:physical.y}:null,
+            rendered:source?{placement:reviewPlacement,phase:source.phase,x:source.x,z:source.z,feet:source.feet,chartId:source.chartId,elapsed:source.elapsed,
+              paused:sourceContinuationScene.view()?.paused,fall:!!source.fall,recovery:source.recovery?.reason||null,grace:source.grace,
+              hush:h?{active:h.active,x:h.x,z:h.z,feet:h.feet,chartId:h.chartId,mode:h.mode,armed:h.armed,notice:h.notice,arrival:h.arrival,arrivals:h.arrivals,
+                distance:Math.hypot(source.x-h.x,source.z-h.z,source.feet-h.feet),trailLength:h.trail?.length,lastFold:h.lastFold}:null,
+              corridor:source.corridor||null,doorOpen:source.doorOpen}:
+              {placement:reviewPlacement,nearby:PROPS.renderInstances().filter(p=>/yard-jardins|lyric-service|lyric-extract|pub-complete|yard-(?:former|rehearsal|baths|covered)/.test(p.id||'')).map(p=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,z:p.z,yaw:p.yaw}))},
+            renderer:{camera:R3.r3dViewCamera?.(),display:R3.r3dPixelMeshStatus?.(),boundaryReady:R3.r3dYardJardinsReady?.(),servicesReady:R3.r3dExteriorInfrastructureReady?.(),source:sourceContinuationRenderer?.diagnostics?.()},
+            faceplate:faceplateModuleStatus(),contact:{sourceContacts:state.sourceContacts,finalEncounter:state.finalEncounter}};
+        },
+      },{stages:[...YARD_TURN_REVIEW.map(view=>[view.id,view.id]),['source-ii-door','Source II · door arrival'],['source-iii-door','Source III · gate arrival'],['source-corridor','Source II · Lyric demolition reach'],['source-corridor-entry','Source II · full corridor elbow']]});
+    }
+    if(import.meta.env.DEV&&qp.has('worldIntegrationReview')){
+      const {createWorldIntegrationReview}=await import('./dev/world-integration-review.js');
+      let reviewPlacement=null;
+      const stand=(at,target,{floor=0,group='ground'}={})=>{
+        const point=FP.logicalAtPhysical(at.x/CELL-.5,at.z/CELL-.5,{group,floor});
+        if(!point||FP.isSolid(point.x,point.y)||!PROPS.propCanOccupy(point.x,point.y))return false;
+        const yaw=Math.atan2(target.x-at.x,-(target.z-at.z))-planYawOffset();
+        if(!godStandAtPhysical(point,yaw,'world-integration-review'))return false;
+        R3.r3dSetLookAngles({yaw,pitch:Math.atan2(target.y-(point.floor+1.62),Math.hypot(target.x-at.x,target.z-at.z)),immediate:true});
+        R3.r3dSnapCameraOnNextFrame?.();return true;
+      };
+      const standBy=(id,{paper=false}={})=>{
+        const prop=PROPS.propById(id),rendered=PROPS.renderSelectedHosts({select:p=>p.id===id})[0];
+        if(!prop||!rendered)throw Error('The actual review object is not placed: '+id);
+        const target={x:rendered.x,y:rendered.y+(paper?.008:1.40),z:rendered.z};
+        const floor=FP.floorAt(prop.interactionRx??prop.rx,prop.interactionRy??prop.ry),group=prop.renderGroups?.[0]||prop.renderGroup;
+        const paperObserver={
+          'student-strike-ellery-record':{x:62.2,z:3.85},
+          'student-strike-tower-record':{x:96.5,z:57.75},
+        }[id];
+        const candidates=paper&&paperObserver?[paperObserver]:[];
+        for(const radius of paper?[1.2,1.5,1.8]:[1.3,1.65,2])for(let i=0;i<12;i++)candidates.push({x:target.x+Math.cos(i*Math.PI/6)*radius,z:target.z+Math.sin(i*Math.PI/6)*radius});
+        for(const at of candidates)if(stand(at,target,{floor,group}))return true;
+        throw Error('No supported observer for '+id);
+      };
+      createWorldIntegrationReview({
+        stage:async id=>{
+          ensureCtx();await actx?.resume?.();
+          return godBuildingScene(null,async()=>{
+            retireStudentStrike();scenes.clear();SPEECH.clearSpeech();setGameplayPaused(false,{announce:false});godReleaseViewForWarp();
+            natatoriumCoffeeStretch.reset();natatoriumCoffeeBody=null;
+            godFlags(['combat.trained',SETUP_HANDOFF.closed,SETUP_HANDOFF.arrived,SETUP_HANDOFF.skillsDone,SETUP_HANDOFF.skillsClosed]);
+            PRES.despawn();reviewPlacement=id;
+            await R3.r3dBasePropsReady();
+            if(id==='pre-shift-map'){
+              godFlags(['van.preparation.v1','van.difficulty.pending'],['bag.taken','map.taken','god.map-acquired','kit.fitted','van.closed','work-order.accepted','radio.work-order-read']);
+              return stand({x:24,z:7.5},{x:35,y:2,z:28});
+            }
+            godFlags(['bag.taken','map.taken','kit.fitted']);godInventory().fieldReady();
+            if(!REC.lightOn())REC.toggleLight({protectTake:true});
+            if(id==='pool-coffee'||id==='pool-no-coffee'){
+              if(id==='pool-coffee')consumeCoffee({source:'DEV.world-integration-review'});else godFlags([],['drank.coffee']);
+              for(const door of FP.doorState())if(/pool|natatorium|changing/i.test(door.id))FP.setDoorOpen(door.id,true);
+              godRefreshDoors();
+              // Approach the real doorway beside the central starting block;
+              // ordinary steps onto the west deck cross the pool-zone boundary.
+              const placed=stand({x:83.25,z:31.25},{x:83.25,y:1.55,z:47});natatoriumCoffeeStretch.reset();natatoriumCoffeeBody=null;return placed;
+            }
+            if(id==='ellery-record'){
+              academicFloorReturns.load({version:1,visits:3,returns:2,guardsDeparted:false,presence:'inside'});academicFloorReturnsSavedKey='';
+              academicBouncers.load({...academicBouncers.save(),admitted:true});saveAcademicGhostClub();syncStoryObjectProps();
+              return standBy('student-strike-ellery-record',{paper:true});
+            }
+            if(id==='tower-record'){godEnterTowerPreset('ringing-room');return standBy('student-strike-tower-record',{paper:true});}
+            if(id==='iona')return standBy(PUB_BARTENDER_ID);
+            if(id==='ruth'||id==='denise')return standBy(id==='ruth'?'vigil-ruth-mallory':'vigil-denise-okafor');
+            if(id==='lyric-camera-extract'){
+              for(const at of [{x:29.8,z:26.8},{x:30,z:27.5},{x:29.8,z:33.8}])if(stand(at,{x:35.5,y:3.47,z:28.65}))return true;
+              return false;
+            }
+            return false;
+          });
+        },
+        map:openFieldMap,pause:value=>setGameplayPaused(value),
+        inspect:()=>{
+          const top=scenes.top({includeOverlay:true}),view=top?.view?.(),state=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf);
+          const native=P3.stillnessNativeReceiverScene(),wanted=/^(?:student-strike-(?:ellery|tower)-record|lyric-service-|lyric-extract-|ellery-(?:academic|school|baths)-rainwater)/;
+          const physical=FP.isLoaded()?FP.logicalToPhysical(px,py):null,camera=R3.r3dViewCamera?.();
+          return{silentOutput:!!openingSilentDestination,placement:reviewPlacement,scene:top?.id||null,
+            dialogue:view?{nodeId:view.nodeId,line:view.line,pending:view.pending}:null,
+            body:{x:px,y:py,floor:physical?.y,physical:physical?{x:physical.x*CELL+CELL/2,z:physical.z*CELL+CELL/2}:null},
+            poolMetric:{...natatoriumCoffeeStretch.view(),rendered:camera?.natatoriumMetric},faceplate:faceplateModuleStatus(),
+            evidence:currentStudentStrikeEvidence(),documents:getSave().run?.ledger?.documentsRead||[],
+            flags:Object.fromEntries(['bag.taken','map.taken','kit.fitted','van.preparation.v1','van.difficulty.pending','drank.coffee',STUDENT_STRIKE_WATCHED_FLAG].map(key=>[key,flagTest(key)])),
+            contact:{sourceContacts:state.sourceContacts,finalEncounter:state.finalEncounter},
+            renderer:{camera,display:R3.r3dPixelMeshStatus?.(),servicesReady:R3.r3dExteriorInfrastructureReady?.(),
+              recordMeshes:['student_strike_ellery_record','student_strike_tower_record'].map(mesh=>({mesh,loaded:P3.propMeshCatalog().includes(mesh)}))},
+            rendered:native.instances.filter(p=>wanted.test(p.id||'')).map(p=>({id:p.id,mesh:p.mesh,x:p.x,y:p.y,z:p.z})),
+          };
+        },
+      });
+    }
+    if(import.meta.env.DEV&&qp.has('studentStrikeReview')){
+      const {createStudentStrikeReview}=await import('./dev/student-strike-review.js');
+      createStudentStrikeReview({
+        stage:async()=>{
+          ensureCtx();await actx?.resume?.();
+          return godBuildingScene(null,()=>{
+            retireStudentStrike();scenes.clear();SPEECH.clearSpeech();setGameplayPaused(false,{announce:false});godReleaseViewForWarp();
+            godFlags(['combat.trained',SETUP_HANDOFF.closed,SETUP_HANDOFF.arrived,SETUP_HANDOFF.skillsDone,SETUP_HANDOFF.skillsClosed]);
+            academicGhostDispatch?.cancel();academicPopulationDispatch?.cancel();academicBouncerSocialDispatch?.cancel();
+            academicSociety.load(academicSociety.save());academicFloorPopulation.load(academicFloorPopulation.save());
+            academicBouncers.load({...academicBouncers.save(),admitted:true});
+            academicFloorReturns.load({version:1,visits:1,returns:0,guardsDeparted:false,presence:'inside'});
+            academicFloorReturnsSavedKey='';saveAcademicGhostClub();
+            const at={x:67.8,z:35.7},point=FP.logicalAtPhysical(at.x/CELL-.5,at.z/CELL-.5,{group:'academic',floor:10});
+            if(!point||FP.isSolid(point.x,point.y)||!PROPS.propCanOccupy(point.x,point.y))throw Error('Odette observer position is not supported.');
+            const yaw=Math.atan2(66.6-at.x,-(36-at.z))-planYawOffset();
+            if(!godStandAtPhysical(point,yaw,'student-strike-review'))return false;
+            R3.r3dSetLookAngles({yaw,pitch:-.097,immediate:true});R3.r3dSnapCameraOnNextFrame?.();
+            saveCommit({view:{yaw,pitch:-.097}});syncStoryObjectProps();revealAround(px,py);godSyncBuildingRender();
+            return academicActorPresent('odette');
+          });
+        },
+        talk:()=>talkToAcademicPerson('odette'),
+        withdraw:()=>studentStrikeScene?.withdraw(),pause:value=>setGameplayPaused(value),
+        clear:()=>{retireStudentStrike();setGameplayPaused(false,{announce:false});},
+        inspect:()=>{
+          const state=chunkSurfRuntime?.state?.()||normalizeChunkSurfState(getSave().chunkSurf),instances=P3.stillnessNativeReceiverScene().instances;
+          const plate=instances.find(p=>p.id==='offered-bread');
+          return{silentOutput:!!openingSilentDestination,scene:studentStrikeScene?.view()||null,lastReturn:studentStrikeLastReturn,
+            canonical:{x:px,y:py,floor:FP.logicalToPhysical(px,py).y,...R3.r3dLookAngles()},
+            saved:{px:getSave().px,py:getSave().py,view:getSave().view},
+            contact:{sourceContacts:state.sourceContacts,finalEncounter:state.finalEncounter},consent:academicSociety.save().consent,
+            watched:flagTest(STUDENT_STRIKE_WATCHED_FLAG),returns:academicFloorReturns.save(),
+            rendered:{plate:plate?{id:plate.id,x:plate.x,y:plate.y,z:plate.z}:null,
+              handArticulation:instances.filter(p=>p.strikeArticulation).map(p=>p.strikeArticulation)},
+            display:R3.r3dPixelMeshStatus?.()};
+        },
+      });
+    }
     if(import.meta.env.DEV&&qp.has('pubPressureReview')){
       const {createPubPressureReview}=await import('./dev/pub-pressure-review.js');
       createPubPressureReview({
@@ -37898,7 +38809,19 @@ async function boot(){
     }
     if(import.meta.env.DEV&&qp.has('firstStrikeReview')){
       const {createFirstStrikeReview}=await import('./dev/first-strike-review.js');
+      const recordingReviewActions=[];
       createFirstStrikeReview({
+        intrusion:qp.has('recordingIntrusionReview'),
+        intrusionStudy:enabled=>{recordingReviewActions.push({kind:'room-traction-ablation',enabled,at:performance.now()});return R3.r3dSetRecordingViewPullEnabled(enabled);},
+        armIntrusionPressure:()=>{
+          if(!REC.isRecording()||REC.isSlating())return false;
+          takeHunter={...HUNTER.armTakeHunter(HUNTER.freshTakeHunter(),{cause:'DEV staged prior approach',roll:.9}),
+            cells:5,seconds:1.3,warningSeconds:HUNTER.TAKE_HUNTER.dragWarningSeconds,quiet:0};
+          recordingReviewActions.push({kind:'DEV-initial-warned-hunter',earnedApproach:false,state:{...takeHunter},at:performance.now()});
+          return true;
+        },
+        intrusionHold:held=>{if(!REC.isRecording())return false;if(held)REC.stallTake();else REC.resumeTake();
+          recordingReviewActions.push({kind:'DEV-instrument-hold',held,at:performance.now()});return true;},
         stage:async(kind,{elapsedSeconds=0}={})=>{
           ensureCtx();await actx?.resume?.();scenes.clear();
           if(REC.isRecording())stopTake({silent:true});if(REC.isListening())REC.stopListening();PB.stopPlayback();
@@ -37910,6 +38833,26 @@ async function boot(){
               'opening.vehicle.exited','opening.overture.completed','prologueDone'],['opening.vehicle.pending','opening.overture.pending']);
             TUT.skipTutorial();saveCommit({nightClock:freshNightClock(),nightDeadline:freshNightDeadline({runId:getSave().run.id})});return true;
           });
+          if(kind==='studio-b3-control'){
+            // Explicit post-console authoring fixture. These are the existing
+            // resolved-source/visit flags, not a completed room-tone job.
+            const postConsoleFlags={'b3.speakers.woken':true,'b3.speakers.silenced':true,
+              'b3.speakers.fader.3':0,'b3.speakers.power':false,'b3.speakers.visit.complete':true};
+            saveCommit({flags:{...getSave().flags,...postConsoleFlags}});
+            b3Speaker.restore(getSave().flags);b3HushVisit?.reset();b3FadersDirty=true;
+            recordingReviewActions.push({kind:'DEV-post-console-visit',earnedVisit:false,jobCredited:false,flags:postConsoleFlags,at:performance.now()});
+            // Stage the radio offline for this explicitly isolated review,
+            // without granting milestones or changing ordinary fault rules. The
+            // canonical serializer caps this temporary interval at120 seconds.
+            const radioNow=performance.now(),radioBefore=RADIO.saveRadioState(radioNow);
+            RADIO.loadRadioState({...radioBefore,phase:RADIO.RADIO_PHASE.DEAD,dead:true,deathCause:'DEV offline-radio review',pendingCue:null,activeCue:null,candidateRoom:null,
+              call:{status:'idle',deadlineRemainingMs:0,nextPulseRemainingMs:0},
+              scheduler:{...radioBefore.scheduler,nextFaultRemainingMs:120000,pulseRemainingMs:[]}},radioNow);
+            saveCommit({radio:RADIO.saveRadioState(radioNow)});
+            recordingReviewActions.push({kind:'DEV-radio-quiet',label:'DEV offline-radio/no pending carrier; fault due120s',earned:false,previousPhase:radioBefore.phase,phase:RADIO.RADIO_PHASE.DEAD,
+              nextFaultRemainingMs:120000,clearedPending:!!(radioBefore.pendingCue||radioBefore.activeCue),at:radioNow});
+            fear=0;FEAR.setFear(0);takeHunter=HUNTER.freshTakeHunter();PRES.despawn();
+          }
           if(kind==='source-II'){
             godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FINAL,{apertureComplete:true});
             const entry=chunkSurfRuntime.sourceContinuationEntry('forward',{runId:getSave().run.id});
@@ -37929,11 +38872,62 @@ async function boot(){
           await new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)));return true;
         },
         lightMode:mode=>R3.r3dSetWorldLightTreatment(mode),
+        seedReviewTake:()=>{
+          const archived=Object.values(getMeta().returns?.records||{}).flatMap(row=>row.recordings?.tapes||[]);
+          const source=archived.find(row=>row.roomId==='main_b3'&&row.id);if(!source)return false;
+          const rows=PB.serializeTakes(),ordinal=rows.length+1,start=rows.at(-1)?.endSeconds||0,duration=Math.max(1,source.durationSeconds||18);
+          PB.loadTakes([...rows,{...structuredClone(source),id:`dev-retained-take:${ordinal}`,ordinal,
+            place:'DEV retained Studio B3 interval',status:'accepted',counted:true,sealed:true,debug:false,voided:false,damage:null,
+            startSeconds:start,endSeconds:start+duration}]);
+          saveCommit({rec:REC.saveRecState()});sourceContinuationTrace.push({type:'DEV-labelled-take-fixture',earnedRecording:false,sourceTakeId:source.id});return true;
+        },
+        contactReturnChapter:()=>chunkSurfRuntime?.sourceRecordingCustody?.().recordings.find(row=>row.status==='held')?.destination.chapter,
+        contactFixture:async(chapter,repeat,{recovery=false}={})=>{
+          if(!chunkSurfRuntime||!['II','III'].includes(chapter))return false;
+          const source=chunkSurfRuntime.state();releaseSourceContinuation({restore:false});
+          const wins=chapter==='II'&&!repeat?['I']:['I','II'];
+          activateSourceSpace({...source,completed:false,finalEncounter:{...source.finalEncounter,
+            status:'locked',victories:wins.length,chapterWins:wins,activeChapter:null,activeBattleId:null,won:null,outcome:null}},{position:{x:px,y:py}});
+          const entry=chunkSurfRuntime.sourceContinuationEntry('forward',{runId:getSave().run.id}),anchor=sourceContinuationRecordingDestination(chapter);
+          if(!entry?.checkpoint||!anchor)return false;
+          const at={x:anchor.x,z:anchor.z+(recovery?.65:2),feet:anchor.feet,chartId:0,level:chapter==='III'?1:0,yaw:0,pitch:recovery?-.8:0};
+          const checkpoint={...entry.checkpoint,...at,phase:chapter==='III'?'catch':'wrong-return',status:'active',
+            lastSafe:{...at},fall:null,recovery:null,reveal:null,bodyTransit:null,cameraTransit:null,
+            hush:{...entry.checkpoint.hush,...at,z:at.z-2,active:!recovery,armed:true,mode:'notice',notice:120,trail:[]},
+            counterweight:{...entry.checkpoint.counterweight,active:false}};
+          if(recovery){
+            const returned=sourceContinuationRecordingReturnProps(checkpoint,sourceRecordingDisplayCustody()).find(row=>row.kind==='source-recording-cassette'&&row.recording.destination.chapter===chapter);
+            if(returned){checkpoint.x=anchor.x+(returned.x-anchor.x)*.1;checkpoint.z=anchor.z+(returned.z-anchor.z)*.1;
+              checkpoint.yaw=Math.atan2(returned.x-checkpoint.x,-(returned.z-checkpoint.z));checkpoint.lastSafe={...checkpoint.lastSafe,x:checkpoint.x,z:checkpoint.z,yaw:checkpoint.yaw};}
+          }
+          const owner=chunkSurfRuntime,stored=owner.setContinuationCheckpoint(checkpoint);
+          const reviewPose=value=>value?{x:value.x,z:value.z,feet:value.feet,chartId:value.chartId,phase:value.phase,yaw:value.yaw,
+            hush:value.hush?{x:value.hush.x,z:value.hush.z,feet:value.hush.feet,active:value.hush.active,mode:value.hush.mode}:null}:null;
+          const matches=value=>value&&value.phase===checkpoint.phase&&value.chartId===checkpoint.chartId
+            &&['x','z','feet'].every(key=>Math.abs(value[key]-checkpoint[key])<1e-6);
+          sourceContinuationTrace.push({type:'DEV-contact-initial-state',stagedChapterWins:wins,chapter,repeat,recovery,earnedProgression:false,
+            stagedNoticeSeconds:120,requested:reviewPose(checkpoint),stored:reviewPose(stored)});
+          if(!matches(stored))throw Error('The review Contact checkpoint was not retained.');
+          saveCommit({chunkSurf:owner.state(),area:'source-space'});
+          const opened=await beginSourceContinuation({checkpoint:stored,skipFalseReturn:true,skipEarthfall:true});
+          await new Promise(done=>requestAnimationFrame(()=>requestAnimationFrame(done)));
+          const actual=opened?.serialize?.(),after=owner.state().sourceContinuation;
+          sourceContinuationTrace.push({type:'DEV-contact-opened-state',chapter,repeat,recovery,earnedProgression:false,
+            actual:reviewPose(actual),storedAfterFrames:reviewPose(after),focus:opened?.view?.().focus||null,sameOwner:owner===chunkSurfRuntime,sameScene:opened===sourceContinuationScene});
+          if(owner!==chunkSurfRuntime||opened!==sourceContinuationScene||!matches(actual)||!matches(after))throw Error('The review Contact scene did not retain its staged body.');
+          return opened;
+        },
         press:code=>onKey({key:code.startsWith('Key')?code.slice(3).toLowerCase():code,code,repeat:false,metaKey:false,ctrlKey:false,altKey:false,target:null,preventDefault(){},stopPropagation(){}}),
         release:code=>onKeyUp({key:code.startsWith('Key')?code.slice(3).toLowerCase():code,code,repeat:false,target:null,preventDefault(){},stopPropagation(){}}),
         lookAt:point=>{const s=firstStrikeScene?.serialize();if(!s)return false;const yaw=Math.atan2(point.x-s.x,-(point.z-s.z));return firstStrikeScene.lookBy(Math.atan2(Math.sin(yaw-s.yaw),Math.cos(yaw-s.yaw)),-s.pitch);},
         lookBy:(yaw,pitch)=>firstStrikeScene?firstStrikeScene.lookBy(yaw,pitch):R3.r3dLook(yaw,pitch),
         startRecording:()=>{ensureTapeAudio();beginTakeNow();},stopRecording:()=>stopTake({silent:true}),
+        finishSlate:()=>{if(REC.isSlating())finishRecordingSlate();},
+        persist:async()=>{firstStrikeScene?.checkpoint?.();return Promise.all([saveGameQueued(structuredClone(getSave())),saveProfileQueued(structuredClone(getMeta()))]);},
+        resumeSaved:async()=>{scenes.clear();frontEndSession?.markLive?.();frontEndPlateOverride=null;R3.r3dSetFrontEndPlate?.('gameplay');endBootWeather?.();
+          if(!inRogue)enterRogue();if(!FP.isLoaded()&&!buildingLoadPromise)loadBuilding();while(buildingLoadPromise){if(!await buildingLoadPromise)return false;}
+          scenes.clear();enterStory({reusePreparedWorld:true});return true;},
+        archive:()=>{const id=getSave().run?.finalizedReturn?.summaryId;if(id){returnToTitle();openArchive({summaryId:id,recordings:true});}},
         pause:()=>{if(paused)onKey({key:'Escape',code:'Escape',repeat:false,preventDefault(){},stopPropagation(){}});else openPauseMenu();},
         captureAudio:()=>{if(!actx||!outGain)return null;const destination=actx.createMediaStreamDestination();outGain.connect(destination);return{stream:destination.stream,dispose:()=>{outGain.disconnect(destination);destination.stream.getTracks().forEach(t=>t.stop());}};},
         observePresentation:fn=>R3.r3dObservePresentation(fn),
@@ -37944,7 +38938,17 @@ async function boot(){
           entry:firstStrikeEntry?{origin:firstStrikeEntry.origin,route:firstStrikeEntry.route,safeEdge:firstStrikeEntry.safeEdge,shelter:firstStrikeEntry.shelter,routeEvidence:firstStrikeEntry.routeEvidence}:null,
           position:{x:px,y:py},camera:R3.r3dViewCamera?.(),light:R3.r3dLightingDebug?.(),output:R3.r3dPixelMeshStatus?.(),paused,foreground:gameplayInputLifecycleActive(),
           warnings:{level:nightWarningHeldFrame?.level||0,constructionCells:nightWarningEntry?.walkCells?.length||0,protected:nightDeadlineTransportProtected()},
+          embodiment:{...recordingEmbodiment.snapshot(),ready:recordingEmbodimentReady,render:R3.r3dRecordingEmbodimentStatus?.()},
+          recordingIntrusion:{actions:recordingReviewActions.slice(-20),hunter:{...takeHunter},transport:HUNTER.takeHunterTransport(takeHunter),pressure:recordingPressurePerformance.inspect()},
+          cassette:{view:sourceRecordingInspectionScene?.view?.(),render:sourceRecordingInspectionRenderer?.diagnostics?.()},
+          contact:{chapterWins:chunkSurfRuntime?.state?.().finalEncounter.chapterWins,
+            checkpoint:chunkSurfRuntime?.state?.().sourceContinuation,body:sourceContinuationScene?.stillnessPose?.(),fixture:sourceContinuationTrace.filter(row=>row.type?.startsWith('DEV-contact-')).slice(-4),
+            status:chunkSurfRuntime?.sourceContactStatus?.(sourceContinuationScene?.view?.().phase==='catch'?'III':'II'),
+            focus:sourceContinuationScene?.view?.().focus,held:sourceContinuationScene?.view?.().contactHeld,
+            custody:chunkSurfRuntime?.sourceRecordingCustody?.(),playback:PB.playbackSnapshot?.(),playbackError:PB.playbackError?.(),
+            returns:sourceContinuationScene?.view?.().sourceContactProps},
           recording:{active:REC.isRecording(),listening:REC.isListening(),open:PB.hasOpenTake(),spoiled:REC.recState().spoiled,elapsed:REC.recState().takeElapsed,injuries:REC.recState().injuries,
+            slating:REC.isSlating(),stalled:REC.isStalled(),spoilReason:REC.recState().spoilReason,spoilMeta:REC.recState().spoilMeta,noise:REC.currentNoise(),ambient:REC.ambientNoise(),
             tapes:PB.tapeTakes().map(t=>({id:t.id,roomId:t.roomId,sealed:t.sealed,status:t.status,nightStamp:t.nightStamp}))},
           audio:firstStrikeAudio?.snapshot?.(),trace:nightDeadlineTrace.slice(-4)}),
       });

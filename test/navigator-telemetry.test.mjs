@@ -5,9 +5,23 @@ import { fieldDeckLayout } from '../src/render/hud-layout.js';
 import { machinePanelAperture } from '../src/render/presentation.js';
 import { navigatorDisplayLayout } from '../src/render/navigator-layout.js';
 import { navigatorTelemetryState, navigatorTelemetryLayout, paintNavigatorTelemetry } from '../src/render/navigator-telemetry.js';
-import { MONITOR_THRESHOLDS, monitorSnapshotForRms } from '../src/audio/monitor.js';
+import { monitorSnapshotForRms } from '../src/audio/monitor.js';
 import { sampleNavigatorLcdMotion } from '../src/render/navigator-lcd-motion.js';
 import { navigatorLcdMeterGeometry, navigatorLcdScaleMarks } from '../src/render/navigator-lcd.js';
+import {resetDualTraceMeters} from '../src/audio/dual-trace.js';
+import {dualTracePeakIndex,dualTraceUnit,drawSevenSegmentNumber,drawTraceCell} from '../src/render/dual-trace-display.js';
+
+test.beforeEach(()=>resetDualTraceMeters());
+let fixtureSerial=0;
+// Paint/material fixtures use a real settled measurement with its own packet
+// clock. They cannot borrow another test's RMS history or retained peak.
+function settledTelemetryState(telemetry){
+  const id=`navigator-fixture-${++fixtureSerial}`;let state;
+  for(let nowMs=0;nowMs<=800;nowMs+=25)state=navigatorTelemetryState({...telemetry,
+    monitor:telemetry.monitor?{...telemetry.monitor,sourceId:id,timestampMs:nowMs}:telemetry.monitor},{nowMs});
+  return state;
+}
+const meterCellCount=()=>navigatorLcdMeterGeometry({x:0,w:20},{cellW:8.45,dpr:1}).length;
 
 const contained=(r,b)=>r.x>=b.x-1e-7&&r.y>=b.y-1e-7
   &&r.x+r.w<=b.x+b.w+1e-7&&r.y+r.h<=b.y+b.h+1e-7;
@@ -60,7 +74,7 @@ test('a silent monitor remains genuinely flat and missing telemetry cannot becom
   assert.equal(silent.available,true);assert.equal(silent.segments,0);
   assert.equal(silent.peakSegments,0);assert.equal(silent.band,'normal');
   assert.equal(silent.warning,false);assert.equal(silent.status,'NORMAL');
-  for(const monitor of[null,undefined,{}, {db:NaN}, {db:Infinity}, {db:'-18'}]){
+  for(const monitor of[null,undefined,{}, {db:NaN}, {db:Infinity}, {db:'not-a-measurement'}, {db:-18,available:false}]){
     const missing=navigatorTelemetryState({monitor}).monitor;
     assert.equal(missing.available,false);assert.equal(missing.status,'--');
     assert.equal(missing.segments,0);assert.equal(missing.peakSegments,0);assert.equal(missing.warning,false);
@@ -70,17 +84,17 @@ test('a silent monitor remains genuinely flat and missing telemetry cannot becom
 test('the actual monitor danger thresholds, clipping and held peak survive the LCD conversion',()=>{
   for(const[db,status,band]of[[-48,'NORMAL','normal'],[-30,'CAUTION','mid-hot'],[-18,'HOT','hot']]){
     const snapshot=monitorSnapshotForRms(10**(db/20));
-    const shown=navigatorTelemetryState({monitor:snapshot}).monitor;
+    const shown=settledTelemetryState({monitor:snapshot}).monitor;
     assert.equal(shown.status,status);assert.equal(shown.band,band);
-    assert.equal(shown.segments,snapshot.segments);
+    assert.equal(shown.segments,dualTracePeakIndex(shown.db,meterCellCount())+1,'shared linear electrodes follow measured dB');
   }
   const clipped=navigatorTelemetryState({monitor:monitorSnapshotForRms(.2,{clipped:true})}).monitor;
   assert.equal(clipped.status,'CLIP');assert.equal(clipped.warning,true);
-  assert.equal(clipped.segments,MONITOR_THRESHOLDS.length);
-  const held=navigatorTelemetryState({monitor:{...monitorSnapshotForRms(.001),peakDb:-9}}).monitor;
+  assert.ok(clipped.segments<meterCellCount(),'CLIP cannot fabricate full-scale RMS');
+  const held=settledTelemetryState({monitor:{...monitorSnapshotForRms(.001),peakDb:-9}}).monitor;
   assert.ok(held.peakSegments>held.segments,'the actual held peak is separate from the current input');
-  const submittedFloor=navigatorTelemetryState({monitor:{...monitorSnapshotForRms(0),segments:4,band:'mid-hot'}}).monitor;
-  assert.equal(submittedFloor.segments,4);assert.equal(submittedFloor.status,'CAUTION');
+  const submittedFloor=settledTelemetryState({monitor:{...monitorSnapshotForRms(0),segments:4,band:'mid-hot'}}).monitor;
+  assert.equal(submittedFloor.segments,0);assert.equal(submittedFloor.db,-96);assert.equal(submittedFloor.status,'CAUTION');
 });
 
 function recordingContext(){
@@ -96,11 +110,48 @@ function recordingContext(){
   return{ctx,draws,stack,state};
 }
 
+function inkPaths(draws){
+  const filled=[];let path=[];
+  for(const draw of draws){
+    if(draw.kind==='beginPath')path=[];
+    else if(['moveTo','lineTo','closePath'].includes(draw.kind))path.push({kind:draw.kind,args:draw.args});
+    else if(draw.kind==='fill')filled.push({path:[...path],alpha:draw.alpha,fillStyle:draw.fillStyle});
+  }
+  return filled;
+}
+function containsInk(actual,expected,message){
+  const paths=inkPaths(actual),required=inkPaths(expected);assert.ok(required.length>0,'the production reference painter emitted real electrodes');
+  for(const path of required)assert.ok(paths.some(candidate=>JSON.stringify(candidate.path)===JSON.stringify(path.path)
+    &&Math.abs(candidate.alpha-path.alpha)<1e-9&&candidate.fillStyle===path.fillStyle),message);
+}
+
+test('one real source integrates RMS separately from its immediate warning and releases to genuine silence',()=>{
+  const sourceId='navigator-rms-release',packet=(rms,at)=>({...monitorSnapshotForRms(rms),sourceId,timestampMs:at});
+  let shown=navigatorTelemetryState({monitor:packet(0,0)},{nowMs:0});assert.equal(shown.monitor.segments,0);
+  shown=navigatorTelemetryState({monitor:packet(.2,25)},{nowMs:25});
+  assert.equal(shown.monitor.status,'HOT','the gameplay warning does not wait for display RMS');
+  assert.equal(shown.monitor.segments,0,'the warning does not supply an artificial RMS floor');
+  for(let at=50;at<=800;at+=25)shown=navigatorTelemetryState({monitor:packet(.2,at)},{nowMs:at});
+  assert.ok(shown.monitor.segments>0);assert.ok(shown.monitor.db>-15&&shown.monitor.db<-13);
+  const previous=structuredClone(shown);
+  for(let at=825;at<=10000;at+=25)shown=navigatorTelemetryState({monitor:packet(0,at)},{nowMs:at});
+  assert.equal(shown.monitor.db,-96);assert.equal(shown.monitor.segments,0);assert.equal(shown.monitor.peakSegments,0);assert.equal(shown.monitor.status,'NORMAL');
+  assert.ok(previous.monitor.segments>0,'renderer projection did not mutate the prior supplied frame');
+  shown=navigatorTelemetryState({monitor:{sourceId,available:false}},{nowMs:10001});
+  assert.equal(shown.monitor.available,false);assert.equal(shown.monitor.segments,0);assert.equal(shown.monitor.peakSegments,0);
+});
+function expectDbInk(draws,lcd,metrics,text){
+  const ref=recordingContext(),bank=navigatorTelemetryLayout(lcd).db;
+  drawSevenSegmentNumber(ref.ctx,text,bank.x*metrics.cellW*metrics.dpr,bank.y*metrics.cellH*metrics.dpr,
+    bank.h*metrics.cellH*metrics.dpr,{color:'#1c3424',dormant:'#1c3424',lcd:true});
+  containsInk(draws,ref.draws,`actual formed dB electrodes display ${text}`);
+}
+
 test('the real LCD paint has no phosphor bloom and changes only with supplied telemetry',()=>{
   const lcd={x:2,y:15,w:23,h:3.15};
   const render=telemetry=>{
     const h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState(telemetry),{cellW:8.45,cellH:20,dpr:1});
+    paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState(telemetry),{cellW:8.45,cellH:20,dpr:1});
     assert.equal(h.stack.length,0);assert.equal(h.state.globalAlpha,1);
     assert.ok(h.draws.every(draw=>draw.shadowBlur===0),'LCD ink must never inherit a VFD halo');
     assert.ok(h.draws.filter(draw=>draw.kind==='fillRect').every(draw=>draw.args.slice(0,4).every(Number.isFinite)));
@@ -117,7 +168,7 @@ test('takes use digits only, while the monitor keeps its own meter',()=>{
     const lcd={x:2,y:15,w:23,h:height},monitor=monitorSnapshotForRms(.2);
     const render=takesVisible=>{
       const h=recordingContext();
-      paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState({takesVisible,takes,total:5,monitor}),metrics);
+      paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState({takesVisible,takes,total:5,monitor}),metrics);
       return h.draws;
     };
     const shown=render(true),hidden=render(false);
@@ -129,10 +180,10 @@ test('takes use digits only, while the monitor keeps its own meter',()=>{
       'showing the takes count adds no row of bars or rectangles');
     const meter=navigatorTelemetryLayout(lcd).meter;
     const cells=navigatorLcdMeterGeometry(meter,metrics);
-    for(const cell of cells)assert.ok(shown.some(d=>d.kind==='fillRect'
-      &&d.args[0]===cell.x&&d.args[1]===meter.y*metrics.cellH
-      &&d.args[2]===cell.w&&d.args[3]===meter.h*metrics.cellH),
-      'the live monitor retains every meter segment');
+    const reference=recordingContext(),state=settledTelemetryState({takes,total:5,monitor});
+    for(const cell of cells)drawTraceCell(reference.ctx,cell.x,meter.y*metrics.cellH,cell.w,meter.h*metrics.cellH,'#1c3424',
+      {alpha:cell.index<state.monitor.segments?.96:.13,chamfer:.8});
+    containsInk(shown,reference.draws,'the live monitor retains every formed electrode at its actual geometry and measured activity');
   }
 });
 
@@ -163,29 +214,29 @@ test('roomy LCD gets larger value banks without stealing compact map area or cro
 });
 
 test('LCD response follows real changes, settles finitely and never mutates telemetry or current danger',()=>{
-  const quiet=navigatorTelemetryState({takes:1,monitor:monitorSnapshotForRms(0)});
-  const hot=navigatorTelemetryState({takes:2,injuries:1,monitor:monitorSnapshotForRms(.2)});
+  const quiet=settledTelemetryState({takes:1,monitor:monitorSnapshotForRms(0)});
+  const hot=settledTelemetryState({takes:2,injuries:1,monitor:monitorSnapshotForRms(.2)});
   const before=structuredClone(hot);
   let frame=sampleNavigatorLcdMotion(null,quiet,{nowMs:0});
-  assert.equal(frame.illumination,0);assert.deepEqual(frame.afterimage,new Array(12).fill(0));
+  assert.equal(frame.illumination,0);assert.deepEqual(frame.afterimage,new Array(meterCellCount()).fill(0));
   frame=sampleNavigatorLcdMotion(frame,hot,{nowMs:16});
   assert.equal(frame.takeResponse,1);assert.equal(frame.changedSlot,1);assert.ok(frame.illumination>0);
   assert.equal(hot.monitor.status,'HOT');assert.ok(hot.monitor.segments>0);
   assert.deepEqual(hot,before,'presentation never smooths or rewrites the actual dB/danger state');
   for(let nowMs=32;nowMs<=800;nowMs+=16)frame=sampleNavigatorLcdMotion(frame,hot,{nowMs});
   assert.equal(frame.takeResponse,0);assert.equal(frame.alertResponse,0);assert.equal(frame.illumination,0);
-  const quietAfterTake=navigatorTelemetryState({takes:2,monitor:monitorSnapshotForRms(0)});
+  const quietAfterTake=settledTelemetryState({takes:2,monitor:monitorSnapshotForRms(0)});
   const falling=sampleNavigatorLcdMotion(frame,quietAfterTake,{nowMs:816});
   assert.equal(quietAfterTake.monitor.segments,0);assert.equal(quietAfterTake.monitor.db,-96);
   assert.ok(falling.afterimage.some(value=>value>0),'only a dim material afterimage may decay');
   frame=falling;
   for(let nowMs=832;nowMs<=1008;nowMs+=16)frame=sampleNavigatorLcdMotion(frame,quietAfterTake,{nowMs});
-  assert.deepEqual(frame.afterimage,new Array(12).fill(0));
+  assert.deepEqual(frame.afterimage,new Array(meterCellCount()).fill(0));
 });
 
 test('paused, repeated, backward and reduced-motion frames cannot spend animation time or invent signal',()=>{
-  const quiet=navigatorTelemetryState({takes:0,monitor:monitorSnapshotForRms(0)});
-  const changed=navigatorTelemetryState({takes:1,monitor:monitorSnapshotForRms(.2)});
+  const quiet=settledTelemetryState({takes:0,monitor:monitorSnapshotForRms(0)});
+  const changed=settledTelemetryState({takes:1,monitor:monitorSnapshotForRms(.2)});
   let frame=sampleNavigatorLcdMotion(null,quiet,{nowMs:1000});
   frame=sampleNavigatorLcdMotion(frame,changed,{nowMs:1016});
   const frozen=sampleNavigatorLcdMotion(frame,changed,{nowMs:9000,paused:true});
@@ -193,44 +244,47 @@ test('paused, repeated, backward and reduced-motion frames cannot spend animatio
   const repeated=sampleNavigatorLcdMotion(frozen,changed,{nowMs:9000});
   assert.equal(repeated.clockMs,frozen.clockMs);
   const backward=sampleNavigatorLcdMotion(repeated,changed,{nowMs:10});
-  assert.equal(backward.clockMs,repeated.clockMs);
+  assert.equal(backward.clockMs,0,'a backwards clock starts fresh material history rather than spending time');
+  assert.equal(backward.takeResponse,0);assert.equal(backward.illumination,0);
   const reduced=sampleNavigatorLcdMotion(frame,changed,{nowMs:1032,reducedMotion:true});
   assert.equal(reduced.illumination,0);assert.equal(reduced.takeResponse,0);
-  assert.deepEqual(reduced.afterimage,new Array(12).fill(0));
+  assert.deepEqual(reduced.afterimage,new Array(meterCellCount()).fill(0));
   assert.equal(changed.monitor.status,'HOT');
   const unavailable=navigatorTelemetryState({takes:1});
   const disconnected=sampleNavigatorLcdMotion(frame,unavailable,{nowMs:1032});
-  assert.deepEqual(disconnected.afterimage,new Array(12).fill(0));
+  assert.deepEqual(disconnected.afterimage,new Array(meterCellCount()).fill(0));
   assert.equal(disconnected.alertResponse,0);assert.equal(unavailable.monitor.segments,0);
 });
 
-test('LCD native ink keeps injury badge conditional and exposes submitted dB without a VFD glyph substitute',()=>{
-  const lcd={x:2,y:15,w:23,h:3.15};
+test('LCD labels keep injury conditional and actual seven-segment dB ink never manufactures a signal',()=>{
+  const lcd={x:2,y:15,w:23,h:3.15},metrics={cellW:8.45,cellH:20,dpr:2};
   const paints=telemetry=>{
     const h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState(telemetry),{cellW:8.45,cellH:20,dpr:2});
-    return h.draws.filter(draw=>draw.kind==='fillText').map(draw=>draw.args[0]);
+    paintNavigatorTelemetry(h.ctx,lcd,settledTelemetryState(telemetry),metrics);
+    return{draws:h.draws,labels:h.draws.filter(draw=>draw.kind==='fillText').map(draw=>draw.args[0])};
   };
   const quiet=paints({takes:2,monitor:monitorSnapshotForRms(0)});
-  assert.ok(quiet.includes('02'));assert.ok(quiet.includes('/ 05'));assert.ok(quiet.includes('-96'));
-  assert.ok(!quiet.some(text=>text.startsWith('HURT')));
+  assert.ok(quiet.labels.includes('02'));assert.ok(quiet.labels.includes('/ 05'));expectDbInk(quiet.draws,lcd,metrics,'-96');
+  assert.ok(!quiet.labels.some(text=>text.startsWith('HURT')));
   const beforeTask=paints({takesVisible:false,takes:4,total:5,monitor:monitorSnapshotForRms(0)});
-  assert.ok(!beforeTask.includes('TAKES'));assert.ok(!beforeTask.includes('04'));assert.ok(!beforeTask.includes('/ 05'));
-  assert.ok(beforeTask.includes('MONITOR')&&beforeTask.includes('-96'),'the measured monitor survives the dark take bank');
+  assert.ok(!beforeTask.labels.includes('04'));assert.ok(!beforeTask.labels.includes('/ 05'));
+  assert.ok(beforeTask.labels.includes('TAKES')&&beforeTask.labels.includes('88'),'the dark take bank retains only dormant electrodes');
+  assert.ok(beforeTask.draws.filter(draw=>draw.kind==='fillText'&&['TAKES','88','/ 88'].includes(draw.args[0])).every(draw=>draw.alpha<=.13));
+  assert.ok(beforeTask.labels.includes('MONITOR'));expectDbInk(beforeTask.draws,lcd,metrics,'-96');
   const hurt=paints({takes:3,injuries:2,monitor:{...monitorSnapshotForRms(0),segments:4,band:'mid-hot'}});
-  assert.ok(hurt.includes('HURT 2'));assert.ok(hurt.includes('-30'));assert.ok(hurt.includes('CAUTION'));
+  assert.ok(hurt.labels.includes('HURT 2'));assert.ok(hurt.labels.includes('CAUTION'));expectDbInk(hurt.draws,lcd,metrics,'-96');
 });
 
 test('losing takes or starting a new run clears earned-take response and stale ink immediately',()=>{
-  const before=navigatorTelemetryState({takes:2,monitor:monitorSnapshotForRms(0)});
-  const earned=navigatorTelemetryState({takes:3,monitor:monitorSnapshotForRms(.2)});
+  const before=settledTelemetryState({takes:2,monitor:monitorSnapshotForRms(0)});
+  const earned=settledTelemetryState({takes:3,monitor:monitorSnapshotForRms(.2)});
   let frame=sampleNavigatorLcdMotion(null,before,{nowMs:0});
   frame=sampleNavigatorLcdMotion(frame,earned,{nowMs:16});
   assert.equal(frame.takeResponse,1);assert.equal(frame.changedSlot,2);
-  const reset=navigatorTelemetryState({takes:0,monitor:monitorSnapshotForRms(0)});
+  const reset=settledTelemetryState({takes:0,monitor:monitorSnapshotForRms(0)});
   frame=sampleNavigatorLcdMotion(frame,reset,{nowMs:32});
   assert.equal(frame.takes,0);assert.equal(frame.takeResponse,0);assert.equal(frame.changedSlot,-1);
-  assert.equal(frame.illumination,0);assert.deepEqual(frame.afterimage,new Array(12).fill(0));
+  assert.equal(frame.illumination,0);assert.deepEqual(frame.afterimage,new Array(meterCellCount()).fill(0));
   assert.deepEqual(reset.slots,new Array(5).fill(false));
 });
 
@@ -252,17 +306,24 @@ test('LCD requests its own bundled ink fonts and keeps readable matrix fallback 
   assert.equal(requested.length,2,'font loads are not restarted on every frame');
 });
 
-test('LCD printed HOT threshold aligns with its actual sixth electrode rather than a fake linear dB scale',()=>{
+test('LCD marks follow the actual shared linear dB scale while HOT retains its immediate gameplay threshold',()=>{
   for(const width of[22.9,26.9,30.9])for(const height of[3.15,4.15])for(const dpr of[1,2]){
     const lcd={x:2,y:15,w:width,h:height},metrics={cellW:8.45,cellH:20,dpr};
     const layout=navigatorTelemetryLayout(lcd),cells=navigatorLcdMeterGeometry(layout.meter,metrics);
-    const marks=navigatorLcdScaleMarks(layout,metrics),hot=marks.find(mark=>mark.thresholdDb===-18);
-    assert.equal(hot.index,MONITOR_THRESHOLDS.indexOf(-18));assert.equal(hot.index,5);
-    assert.equal(hot.centerPx,cells[5].center);assert.equal(hot.align,'center');
+    const marks=navigatorLcdScaleMarks(layout,metrics);
+    for(const mark of marks){
+      assert.equal(mark.index,dualTracePeakIndex(mark.thresholdDb,cells.length));
+      assert.equal(mark.centerPx,(layout.meter.x+dualTraceUnit(mark.thresholdDb)*layout.meter.w)*metrics.cellW*dpr);
+    }
     const h=recordingContext();
-    paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState({monitor:monitorSnapshotForRms(10**(-18/20))}),metrics);
-    const printed=h.draws.filter(draw=>draw.kind==='fillText'&&draw.args[0]==='-18').at(-1);
-    assert.equal(printed.args[1],Math.round(cells[5].center),'actual painted caption shares the active HOT electrode center');
+    const shown=settledTelemetryState({monitor:monitorSnapshotForRms(10**(-18/20))});
+    assert.equal(shown.monitor.status,'HOT');assert.equal(shown.monitor.band,'hot');
+    paintNavigatorTelemetry(h.ctx,lcd,shown,metrics);
+    for(const mark of marks){
+      const printed=h.draws.filter(draw=>draw.kind==='fillText'&&draw.args[0]===mark.label).at(-1),
+        anchor=mark.box.x+(mark.align==='right'?mark.box.w:mark.align==='center'?mark.box.w/2:0);
+      assert.equal(printed.args[1],Math.round(anchor*metrics.cellW*dpr),'painted caption shares its calibrated scale anchor');
+    }
     for(const mark of marks)assert.ok(contained(mark.box,layout.scale));
     assert.equal(marks[0].box.x,layout.scale.x);
     assert.equal(marks[2].box.x+marks[2].box.w,layout.scale.x+layout.scale.w);

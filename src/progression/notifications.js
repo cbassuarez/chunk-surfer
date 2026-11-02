@@ -1,8 +1,10 @@
 import { getMeta, metaCommit } from '../game/save.js';
 import { achievementDefinition } from './achievements.js';
 
-export function noticePolicy({ recording, battle, finale, dialoguePending, threat = 0, platformKind = 'browser' } = {}) {
-  if (recording || battle || finale || dialoguePending || threat > 0.35) return 'defer';
+export function noticePolicy({ recording, playback, battle, finale, dialoguePending, blocked,
+  withdrawn, paused, hidden, focused = true, threat = 0, platformKind = 'browser' } = {}) {
+  if (recording || playback || battle || finale || dialoguePending || blocked || withdrawn
+    || paused || hidden || !focused || threat > 0.35) return 'defer';
   return platformKind === 'steam' ? 'pulse' : 'full';
 }
 

@@ -5,12 +5,14 @@ mod desktop_menu;
 mod display_policy;
 mod dock_tile;
 mod identity;
+mod steam_achievements;
 mod lens_service;
 mod source_desktop;
 mod window_choreography;
 
 pub fn run() {
     let app = tauri::Builder::default()
+        .manage(steam_achievements::SteamAchievementsState::default())
         .manage(lens_service::LensServiceState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(
@@ -47,6 +49,10 @@ pub fn run() {
             display_policy::chunk_window_is_focused,
             display_policy::chunk_quit,
             identity::chunk_ephemeral_identity,
+            steam_achievements::chunk_steam_initialize,
+            steam_achievements::chunk_steam_unlock,
+            steam_achievements::chunk_steam_set_stat,
+            steam_achievements::chunk_steam_flush,
             window_choreography::chunk_fireball_cast_place,
             window_choreography::chunk_fireball_cast_hide_all,
             window_choreography::chunk_fireball_cast_step,
@@ -88,6 +94,7 @@ pub fn run() {
         ) {
             use tauri::Manager;
             app.state::<lens_service::LensServiceState>().stop();
+            app.state::<steam_achievements::SteamAchievementsState>().stop();
             window_choreography::restore_on_exit(app);
         }
     });

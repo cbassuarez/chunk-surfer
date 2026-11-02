@@ -7,6 +7,7 @@ import {STANDING_TEAR_LAYOUT as LAYOUT} from '../data/standing-tear.js';
 import {standingTearFolds,standingTearRibbonSegments} from '../data/standing-tear-folds.js';
 import {STANDING_TEAR_MEMORIES,STANDING_TEAR_PANEL_DEFINITIONS,standingTearPressurePanels} from '../data/standing-tear-pressure.js';
 import {standingTearMemoryPulse} from '../data/standing-tear-memory-score.js';
+import {standingTearDitherIntensity} from './source-dither-routing.js';
 import {standingTearEarLetteringGeometry,standingTearEarLetteringFor,STANDING_TEAR_LETTERING_MATERIAL as EAR_PAINT} from './standing-tear-lettering.js';
 import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
@@ -177,7 +178,7 @@ export function standingTearRenderFrame(frame={},presentation={}){
     {id:PREFIX+'far-fold',x:35,y:38,z:99,radius:120,intensity:5.4,color:[.45,.57,.64],penetration:1},
     {id:PREFIX+'far-boundary',x:-20,y:51,z:176,radius:112,intensity:4.8,color:[.45,.53,.60],penetration:1},
   );
-  return{phase:frame.phase||'arrival',props,lights,labels,eye:camera.eye,yaw:camera.yaw,pitch:camera.pitch,authoredCamera:camera,entryFold:fold,architectureRunning:architecture,memories,panels,
+  return{phase:frame.phase||'arrival',props,lights,labels,eye:camera.eye,yaw:camera.yaw,pitch:camera.pitch,authoredCamera:camera,entryFold:fold,architectureRunning:architecture,memories,panels,ditherIntensity:standingTearDitherIntensity(frame),
     counts:{props:props.length,lights:lights.length,supportedSlabs:96},bounds:STANDING_TEAR_RENDER_BUDGET.basin,presentation};
 }
 
@@ -208,7 +209,7 @@ function setScene(renderer,last){
   renderer.r3dSetSourceScene?.({key:'source:standing-tear',look:sourceLook,weather,corpus:[],staticInstances:[],dynamicInstances:[]});
   renderer.r3dSetProps?.(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights?.(last.lights);
 }
-function drawState(last){return{px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:320,tileW:640,tileH:640,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false};}
+function drawState(last){return{px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:320,tileW:640,tileH:640,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:last.ditherIntensity};}
 function clearScene(renderer,props){
   for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
   for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);

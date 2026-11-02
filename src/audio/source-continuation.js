@@ -50,7 +50,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       if(state?.phase==='wrong-return')return !music.phase||music.phase===state.phase;
       return state?.phase==='catch'&&typeof restMusicOwner.supportsPhase==='function'
         &&restMusicOwner.supportsPhase(state.phase)&&(!music.phase||music.phase===state.phase)
-        &&!!(music.restActive||music.finishAtEnd);
+        &&!!(music.restActive||music.endingCommitted);
     }
     catch{return false;}
   }
@@ -69,7 +69,8 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       if(!hold||restMusicHeld!==true)restMusicOwner.update({active:true,paused:!!hold});
       restMusicHeld=!!hold;
       const music=restMusicOwner.snapshot();
-      surroundings.setRestMusicActive(!hold&&!!(music?.playing||(music?.finishAtEnd&&music?.ended)));
+      const committed=typeof restMusicOwner.supportsPhase==='function'?music?.endingCommitted:music?.finishAtEnd;
+      surroundings.setRestMusicActive(!hold&&!!(music?.playing||(committed&&music?.ended)));
     }catch{
       // An unavailable recording must never silence the original score.
       restMusicHeld=true;surroundings.setRestMusicActive(false);
@@ -193,14 +194,17 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     return v;
   }
   function event(event, state = listener,presentedFrame=acousticFrame) {
-    if(isolateRestMusic(state)){
+    const type=String(event?.type||''),corridorEvent=/^corridor-(?:strain|warning|settled)$/.test(type),isolated=isolateRestMusic(state);
+    if(isolated){
       if(!restMusicIsolated){silenceWorld();restMusicIsolated=true;}
-      return false;
-    }
-    retireRestMusicOutsideII(state);restMusicIsolated=false;
+      if(!corridorEvent)return false;
+    }else{retireRestMusicOutsideII(state);restMusicIsolated=false;}
     if(String(event?.type||'').startsWith('threshold-gag-')){gag.resume();return gag.event(event,state,presentedFrame);}
     if (!available()) return false;
-    listener = state || {};acousticFrame=presentedFrame; const type = String(event?.type || '');
+    // These physical warnings coexist with the recording, without releasing
+    // its isolation or reopening generic world SFX on the next update.
+    if(isolated)restMusicIsolated=true;
+    listener = state || {};acousticFrame=presentedFrame;
     // A real chart crossing is a topology event, not travelled floor distance
     // or an invented stinger. Each actor owns its own stride discontinuity.
     if(type==='portal'||type==='fold'){lastBody=null;footTravel=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);return false;}
@@ -215,7 +219,13 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       : point(event?.position || (Number.isFinite(event?.x) ? event : null),
         /^counterweight|^closure/.test(type) ? machine : type === 'door' && lastFocus ? point(lastFocus.position || lastFocus, here) : here);
     let gain, parts;
-    if (type === 'hush-armed' || type === 'hush-warning') {
+    if(type==='corridor-strain'){
+      gain=.028;parts=[{frequency:460,q:1.4,duration:1,attack:.06},{hz:93,endHz:79,frequency:400,gain:.18,duration:1.2,attack:.08}];
+    }else if(type==='corridor-warning'){
+      gain=.043;parts=[{frequency:1850,q:2.1,duration:.12},{hz:231,endHz:189,frequency:1200,gain:.34,duration:.65}];
+    }else if(type==='corridor-settled'){
+      gain=.045;parts=[{frequency:380,q:.5,duration:.2},{hz:61,endHz:48,frequency:300,gain:.7,duration:.5}];
+    }else if (type === 'hush-armed' || type === 'hush-warning') {
       gain = .058; parts = [{ frequency: 730, q: .55, gain: .8, duration: .19 }, { hz: 71, endHz: 60, frequency: 380, gain: .55, duration: .32 }];
     } else if (type === 'hush-notice') {
       gain = .044; parts = [{ frequency: 950, q: .65, gain: .8, duration: .48, attack: .06 }, { frequency: 2100, q: 1.2, gain: .22, duration: .21, attack: .03 }];
@@ -259,6 +269,11 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     if(isolateRestMusic(surroundingsState||state)){
       if(!restMusicIsolated){silenceWorld();restMusicIsolated=true;}
       listener=state;acousticFrame=presentedFrame;
+      for(const voice of [...voices]){
+        if(!/^corridor-(?:strain|warning|settled)$/.test(voice.kind)||voice.until<=context.currentTime)release(voice);
+        else position(voice);
+      }
+      materials.maintain(state,acousticFrame);
       diagnostic={...diagnostic,phase:state.phase,mode:'rest-recording-only',source:null,mix:null,mechanicalGain:0,focus:null};
       return true;
     }
@@ -266,11 +281,9 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     active = true; listener = state;acousticFrame=presentedFrame;
     gag.resume();gag.update(state,acousticFrame,thresholdGagPose(state));
     materials.update(state,acousticFrame);
-    // Catch's fixed overhead camera faces raw world north. Its study turn
-    // rotates camera and world together, so the raw music listener stays north
-    // while retaining the exact shared score clock and source coordinates.
-    const surroundingsListener = surroundingsState?.phase === 'catch' ? { ...surroundingsState, yaw: 0, pitch: 0 } : surroundingsState;
-    surroundings.update({state:surroundingsListener,ready:true,reducedMotion:!!getReducedMotion(),acousticFrame});
+    // The shared acoustic frame owns the physical head basis in both places.
+    // Keep that same bearing in the state-only fallback as well.
+    surroundings.update({state:surroundingsState,ready:true,reducedMotion:!!getReducedMotion(),acousticFrame});
     const delta = clamp(dt, 0, .25); clock += delta;
     for (const voice of [...voices]) if (voice !== mechanism && voice.until <= context.currentTime) release(voice);
     const place = mechanismAt(state), mode = state.phase === 'catch' ? state.counterweight?.active ? state.counterweight.mode || 'warning' : 'tension' : state.closure?.mode || 'dormant';

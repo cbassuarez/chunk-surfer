@@ -41,7 +41,7 @@ function fakeGl(){
   return{gl,buffers,vaos};
 }
 function fixture({baseGate=null,doorGate=null,bodyGate=null,missingBase=[],omitCustom=false,failDoors=false,failBody=false,failVehicle=false,getTorch=()=>({on:false,look:{power:0}}),getLighting=()=>null,getReducedMotion=()=>false}={}){
-  const calls=[],catalog=new Map(['instrument_case','grand_piano','open_instrument_case','ending_body_standing','tower_bell_04','tower_clapper_04'].filter(m=>!missingBase.includes(m)).map(m=>[m,{}])),g=fakeGl();let releases=0;
+  const calls=[],catalog=new Map(['instrument_case','grand_piano','open_instrument_case','ending_body_standing','tower_bell_04','tower_clapper_04','academic_roof_cassette'].filter(m=>!missingBase.includes(m)).map(m=>[m,{}])),g=fakeGl();let releases=0;
   const renderer=Object.fromEntries(Object.keys(R3).filter(k=>typeof R3[k]==='function').map(k=>[k,(...args)=>{calls.push({name:k,args});return k==='r3dFrame'?true:undefined;}]));
   renderer.r3dBasePropsReady=async()=>{calls.push({name:'base',args:[]});return baseGate?await baseGate:true;};renderer.r3dViewCamera=()=>({width:1280,height:720});
   let bodyReady=false;
@@ -177,34 +177,46 @@ test('the dedicated architecture preserves actual native finishes and maps only 
   for(const[name,entry]of pack.catalog)for(const[p,index]of entry.primitives.map((p,i)=>[p,i])){if(p.materialName.includes('source-cut joint stock')){joints++;assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);assert.equal(p.mainFactors,undefined);}else{native++;assert.deepEqual(p,before.get(name)[index]);}assert.deepEqual(p.emissive,[0,0,0]);}
   assert.ok(native>10&&joints>0);
 });
-test('both physical regions persist while departed Catch shelves have an accountable cutaway',()=>{
+test('both physical regions and every Catch shelf persist in the first-person construction',()=>{
   const start=sourceContinuationRenderFrame(fresh()),ids=sourceContinuationGeometry(fresh()).filter(p=>p.kind==='surface').map(p=>p.id).sort();
   assert.ok(start.props.filter(p=>p.physicalKind==='surface'&&!p.portalDestination).every(p=>(p.chartId??0)===0),'ordinary submitted floors belong to the active chart');
   assert.ok(start.props.filter(p=>p.portalDestination).every(p=>p.portalClipPlanes?.length===5),'neighbor floors enter only through a finite aperture');
   assert.equal(start.props.find(p=>p.upperRemnant).y,100);assert.ok(start.props.some(p=>p.orientation==='sideways'));assert.ok(start.props.some(p=>p.orientation==='inverted'));
-  for(let level=0;level<4;level++){const f=sourceContinuationRenderFrame(catchState(level));assert.deepEqual(f.geometry.surfaces.map(p=>p.id).sort(),ids);assert.deepEqual(f.hiddenAbove,Array.from({length:level},(_,k)=>k));assert.deepEqual(f.architecture.persistentRegions,['wrong-return','catch']);assert.deepEqual([...new Set(f.props.filter(p=>!p.portalDestination).map(p=>p.region).filter(Boolean))],['catch']);assert.equal(f.props.some(p=>!p.portalDestination&&(p.upperRemnant||p.region==='wrong-return')),false);assert.ok(f.props.filter(p=>p.region==='wrong-return').every(p=>p.portalDestination&&p.portalClipPlanes?.length===5),'earlier charts remain visible only through a real portal');
-    assert.ok(f.lights.every(light=>!f.hiddenAbove.includes(light.level)),'cutaway fixtures cannot retain invisible upper-shelf lights');
-    for(let shelf=0;shelf<4;shelf++){assert.equal(f.props.some(p=>p.physicalKind==='surface'&&p.level===shelf),shelf>=level);if(shelf<level)assert.ok(f.props.some(p=>p.catchRim&&p.level===shelf&&p.cutawayOutline));}}
+  for(let level=0;level<4;level++){
+    const f=sourceContinuationRenderFrame(catchState(level));assert.deepEqual(f.geometry.surfaces.map(p=>p.id).sort(),ids);
+    assert.deepEqual(f.hiddenAbove,[]);assert.deepEqual(f.architecture.persistentRegions,['wrong-return','catch']);
+    assert.ok(f.props.some(p=>!p.portalDestination&&p.region==='catch'));
+    assert.ok(f.props.some(p=>!p.portalDestination&&p.region==='wrong-return'),'the same-chart construction remains behind the player');
+    assert.ok(f.props.filter(p=>p.portalDestination).every(p=>p.portalClipPlanes?.length===5),'other charts still need finite apertures');
+    for(let shelf=0;shelf<4;shelf++)assert.ok(f.props.some(p=>p.physicalKind==='surface'&&p.level===shelf),`stage ${level} retains shelf ${shelf}`);
+  }
 });
 test('drawn simulation boxes share exact collision bounds; asset poles and arch piers avoid proxy duplication',()=>{
   const s={...fresh(),closure:{mode:'closing',elapsed:20,frontX:7}},f=sourceContinuationRenderFrame(s);
-  for(const d of continuationSolids(s)){const p=f.props.find(p=>p.physicalKind==='solid'&&p.descriptorId===d.id);if(['spindle','arch-pier'].includes(d.role)){assert.equal(p,undefined);continue;}assert.ok(p,d.id);const g=sourceContinuationGeometry(s).find(p=>p.kind==='solid'&&p.id===d.id),q=sourceContinuationMeshPayload(g);for(const[a,lo,hi]of[[0,d.minX,d.maxX],[1,d.minY,d.maxY],[2,d.minZ,d.maxZ]]){let values=[];for(let k=0;k<q.positions.length;k+=3)values.push(transform(p.matrix,[...q.positions.slice(k,k+3)])[a]);assert.ok(Math.abs(Math.min(...values)-lo)<1e-5);assert.ok(Math.abs(Math.max(...values)-hi)<1e-5);}}
+  for(const d of continuationSolids(s)){const p=f.canonicalProps.find(p=>p.physicalKind==='solid'&&p.descriptorId===d.id);if(['spindle','arch-pier'].includes(d.role)){assert.equal(p,undefined);continue;}assert.ok(p,d.id);const g=sourceContinuationGeometry(s).find(p=>p.kind==='solid'&&p.id===d.id),q=sourceContinuationMeshPayload(g);for(const[a,lo,hi]of[[0,d.minX,d.maxX],[1,d.minY,d.maxY],[2,d.minZ,d.maxZ]]){let values=[];for(let k=0;k<q.positions.length;k+=3)values.push(transform(p.matrix,[...q.positions.slice(k,k+3)])[a]);assert.ok(Math.abs(Math.min(...values)-lo)<1e-5);assert.ok(Math.abs(Math.max(...values)-hi)<1e-5);}}
 });
-test('II retains first person while Catch has a strict north-fixed overhead map and physical operator',()=>{
+test('II and every Catch level keep the physical eye and player-controlled first-person view',()=>{
   const ii={...fresh(),yaw:.63,pitch:-.78},first=sourceContinuationRenderFrame(ii);assert.deepEqual(first.eye,[ii.x,ii.feet+C.eyeHeight,ii.z]);assert.equal(first.pitch,-.78);assert.equal(first.yaw,.63);assert.equal(first.strictOverhead,false);assert.equal(first.counts.body,0);
-  for(let level=0;level<4;level++){const s=catchState(level,{yaw:.63,pitch:-.78,heading:1.1}),f=sourceContinuationRenderFrame(s),body=f.props.find(p=>p.playerBody);assert.equal(f.pitch,-Math.PI/2);assert.equal(f.yaw,0);assert.equal(f.strictOverhead,true);assert.deepEqual(cameraBasis(f.yaw,f.pitch).right,[1,0,0]);assert.ok(f.eye[1]>=s.feet+14.8);assert.ok(f.eye[1]<s.feet+23);assert.equal(f.cameraAimTarget[1],s.feet);assert.equal(f.counts.body,1);assert.ok(Math.abs(body.x-s.x)<1e-5);assert.ok(Math.abs(body.y-s.feet)<1e-5);assert.ok(Math.abs(body.z-s.z)<1e-5);assert.ok(Math.abs(Math.atan2(body.matrix[2],body.matrix[0])-1.1)<1e-6);}
+  for(let level=0;level<4;level++){
+    const s=catchState(level,{yaw:.63,pitch:-.78,heading:1.1}),f=sourceContinuationRenderFrame(s);
+    assert.deepEqual(f.eye,[s.x,s.feet+C.eyeHeight,s.z]);assert.equal(f.pitch,s.pitch);assert.equal(f.yaw,s.yaw);assert.equal(f.strictOverhead,false);
+    assert.equal(f.cameraAimTarget,null);assert.equal(f.counts.body,0);assert.equal(f.props.some(p=>p.playerBody),false);
+    assert.deepEqual(cameraBasis(f.yaw,f.pitch),cameraBasis(s.yaw,s.pitch));
+  }
 });
-test('closer overhead frustum contains both bodies, available edges and their receiving catches at wide and portrait sizes',()=>{
+test('physical mouse-look can frame each chosen release edge at wide and portrait sizes without moving the eye',()=>{
   for(const aspect of[16/9,3/4])for(let level=0;level<4;level++){
-    const state=catchState(level);state.hush={...state.hush,active:true,x:state.x+6,z:state.z-5,feet:state.feet};
-    const frame=sourceContinuationRenderFrame(state,{viewportAspect:aspect}),basis=cameraBasis(frame.yaw,frame.pitch);
-    const project=point=>{const delta=point.map((v,k)=>v-frame.eye[k]),dot=b=>delta.reduce((n,v,k)=>n+v*b[k],0),depth=dot(basis.forward);return[dot(basis.right)/(depth*.95*aspect),dot(basis.up)/(depth*.95)];};
-    for(const actor of[{...state,feet:state.feet},state.hush])for(const height of[0,1.8])assert.ok(project([actor.x,actor.feet+height,actor.z]).every(v=>Math.abs(v)<.9),'the actual bodies retain a view margin');
+    const state=catchState(level),base=sourceContinuationRenderFrame(state,{viewportAspect:aspect});
     for(const lip of continuationProps().filter(p=>p.kind==='release-lip'&&p.level===level)){
-      const points=[[lip.x,state.feet,lip.z],[lip.x+lip.dx*1.1,continuationCatchFloor(level+1),lip.z+lip.dz*1.1]];
-      for(const point of points)assert.ok(project(point).every(v=>Math.abs(v)<.95),`${aspect} stage ${level} ${lip.id}: readable departure and receiving floor`);
+      const dx=lip.x-state.x,dz=lip.z-state.z,aim={...state,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(lip.y-base.eye[1],Math.hypot(dx,dz))},
+        frame=sourceContinuationRenderFrame(aim,{viewportAspect:aspect}),basis=cameraBasis(frame.yaw,frame.pitch),delta=[lip.x-frame.eye[0],lip.y-frame.eye[1],lip.z-frame.eye[2]],
+        dot=b=>delta.reduce((n,v,k)=>n+v*b[k],0),depth=dot(basis.forward);
+      assert.deepEqual(frame.eye,base.eye,'looking changes bearing, never the physical eye');assert.ok(depth>0);
+      assert.ok(Math.abs(dot(basis.right)/(depth*.95*aspect))<1e-8);assert.ok(Math.abs(dot(basis.up)/(depth*.95))<1e-8);
+      assert.ok(frame.props.some(p=>p.releaseTread&&p.lipId===lip.id));
+      assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&p.level===level));
     }
-    assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&p.level===level));if(level<3)assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&p.level===level+1));
+    assert.ok(base.props.some(p=>p.physicalKind==='surface'&&p.level===level));if(level<3)assert.ok(base.props.some(p=>p.physicalKind==='surface'&&p.level===level+1));
   }
 });
 test('one actual density core and fitted return preserve saved identity, material phase and portal transforms',()=>{
@@ -225,29 +237,35 @@ test('one actual density core and fitted return preserve saved identity, materia
   }
   assert.equal(sourceContinuationRenderFrame({...state,hush:{...actor,mode:'yield'}}).hush.performance.clip,'pressure_hold');
 });
-test('overhead cuts the near-camera spindle cap, hoist and prior world while retaining real receiving geometry and remote pressure',()=>{
+test('first-person traversal retains the complete spindle, hoist and previous construction',()=>{
   for(let level=0;level<4;level++){
     const frame=sourceContinuationRenderFrame(catchState(level)),spindle=frame.props.find(p=>p.continuousSpindle);
-    assert.ok(Math.abs(transform(spindle.matrix,[0,17,0])[1]-(continuationCatchFloor(level)+2.4))<1e-5);assert.ok(Math.abs(transform(spindle.matrix,[0,-25,0])[1]+25)<1e-5);
-    assert.ok(frame.eye[1]-spindle.cutawayTop>10);assert.equal(frame.props.some(p=>p.hoistRail||p.hoistTrolley||p.counterweightCable),false);
-    assert.ok(frame.props.some(p=>p.surroundings),'the huge pressure world remains actual submitted geometry');assert.ok(frame.geometry.surfaces.some(s=>s.region==='wrong-return'),'cutaway never removes physical II');
+    assert.ok(Math.abs(transform(spindle.matrix,[0,17,0])[1]-17)<1e-5);assert.ok(Math.abs(transform(spindle.matrix,[0,-25,0])[1]+25)<1e-5);
+    assert.equal(spindle.cutawayTop,17);assert.ok(frame.props.some(p=>p.hoistRail));assert.ok(frame.props.some(p=>p.hoistTrolley));
+    assert.ok(frame.props.some(p=>p.surroundings),'the huge pressure world remains actual submitted geometry');assert.ok(frame.geometry.surfaces.some(s=>s.region==='wrong-return'),'the same world still contains physical II');
   }
   const state=catchState(0,{x:-26,z:-12,hush:{id:'source-continuation-hush',active:true,x:-16,z:-12,feet:8.4,heading:-Math.PI/2,mode:'follow'}}),crossing=sourceContinuationRenderFrame(state);
   assert.ok(crossing.props.some(p=>p.physicalKind==='surface'&&p.region==='wrong-return'&&p.physicalBounds.min[0]<=-16&&p.physicalBounds.max[0]>=-16),'the nearby pursuer retains its actual previous-world support during the doorway crossing');
-  assert.equal(crossing.props.some(p=>p.assemblyId&&p.region==='wrong-return'),false,'one retained physical footway does not restore the towering previous-world banks');
+  assert.ok(crossing.props.some(p=>p.assemblyId&&p.region==='wrong-return'),'the old banks remain in their actual world when looking back');
 });
-test('falling below departure slabs cuts them before landing and follows the body while a rising jump retains its supported reference',()=>{
+test('falling and jumping move the first-person eye with the actual body without inventing a landing or hiding shelves',()=>{
   const start=catchState(0),feet=start.feet-.8,fall={x:start.x,z:start.z,feet,vx:0,vz:0,vy:-2,fromLevel:0,fromPhase:'catch',trigger:'step-off',elapsed:.2,unsupported:true},air=sourceContinuationRenderFrame({...start,feet,fall}),ground=sourceContinuationRenderFrame(start);
-  assert.equal(air.source.level,0,'a render cutaway cannot invent a landing');assert.deepEqual(air.hiddenAbove,[0]);assert.equal(air.props.some(p=>p.physicalKind==='surface'&&p.level===0),false);assert.ok(air.props.some(p=>p.physicalKind==='surface'&&p.level===1));assert.ok(Math.abs(air.eye[1]-(ground.eye[1]-.8))<1e-6);assert.ok(Math.abs(air.props.find(p=>p.playerBody).y-feet)<1e-5);
-  const rising=sourceContinuationRenderFrame({...start,feet:start.feet+.8,fall:{...fall,feet:start.feet+.8,vy:2,trigger:'jump'}});assert.equal(rising.eye[1],ground.eye[1]);
-  const lowerFeet=-5.6,skipping=sourceContinuationRenderFrame({...start,feet:lowerFeet,fall:{...fall,feet:lowerFeet,vy:-10}});assert.deepEqual(skipping.hiddenAbove,[0,1,2]);assert.equal(skipping.source.level,0);assert.ok(skipping.props.some(p=>p.physicalKind==='surface'&&p.level===3));
-  const shadow=skipping.props.find(p=>p.contactShadow&&p.actorId==='operator');assert.ok(shadow);assert.equal(shadow.receiverY,continuationCatchFloor(3),'a full ray finds the first actual lower support, not the departed floor');
+  assert.equal(air.source.level,0,'moving the eye cannot invent a landing');assert.deepEqual(air.hiddenAbove,[]);
+  assert.ok(air.props.some(p=>p.physicalKind==='surface'&&p.level===0));assert.ok(air.props.some(p=>p.physicalKind==='surface'&&p.level===1));
+  assert.ok(Math.abs(air.eye[1]-(ground.eye[1]-.8))<1e-6);assert.equal(air.counts.body,0);
+  const rising=sourceContinuationRenderFrame({...start,feet:start.feet+.8,fall:{...fall,feet:start.feet+.8,vy:2,trigger:'jump'}});assert.equal(rising.eye[1],ground.eye[1]+.8);
+  const lowerFeet=-5.6,skipping=sourceContinuationRenderFrame({...start,feet:lowerFeet,fall:{...fall,feet:lowerFeet,vy:-10}});assert.deepEqual(skipping.hiddenAbove,[]);assert.equal(skipping.source.level,0);assert.ok(skipping.props.some(p=>p.physicalKind==='surface'&&p.level===3));
+  assert.equal(skipping.eye[1],lowerFeet+C.eyeHeight);assert.equal(skipping.props.some(p=>p.playerBody||p.actorId==='operator'&&p.contactShadow),false);
+  const receiver=continuationSupportAt(start.x,start.z,{feet:lowerFeet},{minY:C.bounds.minY,maxY:lowerFeet});
+  assert.equal(receiver?.level,3,'the visible lower shelf is real support; the falling body has not received it yet');
 });
-test('operator canvas is physical non-emissive cloth and both bodies have grounded contact shadows',()=>{
+test('retained operator cloth stays non-emissive while first-person hides its own body and preserves physical HUSH placement',()=>{
   const g=fakeGl(),pack={catalog:new Map()},maps={texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});
   const material=pack.catalog.get('source-continuation-operator-jacket').primitives[0];assert.equal(material.texture,null);assert.equal(material.printedSurface,null);assert.deepEqual(material.emissive,[0,0,0]);assert.equal(material.metallic,0);assert.ok(material.base[0]>.8&&material.base[2]<.4,'warm canvas differs from the cold floor without repainting the world');
   const state=catchState(1);state.hush={...state.hush,active:true,x:state.x+.7,z:state.z,feet:state.feet};const frame=sourceContinuationRenderFrame(state);
-  assert.equal(frame.props.filter(p=>p.physicalCanvas).length,1);assert.equal(frame.counts.hush,1);for(const id of['operator','hush']){const p=frame.props.find(p=>p.contactShadow&&p.actorId===id);assert.ok(p);assert.ok(Math.abs(p.y-(state.feet+.018))<1e-5);}
+  assert.equal(frame.props.filter(p=>p.physicalCanvas).length,0);assert.equal(frame.counts.body,0);assert.equal(frame.counts.hush,1);
+  assert.ok(Math.abs(frame.hush.floorH-state.hush.feet)<1e-6);
+  assert.equal(continuationSupportAt(state.hush.x,state.hush.z,{feet:state.hush.feet})?.y,state.hush.feet,'HUSH retains its actual receiving surface');
   assert.equal(frame.lights.filter(l=>l.shelfPractical&&l.level===state.level).length,3);assert.ok(frame.lights.every(l=>l.region!=='wrong-return'));
 });
 test('door hardware stays with the actual saved leaf swing, including partially open doors',()=>{
@@ -257,7 +275,7 @@ test('door hardware stays with the actual saved leaf swing, including partially 
   assert.notDeepEqual([...get(closed).matrix],[...get(partial).matrix]);assert.notDeepEqual([...get(partial).matrix],[...get(open).matrix]);assert.ok(partial.props.some(p=>p.doorHandle&&p.doorId===d.id&&p.focused));
 });
 test('42 real stair treads and their stringers retain physically open sides',()=>{
-  const f=sourceContinuationRenderFrame(fresh());assert.equal(f.architecture.stairTreads,42);assert.equal(f.props.filter(p=>p.stairStructure).length,3);assert.equal(f.props.some(p=>p.handrail||p.baluster),false,'open stair edges have no decorative ghost barriers');const cut=sourceContinuationRenderFrame(catchState(3));assert.equal(cut.architecture.stairTreads,42);assert.equal(cut.props.some(p=>p.stairId),false);
+  const f=sourceContinuationRenderFrame(fresh());assert.equal(f.architecture.stairTreads,42);assert.equal(f.props.filter(p=>p.stairStructure).length,3);assert.equal(f.props.some(p=>p.handrail||p.baluster),false,'open stair edges have no decorative ghost barriers');const lower=sourceContinuationRenderFrame(catchState(3));assert.equal(lower.architecture.stairTreads,42);assert.equal(lower.props.filter(p=>p.stairStructure).length,3);assert.equal(new Set(lower.props.filter(p=>p.stairId).map(p=>p.stairId)).size,3,'first-person retains the physical stairs above rather than applying the old map cutaway');
   const treads=continuationSurfaces().filter(p=>p.role==='stair');assert.equal(new Set(treads.map(p=>p.stairId)).size,3);for(const id of new Set(treads.map(p=>p.stairId))){const heights=treads.filter(p=>p.stairId===id).map(p=>p.y).sort((a,b)=>a-b);for(let k=1;k<heights.length;k++)assert.ok(Math.abs(heights[k]-heights[k-1]-.3)<1e-6);}
 });
 test('native macro architecture has supported tops and no source model appears as an invisible collision cube',()=>{
@@ -269,13 +287,22 @@ test('lights belong to fixed architectural fixtures rather than following the cu
   const fixed=f=>f.props.filter(p=>p.practical&&!Number.isInteger(p.level)).map(p=>[p.id,p.x,p.y,p.z]);assert.deepEqual(fixed(a),fixed(b));assert.ok(a.lights.length<=8&&b.lights.length<=8);assert.ok([...a.lights,...b.lights].every(p=>p.penetration===0));
 });
 test('the continuous spindle and each partial catch have visible bearing and tension members',()=>{
-  const f=sourceContinuationRenderFrame(catchState(2));assert.equal(f.props.filter(p=>p.continuousSpindle).length,1);assert.equal(f.props.filter(p=>p.bearing).length,2);assert.equal(f.props.filter(p=>p.catchConstruction).length,2);assert.equal(f.props.filter(p=>p.tensionMember).length,4);
+  const f=sourceContinuationRenderFrame(catchState(2));assert.equal(f.props.filter(p=>p.continuousSpindle).length,1);
+  for(const stage of CONTINUATION_CATCH_STAGES){
+    assert.equal(f.props.filter(p=>p.bearing&&p.level===stage.level).length,1);
+    assert.equal(f.props.filter(p=>p.catchConstruction&&p.level===stage.level).length,1);
+    assert.equal(f.props.filter(p=>p.tensionMember&&p.level===stage.level).length,2);
+  }
 });
 test('the final doorway previews the measured existing6.5m service road without a new progression owner',()=>{
   const f=sourceContinuationRenderFrame(catchState(3)),p=f.props.find(p=>p.previewOf==='existing-source-drive'),d=C.catch.finalDoor;assert.ok(p);assert.ok(Math.abs(p.y-d.y)<1e-5);assert.equal(p.matrix[10],6.5);assert.ok(p.x>d.x);assert.equal(f.props.filter(p=>p.onwardPreview&&p.kerb).length,2);
 });
 test('the disclosed transfer study rotates the entire persistent construction rigidly',()=>{
-  const s={...catchState(1),yaw:.7},a=sourceContinuationRenderFrame(s),b=sourceContinuationRenderFrame(s,{studyRotation:Math.PI});assert.ok(Math.abs(b.eye[0]-(2*C.catch.center.x-a.eye[0]))<1e-5);assert.ok(Math.abs(b.eye[2]-(2*C.catch.center.z-a.eye[2]))<1e-5);assert.ok(Math.abs(b.yaw-Math.PI)<1e-6);assert.equal(a.props.length,b.props.length);
+  const s={...catchState(1),yaw:.7},a=sourceContinuationRenderFrame(s),b=sourceContinuationRenderFrame(s,{studyRotation:Math.PI});assert.ok(Math.abs(b.eye[0]-(2*C.catch.center.x-a.eye[0]))<1e-5);assert.ok(Math.abs(b.eye[2]-(2*C.catch.center.z-a.eye[2]))<1e-5);assert.ok(Math.abs(Math.atan2(Math.sin(b.yaw-a.yaw-Math.PI),Math.cos(b.yaw-a.yaw-Math.PI)))<1e-6);assert.equal(a.props.length,b.props.length);
+  const rotated=new Map(b.props.map(p=>[p.id,p]));
+  for(const p of a.props){const q=rotated.get(p.id);assert.ok(q);assert.equal(q.mesh,p.mesh);
+    assert.ok(Math.abs(q.x-(2*C.catch.center.x-p.x))<1e-4);assert.ok(Math.abs(q.z-(2*C.catch.center.z-p.z))<1e-4);assert.equal(q.y,p.y);
+  }
 });
 test('asset preparation coalesces and does not borrow the active scene before readiness',async()=>{
   let resolve;const h=fixture({baseGate:new Promise(r=>resolve=r)}),a=prewarmSourceContinuationAssets(h.options),b=prewarmSourceContinuationAssets(h.options);assert.equal(a,b);await Promise.resolve();assert.equal(h.calls.some(c=>c.name==='r3dSetPlan'),false);resolve(true);await a;assert.ok(h.catalog.has('source_iii_spindle'));assert.ok(h.catalog.has('source_demolition_retained'));assert.equal(h.calls.some(c=>c.name==='r3dSetProps'),false);
@@ -348,7 +375,7 @@ test('controlled lighting diagnostics change only the measured context and prese
 });
 test('fixed grazing fixtures are attached to architectural joints with no floor-following fill',()=>{
   const a=sourceContinuationRenderFrame(fresh()),b=sourceContinuationRenderFrame(catchState(3));const fixtures=f=>f.lights.filter(l=>l.attachedTo).map(l=>[l.id,l.x,l.y,l.z,l.attachedTo]);
-  assert.ok(a.props.some(p=>p.id==='source-continuation-practical-piano-key-joint'));assert.equal(b.props.some(p=>p.id==='source-continuation-practical-counterarc-bearing'),false,'the departed fixture participates in the overhead cutaway');assert.ok(b.props.some(p=>p.shelfPractical&&p.level===3));assert.ok([...a.lights,...b.lights].every(l=>l.penetration===0));
+  assert.ok(a.props.some(p=>p.id==='source-continuation-practical-piano-key-joint'));assert.ok(b.props.some(p=>p.id==='source-continuation-practical-counterarc-bearing'),'first-person retains the fixture at its actual architectural joint');assert.ok(b.props.some(p=>p.shelfPractical&&p.level===3));assert.ok([...a.lights,...b.lights].every(l=>l.penetration===0));
   for(const row of fixtures(a)){const matching=fixtures(b).find(l=>l[0]===row[0]);if(matching)assert.deepEqual(row,matching);}
   const bank=CONTINUATION_ASSEMBLIES.find(p=>p.id==='ii-whole-piano-bank'),joint=a.props.find(p=>p.id==='source-continuation-practical-piano-key-joint'),light=a.lights.find(l=>l.attachedTo==='ii-whole-piano-bank');
   assert.ok(Math.abs(joint.z-(bank.z+6.2))<1e-5,'decorative-bank relocation carries its attached practical');if(light)assert.ok(Math.abs(light.z-joint.z)<1e-5);
@@ -359,7 +386,7 @@ test('looking back retains the Earthfall construction and its original translate
   assert.equal(pieces.length,2);for(const piece of pieces){assert.ok(frame.props.some(p=>p.descriptorId===piece.id));const material=pack.catalog.get(piece.name).primitives[0];if(piece.material==='earthfall-backing'){assert.deepEqual(material.base,[.035,.045,.039,1]);assert.equal(material.texture,null);assert.equal(material.printedSurface,null);assert.equal(material.metallic,0);assert.equal(material.roughness,1);assert.equal(material.materialRole,'quiet-metal');}else assert.deepEqual(material.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);}
   const {sourceEarthfallRenderFrame}=await import('../src/render/source-earthfall-renderer.js'),{freshSourceEarthfall}=await import('../src/game/source-earthfall.js'),{SOURCE_EARTHFALL}=await import('../src/data/source-earthfall.js');
   const original=sourceEarthfallRenderFrame(freshSourceEarthfall()),offset=continuationDoors(fresh()).find(d=>d.id==='wrong-entry-return').z-SOURCE_EARTHFALL.passage.exitZ;
-  const rear=sourceContinuationRenderFrame({...fresh(),z:24,yaw:Math.PI}),retained=rear.lights.filter(l=>l.inheritedEarthfall);assert.equal(retained.length,2);assert.ok(frame.lights.some(l=>l.inheritedEarthfall&&l.id.endsWith('lower-spine')));for(const lamp of retained){const old=original.lights.find(l=>lamp.id.endsWith(l.id.replace('source-earthfall-','')));assert.ok(old,lamp.id);for(const key of['x','y','radius','intensity'])assert.equal(lamp[key],old[key]);assert.deepEqual(lamp.color,old.color);assert.equal(lamp.z,old.z+offset);assert.equal(lamp.penetration,0);}
+  const rear=sourceContinuationRenderFrame({...fresh(),z:24,yaw:Math.PI}),retained=rear.lights.filter(l=>l.inheritedEarthfall&&!l.voidImage);assert.equal(retained.length,2);assert.ok(frame.lights.some(l=>l.inheritedEarthfall&&l.id.endsWith('lower-spine')));for(const lamp of retained){const old=original.lights.find(l=>lamp.id.endsWith(l.id.replace('source-earthfall-','')));assert.ok(old,lamp.id);for(const key of['x','y','radius','intensity'])assert.equal(lamp[key],old[key]);assert.deepEqual(lamp.color,old.color);assert.equal(lamp.z,old.z+offset);assert.equal(lamp.penetration,0);}
   assert.ok(frame.lights.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxLights);
 });
 test('the overlook guard is visibly open with narrow actual rails and body-sized gaps excluded',()=>{
@@ -368,7 +395,7 @@ test('the overlook guard is visibly open with narrow actual rails and body-sized
   for(let k=1;k<posts.length;k++)assert.ok(posts[k].minZ-posts[k-1].maxZ<C.bodyRadius*2,'a whole standing body cannot pass through the authored baluster gap');
   assert.ok(rails.every(p=>p.maxY-p.minY<.061));assert.ok(posts.every(p=>p.maxZ-p.minZ<.061));
   const height=Math.max(...rows.map(p=>p.maxY))-Math.min(...rows.map(p=>p.minY)),area=rows.reduce((n,p)=>n+(p.maxZ-p.minZ)*(p.maxY-p.minY),0);assert.ok(area<5*height*.4,'over60percent of the guard view remains an actual opening');
-  const f=sourceContinuationRenderFrame(fresh());for(const p of rows){const drawn=f.props.find(q=>q.descriptorId===p.id);assert.ok(drawn,p.id);assert.equal(drawn.role,'overlook-rail');}
+  const f=sourceContinuationRenderFrame(fresh());for(const p of rows){const drawn=f.canonicalProps.find(q=>q.descriptorId===p.id);assert.ok(drawn,p.id);assert.equal(drawn.role,'overlook-rail');}
   assert.equal(f.props.some(p=>p.descriptorId==='wrong-overlook-rail'),false,'the previous opaque panel must not remain behind the bars');
 });
 

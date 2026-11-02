@@ -1,0 +1,325 @@
+- generic [active] [ref=f50e1]:
+  - paragraph [ref=f50e2]: LOCAL REVIEW · Exact game surfaces and ROM lettering. Current browser captures use developer placements; release media and publication remain separate.
+  - generic [ref=f50e4]:
+    - banner [ref=f50e5]:
+      - generic [ref=f50e6]:
+        - paragraph [ref=f50e7]: AUDIOCORP · CASE SELECT · SOURCE 4417-C
+        - generic [ref=f50e8]:
+          - heading "CHUNK SURFER" [level=1] [ref=f50e9]
+          - paragraph [ref=f50e10]: v0.3.0 · PUBLIC BETA
+    - main [ref=f50e11]:
+      - generic [ref=f50e12]:
+        - paragraph [ref=f50e13]: Windows x64 · macOS Apple Silicon · Linux x64
+        - generic [ref=f50e14]:
+          - link "Download" [ref=f50e15] [cursor=pointer]:
+            - /url: "#downloads"
+          - generic [ref=f50e16]: Choose your platform below.
+      - generic [ref=f50e17]:
+        - generic [ref=f50e18]:
+          - generic [ref=f50e19]:
+            - paragraph [ref=f50e20]: CHUNK SURFER / FIELD SERVICES
+            - generic [ref=f50e21]:
+              - paragraph [ref=f50e22]: AUDIOCORP / WORK ORDER 4417-C
+              - generic [ref=f50e23]:
+                - paragraph [ref=f50e24]:
+                  - strong [ref=f50e25]: TAKE THE JOB.
+                - paragraph [ref=f50e26]: Report to condemned Ellery Conservatory as the field recordist. Capture five clean room tones before demolition begins at 06:00. Work through the school, the streets around it, and the places the night opens beyond them.
+                - paragraph [ref=f50e27]: FIRST-PERSON HORROR ADVENTURE · SINGLE PLAYER
+            - generic [ref=f50e28]:
+              - paragraph [ref=f50e29]: 01 / PREPARATION
+              - generic [ref=f50e30]:
+                - heading "ARRIVE. UNPACK." [level=2] [ref=f50e31]
+                - paragraph [ref=f50e32]: Step out of the van. Check in. Read the work order. Choose your field equipment, fit the kit, and keep the map close. Bring a light.
+            - generic [ref=f50e33]:
+              - paragraph [ref=f50e34]: 02 / FIELD CAPTURE
+              - generic [ref=f50e35]:
+                - heading "LISTEN. RECORD." [level=2] [ref=f50e36]
+                - paragraph [ref=f50e37]:
+                  - text: Bring the room up in your headphones. Check the level. Open the recorder, press
+                  - strong [ref=f50e38]: REC
+                  - text: ", and hold still. Capture the sound of the room without adding your footsteps, handling, or breath. Watch the machine. Press"
+                  - strong [ref=f50e39]: STOP
+                  - text: when the take is usable. Open
+                  - strong [ref=f50e40]: TAKES
+                  - text: to hear what came back.
+                - paragraph [ref=f50e41]: Mind the torch battery. Use the light to find your way. Keep the beam and your noise off anything you would rather leave alone.
+            - generic [ref=f50e42]:
+              - paragraph [ref=f50e43]: 03 / ENCOUNTERS
+              - generic [ref=f50e44]:
+                - heading "ANSWER THE SIGNAL." [level=2] [ref=f50e45]
+                - paragraph [ref=f50e46]:
+                  - text: Patch your techniques before the encounter. Read the next move.
+                  - strong [ref=f50e47]: EXPOSE
+                  - text: what hides.
+                  - strong [ref=f50e48]: MONITOR
+                  - text: a broadcast. Capture it, then use
+                  - strong [ref=f50e49]: PLAYBACK
+                  - text: .
+                  - strong [ref=f50e50]: HOLD
+                  - text: against a blow, or time a parry to turn it back. Earn another action with a good read. Watch the battery and your composure.
+            - generic [ref=f50e51]:
+              - paragraph [ref=f50e52]: 04 / PEOPLE AND RECORDS
+              - generic [ref=f50e53]:
+                - heading "TALK. READ. CALL." [level=2] [ref=f50e54]
+                - paragraph [ref=f50e55]: Go across the road. Speak to the people keeping the pub warm. Help with an errand. Meet the people still occupying the school. Ask about a performance. Read the retained records. Follow the letters and phone calls. Hear what has been left out of the account, including your own.
+            - generic [ref=f50e56]:
+              - paragraph [ref=f50e57]: 05 / ONWARD
+              - generic [ref=f50e58]:
+                - heading "KEEP GOING." [level=2] [ref=f50e59]
+                - paragraph [ref=f50e60]: Climb through instruments large enough to become buildings. Cross remembered rooms joined at impossible angles. Find the next landing before choosing a descent. Take the wheel and drive into the storm. Look for a way through.
+            - generic [ref=f50e61]:
+              - paragraph [ref=f50e62]: 06 / LISTENING
+              - generic [ref=f50e63]:
+                - heading "SIT DOWN. LISTEN." [level=2] [ref=f50e64]
+                - paragraph [ref=f50e65]: Stay with a performance as it unfolds. Let the conversation run. Hear the room, the hands, the mistakes, and the space after a note. Decide how long to remain. Get up while you still can.
+            - generic [ref=f50e66]:
+              - paragraph [ref=f50e67]: 07 / RETURN
+              - generic [ref=f50e68]:
+                - heading "CHOOSE WHAT TO CARRY OUT." [level=2] [ref=f50e69]
+                - paragraph [ref=f50e70]:
+                  - text: Keep what you find. Decide what to leave. Reach an ending and check
+                  - strong [ref=f50e71]: ARCHIVE / 100%
+                  - text: for discoveries and filed returns. Finish a run; if it qualifies, play through that same night from another side.
+            - generic [ref=f50e72]:
+              - paragraph [ref=f50e73]: BEFORE YOU PLAY
+              - generic [ref=f50e74]:
+                - heading "SET THE INPUT." [level=2] [ref=f50e75]
+                - paragraph [ref=f50e76]: MICROPHONE OPTIONAL · LOCAL PROFILE OPTIONAL
+                - paragraph [ref=f50e77]: Microphone permission is optional. With permission, room loudness is measured locally and noise can affect play. You can also choose to record spoken take slates and voicemail; those recordings stay on your device. There is no speech recognition or automatic audio upload.
+                - paragraph [ref=f50e78]: A separate optional profile permits disclosed local personalization using names, computer details, and in-game responses. Optional desktop effects can move the game window, open additional game-owned windows, and create field-return files in the game's local data folder. The complete game remains available without microphone input or profiling.
+                - paragraph [ref=f50e79]:
+                  - text: Open
+                  - strong [ref=f50e80]: SETTINGS
+                  - text: to adjust text speed, flashes, screen shake, controller bindings, recording forgiveness, navigation help, combat assistance, and escape timers. Use keyboard and mouse or a controller for normal play. Disable profile modules, restore the window, or erase profile data in Settings.
+                - heading "CONTENT WARNING" [level=2] [ref=f50e81]
+                - paragraph [ref=f50e82]: Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Visual effects can be reduced in Settings. Optional desktop effects may move the game window and open additional windows.
+            - generic [ref=f50e83]:
+              - paragraph [ref=f50e84]: DOWNLOAD
+              - generic [ref=f50e85]:
+                - heading "CHOOSE YOUR PLATFORM." [level=2] [ref=f50e86]
+                - paragraph [ref=f50e87]: v0.3.0 PUBLIC BETA · UNSIGNED
+                - list [ref=f50e88]:
+                  - listitem [ref=f50e89]:
+                    - strong [ref=f50e90]: macOS
+                    - generic [ref=f50e91]: Apple Silicon · DMG
+                  - listitem [ref=f50e92]:
+                    - strong [ref=f50e93]: windows
+                    - generic [ref=f50e94]: x64 · portable ZIP · WebView2 Runtime required
+                  - listitem [ref=f50e95]:
+                    - strong [ref=f50e96]: linux
+                    - generic [ref=f50e97]: x64 · AppImage / Debian package
+                - paragraph [ref=f50e98]: Use headphones. Read the first-launch instructions below the downloads. Save compatibility, performance, and packaging may change in later beta updates.
+          - generic [ref=f50e99]:
+            - heading "Downloads" [level=2] [ref=f50e100]
+            - paragraph [ref=f50e101]: This local preview links to installation instructions. It does not host release binaries.
+            - generic [ref=f50e102]:
+              - strong [ref=f50e104]: Windows x64 · portable ZIP
+              - paragraph [ref=f50e105]: Extract the complete folder. WebView2 required.
+              - link "Install instructions" [ref=f50e106] [cursor=pointer]:
+                - /url: "#install"
+            - generic [ref=f50e107]:
+              - strong [ref=f50e109]: macOS · Apple Silicon DMG
+              - paragraph [ref=f50e110]: Drag the app into Applications.
+              - link "Install instructions" [ref=f50e111] [cursor=pointer]:
+                - /url: "#install"
+            - generic [ref=f50e112]:
+              - strong [ref=f50e114]: Linux x64 · AppImage
+              - paragraph [ref=f50e115]: Make executable, then launch.
+              - link "Install instructions" [ref=f50e116] [cursor=pointer]:
+                - /url: "#install"
+            - generic [ref=f50e117]:
+              - strong [ref=f50e119]: Linux x64 · Debian package
+              - paragraph [ref=f50e120]: Install with your package manager.
+              - link "Install instructions" [ref=f50e121] [cursor=pointer]:
+                - /url: "#install"
+          - heading "Install instructions" [level=2] [ref=f50e122]
+          - generic [ref=f50e123]:
+            - paragraph [ref=f50e124]: CHUNK SURFER / INSTALLATION
+            - paragraph [ref=f50e125]:
+              - strong [ref=f50e126]: INSTALL THE BETA.
+            - paragraph [ref=f50e127]: v0.3.0 PUBLIC BETA · UNSIGNED
+            - paragraph [ref=f50e128]: Choose the package for your computer. Follow the steps below.
+            - list [ref=f50e129]:
+              - listitem [ref=f50e130]:
+                - strong [ref=f50e131]: macOS
+                - generic [ref=f50e132]: Apple Silicon · DMG
+              - listitem [ref=f50e133]:
+                - strong [ref=f50e134]: windows
+                - generic [ref=f50e135]:
+                  - text: x64 ·
+                  - code [ref=f50e136]: chunk-surfer-windows-x64.zip
+                  - text: · Microsoft Edge WebView2 Runtime required
+              - listitem [ref=f50e137]:
+                - strong [ref=f50e138]: linux
+                - generic [ref=f50e139]:
+                  - text: x64 ·
+                  - code [ref=f50e140]: chunk-surfer-linux-x64.AppImage
+                  - text: or
+                  - code [ref=f50e141]: chunk-surfer-linux-x64.deb
+              - listitem [ref=f50e142]:
+                - strong [ref=f50e143]: audio
+                - generic [ref=f50e144]: Headphones recommended. A microphone is optional.
+            - paragraph [ref=f50e145]: These beta packages are unsigned, so your operating system may block the first launch. Use the approval steps below for the copy you downloaded from this page. Download sizes appear beside each file.
+            - heading "macOS" [level=2] [ref=f50e146]
+            - list [ref=f50e147]:
+              - listitem [ref=f50e148]:
+                - text: Open the downloaded macOS Apple Silicon
+                - code [ref=f50e149]: .dmg
+                - text: and drag
+                - strong [ref=f50e150]: Chunk Surfer
+                - text: into
+                - strong [ref=f50e151]: Applications
+                - text: .
+              - listitem [ref=f50e152]:
+                - text: Launch
+                - strong [ref=f50e153]: Chunk Surfer
+                - text: from Applications. If macOS blocks it, open
+                - strong [ref=f50e154]: System Settings → Privacy & Security
+                - text: and use
+                - strong [ref=f50e155]: Open Anyway
+                - text: for Chunk Surfer, then confirm the launch.
+              - listitem [ref=f50e156]: If you enable microphone input, also allow access in the macOS permission prompt. You can continue playing if you decline.
+            - heading "Windows" [level=2] [ref=f50e157]
+            - list [ref=f50e158]:
+              - listitem [ref=f50e159]:
+                - text: Extract
+                - code [ref=f50e160]: chunk-surfer-windows-x64.zip
+                - text: completely into a folder you can write to.
+              - listitem [ref=f50e161]:
+                - text: Keep all extracted files together and run
+                - code [ref=f50e162]: chunk-surfer.exe
+                - text: . Do not launch it from inside the ZIP.
+              - listitem [ref=f50e163]:
+                - text: The
+                - strong [ref=f50e164]: Microsoft Edge WebView2 Runtime
+                - text: must be installed. If it is missing, install it from Microsoft and launch the game again.
+              - listitem [ref=f50e165]:
+                - text: If SmartScreen shows
+                - emphasis [ref=f50e166]: Windows protected your PC
+                - text: ", use"
+                - strong [ref=f50e167]: More info → Run anyway
+                - text: for this downloaded beta.
+            - heading "Linux" [level=2] [ref=f50e168]
+            - list [ref=f50e169]:
+              - listitem [ref=f50e170]:
+                - strong [ref=f50e171]: "AppImage:"
+                - text: "make the file executable and run it:"
+                - code [ref=f50e172]: chmod +x chunk-surfer-linux-x64.AppImage
+                - code [ref=f50e173]: ./chunk-surfer-linux-x64.AppImage
+              - listitem [ref=f50e174]:
+                - strong [ref=f50e175]: "Debian / Ubuntu:"
+                - text: install with
+                - code [ref=f50e176]: sudo apt install ./chunk-surfer-linux-x64.deb
+                - text: ", then open"
+                - strong [ref=f50e177]: Chunk Surfer
+                - text: from your applications menu.
+            - paragraph [ref=f50e178]: The game needs working 3D graphics support. If you see a blank or incorrectly rendered world, include your GPU and graphics-driver details in a bug report. Compatibility and performance on additional hardware are still being tested.
+            - heading "Controls" [level=2] [ref=f50e179]
+            - paragraph [ref=f50e180]: "Keyboard and mouse or a controller can be used for normal play. Controller buttons can be remapped in Settings. These are the default on-foot keyboard controls; driving and other scenes show their own prompts:"
+            - table [ref=f50e181]:
+              - rowgroup [ref=f50e182]:
+                - row [ref=f50e183]:
+                  - columnheader "Key" [ref=f50e184]
+                  - columnheader "Action" [ref=f50e185]
+              - rowgroup [ref=f50e186]:
+                - row [ref=f50e187]:
+                  - cell "WASD / arrow keys" [ref=f50e188]
+                  - cell "Move" [ref=f50e189]
+                - row [ref=f50e190]:
+                  - cell "Shift" [ref=f50e191]
+                  - cell "Quiet movement" [ref=f50e192]
+                - row [ref=f50e193]:
+                  - cell "C" [ref=f50e194]
+                  - cell "Hide" [ref=f50e195]
+                - row [ref=f50e196]:
+                  - cell "F" [ref=f50e197]
+                  - cell "Light" [ref=f50e198]
+                - row [ref=f50e199]:
+                  - cell "B" [ref=f50e200]
+                  - cell "Bag" [ref=f50e201]
+                - row [ref=f50e202]:
+                  - cell "M" [ref=f50e203]
+                  - cell "Map" [ref=f50e204]
+                - row [ref=f50e205]:
+                  - cell "R" [ref=f50e206]
+                  - cell "Open recorder" [ref=f50e207]
+                - row [ref=f50e208]:
+                  - cell "V" [ref=f50e209]
+                  - cell "Radio" [ref=f50e210]
+                - row [ref=f50e211]:
+                  - cell "E" [ref=f50e212]
+                  - cell "Interact" [ref=f50e213]
+                - row [ref=f50e214]:
+                  - cell "P" [ref=f50e215]
+                  - cell "Playback" [ref=f50e216]
+                - row [ref=f50e217]:
+                  - cell "Esc" [ref=f50e218]
+                  - cell "Menu / pause" [ref=f50e219]
+            - paragraph [ref=f50e220]:
+              - text: The recorder has
+              - strong [ref=f50e221]: REC
+              - text: ","
+              - strong [ref=f50e222]: STOP
+              - text: ", and"
+              - strong [ref=f50e223]: TAKES
+              - text: controls. Opening it does not pause the room. Follow the prompts on the machine when starting a recording or saving a usable take.
+            - heading "Microphone and local recordings" [level=2] [ref=f50e224]
+            - paragraph [ref=f50e225]: Microphone permission is optional. With permission, the game measures room loudness locally so real noise can affect play. You can also choose to record spoken take slates and voicemail. These recordings stay on your device; the game does not recognize speech or automatically upload audio. You can complete the game without a microphone.
+            - paragraph [ref=f50e226]:
+              - text: Use
+              - strong [ref=f50e227]: Settings → Input
+              - text: to select an input and test its level. Operating-system privacy settings control the app’s microphone permission.
+            - heading "Local profile and desktop effects" [level=2] [ref=f50e228]
+            - paragraph [ref=f50e229]: The separate profile choice permits disclosed local personalization using names, computer details, and in-game responses. Optional desktop effects can move the game window, open additional game-owned windows, and create field-return files in the game’s local data folder. Profile data is processed locally and is not uploaded.
+            - paragraph [ref=f50e230]: You can play the complete game with the profile off. Settings let you disable individual modules, restore the game window, and erase the profile data.
+            - heading "Content warning and accessibility" [level=2] [ref=f50e231]
+            - paragraph [ref=f50e232]: Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Set your preferred effects before starting.
+            - paragraph [ref=f50e233]: Settings include text speed and instant text, flash/strobe and screen-shake reduction, controller configuration, recording forgiveness, navigation help, combat assistance, and escape-timer adjustments.
+            - heading "Saved data and uninstalling" [level=2] [ref=f50e234]
+            - paragraph [ref=f50e235]:
+              - text: Removing the app normally leaves local progress, settings, and recordings on this device. To remove them too, first open
+              - strong [ref=f50e236]: Settings → Memory → Erase all data & restart
+              - text: in the game and confirm. Wait for the restart, then quit and remove the app or package. Exported copies and operating-system backups are not removed by this reset.
+            - heading "Report a problem" [level=2] [ref=f50e237]
+            - paragraph [ref=f50e238]: Include the game version, operating system, CPU/GPU, controller model if relevant, and the steps that led to the problem. A diagnostic report from the in-game About/Support panel also helps.
+            - list [ref=f50e239]:
+              - listitem [ref=f50e240]:
+                - strong [ref=f50e241]: bugs
+                - link "Report a bug" [ref=f50e243] [cursor=pointer]:
+                  - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=bug
+              - listitem [ref=f50e244]:
+                - strong [ref=f50e245]: feedback
+                - link "Send playtest feedback" [ref=f50e247] [cursor=pointer]:
+                  - /url: https://github.com/cbassuarez/chunk-surfer/issues/new?labels=feedback
+            - paragraph [ref=f50e248]:
+              - strong [ref=f50e249]: CHUNK SURFER / v0.3.0 PUBLIC BETA
+        - complementary [ref=f50e250]:
+          - generic [ref=f50e251]:
+            - figure "Cross the construction." [ref=f50e252]:
+              - link [ref=f50e253] [cursor=pointer]:
+                - /url: ./media/storefront/source-vista.jpg
+                - img "A supported route crosses enormous musical architecture under an orange horizon." [ref=f50e254]
+            - figure "Work the machine." [ref=f50e256]:
+              - link [ref=f50e257] [cursor=pointer]:
+                - /url: ./media/storefront/recorder.jpg
+                - img "The current field recorder, green VFD, cyan time counter and REC, STOP and TAKES controls." [ref=f50e258]
+            - figure "Arrive." [ref=f50e260]:
+              - link [ref=f50e261] [cursor=pointer]:
+                - /url: ./media/storefront/arrival.jpg
+                - img "Look through the windscreen of the recordist’s van into the conservatory service yard." [ref=f50e262]
+            - figure "Find somewhere to listen." [ref=f50e264]:
+              - link [ref=f50e265] [cursor=pointer]:
+                - /url: ./media/storefront/harpsichord.jpg
+                - img "Walk beneath the huge strings and case of a harpsichord in an impossible space." [ref=f50e266]
+          - generic [ref=f50e268]:
+            - paragraph [ref=f50e269]: BUILD INFORMATION
+            - generic [ref=f50e270]:
+              - paragraph [ref=f50e271]: PUBLIC BETAIN DEVELOPMENTENGLISHKEYBOARD / MOUSE / CONTROLLERMICROPHONE OPTIONAL
+              - paragraph [ref=f50e272]: SOURCE CAPTURES · 1440 × 900
+    - contentinfo [ref=f50e273]:
+      - link "itch.io" [ref=f50e274] [cursor=pointer]:
+        - /url: https://itch.io
+      - link "seb" [ref=f50e275] [cursor=pointer]:
+        - /url: https://cbassuarez.itch.io
+      - link "Report a problem" [ref=f50e276] [cursor=pointer]:
+        - /url: https://github.com/cbassuarez/chunk-surfer/issues

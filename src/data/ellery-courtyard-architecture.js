@@ -13,6 +13,7 @@ export const ELLERY_COURTYARD_ARCHITECTURE=Object.freeze({
   academic_atrium_structure:{anchor:[85,10,15]},
   academic_skylight:{anchor:[85,10,15]},
   academic_roof_structure:{anchor:[85,17,15.5]},
+  academic_roof_weatherwork:{anchor:[85,17,15.5]},
   academic_roof_glazing:{anchor:[84,17,14.5]},
   gallery_atrium_structure:{anchor:[85,10,15]},
   gallery_floor:{anchor:[85,10,15]},

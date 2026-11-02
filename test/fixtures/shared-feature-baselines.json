@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "method": "Decoded oriented triangle attributes, material/texture semantics and world node transforms; no buffer/index/primitive ordering dependency.",
+  "features": {
+    "canonical-pub-before-hospitality": {
+      "sourceSha256": "500fab6a1bb8f555026281715da5436430230e3225130c7bf2fd0e480f2b5200",
+      "provenance": {
+        "archive": "artifacts/pub-row-placement/merged/conservatory-props.glb",
+        "receipt": "public/assets/pub-hospitality.credits.json:sourceSha256",
+        "note": "Derived only after verifying this exact historical binary against its original immutable build receipt. Current shared-pack bytes were not used as the baseline."
+      },
+      "meshes": {
+        "exterior_pub_interior": {
+          "sha256": "bf6790749fa63b85201ef9fa3cecb4b24c1d6da189cee65a697d13867cdd2c47",
+          "triangles": 11768,
+          "materials": 13,
+          "instances": 1,
+          "materialSha256": "e795dcc07d15a5622b529210d1a5c4bc3e72de33da86b67b16127d8b85a28c62",
+          "storedVertices": 18416
+        }
+      }
+    },
+    "landing-fittings-before-rear-board": {
+      "sourceSha256": "813820b9e372b8c70d261abe880360758eef45db4c6eb96663ce5be582380fa8",
+      "provenance": {
+        "archive": "artifacts/release-v0.3.0/landing-provenance-merged/conservatory-props.glb",
+        "receipt": "public/assets/conservatory-landing-fittings.stats.json:protectedSha256",
+        "note": "Derived only after verifying this exact historical binary against its original immutable build receipt. Current shared-pack bytes were not used as the baseline."
+      },
+      "meshes": {
+        "stair_sconce_pair_opal": {
+          "sha256": "874b4ad64e3016272587e9de03d97c967f87bdb2f8055d0881a9983ec30efa78",
+          "triangles": 364,
+          "materials": 4,
+          "instances": 1,
+          "materialSha256": "1c7c36615cba5ae62f1175af46edc7b33ca78ab4f928dd312f3d2d3ed85368e1",
+          "storedVertices": 512
+        },
+        "stair_bulkhead_pair": {
+          "sha256": "a6f9b2a2c11eddd56ec9c003cf76392059dd8a577c78269808a7ef2212d60f33",
+          "triangles": 388,
+          "materials": 4,
+          "instances": 1,
+          "materialSha256": "c1efb00a688e56dbe389aa4b7272aee6e6d0a8f1192904cc0e64884cbb8b5d7f",
+          "storedVertices": 644
+        }
+      }
+    }
+  }
+}

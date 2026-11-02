@@ -91,7 +91,9 @@ test('accepted forward movement performs the same controlled failure and full 10
     const p = state.physical;
     for (const key of ['phase', 'x', 'z', 'feet', 'velocityY', 'clock', 'elapsed', 'committed'])
       assert.equal(p[key], ordinary[key], key);
-    assert.ok(p.feet <= previousY + 1e-8); distance += previousY - p.feet; previousY = p.feet;
+    // Contact resolution separates the capsule by a2µm skin. It must not be
+    // mistaken for an upward cut or a second catch in the100m descent.
+    assert.ok(p.feet <= previousY + 5e-6); distance += previousY - p.feet; previousY = p.feet;
     assert.equal(frame(state).player.y, p.feet);
     if (p.phase === 'catching') {
       didCatch = true;
@@ -102,7 +104,7 @@ test('accepted forward movement performs the same controlled failure and full 10
   }
   assert.equal(state.physical.phase, 'landed');
   assert.equal(state.physical.feet, 0); assert.ok(didCatch); assert.ok(Math.abs(distance - 100) < 1e-8);
-  assert.deepEqual(events.map(event => event.type), ['strain', 'fracture', 'footing-loss','stratum-0','stratum-1','stratum-2', 'catch', 'land']);
+  assert.deepEqual(events.map(event => event.type), ['strain', 'fracture','load-transfer', 'footing-loss','stratum-0','stratum-1','stratum-2', 'catch', 'land']);
   assert.ok(events.every(event => event.id.startsWith('ending-wrong-door:ending-test:')));
   assert.equal(JSON.stringify(events).includes('source-II'), false);
   assert.deepEqual(state.receipts.map(receipt => receipt.type), events.map(event => event.type));

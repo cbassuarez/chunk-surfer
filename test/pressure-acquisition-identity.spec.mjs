@@ -19,9 +19,9 @@ test('real material identity enters acquisition and final glass without rebuildi
  const acquire=renderer.slice(renderer.indexOf('function runPixelMeshPass('),renderer.indexOf('function loadImageTexture('));
  assert.match(acquire,/bindTexture\(gl.TEXTURE_2D,pressureIdentityTex\|\|markTex\)/);
  assert.match(acquire,/pixelMeshU\('uRecordedPressureInkReady'\),pressureFinishReady\?1:0/);
- assert.match(PIXEL_MESH_FRAG,/pressureRecordedInk\(finalColor,texture\(uRecordedPressureInk,fullUv\).rg\)/);
+ assert.match(PIXEL_MESH_FRAG,/pressureRecordedCosmosInk\(finalColor,texture\(uRecordedPressureInk,fullUv\)\)/);
  const post=renderer.slice(renderer.indexOf('const POST_FRAG = '),renderer.indexOf('const TEXT_SPACE_FRAG = '));
- assert.ok(post.indexOf('pressureRecordedInk(c,texture(uPressureInk,uv).rg)')>post.indexOf('uFrontEndToe)*fe'));
+ assert.ok(post.indexOf('pressurePreserveRecordedCosmos(c,texture(uSrc,uv).rgb,texture(uPressureInk,uv))')>post.indexOf('uFrontEndToe)*fe'));
  assert.match(post,/if\(uPressureInkReady>\.5\)/);
  assert.match(renderer,/postU\('uPressureInkReady'\),pressureFinishReady\?1:0/);
  assert.doesNotMatch(post,/glowCoverage\(|for\(int i=0;i<8/,'reuse the already occluded finite mask instead of redilating every presentation pixel');

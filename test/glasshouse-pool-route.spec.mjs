@@ -13,39 +13,26 @@ import {BUILDING_MAP} from '../src/data/building-map.js';
 import {glassCourtMapPhysical} from '../src/game/glass-court-map.js';
 import {captureFloorplanMapSource} from '../src/game/map-model.js';
 import {findGridRoute} from '../src/game/map-routing.js';
+import {glassCourtBody,glassCourtRoute} from './helpers/glass-court-route.mjs';
 
 const ids=['pool-lobby','glasshouse-changing','changing-pool'];
-const extraLevels=level=>level.id==='natatorium_glasshouse'||level.id==='natatorium_changing'
-  ||level.id.startsWith('glasshouse-changing-throat-')||level.id.startsWith('changing-pool-throat-');
+const extraLevels=level=>['natatorium_glasshouse','natatorium_changing','baths-west-court-wall'].includes(level.id)
+  ||['baths-outdoor-court-','ellery-greenhouse-throat-','glasshouse-changing-throat-','changing-pool-throat-'].some(prefix=>level.id.startsWith(prefix));
 const compile=(levels=conservatory.levels,doors=conservatory.doors)=>{
   FP.compile(levels,{...conservatory,doors});PROPS.propsInit(FP);
 };
-const body=(x,z)=>({x:Math.round((x-.25)*2),y:Math.round((z-.25)*2)});
+const body=glassCourtBody;
 const world=p=>{const q=FP.logicalToPhysical(p.x,p.y);return{x:(q.x+.5)*.5,z:(q.z+.5)*.5};};
-const start=body(84.25,26.25),goal=body(94.25,34.25);
-const key=p=>`${p.x},${p.y}`;
-function route(from,to,{cut=null}={}){
-  const queue=[from],seen=new Set([key(from)]),previous=new Map();
-  for(let i=0;i<queue.length;i++){
-    const p=queue[i];if(p.x===to.x&&p.y===to.y){const out=[p];while(previous.has(key(out.at(-1))))out.push(previous.get(key(out.at(-1))));return out.reverse();}
-    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
-      const q={x:p.x+dx,y:p.y+dy},k=key(q);
-      if(q.x<140||q.x>=196||q.y<40||q.y>=104||seen.has(k))continue;
-      if(cut&&(FP.doorAt(p.x,p.y)?.id===cut||FP.doorAt(q.x,q.y)?.id===cut))continue;
-      if(dx&&dy&&(FP.isSolid(p.x+dx,p.y)||FP.isSolid(p.x,p.y+dy)))continue;
-      const move=FP.canStep(p.x,p.y,q.x,q.y,{keys:new Set()});
-      if(!move.ok||move.redirect||!PROPS.propCanOccupy(q.x,q.y,{from:p}))continue;
-      seen.add(k);previous.set(k,p);queue.push(q);
-    }
-  }
-  return null;
-}
+const start=body(84.25,12.25),goal=body(94.25,34.25);
+const route=(from,to,options)=>glassCourtRoute(FP,PROPS,from,to,options);
 const getDoor=id=>FP.doorState().find(d=>d.id===id);
 const openAll=()=>{for(const id of ids)FP.setDoorOpen(id,true);};
 
 // Compare with the same current plan minus this bounded insertion. A later
 // edit to a basin/stair/deck cannot be excused by updating a broad snapshot.
-compile(conservatory.levels.filter(level=>!extraLevels(level)),conservatory.doors.filter(d=>!ids.slice(1).includes(d.id)));
+compile(conservatory.levels.filter(level=>!extraLevels(level)),conservatory.doors
+  .filter(d=>!['glasshouse-changing','changing-pool','spine-west-court'].includes(d.id))
+  .map(d=>d.id==='pool-lobby'?{...d,at:{x:84,y:27}}:d));
 const protectedPool=[];
 for(let y=66;y<102;y++)for(let x=140;x<194;x++){
   const cell=FP.cellAt(x,y),at=FP.logicalToPhysical(x,y);
@@ -71,25 +58,26 @@ test('the two new indoor zones cannot start a pool recording or pool dread',()=>
   for(const zone of[ZONE.glasshouse,ZONE.poolChanging]){
     assert.equal(isOutdoorZone(zone),false);assert.equal(ZONE_WORLD[zone],'main_b3');assert.equal(rooms[zone],undefined);
   }
-  for(const[x,z,zone,material]of[[84.25,29.25,ZONE.glasshouse,MATERIAL.wetPaving],[94.25,30.25,ZONE.poolChanging,MATERIAL.wetTile]]){
+  for(const[x,z,zone,material,ceil]of[[84.25,21.25,ZONE.glasshouse,MATERIAL.wetPaving,5.2],[84.25,30.25,ZONE.poolChanging,MATERIAL.wetTile,3.4]]){
     const p=body(x,z);assert.equal(FP.zoneAt(p.x,p.y),zone);assert.equal(FP.floorAt(p.x,p.y),0);
     assert.equal(FP.materialAt(p.x,p.y),material);assert.equal(FP.flagsAt(p.x,p.y)&F.SKY,0);
-    assert.equal(FP.cellAt(p.x,p.y).ceil,9.5,'mesh glazing retains the continuous pool render envelope');
+    assert.ok(Math.abs(FP.cellAt(p.x,p.y).ceil-ceil)<1e-5,'the separate rooms have their own real roof/ceiling envelopes');
   }
   assert.equal(rooms[FP.zoneAt(goal.x,goal.y)],'the_tub');
   assert.match(source,/function natatoriumDreadInput\(\)[\s\S]*?recordableRoomAt\(px,py\)!=='the_tub'/);
 });
 
 test('actual dynamic frames align with the two real thin partition apertures',()=>{
-  for(const[id,x,z,axis]of[['glasshouse-changing',92,30,'y'],['changing-pool',94,32,'x']]){
+  for(const[id,x,z,axis]of[['pool-lobby',84,15,'x'],['glasshouse-changing',84,27,'x'],['changing-pool',84,31,'x']]){
     const d=getDoor(id),p=FP.logicalToPhysical(d.cx,d.cy);
     assert.deepEqual([p.x*.5,p.y,p.z*.5],[x,0,z]);assert.equal(d.widthAxis,axis);
     assert.equal(d.aperture.width,2);assert.equal(d.aperture.height,3.4);assert.equal(d.leafCount,2);
     assert.deepEqual(d.activeLeaves,[0,1]);assert.equal(d.keyId,null);assert.equal(d.access,'both');
     assert.equal(d.cells.length,15,'detector centring never pretends to be the physical aperture');
-    assert.ok(d.cells.every(p=>!FP.isSolid(p.x,p.y)&&FP.cellAt(p.x,p.y).ceil===9.5));
+    assert.ok(d.cells.every(p=>!FP.isSolid(p.x,p.y)&&Math.abs(FP.cellAt(p.x,p.y).ceil-3.4)<1e-5));
   }
-  assert.deepEqual([getDoor('pool-lobby').cx,getDoor('pool-lobby').cy],[167.5,54.5],'the original identity/pose remains save compatible');
+  assert.deepEqual([getDoor('pool-lobby').cx,getDoor('pool-lobby').cy],[168,30],'the original identity now owns the actual Ellery-side threshold');
+  assert.ok(conservatory.doors.find(d=>d.id==='pool-lobby').legacyIds.includes('169,55'),'the previous saved portal alias remains recognised');
   // Current packed shared frame/transom bounds fit a 120mm partition and the
   // 3.4m changing ceiling. This uses actual emitted accessors, not a nominal
   // mesh name whose geometry could have drifted.
@@ -122,8 +110,9 @@ test('the actual paired-leaf motion clears the rehosted counter and opens into t
     const min=[0,1,2].map(k=>Math.min(...points.map(p=>p[k]))),max=[0,1,2].map(k=>Math.max(...points.map(p=>p[k])));
     assert.ok(min.some((v,k)=>v>=counter.max[k])||max.some((v,k)=>v<=counter.min[k]),`${id} leaf ${leaf} clears the physical counter at ${step*10}%`);
     if(step===10){
-      if(id==='glasshouse-changing')assert.ok(min[0]>91.9&&max[0]<93.1,'both greenhouse leaves open east into changing');
-      else assert.ok(min[2]>31.9&&max[2]<33.1,'both pool leaves open south onto the existing east deck');
+      const plane=id==='glasshouse-changing'?27:31;
+      if(id==='glasshouse-changing')assert.ok(min[2]>plane-1.1&&max[2]<plane+.1,'the dry-out pair opens back into the greenhouse');
+      else assert.ok(min[2]>plane-.1&&max[2]<plane+1.1,'the pool-in pair opens onto the cross-deck');
     }
   }
 });
@@ -131,16 +120,15 @@ test('the actual paired-leaf motion clears the rehosted counter and opens into t
 test('loaded physical partitions make all three doors dominate every ordinary pool entry and return',()=>{
   PROPS.setColliderGroupEnabled('glass-court',true);openAll();
   const path=route(start,goal);assert.ok(path,'ordinary half-metre collision movement reaches the east pool deck');
-  let walker={...start},steps=0;
-  for(const target of[body(84.25,30.25),body(94.25,30.25),goal]){
-    while(walker.x!==target.x||walker.y!==target.y){
-      const next={x:walker.x+Math.sign(target.x-walker.x),y:walker.y+Math.sign(target.y-walker.y)};
-      assert.ok(FP.canStep(walker.x,walker.y,next.x,next.y,{keys:new Set()}).ok);
-      assert.ok(PROPS.propCanOccupy(next.x,next.y,{from:walker}),`real cardinal keyboard route at ${JSON.stringify(world(next))}`);
-      walker=next;steps++;
-    }
+  let walker={...start};
+  for(const next of path.slice(1)){
+    assert.ok(Math.max(Math.abs(next.x-walker.x),Math.abs(next.y-walker.y))===1,'each input moves only one ordinary cell');
+    const step=FP.canStep(walker.x,walker.y,next.x,next.y,{keys:new Set()});
+    assert.equal(step.ok,true);assert.equal(step.redirect,undefined);
+    assert.ok(PROPS.propCanOccupy(next.x,next.y,{from:walker}),`real keyboard route at ${JSON.stringify(world(next))}`);
+    walker=next;
   }
-  assert.equal(steps,36,'a concrete 18m keyboard route uses the real three-door sequence');
+  assert.deepEqual(walker,goal,'the actual walked path reaches the retained east deck');
   const visited=path.map(p=>FP.doorAt(p.x,p.y)?.id).filter((id,i,a)=>id&&id!==a[i-1]);
   assert.deepEqual(visited,ids,'the shortest legal path crosses D0, planted corridor, D1, changing, D2');
   for(const id of ids){assert.equal(route(start,goal,{cut:id}),null,`${id} has no open-edge bypass`);}
@@ -154,9 +142,25 @@ test('loaded physical partitions make all three doors dominate every ordinary po
   for(const id of ids)assert.ok(pursuit.some(p=>FP.doorAt(p.x,p.y)?.id===id),`ordinary HUSH must also cross ${id}`);
 });
 
+test('the shortened changing buffer leaves a continuous supported cross-deck before every retained starting block',()=>{
+  PROPS.setColliderGroupEnabled('glass-court',true);openAll();
+  assert.equal(GLASS_COURT.origin.z+GLASS_COURT.changing.z1,31);
+  assert.equal(GLASS_COURT.changing.z1-GLASS_COURT.changing.z0,4);
+  let previous=null;
+  for(let x=76.25;x<=94.25;x+=.5){
+    const p=body(x,31.75);assert.equal(FP.floorAt(p.x,p.y),0);assert.equal(FP.isSolid(p.x,p.y),false);
+    assert.equal(PROPS.propCanOccupy(p.x,p.y,previous?{from:previous}:{}),true,`cross-deck body clearance at${x},31.75`);
+    if(previous)assert.equal(FP.canStep(previous.x,previous.y,p.x,p.y,{keys:new Set()}).ok,true);
+    previous=p;
+  }
+  const c=GLASS_COURT.counter,room=GLASS_COURT.changing;
+  assert.ok(c.z-(c.depth+.08)/2>room.z0+room.wallThickness/2);
+  assert.ok(c.z+(c.depth+.08)/2<room.z1-room.wallThickness/2,'the complete original counter/worktop fits between both end walls');
+});
+
 test('either separation pair opens repeatedly from either side without an interlock or new key',()=>{
   FP.resetDoors();
-  for(const[id,approaches]of[['glasshouse-changing',[[181,60,[1,0]],[187,60,[-1,0]]]],['changing-pool',[[188,60,[0,1]],[188,68,[0,-1]]]]]){
+  for(const[id,approaches]of[['glasshouse-changing',[[168,50,[0,1]],[168,58,[0,-1]]]],['changing-pool',[[166,58,[0,1]],[166,64,[0,-1]]]]]){
     for(const[x,y,facing]of approaches){
       FP.setDoorOpen(id,false);const first=FP.interactDoor(x,y,facing,new Set());
       assert.equal(first.id,id);assert.equal(first.opened,true);
@@ -165,16 +169,15 @@ test('either separation pair opens repeatedly from either side without an interl
     }
   }
   FP.setDoorOpen('glasshouse-changing',false);FP.setDoorOpen('changing-pool',false);
-  assert.equal(FP.interactDoor(188,60,[0,1],new Set()).opened,true,'pool pair is usable while the greenhouse pair is shut');
-  FP.tickDoors(3,{playerX:188,playerY:60,onlyIds:['changing-pool']});
+  assert.equal(FP.interactDoor(166,58,[0,1],new Set()).opened,true,'pool pair is usable while the greenhouse pair is shut');
+  FP.tickDoors(3,{playerX:166,playerY:58,onlyIds:['changing-pool']});
   const saved=FP.saveDoorState();compile();FP.loadDoorState(saved);
   assert.equal(getDoor('changing-pool').state,'open');assert.equal(getDoor('glasshouse-changing').state,'closed');
-  assert.equal(FP.interactDoor(187,60,[-1,0],new Set()).opened,true,'reload retains an ordinary return handle');
+  assert.equal(FP.interactDoor(168,58,[0,-1],new Set()).opened,true,'reload retains an ordinary return handle');
 });
 
 test('unavailable optional glazing retains the existing playable pool route',()=>{
-  PROPS.setColliderGroupEnabled('glass-court',false);FP.resetDoors();FP.setDoorOpen('pool-lobby',true);
-  assert.equal(getDoor('glasshouse-changing').state,'closed');assert.equal(getDoor('changing-pool').state,'closed');
+  PROPS.setColliderGroupEnabled('glass-court',false);FP.resetDoors();openAll();
   assert.ok(route(start,goal),'an unloaded supplemental pack cannot strand the recordist');
   assert.ok(route(goal,start));
   PROPS.setColliderGroupEnabled('glass-court',true);
@@ -185,7 +188,7 @@ test('the issued map routes through both vestibule doors and exposes the same ph
   assert.equal(glassCourtMapPhysical(original,{active:false,colliders}),original,'fallback retains the original capture');
   const filtered=glassCourtMapPhysical(original,{active:true,colliders});
   assert.notEqual(filtered,original);assert.notEqual(filtered.cells,original.cells);
-  for(const x of[180,181])for(const z of[64,65]){
+  for(const x of[164,165])for(const z of[40,41]){
     assert.ok(original.cells.get(`${x},${z}`)?.some(s=>s.renderGroup==='ground'&&s.floor===0));
     assert.ok(!filtered.cells.get(`${x},${z}`)?.some(s=>s.renderGroup==='ground'&&s.floor===0),
       'one blocked half-cell conservatively closes the full one-metre map bucket');
@@ -193,15 +196,16 @@ test('the issued map routes through both vestibule doors and exposes the same ph
   const source=captureFloorplanMapSource({definition:BUILDING_MAP,physical:filtered,
     projectLogical:p=>{const r=FP.toRuntimePoint(p),q=FP.logicalToPhysical(r.x,r.y);return{x:q.x,z:q.z,height:q.y,renderGroup:q.renderGroup};}});
   const floor=source.floors.find(f=>f.id==='g');
-  assert.deepEqual(findGridRoute(floor,{x:84,y:26},{x:94,y:34}),
-    [{x:84,y:26},{x:84,y:30},{x:94,y:30},{x:94,y:34}],
-    'guidance turns east along the glasshouse and south only after entering changing');
-  assert.ok(findGridRoute(floor,{x:94,y:34},{x:84,y:26}),'the map also retains the return');
+  const path=findGridRoute(floor,{x:84,y:12},{x:94,y:34});assert.ok(path,'guidance reaches the retained east pool deck');
+  const passes=(x,y)=>path.some((p,i)=>{const q=path[i+1];return q&&x>=Math.min(p.x,q.x)&&x<=Math.max(p.x,q.x)&&y>=Math.min(p.y,q.y)&&y<=Math.max(p.y,q.y)&&(p.x===q.x||p.y===q.y);});
+  for(const z of[15,27,31])assert.equal(passes(84,z),true,`map guidance physically crosses the longitudinal doorway at84,${z}`);
+  assert.ok(findGridRoute(floor,{x:94,y:34},{x:84,y:12}),'the map also retains the return');
   const boundaries=source.architecture.levels.filter(l=>l.floorId==='g'&&l.height===0).flatMap(l=>l.boundaries);
-  assert.ok(boundaries.some(b=>b.kind==='wall'&&b.y0===31&&b.y1===31&&b.x0<=90&&b.x1>=91),
-    'the cutaway does not draw one unbroken pool and greenhouse');
+  assert.equal(floor.open.has('82,20'),false);assert.equal(floor.open.has('83,20'),true);
+  assert.ok(boundaries.some(b=>b.kind==='wall'&&b.x0===83&&b.x1===83&&b.y0<=20&&b.y1>=21),
+    'the conservative one-metre map retains the occupied bed and separate longitudinal walking lane');
   assert.deepEqual(source.spaces.filter(s=>['space:glasshouse','space:pool-changing'].includes(s.id)).map(s=>[s.label,s.position]),
-    [['GLASSHOUSE',{x:84,y:30}],['CHANGING ROOM',{x:94,y:30}]]);
+    [['GLASSHOUSE',{x:84,y:21}],['CHANGING ROOM',{x:84,y:30}]]);
 });
 
 test('the actual map caller invalidates its capture when the supplemental partitions become ready or unavailable',()=>{
@@ -227,6 +231,8 @@ test('the actual map caller invalidates its capture when the supplemental partit
   let ready=false;
   const context=vm.createContext({FP,PROPS,BUILDING_MAP,glassCourtMapPhysical,captureFloorplanMapSource,
     usingSpecialSpace:()=>false,usingSourceSpace:()=>false,usingStairAnomaly:()=>false,usingPlan:()=>true,
+    studentStrikePresentationFrame:()=>null,openingCinematicFrame:()=>null,shouldStageOpeningCinematic:()=>false,openingPresentationView:()=>null,
+    exteriorInfrastructureAvailable:false,streetCrowdSubmitted:[],brendanPresenceSubmitted:[],
     streetPilotTime:()=>null,planName:'conservatory',facilityMapSource:null,glassCourtRenderReady:false,
     px:start.x,py:start.y,RENDERER:'3d',performance:{now:()=>0},
     mapProjectLogical:p=>{const r=FP.toRuntimePoint(p),q=FP.logicalToPhysical(r.x,r.y);return{x:q.x,z:q.z,height:q.y,renderGroup:q.renderGroup};},
@@ -241,7 +247,7 @@ test('the actual map caller invalidates its capture when the supplemental partit
     assert.equal(context.facilityMapSource,null,'the real caller clears the previous readiness capture');
     const current=vm.runInContext('currentFacilityMapSource()',context);
     assert.notEqual(current,first);
-    assert.equal(current.floors.find(f=>f.id==='g').open.has('90,32'),!next,
+    assert.equal(current.floors.find(f=>f.id==='g').open.has('82,20'),!next,
       'the resulting runtime map reflects the same loaded thin wall');
   }
   assert.equal(pushes.length,2,'each readiness change also resubmits static geometry');

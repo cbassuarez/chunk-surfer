@@ -11,6 +11,11 @@ import * as scenes from '../src/game/scenes.js';
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 import {installSourceRest} from '../src/game/source-rest-runtime.js';
 import {createSourceRestMusic} from '../src/audio/source-rest-music.js';
+import {createSourceRestScores} from '../src/audio/source-rest-scores.js';
+import {nightDeadlinePending} from '../src/game/night-deadline.js';
+import {sourceContinuationRecordingReturnProps,sourceContinuationRecordingDestination} from '../src/game/source-continuation-contact.js';
+import {claimSourceRecording} from '../src/game/source-recording-custody.js';
+import {releaseSourceRecordingCassetteLabels} from '../src/render/source-recording-cassette.js';
 import {createSourceRestBreath} from '../src/audio/source-rest-breath.js';
 import {createSourceRestWeather} from '../src/audio/source-rest-weather.js';
 import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
@@ -63,18 +68,18 @@ function completeAtFinalDoor(checkpoint){
   let result=stepSourceContinuation(finalDoorCheckpoint(checkpoint),{interact:true,renderReady:true});
   assert.equal(result.state.doorOpen['catch-final'],true,'E opens the actual final goods pair');
   assert.equal(result.state.completed,false,'opening alone does not transfer the player');
-  // Catch keeps north at the top of the map; this east-facing pair is crossed
-  // with screen-right movement, independent of the retained first-person yaw.
-  for(let i=0;i<30&&result.event?.type!=='complete';i++)result=stepSourceContinuation(result.state,{dt:.05,side:1,renderReady:true});
+  // The final approach faces east. Ordinary forward movement follows that
+  // physical yaw through the existing goods pair.
+  for(let i=0;i<30&&result.event?.type!=='complete';i++)result=stepSourceContinuation(result.state,{dt:.05,forward:1,renderReady:true});
   assert.equal(result.event?.type,'complete','walking through the open final plane grants the exit receipt');
   assert.ok(result.state.x>SOURCE_CONTINUATION.catch.finalDoor.x);
   return result.state;
 }
 async function walkFinalDoor(scene){
   scene.key({key:'e'});assert.equal(scene.serialize().doorOpen['catch-final'],true);assert.equal(scene.serialize().completed,false);
-  scene.key({key:'d'});
+  scene.key({key:'w'});
   for(let i=0;i<30&&scene.serialize().status==='active';i++)scene.update(.05);
-  scene.keyup({key:'d'});await Promise.resolve();await Promise.resolve();
+  scene.keyup({key:'w'});await Promise.resolve();await Promise.resolve();
   assert.equal(scene.serialize().completed,true,'the real scene receives movement through the final door');
   scene.update(.2);scene.update(.2);await Promise.resolve();await Promise.resolve();
 }
@@ -255,14 +260,16 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
   if(checkpoint)runtime.setContinuationCheckpoint(checkpoint);
   let data={...base,flags:{...base.flags,...flags},rec:REC.saveRecState(),chunkSurf:runtime.state(),sourceView:{x:at.x,y:at.y,yaw:.7,pitch:-.04},
     sourceDrive:{...base.sourceDrive,...(driveReturned?{status:'returned'}:{})}},look={yaw:.7,pitch:-.04},focused=true,disposed=0,playing=false,audioOptions=null;
-  const calls=[],renderers=[],audio={stop:()=>calls.push(['audio-stop']),pause:()=>calls.push(['audio-pause']),event(){},update(){}};
-  const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:[],sourceRestBreath:null,sourceRestWeather:null,
+  const calls=[],renderers=[],recorderWindows=[],mediaPresentations=[],audio={stop:()=>calls.push(['audio-stop']),pause:()=>calls.push(['audio-pause']),event(){},update(){}};
+  const e={sourceContinuationScene:null,sourceContinuationRenderer:null,sourceContinuationAudio:null,sourceEarthfallAudio:null,sourceContinuationTrace:[],sourceRestBreath:null,sourceRestWeather:null,sourceRestLiveMusic:null,endingStaticMix:null,firstStrikeScene:null,firstStrikeAudio:null,
     sourceEarthfallNeeded:()=>false,sourceFalseReturnNeeded:()=>false,sourceContinuationStudyRotation:0,resumeSourceContinuationHandoff,
     controllerGameplayAxes:()=>({moveX:0,moveY:0,turnX:0,lookY:0}),runPlayDurationClock:{suspend(){}},
     clamp:(n,lo,hi)=>Math.max(lo,Math.min(hi,n)),mouseLookSensitivity:()=>2,mouseInvertY:()=>false,shakeMode:()=> 'full',noteExteriorArrivalControl(){},cancelLastExposure(){},
     sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,standingTearScene:null,sourceReturnFlashbackScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,musicGain:null,
     px:at.x,py:at.y,renderMove:{},motionRig:{},trail:[1],r3dCache:{physicalKey:'source',physicalGroup:'source-space',fogSize:2},
-    getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,installSourceRest,createSourceRestMusic,createSourceRestBreath,createSourceRestWeather,SOURCE_REST_SEATS,
+    getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,installSourceRest,createSourceRestMusic,createSourceRestScores:options=>createSourceRestScores({...options,createBach:value=>e.createSourceRestMusic(value)}),createSourceRestBreath,createSourceRestWeather,SOURCE_REST_SEATS,
+    persistNightRestLock:()=>false,nightDeadlinePending,openSourceHushContact:()=>false,openSourceRecordingCassette:()=>false,roomLabel:id=>id,pressurePresentationSnapshot:()=>null,
+    sourceContinuationRecordingReturnProps,releaseSourceRecordingCassetteLabels,P3:{},prewarmSourceRecordingCassetteMeshes:async()=>true,
     fireCue(){},CR:{fx(){}},dialogGain:null,master:null,
     REC,resolveTorchLook,applyFieldKitTorchLook,applyHushTorchInterference,inactiveHushField,
     itemLost:id=>missingItems.has(id),flagTest:id=>!!data.flags[id],flagGet:id=>data.flags[id],openPauseMenu:()=>calls.push(['pause-menu']),currentPerception:()=>({torch:1}),activeKitEffects:{},
@@ -273,19 +280,36 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
         ready:()=>ready&&!dead,render:()=>ready&&!dead,torch:()=>options.getTorch(),clear(){},dispose:()=>{if(dead)return false;dead=true;disposed++;return true;}};
       renderers.push(renderer);return renderer;},
     createSourceContinuationAudio:options=>{audioOptions=options;return audio;},
+    // These are device boundaries, not an alternate rest implementation.
+    // Creation and ordinary frame updates never request or show a window.
+    createSourceRestRecorderWindow:options=>{
+      let requested=false,dead=false;
+      const bridge={options,state:()=>({requested,visible:false,mode:requested?'contained':'closed',disposed:dead}),
+        update(){calls.push(['rest-recorder-update']);return bridge.state();},
+        toggle(){if(!dead){requested=!requested;calls.push(['rest-recorder-toggle',requested]);}return bridge.state();},
+        renderFallback:()=>false,dispose(){if(!dead){dead=true;requested=false;calls.push(['rest-recorder-dispose']);}return bridge.state();}};
+      recorderWindows.push(bridge);return bridge;
+    },
+    createSourceRestMediaPresentation:options=>{
+      let latest=null;
+      const bridge={options,update(value){latest=value;calls.push(['rest-media-update']);},
+        stop(reason){latest=null;calls.push(['rest-media-stop',reason]);},snapshot:()=>latest};
+      mediaPresentations.push(bridge);return bridge;
+    },
     playSceneFootContact(){},clearSceneFootContacts(){},
     syncSourceRender:()=>calls.push(['restore-source']),usingSourceSpace:()=>true,
-    PB:{stopPlayback:()=>{playing=false;calls.push(['stop-playback']);},isPlaying:()=>playing},STORY:{stopAll:()=>calls.push(['stop-story'])},SPEECH:{clearSpeech(){}},RT:{setBed(){}},
+    PB:{stopPlayback:()=>{playing=false;calls.push(['stop-playback']);},isPlaying:()=>playing,tapeTake:id=>(REC.recState().tapes||[]).find(row=>row.id===id)||null},STORY:{stopAll:()=>calls.push(['stop-story'])},SPEECH:{clearSpeech(){},say(){}},RT:{setBed(){}},
     towerBellDirector:{suspend(){},resume:()=>calls.push(['resume-bells'])},bellPealPerformance:{suspend(){},resume(){}},
-    windowChoreography:{leaveSource:async()=>{}},frontEndSession:{markLive(){}},frontEndPlateOverride:null,
-    ensureCtx(){},resetMotionInput:reason=>calls.push(['reset-input',reason]),pubRoomAudio:{stop(){},pause(){}},sourcePubAudio:null,
+    windowChoreography:{leaveSource:async()=>{},requestSourceRestRecorder:async options=>{calls.push(['native-recorder-request',options]);return false;}},
+    sourceWindowMedia:{stop(){}},frontEndSession:{markLive(){}},frontEndPlateOverride:null,
+    ensureCtx(){},resetMotionInput:reason=>calls.push(['reset-input',reason]),pubRoomAudio:{stop(){},pause(){}},pubPressureAudio:null,sourcePubAudio:null,
     retireStandingTear(){return false;},releaseSourceRestEndingMusic(){return false;},
     resumeStandingTearFromSave(){return false;},
     cancelOutskirtDoorAnswer(){},stopOutskirtsStreetAudio(){},pauseOutskirtsLastLight(){},stopSourceShoreAudio(){},stopSourceDockDoorAudio(){},stopSourceCorridorRain(){},
     syncStationEdgeSound(){},syncElsewhereBeds(){},endHorizonScore(){},stopAllVoices(){},stopWorldLayerVoice(){},silenceAmbientDrone(){},endBootWeather(){},
     pushEvent:value=>calls.push(['error',value]),updateAudio(){},ensureInteractionFocus(){},
     document:{hidden:false,visibilityState:'visible',hasFocus:()=>focused},IS_TAURI:false,
-    academicGhostDispatch:null,sourceShoreAudio:null,towerWarningAudio:null,openingArrivalAudio:null,openingVehicleScene:null,openingOvertureScene:null,chapelTapeTugHeld:false,recordingPressureVoices:new Set(),
+    academicGhostDispatch:null,sourceShoreAudio:null,towerWarningAudio:null,openingArrivalAudio:null,openingCabRadio:null,openingVehicleScene:null,openingOvertureScene:null,chapelTapeTugHeld:false,recordingPressureVoices:new Set(),
     architectureDoorAudio:{pause:reason=>calls.push(['door-audio-pause',reason])},architectureDoorEvents:{hold:()=>calls.push(['door-events-hold'])},resetArchitectureDoorAudio:reason=>calls.push(['door-audio-reset',reason]),
     rememberChapelTapeDemandDeparture(){},activeRecordingSlate:null,liveRecordingPointerControls:new Set(),
     cancelApparitionApplause(){},setUiCueFocused(){},cancelControlScope(){},pointerMode:{release(){}},recoverInteractionAudio:async()=>{},
@@ -293,6 +317,7 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
     beginSourceDriveJourney:async()=>{calls.push(['drive']);if(!driveReady)return false;data={...data,sourceDrive:{...data.sourceDrive,status:'active'}};return{};},
   };
   e.sourcePresentationTorch=production('sourcePresentationTorch','\nasync function beginCoastalMemoryJourney(',e);
+  e.sourceRecordingDisplayCustody=production('sourceRecordingDisplayCustody','\nfunction openSourceRecordingCassette(',e);
   e.sourceCameraPatch=production('sourceCameraPatch','\nfunction saveSourceView(',e);
   e.gameplayInputLifecycleActive=production('gameplayInputLifecycleActive','\nfunction holdUnavailableGameplayInput(',e);
   e.commitSourceContinuation=production('commitSourceContinuation','\nfunction releaseSourceContinuation(',e);
@@ -301,11 +326,100 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
   e.beginSourceContinuation=production('beginSourceContinuation','\nfunction sourcePubEntranceFrame(',e);
   e.cancelRecordingPressureAudio=production('cancelRecordingPressureAudio','\nfunction recordingPressureFrame(',e);
   e.onBlur=production('onBlur','\n// Focus, capture and a level head',e);
-  return{e,runtime,calls,data:()=>data,look:()=>({...look}),focus:value=>{focused=value;},disposed:()=>disposed,renderers,
+  return{e,runtime,calls,data:()=>data,look:()=>({...look}),focus:value=>{focused=value;},disposed:()=>disposed,renderers,recorderWindows,mediaPresentations,
     audioOptions:()=>audioOptions,playback:value=>{playing=!!value;},flag:(id,value)=>{data.flags={...data.flags,[id]:value};},missingItems,
     close(){try{if(e.sourceContinuationScene){e.commitSourceContinuation();e.releaseSourceContinuation();}scenes.clear();}
       finally{Object.assign(REC.recState(),originalRecorder);REC.configureDifficulty(originalDifficulty);}}};
 }
+
+test('actual DEV Contact and return fixtures survive canonical checkpointing and the full continuation/rest host',async()=>{
+  const marker=main.indexOf('contactFixture:async(chapter,repeat,'),bodyAt=main.indexOf('=>{',marker)+2,
+    end=balancedEnd(main,bodyAt,'{','}')+1;
+  assert.ok(marker>=0&&bodyAt>marker);
+  for(const chapter of ['II','III'])for(const recovery of [false,true]){
+    const h=host(),e=h.e,at=sourceContinuationRecordingDestination(chapter);
+    try{
+      e.requestAnimationFrame=fn=>queueMicrotask(()=>fn(1000));
+      // Native window/media devices are outside this CPU fixture. The actual
+      // continuation scene, rest adapter, canonical state and physics remain.
+      e.createSourceRestRecorderWindow=()=>({state:()=>({}),update(){},dispose(){},renderFallback(){},toggle(){}});
+      e.createSourceRestMediaPresentation=()=>({update(){},stop(){}});
+      e.sourceWindowMedia={stop(){}};
+      const take={id:'native-proof-take',ordinal:1,roomId:'main_b3',place:'Studio B3',status:'accepted',counted:true,startSeconds:0,endSeconds:60,durationSeconds:60};
+      e.PB.tapeTake=id=>id===take.id?take:null;
+      const custody=claimSourceRecording(null,{runId:h.data().run.id,chapter:'II',contactId:'dev-contact-return',takes:[take],destination:at}).state;
+      e.chunkSurfRuntime=createSourceSpaceRuntime({initialState:{...e.chunkSurfRuntime.state(),sourceRecordingCustody:recovery?custody:null}});
+      await e.beginSourceContinuation({skipFalseReturn:true,skipEarthfall:true});
+      e.sourceContinuationRecordingDestination=sourceContinuationRecordingDestination;
+      e.activateSourceSpace=source=>{e.chunkSurfRuntime=createSourceSpaceRuntime({initialState:source,
+        onState:next=>e.saveCommit({chunkSurf:next})});return e.chunkSurfRuntime;};
+      const fixture=Function('environment',`with(environment){return (${main.slice(marker+'contactFixture:'.length,end)});}`)(e);
+      const scene=await fixture(chapter,true,{recovery});
+      assert.ok(scene?.sourceRest,'the actual main host installs its ordinary rest wrapper');
+      const state=scene.serialize(),stored=e.chunkSurfRuntime.state().sourceContinuation;
+      assert.equal(state.phase,chapter==='III'?'catch':'wrong-return');
+      assert.ok(Math.hypot(state.x-at.x,state.z-at.z)<2.1,'the staged body is not silently replaced by the entry/refuge');
+      assert.equal(stored.x,state.x);assert.equal(stored.z,state.z);assert.equal(stored.feet,state.feet);
+      assert.equal(scene.view().focus?.type,recovery?'source-recording-return':'source-contact');
+      assert.equal(scene.view().focus?.chapter,chapter);
+      const staged=e.sourceContinuationTrace.filter(row=>row.type?.startsWith('DEV-contact-'));
+      assert.equal(staged.at(-2).stagedNoticeSeconds,120,'QA setup receives an explicitly disclosed, finite notice interval');
+      assert.equal(staged.at(-2).stored.x,state.x);assert.equal(staged.at(-2).stored.z,state.z);
+      assert.equal(staged.at(-1).sameOwner,true);assert.equal(staged.at(-1).sameScene,true);
+      assert.equal(staged.at(-1).storedAfterFrames.x,state.x);assert.equal(staged.at(-1).storedAfterFrames.z,state.z);
+      assert.equal(staged.at(-1).focus.type,recovery?'source-recording-return':'source-contact');
+      if(!recovery)assert.ok(Math.hypot(state.hush.x-state.x,state.hush.z-state.z)>1.05,'Contact does not begin overlapping the body');
+      for(let tick=0;tick<120;tick++)scene.update(1/60);
+      assert.equal(scene.serialize().x,state.x);assert.equal(scene.serialize().z,state.z);
+      assert.equal(scene.view().focus?.type,recovery?'source-recording-return':'source-contact');
+    }finally{h.close();}
+  }
+});
+
+test('old twenty-second DEV Contact staging reproduces entrance recovery, while the disclosed review interval stays usable then expires normally',()=>{
+  const marker=main.indexOf('contactFixture:async(chapter,repeat,'),end=main.indexOf('\n        press:',marker),
+    fixtureSource=main.slice(marker,end),notice=Number(fixtureSource.match(/mode:'notice',notice:(\d+)/)?.[1]);
+  assert.equal(notice,120);
+  const make=seconds=>{const base=freshSourceContinuation({runId:'review-expiry'}),at={x:16,z:-20,feet:0,chartId:0,level:0,yaw:0,pitch:0};
+    return normalizeSourceContinuation({...base,...at,phase:'wrong-return',status:'active',lastSafe:{...at},hush:{...base.hush,...at,z:-22,active:true,armed:true,mode:'notice',notice:seconds,trail:[]},counterweight:{...base.counterweight,active:false}});};
+  let old=make(20),current=make(notice);const oldEvents=[],currentEvents=[];
+  for(let tick=0;tick<132;tick++){
+    const result=stepSourceContinuation(old,{dt:.25,renderReady:true});old=result.state;oldEvents.push(...result.events);
+  }
+  assert.ok(oldEvents.some(event=>event.type==='capture'&&event.reason==='hush-pressure'));
+  assert.ok(oldEvents.some(event=>event.type==='recovered'));assert.equal(old.x,0);assert.equal(old.z,2);
+  for(let tick=0;tick<240;tick++){
+    const result=stepSourceContinuation(current,{dt:.25,renderReady:true});current=result.state;currentEvents.push(...result.events);
+  }
+  assert.equal(current.x,16);assert.equal(current.z,-20);assert.equal(current.hush.mode,'notice');assert.ok(current.hush.notice>59);
+  assert.equal(currentEvents.some(event=>event.type==='capture'),false);
+  for(let tick=0;tick<248&&!currentEvents.some(event=>event.type==='capture');tick++){
+    const result=stepSourceContinuation(current,{dt:.25,renderReady:true});current=result.state;currentEvents.push(...result.events);
+  }
+  assert.ok(currentEvents.some(event=>event.type==='capture'&&event.reason==='hush-pressure'),'the bounded DEV notice does not disable ordinary pursuit');
+});
+
+test('the actual DEV fixture rejects a refused checkpoint or mismatched scene instead of silently reporting staging success',async()=>{
+  const marker=main.indexOf('contactFixture:async(chapter,repeat,'),bodyAt=main.indexOf('=>{',marker)+2,
+    end=balancedEnd(main,bodyAt,'{','}')+1;
+  for(const failure of ['refused-checkpoint','mismatched-scene']){
+    const h=host(),e=h.e;
+    try{
+      e.requestAnimationFrame=fn=>queueMicrotask(()=>fn(1000));
+      e.sourceContinuationRecordingDestination=sourceContinuationRecordingDestination;
+      e.activateSourceSpace=source=>{
+        e.chunkSurfRuntime=createSourceSpaceRuntime({initialState:source});
+        if(failure==='refused-checkpoint')e.chunkSurfRuntime.setContinuationCheckpoint=()=>false;
+      };
+      let opened=0;e.beginSourceContinuation=async()=>{opened++;return{id:'source-continuation',serialize:()=>({x:0,z:2,feet:0,chartId:0,phase:'wrong-return'}),view:()=>({focus:null})};};
+      const fixture=Function('environment',`with(environment){return (${main.slice(marker+'contactFixture:'.length,end)});}`)(e);
+      await assert.rejects(fixture('II',true),failure==='refused-checkpoint'?/checkpoint was not retained/:/scene did not retain/);
+      assert.equal(opened,failure==='refused-checkpoint'?0:1);
+      assert.equal(e.sourceContinuationTrace.at(-1).earnedProgression,false);
+      if(failure==='mismatched-scene'){assert.equal(e.sourceContinuationTrace.at(-1).actual.x,0);assert.equal(e.sourceContinuationTrace.at(-1).sameScene,false);}
+    }finally{h.close();}
+  }
+});
 
 test('main entry waits for actual renderer readiness, then an opened physical return restores the original body and gaze',async()=>{
   let resolveLoad;const h=host({initialize:()=>new Promise(resolve=>{resolveLoad=resolve;})}),e=h.e;
@@ -333,6 +447,26 @@ test('main entry waits for actual renderer readiness, then an opened physical re
     assert.equal(h.disposed(),1,'the device owner is disposed once despite scene/host cleanup both calling it');
     assert.equal(h.calls.filter(c=>c[0]==='drive').length,0);assert.equal(h.runtime.state().horizon.entered,false);
   }finally{h.close();}
+});
+
+test('ordinary Source entry and presentation updates leave the optional recorder window closed',async()=>{
+  for(const checkpoint of [null,finalDoorCheckpoint(freshSourceContinuation({runId:'main-continuation'}))]){
+    const h=host({checkpoint});try{
+      const scene=await h.e.beginSourceContinuation({checkpoint});
+      assert.equal(h.recorderWindows.length,1);assert.equal(h.mediaPresentations.length,1);
+      assert.equal(scene.sourceRestRecorder,h.recorderWindows[0]);assert.equal(scene.sourceRestMedia,h.mediaPresentations[0]);
+      scene.update(.1);scene.syncRestPresentation();scene.syncRestPresentation({held:true});
+      assert.equal(h.calls.filter(row=>row[0]==='rest-recorder-update').length,2);
+      assert.equal(h.calls.filter(row=>row[0]==='rest-media-update').length,2);
+      assert.equal(scene.sourceRestRecorder.state().requested,false);
+      assert.equal(h.calls.some(row=>row[0]==='rest-recorder-toggle'||row[0]==='native-recorder-request'),false,
+        'constructing the host or syncing its presentation cannot stand in for the player choosing the recorder');
+      assert.equal(scene.sourceRestRecorder.renderFallback(),false);
+      h.e.releaseSourceContinuation();assert.equal(scene.sourceRestRecorder.state().disposed,true);
+      assert.equal(h.calls.filter(row=>row[0]==='rest-recorder-dispose').length,1);
+      assert.ok(h.calls.some(row=>row[0]==='rest-media-stop'&&row[1]==='scene-exit'));
+    }finally{h.close();}
+  }
 });
 
 test('the production Source II host keeps one performance through approach, sitting and standing',async()=>{
@@ -366,6 +500,19 @@ test('the production Source II host keeps one performance through approach, sitt
     assert.equal(scene.sourceRest.view().mode,'sitting');assert.equal(scenes.top()?.id,'source-rest:wrong-return');
     assert.deepEqual(events,['start'],'sitting does not start a second source or stop the first');
     assert.equal(owner.snapshot().currentTime,17.5,'sitting does not seek or replace the recording');
+    scene.syncRestPresentation();
+    assert.equal(h.calls.some(row=>row[0]==='rest-recorder-toggle'||row[0]==='native-recorder-request'),false,
+      'sitting and the ordinary presentation callback do not open the optional recorder');
+    scenes.key({key:'r',ctrlKey:true});scenes.key({key:'r',repeat:true});
+    assert.equal(h.calls.some(row=>row[0]==='rest-recorder-toggle'),false,'modified and repeated keys do not request it');
+    scenes.key({key:'r',code:'KeyR'});
+    assert.deepEqual(h.calls.filter(row=>row[0]==='rest-recorder-toggle'),[['rest-recorder-toggle',true]],
+      'the real conversation key reaches main’s onRecorder callback exactly once');
+    assert.equal(scene.sourceRestRecorder.state().requested,true);assert.equal(scenes.top()?.id,'source-rest:wrong-return');
+    scenes.key({controllerAction:'recorder'});
+    assert.deepEqual(h.calls.filter(row=>row[0]==='rest-recorder-toggle'),[['rest-recorder-toggle',true],['rest-recorder-toggle',false]],
+      'the same explicit callback closes it through the controller action');
+    assert.deepEqual(events,['start'],'operating the recorder presentation does not replace or restart the score');
     scenes.key({key:'Escape'});
     assert.ok(h.calls.some(c=>c[0]==='pause-menu'),'Escape uses the ordinary pause owner');
     scenes.key({key:'e'});
@@ -575,7 +722,7 @@ test('the actual return-to-title cleanup saves local progress before restoring a
     const scene=await e.beginSourceContinuation(),original=scene.serialize().returnPose;scene.setLook({yaw:-2,pitch:.4});
     Object.assign(e,{costumeInspectionScene:null,sourcePubAudio:null,sourceRepriseWorldLease:null,storyMode:true,hushRunActive:false,activeBattleId:null,
       godBattleOpen:false,sampleFieldEnabled:false,bellTowerImpactActive:true,bellTowerCollisionEnabled:false,RENDERER:'3d',FP:{isLoaded:()=>false},
-      usingPlan:()=>false,usingSpecialSpace:()=>true,stopBellTowerRuntime(){},stopHushAudioRuntime(){},apparitionDirector:{reset(){}},resetHorrorState(){},PRES:{despawn(){}},
+      usingPlan:()=>false,usingSpecialSpace:()=>true,retireStudentStrike(){},stopBellTowerRuntime(){},stopHushAudioRuntime(){},apparitionDirector:{reset(){}},resetHorrorState(){},PRES:{despawn(){}},
       setGameplayPaused(){},setGameChrome(){},silenceSampleField(){},resetRunAudio(){},FEAR:{setFear(){}},godFxOverride:{},makeTitle:()=>({id:'title'}),refreshHushAvailability:async()=>{}});
     e.windowChoreography.emergencyRestore=()=>Promise.resolve();e.windowChoreography.beginTitle=()=>{};
     e.saveSourceView=production('saveSourceView','\n// DROPPING THE SOURCE RUNTIME',e);

@@ -8,7 +8,7 @@ import {vigilCharacterPose} from '../src/render/vigil-character-performance.js';
 import {PUB_NEW_ACTORS} from '../src/data/pub-population.js';
 import {pubServiceDrinks} from '../src/render/pub-service-presentation.js';
 import {buildPubInterior,PUB_INTERIOR_LAYOUT as layout} from '../tools/chunk_surfer/pub-interior-geometry.mjs';
-import {pubLocalFromWorld} from '../src/data/exterior-pub.js';
+import {pubLocalFromWorld,pubPhysicalAt,pubAuthoredAt,pubPhysicalYaw} from '../src/data/exterior-pub.js';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url)),sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const receipt=JSON.parse(read('public/assets/pub-characters.credits.json')),bytes=read('public/assets/pub-characters.glb'),asset=parseCharacterAsset(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.length));
 assert.equal(asset.entries.length,7);assert.deepEqual(asset.entries.map(e=>e.name),PUB_CHARACTER_MESHES);assert.equal(asset.nodes.length,115,'two shared anatomical rigs keep the isolated pack within the renderer node limit');assert.ok(bytes.length<10*1024*1024);
@@ -103,8 +103,11 @@ function staticVertices(name){
 }
 const transform=(matrix,point)=>[0,1,2].map(axis=>matrix[axis]*point[0]+matrix[axis+4]*point[1]+matrix[axis+8]*point[2]+matrix[axis+12]);
 const distance=(a,b)=>Math.hypot(...sub(a,b));
+const physicalActor=actor=>({...actor,...pubPhysicalAt({x:actor.x,z:actor.z}),yaw:pubPhysicalYaw(actor.yaw)});
+const localFromPhysical=point=>pubLocalFromWorld(pubAuthoredAt(point));
 const drinkEvidence=[];
-for(const {actor,water} of PUB_NEW_ACTORS.filter(actor=>DESIGNS[actor.id].drink).flatMap(actor=>actor.id==='pub-patron-mavis'?[{actor,water:true},{actor,water:false}]:[{actor,water:false}])){
+for(const {actor:authoredActor,water} of PUB_NEW_ACTORS.filter(actor=>DESIGNS[actor.id].drink).flatMap(actor=>actor.id==='pub-patron-mavis'?[{actor,water:true},{actor,water:false}]:[{actor,water:false}])){
+  const actor=physicalActor(authoredActor);
   const d=DESIGNS[actor.id],entry=asset.entries.find(e=>e.name===d.mesh),kind=water?'water':d.drink,shape=PUB_DRINK_SHAPES[kind],timing=pubCharacterPerformance(actor.id),clock=seconds=>(seconds-d.seed*7.1+timing.period*2)%timing.period;
   const sampleSeconds=d.stance==='polish'?[3,12,13,14,19]:[3,9,timing.period-4.8,timing.period-3.4,timing.period-1.8];
   const phases=new Set();let actualGripError=0,actualMouthError=0;
@@ -124,7 +127,7 @@ for(const {actor,water} of PUB_NEW_ACTORS.filter(actor=>DESIGNS[actor.id].drink)
     const handPoints=handPointsFor(d.stance==='polish'?'L':'R');
     if(d.stance!=='polish'){
       const top=actor.tableId ? .790 : 1.14,supports=fixtureShapes.get(actor.tableId||'pub-counter').filter(s=>s.kind==='cylinder'&&Math.abs(s.args[0][1]+s.args[2]/2-top)<1e-6||s.kind==='box'&&Math.abs(s.args[0][1]+s.args[1][1]/2-top)<1e-6).map(supportSurface);
-      for(const point of handPoints){const row=pubLocalFromWorld({x:point[0],z:point[2]});assert.ok(!(point[1]>top+.12-.069&&point[1]<top+.12-.001&&supports.some(surface=>surface.contains([row.x,0,row.z]))),actor.id+' fingers stay out of the real table or counter slab');}
+      for(const point of handPoints){const row=localFromPhysical({x:point[0],z:point[2]});assert.ok(!(point[1]>top+.12-.069&&point[1]<top+.12-.001&&supports.some(surface=>surface.contains([row.x,0,row.z]))),actor.id+' fingers stay out of the real table or counter slab');}
     }else if(contact.phase==='polish'){
       const cloth=instances.find(p=>p.id===actor.id+':cloth'),clothPoints=staticVertices('pub_polishing_cloth').map(p=>transform(cloth.matrix,p)),rightHand=handPointsFor('R');
       assert.ok(Math.min(...clothPoints.flatMap(p=>rightHand.map(q=>distance(p,q))))<.004,'polishing cloth touches Iona’s actual right-hand skin');
@@ -142,7 +145,7 @@ for(const {actor,water} of PUB_NEW_ACTORS.filter(actor=>DESIGNS[actor.id].drink)
       const support=fixtureShapes.get(actor.tableId||'pub-counter'),top=actor.tableId ? .790 : 1.14;
       const surfaces=support.filter(s=>s.kind==='cylinder'&&Math.abs(s.args[0][1]+s.args[2]/2-top)<1e-6||s.kind==='box'&&Math.abs(s.args[0][1]+s.args[1][1]/2-top)<1e-6).map(supportSurface);
       const bottom=staticVertices(drink.mesh).filter(p=>p[1]<.00001).map(point=>transform(drink.matrix,point));assert.ok(bottom.length>40);
-      for(const point of bottom){const row=pubLocalFromWorld({x:point[0],z:point[2]});assert.ok(Math.abs(point[1]-(top+.12))<1e-5);assert.ok(surfaces.some(surface=>surface.contains([row.x,top,row.z])),actor.id+' full glass base is supported by the real table or bar');}
+      for(const point of bottom){const row=localFromPhysical({x:point[0],z:point[2]});assert.ok(Math.abs(point[1]-(top+.12))<1e-5);assert.ok(surfaces.some(surface=>surface.contains([row.x,top,row.z])),actor.id+' full glass base is supported by the real table or bar');}
       if(water)assert.ok(distance(contact.position,drinksByActor[actor.id].restWorld)<1e-8,'served water rests at the same saved service placement');
     }
     assert.ok([...drink.matrix].every(Number.isFinite));
@@ -172,7 +175,7 @@ for(const name of ['pub_service_water_glass','pub_service_empty_glass',...PUB_HE
 // The visible handoff agrees with the service line: support first, a brief
 // toast in thanks, then the same vessel returns to the same support.
 {
- const actor=PUB_NEW_ACTORS.find(a=>a.id==='pub-patron-mavis'),flags={'pub.help.complete':true};
+ const actor=physicalActor(PUB_NEW_ACTORS.find(a=>a.id==='pub-patron-mavis')),flags={'pub.help.complete':true};
  const sample=timeSec=>pubCharacterInstances([actor],{drinksByActor:pubServiceDrinks(flags,{timeSec})}).find(p=>p.pubDrinkContact)?.pubDrinkContact;
  assert.equal(sample(0).lift,0);assert.equal(sample(2).phase,'sip');assert.equal(sample(5.1).lift,0);
  assert.ok(distance(sample(0).position,sample(5.1).position)<1e-8,'the glass returns to its exact physical support');

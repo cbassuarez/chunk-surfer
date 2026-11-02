@@ -205,7 +205,7 @@ class MicrophoneMacosConfigTests(unittest.TestCase):
                                      'stderr': b'Executable=...\n'})()
         with patch.object(repair.subprocess, 'run', return_value=result) as invoke:
             repair.verify_app(app)
-            self.assertEqual(invoke.call_args.args[0][-1], str(app))
+            self.assertEqual(invoke.call_args.args[0][-1], str(app.resolve()))
         result.stdout = plistlib.dumps({'unrelated': True})
         with patch.object(repair.subprocess, 'run', return_value=result):
             with self.assertRaises(repair.ConfigurationError):

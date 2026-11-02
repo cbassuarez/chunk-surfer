@@ -7,6 +7,7 @@ import {makeRecoveryScene} from '../src/game/last-exposure-recovery.js';
 import {normalizeHushRecovery,normalizeEndingExposure,captureExposureFrame} from '../src/game/last-exposure-state.js';
 import {buildRunSummary} from '../src/progression/report.js';
 import {returnExposureIdentity} from '../src/render/outcome-return-view.js';
+import {applyNightClockLoss,freshNightClock} from '../src/game/night-clock.js';
 
 test('recovery location and penalties survive serialization only for the same run',()=>{
   const raw={runId:'r1',eventId:'taken:1',kind:'taken',roomId:'hall',minutes:9,lostItem:'recorder',
@@ -46,8 +47,8 @@ test('snapshot acquisition copies the final raster once with bounded size and no
 function wakeHarness(){
   const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   const code=main.slice(main.indexOf('function wakeUp('),main.indexOf('// It puts your thing somewhere real.'));
-  const save={run:{id:'same-run'},flags:{},playSeconds:100},calls=[];
-  const context={normalizeHushRecovery,makeRecoveryScene,scenes,Math:Object.assign(Object.create(Math),{random:()=>0}),
+  const save={run:{id:'same-run'},flags:{},playSeconds:100,nightClock:freshNightClock()},calls=[];
+  const context={normalizeHushRecovery,makeRecoveryScene,scenes,applyNightClockLoss,Math:Object.assign(Object.create(Math),{random:()=>0}),
     getSave:()=>save,saveCommit:patch=>Object.assign(save,structuredClone(patch)),
     PRES:{despawn(){},savePresenceState:()=>({})},REC:{saveRecState:()=>({injuries:1}),recState:()=>({injuries:1})},
     R3:{r3dFacing:()=>2},TARGETS:['hall'],ROOM_CELLS:{hall:{x:50,y:50}},FP:{toRuntimePoint:p=>p},
@@ -70,6 +71,9 @@ test('actual wake path commits costs and item location before Quit and Continue 
   try{
     h.methods.wakeUp();const recovery=scenes.top();
     assert.equal(h.save.rec.injuries,1);assert.equal(h.save.playSeconds,460);
+    assert.equal(h.save.nightClock.elapsedSeconds,360);
+    assert.deepEqual(h.save.nightClock.lossEvents,[{id:'taken:1',seconds:360}],
+      'the actual receipt records the fictional lost time independently of real play duration');
     assert.equal(h.save.hushRecovery.lostItem,'recorder');assert.equal(h.save.hushRecovery.lostAt.x,80);
     const after=JSON.stringify(h.save);
     recovery.key({code:'ArrowDown'});recovery.keyup({code:'ArrowDown'});

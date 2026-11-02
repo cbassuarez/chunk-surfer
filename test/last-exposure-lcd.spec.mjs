@@ -24,15 +24,22 @@ function textInk(value,font){
   ascent:(Number.isFinite(top)?-top:0)*size/1000,descent:(Number.isFinite(bottom)?bottom:0)*size/1000,size};
 }
 function inkContext(){
- const draws=[],stack=[];
+ const draws=[],paths=[],stack=[];
  const state={globalAlpha:1,shadowBlur:0,shadowOffsetX:0,shadowOffsetY:0,font:'400 12px "Hardware Sans"',textAlign:'left',textBaseline:'alphabetic',clipping:null};
- let pending=null;
+ let pending=null,points=[];
  const fonts={check:()=>true,load:()=>Promise.resolve([])};
  const ctx={canvas:{ownerDocument:{fonts}},
   save(){stack.push({...state,clipping:state.clipping?{...state.clipping}:null});},
   restore(){const prior=stack.pop();assert.ok(prior);Object.assign(state,prior);},
   createLinearGradient(){return{addColorStop(){}};},
-  beginPath(){pending=null;},rect(x,y,w,h){pending={x,y,w,h};},
+  beginPath(){pending=null;points=[];},rect(x,y,w,h){pending={x,y,w,h};},
+  moveTo(x,y){points.push([x,y]);},lineTo(x,y){points.push([x,y]);},closePath(){},
+  fill(){
+   assert.ok(points.length>=3,'actual LCD segment paths must form filled polygons');
+   const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+   paths.push({ink:{x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)},
+    clip:state.clipping?{...state.clipping}:null,alpha:state.globalAlpha});
+  },
   clip(){if(!pending)return;const c=state.clipping;if(!c){state.clipping={...pending};return;}const x=Math.max(c.x,pending.x),y=Math.max(c.y,pending.y);state.clipping={x,y,w:Math.min(c.x+c.w,pending.x+pending.w)-x,h:Math.min(c.y+c.h,pending.y+pending.h)-y};},
   fillRect(){},
   measureText(value){const m=textInk(value,state.font);return{width:m.width,actualBoundingBoxAscent:m.ascent,actualBoundingBoxDescent:m.descent};},
@@ -48,7 +55,7 @@ function inkContext(){
   },
  };
  for(const key of Object.keys(state))Object.defineProperty(ctx,key,{get:()=>state[key],set:value=>{state[key]=value;}});
- return{ctx,draws,stack};
+ return{ctx,draws,paths,stack};
 }
 const contained=(ink,box,epsilon=.01)=>ink.x>=box.x-epsilon&&ink.y>=box.y-epsilon
  &&ink.x+ink.w<=box.x+box.w+epsilon&&ink.y+ink.h<=box.y+box.h+epsilon;
@@ -75,12 +82,17 @@ test('full-size LCD digits and legends retain all measured glyph ink within thei
    const h=inkContext();
    paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState(data),{cellW:8.45*scale,cellH:20*scale,dpr});
    assert.equal(h.stack.length,0);
-   assert.ok(h.draws.length>=7);
+   for(const label of['TAKES','MONITOR',String(data.takes).padStart(2,'0'),`/ ${String(data.total).padStart(2,'0')}`]){
+    assert.ok(h.draws.some(draw=>draw.text===label),`${label} remains painted alongside the seven-segment monitor`);
+   }
    for(const draw of h.draws){
     assert.ok(contained(draw.ink,draw.clip),`${draw.text} ink crosses its clip atscale${scale},dpr${dpr},h${height}: ${JSON.stringify(draw)}`);
     assert.equal(draw.textBaseline,'alphabetic');
     assert.ok(draw.shrink>.999,`${draw.text} must not be squeezed to hide a layout error`);
    }
+   assert.ok(h.paths.length>48,'the actual seven-segment numbers and separate trace rails are painted');
+   for(const path of h.paths)assert.ok(contained(path.ink,path.clip),
+     `LCD segment crosses its real polarizer clip: ${JSON.stringify(path)}`);
    const digits=h.draws.find(d=>d.text===String(data.takes).padStart(2,'0'));
    const size=Number(/ ([\d.]+)px/.exec(digits.font)[1]);
    assert.ok(Math.abs(size-(height<3.7?1.37:1.65)*20*scale*dpr)<1e-8,'large approved numbers keep their font size');
@@ -90,14 +102,20 @@ test('full-size LCD digits and legends retain all measured glyph ink within thei
 
 test('changing a count, missing input, danger or injury cannot move the digit baselines or LCD housing',()=>{
  for(const height of[3.15,4.15]){
-  const lcd={x:2,y:15,w:26.9,h:height},layouts=[],takeBaselines=[],monitorBaselines=[];
+  const lcd={x:2,y:15,w:26.9,h:height},layouts=[],takeBaselines=[],monitorOrigins=[];
   for(const data of telemetry){
    const h=inkContext();layouts.push(paintNavigatorTelemetry(h.ctx,lcd,navigatorTelemetryState(data),{cellW:8.45,cellH:20,dpr:2}));
    takeBaselines.push(h.draws.find(d=>d.text===String(data.takes).padStart(2,'0')).baseline);
-   monitorBaselines.push(h.draws.find(d=>d.text===(data.monitor?String(Math.round(navigatorTelemetryState(data).monitor.db)):'--')).baseline);
+   // Monitor numerals are now physical seven-segment polygons, not font ink.
+   // The fixed hardware aperture and every submitted segment remain bounded.
+   const layout=layouts.at(-1),db={x:layout.db.x*8.45*2,y:layout.db.y*20*2,w:layout.db.w*8.45*2,h:layout.db.h*20*2};
+   const dbPaths=h.paths.filter(p=>p.ink.x>=db.x-.01&&p.ink.x<db.x+db.w&&p.ink.y>=db.y-.01&&p.ink.y<db.y+db.h);
+   assert.ok(dbPaths.length>0,'available and unavailable states both paint the numeric electrodes');
+   for(const p of dbPaths)assert.ok(contained(p.ink,db),`monitor electrode leaves its fixed bank: ${JSON.stringify(p)}`);
+   monitorOrigins.push(db.y);
   }
   assert.equal(new Set(takeBaselines).size,1);
-  assert.equal(new Set(monitorBaselines).size,1);
+  assert.equal(new Set(monitorOrigins).size,1);
   for(const l of layouts)assert.deepEqual(l,layouts[0]);
  }
 });

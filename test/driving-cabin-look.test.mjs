@@ -8,6 +8,8 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import {aimOpeningCabDoor} from './helpers/opening-cab-aim.mjs';
+import {createStudentStrikeInputGate} from '../src/game/student-strike-host.js';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
 const main=await readFile(path.join(root,'src/main.js'),'utf8');
@@ -45,7 +47,7 @@ async function environment(){
     __handDiagnostics:()=>hand?{reach:{kind:hand.kind,atContact:hand.elapsed>=.28,complete:hand.elapsed>=.72}}:null,
   });
   const stubSources=new Map([
-    ['src/render/ui.js','export const uiFill=()=>{},uiText=()=>{},uiSize=()=>({cols:100,rows:40});'],
+    ['src/render/ui.js','export const uiFill=()=>{},uiText=()=>{},uiInk=()=>{},uiScrim=()=>{},uiDraw=()=>{},uiDrawHardware=()=>{},uiWithClip=()=>{},uiWithHardwareLayer=()=>{},uiCellMetrics=()=>({}),uiWrap=()=>[],uiSize=()=>({cols:100,rows:40});'],
     ['src/game/source-drive-renderer.js','export const createSourceDriveRenderer=()=>{throw Error("Inject a GPU sink");};'],
     ['src/game/source-drive/acoustics.js','export class SourceDriveAcoustics {}'],
     ['src/audio/drive-bumper-intrusion.js','export const createDriveBumperIntrusionAudio=()=>({setPaused(){},dispose(){},play(){}});'],
@@ -74,7 +76,7 @@ async function environment(){
   const bindings=await load('src/game/bindings.js');
   const input=new InputManager({documentRef:document});
   Object.assign(context,{scenes,motionInput:input,RENDERER:'3d',storyMode:true,inRogue:true,hushRunActive:false,paused:false,
-    costumeInspectionScene:null,IS_TAURI:false,KEY_DEBUG:false,SUPPRESS_BROWSER_CHROME:false,
+    costumeInspectionScene:null,studentStrikeScene:null,studentStrikeInputGate:createStudentStrikeInputGate(),IS_TAURI:false,KEY_DEBUG:false,SUPPRESS_BROWSER_CHROME:false,
     holdUnavailableGameplayInput:()=>!focused||document.hidden,gameplayInputLifecycleActive:()=>focused&&!document.hidden,
     controllerGameplayAxes:()=>controller.controllerMotionAxes(),mouseLookSensitivity:()=>1,mouseInvertY:()=>false,
     shakeMode:()=> 'reduced',clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),noteExteriorArrivalControl:noop,
@@ -130,11 +132,13 @@ async function environment(){
     if(live)for(let i=0;i<9;i++)scene.update(.1);
     return{scene,driver};
   }
-  async function opening({parked=false,driveEnabled=true}={}){
+  async function opening({parked=false,driveEnabled=true,automaticParking=false}={}){
     const {makeOpeningVehicleScene}=await load('src/game/opening-vehicle-scene.js');
     const anchor={x:20,y:0,z:30,yaw:.4};
     const checkpoint=parked?{schema:1,reveal:1,drive:{schema:1,x:20,z:30,heading:.4,parked:true,brakeHold:true}}:null;
-    const scene=makeOpeningVehicleScene({getAnchor:()=>anchor,getAssetStatus:()=>({loaded:true}),driveEnabled,checkpoint});
+    // These shared driving-input cases intentionally exercise the retained
+    // manual route; the auto-park suite separately proves production arrival.
+    const scene=makeOpeningVehicleScene({getAnchor:()=>anchor,getAssetStatus:()=>({loaded:true}),driveEnabled,automaticParking,checkpoint});
     context.scene=scene;
     const host=section(main,'function beginOpeningVehicleArrival(', '// The first interaction in the game');
     vm.runInContext(section(host,'  const update=scene.update;', '  openingVehicleScene=scene;'),context);
@@ -144,7 +148,8 @@ async function environment(){
   }
   function installHostLifecycle(){
     Object.assign(context,{runPlayDurationClock:{suspend:noop},b3SpeakerAudio:{pause:noop},b3Speaker:{flush:noop},
-      syncChapelTapeDemandTimelineHold:noop,getInDriveTeaserScene:null,openingArrivalAudio:null,openingOvertureScene:null,
+      FEAR:{setHeartbeatPaused:noop},sourceRestBreath:null,sourceRestWeather:null,pubPressureAudio:null,firstStrikeScene:null,firstStrikeAudio:null,studentStrikeScene:null,studentStrikeAudio:null,sourceRecordingInspectionScene:null,bodyGain:null,
+      syncChapelTapeDemandTimelineHold:noop,getInDriveTeaserScene:null,openingArrivalAudio:null,openingCabRadio:null,openingOvertureScene:null,
       STORY:{pauseOpeningOvertureScore:noop,resumeOpeningOvertureScore:noop},sourceReturnFlashbackScene:null,
       architectureDoorAudio:null,architectureDoorEvents:{hold:noop},cancelLastExposure:noop,cancelRecordingPressureAudio:noop,
       pubRoomAudio:null,sourcePubAudio:null,sourceContinuationAudio:null,towerWarningAudio:null,sourceDriveSession:null,
@@ -321,14 +326,15 @@ test('get-in committed cinematic owns its camera after live driving ends',async(
   f.mode.dispose();
 });
 
-test('parked opening and seated fallback allow Look; exiting releases the cabin owner',async()=>{
+test('parked opening and seated fallback retain bounded Look through the physical exit, then release the cabin owner',async()=>{
   for(const options of [{parked:true},{driveEnabled:false}]){
     const f=await environment(),{scene}=await f.opening(options);
     assert.equal(scene.allowsLook,true);assert.equal(await f.capture(),true);
     const before=scene.worldView();f.mouse(8,-4);f.tick(.1);
     nearly(scene.worldView().yaw,before.yaw+8*.0085);
-    f.key(key('e'));assert.equal(scene.view().phase,'exiting');
-    assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.2,.1),false);
+    aimOpeningCabDoor(scene);f.key(key('e'));assert.equal(scene.view().phase,'exiting');
+    assert.equal(scene.allowsLook,true);assert.equal(scene.lookBy(.2,.1),true);
+    scene.update(4);assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.2,.1),false);
     f.mode.sync('exit');assert.equal(f.mode.isTrueLocked(),false);f.mode.dispose();
   }
 });

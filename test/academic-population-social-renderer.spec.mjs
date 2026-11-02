@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {NodeIO} from '@gltf-transform/core';
 import {academicFloorPopulationPose as pose,academicFloorPopulationInstances as instances,
   academicPopulationSocialGeometry as geometry,installAcademicPopulationSocialMeshes as install} from '../src/render/academic-society-characters.js';
 import {ACADEMIC_FLOOR_POPULATION_DESIGNS as DESIGNS,ACADEMIC_SOCIETY_CHARACTER_RIGS as RIGS} from '../src/data/academic-society-character-design.js';
@@ -146,11 +147,13 @@ const closestTriangle=(p,a,b,c)=>{
  const va=d3*d6-d5*d4;if(va<=0&&d4-d3>=0&&d5-d6>=0)return add(b,mul(sub(c,b),(d4-d3)/((d4-d3)+(d5-d6))));
  const denominator=1/(va+vb+vc);return add(a,add(mul(ab,vb*denominator),mul(ac,vc*denominator)));
 };
-test('support crown is an actual retained GLB triangle and the skinned palm underside meets it without penetrating',()=>{
- const galleryBytes=fs.readFileSync(new URL('../public/assets/academic-gallery.glb',import.meta.url)),j=JSON.parse(galleryBytes.subarray(20,20+galleryBytes.readUInt32LE(12))),binary=20+galleryBytes.readUInt32LE(12)+8;
- const accessor=index=>{const a=j.accessors[index],v=j.bufferViews[a.bufferView],size=a.type==='VEC3'?3:1,offset=binary+(v.byteOffset||0)+(a.byteOffset||0),Type={5126:Float32Array,5123:Uint16Array,5125:Uint32Array}[a.componentType];return new Type(galleryBytes.buffer,galleryBytes.byteOffset+offset,a.count*size);};
+test('support crown is an actual retained GLB triangle and the skinned palm underside meets it without penetrating',async()=>{
+ const galleryBytes=fs.readFileSync(new URL('../public/assets/academic-gallery.glb',import.meta.url)),doc=await new NodeIO().readBinary(galleryBytes);
  const target=[78.84,11.208,9.2];let nearest=Infinity;
- for(const primitive of j.meshes.find(m=>m.name==='gallery_atrium_structure').primitives){const p=accessor(primitive.attributes.POSITION),indices=accessor(primitive.indices);
+ for(const primitive of doc.getRoot().listMeshes().find(m=>m.getName()==='gallery_atrium_structure').listPrimitives()){
+  // The retained pack interleaves position, normal and UV. The loader follows
+  // its actual byte stride; treating the buffer as packed XYZ invents rails.
+  const p=primitive.getAttribute('POSITION').getArray(),indices=primitive.getIndices().getArray();
   for(let i=0;i<indices.length;i+=3){const q=Array.from(indices.slice(i,i+3),n=>[p[n*3]+85,p[n*3+1]+10,p[n*3+2]+15]);nearest=Math.min(nearest,distance(target,closestTriangle(target,...q)));}}
  assert.ok(nearest<.000001,'rail support must match retained primary mesh triangles, not an assumed waist plane');
  for(const designId of['attendant','listener']){

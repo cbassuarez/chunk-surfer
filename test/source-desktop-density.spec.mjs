@@ -60,7 +60,9 @@ test('the density desktop finish uses fitted return geometry rather than white e
   const finish = finishSourceDesktopPressure(THREE, root);
   assert.equal(finish.glows.length, 0);
   assert.equal(root.children.length, 3, 'production cannot silently add six outline meshes per physical layer');
-  assert.deepEqual(root.getObjectByName('hush_density_core').material.color.toArray(), [0, 0, 0]);
+  const core=root.getObjectByName('hush_density_core').material;
+  assert.deepEqual(core.color.toArray(), [1, 1, 1]);
+  assert.equal(core.userData.hushCosmos.space,'authored-world-metres');
   assert.equal(finish.returns[0].material, original, 'the production surface material remains inspectable');
   assert.equal(finish.volumes[0].visible, false, 'the complete glow volume is diagnostic-only');
 });

@@ -5,7 +5,7 @@ import {
   createOutcomeExposureController, normalizeOutcomeExposure,
   sampleOutcomeExposure, outcomeExposureActor,
 } from '../src/render/outcome-exposure.js';
-import { pressureInstances } from '../src/render/pressure-volume.js';
+import { pressureInstances, HUSH_DENSITY_RENDER } from '../src/render/pressure-volume.js';
 
 const anchor = () => ({ id:'hunter',x:31,y:14,floorH:4.8,heightM:2.18,widthM:.68,strength:.98,
   performance:{version:1,role:'live-pressure',heading:1.2,clip:'pressure_arrest',time:.42,
@@ -23,7 +23,7 @@ test('contact retains a copied real root, scale, bearing and authored rig pose a
   assert.deepEqual(first,later,'new camera/world positions must not drag the retained performer');
   assert.equal(first.performance.cue,null,'one physical body, not cue-driven overprints');
   assert.equal(pressureInstances(first,null).length,1);
-  assert.equal(pressureInstances(first,null)[0].mesh,'pressure_body');
+  assert.equal(pressureInstances(first,null)[0].mesh,HUSH_DENSITY_RENDER.core);
 });
 
 test('no anchor means no fabricated camera-facing body; a live physical anchor can be acquired once',()=>{
@@ -84,12 +84,19 @@ test('body-off policy and existing hard/taken bounds stay authoritative',()=>{
 
 test('the real canonical mesh enters shared pressure acquisition before final dither, without a bitmap overlay',async()=>{
   const source=await readFile(new URL('../src/render/r3d.js',import.meta.url),'utf8');
-  assert.match(source,/HUSH_BODY_ASSET='assets\/pressure-character\.glb'/);
-  assert.match(source,/P3\.setPressureInstances\(pressureInstances\(incomingHush/);
-  assert.match(source,/const exposureHush=outcomeExposure\.resolve\(state\.hush/);
-  assert.match(source,/const pressureSourceTex = finishPressure\(sceneTex\)/);
+  assert.match(source.match(/const HUSH_BODY_ASSET=[^\n]+/)?.[0]||'',/HUSH_BODY_ASSET='assets\/hush-density\.glb'/);
+  const pack=await readFile(new URL('../public/'+HUSH_DENSITY_RENDER.asset,import.meta.url));
+  const gltf=JSON.parse(pack.subarray(20,20+pack.readUInt32LE(12)));
+  assert.ok(gltf.meshes.some(mesh=>mesh.name===HUSH_DENSITY_RENDER.core),'the retained exposure uses the actual shipped HUSH core');
+  const pressureStart=source.indexOf('  const pressureDraws='),pressureEnd=source.indexOf('  pressureSceneDepthReady=false;',pressureStart);
+  const submission=source.slice(pressureStart,pressureEnd);
+  assert.match(submission,/:pressureInstances\(incomingHush,incomingHushSecondary/);
+  assert.match(submission,/P3\.setPressureInstances\(resolvedPressureDraws\)/);
+  assert.ok(source.includes('const exposureHush=outcomeExposure.resolve(state.hush'));
   const pass=source.slice(source.indexOf('function runPixelMeshPass('));
-  assert.ok(pass.indexOf('finishPressure(sceneTex)')<pass.indexOf('gl.drawArrays('));
+  const finish=pass.indexOf('const pressureSourceTex = finishPressure(sourceTexture);');
+  assert.ok(finish>=0&&finish<pass.indexOf('gl.drawArrays('));
+  assert.match(pass.slice(finish,finish+900),/runBurstPass\(pressureSourceTex, now\)/,'the physical pressure output enters the shared acquisition before the final dither draw');
   const policy=await readFile(new URL('../src/render/outcome-exposure.js',import.meta.url),'utf8');
   assert.doesNotMatch(policy,/surfer\.png|new Image\s*\(|performance\.now\s*\(|Date\.now\s*\(/,
     'physical body policy must not grow a bitmap or independent clock');

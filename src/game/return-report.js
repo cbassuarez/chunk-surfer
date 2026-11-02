@@ -186,6 +186,11 @@ export function returnAccountLines(summary, { width = 64, causalStatus = {} } = 
     add('Recordings remain in RUN HISTORY. Missing local audio is marked unavailable.','ui-secondary');
     return result;
   }
+  if(causalStatus?.status==='filing'){
+    add('HUSH PLAYBACK', 'ui-amber');
+    add('PREPARING IN THE BACKGROUND', 'ui-secondary');
+    result.push({text:'',cls:'ui-primary'});
+  }
   const achievementIds = [...(summary.unlockedAchievements || [])];
   if (causalStatus?.status === 'ready' && !achievementIds.includes('ACH_SECOND_TRACK')) achievementIds.push('ACH_SECOND_TRACK');
   if (achievementIds.length) {
@@ -239,7 +244,9 @@ export function makeReturnReportScene({
     { id: 'replay', label: 'NEW GAME' },
   ];
   const hits = createHitRegions(), held = new Set();
-  let stage = !failedNight&&getCausalStatus()?.status === 'filing' ? 'filing' : 'residue';
+  // Preparing the optional replay belongs to its background owner. A slow,
+  // unavailable or ineligible capture must not hold the completed run hostage.
+  let stage = 'residue';
   let action = 0, page = 0, entered = 0, consumed = false, exited = false, restartChoice = 0;
   let accountOpen = false, loadedSource = null, loadedImage = null, imageGeneration = 0;
   let detailPageCount = 1;
@@ -297,7 +304,7 @@ export function makeReturnReportScene({
   }
 
   function choose(id) {
-    if (exited || consumed || stage === 'filing') return;
+    if (exited || consumed) return;
     if (id === 'account') {
       if (stage === 'details') {
         closeAccount(); stage = 'residue'; action = 1;
@@ -354,17 +361,6 @@ export function makeReturnReportScene({
     });
   }
 
-  function drawFiling() {
-    const { cols, rows } = uiSize();
-    const w = Math.min(66, cols - 2), h = Math.min(16, rows - 2);
-    const x = (cols - w) / 2, y = (rows - h) / 2;
-    withMachinePanel(x, y, w, h, { label: 'PREPARING HUSH PLAYBACK', source: '', wordmark: '', model: '', meter: false }, (body) => {
-      const lines = uiWrap('Preparing your completed run for THE HUSH.', body.w);
-      lines.forEach((line, index) => uiText(body.x, body.y + index, line, 'ui-primary'));
-      uiWrap('This does not start another game.', body.w).forEach((line, index) => uiText(body.x, body.y + lines.length + 2 + index, line, 'ui-secondary'));
-    });
-  }
-
   function drawRestartConfirmation() {
     const { cols, rows } = uiSize();
     uiFill(0, 0, cols, rows, 'rgba(2,4,3,.95)');
@@ -389,7 +385,6 @@ export function makeReturnReportScene({
     update(dt = 0) {
       if (exited || consumed) return;
       entered += Math.max(0, Number(dt) || 0);
-      if (stage === 'filing' && getCausalStatus()?.status !== 'filing') stage = 'residue';
     },
     key(e = {}) {
       if (exited || consumed) return true;
@@ -398,7 +393,6 @@ export function makeReturnReportScene({
       held.add(key);
       // A fade-reveal press cannot also select NEW GAME or leave the ending.
       if (entered < FADE_IN) { entered = FADE_IN; return true; }
-      if (stage === 'filing') return true;
       const back = key === 'escape' || key === 'backspace';
       if (stage === 'restart-confirm') {
         if (back) { stage = 'residue'; restartChoice = 0; AUDIO.menuBack(); }
@@ -429,7 +423,6 @@ export function makeReturnReportScene({
       if (exited || consumed || e.button > 0) return true;
       if (e.type !== 'pointerdown') return true;
       if (entered < FADE_IN) { entered = FADE_IN; return true; }
-      if (stage === 'filing') return true;
       const hit = hits.hit(e.cellX, e.cellY);
       if (!hit || hit.disabled) return true;
       if (stage === 'restart-confirm') {
@@ -450,7 +443,6 @@ export function makeReturnReportScene({
       hits.reset();
       drawReturnExposure({ summary, snapshot: image(), elapsed: entered, saveStatus: getSaveStatus(), actions: stage === 'residue' ? availableActions() : [], selected: action, hitRegions: hits });
       if (stage === 'details') drawDetails();
-      else if (stage === 'filing' && entered >= FADE_IN) drawFiling();
       else if (stage === 'restart-confirm') drawRestartConfirmation();
     },
   };

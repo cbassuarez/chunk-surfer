@@ -11,6 +11,10 @@ import { EVENT_SCHEMA_VERSION } from './schema.js';
 import { deriveUnlocks, diffUnlocks } from './unlocks.js';
 import { queueChangedStats } from './stat-defs.js';
 import { nightDeadlinePending } from '../game/night-deadline.js';
+import { recordCompletionEvent, captureCompletionFromSave } from './completion-runtime.js';
+import { achievementRunEligible, unrankRun } from './eligibility.js';
+import { validateCausalTape, tapeQualifies } from '../causal/tape.js';
+import { isOrdinaryReturnRecord } from './return-history.js';
 
 export const progressionEvents = createEventBus();
 let buildId = 'LOCAL';
@@ -19,6 +23,7 @@ const unique = (values) => [...new Set(values)];
 
 export function progressionInit({ build = 'LOCAL' } = {}) {
   buildId = String(build || 'LOCAL');
+  reconcileProfileAchievements({ notify: false });
   return progressionSnapshot();
 }
 
@@ -54,7 +59,7 @@ function rememberEvent(event) {
   }
 }
 
-export function unlockAchievement(id, { runId = getSave()?.run?.id || null, notify = true, at = Date.now() } = {}) {
+function persistAchievement(id, { runId = getSave()?.run?.id || null, notify = true, at = Date.now() } = {}) {
   if (!ACHIEVEMENT_BY_ID[id]) return false;
   const meta = getMeta();
   if (meta.achievements[id]) return false;
@@ -73,6 +78,50 @@ export function unlockAchievement(id, { runId = getSave()?.run?.id || null, noti
     presentation: { ...meta.presentation, pendingNotices },
   });
   return true;
+}
+
+export function unlockAchievement(id, options = {}) {
+  if (!achievementRunEligible(getSave()?.run)) return false;
+  return persistAchievement(id, options);
+}
+
+// A durable recording may finish after New Game has replaced the live run.
+// Its authority is the validated tape and its filed return, never that new
+// run's developer flag or ledger. Only this one evidence-backed award (and the
+// catalogue total it may complete) can use this delayed-return path.
+export function unlockCausalTapeAchievement(tape, { notify = true, at = Date.now() } = {}) {
+  const summary = getMeta().returns.records?.[tape?.returnSummaryId];
+  if (!summary || summary.runId !== tape?.runId || summary.id !== tape?.returnSummaryId
+    || summary.endingId !== tape?.endingId || summary.developerRun === true
+    || (summary.endingVariant ?? null) !== (tape?.endingVariant ?? null)
+    || !achievementRunEligible(summary) || !tapeQualifies(summary.injuries)
+    || Number(summary.injuries) !== Number(tape?.qualification?.injuries)
+    || !validateCausalTape(tape).ok) return { ok: false, reason: 'UNVERIFIED_CAUSAL_RETURN', unlocked: [] };
+  const event = {
+    schema: EVENT_SCHEMA_VERSION, id: `causal:${tape.runId}:${tape.contentHash}`,
+    runId: tape.runId, seq: 0, at, type: EVENT_TYPES.CAUSAL_TAPE_PROMOTED,
+    source: 'causal.promote', payload: { contentHash: tape.contentHash, returnSummaryId: tape.returnSummaryId },
+  };
+  const unlocked = evaluateAchievements({ event, profile: getMeta(), run: summary })
+    .filter(id => ['ACH_SECOND_TRACK', 'ACH_COMPLETE_ARCHIVE'].includes(id))
+    .filter(id => persistAchievement(id, { runId: tape.runId, notify, at }));
+  progressionEvents.emit(event);
+  return { ok: true, event, unlocked };
+}
+
+// A union of two legitimate profiles can finish a collection without another
+// game action. These predicates use durable profile evidence exclusively;
+// opening the archive and revealing a hint never enter this path.
+export function reconcileProfileAchievements({ notify = false, at = Date.now() } = {}) {
+  const unlocked = [];
+  for (const id of ['ACH_FIELD_NOTES','ACH_FIELD_LEADS','ACH_ALL_PLAYBACK','ACH_OFF_AIR',
+    'ACH_CALL_YOURSELF','ACH_HIDDEN_EXCHANGES','ACH_ALL_ENDINGS','ACH_COMPLETE_ARCHIVE']) {
+    const profile = getMeta(), def = ACHIEVEMENT_BY_ID[id];
+    if (!def || profile.achievements[id]) continue;
+    if (def.test({ profile, run: null, summary: null, event: null })
+      && persistAchievement(id, { runId: null, notify, at })) unlocked.push(id);
+  }
+  return unlocked;
 }
 
 export function emitProgress(type, payload = {}, source = 'game', {
@@ -100,7 +149,12 @@ export function emitProgress(type, payload = {}, source = 'game', {
 
   run.ledger = reduceRunLedger(run.ledger, event);
   saveCommit({ run });
+  if (!achievementRunEligible(run)) {
+    progressionEvents.emit(event);
+    return { ok: true, event, unlocked: [], unranked: true };
+  }
   rememberEvent(event);
+  recordCompletionEvent(event);
 
   const meta = getMeta();
   const nextStats = statPatchFor(event, meta);
@@ -131,7 +185,15 @@ export function emitProgress(type, payload = {}, source = 'game', {
 export function beginRunProgression() {
   const run = getSave()?.run;
   if (!run) return { ok: false, reason: 'NO_RUN' };
+  captureCompletionFromSave();
   return emitProgress(EVENT_TYPES.RUN_STARTED, { preset: run.rules.startedPreset }, 'progression.beginRun');
+}
+
+export function markDeveloperRun(reason = 'DEVELOPER_STAGING') {
+  const run = getSave()?.run;
+  if (!run || !achievementRunEligible(run)) return false;
+  saveCommit({ run: unrankRun(run, reason) });
+  return true;
 }
 
 export function currentDifficulty() {
@@ -164,7 +226,8 @@ export function commitReturn(endingId, authoritative = {}, now = Date.now()) {
   const beforeUnlocks = deriveUnlocks(getMeta());
   let summary = buildRunSummary({ endingId, save, meta: getMeta(), authoritative, now });
   const metaBefore = getMeta();
-  const endingsSeen = unique([...(metaBefore.endingsSeen || []), endingId]);
+  const eligible = achievementRunEligible(run);
+  const endingsSeen = eligible ? unique([...(metaBefore.endingsSeen || []), endingId]) : [...(metaBefore.endingsSeen || [])];
 
   run.status = 'return-committed';
   run.completedAt = now;
@@ -174,7 +237,7 @@ export function commitReturn(endingId, authoritative = {}, now = Date.now()) {
 
   const returnStats = {
     ...metaBefore.stats,
-    runsCompleted: (metaBefore.stats?.runsCompleted || 0) + 1,
+    runsCompleted: (metaBefore.stats?.runsCompleted || 0) + (eligible ? 1 : 0),
     endingsSeen: endingsSeen.length,
   };
   metaCommit({
@@ -206,13 +269,14 @@ export function commitReturn(endingId, authoritative = {}, now = Date.now()) {
   const metaAfterAchievements = getMeta();
   const deadAirComplete = summary.rules.startedPreset === 'dead-air'
     && summary.integrity.deadAir.eligible === true;
-  if (deadAirComplete && !metaAfterAchievements.challengeCompletions.deadAir) {
+  if (eligible && deadAirComplete && !metaAfterAchievements.challengeCompletions.deadAir) {
     metaCommit({ challengeCompletions: { ...metaAfterAchievements.challengeCompletions, deadAir: true } });
   }
 
   const afterUnlocks = deriveUnlocks(getMeta());
   summary = {
     ...summary,
+    ...(!eligible ? { developerRun: true } : {}),
     unlockedAchievements: unique([...(endingResult.unlocked || []), ...(runResult.unlocked || [])]),
     newlyUnlockedFeatures: diffUnlocks(beforeUnlocks, afterUnlocks),
   };
@@ -266,8 +330,8 @@ export function commitNightFailure(authoritative = {}, now = Date.now()) {
 export function pendingReturnReport() {
   reconcileNightFailureReturn();
   const meta = getMeta();
-  const id = meta.presentation.pendingReports?.[0];
-  return id ? meta.returns.records?.[id] || null : null;
+  return (meta.presentation.pendingReports || []).map(id => meta.returns.records?.[id])
+    .find(isOrdinaryReturnRecord) || null;
 }
 
 export function consumeReturnReport(summaryId) {

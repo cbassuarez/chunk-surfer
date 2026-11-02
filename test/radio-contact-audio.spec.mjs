@@ -25,6 +25,25 @@ function fixture(){
     sources:()=>nodes.filter(n=>n.kind==='source'),advance:seconds=>{ctx.currentTime+=seconds;}};
 }
 
+test('the reduced-dread transmission has zero audio gain, full finite duration and the same natural completion receipt',async()=>{
+  const f=fixture(),sound=createRadioContactAudio(f.options);let completions=0;
+  assert.equal(await sound.egg({quiet:true,onComplete:()=>completions++}),true);
+  const source=f.sources()[0],amplitude=f.nodes.filter(n=>n.kind==='gain').at(-1);
+  assert.ok(amplitude.gain.calls.length>=3);
+  assert.ok(amplitude.gain.calls.every(call=>call[1]===0));
+  assert.equal(source.starts[0][2],RADIO_CONTACT_EGG.seconds);
+  assert.equal(completions,0);source.onended();assert.equal(completions,1);
+});
+
+test('an explicitly retuned unfinished discovery can retry, while a completed transmission stays spent',async()=>{
+  const f=fixture(),sound=createRadioContactAudio(f.options);let completed=0;
+  assert.equal(await sound.egg({onComplete:()=>completed++}),true);
+  sound.stopEgg({retry:true});assert.equal(completed,0);
+  assert.equal(await sound.egg({onComplete:()=>completed++}),true);
+  f.sources().at(-1).onended();assert.equal(completed,1);
+  sound.stopEgg({retry:true});assert.equal(await sound.egg(),false);
+});
+
 test('physical contacts are finite, press-state driven, quiet and routed only through the supplied mixer',()=>{
   const f=fixture(),sound=createRadioContactAudio(f.options);
   assert.equal(sound.control('toString'),false);assert.equal(sound.control('missing'),false);

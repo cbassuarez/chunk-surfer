@@ -11,6 +11,7 @@ import {sourceEarthfallNeeded} from '../src/game/source-earthfall-entry.js';
 import {createSourceEarthfallScene} from '../src/game/source-earthfall-scene.js';
 import {freshSourceEarthfallElleryAside,normalizeSourceEarthfallElleryAside,stepSourceEarthfallElleryAside} from '../src/game/source-earthfall-ellery-aside.js';
 import {continuationFromEarthfall,sourceContinuationEntranceOffset} from '../src/game/source-continuation-entry.js';
+import {releaseSourceRecordingCassetteLabels} from '../src/render/source-recording-cassette.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const initial=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL,{seed:4417}).state;
@@ -40,13 +41,13 @@ function host(){
   scenes:{push:s=>s.enter(),remove:s=>s.exit()},
   ensureCtx(){},actx:{},sfxGain:{},getSave:()=>data,
   saveCommit:patch=>{data={...data,...patch};snapshots.push(copy(patch));},
-  pubRoomAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,
+  pubRoomAudio:null,pubPressureAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,
   frontEndSession:null,frontEndPlateOverride:null,
   playSceneFootContact(){},clearSceneFootContacts(){},
   RT:{setBed(){}},STORY:{stopAll(){}},SPEECH:{clearSpeech(){}},
   R3:{r3dSetFrontEndPlate(){},r3dSetLookAngles(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
   flashMode:()=> 'full',shakeMode:()=> 'full',gameplayInputLifecycleActive:()=>true,
-  sourceCameraPatch:()=>({}),pushEvent:e=>{throw Error(e);},
+  sourceCameraPatch:()=>({}),releaseSourceRecordingCassetteLabels,P3:{},pushEvent:e=>{throw Error(e);},
   beginSourceContinuation:async options=>{continued++;return {id:'source-continuation',options,view:()=>({ready:true})};},
  };
  for(const key of ['resetMotionInput','cancelOutskirtDoorAnswer','stopOutskirtsStreetAudio','pauseOutskirtsLastLight',

@@ -4,13 +4,14 @@ import{buildingWindowForObserver}from'../src/world/building-window-views.js';
 import{ELLERY_PUBLIC_FRONT_LIGHTS}from'../src/data/ellery-public-front.js';
 import{resolveLocalLights}from'../src/data/conservatory-lights.js';
 import{ZONE}from'../src/data/floorplan/legend.js';
+import{GLASS_COURT as C}from'../src/data/glass-court.js';
 import{ELLERY_HYBRID_LIGHTS,selectW3OutlookLights}from'../src/render/ellery-hybrid-lighting.js';
 
 test('the actual greenhouse observer selects W3 and retains its room rig before admitting outside fittings',()=>{
- const w=buildingWindowForObserver({x:84,z:30,y:0,spaceId:'natatorium',renderGroup:'ground'});
+ const w=buildingWindowForObserver({x:C.origin.x+C.walkSpine,z:C.origin.z+6,y:0,spaceId:'front_atrium',renderGroup:'ground'});
  assert.equal(w.id,'W3-foyer-north');assert.equal(w.physical.plane,3);
- const room=[{id:'growing-light',x:84,y:3.2,z:30,intensity:.86,radius:6.4},
-   {id:'emergency-light',x:90,y:3,z:31,intensity:1,radius:5,kind:'emergency'}];
+ const room=[{id:'growing-light',x:84,y:3.2,z:21,intensity:.86,radius:6.4},
+   {id:'emergency-light',x:84,y:3,z:23,intensity:1,radius:5,kind:'emergency'}];
  const external=[...ELLERY_PUBLIC_FRONT_LIGHTS,...ELLERY_HYBRID_LIGHTS];
  const out=selectW3OutlookLights({window:w,ready:true,local:room,exterior:external});
  assert.equal(out.length,4);assert.strictEqual(out[0],room[0]);assert.strictEqual(out[1],room[1]);
@@ -28,7 +29,7 @@ test('the existing pool W4 outlook does not pick up the new public-front lightin
 
 test('the actual live foyer and growing-lamp rigs keep all their lights when W3 is visible',()=>{
  for(const observer of[
-  {x:84,z:30,y:0,spaceId:'natatorium',renderGroup:'ground',zone:ZONE.glasshouse},
+  {x:C.origin.x+C.walkSpine,z:C.origin.z+6,y:0,spaceId:'front_atrium',renderGroup:'ground',zone:ZONE.glasshouse},
   {x:85,z:10,y:0,spaceId:'front_atrium',renderGroup:'ground',zone:ZONE.foyer},
  ]){
   const window=buildingWindowForObserver(observer);assert.equal(window.id,'W3-foyer-north');

@@ -58,8 +58,8 @@ FP.compile(conservatory.levels, {
   widenCorridors: conservatory.widenCorridors,
   connectors: conservatory.connectors,
   edgePortals: conservatory.edgePortals,
+  doors: conservatory.doors,
 });
-for (const door of conservatory.doors || []) FP.setDoorKey(door.x, door.y, door.key);
 FP.setAllDoorsOpen(true);
 PROPS.propsInit(FP);
 

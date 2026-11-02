@@ -31,7 +31,7 @@ function harness() {
   h.REC = { isRecording: () => h.recording, isListening: () => h.listening };
   h.PB = { isPlaying: () => h.playback };
   h.document = { hidden: false, visibilityState: 'visible', hasFocus: () => h.domFocus };
-  h.pointerMode = { status: () => ({ nativeBackend: { focused: h.nativeFocus } }) };
+  h.pointerMode = { nativeFocus: () => h.nativeFocus, status: () => ({ nativeBackend: { focused: h.nativeFocus } }) };
   h.scenes = { blocksWorld: () => h.blocked, blocksInput: () => h.inputBlocked };
   h.R3 = { r3dFacing: () => 2, r3dLookAngles: () => ({ yaw: h.yaw, pitch: -.2 }),
     r3dSourceDemolitionStats: () => ({ loaded: h.assetLoaded }) };
@@ -139,7 +139,8 @@ test('global pre-world pass really ticks demolition before the Horizon-specific 
   for (const name of ['ensureInteractionFocus', 'tickIndependentLook', 'tickHeldTurning', 'tickHeldMovement',
     'tickPracticePropMotion', 'tickKeyCabinetMotion', 'tickOpeningSceneBed', 'tickExteriorPeople', 'tickTowerWarning', 'tickHorizonBustPerformance',
     'tickStopListeningAudio', 'tickChapelServiceAudio', 'tickPubRoomAudio', 'syncArchitectureDoorAudio', 'tickStBrendansSound',
-    'tickAcademicFloorReturns', 'tickAcademicAdversaries', 'tickAcademicBouncers', 'tickAcademicSocietyPresentation', 'tickAcademicCrowdDread']) h[name] = () => {};
+    'tickAcademicFloorReturns', 'tickAcademicAdversaries', 'tickAcademicBouncers', 'tickAcademicSocietyPresentation', 'tickAcademicCrowdDread',
+    'tickNatatoriumCoffeeStretch']) h[name] = () => {};
   h.tick = 1; h.nowLoopMs = 1000;
   Object.assign(h, {
     tickTowerPersonal: () => false, endSourceHaystackMosh() {}, endSourceBracketPresence() {},
@@ -195,6 +196,7 @@ test('actual black helper requires Source, black world state, enabled effects an
 function attachResetDependencies(h) {
   Object.assign(h, {
     recordingPressureVoices:new Set(),recordingPressurePerformance:{reset:()=>h.order.push('recording-pressure-reset')},
+    recordingEmbodiment:{reset(){}},b3SpeakerAudio:{stop(){}},b3Speaker:{flush(){}},b3HushVisit:null,
     towerBellDirector: null, bellTowerRuntime: null, bellTowerAudio: null,
     electricalHumRuntime: null, fountainWaterRuntime: null, forkToneRuntime: null,
     metronomeFieldRuntime: null, plantPipeRuntime: null, stopListeningGut: null, stopListeningAudioFrame: null,
@@ -209,7 +211,8 @@ function attachResetDependencies(h) {
     stairAttentionScene: null, stairAnomalyRuntime: null, stairPresenceSnapshot: null,
     sourceExitSnapshot: null, sourcePresenceWasActive: false,
     bellTowerImpactActive: false, bellTowerCollisionEnabled: true,
-    PRES: { despawn() {} }, frontEndSession: null, openingVehicleScene: null,
+    PRES: { despawn() {} }, frontEndSession: null, openingVehicleScene: null, openingOvertureScene:null,
+    roomMicRunConsent:null,MIC:{micStop(){}},
     activeBattleId: null, godBattleOpen: false,
     newGame: options => { h.order.push('new-run'); h.newGameOptions = copy(options); },
     params: () => new URLSearchParams('at=van'),
@@ -220,7 +223,8 @@ function attachResetDependencies(h) {
     'clearStationPresentation', 'stopOutskirtsStreetAudio', 'resetOutskirtsLastLight', 'stopBellTowerRuntime',
     'clearInstrument', 'stopHushAudioRuntime', 'stopAllVoices', 'stopWorldLayerVoice', 'silenceAmbientDrone',
     'silenceSampleField', 'pushEvent', 'stopSourceDockDoorAudio', 'stopSourceShoreAudio', 'endHorizonScore',
-    'clearStairEnvironmentalTimers', 'endSourceHaystackMosh', 'retireStandingTear', 'resetMotionInput', 'resetArchitectureDoorAudio']) h[name] = () => {};
+    'clearStairEnvironmentalTimers', 'endSourceHaystackMosh', 'retireStandingTear', 'resetMotionInput', 'resetArchitectureDoorAudio',
+    'retireStudentStrike','resetPlayerFootContacts']) h[name] = () => {};
   for (const name of ['r3dSetHorizon', 'r3dSetSourceShore', 'r3dSetSourceEmergency', 'r3dSetSourceWhiteout',
     'r3dSetSourceFault', 'r3dSetIndoorRain', 'r3dSetLocalLights', 'r3dSetSourceScene', 'r3dSetSourceSurface']) h.R3[name] = () => {};
   for (const name of ['cancelRecordingPressureAudio','resetRunAudio', 'clearSourceRuntime', 'godClearSpecialWorlds', 'beginNewGameFlow']) {

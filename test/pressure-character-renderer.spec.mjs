@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import { characterFixture } from './fixtures/character-glb.mjs';
 import * as P from '../src/render/props3d.js';
 
@@ -33,7 +34,10 @@ test('Pressure owns a bounded depth-tested geometry target and frozen independen
   }});
   const oldFetch=globalThis.fetch;
   try{
-    globalThis.fetch=async()=>({ok:true,arrayBuffer:async()=>characterFixture(json=>{json.meshes[0].name='pressure_body';json.animations[0].name='pressure_approach';})});
+    globalThis.fetch=async url=>({ok:true,arrayBuffer:async()=>{
+      if(String(url).includes('hush-density')){const b=readFileSync(new URL('../public/assets/hush-density.glb',import.meta.url));return b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);}
+      return characterFixture(json=>{json.meshes[0].name='pressure_body';json.animations[0].name='pressure_approach';});
+    }});
     P.props3dInit(context);P.props3dResize(160,90,{shadowMapSize:512});
     await P.addCharacterPack('/pressure-fixture.glb');
     P.setPropInstances([]);P.setDynamicPropInstances([]);
@@ -50,7 +54,7 @@ test('Pressure owns a bounded depth-tested geometry target and frozen independen
     const args={camX:0,camY:1.5,camZ:0,yaw:0,timeSec:7,shadowPrepared:true,zoneTints:new Float32Array(21*3).fill(1)};
     assert.equal(P.renderPressurePass(args),true);
     assert.equal(draws.length,2);assert.ok(draws.every(d=>d.enabled===1&&d.instances===1));
-    assert.deepEqual(draws[0].pressure,[.8,1,0,44]);assert.deepEqual(draws[1].pressure,[.4,0,1,45]);
+    assert.deepEqual(draws[0].pressure,[.8,1,0,0]);assert.deepEqual(draws[1].pressure,[.4,0,1,0],'ordinary pressure fixtures never opt into the density cosmos material');
     assert.ok(Math.abs(draws[0].bones[28]-1)<1e-6);assert.ok(Math.abs(draws[1].bones[28]-.25)<1e-6);
     assert.equal(uploads[0][12],0,'the setter retained a mutable caller root');
     const rootTransforms=uploads.map(v=>v.slice(0,16)),palettes=draws.map(v=>v.bones),firstView=draws[0].view;
@@ -62,6 +66,11 @@ test('Pressure owns a bounded depth-tested geometry target and frozen independen
     draws.length=0;
     P.preparePropShadowPass(args);P.renderPropPass({...args,reflection:true});P.renderPropPass(args);
     assert.equal(draws.length,0,'Pressure entered ordinary lighting, torch shadows or wet reflections');
+    await P.addCharacterPack('/hush-density.glb');
+    assert.equal(P.setPressureInstances(['hush_density_core','hush_density_volume'].map((mesh,i)=>({...second,id:'density:'+i,mesh}))),2);
+    P.renderPressurePass(args);assert.ok(draws.length>=2,'both actual retained density meshes reach the dedicated target');
+    assert.ok(draws.every(d=>d.pressure[3]===1),'the fourth packed channel is the current density material flag, never a pose seed');
+    draws.length=0;
     assert.equal(P.setPressureInstances(Array.from({length:8},(_,i)=>({...second,id:`bounded:${i}`}))),4);
     P.renderPressurePass(args);assert.equal(draws.length,4,'the mask submitted more than four actors');
     draws.length=0;

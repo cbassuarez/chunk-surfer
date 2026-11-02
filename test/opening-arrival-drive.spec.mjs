@@ -9,13 +9,14 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {openingDriveColliders} from '../src/game/opening-arrival-world.js';
+import {aimOpeningCabDoor} from './helpers/opening-cab-aim.mjs';
 const target={x:16,y:0,z:8,yaw:Math.PI/2,zone:1,group:'ground'};
 const run=(s,seconds,input={},environment={})=>{const events=[];for(let n=0;n<Math.round(seconds*120);n++)events.push(...stepOpeningArrivalDrive(s,1/120,input,environment));return events;};
 const near=(a,b,t=1e-8)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
 const inStreet=p=>p.x>=-14&&p.x<=-1&&p.z>=-14&&p.z<=106||p.x>=-14&&p.x<=23&&p.z>=3&&p.z<=13;
 const environment={isPoseClear:p=>driveBodyCorners(p).every(inStreet)};
 const ordinaryRoute=[[-8,18],[-7.7,15.6],[-6.5,12.9],[-4,10.8],[-1,10],[7,10],[16,8]];
-function readyScene(options={}){const scene=makeOpeningVehicleScene({getAnchor:()=>target,getAssetStatus:()=>({loaded:true}),...options});scene.update(0);for(let n=0;n<52;n++)scene.update(1/60);return scene;}
+function readyScene(options={}){const scene=makeOpeningVehicleScene({getAnchor:()=>target,getAssetStatus:()=>({loaded:true}),automaticParking:false,...options});scene.update(0);for(let n=0;n<52;n++)scene.update(1/60);return scene;}
 
 test('ordinary pedals steer the real short approach and deliberately park in ten to fifteen seconds without pose writes',t=>{
  const s=createOpeningArrivalDrive(target),points=ordinaryRoute,events=[];let k=0,stopping=false,max=0;
@@ -88,7 +89,7 @@ test('exit is refused before parking, then steps out, physically closes, covers 
  // power before the fade; parking/exit authority is isolated from that launch.
  const stopped=createOpeningArrivalDrive(target,{spawn:target}),checkpoint={schema:1,phase:'driving',reveal:1,drive:openingArrivalSnapshot(stopped)};
  let done=0;const events=[],scene=readyScene({checkpoint,getDriveEnvironment:()=>({spawn:target}),onEvent:e=>events.push(e),onDone:()=>done++});scene.key({code:'KeyE'});assert.equal(scene.view().phase,'driving');
- scene.key({code:'Space'});for(let n=0;n<30;n++)scene.update(1/60);scene.keyup({code:'Space'});assert.equal(scene.view().phase,'parked');scene.key({code:'KeyW'});scene.key({code:'KeyE'});assert.equal(scene.view().phase,'parked');scene.keyup({code:'KeyW'});scene.key({code:'KeyE'});assert.equal(scene.view().phase,'exiting');
+ scene.key({code:'Space'});for(let n=0;n<30;n++)scene.update(1/60);scene.keyup({code:'Space'});assert.equal(scene.view().phase,'parked');aimOpeningCabDoor(scene);scene.key({code:'KeyW'});scene.key({code:'KeyE'});assert.equal(scene.view().phase,'parked');scene.keyup({code:'KeyW'});scene.key({code:'KeyE'});assert.equal(scene.view().phase,'exiting');
  for(let n=0;n<108;n++)scene.update(1/60);assert.equal(done,0);assert.ok(scene.view().doorOpen>.7);const saved=scene.serialize();
  const resumed=makeOpeningVehicleScene({getAnchor:()=>target,getAssetStatus:()=>({loaded:true}),checkpoint:JSON.parse(JSON.stringify(saved)),onEvent:e=>events.push(e),onDone:f=>{done++;assert.equal(f.doorOpen,0);assert.equal(f.fade,1);assert.deepEqual(f.anchor,openingArrivalAnchor(createOpeningArrivalDrive(target,{checkpoint:saved.drive})));}});resumed.update(0);
  for(let n=0;n<100;n++)resumed.update(1/60);assert.equal(done,1);assert.equal(events.filter(e=>e.type==='opening-vehicle-exit-step').length,1);assert.equal(events.filter(e=>e.type==='opening-vehicle-door-close').length,1);assert.equal(events.find(e=>e.type==='opening-vehicle-door-close').seconds-saved.drive.elapsed,2.3);

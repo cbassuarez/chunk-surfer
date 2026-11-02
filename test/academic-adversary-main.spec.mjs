@@ -21,6 +21,7 @@ import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {CELL} from '../src/data/floorplan/legend.js';
 import {uiWrap} from '../src/render/ui.js';
 import {machinePanelBody} from '../src/render/presentation.js';
+import {createStudentStrikeInputGate} from '../src/game/student-strike-host.js';
 
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const renderer=readFileSync(new URL('../src/render/academic-adversaries.js',import.meta.url),'utf8');
@@ -45,7 +46,7 @@ async function adapter(run,{saved,demonstrated=true}={}){
   return withTransientGameState({save:initial},async scope=>{
     scenes.clear();PROPS.propsInit(FP);PROPS.loadPropState({});REC.recState().phase='idle';REC.loadRecState(getSave().rec||{});
     const calls={audio:[],paint:[],lines:[],messages:[],sight:[]},leases=[];let activeSpeech=null;
-    const c={FP,PROPS,REC,CELL,scenes,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_ADVERSARY_SOCIAL_REPLIES,
+    const c={createStudentStrikeInputGate,studentStrikeNarrationLine:()=>null,FP,PROPS,REC,CELL,scenes,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_ADVERSARY_SOCIAL_REPLIES,
       // This original threat fixture is the first, fully populated visit;
       // academic-floor-returns-main exercises the real depletion policy.
       academicActorPresent:()=>true,academicLinesPresent:()=>true,
@@ -60,7 +61,7 @@ async function adapter(run,{saved,demonstrated=true}={}){
       storyMode:true,inRogue:true,planName:'conservatory',RENDERER:'3d',IS_TAURI:true,paused:false,activeBattleId:null,
       usingPlan:()=>true,usingSpecialSpace:()=>false,px:18,py:503,domFocused:true,nativeFocused:true,ready:true,now:1000,
       document:{hidden:false,visibilityState:'visible',hasFocus:()=>c.domFocused},
-      pointerMode:{status:()=>({nativeBackend:{focused:c.nativeFocused}})},
+      pointerMode:{nativeFocus:()=>c.nativeFocused,status:()=>({nativeBackend:{focused:c.nativeFocused}})},
       R3:{r3dHeldNoteStatus:()=>({ready:c.ready}),r3dFacing:()=>0,r3dWorldYaw:()=>0,r3dLookAngles:()=>({yaw:0,pitch:0})},
       performance:{now:()=>c.now},PRES:{isActive:()=>c.hushBusy},hushBusy:false,shakeMode:()=>'full',mapHeading:()=>0,
       getSave,saveCommit,flagGet,flagSet,basementWatcher:{roomId:null,resolved:false},costumeInspectionScene:null,

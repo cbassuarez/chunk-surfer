@@ -8,7 +8,7 @@ const motion=main.slice(main.indexOf('function resetMotionInput('),main.indexOf(
 const native=main.slice(main.indexOf('function handleNativeGameplayFocus('),main.indexOf('function resumeGameplayInput('));
 function fixture(){
  const input=new InputManager();const c=vm.createContext({motionInput:input,REC:{setSlow(){}},document:{hidden:false},paused:false,
- scenes:{top:()=>null},bellPealPerformance:null,
+ scenes:{top:()=>null},bellPealPerformance:null,FEAR:{setHeartbeatPaused(){}},STORY:{resumeOpeningOvertureScore(){}},gameplayInputLifecycleActive:()=>true,
  snapMotionRig(){},setUiCueFocused(){},recoverInteractionAudio(){},refreshStageLayoutSoon(){},
  gameplayWantsPointerCapture:()=>true,ensureInteractionFocus(){}});
  vm.runInContext('let motionFocusSuspended=true, keysDown=new Set(), nextMoveAtMs=0, nextTurnAtMs=0, motionResetReason="", lastLoopMs=0, renderMove=null;'+motion+native+'; function onBlur(){resetMotionInput("window-blur",{stopRenderMove:true});}',c);

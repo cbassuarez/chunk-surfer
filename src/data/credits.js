@@ -11,6 +11,8 @@ import { HEARTBEAT_AUDIO_SOURCES } from './heartbeat-audio-assets.js';
 import {WINDOW_MEDIA_EXTENSION_SOURCES} from './window-media-sources.js';
 import {STILLNESS_ANATOMY} from './generated/stillness-anatomy.js';
 import {sourceRestCouperinCreditLines} from './source-rest-couperin-source.js';
+import {openingCabRadioCreditLines} from './opening-cab-radio-source.js';
+import {b3StudioPropCreditLines} from './b3-studio-props.js';
 
 export const CREDIT_RECORD_TITLE = 'RELEASE RECORD';
 
@@ -88,6 +90,10 @@ export const CREDITS = Object.freeze([
     ]),
   }),
   Object.freeze({
+    heading: 'Studio B3 — Equipment Models',
+    lines: Object.freeze(b3StudioPropCreditLines()),
+  }),
+  Object.freeze({
     heading: 'Window Collage Footage',
     lines: Object.freeze([
       'Bolognese bellringers — Renato Morselli (CC BY 3.0)',
@@ -99,6 +105,10 @@ export const CREDITS = Object.freeze([
       'Clinical eye footage — Otranto and Eberhard (CC BY 2.0)',
       'S5 video courtesy Dr. W.E. Burr',
       'Project flower footage — Sebastian Suarez-Solis',
+      'DIY Ferrocell, View Magnetic Fields with Ferrofluid — Magnetic HD (CC BY3.0)',
+      'https://commons.wikimedia.org/wiki/File:DIY_Ferrocell,_View_Magnetic_Fields_with_Ferrofluid.webm',
+      'https://creativecommons.org/licenses/by/3.0/',
+      'Adapted: continuous62–78second excerpt; cropped, resized, silent; geometry composited over footage',
       ...WINDOW_MEDIA_EXTENSION_SOURCES.flatMap(source=>[
         `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
         `Adapted: ${source.changes}`,
@@ -112,6 +122,10 @@ export const CREDITS = Object.freeze([
       ...sheetMusicCredits(),
       'Excerpted, downmixed and filtered for distance',
     ]),
+  }),
+  Object.freeze({
+    heading: 'Arrival — Cab Radio',
+    lines: Object.freeze(openingCabRadioCreditLines()),
   }),
   Object.freeze({
     heading: 'Standing Tear — Retained Music',

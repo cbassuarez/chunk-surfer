@@ -1,16 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_CONTINUATION as C,continuationSupportAt} from '../src/data/source-continuation.js';
+import {SOURCE_CONTINUATION as C,continuationSupportAt,continuationSurfaces} from '../src/data/source-continuation.js';
 import {continuationVoidDomains,continuationVoidDomain} from '../src/data/source-continuation-void.js';
 import {captureContinuationVoidLoop,wrapContinuationVoid,continuationVoidCameraEye} from '../src/game/source-continuation-void.js';
 import {continuationBallisticStep,continuationFreeBody} from '../src/game/source-continuation-physics.js';
 import {freshSourceContinuation,normalizeSourceContinuation,stepSourceContinuation,sourceContinuationFrame} from '../src/game/source-continuation.js';
+import {freshContinuationHush,normalizeContinuationHush,advanceContinuationHush} from '../src/game/source-continuation-hush.js';
 
 const clone=v=>JSON.parse(JSON.stringify(v));
 const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 const tick=(s,input={})=>stepSourceContinuation(s,{dt:C.fixedStep,...input});
 function upperEdge(){const s=freshSourceContinuation({runId:'fixed-space'});return normalizeSourceContinuation({...s,status:'active',x:25.8,z:-31,feet:8.4,
   yaw:0,lastSafe:{x:25.8,z:-31,feet:8.4,chartId:0,phase:'wrong-return'},hush:{...s.hush,active:false}});}
+
+test('every existing Source-II support plane owns a fixed address, including intermediate stair treads',()=>{
+  for(const surface of continuationSurfaces()){
+    const at={chartId:surface.chartId??0,feet:surface.y,phase:surface.region};
+    const loop=captureContinuationVoidLoop(at);
+    if(surface.region==='catch')assert.equal(loop,null,surface.id);
+    else {
+      const domain=continuationVoidDomain(loop);
+      assert.ok(domain,`unmapped floor: ${surface.id}`);
+      assert.equal(domain.chartId,at.chartId);close(domain.elevation,surface.y);
+    }
+  }
+});
 
 test('all fixed floor and tread address cells have actual support and a clear receiving body column',()=>{
   assert.equal(continuationVoidDomains.length,33);
@@ -42,6 +56,36 @@ test('a crossing is the fixed integer isometry, independent of lastSafe, with mo
   }
 });
 
+test('an older airborne save derives its sheet from the departure floor, never its distinct recovery anchor',()=>{
+  const launched=tick(upperEdge(),{dt:0,side:1,jump:true}).state,old=clone(launched);
+  delete old.fall.voidLoop;
+  const entry=freshSourceContinuation({runId:old.runId});
+  old.lastSafe=clone(entry.lastSafe);old.recoveryAnchor=clone(entry.recoveryAnchor);
+  const restored=normalizeSourceContinuation(old),d=continuationVoidDomain(restored.fall.voidLoop);
+  close(d.elevation,8.4);assert.equal(restored.lastSafe.feet,0);assert.equal(restored.recoveryAnchor.feet,0);
+  const first={...restored.fall,feet:d.exitFeetY-.01},second={...launched.fall,feet:d.exitFeetY-.01};
+  assert.deepEqual(wrapContinuationVoid(first),wrapContinuationVoid(second));
+});
+
+test('ordinary held forward walking from entry crosses and lands without surrendering the input',()=>{
+  let state=freshSourceContinuation({runId:'entry-step-off'}),drop=null,crossing=null,landing=null;
+  const events=[];
+  for(let n=0;n<900&&!landing;n++){
+    const r=tick(state,{forward:1});state=r.state;events.push(...r.events);
+    if(!drop&&r.events.some(e=>e.type==='drop'))drop=clone(state);
+    if(!crossing&&r.events.some(e=>e.type==='space-wrap'))crossing=clone(state);
+    if(crossing&&r.events.some(e=>e.type==='land'))landing=clone(state);
+  }
+  assert.ok(drop&&crossing&&landing);
+  assert.equal(drop.fall.vz,-C.walkSpeed);assert.equal(crossing.fall.vz,-C.walkSpeed);
+  assert.deepEqual(crossing.lastSpaceWrap.translation,[0,29.75,10.4]);
+  assert.equal(landing.feet,C.spawn.feet);assert.equal(landing.recovery,null);assert.equal(landing.grace,0);
+  assert.equal(events.some(e=>e.type==='capture'||e.type==='recovered'||e.type==='return'),false);
+  const next=tick(landing,{forward:1}).state;
+  assert.ok(next.z<landing.z,'the same held input must move after landing');
+  assert.equal(next.yaw,0);assert.equal(next.phase,'wrong-return');
+});
+
 test('one continuous upper-edge jump returns over the same real floor without capture, fade, grace or input release',()=>{
   let s=upperEdge(),events=[],wrapped=null,landed=false;
   for(let n=0;n<1000;n++){
@@ -70,6 +114,52 @@ test('the eye keeps its complete old coordinate image until its own spatial cros
   const eye=continuationVoidCameraEye(state,[fall.x,fall.feet+C.eyeHeight,fall.z]);
   eye.forEach((v,k)=>close(v,before[k]));assert.deepEqual(state.cameraTransit,untouched);
   const below=[fall.x,d.entryY-.1,fall.z];assert.deepEqual(continuationVoidCameraEye(state,below),below);
+});
+
+test('saving on either side of the seam resumes the identical fall, crossing receipt and actual landing',()=>{
+  let state=upperEdge(),before=null,after=null;
+  const d=continuationVoidDomain({chartId:0,feet:8.4});
+  for(let n=0;n<1000&&!after;n++){
+    if(state.fall&&state.fall.feet>d.exitFeetY&&state.fall.feet<d.exitFeetY+.5)before=clone(state);
+    state=tick(state,{side:1,jump:n===0}).state;
+    if(state.lastSpaceWrap)after=clone(state);
+  }
+  assert.ok(before&&after);
+  for(const captured of[before,after]){
+    let original=clone(captured),resumed=normalizeSourceContinuation(clone(captured));
+    assert.deepEqual(resumed,original);
+    const receipts=[];
+    for(let n=0;n<240&&original.fall;n++){
+      const a=tick(original,{side:1,jump:true}),b=tick(resumed,{side:1,jump:true});
+      assert.deepEqual(b,a,`diverged after ${n} ticks`);
+      receipts.push(...a.events);original=a.state;resumed=b.state;
+    }
+    assert.equal(original.fall,null);assert.equal(original.feet,8.4);
+    assert.equal(original.lastSpaceWrap.serial,1);
+    assert.equal(receipts.filter(e=>e.type==='space-wrap').length,captured===before?1:0);
+    assert.equal(receipts.some(e=>e.type==='capture'||e.type==='recovered'),false);
+  }
+});
+
+test('HUSH crosses the same dimensional seam without manufacturing grounded travel or density traction',()=>{
+  const d=continuationVoidDomain({chartId:0,feet:8.4}),at={x:30,z:20,feet:d.exitFeetY+.01,chartId:0,phase:'wrong-return',level:0};
+  const actor=normalizeContinuationHush({...freshContinuationHush(at),mode:'falling',armed:true,warningAnnounced:true,
+    animationClock:12,trail:[],fall:{...at,vx:3.2,vz:-2.1,vy:-24,elapsed:4,unsupported:true,
+      fromPhase:'wrong-return',trigger:'step-off',lastSupport:{x:25.8,z:-31,feet:8.4,chartId:0},
+      voidLoop:captureContinuationVoidLoop({chartId:0,feet:8.4})}});
+  const before=clone(actor),events=[];
+  advanceContinuationHush(actor,{dt:C.fixedStep,player:{x:0,z:0,feet:8.4,chartId:0,phase:'wrong-return',elapsed:10,doorOpen:{},doorMotion:{}},events});
+  assert.ok(actor.fall);assert.equal(actor.recovery,null);
+  assert.equal(actor.lastSpaceWrap.serial,1);
+  assert.equal(actor.lastSpaceWrap.domainId,d.id);
+  assert.equal(actor.animationClock,before.animationClock);assert.equal(actor.density.phase,before.density.phase);
+  assert.equal(actor.fall.vx,before.fall.vx);assert.equal(actor.fall.vz,before.fall.vz);
+  close(actor.fall.vy,before.fall.vy-C.gravity*C.fixedStep);
+  assert.equal(events.filter(e=>e.type==='hush-space-wrap').length,1);
+  assert.equal(events.some(e=>e.type==='hush-recovery'),false);
+  // JSON stores both signed zeroes as 0. Compare the serialized checkpoint;
+  // the trajectory and spatial receipt must remain otherwise identical.
+  assert.deepEqual(normalizeContinuationHush(clone(actor)),clone(actor));
 });
 
 test('real receiving support wins and a long-lived dimensional fall never becomes a timed recovery',()=>{

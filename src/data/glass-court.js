@@ -8,9 +8,9 @@ export const glassCourtLogicalAt=(x,z)=>({x:Number(x),y:Number(z)});
 const meshNames=['glass_court_frame','glass_court_glass','glass_court_beds','glass_court_nursery','glass_court_plants','glass_court_vestibule','glass_court_upper_guards'];
 const plantingBands=[{x0:0,x1:.65,z0:.65,z1:11.35,height:.75,maxHeight:2.75},{x0:3.35,x1:4,z0:.65,z1:11.35,height:.75,maxHeight:2.75}];
 const partitionSegments=[
-  {id:'changing-west',x:-1,z:14.5,width:.14,depth:5,height:3.4,kind:'wall'},
-  {id:'changing-east',x:5,z:14.5,width:.14,depth:5,height:3.4,kind:'wall'},
-  ...[12,17].flatMap(z=>[[-1,1],[3,5]].map(([a,b],n)=>({id:`changing-end-${z}-${n}`,x:(a+b)/2,z,width:b-a,depth:.14,height:3.4,kind:'wall'}))),
+  {id:'changing-west',x:-1,z:14,width:.14,depth:4,height:3.4,kind:'wall'},
+  {id:'changing-east',x:5,z:14,width:.14,depth:4,height:3.4,kind:'wall'},
+  ...[12,16].flatMap(z=>[[-1,1],[3,5]].map(([a,b],n)=>({id:`changing-end-${z}-${n}`,x:(a+b)/2,z,width:b-a,depth:.14,height:3.4,kind:'wall'}))),
 ];
 const lamps=[2,5,8,11].map(z=>({id:`glass-court-fluorescent-${z}`,x:2,y:3.25,z,color:[.82,.94,1],intensity:.86,radius:5.8,zone:ZONE.glasshouse}));
 lamps.push(...[13.3,15.7].map(z=>({id:`glass-court-changing-light-${z}`,x:2,y:2.95,z,color:[.85,.96,1],intensity:.82,radius:4,zone:ZONE.poolChanging})),{id:'glass-court-exit-globe',x:3.55,y:2.25,z:11.75,color:[1,.72,.42],intensity:.90,radius:4,zone:ZONE.glasshouse});
@@ -29,19 +29,19 @@ export const GLASS_COURT=freeze({
   eaves:4,ridge:5.2,bodyRadius:.20,minimumLaneWidth:2.5,
   plantingBands,entryGap:{x0:1,x1:3},clearLane:{x0:.75,x1:3.25,z0:0,z1:12},
   clearFaces:{x0:.65,x1:3.35},bodyLane:{x0:.85,x1:3.15},walkSpine:2,
-  changing:{x0:-1,x1:5,z0:12,z1:17,ceiling:3.4,wallThickness:.14},partitionSegments,
-  doors:{D0:{x:2,z:0,x0:1,x1:3},D1:{x:2,z:12,x0:1,x1:3},D2:{x:2,z:17,x0:1,x1:3}},
-  counter:{x:4.45,z:14.5,width:.90,depth:3.1,height:1.06},
+  changing:{x0:-1,x1:5,z0:12,z1:16,ceiling:3.4,wallThickness:.14},partitionSegments,
+  doors:{D0:{x:2,z:0,x0:1,x1:3},D1:{x:2,z:12,x0:1,x1:3},D2:{x:2,z:16,x0:1,x1:3}},
+  counter:{x:4.45,z:14,width:.90,depth:3.1,height:1.06},
   entranceFixtures:{mesh:'natatorium_entrance_fixtures',origin:{x:84,z:30},yaw:0},
   upperGuards:{academicPolygon:[[79,8],[89,8],[89,15],[94,15],[94,27],[77,27],[77,15],[79,15]],roofPolygon:[[77,15],[94,15],[94,27],[77,27]],height:1.18,setback:.14},
   signs:[
     {id:'baths-greenhouse-entry',copy:'GREENHOUSE / BATHS',x:.5,y:1.65,z:-.09,width:.72,height:.30,normal:[0,0,-1]},
-    {id:'baths-changing-entry',copy:'CHANGING / SHOWERS',x:.1,y:1.65,z:11.90,width:1.0,height:.30,normal:[0,0,-1]},
-    {id:'baths-pool-entry',copy:'POOL / WET DECK',x:4,y:1.65,z:16.90,width:.85,height:.30,normal:[0,0,-1]},
+    {id:'baths-changing-entry',copy:'CHANGING / SHOWERS',x:.1,y:1.65,z:11.86,width:1.0,height:.30,normal:[0,0,-1]},
+    {id:'baths-pool-entry',copy:'POOL / WET DECK',x:4,y:1.65,z:15.90,width:.85,height:.30,normal:[0,0,-1]},
   ],lamps,meshNames,
 });
 export const glassCourtWorld=({x,y=0,z})=>({x:origin.x+x,y:drawnFloor+y,z:origin.z+z});
-export const GLASS_COURT_MESHES=freeze(Object.fromEntries(meshNames.map(mesh=>[mesh,{w:6,d:17,h:9.5,blocks:false}])));
+export const GLASS_COURT_MESHES=freeze(Object.fromEntries(meshNames.map(mesh=>[mesh,{w:6,d:16,h:9.5,blocks:false}])));
 export const GLASS_COURT_PROPS=freeze(meshNames.map(mesh=>({
   id:mesh.replaceAll('_','-'),mesh,...GLASS_COURT.logicalOrigin,yaw:0,scale:1,
   floorOverride:floor,elevation:drawnFloor-floor,worldAligned:true,blocks:false,

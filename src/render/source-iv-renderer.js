@@ -4,6 +4,7 @@ import {CELL,EYE,MATERIAL,ZONE} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
 import {SOURCE_IV as C,SOURCE_IV_GEOMETRY,SOURCE_IV_MODELS,sourceIVModelMatrix} from '../data/source-iv.js';
 import {sourceIVFrame} from '../game/source-iv.js';
+import {sourceIVDitherIntensity} from './source-dither-routing.js';
 import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
@@ -123,7 +124,7 @@ export function createSourceIVRenderer({renderer=R3,props=P3,resolveAsset=assetU
     last=sourceIVRenderFrame(state,presentation);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,
       authoredPropRange:SOURCE_IV_RENDER_BUDGET.far,tileW:512,tileH:512,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),
-      chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false})!==false;
+      chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:sourceIVDitherIntensity(state,{startZ:C.spawn.z,endZ:C.exit.z})})!==false;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
   return{initialize,render,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>{if(!released)renderer.r3dClearScreen?.();},dispose,

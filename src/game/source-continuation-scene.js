@@ -1,8 +1,9 @@
 import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry} from './source-continuation.js';
 import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
 import {portalTransformPoint} from '../render/source-mesh-portals.js';
-import {uiDraw} from '../render/ui.js';
+import {uiDraw,uiSize,uiText} from '../render/ui.js';
 import {recordNightClockTravel} from './night-clock-travel.js';
+import {continuationContactChapter,sourceContinuationContactFocus,sourceContinuationRecordingReturnProps} from './source-continuation-contact.js';
 
 const copy=value=>JSON.parse(JSON.stringify(value));
 const movement=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
@@ -33,10 +34,11 @@ function pursuitRouteTrace(state){
 // This scene borrows the shared renderer. It never writes the original body's
 // position, recorder, injuries, inventory, quest receipts or Contact consent.
 export function createSourceContinuationScene({checkpoint,renderer,audio=null,studyRotation=0,
-  onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
+  onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{},onAcceptedTravel=recordNightClockTravel,
+  getContactStatus=()=>null,getRecordingCustody=()=>null,onContact=()=>false,onRecoverRecording=()=>false}={}){
   if(typeof renderer?.render!=='function')throw Error('Source continuation needs its physical renderer.');
   let state=normalizeSourceContinuation(checkpoint),ready=false,closed=false,paused=false,
-    leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=null;
+    leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=null,contactHeld=null;
   const rotation=Number.isFinite(studyRotation)?studyRotation:0;
   const presented=(x,z)=>{const center=SOURCE_CONTINUATION.catch.center,dx=x-center.x,dz=z-center.z,c=Math.cos(rotation),s=Math.sin(rotation);return{x:center.x+dx*c-dz*s,z:center.z+dx*s+dz*c};};
   function soundState(){
@@ -44,9 +46,9 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     if(state.phase!=='catch')return state;
     const w=state.counterweight;
     const h=state.hush;
-    // In the overhead view, acoustic left/right stays with the fixed screen
-    // compass. Turning the little body cannot rotate the whole sound field.
-    return{...state,...presented(state.x,state.z),yaw:rotation,
+    // A study rotates the body, view and acoustic field together. Ordinary
+    // Source III now uses the listener's real first-person heading.
+    return{...state,...presented(state.x,state.z),yaw:state.yaw+rotation,
       counterweight:w?{...w,...presented(w.x,w.z)}:w,
       hush:h?{...h,...presented(h.x,h.z),heading:(Number(h.heading)||0)+rotation}:h};
   }
@@ -66,6 +68,29 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   const snapshot=()=>copy(state);
   const report=err=>{error=String(err?.message||err);clear();audio?.stop?.();onError(err);};
   function save(reason){const value=snapshot();onCheckpoint(value,{reason});return value;}
+  function interactionFocus(){
+    const ordinary=continuationFocus(state),extra=sourceContinuationContactFocus(state,{status:getContactStatus(continuationContactChapter(state)),custody:getRecordingCustody(),protected:paused||!!contactHeld||leaving});
+    if(!ordinary)return extra;if(!extra)return ordinary;
+    return Math.hypot(state.x-ordinary.x,state.z-ordinary.z)<=extra.distance?ordinary:extra;
+  }
+  function releaseContact({notice=true}={}){
+    if(!contactHeld)return false;const kind=contactHeld;contactHeld=null;clear();
+    // A voluntary conversation cannot become an immediate catch when its text
+    // closes. Use the follower's existing finite notice interval, not immunity.
+    if(notice&&kind==='source-contact'&&state.hush?.active){state.hush.mode='notice';state.hush.notice=SOURCE_CONTINUATION.hush.noticeSeconds;}
+    save('contact-released');return true;
+  }
+  function requestContact(focus){
+    if(!focus||contactHeld)return false;
+    contactHeld=focus.type;clear();audio?.stop?.();const checkpoint=save(focus.type);
+    try{
+      const value=focus.type==='source-contact'?onContact({chapter:focus.chapter,focus:copy(focus),checkpoint})
+        :onRecoverRecording({receiptId:focus.receiptId,chapter:focus.chapter,locationId:focus.locationId,checkpoint});
+      Promise.resolve(value).then(ok=>{if(closed)return;if(focus.type!=='source-contact'||ok!==true)releaseContact({notice:false});})
+        .catch(err=>{if(!closed){releaseContact({notice:false});onError(err);}});
+    }catch(err){releaseContact({notice:false});onError(err);return false;}
+    return true;
+  }
   function dispatchFinish(kind){
     audio?.stop?.();handoff=null;
     const value=save(kind);
@@ -87,7 +112,8 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     return true;
   }
   function apply(input){
-    const choice=input.interact?continuationFocus(state)?.id:null;
+    const focus=input.interact?interactionFocus():null,choice=focus?.id;
+    if(focus&&['source-contact','source-recording-return'].includes(focus.type)){requestContact(focus);return;}
     const result=stepSourceContinuation(state,input);state=result.state;
     if(result.acceptedTravelMetres>0)onAcceptedTravel(result.acceptedTravelMetres);
     const events=result.events|| (result.event?[result.event]:[]);
@@ -106,7 +132,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   }
   const scene={
     id:'source-continuation',blocksWorld:true,blocksInput:true,suppressesHud:true,
-    get allowsLook(){return live()&&!paused&&state.phase!=='catch'&&state.status!=='returned'&&state.status!=='completed';},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
+    get allowsLook(){return live()&&!paused&&state.status!=='returned'&&state.status!=='completed';},handlesEscape:false,worldPresentation:'hidden',lookProfile:'explore',
     initialize(){
       if(initializing)return initializing;
       save('loading');
@@ -123,7 +149,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     },
     enter(){void scene.initialize();},
     update(dt){
-      if(closed||paused)return;
+      if(closed||paused||contactHeld)return;
       if(handoff){
         if(!ready||renderer.ready?.()===false){clear();audio?.pause?.();return;}
         handoff.elapsed+=Math.min(.25,Math.max(0,Number(dt)||0));
@@ -139,7 +165,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
         side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
       apply({dt,forward,side,renderReady:true});
       if(closed||leaving)return;
-      const focus=continuationFocus(state);
+      const focus=interactionFocus();
       const soundFocus=focus&&overhead&&rotation&&typeof renderer.acousticFrame!=='function'?{...focus,...presented(focus.x,focus.z),
         position:focus.position?{...focus.position,...presented(focus.position.x,focus.position.z)}:undefined}:focus;
       audio?.update?.({dt,state:soundState(),surroundingsState:state,acousticFrame:renderer.acousticFrame?.(state),focus:soundFocus,paused:false,ready:true});
@@ -147,7 +173,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       if(saveClock>=1){saveClock=0;save('position');}
       if(traceClock>=.1){traceClock=0;trace({type:'pose',elapsed:state.elapsed,phase:state.phase,
         x:state.x,z:state.z,feet:state.feet,yaw:state.yaw,pitch:state.pitch,level:state.level,chartId:state.chartId??0,cameraTransit:copy(state.cameraTransit||null),
-        focus:continuationFocus(state)?.id||null,closure:copy(state.closure||null),counterweight:copy(state.counterweight||null),
+        focus:interactionFocus()?.id||null,closure:copy(state.closure||null),counterweight:copy(state.counterweight||null),
         recovery:copy(state.recovery||null),reveal:copy(state.reveal||null),grace:state.grace,hush:copy(state.hush||null),heading:state.heading,
         foldSerial:state.foldSerial||0,lastFold:copy(state.lastFold||null),lastSpaceWrap:copy(state.lastSpaceWrap||null),
         fall:copy(state.fall||null),recoveryAnchor:copy(state.recoveryAnchor||null),pursuitRoute:pursuitRouteTrace(state),
@@ -165,19 +191,21 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     // The material clock needs the body, not a copy of the complete pursuit trail.
     stillnessPose:()=>({x:state.x,z:state.z,feet:state.feet,yaw:state.yaw,phase:state.phase,chartId:state.chartId??0,
       level:state.level,foldSerial:state.foldSerial||0,status:state.status,ready:live(),closed,paused,leaving,error,
-      transitioning:!!(handoff||state.fall||state.recovery||state.reveal||state.cameraTransit||state.bodyTransit)}),
-    view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,handoff:copy(handoff),focus:live()?continuationFocus(state):null}),
+      transitioning:!!(contactHeld||handoff||state.fall||state.recovery||state.reveal||state.cameraTransit||state.bodyTransit)}),
+    view:()=>({...snapshot(),ready:live(),closed,paused,leaving,error,contactHeld,handoff:copy(handoff),focus:live()?interactionFocus():null,
+      sourceContactProps:sourceContinuationRecordingReturnProps(state,getRecordingCustody())}),
     serialize:snapshot,checkpoint:()=>save('requested'),
+    releaseContact,
     pause(){if(closed)return false;paused=true;clear();audio?.pause?.();save('pause');return true;},
     resume(){if(closed)return false;paused=false;clear();return true;},
-    lookAngles:()=>state.phase==='catch'?{yaw:0,pitch:-Math.PI/2}:{yaw:state.yaw,pitch:state.pitch},
+    lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),
     lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
     setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look,renderReady:true});return true;},
     key(e={}){
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
-      if(paused){clear();return true;}
+      if(paused||contactHeld){clear();return true;}
       if(!live()){
         clear();if(!e.repeat&&(key==='x'||key==='e')&&error)finish(key==='e'&&failedFinish?failedFinish:'return');return true;
       }
@@ -201,11 +229,18 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       return true;
     },
     render(){
-      if(ready&&!closed){try{if(renderer.render({...state,handoff})===false)throw Error('The Source view is unavailable.');}catch(err){ready=false;report(err);}}
+      if(ready&&!closed){try{if(renderer.render({...state,handoff,sourceContactProps:sourceContinuationRecordingReturnProps(state,getRecordingCustody())})===false)throw Error('The Source view is unavailable.');}catch(err){ready=false;report(err);}}
       const blackout=Math.max(0,Math.min(1,Number(state.recovery?.blackoutAlpha)||0));
       if(blackout)uiDraw(({ctx})=>{ctx.save();ctx.fillStyle=`rgba(0,0,0,${blackout})`;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();});
-      // Physical handles, foot treads, moving machinery and the shared sound
-      // field carry the interaction. The scene never paints gameplay words.
+      const focus=live()&&!paused&&!contactHeld?interactionFocus():null;
+      if(focus?.type==='source-recording-return'){
+        const {cols,rows}=uiSize(),ordinal=Number.isSafeInteger(focus.takeOrdinal)&&focus.takeOrdinal>0?`TAKE ${String(focus.takeOrdinal).padStart(3,'0')} · `:'';
+        uiText(2,Math.max(1,rows-3),ordinal+(focus.text||focus.takeId||''),'ui-secondary',1,Math.max(20,cols-4));
+        uiText(2,Math.max(2,rows-2),'[E] HOLD THE CASSETTE','ui-primary',1,Math.max(20,cols-4));
+      }
+      // Other handles, treads and machinery retain their physical/sound cues.
+      // The returned cassette alone receives a reachable equipment prompt;
+      // there is no general secret marker or new quest overlay.
       // Retain the last valid frame during preparation or a recoverable fault.
     },
     exit(){if(closed)return false;closed=true;clear();audio?.stop?.();if(!leaving)save('interrupted');renderer.dispose?.();onExit({checkpoint:snapshot()});return true;},

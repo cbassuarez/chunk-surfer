@@ -80,6 +80,20 @@ test('monitor protection fades the complete graph and re-entry seeks the service
   assert.ok(f.sources.slice(started.length).some(s => s.starts[0][1] > 5), 'resumes the current prayer, not its first word');
 });
 
+test('optional entry fade is bounded and cannot replace the normal or protected service fade', async () => {
+  const f = fixture(); await f.runtime.ready();
+  f.runtime.update(f.input);
+  assert.equal(f.gains[0].gain.calls.at(-1)[3], CHAPEL_SERVICE.fadeInSeconds);
+  for (const [requested, expected] of [[2, 2], [-10, .025], [30, 15], [NaN, CHAPEL_SERVICE.fadeInSeconds]]) {
+    f.runtime.update({ ...f.input, fadeInSeconds: requested });
+    assert.equal(f.gains[0].gain.calls.at(-1)[3], expected);
+  }
+  f.runtime.update({ ...f.input, fadeInSeconds: 15, muted: true });
+  assert.deepEqual(f.gains[0].gain.calls.at(-1), ['target', 0, 0, CHAPEL_SERVICE.fadeOutSeconds]);
+  assert.equal(f.runtime.frame().sourceCount, 0);
+  f.runtime.dispose();
+});
+
 test('long absence cannot queue missed answers or grow active sources beyond the fixed budget', async () => {
   const f = fixture(); await f.runtime.ready(); f.runtime.update(f.input);
   f.runtime.update({ active: false }); f.context.currentTime = 10000;

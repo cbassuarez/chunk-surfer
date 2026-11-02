@@ -41,13 +41,14 @@ test('contact prediction uses the actual continuing route and contact remains fi
  let state=atLip();state.counterweight.active=true;const before=JSON.stringify(state),p=sourceContinuationThreatTelemetry(state,{horizonSeconds:90});assert.equal(JSON.stringify(state),before);assert.ok(p.timeToContact>6&&p.timeToContact<90);
  const start=state.elapsed;while(!state.recovery&&state.elapsed-start<90)state=next(state).state;
  assert.ok(state.recovery);assert.equal(state.recovery.reason,'counterweight');assert.equal(state.recovery.repaired,false);assert.ok(Math.abs(state.elapsed-start-p.timeToContact)<.05);
- while(state.recovery)state=next(state).state;
+ for(let frame=0;frame<2400&&state.recovery;frame++)state=next(state).state;
+ assert.equal(state.recovery,null,'the physical recovery completes in the bounded fixture');
  assert.ok(state.grace>2.9);const at=continuationRefugeAt(state);assert.equal(state.x,at.x);assert.equal(state.z,at.z);assert.equal(sourceContinuationThreatTelemetry(state).timeToContact,null);
 });
 
-test('entering the overhead Catch clears first-person held motion and deliberate drops clear old motion',async()=>{
+test('entering Catch retains first-person look while clearing held motion, and deliberate drops clear old motion',async()=>{
  const trace=[],scene=createSourceContinuationScene({checkpoint:seed(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
- await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);assert.equal(scene.lookBy(.2,-.1),false);scene.keyup({key:'w'});scene.key({key:'a'});scene.update(.1);assert.ok(scene.serialize().x<crossed.x,'a fresh left input uses fixed west');scene.exit();
+ await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);assert.equal(scene.lookBy(.2,-.1),true);const turned=scene.serialize();scene.keyup({key:'w'});scene.key({key:'a'});scene.update(.1);const walked=scene.serialize();assert.ok((walked.x-turned.x)*Math.cos(turned.yaw)+(walked.z-turned.z)*Math.sin(turned.yaw)<-.2,'a fresh left input strafes relative to the physical view');scene.exit();
  const dropping=createSourceContinuationScene({checkpoint:atLip(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
  await dropping.initialize();dropping.key({key:'w'});dropping.key({key:'e'});dropping.key({key:'d'});
  for(let i=0;i<600&&dropping.serialize().fall;i++)dropping.update(1/60);

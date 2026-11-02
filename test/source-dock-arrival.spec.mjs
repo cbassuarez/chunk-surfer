@@ -5,6 +5,7 @@ import { CHUNK_SURF_PHASE, freshChunkSurfState, reduceChunkSurf } from '../src/g
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { keyboardMotionAxes } from '../src/input/input-manager.js';
 import { sourceShoreOutside } from '../src/game/source-sensory.js';
+import {createPressurePerformance,normalizePressurePresentation} from '../src/game/pressure-performance.js';
 
 if (!globalThis.document) globalThis.document = { title: '', baseURI: 'http://localhost/' };
 globalThis.document.baseURI ||= 'http://localhost/';
@@ -15,8 +16,10 @@ const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 function mainFunction(name) {
   const start = main.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `missing ${name}`);
-  const end = main.indexOf('\nfunction ', start + 10);
-  return main.slice(start, end < 0 ? main.length : end);
+  const lineEnd=main.indexOf('\n',start);
+  if(main.slice(start,lineEnd).trimEnd().endsWith('}'))return main.slice(start,lineEnd);
+  const end=main.indexOf('\n}\n',start);assert.ok(end>start,`complete ${name}`);
+  return main.slice(start,end+2);
 }
 function haystackRuntime() {
   let state = freshChunkSurfState({ seed: 4417, returnPoint: { x: 0, y: 0, facing: 0 } });
@@ -149,7 +152,7 @@ for (const reducedMotion of [false, true]) {
   };
   let facing;
   const context = vm.createContext({
-    CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,
+    CHUNK_SURF_PHASE, CHAPEL_TOWER_PHASE: {}, sourceShoreOutside,normalizePressurePresentation,pressurePerformance:createPressurePerformance(),
     stopOutskirtsStreetAudio() {}, resetOutskirtsLastLight() {},
     prewarmSourceContinuationAssets:()=>Promise.resolve(),
     endSourceHaystackMosh() {}, endSourceBracketPresence() {}, sourceFearFloor: 0,
@@ -163,7 +166,7 @@ for (const reducedMotion of [false, true]) {
     applyLensPreset() {}, syncSourceRender() {}, restoreFromSourceSpace() {}, windowChoreography: { sourceFrame() {} },
     CR: { fx: { hold() {} } }, saveCommit() {}, SOURCE_ENTRY: { facing: 0 },
   });
-  vm.runInContext(mainFunction('activateSourceSpace'), context);
+  vm.runInContext(mainFunction('pressurePresentationSnapshot')+'\n'+mainFunction('activateSourceSpace'), context);
   context.activateSourceSpace(state, { position: saved, resume: true });
   assert.equal(context.px, saved.x); assert.equal(context.py, saved.y);
   assert.equal(facing, saved.facing); assert.equal(checkpointReads, 0);
@@ -217,7 +220,7 @@ for (const reducedMotion of [false, true]) {
       currentMoveIntervalMs: () => 100, ensureMotionRig() {},
       physicalPointFor: (x, y) => ({ x, z: y }), px: 0, py: 0,
       renderMove: null, nextMoveAtMs: 0, lastMoveAtMs: 0, playerKeys: [],
-      setupHandoffBlocksMovement: () => false, paused: false,
+      setupHandoffBlocksMovement: () => false, paused: false,busRecoilGlide:null,
       scenes: { blocksInput: () => false }, inCover: () => false,
       maybeLockHushFromInputDelta() {}, performance: { now: () => now },
     });

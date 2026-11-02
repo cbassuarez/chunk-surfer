@@ -28,7 +28,7 @@ function fixture(){
     controllerGameplayAxes:()=>({turnX:.6,lookY:.4}),
     R3:{r3dLook:(yaw,pitch)=>{looks.push({yaw,pitch});lookAngles.yaw+=yaw;lookAngles.pitch+=pitch;},r3dLookAngles:()=>({...lookAngles})},
     noteExteriorArrivalControl:event=>arrivalLookEvents.push(event),
-    clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),mouseLookSensitivity:()=>1,mouseInvertY:()=>false};
+    clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),mouseLookSensitivity:()=>1,mouseInvertY:()=>false,shakeMode:()=> 'full'};
   vm.createContext(context);vm.runInContext(production('tickIndependentLook'),context);
   const scene=makeCostumeInspectionScene({getActor:()=>state.costume,isActive:()=>active,advance:dt=>{clock+=dt;steps++;step(dt);},onDone:r=>settled.push(r),onCancel:r=>{settled.push(r);state=cancelCostumeInspection(state).state;},onExit:()=>{context.costumeInspectionScene=null;}});
   context.costumeInspectionScene=scene;scenes.push(scene);

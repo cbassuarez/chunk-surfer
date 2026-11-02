@@ -78,7 +78,7 @@ assert.equal(roofGateEligibility(new Set(['master']), ROOF_PASSWORD).canOpen, tr
 // Regression: the old academicAtriumVoid exception admitted ALL stacked
 // spans. At gallery height10 the nearest candidate became roof17, not garden0,
 // producing a seventeen-metre wall across what navigation called a void.
-for (const [worldX, worldZ] of [[83, 14], [83.5, 14.5], [79.5, 8.5], [88.5, 20.5]]) {
+for (const [worldX, worldZ] of [[83, 14], [83, 10], [88, 12]]) {
   const below = physicalCell(gallerySlice, worldX, worldZ);
   assert.equal(below.floor, 0,
     `gallery view at ${worldX},${worldZ} must retain the garden ground, not the roof floor`);
@@ -87,5 +87,16 @@ for (const [worldX, worldZ] of [[83, 14], [83.5, 14.5], [79.5, 8.5], [88.5, 20.5
   assert.equal(below.zone, ZONE.foyer);
   assert.equal(below.solid, 0, 'the rendered garden is air below the guarded gallery opening');
 }
+// The new court's ground must also survive the gallery's vertical selection.
+// This is rendered-volume coverage, independent of its already open collision.
+for(const [worldX,worldZ]of[[80,20],[88.5,20.5],[90,20]]){
+  const below=physicalCell(gallerySlice,worldX,worldZ);
+  assert.equal(below.solid,0,'the existing lower outdoor court is visible from the gallery');
+  assert.equal(below.floor,0);assert.equal(below.ceil,40);
+  assert.equal(below.zone,ZONE.civicCourt);assert.ok(below.flags&F.SKY);
+}
+// These lower roofs are real occupied construction, rather than atrium air.
+assert.ok(Math.abs(physicalCell(gallerySlice,83.5,14.5).ceil-3.4)<1e-6,'D0 retains its actual doorway head');
+assert.equal(physicalCell(gallerySlice,79.5,8.5).ceil,3.5,'the sanitary core retains its actual low ceiling');
 
 console.log('academic gallery treatment: atrium render, ring/roof collision and access invariants passed');

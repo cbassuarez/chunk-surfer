@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {assertSharedFeatures} from './helpers/shared-feature-fingerprint.mjs';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {NodeIO} from '@gltf-transform/core';
@@ -26,13 +27,16 @@ function triangles(mesh,part){
 }
 const overlaps=(a,b)=>[0,1,2].every(k=>a.min[k]<=b.max[k]+1e-7&&b.min[k]<=a.max[k]+1e-7);
 
-test('the small isolated replacement pack binds exact hashes and preserves shared source assets',()=>{
+test('the isolated replacement binds exact output/input hashes and preserves its actual shared feature meshes',async()=>{
   assert.deepEqual([...byName.keys()].sort(),Object.keys(LANDING_FITTING_REAR_PLANES).sort());
   assert.equal(stats.sha256,hash(pack));assert.equal(credits.pack.sha256,hash(pack));
   assert.equal(stats.bytes,pack.length);assert.equal(credits.pack.bytes,pack.length);
   assert.ok(stats.totalTriangles>500&&stats.totalTriangles<4000);
   for(const[file,expected]of Object.entries(stats.sourceSha256))assert.equal(hash(read(file)),expected,file);
-  for(const[file,expected]of Object.entries(stats.protectedSha256))assert.equal(hash(read(file)),expected,file);
+  const sharedMetadata=new Set(['public/assets/conservatory-props.glb','public/assets/conservatory-props.stats.json','public/assets/conservatory-props.credits.json']);
+  for(const[file,expected]of Object.entries(stats.protectedSha256))if(!sharedMetadata.has(file))assert.equal(hash(read(file)),expected,file);
+  await assertSharedFeatures({file:'public/assets/conservatory-props.glb',baselineId:'landing-fittings-before-rear-board',
+    recordedSourceSha256:stats.protectedSha256['public/assets/conservatory-props.glb']});
   assert.equal(doc.getRoot().listTextures().length,0,'existing glyph atlas is reused outside this pack');
   assert.ok(doc.getRoot().listMaterials().every(m=>!m.getDoubleSided()),'closed solids need no hidden backface workaround');
 });

@@ -4,6 +4,7 @@ import {SOURCE_CONTINUATION as C, SOURCE_CONTINUATION_ROUTES as ROUTES,
   CONTINUATION_SIGHTLINES, CONTINUATION_CATCH_STAGES as STAGES,
   CONTINUATION_DROP_LIPS, CONTINUATION_ALTERNATE_LIPS, CONTINUATION_RETURN_CATCHES, continuationRadialPoint, continuationRefugeAt, continuationDoors, continuationSurfaces} from '../data/source-continuation.js';
 import {JOURNEY_ROUTES,JOURNEY_SIGHTLINES,JOURNEY_PORTALS} from '../data/source-continuation-journey.js';
+import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../data/source-connector-corridor.js';
 
 export function sourceContinuationGuidedPlan({alternates=false,topologyLoop=false}={}) {
   const chosen=alternates?CONTINUATION_ALTERNATE_LIPS:CONTINUATION_DROP_LIPS;
@@ -54,7 +55,14 @@ export function sourceContinuationGuidedPlan({alternates=false,topologyLoop=fals
           walk(view.eye.x,view.eye.z,'Read the earlier route on its actual new plane',{feet:view.feet,chartId:view.chartId,tolerance:.12,recognitionId:view.id,portalId:view.portalId,targetChart:view.targetChart,lookTarget:{x:target[0],y:target[1],z:target[2]}});
         }
         recognition=[];
-      }else walk(row.x,row.z,'Walk the outward chart',{...options});
+      }else{
+        if(row.chartId===CORRIDOR.chartId&&row.x===CORRIDOR.x&&row.z===CORRIDOR.endZ){
+          // Follow the real, authored service-side clearance around the
+          // descending cabinet. Public walking still owns every crossing.
+          for(const[x,z]of[[CORRIDOR.x,-74],[CORRIDOR.bypass.centerX,-74],[CORRIDOR.bypass.centerX,-78],[CORRIDOR.x,-79]])walk(x,z,'Use the cabinet’s supported side clearance',{...options});
+        }
+        walk(row.x,row.z,'Walk the outward chart',{...options});
+      }
     }
   }
   if(topologyLoop){
@@ -133,10 +141,7 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
     // Two ordinary equal-length moves resolve a short residual at coarse
     // sampling rates. Only the public look and digital keys change.
     if(lastWalkDistance&&tolerance<lastWalkDistance*.5&&distance<lastWalkDistance*.85&&!precisionLeg){yaw+=Math.acos(Math.max(-1,Math.min(1,distance/(2*lastWalkDistance))));precisionLeg=true;}else precisionLeg=false;
-    if(view.phase==='catch'){
-      const axisTolerance=Math.min(.18,tolerance*.5),keys=[];if(Math.abs(dx)>axisTolerance)keys.push(dx>0?'d':'a');if(Math.abs(dz)>axisTolerance)keys.push(dz>0?'s':'w');
-      pressMove(scene,keys);
-    }else if(step.lookTarget){
+    if(step.lookTarget){
       const tx=step.lookTarget.x-view.x,tz=step.lookTarget.z-view.z,targetYaw=Math.atan2(tx,-tz),pitch=Math.atan2(step.lookTarget.y-(view.feet+C.eyeHeight),Math.hypot(tx,tz));
       scene.setLook({yaw:targetYaw,pitch});
       const forward=Math.sin(targetYaw)*dx-Math.cos(targetYaw)*dz,side=Math.cos(targetYaw)*dx+Math.sin(targetYaw)*dz,threshold=Math.max(.035,distance*.15),keys=[];
@@ -213,7 +218,7 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
     }else if(step.kind==='door'){
       const descriptor=continuationDoors().find(d=>d.id===step.id);if(!descriptor){hold('The authored door is missing; no fallback target.');return;}const dx=descriptor.x-view.x,dz=descriptor.z-view.z;
       scene.setLook({yaw:Math.atan2(dx,-dz),pitch:-.04});
-      if(!stepSent&&Math.hypot(dx,dz)>1.35){pressMove(scene,view.phase==='catch'?[dx>0?'d':'a']:['w']);return;}
+      if(!stepSent&&Math.hypot(dx,dz)>1.35){pressMove(scene,['w']);return;}
       release();
       if(!stepSent){if(scene.view?.().focus?.id!==step.id){hold(`The actual handle ${step.id} is not in reach; no state bypass.`);return;}if(!view.doorOpen?.[step.id])tap(scene,'e');stepSent=true;receipt('door-requested',{id:step.id});}
       if(fraction(scene.view(),step.id)>=C.doorPassFraction)advance();

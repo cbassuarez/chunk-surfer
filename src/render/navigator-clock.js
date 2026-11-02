@@ -42,7 +42,7 @@ export function paintNavigatorClock(ctx,housing,readout,metrics={}){
   ctx.save();ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
   // The header remains legible etched aluminium; its new clock owns a small
   // separate gasket and reflective polarizer, not VFD glow over the map.
-  const identity=drawHardwarePrint(ctx,'AUDIOCORP FN-12',g.identity.x+dpr,g.identity.y,
+  const identity=metrics.identity===false?null:drawHardwarePrint(ctx,'AUDIOCORP FN-12',g.identity.x+dpr,g.identity.y,
     {width:g.identity.w-2*dpr,height:g.identity.h,color:'#333830',finish:'etched',darkPanel:false,dpr:printDpr});
   ctx.fillStyle='#1c2922';ctx.fillRect(g.clock.x-dpr,g.clock.y-dpr,g.clock.w+2*dpr,g.clock.h+2*dpr);
   ctx.fillStyle='#a8b99b';ctx.fillRect(g.clock.x,g.clock.y,g.clock.w,g.clock.h);

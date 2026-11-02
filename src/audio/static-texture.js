@@ -1,5 +1,6 @@
 // Shared spectral kernel: the menu's idle transport and ending interference
-// use this same texture. Each scene owns its carrier; no ending lease enters a menu.
+// use this same transport. A carrier may pass from the ending into the front
+// end without restarting its buffer, filters or phase.
 export const STATIC_TEXTURE=Object.freeze({seconds:1.5,highpassHz:900,lowpassHz:7800,menuGain:.018,seed:0x74617065});
 const finite=(n,d=0)=>Number.isFinite(Number(n))?Number(n):d;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,finite(n)));
@@ -32,12 +33,13 @@ export function createStaticTexture({context:ctx,destination,gain=STATIC_TEXTURE
   }
   // Ending releases can be cancelled/reanchored across a real pause. Only
   // the gain is pre-scheduled; the owner stops the source after unheld time.
-  function fadeOut({seconds=4,level=target}={}){if(stopped)return false;const at=finite(ctx.currentTime),p=g.gain;target=clamp(level,0,.25);
+  function fadeTo({seconds=4,level=target,to=0}={}){if(stopped)return false;const at=finite(ctx.currentTime),p=g.gain;target=clamp(to,0,.25);
     if(p.cancelAndHoldAtTime)p.cancelAndHoldAtTime(at);else p.cancelScheduledValues?.(at);
-    p.setValueAtTime?.(target,at);p.linearRampToValueAtTime?.(0,at+Math.max(.001,seconds));return true;
+    p.setValueAtTime?.(clamp(level,0,.25),at);p.linearRampToValueAtTime?.(target,at+Math.max(.001,seconds));return true;
   }
+  function fadeOut(options={}){return fadeTo({...options,to:0});}
   function cancelFade(){const at=finite(ctx.currentTime);if(g.gain.cancelAndHoldAtTime)g.gain.cancelAndHoldAtTime(at);else g.gain.cancelScheduledValues?.(at);}
   function stop({fade=.04}={}){return finish({fade});}
   function dispose(){if(disposed)return;stopped=true;target=0;g.gain.cancelScheduledValues?.(finite(ctx.currentTime));g.gain.setValueAtTime?.(0,finite(ctx.currentTime));try{src.stop();}catch{}disconnect();}
-  return Object.freeze({src,hp,lp,g,gate,setLevel,setOutputLevel,mute,fadeOut,cancelFade,finish,stop,dispose,snapshot:()=>({startedAt,seed,seconds:STATIC_TEXTURE.seconds,target,outputLevel,stopped,disposed,phase:((finite(ctx.currentTime)-startedAt)%STATIC_TEXTURE.seconds+STATIC_TEXTURE.seconds)%STATIC_TEXTURE.seconds})});
+  return Object.freeze({context:ctx,src,hp,lp,g,gate,setLevel,setOutputLevel,mute,fadeTo,fadeOut,cancelFade,finish,stop,dispose,snapshot:()=>({startedAt,seed,seconds:STATIC_TEXTURE.seconds,target,outputLevel,stopped,disposed,phase:((finite(ctx.currentTime)-startedAt)%STATIC_TEXTURE.seconds+STATIC_TEXTURE.seconds)%STATIC_TEXTURE.seconds})});
 }

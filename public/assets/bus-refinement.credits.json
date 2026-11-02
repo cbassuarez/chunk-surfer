@@ -1,0 +1,13 @@
+{
+  "pack": "bus-refinement.glb",
+  "sha256": "5f2a08083c914c498a9201c4cf78082f4a661fb93bde213a84feb0c8940df4bf",
+  "geometry": "Original project-native municipal coachwork refinement derived from the project’s existing detailed buses.",
+  "builder": "tools/chunk_surfer/build-bus-refinement.mjs",
+  "thirdPartyGeometryUsed": false,
+  "acquisitionManifest": "assets/source-bus-candidates/manifest.json",
+  "existingDestinationPrint": "Retained byte-equivalent texture images and UV data from production bus.",
+  "limitations": [
+    "native final-dither inspection",
+    "ordinary street/bus passage full-route movement acceptance"
+  ]
+}

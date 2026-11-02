@@ -34,7 +34,8 @@ test('actual public credits include performer, complete source, electronic prove
   assert.deepEqual(entry.lines,sourceRestCouperinCreditLines());const text=entry.lines.join('\n');
   assert.match(text,/David Joseph Stith/);assert.match(text,/complete/);assert.match(text,/CC0 1\.0/);
   assert.match(text,/Electronic revoicing created for Chunk Surfer/);assert.match(text,/irregularities retained/);
-  assert.match(text,/no grid quantization, pitch correction or added error stingers/);
+  assert.match(text,/user-adjusted pitch, with no added error stingers/);
+  assert.match(text,/Nicolas Sceaux/);assert.match(text,/CC BY 2\.5/);
   assert.ok(entry.lines.includes(S.sourceUrl));assert.ok(entry.lines.includes(S.licenceUrl));
 });
 
@@ -42,6 +43,7 @@ test('licence record distinguishes the supplied Bach marimba take from the credi
   const licence=readFileSync(new URL('../third_party/licenses/SOURCE-REST-COUPERIN.txt',import.meta.url),'utf8');
   assert.ok(licence.includes(S.sourceSha256));assert.ok(licence.includes(S.asset.sha256));
   assert.match(licence,/Source II’s Bach Chaconne is the separate developer-supplied\nmarimba recording/);
-  assert.match(licence,/does not attribute this harpsichord performance to the player/);
-  assert.match(licence,/Automatic transcription may introduce/);
+  assert.match(licence,/does not\s+attribute this harpsichord performance to the player/);
+  assert.match(licence,/old automatic transcription may introduce/);
+  assert.match(licence,/lossy-to-lossy/);assert.match(licence,/folded to mono/);
 });

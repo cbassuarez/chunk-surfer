@@ -20,16 +20,17 @@ const coverPlan={size:FP.planSize,isSolid:(x,y)=>FP.isSolid(x,y)||PROPS.tallBloc
 const coverAt=(x,z)=>{const p=point(x,z);return resolveCover(coverPlan,p.x+.5,p.y+.5);};
 
 test('optional indoor pack starts without invisible new stock or partitions',()=>{
+  PROPS.setColliderGroupEnabled('glass-court',false);
   const ids=new Set(GLASS_COURT_PROPS.map(p=>p.id));
   assert.equal(PROPS.renderInstances({inscriptions:false}).some(p=>ids.has(p.id)),false,
-    'an old or incomplete pack cannot render stale court meshes at the indoor origin');
-  assert.equal(clear(76.25,28.75),true,'base pool remains playable while the optional pack is absent');
-  assert.equal(PROPS.tallBlockingPropAt(...Object.values(point(76.25,28.75))),false);
-  assert.equal(coverAt(76.25,29.35),null);
-  assert.equal(clear(90.75,32.25),true,'missing glass does not leave its physical wall behind');
+    'an old or incomplete pack cannot render unloaded court meshes');
+  assert.equal(clear(82.25,20.25),true,'the real planted band remains unblocked while the optional pack is absent');
+  assert.equal(PROPS.tallBlockingPropAt(...Object.values(point(82.25,20.25))),false);
+  assert.equal(coverAt(83.25,20.25),null);
+  assert.equal(clear(86,22.25),true,'missing glass does not leave its physical wall behind');
   PROPS.setColliderGroupEnabled('glass-court',true);
-  assert.equal(clear(76.25,28.75),false);
-  assert.equal(clear(90.75,32.25),false);
+  assert.equal(clear(82.25,20.25),false);
+  assert.equal(clear(86,22.25),false);
 });
 
 test('the street profile, rain mix and original bin/bollard placements are restored',()=>{
@@ -50,31 +51,33 @@ test('the street profile, rain mix and original bin/bollard placements are resto
 });
 
 test('real partition pieces retain both door apertures and at least 2.5m physical walking space',()=>{
-  assert.deepEqual(C.origin,{x:71,z:28});assert.equal(C.floor,0);
+  PROPS.setColliderGroupEnabled('glass-court',true);
+  assert.deepEqual(C.origin,{x:82,z:15});assert.equal(C.revision,3);assert.equal(C.roofAxis,'z');assert.equal(C.floor,0);
   assert.deepEqual(glassCourtLogicalAt(94,30),{x:94,y:30});
-  assert.ok(C.clearFaces.z1-C.clearFaces.z0>=C.minimumLaneWidth);
-  assert.deepEqual(C.bodyLane,{z0:1.35,z1:3.60});
+  assert.ok(C.clearFaces.x1-C.clearFaces.x0>=C.minimumLaneWidth);
+  assert.deepEqual(C.bodyLane,{x0:.85,x1:3.15});
   const bodies=GLASS_COURT_COLLIDERS;
   assert.ok(bodies.every(c=>c.colliderGroup==='glass-court'));
   for(const c of GLASS_COURT_PHYSICAL_COLLIDERS){
     const body=bodies.find(b=>b.id===`glass-court:${c.id}`);
     assert.equal(body.width,c.width+.4);assert.equal(body.depth,c.depth+.4);
     assert.equal(body.bodyMargin,.2);assert.ok(Math.abs(body.maxElevation-body.minElevation-c.height)<1e-9);
-    assert.ok(c.depth<=1.1||c.width<=.12||c.role==='rehosted attendant counter','no room-sized collision box');
+    assert.ok(Math.min(c.depth,c.width)<=1.1,'no room-sized collision box');
   }
-  for(const z of[29.35,29.75,30.25,30.5,31.25,31.60])for(let x=74.25;x<=90.75;x+=.5)
+  for(const id of['pool-lobby','glasshouse-changing','changing-pool'])FP.setDoorOpen(id,true);
+  for(let z=16.25;z<=26.25;z+=.5)for(let x=83.25;x<=84.75;x+=.5)
     assert.equal(clear(x,z),true,`actual padded player can walk at ${x},${z}`);
-  const a=point(90.75,31.75),b=point(90.75,32.25);
+  const a=point(85.25,22.25),b=point(85.75,22.25);
   assert.equal(FP.canStep(a.x,a.y,b.x,b.y,{keys:new Set()}).ok,true,'transparent partition has no opaque grid wall behind it');
   assert.equal(PROPS.propCanOccupy(b.x,b.y,{from:a}),false,'the actual thin glass still stops the body');
 });
 
-test('all six meshes share the indoor drawn-floor datum and starting blocks remain supported beyond the partition',()=>{
+test('all seven meshes share the longitudinal drawn-floor datum and starting blocks remain supported beyond changing',()=>{
   const hosts=PROPS.renderInstances({inscriptions:false});
-  assert.equal(GLASS_COURT_PROPS.length,6);
+  assert.equal(GLASS_COURT_PROPS.length,7);
   for(const p of GLASS_COURT_PROPS){
     const h=hosts.find(h=>h.id===p.id);assert.ok(h);
-    assert.deepEqual([h.x,h.z],[71,28]);assert.ok(Math.abs(h.y-FP.decodeH(FP.encodeH(0)))<1e-10);
+    assert.deepEqual([h.x,h.z],[82,15]);assert.ok(Math.abs(h.y-FP.decodeH(FP.encodeH(0)))<1e-10);
     assert.equal(p.blocks,false);
   }
   for(let i=1;i<=5;i++){
@@ -87,18 +90,33 @@ test('all six meshes share the indoor drawn-floor datum and starting blocks rema
   }
 });
 
-test('solid planting supplies cover and an overlapping old save walks outward without granting new entry',()=>{
-  assert.ok(coverAt(76.25,29.35),'the solid trough, not leaves alone, supplies ordinary cover');
-  assert.equal(coverAt(88.25,31.60),null,'clear glass stops bodies without supplying opaque concealment');
-  let restored=point(76.25,28.75);assert.equal(PROPS.propCanOccupy(restored.x,restored.y),false);
-  for(const z of[29.25,29.75]){
-    const to=point(76.25,z);assert.equal(PROPS.propCanOccupy(to.x,to.y,{from:restored}),true);restored=to;
+test('the real Ellery-side approach clears retained garden stock and both relocated garden groups keep their support and collision',()=>{
+  PROPS.setColliderGroupEnabled('glass-court',true);
+  for(const id of['pool-lobby','glasshouse-changing','changing-pool'])FP.setDoorOpen(id,true);
+  for(let z=12.25;z<=16.25;z+=.5)for(let x=83.25;x<=84.75;x+=.5)
+    assert.equal(clear(x,z),true,`the complete D0 approach and throat clear at${x},${z}`);
+  for(const[id,x,z]of[['academic-garden-basin',79.5,19],['academic-garden-planter-east',91,20],['academic-garden-tree-east',91.1,20]]){
+    const p=PROPS.propById(id);assert.deepEqual([p.x,p.y,p.floor],[x,z,0]);assert.equal(p.blocks,id!=='academic-garden-tree-east','basin/planter remain solid; the original narrow tree silhouette remains scenery');
+    const c=Math.cos(p.yaw),s=Math.sin(p.yaw),scale=p.scale||1;
+    for(const dx of[-p.w*scale/2-.2,p.w*scale/2+.2])for(const dz of[-p.d*scale/2-.2,p.d*scale/2+.2]){
+      const q=point(x+dx*c-dz*s,z+dx*s+dz*c);assert.equal(FP.isSolid(q.x,q.y),false);assert.equal(FP.floorAt(q.x,q.y),0,'the entire padded original footprint is supported');
+    }
   }
-  const outside=point(76.25,29.75),inside=point(76.25,29.25);
+});
+
+test('low planting does not promise chest-height cover and an overlapping old save walks outward without granting new entry',()=>{
+  assert.ok(C.plantingBands.every(p=>p.height<COVER.MIN_HEIGHT_M));
+  assert.equal(PROPS.tallBlockingPropAt(...Object.values(point(82.5,20.25))),false,'short troughs do not invent chest-height cover');
+  assert.ok(coverAt(85.75,29.25),'the retained full-height counter supplies ordinary cover');
+  let restored=point(82.5,20.25);assert.equal(PROPS.propCanOccupy(restored.x,restored.y),false);
+  for(const x of[82.75,83.25]){
+    const to=point(x,20.25);assert.equal(PROPS.propCanOccupy(to.x,to.y,{from:restored}),true);restored=to;
+  }
+  const outside=point(83.25,20.25),inside=point(82.75,20.25);
   assert.equal(PROPS.propCanOccupy(inside.x,inside.y,{from:outside}),false);
 });
 
-test('rules and first aid keep their IDs and content on the actual changing north wall',()=>{
+test('rules and first aid keep their IDs and content on the retained pool north wall',()=>{
   const hosts=PROPS.renderInstances({inscriptions:false});
   for(const[id,x,text]of[['pool-entry-rules',95,'Municipal baths rules'],['pool-entry-first-aid',93,'A green first-aid cabinet']]){
     const p=PROPS.propById(id),h=hosts.find(h=>h.id===id),bounds=PROP_BOUNDS[p.mesh];
@@ -108,12 +126,12 @@ test('rules and first aid keep their IDs and content on the actual changing nort
     assert.ok(Math.abs(h.z+Math.cos(h.yaw)*back*h.scale-28)<1e-8,'back plane is flush to real mesh wall');
     assert.ok(Math.abs(frontSign*Math.cos(h.yaw)-1)<1e-8);
     const body=point(x+.25,30.25),yaw=Math.atan2(p.interactionX-(body.x+.5)*.5,-(p.interactionY-(body.y+.5)*.5));
-    assert.equal(PROPS.pickProp(body.x,body.y,0,3.2,{yaw,pitch:0})?.id,id,'existing inspection is reachable from changing floor');
+    assert.equal(PROPS.pickProp(body.x,body.y,0,3.2,{yaw,pitch:0})?.id,id,'existing inspection remains reachable from the pool floor');
   }
 });
 
 test('fluorescents and ventilation-room lights use indoor zones and pack readiness',()=>{
-  assert.equal(GLASS_COURT_LIGHTS.length,9);
+  assert.equal(GLASS_COURT_LIGHTS.length,7);
   for(const a of GLASS_COURT_LIGHTS){
     const light=CONSERVATORY_LIGHTS.find(l=>l.id===a.id);assert.ok(light);
     assert.deepEqual([light.x,light.y,light.z],[a.x,a.y,a.z]);assert.equal(light.powerMode,'always');
@@ -123,7 +141,7 @@ test('fluorescents and ventilation-room lights use indoor zones and pack readine
   assert.equal(resolveLocalLights({group:'ground',zone:ZONE.glasshouse},options).some(l=>l.id.startsWith('glass-court-')),false);
   const gh=resolveLocalLights({group:'ground',zone:ZONE.glasshouse},{...options,glassCourtReady:true});
   const changing=resolveLocalLights({group:'ground',zone:ZONE.poolChanging},{...options,glassCourtReady:true});
-  assert.equal(gh.filter(l=>l.id.startsWith('glass-court-')).length,7);
+  assert.equal(gh.filter(l=>l.id.startsWith('glass-court-')).length,5);
   assert.equal(changing.filter(l=>l.id.startsWith('glass-court-')).length,2);
 });
 
@@ -153,12 +171,14 @@ test('relocated pool washing fixtures attach to their real screen faces and leav
   }
 });
 
-test('fixed greenhouse glazing permits sight but blocks inspecting a pool fixture through it',()=>{
+test('fixed changing partitions permit sight but block inspecting a pool fixture through them',()=>{
   FP.compile(conservatory.levels,conservatory);PROPS.propsInit(FP);
-  const pick=(y,facing,yaw)=>PROPS.pickProp(168,y,facing,2,{yaw,pitch:-.04});
+  for(const id of['pool-lobby','glasshouse-changing','changing-pool'])FP.setDoorOpen(id,true);
+  const target=PROPS.propById('pool-start-4');
+  const pick=(x,z)=>{const p=point(x,z),yaw=Math.atan2(target.interactionX-x,-(target.interactionY-z));return PROPS.pickProp(p.x,p.y,0,3.2,{yaw,pitch:-.04});};
   PROPS.setColliderGroupEnabled('glass-court',false);
-  assert.equal(pick(62,2,Math.PI)?.id,'pool-start-3','the original open approach remains the fallback');
+  assert.equal(pick(85.75,30.25)?.id,'pool-start-4','the original open approach remains the fallback');
   PROPS.setColliderGroupEnabled('glass-court',true);
-  assert.equal(pick(62,2,Math.PI),null,'the real thin partition stops a reaching hand');
-  assert.equal(pick(66,0,0)?.id,'pool-start-3','the same fixture remains inspectable on the actual pool deck');
+  assert.equal(pick(85.75,30.25),null,'the real thin partition stops a reaching hand');
+  assert.equal(pick(85.25,31.75)?.id,'pool-start-4','the same fixture remains inspectable from clear supported cross-deck');
 });

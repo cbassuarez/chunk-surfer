@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import {transcriptChoiceText} from '../src/render/transcript.js';
 
 const root=fileURLToPath(new URL('../src/',import.meta.url));
 const noop=()=>{};
@@ -17,7 +18,7 @@ async function fixture(){
     'render/palette.js':{uiBrightness:()=>1},
     'render/recorder-instrument.js':Object.fromEntries(['drawRecorderInstrument','recorderFaceLayout',
       'recorderDisplayPalette','drawRecorderDisplayText','drawRecorderCheckMeter'].map(name=>[name,noop])),
-    'render/transcript.js':Object.fromEntries(['layoutTranscript','layoutTranscriptChoices','fitTranscriptChoices'].map(name=>[name,noop])),
+    'render/transcript.js':{...Object.fromEntries(['layoutTranscript','layoutTranscriptChoices','fitTranscriptChoices'].map(name=>[name,noop])),transcriptChoiceText},
     'narrative/obscured-name.js':{obscuredGlyphAt:noop,obscuredShape:noop},
     'game/access.js':{visualEffectsEnabled:()=>true},
     'game/local-text-review.js':{registerReviewRegion:noop},

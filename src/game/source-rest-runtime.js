@@ -23,10 +23,12 @@ function defaultPrompt(){const {rows}=uiSize();uiCenter(Math.max(2,rows-3),promp
  * Its renderer receives state.sourceRestView={seatId,progress,look,mode}
  * only while the camera is lowered, seated or rising. This is never saved as
  * Source progression. A commit stays seated until the host calls release(). */
-export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noop,onChange=noop,
+export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noop,onChange=noop,onImpact=noop,
   makeConversation=makeSourceRestConversationScene,stack=scenes,conversationOptions={},
   paintPrompt=defaultPrompt,drawRestInstrument=null,drawRestInstrumentInStudies=false,
-  transitionSeconds=.9,getStudyTreatment=()=>null,getStudyMemory=()=>null,getReducedMotion=()=>false,enableStudies=false}={}){
+  transitionSeconds=.9,getStudyTreatment=()=>null,getStudyMemory=()=>null,getReducedMotion=()=>false,
+  getReducedDread=()=>false,getEffectsMode=()=> 'full',enableStudies=false,
+  getRecorderVisible=()=>false,renderRecorderFallback=noop}={}){
   if(!scene||!renderer||typeof scene.view!=='function'||typeof scene.update!=='function'||typeof scene.key!=='function'||typeof renderer.render!=='function')
     throw Error('Source rest needs the continuation scene and renderer.');
   if(scene.sourceRest)throw Error('Source rest is already installed.');
@@ -35,6 +37,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     allowsLook:Object.getOwnPropertyDescriptor(scene,'allowsLook')};
   let mode='idle',seat=null,progress=0,look=null,overlay=null,committed=false,disposed=false,narrativeProgress=0,interruption=false,memoryDrive=0,memory=null;
   let lockNotified=false;
+  const conversations=new Map();
   const weatherScore=createSourceRestWeatherScore();let weatherCue=null;
   let afflictionPhase=null,affliction=sourceRestAfflictionFrame(),interfaceStage=0,interfaceAfterInterruption=false;
   const presentation=()=>sourceRestInterfacePresentation(narrativeProgress,{affliction,afterInterruption:interfaceAfterInterruption,minimumStage:interfaceStage});
@@ -43,7 +46,21 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   const clearMotion=()=>{for(const key of MOVEMENT)original.keyup?.call(scene,{key,code:key.startsWith('arrow')?key:'Key'+key.toUpperCase()});};
   const locked=()=>!disposed&&(committed||!!seat&&['sitting','seated'].includes(mode)&&overlay?.view?.()?.restLocked===true);
   const view=()=>({mode,seatId:seat?.id||null,phase:seat?.phase||null,progress,look:look?{...look}:null,committed,locked:locked(),overlayOpen:!!overlay,narrativeProgress,
-    timing:overlay?.view?.()?.restTiming||null,presentation:presentation(),weather:weatherCue?{...weatherCue,particles:undefined}:null,affliction:{...affliction}});
+    timing:overlay?.view?.()?.restTiming||null,nodeId:overlay?.view?.()?.nodeId||null,memory:memory?{...memory}:null,
+    presentation:presentation(),weather:weatherCue?{...weatherCue,particles:undefined}:null,affliction:{...affliction}});
+  const musicState=()=>{try{return conversationOptions.getMusicState?.()||{};}catch{return{};}};
+  function refreshWeather(value=scene.view()){
+    const music=musicState(),place=SOURCE_REST_SEATS.find(item=>item.phase===value.phase),
+      near=!!place&&value.chartId===place.chartId&&Math.abs(value.feet-place.feet)<1&&Math.hypot(value.x-place.x,value.z-place.z)<16,
+      sensory=mode==='standing'?narrativeProgress*progress:mode==='idle'?0:narrativeProgress;
+    weatherCue=weatherScore.update({phase:value.phase,active:near,
+      funeralActive:['wrong-return','catch'].includes(value.phase)&&value.ready!==false&&!music.ended&&!music.failed,
+      seated:restMode()&&!!seat,progress:sensory,
+      nodeId:overlay?.view?.()?.nodeId||'',audibleSeconds:Math.max(0,Number(music.audibleWallSeconds??music.playedSeconds)||0),
+      musicTime:Math.max(0,Number(music.currentTime)||0),audioTime:Number(music.audioTime)||0,
+      playbackRate:Number(music.playbackRate)||1,hold:!!(music.paused||music.protected||music.buffering),reducedMotion:!!getReducedMotion()});
+    if(value.phase==='catch'&&weatherCue)weatherCue={...weatherCue,flood:{active:false}};
+  }
   const changed=()=>{try{onChange(view());}catch{}};
   const notifyLock=()=>{if(!lockNotified&&locked()){lockNotified=true;changed();}};
   function focus(){
@@ -55,6 +72,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   }
   function stand(){if(disposed||mode==='committed'||mode==='idle')return false;clearMotion();mode='standing';changed();return true;}
   function finish(outcome){
+    if(outcome!=='commit'&&seat&&overlay?.checkpoint)conversations.set(seat.phase,overlay.checkpoint());
     overlay=null;
     if(disposed||mode==='idle'||mode==='committed')return;
     if(outcome!=='commit'){stand();return;}
@@ -69,9 +87,10 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   function sit(){
     const target=focus();if(!target)return false;
     const selected=SOURCE_REST_SEATS.find(item=>item.id===target.id);if(!selected)return false;
-    clearMotion();seat=selected;look={...seat.view};progress=0;narrativeProgress=0;interruption=false;mode='sitting';committed=false;lockNotified=false;interfaceStage=0;interfaceAfterInterruption=false;
+    const remembered=conversations.get(selected.phase);
+    clearMotion();seat=selected;look={...seat.view};progress=0;narrativeProgress=remembered?.clock?.progress||0;interruption=false;mode='sitting';committed=false;lockNotified=false;interfaceStage=0;interfaceAfterInterruption=!!remembered?.interfaceAfterInterruption;
     afflictionPhase=selected.phase;changed();
-    try{overlay=makeConversation({...conversationOptions,phase:seat.phase,onDone:finish});
+    try{overlay=makeConversation({...conversationOptions,phase:seat.phase,resumeFrom:remembered,onDone:finish});
       if(!overlay)throw Error('The Source rest conversation could not be opened.');
       stack.push(overlay);return true;
     }catch(error){
@@ -108,7 +127,8 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   scene.update=function(dt){
     const delta=Math.min(.25,Math.max(0,Number(dt)||0));
     const result=original.update.call(scene,dt);
-    if(disposed||mode==='idle'){conversationOptions.onRestProgress?.(0,false,weatherCue);return result;}
+    if(disposed)return result;
+    if(mode==='idle'){refreshWeather();conversationOptions.onRestProgress?.(0,false,weatherCue,scene.view()?.phase);return result;}
     notifyLock();
     if(seat&&overlay?.restProgress){
       narrativeProgress=Math.max(narrativeProgress,clamp(overlay.restProgress(),0,1));
@@ -121,6 +141,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
       :['distance-choice','teachers','strangers'].includes(narrative?.nodeId)?'recital':null;
     memory=seat?.phase==='catch'?{drive:0,ellery:0,listener:null,listenerStage:0}:{drive:memoryDrive,ellery:['organ','mistakes','mistake-choice','wince','more','voice','caid'].includes(narrative?.nodeId)?1:0,
       listener,listenerStage:.5};
+    refreshWeather();
     conversationOptions.onRestProgress?.(narrativeProgress,!!seat&&mode!=='standing',weatherCue,seat?.phase);
     if(mode!=='committed'){
       const s=scene.view();
@@ -140,11 +161,12 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
       // The host draws the already-existing physical recorder, not another
       // telemetry strip. It is below the existing vision and subtitle layers,
       // and has no key/pointer ownership or route into equipment state.
-      if(typeof drawRestInstrument==='function'&&(mode==='sitting'||mode==='seated')&&!display.suppressPeripheral){
+      if(getRecorderVisible()&&typeof drawRestInstrument==='function'&&(mode==='sitting'||mode==='seated')&&!display.suppressPeripheral){
         drawRestInstrument({presentation:display,narrativeProgress,affliction:{...affliction},transitionProgress:progress,
           conversationView:overlay?.view?.()||null,sarahNamed:!!conversationOptions.sarahNamed,musicTime:affliction.time,
           ...uiSize(),phase:seat.phase,seatId:seat.id,mode,study:false});
       }
+      renderRecorderFallback();
       const {cols}=uiSize();
       if(interruption)uiText(Math.max(3,Math.floor(cols*.12)),3,'R E C E I V E  /  H E —','ui-secondary',.48*progress);
       for(const field of sourceRestInterfaceFrame(narrativeProgress,{affliction}))uiText(field.edge==='right'?Math.max(2,cols-field.text.length-3):3,field.row,field.text,'ui-secondary',field.alpha*progress);
@@ -164,17 +186,14 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   };
   renderer.render=function(value,...args){
     notifyLock();
-    let musicSignal=0,audibleSeconds=0,musicTime=0,musicDuration=null,musicRevoicing=null,musicPlaying=false;
-    try{const music=conversationOptions.getMusicState?.();musicSignal=clamp(music?.signal,0,1);audibleSeconds=Math.max(0,Number(music?.playedSeconds)||0);musicTime=Math.max(0,Number(music?.currentTime)||0);musicDuration=music?.duration;
+    let musicSignal=0,audibleSeconds=0,musicTime=0,musicDuration=null,musicRevoicing=null,musicPlaying=false,musicSnapshot=null;
+    try{const music=conversationOptions.getMusicState?.();musicSnapshot=music;musicSignal=clamp(music?.signal,0,1);audibleSeconds=Math.max(0,Number(music?.audibleWallSeconds??music?.playedSeconds)||0);musicTime=Math.max(0,Number(music?.currentTime)||0);musicDuration=music?.duration;
       if(value.phase==='catch'){musicRevoicing=music?.revoicing?{...music.revoicing}:null;musicPlaying=!!music?.playing;}}catch{}
-    const place=SOURCE_REST_SEATS.find(item=>item.phase===value.phase)||SOURCE_REST_SEATS[0],near=value.phase===place.phase&&value.chartId===place.chartId&&Math.abs(value.feet-place.feet)<1&&Math.hypot(value.x-place.x,value.z-place.z)<16;
     const sensoryProgress=mode==='standing'?narrativeProgress*progress:mode==='idle'?0:narrativeProgress;
-    weatherCue=weatherScore.update({active:near,seated:restMode()&&!!seat,progress:sensoryProgress,
-      nodeId:overlay?.view?.()?.nodeId||'',audibleSeconds,musicTime,reducedMotion:!!getReducedMotion()});
-    if(value.phase==='catch'&&weatherCue)weatherCue={...weatherCue,flood:{active:false},judgment:weatherCue.judgment?{...weatherCue.judgment,bellEvents:[]}:null};
     const sourceRestView=restMode()&&seat?{seatId:seat.id,progress,look:{...look},mode,musicSignal,audibleSeconds,musicTime,degradation:narrativeProgress,interruption,memoryDrive,memory:getStudyMemory()||memory,studyTreatment:getStudyTreatment()||'loggia'}
       :{audibleSeconds,musicTime,musicSignal};
     sourceRestView.weatherCue=weatherCue;
+    sourceRestView.reducedDread=!!getReducedDread();sourceRestView.effectsMode=getEffectsMode();
     if(value.phase==='catch'){sourceRestView.musicRevoicing=musicRevoicing;sourceRestView.musicPlaying=musicPlaying;}
     sourceRestView.floodProgress=sensoryProgress;
     const embodied=restMode()&&!!seat&&mode!=='standing',canLeave=mode!=='committed'&&!overlay?.view?.()?.restLocked;
@@ -186,7 +205,16 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
       inputLost:embodied&&!canLeave&&affliction.inputLost,
       ...(!embodied?{pain:0,strain:0,pressure:0,facultyLoss:0}:{}),bodyProgress:embodied?progress:0};
     sourceRestView.affliction=affliction;
-    return original.rendererRender.call(renderer,sourceRestView?{...value,sourceRestView}:value,...args);
+    const rendered=original.rendererRender.call(renderer,sourceRestView?{...value,sourceRestView}:value,...args);
+    if(rendered!==false&&mode==='seated'&&affliction.embodied){
+      const receipt=renderer.diagnostics?.()?.frame?.destruction,music=musicSnapshot||{};
+      for(const impact of receipt?.mistakeImpacts||[]){
+        try{onImpact({impact,phase:seat?.phase,rendered:true,visible:impact.visible===true&&receipt.bodyAvailable===true,
+          embodied:true,settled:progress>=.999,canLeave:affliction.canLeave,progress:narrativeProgress,
+          held:!!(music.paused||music.buffering||music.seeking),protected:!!music.protected});}catch(error){onError(error);}
+      }
+    }
+    return rendered;
   };
   Object.defineProperty(scene,'allowsLook',{configurable:true,enumerable:true,get(){
     if(restMode()&&mode!=='standing')return true;
@@ -194,13 +222,13 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   }});
   scene.lookBy=function(yawDelta=0,pitchDelta=0){
     if(restMode()&&mode!=='standing'&&look){const gain=affliction.motorGain;
-      look={yaw:look.yaw+(Number(yawDelta)||0)*gain,pitch:clamp(look.pitch+(Number(pitchDelta)||0)*gain,-1.30,.62)};return true;}
+      look={yaw:look.yaw+(Number(yawDelta)||0)*gain,pitch:clamp(look.pitch+(Number(pitchDelta)||0)*gain,-1.30,1.25)};return true;}
     return original.lookBy?.call(scene,yawDelta,pitchDelta)??false;
   };
   scene.setLook=function(value={}){
     if(restMode()&&mode!=='standing'&&look){const gain=affliction.motorGain;
       look={yaw:look.yaw+(Number.isFinite(value.yaw)?Math.atan2(Math.sin(value.yaw-look.yaw),Math.cos(value.yaw-look.yaw))*gain:0),
-        pitch:clamp(look.pitch+(Number.isFinite(value.pitch)?value.pitch-look.pitch:0)*gain,-1.30,.62)};return true;}
+        pitch:clamp(look.pitch+(Number.isFinite(value.pitch)?value.pitch-look.pitch:0)*gain,-1.30,1.25)};return true;}
     return original.setLook?.call(scene,value)??false;
   };
   scene.lookAngles=function(){return restMode()&&look?{...look}:original.lookAngles?.call(scene)??null;};
@@ -227,7 +255,7 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     // functions; it neither advances the live scene nor rewrites its score.
     const studyWeather=createSourceRestWeatherScore();let studyCue;
     for(let t=Math.max(0,time-2);t<=time+.000001;t=Math.min(time,t+.1)){
-      studyCue=studyWeather.update({active:true,seated:true,progress:degradation,audibleSeconds:t,musicTime:t,
+      studyCue=studyWeather.update({phase:place.phase,active:true,seated:true,progress:degradation,audibleSeconds:t,musicTime:t,audioTime:t,
         sinceEntry:t,sinceSit:t,sinceInterruption:time>55?Math.max(0,t-55):null,stormAge:(degradation-.64)*530,reducedMotion:!!getReducedMotion()});
       if(t>=time)break;
     }
@@ -245,6 +273,9 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
     }
     return result;
   }:undefined;
-  scene.sourceRest=Object.freeze({focus,view,sit,stand,release,restoreCommitted,dispose,...(studyFrame?{studyFrame}:{})});
+  const recorderFrame=()=>seat&&['sitting','seated'].includes(mode)?{presentation:presentation(),narrativeProgress,
+    affliction:{...affliction},transitionProgress:progress,conversationView:overlay?.view?.()||null,
+    sarahNamed:!!conversationOptions.sarahNamed,musicTime:Math.max(0,Number(musicState().currentTime)||0),phase:seat.phase,seatId:seat.id,mode}:null;
+  scene.sourceRest=Object.freeze({focus,view,sit,stand,release,restoreCommitted,dispose,recorderFrame,...(studyFrame?{studyFrame}:{})});
   return scene.sourceRest;
 }

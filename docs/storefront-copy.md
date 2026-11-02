@@ -1,197 +1,228 @@
-# Chunk Surfer Storefront Copy — v1.1
+# Chunk Surfer storefront copy — v2.3 instrument-interface proposal
 
-This is the canonical source for manual itch.io and Steam storefront updates. The copy blocks are paste-ready; the positioning, research, release notes, and verification sections are internal publishing guidance.
+**Review status: unapproved revision.** The user rejected the earlier visual and copy proposals. The latest explicit direction is: **“copy the game look exactly. annunciators. faceplates. vfd. lcd. etc. better screenshots. imperitive copy”**. This revision follows that instruction; it is not evidence of acceptance or publication.
 
-**Release-candidate update:** October 26, 2026 for `v0.3.0`. This is prepared copy,
-not evidence that this version is published. Earlier SD-bundled downloads remain
-unchanged; reconfirm the actual uploaded artifact before posting lean-build claims.
+Prepared November 1, 2026 for the assumed **v0.3.0 public beta release**. This is prepared copy, not evidence that this version is published. Public release wording and actual build uploads remain separate.
 
-## Publishing status
+After review, upload the six gameplay images to itch and replace both their `src` and enclosing `href` URLs in [storefront-copy-itch.html](storefront-copy-itch.html) with the hosted HTTPS image URLs. The relative URLs in this file support local review only. Then paste it into itch's **Description**, [storefront-install-itch.html](storefront-install-itch.html) into **Install instructions**, and [storefront-itch.css](storefront-itch.css) into **Theme → Custom CSS**. Set **Screenshots → Hidden** in the native theme editor and remove the old banner to expose itch's native game title. This preserves the existing gallery uploads while using inline images in reading order. [storefront-itch-preview.html](storefront-itch-preview.html) is a local review preview, not a live itch page or packaged gameplay evidence.
 
-- Keep the pitch evergreen. Refresh beta version, artifact size, signing status, hardware requirements, and download labels from the release artifacts immediately before publication.
-- Do not describe a take as “sixty real-time seconds.” The work-order fiction specifies one minute, while ordinary takes currently complete after 45 seconds. The storefront copy therefore says “clean take” or “clean room-tone recording.”
-- Do not add multiplayer, raw-audio recording, guaranteed playtime, procedural uniqueness, or Steam-availability claims without first implementing and verifying them.
-- Do not advertise live Stable Diffusion as an included feature while it is under development and absent from normal distributions.
-- External publication is a webmaster action. The July 14, 2026 visibility check is historical and does not establish current page visibility. Verify the final published page while logged out and on mobile.
-- The `v0.3.0` candidate targets macOS Apple Silicon DMG, Windows x64 portable ZIP and Linux x64 AppImage/deb. Retain the current beta channels and unsigned notices until the exact release artifacts and publication are verified; do not claim macOS Intel or Steam Deck/Proton support from the current matrix.
+## Corrections carried forward
 
-## Positioning
+The first pass turned the five-room assignment and a missing contractor into the identity of the whole game. Its source audit gave too much authority to old `conservatory-script.js` comments and existing marketing. The claim that the player had no meaningful personal history was wrong: active payphone and Outskirts dialogue contains missed commitments, Sarah and Lyle, damaged relationships, creative pressure, and compulsive retakes. Keep that authored material; do not invent a dead-relative or generic grief plot.
 
-**Product promise:** A short first-person psychological horror game in which a field recordist must capture five clean room tones inside a condemned conservatory, the player’s optional computer microphone can make real-room silence part of the challenge, and the building's native material, light and audio systems distort the world during play.
+The second pass found the broader experience but wrote a genre/thematic essay and proposed another visual interpretation. The user rejected that too. Do not reuse the broad poetic lead or substitute a newly invented equipment aesthetic for the game's actual surfaces.
 
-Present the genre, role, objective, failure condition, and microphone behavior before introducing the work-order voice. Then widen the promise to light/noise management, changing corridors, redaction encounters, and literal source-code spaces. Preserve the previous contractor’s identity, the chapel confrontation, HUSH, and the endings as mysteries.
+The deeper audits followed current authored dialogue and wiring across arrival, social spaces, kit progression, Outskirts, Source II/III, driving, endings, and replay. Use that whole-game evidence to choose tangible instructions and representative media. Keep interpretation and ending evidence internal.
 
-## Positioning and research notes
+## Current copy direction
 
-### Storefront comparison
+**TAKE THE JOB.**
 
-| Reference | What its storefront copy does | Direction for *Chunk Surfer* |
-| --- | --- | --- |
-| [OMORI](https://store.steampowered.com/app/1150690/OMORI) | Establishes an emotional journey and a strange world while leaving its play structure largely implicit. | Treat its deliberate vagueness as a reputation- and media-dependent outlier, not a model for an unfamiliar game with an unfamiliar core task. |
-| [Disco Elysium](https://store.steampowered.com/app/632470/Disco_Elysium/) | Leads with genre and role, then names systems, player verbs, and possible identities and outcomes. | Use this as the primary structural model: identify the player, say what they do, expose the distinctive systems, and let the consequences create intrigue. |
-| [Jazzpunk](https://store.steampowered.com/app/250260/Jazzpunk) | Gives the espionage-adventure premise before letting jokes and stylized voice carry the page. | Preserve the bureaucratic work-order voice, but only after the recording job and its rules are understood. |
-| [Torizon Telecom](https://store.steampowered.com/app/4599560/Torizon_Telecom/) | Makes one legible visual interaction the center of its pitch, then surrounds it with fiction. | Give the microphone-contaminated recording one clear, demonstrable sentence and an adjacent image or clip; avoid restating the same hook as lore. |
-| [DON’T SCREAM](https://store.steampowered.com/app/2497900/DONT_SCREAM/) | Explains immediately that the player’s microphone is part of the challenge and states the consequence of making noise. | Disclose the microphone early, but distinguish *Chunk Surfer*: input is optional and noise spoils a recording or draws danger rather than ending the entire run. |
-| [Stifled](https://store.steampowered.com/app/514830/Stifled/) | Connects microphone input to its echolocation system and to enemies hearing the player. | Explain both sides of real-world sound: it can contaminate a take, and sufficiently loud input can provoke an in-game response. |
-| [A Quiet Place: The Road Ahead](https://store.steampowered.com/app/2233120/A_Quiet_Place_The_Road_Ahead/) | Treats microphone noise detection as an explicit optional feature inside a broader stealth-horror premise. | State optionality and continued play without permission wherever microphone behavior is described. |
-| [DREAMIO: AI-Powered Adventures](https://store.steampowered.com/app/2795060/DREAMIO_AI_Powered_Adventures/) | Uses local or cloud diffusion models for dynamic illustrations. | Keep SD comparisons confined to developer research while Chunk Surfer's optional lens is not distributed. |
-| [The Mortuary Assistant](https://store.steampowered.com/app/1295920/The_Mortuary_Assistant/) | Starts from a recognizable occupation and concrete tasks before escalating into supernatural threat. | Lead with field recording as a job: inspect, monitor, record, retake. Let the conservatory’s behavior become the escalation. |
-| [Home Safety Hotline](https://store.steampowered.com/app/2357910/Home_Safety_Hotline/) | Uses ordinary clerical work and a clear information-handling loop to ground uncanny material. | Make the paperwork and redaction mechanics readable as actions, not merely atmosphere. |
-| [Iron Lung](https://store.steampowered.com/app/1846170/Iron_Lung/) | Compresses role, action, setting, and sensory constraint into a sharp premise, then separates gameplay features from story context. | Keep the first paragraph compact and mechanical; use later sections for the changing building, redaction, source space, and fiction. |
+Write in imperative verbs and the game's concrete vocabulary: **ARRIVE. UNPACK. LISTEN. RECORD. ANSWER THE SIGNAL. TALK. READ. CALL. KEEP GOING. SIT DOWN. LISTEN. CHOOSE WHAT TO CARRY OUT.**
 
-### Research basis
+Establish role and assignment immediately: enter condemned Ellery as the field recordist and capture five clean room tones before demolition. Then instruct actions across the actual adventure: prepare equipment and patch techniques, record and play back, talk to people, follow documents and calls, handle tactical encounters, cross impossible musical construction, drive through the storm, stop for performances, and decide when to leave.
 
-- **Clarity has to survive the skim.** [Steamworks guidance](https://partner.steamgames.com/doc/store/page/description?l=english) asks the short description to summarize genre and unique value, while [itch.io’s page guidance](https://itch.io/docs/creators/design) recommends an informative summary and feature list. In a qualitative [Steam browsing study](https://www.gamedeveloper.com/business/how-steam-users-see-your-game), shoppers often gave copy only a few words before moving to media, tags, or another game. The first sentence therefore carries genre, role, objective, and the unusual microphone rule.
-- **Use plain language before specialist language.** Liu’s research on [technical product language and processing fluency](https://onlinelibrary.wiley.com/doi/10.1002/cb.2244) found that unfamiliar technical language can lower purchase intention through reduced processing fluency. “Room tone” is consequently defined on first use as the ambient sound of an apparently empty room.
-- **Use narrative after the product is legible.** Research by Gallo, Escalas, and Sood on [narrative product presentation](https://www.journals.uchicago.edu/doi/abs/10.1086/727838) supports narrative framing for experiential purchases. The copy retains one compact work order after the mechanical premise instead of making the entire description a prop.
-- **Reveal a rule and preserve a gap.** Loewenstein’s [information-gap account of curiosity](https://doi.org/10.1037/0033-2909.116.1.75) suggests that curiosity depends on recognizing what is missing. The page explains the job and its dangers, but withholds the previous contractor, chapel, HUSH identity, and endings.
-- **Choose features that map to player experience.** The [Player Experience Inventory](https://www.sciencedirect.com/science/article/pii/S1071581919301302) and Ryan, Rigby, and Przybylski’s work on [motivation in games](https://doi.org/10.1007/s11031-006-9051-8) provide useful dimensions for selecting claims: clear goals and rules, challenge and mastery, audiovisual appeal, curiosity, immersion, autonomy, and meaning. They are a framework for what the copy should demonstrate, not evidence that wording alone will convert a sale.
-- **Put media beside the claim it proves.** Research on [multimedia product presentation](https://pubsonline.informs.org/doi/10.1287/isre.1070.0124) supports using vivid, diagnostic presentation to improve product understanding. Each existing image or clip is therefore placed next to the mechanic it makes easiest to verify.
+Use exact control labels where relevant: **REC / STOP / TAKES**, **EXPOSE / MONITOR / PLAYBACK / HOLD**, **SETTINGS**, and **ARCHIVE / 100%**. These are explanatory text, not fake website buttons. Leave actual download actions to itch.
 
-| Player-experience dimension | Storefront evidence |
+Keep genre/platform/version facts as compact instrument readouts. Keep privacy, content, and installation facts precise even where neutral declarative prose is necessary. Do not explain themes, describe renderer implementation, promise a fixed short duration, or reveal later identities or ending mechanisms. Qualify the alternate replay unlock without naming its role.
+
+## Live page findings
+
+The November 1, 2026 editor inspection found:
+
+- The summary is **“a haunting at Ellory Conservatory”**. Correct **Ellory** to **Ellery** and replace the vague summary once the new framing is accepted.
+- Visibility is **Restricted**, with a password enabled. Release status is **in development**. A new beta does not by itself require changing either setting. Keep access restrictions until the intended visibility decision is made; retain the development status while the game remains in development.
+- The AI disclosure is **Yes / Code only**. Removing an experimental image-rendering feature does not justify changing this to No. Preserve the truthful disclosure and independently audit shipped creative assets before changing any category.
+- Tags are `3d`, `atmospheric`, `audio`, `experimental`, `exploration`, `first-person`, `horror`, `itchfunding`, `psychological-horror`, and `singleplayer`. Keep relevant genre and play tags; reassess `itchfunding` against whether there is an actual funding campaign. Do not imply microphone-required play or a conventional rhythm game.
+- All four uploads display **0.3.0**. Displayed sizes are Windows **488 MB**, macOS **494 MB**, Debian **489 MB**, and AppImage **562 MB**. These are a page snapshot, not proof that the uploaded bytes match the newest local working tree. Keep these values out of evergreen copy.
+- The gallery has nine older screenshots, no trailer, and two title treatments. Replace the duplicate title treatment and legacy combat imagery with a new set covering the whole experience.
+- Average session metadata says **“A few hours”**, while the old description calls the game short. Remove the unsupported short-game claim. Revisit session metadata after timed playthroughs of the actual release.
+
+The local preview cannot verify live page state or replace a final logged-out check.
+
+## Source of truth from the deeper audits
+
+| Experience or interpretation | Current source and evidence |
 | --- | --- |
-| Clear goals and rules | Five rooms, five clean recordings; movement or noise can invalidate a take. |
-| Challenge and mastery | Listen first, control movement and breath, manage light and battery, and decide when to risk a retake. |
-| Autonomy | Choose routes, decide when to use light, and choose whether to enable microphone input. |
-| Curiosity and meaning | Investigate the prior packet while deciding what information survives redaction. |
-| Immersion and audiovisual appeal | Headphone monitoring, an audio-reactive building, and optional real-room loudness make listening the primary interface. |
+| Physical arrival, belongings, radio, and stepping out into the world | `src/data/opening-vehicle.js`, `src/game/opening-vehicle-scene.js`, `src/game/opening-cab-inspection.js`, `src/main.js:11922` |
+| The school situated within a social world | `src/data/pub-dialogue.js:24` (Iona's requests), `:59` (vigil), `:129` (refusal, preservation, local work); `src/data/academic-society.js:382` (music and company) |
+| Institutional concealment and refusal to perform | `src/data/student-strike-evidence.js:13` (internal recovery / public missing register), `:23` (students will not play over what happened); `src/data/pub-dialogue.js:129` |
+| Personal relationships, missed commitments, and compulsive retakes | `content/narrative/source-space.payphone.story.json:1473`, `:1525`, `:1545`, `:1624`; active runtime flurry at `src/main.js:20100` |
+| Professional agreement and always being nearly finished | `content/narrative/ending.surfaced.story.json:222`, `:282`; these are internal thematic evidence and contain ending spoilers |
+| Recording as one physical practice within the adventure | `src/game/recordist.js`, `src/game/recorder-scene.js`; the contract in `src/data/conservatory-script.js:36` establishes the assignment rather than the whole game's meaning |
+| Kit choices, patchable techniques, and preparation | `src/game/field-kit.js:16`, `src/game/combat-progression.js:1`, `src/game/skill-patchbay.js`; leads are reversible preparation decisions |
+| Current tactical signal encounters | `src/game/combat-state.js`, `src/game/combat-tutorial.js:6`, `src/game/combat.js`; torch, recorder, holds, parries, and earned actions |
+| Giant musical objects, physical joints, folds, stairs, and descents | `src/data/source-continuation.js:6`, `src/data/source-continuation-journey.js`, `src/data/source-rest-route-composition.js:23`; objectives at `src/game/source-continuation.js:450` |
+| Beauty, attention, imperfection, and the risk of remaining | `src/data/source-rest-conversation.js:250`, `src/data/source-rest-couperin-conversation.js:102`, `src/data/source-rest-questions.js:50` and `:102`; active integration at `src/main.js:21335` |
+| Full performances rather than ornamental music loops | `src/data/source-rest-performance.js:3` (Bach performance), `src/data/source-rest-couperin-source.js:3` (complete Couperin and revoicing); optional music-clocked encounters |
+| A playable storm journey that changes its material | `src/game/source-drive/evolution.js:30`; ordinary road, weather, water, anatomy, aftermath; actual controls/host at `src/main.js:21536` |
+| Source IV belongs to one ending route | `src/data/source-iv.js:1`, `src/main.js:28652`; do not sell four universal mandatory chapters |
+| Return, persistent evidence, and an unlocked causal replay | `src/game/post-run-copy.js:17`, `:91`, `:122`; qualify replay availability and preserve its identity reveal |
+| Accurate microphone and local profile disclosure | `src/game/warning.js:23`, `src/audio/take-slate.js`, `src/audio/payphone-line.js`, `src/game/settings-tips.js` |
+| Controls, accessibility, and release matrix | `src/game/bindings.js`, `src/game/settings.js`, `scripts/release-matrix.mjs`, `scripts/itch-release.mjs` |
 
-## Steam short description
+All Source/rest/ending details above are internal evidence. They are not a list of spoilers to transfer to the store page. Branch-specific scenes and optional conversations should not be promised as mandatory events in every run.
 
-Character limit target: under 300 characters, plain text, no release language.
+## Store summaries
+
+Proposed itch summary, kept brief for the editor's summary field:
+
+> Take the job. Record the rooms. Answer the signal. Find a way through Ellery and the places beyond it.
+
+Steam short description: imperative, plain text, under 300 characters, with no version or availability claim.
 
 <!-- COPY: STEAM SHORT START -->
-Chunk Surfer is a short first-person psychological horror game about recording five clean room tones—the ambient sound of empty rooms—in a condemned conservatory. Stay still and silent: movement or noise can spoil a take, including loudness detected through your optional computer microphone.
+Take a field-recording job at condemned Ellery Conservatory. Prepare your kit. Record the rooms. Talk to the people who stayed. Answer the signal in tactical encounters. Cross impossible musical spaces and choose what to carry out. Microphone input is optional.
 <!-- COPY: STEAM SHORT END -->
 
 ## Shared About section
 
-Use this as Steam’s **About This Game** copy and as the evergreen core of the itch.io page.
+Plain-text counterpart of the proposed description. Retain the tangible action sequence when preparing another store page. The HTML is the itch paste target after review.
 
 <!-- COPY: SHARED ABOUT START -->
-Chunk Surfer is a short first-person psychological horror game about professional listening. As a field recordist in the condemned Ellery Conservatory, capture five clean room tones: the ambient sound of apparently empty rooms. Monitor each space, roll the recorder, then stay still and silent. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.
+**TAKE THE JOB.**
 
-> **SITE** — Ellery Conservatory of Music. Condemned.
->
-> **DELIVER** — Five clean room-tone recordings.
->
-> **WINDOW** — One night. Demolition begins at 06:00.
->
-> **RULE** — If you can hear yourself on the take, the take is not the room.
+Report to Ellery Conservatory as the field recordist. Capture five clean room tones before demolition at 06:00. Carry your kit through the school, its streets, and the places opening beyond them.
 
-### Listen. Record. Do not move.
+FIRST-PERSON HORROR ADVENTURE · SINGLE PLAYER
 
-Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again—and a loud mistake can give the building something to follow.
+### ARRIVE. UNPACK.
 
-### Spend light. Leave noise.
+Step out of the van. Check in. Read the work order. Choose your field equipment, fit the kit, and keep the map close. Bring a light.
 
-Your torch makes the conservatory legible, but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Balance seeing the route ahead against announcing where you are. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.
+### LISTEN. RECORD.
 
-### Watch the building remember wrong.
+Bring the room up in your headphones. Check the level. Open the recorder, press **REC**, and hold still. Capture the sound of the room without adding your footsteps, handling, or breath. Watch the machine. Press **STOP** when the take is usable. Open **TAKES** to hear what came back.
 
-*Chunk Surfer* uses authored PBR materials, native lighting and deliberate rendering distortions to make Ellery Conservatory feel unstable. Material, colour and contrast interact with the building's audio and story systems. The experimental offline Stable Diffusion material renderer is under separate development; it is not bundled with the game and is not required to play.
+Mind the torch battery. Use the light to find your way. Keep the beam and your noise off anything you would rather leave alone.
 
-### Read what comes back.
+### ANSWER THE SIGNAL.
 
-Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce.
+Patch your techniques before the encounter. Read the next move. **EXPOSE** what hides. **MONITOR** a broadcast. Capture it, then use **PLAYBACK**. **HOLD** against a blow, or time a parry to turn it back. Earn another action with a good read. Watch the battery and your composure.
 
-The investigation eventually ruptures into literal source-code space, where the game’s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.
+### TALK. READ. CALL.
 
-### Let your room into the game—or do not.
+Go across the road. Speak to the people keeping the pub warm. Help with an errand. Meet the people still occupying the school. Ask about a performance. Read the retained records. Follow the letters and phone calls. Hear what has been left out of the account, including your own.
 
-Computer microphone input is optional. When enabled, *Chunk Surfer* measures loudness locally while a take is rolling. It never records, stores, transmits, or uploads audio. You can deny permission and complete the game without microphone input.
+### KEEP GOING.
 
-Five rooms. Five clean takes. Complete the account before demolition begins.
+Climb through instruments large enough to become buildings. Cross remembered rooms joined at impossible angles. Find the next landing before choosing a descent. Take the wheel and drive into the storm. Look for a way through.
+
+### SIT DOWN. LISTEN.
+
+Stay with a performance as it unfolds. Let the conversation run. Hear the room, the hands, the mistakes, and the space after a note. Decide how long to remain. Get up while you still can.
+
+### CHOOSE WHAT TO CARRY OUT.
+
+Keep what you find. Decide what to leave. Reach an ending and check **ARCHIVE / 100%** for discoveries and filed returns. Finish a run; if it qualifies, play through that same night from another side.
 <!-- COPY: SHARED ABOUT END -->
 
-## Itch.io version
+## Release-managed copy
 
-Paste the shared About section above first, then append the following release-managed blocks. Keep these separate from the evergreen pitch so they can be replaced without rewriting it.
-
-### Beta and installation block
+These blocks assume the named release will be posted. Verify the release facts before using them. Internal review and verification status should not appear as player-facing release prose.
 
 <!-- COPY: ITCH BETA START -->
-## Beta build and installation
+## v0.3.0 public beta
 
-The v0.3.0 candidate remains a beta distribution. Save files, settings, performance, and packaging may change between builds. Confirm publication and replace this candidate wording before posting.
+Save compatibility, performance, and packaging may change in later updates. Desktop builds are unsigned; first-launch instructions and controls are below the downloads.
 
 - **macOS:** Apple Silicon DMG.
-- **Windows:** 64-bit portable ZIP; extract the complete folder. Microsoft Edge WebView2 Runtime is required. No diffusion-model or NVIDIA CUDA dependency in this release configuration.
-- **Linux:** 64-bit AppImage and Debian package; no diffusion-model or NVIDIA CUDA dependency in this release configuration.
-- **Signing:** Desktop beta builds are unsigned. The operating system may show a warning; macOS may require manual approval the first time the app opens.
-- **Download size:** Replace with measurements from the actual lean release files; do not reuse sizes from the earlier SD-bundled beta.
+- **Windows:** x64 portable ZIP. Microsoft Edge WebView2 Runtime required.
+- **Linux:** x64 AppImage and Debian package.
 
-Before publishing an update, replace this block with the platform labels, signing status, hardware requirements, and sizes verified from that release’s actual artifacts.
+Headphones recommended. Microphone input and local personalization are optional. Download sizes appear beside each file.
 <!-- COPY: ITCH BETA END -->
-
-### Content warning
 
 <!-- COPY: ITCH CONTENT WARNING START -->
 ## Content warning
 
-Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings are available to reduce or disable intense physical presentation effects.
+Sustained dread, sudden loud sounds, deliberate jumpscares, flashing lights, and high-contrast patterns. Visual effects can be reduced in Settings. Optional desktop effects may move the game window and open additional windows.
 <!-- COPY: ITCH CONTENT WARNING END -->
-
-### Microphone privacy notice
 
 <!-- COPY: ITCH MICROPHONE START -->
 ## Optional microphone input
 
-Microphone permission is optional. If enabled, the game performs local loudness analysis so sound in your room can contaminate an active take or provoke an in-game response. Audio is never recorded, stored, transmitted, or uploaded, and microphone input is never played through the game. You can refuse or revoke permission and complete the game without it.
+Microphone permission is optional. With permission, the game measures room loudness locally so real noise can affect play. You can also choose to record spoken take slates and voicemail. These recordings stay on your device; the game does not recognize speech or automatically upload audio. You can complete the game without a microphone.
 <!-- COPY: ITCH MICROPHONE END -->
 
-## Feature hierarchy
+## Exact game surfaces and buttons
 
-Use these verb-led sections in this order. They are already embodied in the shared About copy and should also determine screenshot captions, trailer beats, and page layout.
+Follow the latest explicit instruction to copy the game look exactly. Use production-rendered faceplate, glass, keycaps, annunciators, LCD, and VFD assets with the game's actual lettering. Read `src/render/presentation.js`, `src/render/hardware-faceplate.js`, `src/render/hardware-material.js`, `src/render/recorder-instrument.js`, and the electronic-text/VFD renderers. The runtime shader and world palette are separate from these instrument surfaces; do not paint the whole world amber because a menu uses amber.
 
-1. **Listen and record:** monitor a room, commit to a take, stay still and quiet, and retake contaminated recordings.
-2. **Manage light and noise:** spend finite torch battery, avoid attracting attention, and understand that movement, equipment, and injury create risk.
-3. **Watch the building distort:** authored PBR materials, dynamic lighting and native graphics effects support the psychological horror.
-4. **Navigate changing corridors:** retrace an unstable building whose unheard and unseen connective spaces can shift.
-5. **Redact the record:** make transcript-redaction decisions inside physical encounters and defend what remains readable.
-6. **Enter the source:** move through literal source files used as terrain and interactable space.
+The public fragment supplies `custom-panel > custom-annunciator + custom-glass` composition, `custom-vfd` headings, and `custom-lcd` factual readouts. Annunciators contain static service labels; LCD fields contain actual genre, version, platform, and optional-input facts. They must not fabricate live state, level values, progress, or readiness.
 
-## Media order
+Keep the exported materials and state behavior faithful. Use the actual game wordmark and current screenshots. Preserve itch's real Download, Follow, and Add to collection actions, keyboard focus, readable contrast, mobile wrapping, and reduced-motion behavior. Do not turn explanatory REC / STOP / TAKES text into nonfunctional page controls.
 
-No new media is required. Upload the existing assets to each storefront and place them beside the claim they demonstrate; repo-relative paths are production references, not public embed URLs.
+Both deeper audits also establish that the world exceeds the recorder: the opening overture's pub/vigil/school/rooms/tower contexts are in `src/data/opening-overture.js:15`; the printed front end is in `src/render/pixel-mesh/shader.js:40`; the world palette is in `src/render/pixel-mesh/palette.js:1`; familiar construction at impossible scale and source words that need not be instructions are in `src/data/source-rest-questions.js:37`. Use these pointers to select the screenshots, not to replace current runtime images with a description of their style.
 
-| Order | Asset | Placement and claim | Suggested alt text |
-| --- | --- | --- | --- |
-| 1 | [`docs/media/title-screen.png`](media/title-screen.png) | Page header or first gallery item; establishes title, tone, and professional-recording identity. | “Chunk Surfer title screen styled as an archival field-recording interface.” |
-| 2 | [`docs/media/conservatory-lit.png`](media/conservatory-lit.png) | Beside “Spend light. Leave noise.”; demonstrates first-person exploration, torchlight, and the conservatory setting. | “A flashlight illuminates a dark corridor inside the condemned Ellery Conservatory.” |
-| 3 | [`docs/media/redaction-battle.png`](media/redaction-battle.png) | Beside “Read what comes back.”; demonstrates that redaction becomes a playable encounter. | “A transcript redaction encounter overlays a dark room with selectable text and hostile marks.” |
-| 4 | [`docs/media/chunk-surf-source-space.webm`](media/chunk-surf-source-space.webm) with [`PNG fallback`](media/chunk-surf-source-space.png) | Immediately after the source-space paragraph; demonstrates literal files becoming navigable space. | “Gameplay inside a surreal source-code space where files form the surrounding terrain.” |
+## Replacement media brief
 
-## Verification checklist
+**New media is required.** Existing `docs/media/title-screen.png`, `conservatory-lit.png`, `redaction-battle.png`, and the old Source-space clip are historical references until compared with the release. A title screen and dark corridor cannot represent the whole game. Do not use an old redaction board as the image for current tactical encounters.
 
-### Before every publication
+Capture the exact intended release with its final assets and record its version/hash. Inspect the saved images and clips, including sound. Developer entry points may help compose a shot; they do not establish a normal player route or packaged-native acceptance.
 
-- Re-read the current release artifacts and replace the itch beta/install block with verified platform, signing, hardware, and size facts.
-- Confirm the Steam short description remains plain text, evergreen, below 300 characters, and includes the genre, five-recording objective, and optional microphone hook.
-- Confirm the opening paragraph alone lets a reader identify: psychological-horror genre; field-recordist role; five clean room tones as the objective; movement/noise as the failure condition; optional microphone loudness as an additional input; and local, non-recording microphone behavior.
-- Verify that the storefront does not advertise the development-only Stable Diffusion renderer as an included feature.
-- Preview the short description and About section in Steamworks before submission.
-- After itch publication, inspect the page logged out and on a mobile viewport. Check public visibility, hierarchy, media embeds, alt text, download buttons, supported-platform labels, and beta notices.
+| Order | New capture | What it must communicate |
+| --- | --- | --- |
+| Cover / banner | Actual title identity with a strong current world image | A recognizable game rather than a fabricated equipment brand; legible at thumbnail size |
+| 1 | Arrival, streets, or conservatory frontage | A music school situated in a larger inhabited night |
+| 2 | Recorder during a legitimate take | The physical instrument, readable state, room, and vulnerability of the work |
+| 3 | A current social encounter | People, company, and conversation; no late identity reveal or tiny unreadable dialogue |
+| 4 | A tactical encounter | Current field tools, incoming threat, and the choices the player makes |
+| 5 | Impossible musical architecture | Real scale, a traversable route, material and place; avoid presenting it as a code-reading puzzle |
+| 6 | A listening place or another distinct later environment | The quiet, beauty, and breadth of the journey without showing an ending |
 
-### Opening-copy comprehension test
+A compact gameplay trailer should connect ordinary arrival, a person or conversation, recording under pressure, a tactical exchange, the storm drive, and a glimpse of musical architecture/listening. Use actual game sound and captions where useful. Leave space for a sound or action to register. Do not reduce the trailer to title cards, darkness, effects, or an exhaustive feature list. Its length does not establish playtime.
 
-Show a reader only the first paragraph of the shared About section, without the title, feature sections, screenshots, or tags. Ask the questions below without supplying answer choices. Pass only when every answer is materially correct; record misses and revise the opening before publication.
+## Default controls
 
-| Question | Required understanding in v1.1 |
+The install fragment contains this table. Do not describe Shift as sprint or claim every keyboard binding is remappable. These are normal on-foot controls; driving and specialized scenes display their own prompts.
+
+| Key | Action |
 | --- | --- |
-| What kind of game is this? | A short first-person psychological horror game. |
-| Who are you, and what must you accomplish? | A field recordist capturing five clean room tones inside a condemned conservatory. |
-| What makes a take fail? | Movement or noise invalidates the recording and requires another attempt. |
-| What does the computer microphone do? | Optionally uses loudness from the player’s real room as gameplay input. |
-| What happens to microphone audio? | Loudness is analyzed locally; audio is never recorded or uploaded, and permission is not required to play. |
-| What is the principal differentiator? | A field-recording horror challenge incorporates optional real-room loudness into its sound and listening mechanics. |
+| WASD / arrows | Move |
+| Shift | Quiet movement |
+| C | Hide |
+| F | Light |
+| B | Bag |
+| M | Map |
+| R | Open recorder |
+| V | Radio |
+| E | Interact |
+| P | Playback |
+| Esc | Menu / pause |
 
-The opening copy specifies the role, task, stakes, and optional microphone feature without claiming that an SD model ships. Test comprehension with a reader who has not seen the game.
+R opens the machine. Its physical controls are **REC / STOP / TAKES**. Opening it does not pause the room. Controller bindings can be configured in Settings.
 
-### Ground-truth audit
+## Publication checks
 
-The shipped-mode claims should be limited to the verified authored game: five target rooms; optional microphone input; local loudness-only analysis; microphone noise spoiling takes; sufficiently loud input provoking an in-game response; torch attraction and battery consumption; sound-generating movement and injury; changing unheard/unseen corridors; playable redaction encounters; literal source-code spaces; and authored PBR materials, geometry and lighting. Local SD remains experimental and is not a shipping feature.
+1. Review the imperative copy and exact production-surface implementation against the latest instruction. Earlier rejected proposals remain superseded drafts; a new local draft is not acceptance or publication.
+2. Identify the exact release commit and packages. Recheck architecture, signing, filenames, runtime dependencies, save behavior, and first-launch instructions. Update both public fragments if any facts change.
+3. Confirm all four itch channels contain the intended artifacts: `mac-arm64-beta`, `win-beta`, `linux-appimage-beta`, and `linux-deb-beta`. Existing uploads already say 0.3.0; compare provenance or bytes rather than version labels alone. A local build or upload command is not a publication receipt.
+4. Replace with measurements from the actual lean release files if sizes are needed for a devlog or another store. Let itch show its own package sizes. Do not invent CPU/RAM/GPU minima, macOS Intel support, Steam Deck/Proton acceptance, Steam availability, or playtime.
+5. Capture and inspect the new media from the release. Confirm that it reflects the whole experience, the current visual composition, tools, characters, and encounters. Storefront preview screenshots are not gameplay captures.
+6. After acceptance, upload the selected screenshots and substitute their hosted HTTPS URLs in the description before pasting. Apply the fragments and CSS; choose **Screenshots → Hidden**, remove the old banner, and use the native title. Review cover art separately. Review the complete itch page at desktop and phone widths, logged out as well as logged in: real download actions, footer and metadata links, readability, image order, table wrapping, and motion preferences.
+7. Keep Restricted/password visibility and in-development status unless the publication decision explicitly changes them. For a public launch, change access deliberately and verify logged out. Never embed the private-page password in public files. Preserve truthful AI disclosure; category changes require a separate asset/code audit.
+8. Prepare a release devlog around the exact build's changes, then verify its links and the final page. Record what is live and when it was checked.
 
-### Repository checks
+## Verification boundaries
 
-Run the focused microphone, recordist, redaction, source-space, objective, and mutation tests, followed by `git diff --check`. A failing test in unrelated, pre-existing dirty work should be recorded rather than repaired as part of a storefront-only update.
+This is a revised proposal with six new browser screenshots, not user acceptance, a live update, a build upload, a trailer, or completed runtime validation. Whole-route and platform acceptance require their own evidence.
+
+For this documentation pass, check HTML structure, custom-class compatibility, summary length, COPY markers, factual controls/privacy/install claims, preview consistency, and `git diff --check`. Compare the actual faceplate/glass/annunciator/VFD/LCD exports and improved gameplay captures in the rendered preview. Record unrelated dirty-tree failures separately. Do not change the game to satisfy an obsolete marketing assertion.
+
+
+## Prepared review package
+
+The November 1 pass now includes six 1440 × 900 current browser captures in `docs/media/storefront/`: arrival, recorder, Source vista, harpsichord construction, a listening scene, and the roof/city view. `capture-manifest.json` records the staging and file hashes. Discarded wall-facing and obstructed review captures are not in the gallery. These images prove the pictured current renderer output; they do not establish native release or normal-route acceptance. The recorder image is its real idle state, not a fabricated rolling take. A polished current combat/social capture and gameplay trailer remain useful launch media additions.
+
+`tools/chunk_surfer/storefront-skin.html` calls the production Canvas painters. Its export feeds `scripts/build-storefront-skin.py`, which packages eleven actual material/state images, the character-ROM VFD/LCD fonts, and the game's vendored Hardware Sans faces. `docs/media/storefront/provenance.json` records sources, geometry limits, and checksums; the font licenses are preserved alongside the assets. `storefront-itch.css` embeds the result and needs no separate font or texture hosting. The HTML composition adapts to itch; it is not a claim of pixel-identical layout at every viewport.
+
+The layout uses one native column: title, download control, compact job instruction, then large gameplay images between the action sections. The last two images form a pair on desktop and stack on phones. Platform downloads, More information, and itch's footer retain their native roles. The preview uses the same public fragments and product CSS; only native itch chrome is approximated locally.
+
+VFD headings follow `src/render/vfd-marquee.js`: short names remain still; overflowing names hold their beginning for 2.6 seconds, move in discrete steps, and hold their ending briefly. The CSS adaptation completes in 4.8 seconds and then exposes the complete wrapped heading. It does not run a perpetual web ticker. Reduced motion, forced colors, and browsers without container units show the complete static text. Content warnings remain static.
+
+The source was checked against itch's [CSS guide](https://itch.io/docs/creators/css-guide), [page design guidance](https://itch.io/docs/creators/design), and [quality guidelines](https://itch.io/docs/creators/quality-guidelines). Custom selectors are scoped to `#wrapper`, authored classes begin with `custom-`, embedded font/material data is allowed, native actions and footer links remain available, and the single-column/inline-image arrangement is officially supported. The page adds no audio, flashing, external tracking, or script. Preserve truthful AI disclosure, tested-platform metadata, and actual release provenance. This is a source and local-browser review, not itch approval or a claim of full accessibility conformance.
+
+Local browser checks: the actual VFD/LCD/Hardware Sans fonts and all six images load; 320, 390, 640, and 1200px widths have no horizontal overflow. Overflowing headings move during the travel phase and expose their complete text after 4.8 seconds. Reduced motion disables animations; forced colors removes the instrument images and glass overlays; keyboard focus visibly reaches Download. The live itch page, uploads, access controls, and devlogs were not changed by this pass. A final live, logged-out check remains necessary after applying the hosted assets and native theme settings.
+
+All 15 focused release-document/channel/version checks pass. A PostCSS parse confirms all 179 custom selector rules are scoped to `#wrapper`; the stylesheet embeds eleven material images and four font faces. Task-local `git diff --check` passes. These checks do not establish acceptance of the packaged game.

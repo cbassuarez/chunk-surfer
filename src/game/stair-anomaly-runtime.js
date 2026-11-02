@@ -1,6 +1,6 @@
 import { CELL, EYE, F, MATERIAL, ZONE } from '../data/floorplan/legend.js';
 import { MOVE_MS } from '../config.js';
-import { encodeH } from '../world/floorplan.js';
+import { H_MIN,H_MAX } from '../world/floorplan.js';
 import {
   STAIR_ANOMALY_STAGE,
   STAIR_ANOMALY_STATUS,
@@ -11,7 +11,7 @@ import {
 } from './stair-anomaly.js';
 
 export const STAIR_ANOMALY_ENTRY = Object.freeze({ x: 0, y: 0, facing: 0 });
-export const STAIR_ANOMALY_MODULE_CELLS = 100;
+export const STAIR_ANOMALY_MODULE_CELLS = 28;
 // One continuous, impossible flight at the ORDINARY walk cadence — you travel
 // exactly as you do on a real stair, with no throttle — and no modules, no
 // landings, no loop.
@@ -23,10 +23,11 @@ export const STAIR_ANOMALY_MODULE_CELLS = 100;
 // floor-to-floor stair would have taken, and everything after that is the same
 // sentence said again.
 //
-// 400 treads is 18 seconds and still nearly thirty times a real fourteen-rise
-// flight, which leaves each of the four beats about four and a half seconds —
-// enough to read one and notice the next.
-export const STAIR_ANOMALY_TOTAL_CELLS = 400;
+// 112 treads takes 5.04 seconds at the actual 45ms movement cadence, or 9.576
+// seconds at the existing 1.9x quiet cadence. Four short beats preserve the
+// commitment, repetition, answering presence and release without an 18-second
+// climb (or a 34-second quiet climb).
+export const STAIR_ANOMALY_TOTAL_CELLS = STAIR_ANOMALY_MODULE_CELLS * 4;
 // Per-tread time, used only to reason about pacing in tests; the live climb
 // uses the normal movement clock, so the stair feels no different to walk than
 // any other.
@@ -43,7 +44,7 @@ const PLAN_SNAP = 16;
 // encodeH stores the ordinary 32m height band in one byte. Snap the moving
 // origin to that same quantum so a shared tread receives the identical decoded
 // world height before and after a texture-window rebase.
-const HEIGHT_ENCODING_STEP = 32 / 255;
+const HEIGHT_ENCODING_STEP = (H_MAX-H_MIN) / 255;
 // Steady tread rise per cell — a real stair's pitch, kept continuous over the
 // whole flight, so the staircase just climbs, and climbs, without ever resetting
 // to a landing. Over 320 treads that is ~70m of rise: texture bytes use a local
@@ -54,7 +55,7 @@ const WIDTH_MIN = -3;
 const WIDTH_MAX = 2;
 // Atmosphere/checkpoint thresholds only — the FLOOR is one continuous ramp; these
 // just pace the light stages and the resume checkpoints across the long climb.
-const STAGE_DEPTHS = [0, 100, 200, 300, 400];
+const STAGE_DEPTHS = Array.from({length:5},(_,stage)=>stage*STAIR_ANOMALY_MODULE_CELLS);
 
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, Number(value) || 0));
 
@@ -115,6 +116,22 @@ export function createStairAnomalyRuntime({
     return { x: 0, y: -STAGE_DEPTHS[checkpoint], facing: 0 };
   }
 
+  function restorePosition(position) {
+    if(!position)return checkpointPosition();
+    const suppliedDepth=-Number(position.y),minimum=STAGE_DEPTHS[Math.min(3,ledger.checkpoint)],
+      credited=Math.max(minimum,Math.round(ledger.progress*STAIR_ANOMALY_TOTAL_CELLS));
+    // Older active saves stored coordinates on a 400- or 640-tread flight.
+    // Their proportional ledger remains authoritative after shortening it.
+    // Do not strand that body beyond the new wall or turn an old first beat
+    // into the new final beat just because its raw cell is still in bounds.
+    const legacy=[400,640].some(total=>ledger.progress>0
+      &&Math.abs(suppliedDepth-ledger.progress*total)<1.01);
+    const depth=legacy||!Number.isFinite(suppliedDepth)||suppliedDepth<minimum
+      ||suppliedDepth>STAIR_ANOMALY_TOTAL_CELLS?credited:suppliedDepth;
+    return{x:clamp(position.x,WIDTH_MIN,WIDTH_MAX),y:-clamp(depth,minimum,STAIR_ANOMALY_TOTAL_CELLS),
+      facing:Number.isFinite(position.facing)?position.facing:0};
+  }
+
   function cellAt(x, y) {
     const cx = Math.floor(x), cy = Math.floor(y), depth = -cy;
     if (cx < WIDTH_MIN || cx > WIDTH_MAX || cy > 3 || depth > STAIR_ANOMALY_TOTAL_CELLS + 4) return null;
@@ -171,12 +188,16 @@ export function createStairAnomalyRuntime({
       // rise never runs past the ordinary [-8, 24]m encoding — the camera is
       // shifted by the same reference, so it is an invisible translation.
       const rawRef = stairAnomalyFloorAt(originY + PLAN_SIZE / 2, selected);
-      const ref = Math.round(rawRef / HEIGHT_ENCODING_STEP) * HEIGHT_ENCODING_STEP;
+      const refTick=Math.round(rawRef/HEIGHT_ENCODING_STEP),ref=refTick*HEIGHT_ENCODING_STEP;
+      // Round in the fixed world frame, then translate integer ticks. Rounding
+      // (height-ref) separately made half-byte ties choose opposite sides at a
+      // later window boundary, visibly moving one tread by 125mm.
+      const encodeWorldHeight=height=>clamp(Math.round(((height-H_MIN)/(H_MAX-H_MIN))*255)-refTick,0,255);
       for (let py = 0; py < PLAN_SIZE; py += 1) for (let px = 0; px < PLAN_SIZE; px += 1) {
         const cell = cellAt(originX + px + 0.5, originY + py + 0.5), index = py * PLAN_SIZE + px;
         if (!cell) { rgba[index * 4 + 2] = F.SOLID; continue; }
-        rgba[index * 4] = encodeH(cell.floor - ref);
-        rgba[index * 4 + 1] = encodeH(cell.ceil - ref);
+        rgba[index * 4] = encodeWorldHeight(cell.floor);
+        rgba[index * 4 + 1] = encodeWorldHeight(cell.ceil);
         rgba[index * 4 + 2] = cell.flags;
         rgba[index * 4 + 3] = cell.zone;
         material[index] = cell.material;
@@ -270,6 +291,7 @@ export function createStairAnomalyRuntime({
     geometry,
     state: () => ({ ...ledger }),
     checkpointPosition,
+    restorePosition,
     setPlayerPosition,
     onStep,
     propInstances,

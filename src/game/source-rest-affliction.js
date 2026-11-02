@@ -14,6 +14,44 @@ export const SOURCE_REST_AFFLICTION=Object.freeze({
   motorDeclineStart:.56,
   motorLossAt:.88,
 });
+export const SOURCE_REST_MISTAKE_STRUCTURE=Object.freeze({carriers:3,sections:8,chipSeconds:1.35,contactSeconds:.36,maximumComposureCost:2});
+// These are the performer's exact annotations. One finite set of existing
+// wooden members receives the mistakes; dense clusters do not spawn a field
+// of unbounded particles or secretly author mistakes in the Couperin.
+export function sourceRestMistakeStructure(cue={}){
+  const time=Math.max(0,number(cue.time)),cycle=Math.max(0,Math.floor(number(cue.completedCycles))),length=Math.max(1,number(cue.duration,SOURCE_REST_PERFORMANCE.duration)),
+    posts=Array.from({length:SOURCE_REST_MISTAKE_STRUCTURE.carriers},(_,index)=>({index,hits:0,wear:0,failures:[]})),events=[];
+  if(!cue.active||cue.mistakeSource==='none: no Couperin performance report')return{posts,events};
+  // A prior complete cycle has already exposed every finite failure. Account
+  // repeated listening arithmetically, never by replaying an unbounded log.
+  const rounds=cycle>0?[0,cycle]:[0];
+  for(const round of rounds)for(let index=0;index<mistakes.length;index++){
+    const row=mistakes[index];if(round===cycle&&row.start>time)break;
+    const absoluteTime=round*length+row.start,age=time+cycle*length-absoluteTime,targetIndex=index%posts.length,post=posts[targetIndex],previous=Math.min(7,Math.floor(post.wear/2));
+    post.hits++;post.wear+=Math.max(1,Math.min(2,row.severity));
+    const stage=Math.min(7,Math.floor(post.wear/2)),event={id:`${round}:${row.id}`,annotationId:row.id,index,targetIndex,severity:row.severity,
+      at:absoluteTime,age,stage,failedSection:stage>previous?SOURCE_REST_MISTAKE_STRUCTURE.sections-stage:null};
+    if(event.failedSection!==null)post.failures.push({section:event.failedSection,at:absoluteTime,eventId:event.id});
+    if(age>=0&&age<SOURCE_REST_MISTAKE_STRUCTURE.chipSeconds)events.push(event);
+  }
+  if(cycle>1)for(let index=0;index<mistakes.length;index++){
+    const row=mistakes[index],post=posts[index%posts.length];post.hits+=cycle-1;post.wear+=(cycle-1)*Math.max(1,Math.min(2,row.severity));
+  }
+  return{posts,events:events.slice(-8)};
+}
+
+// Independent accounting: a timestamp or an offscreen fragment cannot spend
+// composure. The caller supplies the rendered body's actual visible contact
+// and commits the returned cost through the existing recorder/save owner.
+export function sourceRestMistakeImpactReceipt(state={},input={}){
+  const previous={spent:clamp(number(state.spent),0,SOURCE_REST_MISTAKE_STRUCTURE.maximumComposureCost),ids:Array.isArray(state.ids)?state.ids.slice(-16):[]},
+    impact=input.impact,composure=number(input.composure),floor=number(input.floor),cost=Math.min(1,Math.max(0,composure-floor),SOURCE_REST_MISTAKE_STRUCTURE.maximumComposureCost-previous.spent);
+  if(!impact?.id||!impact.contact||!input.rendered||!input.visible||!input.embodied||!input.settled||input.canLeave!==false||input.held||input.protected
+    ||input.reducedDread||input.effectsMode==='off'||number(input.progress)>=.96||previous.ids.includes(impact.id)||cost<=0)return{state:previous,event:null};
+  return{state:{spent:previous.spent+cost,ids:[...previous.ids,impact.id].slice(-16)},event:{id:impact.id,annotationId:impact.annotationId,
+    sourceClock:impact.sourceClock,phase:input.phase||'wrong-return',recommendedComposureCost:1,cost,
+    before:composure,after:Math.max(floor,composure-cost),lastingInjury:false,kind:'source-rest-material-contact'}};
+}
 const severityScale=severity=>[0,.68,1,1.2][Math.max(1,Math.min(3,Math.round(number(severity,2))))];
 const passageBudget=index=>index===0?.28:index===1?.34:.64;
 const mistakeWear=severity=>.0008*Math.max(1,Math.min(3,number(severity,2)));
@@ -44,7 +82,9 @@ export function sourceRestAfflictionFrame({currentTime=0,playedSeconds=0,duratio
     latestMistake={id:row.id,time:row.start,severity:row.severity,age};
     if(time>=row.start+SOURCE_REST_AFFLICTION.mistakeSeconds||ended)continue;
     const peak=[0,.38,.66,.91][row.severity],attack=.16+.84*smooth(age/SOURCE_REST_AFFLICTION.attackSeconds),
-      envelope=peak*attack*Math.exp(-age/(.115+.025*row.severity));
+      contactAge=age-SOURCE_REST_MISTAKE_STRUCTURE.contactSeconds,
+      contact=row.severity>=2&&contactAge>=0?peak*.82*smooth(contactAge/SOURCE_REST_AFFLICTION.attackSeconds)*Math.exp(-contactAge/.105):0,
+      envelope=Math.max(peak*attack*Math.exp(-age/(.115+.025*row.severity)),contact);
     painAbsence*=1-clamp(envelope);mistakeIds.push(row.id);
   }
   for(const row of passages){

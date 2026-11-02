@@ -66,7 +66,12 @@ for(const name of ['yard_hedge_run','yard_hedge_dense','yard_hedge_corner']){
   assert.ok(visualDepth<=contract.d,`${name} crown stays inside its collision depth`);
 }
 const authored=[...OPENING_STREET_PROPS,...YARD_PARK_PROPS,...CONSERVATORY_PROPS.filter((prop)=>prop.id.startsWith('yard-hedge-')||prop.id.startsWith('academic-garden-'))];
-for(const prop of authored.filter((entry)=>VEGETATION_FALLBACKS[entry.mesh]))assert.equal(prop.fallbackMesh,VEGETATION_FALLBACKS[prop.mesh],`${prop.id} retains a procedural fallback`);
+for(const prop of authored.filter((entry)=>VEGETATION_FALLBACKS[entry.mesh])){
+  if(prop.id==='yard-park-hedge-south-east'){
+    assert.equal(prop.mesh,'opening_park_laurel');
+    assert.equal(prop.fallbackMesh,undefined,'the compact door-side clump must not acquire the eleven-metre fallback that closes its path');
+  }else assert.equal(prop.fallbackMesh,VEGETATION_FALLBACKS[prop.mesh],`${prop.id} retains a procedural fallback`);
+}
 for(const prop of authored.filter((entry)=>entry.mesh.startsWith('vegetation_')))assert.equal(prop.blocks,false,`${prop.id} groundcover never changes navigation`);
 assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='academic-garden-tree-east').mesh,'academic_dead_tree_b');
 assert.equal(CONSERVATORY_PROPS.find((prop)=>prop.id==='academic-garden-planter-west').mesh,'academic_planter');

@@ -4,6 +4,10 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {VIGIL,freshVigilState,normalizeVigilState,reduceVigil,vigilSeatCandidates} from '../src/game/yard-vigil.js';
 import {normalizeCombatBuild} from '../src/game/combat-progression.js';
+import {EVENT_TYPES} from '../src/progression/events.js';
+import {NodeIO} from '@gltf-transform/core';
+import {cameraBasis} from '../src/render/camera-basis.js';
+import {ORDINARY_CAMERA_TAN_HALF_FOV} from '../src/render/cinematic-lens.js';
 
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const start=main.indexOf('function vigilRoofCell(x,y){');
@@ -11,7 +15,7 @@ const end=main.indexOf('// ── the whisper bed',start);
 assert.ok(start>=0&&end>start);
 
 function fixture({save={flags:{}},seatPoint={x:200,y:200}}={}){
-  const flags={...(save.flags||{})},loose=new Map(),commits=[];
+  const flags={...(save.flags||{})},loose=new Map(),commits=[],events=[];
   let top=null,phase='seated',group='academicRoof',owner='academic_roof',floor=17,solid=false,tall=false,blocked=false;
   const angles={yaw:0,pitch:0};
   const seatScene={view:()=>({phase,seat:{...seatPoint}})};
@@ -20,6 +24,7 @@ function fixture({save={flags:{}},seatPoint={x:200,y:200}}={}){
     px:198,py:200,CELL:.5,ZONE:{academicRoof:12},
     usingSpecialSpace:()=>false,flagTest:id=>!!flags[id],flagSet:id=>{flags[id]=true;},
     getSave:()=>({...save,flags}),saveCommit:value=>commits.push(value),refreshWorldProps(){},
+    EVENT_TYPES,emitProgress:(...args)=>events.push(args),
     scenes:{top:()=>top,blocksWorld:()=>blocked,blocksInput:()=>!!top},
     FP:{isSolid:()=>solid,zoneAt:()=>12,logicalToPhysical:(x,y)=>({x,z:y,y:floor,renderGroup:group,owner}),
       floorAt:()=>floor,ceilAt:()=>24},
@@ -29,7 +34,7 @@ function fixture({save={flags:{}},seatPoint={x:200,y:200}}={}){
       r3dEyePoint:()=>({y:(17+1.62)/.5})},mapHeading:()=>angles.yaw,
   };
   const api=vm.runInNewContext(main.slice(start,end)+'\n({vigilEligible,vigilSight,tickYardVigil,restoreYardVigil,vigilChairSupported})',context);
-  return{api,context,flags,loose,commits,angles,seatScene,
+  return{api,context,flags,loose,commits,events,angles,seatScene,
     seat(){top=seatScene;},stand(){top=null;},overlay(){top={id:'bag'};},
     phase:value=>{phase=value;},group:value=>{group=value;},owner:value=>{owner=value;},
     floor:value=>{floor=value;},solid:value=>{solid=value;},tall:value=>{tall=value;},blocked:value=>{blocked=value;},
@@ -81,6 +86,8 @@ test('the chair can be noticed after standing, once, through a clear same-roof c
   assert.equal(f.flags[VIGIL.FLAG],true);
   const saves=f.commits.length;f.api.tickYardVigil(45);
   assert.equal(f.commits.length,saves,'repeat frames do not grant or announce the lead again');
+  assert.deepEqual(JSON.parse(JSON.stringify(f.events)),[[EVENT_TYPES.ITEM_OBTAINED,{id:VIGIL.FLAG},'main.citySeatLead']],
+    'the retained reward is emitted once, only after the actual collision-clear look');
 });
 
 test('legacy unearned placement resets while flags and folded earned builds survive migration',()=>{
@@ -126,7 +133,7 @@ test('a clear chair centre cannot place a footprint across the low parapet strip
 });
 
 test('the actual compiled roof and authored bench support the default chair and its seated look-back ray',async t=>{
-  const [FP,PROPS,{conservatory},{ROOF_CITY_SEAT},{ZONE}]=await Promise.all([
+  const [FP,PROPS,{conservatory},{ROOF_CITY_SEAT},{ZONE,CELL}]=await Promise.all([
     import('../src/world/floorplan.js'),import('../src/game/props.js'),
     import('../src/data/floorplan/conservatory.js'),import('../src/data/academic-roof.js'),
     import('../src/data/floorplan/legend.js'),
@@ -159,6 +166,38 @@ test('the actual compiled roof and authored bench support the default chair and 
   assert.equal(f.flags[VIGIL.FLAG],true,'the actual supported and seen chair must grant the retained reward');
   const submitted=PROPS.renderInstances({group:'academicRoof'}).find(prop=>prop.id===VIGIL.PROP_ID);
   assert.equal(submitted?.y,17,'the live prop submission stays on the roof floor');
+  // A point behind the eye can still let part of a tall prop pop into view.
+  // Enclose the actual acquisition mesh, then prove one horizontal frustum
+  // plane excludes the entire transformed box at the ordinary settled eye.
+  const document=await new NodeIO().read(new URL('../public/assets/conservatory-acquisitions.glb',import.meta.url).pathname);
+  const mesh=document.getRoot().listMeshes().find(mesh=>mesh.getName()===VIGIL.MESH);
+  assert.ok(mesh,'the proof uses the actual submitted chair mesh');
+  for(const node of mesh.listParents().filter(parent=>parent.propertyType==='Node')){
+    assert.deepEqual(node.getWorldMatrix(),[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],
+      'mesh-local bounds require the actual acquisition node to remain baked');
+  }
+  const bounds={min:[Infinity,Infinity,Infinity],max:[-Infinity,-Infinity,-Infinity]};
+  for(const primitive of mesh.listPrimitives()){
+    const values=primitive.getAttribute('POSITION').getArray();
+    for(let index=0;index<values.length;index+=3)for(let axis=0;axis<3;axis++){
+      bounds.min[axis]=Math.min(bounds.min[axis],values[index+axis]);
+      bounds.max[axis]=Math.max(bounds.max[axis],values[index+axis]);
+    }
+  }
+  const seatPhysical=FP.logicalToPhysical(bench.rx,bench.ry);
+  const eye=[(seatPhysical.x+.5)*CELL,17+1.62-ROOF_CITY_SEAT.eyeDrop,(seatPhysical.z+.5)*CELL];
+  const basis=cameraBasis(ROOF_CITY_SEAT.yaw,ROOF_CITY_SEAT.pitch),c=Math.cos(submitted.yaw),s=Math.sin(submitted.yaw);
+  const scale=submitted.scale||1,sx=(submitted.scaleX??1)*scale,sy=(submitted.scaleY??1)*scale,sz=(submitted.scaleZ??1)*scale;
+  const corners=[];
+  for(const x of[bounds.min[0],bounds.max[0]])for(const y of[bounds.min[1],bounds.max[1]])for(const z of[bounds.min[2],bounds.max[2]]){
+    const local=[submitted.x+c*x*sx-s*z*sz-eye[0],submitted.y+y*sy-eye[1],submitted.z+s*x*sx+c*z*sz-eye[2]];
+    corners.push({depth:local.reduce((sum,value,i)=>sum+value*basis.forward[i],0),right:local.reduce((sum,value,i)=>sum+value*basis.right[i],0)});
+  }
+  for(const[width,height]of[[640,480],[828,518],[1440,900],[3440,1440],[5120,1080]]){
+    const plane=ORDINARY_CAMERA_TAN_HALF_FOV*width/height;
+    assert.ok(corners.every(p=>p.right>p.depth*plane)||corners.every(p=>p.right<-p.depth*plane),
+      `the entire chair bounds must be outside the real camera frustum at ${width}×${height}`);
+  }
   t.diagnostic(JSON.stringify({bench:{x:bench.rx,y:bench.ry},approach,
     interactionProxy:{x:bench.interactionRx,y:bench.interactionRy},
     chair:{x:at.x,y:at.y},authored:{x:FP.toAuthoredCoord(at.x),y:FP.toAuthoredCoord(at.y)},

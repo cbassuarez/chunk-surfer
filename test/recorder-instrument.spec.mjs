@@ -10,11 +10,12 @@ import { witnessEndingIds } from '../src/render/witness-material.js';
 import { drawHardwareCap as renderHardwareCap } from '../src/render/hardware-material.js';
 import { drawHardwarePrint as renderHardwarePrint } from '../src/render/hardware-faceplate.js';
 import {withSourceRestInstrumentDecay} from '../src/render/source-rest-instrument-decay.js';
-import {dualTraceSnapshot} from '../src/audio/dual-trace.js';
-import {paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber} from '../src/render/dual-trace-display.js';
+import {dualTraceSnapshot,resetDualTraceMeters} from '../src/audio/dual-trace.js';
+import {paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,dualTracePeakIndex,drawSevenSegmentNumber,drawTraceVfdText} from '../src/render/dual-trace-display.js';
 import {sourceRestInstrumentStory} from '../src/render/source-rest-instrument-story.js';
 
 test.afterEach(()=>uiSetScale(1));
+test.beforeEach(()=>resetDualTraceMeters());
 const near=(a,b,message='')=>assert.ok(Math.abs(a-b)<1e-8,`${message}: ${a} != ${b}`);
 const inside=(a,b,message='')=>{
   assert.ok([a.x,a.y,a.w,a.h].every(Number.isFinite),message);
@@ -78,7 +79,7 @@ test('output selection preserves the real meter, then room mic, then actual maxi
   const meter={db:-24,peakDb:-12},roomMeter={db:-36},marks=[{kind:'spoil',db:-12}];
   const full=recorderOutputReading({meter,roomMeter,levels:{left:.9,right:.8},meterLabel:'TAKE LEVEL',meterMarks:marks});
   assert.equal(full.snapshot,meter);assert.equal(full.marks,marks);assert.equal(full.label,'TAKE LEVEL');
-  assert.deepEqual(recorderOutputReading({roomMeter,levels:{left:1,right:1}}),{snapshot:roomMeter,label:'ROOM MIC',marks:null});
+  assert.deepEqual(recorderOutputReading({roomMeter,levels:{left:1,right:1}}),{snapshot:roomMeter,label:'ROOM MIC',marks:null,sourceId:'room-mic'});
   for(const[left,right]of [[.1,.5],[.9,.2],[0,0],[-1,-2],[NaN,.25],[Infinity,.125]]){
     const safe=value=>Number.isFinite(value)?value:0;
     const result=recorderOutputReading({levels:{left,right}});
@@ -124,7 +125,9 @@ function drawingHarness({alpha=1,dpr=1,travel=0}={}){
       return renderElectronicText(target,text,x,y,options);
     },
     sampleControl:(id,options)=>{record('sampleControl',[id,options]);return{travel,lampHeat:options.lit?1:0};},hardwareMotionReduced:()=>false,
-    dbToUnit,dbForLinear,locationMarks,meterMarks,normalizeFieldKit,withSourceRestInstrumentDecay,dualTraceSnapshot,paintDualTraceVfd,dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber,
+    dbToUnit,dbForLinear,locationMarks,meterMarks,normalizeFieldKit,withSourceRestInstrumentDecay,dualTraceSnapshot,
+    paintDualTraceVfd:(target,rect,model,options)=>{const start=commands.length,geometry=paintDualTraceVfd(target,rect,model,options);record('traceMeter',[rect,model,options,geometry,start,commands.length]);return geometry;},
+    dualTraceVfdLayout,dualTraceUnit,drawSevenSegmentNumber,
     uiBrightness:()=>1,vfdSettings:{phosphor:'faithful'},themeForSurface:()=>({phosphor:'#8fcd87',counter:'#b4f4e6'}),
   };
   let source=readFileSync(new URL('../src/render/recorder-instrument.js',import.meta.url),'utf8');const names=[];
@@ -136,6 +139,33 @@ function drawingHarness({alpha=1,dpr=1,travel=0}={}){
 }
 
 const baseView=()=>({rect:rectForPixels(736,405),counter:'02:18',progress:0,buttons:{keys:[{id:'rec',label:'REC'},{id:'stop',label:'STOP'},{id:'takes',label:'TAKES'}]}});
+let meterSerial=0;
+function settledMeter(db,extra={}){
+  const sourceId='recorder-test:'+ ++meterSerial;
+  let measurement;
+  for(let at=0;at<=800;at+=25){measurement={...extra,db,sourceId,timestampMs:at};dualTraceSnapshot(sourceId,measurement,at);}
+  return measurement;
+}
+const lastTrace=h=>h.commands.findLast(c=>c.kind==='traceMeter');
+function traceRail(h,rail,trace=lastTrace(h)){
+  assert.ok(trace,'the production recorder paints the actual shared meter');
+  const g=trace.args[3],row=g[rail],t=trace.state.transform;
+  const physical=(x,y)=>[t[0]*x+t[2]*y+t[4],t[1]*x+t[3]*y+t[5]];
+  const bounds=points=>({min:[Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1]))],max:[Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))]});
+  const fills=h.commands.slice(trace.args[4],trace.args[5]).filter(c=>c.kind==='fill'&&c.path.some(p=>p[0]==='lineTo'));
+  return g.cells.map(cell=>{
+    const box=bounds([[cell.x,row.y],[cell.x+cell.w,row.y],[cell.x,row.y+row.h],[cell.x+cell.w,row.y+row.h]].map(p=>physical(...p)));
+    const found=fills.filter(c=>{const b=bounds(c.path.filter(p=>p.length===3).map(p=>p.slice(1)));return ['min','max'].every(k=>b[k].every((v,i)=>Math.abs(v-box[k][i])<1e-7));});
+    assert.equal(found.length,1,`each real ${rail} cell is painted exactly once`);return found[0];
+  });
+}
+function assertTraceText(h,value,{x,y,fontSize,color,align='left',maxWidth=null},trace=lastTrace(h)){
+  const ref=drawingHarness();ref.ctx.setTransform(...trace.state.transform);
+  drawTraceVfdText(ref.ctx,value,x,y,{fontSize,color,align,alpha:trace.args[2].brightness,tracking:.2*trace.args[3].u,maxWidth});
+  const paths=ref.commands.filter(c=>c.kind==='fill').map(c=>JSON.stringify(c.path));assert.ok(paths.length>0,value+' has real electrode ink');
+  const actual=new Set(h.commands.slice(trace.args[4],trace.args[5]).filter(c=>c.kind==='fill'&&c.state.fillStyle===color).map(c=>JSON.stringify(c.path)));
+  assert.ok(paths.every(p=>actual.has(p)),value+' is physically painted by the shared VFD text renderer');
+}
 test('the physical recorder substrate shares the actual readout without mutating UI or appearance',()=>{
   const h=drawingHarness({alpha:.8}),before={...h.state,transform:[...h.state.transform]};
   const appearance=h.recorderAppearance();
@@ -193,7 +223,7 @@ test('saved WITNESS ending stamps are copied, canonical, and independently overr
 });
 
 test('all finish, button and phosphor options change physical paint but never layout or readings',()=>{
-  const view={...baseView(),meter:{db:-24,peakDb:-12}},baseline=recorderFaceLayout(view.rect),capColors=new Set();
+  const view={...baseView(),meter:settledMeter(-24,{peakDb:-12}),nowMs:800},baseline=recorderFaceLayout(view.rect),capColors=new Set();
   for(const finish of ['aluminum','black','olive'])for(const buttonSet of ['classic','signal','sea-glass'])for(const phosphor of ['faithful','amber','ice']){
     const h=drawingHarness(),preview={...view,finish,buttonSet,phosphor};h.drawRecorderInstrument(preview);
     assert.deepEqual(h.recorderFaceLayout(view.rect),baseline);assert.equal(h.recorderOutputReading(preview).snapshot,view.meter);
@@ -206,8 +236,8 @@ test('all finish, button and phosphor options change physical paint but never la
     assert.ok(segments.length>0,'the actual counter changes phosphor');
     const inactive=h.commands.filter(command=>command.state.fillStyle===palette.passive);
     assert.ok(inactive.length>0);assert.ok(inactive.every(command=>command.state.shadowBlur===0),'unenergized electrodes never acquire a halo');
-    assert.ok(h.commands.some(command=>command.state.fillStyle===palette.bar));
-    assert.ok(h.commands.some(command=>command.state.strokeStyle===palette.peak));
+    assert.ok(traceRail(h,'body').some(command=>command.state.fillStyle===palette.bar));
+    assert.equal(traceRail(h,'peak').filter(command=>command.state.fillStyle===palette.peak).length,1);
   }
   assert.equal(capColors.size,3,'three real button-plastic sets, not metadata-only selectors');
 });
@@ -254,16 +284,15 @@ test('special-mode electrode text inherits preview phosphor without leaking thro
 test('the setup microphone check shares the selected phosphor and still reads only its actual snapshot',()=>{
   const h=drawingHarness({alpha:.6});h.setRecorderAppearance({vfd:'amber'});
   h.drawRecorderInstrument({...baseView(),phosphor:'ice'},{drawContent:()=>{
-    h.drawRecorderCheckMeter(1,2,30,{db:-24,peakDb:-12});
-    assert.ok(h.commands.some(command=>command.state.fillStyle==='#9ddce8'));
-    assert.ok(h.commands.some(command=>command.state.strokeStyle==='#e2f8ff'));
+    h.drawRecorderCheckMeter(1,2,30,settledMeter(-24,{peakDb:-12}),{nowMs:800});
+    assert.ok(traceRail(h,'body').some(command=>command.state.fillStyle==='#9ddce8'));
+    assert.equal(traceRail(h,'peak').filter(command=>command.state.fillStyle==='#e2f8ff').length,1);
   }});
   h.commands.length=0;h.drawRecorderCheckMeter(1,2,30,null);
-  assert.ok(h.commands.some(command=>command.state.fillStyle==='#423523'));
-  assert.ok(!h.commands.some(command=>command.state.fillStyle==='#e9b05c'));
-  assert.ok(h.commands.filter(command=>command.kind==='fill').every(command=>command.state.shadowBlur===0&&command.state.globalAlpha===.6));
+  assert.equal(lastTrace(h).args[1].available,false);
+  for(const rail of['body','peak'])assert.ok(traceRail(h,rail).every(command=>command.state.fillStyle==='#423523'&&command.state.shadowBlur===0&&command.state.globalAlpha<=.6),'missing input never energizes a signal electrode');
   const viewSource=readFileSync(new URL('../src/render/recorder-view.js',import.meta.url),'utf8');
-  assert.match(viewSource,/drawRecorderCheckMeter\(body\.x, body\.y \+ 1\.5, meterW, view\.roomMeter/);
+  assert.match(viewSource,/drawRecorderCheckMeter\(layout\.meter\.x,\s*layout\.meter\.y,\s*layout\.meter\.w,\s*view\.roomMeter/);
   assert.doesNotMatch(viewSource,/drawVfdMeter|theme: 'green'/);
 });
 
@@ -282,8 +311,11 @@ test('native printing stays on metal and plastic while every under-glass label u
   assert.ok(h.commands.every((command,index)=>command.kind!=='fillText'||index>glass),'physical printing is painted after the glass');
   const electronic=h.commands.filter(command=>command.kind==='electronicText');
   assert.ok(electronic.length>0&&electronic.every(command=>command.args[3].mode==='vfd'));
-  for(const label of ['TIME COUNTER','LOCATION INDICATOR','MIN','SEC','START','END','OUTPUT LEVEL','-48','-12','0'])
+  for(const label of ['TIME COUNTER','LOCATION INDICATOR','MIN','SEC','START','END'])
     assert.ok(electronic.some(command=>command.args[0]===label),`${label} is an electronic readout label`);
+  const trace=lastTrace(h),g=trace.args[3],colors=h.recorderDisplayPalette();assert.equal(trace.args[2].label,'OUTPUT LEVEL');
+  assertTraceText(h,'OUTPUT LEVEL',{x:g.x,y:g.headerY,fontSize:g.fontSize,color:colors.label,maxWidth:g.labelW},trace);
+  for(const db of[-48,-12,0])assertTraceText(h,String(db),{x:g.body.x+dualTraceUnit(db)*g.body.w,y:g.scaleY,fontSize:g.fontSize,color:colors.label,align:db===-48?'left':db===0?'right':'center'},trace);
   const source=readFileSync(new URL('../src/render/recorder-instrument.js',import.meta.url),'utf8');
   assert.match(source,/import \{ drawElectronicText \} from '\.\/electronic-text\.js'/);
 });
@@ -324,25 +356,29 @@ test('scaled readout labels bake at final device resolution in UI and nonuniform
   assert.deepEqual(h.state,before);assert.equal(h.stack.length,0);
 });
 
-test('silence energizes no output segment, while actual dB input controls the complete bar',()=>{
-  const h=drawingHarness(),view=baseView();
+test('silence energizes neither rail, while actual integrated dB controls the complete RMS bar',()=>{
+  const h=drawingHarness(),view=baseView(),colors=h.recorderDisplayPalette();
   h.drawRecorderInstrument(view);
-  const bars=()=>h.commands.filter(command=>command.kind==='fill'&&['#263c2a','#8dde9a','#d3c75d'].includes(command.state.fillStyle));
-  const silent=bars();assert.ok(silent.length>0);assert.ok(silent.every(command=>command.state.fillStyle==='#263c2a'&&command.state.shadowBlur===0));
-  for(const db of [-96,-36,-12,0]){
-    h.commands.length=0;h.drawRecorderInstrument({...view,meter:{db}});
-    const actual=bars();assert.equal(actual.filter(command=>command.state.fillStyle!=='#263c2a').length,Math.ceil(dbToUnit(db)*actual.length));
+  for(const rail of['body','peak']){const silent=traceRail(h,rail);assert.equal(silent.length,48);assert.ok(silent.every(command=>command.state.fillStyle===colors.dormant&&command.state.shadowBlur===0));}
+  assert.equal(lastTrace(h).args[1].available,false,'idle is unavailable, not a fabricated demonstration signal');
+  for(const db of[-96,-36,-12,0]){
+    h.commands.length=0;h.drawRecorderInstrument({...view,meter:settledMeter(db),nowMs:800});
+    const model=lastTrace(h).args[1],actual=traceRail(h,'body');near(model.db,db);
+    assert.equal(actual.filter(command=>command.state.fillStyle!==colors.dormant).length,Math.ceil(dualTraceUnit(db)*48));
   }
 });
 
-test('peak marker uses peakDb only, not a linear-amplitude peak mistaken for dB',()=>{
-  const h=drawingHarness(),view=baseView();
-  const peaks=()=>h.commands.filter(command=>command.kind==='stroke'&&command.state.strokeStyle==='#d6e0ad');
-  h.drawRecorderInstrument({...view,meter:{db:-24,peak:.9}});assert.equal(peaks().length,0);
-  h.commands.length=0;h.drawRecorderInstrument({...view,meter:{db:-24,peakDb:-6,peak:.01}});
-  assert.equal(peaks().length,1);
-  near(peaks()[0].path[0][1],35+20+dbToUnit(-6)*626,'physical peak position follows real -6dB');
-  h.commands.length=0;h.drawRecorderInstrument({...view,meter:{db:-12,peakDb:-24,peak:1}});assert.equal(peaks().length,0);
+test('the independent peak rail converts real amplitude and gives explicit peakDb precedence',()=>{
+  const h=drawingHarness(),view=baseView(),colors=h.recorderDisplayPalette();
+  for(const[db,fields,expected]of[[-24,{peak:.9},20*Math.log10(.9)],[-24,{peakDb:-6,peak:.01},-6],[-12,{peakDb:-24,peak:1},-24]]){
+    h.commands.length=0;h.drawRecorderInstrument({...view,meter:settledMeter(db,fields),nowMs:800});
+    const model=lastTrace(h).args[1];near(model.peakDb,expected,'only the supplied peak evidence sets the independent rail');
+    const rail=traceRail(h,'peak'),lit=rail.flatMap((command,i)=>command.state.fillStyle===colors.peak?[i]:[]);
+    assert.deepEqual(lit,[dualTracePeakIndex(expected,48)],'the actual filled electrode follows peak dB, never a raw amplitude mistaken for dB');
+    assert.ok(rail[lit[0]].state.shadowBlur>0);
+  }
+  h.commands.length=0;h.drawRecorderInstrument(view);
+  assert.equal(lastTrace(h).args[1].available,false);assert.ok(traceRail(h,'peak').every(command=>command.state.fillStyle===colors.dormant),'unavailable input clears the held rail');
 });
 
 test('the suspended grid spans every actual counter character at either scale and DPR',()=>{

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
 import {
   OPENING_CREDITS_SKIP_CONFIRM_SECONDS,
@@ -186,3 +187,57 @@ for (const [cols, rows] of [[20, 8], [80, 30], [120, 50]]) {
 }
 
 console.log('opening-credit skip specs passed');
+
+const keyboardEnter = { key: 'Enter', code: 'Enter' };
+const keyboardSpace = { key: ' ', code: 'Space' };
+const controllerConfirm = { key: 'Enter', code: 'Enter', controller: true, controllerAction: 'confirm' };
+
+test('first-boot lock ignores complete keyboard and controller skip gestures', () => {
+  for (const input of [keyboardEnter, keyboardSpace, controllerConfirm]) {
+    let now = 0; const done = [];
+    const scene = makeOpeningCreditsScene({ now: () => now, duration: 1, skipUnlocked: false, onDone: value => done.push(value) });
+    scene.key(input); scene.keyup(input); now = .1; scene.key(input); scene.keyup(input);
+    assert.equal(scene.view().skip.armed, false); assert.equal(scene.view().skip.committed, false);
+    assert.equal(done.length, 0); now = 1; scene.update(0);
+    assert.equal(done[0].reason, 'completed');
+  }
+});
+
+test('unlocked keyboard and controller skip requires a released first press and retains the modal trailing-input guard', () => {
+  for (const input of [keyboardEnter, keyboardSpace, controllerConfirm]) {
+    let now = 0; const done = [];
+    const scene = makeOpeningCreditsScene({ now: () => now, duration: 10, skipUnlocked: true, onDone: value => done.push(value) });
+    scene.key(input); assert.equal(scene.view().skip.armed, true); assert.equal(scene.view().skip.inputHeld, true);
+    now = .1;
+    scene.key({ ...input, repeat: true }); scene.key({ ...input, repeat: false });
+    assert.equal(scene.view().skip.committed, false, 'held input never acts as a second press');
+    scene.keyup({ key: 'x', code: 'KeyX' }); scene.key(input);
+    assert.equal(scene.view().skip.committed, false, 'unrelated release does not release the held skip key');
+    scene.keyup(input); assert.equal(scene.view().skip.inputHeld, false);
+    now = .2; scene.key(input); assert.equal(scene.view().skip.committed, true);
+    scene.keyup(input); scene.key(input); assert.equal(done.length, 0);
+    now += OPENING_CREDITS_SKIP_GUARD_SECONDS / 2; scene.update(0); assert.equal(done.length, 0);
+    now += OPENING_CREDITS_SKIP_GUARD_SECONDS; scene.update(0);
+    assert.equal(done.length, 1); assert.equal(done[0].reason, 'skipped');
+    scene.update(1); assert.equal(done.length, 1);
+  }
+});
+
+test('blur or resume clears partial keyboard skip intent without changing the authored clock', () => {
+  for (const interrupt of ['blur', 'resume']) {
+    let now = 0; const scene = makeOpeningCreditsScene({ now: () => now, duration: 10, skipUnlocked: true });
+    scene.key(keyboardEnter); scene[interrupt]();
+    assert.equal(scene.view().skip.armed, false); assert.equal(scene.view().skip.inputHeld, false);
+    now = .1; scene.key(keyboardEnter);
+    assert.equal(scene.view().skip.armed, true); assert.equal(scene.view().skip.committed, false);
+    now = 1.5; scene.update(0); assert.equal(scene.view().time, 1.5, 'boot elapsed time does not acquire a focus gate');
+  }
+});
+
+test('expired or modified-key attempts cannot confirm an unlocked skip', () => {
+  let now = 0; const scene = makeOpeningCreditsScene({ now: () => now, duration: 10, skipUnlocked: true });
+  scene.key({ ...keyboardEnter, ctrlKey: true }); assert.equal(scene.view().skip.armed, false);
+  scene.key(keyboardEnter); scene.keyup(keyboardEnter);
+  now = OPENING_CREDITS_SKIP_CONFIRM_SECONDS + .001; scene.key(keyboardEnter);
+  assert.equal(scene.view().skip.armed, true); assert.equal(scene.view().skip.committed, false);
+});

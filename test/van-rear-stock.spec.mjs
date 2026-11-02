@@ -50,9 +50,10 @@ test('the live host reconciles actual saved packing and restores revised stock o
 test('the production bay follows opening, changing a packed choice, sign-out and physical door landing',()=>{
  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
  const source=main.slice(main.indexOf('function syncVanProps(){'),main.indexOf('// Two instances, hung'));
- const state={flags:{},fieldKit:normalizeFieldKit()},present=new Set(CONSERVATORY_PROPS.map(p=>p.id));let open=1;
+ const state={flags:{},fieldKit:normalizeFieldKit()},present=new Set(CONSERVATORY_PROPS.map(p=>p.id));let open=1,parkedSyncs=0;
  const context={planName:'conservatory',FP:{isLoaded:()=>true},getSave:()=>state,getMeta:()=>freshMeta(),
   flagTest:id=>!!state.flags[id],vanDoorOpenFraction:()=>open,vanRearStockState,resolveFieldKit,packedWorkbenchGroups,
+  syncParkedOpeningVehicle:()=>{parkedSyncs++;},
   PROPS:{setLooseProp:(id,value)=>{assert.equal(value,null);present.delete(id);},propById:id=>present.has(id),restoreAuthoredProp:id=>present.add(id)}};
  vm.createContext(context);vm.runInContext(source,context);context.syncVanProps();
  assert.ok(present.has('yard-van-field-case'));assert.ok(!present.has('yard-van-field-case-open'));
@@ -67,6 +68,7 @@ test('the production bay follows opening, changing a packed choice, sign-out and
  assert.ok(present.has('yard-van-lamp'),'practical remains while the leaves swing over it');
  assert.ok(VAN_REAR_STOCK_PARTS.every(p=>!present.has(p.id)));
  open=0;context.syncVanProps();assert.ok(!present.has('yard-van-lamp'));
+ assert.equal(parkedSyncs,6,'each stock reconciliation hands the current props to parked-placement ownership');
 });
 
 test('every prop API called by the production van synchronizer is actually exported',()=>{

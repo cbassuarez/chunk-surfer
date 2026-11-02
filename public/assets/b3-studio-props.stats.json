@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "revision": "b3-last-session-material-v2",
+  "asset": "assets/b3-studio-props.glb",
+  "bytes": 1845336,
+  "sha256": "8b322a9f05d673166a244e6796fe0ed6e24802f0793e6abd10e800cb90e27ff4",
+  "triangles": 34094,
+  "primitives": 29,
+  "materials": 7,
+  "meshes": [
+    {
+      "name": "b3_mixing_console",
+      "bounds": {
+        "min": [
+          -1.1500932331167217,
+          0.00002062792264041491,
+          -0.48100000619888306
+        ],
+        "max": [
+          1.1500932331167217,
+          1.2710000276565552,
+          0.4724999964237213
+        ]
+      },
+      "triangles": 16120,
+      "primitives": 7,
+      "sources": [
+        "console-timber"
+      ]
+    },
+    {
+      "name": "b3_fader_cap",
+      "bounds": {
+        "min": [
+          -0.027499999850988388,
+          -0.013000000268220901,
+          -0.017999999225139618
+        ],
+        "max": [
+          0.027499999850988388,
+          0.014100000262260437,
+          0.017999999225139618
+        ]
+      },
+      "triangles": 120,
+      "primitives": 2,
+      "sources": []
+    },
+    {
+      "name": "b3_engineer_chair",
+      "bounds": {
+        "min": [
+          -0.32951245153391806,
+          0,
+          -0.34035413447072954
+        ],
+        "max": [
+          0.32951245153391806,
+          1.1606106758117676,
+          0.34035413447072954
+        ]
+      },
+      "triangles": 1694,
+      "primitives": 4,
+      "sources": [
+        "engineer-chair"
+      ]
+    },
+    {
+      "name": "b3_outboard_rack",
+      "bounds": {
+        "min": [
+          -0.3184217464424179,
+          0,
+          -0.3330000042915344
+        ],
+        "max": [
+          0.32026553582288547,
+          1.6,
+          0.3104253376231474
+        ]
+      },
+      "triangles": 4832,
+      "primitives": 5,
+      "sources": [
+        "outboard-frame"
+      ]
+    },
+    {
+      "name": "b3_patchbay",
+      "bounds": {
+        "min": [
+          -0.5899999737739563,
+          -4.76837147544984e-9,
+          -0.17999999225139618
+        ],
+        "max": [
+          0.5899999737739563,
+          1.7400000095367432,
+          0.2070000022649765
+        ]
+      },
+      "triangles": 8752,
+      "primitives": 5,
+      "sources": [
+        "patch-panel"
+      ]
+    },
+    {
+      "name": "b3_window_surround",
+      "bounds": {
+        "min": [
+          -0.5049999952316284,
+          0.9144999980926514,
+          -2.640000104904175
+        ],
+        "max": [
+          0.5049999952316284,
+          3.185499906539917,
+          2.640000104904175
+        ]
+      },
+      "triangles": 1288,
+      "primitives": 3,
+      "sources": []
+    },
+    {
+      "name": "b3_window_south_surround",
+      "bounds": {
+        "min": [
+          -0.5049999952316284,
+          0.9144999980926514,
+          -1.6399999856948853
+        ],
+        "max": [
+          0.5049999952316284,
+          3.185499906539917,
+          1.6399999856948853
+        ]
+      },
+      "triangles": 1288,
+      "primitives": 3,
+      "sources": []
+    }
+  ],
+  "contract": {
+    "faders": 16,
+    "channelX": "-.97 + channelIndex*.112",
+    "capNominalY": 0.918,
+    "capNominalZ": 0.1225,
+    "travelMetres": 0.27,
+    "workingValue": 0.75,
+    "window": "No glass model; unchanged B3 aperture/optical pass.",
+    "collision": "Existing console, chair and route owners retained."
+  },
+  "limits": {
+    "bytes": 4000000,
+    "triangles": 42000,
+    "primitives": 30
+  }
+}

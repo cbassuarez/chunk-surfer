@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CONTROL_TIMING, CONTROL_REGISTRY_LIMIT, CONTROL_LATCH_TRAVEL, pressControl, releaseControl,
+  CONTROL_TIMING, CONTROL_REGISTRY_LIMIT, CONTROL_LATCH_TRAVEL, CONTROL_REJECTION_MS, pressControl, releaseControl,
   cancelControlScope, sampleControl, controlMechanicsSnapshot,
 } from '../src/game/control-mechanics.js';
 
@@ -82,4 +82,29 @@ test('scope cancellation and bounded registry leave no unbounded control lifetim
   assert.equal(pressControl(''), false);
   cancelControlScope('');
   assert.equal(controlMechanicsSnapshot().size, 0);
+});
+
+test('a registered rejected press has a bounded local shudder, with no oscillation under reduced motion',()=>{
+  cancelControlScope('');pressControl('test:rejected',{now:100,held:false,rejected:true});
+  const samples=[];
+  for(let now=100;now<100+CONTROL_REJECTION_MS;now+=10){
+    const sample=sampleControl('test:rejected',{now});samples.push(sample);
+    assert.equal(sample.rejected,true);assert.ok(Math.abs(sample.lateral)<=1);assert.ok(sample.rejectTravel>=0&&sample.rejectTravel<.045);
+  }
+  assert.ok(samples.some(s=>s.lateral>.2)&&samples.some(s=>s.lateral<-.2),'a finite side-to-side rattle');
+  assert.deepEqual(sampleControl('test:rejected',{now:100+CONTROL_REJECTION_MS}),{travel:0,lampHeat:0});
+  pressControl('test:reduced-rejection',{now:100,held:false,rejected:true});
+  for(const now of[100,150,220,330]){
+    const sample=sampleControl('test:reduced-rejection',{now,reducedMotion:true});
+    assert.equal(sample.rejected,true);assert.equal(sample.lateral,0);assert.equal(sample.rejectTravel,0);assert.ok(sample.travel>=.72);
+  }
+  assert.deepEqual(sampleControl('test:reduced-rejection',{now:340,reducedMotion:true}),{travel:0,lampHeat:0});
+});
+
+test('successful presses and scope cancellation cannot retain a stale rejection or shake another control',()=>{
+  cancelControlScope('');pressControl('test:stop',{now:0,held:false,rejected:true});
+  assert.equal(sampleControl('test:stop',{now:20}).rejected,true);assert.equal(sampleControl('test:rec',{now:20}).rejected,undefined);
+  pressControl('test:stop',{now:30,held:false});assert.equal(sampleControl('test:stop',{now:40}).rejected,undefined);
+  pressControl('test:stop',{now:50,held:false,rejected:true});cancelControlScope('test:');
+  assert.deepEqual(sampleControl('test:stop',{now:60}),{travel:0,lampHeat:0});
 });

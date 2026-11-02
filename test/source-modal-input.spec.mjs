@@ -26,7 +26,8 @@ function inputHost(){
   const world={yaw:.7,pitch:-.1},calls={worldLooks:[],worldReads:0,receipts:[],resets:[]};
   const h={scenes,motionInput,keysDown:motionInput.held,IS_TAURI:true,paused:false,RENDERER:'3d',costumeInspectionScene:null,
     nextMoveAtMs:0,nextTurnAtMs:0,renderMove:null,towerWarningAudio:null,
-    document:{hidden:false,visibilityState:'visible',hasFocus:()=>focus.dom},pointerMode:{status:()=>({nativeBackend:{focused:focus.native}})},
+    document:{hidden:false,visibilityState:'visible',hasFocus:()=>focus.dom},pointerMode:{nativeFocus:()=>focus.native,status:()=>({nativeBackend:{focused:focus.native}})},
+    FEAR:{setHeartbeatPaused(){}},b3SpeakerAudio:{pause(){}},b3Speaker:{flush(){}},shakeMode:()=> 'full',
     controllerGameplayAxes:()=>axes,clamp:(n,lo,hi)=>Math.max(lo,Math.min(hi,n)),getSave:()=>({settings:{mouseSensitivity:2,mouseInvertY:false}}),
     R3:{r3dLookAngles(){calls.worldReads++;return{...world};},r3dLook(yaw,pitch){calls.worldLooks.push({yaw,pitch});world.yaw+=yaw;world.pitch+=pitch;}},
     noteExteriorArrivalControl:value=>calls.receipts.push(value),
@@ -53,7 +54,7 @@ test('actual mouse and controller look deltas target the borrowed camera rather 
   const x=inputHost();t.after(x.close);const b=body();scenes.push(b.owner);scenes.push({id:'speech',blocksInput:true,allowsLook:true});
   x.axes.turnX=.5;x.axes.lookY=.25;x.h.motionInput.pointerDx=8;x.h.motionInput.pointerDy=-3;
   x.h.tickIndependentLook(.1);
-  assert.equal(b.applied.length,2);near(b.pose.yaw,1+.5*.1*2.2+8*2*.0048);near(b.pose.pitch,.2+.25*.1*1.55+3*2*.0048);
+  assert.equal(b.applied.length,2);near(b.pose.yaw,1+.5*.1*2.2+8*2*.0085);near(b.pose.pitch,.2+.25*.1*1.55+3*2*.0068);
   assert.equal(x.calls.worldLooks.length,0);assert.equal(x.calls.worldReads,0,'reading the parked camera would make local receipt deltas wrong');
   assert.equal(x.h.motionInput.pointerDx,0);assert.equal(x.h.motionInput.pointerDy,0);
   assert.equal(x.calls.receipts.length,1);near(x.calls.receipts[0].yawDelta,b.pose.yaw-1);near(x.calls.receipts[0].pitchDelta,b.pose.pitch-.2);
@@ -63,7 +64,7 @@ test('ordinary world look still uses the renderer when there is no borrowed owne
   const x=inputHost();t.after(x.close);scenes.push({id:'notice',overlay:true});
   x.h.motionInput.pointerDx=5;x.h.motionInput.pointerDy=2;x.h.tickIndependentLook(.01);
   assert.equal(scenes.lookOwner(),null);assert.equal(x.calls.worldLooks.length,1);
-  near(x.world.yaw,.7+5*2*.0048);near(x.world.pitch,-.1-2*2*.0048);assert.equal(x.calls.receipts.length,1);
+  near(x.world.yaw,.7+5*2*.0085);near(x.world.pitch,-.1-2*2*.0068);assert.equal(x.calls.receipts.length,1);
 });
 
 test('pause, hidden views and confirmed native focus loss discard pointer displacement instead of replaying it',t=>{
@@ -107,7 +108,7 @@ test('actual consumed-key dispatch preserves the borrowed body frame clock and p
   vm.runInContext('function heldFrame(nowLoopMs){\n'+main.slice(clockStart,clockEnd)+'\ntickIndependentLook(dt);return dt;}',h);
   const dt=h.heldFrame(1050);assert.equal(dt,.05);scene.update(dt);
   assert.ok(scene.serialize().z<before.z,'the held body advances with its actual frame duration');
-  near(scene.lookAngles().yaw,before.yaw+23*2*.0048);near(scene.lookAngles().pitch,before.pitch+9*2*.0048);
+  near(scene.lookAngles().yaw,before.yaw+23*2*.0085);near(scene.lookAngles().pitch,before.pitch+9*2*.0068);
   assert.equal(h.motionInput.pointerDx,0);assert.equal(h.motionInput.pointerDy,0);assert.equal(x.calls.worldLooks.length,0);
   scenes.push({id:'pause',blocksInput:true,allowsLook:false,key:()=>true});
   h.motionInput.addPointerDelta(19,4);h.consumedKey(key(true));
@@ -129,19 +130,22 @@ test('native focus replaces stale DOM focus, while hidden and unknown native sta
 
 for(const name of ['beginCoastalMemoryJourney','beginSourceFalseReturn','beginSourceEarthfall','beginSourceContinuation','beginSourcePubJourney']){
   test(`${name} actual update wrapper accepts confirmed native focus without a second DOM-focus veto`,()=>{
-    const source=production(name),wrappers=source.match(/scene\.update=dt=>\{[^\n]*\};/g)||[];
-    assert.equal(wrappers.length,1,'one production update wrapper is exercised');
-    const focus={native:true,dom:false},updates=[];
+    const source=production(name),wrapperStart=source.indexOf('scene.update=dt=>'),wrapperEnd=source.indexOf('\n  scene.blur=',wrapperStart);
+    assert.ok(wrapperStart>=0&&wrapperEnd>wrapperStart,'the complete production update wrapper is exercised');
+    assert.equal(source.indexOf('scene.update=dt=>',wrapperStart+1),-1,'one production update wrapper is exercised');
+    const wrapper=source.slice(wrapperStart,wrapperEnd),focus={native:true,dom:false},updates=[],performanceSyncs=[];
     const h={IS_TAURI:true,paused:false,document:{hidden:false,visibilityState:'visible',hasFocus:()=>focus.dom},
-      pointerMode:{status:()=>({nativeBackend:{focused:focus.native}})},scene:{update:dt=>updates.push(dt)}};
+      pointerMode:{nativeFocus:()=>focus.native,status:()=>({nativeBackend:{focused:focus.native}})},scene:{update:dt=>updates.push(dt)},
+      syncSourceRestPerformance:()=>performanceSyncs.push(updates.length)};
     vm.createContext(h);vm.runInContext(production('gameplayInputLifecycleActive'),h);
-    vm.runInContext('const update=scene.update;\n'+wrappers[0],h);
+    vm.runInContext('const update=scene.update;\n'+wrapper,h);
     h.scene.update(.1);assert.deepEqual(updates,[.1],'native-focused body must advance even while WebKit reports stale DOM focus');
     focus.native=false;focus.dom=true;h.scene.update(.2);assert.deepEqual(updates,[.1]);
     focus.native=true;h.document.hidden=true;h.scene.update(.3);assert.deepEqual(updates,[.1]);
     h.document.hidden=false;h.paused=true;h.scene.update(.4);assert.deepEqual(updates,[.1]);
     h.paused=false;focus.native=null;focus.dom=true;h.scene.update(.5);assert.deepEqual(updates,[.1,.5]);
     focus.dom=false;h.scene.update(.6);assert.deepEqual(updates,[.1,.5]);
+    if(name==='beginSourceContinuation')assert.deepEqual(performanceSyncs,[0,1,1,2],'score synchronization brackets only the two active body updates');
     if(name==='beginCoastalMemoryJourney'){
       const held=source.match(/isHeld:\(\)=>[^\n]+/);assert.ok(held,'coastal audio/body hold uses the same lifecycle truth');
       vm.runInContext('var coastalHeld='+held[0].replace(/^isHeld:/,'').replace(/,$/,'')+';',h);

@@ -10,7 +10,7 @@ import * as FP from '../src/world/floorplan.js';
 import * as PROPS from '../src/game/props.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {districtLogicalAt} from '../src/data/exterior-district.js';
-import {EXTERIOR_PUB,pubLogicalAt} from '../src/data/exterior-pub.js';
+import {EXTERIOR_PUB,pubLogicalAt,pubPhysicalAt} from '../src/data/exterior-pub.js';
 
 const pack=parseGlb(fs.readFileSync(new URL('../public/assets/conservatory-props.glb',import.meta.url)));
 const openingPack=parseGlb(fs.readFileSync(new URL('../public/assets/opening-street.glb',import.meta.url)));
@@ -114,7 +114,7 @@ test('all four court mouths and centre walks remain open through the exact share
 
 test('both actual pub apertures and the loading-bay goods mouth remain clear',()=>{
   for(const d of EXTERIOR_PUB.doors){
-    const x=d.x,from={x,z:EXTERIOR_PUB.frontWorldZ-.5,feet:.12},to={x,z:EXTERIOR_PUB.frontWorldZ+1.25,feet:.12};
+    const x=d.x,from=pubPhysicalAt({x,z:EXTERIOR_PUB.frontWorldZ-.5,feet:.12}),to=pubPhysicalAt({x,z:EXTERIOR_PUB.frontWorldZ+1.25,feet:.12});
     assert.equal(originalTriangleCrossing(from,to,instance('pub-complete-frontage')),false,'the original pub aperture contains no static wall');
     assert.equal(step(from,to).ok,true,'ordinary dynamic doors retain sole ownership of their openings');
   }

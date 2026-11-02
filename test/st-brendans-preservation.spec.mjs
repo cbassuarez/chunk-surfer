@@ -143,11 +143,16 @@ const protectedHashes = {
   "public/audio/stop-listening/stephan-slime-smacking-01.mp3": "e615616d890b178bc3b700914b1a3d0151aa424b327aec2e0dd633d7228bbb35",
   "public/audio/stop-listening/stephan-slime-smacking-02.mp3": "611ca244a87bb6193c863f3373908b99a50c8d23636173d06cf77ffbb8151e4b",
   "public/audio/stop-listening/stephan-slime-smacking-03.mp3": "0d33b4517809f4d79a4eb4429bbe7b26c0b8719b297993a82c39b2b1c3ee45cd",
-  "src/audio/chapel-service.js": "ef031203401ab8061e88d343e9ac5bed3ecc32470c6b0f2453d833ad32b07866",
+  // ef575222 adds an opt-in, bounded entry fade; the default service and
+  // protection fade are independently exercised by chapel-service-runtime.
+  "src/audio/chapel-service.js": "fd70bdbe9097d6e8fd7c67927ff56a5df3bfec6159cbf9a73df8d05e3e14341c",
   "src/audio/stop-listening-gut.js": "c9d59409dff07a1d8f2f12fb63e94f7f5b6968cf506a0a27d333be1ad65d29a4",
   "src/data/chapel-service-audio.js": "3a1501837baacb2f459757bcc0432b9fc5a404e27132ebbedf98b8fb417ab39b",
   "src/data/chapel-service-score.js": "0e7dec5d1ef57af3ed38ecdf92a1efdf2e3ba1c76f782bb1fcaed31c2e282bd6",
-  "src/data/stop-listening.js": "44f246406f662a6bb0f40b0299b74c2523f17961e5d195d66d60a3982b4eebb9",
+  // The detached changing room covered three former heap sites and the sheet.
+  // Only those pool placements, their entry and one source origin moved;
+  // stop-listening-scale proves all five piles, the sheet and clear routes.
+  "src/data/stop-listening.js": "e522a81e0727de19535565de8de30c3d2a2caa8f48143979f7628618e391ff27",
   "src/game/chapel-service.js": "3b1ca498d5d25fbf8c82e0986fa8378c0f012cb9c9b7723684d0fba04d483387",
   "src/game/stop-listening.js": "2ef8f56d4bb37cfb43c9a8d38724969ebfeb96ab4934f8e1d8238f5a5a012d51",
   "tools/chunk_surfer/build-chapel-service-audio.mjs": "33bbb1a9982799dbd6e00d1de3c72e2e1d2815932b5aa6ee55e20b4e68c4ea33",

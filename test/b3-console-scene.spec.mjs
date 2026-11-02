@@ -20,7 +20,7 @@ test('the player can turn a specific fader and power off without pausing the roo
   for(let i=0;i<5;i++)s.key({key:'ArrowDown'});
   assert.ok(f.state.fader[2]<.0001);assert.ok(f.state.intensity<.0001);
   assert.equal(f.state.fader[1],.5,'other channels are unchanged');
-  s.key({key:'Tab'});s.key({key:'Enter'});assert.equal(f.state.powerOn,false);
+  s.key({key:'p'});assert.equal(f.state.powerOn,false);
   assert.ok(f.state.intensity<.0001,'the power switch is independent of source state');
   s.key({key:'e',code:'KeyE'});assert.equal(f.closes,1);assert.equal(scenes.has('b3-console'),false);
   s.key({key:'Escape'});assert.equal(f.closes,1);
@@ -34,10 +34,12 @@ test('pointer control moves the physical slider and all sixteen channels remain 
   for(let i=0;i<3;i++){
     const next=s.view().layout.next;
     s.pointer({type:'pointerdown',button:0,pointerId:8,cellX:next.x+next.w/2,cellY:next.y+next.h/2});
+    s.pointer({type:'pointerup',button:0,pointerId:8,cellX:next.x+next.w/2,cellY:next.y+next.h/2});
   }
-  assert.equal(s.view().selected,15);assert.deepEqual(s.view().layout.strips.map(x=>x.channel),[13,14,15,16]);
+  assert.equal(s.view().selected,16);assert.deepEqual(s.view().layout.strips.map(x=>x.channel),[9,10,11,12,13,14,15,16]);
   const leave=s.view().layout.close;
   s.pointer({type:'pointerdown',button:0,pointerId:8,cellX:leave.x+leave.w/2,cellY:leave.y+leave.h/2});
+  s.pointer({type:'pointerup',button:0,pointerId:8,cellX:leave.x+leave.w/2,cellY:leave.y+leave.h/2});
   assert.equal(f.closes,1,'pointer users can leave without the keyboard');
 });
 
@@ -59,7 +61,7 @@ test('the live disturbance obeys the actual console controls and not its power s
   speaker.step({dt:.1,enabled:true,recording:true,roomId:'main_b3',takeElapsed:41,minimumSeconds:45});
   const scene=makeB3ConsoleScene({getState:()=>speaker.snapshot(),onFader:(c,v)=>speaker.setFader(c,v),onPower:v=>speaker.setPower(v),onClose:()=>speaker.flush()});
   scenes.push(scene);const before=speaker.snapshot();assert.ok(before.active&&before.intensity>0);
-  scene.key({key:'Tab'});scene.key({key:'Enter'});
+  scene.key({key:'p'});
   assert.equal(speaker.snapshot().powerOn,false);assert.equal(speaker.snapshot().intensity,before.intensity,'power cut does not stop the impossible sound');
   scene.key({key:'ArrowRight'});scene.key({key:'ArrowRight'});
   scene.key({key:'ArrowDown'});assert.ok(speaker.snapshot().intensity<before.intensity,'moving the actual channel changes audible intensity');

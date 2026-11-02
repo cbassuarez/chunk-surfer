@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import * as D from '../src/game/chapel-tape-demand.js';
 import * as tapes from '../src/game/playback.js';
+import {nightDeadlineAllowsTransport} from '../src/game/night-deadline.js';
 
 const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function sourceFunction(name){
@@ -27,7 +28,7 @@ function loadOriginalMedia(){
 }
 function harness(initial=heldState()){
   const log=[],live={case:initial,special:false,recording:false,playing:false};
-  const host={...D,
+  const host={...D,nightDeadlineAllowsTransport,getSave:()=>({nightDeadline:null}),firstStrikeAudio:null,
     chapelTapeDemandState:()=>live.case,chapelTapeDemandContext:()=>context,usingSpecialSpace:()=>live.special,
     storyMode:true,itemLost:()=>false,usingSourceSpace:()=>false,usingStairAnomaly:()=>false,
     px:0,py:2,recordableRoomAt:()=> 'main_b3',setupComplete:()=>true,levelCheckHere:()=>false,flagTest:()=>true,

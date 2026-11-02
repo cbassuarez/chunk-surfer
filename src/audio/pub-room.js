@@ -1,7 +1,7 @@
 import {createPubRoomBed} from './pub-room-bed.js';
-import {pubWorldFromLocal} from '../data/exterior-pub.js';
+import {pubPhysicalFromLocal} from '../data/exterior-pub.js';
 import {PUB_INTERIOR_LAYOUT} from '../data/exterior-pub-furnishings.js';
-const point=id=>{const f=PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===id);return Object.freeze(pubWorldFromLocal(f));};
+const point=id=>{const f=PUB_INTERIOR_LAYOUT.furniture.find(f=>f.id===id);return Object.freeze(pubPhysicalFromLocal(f));};
 export const PUB_ROOM_SOUND_ANCHORS=Object.freeze({stove:point('pub-snug-stove'),glass:point('pub-counter'),crockery:point('pub-snug-table-0'),domino:point('pub-snug-table-1')});
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v)||0));
 export function pubRoomSpatial(listener={},anchor=PUB_ROOM_SOUND_ANCHORS.stove,{inPub=true,doorOpen=false,busy=false}={}){

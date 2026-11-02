@@ -9,6 +9,7 @@ import { SOURCE_EARTHFALL as EARTH } from '../src/data/source-earthfall.js';
 import { SOURCE_IV as IV } from '../src/data/source-iv.js';
 import { freshSave, getSave, saveCommit, withTransientGameState } from '../src/game/save.js';
 import { freshRunRecord } from '../src/progression/schema.js';
+import {completedEndingDemolition} from './helpers/ending-demolition-route.mjs';
 
 const runId='ending-source-journey-test',copy=value=>JSON.parse(JSON.stringify(value));
 const initial=()=>freshEndingWrongDoorDemolition({runId,returnPose:{x:254,y:367,yaw:.2,pitch:-.1}});
@@ -18,15 +19,7 @@ function advance(engine,state,seconds,input={}){
     state=result.state;events.push(...result.events);time+=dt;}return{state,events};
 }
 function collapsed(){
-  let state=advance(stepEndingWrongDoorDemolition,initial(),.25,{forward:1}).state;
-  state=advance(stepEndingWrongDoorDemolition,state,EARTH.footingLossAt+7).state;
-  const distance=state.physical.z-(EARTH.passage.exitZ+1.4);
-  state=advance(stepEndingWrongDoorDemolition,state,distance/EARTH.walkSpeed,{forward:1}).state;
-  state=stepEndingWrongDoorDemolition(state,{interact:true}).state;
-  state=advance(stepEndingWrongDoorDemolition,state,EARTH.door.openSeconds).state;
-  const result=advance(stepEndingWrongDoorDemolition,state,.6,{forward:1});
-  assert.equal(result.state.status,'ready-for-source-IV');
-  assert.equal(result.events.filter(event=>event.type==='enter-source-IV').length,1);return result.state;
+  return completedEndingDemolition({runId,returnPose:initial().returnPose});
 }
 function saveBase(){
   const save=freshSave({run:freshRunRecord({id:runId,now:1000})});

@@ -11,12 +11,20 @@ export function normalizeReturnHistory(history) {
   return ids;
 }
 
-export function resolvedReturnHistory(meta) {
-  const records = meta?.returns?.records || {};
-  return normalizeReturnHistory(meta?.returns?.history).map((id) => records[id]).filter(Boolean);
+// Old ordinary returns did not carry an integrity field. Only explicit
+// developer evidence excludes a record; a real failed night remains history.
+export function isOrdinaryReturnRecord(record) {
+  return !!record && typeof record === 'object' && !Array.isArray(record)
+    && record.developerRun !== true && record.integrity?.achievements?.eligible !== false;
 }
 
-export function lastReturnRecord(meta) {
-  const records = resolvedReturnHistory(meta);
+export function resolvedReturnHistory(meta, { includeDeveloper = false } = {}) {
+  const records = meta?.returns?.records || {};
+  return normalizeReturnHistory(meta?.returns?.history).map((id) => records[id])
+    .filter(record => includeDeveloper ? !!record : isOrdinaryReturnRecord(record));
+}
+
+export function lastReturnRecord(meta, options) {
+  const records = resolvedReturnHistory(meta, options);
   return records[records.length - 1] || null;
 }

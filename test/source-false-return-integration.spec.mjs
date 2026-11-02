@@ -9,6 +9,7 @@ import {freshSourceFalseReturn,normalizeSourceFalseReturn,sourceFalseReturnNeede
 import {sourceEarthfallNeeded} from '../src/game/source-earthfall-entry.js';
 import {freshSourceEarthfall} from '../src/game/source-earthfall.js';
 import {createSourceFalseReturnScene} from '../src/game/source-false-return-scene.js';
+import {releaseSourceRecordingCassetteLabels} from '../src/render/source-recording-cassette.js';
 
 const copy=v=>JSON.parse(JSON.stringify(v));
 const initial=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.FINAL,{seed:4417}).state;
@@ -27,10 +28,10 @@ function host(){
     buildSourceFalseReturnLayout:()=>layout,FP:{},PROPS:{renderInstances:()=>[],allProps:()=>[]},resolveLocalLights:()=>[],liveLightCircuits:()=>new Set(),ZONE:{practice:6},
     createSourceFalseReturnRenderer:()=>({initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){if(this.dead)return false;this.dead=true;disposals++;return true;}}),
     createSourceContinuationAudio:()=>audio,playSceneFootContact(){},clearSceneFootContacts(){},scenes:{push:s=>s.enter(),remove:s=>s.exit()},ensureCtx(){},actx:{},sfxGain:{},getSave:()=>data,saveCommit:p=>{data={...data,...p};},
-    REC:{isRecording:()=>false,isListening:()=>false},STAB:{reserveExternalScare:()=>true},activeBattleId:null,activeEndingCutscene:null,PB:{stopPlayback(){},isPlaying:()=>false},pubRoomAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,frontEndSession:null,frontEndPlateOverride:null,
+    REC:{isRecording:()=>false,isListening:()=>false},STAB:{reserveExternalScare:()=>true},activeBattleId:null,activeEndingCutscene:null,PB:{stopPlayback(){},isPlaying:()=>false},pubRoomAudio:null,pubPressureAudio:null,windowChoreography:null,towerBellDirector:null,bellPealPerformance:null,frontEndSession:null,frontEndPlateOverride:null,
     RT:{setBed(){}},STORY:{stopAll(){}},SPEECH:{clearSpeech(){}},R3:{r3dSetFrontEndPlate(){},r3dSetLookAngles(){},r3dSnapCameraOnNextFrame(){},r3dResetVfdMemory(){}},
     sourceCameraPatch:()=>({}),sourcePresentationTorch:()=>({on:false,look:{power:0}}),
-    sourceEarthfallProtected:()=>false,gameplayInputLifecycleActive:()=>true,pushEvent:e=>{throw Error(e);},
+    sourceEarthfallProtected:()=>false,gameplayInputLifecycleActive:()=>true,releaseSourceRecordingCassetteLabels,P3:{},pushEvent:e=>{throw Error(e);},
     beginSourceEarthfall:async next=>{continued++;const scene={id:'source-earthfall',view:()=>({ready:true}),entry:next};h.sourceContinuationScene=scene;return scene;},
   };
   for(const key of ['resetMotionInput','cancelOutskirtDoorAnswer','stopOutskirtsStreetAudio','pauseOutskirtsLastLight','stopSourceShoreAudio','stopSourceDockDoorAudio','stopSourceCorridorRain','syncStationEdgeSound','syncElsewhereBeds','endHorizonScore','stopAllVoices','stopWorldLayerVoice','silenceAmbientDrone','endBootWeather','syncSourceRender','updateAudio','ensureInteractionFocus'])h[key]=()=>{};

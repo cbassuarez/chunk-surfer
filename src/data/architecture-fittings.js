@@ -59,8 +59,8 @@ export const ARCHITECTURE_HOST_RESERVATIONS = Object.freeze([
 // the floor profile and higher picture rails continue through this interval.
 export const ARCHITECTURE_TRIM_CLEARANCES = Object.freeze([
   Object.freeze({id:'public-fountain',propId:'amenity-public-drinking-fountain',
-    group:'ground',floor:0,axis:'y',plane:97,nx:-1,ny:0,finish:'public',
-    from:16.29,to:17.01,mesh:'arch_dado_public_fountain_clearance'}),
+    group:'ground',floor:0,axis:'x',plane:14,nx:0,ny:-1,finish:'public',
+    from:88.14,to:88.86,mesh:'arch_dado_public_fountain_clearance'}),
 ]);
 
 const publicIds = new Set(['atrium','academic-gallery','academic-lobby','academic-loggia','chapel-narthex','the_tub','amplifications','lux_nova','classroom-west-1','public-sanitary-core']);

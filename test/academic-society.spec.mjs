@@ -77,6 +77,11 @@ test('each named person has a complete relationship, local-need and leave hub wi
     for(const node of Object.values(tree.nodes))for(const c of node.choices||[])assert.ok(tree.nodes[c.goto],`${actor.id}:${c.goto}`);
     for(const node of Object.values(tree.nodes))for(const line of node.lines){
       if(line.who==='direction')continue;
+      if(line.who==='me'){
+        assert.equal(line.voiceSpeaker,'me');assert.equal(line.sourceLabel,'YOU');
+        assert.equal(line.say,false,'the selected short choice already authorized the operator line');
+        assert.equal(line.actorId,undefined,'operator speech must not animate an NPC mouth');continue;
+      }
       assert.ok(byId[line.actorId]);assert.equal(line.name,byId[line.actorId].name);
       assert.equal(line.voiceSpeaker,`society-${line.actorId}`);
     }
@@ -361,7 +366,7 @@ test('presentation time advances idle bodies during a conversation but freezes a
 test('all authored body cues use the supported local performance vocabulary',()=>{
   const lines=[...BEATS.flatMap(b=>b.lines),...ACTORS.flatMap(a=>Object.values(academicSocietyDialogue(a.id).nodes).flatMap(n=>n.lines))];
   for(const line of lines){
-    if(line.who==='direction')continue;
+    if(line.who==='direction'||line.who==='me')continue;
     assert.ok(CUES.includes(line.performanceCue),line.text);
     if(line.responseCue)assert.ok(RESPONSES.includes(line.responseCue),line.text);
     if(line.toActorId){assert.ok(byId[line.toActorId]);assert.ok(Math.hypot(byId[line.actorId].x-byId[line.toActorId].x,byId[line.actorId].y-byId[line.toActorId].y)<=T.earshot);}

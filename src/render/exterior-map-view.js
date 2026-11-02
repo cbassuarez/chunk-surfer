@@ -60,6 +60,11 @@ export function drawExteriorMapCommand(command){
       pen.diamond(command.point,'#a8bca0',2);
       if(command.showLabel)pen.text(command.label,{x:command.point.x+.55,y:command.point.y-.45},{size:9,alpha:.8});
     }
+    else if(command.kind==='district-label')pen.text(command.text,command.point,{size:9,align:'center',alpha:.72});
+    else if(command.kind==='district-north'){
+      pen.line([command.point,command.tip],'#c8d1b2',.8);
+      pen.text('N',{x:command.point.x,y:command.point.y+.65},{align:'center',size:8,alpha:.9});
+    }
     ctx.restore();
   });
 }

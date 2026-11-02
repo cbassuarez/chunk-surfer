@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import { emitAcousticEvent, resetAcousticEventsForTest, setAcousticClock } from '../src/audio/acoustic-events.js';
 import { createHushAudioRuntime } from '../src/game/hush-audio-runtime.js';
 
@@ -109,5 +110,40 @@ closeRuntime.tick(1.4);
 assert.equal(closeRuntime.snapshot().field.stage, 'engulf');
 assert.ok(closeRuntime.snapshot().field.absorption.monitor < .92);
 closeRuntime.destroy();
+
+test('instrument HOLD discards real acoustic events before propagation and memory, while live field and resumed events remain authoritative',()=>{
+  let held=false,propagations=0,at=50000,player={x:0,y:0};const targets=[],heard=[],fields=[];
+  const runtime=createHushAudioRuntime({
+    presence:{publicSnapshot:()=>({active:true,position:{x:10,y:0},roomId:'hold-room',floorId:'g',hasTarget:false}),
+      offerSoundTarget:target=>{targets.push(target);return true;}},
+    playerSpatial:()=>({position:player,roomId:'hold-room',floorId:'g'}),
+    occlusionDb:()=>{propagations++;return 0;},
+    context:()=>({instrumentHold:held,allowMischief:false,monitorOpen:true}),clock:()=>at,random:()=>1,
+    effects:{applyField:field=>fields.push(field),maybeResidue:()=>false},onHeard:event=>heard.push(event),
+  });
+  const emit=(id,playerGenerated=false)=>emitAcousticEvent({id,kind:playerGenerated?'footstep_walk':'radio_squelch',
+    source:{kind:playerGenerated?'player':'equipment',id:playerGenerated?'player':'radio'},
+    spatial:{roomId:'hold-room',floorId:'g',position:{x:9,y:0}},
+    acoustic:{levelDb:-8,durationMs:400},semantics:{audibleToHush:true,playerGenerated,canBeMimicked:true}});
+  try{
+    emit('before-instrument-hold');runtime.tick(0);
+    assert.equal(targets.length,1);assert.equal(heard.length,1);assert.ok(runtime.currentAudition().interest>0);
+    const before=runtime.snapshot(),beforePropagation=propagations,beforeFields=fields.length;
+    held=true;emit('held-permitted-footstep',true);emit('held-equipment-sound');
+    assert.equal(propagations,beforePropagation,'held events never reach propagation');
+    assert.deepEqual(runtime.snapshot(),before,'preexisting audition, last event, propagation and intent are preserved');
+    assert.equal(targets.length,1);assert.equal(heard.length,1);
+    player={x:9,y:0};runtime.tick(0);
+    assert.equal(fields.length,beforeFields+1,'the physical field continues to render/mix during HOLD');
+    assert.ok(runtime.currentField().absorption.monitor>before.field.absorption.monitor);
+    assert.deepEqual(runtime.currentAudition(),before.audition,'field observation neither erases nor augments earlier memory');
+    held=false;at+=1000;const offersBeforeResume=targets.length,heardBeforeResume=heard.length;
+    runtime.tick(0);assert.equal(targets.length,offersBeforeResume);assert.equal(heard.length,heardBeforeResume,'discarded events are never delivered on resume');
+    emit('after-instrument-resume');assert.equal(targets.length,offersBeforeResume+1);assert.equal(heard.length,heardBeforeResume+1);
+    const ids=runtime.currentAudition().noiseMemory.map(row=>row.eventId);
+    assert.ok(ids.includes('before-instrument-hold')&&ids.includes('after-instrument-resume'));
+    assert.ok(!ids.includes('held-permitted-footstep')&&!ids.includes('held-equipment-sound'));
+  }finally{runtime.destroy();}
+});
 
 console.log('hush audio runtime tests ok');

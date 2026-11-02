@@ -139,6 +139,9 @@ test('cancellation after dispatch invalidates the predicate and avoids stale sim
 const effectsSource=readFileSync(new URL('../src/platform/personalized-window-effects.js',import.meta.url),'utf8');
 const methodStart=effectsSource.indexOf('async function showComposition(');
 const methodEnd=effectsSource.indexOf('\n  async function snapComposition(',methodStart);
+const releaseStart=effectsSource.indexOf('function releaseStudyFrames(){');
+const releaseEnd=effectsSource.indexOf('\n  async function updateStudyFrames(',releaseStart);
+assert.ok(releaseStart>=0&&releaseEnd>releaseStart);
 function effectsMethodHarness({prepareGate=null,assignGate=null,placeGate=null}={}){
   const calls=[],session={token:'test-session',compositionGeneration:0,activeComposition:null,
     manualMediaPanes:new Set(),mediaRevisions:new Map()};
@@ -158,7 +161,7 @@ function effectsMethodHarness({prepareGate=null,assignGate=null,placeGate=null}=
       emitTo:async(...args)=>calls.push(['emit',...args])},
     dispatch:(...args)=>calls.push(['dispatch',...args]),wait:async()=>{},
   };
-  const show=runInNewContext(`(${effectsSource.slice(methodStart,methodEnd).trim()})`,scope);
+  const show=runInNewContext(`${effectsSource.slice(releaseStart,releaseEnd)}\n(${effectsSource.slice(methodStart,methodEnd).trim()})`,scope);
   return{calls,session,show:(plan)=>show(plan,{isCurrent:()=>live}),cancel:()=>{live=false;},
     replace(plan){live=false;session.compositionGeneration++;session.activeComposition=plan;session.mediaRevisions.set('window-media-1',99);session.mediaRevisions.set('window-media-2',100);},
     restore(){live=false;session.compositionGeneration++;session.activeComposition=null;session.mediaRevisions.clear();},

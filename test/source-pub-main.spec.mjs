@@ -17,7 +17,7 @@ const fullFlags=()=>({'pub.help.complete':true,'pub.help.opener.returned':true,'
 function harness(flags=fullFlags()){
   scenes.clear();let data={run:{id:'test-source-pub'},flags,sourcePub:normalizeSourcePubCheckpoint(null),chunkSurf:{active:true,phase:'horizon'}},look={yaw:1.1,pitch:-.08},restores=0,disposed=0;
   const calls=[],environment={
-    sourcePubScene:null,sourcePubRenderer:null,sourceDriveSession:null,pubRoomAudio:null,sourcePubAudio:null,px:210.125,py:-177.75,renderMove:{},motionRig:{},trail:[1],paused:false,
+    sourcePubScene:null,sourcePubRenderer:null,sourceDriveSession:null,pubRoomAudio:null,pubPressureAudio:null,sourcePubAudio:null,px:210.125,py:-177.75,renderMove:{},motionRig:{},trail:[1],paused:false,
     getSave:()=>data,saveCommit:patch=>{data={...data,...patch};},flagTest:id=>data.flags[id]===true,pubQuestState,
     normalizeSourcePubCheckpoint,sourcePubEntry,createSourcePubScene,scenes,CELL:.5,
     chunkSurfRuntime:{state:()=>data.chunkSurf,outskirtsLastLight:()=>({along:40,across:.3,mark:42}),geometry:{floorAt:()=>15.2},setPlayerPosition:value=>calls.push(['runtime-pose',value])},

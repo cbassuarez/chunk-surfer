@@ -125,6 +125,12 @@ export function vigilSeatCandidates({ x, y, forwardX, forwardY, cellsPerMetre = 
     at(VIGIL.PLACE_MIN_M, -1.6),
     at(VIGIL.PLACE_MAX_M, 2.8),
     at(VIGIL.PLACE_MAX_M, -2.8),
+    // The city seat now faces east along a narrow roof edge. All six deep
+    // returns can fall inside the open courtyard. A far shoulder remains
+    // behind the eye, beyond the normal view, and at least 5.5m away; the
+    // caller still requires the entire chair footprint on actual roof.
+    at(.25, VIGIL.PLACE_MIN_M),
+    at(.25, -VIGIL.PLACE_MIN_M),
   ];
 }
 

@@ -15,6 +15,8 @@ import {isLiveExteriorPerformer,isExteriorPerformerInput} from '../src/render/ex
 import {ZONE} from '../src/data/floorplan/legend.js';
 import {applyInstitutionPosters} from '../src/data/institution-poster-sites.js';
 import {hallChandelierInstances} from '../src/data/hall-chandelier-treatment.js';
+import {openingCinematicStaticProps} from '../src/render/opening-cinematic-staging.js';
+import {vanBrandInstances} from '../src/render/van-brand.js';
 
 // Execute the actual main render adapters with controlled world/renderer
 // boundaries. This checks their handoff, rather than repeating the readiness
@@ -27,12 +29,15 @@ let authored=[...originals,...named],ready=false,currentViewGroup='ground',endin
 const submitted={static:[],dynamic:[],groups:[],drifts:[]};
 const context={
   console,Math,Number,Set,Map,Float32Array,performance:{now:()=>12_000},ZONE,
+  studentStrikePresentationFrame:()=>null,openingCinematicFrame:()=>null,shouldStageOpeningCinematic:()=>false,openingCinematicStaticProps,vanBrandInstances,
+  openingObserver:()=>null,openingPresentationView:()=>null,openingOvertureScene:null,exteriorInfrastructureAvailable:false,
   renderedWorldPropVisibilityKey:'',worldPropVisibilityKey:({group,zone})=>group+':'+zone,
   isLiveExteriorPerformer,isExteriorPerformerInput,applyInstitutionPosters,currentExteriorWindow:()=>null,buildingWindowInteriorInstance:()=>null,
   hallChandelierInstances,hallChandelierRendered:[{id:'stale-hall-fixture'}],
   exteriorRooflineInstance:()=>null,exteriorRoofArchitectureInstances:()=>[],pubHospitalityInstance:v=>v,
   pubHospitalityReady:()=>false,pubHospitalityRenderReady:false,pubHospitalityRendered:[],glassCourtRenderReady:false,facilityMapSource:null,
   pubServiceInstances,pubServiceDrinks,pubQuestState,pubWaterFirstSeenAt:null,
+  pubPressureFrame:{active:false},currentRecordistReleaseProps:()=>[],
   STREET_CROWD_IDS,STREET_CROWD_DESIGNS,STREET_CROWD_ACTOR_IDS:new Set(STREET_CROWD_IDS),streetCrowdDesign,streetCrowdInstances,streetCrowdRenderInstance,
   vigilCharacterIdForMesh,vigilCharacterDescriptor,VIGIL_ACTORS:vigilFigures(),pubActor,pubSeatedVigilDescriptor,
   exteriorPeopleClock:4,exteriorConversationFrames:()=>({}),exteriorVigilInstances,busWomanExteriorInstances,
@@ -42,7 +47,7 @@ const context={
   usingSourceSpace:()=>false,usingStairAnomaly:()=>false,usingSpecialSpace:()=>false,FP:{isLoaded:()=>true,logicalToPhysical:(x)=>({x,z:0,y:0,renderGroup:x===100?'academic':currentViewGroup}),zoneAt:()=>ZONE.street},
   PROPS:{setColliderGroupEnabled:()=>{},renderInstances:({group}={})=>{submitted.groups.push(group);return group==='academic'?[]:authored;},renderSelectedHosts:({select})=>authored.filter(select),attachInscriptions:v=>v,setPropDrift:(id,drift)=>submitted.drifts.push({id,drift})},
   R3:{r3dStreetCrowdStatus:()=>({ready}),r3dSetProps:instances=>{submitted.static=[...instances];},r3dSetDynamicProps:instances=>{submitted.dynamic=[...instances];}},
-  RENDERER:'3d',shakeMode:()=>'full',getSave:()=>({settings:{shake:'full'}}),flagTest:()=>false,isOutdoorZone:()=>true,
+  RENDERER:'3d',shakeMode:()=>'full',flashMode:()=> 'full',getSave:()=>({settings:{shake:'full'}}),flagTest:()=>false,isOutdoorZone:()=>true,
   syncArchitecturalLocalLights:()=>{},chapelTowerState:()=>({}),CHAPEL_TOWER_PHASE:{TOWER_CLEARED:'cleared',CHAPEL_FINAL:'final',TOWER_ACTIVE:'active'},
   currentNatatoriumWaterRun:()=>null,hiddenCrossEnvelopeProp:()=>false,hideStaticTowerRope:()=>false,
   roofRenMemoryFoldActive:false,roofRenMemoryFoldUntilMs:0,activeEndingCutscene:null,openingVehicleScene:null,boothPresentationPose:'wait',brendanFinale:()=>null,KEY_CABINET_RING:{'C-17':{id:'not-in-fixture'}},playerKeys:new Set(),
@@ -128,7 +133,7 @@ assert.deepEqual(submitted.drifts.slice(driftCount),[{id:'vigil-crowd-east-1',dr
 assert.equal(submitted.static.some(i=>STREET_CROWD_IDS.includes(i.id)),false,'old static silhouettes are retired in preflight');
 assert.deepEqual(submitted.dynamic,before,'preflight does not submit partial dynamic props');
 assert.equal(context.pubWaterFirstSeenAt,7);assert.equal(leafSteps,1);
-assert.deepEqual(colliderUpdates.map(v=>v[0]),['street-pilot','opening-street','glass-court']);
+assert.deepEqual(colliderUpdates.map(v=>v[0]),['street-pilot','opening-street','glass-court','exterior-infrastructure']);
 context.yardBusWomanClock=8;context.exteriorPeopleClock=14;context.syncDoorDynamicProps();
 assert.equal(context.doorDynamicRenderPending,false);assert.equal(context.pubWaterFirstSeenAt,7);assert.equal(leafSteps,2);
 assert.equal(submitted.dynamic.filter(i=>STREET_CROWD_IDS.includes(i.id)).length,20,'later render submits every live crowd body');

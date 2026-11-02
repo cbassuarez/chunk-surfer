@@ -128,6 +128,10 @@ export function compile(levels, { width, height, widenCorridors = false, connect
   plan.solid = new Uint8Array(w * h).fill(1);   // everything is rock until drawn
   plan.physicalX = new Int32Array(w * h).fill(PHYSICAL_VOID);
   plan.physicalY = new Int32Array(w * h).fill(PHYSICAL_VOID);
+  plan.physicalQuarterTurns = new Int8Array(w * h);
+  plan.physicalNavigation = new Uint8Array(w * h);
+  plan.hasPhysicalFrames=levels.some(l=>l.physicalFrame||l.physicalNavigation);
+  plan.physicalNavigationBuckets=new Set();plan.physicalFrameBuckets=new Set();
   plan.physicalReplace = new Uint8Array(w * h);
   plan.physicalStack = new Uint8Array(w * h);
   plan.collisionOnly = new Uint8Array(w * h);
@@ -171,9 +175,17 @@ export function compile(levels, { width, height, widenCorridors = false, connect
         const x0 = (origin.x + rx) * PLAN_SCALE;
         const y0 = (origin.y + ry) * PLAN_SCALE;
         for (let sy = 0; sy < PLAN_SCALE; sy++) for (let sx = 0; sx < PLAN_SCALE; sx++) {
+          const embedding=level.physicalFrame;
+          let physicalX=(physicalOrigin.x+rx)*PLAN_SCALE+sx,physicalY=(physicalOrigin.y+ry)*PLAN_SCALE+sy;
+          const turns=embedding?((Math.round(embedding.quarterTurns||0)%4)+4)%4:0;
+          if(embedding){
+            const a=turns*Math.PI/2,c=Math.round(Math.cos(a)),s=Math.round(Math.sin(a));
+            const dx=(physicalX+.5)/PLAN_SCALE-embedding.source.x,dz=(physicalY+.5)/PLAN_SCALE-embedding.source.z;
+            physicalX=Math.round((embedding.target.x+dx*c-dz*s)*PLAN_SCALE-.5);
+            physicalY=Math.round((embedding.target.z+dx*s+dz*c)*PLAN_SCALE-.5);
+          }
           writeCell(x0 + sx, y0 + sy, cell,{
-            physicalX:(physicalOrigin.x+rx)*PLAN_SCALE+sx,
-            physicalY:(physicalOrigin.y+ry)*PLAN_SCALE+sy,
+            physicalX,physicalY,physicalQuarterTurns:turns,physicalNavigation:!!embedding||!!level.physicalNavigation,
             layer,space,renderGroup:cell.zone===ZONE.hall?'hall':renderGroup,
             owner:level.id||layer,replace:!!level.replace,physicalReplace:!!level.physicalReplace,
             physicalStack:!!level.physicalStack,
@@ -274,24 +286,26 @@ function initDoorPortals(){
   }
 }
 
-function setPortalPassable(portal,open){
+function setPortalPassable(portal,open,{rebuild=true}={}){
   if(!portal)return false;portal.open=!!open;
   for(const {x,y} of portal.cells){const i=idx(x,y);plan.flags[i]=portal.open?(plan.flags[i]&~F.CLOSED):(plan.flags[i]|F.CLOSED);if(plan.rgba)plan.rgba[i*4+2]=plan.flags[i];}
-  buildPhysicalSpans();
+  if(rebuild)buildPhysicalSpans();
   return true;
 }
 
-function setPortalOpen(portal,open,{preserveWedge=true}={}){
+function setPortalOpen(portal,open,{preserveWedge=true,rebuild=true}={}){
   if(!portal)return false;
   portal.runtime.state=open?DOOR_STATE.OPEN:DOOR_STATE.CLOSED;
   portal.runtime.openFraction=open?1:0;
   portal.runtime.closeRequested=false;
   if(!preserveWedge&&!open)portal.runtime.wedge=false;
-  return setPortalPassable(portal,open);
+  return setPortalPassable(portal,open,{rebuild});
 }
 
 export function configureDoors(definitions=[]){
   const unmatched=new Set(doorPortals);
+  let changed=false;
+  try{
   for(const raw of definitions){
     const definition=doorDefinitionWithArchetype(raw);
     const targetX=Number(definition.at?.x)*PLAN_SCALE,targetY=Number(definition.at?.y)*PLAN_SCALE;
@@ -309,9 +323,14 @@ export function configureDoors(definitions=[]){
     portal.runtime=freshDoorRuntime(definition);
     portal.aperture={...definition.aperture};portal.leaf={...definition.leaf};portal.activeLeaves=[...definition.activeLeaves];
     for(const c of portal.cells){doorCellToPortal.set(`${c.x},${c.y}`,portal);if(portal.keyId)doorKeys.set(`${c.x},${c.y}`,portal.keyId);}
-    setPortalPassable(portal,!doorBlocksPassage(portal.runtime));
+    changed=true;setPortalPassable(portal,!doorBlocksPassage(portal.runtime),{rebuild:false});
   }
   if(unmatched.size)throw new Error(`floorplan: ${unmatched.size} door portal(s) lack explicit definitions: ${[...unmatched].map((p)=>p.legacyId).join(', ')}`);
+  }finally{
+    // A batch changes many flags in one synchronous transaction. Publish its
+    // complete physical view once, including any applied prefix on failure.
+    if(changed)buildPhysicalSpans();
+  }
   return doorState();
 }
 
@@ -335,7 +354,7 @@ function writeCell(x, y, cell, meta=null) {
   plan.flags[i] = cell.flags;
   plan.zone[i] = cell.zone;
   plan.material[i] = cell.material || materialForZone(cell.zone);
-  if(meta){plan.physicalX[i]=meta.physicalX;plan.physicalY[i]=meta.physicalY;plan.physicalReplace[i]=meta.physicalReplace?1:0;plan.physicalStack[i]=meta.physicalStack?1:0;plan.collisionOnly[i]=meta.collisionOnly?1:0;plan.layer[i]=meta.layer;plan.space[i]=meta.space;plan.renderGroup[i]=meta.renderGroup;}
+  if(meta){plan.physicalX[i]=meta.physicalX;plan.physicalY[i]=meta.physicalY;plan.physicalQuarterTurns[i]=meta.physicalQuarterTurns||0;plan.physicalNavigation[i]=meta.physicalNavigation?1:0;plan.physicalReplace[i]=meta.physicalReplace?1:0;plan.physicalStack[i]=meta.physicalStack?1:0;plan.collisionOnly[i]=meta.collisionOnly?1:0;plan.layer[i]=meta.layer;plan.space[i]=meta.space;plan.renderGroup[i]=meta.renderGroup;}
 }
 
 function widenCorridorRuns() {
@@ -1005,7 +1024,9 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
     ||(dx&&dy&&(edgePortalMap.get(`${sx},${sy}|${dx},0`)
       ||edgePortalMap.get(`${sx},${sy}|0,${dy}`)))
     ||null;
-  const destination=edge?.redirect||null;
+  const embedded=!edge&&physicalNavigationDestination(fromX,fromY,toX,toY);
+  if(embedded?.blocked)return{ok:false,why:'wall'};
+  const destination=edge?.redirect||embedded?.redirect||null;
   const b = destination?cellAt(destination.x,destination.y):cellAt(toX, toY);
   if (!b) return { ok: false, why: 'wall' };
   const bx=Math.floor(destination?.x??toX),by=Math.floor(destination?.y??toY);
@@ -1028,9 +1049,30 @@ export function canStep(fromX, fromY, toX, toY, { keys } = {}) {
     accessPortal.autoCloseSide=accessPortal.definition.insideSide===-1?-1:1;
     accessPortal.runtime.closerArmed=true;
   }
-  if(destination)return{ok:true,floor:b.floor,redirect:{...destination},edgePortal:edge.id,edgeTurn:edge.turn||0};
+  if(destination)return{ok:true,floor:b.floor,redirect:{...destination},edgePortal:edge?.id||'physical-frame',edgeTurn:edge?.turn??embedded?.turn??0};
   const redirect=connectorMap.get(`${Math.floor(toX)},${Math.floor(toY)}`)||null;
   return { ok: true, floor: b.floor, ...(redirect?{redirect:{...redirect}}:{}) };
+}
+
+// Cardinal room embeddings share real adjacent ground, not a teleport trigger.
+// Only opt-in frame/circulation cells participate; every existing level keeps
+// its authored edge/connector rules. Redirects retain old room save addresses.
+function physicalNavigationDestination(fromX,fromY,toX,toY){
+  if(!plan.hasPhysicalFrames)return null;
+  const sx=Math.floor(fromX),sy=Math.floor(fromY),tx=Math.floor(toX),ty=Math.floor(toY);
+  if(!inside(sx,sy))return null;
+  const si=idx(sx,sy),requestedNav=inside(tx,ty)&&!!plan.physicalNavigation[idx(tx,ty)],sourceNav=!!plan.physicalNavigation[si];
+  const a=logicalToPhysical(fromX,fromY),yaw=arcYawOffset(fromX,fromY,a.x+.5,a.z+.5),c=Math.cos(yaw),s=Math.sin(yaw);
+  const dx=toX-fromX,dy=toY-fromY,px=a.x+dx*c-dy*s,pz=a.z+dx*s+dy*c;
+  if(!sourceNav&&!requestedNav&&!nearPhysicalBucket(plan.physicalNavigationBuckets,px,pz))return null;
+  const target=logicalAtPhysical(px,pz,{group:plan.renderGroup[si],floor:plan.floor[si]});
+  const targetNav=target&&inside(Math.floor(target.x),Math.floor(target.y))&&!!plan.physicalNavigation[idx(Math.floor(target.x),Math.floor(target.y))];
+  if(!sourceNav&&!requestedNav&&!targetNav)return null;
+  if(!target)return{blocked:true};
+  const targetYaw=arcYawOffset(target.x,target.y,px+.5,pz+.5);
+  let turn=yaw-targetYaw;while(turn>Math.PI)turn-=Math.PI*2;while(turn<=-Math.PI)turn+=Math.PI*2;
+  if(Math.abs(target.x-toX)<1e-7&&Math.abs(target.y-toY)<1e-7&&Math.abs(turn)<1e-7)return null;
+  return{redirect:{x:target.x,y:target.y},turn};
 }
 
 // Logical cells stay unique for gameplay, while their physical embedding may
@@ -1164,6 +1206,7 @@ function registerConnector({from,to,bidirectional=true,span=null}){
 
 function buildPhysicalSpans(){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;const cells=new Map();
+  plan.physicalNavigationBuckets=new Set();plan.physicalFrameBuckets=new Set();
   for(let y=0;y<plan.h;y++)for(let x=0;x<plan.w;x++){
     // Collision-only hall cells remain ordinary AIR to the physical renderer.
     // Omitting them turns the space around a hero mesh back into the compiler's
@@ -1178,6 +1221,8 @@ function buildPhysicalSpans(){
     const stairRun=plan.flightId[i]?plan.stairRuns[plan.flightId[i]-1]:null;
     if(stairRun?.analyticHelix)continue;
     const px=plan.physicalX[i],py=plan.physicalY[i],key=`${px},${py}`;
+    if(plan.physicalNavigation?.[i])plan.physicalNavigationBuckets.add(`${Math.floor(px/8)},${Math.floor(py/8)}`);
+    if(plan.physicalQuarterTurns?.[i])plan.physicalFrameBuckets.add(`${Math.floor(px/8)},${Math.floor(py/8)}`);
     minX=Math.min(minX,px);minY=Math.min(minY,py);maxX=Math.max(maxX,px);maxY=Math.max(maxY,py);
     if(!cells.has(key))cells.set(key,[]);
     cells.get(key).push({floor:plan.floor[i],ceil:plan.ceil[i],flags:plan.flags[i],zone:plan.zone[i],material:plan.material[i],logicalX:x,logicalY:y,layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i],owner:plan.owner[i],arcId:plan.arcId[i],flightId:plan.flightId[i],physicalReplace:!!plan.physicalReplace[i],physicalStack:!!plan.physicalStack[i]});
@@ -1291,9 +1336,16 @@ export function arcYawOffset(logicalX,logicalY,physX,physZ){
   const cx=Math.floor(logicalX),cy=Math.floor(logicalY);
   if(!inside(cx,cy))return 0;
   const id=plan.arcId?.[idx(cx,cy)];
-  if(!id)return 0;
+  if(!id)return (plan.physicalQuarterTurns?.[idx(cx,cy)]||0)*Math.PI/2;
   const a=plan.arcs[id-1];
   return a.yawBase+a.sign*(Math.atan2(physX-a.cx,-(physZ-a.cz))-a.theta0);
+}
+export function physicalQuarterTurnsAt(x,y){const cx=Math.floor(x),cy=Math.floor(y);return inside(cx,cy)?plan.physicalQuarterTurns?.[idx(cx,cy)]||0:0;}
+export function usesPhysicalNavigationAt(x,y){const cx=Math.floor(x),cy=Math.floor(y);return inside(cx,cy)&&!!plan.physicalNavigation?.[idx(cx,cy)];}
+export function nearPhysicalNavigationAt(x,y){
+  if(!plan.hasPhysicalFrames)return false;
+  const at=logicalToPhysical(x,y);
+  return nearPhysicalBucket(plan.physicalNavigationBuckets,at.x,at.z);
 }
 
 export function logicalToPhysical(x,y){
@@ -1322,12 +1374,22 @@ export function logicalToPhysical(x,y){
   // byte-identical, which matters: ~25 call sites pass integers meaning "that
   // cell" and registerConnector compares the results for exact coincidence.
   let rx=ox,rz=oy;
-  if(id&&(ox||oy)){
+  if((id||plan.physicalQuarterTurns[i])&&(ox||oy)){
     const t=arcYawOffset(cx,cy,px+.5,pz+.5),c=Math.cos(t),s=Math.sin(t);
     rx=ox*c-oy*s;rz=ox*s+oy*c;
   }
   const mapped=px!==PHYSICAL_VOID&&pz!==PHYSICAL_VOID;
   return{x:mapped?px+rx:x,z:mapped?pz+rz:y,y:plan.floor[i],arcId:id,flightId:plan.flightId[i],owner:plan.owner[i],layer:plan.layer[i],spaceId:plan.space[i],renderGroup:plan.renderGroup[i]};
+}
+
+// Authored points are geometry anchors, unlike body coordinates whose caller
+// adds half a cell after embedding. Keep those conventions explicit on turns.
+export function logicalPointToPhysical(x,y){
+  const at=logicalToPhysical(x,y),cx=Math.floor(x),cy=Math.floor(y);
+  if(!inside(cx,cy))return at;
+  const turns=plan.physicalQuarterTurns?.[idx(cx,cy)]||0;if(!turns)return at;
+  const a=turns*Math.PI/2,c=Math.round(Math.cos(a)),s=Math.round(Math.sin(a));
+  return{...at,x:at.x+.5-(.5*c-.5*s),z:at.z+.5-(.5*s+.5*c)};
 }
 
 // Collision remains on the half-metre grid, but the camera follows the real
@@ -1387,9 +1449,23 @@ export function physicalSpanData(){return plan.physical;}
 export function ownershipData(){return{owner:plan.owner,conflicts:plan.ownershipConflicts};}
 
 export function logicalAtPhysical(x,z,{group=null,floor=null}={}){
-  const list=plan.physical?.cells.get(`${Math.floor(x)},${Math.floor(z)}`)||[];let choices=group?list.filter((s)=>s.renderGroup===group):list;if(!choices.length)choices=list;if(!choices.length)return null;
-  choices.sort((a,b)=>floor==null?0:Math.abs(a.floor-floor)-Math.abs(b.floor-floor));return{x:choices[0].logicalX+(x-Math.floor(x)),y:choices[0].logicalY+(z-Math.floor(z)),...choices[0]};
+  const list=plan.physical?.cells.get(`${Math.floor(x)},${Math.floor(z)}`)||[];
+  const turned=[];
+  if(nearPhysicalBucket(plan.physicalFrameBuckets,x,z))for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)for(const span of plan.physical?.cells.get(`${Math.floor(x)+dx},${Math.floor(z)+dz}`)||[]){
+    const i=idx(span.logicalX,span.logicalY),turns=plan.physicalQuarterTurns?.[i]||0;if(!turns)continue;
+    const a=turns*Math.PI/2,c=Math.round(Math.cos(a)),s=Math.round(Math.sin(a)),px=x-plan.physicalX[i],pz=z-plan.physicalY[i];
+    const ox=px*c+pz*s,oy=-px*s+pz*c;
+    if(ox>=-1e-7&&ox<1-1e-7&&oy>=-1e-7&&oy<1-1e-7)turned.push({...span,x:span.logicalX+Math.max(0,ox),y:span.logicalY+Math.max(0,oy)});
+  }
+  // A cardinal span must use its inverse basis. Reusing the ordinary XY
+  // fractional fallback can return a different physical point and let a step
+  // skip a wall at the edge of a turned room.
+  let choices=[...turned,...list.filter(s=>!plan.physicalQuarterTurns?.[idx(s.logicalX,s.logicalY)]).map(s=>({...s,x:s.logicalX+(x-Math.floor(x)),y:s.logicalY+(z-Math.floor(z))}))];
+  const selected=group?choices.filter(s=>s.renderGroup===group):choices;if(selected.length)choices=selected;
+  if(!choices.length)return null;
+  choices.sort((a,b)=>floor==null?0:Math.abs(a.floor-floor)-Math.abs(b.floor-floor));return choices[0];
 }
+function nearPhysicalBucket(buckets,x,z){if(!buckets?.size)return false;const bx=Math.floor(x/8),bz=Math.floor(z/8);for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++)if(buckets.has(`${bx+dx},${bz+dz}`))return true;return false;}
 
 // AMBIENT IS A PROPERTY OF PLACE, NOT A NUMBER PER ZONE.
 //
@@ -1528,6 +1604,34 @@ export function physicalRenderPlanFor(x,y){
   const exteriorObserver=isOutdoorZone(observerZone)||isCivicMeshEnvelopeZone(observerZone);
   const architecturalWindow=exteriorObserver?null:buildingWindowForObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,spaceId:here.spaceId,renderGroup:here.renderGroup});
   const exteriorWindow=exteriorObserver?buildingWindowForExteriorObserver({x:here.x*CELL,z:here.z*CELL,y:here.y,zone:observerZone}):null;
+  // A connected stair is one continuous opening, including the part below
+  // this storey. The yard can legitimately stand above the basement landing;
+  // choosing its nearer grade while looking down that stair draws a slab the
+  // body then walks through. Prefer the actual connected flight/landings only
+  // from its enclosed approach or from the stair itself. Exterior observers
+  // must retain the real yard over it.
+  const connectedStairOwners=new Set(),connectedStairEndpoints=[],ownedStairPortals=[];
+  if(!exteriorObserver)for(const portal of plan.stairPortals){
+    const run=plan.stairRuns.find(run=>run.id===portal.id);if(!run)continue;
+    ownedStairPortals.push({portal,owner:run.owner});
+    const atEndpoint=(point,height,endpointGroup)=>group===endpointGroup
+      &&Math.abs(here.y-height)<=SPAN_WINDOW
+      &&Math.hypot(here.x-point[0],here.z-point[1])<=portal.radius;
+    if(here.owner===run.owner||atEndpoint(portal.p0,portal.floor0,portal.group0)
+      ||atEndpoint(portal.p1,portal.floor1,portal.group1)){
+      connectedStairOwners.add(run.owner);
+    }
+  }
+  // Selecting one owned stair selects its whole construction. Otherwise two
+  // positions with the same cache key could retain different endpoint sets.
+  for(const {portal,owner}of ownedStairPortals)if(connectedStairOwners.has(owner)){
+    connectedStairEndpoints.push({point:portal.p0,height:portal.floor0,group:portal.group0,radius:portal.radius},
+      {point:portal.p1,height:portal.floor1,group:portal.group1,radius:portal.radius});
+  }
+  const stairEnvelopeKey=[...connectedStairOwners].sort().join(',')||'no-stair-envelope';
+  const connectedEndpointAt=(span,px,py)=>connectedStairEndpoints.some(end=>span.renderGroup===end.group
+    &&Math.abs(span.floor-end.height)<=STEP_UP
+    &&Math.hypot(px-end.point[0],py-end.point[1])<=end.radius);
   const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
     &&x>=84&&x<=94&&y>=480&&y<=492;
   const band=Math.round(here.y/HEIGHT_BAND);
@@ -1545,7 +1649,7 @@ export function physicalRenderPlanFor(x,y){
   // to hand its slice to the other. That is how the pool came back solid even
   // after the retention rule was right: the cached foyer slice had no basin in
   // it. Same shape of bug as the rounded band the note above describes.
-  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}:${architecturalWindow?.id||'no-window'}:${exteriorWindow?.id||'no-inward-window'}`;
+  const cacheKey=`${group}:${here.layer}:${here.spaceId||''}:${band}:${exteriorObserver?'exterior':'enclosed'}:${northRoofGateSightline?'north-roof-aperture':'ordinary'}:${architecturalWindow?.id||'no-window'}:${exteriorWindow?.id||'no-inward-window'}:${stairEnvelopeKey}`;
   if(plan.physical.renderCache.has(cacheKey))return plan.physical.renderCache.get(cacheKey);
   const w=plan.physical.width,h=plan.physical.height,originX=plan.physical.originX||0,originY=plan.physical.originY||0,solid=new Uint8Array(w*h).fill(1),floor=new Float32Array(w*h),ceil=new Float32Array(w*h),flags=new Uint8Array(w*h),zone=new Uint8Array(w*h),material=new Uint8Array(w*h),rgba=new Uint8Array(w*h*4);
   // Cells where a church contributes its ground to an outdoor slice. Their
@@ -1588,6 +1692,13 @@ export function physicalRenderPlanFor(x,y){
     const academicAtriumVoid=here.renderGroup==='academic'
       &&sceneSpans.some((s)=>s.spaceId==='front_atrium')
       &&!sceneSpans.some((s)=>s.renderGroup==='academic');
+    // The newer open court continues that downward view. Its ground span is
+    // deliberately ten metres below the gallery, outside the storey window;
+    // omitting it would render unloaded solid rock across the actual opening.
+    const academicCourtVoid=here.renderGroup==='academic'
+      &&!sceneSpans.some((s)=>s.renderGroup==='academic');
+    const courtBelow=(s)=>academicCourtVoid&&s.spaceId==='baths_courtyard'
+      &&s.layer==='ground'&&(s.flags&F.SKY);
     // One coherent physical slice: nearby occupied floors plus every stair
     // run, regardless of its logical render group. Group-filtered slices cut
     // stairs in half and produced the horizontal slab / Platform 9¾ effect.
@@ -1613,7 +1724,7 @@ export function physicalRenderPlanFor(x,y){
     // from the eye, so it can never become the nearest span and never changes
     // what an already-drawn cell draws.
     const sameRoom=here.spaceId?(s)=>s.spaceId===here.spaceId:()=>false;
-    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||sameRoom(s)||landingVisible(s)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||(academicAtriumVoid&&s.spaceId==='front_atrium'));
+    let list=hallEnvelope?sceneSpans.filter((s)=>s.spaceId==='hall'||s.spaceId==='front_atrium'):sceneSpans.filter((s)=>(s.flags&F.STAIR)||Math.abs(s.floor-hy)<=SPAN_WINDOW||sameRoom(s)||landingVisible(s)||connectedEndpointAt(s,px,py)||(here.spaceId==='hall'&&s.spaceId==='front_atrium')||(academicAtriumVoid&&s.spaceId==='front_atrium')||courtBelow(s));
     if(!list.length)continue;const localX=px-originX,localY=py-originY;if(localX<0||localY<0||localX>=w||localY>=h)continue;const i=localY*w+localX;solid[i]=0;
     // Hall decks are structural meshes. The sector envelope remains the full
     // air volume so orchestra and both balconies retain reciprocal sightlines.
@@ -1634,15 +1745,18 @@ export function physicalRenderPlanFor(x,y){
       // prevent. Nothing in the building is an arc today, so this is inert until
       // a spiral is authored.
       let pool=list;
+      const connected=connectedStairOwners.size?list.filter(span=>((span.flags&F.STAIR)&&connectedStairOwners.has(span.owner))
+        ||connectedEndpointAt(span,px,py)):[];
+      if(connected.length)pool=connected;
       if(here.arcId){
         // Matched on the ARC, not the owner: two coils authored as two flights of
         // one compoundStair share an owner id, and the whole point is to tell
         // them apart. The arc is the coil.
-        const mine=list.filter((v)=>v.arcId===here.arcId);
+        const mine=pool.filter((v)=>v.arcId===here.arcId);
         if(mine.length)pool=mine;
       }
       if(here.flightId){
-        const mine=list.filter((v)=>v.flightId===here.flightId);
+        const mine=pool.filter((v)=>v.flightId===here.flightId);
         if(mine.length)pool=mine;
       }
       const s=pool.reduce((best,v)=>Math.abs(v.floor-hy)<Math.abs(best.floor-hy)?v:best,pool[0]);
@@ -1754,6 +1868,9 @@ export function physicalRenderPlanFor(x,y){
 // the level data fills.
 const doorKeys = new Map();
 export function setDoorKey(x, y, keyId, { authored = true, open = false } = {}) {
+  // Invalid legacy addresses must not become (0,0) and mutate an unrelated
+  // nearby portal repeatedly. Door definitions carry coordinates in `at`.
+  if(!Number.isFinite(x)||!Number.isFinite(y))return false;
   const x0 = authored ? toRuntimeCoord(x, { center: false }) : Math.floor(x);
   const y0 = authored ? toRuntimeCoord(y, { center: false }) : Math.floor(y);
   const sx=x0+(authored?Math.floor(PLAN_SCALE/2):0),sy=y0+(authored?Math.floor(PLAN_SCALE/2):0);
@@ -1790,8 +1907,16 @@ export function doorAt(x,y){return doorCellToPortal.get(`${Math.floor(x)},${Math
 export function doorNear(px,py,facing=[0,-1],maxCells=5){
   let best=null;
   for(const portal of doorPortals){
-    const dx=portal.cx-px,dy=portal.cy-py,d=Math.hypot(dx,dy);if(d>maxCells)continue;
-    const dot=d>.001?(dx*facing[0]+dy*facing[1])/d:1;if(dot<.12)continue;
+    const sourceNav=inside(Math.floor(px),Math.floor(py))&&plan.physicalNavigation?.[idx(Math.floor(px),Math.floor(py))];
+    const physical=sourceNav||physicalQuarterTurnsAt(portal.cx,portal.cy);
+    let dx=portal.cx-px,dy=portal.cy-py,forward=facing;
+    if(physical){
+      if(Math.abs(floorAt(px,py)-floorAt(portal.cx,portal.cy))>1.2)continue;
+      const source=logicalToPhysical(px,py),target=logicalPointToPhysical(portal.cx,portal.cy),yaw=arcYawOffset(px,py,source.x+.5,source.z+.5),c=Math.cos(yaw),s=Math.sin(yaw);
+      dx=target.x-(source.x+.5);dy=target.z-(source.z+.5);forward=[facing[0]*c-facing[1]*s,facing[0]*s+facing[1]*c];
+    }
+    const d=Math.hypot(dx,dy);if(d>maxCells)continue;
+    const dot=d>.001?(dx*forward[0]+dy*forward[1])/d:1;if(dot<.12)continue;
     if(!best||d<best.distance)best={portal,distance:d};
   }
   return best;
@@ -1799,7 +1924,7 @@ export function doorNear(px,py,facing=[0,-1],maxCells=5){
 export function interactDoor(px,py,facing,keys){
   const hit=doorNear(px,py,facing);if(!hit)return null;
   const {portal}=hit;
-  const side=portalSide(portal,px,py);
+  const actor=portalActorCoordinates(portal,px,py),side=portalSide(portal,actor.x,actor.y);
   if(portal.definition?.access==='exit-only'&&side!==(portal.definition.insideSide===-1?-1:1)){
     return{ok:false,why:'exit-only',id:portal.id,archetype:portal.definition?.archetype||null};
   }
@@ -1808,7 +1933,7 @@ export function interactDoor(px,py,facing,keys){
   }
   const opening=portal.runtime.state===DOOR_STATE.CLOSED||portal.runtime.state===DOOR_STATE.CLOSING;
   if(opening&&portal.keyId&&!(keys&&keys.has(portal.keyId)))return{ok:false,why:'locked',id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null};
-  const along=portal.widthAxis==='x'?py:px,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
+  const along=portal.widthAxis==='x'?actor.y:actor.x,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
   portal.autoCloseSide=Math.sign(along-plane)||-1;
   if(opening){
     const opened=beginDoorOpen(portal.runtime);
@@ -1823,6 +1948,13 @@ export function interactDoor(px,py,facing,keys){
   const closed=beginDoorClose(portal.runtime,{removeWedge:true});
   if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
   return{ok:true,closed,removedWedge,id:portal.id,keyId:portal.keyId,archetype:portal.definition?.archetype||null,construction:portal.definition?.construction||'steel'};
+}
+function portalActorCoordinates(portal,x,y){
+  const sourceNav=inside(Math.floor(x),Math.floor(y))&&plan.physicalNavigation?.[idx(Math.floor(x),Math.floor(y))];
+  if(!sourceNav&&!physicalQuarterTurnsAt(portal.cx,portal.cy))return{x,y};
+  const source=logicalToPhysical(x,y),target=logicalPointToPhysical(portal.cx,portal.cy),yaw=arcYawOffset(portal.cx,portal.cy,target.x,target.z),c=Math.cos(yaw),s=Math.sin(yaw);
+  const dx=source.x+.5-target.x,dz=source.z+.5-target.z;
+  return{x:portal.cx+dx*c+dz*s,y:portal.cy-dx*s+dz*c};
 }
 export function tickDoors(dt,{playerX=Infinity,playerY=Infinity,onlyIds=null}={}){
   const events=doorTickEvents;events.length=0;
@@ -1853,7 +1985,12 @@ export function setDoorOpen(id,open){
   const portal=doorPortals.find((p)=>p.id===id);if(!portal)return false;
   portal.autoCloseSide=0;return setPortalOpen(portal,open);
 }
-export function setAllDoorsOpen(open){for(const portal of doorPortals)setPortalOpen(portal,open,{preserveWedge:false});return saveDoorState();}
+export function setAllDoorsOpen(open){
+  let changed=false;
+  try{for(const portal of doorPortals){changed=true;setPortalOpen(portal,open,{preserveWedge:false,rebuild:false});}}
+  finally{if(changed)buildPhysicalSpans();}
+  return saveDoorState();
+}
 // Restage one real closer under an authored cover without touching any other
 // portal. The following selected tick owns its physical leaf and closed event.
 export function runDoorCloserCycle(id){
@@ -1872,16 +2009,24 @@ export function runDoorCloserCycles(){
 }
 export function loadDoorState(saved={}){
   const normalized=normalizeDoorSave(saved),legacyOpen=new Set(normalized.legacyOpen);
+  let changed=false;
+  try{
   for(const portal of doorPortals){
     const aliases=new Set([portal.id,portal.legacyId,...(portal.definition?.legacyIds||[])]);
     const endpoint=normalized.states[portal.id]||[...aliases].map((id)=>normalized.states[id]).find(Boolean);
     portal.runtime=endpoint?normalizeDoorEndpoint(endpoint,portal.definition):freshDoorRuntime(portal.definition||{initialState:legacyOpen.has(portal.id)?'open':'closed'});
     if(!endpoint&&[...aliases].some((id)=>legacyOpen.has(id)))portal.runtime=normalizeDoorEndpoint({state:DOOR_STATE.OPEN,wedge:portal.definition?.wedged,closerArmed:portal.definition?.closerArmed},portal.definition);
-    setPortalPassable(portal,!doorBlocksPassage(portal.runtime));
+    changed=true;setPortalPassable(portal,!doorBlocksPassage(portal.runtime),{rebuild:false});
   }
+  }finally{if(changed)buildPhysicalSpans();}
 }
 export function saveDoorState(){return{schema:2,states:Object.fromEntries(doorPortals.map((portal)=>[portal.id,stableDoorEndpoint(portal.runtime)]))};}
-export function resetDoors(){for(const portal of doorPortals){portal.runtime=freshDoorRuntime(portal.definition||{initialState:portal.keyId?'closed':'open'});portal.autoCloseSide=0;setPortalPassable(portal,!doorBlocksPassage(portal.runtime));}return saveDoorState();}
+export function resetDoors(){
+  let changed=false;
+  try{for(const portal of doorPortals){portal.runtime=freshDoorRuntime(portal.definition||{initialState:portal.keyId?'closed':'open'});portal.autoCloseSide=0;changed=true;setPortalPassable(portal,!doorBlocksPassage(portal.runtime),{rebuild:false});}}
+  finally{if(changed)buildPhysicalSpans();}
+  return saveDoorState();
+}
 export function doorState(){return doorPortals.map((portal)=>({
   id:portal.id,legacyId:portal.legacyId,archetype:portal.definition?.archetype||'legacy',state:portal.runtime.state,openFraction:portal.runtime.openFraction,
   keyId:portal.keyId,open:portal.open,wedge:portal.runtime.wedge,closer:portal.definition?.closer||'none',closerArmed:portal.runtime.closerArmed,

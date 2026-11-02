@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {createLocalTextReview,localTextReviewLocation,reviewKey,TEXT_REVIEW_STORAGE_KEY,TEXT_REVIEW_REASONS} from '../src/game/local-text-review.js';
+import {createStudentStrikeInputGate} from '../src/game/student-strike-host.js';
 const target={id:'guard.start.1',sceneId:'coldopen',nodeId:'guard.start',sourceId:'guard.line.1',speaker:'me',fields:[
   {key:'guard.short',label:'Choice label',original:'Ask about the job'},
   {key:'guard.long',label:'Spoken line',original:'What can you tell me about the job?'}]};
@@ -188,7 +189,7 @@ test('the actual main key gates keep textarea, navigation and key releases insid
       const header=`function ${name}(e){`,start=main.indexOf(header),body=start+header.length;
       const guard=main.indexOf("  if(typeof localTextReviewUi",body),end=main.indexOf('\n',guard);
       assert.ok(start>=0&&guard>=body&&end>guard);
-      return new Function('localTextReviewUi','game',`return function(e){${main.slice(body,end)}\ngame(e);};`)(h.ui,e=>reached.push(e.key));
+      return new Function('localTextReviewUi','game','studentStrikeInputGate',`return function(e){${main.slice(body,end)}\ngame(e);};`)(h.ui,e=>reached.push(e.key),createStudentStrikeInputGate());
     });
     const textarea=h.field('local-text-field-0');
     for(const key of ['a',' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown','Tab','Backspace','Delete','r','b','F8']){

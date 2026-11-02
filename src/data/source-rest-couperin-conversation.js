@@ -1,6 +1,7 @@
 // Source III's own listening conversation. The caller owns the full recording,
 // acoustic/electronic revoicing, audible clock, bodily loss and ending.
 // These are language choices; none selects a mix, instrument or musical result.
+import {sourceRestQuestionNodes} from './source-rest-questions.js';
 const line=(who,text)=>Object.freeze({who,text,voice:false,say:false});
 const you=text=>line('you',text),other=text=>line('other',text);
 const go=(id,label,next)=>Object.freeze({id,label,next});
@@ -32,7 +33,7 @@ const nodes={
     other('Enough to be glad you stopped.'),
     you('That is not quite what I asked.'),
     other('I know. I was trying not to talk over it.')
-  ],{next:'guitar-etudes'}),
+  ],{next:'questions-entry'}),
   'a-while':timed([
     you('Only for a while.'),
     other('Then I will not ask how long.'),
@@ -40,7 +41,7 @@ const nodes={
     other('Good.'),
     you('You sound pleased with yourself.'),
     other('I found somewhere to sit. It is not a small achievement here.')
-  ],{next:'guitar-etudes'}),
+  ],{next:'questions-entry'}),
   'guitar-etudes':timed([
     you('I kept wondering about the guitar études.'),
     other('What about them?'),
@@ -219,6 +220,14 @@ const nodes={
     other('Here.')
   ],{locked:true,next:'last'}),
   last:timed([
+    you('I cannot tell where the edge of it is.'),
+    other('The note?'),
+    you('The room.'),
+    other('Leave the room a moment.'),
+    you('Will I still know when it ends?'),
+    other('We can listen for the space after it.'),
+    you('Do not count.'),
+    other('No.'),
     you('There it is.'),
     other('Yes.'),
     you('Leave it there.')
@@ -226,4 +235,4 @@ const nodes={
 };
 
 export const SOURCE_REST_COUPERIN_CONVERSATION=Object.freeze({id:'source-rest:catch',phase:'catch',title:'THE BENCH / COUPERIN',
-  entry:'arrival',timed:true,cues:SOURCE_REST_COUPERIN_CUES,nodes:Object.freeze(nodes)});
+  entry:'arrival',timed:true,cues:SOURCE_REST_COUPERIN_CUES,nodes:Object.freeze({...nodes,...sourceRestQuestionNodes('guitar-etudes',{phase:'catch'})})});

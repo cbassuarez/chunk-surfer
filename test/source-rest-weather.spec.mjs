@@ -5,7 +5,7 @@ import {sourceRestWeatherCue,createSourceRestWeatherScore} from '../src/game/sou
 import {windAt} from '../src/world/wind.js';
 import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
-import {sourceContinuationRenderFrame} from '../src/render/source-continuation-renderer.js';
+import {sourceContinuationRenderFrame,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
 import {sourceRestGeometryLibrary} from '../src/render/source-rest-models.js';
 import {continuationSupportAt} from '../src/data/source-continuation.js';
 const seat=SOURCE_REST_SEATS[0],state=(t,cue)=>({...freshSourceContinuation(),...seat,...seat.approach,status:'active',elapsed:200,
@@ -42,7 +42,7 @@ test('standard rain respects the actual water surface and reduced-motion keeps t
 test('storm, wrecks and fish preserve the physical route and release before black',()=>{
  const cue=sourceRestWeatherCue({active:true,seated:true,progress:.68,stormAge:24,audibleSeconds:364}),s=state(364,cue);s.sourceRestView.degradation=.68;
  const a=sourceContinuationRenderFrame(s);assert.ok(a.props.some(p=>p.floodKind==='flood-fauna'));assert.ok(a.props.some(p=>p.floodKind==='flood-wreck'));
- assert.ok(a.flood.water.active);assert.ok(a.lights.length<=8);assert.ok(a.counts.props<760);
+ assert.ok(a.flood.water.active);assert.ok(a.lights.length<=8);assert.ok(a.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
  const b=sourceContinuationRenderFrame({...s,sourceRestView:{...s.sourceRestView,weatherCue:sourceRestWeatherCue({active:true,seated:true,progress:.68,stormAge:54,audibleSeconds:394})}});
  assert.deepEqual(a.geometry,b.geometry);assert.equal(b.props.some(p=>p.restFlood),false);
  assert.equal(sourceRestWeather({...s,phase:'catch'}),null);

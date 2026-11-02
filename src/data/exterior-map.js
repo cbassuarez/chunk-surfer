@@ -1,7 +1,8 @@
 // Public street survey, not a second interior plan. Existing street contracts
 // own the parcels; no closed frontage gains an invented room or entrance.
 import {DISTRICT_STREETS,DISTRICT_COURTS,YARD_SERVICE_RANGES,districtLogicalAt} from './exterior-district.js';
-import {EXTERIOR_PUB,pubExteriorAt,pubExteriorLogicalAt} from './exterior-pub.js';
+import {EXTERIOR_PUB,pubPhysicalExteriorAt,pubExteriorLogicalAt} from './exterior-pub.js';
+import {yardTurnPoint,YARD_TURN_YAW} from './yard-turn.js';
 import {CHURCH} from './st-brendans.js';
 import {CONSERVATORY_PROPS} from './conservatory-props.js';
 import {EXTERIOR_MAP_SHELL} from './generated/exterior-map-shell.js';
@@ -50,7 +51,7 @@ export function exteriorInstitutionCells({renderedInstances=[]}={}){
 export function exteriorMapFootprints({renderedInstances=[]}={}){
   const result=[]; // Ellery's occupied envelope is captured from the real plan.
   for(const range of YARD_SERVICE_RANGES){
-    const pose=renderedInstances.find(p=>p.id===range.id)||{x:range.physical.x,z:range.physical.y};
+    const pose=renderedInstances.find(p=>p.id===range.id)||{...yardTurnPoint(range.id,{x:range.physical.x,z:range.physical.y}),yaw:YARD_TURN_YAW};
     const pub=range.id===EXTERIOR_PUB.building?.id;
     result.push({id:pub?'lyric':range.id,sourcePropId:range.id,role:pub?'pub':'outbuilding',label:pub?'THE LYRIC':range.use.toUpperCase(),
       points:rectangle(-range.w/2,-range.d/2,range.w/2,range.d/2).map(p=>projectFromPose(pose,p.x,p.y))});
@@ -90,7 +91,7 @@ export function exteriorMapFootprints({renderedInstances=[]}={}){
   return result;
 }
 export function exteriorMapTargets({renderedInstances=[]}={}){
-  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubExteriorAt(pubDoor.id),bindery=binderyPlacement({renderedInstances});
+  const pubDoor=EXTERIOR_PUB.doors[0],pub=pubPhysicalExteriorAt(pubDoor.id),bindery=binderyPlacement({renderedInstances});
   return [
     {id:'outside:van',label:'VAN / EQUIPMENT',shortLabel:'VAN',logical:{x:61,y:208},currentRadius:4},
     {id:'outside:shelter',label:'ARRIVAL SHELTER',shortLabel:'BUS',logical:{x:54.5,y:205},currentRadius:3},

@@ -12,6 +12,7 @@ import {SOURCE_SURROUNDINGS as C} from '../src/data/source-surroundings.js';
 import {sourceSurroundingsFrame} from '../src/game/source-surroundings.js';
 import {setSourceSurroundingsPressure,props3dDebugShaders} from '../src/render/props3d.js';
 import {portalTransformPoint,portalTransformVector,portalMultiply} from '../src/render/source-mesh-portals.js';
+import {natatoriumMetricPoint,NATATORIUM_METRIC_IDENTITY} from '../src/render/natatorium-metric.js';
 
 const near=(a,b,epsilon=1e-5)=>assert.ok(Math.abs(a-b)<epsilon,`${a} != ${b}`);
 const wave=(extra={})=>({world:'fall',kind:'radial-pressure',origin:{x:160,y:59.3,z:-55},age:2,speed:36,radius:72,width:14,strength:.9,...extra});
@@ -85,7 +86,12 @@ test('main, reflected and shadow draws share the displaced world vertex and opaq
     assert.ok(shader.includes(glsl));assert.ok(shader.includes('w.xyz+=sourceSurroundingsPressureDisplacement(local,w.xyz,mat3(m))'));
   }
   assert.ok(shaders.vertex.indexOf('w.xyz+=sourceSurroundingsPressureDisplacement')<shaders.vertex.indexOf('vWorld=w.xyz'));
-  assert.ok(shaders.vertex.includes('gl_Position=uProj*uView*w'));assert.ok(shaders.shadowVertex.includes('gl_Position=uShadowMatrix*w'));
+  assert.ok(shaders.vertex.includes('gl_Position=uProj*uView*vec4(natatoriumMetricPoint(w.xyz),w.w)'));
+  assert.ok(shaders.vertex.indexOf('w.xyz+=sourceSurroundingsPressureDisplacement')<shaders.vertex.indexOf('gl_Position='),
+    'presentation projects the pressure-displaced material point, never an undisplaced copy');
+  assert.deepEqual(natatoriumMetricPoint([232,59.3,-55],NATATORIUM_METRIC_IDENTITY),[232,59.3,-55],
+    'the shared presentation metric is identity for ordinary Source pressure geometry');
+  assert.ok(shaders.shadowVertex.includes('gl_Position=uShadowMatrix*w'));
   assert.ok(shaders.fragment.includes('sourceSurroundingsPressureSample(vSourceSurroundingsLocal,vSourceSurroundingsRestWorld).stress'));
   assert.ok(shaders.fragment.includes('col+=mix(base,vec3(.75,.79,.69),.35)*surroundingsStress*.62'));
   for(const text of['bindSourceSurroundingsPressure(SU)','bindSourceSurroundingsPressure(U)','bindSourceSurroundingsPressureShape(SU,primitive)','bindSourceSurroundingsPressureShape(U,p)','primitive.sourceSurroundingsPressure===true'])assert.ok(source.includes(text),text);

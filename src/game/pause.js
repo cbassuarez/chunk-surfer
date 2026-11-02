@@ -30,17 +30,19 @@ export function makePauseScene({
   onReturnToTitle,
   onQuitDesktop,
   onWithdraw,
+  withdrawLabel='LEAVE RETAINED VIEW',
+  withdrawDetail='Return to where you entered.',
   status = () => ({}),
 } = {}) {
   let selected = 0;
   const hits = createHitRegions();
   const items = [
     { id: 'resume', label: 'RESUME', detail: 'Return to live monitoring.', action: onResume },
-    ...(onWithdraw?[{id:'withdraw',label:'LEAVE RETAINED VIEW',detail:'Return to where you entered.',action:onWithdraw}]:[]),
+    ...(onWithdraw?[{id:'withdraw',label:withdrawLabel,detail:withdrawDetail,action:onWithdraw}]:[]),
     ...(onJournal ? [{ id: 'journal', label: 'JOURNAL / QUESTS', detail: 'The job, discovered leads, and their outcomes.', action: onJournal }] : []),
     ...(onMap ? [{ id: 'map', label: 'MAP', detail: 'Open the Survey Indicator.', action: onMap }] : []),
     { id: 'objectives', label: 'INVENTORY', detail: 'Review carried equipment.', action: onObjectives },
-    { id: 'archive', label: 'ARCHIVE / RECORDS', detail: 'Open long-term records.', action: onArchive },
+    { id: 'archive', label: 'ARCHIVE / 100%', detail: 'Achievements, discoveries and filed returns.', action: onArchive },
     { id: 'settings', label: 'SETTINGS…', detail: 'Open display, audio, input, and accessibility.', action: onSettings },
     { id: 'restart', label: 'RESTART RUN…', detail: 'Begin setup again.', danger: true, action: onRestartRun },
     { id: 'title', label: 'RETURN TO TITLE…', detail: 'Leave the current field session.', danger: true, action: onReturnToTitle },

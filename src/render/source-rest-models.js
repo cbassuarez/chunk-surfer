@@ -1,6 +1,7 @@
 // Authored metre-scale geometry for the Source II listening place. These
 // meshes give its near surfaces thickness, rounded edges and material relief.
 import {LEAF_SHAPES,leafOutline} from '../world/leaf-species.js';
+import {SOURCE_REST_ROUTE_GROUPS} from '../data/source-rest-route-composition.js';
 const box=(a,b,c,d,e,f)=>({p:[a,c,e,b,c,e,b,c,f,a,c,f,a,d,e,b,d,e,b,d,f,a,d,f],i:[0,2,3,0,1,2,4,7,6,4,6,5,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0]});
 const join=(items)=>{const p=[],i=[];for(const g of items){const o=p.length/3;p.push(...g.p);i.push(...g.i.map(n=>n+o));}return{p,i};};
 function foliage(){const p=[],i=[],rings=[[0,.27],[.20,.48],[.68,.35],[1,.018]];for(const[y,r]of rings)for(let k=0;k<9;k++){const a=k*Math.PI*2/9;p.push(Math.cos(a)*r,y,Math.sin(a)*r);}for(let j=0;j<3;j++)for(let k=0;k<9;k++){const a=j*9+k,b=j*9+(k+1)%9,c=a+9,d=b+9;i.push(a,c,b,b,c,d);}for(let k=1;k<8;k++)i.push(0,k,k+1);return{p,i};}
@@ -39,6 +40,8 @@ const piping=join([...[-1,1].flatMap(s=>[box(-.215,.325,.545,.555,s<0?-.77:.035,
   ...[-.40,.40].map(z=>bevel(-.15,-.14,.735,.762,z-.014,z+.014,.004))]);
 const model=(geometry,material,base,extra={})=>({...geometry,material,base:[...base,1],...extra});
 export function sourceRestGeometryLibrary(){return{
+  ...Object.fromEntries(SOURCE_REST_ROUTE_GROUPS.map(group=>[group.mesh,model(join(group.pieces.map(p=>
+    box(p.x-p.sx/2,p.x+p.sx/2,p.y,p.y+p.sy,p.z-p.sz/2,p.z+p.sz/2))),group.material,group.base)])),
   'rest-settle-frame':model(frame,'wood',[.68,.48,.27]),
   'rest-settle-cloth':model(cushions,'case-lining',[.46,.55,.39]),
   'rest-settle-piping':model(piping,'linen',[.67,.59,.38]),

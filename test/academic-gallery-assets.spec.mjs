@@ -6,6 +6,7 @@ import { inflateSync } from 'node:zlib';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
 import { ACADEMIC_ROOF_PROPS } from '../src/data/academic-roof.js';
+import { GLASS_COURT } from '../src/data/glass-court.js';
 import {
   ACADEMIC_GALLERY, ACADEMIC_GALLERY_MESHES, ACADEMIC_GALLERY_PROPS,
   academicGalleryMesh,
@@ -175,7 +176,15 @@ function verticalIntersections(name, x, z) {
 test('guard posts bear on the actual full-depth slab rather than only the parquet overlay', () => {
   // The retained old west/south slab edges stopped0.34m short of the newly
   // registered guard. A floor overlay hid that load-path gap from above.
-  const worldPoints = [[78.84, 9], [78.84, 14], [78.84, 19], [80, 21.16], [84, 21.16], [88, 21.16]];
+  // The later open courtyard replaces the former south rectangular rail with
+  // the actual stepped guard. Check every scheduled post, including the new
+  // court returns, rather than testing bearing inside the intentionally cut air.
+  const polygon=GLASS_COURT.upperGuards.academicPolygon,worldPoints=[];
+  for(let n=0;n<polygon.length;n++){
+    const a=polygon[n],b=polygon[(n+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),count=Math.ceil(length/1.25);
+    for(let k=0;k<=count;k++)worldPoints.push([a[0]+dx*k/count+dz/length*.14,a[1]+dz*k/count-dx/length*.14]);
+  }
+  assert.ok(worldPoints.length>50,'the entire stepped academic guard is checked');
   for (const [x, z] of worldPoints) {
     const hits = verticalIntersections('gallery_atrium_structure', x - 85, z - 15);
     assert.ok(hits.some(hit => Math.abs(hit.y) < .003 && hit.ny > .99),
@@ -286,7 +295,9 @@ test('shared atlas materials use distinct albedo, linear ORM and normal maps wit
   const usedMaps = new Set();
   for (const m of json.materials) {
     const p = m.pbrMetallicRoughness;
-    assert.equal(p.metallicFactor, 1); assert.equal(p.roughnessFactor, 1);
+    // glTF's omitted scalar factors are both1; the production loader uses the
+    // same defaults, so a normalized export need not spell them out.
+    assert.equal(p.metallicFactor??1, 1); assert.equal(p.roughnessFactor??1, 1);
     assert.deepEqual(p.baseColorFactor || [1, 1, 1, 1], [1, 1, 1, 1]);
     const maps = [p.baseColorTexture.index, p.metallicRoughnessTexture.index, m.normalTexture.index];
     assert.equal(new Set(maps).size, 3);
@@ -392,7 +403,7 @@ test('actual integrated data keeps six stations, solid plinths, west circulation
     assert.equal(PROPS.propCanOccupy(p.rx, p.ry), false, `${id}: physical proxy is active`);
     assert.equal(p.interactive, false, `${id}: furnishing adds no new interaction`);
   }
-  for (const x of [25, 26]) for (let y = 246; y <= 263; y += .5) {
+  for (const x of [26, 26.5]) for (let y = 246; y <= 263; y += .5) {
     const p = FP.toRuntimePoint({ x, y }, { center: false });
     assert.equal(FP.isSolid(p.x, p.y), false, `west walk ${x},${y} remains floor`);
     assert.equal(FP.floorAt(p.x, p.y), 10);

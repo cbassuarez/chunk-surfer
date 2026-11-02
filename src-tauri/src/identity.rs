@@ -1,11 +1,4 @@
-use libloading::Library;
 use serde::Serialize;
-use std::{
-    ffi::CStr,
-    os::raw::{c_char, c_void},
-    path::PathBuf,
-};
-use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct EphemeralDisplayName {
@@ -91,80 +84,10 @@ fn computer_name() -> Option<String> {
     sanitize_candidate(String::from_utf8(bytes).ok(), 96)
 }
 
-#[cfg(target_os = "windows")]
-const STEAM_LIBRARY: &str = "steam_api64.dll";
-#[cfg(target_os = "macos")]
-const STEAM_LIBRARY: &str = "libsteam_api.dylib";
-#[cfg(all(unix, not(target_os = "macos")))]
-const STEAM_LIBRARY: &str = "libsteam_api.so";
-
-fn steam_library_candidates(app: &tauri::AppHandle) -> Vec<PathBuf> {
-    let mut candidates = Vec::new();
-    if let Ok(resources) = app.path().resource_dir() {
-        candidates.push(resources.join("steamworks").join(STEAM_LIBRARY));
-        candidates.push(resources.join(STEAM_LIBRARY));
-    }
-    if let Ok(executable) = std::env::current_exe() {
-        if let Some(parent) = executable.parent() {
-            candidates.push(parent.join(STEAM_LIBRARY));
-            candidates.push(parent.join("steamworks").join(STEAM_LIBRARY));
-        }
-    }
-    // This final candidate is resolved by the platform loader and supports the
-    // ordinary Steam launch environment and local SDK development setup.
-    candidates.push(PathBuf::from(STEAM_LIBRARY));
-    candidates
-}
-
-unsafe fn persona_from_library(library: &Library) -> Option<String> {
-    type SteamInit = unsafe extern "C" fn() -> u8;
-    type SteamShutdown = unsafe extern "C" fn();
-    type SteamFriends = unsafe extern "C" fn() -> *mut c_void;
-    type GetPersonaName = unsafe extern "C" fn(*mut c_void) -> *const c_char;
-
-    let init = *library.get::<SteamInit>(b"SteamAPI_Init\0").ok()?;
-    let shutdown = *library.get::<SteamShutdown>(b"SteamAPI_Shutdown\0").ok()?;
-    if init() == 0 {
-        return None;
-    }
-    let result = (|| {
-        let friends = [
-            b"SteamAPI_SteamFriends_v017\0".as_slice(),
-            b"SteamAPI_SteamFriends_v016\0".as_slice(),
-            b"SteamAPI_SteamFriends_v015\0".as_slice(),
-        ]
-        .iter()
-        .find_map(|symbol| library.get::<SteamFriends>(symbol).ok().map(|value| *value))?;
-        let get_persona = *library
-            .get::<GetPersonaName>(b"SteamAPI_ISteamFriends_GetPersonaName\0")
-            .ok()?;
-        let interface = friends();
-        if interface.is_null() {
-            return None;
-        }
-        let value = get_persona(interface);
-        if value.is_null() {
-            return None;
-        }
-        sanitize_candidate(
-            Some(CStr::from_ptr(value).to_string_lossy().into_owned()),
-            64,
-        )
-    })();
-    shutdown();
-    result
-}
-
+// The persistent Steam owner also serves optional persona reads. Identity
+// inspection must never shut down the achievements client's callback pump.
 fn steam_persona_name(app: &tauri::AppHandle) -> Option<String> {
-    for candidate in steam_library_candidates(app) {
-        let library = unsafe { Library::new(candidate) }.ok();
-        if let Some(library) = library {
-            if let Some(display) = unsafe { persona_from_library(&library) } {
-                return Some(display);
-            }
-        }
-    }
-    None
+    sanitize_candidate(crate::steam_achievements::persona_name(app), 64)
 }
 
 #[tauri::command]

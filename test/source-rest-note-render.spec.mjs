@@ -25,7 +25,7 @@ test('persistent paired cubies detach during the human hard passages and remain 
     return sourceContinuationRenderFrame(s,{noteScore:score});
   };
   const before=run(200),first=run(247.5),returning=run(300),second=run(469.99),later=run(500),
-    cube=r=>r.props.filter(p=>p.restNoteArchitecture),ids=cube(before).map(p=>p.id),
+    cube=r=>r.props.filter(p=>p.restNoteArchitecture&&!p.portalDestination),ids=cube(before).map(p=>p.id),
     detached=r=>new Set(cube(r).filter(p=>p.restDetached&&p.cubieId).map(p=>p.cubieId));
   assert.equal(ids.length,91);assert.equal(detached(before).size,0);
   assert.ok(detached(first).size>0,'the first reported grueling passage removes mechanical members');

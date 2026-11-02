@@ -94,9 +94,9 @@ test('a failed Source II performance restores ordinary sound, without trapping t
 
 test('phase-aware Source III keeps score continuous while walking but preserves HUSH and mechanism sounds until seated',()=>{
   const g=graph(),sound=createSourceContinuationAudio({getAudio:()=>g}),calls=[];
-  let restActive=false,finishAtEnd=false,phase='catch';
+  let restActive=false,finishAtEnd=true,endingCommitted=false,playing=true,ended=false,phase='catch';
   const owner={supportsPhase:p=>p==='wrong-return'||p==='catch',update:v=>calls.push(v),
-    snapshot:()=>({phase,active:true,playing:true,restActive,finishAtEnd})};
+    snapshot:()=>({phase,active:true,playing,ended,restActive,finishAtEnd,endingCommitted})};
   sound.attachRestMusic(owner);const s=state({hush:hush()});frame(sound,s);
   assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
   assert.equal(sound.snapshot().surroundings.restMusicActive,true,'only the old score is ducked');
@@ -104,7 +104,9 @@ test('phase-aware Source III keeps score continuous while walking but preserves 
   restActive=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);assert.equal(sound.snapshot().sources,0);
   assert.equal(sound.event({type:'hush-warning'},s),false);
   restActive=false;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
-  finishAtEnd=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);
+  frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,false,'single-pass transport policy is not consent to isolate the world');
+  playing=false;ended=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,false);assert.equal(sound.snapshot().surroundings.restMusicActive,false,'natural completion while walking is not an ending');
+  endingCommitted=true;frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);assert.equal(sound.snapshot().surroundings.restMusicActive,true,'only a committed ending retains the ended score isolation');
   assert.ok(!calls.some(c=>c.active===false),'supported III never retires its own performance');sound.dispose();
 });
 
@@ -425,4 +427,25 @@ test('shared II gait follows supported metre speed and refuses unsupported, relo
   assert.equal(contacts.length,count,'portal placement establishes a new origin without walking it');
   s={...s,x:.05};frame(sound,s,1/60);assert.equal(contacts.length,count+1,'fresh supported movement resumes immediately');
   sound.dispose();
+});
+
+test('three corridor contacts survive score isolation, retain spatial tails and never reopen generic effects',()=>{
+  const g=graph(),calls=[];let protection=false;
+  const sound=createSourceContinuationAudio({getAudio:()=>g,protectedAudio:()=>protection});
+  const s=state({phase:'wrong-return',chartId:4,x:-146,z:-72,feet:8.4,yaw:0,elapsed:30});
+  sound.attachRestMusic({update:v=>calls.push(v),snapshot:()=>({active:true,playing:true,phase:'wrong-return'})});
+  frame(sound,s);assert.equal(sound.snapshot().restMusicIsolated,true);calls.length=0;
+  for(const type of ['corridor-strain','corridor-warning','corridor-settled'])assert.equal(sound.event({type,chartId:4,position:{x:-143,y:10.4,z:-77}},s),true);
+  const before=sound.snapshot();assert.equal(before.voices,3);assert.equal(before.restMusicIsolated,true);
+  assert.ok(before.layers.every(v=>v.chartId===4&&v.kind.startsWith('corridor-')&&v.mix.pan>0));
+  const starts=g.sources.map(v=>v.starts.length);g.ctx.currentTime+=.1;frame(sound,{...s,yaw:Math.PI,elapsed:90});
+  assert.equal(sound.snapshot().voices,3,'isolated update does not silence the admitted cues');
+  assert.ok(sound.snapshot().layers.every(v=>v.mix.pan<0));assert.deepEqual(g.sources.map(v=>v.starts.length),starts);
+  for(const type of ['door','hush-warning','closure-warning','land','threshold-gag-start'])assert.equal(sound.event({type},s),false);
+  assert.equal(sound.snapshot().voices,3);assert.equal(sound.snapshot().surroundings.voices,0);assert.equal(sound.snapshot().materials.voices,0);
+  assert.ok(!calls.some(v=>v.active===false||v.paused),'contacts never pause or retire the score');
+  g.ctx.currentTime+=2;frame(sound,s);assert.equal(sound.snapshot().voices,0,'isolated tails expire without a generic mechanism update');
+  sound.event({type:'corridor-warning',chartId:4},s);protection=true;frame(sound,s);assert.equal(sound.snapshot().voices,0);
+  protection=false;frame(sound,s);assert.equal(sound.snapshot().voices,0,'protection queues no delayed replay');
+  sound.event({type:'corridor-settled',chartId:4},s);sound.pause();assert.equal(sound.snapshot().voices,0);sound.dispose();
 });

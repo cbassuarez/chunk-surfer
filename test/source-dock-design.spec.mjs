@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { SOURCE_HANGING_SHORE } from '../src/data/source-hanging-shore.js';
 import { readFileSync } from 'node:fs';
 import { CELL, ZONE } from '../src/data/floorplan/legend.js';
+import { SCENE_DOCK_MESHES } from '../src/data/scene-dock-dressing.js';
 import {
   SOURCE_DOCK_DESIGN,
   SOURCE_LANDING_PORTAL_APERTURE,
@@ -97,7 +98,8 @@ const c = Math.cos(desk.yaw), s = Math.sin(desk.yaw);
 for (const [x, , z] of transformedVertices(clipboard)) {
   const dx = x - desk.x * CELL, dz = z - (desk.z * CELL - SOURCE_HANGING_SHORE.dockZ);
   const localX = c * dx - s * dz, localZ = s * dx + c * dz;
-  assert.ok(localX >= -.31 && localX <= .31 && localZ >= -.28 && localZ <= .20,
+  const top=SCENE_DOCK_MESHES.scene_dock_dispatch_desk;
+  assert.ok(localX >= -top.w/2 && localX <= top.w/2 && localZ >= -top.d/2 && localZ <= top.d/2,
     'clipboard overhangs the measured desktop');
 }
 const cage = bounds(byId.get('dock-chandelier-frame'));
@@ -141,10 +143,16 @@ for (let x = clear.minX; x <= clear.maxX; x += .1) {
 // Flood the entire room at body scale. The dock remains one open floor with
 // freely reachable sides of its anchors, rather than a diagrammed route.
 const step = .25, free = new Map();
+// Include the supported body band at the room perimeter. The old cropped
+// -5..5 sample removed a real25cm route beside the retained freight.
+const minX=Math.ceil((-SOURCE_DOCK_DESIGN.widthMetres/2+.22)/step)*step;
+const maxX=Math.floor((SOURCE_DOCK_DESIGN.widthMetres/2-.22)/step)*step;
+const minZ=Math.ceil((-SOURCE_DOCK_DESIGN.depthMetres/2+.22)/step)*step;
+const maxZ=Math.floor((SOURCE_DOCK_DESIGN.depthMetres/2-.22)/step)*step;
 let total = 0;
-for (let ix = 0; ix <= 40; ix += 1) {
-  for (let iz = 0; iz <= 60; iz += 1) {
-    const x = -5 + ix * step, z = -7.5 + iz * step;
+for (let ix = 0; ix <= Math.round((maxX-minX)/step); ix += 1) {
+  for (let iz = 0; iz <= Math.round((maxZ-minZ)/step); iz += 1) {
+    const x = minX + ix * step, z = minZ + iz * step;
     if (sourceLandingCellAt(x / CELL, (z + DZ) / CELL)?.solid !== false) continue;
     total += 1;
     if (!sourceLandingPropCollisionAt(x / CELL, (z + DZ) / CELL)) free.set(`${ix}:${iz}`, { ix, iz });

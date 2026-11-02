@@ -15,6 +15,80 @@ function source(name) {
   return main.slice(start,end+2);
 }
 const compile=(name,context)=>runInNewContext(`(${source(name)})`,context);
+
+function instrumentFocusHost({native=true,nativeFocus=true,domFocus=false,terminal=false,dead=false}={}) {
+  let top=null,options=null,audioProtected=null,monitoring=false,playing=false,dropped=false,lost=false,phase='live';
+  const events=[],profile={completion:{secrets:{}}};
+  const context={
+    storyMode:true,NO_THINK:false,ensureCtx(){},actx:null,dialogGain:null,sfxDirectGain:null,master:null,
+    R3:{r3dLookAngles:()=>({yaw:0,pitch:0})},mapHeading:()=>0,paused:false,
+    IS_TAURI:native,pointerMode:{nativeFocus:()=>nativeFocus},
+    document:{hidden:false,visibilityState:'visible',hasFocus:()=>domFocus},
+    REC:{isMonitoring:()=>monitoring},PB:{isPlaying:()=>playing},
+    scenes:{top:()=>top,push:scene=>{top=scene;return scene;}},
+    createRadioContactAudio:value=>{audioProtected=value.getProtected;return{snapshot:()=>({}),pause(){},resume(){},stop(){}};},
+    createRadioSceneAudio:()=>({snapshot:()=>({})}),setRadioSceneMix(){},STORY:{},fireCue(){},
+    createReplayService:()=>({}),shakeMode:()=> 'full',applyStoryChoice(){},
+    getMeta:()=>profile,itemLost:()=>lost,
+    RADIO:{isDropped:()=>dropped,radioPhase:()=>phase,RADIO_PHASE:{LIVE:'live'}},
+    makeRadioScene:value=>{options=value;assert.equal(value.getInstrumentProtected(),true,'an uninstalled scene is protected');return{id:value.id};},
+    emitProgress:(...args)=>events.push(args),EVENT_TYPES:{RADIO_USED:'radio.used',SECRET_DISCOVERED:'secret.discovered'},
+  };
+  // Both functions are the current production definitions, not a copied
+  // native-focus approximation or a source-pattern assertion.
+  context.gameplayInputLifecycleActive=compile('gameplayInputLifecycleActive',context);
+  const scene=compile('presentRadio',context)('focus-host',{}, {terminal,dead});
+  return{context,scene,options,events,profile,protected:()=>options.getInstrumentProtected(),
+    audioProtected:()=>audioProtected(),canEgg:()=>options.canEgg(),
+    nativeFocus:value=>{nativeFocus=value;},domFocus:value=>{domFocus=value;},
+    monitoring:value=>{monitoring=value;},playing:value=>{playing=value;},top:value=>{top=value;},
+    dropped:value=>{dropped=value;},lost:value=>{lost=value;},phase:value=>{phase=value;}};
+}
+
+test('actual radio protection uses canonical native focus and always respects real blur or hidden state',()=>{
+  const host=instrumentFocusHost();
+  assert.equal(host.context.document.hasFocus(),false);
+  assert.equal(host.protected(),false,'verified native focus replaces delayed WebKit DOM focus');
+  assert.equal(host.audioProtected(),false,'the actual audio owner receives the same guard');
+  assert.equal(host.canEgg(),true);
+  host.domFocus(true);host.nativeFocus(false);
+  assert.equal(host.protected(),true,'DOM focus cannot override a native blur');
+  assert.equal(host.audioProtected(),true);assert.equal(host.canEgg(),false);
+  host.nativeFocus(true);host.context.document.hidden=true;
+  assert.equal(host.protected(),true,'native focus never overrides hidden');
+  host.context.document.hidden=false;host.context.document.visibilityState='hidden';
+  assert.equal(host.protected(),true,'canonical visibility hold remains authoritative');
+  host.context.document.visibilityState='visible';host.nativeFocus(null);
+  assert.equal(host.protected(),false,'unknown native focus falls back to focused DOM');
+  host.domFocus(false);assert.equal(host.protected(),true);
+  const browser=instrumentFocusHost({native:false,nativeFocus:true,domFocus:false});
+  assert.equal(browser.protected(),true,'browser operation cannot borrow an irrelevant native focus value');
+  browser.domFocus(true);assert.equal(browser.protected(),false);
+  assert.deepEqual(host.events,[]);assert.deepEqual(browser.events,[],'inspecting focus never emits use/completion');
+});
+
+test('canonical radio focus change preserves transport, pause, scene ownership and hidden-exchange gates',()=>{
+  const host=instrumentFocusHost();
+  for(const [hold,release]of[
+    [()=>host.monitoring(true),()=>host.monitoring(false)],
+    [()=>host.playing(true),()=>host.playing(false)],
+    [()=>{host.context.paused=true;},()=>{host.context.paused=false;}],
+    [()=>host.top({id:'other-scene'}),()=>host.top(host.scene)],
+    [()=>host.top(null),()=>host.top(host.scene)],
+  ]){
+    hold();assert.equal(host.protected(),true);assert.equal(host.audioProtected(),true);assert.equal(host.canEgg(),false);
+    release();assert.equal(host.protected(),false);assert.equal(host.canEgg(),true);
+  }
+  for(const [deny,restore]of[
+    [()=>host.lost(true),()=>host.lost(false)],
+    [()=>host.dropped(true),()=>host.dropped(false)],
+    [()=>host.phase('failing'),()=>host.phase('live')],
+    [()=>{host.profile.completion.secrets['off-air']={};},()=>{delete host.profile.completion.secrets['off-air'];}],
+  ]){deny();assert.equal(host.canEgg(),false);restore();assert.equal(host.canEgg(),true);}
+  assert.equal(instrumentFocusHost({terminal:true}).canEgg(),false);
+  assert.equal(instrumentFocusHost({dead:true}).canEgg(),false);
+  assert.deepEqual(host.events,[]);
+});
 const target={roomId:'amplifications',floorId:'ground',reachable:true,unfinished:true,distanceMeters:4};
 const ready=()=>({isTraversal:true,sceneId:'explore',floorId:'ground',completedJobTakes:2,target:{...target}});
 function walk(seconds,context=ready()) { for(let i=0;i<seconds*4;i++)radio.updateRadioProgression(.25,context); }

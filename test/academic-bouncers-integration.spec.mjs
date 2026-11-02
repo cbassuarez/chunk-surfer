@@ -32,6 +32,7 @@ import * as scenes from '../src/game/scenes.js';
 import * as actualSpeech from '../src/game/speech.js';
 import {InputManager} from '../src/input/input-manager.js';
 import {createPointerModeController} from '../src/input/pointer-mode.js';
+import {createStudentStrikeInputGate} from '../src/game/student-strike-host.js';
 
 const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 const plain=value=>JSON.parse(JSON.stringify(value));
@@ -97,7 +98,7 @@ async function adapter(run,{saved=freshSave()}={}){
     PROPS.propsInit(FP);PROPS.loadPropState({});scenes.clear();
     const device=deviceWorld(),voice=fakeVoice(),messages=[],prompts=[],dialogueOptions=[];let yaw=0;
     const speech=speechAudio(messages);
-    const c={FP,PROPS,OBJ,CELL,ZONE,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_CLUE_HOST_SURFACES,
+    const c={createStudentStrikeInputGate,studentStrikeNarrationLine:()=>null,FP,PROPS,OBJ,CELL,ZONE,ACADEMIC_BOUNCER_ACTORS,ACADEMIC_CLUE_HOST_SURFACES,
       // Admission remains a first-visit fixture. Later absence is exercised
       // with the actual common policy in academic-floor-returns-main.
       academicActorPresent:()=>true,academicLinesPresent:()=>true,
@@ -116,7 +117,7 @@ async function adapter(run,{saved=freshSave()}={}){
       academicGhostAudioFrame:{},actx:null,dialogGain:null,master:null,
       storyMode:true,inRogue:true,planName:'conservatory',usingSpecialSpace:()=>false,paused:false,
       px:gate.pairs[0].from.x+1,py:gate.pairs[0].from.y,IS_TAURI:true,nativeFocus:true,
-      document:device.documentRef,pointerMode:{status:()=>({...device.pointer.status(),nativeBackend:{focused:c.nativeFocus}})},
+      document:device.documentRef,pointerMode:{nativeFocus:()=>c.nativeFocus,status:()=>({...device.pointer.status(),nativeBackend:{focused:c.nativeFocus}})},
       R3:{r3dWorldYaw:()=>yaw,r3dLookAngles:()=>({yaw,pitch:0}),r3dFacing:()=>0},
       scenes,shakeMode:()=>getSave().settings?.shake||'full',getSave,saveCommit,flagTest,furnitureRecognitionLine,emitProgress,EVENT_TYPES,
       ensureCtx(){},academicGhostSpeechDestination:()=>null,

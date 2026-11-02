@@ -14,13 +14,13 @@ test('each audible bell has a visible hollow mouth, physical headstock and movin
   assert.ok(bell.i.length>3000);assert.ok(bell.p.every(Number.isFinite));
   const at=SOURCE_REST_BELL_EVENTS[0].at,quiet=sourceRestJudgmentFrame({clock:0}),struck=sourceRestJudgmentFrame({clock:at});
   assert.equal(quiet.bells[0].angle,0);assert.ok(struck.bells[0].angle>.4);assert.ok(struck.bells[0].clapperAngle<0);
-  assert.equal(sourceRestBellProps({phase:'catch'}).length,0);
+  assert.equal(sourceRestBellProps({phase:'catch'}).length,15,'III has the same three bells, each with a physical half-muffle');
   const state={...freshSourceContinuation(),...seat,status:'active',sourceRestView:{seatId:seat.id,progress:1,look:seat.view,musicTime:at,audibleSeconds:at}};
   const frame=sourceContinuationRenderFrame(state),parts=frame.props.filter(p=>p.restBell);
-  assert.equal(parts.length,12);assert.ok(parts.every(p=>p.decorative&&!p.structural));
+  assert.equal(parts.filter(p=>!p.id.includes(':through:')).length,12);assert.ok(parts.every(p=>p.decorative&&!p.structural));
   assert.equal(new Set(parts.map(p=>p.bellId)).size,3);
   for(const event of SOURCE_REST_BELL_EVENTS){const source=SOURCE_REST_BELLS.find(b=>b.id===event.bellId);assert.deepEqual(source.position,event.position);assert.equal(event.sample,source.sample);}
-  const noBells=sourceContinuationRenderFrame({...state,phase:'catch'});assert.equal(noBells.props.some(p=>p.restBell),false);
+  const third=sourceContinuationRenderFrame({...state,phase:'catch'});assert.equal(third.props.some(p=>p.restBell),true);
 });
 
 test('lightning uses the actual standard channel, followed by thunder at distance over sound speed',()=>{

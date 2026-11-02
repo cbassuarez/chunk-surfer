@@ -616,7 +616,7 @@ function buildSkillsSection({ build, settledBuild = null, hasRig }) {
   };
 }
 
-export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null } = {}) {
+export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], map = null, mapUnavailableReason = '', loadout = null, build = null, settledBuild = null, hasRig = false, sheetInsights = null, sectionIds = null } = {}) {
   const safeJob = {
     ...EMPTY_JOB,
     ...(job || {}),
@@ -734,7 +734,7 @@ export function buildBagModel({ equipment = [], job = EMPTY_JOB, journal = [], m
       { id: 'sheets', label: 'SHEETS', countLabel: String(files.length).padStart(2, '0'), entries: files },
       buildSkillsSection({ build, settledBuild, hasRig }),
       { id: 'journal', label: 'JOURNAL', countLabel: `${quests.filter((entry) => entry.hasOpenCommitment ?? entry.state === 'active').length} OPEN${quests.some(entry=>entry.unseen) ? ` · ${quests.filter(entry=>entry.unseen).length} NEW` : ''}`, entries: quests },
-    ],
+    ].filter(section=>!Array.isArray(sectionIds)||sectionIds.some(id=>normalizeBagSectionId(id)===section.id)),
     progress: { done, total },
     loadout: normalizedLoadout,
     job: safeJob,
@@ -750,4 +750,12 @@ export function bagSection(model, sectionId) {
 
 export function bagEntry(model, sectionId, entryId) {
   return bagSection(model, sectionId)?.entries?.find((entry) => entry.id === entryId) || null;
+}
+
+// Survey preview borrows the real map without granting ownership or a target.
+// The host still decides whether a lost/acquired map may be opened at all.
+export function readOnlyBagMap(map){
+  if(!map||typeof map!=='object')return map;
+  return{...map,playerWaypoint:null,waypoint:null,route:null,policy:{...(map.policy||{}),readOnly:true},
+    spaces:(map.spaces||[]).map(space=>({...space,waypoint:false,marked:false,waypointable:false}))};
 }

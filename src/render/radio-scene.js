@@ -113,6 +113,7 @@ export function radioSceneLayout({ cols = 120, rows = 38 } = {}, view = {}) {
 }
 
 function radioCaptionText(view, typed = false) {
+  if(view.radio?.instrument?.eggPlaying)return '[A distorted scream breaks through the radio.]';
   const channel = view.radio?.instrument?.channel;
   if (channel && channel !== RADIO_DESK_CHANNEL) return 'No front desk carrier. Channel two is still there.';
   return String(view.line?.text || '').slice(0, typed ? view.typed ?? Infinity : Infinity);

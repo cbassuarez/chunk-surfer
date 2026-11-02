@@ -22,8 +22,11 @@ const finalCameraPoint=new Function('state',`const authoredCamera=null,CELL=.5;$
 function mainFunction(name) {
   const start=main.indexOf(`function ${name}(`);
   assert.ok(start>=0,`production function ${name} is missing`);
-  const end=main.indexOf('\nfunction ',start+10);
-  return main.slice(start,end<0?main.length:end);
+  const line=main.slice(start,main.indexOf('\n',start));
+  if(line.endsWith('}'))return line;
+  const end=main.indexOf('\n}\n',start);
+  assert(end>start,`production function ${name} has no complete body`);
+  return main.slice(start,end+3);
 }
 
 function harness({kind='main',quiet=1}={}) {
@@ -60,12 +63,13 @@ function harness({kind='main',quiet=1}={}) {
     sourceShoreOutside:()=>false,
     sourceDoorArrival:null,
     holdUnavailableGameplayInput:()=>false,inCover:()=>false,
+    busRecoilGlide:null,stepBusRecoilGlide:()=>{},
     arrowDelta:()=>[context.keysDown.has('KeyW')?1:0,0],
     maybeLockHushFromInputDelta:()=>{},
     accepted:0,RENDERER:'3d',
     R3:{r3dLookAngles:()=>({yaw:.3,pitch:.1}),r3dSetLookAngles:(v)=>{context.lastLook=v;},
       r3dShiftLookFrame:(turn)=>{context.lastFrameTurn=turn;}},
-    approach:{camera:{eyeDropM:0}},outskirtsBody:null,outskirtsStride:0,
+    approach:{camera:{eyeDropM:0}},coverEyeDropM:()=>0,outskirtsBody:null,outskirtsStride:0,FEAR:{setHeartbeatPaused:()=>{}},
     viewX:1,viewY:0,floorHere:()=>12,
   });
   for(const name of ['physicalPointFor','motionTargetPoint','snapMotionRig','ensureMotionRig',
@@ -378,6 +382,7 @@ function compiledKeyboardHost({frameMs=16}={}){
     isOnboardingActive:()=>false,
     motionInput:input,keysDown:input.held,controllerGameplayAxes:()=>({moveX:0,moveY:0}),clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),
     holdUnavailableGameplayInput:()=>false,inCover:()=>false,nextMoveAtMs:0,maybeLockHushFromInputDelta:()=>{},gameplayInputLifecycleActive:()=>true,
+    busRecoilGlide:null,stepBusRecoilGlide:()=>{},
     R3:Object.fromEntries(['r3dStepDelta','r3dShiftLookFrame','r3dLookAngles','r3dSetLookAngles'].map(name=>[name,rendererScope[name]])),RT:{footstep:()=>{}},
   });
   for(const name of ['physicalPointFor','motionTargetPoint','snapMotionRig','ensureMotionRig','renderedPlayerPoint','mainStairRenderPose',
@@ -387,7 +392,7 @@ function compiledKeyboardHost({frameMs=16}={}){
   // logical commit. Only the intervening audio and following story accounting
   // are omitted; no canStep, prop collision, movement or look rule is copied.
   const source=mainFunction('step'),prefix=source.slice(0,source.indexOf('  const stairFootContact='));
-  const position=source.slice(source.indexOf('  const stepFrom='),source.indexOf('  // An edge portal changes logical drawings,'));
+  const position=source.slice(source.indexOf('  const stepFrom='),source.indexOf('  // The move is accepted now.'));
   const commit=source.slice(source.indexOf('  const stairMotion=beginRenderStep('),source.indexOf("  if(escape?.kind==='cathedral-carry')saveCathedralExtraction();"));
   assert.ok(prefix&&position&&commit);
   vm.runInContext(prefix+'\nconst deferredStairFootfall=null,sx=dx,sy=dy;\n'+position+commit+'\n}',c);

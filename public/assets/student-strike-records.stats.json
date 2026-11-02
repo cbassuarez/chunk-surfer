@@ -1,0 +1,93 @@
+{
+  "pack": "student-strike-records.glb",
+  "bytes": 647612,
+  "sha256": "aae5d57771ebc1d6d31a89def6ba5675e7507ebf99bf91d01b46e11eff9eb791",
+  "meshes": {
+    "student_strike_ellery_record": {
+      "triangles": 2,
+      "bounds": {
+        "min": [
+          -0.105,
+          0.003,
+          -0.1485
+        ],
+        "max": [
+          0.105,
+          0.003,
+          0.1485
+        ]
+      }
+    },
+    "student_strike_tower_record": {
+      "triangles": 2,
+      "bounds": {
+        "min": [
+          -0.105,
+          0.003,
+          -0.1485
+        ],
+        "max": [
+          0.105,
+          0.003,
+          0.1485
+        ]
+      }
+    }
+  },
+  "readerRecords": [
+    {
+      "id": "student-strike-ellery-recovery",
+      "format": "A4",
+      "issuer": "ellery-internal",
+      "template": "retained-recovery-record",
+      "handlingVector": [
+        -1,
+        0,
+        0,
+        0
+      ],
+      "semanticHash": "9d0e4708dbf24a6f6bc221d482ff853bebdad66d97770714f1ca13863988a82b",
+      "pages": [
+        {
+          "path": "assets/student-strike-records/student-strike-ellery-recovery.webp",
+          "atlasIndex": -1,
+          "materialPath": null
+        }
+      ]
+    },
+    {
+      "id": "student-strike-tower-recovery",
+      "format": "A4",
+      "issuer": "ellery-internal",
+      "template": "retained-recovery-record",
+      "handlingVector": [
+        -1,
+        0,
+        0,
+        0
+      ],
+      "semanticHash": "9566402e794cc25e64ed6ea4965caac1cb8534198a1b195f0d0945645bdf099f",
+      "pages": [
+        {
+          "path": "assets/student-strike-records/student-strike-tower-recovery.webp",
+          "atlasIndex": -1,
+          "materialPath": null
+        }
+      ]
+    }
+  ],
+  "sourceHashes": {
+    "src/data/student-strike-evidence.js": "0873da96a7386418480363a18aa4f5466cc8a8ae622c500a1b9e8446ac055681",
+    "tools/chunk_surfer/build-student-strike-records.mjs": "da68cb52cfd813cb620b9f7376a32fff84783118053101683640bc58ca79656b",
+    "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
+    "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc"
+  },
+  "letteringManifest": "assets/student-strike-records/atlas-manifest.json",
+  "protectedAssets": {
+    "public/assets/conservatory-props.glb": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
+    "assets/paper/world-atlas.webp": "a8beb1af0056f1a07c49739ed6aa50ddb10028c14ce4cfda612ee298b91bb099",
+    "src/generated/paper-catalog.js": "e0d2e7643d0dc40f60a4af509e023ff6f467a1f05bbe2eba5d0097b0662c2d16"
+  },
+  "validation": "CPU asset/data validation only; native placement and legibility pending",
+  "protectedAssetsUnchanged": true
+}

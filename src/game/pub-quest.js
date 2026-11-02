@@ -149,7 +149,7 @@ export function reducePubQuest(value = {}, rawAction, context = {}) {
   return { flags, effects };
 }
 
-export const pubQuestDialogue = flags => buildPubBartenderDialogue(pubQuestState(flags), PUB_FAVORS);
+export const pubQuestDialogue = (flags, context={}) => buildPubBartenderDialogue(pubQuestState(flags), PUB_FAVORS, context);
 export const pubTrayDialogue = flags => buildPubTrayDialogue(pubQuestState(flags));
 export const pubServiceChoice = (actorId, flags) => buildPubServiceChoice(actorId, pubQuestState(flags));
 export const pubServiceDialogue = (actorId, flags) => buildPubServiceDialogue(actorId, pubQuestState(flags));

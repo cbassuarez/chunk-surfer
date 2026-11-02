@@ -23,7 +23,7 @@ function graceFixture(){
   const fresh=resumeSourceContinuation(freshSourceContinuation({runId:'recovery-grace'}));
   return normalizeSourceContinuation({...fresh,x:8,z:-3,feet:0,grace:C.graceSeconds,
     lastSafe:{x:8,z:-3,feet:0,phase:'wrong-return',level:0,yaw:0,pitch:0},
-    hush:{...fresh.hush,x:6,z:-3,feet:0,armed:true,warningAnnounced:true,mode:'yield',notice:C.hush.noticeSeconds,
+    hush:{...fresh.hush,active:true,x:6,z:-3,feet:0,armed:true,warningAnnounced:true,mode:'yield',notice:C.hush.noticeSeconds,
       trail:[{kind:'walk',x:8,z:-3,feet:0,phase:'wrong-return',level:0}],lastRecorded:{x:8,z:-3,feet:0,phase:'wrong-return',level:0}}});
 }
 

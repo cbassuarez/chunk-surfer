@@ -1,3 +1,5 @@
+import { CAUSAL_INJURY_CEILING } from '../causal/tape.js';
+
 export const POST_RUN_STAGE_COPY = Object.freeze({
   filing: Object.freeze({
     panel: 'PREPARING THE HUSH',
@@ -25,16 +27,16 @@ export const POST_RUN_ACTIONS = Object.freeze([
   }),
   Object.freeze({
     id: 'archive',
-    label: 'ACHIEVEMENTS & RUN HISTORY',
-    body: 'Review achievements, completed runs, unlocked hints, and archived story documents.',
+    label: 'ARCHIVE / 100%',
+    body: 'Track every achievement, your discoveries, filed returns and optional hints across playthroughs.',
   }),
   Object.freeze({ id: 'title', label: 'TITLE SCREEN' }),
 ]);
 
 export const FEATURE_COPY = Object.freeze({
   archive: Object.freeze({
-    label: 'ACHIEVEMENTS & RUN HISTORY',
-    description: 'Review achievements, completed runs, and archived story documents from the title screen.',
+    label: 'ARCHIVE / 100%',
+    description: 'Track all achievements, discoveries and filed returns from the title screen.',
   }),
   returnIndex: Object.freeze({
     label: 'ENDING HINTS',
@@ -100,8 +102,8 @@ export const HUSH_COPY = Object.freeze({
     body: 'Preparing your completed run for THE HUSH…',
   }),
   qualification: Object.freeze({
-    short: 'FINISH A RUN WITH NO MORE THAN 1 INJURY TO PLAY.',
-    body: 'Finish a run with no more than 1 injury to play THE HUSH.',
+    short: `FINISH A RUN WITH NO MORE THAN ${CAUSAL_INJURY_CEILING} INJURIES TO PLAY.`,
+    body: `Finish a run with no more than ${CAUSAL_INJURY_CEILING} injuries to play THE HUSH.`,
   }),
   failed: Object.freeze({
     short: 'FINISH ANOTHER RUN TO PREPARE THE HUSH.',

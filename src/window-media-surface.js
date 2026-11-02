@@ -2,6 +2,8 @@ import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import mediaManifest from '../content/media/window-media.media.json' with { type: 'json' };
 import { WINDOW_SURFACE_LOOK_GLSL } from './render/window-surface-look.js';
+import {sourceRestOwnedFramesValid} from './render/source-rest-apertures.js';
+import {createWindowMediaArchitecture,windowArchitectureCueAllowed} from './render/window-media-architecture.js';
 import {
   WINDOW_MEDIA_PROTOCOL,
   createWindowMediaClock,
@@ -21,6 +23,8 @@ let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blu
 let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let pendingPlay=null,failedMedia=null;
+let ownedFrameRevision=0,ownedFrameLoad=0,ownedFrameReady=null,ownedFramePending=null;
+let architecture=null,architectureBackground=null,architectureMediaAnchor=null,mediaQuadVao=null;
 let scoreClock=createWindowMediaClock(),videoClock=null;
 let transition={mode:'cut',startedAt:0,endsAt:0},scoreCycle=-1,executedTimed=new Set(),currentRevision=0,currentSession='';
 const eventTimers=new Set();
@@ -90,11 +94,11 @@ function makeBlueNoiseTexture(){
   const image=new Image();image.onload=()=>{gl.bindTexture(gl.TEXTURE_2D,value);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,image);};image.onerror=()=>{};image.src=assetUrl('assets/blue-noise-64.png');return value;
 }
 function initGl(){
-  gl=canvas.getContext('webgl2',{alpha:false,antialias:false,preserveDrawingBuffer:true});
+  gl=canvas.getContext('webgl2',{alpha:false,depth:true,antialias:false,preserveDrawingBuffer:true});
   if(!gl)return false;
   program=gl.createProgram();gl.attachShader(program,compile(gl.VERTEX_SHADER,vertex));gl.attachShader(program,compile(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);
   if(!gl.getProgramParameter(program,gl.LINK_STATUS))return false;
-  const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  const buffer=gl.createBuffer();mediaQuadVao=gl.createVertexArray();gl.bindVertexArray(mediaQuadVao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   gl.useProgram(program);const p=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
   texture=makeMediaTexture();staleTexture=makeMediaTexture();outgoingTexture=makeMediaTexture();blueNoiseTexture=makeBlueNoiseTexture();return true;
 }
@@ -136,6 +140,7 @@ function beginTransition(mode='cut',durationMs=0){
 }
 function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   if(!next?.content)return;
+  cancelOwnedDecode();ownedFrameLoad++;ownedFrameReady=null;
   beginTransition(mode,durationMs);destroySource();assignment=next;
   videoClock?.assign(next,Date.now());
   const serial=assignmentSerial,content=assignment.content||{};
@@ -199,7 +204,7 @@ function executeAction(action,cueId=''){
   document.documentElement.dataset.lastEvent=cueId;
   if(action.type==='assignment')loadAssignment(action.assignment,{transition:action.transition,durationMs:action.durationMs});
   else if(action.type==='frozen'){
-    videoClock?.freeze(!!action.frozen,Date.now(),currentVideoPosition());frozen=!!action.frozen;syncVideoPlayback();
+    videoClock?.freeze(!!action.frozen,Date.now(),currentVideoPosition());frozen=!!action.frozen;architecture?.hold(frozen||scoreSuspended);syncVideoPlayback();
   }else if(action.type==='seek'){
     videoClock?.seek(action.seekMs,Date.now(),{durationSeconds:Number(video?.duration)||Number(assetById.get(assignment?.content?.assetId)?.trim?.durationSeconds)||12});
     if(video){try{video.currentTime=Math.min(desiredSeconds(),Math.max(0,(Number(video.duration)||0)-.04));}catch(_){}}
@@ -247,12 +252,14 @@ function draw(at){
     if((assignment?.content?.playback==='reverse'||drift>.08)&&at-lastSeekAt>(assignment?.content?.playback==='reverse'?55:180)){lastSeekAt=at;try{video.currentTime=Math.min(desired,Math.max(0,video.duration-.04));}catch(_){}}
   }
   if(gl&&program){
+    gl.bindVertexArray(mediaQuadVao);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.DEPTH_TEST);gl.depthMask(false);
     const clockNow=scoreClock.now(Date.now());
     uploadTo(texture);const cadence=Math.max(90,Number(envelope?.fault?.cadenceMs)||420);if(!staleReady||clockNow-lastStaleAt>=cadence){staleReady=uploadTo(staleTexture);lastStaleAt=clockNow;}
     const transitionState=transitionUniform(clockNow);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
     gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
     const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
+    architecture?.draw({width:w,height:h,dpr,desktopOrigin:envelope?.desktopOrigin||{x:0,y:0},blueNoiseTexture,coherence:envelope?.coherent?1:0,negative:frontEndNegative});
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);
 }
@@ -262,6 +269,8 @@ async function announceReady(){try{await emit('window-media-ready',{protocol:WIN
 async function acceptEnvelope(payload){
   const label=currentLabel(),validation=validatePaneScoreEnvelope(payload,{targetLabel:label,currentSession,currentRevision});
   if(!validation.ok)return false;
+  architecture?.dispose();architecture=null;architectureBackground=null;architectureMediaAnchor=null;
+  cancelOwnedDecode();ownedFrameRevision=0;ownedFrameLoad++;ownedFrameReady=null;
   clearEventTimers();scoreSuspended=false;envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
   scoreClock=createWindowMediaClock({epochMs:payload.score.epochMs,nowMs:Date.now()});
   videoClock=createWindowVideoClock({score:payload.score,assignment:payload.score.initial,nowMs:Date.now(),reducedMotion:!!payload.reducedMotion});
@@ -279,9 +288,61 @@ function matchesActiveScore(payload){
     && String(payload?.cueId||'')===String(envelope.cueId||'')
     && String(payload?.paneId||'')===String(envelope.paneId||'');
 }
+function cancelOwnedDecode(){
+  if(ownedFramePending){ownedFramePending.onload=null;ownedFramePending.onerror=null;ownedFramePending.removeAttribute?.('src');ownedFramePending=null;}
+}
+function commitOwnedFrame(){
+  const ready=ownedFrameReady;if(!ready||scoreSuspended||frozen)return false;
+  const{payload,image,load}=ready;ownedFrameReady=null;
+  if(load!==ownedFrameLoad||!matchesActiveScore(payload))return false;
+  destroySource();assignment={content:{kind:'snapshot',token:payload.token},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:0};
+  source=poster=image;envelope={...envelope,snapshotData:null,snapshotFrames:{[payload.token]:payload.dataUrl}};fallback.src=payload.dataUrl;
+  document.documentElement.dataset.contentId=windowMediaContentId(assignment);document.documentElement.dataset.ownedFrameRevision=String(ownedFrameRevision);return true;
+}
+function acceptOwnedFrame(payload){
+  if(!matchesActiveScore(payload)||!String(envelope.cueId).startsWith('source-rest:apertures:')||!['rest:source','rest:answer'].includes(envelope.paneId)||scoreSuspended||frozen||!Number.isSafeInteger(payload.frameRevision)||payload.frameRevision<=ownedFrameRevision
+    ||envelope.reducedMotion&&ownedFrameRevision>0||!sourceRestOwnedFramesValid([{surfaceId:payload.paneId,dataUrl:payload.dataUrl}],[envelope.paneId]))return false;
+  architecture?.dispose();architecture=null;architectureBackground=null;architectureMediaAnchor=null;
+  cancelOwnedDecode();ownedFrameRevision=payload.frameRevision;const load=++ownedFrameLoad,image=new Image();ownedFramePending=image;image.decoding='async';
+  image.onload=()=>{
+    if(load!==ownedFrameLoad||!matchesActiveScore(payload))return;
+    if(ownedFramePending===image)ownedFramePending=null;
+    ownedFrameReady={payload,image,load};commitOwnedFrame();
+  };
+  image.src=payload.dataUrl;return true;
+}
+function syncArchitectureBackground(pane){
+  const background=pane.background;
+  if(background){
+    if(architectureBackground!==background.assetId){
+      const elapsed=scoreClock.now(Date.now())-Number(envelope?.score?.epochMs||0);
+      loadAssignment({content:{kind:'video',assetId:background.assetId,playback:'forward'},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:background.mediaTime*1000-elapsed});
+      architectureBackground=background.assetId;architectureMediaAnchor=null;
+    }
+    const at=Date.now(),durationSeconds=Number(video?.duration)||Number(assetById.get(background.assetId)?.trim?.durationSeconds)||12;
+    videoClock?.seek(background.mediaTime*1000,at,{durationSeconds});
+    if(architectureMediaAnchor&&at>architectureMediaAnchor.at+8){const measured=(background.mediaTime-architectureMediaAnchor.time)/((at-architectureMediaAnchor.at)/1000);
+      if(measured>.03&&measured<4&&video)try{video.playbackRate=Math.max(.0625,Math.min(4,architectureMediaAnchor.rate*.75+measured*.25));}catch(_){}
+    }
+    architectureMediaAnchor={at,time:background.mediaTime,rate:Number(video?.playbackRate)||1};
+  }else if(architectureBackground){
+    loadAssignment({content:{kind:'procedural',preset:'empty-field'},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:0});architectureBackground=null;architectureMediaAnchor=null;
+  }
+}
+function acceptArchitecture(payload){
+  if(!matchesActiveScore(payload)||!windowArchitectureCueAllowed(envelope.cueId)||!['rest:source','rest:answer'].includes(envelope.paneId)||scoreSuspended||frozen)return false;
+  architecture??=createWindowMediaArchitecture({gl,surfaceId:envelope.paneId,reducedMotion:!!envelope.reducedMotion});
+  if(!architecture.update(payload.packet,{revision:payload.architectureRevision}))return false;
+  cancelOwnedDecode();ownedFrameLoad++;ownedFrameReady=null;
+  const pane=payload.packet.panes.find(p=>p.surfaceId===envelope.paneId);
+  if(Number.isFinite(pane.desktopOrigin?.x)&&Number.isFinite(pane.desktopOrigin?.y))envelope={...envelope,desktopOrigin:pane.desktopOrigin};
+  syncArchitectureBackground(pane);
+  document.documentElement.dataset.architectureRevision=String(payload.architectureRevision);return true;
+}
 function clearMediaScore(payload){
   if(String(payload?.sessionToken)!==currentSession||Number(payload?.revision)!==currentRevision)return false;
-  clearEventTimers();destroySource();envelope=null;assignment=null;scoreSuspended=true;executedTimed.clear();
+  architecture?.dispose();architecture=null;architectureBackground=null;architectureMediaAnchor=null;
+  clearEventTimers();destroySource();cancelOwnedDecode();ownedFrameReady=null;ownedFrameLoad++;envelope=null;assignment=null;scoreSuspended=true;executedTimed.clear();
   videoClock=null;
   fallback.removeAttribute('src');document.documentElement.style.visibility='hidden';
   if(gl)for(const tex of [texture,staleTexture,outgoingTexture])if(tex){
@@ -293,7 +354,9 @@ function holdScore(payload){
   if(!matchesActiveScore(payload))return false;
   const held=payload.held!==false,now=Date.now();
   videoClock?.hold(held,now,currentVideoPosition());scoreClock.hold(held,now);scoreSuspended=held;
+  architecture?.hold(held||frozen);architectureMediaAnchor=null;
   document.documentElement.dataset.scoreHeld=String(held);syncVideoPlayback();
+  if(!held)commitOwnedFrame();
   return true;
 }
 function triggerEvent(payload){
@@ -314,9 +377,12 @@ grip.addEventListener('pointerdown',(event)=>{event.preventDefault();event.stopP
 canvas.addEventListener('pointerdown',()=>{void emit('window-media-pane-action',{cueId:String(envelope?.cueId||''),paneId:String(envelope?.paneId||''),action:'activate'});});
 addEventListener('keydown',(event)=>{if(event.key==='Escape')void emit('window-media-pane-action',{cueId:String(envelope?.cueId||''),paneId:String(envelope?.paneId||''),action:'escape'});});
 async function boot(){
+  globalThis.__chunkMediaArchitectureStatus=()=>({...(architecture?.snapshot()||{active:false}),session:currentSession,scoreRevision:currentRevision,cueId:envelope?.cueId||null,paneId:envelope?.paneId||null,gl:!!gl,glError:gl?.getError?.()??null,background:architectureBackground,videoReady:Number(video?.readyState)||0,videoTime:Number(video?.currentTime)||0});
   try{const ready=initGl();canvas.dataset.renderer=ready?'webgl2':'fallback';if(!ready)fallback.style.display='block';}
   catch(error){canvas.dataset.renderer='shader-error';fallback.style.display='block';console.error('window media shader unavailable',error);}
   try{await listen('window-media-score',({payload})=>{void acceptEnvelope(payload);});}catch(_){}
+  try{await listen('window-media-owned-frame',({payload})=>acceptOwnedFrame(payload));}catch(_){}
+  try{await listen('window-media-architecture',({payload})=>acceptArchitecture(payload));}catch(_){}
   try{await listen('window-media-trigger',({payload})=>triggerEvent(payload));}catch(_){}
   try{await listen('window-media-score-hold',({payload})=>holdScore(payload));}catch(_){}
   try{await listen('window-media-clear',({payload})=>clearMediaScore(payload));}catch(_){}
@@ -351,4 +417,6 @@ async function boot(){
 }
 void boot();
 addEventListener('blur',()=>{try{const win=getCurrentWindow();void emit('window-media-focus-left',{label:win.label,cueId:String(envelope?.cueId||'')}).catch(()=>{});}catch(_){}});
-addEventListener('beforeunload',()=>{cancelAnimationFrame(raf);clearEventTimers();destroySource();});
+canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();architecture?.setGl(null);gl=null;program=null;mediaQuadVao=null;});
+canvas.addEventListener('webglcontextrestored',()=>{try{if(initGl()){architecture?.setGl(gl);fallback.style.display='none';}}catch(_){fallback.style.display='block';}});
+addEventListener('beforeunload',()=>{cancelAnimationFrame(raf);clearEventTimers();architecture?.dispose();cancelOwnedDecode();destroySource();});

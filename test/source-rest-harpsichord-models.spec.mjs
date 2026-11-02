@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOURCE_REST_HARPSICHORD,SOURCE_REST_HARPSICHORD_PARTS,sourceRestHarpsichordGeometryLibrary} from '../src/render/source-rest-harpsichord-models.js';
-import {sourceRestHarpsichordBoardWorldToLocal} from '../src/render/source-rest-harpsichord-board.js';
-import {SOURCE_CONTINUATION,continuationRadialPoint} from '../src/data/source-continuation.js';
+import {SOURCE_REST_HARPSICHORD,SOURCE_REST_HARPSICHORD_PARTS,sourceRestHarpsichordGeometryLibrary,sourceRestHarpsichordSeatGeometry} from '../src/render/source-rest-harpsichord-models.js';
+import {sourceRestHarpsichordBoardWorldToLocal,sourceRestHarpsichordBoardLocalToWorld,sourceRestHarpsichordBoardGeometry} from '../src/render/source-rest-harpsichord-board.js';
+import {SOURCE_CONTINUATION,CONTINUATION_CATCH_STAGES,continuationRadialPoint,continuationSupportAt} from '../src/data/source-continuation.js';
+import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
 
 const models=sourceRestHarpsichordGeometryLibrary(),values=Object.values(models),close=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],dot=(a,b)=>a.reduce((n,v,k)=>n+v*b[k],0);
@@ -18,7 +19,7 @@ function hitsBox(tri,min,max){
 }
 const allTriangles=Object.entries(models).flatMap(([name,m])=>triangles(m).map(p=>({name,p})));
 function assertClear(local,radius,height,label){
-  const min=[local.x-radius,.0601,local.z-radius],max=[local.x+radius,height,local.z+radius];
+  const min=[local.x-radius,local.y+.0601,local.z-radius],max=[local.x+radius,local.y+height,local.z+radius];
   for(const row of allTriangles)assert.equal(hitsBox(row.p,min,max),false,`${label}: ${row.name} obstructs ${local.x.toFixed(3)},${local.z.toFixed(3)}`);
 }
 function samplePath(points,step=.15){
@@ -44,7 +45,7 @@ test('twenty coherent resident-ready batches have finite, closed, nondegenerate 
     assert.ok(volume>0,`${part.id} winding is reversed`);assert.ok([...edges.values()].every(n=>n===2),`${part.id} has an unclosed boundary`);
     assert.equal(m.triangles,m.i.length/3);total+=m.triangles;
   }
-  assert.ok(total<=SOURCE_REST_HARPSICHORD.triangleBudget);assert.equal(total,11792);
+  assert.ok(total<=SOURCE_REST_HARPSICHORD.triangleBudget);assert.equal(total,14024);
   assert.ok(Object.isFrozen(models));assert.ok(Object.isFrozen(SOURCE_REST_HARPSICHORD_PARTS));
 });
 
@@ -55,7 +56,8 @@ test('case anatomy has a straight spine, asymmetrical bent side, narrow tail and
   const cut=SOURCE_REST_HARPSICHORD.sideBreak;assert.equal(cut.thresholdTop,.055);
   for(const name of['case','lining','beading']){
     const m=models['rest-harpsichord-'+name];
-    for(const tri of triangles(m))if(tri.every(p=>p[0]>.1&&p[2]>cut.minZ+.1&&p[2]<cut.maxZ-.1))assert.ok(tri.every(p=>p[1]<=.06),`${name} bridges the authored side opening`);
+    for(const tri of triangles(m))if(tri.every(p=>p[0]>.1&&p[2]>cut.minZ+.1&&p[2]<cut.maxZ-.1))
+      assert.ok(tri.every(p=>p[1]<=.06)||tri.every(p=>p[1]>=1.95),`${name} blocks the human-height authored side opening`);
   }
   assert.equal(SOURCE_REST_HARPSICHORD.supportFloor,false);
 });
@@ -68,9 +70,26 @@ test('both complete string choirs expose three note registers and survive dither
     assert.deepEqual(strings.map(p=>p.midi),Array.from({length:61},(_,k)=>36+k));
     assert.ok(strings.every(p=>p.width>=.012&&p.end[2]<p.start[2]));
     assert.ok(strings[0].start[2]-strings[0].end[2]>strings.at(-1).start[2]-strings.at(-1).end[2]);
-    for(const p of parts){const m=models[p.mesh];assert.ok(m.bounds.min[1]>=2.04);assert.ok(m.bounds.max[1]<=2.25);assert.ok(m.bounds.max[2]<-.65);}
+    for(const p of parts){const m=models[p.mesh];assert.ok(m.bounds.min[1]>=2.025);assert.ok(m.bounds.max[1]<=18.1);assert.ok(m.bounds.max[2]<-.35);
+      assert.equal(m.architecturalStrings.length,m.strings.length);assert.ok(m.courseWidthMinimum>=.022);
+      assert.ok(m.architecturalStrings.filter(course=>course.principal).every(course=>course.width>=.15));}
   }
   assert.notDeepEqual(models['rest-harpsichord-strings-acoustic-mid'].p,models['rest-harpsichord-strings-electronic-mid'].p);
+});
+
+test('monumental pitch courses are rooted in actual stage supports and rise across the three-storey void without more draw batches',()=>{
+  const groups=SOURCE_REST_HARPSICHORD_PARTS.filter(p=>p.casePart==='strings'),courses=groups.flatMap(part=>models[part.mesh].architecturalStrings);
+  assert.equal(courses.length,122);assert.deepEqual(new Set(courses.map(course=>course.support.level)),new Set([0,1,2]));
+  assert.equal(courses.filter(course=>course.principal).length,30);
+  assert.ok(courses.some(course=>course.end[1]>18));assert.ok(courses.some(course=>Math.hypot(...course.end.map((value,k)=>value-course.start[k]))>25));
+  for(const course of courses){
+    const foot=sourceRestHarpsichordBoardLocalToWorld({x:course.foot[0],y:course.foot[1],z:course.foot[2]}),support=course.support;
+    close(foot.x,support.x);close(foot.y,support.y);close(foot.z,support.z);
+    for(const dx of[-support.halfFootprint,support.halfFootprint])for(const dz of[-support.halfFootprint,support.halfFootprint]){
+      const actual=continuationSupportAt(foot.x+dx,foot.z+dz,{phase:'catch',chartId:0,feet:foot.y},{minY:foot.y-.001,maxY:foot.y+.001});
+      assert.ok(actual,`missing physical bearing for MIDI${course.midi} on ${support.id}`);close(actual.y,foot.y);
+    }
+  }
 });
 
 test('two genuine manuals have continuous naturals and the two/three accidental rhythm in every octave',()=>{
@@ -111,10 +130,40 @@ test('the actual existing entry and return walk never pass through case, lining,
   for(let a=0;a<.92;a+=.02)path.push(continuationRadialPoint(12.3,a));
   path.push(continuationRadialPoint(12.3,.92));
   for(const r of[13.02,13.35,14.25,15.15])path.push(continuationRadialPoint(r,.92));
-  for(const p of samplePath(path,.20))assertClear(sourceRestHarpsichordBoardWorldToLocal(p),SOURCE_CONTINUATION.bodyRadius,SOURCE_CONTINUATION.bodyHeight,'actual entry');
+  for(const p of samplePath(path,.20))assertClear(sourceRestHarpsichordBoardWorldToLocal({...p,y:SOURCE_CONTINUATION.catch.top}),SOURCE_CONTINUATION.bodyRadius,SOURCE_CONTINUATION.bodyHeight,'actual upper entry');
+  const seat=SOURCE_REST_SEATS[1],stage=CONTINUATION_CATCH_STAGES[seat.level],angle=Math.atan2(seat.z-SOURCE_CONTINUATION.catch.center.z,seat.x-SOURCE_CONTINUATION.catch.center.x),earned=[];
+  for(let a=angle-.22;a<=angle+.001;a+=.02)earned.push(continuationRadialPoint(stage.outerRadius-.45,a));
+  for(const radius of[stage.outerRadius-.45,11.52,11.85,13.65])earned.push(continuationRadialPoint(radius,angle));
+  for(const p of samplePath(earned,.20))assertClear(sourceRestHarpsichordBoardWorldToLocal({...p,y:seat.feet}),SOURCE_CONTINUATION.bodyRadius,SOURCE_CONTINUATION.bodyHeight,'earned refuge approach');
 });
 
 test('the real counterweight path and full .72m envelope clear the authored broken side',()=>{
   const path=[SOURCE_CONTINUATION.catch.hoist.start,{x:-164.1968848553,z:-83.9656117819},{x:-165.7296396159,z:-85.5437951819},{x:-164,z:-92},{x:-165.54,z:-92}];
-  for(const p of samplePath(path,.20))assertClear(sourceRestHarpsichordBoardWorldToLocal(p),SOURCE_CONTINUATION.catch.counterweightRadius,1.451,'actual counterweight');
+  for(const p of samplePath(path,.20))assertClear(sourceRestHarpsichordBoardWorldToLocal({...p,y:SOURCE_CONTINUATION.catch.top}),SOURCE_CONTINUATION.catch.counterweightRadius,1.451,'actual counterweight');
+});
+
+test('the purpose-built case settle keeps all four actual seat contacts, clear eyes and a shared bounded geometry budget',()=>{
+  const settle=sourceRestHarpsichordSeatGeometry(),pad=settle.upholstery;
+  assert.equal(settle.forward,'+X');assert.equal(settle.retainedScaleZ,.55);assert.equal(settle.seatHeight,.6075);
+  assert.equal(settle.material,'wood');assert.equal(pad.material,'linen');assert.equal(pad.seatHeight,.6075);
+  assert.ok(settle.bounds.min[0]>=-.36&&settle.bounds.max[0]<=.36);
+  assert.ok(settle.bounds.min[2]*.55>=-.89&&settle.bounds.max[2]*.55<=.89);
+  assert.ok(settle.diagnostics.instrumentAndSeatTriangles<=16000);
+  assert.ok(settle.diagnostics.instrumentAndSeatTriangles+sourceRestHarpsichordBoardGeometry().i.length/3<=16000,
+    'the clipped soundboard veneer also fits the unchanged whole-instrument triangle budget');
+  const surface=(x,z)=>{
+    let top=-Infinity;
+    for(const tri of triangles(pad)){
+      const[a,b,c]=tri,den=(b[2]-c[2])*(a[0]-c[0])+(c[0]-b[0])*(a[2]-c[2]);if(Math.abs(den)<1e-10)continue;
+      const u=((b[2]-c[2])*(x-c[0])+(c[0]-b[0])*(z-c[2]))/den,
+        v=((c[2]-a[2])*(x-c[0])+(a[0]-c[0])*(z-c[2]))/den,w=1-u-v;
+      if(u>=-1e-8&&v>=-1e-8&&w>=-1e-8)top=Math.max(top,u*a[1]+v*b[1]+w*c[1]);
+    }
+    return top;
+  };
+  for(const f of[-.08,.08])for(const r of[-.14,.14])close(surface(f,r/.55),.6075);
+  for(const model of[settle,pad]){
+    assert.ok(model.p.every(Number.isFinite));assert.ok(model.i.every(index=>index>=0&&index<model.p.length/3));
+    for(const tri of triangles(model))assert.equal(hitsBox(tri,[.08,1.23,-.10],[.28,1.33,.10]),false,'no back/arm/pad intersects the actual initial eye');
+  }
 });

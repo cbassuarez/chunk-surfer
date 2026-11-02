@@ -1,3 +1,4 @@
+import { causalFixtureReturnEvent } from './helpers/causal-fixture.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 
@@ -51,8 +52,9 @@ assert.deepEqual([...evidence.tags],[
 ]);
 assert.equal(evidence.combatReadings.length,2);
 assert.equal(evidence.sourceGuidance,true);
-assert.equal(canQualifyBorrowedRecordist({ledger:fullLedger,hasFork:true,hasRig:true,bodyRedacted:true}),true);
-assert.equal(canQualifyBorrowedRecordist({ledger:fullLedger,hasFork:false,hasRig:true,bodyRedacted:true}),false);
+assert.equal(canQualifyBorrowedRecordist({ledger:fullLedger,hasFork:true,hasRig:true,bodyRedacted:true}),false,'paper and obsolete Source redaction cannot replace the performed Chapel return');
+assert.equal(canQualifyBorrowedRecordist({hasFork:true,hasRig:true,chapelReturnGranted:true,chapelReturnLocked:false}),true);
+assert.equal(canQualifyBorrowedRecordist({hasFork:false,hasRig:true,chapelReturnGranted:true}),false);
 assert.equal(deriveStoryEvidence({}).count,0,'zero-clue completion remains eligible for ordinary play');
 
 let intrusion=reducePerformanceIntrusion(0,{missed:true});
@@ -163,7 +165,7 @@ const tape=sealCausalTape({
   runId:'coherence',returnSummaryId:'return:coherence',endingId:'sacrifice',durationMs:12000,
   qualification:{injuries:0,difficulty:'contract',completedAt:1},requireCausalSpine:true,
   shadowFrames:[{t:0,x:0,y:0,spaceId:'conservatory'},{t:6000,x:5,y:5,spaceId:'source-space'},{t:12000,x:8,y:8,spaceId:'conservatory'}],
-  anchors,events:[],
+  anchors,events:[causalFixtureReturnEvent('coherence','sacrifice',{at:12000})],
 });
 assert.equal(validateCausalTape(tape).ok,true);
 const broken={...tape,anchors:tape.anchors.slice(1)};

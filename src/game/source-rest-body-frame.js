@@ -10,12 +10,12 @@ export const SOURCE_REST_BODY_BENCHES=freeze({
     seatContacts:[['seat-left',.02,.57,-.14],['seat-right',.02,.57,.14]],
     leftArm:['armrest-left',.18,.71,-.67],rightArm:['armrest-right',.18,.71,.67],
     evidence:'src/render/source-rest-models.js: cushion top .57; padded frame arm tops .71; local Z scaled .78'},
-  catch:{mesh:'yard_look_bench',seatHeight:.6075,
-    // The centre lies between two slats. These four points lie on real wood.
+  catch:{mesh:'source-continuation-rest-harpsichord-seat',seatHeight:.6075,
+    // The case settle retains the player's measured contact plane.
     seatContacts:[['seat-left-front',.08,.6075,-.14],['seat-left-rear',-.08,.6075,-.14],
       ['seat-right-front',.08,.6075,.14],['seat-right-rear',-.08,.6075,.14]],
     leftArm:null,rightArm:null,
-    evidence:'public/assets/conservatory-props.glb: yard_look_bench seat top .60750003; diagonal side bearers are not armrests'},
+    evidence:'src/render/source-rest-harpsichord-models.js: measured case-settle contact pad .6075; existing thigh-supported hand poses retained'},
 });
 
 export function sourceRestBodyFrame(seat,{origin={}}={}){

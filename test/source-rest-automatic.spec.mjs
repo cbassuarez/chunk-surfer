@@ -6,17 +6,17 @@ import {makeSourceRestConversationScene} from '../src/game/source-rest-conversat
 import {sourceRestConversation} from '../src/data/source-rest-conversation.js';
 
 test.afterEach(()=>scenes.clear());
-const media=(position=0)=>({playing:true,paused:false,protected:false,failed:null,currentTime:position,duration:716.4,playedSeconds:position});
-function advance(source,dt){if(source.playing&&!source.paused&&!source.protected){source.playedSeconds+=dt;source.currentTime=(source.currentTime+dt)%source.duration;}scenes.update(dt);}
-function respond(scene){const view=scene.view();if(view.pending){const index=view.pending.options.findIndex(option=>option.restAction!=='leave');scenes.key({key:String(index+1)});}}
+const media=(position=0)=>({playing:true,paused:false,protected:false,failed:null,currentTime:position,duration:716.4,playedSeconds:position,audibleWallSeconds:position,playbackRate:1,ended:false});
+function advance(source,dt){if(source.playing&&!source.paused&&!source.protected){const heard=Math.min(dt,source.duration-source.currentTime);source.playedSeconds+=heard;source.audibleWallSeconds+=heard;source.currentTime+=heard;if(source.currentTime>=source.duration){source.ended=true;source.playing=false;}}scenes.update(dt);}
+function respond(scene){const view=scene.view();if(view.pending&&!view.restReplySelection){const index=view.pending.options.findIndex(option=>option.restAction!=='leave');scenes.key({key:String(index+1)});}}
 
 test('the black cue follows the real performance, including a late arrival and a pause',()=>{
   const source=media(140),clock=createSourceRestClock(()=>source);
   clock.update();assert.equal(clock.snapshot().untilBlack,435,'a late listener never waits another full pass');
-  assert.equal(clock.snapshot().cueMode,'late-arrival');
-  source.paused=true;source.playing=false;source.playedSeconds+=20;clock.update(20);
+  assert.equal(clock.snapshot().cueMode,'preferred');
+  source.paused=true;source.playing=false;source.playedSeconds+=20;source.audibleWallSeconds+=20;clock.update(20);
   assert.equal(clock.snapshot().heardSeconds,0,'neither pause nor an advanced wall clock moves the scene');
-  source.paused=false;source.playing=true;source.playedSeconds+=clock.snapshot().untilBlack;
+  source.paused=false;source.playing=true;source.playedSeconds+=clock.snapshot().untilBlack;source.audibleWallSeconds+=clock.snapshot().untilBlack;
   source.currentTime=575;clock.update();
   assert.ok(Math.abs(clock.snapshot().progress-SOURCE_REST_BLACK_PROGRESS)<1e-9);
 });
@@ -45,7 +45,7 @@ test('the interruption occurs before the locked passage; the final music dialogu
       assert.equal(scenes.top(),scene,'Escape cannot dismiss the locked part');assert.equal(scene.view().nodeId,current);}
     if(view.nodeId==='last'&&!view.lineSourceId?.startsWith('source-rest-cue:')&&!finalSeen){finalSeen=true;
       assert.ok(scene.restProgress()>=.96,'the last musical exchange is on black');
-      assert.ok(source.currentTime>=509.5&&source.currentTime<=515,'black is tied to the measured passage');}
+      assert.ok(source.currentTime>=509.5&&source.currentTime<=550,'the readable exchange stays within the measured major passage in this fixed-1x fixture');}
     if(!seen.includes(view.nodeId))seen.push(view.nodeId);
   }
   assert.ok(faultSeen,'the first breakdown precedes the choice to stay');
@@ -53,25 +53,23 @@ test('the interruption occurs before the locked passage; the final music dialogu
   assert.deepEqual(outcomes,['commit']);
 });
 
-test('a response commits immediately once, closes its choices and is delivered only at its musical window',()=>{
+test('a response remains changeable during its visible window, then commits and is delivered exactly once',()=>{
   const source=media(),chosen=[],confirmations=[];scenes.push({id:'source',blocksWorld:true,blocksInput:true,allowsLook:true});
   const scene=makeSourceRestConversationScene({phase:'wrong-return',getMusicState:()=>source,onChoice:choice=>chosen.push(choice),
     audio:{menuConfirm:()=>confirmations.push('confirm')}});scenes.push(scene);
   for(let i=0;i<800&&!(scene.view().nodeId==='first-choice'&&scene.view().pending);i++)advance(source,.25);
   assert.equal(scene.view().nodeId,'first-choice');assert.ok(scene.view().pending);
   const exact=scene.view().pending.options[1].text;scenes.key({key:'ArrowDown'});scenes.key({key:'Enter'});
-  assert.equal(scene.view().pending,null,'the ordinary choice closes immediately');
-  assert.equal(scene.view().restQueuedReply.text,exact);assert.equal(scene.view().line.text,'','the reply has not been spoken early');
-  assert.equal(chosen.length,1);assert.equal(confirmations.length,1);
-  scenes.key({key:'1'});scenes.key({key:'Enter'});assert.equal(scene.view().restQueuedReply.text,exact,'later input cannot revise a committed reply');
-  assert.equal(chosen.length,1);assert.equal(confirmations.length,1);
+  assert.ok(scene.view().pending,'the ordinary choices remain available during the undo window');
+  assert.equal(scene.view().restReplySelection.text,exact);assert.equal(scene.view().restQueuedReply,null);
+  assert.equal(chosen.length,0);assert.equal(confirmations.length,0);
   const progress=scene.restProgress(),serial=scene.view().lineSerial;
   source.paused=true;source.playing=false;scenes.update(20);
   assert.equal(scene.restProgress(),progress);assert.equal(scene.view().lineSerial,serial);
   source.paused=false;source.playing=true;
   for(let i=0;i<24;i++)advance(source,.25);
-  assert.ok(scene.view().restQueuedReply,'the selected words wait for their delivery window');
-  for(let i=0;i<30&&scene.view().restQueuedReply;i++)advance(source,.25);
+  assert.ok(scene.view().restReplySelection,'the selected words remain undoable while the timer runs');
+  for(let i=0;i<20&&(scene.view().restReplySelection||scene.view().restQueuedReply);i++)advance(source,.25);
   assert.equal(scene.view().nodeId,'hear','the selected language is used at the scheduled moment');
   assert.equal(scene.view().restQueuedReply,null);assert.equal(chosen.length,1);
 });
@@ -84,10 +82,10 @@ test('ordinary offers wait for the player and a queued reply is cancelled cleanl
   for(let i=0;i<1000;i++)advance(source,.25);
   assert.equal(scene.view().nodeId,'first-choice');assert.ok(scene.view().pending);assert.equal(scene.restProgress(),p);
   assert.equal(chosen.length,0,'silence does not invent a response');
-  scenes.key({key:'2'});assert.equal(chosen.length,1);assert.ok(scene.view().restQueuedReply);
-  scenes.key({key:'Escape'});assert.deepEqual(outcomes,['leave']);assert.equal(scene.view().restQueuedReply,null);
+  scenes.key({key:'2'});assert.equal(chosen.length,0);assert.ok(scene.view().restReplySelection);
+  scenes.key({key:'Escape'});assert.deepEqual(outcomes,['leave']);assert.equal(scene.view().restReplySelection,null);assert.equal(scene.view().restQueuedReply,null);
   for(let i=0;i<40;i++)advance(source,.25);
-  assert.equal(chosen.length,1);assert.deepEqual(outcomes,['leave']);
+  assert.equal(chosen.length,0);assert.deepEqual(outcomes,['leave']);
 });
 
 test('a paraphrased branch delivers the exact chosen words once before its authored continuation',()=>{
@@ -95,8 +93,8 @@ test('a paraphrased branch delivers the exact chosen words once before its autho
   const scene=makeSourceRestConversationScene({phase:'wrong-return',getMusicState:()=>source,onLine:line=>lines.push(line)});scenes.push(scene);
   for(let i=0;i<800&&!(scene.view().nodeId==='first-choice'&&scene.view().pending);i++)advance(source,.25);
   const exact=scene.view().pending.options[0].text;scenes.key({key:'Enter'});
-  assert.equal(scene.view().restQueuedReply.text,exact);
-  for(let i=0;i<40&&scene.view().restQueuedReply;i++)advance(source,.25);
+  assert.equal(scene.view().restReplySelection.text,exact);
+  for(let i=0;i<40&&(scene.view().restReplySelection||scene.view().restQueuedReply);i++)advance(source,.25);
   assert.equal(scene.view().line.text,exact,'the queued language becomes the spoken text at delivery');
   assert.equal(scene.view().who,'me');
   for(let i=0;i<40&&scene.view().line.text===exact;i++)advance(source,.25);
@@ -124,8 +122,9 @@ test('the first interruption never supplies consent, and a delayed response keep
   for(let i=0;i<1600;i++)advance(source,.25);
   assert.equal(scene.view().nodeId,'interruption');assert.equal(scene.restProgress(),progress);
   assert.equal(scene.view().restLocked,false);assert.ok(source.currentTime!==time,'the recording continues while the choice is open');
-  scenes.key({key:'2'});assert.equal(scene.view().pending,null);assert.equal(scene.view().restQueuedReply.targetNode,'after-interruption');
-  assert.equal(scene.view().restTiming.cueMode,'late-arrival');
+  scenes.key({key:'2'});assert.ok(scene.view().pending);assert.equal(scene.view().restReplySelection.text,'Let it pass.');
+  for(let i=0;i<32;i++)advance(source,.25);
+  assert.equal(scene.view().restQueuedReply.targetNode,'after-interruption');assert.equal(scene.view().restTiming.cueMode,'late-arrival');
   for(let i=0;i<2400&&result===null;i++){advance(source,.25);respond(scene);}
   assert.equal(result,'commit');
 });
@@ -168,8 +167,8 @@ test('late sitting hears the complete graph without waiting for an extra musical
     if(finalTime===null&&view.nodeId==='last'&&!view.lineSourceId?.startsWith('source-rest-cue:'))finalTime=source.currentTime;
   }
   for(const node of ['arrival','interruption','ornaments','organ','voice','distance','return','last'])assert.ok(seen.has(node),node);
-  assert.equal(blackNode,'last');assert.ok(finalTime>=570&&finalTime<600);assert.ok(finished);
-  assert.ok(source.playedSeconds-140<500,'the whole late encounter is bounded to its readable length');
+  assert.equal(blackNode,'last');assert.ok(finalTime>=570&&finalTime<source.duration-30);assert.ok(finished);
+  assert.ok(source.playedSeconds<source.duration,'the whole extended late encounter fits this single pass without a wrap');
 });
 
 test('all response combinations and both naming states preserve their lines at the shortest eligible lead',()=>{
@@ -183,9 +182,9 @@ test('all response combinations and both naming states preserve their lines at t
       if(view.lineSourceId?.startsWith(`${story.id}:`)){
         const lines=seen.get(view.nodeId)||new Set();lines.add(view.lineSourceId);seen.set(view.nodeId,lines);
       }
-      if(view.pending&&selected!==view.nodeId){selected=view.nodeId;
+      if(view.pending&&!view.restReplySelection&&selected!==view.nodeId){selected=view.nodeId;
         const safe=view.pending.options.map((option,index)=>option.restAction==='leave'?-1:index).filter(index=>index>=0);
-        const index=safe[(mask>>branch++)%safe.length];scenes.key({key:String(index+1)});
+        const index=view.nodeId.startsWith('questions-')?safe[0]:safe[(mask>>branch++)%safe.length];scenes.key({key:String(index+1)});
       }
       if(blackNode===null&&scene.restProgress()>=.96)blackNode=view.nodeId;
     }

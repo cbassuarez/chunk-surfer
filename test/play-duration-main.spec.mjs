@@ -9,7 +9,7 @@ function body(name){const start=main.indexOf(`function ${name}(`),end=main.index
 function host(){
  const save={run:{id:'run:first',status:'active'},playSeconds:700,playDuration:freshPlayDuration()},menus=new Set();
  const h={getSave:()=>save,storyMode:true,inRogue:true,paused:false,focused:true,scenes:{has:id=>menus.has(id)},
-    runPlayDurationClock:createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,gameplayInputLifecycleActive:()=>h.focused};
+    runPlayDurationClock:createPlayDurationClock(),advanceNightClock,nightClockPace:createNightClockPace(),consumeNightClockTravel:()=>0,nightClockSlowAction:()=>false,gameplayInputLifecycleActive:()=>h.focused,tickNightDeadline(){}};
  vm.createContext(h);vm.runInContext(body('tickRunPlayDuration'),h);
  return{h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h)};
 }
@@ -38,9 +38,15 @@ test('pause and blur invalidate the monotonic sample synchronously; a new run st
 test('hidden pages and lifecycle returns reset the real-time sample before rendering can stop',()=>{
  for(const [target,event] of [['document','visibilitychange'],['window','pagehide'],['window','pageshow'],['window','focus']]){
   const at=main.lastIndexOf(`${target}.addEventListener('${event}',`);assert.ok(at>=0,event);
-  const entry=main.slice(at).split('\n').slice(0,2).join('\n');
-  assert.match(entry,/=>\{\n\s+runPlayDurationClock\.suspend\(\);/,`${event} suspends before other side effects`);
-  const h=host();h.tick(0);h.tick(1000);h.h.runPlayDurationClock.suspend();
+  const callback=main.indexOf('=>',at),begin=main.indexOf('{',callback),suspend=main.indexOf('runPlayDurationClock.suspend();',begin);
+  assert.ok(callback>at&&begin>callback&&suspend>begin&&suspend-begin<200,`${event} synchronously suspends at its lifecycle boundary`);
+  const prefix=main.slice(begin+1,suspend+'runPlayDurationClock.suspend();'.length);
+  assert.doesNotMatch(prefix,/\bawait\b|requestAnimationFrame|setTimeout/,`${event} must not defer duration suspension`);
+  const h=host();h.tick(0);h.tick(1000);
+  // Execute the real listener prefix. Immediate First Strike pause/stop is
+  // permitted before suspension; no clock sample may survive this callback.
+  Object.assign(h.h,{document:{hidden:true},firstStrikeScene:{pause(){}},firstStrikeAudio:{stop(){}}});
+  vm.runInContext(`(()=>{${prefix}})()`,h.h);
   // No hidden rAF is delivered; return is the next active production tick.
   h.tick(3601000);assert.equal(h.save.playDuration.seconds,1,event);
   h.tick(3602000);assert.equal(h.save.playDuration.seconds,2,event);

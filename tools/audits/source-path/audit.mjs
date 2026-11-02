@@ -219,7 +219,7 @@ export const STAGES = Object.freeze([
       ['The open strata release', at(RUNTIME, "dispatch({type:'SOURCE_LIFT_COMPLETED',id:'lift-fork'")],
       ['What moves you on', at(RUNTIME, "dispatch({ type: 'FINAL_REACHED' }")],
       ['The rule it passes', at(STATE, "case 'FINAL_REACHED':")],
-      ['The voluntary meeting and fight authority', at(STATE, 'export function sourceBossAvailable(value) {')],
+      ['The voluntary meeting and fight authority', at(STATE, "export function sourceBossAvailable(value, { chapter = 'I' } = {}) {")],
       ['Waiting does not start pursuit', at('src/game/source-hush-follow.js', "if (intent === 'follow') {")],
     ],
     presets: [G.FIRST_LIFT, G.FIRST_CONTACT, G.ALL_INSIGHTS, G.LANDSCAPE, G.HUNT, G.FINAL_RUN], jump: [], puzzles: ['source-contact'],
@@ -366,7 +366,7 @@ export const STAGES = Object.freeze([
     ]; },
     cites: [
       ['Shared finite surfaces and the ramp', at(CONTINUATION_DATA, 'const wrongSurfaces = [')],
-      ['The real closing front and physical transfer', at(CONTINUATION, "if (state.phase === 'wrong-return') {")],
+      ['The physical chapter transfer', at(CONTINUATION, "if (state.phase === 'wrong-return' && state.x < d.x - C.bodyRadius")],
       ['The checkpoint and borrowed-world owner', at(MAIN, 'async function beginSourceContinuation(')],
       ['Pause, loading and error return', at(CONTINUATION_SCENE, 'export function createSourceContinuationScene(')],
     ],
@@ -394,9 +394,9 @@ export const STAGES = Object.freeze([
       ['Recovery / grace', `${number(SOURCE_CONTINUATION.recoverySeconds)} s / ${number(SOURCE_CONTINUATION.graceSeconds)} s`],
     ],
     cites: [
-      ['The actual shelf surfaces and openings', at(CONTINUATION_DATA, 'const catchSurfaces = [];')],
+      ['The actual shelf surfaces and openings', at(CONTINUATION_DATA, 'const catchSurfaces = [bridge];')],
       ['Supported movement, falls and counterweight', at(CONTINUATION, 'function fallStep(')],
-      ['The final open-then-cross condition', at(CONTINUATION, "sourceContinuationDoorFraction(state, 'catch-final') >= C.doorPassFraction")],
+      ['The final open-then-cross condition', at(CONTINUATION, 'function finalCrossed(state,before,events) {')],
       ['The original normal exit and one-time receipt', at(RUNTIME, 'function completeContinuation(')],
       ['The existing drive handoff', at(MAIN, 'async function deliverSourceContinuationHandoff(')],
     ],
@@ -415,7 +415,7 @@ export const STAGES = Object.freeze([
     measure: () => [['Persistence', 'sourceDrive, separate from chunkSurf.sourceContinuation']],
     cites: [
       ['The preserved drive session', at(MAIN, 'async function beginSourceDriveJourney(')],
-      ['The actual parked dismount and returned receipt', at('src/game/source-drive-session.js', 'function finish() {')],
+      ['The actual parked dismount and returned receipt', at('src/game/source-drive-session.js', 'function finish({throughDoor=false}={}) {')],
       ['Onward handoff and acknowledgement', at(MAIN, 'async function deliverSourceContinuationHandoff(')],
     ],
     presets: [], jump: [{probe:'sourceDrive',call:'__probe.sourceDrive.start()'}], puzzles: [],

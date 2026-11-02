@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { causalFixtureReturnEvent } from './helpers/causal-fixture.mjs';
 import {
   CAUSAL_TOPOLOGY_HASH,
   CAUSAL_SPINE_IDS,
@@ -27,6 +28,7 @@ const tape=sealCausalTape({
   events:[
     {id:'later-order',at:2000,order:2,type:'cue',actor:'hush',payload:resolved},
     {id:'first-order',at:2000,order:1,type:'door',actor:'building',payload:{state:'open'}},
+    causalFixtureReturnEvent('run_a','sacrifice',{at:10000}),
   ],
   anchors:[
     {id:'a',at:2000,order:0,verb:'taunt',locus:{x:1,y:2},payload:resolved},

@@ -132,6 +132,8 @@ import {
   recordSourceRadioTalk,
   sourceContactTalksReady,
 } from './source-contact.js';
+import { sourceContactChapter, sourceContactChapterWon } from './source-contact-chapters.js';
+import { normalizeSourceRecordingCustody, claimSourceRecording, recoverSourceRecording as recoverCustodyRecording } from './source-recording-custody.js';
 import {
   HORIZON_BUST_REFUSAL,
   horizonBustAudience,
@@ -2302,7 +2304,8 @@ export function createSourceSpaceRuntime({
     // authored tableau control and the forward body is render-only. Neither is
     // allowed to resolve contact. The later physical follower can gain ground,
     // while the meeting still requires an explicit warned commitment.
-    const meeting = !lastReceptionFrame().inside && state.firstLiftCompleted && !state.finale.route && sourceBossAvailable(state)
+    const meeting = !lastReceptionFrame().inside && state.firstLiftCompleted && !state.finale.route
+      && (sourceContactStatus('I').battleAvailable || sourceContactStatus('I').repeatAvailable)
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
     const laterPursuit = false;
     const present = bracket.active || landing.active || meeting;
@@ -2344,7 +2347,8 @@ export function createSourceSpaceRuntime({
   function hushFollowVisible() {
     if (!hushFollow.frame().active || !sourcePhaseActive()) return false;
     if (!state.firstLiftCompleted) return [CHUNK_SURF_PHASE.TRANSFORMING, CHUNK_SURF_PHASE.LANDSCAPE].includes(state.phase);
-    return !lastReceptionFrame().inside && !state.finale.route && sourceBossAvailable(state)
+    return !lastReceptionFrame().inside && !state.finale.route
+      && (sourceContactStatus('I').battleAvailable || sourceContactStatus('I').repeatAvailable)
       && [CHUNK_SURF_PHASE.LANDSCAPE, CHUNK_SURF_PHASE.FINAL].includes(state.phase);
   }
   function hushFollowFrame() {
@@ -2590,12 +2594,14 @@ export function createSourceSpaceRuntime({
     // reach the rescue, because inverting the contract is what the rig is for.
     const rigAvailable = !!state.profile?.bestEligible;
     const hurtBefore = state.injuriesAtEntry >= 1;
-    const available = sourceBossAvailable(state);
+    const chapter = state.finalEncounter.activeChapter || state.sourceContacts.chapter || 'I';
+    const available = sourceBossAvailable(state, { chapter });
     const bodyReturnAssist = state.visited.includes('body-room');
     return {
       schema: 3,
       id: 'source-final',
       battleAttemptId: state.finalEncounter.activeBattleId,
+      chapter,
       victories: state.finalEncounter.victories,
       victoriesRequired: SOURCE_HUSH_VICTORIES_REQUIRED,
       contactCycle: Math.min(SOURCE_HUSH_VICTORIES_REQUIRED, state.finalEncounter.victories + 1),
@@ -2617,21 +2623,21 @@ export function createSourceSpaceRuntime({
     };
   }
 
-  function requestBossBattle() {
+  function requestBossBattle({ chapter = 'I' } = {}) {
     const exposed = sourceBossExposed(state.sourceContacts);
     const hurtBefore = state.injuriesAtEntry >= 1;
-    if (!sourceBossAvailable(state)) return { handled: true, available: false, exposed, hurtBefore };
+    if (!sourceBossAvailable(state, { chapter })) return { handled: true, available: false, exposed, hurtBefore };
     if (state.finale?.route && state.finale.route !== SOURCE_FINALE_ROUTE.CONTACT) {
       return { handled: true, available: false, exposed, hurtBefore, committed: state.finale.route };
     }
     return { handled: true, available: true, warning: true, request: finalEncounterRequest() };
   }
 
-  function commitContact() {
+  function commitContact({ chapter = state.sourceContacts.chapter } = {}) {
     const exposed = sourceBossExposed(state.sourceContacts);
     const hurtBefore = state.injuriesAtEntry >= 1;
-    if (!sourceBossAvailable(state)) return { handled: true, available: false, exposed, hurtBefore };
-    dispatch({ type: 'CONTACT_COMMITTED' }, { immediate: true });
+    if (!sourceBossAvailable(state, { chapter })) return { handled: true, available: false, exposed, hurtBefore };
+    dispatch({ type: 'CONTACT_COMMITTED', chapter }, { immediate: true });
     if (state.finale?.route !== SOURCE_FINALE_ROUTE.CONTACT) {
       return { handled: false, available: false, exposed, hurtBefore };
     }
@@ -8071,11 +8077,37 @@ export function createSourceSpaceRuntime({
   };
 
   // `context` is what the recordist brings to the landing — see sourceHushContext().
-  function beginHushContact(context = null) {
-    if (!hushMode().contactAvailable || traversal || pendingContact) return null;
+  function sourceContactStatus(chapter = 'I') {
+    const valid = sourceContactChapter(chapter), won = !!valid && sourceContactChapterWon(state.finalEncounter, valid);
+    const free = !!valid && state.firstLiftCompleted && !state.completed && !state.finale?.bust?.decision
+      && !state.finale?.route && state.finalEncounter.victories < SOURCE_HUSH_VICTORIES_REQUIRED;
+    return { chapter: valid, won, battleAvailable: free && !won,
+      repeatAvailable: free && won, activeBattleId: state.finalEncounter.activeBattleId,
+      activeChapter: state.finalEncounter.activeChapter, victories: state.finalEncounter.victories };
+  }
+
+  function continuationContactLocal(chapter) {
+    const checkpoint = state.sourceContinuation;
+    return checkpoint?.status === 'active' && !checkpoint.fall && !checkpoint.recovery
+      && !checkpoint.bodyTransit && !checkpoint.cameraTransit
+      && (chapter === 'II' ? checkpoint.phase === 'wrong-return' : chapter === 'III' && checkpoint.phase === 'catch');
+  }
+
+  function beginHushContact(context = null, { chapter = 'I', locallyAvailable = false, runId = '' } = {}) {
+    chapter = sourceContactChapter(chapter);
+    const status = sourceContactStatus(chapter);
+    const local = chapter === 'I' ? hushMode().contactAvailable : locallyAvailable && continuationContactLocal(chapter);
+    if (!local || (!status.battleAvailable && !status.repeatAvailable) || traversal || pendingContact) return null;
+    // Each new approach needs its own warning, including one interrupted at
+    // the warning in an older save. Merely asking a question never pays a cost.
+    state = { ...state, sourceContacts: normalizeSourceContactState({ ...state.sourceContacts,
+      chapter, warningSeen: false, combatCommitted: false, lastChoiceId: null }) };
     rememberDialogueFact(SOURCE_DIALOGUE_FACT.HUSH_CONTACT, true, { latencyReads: 0 });
     pendingContact = nextSourceContact(state.sourceContacts, { seed: state.seed, context,
-      victories: state.finalEncounter.victories });
+      victories: state.finalEncounter.victories, chapter, repeatContact: status.repeatAvailable });
+    pendingContact.custodyRunId = typeof runId === 'string' ? runId : '';
+    const custody = normalizeSourceRecordingCustody(state.sourceRecordingCustody, { runId: pendingContact.custodyRunId });
+    pendingContact.recordingContactId = `source-repeat:${pendingContact.custodyRunId}:${chapter}:${custody.serial + 1}`;
     protectionRemaining = Math.max(protectionRemaining, 30);
     return pendingContact;
   }
@@ -8088,7 +8120,7 @@ export function createSourceSpaceRuntime({
     return 'arrival';
   }
 
-  function resolveHushContactChoice(choiceId) {
+  function resolveHushContactChoice(choiceId, { takes = [], destination = null } = {}) {
     if (!pendingContact) return { handled: false, checkpoint: checkpointPosition() };
     const encounter = pendingContact;
     const before = normalizeSourceContactState(state.sourceContacts);
@@ -8096,24 +8128,45 @@ export function createSourceSpaceRuntime({
     const choice = sourceContactChoice(encounter,choiceId);
     if(!choice)return {handled:false};
     if(contact.lastChoiceId!==choice.id)return {handled:false,reason:'warning-required'};
-    dispatch({ type: 'SOURCE_CONTACT_RESOLVED', contact }, { immediate: true });
+    let recordingContact = null;
+    if (choice.sourceContactAction === 'repeat-contact') {
+      if (!encounter.repeatContact || !sourceContactStatus(encounter.chapter).repeatAvailable)
+        return { handled: false, reason: 'repeat-contact-unavailable' };
+      recordingContact = claimSourceRecording(state.sourceRecordingCustody, { runId: encounter.custodyRunId,
+        chapter: encounter.chapter, contactId: encounter.recordingContactId, takes, destination });
+      if (!recordingContact.handled) return { handled: false, reason: recordingContact.reason };
+      // Consent and custody reach the same durable Source write. A reload
+      // cannot keep the cost but replay the unclaimed choice, or vice versa.
+      setState({ ...state, sourceContacts: normalizeSourceContactState({ ...contact, warningSeen: false, lastChoiceId: null }),
+        sourceRecordingCustody: recordingContact.state }, { immediate: true });
+    } else dispatch({ type: 'SOURCE_CONTACT_RESOLVED', contact }, { immediate: true });
     if(choice.terminal){pendingContact = null;if(!(choice.sourceContactAction==='combat'&&contact.combatCommitted))hushFollow.release();}
     protectionRemaining = Math.max(0, 1.25);
     captureMovementRequired = false;
     captureMovementAnchor = null;
     noProgressSeconds = 0;
     const combat=choice.sourceContactAction==='combat' && contact.combatCommitted;
-    const committed=combat?commitContact():null;
+    const committed=combat?commitContact({ chapter: encounter.chapter }):null;
     return {
       handled: true,
       checkpoint: { ...player },
       combat: combat && committed?.handled,
+      chapter: encounter.chapter,
+      repeatContact: choice.sourceContactAction === 'repeat-contact',
+      recordingContact,
       terminal: !!choice.terminal,
       insightGained: null,
       bossExposed: sourceBossExposed(contact),
       contact,
       encounterId: encounter.id,
     };
+  }
+
+  function recoverSourceRecording({ receiptId, chapter, locationId } = {}) {
+    if (state.completed || state.finale?.route || state.finale?.bust?.decision) return { handled: false, reason: 'route-committed' };
+    const result = recoverCustodyRecording(state.sourceRecordingCustody, { receiptId, chapter, locationId });
+    if (result.handled && !result.duplicate) setState({ ...state, sourceRecordingCustody: result.state }, { immediate: true });
+    return result;
   }
 
   // Radio history can change the human trace's response. A call never arms
@@ -8597,6 +8650,9 @@ export function createSourceSpaceRuntime({
     navigation,
     checkpointPosition,
     beginHushContact,
+    sourceContactStatus,
+    sourceRecordingCustody: () => normalizeSourceRecordingCustody(state.sourceRecordingCustody),
+    recoverSourceRecording,
     cancelHushContact: () => { pendingContact=null;hushFollow.release();return true; },
     recordHushRadioTalk,
     outskirtPortals,

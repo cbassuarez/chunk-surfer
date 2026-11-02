@@ -18,6 +18,7 @@
 // locked with a replacement key retained by front of house.
 //
 import { F, ZONE, MATERIAL } from './legend.js';
+import {B3_WINDOW,b3WindowLevel} from '../studio-b3-window.js';
 import { CONSERVATORY_DOORS } from '../conservatory-doors.js';
 import { BUILDING_AMENITY_LEVELS } from '../building-amenities.js';
 import { BUILDING_WINDOW_LEVELS } from '../building-windows.js';
@@ -47,6 +48,7 @@ import { STATIONERS_LEVELS } from '../exterior-stationers.js';
 import { TOWER_WARNING_LEVELS } from '../tower-warning.js';
 import {GLASS_COURT} from '../glass-court.js';
 import {YARD_PUBLIC_ROOM_LEVELS} from '../yard-public-rooms.js';
+import {YARD_JARDINS,YARD_JARDINS_LEVEL,YARD_JARDINS_NORTH_LEVEL} from '../yard-jardins.js';
 
 // The engine holds no geometry — edit these maps freely. To find a building
 // that has quietly sealed itself:
@@ -290,13 +292,13 @@ const BATHS_APPROACH_LEVELS=[
   {id:'natatorium_glasshouse',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:82,y:15},physicalOrigin:{x:82,y:15},base:0,
    rows:Array(12).fill('T'.repeat(4)),profile:bathsApproachProfile(ZONE.glasshouse)},
   {id:'natatorium_changing',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:81,y:28},physicalOrigin:{x:81,y:28},base:0,
-   rows:Array(4).fill('T'.repeat(6)),profile:bathsApproachProfile(ZONE.poolChanging)},
+   rows:Array(3).fill('T'.repeat(6)),profile:bathsApproachProfile(ZONE.poolChanging)},
   // Enclosed dry return keeps the existing hall public door reachable.
-  {id:'hall-east-return',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:95,y:12},physicalOrigin:{x:95,y:12},base:0,
-   rows:Array(13).fill('FFF'),profile:()=>({floor:0,ceil:3.6,zone:ZONE.foyer,material:MATERIAL.wetPaving,flags:0})},
+  {id:'hall-east-return',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:95,y:13},physicalOrigin:{x:95,y:13},base:0,
+   rows:Array(12).fill('FF'),profile:()=>({floor:0,ceil:3.6,zone:ZONE.foyer,material:MATERIAL.wetPaving,flags:0})},
   ...bathsApproachThreshold('ellery-greenhouse-throat',84,15,'x',ZONE.glasshouse),
   ...bathsApproachThreshold('glasshouse-changing-throat',84,27,'x',ZONE.poolChanging),
-  ...bathsApproachThreshold('changing-pool-throat',84,32,'x',ZONE.poolChanging),
+  ...bathsApproachThreshold('changing-pool-throat',84,31,'x',ZONE.poolChanging),
 ];
 function frontAtriumRows(){
   const w=24,h=12,out=[];
@@ -306,6 +308,10 @@ function frontAtriumRows(){
     if(x===0&&y===10)c='+';
     if(x===w-1&&y===13)c='x';          // old staff door, visibly bricked
     if(y===h-1&&(x===21||x===22))c='+';
+    // The greenhouse throat begins half a metre beyond this final atrium
+    // row. Keep its two-metre approach open up to the real D0 door, rather
+    // than leaving the original boundary wall in front of the new aperture.
+    if(y===h-1&&(x===9||x===10))c='A';
     // Compact entrance-side ticket office. It sits beside the public doors,
     // where a municipal box office belongs, instead of forming a brick choke
     // point immediately in front of the concert-hall portal. The public counter
@@ -923,13 +929,10 @@ function studioB3BoothPartition(row,y){
 // A real aperture through the one-metre partition: air for rendering between
 // sill and head, while collisionOnly preserves the wall against body movement.
 // Its authored metre coordinates are shared with the glass and booth fittings.
-const B3_CONTROL_WINDOW_LEVEL={
-  id:'b3-control-window',replace:true,collisionOnly:true,
-  layer:'basement',space:'basement',renderGroup:'basement',
-  origin:{x:18,y:8},physicalOrigin:{x:18,y:8},base:0,
-  rows:['=','=','=','=','='],
-  profile:()=>({floor:-2.95,ceil:-.95,zone:ZONE.studio,material:MATERIAL.doorGlassDuct,flags:0}),
-};
+const B3_CONTROL_WINDOW_LEVELS=B3_WINDOW.panes.map(pane=>({
+  ...b3WindowLevel(pane),
+  profile:()=>({floor:B3_WINDOW.bottom,ceil:B3_WINDOW.top,zone:ZONE.studio,material:MATERIAL.doorGlassDuct,flags:0}),
+}));
 
 function exteriorDistrictProfile(rx,ry,cell){
   if(cell.solid)return null;
@@ -965,6 +968,15 @@ const EUCLIDEAN_ADDITIONS=[
   {id:'loading_bay_yard',layer:'ground',space:'loading_bay',renderGroup:'ground',
    origin:{x:50,y:200},physicalOrigin:{x:0,y:0},base:0,rows:yardRows(),profile:yardProfile},
   ...YARD_PUBLIC_ROOM_LEVELS,
+  {...YARD_JARDINS_LEVEL,profile:(rx,rz,cell)=>{
+    const existing=yardProfile(YARD_JARDINS.bounds.x0+rx,YARD_JARDINS.bounds.z0+rz,cell)||{};
+    return{...existing,...YARD_JARDINS_LEVEL.profile(rx,rz,cell),floor:existing.floor??0,ceil:existing.ceil??24};
+  }},
+  {...YARD_JARDINS_NORTH_LEVEL,profile:(rx,rz)=>{
+    const x=42+rx,grade=YARD_DROP*((x-YARD_RAMP_TO)/(YARD_DROP_FROM-YARD_RAMP_TO));
+    const floor=rz===2||rz===12?grade*.5:rz>=3&&rz<=11?grade:0;
+    return{floor,ceil:yardCeilAt(rz),zone:ZONE.serviceYard,material:MATERIAL.wetPaving,flags:F.SKY|F.WALLED};
+  }},
   // St Brendan's owns its plan instead of borrowing the yard component. The
   // Y cells in the concave corners preserve continuous tarmac while every wall,
   // room and threshold inside the compact envelope has one named owner.
@@ -1137,14 +1149,14 @@ const EUCLIDEAN_ADDITIONS=[
   }]},
   ...BUILDING_AMENITY_LEVELS,
   ...BUILDING_WINDOW_LEVELS,
-  B3_CONTROL_WINDOW_LEVEL,
+  ...B3_CONTROL_WINDOW_LEVELS,
 ];
 
 export const conservatory = {
   width: 240,
   // Ellery Square's level lives at logical y 520..566, clear of every saved
   // address below it.
-  height: 580,
+  height: 700,
   layoutRevision: 5,
   positionMigrations:[
     {id:'old-upper-coil',beforeRevision:3,bounds:{x0:62,x1:64,y0:38,y1:47},to:MAIN_STAIR_LAYOUT.upperLanding,floor:4.8},

@@ -100,17 +100,17 @@ const W = STOP_LISTENING_MESH.writing;
 const H = STOP_LISTENING_MESH.heaps;
 
 export const STOP_LISTENING_ROOMS = Object.freeze({
-  // The natatorium. In through the glazed pair in the north wall, facing south
-  // across five metres of dry deck before the basin.
+  // The natatorium, beyond the separate changing room. The retained north
+  // deck wraps that enclosure; the central pile rests on the basin floor.
   the_tub: Object.freeze({
-    entry: Object.freeze({ x: 84.0, y: 28.3 }),
+    entry: Object.freeze({ x: 84.0, y: 32.3 }),
     fields: Object.freeze([
       field(77.0, 91.5, 28.4, 32.6, 92),
       field(72.0, 77.4, 29.0, 41.0, 30),
       field(90.0, 95.6, 29.0, 41.0, 30),
     ]),
     heaps: Object.freeze([
-      heap(83.4, 30.3, H[0], .2), heap(80.1, 30.6, H[2], -.8), heap(87.2, 30.6, H[1], 1.7),
+      heap(83.5, 33.75, H[0], .2), heap(79.5, 30.5, H[2], -.8), heap(87.5, 30.5, H[1], 1.7),
       heap(74.6, 35.8, H[1], 2.9, .9), heap(92.7, 35.1, H[0], -1.9, .9),
     ]),
     writing: Object.freeze([
@@ -123,8 +123,8 @@ export const STOP_LISTENING_ROOMS = Object.freeze({
       writing(89.8, 28.5, W.block, 0, 1, { elevation: 1.0 }),
       writing(80.8, 28.5, W.scrawl, 0, 1, { elevation: 1.15 }),
     ]),
-    sheet: Object.freeze({ x: 84.7, y: 30.7, yaw: -.5 }),
-    voices: Object.freeze([voice(83.4, 30.3), voice(74.6, 35.8, .8), voice(92.7, 35.0, .8), voice(83.5, 40.5, .6)]),
+    sheet: Object.freeze({ x: 89.7, y: 32.6, yaw: -.5 }),
+    voices: Object.freeze([voice(83.5, 33.75), voice(74.6, 35.8, .8), voice(92.7, 35.0, .8), voice(83.5, 40.5, .6)]),
   }),
   // The concert hall. Through the vestibule pair in the west wall, straight onto
   // the stepped side aisle under the balcony arm. Heaps sit at terrace centres

@@ -10,6 +10,7 @@ import * as scenes from '../src/game/scenes.js';
 import { makeOpeningVehicleScene } from '../src/game/opening-vehicle-scene.js';
 import { OPENING_VEHICLE, openingVehiclePoint, openingVehicleInstances, openingVehicleExitFrame, openingVehiclePending } from '../src/data/opening-vehicle.js';
 import { OPENING_CAB_ASSET, OPENING_CAB_REQUIRED_MESHES } from '../src/game/opening-cab-inspection.js';
+import {aimOpeningCabDoor} from './helpers/opening-cab-aim.mjs';
 
 const anchor = { x: 30, y: 0, z: 50, yaw: Math.PI/2, group: 'ground', zone: 1 };
 test('new runs and an interrupted vehicle arrival resume inside; exited and legacy runs do not replay it', () => {
@@ -46,8 +47,8 @@ test('waiting, pause, repeat keys and teardown cannot complete or retain the ope
   scene.key({ key: 'e' }); assert.equal(doors, 0);
   ready = true; scenes.update(.1); assert.equal(scene.view().phase, 'seated'); assert.equal(scenes.allowsLook(), true);
   scenes.update(90); assert.equal(landed, 0, 'the player chooses when to get out');
-  scene.key({ key: 'e', repeat: true }); assert.equal(doors, 0);
-  scene.key({ key: 'e' }); assert.equal(doors, 1); assert.equal(scene.allowsLook, false);
+  aimOpeningCabDoor(scene);scene.key({ key: 'e', repeat: true }); assert.equal(doors, 0);
+  scene.key({ key: 'e' }); assert.equal(doors, 1); assert.equal(scene.allowsLook, true);
   scenes.push({ id: 'pause' }); scenes.update(20); assert.equal(landed, 0, 'pause freezes the exit clock');
   scenes.pop(); scenes.update(OPENING_VEHICLE.exitSeconds); assert.equal(landed, 1);
   scenes.update(10); scene.key({ key: 'e' }); assert.equal(landed, 1); assert.equal(doors, 1);
@@ -59,7 +60,7 @@ test('asset load failure leaves an explicit exit path instead of an indefinite m
   const scene = makeOpeningVehicleScene({ driveEnabled:false,getAnchor: () => anchor,
     getAssetStatus: () => ({ loaded: false, error: 'load failed' }), onDone: () => landed++ });
   scene.update(.1); assert.equal(scene.view().phase, 'seated'); assert.equal(scene.view().error, 'load failed');
-  scene.key({ controllerAction: 'interact' }); scene.update(3); assert.equal(landed, 1);
+  aimOpeningCabDoor(scene);scene.key({ controllerAction: 'interact' }); scene.update(OPENING_VEHICLE.exitSeconds); assert.equal(landed, 1);
 });
 test('production vehicle is a self-contained promoted Source asset with real openings and detached door', async () => {
   const bytes = await readFile(new URL('../public/assets/source-vehicle-interior.glb', import.meta.url));
@@ -114,6 +115,7 @@ test('real main opening persists the exit once, starts the overture and is repla
     openingDriveColliders:()=>[],openingArrivalWorldView:frame=>({x:Array.isArray(frame.eye)?frame.eye[0]:frame.eye.x,y:Array.isArray(frame.eye)?frame.eye[2]:frame.eye.z,authoredCamera:{eye:frame.eye,lens:frame.lens}}),
     openingParkedPlacement:()=>({rx:60,ry:100}),
     createOpeningArrivalAudio:()=>({prepare:()=>Promise.resolve(),update(){},event(){},dispose(){}}),
+    OPENING_CAB_RADIO_STATIONS:[],createOpeningCabRadio:()=>({prepare:()=>Promise.resolve(),start(){},update(){},pause(){},dispose(){}}),
     prepareOpeningCinematicAssets:()=>{stagingPrepared++;return stagingReady;},openingCinematicGate,
     makeOpeningOvertureScene:options=>{overtureOptions=options;return{id:'opening-overture',update(){},worldView:()=>null,resume(){}};},
     resetMotionInput() {}, STORY: {}, shakeMode: () => 'full', CUES: { CUE: { door: 1 }, playCue() {} },
@@ -126,7 +128,7 @@ test('real main opening persists the exit once, starts the overture and is repla
   assert.equal(context.beginOpeningVehicleArrival(), true); const canceled = active;
   canceled.update(.1); canceled.exit(); assert.equal(saved.flags['opening.vehicle.pending'], true);
   assert.equal(context.beginOpeningVehicleArrival(), true); const next = active;
-  next.update(.1); next.key({ key: 'e' }); next.update(3);
+  next.update(.1);aimOpeningCabDoor(next); next.key({ key: 'e' }); next.update(OPENING_VEHICLE.exitSeconds);
   assert.equal(saved.flags['opening.vehicle.pending'], false); assert.equal(saved.flags['opening.vehicle.exited'], true);
   assert.equal(saved.steps, 1, 'the new position can be restored even without a later walking step');
   assert.equal(saved.area, 'conservatory'); assert.equal(active.id, 'opening-overture');assert.equal(saved.flags['opening.overture.pending'],true); assert.equal(revealed, 1);

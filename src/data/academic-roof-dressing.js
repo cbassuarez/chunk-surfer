@@ -27,11 +27,11 @@ export const ACADEMIC_ROOF_DRESSING_PROPS=Object.freeze([
   // A compact stored chair, coat and collapsed stand beside the listening
   // vent. It is real furniture with its own footprint; the broad south loop,
   // glass bays, return ladder and Ren's ritual remain clear.
-  prop('roof-rehearsal-rest','academic_roof_rehearsal_rest',point(210.0,293.2),{
-    interactive:false,blocks:true,
+  prop('roof-rehearsal-rest','academic_roof_rehearsal_rest',point(212.25,286),{
+    interactive:false,blocks:true,yaw:Math.PI/2,
   }),
-  prop('academic-roof-weatherwork','academic_roof_weatherwork',point(202,283.5),{
-    interactive:false,
+  prop('academic-roof-weatherwork','academic_roof_weatherwork',point(202,282.5),{
+    interactive:false,renderOffsetZ:1,floorOverride:17,
   }),
 ]);
 

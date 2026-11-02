@@ -13,6 +13,7 @@ import { drawElectronicText } from './electronic-text.js';
 
 let host = null, canvas = null, ctx = null;
 let cols = 0, rows = 0;
+let layoutSize = null;
 let uiScale = 1;
 let scaledCellW = CELL_W;
 let scaledCellH = CELL_H;
@@ -55,7 +56,23 @@ export function uiSetScale(value = 1) {
 
 export function uiCurrentScale() { return uiScale; }
 
-export function uiSize() { return { cols, rows }; }
+export function uiPhysicalSize() { return { cols, rows }; }
+// Reserved instrument territory is a persistent layout, not a render-only
+// transform. Menu key/pointer handlers read the same dimensions between frames.
+// Coordinates and client picking remain in the unchanged physical pixel frame.
+export function uiSize() {
+  return layoutSize ? {cols:cols>0?Math.min(cols,layoutSize.cols):layoutSize.cols,
+    rows:rows>0?Math.min(rows,layoutSize.rows):layoutSize.rows} : { cols, rows };
+}
+export function uiSetLayoutSize(value = null) {
+  layoutSize=value&&Number.isFinite(value.cols)&&Number.isFinite(value.rows)
+    ?{cols:Math.max(1,Math.floor(value.cols)),rows:Math.max(1,Math.floor(value.rows))}:null;
+  return uiSize();
+}
+export function uiWithLayoutSize(value,draw) {
+  const previous=layoutSize;uiSetLayoutSize(value);
+  try{return typeof draw==='function'?draw():undefined;}finally{layoutSize=previous;}
+}
 export function uiClear() { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); }
 export function uiCanvasSize() { return { width: canvas?.width || 0, height: canvas?.height || 0 }; }
 // Multiply everything already drawn on the transparent UI surface without
@@ -99,7 +116,8 @@ let uiAlphaScope=1;
 export function uiWithAlpha(alpha,draw){const prev=uiAlphaScope;uiAlphaScope=prev*Math.max(0,Math.min(1,Number(alpha)||0));try{return typeof draw==='function'?draw():undefined;}finally{uiAlphaScope=prev;}}
 export function uiDraw(draw) {
   if (!ctx || typeof draw !== 'function') return;
-  ctx.save();ctx.globalAlpha*=uiAlphaScope;try{draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, cols, rows });}finally{ctx.restore();}
+  const size=uiSize();
+  ctx.save();ctx.globalAlpha*=uiAlphaScope;try{draw({ ctx, dpr: atlasDpr(), cellW: scaledCellW, cellH: scaledCellH, ...size });}finally{ctx.restore();}
 }
 
 // Instrument surfaces have two physical planes. Display content is clipped to
@@ -184,7 +202,7 @@ export function uiGlyph(cx, cy, ch, cls = 't-chunk', alpha = 1) {
 // even if a caller gets its arithmetic wrong.
 export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1, max = null) {
   const s = fitText(str, max);
-  const limit = Math.min(s.length, Math.max(0, Math.ceil(cols - cx)));
+  const limit = Math.min(s.length, Math.max(0, Math.ceil(uiSize().cols - cx)));
   for (let i = 0; i < limit; i++) uiGlyph(cx + i, cy, s[i], cls, alpha);
 }
 
@@ -192,7 +210,7 @@ export function uiText(cx, cy, str, cls = 't-chunk', alpha = 1, max = null) {
 // legacy entry point so transcript semantics and pacing do not change, but a
 // machine's aside cannot bypass its ROM with italic native-font text.
 export function uiItalicText(cx, cy, str, cls = 'ui-secondary', alpha = 1) {
-  const s = fitText(String(str ?? ''),Math.max(0,Math.floor(cols-cx)));
+  const s = fitText(String(str ?? ''),Math.max(0,Math.floor(uiSize().cols-cx)));
   if (!ctx || !s) return;
   const dpr = atlasDpr();
   drawElectronicText(ctx,s,cx*scaledCellW*dpr,(cy+.5)*scaledCellH*dpr,{
@@ -292,6 +310,7 @@ export function uiWrap(text, width) {
 // Centred, and never wider than the screen it is centred on. It used to clamp
 // the x to zero and leave an over-long line running off the right edge.
 export function uiCenter(cy, str, cls, alpha, max = null) {
-  const s = fitText(str, Math.min(cols, max == null ? cols : max));
-  uiText(Math.max(0, Math.floor((cols - s.length) / 2)), cy, s, cls, alpha);
+  const width=uiSize().cols;
+  const s = fitText(str, Math.min(width, max == null ? width : max));
+  uiText(Math.max(0, Math.floor((width - s.length) / 2)), cy, s, cls, alpha);
 }

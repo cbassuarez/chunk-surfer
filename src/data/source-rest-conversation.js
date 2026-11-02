@@ -1,4 +1,5 @@
 import {SOURCE_REST_COUPERIN_CONVERSATION} from './source-rest-couperin-conversation.js';
+import {sourceRestQuestionNodes} from './source-rest-questions.js';
 
 // The two seats use the music associated with Source II and III. These
 // are conversations with an uncertain interlocutor, not claims about the
@@ -211,7 +212,7 @@ const phaseOpenings={
       other('And now?'),
       you('The road is gone.'),
       other('The music is still here.')
-    ],{next:'ornaments'}),
+    ],{next:'questions-entry'}),
     'ornaments':timed([
       you('I had to defend those ornaments to my professors.'),
       other('Every one?'),
@@ -380,7 +381,17 @@ const phaseOpenings={
     'last':timed([
       you('I like that note.'),
       other('The one underneath?'),
-      you('Yes. That one.')
+      you('Yes. That one.'),
+      you('I cannot see where it is coming from.'),
+      other('You need not find it.'),
+      you('I was still trying to hold the rest of the room.'),
+      other('You can hear this without holding all of that.'),
+      you('There was someone I meant to play it for.'),
+      other('You need not tell me.'),
+      you('Stay until the sound is gone.'),
+      other('I am here.'),
+      you('Not yet.'),
+      other('All right.')
     ],{lockExit:true,action:'commit'})
   },
   'catch':{
@@ -414,7 +425,7 @@ const phaseOpenings={
   }
 };
 
-function build(phase,title){const nodes=phase==='wrong-return'?phaseOpenings[phase]:{...shared,...phaseOpenings[phase]};return Object.freeze({id:`source-rest:${phase}`,phase,title,entry:'arrival',nodes:Object.freeze(nodes)});}
+function build(phase,title){const nodes=phase==='wrong-return'?{...phaseOpenings[phase],...sourceRestQuestionNodes('ornaments')}:{...shared,...phaseOpenings[phase]};return Object.freeze({id:`source-rest:${phase}`,phase,title,entry:'arrival',nodes:Object.freeze(nodes)});}
 export const SOURCE_REST_CONVERSATIONS=Object.freeze({
   'wrong-return':build('wrong-return','THE BENCH / BACH'),
   'catch':SOURCE_REST_COUPERIN_CONVERSATION,

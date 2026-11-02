@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {createStudentStrikeInputGate} from '../src/game/student-strike-host.js';
+import {STUDENT_STRIKE_WATCHED_FLAG,odetteStrikeDialogue} from '../src/data/student-strike-dialogue.js';
 import * as scenes from '../src/game/scenes.js';
 import { makeThoughtScene } from '../src/game/thoughts.js';
 import { InputManager } from '../src/input/input-manager.js';
@@ -124,11 +126,11 @@ function adapter() {
   const start=main.indexOf('function inAcademicSociety(){'),end=main.indexOf('function talkToBust(propId){',start);
   assert.ok(start>=0&&end>start,'extract the current production adapter');
   let cancelled=0,lease=null,spoken=null,saved=null;const looseProps=new Map();
-  const context={storyMode:true,planName:'conservatory',usingSpecialSpace:()=>false,px:18,py:500,
+  const context={createStudentStrikeInputGate,STUDENT_STRIKE_WATCHED_FLAG,odetteStrikeDialogue,studentStrikeScene:null,studentStrikeNarrationLine:()=>null,flagTest:()=>false,storyMode:true,planName:'conservatory',usingSpecialSpace:()=>false,px:18,py:500,
     FP:{isLoaded:()=>true,toAuthoredCoord:x=>x/2,toRuntimeDistance:x=>x*2,logicalToPhysical:(x,y)=>({x,z:y,renderGroup:'academic'})},ZONE:{academic:8},
     PROPS:{pickProp:()=>null,setLooseProp:(id,prop)=>looseProps.set(id,prop)},R3:{r3dFacing:()=>0,r3dLookAngles:()=>({yaw:0,pitch:0}),r3dWorldYaw:()=>0},mapHeading:()=>0,
     paused:false,document:{hidden:false,hasFocus:()=>true},nativeFocus:true,
-    pointerMode:{status:()=>({nativeBackend:{focused:context.nativeFocus}})},
+    pointerMode:{nativeFocus:()=>context.nativeFocus,status:()=>({nativeBackend:{focused:context.nativeFocus}})},
     scenes:{blocksInput:()=>false,blocksWorld:()=>false,top:()=>null},
     academicSociety:createAcademicSociety(),ACADEMIC_SOCIETY_ACTORS,academicSocietyDialogueLine:null,academicBouncerDialogueLine:null,
     academicBouncerSocialScene:null,academicBouncerSocialDispatch:null,academicBouncerActors:()=>[],
@@ -141,7 +143,7 @@ function adapter() {
     // is exercised separately in academic-bouncer-audibility.spec.mjs.
     academicBouncerSocialAudible:()=>true,
     academicSocietyPresentation:createAcademicSocietyPresentationClock(),academicSocietyAmbientAudible,
-    academicSocietyDialogueScene:null,
+    academicSocietyDialogueScene:null,REC:{isRecording:()=>false,isListening:()=>false},PB:{isPlaying:()=>false},activeBattleId:null,
     academicGhostDispatch:{cancel(){cancelled++;}},academicGhostAudioFrame:{},academicGhostPanner:null,actx:null,dialogGain:null,master:null,
     saveCommit(patch){saved=patch;},
     SPEECH:{isSpeaking:()=>false,isVoicing:()=>false,speaking:()=>spoken,sayAll(lines,options){spoken=lines[0];lease=options;return{cancel(){cancelled++;}};}},
@@ -184,7 +186,9 @@ test('actual presentation adapter runs during its own dialogue and freezes under
   c.paused=false;c.document.hidden=true;c.tickAcademicSocietyPresentation(.1);assert.equal(c.academicSocietyPresentation.view().timeSec,.05);
   c.document.hidden=false;c.scenes.top=()=>({id:'pause'});c.tickAcademicSocietyPresentation(.1);
   assert.equal(c.academicSocietyPresentation.view().timeSec,.05);
-  assert.match(main,/tickAcademicSocietyPresentation\(dt\);\s*if\(!scenes\.blocksWorld\(\)\)/,'the call must sit outside the world hold');
+  const tick=main.indexOf('      tickAcademicSocietyPresentation(dt);');
+  const hold=main.indexOf('      if(!scenes.blocksWorld()){',tick);
+  assert.ok(tick>=0&&hold>tick&&hold-tick<160,'presentation still ticks before the ordinary world hold');
 });
 
 test('actual main actor frame stops the jaw at audio end while the displayed sentence finishes its gesture',()=>{
@@ -220,7 +224,7 @@ test('the actual six-bust interaction still selects its original trees without e
   const start=main.indexOf('function talkToBust(propId){'),end=main.indexOf('// ── the garden',start);
   const mapStart=main.indexOf('const BUST_TREES = Object.freeze('),mapEnd=main.indexOf('});',mapStart)+3;
   let presented=null;
-  const context={storyMode:true,planName:'conservatory',scenes:{blocksInput:()=>false},
+  const context={createStudentStrikeInputGate,storyMode:true,planName:'conservatory',scenes:{blocksInput:()=>false},
     HEAD:{carryingMarbleHead:()=>false,marbleHeadReturned:()=>false,noteGalleryBustSpoken(){}},
     BUST_THAT_TURNS:'academic-bust-2',BUST_WITH_PIN:'academic-bust-5',bustTurned:false,spokenBusts:new Set(),
     academicGhostDispatch:null,saveMarbleHead(){},takeServicesKey:()=>false,takeHostedPin(){},bumpFear(){},
@@ -243,7 +247,7 @@ test('the actual six-bust interaction still selects its original trees without e
 test('pause immediately cancels active gallery audio even though the paused loop cannot tick it',()=>{
   const a=main.indexOf('function setGameplayPaused('),b=main.indexOf('function togglePause()',a);
   let cancelled=0,saved=0,pressureStops=0;
-  const context={paused:false,storyMode:true,inRogue:true,sourceDriveSession:null,sourcePubScene:null,pubRoomAudio:null,sourcePubAudio:null,getInDriveTeaserScene:null,
+  const context={createStudentStrikeInputGate,paused:false,storyMode:true,inRogue:true,sourceDriveSession:null,sourcePubScene:null,pubRoomAudio:null,sourcePubAudio:null,getInDriveTeaserScene:null,
     sourceContinuationAudio:null,sourceContinuationScene:null,coastalMemoryScene:null,sourceReturnFlashbackScene:null,standingTearScene:null,towerWarningAudio:null,
     syncChapelTapeDemandTimelineHold(){},
     academicGhostDispatch:{cancel(){cancelled++;}},saveAcademicGhostClub(){saved++;},
@@ -255,6 +259,13 @@ test('pause immediately cancels active gallery audio even though the paused loop
     recordingPressureVoices:new Set(Array.from({length:2},()=>({stop:()=>pressureStops++}))),
   };
   const cancel=main.match(/function cancelRecordingPressureAudio\(\)\{[\s\S]*?\n\}/)?.[0];assert.ok(cancel);
+  Object.assign(context,{
+    runPlayDurationClock:{suspend(){}},FEAR:{setHeartbeatPaused(){}},gameplayInputLifecycleActive:()=>true,
+    b3SpeakerAudio:{pause(){}},b3Speaker:{flush(){}},STORY:{},bodyGain:null,
+    openingVehicleScene:null,openingOvertureScene:null,studentStrikeScene:null,firstStrikeScene:null,
+    sourceRecordingInspectionScene:null,sourceRestBreath:null,sourceRestWeather:null,
+    architectureDoorAudio:null,architectureDoorEvents:{hold(){}},pubPressureAudio:null,cancelLastExposure(){},
+  });
   vm.createContext(context);vm.runInContext(cancel+'\n'+main.slice(a,b),context);
   context.setGameplayPaused(true,{announce:false});
   assert.equal(cancelled,1);assert.equal(saved,1);assert.equal(context.academicGhostDispatch,null);
@@ -268,7 +279,7 @@ test('the regular autosave checkpoints loan time before either normal or anomaly
   let saved=null;const society=createAcademicSociety();society.tick(0,{onAcademicFloor:true,listener:{x:9,y:250}});
   const tree=society.beginDialogue('emile');society.endDialogue('emile',{completed:true,choices:[tree.nodes.need.choices.find(c=>c.societyAction==='lend')]});
   for(let n=0;n<12;n++)society.tick(.25,{onAcademicFloor:true,listener:{x:9,y:250}});
-  const context={saveAcc:0,saveAcademicGhostClub(){saved=society.save();},rememberChapelTapeDemandDeparture(){},usingStairAnomaly:()=>true,
+  const context={createStudentStrikeInputGate,saveAcc:0,saveAcademicGhostClub(){saved=society.save();},rememberChapelTapeDemandDeparture(){},usingStairAnomaly:()=>true,
     saveCommit(){},stepCount:0,storyMode:false,getSave:()=>({}),hushAudioRuntime:null,sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,sourceReturnFlashbackScene:null,standingTearScene:null};
   vm.createContext(context);vm.runInContext(main.slice(a,b),context);
   context.saveTick(4);assert.equal(saved.loanRemaining,9);assert.equal(saved.loanPulses,1);
@@ -278,7 +289,7 @@ test('spatial society audio uses actual actor positions, metre distances and ren
   const a=main.indexOf('function updateAcademicGhostAudio(){'),b=main.indexOf('function talkToAcademicPerson',a);
   const values={};
   const emile=ACADEMIC_SOCIETY_ACTORS.find(actor=>actor.id==='emile');
-  const context={SPEECH:{speaking:()=>({academicSociety:true,actorId:'emile'})},academicSocietyDialogueLine:null,academicBouncerDialogueLine:null,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_FLOOR_POPULATION,
+  const context={createStudentStrikeInputGate,studentStrikeNarrationLine:()=>null,SPEECH:{speaking:()=>({academicSociety:true,actorId:'emile'})},academicSocietyDialogueLine:null,academicBouncerDialogueLine:null,ACADEMIC_SOCIETY_ACTORS,ACADEMIC_FLOOR_POPULATION,
     academicActorPresent:()=>true,
     FP:{logicalToPhysical:(x,y)=>({x,z:y}),toRuntimeDistance:x=>x*2},px:emile.x*2-20,py:emile.y*2,CELL:.5,
     R3:{r3dWorldYaw:()=>0,r3dLookAngles:()=>({yaw:Math.PI})},actx:{currentTime:0},
@@ -296,7 +307,7 @@ test('actual renderer pack registration admits every named and hollow mesh in th
   const call=source.split('\n').find(line=>line.includes("P3.addCharacterPack(assetUrl('assets/academic-society-characters.glb')"));
   assert.ok(call,'execute the production registration, not a separate test whitelist');
   let registered=null;
-  const context={ACADEMIC_CHARACTER_PACK_MESHES,assetUrl:x=>x,
+  const context={createStudentStrikeInputGate,ACADEMIC_CHARACTER_PACK_MESHES,assetUrl:x=>x,
     P3:{addCharacterPack(url,options){registered={url,options};return Promise.resolve();}},console};
   vm.runInNewContext(call,context);
   const bytes=fs.readFileSync(new URL('../public/assets/academic-society-characters.glb',import.meta.url));

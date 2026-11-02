@@ -18,6 +18,8 @@ import { makeBagScene } from '../src/game/bag.js';
 import { isBattleGear } from '../src/game/combat-loadout.js';
 import { bagKitDetailAction } from '../src/render/bag-view.js';
 import { PAGES } from '../src/data/conservatory-script.js';
+import { COMPLETION_PAPERS } from '../src/progression/completion-defs.js';
+import { STUDENT_STRIKE_DOCUMENTS } from '../src/data/student-strike-evidence.js';
 import { ROOF_PASSWORD_PAGE_ID } from '../src/data/roof-password.js';
 import { SOURCE_PAGES } from '../src/data/source-pages.js';
 
@@ -36,7 +38,8 @@ test('every collected-object family has exactly one audited destination', () => 
   assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'plant-stillson').destination, 'external-load');
   assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'source-sheets').destination, 'transient-source-document');
   assert.equal(COLLECTED_ITEM_AUDIT.find((entry) => entry.id === 'building-pages:1-16').destination, 'file');
-  assert.equal(PAGES.length, 16, 'the complete bounded building-page family is represented');
+  assert.equal(COMPLETION_PAPERS.length, 16, 'retained incident records do not enlarge the finite field-paper collection');
+  assert.deepEqual(PAGES.map(p=>p.id).sort(),[...COMPLETION_PAPERS,...STUDENT_STRIKE_DOCUMENTS.map(p=>p.id)].sort(), 'the complete building file includes both field papers and retained incident records');
   assert.equal(new Set(PAGES.map(page => page.id)).size, PAGES.length, 'all building pages have distinct identities');
   assert.ok(PAGES.some(page => page.id === ROOF_PASSWORD_PAGE_ID), 'the hosted north-gallery service slip belongs to the audited file family');
   assert.ok(SOURCE_PAGES.length > 0, 'Source has read-in-place documents covered by the transient family');

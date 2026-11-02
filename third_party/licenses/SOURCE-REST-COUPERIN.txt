@@ -1,60 +1,40 @@
 SOURCE III — FULL COUPERIN PERFORMANCE AND ELECTRONIC REVOICING
 
 Human performance
-François Couperin — L’Art de toucher le clavecin (complete musical pieces).
+François Couperin — L’Art de toucher le clavecin (complete).
 Harpsichord: David Joseph Stith, Gerald Self instrument built in 2020.
-Recorded 27 January 2021. The performer-uploaded primary page describes a
-TASCAM DR-100MKIII recording, processed with sox treble -4/bass +11.
-
-Primary source:
+Recorded 27 January 2021. Original recording released under CC0 1.0:
 https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Couperin_%22L%27Art_de_toucher_le_Clavecin%22.wav
-
-The uploader dedicates this recording to the public domain under CC0 1.0:
 https://creativecommons.org/publicdomain/zero/1.0/
+Source SHA256: f9a9f0cefd38a4b7742f25e7636f88830b8a8ceed41167da7193426d0f80ae3a
 
-Downloaded Commons MP3 transcode: 23,385,412 bytes; 843.157120 seconds.
-SHA256: f9a9f0cefd38a4b7742f25e7636f88830b8a8ceed41167da7193426d0f80ae3a
+Score and electronic revoicing
+The underlying Couperin composition is public domain. The score MIDI
+transcription is by Nicolas Sceaux for the Mutopia Project, CC BY 2.5:
+https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=907
+https://creativecommons.org/licenses/by/2.5/
+It was aligned to the human performance and adapted into a user-edited Live
+arrangement; the user adjusted MIDI pitch by ear. The original composition's
+full sequence and irregular timing are retained approximately. Score
+alignment and realization of some ornaments remain approximate.
 
-The existing 11-second sheet excerpt is strongly correlated with this same
-human take: its interior 1–9 seconds matches full 308.7105–316.7105 seconds,
-normalized waveform correlation 0.985842. This does not imply encoded byte
-identity. The full Source III performance does not repeat that short excerpt.
+The human performance is credited to David Joseph Stith. The game does not
+attribute this harpsichord performance to the player or developer.
+Source II’s Bach Chaconne is the separate developer-supplied
+marimba recording. No Couperin source claim extends to that performance.
 
 Prepared carrier
 public/audio/source-rest/couperin/couperin-revoiced-pair.mp3
-20,238,381 bytes; 32 kHz stereo; 192 kbps; decoded duration 843.157125 seconds.
-SHA256: d2e43c31c04d69572cf70222fdfc63056b87081b6f218426a756c5ba085d97e9
-Channel 0: mono downmix of the complete credited human performance.
-Channel 1: newly synthesized electronic revoicing, not a second performer.
-Both channels share one sample clock and one encoded decoder delay. In game,
-they are blended as stems into the same room; they are not a left/right mix.
+SHA256: 908c1b5d2bd37f644baab797f9e47ea9fa7b34ec6422087aca86f6b0a9c42495
+32 kHz, two independent mono channels in one 192 kbps MP3, 843.15746875 seconds.
+Left: human performance; right: the edited electronic arrangement. A common
+encoded clock keeps both aligned, and the game blends them as sources.
+The Live export was 320 kbps stereo MP3, re-encoded as 192 kbps; this is a
+lossy-to-lossy path. The export's stereo field was folded to mono for the
+existing paired-carrier format. A constant -15.33 dB was applied
+to match acoustic integrated loudness, without dynamic processing. Native
+gameplay listening remains unverified.
 
-The generator infers 9,153 polyphonic note candidates using Spotify Basic Pitch
-ICASSP 2022 ONNX (Apache 2.0 analysis dependency; existing isolated CPU runtime).
-No model or inference engine ships in game. Additive/FM bass, struck middle
-and glass upper voices follow inferred actual onsets, durations and register.
-The electronic stem contains no copied source waveform. The preparation adds
-no tempo quantization, score-based pitch correction or artificial error
-stingers. Performed timing and irregularities remain; this does not certify
-which sounds are performer mistakes. Automatic transcription may introduce
-omissions, octave/partial errors and split/merged notes or ornaments.
-
-Manifest and reproducible generator:
-public/audio/source-rest/couperin/couperin-revoicing.json
-tools/chunk_surfer/build-source-rest-couperin.py
-
-The full source, prepared carrier and model hashes, timing/confidence method,
-decoded headroom and limitations are retained in the manifest. A +6.0944 cent
-fine-tuning estimate aligns synthesized pitches with the recording; it is not
-a historical-temperament reconstruction. The decoded dry equal-power bound
-is 0.310724 peak, with 0 clipped and 0 nonfinite samples. Native mix and musician
-acceptance remain separate validation.
-
-Credit and identity
-The game credits David Joseph Stith for this human harpsichord performance,
-and identifies the performance-derived electronic revoicing made for Chunk
-Surfer. It does not attribute this harpsichord performance to the player or
-developer. Source II’s Bach Chaconne is the separate developer-supplied
-marimba recording. No third-party rights claim for Couperin extends to that
-personal recording, and no claim is made that an autobiographical electronic
-recording already existed. The new revoicing was created for this game.
+Previous audio and provenance are preserved in artifacts/couperin-live12/
+integration/previous-production/. The old automatic transcription may introduce
+omissions or octave errors; the replacement instead follows edited score MIDI.

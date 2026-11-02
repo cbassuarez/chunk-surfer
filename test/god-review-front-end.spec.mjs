@@ -6,8 +6,14 @@ import { FrontEndSession, FRONT_END_STATE } from '../src/game/front-end-session.
 import { affinityMatches, destinationAffinityForContinue, makeResumeLaunchPlan } from '../src/game/run-launch-plan.js';
 import { makeBlackHoldScene, makeIrisScene } from '../src/game/iris-transition.js';
 import * as scenes from '../src/game/scenes.js';
+import {achievementRunEligible,unrankRun} from '../src/progression/eligibility.js';
+import {uiPhysicalSize} from '../src/render/ui.js';
 
 const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+const progression=await readFile(new URL('../src/progression/runtime.js',import.meta.url),'utf8');
+const developerStart=progression.indexOf('function markDeveloperRun('),developerEnd=progression.indexOf('\n}\n',developerStart)+3;
+assert.ok(developerStart>=0&&developerEnd>developerStart);
+const developerTracker=progression.slice(developerStart,developerEnd);
 const start = main.indexOf('function godEnsureTestRun(){');
 const body = main.slice(start, main.indexOf('\nfunction godStoryWayfindingCapture', start));
 
@@ -20,13 +26,14 @@ function run(session) {
     endBootWeather: () => events.push(['boot-ended']), scenes: { depth: () => 0, clear: noop },
     godRestoreBuildingWorld: noop, activeBattleId: 'old', godBattleOpen: true,
     STORY: { stopTapeHiss: noop }, resetMotionInput: noop, setGameplayPaused: noop,
-    getSave: () => save, flagApply: noop, saveCommit: noop, storyMode: true,
+    getSave: () => save, flagApply: noop, saveCommit: patch=>Object.assign(save,patch), storyMode: true,
+    achievementRunEligible,unrankRun,
     inRogue: true, buildingLoadPromise: Promise.resolve(true),
     sampleFieldEnabled: true, silenceSampleField: noop, setGameChrome: noop,
     FP: { isLoaded: () => false }, godSyncBuildingRender: noop,
   };
   vm.createContext(context);
-  vm.runInContext(`${body}\ngodEnsureTestRun();`, context);
+  vm.runInContext(`${developerTracker}\n${body}\ngodEnsureTestRun();`, context);
   return { context, events };
 }
 
@@ -58,7 +65,7 @@ function mainBlock(from, to) {
   return main.slice(start, end);
 }
 
-function nativeContinue({ exact = true, inGame = false, hasRun = true } = {}) {
+function nativeContinue({ exact = true, inGame = false, hasRun = true,micConsent=false } = {}) {
   const save = { run: hasRun ? { id: 'saved-tower', status: 'active' } : null,
     area: exact ? 'conservatory' : 'source-space', px: 257, py: 397,
     view: { yaw: 0, pitch: -.08 }, cameraRevision: 4, checkpointRevision: 9 };
@@ -70,10 +77,14 @@ function nativeContinue({ exact = true, inGame = false, hasRun = true } = {}) {
     frontEndSession: session, frontEndPromotionPending: false, frontEndMismatchPending: false,
     frontEndPlateOverride: null, FRONT_END_STATE, dt: 0, storyMode: inGame, inRogue: true, paused: inGame,
     getSave: () => save, scenes, affinityMatches, destinationAffinityForContinue,
+    roomMicRunConsent:micConsent,params:()=>new URLSearchParams(),
+    makeWarningScene:options=>({id:'warning',...options}),
+    chooseRoomMicForRun:allowed=>{context.roomMicRunConsent=allowed;},
     makeIrisScene, makeBlackHoldScene, shakeMode: () => 'full',
     windowChoreography: { finishTitle: options => events.push(['finish-title', options.windowPolicy]) },
     R3: { r3dSetFrontEndPlate: plate => events.push(['plate', plate]), r3dFrontEndPlate: () => session.snapshot().plate },
     personalWindowEffects: { setFrontEndPlate() {} },
+    syncHeartbeatPresentation(){},beginFaceplateModuleFrame(){},sharedFaceplateContext:()=>({}),uiPhysicalSize,
     endBootWeather: () => events.push(['weather-ended']), syncPointerMode: () => {},
     setGameplayPaused: next => { context.paused = next; events.push(['paused', next]); },
     enterStory: options => { context.storyMode = true; events.push(['story', structuredClone(options)]); },
@@ -109,6 +120,19 @@ test('native Continue restores through the actual title lift and retires its per
     assert.equal(h.context.frontEndPromotionPending, false);
     assert.deepEqual(h.save.view, { yaw: 0, pitch: -.08 }, 'the handoff preserves the saved church view');
   } finally { scenes.clear(); }
+});
+
+test('a fresh-process Continue still waits for the existing room-microphone choice before title handoff',()=>{
+  scenes.clear();scenes.push({id:'title'});
+  try{
+    const h=nativeContinue({micConsent:null});h.continue();
+    const prompt=scenes.top();assert.equal(prompt.id,'warning');assert.equal(prompt.askMic,true);
+    assert.equal(h.session.state,FRONT_END_STATE.TITLE);
+    assert.deepEqual(h.events.filter(([event])=>['story','load','finish-title'].includes(event)),[['finish-title','none']],
+      'the desktop title surface may retire, but loading/gameplay must wait for the microphone choice');
+    prompt.onMicDeny();scenes.pop();prompt.onDone();
+    assert.equal(h.context.roomMicRunConsent,false);assert.equal(h.session.state,FRONT_END_STATE.LIFTING);
+  }finally{scenes.clear();}
 });
 
 test('native Continue also finishes the real iris transition when the prepared view is not exact', async () => {

@@ -3,6 +3,7 @@ import { getMeta, getSave, metaCommit, saveCommit } from '../game/save.js';
 const categories = new Set(['lines', 'choices', 'documents', 'playbacks', 'props']);
 
 export function markKnowledge(category, id, runId = getSave()?.run?.id, at = Date.now()) {
+  if (getSave()?.run?.integrity?.achievements?.eligible === false) return false;
   if (!categories.has(category) || typeof id !== 'string' || !id) return false;
   const meta = getMeta();
   const knowledge = { ...meta.knowledge };

@@ -6,7 +6,7 @@
     "name": "conservatory_west_elevation",
     "fingerprint": "0bbee88d9932239ddb772588618967329bc0c0eea822705cee68bf44d397c34f",
     "triangles": 17829,
-    "retainedTriangles": 17329,
+    "retainedTriangles": 17617,
     "occupiedAirClips": [
       {
         "physicalMin": [
@@ -162,7 +162,7 @@
   },
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
+    "sha256": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
     "unchangedDuringBuild": true,
     "meshCount": 625
   },
@@ -170,6 +170,7 @@
     "src/data/ellery-public-front.js",
     "src/data/glass-court-sightlines.js",
     "tools/chunk_surfer/ellery-public-front-geometry.mjs",
+    "tools/chunk_surfer/ellery-yard-repair.mjs",
     "tools/chunk_surfer/build-ellery-public-front.mjs"
   ],
   "lettering": {

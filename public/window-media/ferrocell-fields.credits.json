@@ -1,0 +1,52 @@
+{
+  "id": "ferrocell-fields",
+  "kind": "video",
+  "path": "window-media/ferrocell-fields.webm",
+  "aspectRatio": 1.7777777777777777,
+  "width": 640,
+  "height": 360,
+  "fps": 15,
+  "trim": {
+    "startSeconds": 62,
+    "durationSeconds": 16,
+    "loopDissolveSeconds": 0
+  },
+  "sensitivity": "none",
+  "source": {
+    "file": "ferrocell-source.webm",
+    "sha256": "b2f10a708bf7c3b6ef95e3c7e6004580d2187612a33f1ec1bdb3ec81d8095c9e",
+    "title": "DIY Ferrocell, View Magnetic Fields with Ferrofluid",
+    "creator": "Magnetic HD",
+    "license": "CC BY 3.0",
+    "url": "https://commons.wikimedia.org/wiki/File:DIY_Ferrocell,_View_Magnetic_Fields_with_Ferrofluid.webm",
+    "originalUrl": "https://www.youtube.com/watch?v=WA7z2JU-v4A",
+    "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/1/19/DIY_Ferrocell%2C_View_Magnetic_Fields_with_Ferrofluid.webm",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "licenseReview": "Wikimedia Commons: Majora confirmed source CC BY3.0 on2018-06-26; original author Magnetic HD"
+  },
+  "derivatives": {
+    "webm": {
+      "path": "window-media/ferrocell-fields.webm",
+      "codec": "vp9",
+      "sha256": "37eca6d3602d9da6fbf7040b394ce388e2f5bf63ed56c26cf1bbaebfe0ebd525",
+      "bytes": 465891
+    },
+    "mp4": {
+      "path": "window-media/ferrocell-fields.mp4",
+      "codec": "h264",
+      "sha256": "c6a2a043fcc6b000f437ec9fae0a4ab45fca550ba51361de020aae1a8efa1182",
+      "bytes": 646509
+    },
+    "poster": {
+      "path": "window-media/ferrocell-fields.png",
+      "codec": "png",
+      "sha256": "927bfae8b767cbec0d90bda1934cda3ddffdc35cfe855d5686b907b195311196",
+      "bytes": 272999
+    }
+  },
+  "modifications": [
+    "Single continuous excerpt62–78seconds of actual moving ferrocell footage",
+    "Resized/cropped640x360;15fps; audio removed",
+    "No generated motion, still-image carrier or frame interpolation; runtime geometry occludes footage"
+  ]
+}

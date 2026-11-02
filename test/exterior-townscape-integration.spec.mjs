@@ -14,6 +14,7 @@ function move(p,dx,dy){
 }
 function walk(p,dx,dy,count){for(let i=0;i<count;i++)p=move(p,dx,dy);return p;}
 const rendered=PROPS.renderInstances({group:'ground',inscriptions:false}),rows=rendered.filter(p=>DRESSING.some(d=>d.id===p.id));
+const {CONSERVATORY_DOORS}=await load('src/data/conservatory-doors.js');
 
 test('the public front retains the original building namespace and an explicit full-width directional seam',()=>{
  assert.equal(C.levels.some(l=>l.id==='ellery_public_footway_join'),false,'a one-metre join layer overlaps half a metre of the actual forecourt');
@@ -38,7 +39,10 @@ test('the public door stays closure-locked and W3 and D0 keep their established 
  const front=FP.doorState().find(p=>p.id==='front-main');assert.ok(front);assert.equal(front.keyId,'closure-order');assert.equal(front.open,false);assert.equal(front.legacyId,'158,7');
  let p=at(79.25,2.25);p=move(p,0,1);const refusal=FP.canStep(p.x,p.y,p.x,p.y+1,{keys:new Set(['master'])});assert.equal(refusal.ok,false);assert.equal(refusal.why,'locked');assert.equal(refusal.keyId,'closure-order');
  const w=BUILDING_WINDOWS.find(w=>w.id==='W3-foyer-north');assert.deepEqual(w.physical,{axis:'z',plane:3,from:84,to:88,depth:1,x0:84,x1:88,z0:3,z1:4});near(w.sill,1.05);near(w.head,3.45);
- const d0=FP.doorState().find(p=>p.id==='pool-lobby');assert.ok(d0);assert.equal(d0.legacyId,'168,55');assert.equal(d0.keyId,null);assert.equal(d0.archetype,'pool-glazed-pair');assert.equal(d0.leafCount,2);assert.deepEqual(d0.aperture,{width:2,height:3.4});
+ const d0=FP.doorState().find(p=>p.id==='pool-lobby'),definition=CONSERVATORY_DOORS.find(p=>p.id==='pool-lobby');assert.ok(d0);
+ assert.equal(d0.legacyId,`${FP.toRuntimeDistance(definition.at.x)},${FP.toRuntimeDistance(definition.at.y)}`,'the active aperture follows the current authored door, not an old save alias');
+ assert.ok(definition.legacyIds.includes('168,55'),'the historical save address remains an alias');
+ assert.equal(d0.keyId,null);assert.equal(d0.archetype,'pool-glazed-pair');assert.equal(d0.leafCount,2);assert.deepEqual(d0.aperture,{width:2,height:3.4});
 });
 
 test('every reachable trade target survives production propsInit, describes its actual display and never renders a proxy',async()=>{

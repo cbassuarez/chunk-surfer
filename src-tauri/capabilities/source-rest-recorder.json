@@ -1,0 +1,13 @@
+{
+  "$schema":"../gen/schemas/desktop-schema.json",
+  "identifier":"source-rest-recorder",
+  "description":"One fixed, bundled, player-requested passive recorder face. No microphone, files, network, transport, or focus permission.",
+  "windows":["main","source-rest-recorder"],
+  "permissions":[
+    "core:event:allow-emit","core:event:allow-emit-to","core:event:allow-listen","core:event:allow-unlisten",
+    "core:webview:allow-create-webview-window","core:webview:allow-get-all-webviews",
+    "core:window:allow-get-all-windows",
+    "core:window:allow-current-monitor","core:window:allow-outer-position","core:window:allow-outer-size","core:window:allow-scale-factor",
+    "core:window:allow-show","core:window:allow-hide","core:window:allow-close"
+  ]
+}

@@ -1,4 +1,6 @@
 import {assetUrl} from './paths.js';
+import {sourceRestOwnedFramesValid} from '../render/source-rest-apertures.js';
+import {createWindowMediaArchitecture,validateWindowArchitecturePacket,windowArchitectureCueAllowed} from '../render/window-media-architecture.js';
 import {compilePaneScore, createWindowMediaClock, createWindowVideoClock, windowMediaAsset} from './window-composition.js';
 
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,Number(value)||0));
@@ -14,6 +16,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
   let root=null,plan=null,clock=null,frame=null,generation=0,held=false,forcedFrozen=false;
   let queue=[],controls=[],sequence=0,scheduledCycle=-1,lastLogical=0;
   const panes=new Map();
+  let ownedFrameRevision=0;
   const stamp=value=>Number.isFinite(Number(value))?Number(value):now();
   const logical=at=>clock?.now(stamp(at))??stamp(at);
   const localUrl=path=>{const resolved=assetUrl(path);try{return new URL(resolved,documentApi?.baseURI).href;}catch(_){return resolved;}};
@@ -177,6 +180,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     return media;
   }
   function assign(entry,assignment,at,action={}){
+    disposeMedia(entry.ownedPending?.media);entry.ownedPending=null;entry.ownedLoad=(entry.ownedLoad||0)+1;
     clearTransition(entry);
     const previous=entry.media;
     entry.assignment=assignment;entry.transport.assign(assignment,at);
@@ -190,6 +194,56 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     }else disposeMedia(previous);
     if(next.kind==='video')next.child.load?.();
     syncVideo(entry,at,{forceSeek:true});
+  }
+  function commitOwnedFrame(entry){
+    const pending=entry.ownedPending;if(!pending?.ready||held||forcedFrozen)return;
+    if(pending.owner!==generation||pending.load!==entry.ownedLoad){disposeMedia(pending.media);entry.ownedPending=null;return;}
+    clearTransition(entry);const old=entry.media;entry.assignment=pending.assignment;entry.media=pending.media;entry.ownedPending=null;
+    entry.pane.replaceChildren(entry.media.child);entry.pane.dataset.contentId=pending.assignment.content.token;disposeMedia(old);
+  }
+  function updateStudyFrames({cueId,frames,revision}={}){
+    if(!plan||plan.purpose!=='source-study'||!String(plan.cueId).startsWith('source-rest:apertures:')||plan.cueId!==cueId||held||forcedFrozen||!Number.isSafeInteger(revision)||revision<=ownedFrameRevision
+      ||plan.reducedMotion&&ownedFrameRevision>0||!sourceRestOwnedFramesValid(frames,plan.surfaces.filter(p=>p.sensitivity==='none').map(p=>p.id)))return false;
+    ownedFrameRevision=revision;
+    for(const value of frames){
+      const entry=panes.get(value.surfaceId);if(!entry)continue;
+      entry.architecture?.controller.dispose();entry.architecture?.canvas.remove();entry.architecture=null;
+      const token=`snapshot-owned-${revision}-${entry.surface.index}`,assignment={content:{kind:'snapshot',token},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:0};
+      disposeMedia(entry.ownedPending?.media);const next=makeMedia(entry,assignment),load=(entry.ownedLoad||0)+1;
+      entry.ownedLoad=load;entry.ownedPending={media:next,assignment,load,owner:generation,ready:false};
+      const ready=()=>{if(entry.ownedPending?.media!==next)return;entry.ownedPending.ready=true;commitOwnedFrame(entry);};
+      next.child.addEventListener?.('load',ready,{once:true});next.listeners.push(['load',ready]);next.child.src=value.dataUrl;
+      if(next.child.complete&&next.child.naturalWidth>0)ready();
+    }
+    return true;
+  }
+  function updateStudyArchitecture({cueId,packet,revision}={}){
+    if(!plan||plan.purpose!=='source-study'||!windowArchitectureCueAllowed(plan.cueId)||plan.cueId!==cueId||held||forcedFrozen)return false;
+    let accepted=true;
+    for(const pane of packet?.panes||[]){
+      const entry=panes.get(pane.surfaceId);if(!entry||entry.surface.sensitivity!=='none'){accepted=false;continue;}
+      if(!entry.architecture){
+        const canvas=documentApi.createElement('canvas');canvas.style.position='absolute';canvas.style.inset='0';canvas.style.width=canvas.style.height='100%';canvas.style.pointerEvents='none';canvas.style.zIndex='1';
+        let gl=null;try{gl=canvas.getContext?.('webgl2',{alpha:true,depth:true,antialias:false});}catch(_){}
+        let blueNoise=null;if(gl){blueNoise=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,blueNoise);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([128,128,128,255]));}
+        entry.architecture={canvas,gl,blueNoise,controller:createWindowMediaArchitecture({gl,now,surfaceId:pane.surfaceId,reducedMotion:plan.reducedMotion})};
+      }
+      if(!entry.architecture.controller.update({...packet,panes:[pane]},{revision})){accepted=false;continue;}
+      disposeMedia(entry.ownedPending?.media);entry.ownedPending=null;entry.ownedLoad=(entry.ownedLoad||0)+1;
+      if(pane.background){if(entry.assignment?.content?.assetId!==pane.background.assetId)assign(entry,{content:{kind:'video',assetId:pane.background.assetId},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:0},logical(now()));entry.transport.seek(pane.background.mediaTime*1000,logical(now()),clockOptions(entry));entry.architectureBackground=pane.background.assetId;}
+      else if(entry.architectureBackground){assign(entry,{content:{kind:'procedural',preset:'empty-field'},crop:{x:0,y:0,w:1,h:1},clockMode:'source',phaseOffsetMs:0},logical(now()));entry.architectureBackground=null;}
+      if(entry.architecture.canvas.parent!==entry.pane&&!entry.pane.contains?.(entry.architecture.canvas))entry.pane.append(entry.architecture.canvas);
+    }
+    return accepted;
+  }
+  function drawArchitecture(entry){
+    const a=entry.architecture;if(!a)return;
+    const size=entry.pane.getBoundingClientRect(),dpr=Math.max(1,view.devicePixelRatio||1),width=Math.max(1,Math.round(size.width*dpr)),height=Math.max(1,Math.round(size.height*dpr));
+    if(a.canvas.width!==width||a.canvas.height!==height){a.canvas.width=width;a.canvas.height=height;}
+    if(a.gl){a.gl.clearColor(0,0,0,0);a.gl.clear(a.gl.COLOR_BUFFER_BIT|a.gl.DEPTH_BUFFER_BIT);a.controller.draw({width,height,dpr,desktopOrigin:{x:size.left,y:size.top},blueNoiseTexture:a.blueNoise});}
+  }
+  function architectureLayout(){
+    if(!plan||!root)return null;const main=root.getBoundingClientRect();return{mainRect:{x:main.left,y:main.top,width:main.width,height:main.height},viewport:{width:main.width,height:main.height},native:false,revision:1,panes:[...panes.values()].map(entry=>{const r=entry.rendered;return{surfaceId:entry.surface.id,rect:r?{x:main.left+r.x-r.width/2,y:main.top+r.y-r.height/2,width:r.width,height:r.height}:{x:main.left,y:main.top,width:entry.surface.width,height:entry.surface.height}};})};
   }
   function renderTransition(entry,at){
     const transition=entry.transition;if(!transition)return;
@@ -207,7 +261,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     entry.pane.dataset.lastScoreCue=cueId;
     if(action.type==='assignment')assign(entry,action.assignment,at,action);
     else if(action.type==='visible'){entry.visible=!!action.visible;entry.pane.style.display=entry.visible?'block':'none';report(entry);}
-    else if(action.type==='frozen'){entry.frozen=!!action.frozen;entry.transport.freeze(forcedFrozen||entry.frozen,at,clockOptions(entry));}
+    else if(action.type==='frozen'){entry.frozen=!!action.frozen;entry.transport.freeze(forcedFrozen||entry.frozen,at,clockOptions(entry));entry.architecture?.controller.hold(held||forcedFrozen||entry.frozen);}
     else if(action.type==='seek')entry.transport.seek(action.seekMs,at,clockOptions(entry));
     else if(action.type==='shader'){
       if(action.coherent!==null)entry.pane.classList.toggle('coherent',!!action.coherent);
@@ -245,14 +299,14 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
       }
     }
     if(root)root.dataset.scoreTime=String(Math.round(Math.max(0,at-plan.epochMs)));
-    for(const entry of panes.values()){renderPosition(entry,at);renderTransition(entry,at);syncVideo(entry,at);}
+    for(const entry of panes.values()){renderPosition(entry,at);renderTransition(entry,at);syncVideo(entry,at);drawArchitecture(entry);}
   }
   function setHeld(value,raw){
     advance(raw);const at=logical(raw);
     held=!!value;clock.hold(held,raw);
-    for(const entry of panes.values()){entry.transport.hold(held,at,clockOptions(entry));syncVideo(entry,at,{forceSeek:true});}
+    for(const entry of panes.values()){entry.transport.hold(held,at,clockOptions(entry));entry.architecture?.controller.hold(held||forcedFrozen||entry.frozen);syncVideo(entry,at,{forceSeek:true});}
     root.dataset.scoreHeld=String(held);
-    if(!held)advance(raw);
+    if(!held){for(const entry of panes.values())commitOwnedFrame(entry);advance(raw);}
   }
   function arm(){
     if(!plan||!request)return;
@@ -267,10 +321,12 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     arm();
   }
   function hide(){
+    ownedFrameRevision=0;
     generation++;if(frame!==null)cancel?.(frame);frame=null;
     for(const entry of panes.values()){
       for(const [event,handler] of entry.listeners)entry.pane.removeEventListener?.(event,handler);
-      disposeMedia(entry.media);disposeMedia(entry.outgoing);
+      disposeMedia(entry.media);disposeMedia(entry.outgoing);disposeMedia(entry.ownedPending?.media);
+      entry.architecture?.controller.dispose();if(entry.architecture?.blueNoise)entry.architecture.gl.deleteTexture(entry.architecture.blueNoise);entry.architecture?.canvas.remove();
     }
     panes.clear();plan=null;clock=null;queue=[];controls=[];scheduledCycle=-1;held=false;forcedFrozen=false;
     root?.classList.remove('active');root?.replaceChildren();return true;
@@ -285,6 +341,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     listen('pointerup',end);listen('pointercancel',end);
   }
   function show(next){
+    ownedFrameRevision=0;
     hide();if(next?.kind!=='composition'||!ensure())return false;
     plan=next;const raw=now();clock=createWindowMediaClock({epochMs:plan.epochMs,nowMs:raw});
     root.dataset.cue=plan.cueId;root.dataset.scoreHeld='false';root.classList.add('active');
@@ -322,7 +379,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
   function freeze(value=true){
     if(!plan)return false;
     const at=logical(now());forcedFrozen=!!value;
-    for(const entry of panes.values()){entry.transport.freeze(forcedFrozen||entry.frozen,at,clockOptions(entry));syncVideo(entry,at,{forceSeek:true});}
+    for(const entry of panes.values()){entry.transport.freeze(forcedFrozen||entry.frozen,at,clockOptions(entry));entry.architecture?.controller.hold(held||forcedFrozen||entry.frozen);syncVideo(entry,at,{forceSeek:true});}
     return true;
   }
   function coherence(value=true){for(const entry of panes.values())entry.pane.classList.toggle('coherent',!!value);return !!plan;}
@@ -334,7 +391,7 @@ export function createWindowMediaSimulation({documentApi=globalThis.document,eff
     }
     return true;
   }
-  return {show,snap,coherence,freeze,trigger,hold,hide,active:()=>!!plan,
+  return {show,snap,coherence,freeze,trigger,hold,hide,updateStudyFrames,updateStudyArchitecture,architectureLayout,active:()=>!!plan,
     debug:()=>({active:!!plan,cueId:plan?.cueId||null,held,frozen:forcedFrozen,frameScheduled:frame!==null,logicalTimeMs:clock?.now(now())??null,pendingEvents:queue.filter(q=>q.event).length,pendingTimed:queue.filter(q=>!q.event&&q.at>lastLogical).length,pendingControls:controls.length,
       panes:[...panes.values()].map(entry=>({id:entry.surface.id,assignment:entry.assignment,visible:entry.visible,frozen:entry.frozen||forcedFrozen,mediaTimeSeconds:entry.transport.time(logical(now()),clockOptions(entry)),mediaFormat:entry.media?.child?.dataset?.mediaFormat||null,mediaFallbacks:entry.media?.loadRevision||0,mediaFailed:!!entry.media?.failed,position:positionAt(entry,logical(now())),rendered:entry.rendered?{...entry.rendered}:null,transition:entry.transition?{...entry.transition}:null,lastCue:entry.pane.dataset.lastScoreCue||null}))})};
 }

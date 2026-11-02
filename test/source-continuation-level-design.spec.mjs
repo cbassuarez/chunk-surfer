@@ -21,7 +21,7 @@ function walk(state,x,z,events=[]) {
     if(d<.04&&!state.fall&&!state.recovery)return state;
     assert.equal(state.recovery,null,`ordinary planned walk captured at ${state.x},${state.z}: ${state.recovery?.reason}`);
     const amount=Math.min(1,d/(C.walkSpeed*.05));
-    state=tick(state,state.phase==='catch'?{forward:-dz/d*amount,side:dx/d*amount}:{forward:amount,look:{yaw:Math.atan2(dx,-dz)}},events);
+    state=tick(state,{forward:amount,look:{yaw:Math.atan2(dx,-dz)}},events);
   }
   assert.fail(`cannot walk to ${x},${z}; at ${state.x},${state.z},${state.feet}`);
 }
@@ -37,7 +37,8 @@ function arc(state,angle,events=[],radius=null) {
 function drop(state,lip,events=[]) {
   state=walk(state,lip.x,lip.z,events);state=tick(state,{interact:true},events);
   assert.ok(state.fall,'a chosen release starts real gravity');
-  while(state.fall)state=tick(state,{},events);
+  for(let frame=0;frame<600&&state.fall;frame++)state=tick(state,{},events);
+  assert.equal(state.fall,null,'the chosen release finds its physical receiving support within30 simulated seconds');
   assert.equal(state.recovery,null,'the chosen visible receiving footprint must be safe');
   return state;
 }
@@ -110,7 +111,8 @@ test('hesitation on ground, middle, stairs and high return is reachable by the s
     assert.equal(waiting.recovery.kind,'guided-return');
     assert.ok(waiting.recovery.path.slice(1).every((p,k)=>continuationWalkSegment(waiting.recovery.path[k],p)));
     const actor={x:waiting.hush.x,z:waiting.hush.z,feet:waiting.hush.feet};
-    while(waiting.recovery){waiting=tick(waiting);assert.deepEqual({x:waiting.hush.x,z:waiting.hush.z,feet:waiting.hush.feet},actor);assert.ok(layout.continuationSupportAt(waiting.x,waiting.z,waiting),'carried return follows ground and treads');}
+    for(let frame=0;frame<1200&&waiting.recovery;frame++){waiting=tick(waiting);assert.deepEqual({x:waiting.hush.x,z:waiting.hush.z,feet:waiting.hush.feet},actor);assert.ok(layout.continuationSupportAt(waiting.x,waiting.z,waiting),'carried return follows ground and treads');}
+    assert.equal(waiting.recovery,null,'the supported return completes within its bounded60s fixture');
     assert.ok(waiting.grace>2.9);
     const anchor=waiting.recoveryAnchor;close(waiting.x,anchor.x);close(waiting.z,anchor.z);close(waiting.feet,anchor.feet);
     const departure=[[3.3,0],[-3.3,0],[0,3.3],[0,-3.3]].map(([dx,dz])=>({...anchor,x:anchor.x+dx,z:anchor.z+dz})).find(p=>continuationWalkSegment(anchor,p)&&controller.sourceContinuationCanOccupy(p.x,p.z,waiting));
@@ -122,10 +124,14 @@ test('hesitation on ground, middle, stairs and high return is reachable by the s
 test('a real refuge holds Hush outside its neck and a fresh departure gets a finite notice interval',()=>{
   let state=fresh();const events=[];
   for(const [x,z]of layout.SOURCE_CONTINUATION_ROUTES.main.slice(1,19))state=walk(state,x,z,events);
+  // The route array now includes the full outgoing overlook arm. Its former
+  // index18 endpoint is the refuge's outer crossing, not the protected body
+  // position; walk the retained approach into the actual refuge before wait.
+  state=walk(state,0,-20,events);state=walk(state,C.wrongReturn.refuge.x,C.wrongReturn.refuge.z,events);
   for(let n=0;n<600;n++)state=tick(state,{},events);
   assert.equal(state.recovery,null);assert.equal(state.hush.mode,'yield');
   const refuge=layout.continuationRefugeAt(state);
-  assert.ok(Math.hypot(state.hush.x-refuge.x,state.hush.z-refuge.z)>=C.hush.refugeStandOff-.01);
+  assert.ok(Math.hypot(state.hush.x-refuge.x,state.hush.z-refuge.z)>=Math.max(C.hush.refugeStandOff,refuge.standOff||0)-.01);
   const queued=structuredClone(state.hush.trail),last=structuredClone(state.hush.lastRecorded);
   for(let n=0;n<5000;n++) {
     const pose={x:refuge.x+.6*Math.sin(n*.2),z:refuge.z+.6*Math.cos(n*.2),feet:refuge.feet,level:0};
@@ -144,7 +150,7 @@ test('long saved trails compact through supported paths without losing a queued 
   const before=Array.from({length:3500},(_,n)=>({kind:'walk',x:lip.x+.12*Math.sin(n),z:lip.z+.12*Math.cos(n),feet:8.4,level:0}));
   const after=Array.from({length:3500},(_,n)=>({kind:'walk',x:C.catch.center.x+6+Math.sin(n)*.1,z:C.catch.center.z+Math.cos(n)*.1,feet:2.4,level:1}));
   const target=after.at(-1);
-  let state=controller.normalizeSourceContinuation({...fresh(),phase:'catch',level:1,...target,lastSafe:{...target,yaw:0,pitch:0},hush:{...fresh().hush,x:lip.x,z:lip.z,feet:8.4,armed:true,mode:'follow',elapsed:10,
+  let state=controller.normalizeSourceContinuation({...fresh(),phase:'catch',level:1,...target,lastSafe:{...target,yaw:0,pitch:0},hush:{...fresh().hush,active:true,x:lip.x,z:lip.z,feet:8.4,armed:true,mode:'follow',elapsed:10,
     trail:[...before,{kind:'drop',x:lip.x,z:lip.z,feet:8.4,level:0,vx:-.8,vz:0},{kind:'walk',...landing},...after],lastRecorded:target}});
   assert.ok(state.hush.trail.length<512);assert.equal(state.hush.trail.filter(p=>p.kind==='drop').length,1);
   assert.deepEqual(state.hush.lastRecorded,{x:target.x,z:target.z,feet:target.feet,chartId:0,level:target.level});
@@ -156,7 +162,7 @@ test('long saved trails compact through supported paths without losing a queued 
 
 test('Hush opens a shut ordinary leaf with its real swing before crossing its occupied plane',()=>{
   let state={...fresh(),phase:'wrong-return',level:0,x:-26.5,z:-12,feet:8.4,lastSafe:{x:-26.5,z:-12,feet:8.4,level:0,yaw:0,pitch:0},
-    hush:{...fresh().hush,x:-17.3,z:-12,feet:8.4,armed:true,mode:'follow',elapsed:10,trail:[{kind:'walk',x:-26.5,z:-12,feet:8.4,level:0}],lastRecorded:{x:-26.5,z:-12,feet:8.4,level:0}}};
+    hush:{...fresh().hush,active:true,x:-17.3,z:-12,feet:8.4,armed:true,mode:'follow',elapsed:10,trail:[{kind:'walk',x:-26.5,z:-12,feet:8.4,level:0}],lastRecorded:{x:-26.5,z:-12,feet:8.4,level:0}}};
   const events=[];let openedAt=null;
   for(let n=0;n<100&&state.hush.x>-18.5;n++) {
     state=tick(state,{},events);

@@ -1,6 +1,7 @@
 // The approved post-exit edit. Camera, focus and transition time belong to
 // presentation, never to the saved walking camera or the vehicle controller.
 import { OPENING_OVERTURE_PLAN, OPENING_OVERTURE_PLAN_REVISION, OPENING_OVERTURE_PLAN_SHA256 } from './opening-overture-plan.js';
+import {pubPhysicalAt} from './exterior-pub.js';
 export { OPENING_OVERTURE_PLAN, OPENING_OVERTURE_PLAN_REVISION, OPENING_OVERTURE_PLAN_SHA256 } from './opening-overture-plan.js';
 const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 const clamp=(value,lo=0,hi=1)=>Math.max(lo,Math.min(hi,Number(value)||0));
@@ -10,9 +11,10 @@ const vector=(a,b,t)=>a.map((value,k)=>mix(value,b[k],t));
 const subtract=(a,b)=>a.map((value,k)=>value-b[k]);
 const dot=(a,b)=>a.reduce((sum,value,k)=>sum+value*b[k],0);
 const finite3=value=>Array.isArray(value)&&value.length===3&&value.every(Number.isFinite);
+const pubPhysicalVector=value=>{const p=pubPhysicalAt({x:value[0],y:value[1],z:value[2]});return[p.x,p.y,p.z];};
 const SEMANTIC_IDS=['pub-evening','vigil','ellery-title','service-approach','room-chamber','room-b3','tower','return'];
 const CONTEXT={
-  pub:{renderGroup:'ground',floorH:.12,observerSpace:'exterior_pub',observerAt:[41,.12,31]},
+  pub:{renderGroup:'ground',floorH:.12,observerSpace:'exterior_pub',observerAt:pubPhysicalVector([41,.12,31])},
   vigil:{renderGroup:'ground',floorH:0,observerSpace:'loading_bay',observerAt:[28,0,52]},
   school:{renderGroup:'ground',floorH:0,observerSpace:'exterior_civic_block'},
   // The physical camera crosses the sloped dock apron. Its envelope seed is
@@ -24,6 +26,12 @@ const CONTEXT={
 };
 const optics=c=>c?{focalLengthMm:c.focalLengthMm,sensorHeightMm:12.445,apertureFNumber:c.fNumber,maxBlurPx:12}:null;
 export const OPENING_OVERTURE_SHOTS=freeze(OPENING_OVERTURE_PLAN.shots.map((approved,index)=>{
+  // Retain the approved photography relative to the room after its physical
+  // relocation. The immutable reviewed plan remains the source-space record.
+  if(approved.set==='pub')approved={...approved,physicalEmbedding:'yard-quarter-turn',camera:{...approved.camera,
+    eye:approved.camera.eye.map(pubPhysicalVector),target:approved.camera.target.map(pubPhysicalVector),
+    focus:approved.camera.focus?.map(mark=>({...mark,target:pubPhysicalVector(mark.target)}))},
+    axisGeometry:approved.axisGeometry?{...approved.axisGeometry,lineXZ:approved.axisGeometry.lineXZ.map(([x,z])=>{const p=pubPhysicalAt({x,z});return[p.x,p.z];})}:undefined};
   const camera=approved.camera,context=CONTEXT[approved.set],dynamicReturn=approved.stage==='return';
   return {...approved,id:SEMANTIC_IDS[index],sourcePlanId:approved.id,index,
     duration:approved.end-approved.start,...context,windowPolicy:'physical',

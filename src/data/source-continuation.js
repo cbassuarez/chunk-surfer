@@ -1,6 +1,7 @@
 import {SOURCE_EARTHFALL} from './source-earthfall.js';
 import {SOURCE_JOURNEY,JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_DOORS,JOURNEY_FOLDS,JOURNEY_PROPS,JOURNEY_ARRIVAL_ANCHORS,JOURNEY_REFUGES} from './source-continuation-journey.js';
 import {SOURCE_REST_ALCOVE_SOLIDS} from './source-rest-alcove.js';
+import {corridorCollisionSolids,SOURCE_CONNECTOR_CORRIDOR} from './source-connector-corridor.js';
 
 // One persistent construction in local metres. Both Sources and their threshold
 // exist together; phase names describe the journey, not which floor is drawn.
@@ -18,7 +19,8 @@ export const SOURCE_CONTINUATION = freeze({
   fixedStep: 1 / 120, jumpSpeed:4.45,doorSwingSeconds: .65, doorPassFraction: .85, doorApproachDistance: 6.5,
   recoverySeconds: 1.6, recoveryMaximumSeconds: 12, recoverySpeed: 6, recoveryRise: 3,
   revealSeconds: 0, graceSeconds: 3, bounds: {...SOURCE_JOURNEY.bounds},
-  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.65, speed: 3.2, radius: .26, contactDistance: .7, refugeStandOff: 2.8 }),
+  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.65, speed: 3.2, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
+    entryDelaySeconds:6,entryOutsideMetres:1.1,thresholdArrivalDelaySeconds:3,thresholdNoticeSeconds:2.5 }),
   spawn: freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
   wrongReturn: freeze({ transferX: -18, warningSeconds: 6, closureSpeed: .62,
     pressureDelay: 12, closureStartX: 16.5, closureEndX: -15.5,
@@ -224,7 +226,7 @@ export const continuationSurfaces = value =>Number.isInteger(value?.chartId)?all
 export const continuationChartId=value=>Number.isInteger(value?.chartId)?value.chartId:0;
 export const continuationChartSurfaces=value=>allSurfaces.filter(s=>(s.chartId??0)===continuationChartId(value));
 export function continuationSolids(value = {}) {
-  const result = [...walls,...JOURNEY_JOINT_SOLIDS,...SOURCE_REST_ALCOVE_SOLIDS];
+  const result = [...walls,...JOURNEY_JOINT_SOLIDS,...SOURCE_REST_ALCOVE_SOLIDS,...corridorCollisionSolids(value)];
   if (value.closure?.mode === 'closing') { const x = Number(value.closure.frontX) || 0; result.push(wall('wrong-closing-front', x - .16, x + .16, -14, -10, 8.4, 11.4, { role: 'closure', material: 'dark-metal' })); }
   return Number.isInteger(value?.chartId)?result.filter(s=>(s.chartId??0)===value.chartId):result;
 }
@@ -233,7 +235,7 @@ export const continuationChartDoors=value=>doors.filter(d=>(d.chartId??0)===cont
 export const continuationChartSolids=value=>continuationSolids(value).filter(s=>(s.chartId??0)===continuationChartId(value));
 export const continuationProps = () => [...props,...JOURNEY_PROPS];
 export const continuationFolds=()=>JOURNEY_FOLDS;
-export const continuationArrivalAnchors=()=>JOURNEY_ARRIVAL_ANCHORS;
+export const continuationArrivalAnchors=()=>[...JOURNEY_ARRIVAL_ANCHORS,SOURCE_CONNECTOR_CORRIDOR.anchor];
 export function continuationSupportAt(x, z, value = {}, options = {}) {
   const feet = Number.isFinite(options.feet) ? options.feet : Number.isFinite(value.feet) ? value.feet : 0;
   const maxY = options.maxY ?? feet + C.maximumStep, minY = options.minY ?? feet - C.maximumStep;

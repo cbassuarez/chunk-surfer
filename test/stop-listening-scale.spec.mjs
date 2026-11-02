@@ -57,6 +57,9 @@ const canPlace = (room) => (x, y) => {
 for (const roomId of STOP_LISTENING_ROOM_IDS) test(`${roomId}: giant ears fit actual surfaces without hiding the sheet, entry or route`, () => {
   const room = STOP_LISTENING_ROOMS[roomId], options = { canPlace: canPlace(roomId), floorAt };
   const poses = stopListeningPlacements(roomId, options), actual = (p) => ({ ...p, x: p.x + (p.renderOffsetX || 0), y: p.y + (p.renderOffsetZ || 0) });
+  const sheet = poses.find(p => p.id.includes(':sheet:'));
+  assert.ok(sheet, 'the inspectable take sheet must survive the current room construction');
+  assert.ok(options.canPlace(room.sheet.x, room.sheet.y), 'the sheet belongs to reachable recording-room floor');
   const ears = poses.filter((p) => p.id.includes(':ear:')), heaps = poses.filter((p) => p.id.includes(':heap:'));
   assert.equal(heaps.length, room.heaps.length, 'a giant heap no longer fits its assigned room');
   assert.ok(ears.length >= room.fields.reduce((sum, f) => sum + f.count, 0) * .9, 'size increase erased the floor treatment');

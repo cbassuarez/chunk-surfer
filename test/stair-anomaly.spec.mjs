@@ -70,15 +70,15 @@ assert.equal(normalizeStairAnomalyEnvironment({
 // point where the stair stops making an argument and starts merely continuing.
 // The effect lands when the player passes the rise a real flight would have
 // taken; everything after that is the same sentence repeated.
-assert.equal(STAIR_ANOMALY_TOTAL_CELLS, 400, 'the climb is well under what it was');
+assert.equal(STAIR_ANOMALY_TOTAL_CELLS, 112, 'the four-beat climb stays inside the requested duration');
 // The interval is DERIVED from MOVE_MS, not copied. It used to be the literal
 // 90 while calling itself "matching config MOVE_MS" — but MOVE_MS is `ms(90)`
 // and `ms` scales by 1/CELL_SCALE, so the real figure is 45. Every duration
 // reasoned from the old constant was exactly double the truth.
 assert.equal(STAIR_ANOMALY_STEP_INTERVAL_MS, MOVE_MS,
   'the pacing constant is the movement clock, not a copy of it that can drift');
-assert.ok(STAIR_ANOMALY_TOTAL_CELLS >= 14 * 20,
-  'while still being many times a real fourteen-rise flight');
+assert.ok(STAIR_ANOMALY_TOTAL_CELLS >= 14 * 8,
+  'while still being eight times a real fourteen-rise flight');
 assert.equal(STAIR_ANOMALY_TOTAL_CELLS % STAIR_ANOMALY_MODULE_CELLS, 0,
   'the four beats divide the climb evenly');
 assert.equal(STAIR_ANOMALY_TOTAL_CELLS / STAIR_ANOMALY_MODULE_CELLS, 4,
@@ -141,8 +141,10 @@ assert.deepEqual(runtime.state(), LEGACY_STAIR_ANOMALY_LEDGER);
 assert.deepEqual(saved.map((entry) => entry.checkpoint), [1, 2, 3, 4]);
 // Walked end to end, at the ordinary cadence. This was 28.8s, which is past the
 // point where the stair stops making an argument and merely continues.
-assert.ok(clock / 1000 >= 15 && clock / 1000 <= 21,
-  `normal traversal is ${clock / 1000}s — long enough to mean something, not long enough to outstay it`);
+assert.ok(clock / 1000 >= 5 && clock / 1000 <= 10,
+  `normal traversal is ${clock / 1000}s`);
+assert.ok(clock * 1.9 / 1000 >= 5 && clock * 1.9 / 1000 <= 10,
+  `quiet traversal is ${clock * 1.9 / 1000}s without changing its movement cadence`);
 runtime.onStep({ x: 0, y }, { x: 0, y: y - 1, facing: 0 });
 assert.equal(completed, 1, 'completion callback is exactly once');
 
@@ -175,6 +177,17 @@ assert.ok(Math.abs(afterRebase.heightOffset - beforeRebase.heightOffset) > 3, 't
 const eyeBefore = paced.geometry.renderedFloorAt(0, -1, 0, -.99);
 const eyeAfter = paced.geometry.renderedFloorAt(0, -1, 0, -1.01);
 assert.ok(Math.abs(eyeAfter - eyeBefore) < .01, 'eye height follows continuous stair pitch across a tread edge');
+let priorPlan=beforeRebase,rebaseCount=0;
+for(let depth=1;depth<=STAIR_ANOMALY_TOTAL_CELLS;depth++){
+  const next=paced.geometry.renderPlanFor(0,-depth);if(next.key===priorPlan.key)continue;
+  for(const x of[-2,0,2])for(let y=-depth-6;y<=-depth+6;y++){
+    if(!paced.geometry.cellAt(x,y))continue;
+    const a=decodedWorldFloor(priorPlan,x,y),b=decodedWorldFloor(next,x,y);
+    assert.ok(Math.abs(a-b)<1e-10,`a visible tread moved across rebase ${depth} at (${x},${y}): ${a} -> ${b}`);
+  }
+  priorPlan=next;rebaseCount++;
+}
+assert.ok(rebaseCount>=7,'the test crosses every moving texture window on the complete shortened climb');
 
 // One continuous flight, no loop: the floor rises monotonically the whole way,
 // never resetting to a landing (which is what made it feel like the same stairs
@@ -223,11 +236,11 @@ const fading = createStairAnomalyRuntime({
   initialLedger: { status: 'active', stage: 1, progress: .25, checkpoint: 1 },
   now: () => clock,
 });
-fading.setPlayerPosition({ x: 0, y: -319, facing: 0 });
-fading.onStep({ x: 0, y: -319 }, { x: 0, y: -320, facing: 0 });   // crosses into the SHADOW stage
-const fadingStart = fading.lightRig(0, { reducedFlash: true }).find((entry) => entry.id === 'stair-practical-306');
+fading.setPlayerPosition({ x: 0, y: -55, facing: 0 });
+fading.onStep({ x: 0, y: -55 }, { x: 0, y: -56, facing: 0 });
+const fadingStart = fading.lightRig(0, { reducedFlash: true }).find((entry) => entry.id === 'stair-practical-46');
 clock = 650;
-const fadingEnd = fading.lightRig(.65, { reducedFlash: true }).find((entry) => entry.id === 'stair-practical-306');
+const fadingEnd = fading.lightRig(.65, { reducedFlash: true }).find((entry) => entry.id === 'stair-practical-46');
 assert.ok(fadingStart.intensity > fadingEnd.intensity && fadingEnd.intensity >= .18, 'reduced flash fades the light behind instead of snapping it off');
 
 const propRenderer = readFileSync(new URL('../src/render/props3d.js', import.meta.url), 'utf8');

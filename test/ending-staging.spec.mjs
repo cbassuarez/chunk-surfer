@@ -6,6 +6,7 @@ import * as FP from '../src/world/floorplan.js';
 import { cathedralBodiesOutsideWest, cathedralGroundRuntimePoint } from '../src/game/cathedral-extraction.js';
 import { CHURCH_COLLIDERS } from '../src/data/st-brendans.js';
 import { ENDING_VARIANT } from '../src/data/ending-variants.js';
+import {nightDeadlinePending} from '../src/game/night-deadline.js';
 
 const runtime=readFileSync('src/main.js','utf8');
 const section=(start,end)=>{
@@ -148,6 +149,7 @@ const section=(start,end)=>{
 // cannot interrupt the last action or the held image.
 {
   const sequence=[];
+  let deadline={phase:'pending'};
   const residue={approach:{progress:.9},approachOrigin:{x:2,y:3}};
   const sandbox={
     escape:residue,activeEndingCutscene:null,endingArrival:null,endingDossier:null,ENDING_VARIANT,finishChapelTapeDemand:()=>{},
@@ -160,8 +162,11 @@ const section=(start,end)=>{
     presentEndingFinalHold:(_manifest,done)=>{sequence.push('image');done();},
     presentFinale:(_content,options)=>{sequence.push('recap');options.onDone();},
     finishEnding:()=>sequence.push('postgame'),
+    nightDeadlinePending,getSave:()=>({nightDeadline:deadline}),
   };
   const play=vm.runInNewContext(`${section('function playEnding(','function resumeEndingCutsceneFromSave')}playEnding`,sandbox);
+  assert.equal(play('sacrifice','agreed'),false);assert.deepEqual(sequence,[],'First Strike owns a pending terminal transition');
+  assert.equal(sandbox.escape,residue,'a denied ending does not spend the physical approach');deadline={phase:'unarmed'};
   play('sacrifice','agreed');
   assert.deepEqual(sequence,['action','image','recap','postgame']);
   assert.equal(sandbox.escape,null);

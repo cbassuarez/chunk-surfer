@@ -20,11 +20,11 @@ export const LOCAL_STAT_BY_PLATFORM_ID = Object.freeze(
 );
 
 export function platformStatId(localKey) {
-  return STAT_DEFS[localKey]?.platformId || null;
+  return Object.hasOwn(STAT_DEFS, localKey) ? STAT_DEFS[localKey].platformId : null;
 }
 
 export function localStatKey(platformId) {
-  return LOCAL_STAT_BY_PLATFORM_ID[platformId] || null;
+  return Object.hasOwn(LOCAL_STAT_BY_PLATFORM_ID, platformId) ? LOCAL_STAT_BY_PLATFORM_ID[platformId] : null;
 }
 
 export function queueChangedStats(previous = {}, next = {}, pending = {}) {

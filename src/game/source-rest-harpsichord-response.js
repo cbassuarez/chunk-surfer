@@ -14,7 +14,7 @@ function scoreData(score){
 function upperBound(notes,time){let lo=0,hi=notes.length;while(lo<hi){const mid=(lo+hi)>>>1;if(notes[mid].onset<=time)lo=mid+1;else hi=mid;}return lo;}
 export function sourceRestHarpsichordResponse({score=null,currentTime=0,signal=0,electronic=0,playing=true,reducedMotion=false}={}){
   const notes=scoreData(score),time=Math.max(0,Number(currentTime)||0),mix=clamp(electronic),level=clamp(signal),
-    energy=[0,0,0],active=[],phrase=[];
+    energy=[0,0,0],attacks=[0,0,0],active=[],phrase=[];
   let examined=0,phraseEnergy=0;
   if(notes){
     const end=upperBound(notes,time),start=upperBound(notes,Math.max(-.00001,time-12));
@@ -26,20 +26,29 @@ export function sourceRestHarpsichordResponse({score=null,currentTime=0,signal=0
         attack=smooth(0,.045,age),release=1-smooth(duration,duration+.85,age),envelope=attack*release,
         register=note.midi<55?0:note.midi<76?1:2;
       energy[register]+=weight*envelope;
+      attacks[register]+=weight*smooth(0,.045,age)*Math.exp(-age/.48);
       if(envelope>.04&&active.length<24)active.push(note.id??`couperin-${n}`);
       const swell=smooth(0,1.1,age)*Math.exp(-age/3.2);phraseEnergy+=weight*swell;
       if(swell>.05&&phrase.length<12)phrase.push(note.midi);
     }
   }
   const registers=energy.map(value=>clamp(1-Math.exp(-value*.52))),
+    registerAttacks=attacks.map(value=>clamp(1-Math.exp(-value*.75))),
     notePressure=clamp(1-Math.exp(-energy.reduce((sum,value)=>sum+value,0)*.24)),
     phrasePressure=clamp(1-Math.exp(-phraseEnergy*.10)),
     audibleLevel=playing?level:0,
     pressure=notes?clamp(notePressure*.82+audibleLevel*.18):audibleLevel,
     acoustic=pressure*Math.cos(mix*Math.PI/2),synthetic=pressure*Math.sin(mix*Math.PI/2),
-    motion=reducedMotion?0:1;
+    motion=reducedMotion?0:1,
+    registerPressure=registers.map((value,k)=>notes?clamp(value*.72+registerAttacks[k]*.28):audibleLevel),
+    architecture=Object.freeze({
+      acousticLift:Object.freeze(registerPressure.map(value=>motion*.035*value*Math.cos(mix*Math.PI/2))),
+      electronicLift:Object.freeze(registerPressure.map(value=>motion*.040*value*Math.sin(mix*Math.PI/2))),
+      registerPressure:Object.freeze(registerPressure),maximumTravel:.040,
+      cause:notes?'aligned pitch-register envelopes':'measured level; no invented pitches',
+    });
   return Object.freeze({time,electronic:mix,signal:audibleLevel,pressure,registers:Object.freeze(registers),
-    acoustic,synthetic,phrasePressure,
+    acoustic,synthetic,phrasePressure,architecture,
     // Visible slow pressure and relaxation, never a sampled 400Hz vibration.
     acousticLift:motion*.040*acoustic,electronicLift:motion*.048*synthetic,
     bridgeLift:motion*.012*pressure,lidAngle:motion*.018*phrasePressure,

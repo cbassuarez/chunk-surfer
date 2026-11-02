@@ -43,7 +43,7 @@ export const ENDING_FAMILY = Object.freeze({
   chapel: Object.freeze({
     id: 'chapel',
     title: 'The chapel',
-    reached: 'Walk away from the Source fight, take the Horizon tape, and get off it at the chapel. Four of the nine endings are here, and they are the only ones the player picks between.',
+    reached: 'Walk away from the Source fight, take the Horizon tape, and get off it at the chapel. Five of the nine endings are here, and they are the only ones the player picks between.',
     where: at('src/main.js', 'function beginConfrontation('),
   }),
   contact: Object.freeze({
@@ -300,24 +300,24 @@ export const ENDING_GATES = Object.freeze({
       RIG,
       FORK,
       Object.freeze({
-        label: 'You qualified, one of two ways',
+        label: 'Both Chapel return proofs were performed',
         kind: GATE_KIND.PROOF,
-        detail: 'Either you proved it in the chapel fight — both return proofs, a clean monitor in the recordist round and a playback of a body-tagged recording in the source round — or you brought enough evidence: every piece of the story found, the fork, the rig, and the right redaction.',
-        where: at('src/main.js', 'const canSurface = hasRig&&hasFork&&(chapelProof||evidenceProof)'),
+        detail: 'A perfect MONITOR in the recordist movement and PLAYBACK of a body-tagged capture in the source movement together earn the Chapel return grant. Papers can explain the possibility; they cannot perform it. No terminal Source rescue or obsolete redaction is required.',
+        where: at('src/game/combat-state.js', "const returnProof = state.proofs.includes('return.recordist') && state.proofs.includes('return.source')"),
       }),
     ]),
     blocks: Object.freeze([
       Object.freeze({
         label: 'Missing the fork or the rig',
         kind: GATE_KIND.OBJECT,
-        detail: 'Both are checked before either qualification is looked at. No amount of proof stands in for the objects.',
-        where: at('src/main.js', 'const canSurface = hasRig&&hasFork&&(chapelProof||evidenceProof)'),
+        detail: 'Both physical instruments must still be owned. A completed reading, documentary evidence or a legacy Source flag cannot stand in for either object.',
+        where: at('src/game/story-evidence.js', 'return hasFork === true && hasRig === true'),
       }),
       Object.freeze({
-        label: 'The chapel locked it and the evidence is incomplete',
+        label: 'The performed return grant is absent or locked',
         kind: GATE_KIND.LOCKED,
-        detail: 'The chapel says so out loud: "RETURN is missing from too many pages. Something could still be saved, but not cleanly."',
-        where: at('src/data/conservatory-script.js', "locks.has('route.surfaced')"),
+        detail: 'Winning the fight alone does not return the man. Both proof actions must survive into an unlocked route.surfaced grant before the physical release is available.',
+        where: at('src/game/story-evidence.js', 'chapelReturnGranted === true && chapelReturnLocked === false'),
       }),
       Object.freeze({
         label: 'Having gone to the tower instead',

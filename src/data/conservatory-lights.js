@@ -7,7 +7,7 @@
 
 import { ZONE } from './floorplan/legend.js';
 import { CHURCH_LIGHTS } from './st-brendans.js';
-import { EXTERIOR_PUB, pubWorldFromLocal } from './exterior-pub.js';
+import { EXTERIOR_PUB, pubPhysicalFromLocal, pubPhysicalAt } from './exterior-pub.js';
 import { PUB_LIGHT_ANCHORS } from './exterior-pub-furnishings.js';
 import {PUB_HOSPITALITY_LIGHTS} from './pub-hospitality.js';
 import { STATIONERS_LIGHTS } from './exterior-stationers.js';
@@ -254,19 +254,19 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // the actual pendant/WC sockets from the shared furnishing contract; retain
   // their output when seen through the pub's open window joinery.
   ...PUB_LIGHT_ANCHORS.map(a=>{
-    const p=pubWorldFromLocal(a),warm=PUB_HOSPITALITY_LIGHTS.find(light=>light.id===a.id),w=warm&&pubWorldFromLocal(warm);
+    const p=pubPhysicalFromLocal(a),warm=PUB_HOSPITALITY_LIGHTS.find(light=>light.id===a.id),w=warm&&pubPhysicalFromLocal(warm);
     return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
       {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
        castsShadow:a.id==='pub-bar-light',pubHospitalityReplacement:w?{x:w.x,z:w.z,y:EXTERIOR_PUB.floor+warm.y,color:warm.color,intensity:warm.intensity,radius:warm.radius}:null});
   }),
   ...PUB_HOSPITALITY_LIGHTS.filter(a=>!PUB_LIGHT_ANCHORS.some(base=>base.id===a.id)).map(a=>{
-    const p=pubWorldFromLocal(a);
+    const p=pubPhysicalFromLocal(a);
     return L(a.id,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+a.y,a.color,a.intensity,a.radius,
       {groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
        penetration:a.penetration||0,pubHospitalityOnly:true,castsShadow:!!a.castsShadow});
   }),
   ...[-28,-20].flatMap(z=>[-1.57,3.63].map(dz=>{
-    const p=pubWorldFromLocal({x:.79,z:z+dz});
+    const p=pubPhysicalFromLocal({x:.79,z:z+dz});
     return L(`pub-front-lantern-${z}-${dz}`,LIGHT_KIND.FITTING,p.x,p.z,EXTERIOR_PUB.floor+2.80,
       [1,.72,.40],1.2,4.3,{groups:['ground'],zones:[ZONE.pub,ZONE.street,ZONE.civicCourt],powerMode:LIGHT_POWER_MODE.EXTERNAL,
        pubHospitalityReplacement:{radius:6.2,intensity:1.55,penetration:.12}});
@@ -316,7 +316,7 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
   // The visible portable masts run from the contractor's independent supply.
   // One source represents each four-head cluster, keeping the ordinary eight-
   // source budget; no house breaker or later tower phase turns them on.
-  L('construction-conservatoire-work-heads', LIGHT_KIND.FITTING, 44.4, 12.63, 4.47,
+  L('construction-conservatoire-work-heads', LIGHT_KIND.FITTING, 41, 14.83, 4.47,
     [1,.91,.76], 1.32, 18,
     {groups:['ground'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.church],home:ZONE.dock,
       powerMode:LIGHT_POWER_MODE.EXTERNAL,anchorPropId:'conservatoire-construction-light-tower',anchorOffset:[0,4.47,-.17]}),
@@ -355,8 +355,8 @@ export const CONSERVATORY_LIGHTS = Object.freeze([
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   L('district-east-lamp-south', LIGHT_KIND.FITTING, 135, 78, 6.1, [1,.57,.24], .84, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
-  L('district-south-pub-spill', LIGHT_KIND.FITTING, EXTERIOR_PUB.interiorAnchor.x, EXTERIOR_PUB.frontWorldZ-2, 2.4, [1,.76,.46], .72, 13,
-    {groups:['ground','academicRoof'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.pub,ZONE.academicRoof],flutter:{amount:.03,steady:.95}}),
+  (()=>{const p=pubPhysicalAt({x:EXTERIOR_PUB.interiorAnchor.x,z:EXTERIOR_PUB.frontWorldZ-2});return L('district-south-pub-spill', LIGHT_KIND.FITTING, p.x, p.z, 2.4, [1,.76,.46], .72, 13,
+    {groups:['ground','academicRoof'],zones:[ZONE.dock,ZONE.street,ZONE.civicCourt,ZONE.pub,ZONE.academicRoof],flutter:{amount:.03,steady:.95}});})(),
   L('district-south-lamp-east', LIGHT_KIND.FITTING, 106, 99, 6.1, [1,.60,.27], .88, 20,
     {groups:['ground','academicRoof'],zones:[ZONE.street,ZONE.civicCourt,ZONE.academicRoof]}),
   // Cold overcast relief on Ellery itself. These reveal cornices and roof depth

@@ -310,7 +310,7 @@ export function sourceLandingPropCollisionAt(localX, localY, { radiusMetres = .2
 export function sourceLandingRecognitions(origin = { x: 0, y: 0 }) {
   const anchors = [{
     id: 'source-dock:desk', sourcePropId: 'dock-desk-1', label: 'unfinished clipboard',
-    standX: -2.65, standZ: 5.4,
+    standX: -2.5, standZ: 5.4,
     first: 'The same little desk. The last line on the clipboard is still waiting to be crossed out.',
     again: 'Somebody meant to come back to it.',
   }, {

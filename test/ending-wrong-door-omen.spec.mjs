@@ -2,12 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { freshSourceEarthfall, stepSourceEarthfall } from '../src/game/source-earthfall.js';
-import { sourceEarthfallRenderFrame, sourceEarthfallGeometry, createSourceEarthfallRenderer } from '../src/render/source-earthfall-renderer.js';
+import { SOURCE_EARTHFALL as EARTH } from '../src/data/source-earthfall.js';
+import { sourceEarthfallRenderFrame, sourceEarthfallShakenFrame, sourceEarthfallGeometry, createSourceEarthfallRenderer } from '../src/render/source-earthfall-renderer.js';
 import { endingWrongDoorRenderFrame, createEndingWrongDoorRenderer } from '../src/render/ending-wrong-door-renderer.js';
 import { endingWrongDoorOmenFrame, endingWrongDoorFlowHeight } from '../src/data/ending-wrong-door-omen.js';
 import { SOURCE_DEMOLITION_GEOMETRY as DEMO } from '../src/data/generated/source-demolition-geometry.js';
-import { ST_BRENDANS_PRESENCE_MESH } from '../src/data/st-brendans-presences.js';
-import { doorAssembly } from '../src/data/source-door-fields.js';
 import { propInstanceVisible } from '../src/render/props3d.js';
 
 const fresh = () => freshSourceEarthfall({ runId: 'ending-physical' });
@@ -77,8 +76,11 @@ test('protection and effects off suppress the extra presence while reduced motio
 });
 
 test('shared presentation is pure and its free-fall plane has the physical gravity and terminal speed', () => {
-  assert.equal(endingWrongDoorFlowHeight(3), 92); assert.equal(endingWrongDoorFlowHeight(4), 87.1);
-  assert.ok(Math.abs(endingWrongDoorFlowHeight(7) - endingWrongDoorFlowHeight(7.01) - .26) < 1e-8);
+  const release = EARTH.footingLossAt, top = EARTH.upperFloor - EARTH.lowering.drop;
+  assert.equal(endingWrongDoorFlowHeight(release), top);
+  assert.ok(Math.abs(endingWrongDoorFlowHeight(release + 1) - (top - EARTH.gravity / 2)) < 1e-8);
+  const terminalAt = release + EARTH.terminalSpeed / EARTH.gravity + .1;
+  assert.ok(Math.abs(endingWrongDoorFlowHeight(terminalAt) - endingWrongDoorFlowHeight(terminalAt + .01) - EARTH.terminalSpeed * .01) < 1e-8);
   let state = fresh(); for (let i = 0; i < 50; i++) state = stepSourceEarthfall(state, { dt: .1, forward: i < 3 ? 1 : 0 }).state;
   const original = JSON.stringify(state), result = endingWrongDoorOmenFrame(state);
   // The presentation plane is analytic; the existing body integrates gravity
@@ -92,10 +94,11 @@ function fixture(ending = true, dark = true) {
   const props = { propMeshCatalog: () => [...catalog], setPressureInstances() {},
     installAuthoredPropMeshes() { for (const p of sourceEarthfallGeometry()) catalog.add(p.name); return true; },
     async addPropPack(url) {
-      const door = doorAssembly('bay-goods-pair', { activeLeaves: 'all' });
-      const names = url.includes('source-demolition') ? [DEMO.staticMesh, ...DEMO.parts.map(p => p.mesh), ...(dark ? [DEMO.darkMesh] : [])]
-        : url.includes('presences') ? Object.values(ST_BRENDANS_PRESENCE_MESH) : [door.frameMesh, door.leafMesh, door.freeStandingHeadMesh].filter(Boolean);
-      for (const n of names) catalog.add(n);
+      // Mirror the requested shipped packs, including the fractured Ellery
+      // assembly. The missing-volume case still deliberately withholds that mesh.
+      const bytes = fs.readFileSync(`public/${url}`);
+      const gltf = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)));
+      for (const mesh of gltf.meshes) if (dark || mesh.name !== DEMO.darkMesh) catalog.add(mesh.name);
     }, setAuthoredPropRange: () => () => {} };
   const owner = (ending ? createEndingWrongDoorRenderer : createSourceEarthfallRenderer)({ renderer, props, resolveAsset: p => p });
   return { owner, calls };
@@ -104,14 +107,16 @@ function fixture(ending = true, dark = true) {
 test('ending borrows the actual shared acquisition/dither draw and reports the finite occupation', async () => {
   const h = fixture(); assert.equal(await h.owner.initialize(), true); assert.equal(h.owner.render(stateAt(5.3)), true);
   const draw = h.calls.findLast(c => c.key === 'r3dFrame').args[0];
-  assert.equal(draw.textSpace, true); assert.equal(draw.sourceVoidPhysical, false); assert.equal(draw.authoredPropRange, 240);
+  assert.equal(draw.textSpace, true); assert.equal(draw.sourceVoidPhysical, false); assert.equal(draw.authoredPropRange, 300);
   assert.deepEqual(draw.authoredCamera.eye, [0, endingWrongDoorFlowHeight(5.3) + 1.62, -3]);
   assert.equal(h.owner.diagnostics().endingOmen.occupied, true); h.owner.dispose(); assert.equal(h.owner.ready(), false);
 });
 
 test('normal Earthfall default output stays exact; missing ending volume fails clearly', async () => {
   const h = fixture(false); await h.owner.initialize(); const state = stateAt(4.3); h.owner.render(state);
-  assert.deepEqual(h.calls.findLast(c => c.key === 'r3dSetProps').args[0], sourceEarthfallRenderFrame(state).props); h.owner.dispose();
+  const physical = sourceEarthfallRenderFrame(state), shown = sourceEarthfallShakenFrame(physical);
+  assert.deepEqual(h.calls.findLast(c => c.key === 'r3dSetProps').args[0], shown.props);
+  assert.deepEqual(shown.eye, physical.eye, 'ground motion must not move the body camera'); h.owner.dispose();
   const missing = fixture(true, false); await assert.rejects(missing.owner.initialize(), /finite Source nothingness mesh/);
   assert.equal(missing.owner.ready(), false);
 });

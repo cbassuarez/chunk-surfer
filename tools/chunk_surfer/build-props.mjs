@@ -6857,7 +6857,7 @@ fs.writeFileSync(CREDITS,JSON.stringify(credits,null,2)+'\n');
 // The street survey projects the final exterior mesh, never stale room-floor
 // data. Isolated proof bakes keep this derived file beside their own pack.
 const {buildExteriorMapShell}=await import('./build-exterior-map-shell.mjs');
-buildExteriorMapShell({root:ROOT,assetPath:OUT,outputPath:process.env.CHUNK_SURFER_PROPS_OUT_DIR
+buildExteriorMapShell({root:ROOT,assetPath:process.env.CHUNK_SURFER_PROPS_OUT_DIR?OUT:path.join(ROOT,'public/assets/ellery-public-front.glb'),outputPath:process.env.CHUNK_SURFER_PROPS_OUT_DIR
   ?path.join(OUT_DIR,'exterior-map-shell.js'):path.join(ROOT,'src/data/generated/exterior-map-shell.js')});
 
 const realCount=Object.keys(imported).length;

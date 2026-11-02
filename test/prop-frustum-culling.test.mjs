@@ -69,7 +69,8 @@ test('a visible prop reuses exactly the culled transform for upload only within 
   const deformed={id:'paper',mesh:'cube',paperIndex:0,matrix:[...identity.slice(0,12),1,0,-8,1]};
   const uploads=[];let transforms=0;
   const ctx={propBoundsInView,modelMatrix:p=>{transforms++;return new Float32Array(p.matrix)},
-    staticInstances:[ordinary,deformed],dynamicInstances:[],roofWatcherInstances:[],emergencyShadowInstances:[],diagnosticInstances:[],
+    staticInstances:[ordinary,deformed],dynamicInstances:[],roofWatcherInstances:[],emergencyShadowInstances:[],
+    stillnessReliefDrawInstances:[],pressureSurfaceInstances:[],diagnosticInstances:[],
     propDiagnosticsEnabled:false,propDiagnosticOptions:null,propInstanceVisible:()=>true,sourceDoorSceneryInView:()=>true,
     propPortalBatchKey:()=>'',resolvedMeshName:p=>p.mesh,characterSnapshot:()=>null,pack:{catalog:new Map([['cube',boxMesh]])},
     REFLECTION_SKIP:new Set(),PROP_INSTANCE_FLOATS:29,practicalLightFrameByPropId:new Map(),PAPER_ATLAS_HANDLING:[],

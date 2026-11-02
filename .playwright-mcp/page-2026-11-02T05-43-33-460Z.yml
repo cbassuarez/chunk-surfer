@@ -1,0 +1,437 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - link "Skip to main content" [ref=f1e3] [cursor=pointer]:
+      - /url: "#maincontent"
+    - generic [ref=f1e4]:
+      - heading [level=1] [ref=f1e5]:
+        - link "itch.io itch.io logo" [ref=f1e6] [cursor=pointer]:
+          - /url: https://itch.io/
+          - generic [ref=f1e7]: itch.io
+          - img "itch.io logo" [ref=f1e8]
+      - link "Dashboard" [ref=f1e10] [cursor=pointer]:
+        - /url: https://itch.io/dashboard
+      - generic [ref=f1e11]:
+        - text: "Manage:"
+        - link "Edit game" [ref=f1e12] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870
+        - link "Analytics" [ref=f1e13] [cursor=pointer]:
+          - /url: https://itch.io/game/summary/4768870
+        - link "Widget" [ref=f1e14] [cursor=pointer]:
+          - /url: https://itch.io/game/widget/4768870
+        - button " Edit theme" [ref=f1e15] [cursor=pointer]:
+          - generic [ref=f1e16]: 
+          - text: Edit theme
+        - link "Restricted" [ref=f1e18] [cursor=pointer]:
+          - /url: https://itch.io/game/edit/4768870#published
+      - generic [ref=f1e19]:
+        - link "8" [ref=f1e20] [cursor=pointer]:
+          - /url: https://itch.io/notifications
+        - link "seb" [ref=f1e21] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - button "Account Menu" [ref=f1e25] [cursor=pointer]
+  - generic [ref=f1e29]:
+    - generic [ref=f1e31]:
+      - heading "You recently updated this page" [level=2] [ref=f1e32]
+      - generic [ref=f1e33]:
+        - generic [ref=f1e34]:
+          - generic [ref=f1e35]: Consider posting a devlog to notify followers of the updates.
+          - generic [ref=f1e36]: Added CHUNK SURFER for Windows 0.3.0, CHUNK SURFER for macOS (Silicon) 0.3.0, CHUNK SURFER for Linux (Debian) 0.3.0, CHUNK SURFER for Linux (AppImage) 0.3.0, 15 images
+        - generic [ref=f1e37]:
+          - button "Dismiss" [ref=f1e39] [cursor=pointer]
+          - link "New devlog →" [ref=f1e40] [cursor=pointer]:
+            - /url: https://itch.io/dashboard/game/4768870/new-devlog
+    - list:
+      - listitem:
+        - link "Add To Collection" [ref=f1e41] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io/chunk-surfer/add-to-collection?source=game
+    - generic [ref=f1e45]:
+      - text: AUDIOCORP ·LOCAL MONITOR ·SOURCE 4417-C
+      - generic [ref=f1e46]:
+        - img "CHUNK SURFER" [ref=f1e47]
+        - heading "CHUNK SURFER" [level=1] [ref=f1e48]
+      - generic [ref=f1e50]:
+        - generic [ref=f1e51]:
+          - generic [ref=f1e52]:
+            - paragraph [ref=f1e53]: ELLERY HOLDINGS ORDER 4417-C
+            - paragraph [ref=f1e54]:
+              - strong [ref=f1e55]: Five rooms. Five clean takes and you’re done… or so you think.
+            - paragraph [ref=f1e56]: Record the sound of empty rooms in a condemned conservatory. Stay still. Stay silent. Finish before demolition begins.
+            - blockquote [ref=f1e57]:
+              - text: WORK ORDER ·SOURCE 4417-C
+              - strong [ref=f1e58]: site
+              - text: Ellery Conservatory of Music. Condemned.
+              - strong [ref=f1e59]: deliver
+              - text: Five clean room-tone recordings.
+              - strong [ref=f1e60]: window
+              - text: One night. Demolition begins at 06:00.
+              - strong [ref=f1e61]: rules
+              - text: If you can hear yourself on the take, the take is not the room.
+            - paragraph [ref=f1e62]: "● ACCOUNT OPEN: CONTRACTOR PRESENT"
+            - separator [ref=f1e63]
+            - paragraph [ref=f1e64]: 01 / CASE — first person audio-reactive horror
+            - heading "The job is to record nothing." [level=2] [ref=f1e65]
+            - paragraph [ref=f1e66]:
+              - emphasis [ref=f1e67]: Chunk Surfer
+              - text: is a short first-person psychological horror game about sound recording. As a field recordist in the condemned Ellery Conservatory, your job is to capture five clean room sounds as you evade invisible entities, confront your murky past, and figure out what happened to the previous recordist who tried to do this gig first.
+            - paragraph [ref=f1e68]: Monitor each space, roll the recorder, then stay still and silent – or, rather, vulnerable – for a whole minute. Movement or noise can invalidate the take. An optional computer microphone adds noise from your real room through local loudness analysis only; audio is never recorded or uploaded.
+            - paragraph [ref=f1e69]: 02 / MATERIAL — offline shader diffusion over traditional PBR maps
+            - heading "Stable Diffusion in game shader stack." [level=2] [ref=f1e70]
+            - paragraph [ref=f1e71]:
+              - emphasis [ref=f1e72]: Chunk Surfer
+              - text: "is perhaps the first 3D psychological horror game with a local Stable Diffusion material renderer that keeps generating during play: GPU-budgeted local Stable Diffusion designed as neural rendering shaders for video games."
+            - paragraph [ref=f1e73]:
+              - strong [ref=f1e74]: "Technical jargon:"
+              - text: it does not redraw the camera image or replace the game’s regular 3D texture maps. Instead, it layers machine learning hallucinations over authored PBR materials; every 5–15 seconds, when the frame budget permits, one visible surface is re-hallucinated and crossfaded into the building over 6–12 seconds. This is real-time AI texture crossfading rather than full-screen frame generation. On top of traditional PBR maps sits this hallucination engine, which itself sits under an 8-bit mesh.
+            - paragraph [ref=f1e75]: The result is a unique low-resolution look that is neither 8bit nor diffused nor traditional PBR texturing, but a mix of the three.
+            - paragraph [ref=f1e76]: Geometry, lighting, depth, movement, and UI remain native, while reaction-diffusion, VFD pixel-mesh, datamosh, and glass shaders complete the stack. The entire visual lens runs locally and offline on the player’s GPU. No image is uploaded to a cloud service.
+            - paragraph [ref=f1e77]: 03 / FIELD — listen. record. do not move.
+            - heading "Your movement betrays you." [level=2] [ref=f1e78]
+            - paragraph [ref=f1e79]: Monitor each assigned space before committing to a take. Once the recorder rolls, light and movement become liabilities. A clean recording advances the work order. A contaminated one must be attempted again, and a loud mistake can give whatever else is in the building someone to follow.
+            - paragraph [ref=f1e80]: Your torch makes the conservatory visible but its battery is finite and its beam attracts attention. Footsteps, handling, and injuries make noise. Corridors outside your sight and hearing can change, so a remembered route may not remain the route you return to.
+            - paragraph [ref=f1e81]: 04 / RECORD — redaction turn-based combat
+            - heading "Pick up the pieces." [level=2] [ref=f1e82]
+            - paragraph [ref=f1e83]: "Inspect the packet left by the previous contractor and play back what your recorder captured. Later encounters turn transcript redaction into a physical struggle: choose what to black out, protect what remains readable, and live with the record you produce."
+            - blockquote [ref=f1e84]: a game of redaction. black out the words that change your reality to favorable odds.
+            - paragraph [ref=f1e85]: 05 / SOURCE — source space
+            - heading "The game’s own files become the map." [level=2] [ref=f1e86]
+            - paragraph [ref=f1e87]: The investigation eventually ruptures into literal source-code space, where the game’s own files become terrain, passages, and surfaces that can be altered. The machinery behind the fiction is not a bonus menu. It is somewhere you go.
+            - paragraph [ref=f1e88]: 06 / INPUT — let your room into the game—or do not
+            - heading "Your microphone is optional. Its consequences are not cosmetic." [level=2] [ref=f1e89]
+            - paragraph [ref=f1e90]:
+              - text: When enabled,
+              - emphasis [ref=f1e91]: Chunk Surfer
+              - text: measures loudness locally while a take is rolling. Noise in your real room can contaminate a take or provoke an in-game response. It never records, stores, transmits, uploads, or plays back microphone audio.
+            - paragraph [ref=f1e92]: You can deny or revoke permission and complete the game without microphone input.
+            - paragraph [ref=f1e93]: 07 / RELEASE — public beta
+            - heading "Now out for public beta testing." [level=2] [ref=f1e94]
+            - paragraph [ref=f1e95]: This game is in its nascent stages. Expect some bugs. Dialog is very likely to change, story is not. Expected bugs list and feedback links incoming soon.
+            - list [ref=f1e96]:
+              - listitem [ref=f1e97]:
+                - strong [ref=f1e98]: mac
+                - generic [ref=f1e99]: apple silicon
+              - listitem [ref=f1e100]:
+                - strong [ref=f1e101]: windows
+                - generic [ref=f1e102]: x64 + nvidia cuda
+              - listitem [ref=f1e103]:
+                - strong [ref=f1e104]: linux
+                - generic [ref=f1e105]: appimage / deb — x64 + nvidia cuda
+              - listitem [ref=f1e106]:
+                - strong [ref=f1e107]: beta
+                - generic [ref=f1e108]: unsigned
+            - paragraph [ref=f1e109]: Full requirements, first-launch approval steps and download sizes are in the install instructions below the downloads.
+            - heading "content warning (general horror)" [level=2] [ref=f1e110]
+            - paragraph [ref=f1e111]: CAUTION Sustained dread, sudden loud sounds, a small number of deliberate jumpscares, and flashing or high-contrast strobing effects. Settings can reduce or disable intense physical presentation effects.
+            - separator [ref=f1e112]
+            - paragraph [ref=f1e113]: order 4417-C remains open
+            - heading "Five rooms. Five clean takes." [level=2] [ref=f1e114]
+            - paragraph [ref=f1e115]:
+              - strong [ref=f1e116]: Do you take the gig?
+          - generic [ref=f1e117]:
+            - link "More information" [ref=f1e119] [cursor=pointer]:
+              - /url: javascript:void(0)
+            - text: 
+          - generic [ref=f1e122]:
+            - text: DELIVERABLES
+            - heading "Download" [level=2] [ref=f1e123]
+            - generic [ref=f1e124]:
+              - generic [ref=f1e125]:
+                - link "Download" [ref=f1e126] [cursor=pointer]:
+                  - /url: javascript:void(0);
+                - generic [ref=f1e127]:
+                  - generic [ref=f1e128]:
+                    - strong [ref=f1e129]: CHUNK SURFER for Windows
+                    - generic [ref=f1e130]: 488 MB
+                    - generic [aria-hidden] [ref=f1e132]: 
+                  - generic [ref=f1e133]:
+                    - text: Version 0.3.0
+                    - generic "01 November 2026 @ 07:59 UTC" [ref=f1e135]:
+                      - generic [aria-hidden] [ref=f1e136]: 
+                      - text: 21 hours ago
+              - generic [ref=f1e137]:
+                - link "Download" [ref=f1e138] [cursor=pointer]:
+                  - /url: javascript:void(0);
+                - generic [ref=f1e139]:
+                  - generic [ref=f1e140]:
+                    - strong [ref=f1e141]: CHUNK SURFER for macOS (Silicon)
+                    - generic [ref=f1e142]: 494 MB
+                    - generic [aria-hidden] [ref=f1e144]: 
+                  - generic [ref=f1e145]:
+                    - text: Version 0.3.0
+                    - generic "01 November 2026 @ 07:59 UTC" [ref=f1e147]:
+                      - generic [aria-hidden] [ref=f1e148]: 
+                      - text: 21 hours ago
+              - generic [ref=f1e149]:
+                - link "Download" [ref=f1e150] [cursor=pointer]:
+                  - /url: javascript:void(0);
+                - generic [ref=f1e151]:
+                  - generic [ref=f1e152]:
+                    - strong [ref=f1e153]: CHUNK SURFER for Linux (Debian)
+                    - generic [ref=f1e154]: 489 MB
+                    - generic [aria-hidden] [ref=f1e156]: 
+                  - generic [ref=f1e157]:
+                    - text: Version 0.3.0
+                    - generic "01 November 2026 @ 08:00 UTC" [ref=f1e159]:
+                      - generic [aria-hidden] [ref=f1e160]: 
+                      - text: 21 hours ago
+              - generic [ref=f1e161]:
+                - link "Download" [ref=f1e162] [cursor=pointer]:
+                  - /url: javascript:void(0);
+                - generic [ref=f1e163]:
+                  - generic [ref=f1e164]:
+                    - strong [ref=f1e165]: CHUNK SURFER for Linux (AppImage)
+                    - generic [ref=f1e166]: 562 MB
+                    - generic [aria-hidden] [ref=f1e168]: 
+                  - generic [ref=f1e169]:
+                    - text: Version 0.3.0
+                    - generic "01 November 2026 @ 08:00 UTC" [ref=f1e171]:
+                      - generic [aria-hidden] [ref=f1e172]: 
+                      - text: 21 hours ago
+          - generic [ref=f1e173]:
+            - heading "Install instructions" [level=2] [ref=f1e174]
+            - generic [ref=f1e175]:
+              - paragraph
+              - heading "DOWNLOAD and INSTALLATION" [level=1] [ref=f1e176]
+              - paragraph [ref=f1e177]:
+                - strong [ref=f1e178]: Chunk Surfer is currently in beta.
+                - text: Features, compatibility, performance, and system requirements may change during development.
+              - paragraph [ref=f1e179]:
+                - text: For the intended audio experience,
+                - strong [ref=f1e180]: headphones are strongly recommended
+                - text: .
+              - paragraph [ref=f1e181]: Chunk Surfer supports keyboard and mouse as well as full controller input.
+              - heading "WINDOWS" [level=2] [ref=f1e182]
+              - paragraph [ref=f1e183]:
+                - text: Download the
+                - strong [ref=f1e184]:
+                  - text: Windows
+                  - code [ref=f1e185]: .exe
+                  - text: installer
+                - text: .
+              - paragraph [ref=f1e186]:
+                - strong [ref=f1e187]: Requirements
+              - list [ref=f1e188]:
+                - listitem [ref=f1e189]: Windows 11, 64-bit
+                - listitem [ref=f1e190]: 8 GB RAM minimum
+                - listitem [ref=f1e191]: 5 GB available storage
+                - listitem [ref=f1e192]: Modern integrated or dedicated graphics hardware
+                - listitem [ref=f1e193]: Current graphics drivers recommended
+              - paragraph [ref=f1e194]:
+                - strong [ref=f1e195]: Installation
+              - list [ref=f1e196]:
+                - listitem [ref=f1e197]: Download the Windows installer.
+                - listitem [ref=f1e198]:
+                  - text: Double-click the downloaded
+                  - code [ref=f1e199]: .exe
+                  - text: .
+                - listitem [ref=f1e200]: Follow the installation prompts.
+                - listitem [ref=f1e201]: Launch Chunk Surfer from the Start menu or desktop shortcut.
+              - paragraph [ref=f1e202]: Because this is a beta build, Windows may display an unknown-publisher or security warning. Only continue when the installer was downloaded directly from the official Chunk Surfer itch.io page.
+              - heading "macOS" [level=3] [ref=f1e203]
+              - paragraph [ref=f1e204]:
+                - text: This build supports
+                - strong [ref=f1e205]: Apple Silicon Macs only
+                - text: .
+              - paragraph [ref=f1e206]: Supported processors include Apple M-series chips. Intel Macs are not currently supported.
+              - paragraph [ref=f1e207]:
+                - strong [ref=f1e208]: Requirements
+              - list [ref=f1e209]:
+                - listitem [ref=f1e210]: Apple Silicon Mac
+                - listitem [ref=f1e211]: macOS 11 Big Sur or later
+                - listitem [ref=f1e212]: 8 GB RAM minimum
+                - listitem [ref=f1e213]: 5 GB available storage
+              - paragraph [ref=f1e214]:
+                - strong [ref=f1e215]: Installation
+              - list [ref=f1e216]:
+                - listitem [ref=f1e217]:
+                  - text: Download the macOS
+                  - code [ref=f1e218]: .dmg
+                  - text: .
+                - listitem [ref=f1e219]: Double-click the downloaded disk image.
+                - listitem [ref=f1e220]:
+                  - text: Drag
+                  - strong [ref=f1e221]: Chunk Surfer
+                  - text: into the
+                  - strong [ref=f1e222]: Applications
+                  - text: folder.
+                - listitem [ref=f1e223]: Eject the Chunk Surfer disk image.
+                - listitem [ref=f1e224]: Open Chunk Surfer from Applications.
+              - heading "Current unsigned-beta notice" [level=4] [ref=f1e225]
+              - paragraph [ref=f1e226]: The current beta may not yet be signed and notarized by Apple. macOS may therefore prevent it from opening normally.
+              - paragraph [ref=f1e227]: "After attempting to open the game:"
+              - list [ref=f1e228]:
+                - listitem [ref=f1e229]:
+                  - text: Open
+                  - strong [ref=f1e230]: System Settings
+                  - text: .
+                - listitem [ref=f1e231]:
+                  - text: Select
+                  - strong [ref=f1e232]: Privacy & Security
+                  - text: .
+                - listitem [ref=f1e233]: Scroll to the Security section.
+                - listitem [ref=f1e234]: Find the message concerning Chunk Surfer.
+                - listitem [ref=f1e235]:
+                  - text: Select
+                  - strong [ref=f1e236]: Open Anyway
+                  - text: .
+                - listitem [ref=f1e237]: Confirm that you want to open the application.
+              - paragraph [ref=f1e238]: Only override this warning when the game was downloaded directly from the official Chunk Surfer itch.io page.
+              - paragraph [ref=f1e239]: This section will be removed once the macOS release is signed and notarized.
+              - heading "LINUX (AppImage)" [level=3] [ref=f1e240]
+              - paragraph [ref=f1e241]: The AppImage is the recommended Linux download for most players.
+              - paragraph [ref=f1e242]:
+                - strong [ref=f1e243]: Requirements
+              - list [ref=f1e244]:
+                - listitem [ref=f1e245]: 64-bit Linux system
+                - listitem [ref=f1e246]: Ubuntu 26.04 LTS or a compatible modern distribution
+                - listitem [ref=f1e247]: 8 GB RAM minimum
+                - listitem [ref=f1e248]: 7.5 GB available storage
+                - listitem [ref=f1e249]: Modern integrated or dedicated graphics hardware
+                - listitem [ref=f1e250]: Current graphics drivers recommended
+              - paragraph [ref=f1e251]:
+                - strong [ref=f1e252]: Installation
+              - list [ref=f1e253]:
+                - listitem [ref=f1e254]:
+                  - text: Download the
+                  - code [ref=f1e255]: .AppImage
+                  - text: .
+                - listitem [ref=f1e256]: Open a terminal in the download folder.
+                - listitem [ref=f1e257]: "Make the file executable:"
+              - generic [ref=f1e258]: chmod +x ./Chunk-Surfer*.AppImage
+              - list [ref=f1e259]:
+                - listitem [ref=f1e260]: "Launch the game:"
+              - generic [ref=f1e261]: ./Chunk-Surfer*.AppImage
+              - paragraph [ref=f1e262]:
+                - text: Many Linux file managers also allow you to right-click the AppImage, open
+                - strong [ref=f1e263]: Properties
+                - text: ", enable"
+                - strong [ref=f1e264]: Allow executing file as program
+                - text: ", and then double-click it."
+              - heading "LINUX (DEBIAN PACKAGE)" [level=3] [ref=f1e265]
+              - paragraph [ref=f1e266]:
+                - text: The
+                - code [ref=f1e267]: .deb
+                - text: package is intended for Ubuntu, Debian, and compatible Debian-based distributions.
+              - paragraph [ref=f1e268]: "Install it by opening the downloaded package in your software installer, or run:"
+              - generic [ref=f1e269]: sudo apt install ./chunk-surfer*.deb
+              - paragraph [ref=f1e270]: After installation, launch Chunk Surfer from your application menu.
+              - paragraph [ref=f1e271]: Players using another Linux distribution should generally choose the AppImage instead.
+              - heading "AUDIO" [level=2] [ref=f1e272]
+              - paragraph [ref=f1e273]: Headphones are strongly recommended.
+              - paragraph [ref=f1e274]: No specific Bluetooth, audio-interface, or sample-rate compatibility problems are currently known. During the beta, please report any device-specific audio issues.
+              - paragraph [ref=f1e275]: "When reporting an audio problem, include:"
+              - list [ref=f1e276]:
+                - listitem [ref=f1e277]: Operating system and version
+                - listitem [ref=f1e278]: Headphone, speaker, or audio-interface model
+                - listitem [ref=f1e279]: Connection type, such as wired, Bluetooth, USB, or HDMI
+                - listitem [ref=f1e280]: Sample rate, when known
+                - listitem [ref=f1e281]: Whether the problem occurs immediately or after playing for a while
+              - heading "CONTROLLERS" [level=2] [ref=f1e282]
+              - paragraph [ref=f1e283]: Chunk Surfer supports full controller input as well as keyboard and mouse.
+              - paragraph [ref=f1e284]: Controller support can vary by operating system, driver, connection type, and controller model. Please include those details when reporting an input problem.
+              - heading "PERMISSIONS" [level=2] [ref=f1e285]
+              - paragraph [ref=f1e286]: Chunk Surfer may request optional operating-system permissions.
+              - paragraph [ref=f1e287]: These permissions are not required for normal gameplay. You may deny them and continue playing.
+              - paragraph [ref=f1e288]: Permissions can be reviewed or changed later through your operating system’s privacy or application settings.
+              - heading "SAVING PROGRESS" [level=2] [ref=f1e289]
+              - paragraph [ref=f1e290]: Chunk Surfer saves progress automatically to local application data.
+              - list [ref=f1e291]:
+                - listitem [ref=f1e292]: There is no manual save button.
+                - listitem [ref=f1e293]: Progress is stored on the current computer.
+                - listitem [ref=f1e294]: Cloud saves are not currently available.
+                - listitem [ref=f1e295]: Saves do not automatically transfer between computers or operating systems.
+                - listitem [ref=f1e296]: Avoid deleting local application data unless you intend to reset your progress.
+              - paragraph [ref=f1e297]: Because this is a beta, save compatibility between major builds is not guaranteed. Any update that intentionally resets or changes save data will be identified in the release notes.
+              - heading "UPDATING the GAME" [level=2] [ref=f1e298]
+              - paragraph [ref=f1e299]: Players using the itch.io desktop app may receive updates through the app when a compatible build is available.
+              - paragraph [ref=f1e300]: Players who download directly from the website should return to this page to download new beta releases.
+              - paragraph [ref=f1e301]: Unless a release note says otherwise, installing an update over the existing version should preserve local progress. During the beta, keeping a copy of important save data is recommended before installing major updates.
+              - heading "TROUBLESHOOTING" [level=2] [ref=f1e302]
+              - paragraph [ref=f1e303]: "Before reporting a problem:"
+              - list [ref=f1e304]:
+                - listitem [ref=f1e305]: Confirm that you downloaded the correct build for your operating system.
+                - listitem [ref=f1e306]: Restart the game.
+                - listitem [ref=f1e307]: Restart your computer.
+                - listitem [ref=f1e308]: Confirm that your graphics drivers and operating system are current.
+                - listitem [ref=f1e309]: Disconnect unnecessary controllers or audio devices and try again.
+                - listitem [ref=f1e310]: Re-download the build if the installer or archive may be incomplete.
+              - paragraph [ref=f1e311]: "When reporting a bug, please include:"
+              - list [ref=f1e312]:
+                - listitem [ref=f1e313]: Operating system and version
+                - listitem [ref=f1e314]: Computer model or hardware specifications
+                - listitem [ref=f1e315]:
+                  - text: "Download used: Windows, macOS, AppImage, or"
+                  - code [ref=f1e316]: .deb
+                - listitem [ref=f1e317]: Game version
+                - listitem [ref=f1e318]: Keyboard/mouse or controller
+                - listitem [ref=f1e319]: What you expected to happen
+                - listitem [ref=f1e320]: What happened instead
+                - listitem [ref=f1e321]: Steps that reproduce the problem
+                - listitem [ref=f1e322]: Screenshot, video, or error message when available
+              - paragraph [ref=f1e323]: Thank you for helping test Chunk Surfer.
+          - generic [ref=f1e324]:
+            - heading "Development log" [level=2] [ref=f1e325]
+            - list [ref=f1e326]:
+              - listitem [ref=f1e327]:
+                - link "Initial beta" [ref=f1e328] [cursor=pointer]:
+                  - /url: https://cbassuarez.itch.io/chunk-surfer/devlog/1586760/initial-beta
+                - generic "15 July 2026 @ 01:43 UTC" [ref=f1e330]:  Jul 15, 2026
+          - generic [ref=f1e332]:
+            - heading "Comments" [level=2] [ref=f1e333]
+            - textbox "Write your comment…" [ref=f1e336]
+        - generic [ref=f1e338]:
+          - link [ref=f1e339] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjcyNy5wbmc=/original/C56R7X.png
+          - link [ref=f1e341] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNC5wbmc=/original/L9QG27.png
+          - link [ref=f1e343] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNy5wbmc=/original/msYG9g.png
+          - link [ref=f1e345] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczOS5wbmc=/original/wA5QRg.png
+          - link [ref=f1e347] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg4MjI2OC5wbmc=/original/jpQ9c7.png
+          - link [ref=f1e349] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNi5wbmc=/original/NHheR2.png
+          - link [ref=f1e351] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczNS5wbmc=/original/sxauwR.png
+          - link [ref=f1e353] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg3NjczOC5wbmc=/original/Jk1sBm.png
+          - link [ref=f1e355] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8yODg4MzEzMS5wbmc=/original/XJmgu9.png
+          - link [ref=f1e357] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNS5qcGc=/original/F3mu%2Fa.jpg
+          - link [ref=f1e359] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOC5qcGc=/original/7rL9JL.jpg
+          - link [ref=f1e361] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNy5qcGc=/original/uMkj4D.jpg
+          - link [ref=f1e363] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNi5qcGc=/original/eE0fjK.jpg
+          - link [ref=f1e365] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxOS5qcGc=/original/9tNIpz.jpg
+          - link [ref=f1e367] [cursor=pointer]:
+            - /url: https://img.itch.zone/aW1hZ2UvNDc2ODg3MC8zMTcxMjYxNC5qcGc=/original/oOt8l3.jpg
+      - generic [ref=f1e369]:
+        - link [ref=f1e370] [cursor=pointer]:
+          - /url: https://itch.io/
+        - link "itch.io" [ref=f1e373] [cursor=pointer]:
+          - /url: https://itch.io/
+        - generic [ref=f1e374]: ·
+        - link "View all by seb" [ref=f1e375] [cursor=pointer]:
+          - /url: https://cbassuarez.itch.io
+        - generic [ref=f1e376]: ·
+        - link "Report" [ref=f1e377] [cursor=pointer]:
+          - /url: javascript:void(0);
+        - generic [ref=f1e378]: ·
+        - link "Embed" [ref=f1e379] [cursor=pointer]:
+          - /url: javascript:void(0);
+        - generic [ref=f1e380]: ·
+        - generic [ref=f1e381]: Updated 13 seconds ago
+        - generic [ref=f1e382]:
+          - link "Games" [ref=f1e383] [cursor=pointer]:
+            - /url: https://itch.io/games
+          - text: ›
+          - link "Adventure" [ref=f1e384] [cursor=pointer]:
+            - /url: https://itch.io/games/genre-adventure
+          - text: ›
+          - link "Free" [ref=f1e385] [cursor=pointer]:
+            - /url: https://itch.io/games/free
+      - text: ELLERY CONSERVATORY OF MUSIC ·CONDEMNED ·DEMOLITION 06:00

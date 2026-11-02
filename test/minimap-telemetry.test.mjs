@@ -43,7 +43,7 @@ test('minimap confirms what HUSH knows only after the player physically senses i
   assert.deepEqual(tracing, { label: 'TRACING', cls: 'ui-amber', detail: '64%', floorDelta: 0 });
 });
 
-test('stale minimap telemetry is capped, transformed, and age-faded', () => {
+test('stale acoustic telemetry cannot leave an exact-position HUSH radar trail', () => {
   const contacts = Array.from({ length: 9 }, (_, index) => ({
     id: `c${index}`,
     state: 'decaying',
@@ -57,11 +57,7 @@ test('stale minimap telemetry is capped, transformed, and age-faded', () => {
   const model = { player: { floorId: 'g' }, contacts };
   const commands = [{ kind: 'sight', transform: { point: (point) => ({ x: point.x + 10, y: point.y + 20 }) } }];
   const crumbs = minimapTelemetryCrumbs(model, commands, 6000);
-  assert.ok(crumbs.length <= 7);
-  assert.ok(crumbs.length > 0);
-  assert.ok(crumbs.every((crumb) => crumb.alpha > 0 && crumb.alpha < 0.18));
-  assert.ok(crumbs.every((crumb) => crumb.point.x >= 10 && crumb.point.y >= 21));
-  assert.ok(!crumbs.some((crumb) => crumb.point.x === 18), 'newest contact stays the live observation, not a crumb');
+  assert.deepEqual(crumbs, [], 'direct visibility is required now, not merely at an older observation');
 });
 
 test('minimap reveals the HUSH body only during direct visual confirmation', () => {

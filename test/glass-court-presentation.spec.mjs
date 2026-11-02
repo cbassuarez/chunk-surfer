@@ -10,15 +10,15 @@ import {GLASS_COURT_PRESENCES} from '../src/data/glass-court-presences.js';
 import {glassCourtCoveredAt,glassCourtRoofHeightAt,GLASS_COURT_RAIN_GLSL} from '../src/render/glass-court-weather.js';
 
 test('shelter follows the real gabled roof and leaves the approach and sky above it exposed',()=>{
-  assert.equal(glassCourtCoveredAt(84,26,0),false,'the preceding atrium is outside this canopy');
-  assert.equal(glassCourtCoveredAt(74,29,0),true);
-  assert.equal(glassCourtCoveredAt(90,31,0),true);
+  assert.equal(glassCourtCoveredAt(84,14,0),false,'the preceding atrium is outside this canopy');
+  assert.equal(glassCourtCoveredAt(83,17,0),true);
+  assert.equal(glassCourtCoveredAt(85,26,0),true);
   assert.equal(glassCourtCoveredAt(94,30,0),false,'the drying lobby has its own ceiling');
   assert.equal(glassCourtCoveredAt(145.5,16,0),false,'the earlier street study is restored');
   assert.equal(glassCourtCoveredAt(84,30,6),false,'being above the roof is not shelter');
   assert.equal(glassCourtCoveredAt(NaN,30,0),false);
-  assert.equal(glassCourtRoofHeightAt(84,30),C.drawnFloor+C.ridge);
-  assert.equal(glassCourtRoofHeightAt(84,28),C.drawnFloor+C.eaves);
+  assert.equal(glassCourtRoofHeightAt(84,21),C.drawnFloor+C.ridge);
+  assert.equal(glassCourtRoofHeightAt(82,21),C.drawnFloor+C.eaves);
 });
 
 test('the actual main camera adapter uses physical metres and gates shelter on loaded ordinary geometry',()=>{
@@ -26,14 +26,14 @@ test('the actual main camera adapter uses physical metres and gates shelter on l
   const source=main.match(/function glassCourtShelteredAtPlayer\(\)\{[\s\S]*?\n\}/)?.[0];
   assert.ok(source);
   const context={usingPlan:()=>true,usingSpecialSpace:()=>false,
-    R3:{r3dGlassCourtReady:()=>true},FP:{logicalToPhysical:()=>({x:160,z:60,y:0})},
+    R3:{r3dGlassCourtReady:()=>true},FP:{logicalToPhysical:()=>({x:166,z:42,y:0})},
     px:0,py:0,CELL:.5,glassCourtCoveredAt};
   const run=()=>vm.runInNewContext(`(${source})()`,context);
   assert.equal(run(),true,'the runtime cell centre maps beneath the real roof');
   context.R3.r3dGlassCourtReady=()=>false;assert.equal(run(),false,'a missing pack supplies no invisible roof');
   context.R3.r3dGlassCourtReady=()=>true;context.usingSpecialSpace=()=>true;
   assert.equal(run(),false,'Source is not covered by a geographically coincident ordinary roof');
-  context.usingSpecialSpace=()=>false;context.FP.logicalToPhysical=()=>({x:168,z:52,y:0});
+  context.usingSpecialSpace=()=>false;context.FP.logicalToPhysical=()=>({x:168,z:28,y:0});
   assert.equal(run(),false,'returning to the atrium leaves the greenhouse roof');
 });
 
@@ -75,7 +75,10 @@ test('missing greenhouse geometry cannot expose its hidden bodies in the empty p
   PROPS.setColliderGroupEnabled('glass-court',true);
   const visible=PROPS.renderInstances({inscriptions:false}).filter(p=>ids.has(p.id));
   assert.equal(visible.length,2);
-  for(const p of visible){assert.ok(p.x>71&&p.x<92&&p.z>28&&p.z<29.1);}
+  for(const p of visible){
+    const bed=C.plantingBands.find(b=>p.x>C.origin.x+b.x0&&p.x<C.origin.x+b.x1&&p.z>C.origin.z+b.z0&&p.z<C.origin.z+b.z1);
+    assert.ok(bed,'the loaded figure remains inside a real planted band');
+  }
   PROPS.setColliderGroupEnabled('glass-court',false);
 });
 

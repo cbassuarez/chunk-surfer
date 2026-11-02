@@ -1,4 +1,4 @@
-import {pubWorldFromLocal,EXTERIOR_PUB} from '../data/exterior-pub.js';
+import {pubPhysicalFromLocal,EXTERIOR_PUB} from '../data/exterior-pub.js';
 import {pubQuestState} from '../game/pub-quest.js';
 import {ZONE} from '../data/floorplan/legend.js';
 
@@ -48,7 +48,7 @@ export function applyPubPressureToGlass(instance,frame){
 
 export function pubServiceDrinks(flags={}, {timeSec=0}={}) {
   if(!pubQuestState(flags).watersServed)return {'pub-patron-mavis':null};
-  const placement=PUB_SERVICE_PLACEMENTS.find(p=>p.id==='pub-water-mavis'),at=pubWorldFromLocal(placement);
+  const placement=PUB_SERVICE_PLACEMENTS.find(p=>p.id==='pub-water-mavis'),at=pubPhysicalFromLocal(placement);
   return {'pub-patron-mavis':{kind:'water',handoff:true,restWorld:[at.x,EXTERIOR_PUB.floor+.790,at.z],timeSec:Math.max(0,Number(timeSec)||0)}};
 }
 
@@ -58,7 +58,7 @@ export function pubServiceInstances(flags={}, {source=false,carrier=null,drinksB
   for(const vessel of tables?PUB_SERVICE_PLACEMENTS:[]){
     if(vessel.kind==='water'?!state.watersServed:state.emptiesCollected)continue;
     if(vessel.id==='pub-water-mavis'&&drinksByActor['pub-patron-mavis']?.kind==='water')continue;
-    const point=pubWorldFromLocal(vessel);
+    const point=pubPhysicalFromLocal(vessel);
     out.push(applyPubPressureToGlass({id:vessel.id,mesh:vessel.kind==='water'?'pub_service_water_glass':'pub_service_empty_glass',
       x:point.x,y:EXTERIOR_PUB.floor+.790,z:point.z,yaw:0,zone:ZONE.pub,structural:false},pressureFrame));
   }

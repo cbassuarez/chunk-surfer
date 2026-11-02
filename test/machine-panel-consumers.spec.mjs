@@ -2,19 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
-import { machinePanelAperture, machinePanelBody } from '../src/render/presentation.js';
+import { machinePanelAperture, machinePanelBody, machinePanelBezelRail } from '../src/render/presentation.js';
 import { createHitRegions } from '../src/render/hit-regions.js';
 import { visiblePresets, normalizeRuleValues, cycleRuleValue } from '../src/progression/difficulty.js';
 import { RULE_HELP, RULE_LABELS, VALUE_LABELS } from '../src/progression/difficulty-defs.js';
 import { deriveUnlocks } from '../src/progression/unlocks.js';
 import { createLocalTextReview } from '../src/game/local-text-review.js';
+import * as ARCHIVE_MODEL from '../src/game/archive-model.js';
+import * as DECK from '../src/render/achievement-deck.js';
+import {achievementDefinition,achievementEntries,achievementCompletion} from '../src/progression/achievements.js';
+import {achievementEarnedReason,achievementPresentationCategory} from '../src/data/achievement-presentation.js';
+import {completionCollections} from '../src/progression/completion.js';
+import {returnFileEntries} from '../src/game/second-shift.js';
+import {fitText,fitLines} from '../src/render/fit-text.js';
+import {measureElectronicText} from '../src/render/electronic-text.js';
+import {playDurationLine} from '../src/game/play-duration.js';
 
 const gameSource = (file) => readFileSync(new URL(`../src/game/${file}.js`, import.meta.url), 'utf8');
 const consumers = {
-  'achievement-notice': 1, archive: 1, 'bell-peal-scene': 1, 'beta-notice': 1,
-  coldopen: 2, 'controller-settings': 1, dialogue: 1, 'difficulty-select': 2,
+  'bell-peal-scene': 1, 'beta-notice': 1,
+  coldopen: 1, 'controller-settings': 1, dialogue: 1, 'difficulty-select': 2,
   'eula-scene': 1, 'god-menu': 1, 'hush-audio-lab': 1, 'hush-run': 5,
-  pause: 1, 'progression-lab': 1, 'return-index': 1, 'return-report': 2,
+  pause: 1, 'progression-lab': 1, 'return-index': 1, 'return-report': 1,
   settings: 1, 'setup-handoff-scene': 2,
   speech: 1, 'story-art-preview': 1, thoughts: 1, title: 1, 'transfer-room': 1, warning: 1,
 };
@@ -52,10 +61,11 @@ function surfaceHarness(extra = {}) {
     activeInputPromptDevice: () => 'keyboard',
     promptLine: (parts) => parts.map((part) => part.label).join(' / '),
     UI_COLOR: { glass: '#030503', amber: '#d9ab73', frame: '#555', primary: '#bfd2bc' },
+    machinePanelBezelRail,
     withMachinePanel(x, y, w, h, options, drawContent) {
       assert.equal(depth, 0, 'one presenter may not start a second display inside its first');
       assert.equal(typeof drawContent, 'function');
-      const body = machinePanelBody(x, y, w, h, { footer: options.footer || options.footerParts?.length ? 'CONTROLS' : '' });
+      const body = machinePanelBody(x, y, w, h, { footer: options.footer || options.footerParts?.length ? 'CONTROLS' : '',apertureBounds:options.bodyWithinAperture?options.apertureBounds:null });
       panels.push({ x, y, w, h, options, body });
       events.push({ kind: 'back' });
       depth++;
@@ -71,7 +81,7 @@ function surfaceHarness(extra = {}) {
     },
     ...extra,
   };
-  return { events, panels, lamps, globals, electronic };
+  return { events, panels, lamps, globals, electronic, outer };
 }
 
 function assertTextFitsWell(harness) {
@@ -85,7 +95,49 @@ function assertTextFitsWell(harness) {
   }
 }
 
-test('all 32 scoped electronic panel branches submit their body through the optical callback', () => {
+// The notice and MASTER INDEX now own two actual machined apertures rather
+// than borrowing a generic monitor. Execute their real drawing module; only
+// Canvas/material sinks are recorded, with the actual glyph metrics and clips.
+function deckHarness(size){
+  const events=[],wells=[],clips=[],stack=[];let well=null;
+  const ctx={globalAlpha:1,save(){stack.push(this.globalAlpha);},restore(){this.globalAlpha=stack.pop();},fillRect(){}};
+  const metrics={ctx,dpr:1,cellW:8.45,cellH:20};
+  const text=(value,x,y,options={})=>{
+    const width=measureElectronicText(value,{fontSize:options.fontSize||15,cellWidth:options.cellWidth});
+    const align=options.align||'left';if(align==='right')x-=width;else if(align==='center')x-=width/2;
+    events.push({kind:'electrode',value:String(value),x,y,w:width,h:options.fontSize||15,clip:clips.at(-1)||well,options});
+  };
+  const context={achievementPresentationCategory,ACHIEVEMENT_RESIN_TONES:DECK.ACHIEVEMENT_DECK_TONES,
+    uiCellMetrics:()=>metrics,uiDraw:fn=>{ctx.save();try{return fn(metrics);}finally{ctx.restore();}},uiDrawHardware:fn=>fn(metrics),
+    uiWithClip:(r,fn)=>{clips.push({x:r.x*metrics.cellW,y:r.y*metrics.cellH,w:r.w*metrics.cellW,h:r.h*metrics.cellH});try{return fn();}finally{clips.pop();}},
+    uiWithHardwareLayer:(draw,cover)=>{try{return draw();}finally{cover();}},hardwareMotionReduced:()=>true,measureElectronicText,
+    drawElectronicText:(_,value,x,y,options)=>text(value,x,y,options),
+    drawInstrumentPlate:(_,r)=>events.push({kind:'plate',...r}),drawHardwarePrint:()=>{},
+    drawInstrumentWell:(_,r)=>{well={...r};wells.push(well);events.push({kind:'well',...r});},
+    drawInstrumentGlass:(_,r)=>{events.push({kind:'cover',...r});well=null;},
+    drawAchievementResinKey:(_,x,y,w,h)=>({content:{x:x+2,y:y+2,w:w-4,h:h-4}}),drawAchievementIconToCanvas:()=>{},
+  };
+  const source=readFileSync(new URL('../src/render/achievement-deck.js',import.meta.url),'utf8').replace(/^import[^\n]*\n/gm,'').replaceAll('export function ','function ').replaceAll('export const ','const ');
+  const names=[...source.matchAll(/^(?:function|const) (\w+)/gm)].map(m=>m[1]);
+  const actual=runInNewContext(source+'\n({'+names.join(',')+'})',context);
+  const globals={...ARCHIVE_MODEL,...actual,uiSize:()=>size,uiCellMetrics:()=>metrics,
+    achievementDefinition,achievementEntries,achievementCompletion,achievementEarnedReason,completionCollections,returnFileEntries,
+    getMeta:()=>({}),getSave:()=>({}),playDurationLine,createHitRegions,fitText,fitLines,hardwareMotionReduced:()=>true,
+    resolveNotice:notice=>({title:achievementDefinition(notice.achievementId).name,body:achievementEarnedReason(notice.achievementId)}),
+    consumeNotice(){},scenes:{remove(){},pop(){}},AUDIO:new Proxy({},{get:()=>()=>{}}),
+    uiFill(){},uiLine(){},uiWrap:fitLines,UI_COLOR:{amber:'#edc086',green:'#b8d49d',frame:'#78816d',glass:'#07120d'},
+    uiWithClip:context.uiWithClip,
+    uiText:(x,y,value)=>text(value,x*metrics.cellW,y*metrics.cellH,{fontSize:16,cellWidth:metrics.cellW}),
+    drawVfdText:(x,y,value,o={})=>text(value,x*metrics.cellW,y*metrics.cellH,{fontSize:16*(o.scale||1),cellWidth:metrics.cellW*(o.scale||1)}),
+    inputPrompt:action=>action.toUpperCase(),activeInputPromptDevice:()=>'keyboard',PB:{archivedPlaybackActive:()=>false},
+    archivedRecordingRows:()=>[],archivedRecordingStatus:()=>'',takeStamp:()=>'',returnDefinition:()=>null,endingHintForEnding:()=>'',
+    TAB_LABEL:{achievements:'ACHIEVEMENTS',discoveries:'DISCOVERIES',history:'RUN HISTORY'},
+  };
+  const assertFits=()=>{for(const e of events.filter(e=>e.kind==='electrode')){assert.ok(e.clip,'every electronic glyph owns a real aperture');assert.ok(e.x>=e.clip.x-.01&&e.x+e.w<=e.clip.x+e.clip.w+.01,JSON.stringify(e));assert.ok(e.y>=e.clip.y-.01&&e.y+e.h<=e.clip.y+e.clip.h+.01,JSON.stringify(e));assert.equal(e.options.mode||'vfd','vfd');}};
+  return{globals,events,wells,assertFits};
+}
+
+test('all 28 current generic panel branches submit through the optical callback; dedicated displays keep their actual owner', () => {
   let count = 0;
   for (const [file, expected] of Object.entries(consumers)) {
     const source = gameSource(file);
@@ -95,7 +147,11 @@ test('all 32 scoped electronic panel branches submit their body through the opti
     assert.equal(calls, expected, file);
     count += calls;
   }
-  assert.equal(count, 32);
+  assert.equal(count, 28);
+  for(const[file,helper,module]of[['achievement-notice','drawAchievementNotice','achievement-deck'],['archive','withAchievementDeck','achievement-deck'],['return-report','drawReturnExposure','outcome-return-view']]){
+    const source=gameSource(file);assert.match(source,new RegExp('import\\s*\\{[^}]*\\b'+helper+'\\b[^}]*\\}\\s*from [\'\"]\\.\\.\\/render\\/'+module+'\\.js[\'\"]'),file+' uses its actual dedicated optical presenter');
+    assert.match(source,new RegExp('\\b'+helper+'\\s*\\('));
+  }
   assert.doesNotMatch(gameSource('document'), /\bwithMachinePanel\s*\(/, 'physical documents remain paper rather than electronic displays');
 });
 
@@ -132,7 +188,9 @@ test('setup text is covered once and the physical OPEN button retains its exact 
   assert.match(h.events.find((event) => event.kind === 'text').args[2], /2 spare leads/);
   const [x, y, w, height, options] = h.lamps[0];
   const body = h.panels[0].body;
-  assert.deepEqual([x, y, w, height], [body.x, body.y + 4.5, Math.min(30, body.w), 2.5]);
+  const panel=h.panels[0],rail=machinePanelBezelRail(panel.x,panel.y,panel.w,panel.h,{controlHeight:2.5});
+  assert.deepEqual([x, y, w, height], [body.x, rail.controlY, Math.min(30, body.w), 2.5]);
+  assert.ok(y>=rail.apertureBounds.y+rail.apertureBounds.h+.6,'OPEN remains on the physical bezel below its optical cutout');
   assert.equal(options.latched, false);
   scene.pointer({ type: 'pointermove', cellX: x + 1, cellY: y + 1 });
   scene.pointer({ type: 'pointerdown', button: 2, cellX: x + 1, cellY: y + 1 });
@@ -163,17 +221,13 @@ test('real recorder hold readout is covered without substituting scene time or p
   assert.equal(h.events.length, before);
 });
 
-test('tiny achievement and tutorial readouts retain every glyph inside the real aperture at normal and compact sizes', () => {
+test('the actual achievement deck and tutorial readout retain every glyph in their own apertures at both sizes', () => {
   for (const size of [{ cols: 112, rows: 48 }, { cols: 64, rows: 32 }]) {
-    const h = surfaceHarness({
-      uiSize: () => size, uiWrap: (text) => String(text).split('\n'),
-      resolveNotice: () => ({ title: 'Listening', body: 'First line.\nSecond line.\nThird line.' }),
-    });
-    const scene = factory('achievement-notice', 'makeAchievementNoticeScene', h.globals)({ notice: { id: 'test' } });
-    scene.render();
-    assert.equal(h.events.filter((entry) => entry.kind === 'text').length, 4);
-    assert.equal(h.panels[0].h, 13);
-    assertTextFitsWell(h);
+    const h=deckHarness(size),scene=factory('achievement-notice','makeAchievementNoticeScene',h.globals)({notice:{id:'test',achievementId:'ACH_FIRST_TAKE'}});
+    scene.update(.4);scene.render();const view=scene.view(),layout=DECK.achievementNoticeLayout({...size,title:view.title,reason:view.reason});
+    const values=h.events.filter(e=>e.kind==='electrode').map(e=>e.value);
+    assert.deepEqual(values,['0 / 38',...layout.titleLines,...layout.reasonLines]);
+    assert.equal(h.wells.length,2,'the physical tally and main VFD retain distinct real wells');h.assertFits();
 
     const hold = surfaceHarness({ uiSize: () => size });
     factory('setup-handoff-scene', 'makeSetupLevelHoldScene', hold.globals)({ getReading: () => ({ recording: true, takeElapsed: 4.5 }) }).render();
@@ -219,21 +273,15 @@ test('Source uses the shared cinematic strip with denser glass, without darkenin
   }
 });
 
-test('empty Archive and empty history keep all explanatory text inside the cover', () => {
-  const h = surfaceHarness({
-    achievementEntries: () => [], returnFileEntries: () => [],
-    CATEGORY_ORDER: ['work'], CATEGORY_LABEL: { work: 'STORY' },
-    AUDIO: { menuMove() {}, menuPage() {}, menuBack() {} },
-  });
+test('an empty achievement filter and empty run history retain all copy in the actual master deck', () => {
+  const h=deckHarness({cols:112,rows:48});
   const scene = factory('archive', 'makeArchiveScene', h.globals)();
-  scene.render();
+  scene.key({key:'f'});scene.key({key:'f'});scene.render();
   assert.equal(h.events.at(-1).kind, 'cover');
-  assert.ok(h.events.some((event) => event.args?.[2] === 'NO ENTRIES IN THIS CATEGORY'));
-  scene.key({ key: 'Tab' });
-  scene.render();
-  assert.equal(h.panels.length, 2);
+  assert.ok(h.events.some(event=>event.value==='NO MATCHING ENTRIES'));h.assertFits();
+  h.events.length=0;scene.key({key:'Tab'});scene.key({key:'Tab'});scene.render();
   assert.equal(h.events.at(-1).kind, 'cover');
-  assert.ok(h.events.some((event) => event.args?.[2] === 'NO COMPLETED RUNS'));
+  assert.ok(h.events.some(event=>event.value==='NO FILED RUNS'));h.assertFits();
 });
 
 test('speech text and typing cursor share one covered surface with unchanged placement', () => {
@@ -293,9 +341,10 @@ test('opening transcript normal and side-by-side branches paint behind one cover
   }
 });
 
-test('PROGRAM display does not capture the preceding world iris and keeps its authored timing', () => {
+test('the original title stays on black beyond the world iris and keeps its authored timing', () => {
   let restored = 0, pops = 0, completed = 0;
   const h = surfaceHarness({ scenes: { pop: () => pops++ } });
+  h.globals.drawVfdText=h.outer('vfd');h.globals.uiText=h.outer('text');
   const scene = factory('coldopen', 'makeWorldTitleScene', h.globals)({
     turn: 1, iris: 1, duration: 12,
     camera: { pose: () => ({ yaw: .5 }), turn() {}, restore: () => restored++ },
@@ -315,9 +364,9 @@ test('PROGRAM display does not capture the preceding world iris and keeps its au
   assert.equal(scene.worldPresentation, 'hidden', 'the fully opaque title must release hidden world drawing work');
   assert.equal(scene.view().opaque, true);
   assert.equal(scene.view().elapsed, 2, 'the presentation policy does not skip any authored time');
-  assert.equal(h.panels.length, 1);
-  assert.equal(h.panels[0].options.label, 'PROGRAM');
-  assert.deepEqual(h.events.slice(-5).map((event) => event.kind), ['back', 'vfd', 'text', 'text', 'cover']);
+  assert.equal(h.panels.length, 0,'the existing original frontispiece deliberately has no monitor frame');
+  assert.deepEqual(h.events.slice(-4).map((event) => event.kind), ['fill','vfd','text','text']);
+  assert.equal(h.events.at(-3).args[2],'CHUNK SURFER');
   assert.equal(completed, 0);
   scene.key({ key: 'Enter' });
   assert.equal(completed, 0);

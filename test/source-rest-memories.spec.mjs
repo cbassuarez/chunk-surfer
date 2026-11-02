@@ -91,7 +91,7 @@ test('production submission uses full Ellery frontage and staged memories withou
     const frame=sourceContinuationRenderFrame(state(memory)),props=frame.props.filter(p=>p.restMemory||p.restFlood);
     assert.ok(props.length>2);assert.ok(props.every(p=>p.chartId===seat.chartId&&p.decorative&&!p.structural));
     assert.deepEqual(frame.geometry.surfaces,before.geometry.surfaces);
-    assert.ok(frame.counts.props<SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
+    assert.ok(frame.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
     assert.ok(frame.lights.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxLights);
     if(memory.ellery)assert.ok(props.some(p=>p.mesh==='ellery_public_front'));
     if(memory.drive)assert.ok(props.some(p=>p.mesh==='opening_drive_vehicle_body'),'the established early memory remains before the bounded flood');

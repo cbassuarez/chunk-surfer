@@ -4,6 +4,7 @@ import {installSourceContinuationGuidedReview,sourceContinuationGuidedPlan} from
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
+import {SOURCE_CONNECTOR_CORRIDOR as CORRIDOR} from '../src/data/source-connector-corridor.js';
 
 async function harness({dt=1/60,blocked=false,alternates=false,topologyLoop=false,stageLoop=topologyLoop}={}){
  let wall=0,scheduled=null,focused=true,recording=false,owner;const events=[];
@@ -36,6 +37,7 @@ test('the plan follows the declared raised return, physical doors and exactly th
  assert.equal(p.find(s=>s.id==='journey-catch-gate').expectedChart,4);
  assert.equal(p.filter(s=>s.recognitionId).length,8);assert.ok(p.filter(s=>s.recognitionId).every(s=>s.lookTarget&&Number.isFinite(s.feet)&&Number.isFinite(s.chartId)));
  assert.ok(p.some(s=>s.kind==='walk'&&s.x===16&&s.z===-33));assert.ok(p.some(s=>s.kind==='walk'&&s.x===3.85&&s.z===-20));
+ const bypass=p.filter(s=>s.label==='Use the cabinet’s supported side clearance');assert.deepEqual(bypass.map(s=>[s.x,s.z]),[[CORRIDOR.x,-74],[CORRIDOR.bypass.centerX,-74],[CORRIDOR.bypass.centerX,-78],[CORRIDOR.x,-79]]);assert.ok(bypass.every(s=>s.kind==='walk'&&s.expectedChart===CORRIDOR.chartId&&s.feet===CORRIDOR.feet),'the guide walks the same supported cabinet clearance rather than staging past it');
 });
 
 test('the physical closed-loop plan returns through the earlier-chart aperture and stops in the same refuge',()=>{

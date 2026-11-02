@@ -5,7 +5,8 @@
 // momentary visual-confirmation flag; exact HUSH position exists here only
 // while the player can already see the manifestation in the world.
 
-import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize } from './ui.js';
+import { uiCellMetrics, uiDraw, uiFill, uiGlyph, uiText, uiSize, uiWithClip } from './ui.js';
+import {faceplateModuleFrameOwnsNavigator} from './faceplate-module-state.js';
 import { withMachinePanel, machinePanelAperture } from './presentation.js';
 import { navigatorDisplayLayout } from './navigator-layout.js';
 import { drawNavigatorTelemetry } from './navigator-telemetry.js';
@@ -91,26 +92,10 @@ export function hushStatus(model, now = 0) {
   return { label: 'UNCLEAR', cls: 'ui-blue', detail: floor?.label || `${confidence}%`, floorDelta: 0 };
 }
 
-export function minimapTelemetryCrumbs(model, commands, now = 0) {
-  const transformCommand = (commands || []).find((command) => command.kind === 'sight')
-    || (commands || []).find((command) => command.kind === 'local-topology');
-  if (!transformCommand?.transform || !Array.isArray(model?.contacts)) return [];
-  const newest = newestMapContact(model);
-  return model.contacts
-    .filter((contact) => contact !== newest && contact?.observation?.position)
-    .filter((contact) => contact.observation.floorId === model?.player?.floorId)
-    .sort((a, b) => Number(a.observation.observedAt || 0) - Number(b.observation.observedAt || 0))
-    .slice(-7)
-    .map((contact) => {
-      const observedAt = Number(contact.observation.observedAt);
-      const age = Math.max(0, (Number(now) - (Number.isFinite(observedAt) ? observedAt : Number(now))) / 1000);
-      return {
-        point: transformCommand.transform.point(contact.observation.position),
-        alpha: Math.max(0, 0.18 * (1 - age / 12)),
-        age,
-      };
-    })
-    .filter((crumb) => crumb.alpha > 0.004);
+export function minimapTelemetryCrumbs() {
+  // Old acoustic fixes must never leave an exact-position radar trail. The
+  // only exact HUSH mark is the current directly visible body below.
+  return [];
 }
 
 function drawTelemetryCrumbs(model, commands, viewport, now) {
@@ -471,7 +456,7 @@ function drawLocalRoute(command){
 }
 
 const COMMAND_LAYER=Object.freeze({
-  'local-topology':0,'plan-shape':1,'district-footprint':2,'plan-edge':3,'district-mass-edge':3,'district-boundary':3,sight:10,'route-local':20,'door-local':30,'connector-local':32,'district-landmark':35,
+  'local-topology':0,'plan-shape':1,'district-footprint':2,'plan-edge':3,'district-mass-edge':3,'district-boundary':3,sight:10,'route-local':20,'door-local':30,'connector-local':32,'district-landmark':35,'district-label':36,'district-north':37,
   waypoint:40,'waypoint-edge':40,'connector-target':40,'connector-edge':40,
   equipment:50,'equipment-edge':50,'anomaly-contact':60,'anomaly-edge':60,
   'hush-awareness':70,player:80,'hush-visible':90,'hush-visible-edge':90,
@@ -482,7 +467,7 @@ function drawCommands(commands, now) {
   const hasSight=commands.some((command)=>command.kind==='sight');
   for (const command of ordered) {
     if (command.kind === 'local-topology') drawLocalTopology(command);
-    else if(['plan-shape','plan-edge','district-footprint','district-mass-edge','district-boundary','district-landmark'].includes(command.kind))drawExteriorMapCommand(command);
+    else if(['plan-shape','plan-edge','district-footprint','district-mass-edge','district-boundary','district-landmark','district-label','district-north'].includes(command.kind))drawExteriorMapCommand(command);
     else if (command.kind === 'sight') drawSight(command);
     else if(command.kind==='route-local')drawLocalRoute(command);
     else if(command.kind==='door-local')uiGlyph(Math.round(command.point.x),Math.round(command.point.y),command.state==='locked'?'╫':command.state==='closed'?'┼':'·',command.state==='locked'?'ui-danger':'ui-label',command.state==='open' ? .34 : .62);
@@ -590,6 +575,7 @@ function drawApparitionReturns(commands, apparitions, viewport) {
 }
 
 export function drawMinimap(model, opts = {}) {
+  if(faceplateModuleFrameOwnsNavigator()&&opts.module!==true)return;
   if (!model || typeof model !== 'object' || !model.player) return;
   const { cols,rows } = uiSize();
   const width = Math.min(Math.max(26,Math.floor(opts.bounds?.w||32)),Math.max(26,cols-4));
@@ -637,7 +623,7 @@ export function drawMinimap(model, opts = {}) {
   }
   if(!targetReadout)drawConfidenceTicks(panel, model);
 
-  const commands = navigationVisible?buildMinimapCommands({ model, viewport, radius: opts.radius || 18, now, aspect: uiCellMetrics().aspect }):[];
+  const commands = navigationVisible?buildMinimapCommands({ model, viewport, radius: minimapRadius(model,opts.radius), now, aspect: uiCellMetrics().aspect }):[];
   if(!navigationVisible)uiText(panel.x,panel.y,clip(opts.mapStatus||'NAVIGATION UNAVAILABLE',panel.w),'ui-secondary',.72);
   drawTelemetryCrumbs(model, commands, viewport, now);
   drawMischiefBlink(commands, opts.mischief, viewport);
@@ -646,7 +632,7 @@ export function drawMinimap(model, opts = {}) {
 
   const floorTarget = commands.find((command) => command.kind === 'floor-target');
   const anomalyFloor = commands.find((command) => command.kind === 'anomaly-floor');
-  const hushHasSignal=!!model.hush?.active||!!newestMapContact(model)?.observation;
+  const hushHasSignal=!!(model.hush?.active&&(model.hush.sensed===true||model.hush.visible===true))||!!newestMapContact(model)?.observation;
   let footer=`YOU · ${here}`;
   let footerCls='ui-green';
   if (anomalyFloor?.delta) footer = `HUSH ${anomalyFloor.delta > 0 ? '+' : ''}${anomalyFloor.delta} FLOOR`;
@@ -662,6 +648,28 @@ export function drawMinimap(model, opts = {}) {
   // after its smoked cover. Map glow and target pulses never repaint its ink.
   if(opts.telemetry)drawNavigatorTelemetry(layout.lcd,opts.telemetry,{nowMs:now});
   if(nightClock)drawNavigatorClock({x:x0,y:y0,w:width,h:height},nightClock);
+}
+
+// The compact shared device is the same semantic navigator, not a clock-only
+// substitute. Its housing is painted by the common frame; this draws its local
+// survey at the supplied physical aperture and obeys the same information rules.
+export function minimapRadius(model,value){
+  return Number.isFinite(value)&&value>0?value:model?.context==='exterior'?28:18;
+}
+export function drawMinimapInset(model,opts={}){
+  const viewport=opts.bounds;
+  if(!model?.player||!viewport||viewport.w<=0||viewport.h<=0)return[];
+  const now=Number(opts.now)||0;
+  const commands=opts.navigationVisible!==false?buildMinimapCommands({model,viewport,
+    radius:minimapRadius(model,opts.radius),now,aspect:uiCellMetrics().aspect}):[];
+  uiWithClip(viewport,()=>{
+    if(opts.navigationVisible===false)uiText(viewport.x+.4,viewport.y+.6,clip(opts.mapStatus||'NO PLAN',viewport.w-1),'ui-secondary',.7);
+    else if(!model.player.resolved)uiText(viewport.x+.4,viewport.y+.6,clip('NO FIX',viewport.w-1),'ui-secondary',.7);
+    drawMischiefBlink(commands,opts.mischief,viewport);
+    drawApparitionReturns(commands,opts.apparitions,viewport);
+    drawCommands(commands,now);
+  });
+  return commands;
 }
 
 // Small explicit marker used only for recorder playback origin. It is not part

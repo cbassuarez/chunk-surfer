@@ -18,7 +18,8 @@ import {
   normalizeStairAnomalyEnvironment,
   normalizeStairAnomalyLedger,
 } from '../game/stair-anomaly.js';
-import { normalizeReturnHistory } from './return-history.js';
+import { isOrdinaryReturnRecord, normalizeReturnHistory } from './return-history.js';
+import { freshCompletionLedger, normalizeCompletionLedger } from './completion-ledger.js';
 import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { carriedRead, readFromCarried } from '../game/enemy-mind.js';
 import { freshReferenceExposure, normalizeReferenceExposure } from '../game/reference-exposure.js';
@@ -206,6 +207,7 @@ export function freshRunRecord({
       values: { ...DEFAULT_RULE_VALUES, ...objectOr(values) },
     },
     integrity: {
+      achievements: { eligible: true, reason: null },
       deadAir: {
         startedEligible: deadAir,
         eligible: deadAir,
@@ -265,6 +267,7 @@ export function freshMeta() {
     runs: 0,
     lastSeenAt: 0,
     achievements: {},
+    completion: freshCompletionLedger(),
     stats: {
       runsStarted: 0,
       runsCompleted: 0,
@@ -411,6 +414,7 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
     ? { ...rawRuleValues, combatAssistance: rawRuleValues.redactionAssistance }
     : rawRuleValues;
   const integrity = objectOr(source.integrity);
+  const achievementIntegrity = objectOr(integrity.achievements);
   const deadAir = objectOr(integrity.deadAir);
   const replay = objectOr(source.replay);
   const startedPreset = typeof rules.startedPreset === 'string' ? rules.startedPreset : 'contract';
@@ -436,6 +440,11 @@ export function normalizeRun(value, { meta = null, settings = null, activeFallba
       values: { ...DEFAULT_RULE_VALUES, ...migratedRuleValues },
     },
     integrity: {
+      achievements: {
+        eligible: achievementIntegrity.eligible !== false,
+        reason: achievementIntegrity.eligible === false && typeof achievementIntegrity.reason === 'string'
+          ? achievementIntegrity.reason.slice(0, 160) : null,
+      },
       deadAir: {
         startedEligible: !!deadAir.startedEligible,
         eligible: !!deadAir.eligible,
@@ -543,10 +552,12 @@ export function normalizeMeta(value) {
     runs: Math.max(0, Math.floor(finiteOr(source.runs, 0))),
     lastSeenAt: finiteOr(source.lastSeenAt, 0),
     achievements: { ...objectOr(source.achievements) },
+    completion: normalizeCompletionLedger(source.completion),
     stats: {
       runsStarted: Math.max(0, Math.floor(finiteOr(stats.runsStarted, source.runs || 0))),
       runsCompleted: Math.max(0, Math.floor(finiteOr(stats.runsCompleted,
-        normalizeReturnHistory(returns.history).filter(id=>returns.records?.[id]?.classification!=='failed-night').length))),
+        normalizeReturnHistory(returns.history).filter(id=>isOrdinaryReturnRecord(returns.records?.[id])
+          && returns.records[id].classification!=='failed-night').length))),
       takesCompleted: Math.max(0, Math.floor(finiteOr(stats.takesCompleted, 0))),
       takesSpoiled: Math.max(0, Math.floor(finiteOr(stats.takesSpoiled, 0))),
       battlesWon: Math.max(0, Math.floor(finiteOr(stats.battlesWon, 0))),

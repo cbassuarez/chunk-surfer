@@ -1,14 +1,14 @@
 {
-  "revision": "endowed-school-hybrid-3",
-  "sha256": "2ff4e5a1dd6fa01ea02bd98fbcfe3aeaeedd8001f3b91472dcdd72b15bbdd580",
-  "bytes": 5040240,
+  "revision": "endowed-school-yard-clearance-4",
+  "sha256": "c4be70cc9402577defb8db9b366f8abf8cfa4a6ec6d8921bbfd1222931b3c454",
+  "bytes": 5082156,
   "baselineHeroBytes": 4586756,
-  "addedBytes": 453484,
-  "addedTriangles": 3368,
-  "totalTriangles": 20697,
+  "addedBytes": 495400,
+  "addedTriangles": 3656,
+  "totalTriangles": 20985,
   "sourcePack": {
     "file": "public/assets/conservatory-props.glb",
-    "sha256": "377cacc811eff3327177a1524ccd43da40a7682de8f186e42f0d2984b263d5c3",
+    "sha256": "6ecde428499f2cd0653586ea6beb7690df5d352fa131c86e4b60d132f48b57a7",
     "unchangedDuringBuild": true,
     "meshCount": 625
   },
@@ -16,7 +16,7 @@
     "name": "conservatory_west_elevation",
     "fingerprint": "0bbee88d9932239ddb772588618967329bc0c0eea822705cee68bf44d397c34f",
     "triangles": 17829,
-    "retainedTriangles": 17329,
+    "retainedTriangles": 17617,
     "occupiedAirClips": [
       {
         "physicalMin": [
@@ -801,8 +801,8 @@
   },
   "meshes": {
     "conservatory_west_elevation": {
-      "triangles": 17329,
-      "primitives": 13
+      "triangles": 17617,
+      "primitives": 15
     },
     "ellery_public_front": {
       "triangles": 2120,
@@ -818,10 +818,11 @@
     }
   },
   "sourceHashes": {
-    "src/data/ellery-public-front.js": "dfcf9e27b72cac695fb446effea99ed417efa9a2c9287f741275ed9e4383983d",
+    "src/data/ellery-public-front.js": "b77ddf363822165abbed28e27509fb8576be007ca1f144038c4e72969b35f54c",
     "src/data/glass-court-sightlines.js": "7f2791f88a5d6f5ff39b59042d4a6d703791386b006b848f44df21aeb9c9fce6",
     "tools/chunk_surfer/ellery-public-front-geometry.mjs": "8bca13953cf613d1206c649b33f1852cc3db0e72561cf80b897b9f645f6c4a65",
-    "tools/chunk_surfer/build-ellery-public-front.mjs": "b16d93ea27b9e0de1dd65648a2a31a355318fabb3953a411c4b4edac11b9bb85"
+    "tools/chunk_surfer/ellery-yard-repair.mjs": "5bd17acd5383c92bae94f9947d744ee4b71435b061b6fc7e5a8ffc9bae5489e3",
+    "tools/chunk_surfer/build-ellery-public-front.mjs": "c4e40feaec6c1f5fc79e5ccfe6504224aaaf29d480e8c570a281d9a8a84ba61f"
   },
   "pending": [
     "root floorplan/prop/pack integration",

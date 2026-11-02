@@ -1,4 +1,4 @@
-// Shared public provenance, kept small: the 9,153 candidate events remain in
+// Shared public provenance, kept small: the 3,202 score MIDI events remain in
 // the separate prepared manifest rather than being bundled into credits.
 export const SOURCE_REST_COUPERIN_SOURCE=Object.freeze({
   id:'source-rest-couperin-full',
@@ -17,22 +17,25 @@ export const SOURCE_REST_COUPERIN_SOURCE=Object.freeze({
   asset:Object.freeze({
     url:'audio/source-rest/couperin/couperin-revoiced-pair.mp3',
     manifestUrl:'audio/source-rest/couperin/couperin-revoicing.json',
-    sha256:'d2e43c31c04d69572cf70222fdfc63056b87081b6f218426a756c5ba085d97e9',
-    manifestSha256:'15f358c1b55c30ba3c880cc132a439722e139068030827513f824aa29fa8bacb',
-    bytes:20238381,sampleRate:32000,channels:2,sampleCount:26981028,duration:843.157125,
+    sha256:'908c1b5d2bd37f644baab797f9e47ea9fa7b34ec6422087aca86f6b0a9c42495',
+    manifestSha256:'c5c4253bcbda346efda2387465316174669db5d60ec7a9a7d2ac0995bb5e3d1a',
+    bytes:20238381,sampleRate:32000,channels:2,sampleCount:26981039,duration:843.15746875,
     layout:Object.freeze(['human mono downmix','new note synthesis']),
   }),
   revoicing:Object.freeze({
-    attribution:'Electronic revoicing created for Chunk Surfer from inferred performance notes.',
-    method:'Independent additive/FM voices at inferred performed onsets and durations; no copied waveform in the electronic stem.',
-    noteCandidates:9153,
-    timing:'Performed timing and irregularities retained; no grid quantization, pitch correction or added error stingers.',
-    limitation:'Automatic note candidates can omit, split or merge notes and misread octaves, partials or ornament durations. Not musician-validated.',
+    attribution:'Electronic revoicing created for Chunk Surfer from a user-edited score-based arrangement.',
+    method:'Native Live render of the edited MIDI arrangement, using score-based timing and user-adjusted pitch.',
+    noteCandidates:3202,
+    timing:'Performance-aligned timing and irregularities retained; user-adjusted pitch, with no added error stingers.',
+    limitation:'Score-MIDI alignment and some ornaments are approximate; the stereo electronic render is folded to mono and transcoded from MP3.',
   }),
 });
 
 export function sourceRestCouperinCreditLines(){
   const s=SOURCE_REST_COUPERIN_SOURCE;
   return [`${s.composer} — ${s.title} — ${s.performer} (${s.licence})`,
-    s.revoicing.attribution,s.revoicing.timing,s.sourceUrl,s.licenceUrl];
+    s.revoicing.attribution,s.revoicing.timing,
+    'Score MIDI transcription: Nicolas Sceaux / Mutopia Project (CC BY 2.5); adapted and aligned.',
+    'https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=907',
+    'https://creativecommons.org/licenses/by/2.5/',s.sourceUrl,s.licenceUrl];
 }

@@ -38,6 +38,21 @@ test('cap forming scales with DPI, preserves a fixed socket, and moves the compl
   }
 });
 
+test('lateral rejection moves only the captive cap and its print geometry inside an unchanged housing',()=>{
+  for(const dpr of[1,2]){
+    const p=canvasProbe(),w=100*dpr,h=40*dpr,up=drawHardwareCap(p.ctx,10,20,w,h,{dpr,travel:.6}),
+      left=drawHardwareCap(p.ctx,10,20,w,h,{dpr,travel:.6,lateral:-1}),right=drawHardwareCap(p.ctx,10,20,w,h,{dpr,travel:.6,lateral:1});
+    for(const moved of[left,right]){
+      for(const key of['w','h','rim','gap','distance','depth'])assert.equal(moved[key],up[key],key);
+      assert.ok(Math.abs(moved.face.x-up.face.x)<=2.2*dpr+1e-9);
+      assert.ok(Math.abs((moved.content.x-up.content.x)-(moved.face.x-up.face.x))<1e-9,'printed label follows the cap');
+      assert.equal(moved.face.y,up.face.y);assert.equal(moved.content.y,up.content.y);
+    }
+    assert.ok(left.face.x<up.face.x&&right.face.x>up.face.x);
+    assert.ok(p.calls.filter(call=>call[0]==='translate').every(call=>call[1]===10&&call[2]===20),'the socket itself never translates');
+  }
+});
+
 test('coloured polymer has distinct unlit pigments and invalid colours have a safe material',()=>{
   assert.ok(hardwarePigment('red').off[0]>hardwarePigment('red').off[1]*1.5);
   assert.ok(hardwarePigment('blue').off[2]>hardwarePigment('blue').off[0]);

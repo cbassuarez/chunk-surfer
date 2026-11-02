@@ -9,7 +9,7 @@
 // building forty times today.)
 
 import * as scenes from './scenes.js';
-import { uiSize, uiFill, uiText, uiLine, uiDraw } from '../render/ui.js';
+import { uiSize, uiFill, uiText, uiLine, uiDraw, uiWithClip } from '../render/ui.js';
 import { PANEL, withMachinePanel, drawVfdText } from '../render/presentation.js';
 import {
   drawTranscript,
@@ -33,6 +33,8 @@ import {
 import { resolveStoryArt } from './story-art.js';
 import { promptLine, activeInputPromptDevice } from './bindings.js';
 import {sourceRestSubtitleLayout} from '../render/source-rest-subtitle.js';
+import {vfdMarqueeFrame} from '../render/vfd-marquee.js';
+import {hardwareMotionReduced} from '../render/hardware-material.js';
 
 const COL_W = 86;
 const KEEP = 12;
@@ -89,6 +91,7 @@ export function makeColdOpenScene({
 
   scene = {
     id,
+    get faceplate(){return presentation==='monitor';},
     blocksInput: true,
     blocksWorld,
     allowsLook,
@@ -136,9 +139,11 @@ export function makeColdOpenScene({
           if(v.restSubtitle){
             const scale=1.55,localCols=Math.floor(cols/scale),localRows=Math.floor(rows/scale);
             const width=Math.max(18,Math.min(86,localCols-8));
-            const choices=fitTranscriptChoices(layoutTranscriptChoices(v,width-4,{label:v.choiceHeading??null}),Math.max(1,localRows-8),{selectedOffset:choiceScrollOffset});
+            const choices=fitTranscriptChoices(layoutTranscriptChoices(v,width-4,{label:v.choiceHeading??null}),Math.max(1,localRows-8-(v.restChoiceTimer?2:0)),{selectedOffset:choiceScrollOffset});
             choiceScrollMax=choices.selectedMaxOffset||0;
-            const layout=sourceRestSubtitleLayout(v,{cols:localCols,rows:localRows,choiceRows:choices.height?choices.height+2:0});
+            const timerRows=choices.height&&v.restChoiceTimer?2:0;
+            const layout=sourceRestSubtitleLayout(v,{cols:localCols,rows:localRows,choiceRows:choices.height?choices.height+2+timerRows:0});
+            if(layout.empty)return;
             uiDraw(({ctx})=>{ctx.scale(scale,scale);
             if(!v.restBlack)uiFill(layout.x,layout.y-1,layout.width,layout.height+2,'rgba(0,0,0,.88)');
             let cy=layout.y;
@@ -146,11 +151,17 @@ export function makeColdOpenScene({
             for(const line of layout.body)uiText(layout.x+2,cy++,line,'ui-primary',v.restBlack?1:.88);
             if(choices.height){
               const choiceY=layout.y+layout.height-choices.height-1;
+              if(v.restChoiceTimer){
+                const timer=v.restChoiceTimer,barY=choiceY-1.15,barWidth=layout.width-4;
+                uiText(layout.x+2,choiceY-2,timer.resumeHold?'REPLY HELD · SELECT AGAIN TO RESUME':timer.active?`REPLY IN ${Math.ceil(timer.remaining)}s · SELECT AGAIN TO CLEAR`:'CHOOSE A REPLY · NOTHING SELECTED','ui-counter',.8);
+                uiFill(layout.x+2,barY,barWidth,.12,'rgba(158,190,177,.22)');
+                if(timer.active)uiFill(layout.x+2,barY,barWidth*Math.max(0,Math.min(1,timer.fraction)),.12,'rgba(202,222,207,.84)');
+              }
               drawTranscriptChoices(choices,{x:layout.x+2,y:choiceY,width:layout.width-4,maxRows:choices.height});
-              const prompt=v.presentationPrompt??promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'}]);
-              uiText(layout.x+2,layout.y+layout.height,String(prompt).slice(0,layout.width-4),'ui-counter',.9);
+              const prompt=v.presentationPrompt??promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:'REPLY'},...(v.restRecorderPrompt?[{action:'recorder',label:'RECORDER'}]:[])]);
+              uiText(layout.x+2,layout.y+layout.height,String(v.restChoiceTimer?`${prompt} · BACKSPACE CLEAR`:prompt).slice(0,layout.width-4),'ui-counter',.9);
             }else if(!v.restBlack){
-              const controls=promptLine([...(v.restCanLeave?[{action:'interact',label:'GET UP'}]:[]),{action:'back',label:'PAUSE'}]);
+              const controls=promptLine([...(v.restCanLeave?[{action:'interact',label:'GET UP'}]:[]),...(v.restRecorderPrompt?[{action:'recorder',label:'RECORDER'}]:[]),{action:'back',label:'PAUSE'}]);
               uiText(layout.x+2,layout.y+layout.height,controls.slice(0,layout.width-4),'ui-counter',.8);
             }
             });
@@ -500,7 +511,7 @@ export function makeBoothDownbeatHoldScene({ duration = 0, onDone, scrim = 0.28 
 // every existing caller and the god menu are unchanged.
 export function makeWorldTitleScene({
   onDone, audio, cue, camera = null,
-  duration = 12.0, turn = 1.3, iris = 1.6,
+  duration = 12.0, turn = 1.3, iris = 1.6, marquee = false,
 } = {}) {
   let t = 0;
   let done = false;
@@ -579,39 +590,91 @@ export function makeWorldTitleScene({
       const out = Math.min(1, Math.max(0, (duration - tt) / 2.4));
       const up = (at, over = 1.8) => Math.min(1, Math.max(0, (tt - at) / over)) * out;
 
-      // A frontispiece, on the same glyph surface as the rest of the game.
-      // The name has room to stand alone; place and work arrive below it.
-      // There is no apparatus here competing with the physical door behind us.
+      if (!marquee) {
+        // The original frontispiece remains still. Only the named Ellery-entry
+        // factory below requests the finite hardware display treatment.
+        const title = 'CHUNK SURFER';
+        const place = 'ELLERY CONSERVATOIRE OF MUSIC';
+        const work = '5 ROOMS / 1 CLEAN MINUTE EACH';
+        const width = Math.max(16, cols - 4);
+        const wrap = (copy) => {
+          const lines = [];
+          let line = '';
+          for (const word of copy.split(' ')) {
+            const next = line ? `${line} ${word}` : word;
+            if (line && next.length > width) { lines.push(line); line = word; }
+            else line = next;
+          }
+          if (line) lines.push(line);
+          return lines;
+        };
+        const placeLines = wrap(place), workLines = wrap(work);
+        const compact = rows < 15;
+        const scale = Math.min(compact ? 2 : 3.4, (cols - 4) / title.length);
+        const titleHeight = scale * .60;
+        const placeGap = compact ? .50 : 1.75, workGap = compact ? .25 : .85;
+        const height = titleHeight + placeGap + placeLines.length + workGap + workLines.length;
+        const y = Math.max(.15, Math.min(rows - height - .15, rows * .46 - height / 2));
+        drawVfdText((cols - title.length * scale) / 2, y, title,
+          { scale, color:UI_COLOR.paper, alpha:up(0) });
+        const placeY = y + titleHeight + placeGap;
+        for (const [index, line] of placeLines.entries())
+          uiText((cols - line.length) / 2, placeY + index, line, 'ui-secondary', up(2.4) * .90);
+        const workY = placeY + placeLines.length + workGap;
+        for (const [index, line] of workLines.entries())
+          uiText((cols - line.length) / 2, workY + index, line, 'ui-secondary', up(3.6) * .72);
+        return;
+      }
+
+      // A finite dot-display title and two caption fields. Long names move
+      // once after their reading hold, then stay at the ending; the scene's
+      // original fade, duration and camera remain their only timing owner.
       const title = 'CHUNK SURFER';
       const place = 'ELLERY CONSERVATOIRE OF MUSIC';
       const work = '5 ROOMS / 1 CLEAN MINUTE EACH';
-      const width = Math.max(16, cols - 4);
-      const wrap = (copy) => {
+      const width = Math.min(34,Math.max(16,cols-4)),reduced=hardwareMotionReduced();
+      const wrap = (copy,available) => {
         const lines = [];
         let line = '';
         for (const word of copy.split(' ')) {
           const next = line ? `${line} ${word}` : word;
-          if (line && next.length > width) { lines.push(line); line = word; }
+          if (line && next.length > available) { lines.push(line); line = word; }
           else line = next;
         }
         if (line) lines.push(line);
         return lines;
       };
-      const placeLines = wrap(place), workLines = wrap(work);
       const compact = rows < 15;
-      const scale = Math.min(compact ? 2 : 3.4, (cols - 4) / title.length);
+      const scale = Math.min(compact ? 2 : 3.4, (cols - 4) / title.length,reduced?width/title.length:Infinity),
+        placeScale=compact?1:1.25,workScale=1,
+        placeLines=reduced?wrap(place,Math.floor(width/placeScale)):[place],workLines=reduced?wrap(work,width):[work];
       const titleHeight = scale * .60;
       const placeGap = compact ? .50 : 1.75, workGap = compact ? .25 : .85;
-      const height = titleHeight + placeGap + placeLines.length + workGap + workLines.length;
+      const placeHeight=placeLines.length*placeScale,workHeight=workLines.length*workScale,
+        height = titleHeight + placeGap + placeHeight + workGap + workHeight;
       const y = Math.max(.15, Math.min(rows - height - .15, rows * .46 - height / 2));
-      drawVfdText((cols - title.length * scale) / 2, y, title,
-        { scale, color:UI_COLOR.paper, alpha:up(0) });
+      const drawField=(copy,atY,fontScale,alpha,reveal)=>{
+        const frame=vfdMarqueeFrame(copy,{width,scale:fontScale,time:Math.max(0,tt-reveal-1.8),
+          reducedMotion:reduced,startHold:1.2,endHold:1.2,speed:3.8}),x=(cols-width)/2;
+        uiWithClip({x,y:atY-.18,w:width,h:Math.max(1,fontScale*.68)+.36},()=>{
+          drawVfdText(x+Math.max(0,(width-frame.contentWidth)/2)-frame.offset,atY,copy,
+            {scale:fontScale,role:'ui-primary',color:UI_COLOR.primary,alpha});
+        });
+      };
+      drawField(title,y,scale,up(0),0);
       const placeY = y + titleHeight + placeGap;
       for (const [index, line] of placeLines.entries())
-        uiText((cols - line.length) / 2, placeY + index, line, 'ui-secondary', up(2.4) * .90);
-      const workY = placeY + placeLines.length + workGap;
+        drawField(line,placeY+index*placeScale,placeScale,up(2.4)*.90,2.4);
+      const workY = placeY + placeHeight + workGap;
       for (const [index, line] of workLines.entries())
-        uiText((cols - line.length) / 2, workY + index, line, 'ui-secondary', up(3.6) * .72);
+        drawField(line,workY+index*workScale,workScale,up(3.6)*.72,3.6);
     },
   };
+}
+
+// This is the title encountered at Ellery's goods-entry threshold, not the
+// opening credits/overture. Retain the same scene id and camera lifecycle so
+// the existing input and opaque-world safeguards still own its presentation.
+export function makeArrivalTitleScene(options = {}) {
+  return makeWorldTitleScene({ ...options, marquee: true });
 }

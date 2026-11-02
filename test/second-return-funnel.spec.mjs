@@ -7,6 +7,7 @@ import { lastReturnRecord } from '../src/progression/return-history.js';
 import { SECOND_SHIFT_BY_ENDING } from '../src/game/second-shift.js';
 import { ACHIEVEMENT_BY_ID } from '../src/progression/achievement-defs.js';
 import { EVENT_TYPES } from '../src/progression/events.js';
+import { CAUSAL_INJURY_CEILING } from '../src/causal/tape.js';
 import { HUSH_DOSSIER } from '../src/game/hush-dossier.js';
 import { CONSERVATORY_PROPS, PROP_MESH } from '../src/data/conservatory-props.js';
 
@@ -61,7 +62,7 @@ assert.match(report,/transferRoomCopy/);
 assert.ok(POST_RUN_ACTIONS.some((action)=>action.id==='replay'),'a way back into the story');
 assert.ok(POST_RUN_ACTIONS.some((action)=>action.id==='transfer-room'),'and a way into the transfer room');
 assert.match(POST_RUN_STAGE_COPY.filing.panel,/PREPARING THE HUSH/);
-assert.match(hushAvailabilityCopy({status:'not-qualified'}).short,/1 INJURY/);
+assert.ok(hushAvailabilityCopy({status:'not-qualified'}).short.includes(`${CAUSAL_INJURY_CEILING} INJURIES`));
 assert.match(hushAvailabilityCopy({status:'ready'}).body,/cause the events your past self experienced/);
 // 'RETURN FILES' is 'RUN HISTORY' now — the archive's second tab, in the same
 // plain register as the rest of the post-run copy.

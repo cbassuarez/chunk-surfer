@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-31T20:42:45.141Z",
-  "bytes": 64421752,
-  "totalTriangles": 890649,
+  "generatedAt": "2026-11-02T05:50:30.569Z",
+  "bytes": 64405332,
+  "totalTriangles": 890425,
   "meshes": {
     "school_desk": {
       "triangles": 176,
@@ -1820,8 +1820,8 @@
       "vertices": 456
     },
     "arrival_civic_boundary": {
-      "triangles": 12288,
-      "vertices": 24576
+      "triangles": 11800,
+      "vertices": 23600
     },
     "arrival_civic_bench": {
       "triangles": 1448,
@@ -2196,20 +2196,20 @@
       "vertices": 1419
     },
     "baseboard_ground": {
-      "triangles": 3936,
-      "vertices": 7872
+      "triangles": 4104,
+      "vertices": 8208
     },
     "baseboard_hall": {
       "triangles": 1740,
       "vertices": 3480
     },
     "baseboard_basement": {
-      "triangles": 2220,
-      "vertices": 4440
+      "triangles": 2244,
+      "vertices": 4488
     },
     "baseboard_upper": {
-      "triangles": 1296,
-      "vertices": 2592
+      "triangles": 1308,
+      "vertices": 2616
     },
     "baseboard_academic": {
       "triangles": 1368,
@@ -2220,8 +2220,8 @@
       "vertices": 8784
     },
     "baseboard_cathedral": {
-      "triangles": 1260,
-      "vertices": 2520
+      "triangles": 1248,
+      "vertices": 2496
     },
     "baseboard_academicRoof": {
       "triangles": 1476,
@@ -2484,12 +2484,12 @@
       "vertices": 8584
     },
     "building_dressing_batch_basement": {
-      "triangles": 31372,
-      "vertices": 43877
+      "triangles": 31324,
+      "vertices": 43781
     },
     "building_dressing_batch_ground": {
-      "triangles": 34144,
-      "vertices": 51738
+      "triangles": 34264,
+      "vertices": 51978
     },
     "building_dressing_batch_academic": {
       "triangles": 66296,
@@ -10037,7 +10037,7 @@
     }
   },
   "baseboards": {
-    "planHash": "23a39cee902b90b0eb31babfc38acbb73aad9f0046b79c71fbafc4c34bf685f9",
+    "planHash": "52873a33970c8443adfef2cd8646d7176ed8d2b3f72a8e9973a9890794ef4d47",
     "groups": {
       "ground": {
         "mesh": "baseboard_ground",
@@ -10107,10 +10107,10 @@
           -4.349999904632568,
           8.85
         ],
-        "count": 212,
-        "poseDigest": "8cda297e",
+        "count": 210,
+        "poseDigest": "32470067",
         "materialCount": 20,
-        "triangles": 31372,
+        "triangles": 31324,
         "bounds": {
           "min": [
             -0.9800000000000002,
@@ -10149,11 +10149,11 @@
             "trianglesPerInstance": 24
           },
           "arch_dado_staff": {
-            "count": 52,
+            "count": 51,
             "trianglesPerInstance": 24
           },
           "arch_coving_staff": {
-            "count": 52,
+            "count": 51,
             "trianglesPerInstance": 24
           },
           "arch_switch_staff": {
@@ -10221,10 +10221,10 @@
           0.949,
           4.5
         ],
-        "count": 192,
-        "poseDigest": "7e74b9cc",
+        "count": 194,
+        "poseDigest": "acfe97de",
         "materialCount": 38,
-        "triangles": 34144,
+        "triangles": 34264,
         "bounds": {
           "min": [
             -79.1,
@@ -10343,11 +10343,11 @@
             "trianglesPerInstance": 24
           },
           "arch_dado_public": {
-            "count": 15,
+            "count": 16,
             "trianglesPerInstance": 72
           },
           "arch_coving_public": {
-            "count": 15,
+            "count": 16,
             "trianglesPerInstance": 48
           },
           "arch_dado_staff": {
@@ -11153,7 +11153,7 @@
     "surfaces": 120,
     "pages": 16,
     "textureBaseLevelBytes": 42607008,
-    "atlasInputSha256": "4fafdb12815afb2d273976eb4c5440dddcda79d10ee5c25023fefb21b16780a6",
+    "atlasInputSha256": "5067d534a6b054b9ff945e727a9bf6af15b043cd8c0cb9b247f875192948ad98",
     "carrierAssemblies": {
       "meshes": 24,
       "members": 128,

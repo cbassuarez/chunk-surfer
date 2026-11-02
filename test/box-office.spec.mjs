@@ -20,10 +20,36 @@ FP.compile(conservatory.levels, {
 });
 
 const prop = (id) => CONSERVATORY_PROPS.find((entry) => entry.id === id);
-const cellOf = (id) => {
-  const p = prop(id);
-  assert.ok(p, `${id} is not placed`);
-  return { x: Math.round(p.x / 0.5), y: Math.round(p.y / 0.5) };
+PROPS.propsInit(FP);
+
+// Use the ordinary body, prop collision and reticle picker. A document or desk
+// is inspected from a clear floor cell; standing inside its mesh is no proof.
+const walkOffice = (start) => {
+  const queue=[start],seen=new Set([`${start.x},${start.y}`]),clearCache=new Map(),previous=new Map();
+  const clear=p=>{
+    const key=`${p.x},${p.y}`;
+    if(!clearCache.has(key))clearCache.set(key,!FP.isSolid(p.x,p.y)&&PROPS.propCanOccupy(p.x,p.y));
+    return clearCache.get(key);
+  };
+  assert.ok(clear(start),'the ordinary public approach supports the full body');
+  for(let i=0;i<queue.length;i++)for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+    const at=queue[i],next={x:at.x+dx,y:at.y+dy},key=`${next.x},${next.y}`;
+    if(seen.has(key)||next.x<148||next.x>197||next.y<6||next.y>60||!clear(next))continue;
+    const step=FP.canStep(at.x,at.y,next.x,next.y,{keys:new Set(['master'])});
+    if(!step.ok||step.redirect||!PROPS.propCanOccupy(next.x,next.y,{from:at}))continue;
+    seen.add(key);previous.set(key,at);queue.push(next);
+  }
+  return {queue,seen,previous};
+};
+const inspectionFrom = (route,id) => {
+  const p=PROPS.allProps().find(p=>p.id===id);
+  assert.ok(p,`${id} survives actual prop initialization`);
+  return route.queue.map(at=>{
+    const dx=p.interactionX-(at.x+.5)*.5,dz=p.interactionY-(at.y+.5)*.5,d=Math.hypot(dx,dz);
+    const targetY=(p.floor||0)+(p.elevation||0)+(p.interactionHeight??Math.max(.12,(p.h||.55)*(p.scale||1))*.5);
+    return{at,d,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(targetY-1.58,Math.max(.05,d))};
+  }).filter(aim=>aim.d<2.5).sort((a,b)=>a.d-b.d)
+    .find(aim=>PROPS.pickProp(aim.at.x,aim.at.y,0,2,{yaw:aim.yaw,pitch:aim.pitch})?.id===id);
 };
 
 // ── THE FRONTAGE IS A FACADE ────────────────────────────────────────────────
@@ -55,28 +81,27 @@ const cellOf = (id) => {
 // exactly what bag-sheets.js tells the player.
 {
   const start = { x: 170, y: 19 };            // the atrium, outside the counter
-  const seen = new Set([`${start.x},${start.y}`]);
-  const queue = [start];
-  while (queue.length && seen.size < 300000) {
-    const at = queue.shift();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = at.x + dx, ny = at.y + dy, key = `${nx},${ny}`;
-      if (seen.has(key) || nx < 0 || ny < 0 || nx > 2000 || ny > 2000) continue;
-      // Doors are passable for reachability: whether one is locked is run state,
-      // not geometry, and this asks whether the room can be got to at all.
-      if (FP.isSolid(nx, ny) && !FP.doorAt(nx, ny)) continue;
-      seen.add(key);
-      queue.push({ x: nx, y: ny });
-    }
+  const required=['box-office-key-cabinet','box-office-ledger','box-office-desk',
+    ...Object.values(KEY_CABINET_RING).map(ring=>ring.id)];
+  const staffDoor=FP.doorState().find(door=>door.id==='foh-office');
+  assert.equal(staffDoor?.keyId,'master','staff access still requires the issued key');
+  FP.setDoorOpen('foh-office',false);
+  const closed=walkOffice(start);
+  for(const id of required)assert.equal(inspectionFrom(closed,id),undefined,`${id} cannot be used through closed blockwork`);
+  assert.ok(closed.seen.has('188,26')||closed.seen.has('189,26'),'the closed staff leaf can be approached');
+  assert.ok(inspectionFrom(closed,'box-office-counter'),'the public queue can inspect the counter without entering its mesh');
+  FP.setDoorOpen('foh-office',true);
+  const opened=walkOffice(start);
+  for(const id of required){
+    const aim=inspectionFrom(opened,id);
+    assert.ok(aim,`${id} has a reachable full-body inspection with the staff leaf open`);
+    assert.ok(walkOffice(aim.at).seen.has(`${start.x},${start.y}`),`${id} retains an ordinary return to the atrium`);
   }
-  const reachable = ({ x, y }) => seen.has(`${x},${y}`);
-
-  for (const id of ['box-office-key-cabinet', 'box-office-ledger', 'box-office-desk']) {
-    assert.ok(reachable(cellOf(id)), `${id} is sealed inside the box office`);
-  }
-  assert.ok(seen.has('188,26') || seen.has('189,26'), 'the staff door is not reachable');
-  // The public side of the counter is the atrium and must stay open.
-  assert.ok(reachable({ x: 179, y: 19 }), 'the queue cannot reach the counter');
+  const ledger=PROPS.allProps().find(p=>p.id==='box-office-ledger');
+  assert.equal(FP.floorAt(ledger.rx,ledger.ry),0,'the ledger is supported on its own room floor');
+  assert.deepEqual([ledger.wallContact?.nx,ledger.wallContact?.ny],[0,-1],'the ledger mounts on the south wall inward face');
+  assert.ok(Math.abs(ledger.interactionY-11.95)<.00001,'the mounted ledger sits against the south wall instead of inside masonry');
+  FP.setDoorOpen('foh-office',false);
 }
 
 // ── THE PUZZLE IS SOLVABLE INSIDE THE GAME WINDOW ───────────────────────────

@@ -138,6 +138,11 @@ const plan = {
     return {min,max};
   };
   const foyer=BUILDING_WINDOWS.find(w=>w.id==='W3-foyer-north');
+  const servicePortrait=worldBounds('deadend-ground-painting');
+  const courtDoor=FP.doorState().find(p=>p.id==='spine-west-court');
+  assert.ok(courtDoor,'the new west court doorway is present');
+  const apertureMin=Math.min(...courtDoor.cells.map(c=>c.y))*CELL;
+  assert.ok(servicePortrait.max[2]<apertureMin-.08,'the complete portrait frame clears the real court doorway');
   const greco=worldBounds('foyer-portrait-greco'),titian=worldBounds('foyer-portrait-titian');
   const foyerFrame=worldBounds(`building-window-unit-${foyer.id}`);
   assert.ok(greco.max[1]>foyer.sill&&greco.min[1]<foyer.head,'portrait clearance must be checked at the actual aperture height');

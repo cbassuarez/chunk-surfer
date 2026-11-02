@@ -4,6 +4,8 @@ import { sectorErrorPhases } from '../render/sector-error.js';
 import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
 import {createWindowMediaSimulation} from './window-media-simulation.js';
+import {sourceRestOwnedFramesValid} from '../render/source-rest-apertures.js';
+import {validateWindowArchitecturePacket,windowArchitectureCueAllowed} from '../render/window-media-architecture.js';
 import { ensureWorldLetteringFonts } from '../render/world-lettering-fonts.js';
 import {
   apertureCompositionPlan,
@@ -469,7 +471,7 @@ function createSimulation(documentApi,effects){
     return matched;
   }
   function hide(){media.hide();if(root){root.classList.remove('active');clear();}}
-  return{show,snap,coherence,freeze,trigger,hold:(value,options)=>media.hold(value,options),hide,active:()=>media.active()||!!root?.classList?.contains('active'),debug:()=>media.debug()};
+  return{show,snap,coherence,freeze,trigger,hold:(value,options)=>media.hold(value,options),hide,updateStudyFrames:request=>media.updateStudyFrames(request),updateStudyArchitecture:request=>media.updateStudyArchitecture(request),architectureLayout:()=>media.architectureLayout(),active:()=>media.active()||!!root?.classList?.contains('active'),debug:()=>media.debug()};
 }
 
 // ── THE BOX OFFICE KEY TAGS ─────────────────────────────────────────────────
@@ -617,6 +619,16 @@ export function compilePlantHeaderPlan({order=[],trap='',seated=0,total=3,reduce
   });
 }
 
+export function sourceStudyArchitectureLayout(metrics,surfaces=[{id:'rest:source',width:240,height:160},{id:'rest:answer',width:240,height:160}]){
+  const valid=r=>r&&['x','y','width','height'].every(k=>Number.isFinite(r[k]))&&r.width>0&&r.height>0,main=metrics?.content_rect,work=metrics?.work_area;
+  if(!valid(main)||!valid(work))return null;
+  const bound=(x,a,b)=>Math.max(a,Math.min(b,x)),panes=surfaces.filter(p=>['rest:source','rest:answer'].includes(p.id)).map((surface,index)=>{
+    const width=bound(surface.width||240,160,320),height=bound(surface.height||160,96,320),x=index?main.x+main.width-width*.65:main.x-width*.35,
+      rect={x:bound(x,work.x,Math.max(work.x,work.x+work.width-width)),y:bound(index?main.y:main.y+main.height*.38-height/2,work.y,Math.max(work.y,work.y+work.height-height)),width,height};
+    return{surfaceId:surface.id,rect,crop:{x:(rect.x-main.x)/main.width,y:(rect.y-main.y)/main.height,width:width/main.width,height:height/main.height}};
+  });
+  return{mainRect:{...main},workArea:{...work},viewport:{width:main.width,height:main.height},panes};
+}
 export function createWindowChoreographyDirector({
   effects=null,runtimeApi=null,documentApi=globalThis.document,
   getEnabled=()=>true,getDisplayMode=()=> 'windowed',getReducedMotion=()=>false,
@@ -970,14 +982,68 @@ export function createWindowChoreographyDirector({
       onPresentationPlan:value=>{if(current())active.plan=value;}});
     if(!current())return null;
     if(result){
+      active.native=!!result.native;
       markCompositionPresented(active);
       if(presentationHeld){simulation.hold(true);await safe(()=>effects?.holdComposition?.(true));}
     }
     return result;
   }
+  // A player-raised passive instrument shares this Source transaction. It
+  // cannot quietly bypass the measured fullscreen handoff or opt-in policy.
+  async function requestSourceRestRecorder({isCurrent=()=>true}={}){
+    if(!nativeDesired()||!compositionContext().introduced||sourceDesktop||!isCurrent())return false;
+    const owner=epoch;
+    const active=await beginTransaction('source:continuation');
+    return owner===epoch&&isCurrent()&&!!active?.native;
+  }
   async function endStudy(key=null){
     if(composition?.purpose!=='source-study'||key!==null&&composition.key!==key)return false;
+    effects?.releaseStudyFrames?.();
     return restore('source-study-end',{preserveSnapshots:true});
+  }
+  async function updateStudyFrames({key,frames,revision}={}){
+    const active=composition;
+    if(active?.purpose!=='source-study'||!String(active.plan.cueId).startsWith('source-rest:apertures:')||active.key!==key||!active.presented||presentationHeld||active.held||active.framePublishing
+      ||compositionContext().reduceDread||!Number.isSafeInteger(revision)||revision<1||revision<=(active.frameRevision||0)
+      ||active.plan.reducedMotion&&(active.frameRevision||0)>0||!sourceRestOwnedFramesValid(frames,active.plan.surfaces.filter(p=>p.sensitivity==='none').map(p=>p.id)))return false;
+    active.frameRevision=revision;active.framePublishing=true;
+    try{const request={cueId:active.plan.cueId,frames,revision};const okay=active.native?await effects?.updateStudyFrames?.(request):simulation.updateStudyFrames(request);return composition===active&&!!okay;}
+    finally{active.framePublishing=false;}
+  }
+  async function updateStudyArchitecture({key,revision,packet}={}){
+    const active=composition;
+    if(active?.purpose!=='source-study'||!windowArchitectureCueAllowed(active.plan.cueId)||active.key!==key||!active.presented||presentationHeld||active.held||active.architecturePublishing||compositionContext().reduceDread||!Number.isSafeInteger(revision)||revision<1||revision<=(active.architectureRevision||0)||active.plan.reducedMotion&&(active.architectureRevision||0)>0)return false;
+    const old=active.architectureCatalogue,same=old?.meshRevision===packet?.meshRevision,wire=same?{...packet,meshes:undefined}:packet,valid=validateWindowArchitecturePacket(wire,{catalogue:same?old.catalogue:null});
+    if(!valid.ok||!packet.panes.every(p=>active.plan.surfaces.some(s=>s.id===p.surfaceId&&s.sensitivity==='none')))return false;
+    active.architectureCatalogue=same?old:{meshRevision:packet.meshRevision,catalogue:valid.catalogue,meshes:packet.meshes};active.architectureRevision=revision;active.architecturePublishing=true;
+    const panes=wire.panes.map(pane=>{const layout=active.architectureLayout?.panes.find(p=>p.surfaceId===pane.surfaceId);return layout?{...pane,desktopOrigin:{x:layout.rect.x,y:layout.rect.y}}:pane;});
+    try{const request={cueId:active.plan.cueId,revision,packet:{...wire,panes,meshes:same?undefined:packet.meshes}};
+      const okay=active.native?await effects?.updateStudyArchitecture?.(request):simulation.updateStudyArchitecture(request);return composition===active&&!!okay;
+    }finally{active.architecturePublishing=false;}
+  }
+  async function layoutStudyArchitecture({key}={}){
+    const active=composition;
+    if(active?.purpose!=='source-study'||active.key!==key||!active.presented||presentationHeld||active.held)return null;
+    if(!active.native)return simulation.architectureLayout();
+    if(active.architectureLayoutPromise)return active.architectureLayoutPromise;
+    if(active.architectureLayout&&Date.now()-(active.architectureLayoutPoll||0)<1000)return active.architectureLayout;
+    active.architectureLayoutPoll=Date.now();
+    active.architectureLayoutPromise=(async()=>{
+      const metrics=await safe(()=>api?.invoke?.('chunk_window_metrics'));
+      if(composition!==active||presentationHeld||active.held)return null;
+      const layout=sourceStudyArchitectureLayout(metrics,active.plan.surfaces);if(!layout)return active.architectureLayout||null;
+      const signature=JSON.stringify([layout.mainRect,layout.workArea]);if(signature===active.architectureLayoutSignature)return active.architectureLayout;
+      const panes=[];
+      for(const pane of layout.panes){
+        if(composition!==active||presentationHeld||active.held)return null;
+        const surface=active.plan.surfaces.find(p=>p.id===pane.surfaceId),w=layout.workArea,placement=await safe(()=>api?.invoke?.('chunk_window_media_place',{request:{label:`window-media-${surface.index+1}`,index:surface.index,x:(pane.rect.x+pane.rect.width/2-w.x)/w.width,y:(pane.rect.y+pane.rect.height/2-w.y)/w.height,width:pane.rect.width,height:pane.rect.height,recoverable:24,durationMs:0,interactive:false}}));
+        if(composition!==active)return null;
+        const rect=placement?.center&&Number.isFinite(placement.width)?{x:w.x+placement.center.x-placement.width/2,y:w.y+placement.center.y-placement.height/2,width:placement.width,height:placement.height}:pane.rect;
+        panes.push({...pane,rect,crop:{x:(rect.x-layout.mainRect.x)/layout.mainRect.width,y:(rect.y-layout.mainRect.y)/layout.mainRect.height,width:rect.width/layout.mainRect.width,height:rect.height/layout.mainRect.height}});
+      }
+      active.architectureLayoutSignature=signature;active.architectureLayout={...layout,panes,revision:(active.architectureLayout?.revision||0)+1,native:true};return active.architectureLayout;
+    })().finally(()=>{active.architectureLayoutPromise=null;});
+    return active.architectureLayoutPromise;
   }
   function holdComposition(value=true){
     const held=!!value;presentationHeld=held;
@@ -1683,7 +1749,7 @@ export function createWindowChoreographyDirector({
 
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
-    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,
+    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
     beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take
