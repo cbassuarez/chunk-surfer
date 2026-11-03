@@ -160,6 +160,18 @@ For browser-only authored-material work, use `npm run dev` and open the Vite URL
 A development lens session should use the `--sd` launcher, which supplies its
 own authenticated loopback endpoint.
 
+On Windows, `play:latest` optionally reads the ignored checkout-local
+`graphics.local.json`, for example `{"angleBackend":"vulkan"}`. Supported
+choices are `default`, `d3d11`, and `vulkan`. This sets the native process's
+`CHUNK_SURFER_ANGLE_BACKEND` override for that launch; it does not change Windows
+or user-wide settings. An explicit environment override takes precedence over
+the file, and an existing WebView2 `--use-angle` choice takes precedence over
+both. Packaged Windows builds retain WebView2's automatic choice unless that
+environment override is explicitly supplied. Vulkan is a verified local
+workaround for this checkout's RTX 5060 shader compiler failure. The Windows
+target passes `cargo check`; visual startup in native WebView2 still needs
+acceptance.
+
 ### Web Build
 
 ```sh

@@ -22,6 +22,22 @@ const intents = new Set(['broadcast', 'conceal', 'overload', 'loop', 'silence'])
 
 export const SOURCE_DESKTOP_PRESSURE_ASSET = 'assets/hush-density.glb';
 
+// HUSH's pattern is fixed in the actual acquisition target, not in CSS pixels
+// or the stage's cropped viewport. Both performers must sample the same field.
+// The transparent pass creates its scene target at floor(logical size * DPR).
+export function setSourceDesktopHushViewport(materials, width, height, dpr = 1) {
+  const scale = clamp(dpr, 1, 2);
+  const w = Math.max(1, Math.floor(Math.max(1, finite(width, 1)) * scale));
+  const h = Math.max(1, Math.floor(Math.max(1, finite(height, 1)) * scale));
+  for (const material of materials) {
+    const value = material?.userData?.hushCosmos?.viewport?.value;
+    if (!value) continue;
+    if (typeof value.set === 'function') value.set(w, h);
+    else { value.x = w; value.y = h; }
+  }
+  return [w, h];
+}
+
 // The battle owner supplies this clock and intent. The captured density is an
 // entry reference, not a live world actor: fighting never advances its gait or
 // teaches it a new sound. Pause/focus remains owned by the existing session.
@@ -460,6 +476,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
     guardPlate.visible = frame.guardVisible; rake.visible = frame.rakeVisible;
     modelGroups.forEach((root, index) => { root.visible = snapshot.active; root.rotation.z = (index ? -.10 : .07) * frame.openness; });
     ambient.intensity = snapshot.intent.kind === 'conceal' ? .68 : 1.1;
+    setSourceDesktopHushViewport([...materials, ...echoMaterials], width, height, dpr);
     renderer.info.reset();
     dither.render(scene,camera,{width,height,dpr,stageHeight:layout.stageHeight,snapshot}); renderCount++;
     if (diagnostic) {
@@ -551,7 +568,7 @@ export function createSourceDesktopView({ canvas = null, container = null, asset
       dither:dither?.debug(),
       pressureAsset: SOURCE_DESKTOP_PRESSURE_ASSET,
       skinnedMeshes: bodyMeshCount, bones: bodySampler?.debug().joints || 0, animationClips, modelIds,
-      pressureFinish: { core: 'world-fixed-purple-cosmos', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
+      pressureFinish: { core: 'screen-fixed-torn-horizon', cosmicRevision:HUSH_COSMOS.revision, surface: 'physical-skinned-return', glow: 'diagnostic-volume-only',
         surfaceMeshes: bodySurfaces.length,
         coreMaterials: materials.length + echoMaterials.length, glowBands: bodyGlows.length,
         maxGlowRadiusM: Math.max(0, ...bodyGlows.map(band => band.radius)) },

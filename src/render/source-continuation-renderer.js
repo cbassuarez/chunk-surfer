@@ -20,6 +20,7 @@ import {sourceRestApertureFrame} from './source-rest-aperture-frame.js';
 import {sourceRestHarpsichordGeometryLibrary,sourceRestHarpsichordSeatGeometry} from './source-rest-harpsichord-models.js';
 import {sourceRestHarpsichordBoardGeometry} from './source-rest-harpsichord-board.js';
 import {sourceRestMemoryGeometryLibrary} from '../game/source-rest-memories.js';
+import {sourceCoastalEchoGeometry,sourceCoastalEchoFrame} from '../game/source-coastal-echoes.js';
 import {sourceRestNoteGeometryLibrary} from './source-rest-note-models.js';
 import {sourceRestCubeGeometryLibrary} from './source-rest-cube-models.js';
 import {sourceRestDestructionGeometryLibrary} from './source-rest-destruction-models.js';
@@ -32,11 +33,13 @@ import {applySourceRestReturn} from './source-rest-return.js';
 import {sourceRestBellGeometryLibrary} from './source-rest-bells.js';
 import {SOURCE_REST_FLOOD_MESHES} from '../game/source-rest-flood.js';
 import {sourceRestFloodGeometryLibrary} from './source-rest-flood-models.js';
+import {sourceRestSeabedGeometryLibrary} from './source-rest-seabed-models.js';
 import {sourceConnectorGeometryLibrary,sourceConnectorRenderParts} from './source-connector-corridor.js';
 import {createSourceRestNoteAsset} from '../game/source-rest-note-score.js';
 import {continuationCameraBasis,continuationCameraEye,continuationBodyBasis} from '../game/source-continuation-portals.js';
 import {continuationVoidCameraEye} from '../game/source-continuation-void.js';
 import {sourceContinuationVoidViews,sourceContinuationVoidCopies,sourceContinuationVoidInstance,sourceContinuationVoidInFrustum,sourceContinuationVoidAcousticPoint,SOURCE_VOID_VIEW_LIMITS} from './source-continuation-void.js';
+import {sourceContinuationEscherFrame,sourceContinuationEscherGeometryLibrary} from './source-continuation-escher.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {sourcePrintUV,sourcePrintMaps,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
@@ -44,6 +47,7 @@ import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} fro
 import {sourceSurroundingsFrame} from '../game/source-surroundings.js';
 import {SOURCE_SURROUNDINGS} from '../data/source-surroundings.js';
 import {continuationDitherIntensity} from './source-dither-routing.js';
+import {sourceChunkFaultFrame} from '../game/source-chunk-fault.js';
 import {sourceSurroundingsGeometryLibrary,sourceSurroundingsMeshPayload,sourceSurroundingsProps,installSourceSurroundingsEmitterAliases,SOURCE_SURROUNDINGS_REQUIRED_MESHES} from './source-surroundings-geometry.js';
 
 const PREFIX='source-continuation-';
@@ -64,7 +68,7 @@ const name=(phase,kind,id)=>`${PREFIX}${phase}-${kind}-${String(id).replace(/[^a
 const boxFaces=[[0,3,2,1],[4,5,6,7],[0,4,7,3],[1,2,6,5],[0,1,5,4],[3,7,6,2]];
 const paint={source:[.62,.66,.59],concrete:[.52,.55,.50],stone:[.56,.59,.53],wood:[.37,.31,.23],'cold-stone':[.63,.66,.58],'cold-wall':[.60,.64,.57],'case-lining':[.27,.34,.31],'piano-wood':[.43,.34,.23],'dark-metal':[.18,.23,.22],metal:[.27,.31,.30],steel:[.29,.34,.33],'edge-steel':[.028,.036,.034],'next-edge-steel':[.11,.15,.14],'worn-metal':[.52,.43,.25],'asphalt':[.055,.065,.062],'earthfall-backing':[.035,.045,.039],'linen':[.55,.53,.41],'operator-canvas':[.84,.67,.34],'lip-paint':[.42,.34,.12],dark:[.07,.09,.08],refuge:[.53,.42,.24],warning:[.65,.47,.16]};
 const isMetal=material=>/metal|steel|iron/.test(material||'');
-const isSource=material=>!isMetal(material)&&!['asphalt','earthfall-backing','wood','piano-wood','case-lining','linen','operator-canvas','lip-paint','dark','refuge','warning'].includes(material);
+const isSource=material=>!isMetal(material)&&!['asphalt','earthfall-backing','wood','piano-wood','case-lining','linen','operator-canvas','lip-paint','dark','refuge','warning','source-error'].includes(material);
 
 export const SOURCE_CONTINUATION_ARCHITECTURE=Object.freeze({
   asset:'assets/source-continuation-architecture.glb',far:SOURCE_SURROUNDINGS.farClip,maxInstances:760,maxLights:8,
@@ -210,14 +214,21 @@ const canonical={
   'rest-harpsichord-seat-upholstery':sourceRestHarpsichordSeatGeometry().upholstery,
   'rest-harpsichord-soundboard':sourceRestHarpsichordBoardGeometry(),
   ...sourceRestMemoryGeometryLibrary(),
+  ...sourceCoastalEchoGeometry(),
   ...sourceRestNoteGeometryLibrary(),
   ...sourceRestCubeGeometryLibrary(),
   ...sourceRestDestructionGeometryLibrary(),
   ...sourceRestBellGeometryLibrary(),
   ...sourceRestFloodGeometryLibrary(),
+  ...sourceRestSeabedGeometryLibrary(),
+  ...sourceContinuationEscherGeometryLibrary(),
   ...sourceConnectorGeometryLibrary(),
   'rest-judgment-lightning':{...cylinderGeometry(6),material:'linen',base:[.82,.89,.94,1],emissive:[1.2,1.4,1.6],roughness:1},
   block:{...solidGeometry({minX:-.5,maxX:.5,minY:0,maxY:1,minZ:-.5,maxZ:.5}),material:'metal'},
+  ...Object.fromEntries([[1,.015,.72],[.015,.82,1],[.42,.015,1],[.74,1,.015]].map((rgb,index)=>[
+    `chunk-error-${index}`,{...solidGeometry({minX:-.5,maxX:.5,minY:-.5,maxY:.5,minZ:-.5,maxZ:.5}),
+      material:'source-error',materialRole:'source-chunk-error',base:[...rgb,1],emissive:rgb.map(channel=>channel*.36),roughness:.22},
+  ])),
   counterweight:{...cylinderGeometry(32),material:'metal'},
   pin:{...cylinderGeometry(12),material:'steel'},
   lamp:{...solidGeometry({minX:-.12,maxX:.12,minY:-.08,maxY:.08,minZ:-.10,maxZ:.10}),material:'refuge'},
@@ -290,9 +301,9 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
   installSourceSurroundingsEmitterAliases(gl,pack);
   const pieces=meshLibrary,missing=pieces.filter(piece=>!pack.catalog.has(piece.name));if(!missing.length)return pieces.map(p=>p.name);
   const printed=maps||sourceBlueprintMaps(gl);
-  // Broad load-bearing sheets need a visible substrate. Keep the existing
-  // pale physical Source paper there; cyanotype belongs to cut joints and the
-  // former Earthfall path, whose material continuity is already established.
+  // Semantic Source stock carries light code over the chapter finish. Keep
+  // actual paper/notes and native wood/cloth on their own retained materials.
+  // The divide control remains dark-on-light for diagnostic comparisons.
   const palePrinted=maps?{...maps,blueprint:false}:{...sourcePrintMaps(gl,'divide'),blueprint:false};
   for(const piece of missing){
     const data=sourceContinuationMeshPayload(piece),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
@@ -300,7 +311,11 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    const source=isSource(piece.material),stock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall'?palePrinted:printed,base=piece.base||[...(paint[piece.material]||paint.source),1],localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
+    const source=isSource(piece.material),sourceSurface=piece.kind==='surface'&&printed.blueprint,
+      paleStock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall',
+      stock=sourceSurface?printed:paleStock?palePrinted:printed,
+      base=piece.base||[...(paint[piece.material]||paint.source),1],
+      localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
     const edge=/edge-steel/.test(piece.material);
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),base,emissive:piece.emissive||[0,0,0],texture:source?stock.texture:finishTexture(gl,piece.material),normalTexture:source?stock.normalTexture:null,ormTexture:source?stock.ormTexture:null,letteringFinish:source?stock.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.roughness??(piece.material==='earthfall-backing'?1:source?1:edge?.91:isMetal(piece.material)?.58:.91),aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,sourceSurroundingsPressure:piece.sourceSurroundingsPressure===true,sourceSurroundingsArcRadius:piece.sourceSurroundingsArcRadius||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(stock,{base}):{})}]});
   }
@@ -377,7 +392,7 @@ export function sourceContinuationCamera(frame,{viewportAspect=16/9}={}){
   return{eye:[finite(player.x),feet+EYE,finite(player.z)],yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
 }
 
-export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,viewportTanHalfFov=.95,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true}={}){
+export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,viewportTanHalfFov=.95,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true,escherMemory=null}={}){
   const frame=sourceContinuationFrame(state),player=frame.player||state.player||state,geometry=frame.geometry||{},surfaces=geometry.surfaces||continuationSurfaces(state),solids=geometry.solids||continuationSolids(state),doors=geometry.doors||continuationDoors(state),memoryProps=geometry.props||continuationProps(state);
   const baseCamera=sourceContinuationCamera(frame,{viewportAspect}),restSeat=state.sourceRestView&&sourceRestSeatForState(state);
   let camera=restSeat&&state.sourceRestView.seatId===restSeat.id
@@ -390,17 +405,25 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     const p=positioned(PREFIX+id,mesh,matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz),extra);props.push(p);return p;
   };
   const putMatrix=(id,mesh,m,extra={})=>{const p=positioned(PREFIX+id,mesh,multiply(matrix(origin.x,origin.y,origin.z),m),extra);props.push(p);return p;};
+  const chunkFault=sourceChunkFaultFrame(state,{reducedMotion});
+  for(const piece of chunkFault.pieces)put(piece.id,PREFIX+`chunk-error-${piece.palette}`,piece.x,piece.y,piece.z,0,piece.sx,piece.sy,piece.sz,
+    {chunkFault:true,chunkFaultStage:chunkFault.stage,chunkFaultProximity:chunkFault.proximity,region:piece.region,chartId:piece.chartId,descriptorId:'wrong-closing-front',cullRadius:1.6});
   const beam=(id,a,b,width=.08,material='pin',extra={})=>{
     const y=b.map((v,k)=>v-a[k]),length=Math.hypot(...y);if(length<.001)return;
     const n=y.map(v=>v/length),seed=Math.abs(n[1])<.9?[0,1,0]:[1,0,0],cross=(u,v)=>[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],x=cross(n,seed),xl=Math.hypot(...x);for(let k=0;k<3;k++)x[k]/=xl;const z=cross(x,n);
     putMatrix(id,PREFIX+material,new Float32Array([...x.map(v=>v*width),0,...y,0,...z.map(v=>v*width),0,...a,1]),extra);
   };
   const restScenery=sourceRestScenery(state,{reducedMotion,noteScore,couperinNoteScore,flashMode});
+  let restHorizon=null;
   if(restScenery){
     const decoration={chartId:restScenery.carpet.chartId,region:restScenery.region||'wrong-return',structural:false,decorative:true,noShadow:true};
     for(const part of restScenery.bells||[])putMatrix(part.id,PREFIX+part.mesh,part.matrix,{...decoration,restBell:true,bellId:part.bellId,bellPart:part.bellPart,cullRadius:7});
     for(const part of restScenery.flood?.props||[])putMatrix(part.id,part.mesh,part.matrix,{...decoration,restFlood:true,floodKind:part.kind,
-      memoryFish:part.memoryFish,memoryWreck:part.memoryWreck,cullRadius:part.cullRadius||6});
+      memoryFish:part.memoryFish,memoryWreck:part.memoryWreck,...(part.emissive?{emissive:part.emissive}:{}),cullRadius:part.cullRadius||6});
+    // The Catch fills with the floor of the sea instead of water.
+    for(const part of restScenery.seabed?.props||[])putMatrix(part.id,part.mesh,part.matrix,{...decoration,restSeabed:true,seabedKind:part.kind,
+      seabedCar:part.seabedCar,...(part.emissive?{emissive:part.emissive}:{}),cullRadius:part.cullRadius||4});
+    for(const lamp of restScenery.seabed?.lights||[])lights.push({...lamp,x:origin.x+lamp.x,y:origin.y+lamp.y,z:origin.z+lamp.z,region:decoration.region});
     for(const part of restScenery.weather?.lightning||[])beam(part.id,part.a,part.b,part.width,'rest-judgment-lightning',{...decoration,restLightning:true,cullRadius:30});
     for(const part of restScenery.place){
       // The overhead traversal retains sight of its actual refuge and doors;
@@ -435,6 +458,14 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
         turnIndex:part.turnIndex,turnAxis:part.turnAxis,turnSlice:part.turnSlice,turnAngle:part.turnAngle,turnProgress:part.turnProgress};
       if(part.matrix)putMatrix(part.id,PREFIX+part.mesh,part.matrix,extra);
       else put(part.id,PREFIX+part.mesh,part.x,part.y,part.z,part.yaw,part.sx,part.sy,part.sz,extra);
+    }
+    // The horizon has no mesh. Its wheels light the vista from the pivot the
+    // semiangel used, and the lens pass draws it before the recording.
+    const local=restScenery.noteArchitecture?.horizon;
+    if(local?.active){
+      restHorizon={...local,centre:local.centre.map((v,k)=>v+[origin.x,origin.y,origin.z][k])};
+      lights.push({id:PREFIX+'rest-horizon-wheels',x:restHorizon.centre[0],y:restHorizon.centre[1],z:restHorizon.centre[2],radius:32,
+        intensity:2.4*restHorizon.light,color:[.86,.88,1],penetration:0,chartId:decoration.chartId,region:decoration.region,restSky:true,focusPractical:true});
     }
     const weather=restScenery.weather;
     for(const drop of [...weather.streaks,...weather.roof])beam(drop.id,drop.a,drop.b,drop.width,'rest-rain',{...decoration,restSky:true,restWeather:true,weatherLayer:drop.layer??drop.kind});
@@ -634,6 +665,17 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
       lights.push({id:PREFIX+id,x:origin.x+x,y:origin.y+stage.y+.45,z:origin.z+z,radius:6.2,intensity:1.65,color:[.83,.68,.42],penetration:0,attachedTo:id,region:'catch',level,shelfPractical:true});
     }
   }
+  // A pair of tall, lit gateposts marks the onward island from the stack.
+  // Their warm verticals and the lit causeway read even in the overhead view.
+  const destination=SOURCE_CONTINUATION.catch.finalDoor;
+  for(const side of [-1,1]){
+    const z=destination.z+side*3.4;
+    beam('door-island-beacon-'+side,[destination.x,destination.y,z],[destination.x,destination.y+7,z],.12,'worn-block',{architecture:true,region:'catch',level:3,islandBeacon:true});
+    beam('door-island-light-'+side,[destination.x-.08,destination.y+1,z],[destination.x-.08,destination.y+6.6,z],.055,'rest-sky-wire',{region:'catch',level:3,islandBeacon:true});
+    lights.push({id:PREFIX+'island-beacon-light-'+side,x:origin.x+destination.x,y:origin.y+destination.y+5,z:origin.z+z,radius:13,intensity:1.7,color:[.94,.73,.40],penetration:0,region:'catch',level:3});
+  }
+  beam('door-island-crown',[destination.x,destination.y+7,destination.z-3.4],[destination.x,destination.y+7,destination.z+3.4],.11,'rest-sky-wire',{region:'catch',level:3,islandBeacon:true});
+  for(const x of [-158,-153,-148,-143])put('door-route-light-'+x,PREFIX+'rest-lamp-light',x,-12.48,-93,0,.17,.10,.17,{region:'catch',level:3,islandBeacon:true,practical:true});
   // The landing and narrow spine behind the entry are the floor just crossed,
   // with their original lower fixtures translated through the shared door.
   // They stay fixed in this world; architectural visibility still occludes them.
@@ -701,10 +743,10 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   if(restDegradation>.42){
     const distant=restEase(.42,.78,restDegradation),ground=restEase(.63,.88,restDegradation),place=restEase(.77,.91,restDegradation);
     for(const p of props){
-      // Flood animals and wrecks already follow the shared water frame. The
-      // architectural recession must not sink them away from that surface and
-      // their headlamps a second time.
-      if(chartOf(p)!==chartOf(state)||p.restSky||p.restFlood)continue;
+      // The flood and seabed already own their changing world-space heights.
+      // Architectural recession must not sink their ground, animals or wrecks
+      // away from their own lamps and surfaces a second time.
+      if(chartOf(p)!==chartOf(state)||p.restSky||p.restFlood||p.restSeabed)continue;
       const amount=p.restPlace?place:p.physicalKind==='surface'?ground:(p.surroundings||p.region===phaseOf(state)||p.doorId)?distant:0;
       if(amount<=0)continue;
       const drop=(p.restPlace?3:p.physicalKind==='surface'?7:8)*amount;
@@ -712,7 +754,7 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     }
   }
   const destruction=applySourceRestDestruction(props,{cue:affliction,time:state.sourceRestView?.musicTime,
-    seat:restSeat||SOURCE_REST_SEATS[0],origin,reducedMotion,canLeave:affliction?.canLeave!==false,
+    seat:restSeat||SOURCE_REST_SEATS[0],origin,reducedMotion,canLeave:affliction?.canLeave!==false,horizon:restHorizon,
     effectsMode:state.sourceRestView?.effectsMode||'full',reducedDread:state.sourceRestView?.reducedDread===true});
   if(!restBodyReady){destruction.body=[];destruction.diagnostics.bodyParts=0;}
   destruction.diagnostics.bodyAvailable=!!restBodyReady;
@@ -752,9 +794,19 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     portalCount:sourceExcludes.length,maxInstances:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances});
   if(restReturn.diagnostics.active){props.splice(0,props.length,...restReturn.props);lights.splice(0,lights.length,...restReturn.lights);}
   if(restReturn.planes)sourceExcludes.push(restReturn.planes);
+  // Exact aperture echoes retain their native budget; the merged fall images
+  // have their own fixed instance ceiling and must not displace seam geometry.
+  const escher=sourceContinuationEscherFrame(state,{voidViews,origin,memory:escherMemory});
   const voidCopies=sourceContinuationVoidCopies({views:voidViews,canonicalProps:allProps,canonicalLights:allLights,origin,
     remaining:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances-props.length});
   props.push(...voidCopies.props);lights.push(...voidCopies.lights);
+  // Portal and void echoes copy a pulled prop's tide, but each image would
+  // fall toward the one real hole. An echo vanishes once its original is
+  // released and is drawn untouched before then.
+  if(restHorizon)for(let index=props.length-1;index>=0;index--){
+    const p=props[index];if(!p.horizonTide||!String(p.id).includes(':through:'))continue;
+    if(restHorizon.clock>=p.horizonTide.release)props.splice(index,1);else{const {horizonTide,...still}=p;props[index]=still;}
+  }
   const pressureInstances=[],rawPressure=hush?pressureMeshes(hush,null,{reducedMotion}):[],hushChart=chartOf(pursuer);
   const straddles=endpoint=>{
     if(!pursuer||endpoint.chartId!==hushChart)return false;
@@ -804,6 +856,16 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   for(let i=0;i<props.length;i++){const p=submitTransform(props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));props[i]=p;}
   for(const l of lights){const q=transform(compensate,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}
   for(const p of pressureInstances){p.matrix=portalMultiply(compensate,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));}
+  // Upright house-of-stairs images yield to the exact aperture views.
+  const escherApertures=voidViews.domain?[...voidViews.lower,...voidViews.upper].map(v=>transformPortalPlanes(v.planes,originMatrix)):[];
+  for(let i=0;i<escher.props.length;i++){const p=submitTransform({...escher.props[i],portalExcludePlanes:escher.props[i].excludeVoidApertures&&escherApertures.length?escherApertures:null},compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));escher.props[i]=p;}
+  // These bounded, non-colliding memories are not aperture copies: preserve
+  // every native seam image and submit only the current chart's fragments.
+  const coastalEchoes=sourceCoastalEchoFrame(state).filter(p=>chartOf(p)===chartId).map(echo=>{
+    const {id,mesh,matrix:m,x,y,z,yaw=0,sx=1,sy=1,sz=1,...flags}=echo;
+    const at=m?multiply(originMatrix,m):matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz);
+    return submitTransform(positioned(PREFIX+'coastal-'+id,mesh,at,flags),compensate);
+  });
   let eye=presentation.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),worldYaw=camera.yaw,
     aim=camera.aimTarget?.map((v,k)=>v+[origin.x,origin.y,origin.z][k])||null;
   const rotation=phaseOf(state)==='catch'?finite(studyRotation):0;
@@ -827,7 +889,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     shownLevels:[...shownLevels].sort((a,b)=>a-b),hiddenAbove,geometry:{surfaces,solids,doors},source:frame,surroundings,
     counts:{surfaces:props.filter(p=>p.physicalKind==='surface').length,solids:props.filter(p=>p.physicalKind==='solid').length,props:props.length,lights:selectedLights.length,body:props.filter(p=>p.playerBody).length,hush:pressureInstances.length?1:0,hushViews:pressureInstances.length},
     noteArchitecture:restScenery?.noteArchitecture?.diagnostics||null,...(phaseOf(state)==='catch'?{harpsichord:restScenery?.harpsichord||null}:{}),
-    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,voidLoop:voidCopies.diagnostics,sunset:state.sourceRestView?.weatherCue?.sunset||null,
+    restHorizon,horizon:restHorizon?{...restHorizon.diagnostics,centre:restHorizon.centre,tides:destruction.diagnostics.horizonTides??0}:null,
+    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,voidLoop:voidCopies.diagnostics,escher,coastalEchoes,chunkFault:{active:chunkFault.active,stage:chunkFault.stage,frontX:chunkFault.frontX,proximity:chunkFault.proximity,touching:chunkFault.touching,collisionActive:chunkFault.collisionActive,parts:chunkFault.pieces.length},sunset:state.sourceRestView?.weatherCue?.sunset||null,
     flood:restScenery?.flood?{...restScenery.flood,props:undefined,water:{...restScenery.flood.water,
       siteMatrix:multiply(matrix(origin.x,origin.y,origin.z),restScenery.flood.water.siteMatrix),
       lights:(restScenery.flood.water.lights||[]).map(l=>({...l,position:l.position.map((n,k)=>n+[origin.x,origin.y,origin.z][k])}))}}:null,
@@ -843,7 +906,7 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
   const couperinNoteAsset=createSourceRestNoteAsset({resolveAsset,url:'audio/source-rest/couperin/couperin-revoicing.json'});
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh))&&renderer.r3dHushBodyReady?.()===true;};
   function clearSource(){
-    renderer.r3dSetSourceRestFaculties?.(null);
+    renderer.r3dSetSourceRestFaculties?.(null);renderer.r3dSetSourceRestHorizon?.(null);
     renderer.r3dSetStormFlash?.(0);
     renderer.r3dSetSourceWeather?.({rain:0,moon:0,clouds:0});props.setPressureSurfaceInstances?.([]);
     renderer.r3dSetHorizon?.(null);renderer.r3dSetSourceShore?.(null);renderer.r3dSetSourceEmergency?.(0);renderer.r3dSetSourceWhiteout?.(0);renderer.r3dSetSourceFault?.(0);renderer.r3dSetLocalLights?.([]);renderer.r3dSetEmergencyShadows?.([]);renderer.r3dSetSourcePortals?.([]);renderer.r3dSetSourceTowerView?.(null);renderer.r3dSetSourceOpenings?.([]);renderer.r3dSetSourceDoorLights?.([]);renderer.r3dSetSourceCrossing?.(null);renderer.r3dSetSourceReflection?.(null);renderer.r3dSetIndoorRain?.(0);renderer.r3dSetSourceTextInstances?.([]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetProps?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);
@@ -861,9 +924,10 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
       if(typeof props.setAuthoredPropRange!=='function')throw Error('The Source continuation far-range lease is unavailable.');
       releaseRange=props.setAuthoredPropRange(rangeOwner,SOURCE_CONTINUATION_ARCHITECTURE.far);
       clearSource();props.setSourceSurroundingsGate?.({x:finite(anchor.x)+SOURCE_JOURNEY.gate.x,y:finite(anchor.y)+SOURCE_JOURNEY.gate.y-.01,z:finite(anchor.z)+SOURCE_JOURNEY.gate.z,width:2.2,height:2.86});const size=256,rgba=new Uint8Array(size*size*4),material=new Uint8Array(size*size).fill(MATERIAL.sourceField);for(let i=0;i<rgba.length;i+=4)rgba.set([0,0,0,ZONE.sourceSpace],i);
-      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});updateLighting();renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
+      renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0,finish:'silicon'},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});updateLighting();renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(reason=>{releaseRange?.();releaseRange=null;error=String(reason?.message||reason);throw reason;});return loading;
   }
+  let escherMemory=null;
   function render(state){
     if(!initialized||released)return false;if(error)throw Error(error);
     if(!resident()){
@@ -877,7 +941,7 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     const viewport=getViewport?.(),bodyCatalog=new Set(props.propMeshCatalog?.()||[]);
     lastViewport=viewport;
     lastRestState={phase:state.phase,chartId:state.chartId??0,sourceRestView:state.sourceRestView};
-    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,viewportTanHalfFov:viewport?.tanHalfFov||.95,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name))});props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
+    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,viewportTanHalfFov:viewport?.tanHalfFov||.95,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name)),escherMemory});escherMemory=last.escher?.memory||null;props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps([...last.props,...last.escher.props,...last.coastalEchoes]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     const restSeat=SOURCE_REST_SEATS.find(seat=>seat.phase===state.phase),distance=restSeat?Math.hypot(state.x-restSeat.x,state.z-restSeat.z):Infinity,near=!!restSeat&&state.chartId===restSeat.chartId&&Math.abs(state.feet-restSeat.feet)<1;
     const weatherPresence=near?Math.max(0,Math.min(1,(16-distance)/10)):0,cue=state.sourceRestView?.weatherCue;
     renderer.r3dSetSourceWeather?.({rain:(cue?.rain||0)*weatherPresence,moon:(cue?.moon||0)*weatherPresence,clouds:(cue?.clouds||0)*weatherPresence,
@@ -891,10 +955,12 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
       affliction:last.affliction,reducedMotion:!!getReducedMotion(),
       reducedDread:state.sourceRestView?.reducedDread===true,effectsMode:state.sourceRestView?.effectsMode||'full',
     });renderer.r3dSetSourceRestFaculties?.(last.faculties);
+    renderer.r3dSetSourceRestHorizon?.(last.restHorizon||null);
     if(last.falling||lastFalling||last.authoredCamera)renderer.r3dSnapCameraOnNextFrame?.();lastFalling=last.falling;
+    renderer.r3dSetSourceFinish?.(phaseOf(state)==='catch'?'bismuth':'silicon');
     updateLighting();const heldTorch=getTorch?.();torchFrame={on:!!heldTorch?.on,look:{...(heldTorch?.look||{})}};
     return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.floorH,authoredPropRange:SOURCE_CONTINUATION_ARCHITECTURE.far,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:last.hush,hushSecondary:null,sourcePressureInstances:last.pressureInstances,audio:0,light:torchFrame.on?1:0,torchLook:torchFrame.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:continuationDitherIntensity(state),coastalMemory:last.flood?.water||null,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
-  return{initialize,render,restApertureFrame:()=>initialized&&!released&&!repair&&!error?sourceRestApertureFrame(last,lastRestState,{anchor,viewport:lastViewport}):null,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,harpsichord:last.harpsichord,affliction:last.affliction,faculties:last.faculties,destruction:last.destruction,restReturn:last.restReturn,voidLoop:last.voidLoop,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
+  return{initialize,render,restApertureFrame:()=>initialized&&!released&&!repair&&!error?sourceRestApertureFrame(last,lastRestState,{anchor,viewport:lastViewport}):null,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,horizon:last.horizon,harpsichord:last.harpsichord,affliction:last.affliction,faculties:last.faculties,destruction:last.destruction,restReturn:last.restReturn,voidLoop:last.voidLoop,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
 }

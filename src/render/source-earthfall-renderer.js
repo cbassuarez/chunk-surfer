@@ -11,7 +11,7 @@ import {sourceEarthfallFrame} from '../game/source-earthfall.js';
 import {sourceContinuationMeshPayload,sourceContinuationRenderFrame,prewarmSourceContinuationAssets,SOURCE_CONTINUATION_ARCHITECTURE} from './source-continuation-renderer.js';
 import {freshSourceContinuation} from '../game/source-continuation.js';
 import {sourceContinuationEntranceOffset} from '../game/source-continuation-entry.js';
-import {SOURCE_PRINT_SURFACE} from './physical-source-print.js';
+import {SOURCE_PRINT_SURFACE,sourcePrintMaps} from './physical-source-print.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
@@ -21,6 +21,7 @@ import {sourceDemolitionPose} from './source-demolition.js';
 import {ST_BRENDANS_PRESENCE_MESH,ST_BRENDANS_PRESENCE_PACK} from '../data/st-brendans-presences.js';
 import {SOURCE_EARTHFALL_QUAKE,earthfallGroundMotion,earthfallBuildingSway,earthfallMotionMatrix} from '../data/source-earthfall-quake.js';
 import {earthfallCollapseFrame,earthfallCollapseMeshes} from './source-earthfall-collapse.js';
+import {sourceEarthfallFaultLayout} from '../data/source-earthfall-faults.js';
 
 const PREFIX='source-earthfall-',clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,Number(n)||0));
 const smooth=(a,b,n)=>{const p=clamp((n-a)/(b-a));return p*p*(3-2*p);};
@@ -78,16 +79,38 @@ function stratumFragment(layer,piece){
 }
 const STRATA=SOURCE_EARTHFALL_STRATA.flatMap(layer=>Array.from({length:4},(_,piece)=>stratumFragment(layer,piece)));
 const LIBRARY=[...CELLS,...SHARED,...STRATA,...RUBBLE],GOODS=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
+// Torn address-space faults have no thickness and no moving owner. Batch the
+// fixed world polygons by stage/material, retaining their individual ranges
+// for geometry checks. Nothing here depends on the eye, quake or scene clock.
+const FAULT_SHEETS=sourceEarthfallFaultLayout();
+const FAULT_LIBRARY=[];
+for(const stage of ['walk','fall'])for(const palette of ['silver','black','magenta','cyan','violet','lime']){
+  const sheets=FAULT_SHEETS.filter(sheet=>sheet.stage===stage&&sheet.palette===palette);if(!sheets.length)continue;
+  const p=[],i=[],sheetRanges=[];
+  for(const sheet of sheets){
+    const vertexStart=p.length/3,indexStart=i.length;
+    p.push(...sheet.vertices.flat());i.push(...sheet.indices.map(index=>index+vertexStart));
+    sheetRanges.push({id:sheet.id,vertexStart,vertexCount:sheet.vertices.length,indexStart,indexCount:sheet.indices.length});
+  }
+  const id=`fault-${stage}-${palette}`;
+  FAULT_LIBRARY.push({id,name:PREFIX+id,kind:'chunk-fault',material:'source-error',stage,palette,p,i,sheetRanges});
+}
+const ALL_LIBRARY=[...LIBRARY,...FAULT_LIBRARY];
 const DOOR_MESHES=[GOODS.frameMesh,GOODS.leafMesh,GOODS.freeStandingHeadMesh].filter(Boolean);
 const REQUIRED_BASE=['grand_piano','instrument_case'];
 const REQUIRED_DEMO=[DEMO.staticMesh,...DEMO.parts.map(p=>p.mesh)];
 const REQUIRED_COLLAPSE=earthfallCollapseMeshes();
-export const SOURCE_EARTHFALL_RENDER_BUDGET=Object.freeze({earthCells:120,strata:3,sectionPanels:12,sectionModels:6,customTriangles:LIBRARY.reduce((n,p)=>n+p.i.length/3,0),far:SOURCE_CONTINUATION_ARCHITECTURE.far,presences:24,fractureDebris:72});
+export const SOURCE_EARTHFALL_RENDER_BUDGET=Object.freeze({earthCells:120,strata:3,sectionPanels:12,sectionModels:6,customTriangles:LIBRARY.reduce((n,p)=>n+p.i.length/3,0),faultSheets:FAULT_SHEETS.length,faultBatches:FAULT_LIBRARY.length,faultTriangles:FAULT_LIBRARY.reduce((n,p)=>n+p.i.length/3,0),far:SOURCE_CONTINUATION_ARCHITECTURE.far,presences:24,fractureDebris:72});
 export function sourceEarthfallGeometry(){return LIBRARY;}
+export function sourceEarthfallFaultGeometry(){return FAULT_LIBRARY;}
 
 export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
   if(!gl||!pack?.catalog)return false;
   const printed=maps||sourceBlueprintMaps(gl);
+  // Pale torn stock keeps the actual engraved source texture. Cut planes use
+  // opaque hyperchromatic ink, and absence stays black without material glow.
+  let faultPrinted=null;
+  const faultColors={silver:[.84,.88,.94],black:[.0002,.0003,.0006],magenta:[1,.01,.72],cyan:[.01,.86,1],violet:[.43,.01,1],lime:[.74,1,.01]};
   const upload=(data,material)=>{
     const vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const bind=(location,values,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
@@ -99,7 +122,7 @@ export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
     for(let i=0;i<data.positions.length;i+=9)if((data.normals[i+1]>.99)===top){p.push(...data.positions.slice(i,i+9));n.push(...data.normals.slice(i,i+9));uv.push(...data.uvs.slice(i/3*2,i/3*2+6));}
     return{positions:new Float32Array(p),normals:new Float32Array(n),uvs:new Float32Array(uv),indices:new Uint32Array(Array.from({length:p.length/3},(_,i)=>i))};
   };
-  for(const piece of LIBRARY){
+  for(const piece of ALL_LIBRARY){
     if(pack.catalog.has(piece.name))continue;
     const data=sourceContinuationMeshPayload(piece),instanceBuffer=gl.createBuffer(),source=piece.material==='source',quietBacking=piece.kind==='catch',raw=piece.material==='fracture';
     const base=piece.kind==='path'?[.52,.57,.50,1]:quietBacking?[.035,.045,.039,1]:source?[.46,.51,.45,1]:raw?[.26,.29,.25,1]:[.025,.035,.03,1];
@@ -107,7 +130,20 @@ export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
     // Only the worn upper finish bears the blueprint. Newly exposed soil and
     // aggregate have substantial dark fracture faces, rather than extending
     // the bright graphic across every side of a paper-thin rectangular card.
-    const primitives=piece.kind==='earth'?[upload(subset(data,true),surface),upload(subset(data,false),{...surface,base:[.19,.23,.20,1],texture:null,normalTexture:null,ormTexture:null,letteringFinish:null,printedSurface:null,metallic:0,roughness:.98,materialName:'earthfall exposed aggregate',materialRole:'fracture-core'})]:[upload(data,surface)];
+    let faultSurface;
+    if(piece.kind==='chunk-fault'){
+      const silver=piece.palette==='silver',black=piece.palette==='black',rgb=faultColors[piece.palette];
+      if(silver)faultPrinted ||= maps||sourcePrintMaps(gl,'divide');
+      faultSurface={...surface,base:[...rgb,1],emissive:black||silver?[0,0,0]:rgb.map(channel=>channel*.46),
+        texture:silver?faultPrinted.texture:null,normalTexture:silver?faultPrinted.normalTexture:null,
+        ormTexture:silver?faultPrinted.ormTexture:null,letteringFinish:silver?faultPrinted.letteringFinish:null,
+        metallic:0,roughness:1,printedSurface:silver?SOURCE_PRINT_SURFACE:null,
+        materialName:`earthfall fixed ${piece.palette} tear`,materialRole:black?'quiet-metal':'source-chunk-error'};
+    }
+    // The shared opaque prop pass already draws both sides and faces its
+    // normals toward the eye. A single flat face needs no reverse duplicate,
+    // extrusion, billboard transform or singular zero-scale instance matrix.
+    const primitives=faultSurface?[upload(data,faultSurface)]:piece.kind==='earth'?[upload(subset(data,true),surface),upload(subset(data,false),{...surface,base:[.19,.23,.20,1],texture:null,normalTexture:null,ormTexture:null,letteringFinish:null,printedSurface:null,metallic:0,roughness:.98,materialName:'earthfall exposed aggregate',materialRole:'fracture-core'})]:[upload(data,surface)];
     for(const primitive of primitives){
       gl.bindVertexArray(primitive.vao);gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);
       for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
@@ -115,10 +151,10 @@ export function installSourceEarthfallMeshes(gl,pack,{maps=null}={}){
     }
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceEarthfall:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},primitives});
   }
-  gl.bindVertexArray(null);return LIBRARY.map(p=>p.name);
+  gl.bindVertexArray(null);return ALL_LIBRARY.map(p=>p.name);
 }
 const boundsCenter=piece=>{const b=sourceContinuationMeshPayload(piece).bounds;return b.center;};
-const CENTERS=new Map(LIBRARY.map(p=>[p.name,boundsCenter(p)]));
+const CENTERS=new Map(ALL_LIBRARY.map(p=>[p.name,boundsCenter(p)]));
 const MODEL_STATIONS=[
   {id:0,x:31,z:-11,scale:11,yaw:-.6,mesh:'grand_piano'},
   {id:1,x:42,z:-48,scale:9,yaw:1.8,mesh:'grand_piano'},
@@ -217,6 +253,11 @@ function applyEarthfallGroundMotion(props,frame,quake){
 export function sourceEarthfallRenderFrame(state,presentation={}){
   const frame=sourceEarthfallFrame(state),props=[],lights=[],reduced=presentation.reducedMotion===true||presentation.reduceMotion===true||presentation.shakeMode==='off',effectsOff=presentation.effectsMode==='off'||presentation.flashMode==='off';
   const put=(id,mesh,m,extra={})=>props.push(placed(id,mesh,m,extra));
+  for(const piece of FAULT_LIBRARY){
+    const center=CENTERS.get(piece.name);
+    put(piece.id,piece.name,matrix(...center),{earthfallRole:'chunk-fault',worldAnchored:true,
+      faultStage:piece.stage,faultPalette:piece.palette,faultSheets:piece.sheetRanges.length});
+  }
   for(const cell of CELLS){
     const pose=sourceEarthfallFracturePose(cell.index,frame.elapsed,cell.center),b=CENTERS.get(cell.name);
     // The supporting slab's finite bearing fold is physical geometry in both
@@ -359,7 +400,7 @@ export function sourceEarthfallRenderFrame(state,presentation={}){
   const eye=[frame.player.x,frame.player.feet+C.eyeHeight+(reduced?0:impactDip),frame.player.z];
   const bodyPitch=Number.isFinite(impactAge)&&!reduced?.09*Math.sin(impactAge*22)*Math.exp(-impactAge*7):0;
   const cameraPitch=frame.player.pitch+bodyPitch;
-  return{source:frame,phase:frame.phase,props,lights,eye,reducedMotion:reduced,construction:SOURCE_EARTHFALL_CONSTRUCTION,impossibleDepth:frame.player.feet<SOURCE_EARTHFALL_CONSTRUCTION.impossibleBelowY,yaw:frame.player.yaw,pitch:cameraPitch,authoredCamera:{eye,yaw:frame.player.yaw,pitch:cameraPitch},counts:{props:props.length,earth:CELLS.length,presences:props.filter(p=>p.earthfallRole==='residue').length},falling:frame.falling,catchSurfaceY:frame.catchSurfaceY};
+  return{source:frame,phase:frame.phase,props,lights,eye,reducedMotion:reduced,construction:SOURCE_EARTHFALL_CONSTRUCTION,impossibleDepth:frame.player.feet<SOURCE_EARTHFALL_CONSTRUCTION.impossibleBelowY,yaw:frame.player.yaw,pitch:cameraPitch,authoredCamera:{eye,yaw:frame.player.yaw,pitch:cameraPitch},counts:{props:props.length,earth:CELLS.length,faultSheets:FAULT_SHEETS.length,faultBatches:FAULT_LIBRARY.length,presences:props.filter(p=>p.earthfallRole==='residue').length},falling:frame.falling,catchSurfaceY:frame.catchSurfaceY};
 }
 
 let continuationPreview=null;
@@ -392,7 +433,7 @@ export function createSourceEarthfallRenderer({renderer=R3,props=P3,resolveAsset
   const aside=asideRenderer||createSourceEarthfallElleryAsideRenderer({renderer,props,resolveAsset,getTorch,diagnostics});let renderingAside=false;
   const cpuSamples=[];
   const cpuSummary=()=>{const sorted=[...cpuSamples].sort((a,b)=>a-b);return{samples:sorted.length,medianMs:sorted[Math.floor(sorted.length*.5)]??null,p95Ms:sorted[Math.floor(sorted.length*.95)]??null,scope:'CPU frame construction and WebGL submission; excludes asynchronous GPU completion'};};
-  const required=[...LIBRARY.map(p=>p.name),...REQUIRED_BASE,...REQUIRED_DEMO,...REQUIRED_COLLAPSE,...DOOR_MESHES,...Object.values(ST_BRENDANS_PRESENCE_MESH)];
+  const required=[...ALL_LIBRARY.map(p=>p.name),...REQUIRED_BASE,...REQUIRED_DEMO,...REQUIRED_COLLAPSE,...DOOR_MESHES,...Object.values(ST_BRENDANS_PRESENCE_MESH)];
   const resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh));};
   function clearSource(){for(const name of ['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);for(const name of ['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);for(const name of ['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);props.setSourceSurroundingsGate?.(null);props.setSourceSurroundingsPressure?.(null);}
   async function install(){

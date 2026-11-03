@@ -54,8 +54,8 @@ test('VFD selection is destabilised before phosphor encoding', () => {
   assert.match(pixelShader, /broadForm/);
   assert.match(pixelShader, /brightContour/);
   assert.match(pixelShader, /darkCrease/);
-  assert.match(pixelShader, /float inkChroma/);
-  assert.match(pixelShader, /luma\(neutralLightInk\)\s*\/\s*max\(0\.001,\s*luma\(captureLight\)\)/);
+  assert.match(pixelShader, /finalMaterialLightInk\(broadColor,captureBlackProtect\)/);
+  assert.doesNotMatch(pixelShader, /captureLight\s*\*=\s*luma\(neutralLightInk\)/);
   assert.match(pixelShader, /vec3 oneBitScene/);
   assert.doesNotMatch(pixelShader, /capturedTone|acquiredScene/);
   assert.doesNotMatch(pixelShader, /clusteredDotScreen|diagonalLineScreen|materialScreen/);

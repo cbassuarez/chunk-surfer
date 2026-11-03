@@ -420,6 +420,7 @@ test('actual integrated data keeps six stations, solid plinths, west circulation
   const academic = PROPS.renderInstances({ group: 'academic', inscriptions: false });
   const ground = PROPS.renderInstances({ group: 'ground', inscriptions: false });
   assert.ok(academic.some(p => p.id === 'academic-roof-glazing'));
+  assert.ok(academic.some(p => p.id === 'academic-roof-service-stair'), 'the normal ascent is visible through the gallery service doorway before crossing render groups');
   assert.ok(!academic.some(p => p.id === 'academic-skylight'), 'the old oversized grid is not a second gallery roof');
   assert.ok(ground.some(p => p.id === 'academic-skylight'), 'legacy ground-floor presentation remains');
   assert.ok(!academic.some(p => p.id === 'roof-ren'), 'sharing static glazing does not add roof actors to the gallery');

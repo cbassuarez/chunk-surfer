@@ -21,7 +21,7 @@ test('the Source III resting place is unavailable on entry and only belongs to i
   assert.equal(sourceRestFocus({...base,...seat,...seat.approach})?.id,seat.id);
 });
 
-test('real first-person walking and E releases reach the counterarc bench, and leaving preserves the original final door route',async()=>{
+test('real first-person walking and E releases reach the listening island and then the door island',async()=>{
   scenes.clear();const events=[],traceEvents=[],poses=[],seat=SOURCE_REST_SEATS[1];let completed=0,returned=0;
   // No immunity or position corrections are applied after this actual Catch
   // entry. The ordinary HUSH/counterweight clocks continue throughout. Their
@@ -72,8 +72,9 @@ test('real first-person walking and E releases reach the counterarc bench, and l
     walk(continuationRadialPoint(7.6,0));arc(7.6,0,Math.PI-.06);
     walk(continuationRadialPoint(4.7,Math.PI-.04));release(2);
     walk(continuationRadialPoint(7.5,Math.PI+.04));arc(7.5,Math.PI+.04,4.13);
-    walk(continuationRadialPoint(11.52,4.13));
-    assert.equal(scene.sourceRest.focus()?.id,seat.id,'the actual counterarc approach discovers the seat');
+    walk(continuationRadialPoint(9.7,3.8));
+    walk({x:-180,z:-98});walk({x:-189,z:-98});walk({x:-189,z:-102});walk({x:-192.3,z:-102});walk(seat.approach);
+    assert.equal(scene.sourceRest.focus()?.id,seat.id,'the actual island approach discovers the seat');
     const before=scene.serialize();scenes.key({key:'e'});
     assert.equal(scene.sourceRest.view().mode,'sitting');assert.equal(scenes.top()?.id,'source-rest:catch');
     for(let i=0;i<5;i++)advance(.2);
@@ -82,8 +83,9 @@ test('real first-person walking and E releases reach the counterarc bench, and l
     const after=scene.serialize();assert.equal(scene.sourceRest.view().mode,'idle');
     near(after.x,before.x);near(after.z,before.z);near(after.feet,before.feet);
     assert.equal(after.completed,false);assert.equal(after.exitReceipt,null);assert.equal(completed,0);assert.equal(returned,0);
-    // Remaining on the live route still reaches the same final goods pair.
-    walk(continuationRadialPoint(7.5,4.13));arc(7.5,4.13,2.6);
+    // Retrace the causeway before descending to the door island.
+    walk({x:-192.3,z:-102});walk({x:-189,z:-102});walk({x:-189,z:-98});walk({x:-180,z:-98});
+    walk(continuationRadialPoint(9.7,3.8));walk(continuationRadialPoint(7.5,3.8));arc(7.5,3.8,4.13);arc(7.5,4.13,2.6);
     walk(continuationRadialPoint(2.86,2.6));release(3);
     walk(continuationRadialPoint(5,2.6));arc(5,2.6,0);walk(C.catch.finalApproach);
     assert.equal(scene.view().focus?.id,'catch-final');scene.key({key:'e'});

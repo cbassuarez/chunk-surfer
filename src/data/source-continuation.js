@@ -29,8 +29,8 @@ export const SOURCE_CONTINUATION = freeze({
     levels: CONTINUATION_CATCH_STAGES.length, ringHalfExtent: 13,
     outer: { minX: -187, maxX: -157, minZ: -107, maxZ: -77 },
     centers: CONTINUATION_CATCH_STAGES.map(() => ({ x: -172, z: -92 })),
-    finalApproach: { x: -164, z: -92, feet: -12.6, yaw: Math.PI / 2, pitch: 0 },
-    finalDoor: { x: -162.7, z: -92, y: -12.6 },
+    finalApproach: { x: -140.3, z: -92, feet: -12.6, yaw: Math.PI / 2, pitch: 0 },
+    finalDoor: { x: -139, z: -92, y: -12.6 },
     refuge: { x: -172 + Math.cos(.92) * 14.25, z: -92 + Math.sin(.92) * 14.25 }, counterweightRadius: .72,
     counterweightSpeed: 1.15, counterweightWarningSeconds: 6,
     hoist: { shaft: { x: -188, z: -92 }, start: { x: -164.29, z: -83.27 },
@@ -40,6 +40,7 @@ export const SOURCE_CONTINUATION = freeze({
   }),
 });
 const C = SOURCE_CONTINUATION;
+export const CONTINUATION_SEAT_ISLAND = freeze({x:-193,z:-106,feet:-4.8,level:2,chartId:0});
 export const continuationCatchFloor = level => CONTINUATION_CATCH_STAGES[Math.min(3, Math.max(0, Math.round(level)))]?.y ?? -12.6;
 export const continuationStage = level => CONTINUATION_CATCH_STAGES[Math.min(3, Math.max(0, Math.round(Number(level) || 0)))];
 export function continuationRadialPoint(radius, angle) { return { x: C.catch.center.x + Math.cos(angle) * radius, z: C.catch.center.z + Math.sin(angle) * radius }; }
@@ -124,8 +125,36 @@ for (const branch of CONTINUATION_RETURN_CATCHES) {
     innerRadius:radius-1.4,outerRadius:radius,startAngle:Math.min(branch.angle,branch.joinAngle)-.045,endAngle:Math.max(branch.angle,branch.joinAngle)+.045,
     y:stage.y,thickness:.35,level:stage.level,role:'wrong-catch-return',material:'case-lining',construction:'binding',angularSegments:24});
 }
-catchSurfaces.push(rect('catch-final-balcony', 'catch', -167.5, -161, -93.2, -90.8, -12.6,
-  { level: 3, role: 'final-balcony', material: 'piano-wood', construction: 'soundboard' }));
+// The spindle is one island in an archipelago. Narrow causeways join distinct
+// floating destinations; all are real supports, including the quiet detours.
+// Their varying silhouettes and cuts leave the void visible between them.
+const island=(id,bounds,y,level,role='island')=>catchSurfaces.push(rect(id,'catch',...bounds,y,
+  {level,role,material:'cold-stone',construction:'masonry',thickness:.72}));
+const causeway=(id,bounds,y,level)=>catchSurfaces.push(rect(id,'catch',...bounds,y,
+  {level,role:'island-causeway',material:'piano-wood',construction:'binding',thickness:.28}));
+// The counterarc's return pocket leads to the separate listening island.
+causeway('catch-seat-causeway',[-190,-179,-99,-97],-4.8,2);
+causeway('catch-seat-causeway-bend',[-190,-188,-103,-97],-4.8,2);
+island('catch-seat-island',[-197,-189,-110,-101],-4.8,2,'seat-island');
+// A route of two intermediary islands leads east to the unmistakable door.
+causeway('catch-final-balcony',[-167.5,-157,-93.2,-90.8],-12.6,3);
+island('catch-east-island',[-158,-151,-96,-88],-12.6,3);
+causeway('catch-east-causeway',[-152,-142,-93.2,-90.8],-12.6,3);
+island('catch-door-island',[-143,-135,-97,-87],-12.6,3,'door-island');
+// Two other destinations make this a place to navigate, not a single pier.
+causeway('catch-north-causeway',[-168,-166,-111,-99],-12.6,3);
+island('catch-north-island',[-171,-163,-118,-110],-12.6,3);
+causeway('catch-south-causeway',[-173,-171,-83,-74],-12.6,3);
+island('catch-south-island',[-176,-168,-75,-68],-12.6,3);
+// Farther islands remain connected at the real height of their own layer, so
+// landing on one cannot leave the player stranded on an unearned floor.
+causeway('catch-upper-satellite-way',[-192,-163,-81.6,-79.6],8.4,0);
+island('catch-upper-satellite',[-196,-190,-82,-76],8.4,0);
+causeway('catch-lower-satellite-way',[-201,-170,-116.8,-114.8],-12.6,3);
+island('catch-lower-satellite',[-204,-198,-119,-113],-12.6,3);
+causeway('catch-far-satellite-way',[-193,-148,-107,-105],-4.8,2);
+causeway('catch-far-satellite-bend',[-150,-148,-111,-105],-4.8,2);
+island('catch-far-satellite',[-151,-145,-115,-109],-4.8,2);
 const wall = (id, minX, maxX, minZ, maxZ, minY, maxY, extra = {}) => ({ id, phase: 'wrong-return', region: 'wrong-return', minX, maxX, minZ, maxZ, minY, maxY, material: 'cold-wall', ...extra });
 const walls = [
   wall('wrong-entry-back-west', -1.8, -1.58, 3.38, 3.62, 0, 3.3), wall('wrong-entry-back-east', 1.58, 1.8, 3.38, 3.62, 0, 3.3),
@@ -249,7 +278,8 @@ export function continuationRefugeAt(value = {}) {
     return [base,...JOURNEY_REFUGES.map(p=>({...p,level:0}))].filter(p=>(p.chartId??0)===continuationChartId(value)&&Math.abs(p.feet-value.feet)<.5).sort((a,b)=>Math.hypot(a.x-value.x,a.z-value.z)-Math.hypot(b.x-value.x,b.z-value.z))[0]||base;
   }
   const stage = continuationStage(value.level), at = continuationRadialPoint(stage.outerRadius + 1.25, stage.refugeAngle);
-  return { ...at, feet: stage.y, level: stage.level };
+  const pocket={ ...at, feet: stage.y, level: stage.level };
+  return stage.level===CONTINUATION_SEAT_ISLAND.level && Math.hypot(value.x-CONTINUATION_SEAT_ISLAND.x,value.z-CONTINUATION_SEAT_ISLAND.z)<Math.hypot(value.x-pocket.x,value.z-pocket.z) ? CONTINUATION_SEAT_ISLAND : pocket;
 }
 export function continuationCatchObstacles(value={}) {
   return [...continuationChartSurfaces(value).map(s => ({ ...s, minY: s.y - s.thickness, maxY: s.y })), ...continuationChartSolids(value),

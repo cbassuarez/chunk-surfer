@@ -25,6 +25,8 @@ import { B3_GLASS_GLSL, createB3GlassMoment, b3FigurePanePoint, b3ClearRay, b3Pa
 import {OUTSKIRTS_BUS_RAIN_GLSL,outskirtsBusRainUniforms,outskirtsBusInteriorLightMix} from './outskirts-bus-weather.js';
 import {GLASS_COURT} from '../data/glass-court.js';
 import {SOURCE_BLUEPRINT_ACQUISITION_GLSL,sourceBlueprintEnabled} from './source-blueprint-contract.js';
+import {normalizeSourceFinish} from './source-material-finish.js';
+import {SOURCE_REST_HORIZON_LENS_GLSL,sourceRestHorizonLensUniforms} from './source-rest-horizon-pass.js';
 import {SOURCE_REST_STARS_GLSL} from './source-rest-stars.js';
 import { MAIN_STAIR_WALL_PACK } from '../data/main-stair-wall-dressing.js';
 import { EXTERIOR_FRONTAGE_PACK } from '../data/exterior-frontages.js';
@@ -450,7 +452,7 @@ float rainVolume(vec3 ro, vec3 rd, float surfaceViewM){
 
 `;
 
-const MARCH_FRAG = COMMON_GLSL + TORCH_OPTICS_GLSL + WORLD_LIGHT_TREATMENT_GLSL + STILLNESS_FACES_GLSL + STILLNESS_RELIEF_PROXY_GLSL + NATATORIUM_METRIC_GLSL + `
+export const MARCH_FRAG = COMMON_GLSL + TORCH_OPTICS_GLSL + WORLD_LIGHT_TREATMENT_GLSL + STILLNESS_FACES_GLSL + STILLNESS_RELIEF_PROXY_GLSL + NATATORIUM_METRIC_GLSL + `
 uniform vec2  uRes;
 uniform float uTime;
 uniform vec3  uCam;          // eye (x, height, z=world y)
@@ -539,11 +541,13 @@ uniform vec4  uKey;          // x, z, active, -
 uniform vec4  uDoor;
 uniform vec4  uHush;         // x, z, absorption strength, radius in metres
 uniform float uPressureGeometryReady;
-uniform sampler2D uHushBodyTex;
 uniform sampler2D uPlan;     // the authored building: R=floor G=ceil B=flags A=zone
 uniform sampler2D uMat;      // R=material id
 uniform sampler2D uSourceLayer; // R=source corpus layer for this runtime cell
-uniform sampler2D uSourceSurface; // exact repository source rendered as a code-native surface
+// Source's corpus and the physical HUSH geometry are mutually exclusive.
+// Share the sampler declaration as well as texture unit 13: two sampler
+// uniforms on one unit still exceed D3D11's sixteen-sampler link budget.
+uniform sampler2D uSourceSurface;
 uniform sampler2D uPropColor;
 uniform sampler2D uPropDepth;
 uniform float uLitApparitions;
@@ -4353,6 +4357,15 @@ let sourceFaultState={active:false,nvme:0,ps2:0,transition:0,seed:0,slot:0,overf
 let sourceRestFaculties=normalizeSourceRestFaculties(null);
 export function r3dSetSourceRestFaculties(value=null){sourceRestFaculties=normalizeSourceRestFaculties(value);return{...sourceRestFaculties};}
 export function r3dSourceRestFacultyStatus(){return{...sourceRestFaculties};}
+// Source II's Ophanim horizon. The lens pass runs only while a frame is set;
+// the same frame drives the per-vertex infall of released props.
+let sourceRestHorizon=null,progSourceRestHorizon=null,sourceRestHorizonTex=null,sourceRestHorizonMarkTex=null,sourceRestHorizonFbo=null;
+const sourceRestHorizonUniformCache=new Map(),sourceRestHorizonStatus={active:false,drawn:false,error:null};
+export function r3dSetSourceRestHorizon(frame=null){
+  sourceRestHorizon=frame?.active?frame:null;sourceRestHorizonStatus.active=!!sourceRestHorizon;
+  P3.setSourceRestHorizonTide?.(sourceRestHorizon);return sourceRestHorizonStatus.active;
+}
+export function r3dSourceRestHorizonStatus(){return{...sourceRestHorizonStatus,programReady:!!progSourceRestHorizon};}
 let surfAlbedoTex=null, surfNormalTex=null, surfMaterialTex=null, surfDreamTex=null, surfDreamStageTex=null, anisoExt=null, anisoMax=1;
 // The engraving, derived from each generated tile as it arrives (see
 // render/mark-field.js). It is a strict parallel of the dream arrays — same
@@ -6260,6 +6273,7 @@ function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,tor
   gl.drawArrays(gl.TRIANGLES,0,3);
   // Use the actual overworld acquisition kernel and active look profile. The
   // Source fault still damages that same recording, rather than replacing it.
+  runSourceRestHorizonPass();
   const encoded=runPixelMeshPass({...worldState,hushBodyAllowed:false},now);
   const faulted=runSourceFaultPass(encoded,now);
   const resolved=runDatamoshPass(faulted,now);
@@ -6555,6 +6569,42 @@ function invertRigidMatrix(m){
   return new Float32Array([m[0],m[4],m[8],0, m[1],m[5],m[9],0, m[2],m[6],m[10],0,
     -(m[0]*t[0]+m[1]*t[1]+m[2]*t[2]),-(m[4]*t[0]+m[5]*t[1]+m[6]*t[2]),-(m[8]*t[0]+m[9]*t[1]+m[10]*t[2]),1]);
 }
+// Between the rest acquisition and the recording: copy the acquired scene
+// and its marks aside, then bend them around the horizon back into the same
+// scene targets, with the wheels and shadow. Depth and pigment marks move
+// with every pixel, so the unchanged recording inks the lensed image as itself.
+function sourceRestHorizonTargets(){
+  const w=uniforms.sceneW,h=uniforms.sceneH;
+  if(sourceRestHorizonFbo&&sourceRestHorizonTargets.size===w+'x'+h)return true;
+  for(const item of [sourceRestHorizonTex,sourceRestHorizonMarkTex])if(item)gl.deleteTexture(item);if(sourceRestHorizonFbo)gl.deleteFramebuffer(sourceRestHorizonFbo);
+  sourceRestHorizonTex=makeTex(w,h,null,'rgba16f');sourceRestHorizonMarkTex=makeTex(w,h,null,'rgba8');
+  sourceRestHorizonFbo=makeFbo(sourceRestHorizonTex,[sourceRestHorizonMarkTex]);sourceRestHorizonTargets.size=w+'x'+h;return true;
+}
+function runSourceRestHorizonPass(){
+  sourceRestHorizonStatus.drawn=false;
+  if(!sourceRestHorizon||!progSourceRestHorizon||!sceneFbo||!sourceRestHorizonTargets())return false;
+  const w=uniforms.sceneW,h=uniforms.sceneH;
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,sceneFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,sourceRestHorizonFbo);
+  for(const attachment of [gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]){
+    gl.readBuffer(attachment);gl.drawBuffers(attachment===gl.COLOR_ATTACHMENT0?[gl.COLOR_ATTACHMENT0,gl.NONE]:[gl.NONE,gl.COLOR_ATTACHMENT1]);
+    gl.blitFramebuffer(0,0,w,h,0,0,w,h,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+  }
+  gl.readBuffer(gl.COLOR_ATTACHMENT0);gl.bindFramebuffer(gl.READ_FRAMEBUFFER,null);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,null);
+  const U=name=>{if(!sourceRestHorizonUniformCache.has(name))sourceRestHorizonUniformCache.set(name,gl.getUniformLocation(progSourceRestHorizon,name));return sourceRestHorizonUniformCache.get(name);};
+  const q=sourceRestHorizonLensUniforms(sourceRestHorizon);
+  gl.useProgram(progSourceRestHorizon);gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFbo);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.viewport(0,0,w,h);
+  gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.bindVertexArray(null);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sourceRestHorizonTex);gl.uniform1i(U('uHorizonScene'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,sourceRestHorizonMarkTex);gl.uniform1i(U('uHorizonMarks'),1);
+  gl.uniform2f(U('uHorizonRes'),uniforms.sceneW,uniforms.sceneH);gl.uniform2f(U('uHorizonView'),yaw+planYaw,pitch);
+  gl.uniform3f(U('uHorizonEye'),camX*CELL,camY*CELL,camZ*CELL);gl.uniform1f(U('uHorizonTan'),activeCameraTanHalfFov);
+  gl.uniform4fv(U('uHorizonCentre'),q.centre);gl.uniform4fv(U('uHorizonSpin'),q.spin);gl.uniform4fv(U('uHorizonParams'),q.params);
+  gl.uniform3fv(U('uHorizonRingNormal[0]'),q.normals);gl.uniform4fv(U('uHorizonRing[0]'),q.rings);gl.uniform1fv(U('uHorizonEyeAge[0]'),q.ages);
+  gl.drawArrays(gl.TRIANGLES,0,3);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  sourceRestHorizonStatus.drawn=true;return true;
+}
+
 function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTexture = sceneTex } = {}) {
   pixelMeshStatus.framesSeen += 1;
   pixelMeshStatus.shaderReady = !!progPixelMesh;
@@ -6775,6 +6825,7 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   gl.uniform1f(pixelMeshU('uRecordingSensitivity'), textSpaceActive&&sourceLook.roomMemoryActive?captureExposure:1);
   const blueprintRecording=textSpaceActive&&sourceLook.roomMemoryActive&&sourceLook.blueprint===true&&sourceBlueprintEnabled();
   gl.uniform2f(pixelMeshU('uSourceBlueprint'),blueprintRecording?1:0,1/(1+(P3.propTargets().far||90)*.14));
+  gl.uniform1f(pixelMeshU('uSourceFinish'),blueprintRecording?normalizeSourceFinish(sourceLook.finish):0);
   const floodInk=textSpaceActive&&sourceLook.roomMemoryActive&&state?.coastalMemory?.active?state.coastalMemory:null;
   gl.uniform1f(pixelMeshU('uSourceSunsetInk'),textSpaceActive&&sourceLook.roomMemoryActive?(sourceWeather.sunset?.amount||0):0);
   gl.uniform4f(pixelMeshU('uSourceWaterInk'),floodInk?1:0,
@@ -6875,6 +6926,11 @@ export function r3dInit(mapEl) {
   try { progBurst = program(BURST_FRAG); } catch (_) { progBurst = null; }
   progTextSpace = program(TEXT_SPACE_FRAG);
   progSourceRoomAcquisition=program(SOURCE_ROOM_ACQUISITION_FRAG);
+  // A failed horizon program leaves Source II recorded without the hole
+  // rather than taking down the rest of the renderer.
+  try{progSourceRestHorizon=program(COMMON_GLSL+SOURCE_REST_HORIZON_LENS_GLSL);sourceRestHorizonStatus.error=null;}
+  catch(error){progSourceRestHorizon=null;sourceRestHorizonStatus.error=String(error?.message||error);console.warn('[r3d] source rest horizon unavailable',error);}
+  sourceRestHorizonUniformCache.clear();
   progSourceIdentity=program(SOURCE_IDENTITY_FRAG);
   sourceRoomUniformCache.clear();sourceIdentityUniformCache.clear();
   try {
@@ -7519,11 +7575,14 @@ export function r3dSetSourceScene(scene = {}) {
   P3.setSourceScene(scene);
   sourceLook = scene.look && typeof scene.look === 'object'
     ? { sunrise: scene.look.sunrise, chroma: scene.look.chroma, paper: scene.look.paper,
-      roomMemoryActive: scene.look.roomMemoryActive===true, blueprint:scene.look.blueprint===true }
+      roomMemoryActive: scene.look.roomMemoryActive===true, blueprint:scene.look.blueprint===true,finish:normalizeSourceFinish(scene.look.finish) }
     : { sunrise: 0, chroma: 1, paper: 0 };
   sourceWeather = scene.weather && typeof scene.weather === 'object'
     ? { rain: scene.weather.rain, moon: scene.weather.moon, clouds: scene.weather.clouds }
     : { rain: 0, moon: 1, clouds: 1 };
+}
+export function r3dSetSourceFinish(finish='bsod'){
+  sourceLook.finish=normalizeSourceFinish(finish);return sourceLook.finish;
 }
 // Change atmosphere without replacing a Source scene's geometry or input owner.
 export function r3dSetSourceWeather(weather={}){
@@ -8241,7 +8300,7 @@ export function r3dFrame(state) {
   const hushBodyTextureActive=hushBodyRenderAllowed&&hushBodyReady&&P3.pressureTargets().draws>0;
   const unit13Texture=hushBodyTextureActive?P3.pressureTargets().color:sourceSurfaceTexture;
   gl.uniform1f(U('uSourceReady'),sourceSurfaceTexture&&!hushBodyTextureActive?1:0);
-  gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);gl.uniform1i(U('uHushBodyTex'),13);
+  gl.activeTexture(gl.TEXTURE13);gl.bindTexture(gl.TEXTURE_2D,unit13Texture);gl.uniform1i(U('uSourceSurface'),13);
   gl.activeTexture(gl.TEXTURE14);gl.bindTexture(gl.TEXTURE_2D,sourceLayerTexture);gl.uniform1i(U('uSourceLayer'),14);
   const propTargets=P3.propTargets();
   gl.uniform1f(U('uPropsReady'),propTargets.ready?1:0);

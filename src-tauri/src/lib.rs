@@ -9,8 +9,12 @@ mod steam_achievements;
 mod lens_service;
 mod source_desktop;
 mod window_choreography;
+#[cfg(target_os = "windows")]
+mod graphics_backend;
 
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    graphics_backend::configure_from_environment();
     let app = tauri::Builder::default()
         .manage(steam_achievements::SteamAchievementsState::default())
         .manage(lens_service::LensServiceState::default())

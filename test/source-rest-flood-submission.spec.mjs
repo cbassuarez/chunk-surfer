@@ -59,6 +59,32 @@ test('the actual submitted van and underwater headlamp carriers share one pose a
   }
 });
 
+test('the persistent van lamps face the seated viewer through the real window and clear physical platforms',()=>{
+  const frame=sourceContinuationRenderFrame(state(.2,-1,120)),eye=frame.eye,lights=frame.flood.water.lights,
+    lenses=canonicalFlood(frame).filter(p=>p.floodKind==='flood-lens');
+  assert.equal(lights.length,2);assert.equal(lenses.length,2);
+  const crosses=(a,b,min,max)=>{
+    let enter=0,leave=1;
+    for(let k=0;k<3;k++){
+      const d=b[k]-a[k];if(Math.abs(d)<1e-8){if(a[k]<min[k]||a[k]>max[k])return false;continue;}
+      let t=(min[k]-a[k])/d,u=(max[k]-a[k])/d;if(t>u)[t,u]=[u,t];
+      enter=Math.max(enter,t);leave=Math.min(leave,u);if(enter>leave)return false;
+    }
+    return enter>0&&enter<1;
+  };
+  for(const [i,light] of lights.entries()){
+    assert.ok(light.position[1]<frame.flood.waterY,'both powered lenses sit under the tide');
+    assert.ok(light.direction[0]>.99,'both beams face the seated listener');
+    const t=(SOURCE_REST_ALCOVE.window.x-eye[0])/(light.position[0]-eye[0]),
+      y=eye[1]+(light.position[1]-eye[1])*t,z=eye[2]+(light.position[2]-eye[2])*t,w=SOURCE_REST_ALCOVE.window;
+    assert.ok(t>0&&t<1&&y>w.minY&&y<w.maxY&&z>w.minZ&&z<w.maxZ,'the light crosses the open window');
+    for(const p of frame.props.filter(p=>p.physicalBounds&&!p.portalDestination))
+      assert.equal(crosses(eye,light.position,p.physicalBounds.min,p.physicalBounds.max),false,p.id);
+    for(let k=0;k<3;k++)near(lenses[i].matrix[12+k],light.position[k],'lens follows beam');
+    assert.ok(lenses[i].emissive[3]>0,'actual visible lens follows its powered beam');
+  }
+});
+
 test('the production seated camera has fish in front of the real alcove opening during the storm hold',()=>{
   const frame=sourceContinuationRenderFrame(state(.68,24)),eye=frame.eye,w=SOURCE_REST_ALCOVE.window;
   const visible=canonicalFlood(frame).filter(p=>p.mesh==='source_return_fish_body').filter(p=>{
@@ -77,7 +103,7 @@ test('every submitted wreck and animal resolves to actual generated vehicle and 
     for(const mesh of gltf.meshes)catalog.set(mesh.name,{mesh,gltf});
   }
   for(const p of canonicalFlood(sourceContinuationRenderFrame(state(.68,24)))){
-    if(p.floodKind==='flood-bubble')continue; // Installed by the renderer's existing authored-mesh installer.
+    if(p.floodKind==='flood-bubble'||p.floodKind==='flood-lens')continue; // Installed by the renderer's authored-mesh installer.
     const entry=catalog.get(p.mesh);assert.ok(entry,'unresolved production mesh '+p.mesh);
     for(const primitive of entry.mesh.primitives){
       assert.ok(entry.gltf.accessors[primitive.attributes.POSITION].count>3);
@@ -97,8 +123,19 @@ test('finite portal aliases preserve the flood exemption and canonical animal id
   assert.equal(alias.portalDestination,true);near(alias.y,original.y-100,'lower world alias');
 });
 
-test('water and all flood carriers retire together, preserving ordinary route geometry',()=>{
-  const during=sourceContinuationRenderFrame(state(.68,24)),after=sourceContinuationRenderFrame(state(.68,54));
-  assert.equal(after.flood.active,false);assert.equal(after.flood.water.lights.length,0);assert.equal(canonicalFlood(after).length,0);
+test('storm carriers retire to the seated tide, which leaves with the listener',()=>{
+  const seated=state(.68,54),during=sourceContinuationRenderFrame(state(.68,24)),after=sourceContinuationRenderFrame(seated),
+    departed=sourceContinuationRenderFrame({...seated,sourceRestView:null}),remaining=canonicalFlood(after);
+  assert.equal(after.flood.active,false,'the storm has ended');
+  assert.equal(after.flood.water.active,true,'the underlying seated tide remains');
+  assert.equal(after.flood.water.flood,0);
+  assert.equal(after.flood.water.lights.length,2);
+  assert.ok(after.flood.water.lights.every(light=>light.source==='sunken-deep'));
+  assert.ok(remaining.some(p=>p.memoryWreck==='sunken-deep'));
+  assert.ok(remaining.every(p=>p.memoryWreck==='sunken-deep'||['breath-bubble','flood-lens'].includes(p.floodKind)));
+  assert.equal(departed.flood.water.active,false);
+  assert.equal(departed.flood.water.lights.length,0);
+  assert.equal(canonicalFlood(departed).length,0);
   assert.deepEqual(after.geometry,during.geometry);
+  assert.deepEqual(departed.geometry,during.geometry);
 });

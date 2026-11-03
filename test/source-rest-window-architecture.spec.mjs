@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sourceRestWindowArchitecture,createSourceRestWindowArchitectureComposer,sourceRestWindowProject,
   sourceRestWindowArchitectureSeam,sourceRestWindowOffAxisProjection,SOURCE_REST_WINDOW_ARCHITECTURE_LIMITS as LIMITS} from '../src/render/source-rest-window-architecture.js';
-import {sourceRestApertureFrame} from '../src/render/source-rest-aperture-frame.js';
+import {sourceRestApertureFrame,sourceRestApertureMesh} from '../src/render/source-rest-aperture-frame.js';
 import {sourceContinuationRenderFrame} from '../src/render/source-continuation-renderer.js';
 import {validateWindowArchitecturePacket} from '../src/render/window-media-architecture.js';
 import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
@@ -25,7 +25,8 @@ const layout={mainRect:{x:340,y:100,width:1280,height:720},panes:[
 const foreground=pane=>pane.layers.find(layer=>layer.id==='registered-foreground');
 
 test('the two panes share immutable, whitelisted production topology and exact final case transforms',()=>{
-  for(let index=0;index<2;index++){
+  assert.equal(actual(0).frame,null,'the lensed Source II horizon has no window architecture');
+  for(let index=1;index<2;index++){
     const {frame,world}=actual(index),packet=sourceRestWindowArchitecture(frame,{layout});
     assert.ok(validateWindowArchitecturePacket(packet).ok);assert.equal(packet.version,1);assert.equal(packet.sourceSeconds,160);
     assert.equal(packet.panes.length,2);assert.ok(packet.meshes.length<=LIMITS.meshes);assert.ok(packet.diagnostics.triangles<=LIMITS.triangles);
@@ -40,7 +41,12 @@ test('the two panes share immutable, whitelisted production topology and exact f
       }
     }
     if(index===1){
-      assert.equal(packet.meshes.length,21);assert.equal(packet.diagnostics.triangles,14336);
+      assert.equal(packet.meshes.length,21);
+      // The soundboard is clipped to the real supports, so moving the bench
+      // island changes its tessellation. Count the authoritative production
+      // meshes rather than freezing the old island's incidental triangle sum.
+      const triangles=packet.meshes.reduce((sum,mesh)=>sum+sourceRestApertureMesh(mesh.id).i.length/3,0);
+      assert.equal(packet.diagnostics.triangles,triangles);assert.ok(triangles>=14000);
       assert.equal(foreground(packet.panes[0]).instances.filter(p=>p.role==='strings').length,6);
       assert.equal(foreground(packet.panes[0]).instances.filter(p=>p.role==='lid').length,3);
     }else assert.equal(packet.panes[0].view.upRelation,'incompatible');
@@ -97,7 +103,7 @@ function worldTriangles(item,mesh){
 test('actual case and lining ribs occlude actual string surfaces in the pane, instead of behaving like a film overlay',()=>{
   // This measured overlap frames the two specific case/rib sightlines inside
   // the retained, full-depth seam strip, not outside the rendered crop.
-  const overlap={...layout,panes:[{surfaceId:'rest:source',rect:{x:layout.mainRect.x+.112*1280,y:layout.mainRect.y+.05*720,width:288,height:192}},layout.panes[1]]};
+  const overlap={...layout,panes:[{surfaceId:'rest:source',rect:{x:layout.mainRect.x+.08*1280,y:layout.mainRect.y+.05*720,width:288,height:192}},layout.panes[1]]};
   const {frame}=actual(),packet=sourceRestWindowArchitecture(frame,{layout:overlap}),pane=packet.panes[0],rows=foreground(pane).instances,
     meshes=new Map(packet.meshes.map(g=>[g.id,g])),strings=rows.find(g=>/strings-acoustic-low$/.test(g.meshId)),
     stringTriangles=worldTriangles(strings,meshes.get(strings.meshId)),
@@ -134,19 +140,10 @@ test('the impossible cut preserves a useful real-view span and marks its hard ed
     'native65%-overlap main edge is inside the registered strip, not inside the foreign view');
 });
 
-test('last-intact retention freezes only prior canonical matrices while live camera and foreground keep moving',()=>{
-  const composer=createSourceRestWindowArchitectureComposer(),first=actual(0,{degradation:.30,time:160}).frame,
-    intact=actual(0,{degradation:.40,time:180}).frame,late=actual(0,{degradation:.68,time:450}).frame;
-  composer.compose(first,{layout});composer.compose(intact,{layout});const packet=composer.compose(late,{layout});
-  assert.ok(packet.diagnostics.retained);assert.equal(packet.sourceSeconds,450);assert.equal(packet.panes[1].view.referenceSeconds,180);
-  assert.equal(packet.panes[1].view.kind,'last-intact-chamber');
-  for(const row of packet.panes[1].layers[0].instances)assert.deepEqual(row.matrix,intact.geometry.find(g=>g.id===row.id).matrix);
-  for(const row of foreground(packet.panes[1]).instances)assert.deepEqual(row.matrix,late.geometry.find(g=>g.id===row.id).matrix);
-  assert.deepEqual(packet.panes[1].camera.eye,late.eye);assert.deepEqual(packet.panes[1].camera.basis,late.basis);
-  const fromReload=createSourceRestWindowArchitectureComposer().compose(late,{layout});
-  assert.equal(fromReload.diagnostics.retained,false);assert.equal(fromReload.panes[1].view.kind,'current-chamber','late reload does not invent an intact historical view');
-  composer.reset();assert.deepEqual(composer.snapshot(),{phase:null,retainedSeconds:null,sourceSeconds:null,meshRevision:null});
-  const other=composer.compose(actual(1,{time:30}).frame,{layout});assert.equal(other.phase,'catch');assert.equal(other.diagnostics.retained,false);
+test('the retired semiangel leaves Source II with no retained window chamber to compose',()=>{
+  const composer=createSourceRestWindowArchitectureComposer();
+  for(const at of [{degradation:.30,time:160},{degradation:.40,time:180},{degradation:.68,time:450}])
+    assert.equal(composer.compose(actual(0,at).frame,{layout}),null);
 });
 
 test('moving film remains a source-clock background behind both complete architectural layers',()=>{

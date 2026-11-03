@@ -157,10 +157,11 @@ function haystackState(slot = 0) {
 {
   const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
   const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
-  assert.match(renderer, /P3\.setPressureInstances\(pressureInstances\(incomingHush,incomingHushSecondary,/);
+  assert.match(renderer, /pressureInstances\(incomingHush,incomingHushSecondary,/);
+  assert.match(renderer, /P3\.setPressureInstances\(resolvedPressureDraws\)/);
   const [primary, secondary] = pressureInstances({ x: 2, y: 3, strength: .9 }, { x: 9, y: 3, strength: .9 });
   assert.ok(primary && secondary && secondary.x - primary.x > 3, 'the secondary is its own volume at its own place');
-  assert.equal((renderer.match(/uniform sampler2D[^;]*\buHushBodyTex\b/g) || []).length, 2, 'the physical march and the Source identity share one Pressure geometry target');
+  assert.equal((renderer.match(/uniform sampler2D[^;]*\buHushBodyTex\b/g) || []).length, 1, 'only Source identity needs a dedicated Pressure sampler; the physical march shares the corpus sampler');
   assert.doesNotMatch(renderer, /uHush2\b/, 'secondary manifestation accidentally gained a second gameplay field');
   assert.match(main, /hushSecondary:renderedHushSecondary/);
   assert.match(main, /sourceBracketTableauActive/);

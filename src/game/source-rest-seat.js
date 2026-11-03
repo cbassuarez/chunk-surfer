@@ -1,16 +1,15 @@
 // Source continuation rest places, in the same local metres as the world.
-// Both reuse the existing backed shelter bench, with no new floors or doors.
-import {continuationDoors,continuationRefugeAt,continuationSupportAt} from '../data/source-continuation.js';
+// Seat positions share the real physical supports and refuge checks.
+import {continuationDoors,continuationRefugeAt,continuationSupportAt,CONTINUATION_SEAT_ISLAND,SOURCE_CONTINUATION} from '../data/source-continuation.js';
 import {SOURCE_REST_ALCOVE} from '../data/source-rest-alcove.js';
-const radial=(r,a)=>({x:-172+Math.cos(a)*r,z:-92+Math.sin(a)*r});
 const freeze=Object.freeze;
+const catchSeatAngle=Math.atan2(CONTINUATION_SEAT_ISLAND.z-SOURCE_CONTINUATION.catch.center.z,CONTINUATION_SEAT_ISLAND.x-SOURCE_CONTINUATION.catch.center.x);
 export const SOURCE_REST_SEATS=freeze([
   freeze({id:'source-rest-ii',phase:'wrong-return',chartId:SOURCE_REST_ALCOVE.chartId,level:0,...SOURCE_REST_ALCOVE.seat,feet:SOURCE_REST_ALCOVE.feet,yaw:Math.PI,
     approach:SOURCE_REST_ALCOVE.approach,discovery:SOURCE_REST_ALCOVE.discovery,view:freeze({yaw:-Math.PI/2,pitch:-.04})}),
-  // The counterarc is earned by descending through the case, not a chair
-  // offered beside its entrance. It keeps the existing refuge and return.
-  freeze({id:'source-rest-iii',phase:'catch',chartId:0,level:2,...radial(11.85,4.13),feet:-4.8,yaw:Math.PI-4.13,
-    approach:freeze(radial(11.52,4.13)),view:freeze({yaw:4.13-Math.PI/2+.35,pitch:.27})}),
+  // A separate island beyond the counterarc, reached by a narrow causeway.
+  freeze({id:'source-rest-iii',phase:'catch',...CONTINUATION_SEAT_ISLAND,yaw:Math.PI-catchSeatAngle,
+    approach:freeze({x:-192.3,z:-106}),view:freeze({yaw:catchSeatAngle-Math.PI/2+.35,pitch:.27})}),
 ]);
 export const SOURCE_REST_MESH='yard_look_bench';
 export const SOURCE_REST_II_MESH='source-continuation-rest-settle-frame';

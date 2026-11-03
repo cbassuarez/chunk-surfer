@@ -1,6 +1,6 @@
 // The manifestation is a skinned volume. Its geometry pass transports actual
 // coverage and view depth into acquisition; no image/card supplies its contour.
-// HUSH reveals a world-fixed cosmic field. The retained human reference keeps
+// HUSH reveals a screen-fixed image. The retained human reference keeps
 // its black absence; neutral radiance remains outside either physical volume.
 // Endpoint identity only: acquisition still chooses every glow mark. Sharing
 // this operation keeps glass, exposure and phosphor from tinting that material.
@@ -55,7 +55,7 @@ void main(){
  float cosmos=mod(floor(bits/32.0),2.0);
  float coreMask=step(.018,mass)*core;
  float cosmosMask=coreMask*cosmos;
- vec4 cosmic=hushCosmosSignalMaterial(mod(bits,32.0)/31.0);
+ vec4 cosmic=hushCosmosField(gl_FragCoord.xy,uRes);
  float nearGlow=0.0,midGlow=0.0,wideGlow=0.0,farGlow=0.0;
  for(int i=0;i<8;i++){
   float a=float(i)*.78539816339;vec2 d=vec2(cos(a),sin(a));
@@ -97,9 +97,11 @@ void main(){
 
 // Also used before acquisition by the physical march: real depth is available
 // to scene captures, fog and the lens, before its material is recorded.
+// Its geometry shares the march's corpus sampler; the host selects the texture
+// on unit 13 and disables corpus reads while physical HUSH geometry is bound.
 export const PRESSURE_SCENE_GLSL = `
 void compositePressureVolume(inout vec3 col,inout float zView){
- vec4 g=texture(uHushBodyTex,gl_FragCoord.xy/uRes);
+ vec4 g=texture(uSourceSurface,gl_FragCoord.xy/uRes);
  float d=dot(g.rg,vec2(65280.0,255.0))*90.0/65535.0;
  float bits=floor(g.b*255.0+.5),core=mod(floor(bits/64.0),2.0);
  float a=g.a*step(d,zView+.022)*core;

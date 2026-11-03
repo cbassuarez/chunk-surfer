@@ -96,7 +96,12 @@ for(const [worldX,worldZ]of[[80,20],[88.5,20.5],[90,20]]){
   assert.equal(below.zone,ZONE.civicCourt);assert.ok(below.flags&F.SKY);
 }
 // These lower roofs are real occupied construction, rather than atrium air.
-assert.ok(Math.abs(physicalCell(gallerySlice,83.5,14.5).ceil-3.4)<1e-6,'D0 retains its actual doorway head');
-assert.equal(physicalCell(gallerySlice,79.5,8.5).ceil,3.5,'the sanitary core retains its actual low ceiling');
+assert.ok(Math.abs(physicalCell(gallerySlice,83.5,14.5).floor-3.4)<1e-6,'the gallery sees the top of D0, with air above its doorway head');
+assert.equal(physicalCell(gallerySlice,79.5,8.5).floor,3.5,'the sanitary core roof remains below the gallery');
+for(let z=8;z<15;z+=.5)for(let x=79;x<89;x+=.5){
+  const cell=physicalCell(gallerySlice,x,z);
+  assert.equal(cell.solid,0,`${x},${z}: lower walls cannot become full-height columns in the gallery view`);
+  assert.ok(cell.floor<10&&cell.ceil>=17,`${x},${z}: the complete atrium has air at gallery height`);
+}
 
 console.log('academic gallery treatment: atrium render, ring/roof collision and access invariants passed');

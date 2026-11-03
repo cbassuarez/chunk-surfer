@@ -6,6 +6,37 @@ that slid into a point, and a landing that held nothing but the exit. This is
 the beat board for making it an earthquake that takes the town down with you,
 and a landing that shows something.
 
+## Approved corruption direction: torn address space
+
+The walk and the full depth of the fall contain fixed tears in the world:
+flat, irregular sheets, long stretched triangles, black absences and silver
+printed remnants with hyperchromatic cut planes. They originate along the
+plaza's actual failure branches and crowd the spaces between the broken
+coffer, soundboard and binding levels. Corruption should read as the
+desecration of the construction, with the surviving ground and falling
+building breaking around it.
+
+The user selected concept A and specified that the faults are **2D and fixed
+relative to the world**. They have zero thickness, both visible faces, and
+immutable world vertices. They never billboard, drift, rotate, follow the
+camera, receive the earthquake transform, or move with released terrain.
+Their silhouettes remain behind as the construction fails. The existing
+terrain, support and landing simulation continues to own physical footing;
+the fault sheets do not introduce hidden collision walls.
+
+The layout contains 72 forecourt tears, 120 fixed cut faces over the upper
+ground, 480 faults around the whole town, 640 above it and 640 through the
+100-metre depth, including larger remnants at the three existing strata.
+The surrounding volume extends beyond the town in every direction and up to
+230m in world height. Corruption fills the ground, horizon and overhead view
+from the beginning of the walk. It keeps a clear central fall lane.
+Twelve material/stage batches carry the 1,952 sheets
+through the ordinary opaque depth/acquisition renderer. Silver stock retains
+physical engraved texture; unstable cut matter uses magenta, cyan, violet
+and lime. Black sheets retain absence without emission. The selected concept
+and the alternative studies are saved under
+`artifacts/earthfall-corruption-options/`.
+
 ## Raw material
 
 - **Ground motion.** 2019 Ridgecrest Mw 7.1 (2019-07-06 03:19:53 UTC), station

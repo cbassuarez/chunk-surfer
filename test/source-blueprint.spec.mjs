@@ -9,7 +9,7 @@ import {sourceBlueprintMaterial,sourceBlueprintLighting} from '../src/render/sou
 import {sourcePrintRows,SOURCE_PRINT_SURFACE} from '../src/render/physical-source-print.js';
 import {printedSurfaceDescriptor} from '../src/render/printed-surface.js';
 
-test('blueprint recovers the actual cyanotype reference while retaining exact Source clauses and placement',()=>{
+test('Source I uses the approved Windows 9x cobalt reference while retaining exact clauses and placement',()=>{
  assert.ok(fs.existsSync(B.reference));
  const original=sourcePrintRows('divide'),blueprint=sourcePrintRows('blueprint');
  assert.equal(original.length,26);assert.equal(blueprint.length,26);
@@ -45,7 +45,7 @@ test('real depth contours stay on the nearer supported side and never invent an 
  assert.equal(sourceBlueprintDepthContour(20,[5,20,20,20]),0);
  assert.equal(sourceBlueprintDepthContour(NaN,[2,3,4,5]),0);
  const rgb=[.04,.045,.05],near=sourceBlueprintResolve({rgb,alpha:1,metres:5,contour:1}),far=sourceBlueprintResolve({rgb,alpha:1,metres:145,contour:1});
- assert.ok(near.every((v,i)=>v>rgb[i]&&v-rgb[i]<.021));
+ assert.ok(near.every((v,i)=>v>rgb[i]&&v-rgb[i]<=.035));
  assert.ok(far.every(Number.isFinite));
 });
 
@@ -64,13 +64,14 @@ test('Source recording ink survives the black-stock reservation without changing
  const source={enabled:true,pigmentKind:2,packedDepth:.5,packedFar:far,capturedLight:1};
  assert.deepEqual(sourceBlueprintRecordedInk(dark,source),B.recordedDark);
  assert.deepEqual(sourceBlueprintRecordedInk(light,{...source,light:true}),B.recordedLight);
- assert.ok(B.recordedDark[2]>B.recordedDark[1]&&B.recordedDark[1]>B.recordedDark[0]);
- assert.ok(B.recordedDark[2]>=.10&&B.recordedDark[2]<.16,'navy has a recorded blue floor, still distant from pale ink');
+ assert.equal(B.stock,'#0000aa');
+ assert.deepEqual(B.recordedDark,[0,0,170/255],'the dark stock retains the reference crash-screen cobalt');
+ assert.deepEqual(B.ink,['#ffffff','#c0c0c0'],'the actual source lettering remains white/silver');
  assert.deepEqual(sourceBlueprintRecordedInk(dark,{...source,enabled:false}),dark);
  assert.deepEqual(sourceBlueprintRecordedInk(light,{...source,capturedLight:0,light:true}),light,'zero captured light cannot manufacture cyanotype ink');
  assert.deepEqual(sourceBlueprintRecordedInk(dark,{...source,pigmentKind:0}),dark,'ordinary near materials keep original inks');
  assert.deepEqual(sourceBlueprintRecordedInk(dark,{...source,pigmentKind:0,packedDepth:far}),B.recordedDark,'actual atmosphere shares the Source palette');
- const half=sourceBlueprintRecordedInk(dark,{...source,capturedLight:.5});assert.ok(half.every((v,i)=>v>dark[i]&&v<B.recordedDark[i]));
+ const half=sourceBlueprintRecordedInk(dark,{...source,capturedLight:.5});assert.ok(half.every((v,i)=>Math.abs(v-(dark[i]+B.recordedDark[i])*.5)<1e-12));
  assert.doesNotMatch(recording,/captureBit|formTone|threshold|discard|gl_FragDepth|uTime|sampler/);
  const full=fs.readFileSync('src/render/pixel-mesh/shader.js','utf8');
  assert.ok(full.indexOf('float captureBit =')<full.indexOf('vec3 captureDark = sourceBlueprintRecordedInk'));

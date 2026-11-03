@@ -49,9 +49,8 @@ test('seat prompt is local, phase- and chart-specific and cannot take a door han
  const door=continuationDoors().find(d=>d.id===`catch-return-${SOURCE_REST_SEATS[1].level}`),seat=SOURCE_REST_SEATS[1];
  const byDoor={...state(seat),x:door.x,z:door.z};assert.equal(sourceRestFocus(byDoor),null);
  assert.equal(continuationFocus(byDoor)?.id,`catch-return-${seat.level}`);
- const exposed={...state(seat),...continuationRadialPoint(11.20,4.13)};
- assert.ok(Math.hypot(exposed.x-seat.x,exposed.z-seat.z)<.72,'physically close to bench');
- assert.equal(sourceRestFocus(exposed),null,'outside actual refuge despite being in reach');
+ const exposed={...state(seat),x:seat.x+1.4,z:seat.z};
+ assert.equal(sourceRestFocus(exposed),null,'outside the protected listening pocket');
 });
 
 test('seated camera transition clears authored support and solid geometry at both seats',()=>{

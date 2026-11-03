@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {createSourceRestCouperin,sourceRestCouperinMix,advanceSourceRestCouperinBlend,SOURCE_REST_COUPERIN_BLEND,SOURCE_REST_COUPERIN_URL,SOURCE_REST_COUPERIN_DURATION} from '../src/audio/source-rest-couperin.js';
+import {createSourceRestCouperin,sourceRestCouperinMix,sourceRestCouperinSpace,advanceSourceRestCouperinBlend,SOURCE_REST_COUPERIN_BLEND,SOURCE_REST_COUPERIN_URL,SOURCE_REST_COUPERIN_DURATION} from '../src/audio/source-rest-couperin.js';
+import {SOURCE_REST_SEATS} from '../src/game/source-rest-seat.js';
+import {SOURCE_CONTINUATION} from '../src/data/source-continuation.js';
 
 class Param{
   constructor(value=1){this.value=value;this.events=[];}
@@ -30,6 +32,7 @@ function fixture(){
   const ctx={currentTime:0,state:'running',sampleRate:44100,
     createMediaElementSource(value){assert.equal(value,media);return node('source');},
     createChannelSplitter(count){assert.equal(count,2);return node('splitter');},createGain:()=>node('gain'),
+    createStereoPanner(){const n=node('panner');n.pan=new Param(0);return n;},
     createConvolver:()=>node('convolver'),
     createBuffer(channels,length,sampleRate){return{numberOfChannels:channels,length,sampleRate,duration:length/sampleRate,data:Array.from({length:channels},()=>new Float32Array(length)),getChannelData(i){return this.data[i];}};},
   };
@@ -48,6 +51,23 @@ test('director conserves equal-power energy and gives distinct acoustic returns 
   assert.equal(sourceRestCouperinMix({progress:0}).electronic,0);
   assert.ok(sourceRestCouperinMix({progress:.54}).electronic>sourceRestCouperinMix({progress:.38}).electronic+.4);
   assert.ok(sourceRestCouperinMix({progress:.80}).electronic>sourceRestCouperinMix({progress:.67}).electronic+.4);
+});
+
+test('the Catch gives both aligned versions moving spatial presence before sitting',async()=>{
+  const seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch'),destination=SOURCE_CONTINUATION.catch.finalDoor,bench={phase:'catch',x:seat.x,z:seat.z,feet:seat.feet,yaw:0},door={phase:'catch',x:destination.x,z:destination.z,feet:destination.y,yaw:0};
+  const nearBench=sourceRestCouperinSpace(bench,null,10),nearDoor=sourceRestCouperinSpace(door,null,10);
+  assert.ok(nearDoor.electronic>nearBench.electronic+.15);
+  assert.ok(Math.abs(nearBench.acousticPan-nearBench.electronicPan)>.1);
+  assert.equal(sourceRestCouperinSpace({phase:'wrong-return'},null,0),null);
+  const f=fixture();f.owner.start();await flush();
+  for(let n=1;n<=600;n++){f.ctx.currentTime=n/60;f.media.currentTime=n/60;f.owner.update({spatialState:door,progress:0});}
+  const state=f.owner.snapshot().revoicing;
+  assert.ok(state.electronic>.15,'the electronic version is audible without narrative progress');
+  assert.ok(state.targetElectronic>.2);assert.equal(f.nodes.filter(n=>n.kind==='panner').length,2);
+  assert.ok(f.nodes.filter(n=>n.kind==='panner').every(n=>n.pan.events.length>1));
+  assert.equal(f.nodes.filter(n=>n.kind==='source').length,1);
+  f.ctx.currentTime+=1/60;f.media.currentTime+=1/60;f.owner.update({spatialState:bench,progress:.54});
+  assert.ok(f.owner.snapshot().revoicing.targetElectronic>.6,'the seated narrative can still reach its authored electronic peak');
 });
 
 test('one decoder splits two stems into one shared room, never an unattenuated bypass',async()=>{

@@ -7,7 +7,7 @@ import { parseCharacterAsset, sampleCharacterPose } from '../src/render/characte
 import { hushDensityCharacter } from '../src/game/hush-density-performance.js';
 import {
   createSourceDesktopPressureSampler, finishSourceDesktopPressure,
-  sourceDesktopDensityPerformance, sourceDesktopRenderFrame,
+  sourceDesktopDensityPerformance, sourceDesktopRenderFrame, setSourceDesktopHushViewport,
   SOURCE_DESKTOP_PRESSURE_ASSET,
 } from '../src/render/source-desktop-view.js';
 
@@ -62,9 +62,19 @@ test('the density desktop finish uses fitted return geometry rather than white e
   assert.equal(root.children.length, 3, 'production cannot silently add six outline meshes per physical layer');
   const core=root.getObjectByName('hush_density_core').material;
   assert.deepEqual(core.color.toArray(), [1, 1, 1]);
-  assert.equal(core.userData.hushCosmos.space,'authored-world-metres');
+  assert.equal(core.userData.hushCosmos.space,'screen-viewport');
   assert.equal(finish.returns[0].material, original, 'the production surface material remains inspectable');
   assert.equal(finish.volumes[0].visible, false, 'the complete glow volume is diagnostic-only');
+});
+
+test('desktop and echo share the fixed 2D field at the actual acquisition pixel size on resize', () => {
+  const vector = new THREE.Vector2(), plain = {x: 0, y: 0};
+  const material = value => ({ userData: { hushCosmos: { viewport: { value } } } });
+  const both = [material(vector), material(plain), {}];
+  assert.deepEqual(setSourceDesktopHushViewport(both, 801, 602, 1.25), [1001, 752]);
+  assert.deepEqual(vector.toArray(), [1001, 752]); assert.deepEqual(plain, {x: 1001, y: 752});
+  assert.deepEqual(setSourceDesktopHushViewport(both, 640, 480, 3), [1280, 960]);
+  assert.deepEqual(vector.toArray(), [1280, 960]); assert.deepEqual(plain, {x: 1280, y: 960});
 });
 
 test('repeated exact samples do not accumulate unanimated fold translations or rotations', () => {

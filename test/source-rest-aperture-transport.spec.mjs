@@ -124,7 +124,7 @@ class Element{
 }
 test('real production frames and composer reach the actual director/simulator when native windows are disabled and unintroduced',async()=>{
   const notes={duration:716.4,notes:[{id:'real-note',onset:159.8,duration:1,midi:67,velocity:.8,confidence:1}]};
-  for(const seat of SOURCE_REST_SEATS){
+  for(const seat of SOURCE_REST_SEATS.filter(seat=>seat.phase==='catch')){
     const body=new Element('body'),documentApi={body,baseURI:'https://game.test/',createElement:tag=>new Element(tag),querySelector:()=>body},
       director=createWindowChoreographyDirector({documentApi,getEnabled:()=>false,getCompositionContext:()=>({introduced:false,reduceDread:false}),waitFn:async()=>{}}),
       state={...freshSourceContinuation(),...seat,...seat.approach,status:'active',sourceRestView:{seatId:seat.id,mode:'seated',progress:1,degradation:.3,musicTime:160,musicSignal:.4,look:seat.view}},

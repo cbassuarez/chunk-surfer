@@ -6,6 +6,7 @@ import {freshSourceConnectorCorridor,normalizeSourceConnectorCorridor,advanceSou
 import {continuationBallisticStep,continuationFreeBody} from './source-continuation-physics.js';
 import {continuationPortalCrossing,transferContinuationPortal,advancePortalTransit,continuationCameraEye,continuationCameraBasis,continuationBodyAxis} from './source-continuation-portals.js';
 import {captureContinuationVoidLoop,continuationVoidLoopForFall,normalizeContinuationSpaceWrap} from './source-continuation-void.js';
+import {sourceChunkFaultResponse,SOURCE_CHUNK_FAULT} from './source-chunk-fault.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
@@ -368,7 +369,14 @@ function finalCrossed(state,before,events) {
 function tickClosure(state, dt, events) {
   const c = state.closure;
   if (state.chartId===0&&state.knowledge.includes('false-return-porch') && state.feet > 8 && state.x > 3 && state.x < 9 && state.z > 1 && c.mode === 'dormant') { c.mode = 'primed'; c.elapsed = 0; learn(state, 'upper-return-is-different'); events.push({ type: 'return-recognized', position: { x: 6, y: 8.4, z: 3.5 } }); }
-  if (c.mode === 'primed' && state.z < -2) { c.exposure += dt; if (c.exposure >= C.wrongReturn.pressureDelay) { c.mode = 'warning'; c.elapsed = 0; events.push({ type: 'closure-warning', position: { x: c.frontX, y: 9.4, z: -12 } }); } }
+  if (c.mode === 'primed' && state.z < -2) {
+    // Approaching/touching the visible corrupted chunks excites this existing
+    // front sooner. It never spends the six-second visible warning or moves
+    // collision ahead of the saved closure's actual closing phase.
+    const reaction=sourceChunkFaultResponse(state);
+    c.exposure += dt*(1+SOURCE_CHUNK_FAULT.chargeBoost*reaction.amount);
+    if (c.exposure >= C.wrongReturn.pressureDelay) { c.mode = 'warning'; c.elapsed = 0; events.push({ type: 'closure-warning', position: { x: c.frontX, y: 9.4, z: -12 },reactive:reaction.amount>0,touching:reaction.touching }); }
+  }
   else if (c.mode === 'warning' || c.mode === 'closing') { c.elapsed += dt; if (c.elapsed >= C.wrongReturn.warningSeconds) { c.mode = 'closing'; c.frontX = Math.max(C.wrongReturn.closureEndX, C.wrongReturn.closureStartX - (c.elapsed - C.wrongReturn.warningSeconds) * C.wrongReturn.closureSpeed); if (state.chartId===0&&state.feet > 8 && Math.abs(state.x - c.frontX) < .65 && state.z > -14 && state.z < -10) beginRecovery(state, 'closing-front', events); } }
 }
 function crossPortal(state,before,events) {

@@ -43,7 +43,7 @@ test('original coastal fish swim in fixed submerged world lanes with coherent he
 
 test('the complete real van assemblies sink and overturn without moving support or adding collision',()=>{
   const input=state(.30,35),original=structuredClone(input),f=sourceRestFlood(input),cars=f.props.filter(p=>p.mesh==='opening_drive_vehicle_body');
-  assert.deepEqual(input,original);assert.equal(cars.length,2);assert.ok(f.props.length<=SOURCE_REST_FLOOD_LIMITS.maxProps);
+  assert.deepEqual(input,original);assert.equal(cars.length,3);assert.ok(f.props.length<=SOURCE_REST_FLOOD_LIMITS.maxProps);
   for(const car of cars){
     const assembly=f.props.filter(p=>p.memoryWreck===car.memoryWreck);
     assert.equal(assembly.filter(p=>p.mesh==='opening_drive_tyre').length,4);
@@ -70,12 +70,13 @@ test('the flooded medium scatters the near wreck’s two actual transformed head
     assert.ok(lights[i].position[1]<f.waterY);assert.ok(lights[i].intensity>0);
     assert.ok(u.positions[i*4+3]>0,'the shared coastal compositor receives both volume-light carriers');
   }
-  assert.equal(sourceRestFloodFrame({progress:.17}).water.lights.length,0);
+  const early=sourceRestFloodFrame({progress:.17}).water.lights;
+  assert.equal(early.length,2);assert.ok(early.every(light=>light.source==='sunken-deep'&&light.intensity>0));
 });
 
 test('small real bubble shells rise from fixed chains to the actual surface and hold under reduced motion',()=>{
   const a=sourceRestFlood(state(.3,15)),b=sourceRestFlood(state(.3,15.01)),bubble=p=>p.kind==='flood-bubble',rows=a.props.filter(bubble),later=b.props.filter(bubble);
-  assert.equal(rows.length,12);assert.equal(a.diagnostics.bubbleProps,12);assert.ok(a.props.length<=44);
+  assert.equal(rows.length,12);assert.equal(a.diagnostics.bubbleProps,12);assert.ok(a.props.length<=SOURCE_REST_FLOOD_LIMITS.maxProps);
   for(let i=0;i<rows.length;i++){
     const p=rows[i];assert.equal(p.mesh,'source-continuation-rest-flood-bubble');
     assert.ok(p.bubbleRadius>0&&p.bubbleRadius<=.055);assert.ok(p.y+p.bubbleRadius<a.waterY);
@@ -86,4 +87,12 @@ test('small real bubble shells rise from fixed chains to the actual surface and 
   const r=sourceRestFlood(state(.3,15),{reducedMotion:true}),s=sourceRestFlood(state(.3,150),{reducedMotion:true});
   assert.deepEqual(r.props.filter(bubble),s.props.filter(bubble));
   assert.equal(sourceRestFlood(state(.10,15,-1)).props.filter(bubble).length,0);
+});
+
+test('the persistent tide and storm remain within their declared combined prop ceiling',()=>{
+  for(const progress of [0,.3,.65,.9,1])for(let age=0;age<=54;age+=1)for(const clock of [0,1,2,3,4,5,6]){
+    const frame=sourceRestFlood(state(progress,clock,age));
+    assert.ok(frame.props.length<=SOURCE_REST_FLOOD_LIMITS.maxProps,`progress ${progress}, storm age ${age}, clock ${clock}`);
+    assert.ok(frame.diagnostics.wrecks<=SOURCE_REST_FLOOD_LIMITS.wrecks);
+  }
 });

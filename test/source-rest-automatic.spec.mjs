@@ -13,7 +13,7 @@ function respond(scene){const view=scene.view();if(view.pending&&!view.restReply
 test('the black cue follows the real performance, including a late arrival and a pause',()=>{
   const source=media(140),clock=createSourceRestClock(()=>source);
   clock.update();assert.equal(clock.snapshot().untilBlack,435,'a late listener never waits another full pass');
-  assert.equal(clock.snapshot().cueMode,'preferred');
+  assert.equal(clock.snapshot().cueMode,'late-arrival','the readable lead places this cue beyond the preferred passage');
   source.paused=true;source.playing=false;source.playedSeconds+=20;source.audibleWallSeconds+=20;clock.update(20);
   assert.equal(clock.snapshot().heardSeconds,0,'neither pause nor an advanced wall clock moves the scene');
   source.paused=false;source.playing=true;source.playedSeconds+=clock.snapshot().untilBlack;source.audibleWallSeconds+=clock.snapshot().untilBlack;

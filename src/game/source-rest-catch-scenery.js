@@ -6,6 +6,7 @@ import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
 import {SOURCE_REST_HARPSICHORD_PARTS,sourceRestHarpsichordGeometryLibrary} from '../render/source-rest-harpsichord-models.js';
 import {sourceRestHarpsichordResponse} from './source-rest-harpsichord-response.js';
 import {sourceRestBellProps} from '../render/source-rest-bells.js';
+import {sourceRestSeabed} from './source-rest-seabed.js';
 
 const seat=SOURCE_REST_SEATS[1],first=SOURCE_REST_SEATS[0];
 // The seat looks slightly left of the mechanism. Its shelter and weather
@@ -80,7 +81,7 @@ export function sourceRestCatchScenery(state,{reducedMotion=false,flashMode='ful
     carpet:{id:'catch-rest-existing-floor',...point(0,.009,0),chartId:seat.chartId,region:seat.phase,existingFloor:true},
     centre,signal,degradation,rally:0,arcs:[],motes:[],vaults:[],rallyFragments:[],
     memories:{road:[],drive:[],ellery:[],tableaux:[],lights:[]},noteArchitecture:{parts:[],lights:[],diagnostics:{recognized:0,represented:0,parts:0}},
-    bells:sourceRestBellProps(state,{reducedMotion}),flood:null,weather:sourceRestCatchWeather(state,{reducedMotion,flashMode}),
+    bells:sourceRestBellProps(state,{reducedMotion}),flood:null,seabed:sourceRestSeabed(state,{reducedMotion}),weather:sourceRestCatchWeather(state,{reducedMotion,flashMode}),
     harpsichord:{parts:place.length,caseFrame:'one instrument spans all Catch stages; earned counterarc refuge',response,
       strings:122,manuals:2,supportFloor:'original supports with a clipped wood veneer',
       architecturalCourses:122,registerBays:3,architecturalHeight:18.2,seatLevel:seat.level,

@@ -31,7 +31,8 @@ test('a pair contains deterministic actual geometry with incompatible nested vie
 });
 test('both production listening places provide material-bearing bounded source meshes without a graphics context',()=>{
   const notes={duration:716.4,notes:[{id:'note',onset:159.8,duration:.8,midi:67,velocity:.8,confidence:1}]};
-  for(const seat of SOURCE_REST_SEATS){
+  // Source II's horizon is drawn by the lens pass and offers no aperture mesh.
+  for(const seat of SOURCE_REST_SEATS.filter(seat=>seat.phase==='catch')){
     const state={...freshSourceContinuation(),...seat,...seat.approach,status:'active',sourceRestView:{seatId:seat.id,mode:'seated',progress:1,degradation:.3,musicTime:160,musicSignal:.4,look:seat.view}},
       world=sourceContinuationRenderFrame(state,{noteScore:notes}),frame=sourceRestApertureFrame(world,state),pair=sourceRestAperturePair(frame);
     assert.ok(pair);assert.ok(pair.diagnostics.drawnTriangles>12);assert.ok(pair.diagnostics.candidateTriangles<=SOURCE_REST_APERTURES.maxCandidateTriangles);

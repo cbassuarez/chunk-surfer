@@ -1,18 +1,19 @@
-// Source's cyanotype study is a material direction, not a blue screen grade.
+// Source I uses the approved Windows 9x crash-screen cobalt, as physical stock
+// and recording ink rather than a full-frame blue grade.
 // Physical supports keep their actual depths, shading and pigment coverage.
 // The original study's hue-inference proxy is deliberately not reproduced.
 export const SOURCE_BLUEPRINT=Object.freeze({
-  version:1,
-  reference:'artifacts/source-palette-study/variants/cyanotype-middle.jpg',
-  stock:'#16334a',ink:Object.freeze(['#b1cdd6','#7da8b9']),
-  registration:'#426f89',
-  airLow:Object.freeze([.0045,.013,.022]),airHigh:Object.freeze([.0018,.0055,.011]),
-  contour:Object.freeze([.32,.50,.58]),
+  version:2,
+  reference:'docs/media/source-bsod-reference.png',
+  stock:'#0000aa',ink:Object.freeze(['#ffffff','#c0c0c0']),
+  registration:'#5555ff',
+  airLow:Object.freeze([.0005,.001,.10]),airHigh:Object.freeze([.0001,.0002,.035]),
+  contour:Object.freeze([.36,.40,1]),
   // Display inks, calibrated AFTER the existing full recording decision.
   // The physical navy albedo was otherwise quantised into the tube's almost
   // black green shadow ink. These never become material emission or alter bits.
-  recordedDark:Object.freeze([.026,.075,.125]),
-  recordedLight:Object.freeze([.70,.86,.93]),
+  recordedDark:Object.freeze([0,0,170/255]),
+  recordedLight:Object.freeze([.96,.985,1]),
   metresPerTile:8,minorRegistrationM:1,majorRegistrationM:4,
   stockFactor:Object.freeze([1,1,1,1]),
 });

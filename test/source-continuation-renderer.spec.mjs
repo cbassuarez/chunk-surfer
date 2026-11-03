@@ -16,6 +16,7 @@ import {createPropRangeController} from '../src/render/prop-range.js';
 import {pressureInstances,pressureSurfaceInstances} from '../src/render/pressure-volume.js';
 import {CELL} from '../src/data/floorplan/legend.js';
 import {JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS} from '../src/data/source-continuation-journey.js';
+import {SOURCE_ESCHER_MESHES_BY_CHART} from '../src/render/source-continuation-escher.js';
 
 const fresh=()=>({...freshSourceContinuation({runId:'render-proof',returnPose:{x:12,y:34,yaw:.7,pitch:-.1}}),status:'active'});
 test('the relocated fake-Ellery apparatus is absent from the exposed Source II route, even in an old gag checkpoint',async()=>{
@@ -97,15 +98,20 @@ test('physical print installation is bounded and idempotent with all material ch
   const surroundings=new Map(sourceSurroundingsGeometryLibrary().map(piece=>[piece.name,piece])),originalNames=names.filter(name=>!surroundings.has(name));
   const journeyNames=originalNames.filter(name=>name.includes('-journey-'));
   assert.equal(journeyNames.length,JOURNEY_SURFACES.length+JOURNEY_JOINT_SOLIDS.length,'every added journey support/frame has one inspectable mesh');
-  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-'));
-  assert.ok(retainedOriginal.length>80&&retainedOriginal.length<240,'the retained original asset budget is unchanged; listening-place geometry has its own bounded tests');
+  const islandNames=new Set(sourceContinuationGeometry().filter(p=>['island','seat-island','door-island','island-causeway'].includes(p.role)).map(p=>p.name));
+  const escherNames=new Set(Object.values(SOURCE_ESCHER_MESHES_BY_CHART).flat().map(name=>'source-continuation-'+name));
+  assert.equal(islandNames.size,18,'the archipelago has a bounded set of physical supports');
+  assert.equal(escherNames.size,16,'each chart fall is merged into its used materials');
+  for(const name of [...islandNames,...escherNames])assert.ok(originalNames.includes(name),name);
+  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-')&&!islandNames.has(name)&&!escherNames.has(name));
+  assert.ok(retainedOriginal.length>80&&retainedOriginal.length<240,'the retained original asset budget is unchanged; added geometry is bounded separately');
   assert.equal(names.length,originalNames.length+surroundings.size,'the added catalogue is exactly the declared static surroundings library');
   assert.deepEqual(installSourceContinuationMeshes(g.gl,pack,{maps}),names);assert.equal(g.buffers.length,count);
   for(const entry of pack.catalog.values()){
     const p=entry.primitives[0],added=surroundings.get(entry.name);
     if(added){assert.equal(p.materialRole,added.materialRole);assert.deepEqual(p.emissive,added.emissive);assert.equal(entry.extras.triangles,added.triangles);}
     else{
-      assert.ok(['source-continuation','quiet-metal'].includes(p.materialRole));
+      assert.ok(['source-continuation','quiet-metal','source-chunk-error'].includes(p.materialRole));
       // Only declared listening-place practicals, weather and flood shells
       // own self-light; all other retained continuation material stays dark.
       const restEmission={
@@ -119,9 +125,14 @@ test('physical print installation is bounded and idempotent with all material ch
         'source-continuation-rest-sky-mote':[.45,.36,.22],
         'source-continuation-rest-note-keystone':[.085,.055,.018],
         'source-continuation-rest-flood-bubble':[.013,.025,.028],
+        'source-continuation-rest-seabed-lamp':[.5,.45,.36],
         'source-continuation-rest-judgment-lightning':[1.2,1.4,1.6],
       };
-      assert.deepEqual(p.emissive,restEmission[entry.name]||[0,0,0]);
+      if(p.materialRole==='source-chunk-error'){
+        assert.ok(p.emissive.every(v=>v>=0&&v<=.36));
+        assert.ok(Math.max(...p.emissive)>=.35&&Math.min(...p.emissive)<.01,'bounded fault material retains strong channel separation');
+        assert.equal(p.texture,null,'fault cubes retain their literal spectral material rather than code paper');
+      }else assert.deepEqual(p.emissive,restEmission[entry.name]||[0,0,0]);
     }
     assert.ok(entry.extras.triangles>0);
     if(p.printedSurface){assert.ok([SOURCE_PRINT_SURFACE,SOURCE_BLUEPRINT_PRINT_SURFACE].includes(p.printedSurface));assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
@@ -164,10 +175,19 @@ test('blueprint substitution changes stock rather than support geometry or nativ
   for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];assert.deepEqual([...p.vao.attributes[0].data],[...old.vao.attributes[0].data]);if(p.printedSurface){if(p.printedSurface===SOURCE_BLUEPRINT_PRINT_SURFACE)assert.deepEqual(p.base,[1,1,1,1]);else assert.deepEqual(p.base,old.base);assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}else{physical++;assert.deepEqual(p.base,old.base);}}
   assert.ok(physical>10);
 });
-test('broad Source sheets retain pale printed mass while construction joints preserve cyanotype',()=>{
+test('the active continuation chooses silicon for II and bismuth for III without rebuilding the world',async()=>{
+  const h=fixture();await h.owner.initialize();const plans=h.calls.filter(c=>c.name==='r3dSetPlan').length;
+  const ii=fresh(),iii=catchState(0),before=[JSON.stringify(ii),JSON.stringify(iii)];
+  h.owner.render(ii);h.owner.render(iii);h.owner.render(ii);
+  assert.deepEqual(h.calls.filter(c=>c.name==='r3dSetSourceFinish').map(c=>c.args[0]),['silicon','bismuth','silicon']);
+  assert.equal(h.calls.filter(c=>c.name==='r3dSetPlan').length,plans);
+  assert.deepEqual([JSON.stringify(ii),JSON.stringify(iii)],before);h.owner.dispose();
+});
+
+test('semantic Source sheets keep white code over chapter stock while physical notes and native finishes remain separate',()=>{
   const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});let sheets=0;
-  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall'){sheets++;assert.equal(p.printedSurface,SOURCE_PRINT_SURFACE);assert.notDeepEqual(p.base,[1,1,1,1]);}else assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
-  for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,SOURCE_PRINT_SURFACE,id);}
+  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+  for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE,id);}
   assert.ok(sheets>0,'load-bearing sheets must retain physical printed stock');
 });
 test('the dedicated architecture preserves actual native finishes and maps only explicit printed joints',()=>{

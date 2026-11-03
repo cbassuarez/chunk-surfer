@@ -90,6 +90,22 @@ export function sourceShoreGeometry(frame) {
   for(let z=front+1;z<r.maxZ;z+=3)
     box(`room-roof-seam-${z}`,r.minX-.035,r.maxX+.035,r.roof+.24,r.roof+.28,z-.035,z+.035,STEEL,1);
 
+  // The bluffs intrude only as isolated roadside remnants: nothing here is
+  // added to the floorplan or collision. A pair of distant lamps makes the
+  // same submerged vehicle recognizable before the listener reaches II.
+  const ox=Number(frame.originMetres?.x)||0,oz=Number(frame.originMetres?.z)||0;
+  for(const [i,x,z] of [[0,-7,-255],[1,10,-320]]){
+    const px=ox+x,pz=oz+z;
+    for(const dz of[-2,0,2])box(`coastal-echo-${i}-post-${dz}`,px-.06,px+.06,r.floor-.28,r.floor+.75,pz+dz-.06,pz+dz+.06,STEEL,1);
+    box(`coastal-echo-${i}-rail`,px-.12,px+.12,r.floor+.48,r.floor+.70,pz-2.5,pz+2.5,STEEL,1);
+    box(`coastal-echo-${i}-reflector-post`,px-.055,px+.055,r.floor-.2,r.floor+1.1,pz+3,pz+3.11,STEEL,1);
+    mesh(`coastal-echo-${i}-reflector`,'tower_bulkhead',px,r.floor+1.05,pz+3.05,.14,.14,.14,false,0,.25);
+  }
+  // This is the opening vehicle's real exterior, when its shared optional
+  // pack has finished loading. The lights remain even if that pack fails.
+  mesh('coastal-echo-wreck-body','opening_drive_vehicle_body',ox+18,r.floor-.7,oz-298.2,1,1,1,false,Math.PI);
+  for(const side of[-1,1])mesh(`coastal-echo-wreck-headlamp-${side}`,'tower_bulkhead',ox+18+side*.65,r.floor+.60,oz-296,.22,.22,.22,false,Math.PI,.55);
+
   // The exposed source bank is the same finite geometry used by collision.
   // Its cut courses carry their own ends and undersides, with no building
   // shell, lintel or louvres enclosing the open-sky cleft.

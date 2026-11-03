@@ -5,6 +5,7 @@ dist-studio/
 .env
 .env.*
 lens.local.json
+graphics.local.json
 src-tauri/target/
 src-tauri/gen/
 src-tauri/binaries/

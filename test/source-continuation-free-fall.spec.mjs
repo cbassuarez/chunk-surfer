@@ -151,7 +151,7 @@ test('a missed upper-west edge follows the fixed same-floor gluing without unloc
 });
 
 test('Catch voids retry the exact earned floor departure instead of granting a remote refuge or final approach',()=>{
-  for(const [level,angle,radius]of [[1,0,12.47],[3,2.6,9.77]]) {
+  for(const [level,angle,radius]of [[1,.45,12.47],[3,2.6,9.77]]) {
     const x=C.catch.center.x+Math.cos(angle)*radius,z=C.catch.center.z+Math.sin(angle)*radius,feet=level===1?2.4:-12.6;
     let state=at(x,z,feet,'catch',level),events=[];
     for(let k=0;k<80&&!state.fall;k++)state=tick(state,{side:Math.cos(angle),forward:-Math.sin(angle)},events);

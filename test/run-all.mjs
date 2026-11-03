@@ -4,6 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const tests = [
+  'test/source-continuation-escher.spec.mjs',
+  'test/source-continuation-islands.spec.mjs',
+  'test/source-coastal-echoes.spec.mjs',
+  'test/source-rest-seabed.spec.mjs',
   'test/source-rest-faculties.spec.mjs',
   'test/source-rest-questions-replies.spec.mjs',
   'test/source-rest-mistake-impact.spec.mjs',
@@ -108,6 +112,7 @@ const tests = [
   'test/minimap-sight-optimization.test.mjs',
   'test/outdoor-door-defer.test.mjs',
   'test/prop-sampler-pass.test.mjs',
+  'test/world-sampler-budget.test.mjs',
   'test/prop-uniform-cache.test.mjs',
   'test/prop-texture-cache.test.mjs',
   'test/prop-frustum-culling.test.mjs',
@@ -169,6 +174,8 @@ const tests = [
   'test/source-earthfall-audio.spec.mjs',
   'test/source-earthfall-integration.spec.mjs',
   'test/source-earthfall-render.spec.mjs',
+  'test/source-earthfall-faults.spec.mjs',
+  'test/source-earthfall-fault-renderer.spec.mjs',
   'test/source-earthfall-ellery-aside.spec.mjs',
   'test/source-earthfall-gag-audio.spec.mjs',
   'test/source-earthfall-gag-render.spec.mjs',
@@ -1133,6 +1140,9 @@ const tests = [
   'test/performance-meter.test.mjs',
   'test/physical-torch-profile.spec.mjs',
   'test/pixel-mesh-contract.test.mjs',
+  'test/material-ink-colors.test.mjs',
+  'test/source-material-finish.test.mjs',
+  'test/source-chunk-fault.spec.mjs',
   'test/pixel-mesh-dither.test.mjs',
   'test/source-dither-routing.spec.mjs',
   'test/pixel-mesh-memory.test.mjs',

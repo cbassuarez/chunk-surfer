@@ -63,10 +63,10 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
       surroundings.setRestMusicActive(false);restMusicHeld=null;
     }catch{surroundings.setRestMusicActive(false);}
   }
-  function syncRestMusic(hold){
+  function syncRestMusic(hold,spatialState=null,presentedFrame=null){
     if(!restMusicOwner)return;
     try{
-      if(!hold||restMusicHeld!==true)restMusicOwner.update({active:true,paused:!!hold});
+      if(!hold||restMusicHeld!==true)restMusicOwner.update({active:true,paused:!!hold,spatialState,acousticFrame:presentedFrame});
       restMusicHeld=!!hold;
       const music=restMusicOwner.snapshot();
       const committed=typeof restMusicOwner.supportsPhase==='function'?music?.endingCommitted:music?.finishAtEnd;
@@ -265,7 +265,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
   function update({ dt = 0, state, surroundingsState = state, focus = null, paused = false, ready = false,acousticFrame:presentedFrame=null } = {}) {
     if (paused || !ready || !state || !available()) { stop(); return false; }
     retireRestMusicOutsideII(surroundingsState||state);
-    syncRestMusic(false);
+    syncRestMusic(false,surroundingsState||state,presentedFrame);
     if(isolateRestMusic(surroundingsState||state)){
       if(!restMusicIsolated){silenceWorld();restMusicIsolated=true;}
       listener=state;acousticFrame=presentedFrame;

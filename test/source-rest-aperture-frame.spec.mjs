@@ -10,7 +10,10 @@ const pose=seat=>({...freshSourceContinuation(),...seat,...seat.approach,status:
 const noteScore={duration:716.4,notes:[{id:'detected-note',onset:159.8,duration:.8,midi:67,velocity:.8,confidence:1}]};
 
 test('apertures export only current submitted music architecture, never bodies, whole worlds or projected duplicates',()=>{
-  for(const seat of SOURCE_REST_SEATS){
+  // Source II's presence is now the lensed horizon, which has no mesh to export.
+  const horizonSeat=SOURCE_REST_SEATS.find(seat=>seat.phase==='wrong-return'),horizonState=pose(horizonSeat);
+  assert.equal(sourceRestApertureFrame(sourceContinuationRenderFrame(horizonState,{noteScore}),horizonState),null);
+  for(const seat of SOURCE_REST_SEATS.filter(seat=>seat.phase==='catch')){
     const state=pose(seat),frame=sourceContinuationRenderFrame(state,{noteScore}),view=sourceRestApertureFrame(frame,state,{viewport:{width:1440,height:900,tanHalfFov:.81}});
     assert.ok(view);assert.equal(view.phase,seat.phase);assert.equal(view.mediaTime,160);
     assert.equal(SOURCE_REST_APERTURE_GEOMETRY_LIMIT,24);

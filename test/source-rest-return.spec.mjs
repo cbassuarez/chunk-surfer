@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {SOURCE_REST_SEATS,sourceRestBenchProps} from '../src/game/source-rest-seat.js';
 import {SOURCE_REST_ALCOVE,SOURCE_REST_ALCOVE_SOLIDS} from '../src/data/source-rest-alcove.js';
-import {SOURCE_CONTINUATION,continuationDoors,continuationSupportAt,continuationFolds,continuationStage} from '../src/data/source-continuation.js';
+import {SOURCE_CONTINUATION,continuationDoors,continuationSupportAt,continuationFolds} from '../src/data/source-continuation.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {sourceRestAfflictionFrame} from '../src/game/source-rest-affliction.js';
 import {sourceRestWeatherCue} from '../src/game/source-rest-weather-score.js';
@@ -47,7 +47,8 @@ test('II uses its genuine door opening and III its authored case opening on the 
     for(const corner of portalCorners(c.sourceAperture)){
       const support=continuationSupportAt(corner[0],corner[2],s,{minY:seat.feet-.02,maxY:seat.feet+.02});
       assert.ok(support,`unsupported ${seat.id} mouth corner ${corner}`);close(support.y,seat.feet);
-      assert.equal(support.id,seat.phase==='catch'?`catch-${seat.level}-${continuationStage(seat.level).id}`:'wrong-upper-west');
+      if(seat.phase==='catch')assert.equal(support.surface.region,'catch','the relocated island mouth is supported by the Catch');
+      else assert.equal(support.id,'wrong-upper-west');
     }
     pointClose(portalTransformPoint(c.toCurrent,centre(c.destinationAperture)),centre(c.sourceAperture));
     // Pure translation preserves handedness and scale; this is never a mirror.
@@ -98,7 +99,7 @@ test('production Source II projects the complete bounded current shelter and pre
   assert.equal(after.restReturn.projected,true);assert.equal(after.restReturn.projectedProps,targets.length);assert.ok(targets.length>50&&targets.length<=SOURCE_REST_RETURN.maxProjectedProps);
   assert.deepEqual(new Set(after.props.filter(p=>p.restReturnDestination).map(p=>p.canonicalId)),new Set(targets.map(p=>p.id)),'the finite copy includes every actual canonical shelter member');
   assert.equal(current.size,before.canonicalProps.length);
-  assert.ok(before.props.some(p=>p.angelAssemblyId));assert.ok(before.props.some(p=>p.restNoteArchitecture));
+  assert.ok(before.restHorizon?.active,'the horizon keeps its place above the gate');
   assert.ok(before.props.some(p=>p.restBody));assert.ok(before.props.some(p=>p.restVista));
   for(const original of before.canonicalProps){
     const p=current.get(original.id);assert.ok(p,`removed live scene layer ${original.id}`);
@@ -107,7 +108,8 @@ test('production Source II projects the complete bounded current shelter and pre
   }
   assert.deepEqual(after.noteArchitecture,before.noteArchitecture);assert.deepEqual(after.sunset,before.sunset);assert.deepEqual(after.flood,before.flood);
   pointClose(after.eye,before.eye);assert.equal(after.yaw,before.yaw);assert.equal(after.pitch,before.pitch);
-  assert.equal(after.props.some(p=>p.restReturnDestination&&(p.restBody||p.playerBody||p.angelAssemblyId||p.restNoteArchitecture)),false);
+  assert.equal(after.props.some(p=>p.restReturnDestination&&(p.restBody||p.playerBody)),false);
+  assert.deepEqual(after.restHorizon.centre,before.restHorizon.centre);
   assert.equal(after.lights.length,8);assert.ok(after.props.length<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
 });
 
@@ -191,16 +193,18 @@ test('canonical support and near frame survive the finite mask while the back wa
 
 test('the supported upper-west return and primary semiangel remain simultaneously visible through the near window',()=>{
   const s=fixture();s.sourceRestView.musicTime=150;s.sourceRestView.audibleSeconds=150;
-  const f=render(s),parts=f.props.filter(p=>p.angelAssemblyId&&!p.portalDestination),models=sourceRestCubeGeometryLibrary(),aperture=f.restReturn.sourceAperture,
-    planes=portalClipPlanes(aperture,f.eye),anchor=parts[0].cubePivot,points=[];
-  assert.equal(f.restReturn.projected,true);assert.ok(parts.length>0);
-  assert.equal(inside(planes,anchor),false,'the return must not replace the semiangel centre');
-  for(const p of parts){
-    const mesh=models[p.mesh.replace('source-continuation-','')];assert.ok(mesh);
-    for(let k=0;k<mesh.p.length;k+=3)points.push(portalTransformPoint(p.matrix,mesh.p.slice(k,k+3)));
+  const f=render(s),horizon=f.restHorizon,aperture=f.restReturn.sourceAperture,
+    planes=portalClipPlanes(aperture,f.eye),anchor=horizon.centre,points=[];
+  assert.equal(f.restReturn.projected,true);assert.ok(horizon?.active);
+  assert.equal(inside(planes,anchor),false,'the return must not replace the horizon centre');
+  // Sample every live wheel's rim: the mouth may not hide the presence.
+  for(const ring of horizon.rings){
+    const n=ring.normal,a=Math.abs(n[1])<.95?[0,1,0]:[1,0,0],u=[n[1]*a[2]-n[2]*a[1],n[2]*a[0]-n[0]*a[2],n[0]*a[1]-n[1]*a[0]],ul=Math.hypot(...u),
+      e1=u.map(v=>v/ul),e2=[n[1]*e1[2]-n[2]*e1[1],n[2]*e1[0]-n[0]*e1[2],n[0]*e1[1]-n[1]*e1[0]];
+    for(let k=0;k<48;k++){const t=k/48*Math.PI*2,r=ring.outer*horizon.radius;points.push(anchor.map((v,i)=>v+r*(Math.cos(t)*e1[i]+Math.sin(t)*e2[i])));}
   }
   const hidden=points.filter(p=>inside(planes,p)).length/points.length;
-  assert.ok(hidden<.10,`Return masks ${(hidden*100).toFixed(1)}% of actual semiangel mesh vertices`);
+  assert.ok(hidden<.10,`Return masks ${(hidden*100).toFixed(1)}% of the horizon wheels`);
   // Verify both the live pivot and complete mouth clear the actual foreground
   // enclosure. Metadata alone would not demonstrate a visible composition.
   for(const point of[anchor,...portalCorners(aperture)])assert.equal(SOURCE_REST_ALCOVE_SOLIDS.some(box=>segmentHits(f.eye,point,box)),false);
@@ -217,8 +221,10 @@ test('live structural damage and drift are shared by returned instances rather t
   assert.ok(copies.some(p=>p.restDetached||p.restFracture),'the rear view includes actually failed shelter pieces');
   for(const p of copies){const q=current.get(p.canonicalId);assert.ok(q);assert.equal(p.fractureState,q.fractureState);assert.equal(p.restDrift,q.restDrift);}
   const targets=sourceRestReturnRoom(f.canonicalProps,SOURCE_REST_SEATS[0]),copied=new Set(copies.map(p=>p.canonicalId)),omitted=targets.filter(p=>!copied.has(p.id));
-  assert.ok(targets.length>SOURCE_REST_RETURN.maxProjectedProps);assert.ok(copies.length<=SOURCE_REST_RETURN.maxProjectedProps);assert.ok(f.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
-  assert.equal(f.restReturn.apertureRejectedProps,omitted.length);assert.ok(omitted.length>0);
+  assert.ok(targets.length>0);assert.ok(copies.length<=SOURCE_REST_RETURN.maxProjectedProps);assert.ok(f.counts.props<=SOURCE_CONTINUATION_ARCHITECTURE.maxInstances);
+  // Batched shelter pieces may fit without rejection. When a full room does
+  // need rejection, each omitted piece still has to clear the real aperture.
+  assert.equal(f.restReturn.apertureRejectedProps,omitted.length);
   const door=continuationDoors().find(p=>p.id===f.restReturn.canonicalDoorId),root=f.canonicalProps.find(p=>p.doorId===door.id&&p.role==='return'),config=sourceRestReturnConfig(SOURCE_REST_SEATS[0],{doorDrop:root.y-door.y}),planes=portalClipPlanes(config.sourceAperture,f.eye),models=sourceRestGeometryLibrary();
   for(const row of omitted){
     const geometry=models[row.mesh.replace('source-continuation-','')];assert.ok(geometry,'unknown geometry is never rejected for budget');

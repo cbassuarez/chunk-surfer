@@ -98,6 +98,7 @@ test('phase-aware Source III keeps score continuous while walking but preserves 
   const owner={supportsPhase:p=>p==='wrong-return'||p==='catch',update:v=>calls.push(v),
     snapshot:()=>({phase,active:true,playing,ended,restActive,finishAtEnd,endingCommitted})};
   sound.attachRestMusic(owner);const s=state({hush:hush()});frame(sound,s);
+  assert.equal(calls.at(-1).spatialState,s,'walking position reaches the score before the bench conversation');
   assert.equal(sound.snapshot().restMusicIsolated,false);assert.ok(sound.snapshot().sources>0);
   assert.equal(sound.snapshot().surroundings.restMusicActive,true,'only the old score is ducked');
   assert.equal(sound.event({type:'hush-warning'},s),true);assert.equal(sound.event({type:'counterweight-warning'},s),true);

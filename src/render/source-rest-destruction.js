@@ -1,4 +1,5 @@
-import {SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
+import {SOURCE_REST_SEATS,sourceRestEyePosition} from '../game/source-rest-seat.js';
+import {sourceRestHorizonSchedule,sourceRestHorizonInfall} from '../game/source-rest-horizon.js';
 import {SOURCE_REST_PERFORMANCE} from '../data/source-rest-performance.js';
 import {sourceRestDestructionFragments,sourceRestDestructionPostBatch} from './source-rest-destruction-models.js';
 import {sourceRestBodyPose} from './source-rest-body.js';
@@ -139,7 +140,7 @@ function catchDecline(input,{cue,time,seat,origin,reducedMotion,canLeave}){
 
 /** A transient rendering layer. The actual controller/collision descriptors
  * remain authoritative, including while these hallucinated structures fall. */
-export function applySourceRestDestruction(input,{cue,time=0,seat=SOURCE_REST_SEATS[0],origin={x:0,y:0,z:0},reducedMotion=false,canLeave=true,effectsMode='full',reducedDread=false}={}){
+export function applySourceRestDestruction(input,{cue,time=0,seat=SOURCE_REST_SEATS[0],origin={x:0,y:0,z:0},reducedMotion=false,canLeave=true,effectsMode='full',reducedDread=false,horizon=null}={}){
   const empty={props:input,debris:[],body:[],diagnostics:{active:false,fracturedStructures:0,fragments:0,bodyParts:0,physicalCollisionChanged:false}};
   if(!cue?.active)return empty;
   if(seat?.phase==='catch'){
@@ -172,31 +173,6 @@ export function applySourceRestDestruction(input,{cue,time=0,seat=SOURCE_REST_SE
     if(protectedSupport){props.push(part);protectedIds.push(id);continue;}
     const family=String(part.mesh||'').match(/rest-note-(oculus|grand-return|vault|window|stair|return|landing|bridge)$/)?.[1];
     if(isNote){
-      if(part.angelAssemblyId){
-        // A wheel, its eyes and the two rooted wings are one bearing group.
-        // The first wheel keeps the damaged core turning. The other two fail
-        // at authored moments inside the second human-marked hard passage.
-        const wheel=Number(part.wheelId),fractureAt=wheel===1?at(second,.35):wheel===2?at(second,.70):Infinity;
-        if(now>=fractureAt&&damage>.1){
-          const motion=trajectory('rest-angel-bearing-'+wheel,now-fractureAt,reducedMotion),pivot=part.cubePivot||[part.x,part.y,part.z],
-            group=multiply(translation(...pivot),multiply(motion.matrix,translation(...pivot.map(n=>-n)))),
-            movedPart=multiply(group,matrixOf(part));
-          props.push(positionPart(part,movedPart,{restAffliction:true,restDetached:true,fractureAt,fractureState:motion.state}));
-          moved.push(part.id);if(motion.state==='falling')falling++;if(motion.state==='fallen')fallen++;
-        }else props.push(part);
-        continue;
-      }
-      if(part.cubieId||part.noteKind==='note-cube-core'){
-        // Paired shell/chamber pieces remain one mechanical member. The core
-        // and most of the lattice keep playing while damaged members fall.
-        if(!part.cubieId){props.push(part);continue;}
-        const key=String(part.cubieId),weight=hash(key),breakAt=weight<.24?at(first,.20+weight*2):weight<.60?at(second,.12+(weight-.24)*1.8):Infinity;
-        if(now>=breakAt&&damage>.1){const motion=trajectory(key,now-breakAt,reducedMotion);
-          props.push(positionPart(part,movedMatrix(matrixOf(part),motion),{restAffliction:true,restDetached:true,fractureAt:breakAt,fractureState:motion.state}));
-          moved.push(part.id);if(motion.state==='falling')falling++;if(motion.state==='fallen')fallen++;
-        }else props.push(part);
-        continue;
-      }
       // A newly performed note is a fresh attempt to build in the ruins, not
       // a structure that inexplicably fell before that note was ever played.
       if(part.articulation){
@@ -226,8 +202,100 @@ export function applySourceRestDestruction(input,{cue,time=0,seat=SOURCE_REST_SE
     }
     props.push(part);
   }
-  const mistakes=mistakeStructure(props,{cue,seat,origin,reducedMotion,effectsMode,reducedDread});
-  return{props:mistakes.props,debris,body,diagnostics:{active:true,damage,pain,fracturedStructures:fractured.length,fracturedIds:fractured,detachedStructures:moved.length,detachedIds:moved,
+  const mistakes=mistakeStructure(props,{cue,seat,origin,reducedMotion,effectsMode,reducedDread}),
+    tides=horizonTides(mistakes.props,{cue,horizon,seat,origin});
+  return{props:tides.props,debris,body,diagnostics:{active:true,damage,pain,fracturedStructures:fractured.length,fracturedIds:fractured,detachedStructures:moved.length,detachedIds:moved,
     fragments:debris.length,bodyParts:body.length,falling,fallen,protectedIds,physicalCollisionChanged:false,lateShelterDamage:!canLeave&&moved.some(id=>id.includes('ceiling')||id.includes('window')),
-    time:now,reducedMotion,...mistakes.diagnostics,scope:'Finite world-anchored wooden failures and contact evidence; support/collision unchanged. Actual bounded composure is committed separately after a visible embodied impact; no lasting injury.'}};
+    time:now,reducedMotion,...mistakes.diagnostics,...tides.diagnostics,scope:'Finite world-anchored wooden failures and contact evidence; support/collision unchanged. Actual bounded composure is committed separately after a visible embodied impact; no lasting injury.'}};
+}
+
+// The horizon takes what the marked recording breaks outside the room. Each
+// mistake releases one small fitting or pillar section; each grueling passage
+// releases the outside architecture nearest the hole first. Released props
+// keep their rest matrix: the prop vertex program pulls every vertex along
+// its own infall path, so only the release clock is decided here.
+const HORIZON_SMALL=/cypress|water-light|lamp|lantern|handle|wear/,HORIZON_PILLAR=/pier|stringer|column|jamb|tower|post/;
+const HORIZON_PASSAGE=[{share:.3,until:.85,anchor:1.9},{share:.3,until:.85,anchor:1.5},{share:1,until:.62,anchor:1.3}];
+const canonicalId=id=>String(id||'').split(':through:')[0];
+function horizonEligible(part,eye,view){
+  const id=String(part.id||'');
+  if(id.includes(':through:')||part.physicalKind||part.continuation||part.architecturalJoint||part.restPlace||part.restBody||part.playerBody
+    ||part.restSeatDetail||part.restBell||part.doorId||part.role||part.portalDestination||part.portalClipPlanes||part.restReturnDestination
+    ||part.restMemory||part.restWeather||part.restFlood||part.chunkFault||part.catchRim||part.restAffliction||String(part.mesh).endsWith('rest-water'))return false;
+  if(!part.restVista&&!part.restRouteComposition&&!part.restSky&&part.region!=='wrong-return')return false;
+  const d=[part.x-eye[0],part.y-eye[1],part.z-eye[2]],along=d[0]*view[0]+d[1]*view[1]+d[2]*view[2];
+  return along>4&&Math.hypot(...d)<70;
+}
+function horizonTides(input,{cue,horizon,seat,origin}){
+  if(!horizon?.active||seat?.phase!=='wrong-return')return{props:input,diagnostics:{horizonTides:0}};
+  const schedule=sourceRestHorizonSchedule(cue?.duration),clock=horizon.clock,o=[Number(origin.x)||0,Number(origin.y)||0,Number(origin.z)||0],
+    eye=sourceRestEyePosition(seat).map((v,k)=>v+o[k]),view=horizon.centre.map((v,k)=>v-eye[k]),length=Math.hypot(...view);
+  for(let k=0;k<3;k++)view[k]/=length;
+  const candidates=input.filter(p=>horizonEligible(p,eye,view)),byId=new Map(),order=(a,b)=>hash(a.id+':horizon')-hash(b.id+':horizon');
+  const small=candidates.filter(p=>HORIZON_SMALL.test(p.id)).sort(order),pillars=candidates.filter(p=>!HORIZON_SMALL.test(p.id)&&HORIZON_PILLAR.test(p.id)).sort(order);
+  // Small fittings and pillar sections answer individual mistakes in a stable
+  // hashed order; most mistakes take a fitting, every fourth a pillar.
+  let s=0,q=0;
+  for(const row of schedule.mistakes){
+    if(row.index===0)continue;
+    const prefer=row.index%4===3?'pillar':'small',pick=prefer==='pillar'?(pillars[q]?pillars[q++]:small[s++]):(small[s]?small[s++]:pillars[q++]);
+    if(!pick)break;
+    byId.set(pick.id,{release:row.time,anchor:prefer==='pillar'?1.3:1,kick:prefer==='pillar'?.25:.5,mistake:row.id});
+  }
+  // Horizontal distance survives the late vertical recession, so the passage
+  // assignment never reorders as the vista sinks.
+  const rest=candidates.filter(p=>!byId.has(p.id)).map(p=>({p,d:Math.hypot(p.x-horizon.centre[0],p.z-horizon.centre[2])}))
+    .sort((a,b)=>a.d-b.d||order(a.p,b.p));
+  let cursor=0;
+  HORIZON_PASSAGE.forEach((plan,index)=>{
+    const passage=schedule.passages[index];if(!passage)return;
+    const count=index===HORIZON_PASSAGE.length-1?rest.length-cursor:Math.round(rest.length*plan.share),group=rest.slice(cursor,cursor+count);cursor+=count;
+    group.forEach(({p},rank)=>byId.set(p.id,{release:passage.start+passage.span*plan.until*Math.pow(rank/Math.max(1,group.length-1),.9),anchor:plan.anchor,kick:0,passage:index}));
+  });
+  // Once whole fittings run out, a mistake chips a stone block off a vista
+  // structure the horizon has not yet taken. Only chips in flight exist.
+  const quarries=candidates.filter(p=>UNIT_BOX.test(String(p.mesh))&&String(p.mesh).endsWith('rest-stone')),chips=[];
+  for(const row of schedule.mistakes){
+    if(row.index===0||[...byId.values()].some(t=>t.mistake===row.id)||row.time>clock)continue;
+    const open=quarries.filter(p=>!(byId.get(p.id)?.release<=row.time));if(!open.length)continue;
+    const source=open[Math.floor(hash(row.id+':quarry')*open.length)],m=matrixOf(source),u=hash(row.id+':u')-.5,w=hash(row.id+':w')-.5,
+      size=.32+.38*hash(row.id+':size'),tall=row.index%4===3,top=transformed(m,[u*.8,1,w*.8]),
+      local=multiply(translation(...top),multiply(rotation(0,hash(row.id+':yaw')*6.283,0),scale(size,size*(tall?2.6:.7),size)));
+    chips.push({...source,id:source.id+':mistake-chip:'+row.index,matrix:new Float32Array(local),x:local[12],y:local[13],z:local[14],cullRadius:2,
+      horizonChip:true,horizonTide:{release:row.time,anchor:1,kick:.6,mistake:row.id}});
+  }
+  const released=new Set([...byId].filter(([,t])=>clock>=t.release).map(([id])=>id)),props=[];let consumed=0,pulling=0;
+  for(const part of [...input,...chips]){
+    const id=String(part.id||'');
+    if(id.includes(':through:')&&released.has(canonicalId(id)))continue;
+    const tide=part.horizonChip?part.horizonTide:byId.get(id);if(!tide){props.push(part);continue;}
+    const pieces=clock>=tide.release?horizonSegments(part):[part];
+    for(const piece of pieces){
+      if(clock>=tide.release){
+        // Drop a piece once even its far side has crossed the horizon.
+        const m=piece.matrix,reach=Math.max(Number(piece.cullRadius)||0,Math.hypot(m[0],m[1],m[2]),Math.hypot(m[4],m[5],m[6]),Math.hypot(m[8],m[9],m[10])),
+          toward=[m[12]-horizon.centre[0],m[13]-horizon.centre[1],m[14]-horizon.centre[2]],r=Math.max(.001,Math.hypot(...toward)),
+          far=[0,1,2].map(k=>horizon.centre[k]+toward[k]/r*(r+reach));
+        if(sourceRestHorizonInfall(far,tide,horizon).consumed){consumed++;continue;}
+        pulling++;
+      }
+      // A pulled piece has no stable shadow-map pose; the shadow pass skips it.
+      props.push({...piece,noShadow:true,horizonTide:{release:tide.release,anchor:tide.anchor,kick:tide.kick,seed:hash(piece.id+':tide'),hidden:false}});
+    }
+  }
+  return{props,diagnostics:{horizonTides:byId.size,horizonChips:chips.length,horizonPulling:pulling,horizonConsumed:consumed,horizonCandidates:candidates.length}};
+}
+// Rest dressing boxes are unit cubes standing on their origin. A long one is
+// cut into short exact segments while it is pulled, so each segment follows
+// its own infall and a wall or island curls into a stream.
+const UNIT_BOX=/rest-(stone|green|oak|copper|light-strip)$/;
+function horizonSegments(part){
+  const m=matrixOf(part);if(!UNIT_BOX.test(String(part.mesh)))return[part];
+  const lengths=[0,1,2].map(a=>Math.hypot(m[a*4],m[a*4+1],m[a*4+2])),axis=lengths.indexOf(Math.max(...lengths)),count=Math.min(10,Math.ceil(lengths[axis]/2.5));
+  if(count<2)return[part];
+  return Array.from({length:count},(_,j)=>{
+    const offset=axis===1?j/count:-.5+(j+.5)/count,q=Array.from(m);
+    for(let k=0;k<3;k++){q[12+k]+=m[axis*4+k]*offset;q[axis*4+k]=m[axis*4+k]/count;}
+    return{...part,id:part.id+':horizon-'+j,matrix:new Float32Array(q),x:q[12],y:q[13],z:q[14],cullRadius:Math.max(2,lengths[axis]/count)};
+  });
 }

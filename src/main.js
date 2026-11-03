@@ -7931,10 +7931,11 @@ function syncDoorDynamicProps({logicalX=px,logicalY=py,timeSec=performance.now()
   streetCrowdSubmitted=[];
   const guidance=currentStoryGuidanceFrame({logicalX,logicalY,nowMs:timeSec*1000,trackHighlight:true});
   const nextHighlight={
-    visible:!!guidance.highlight?.visible,
+    // Navigation remains in the HUD; objectives do not repaint world materials.
+    visible:false,
     propId:guidance.target?.propId||null,
     doorId:guidance.target?.doorId||null,
-    alpha:Number(guidance.highlight?.alpha)||0,
+    alpha:0,
   };
   const highlightKey=`${nextHighlight.visible}:${nextHighlight.propId||''}:${nextHighlight.doorId||''}:${nextHighlight.alpha.toFixed(2)}`;
   if(highlightKey!==storyGuidanceHighlightRenderKey){
@@ -8721,12 +8722,7 @@ function propEmissive(instance){
 }
 
 function storyGuidanceEmissive(instance,base=null){
-  if(!storyGuidanceHighlight.visible)return base;
-  const propMatch=storyGuidanceHighlight.propId&&instance.id===storyGuidanceHighlight.propId;
-  const doorMatch=storyGuidanceHighlight.doorId&&instance.doorId===storyGuidanceHighlight.doorId;
-  if(!propMatch&&!doorMatch)return base;
-  const strength=.30+Math.max(0,Math.min(1,storyGuidanceHighlight.alpha||0))*.42;
-  return[1,.52,.12,Math.max(strength,Number(base?.[3])||0)];
+  return base;
 }
 
 function currentExteriorWindow(){
@@ -36308,7 +36304,9 @@ async function bootScenes(){
     if(import.meta.env.DEV&&(params().has('hushMotionReview')||params().has('vanBrandReview'))){
       const vanReview=params().has('vanBrandReview'),loopReview=params().has('sourceIILoopReview');
       const {installHushMotionReview}=await import('./dev/hush-motion-review.js');
-      const {createTractionPerformance}=await import('../artifacts/hush-motion-study/traction-performance.js');
+      // An optional local study outside the repository; resolved only when its review flag runs.
+      const tractionStudy='../artifacts/hush-motion-study/traction-performance.js';
+      const {createTractionPerformance}=await import(/* @vite-ignore */tractionStudy);
       hushMotionStudyDriver=createTractionPerformance();
       const hushStudySnapshot=()=>{const body=R3.r3dHushBodyStatus();return{study:{enabled:hushMotionStudyEnabled,output:hushMotionStudyOutput},presence:PRES.publicSnapshot(),performance:pressurePerformance.snapshot(),continuation:sourceContinuationScene?.view(),continuationRender:sourceContinuationRenderer?.diagnostics?.(),
         body:loopReview?{ready:body?.ready,error:body?.error,asset:body?.asset,geometry:body?.geometry,character:{poses:body?.character?.poses,poseErrors:body?.character?.poseErrors}}:body,source:chunkSurfRuntime?{phase:chunkSurfRuntime.state().phase,follow:chunkSurfRuntime.hushFollowFrame?.(),sensory:chunkSurfRuntime.sourceSensoryFrame?.()}:null,

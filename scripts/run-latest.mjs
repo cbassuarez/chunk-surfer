@@ -7,12 +7,15 @@ import net from 'node:net';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { localGraphicsEnvironment } from './local-graphics.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serviceDir = path.join(root, 'tools/chunk_surfer/diffusion_server');
 const lens = path.join(serviceDir, 'run-local.sh');
 const python = path.join(serviceDir, '.venv-local/bin/python');
-const tauri = path.join(root, 'node_modules/.bin/tauri');
+// npm's .bin/tauri file is a POSIX shim. On Windows, invoke the CLI's actual
+// JavaScript entry through this Node executable, preserving structured args.
+const tauri = path.join(root, process.platform === 'win32' ? 'node_modules/@tauri-apps/cli/tauri.js' : 'node_modules/.bin/tauri');
 // The normal game no longer needs a local model runtime. --sd explicitly
 // restores the development lens workflow, including its authenticated service.
 const withStableDiffusion = process.argv.slice(2).includes('--sd');
@@ -39,6 +42,7 @@ async function executable(file, help) {
 
 if (withStableDiffusion) await executable(python, 'Local lens runtime is missing. Run: npm run lens:setup');
 await executable(tauri, 'Tauri dependencies are missing. Run: npm install');
+const launchEnv=await localGraphicsEnvironment({platform:process.platform,env:process.env,file:path.join(root,'graphics.local.json')});
 
 const frontendPort=await reserveRandomPort();
 const lensPort=withStableDiffusion ? await reserveRandomPort() : null;
@@ -61,9 +65,9 @@ const lensChild = withStableDiffusion ? spawn(lens, [], {
   env: { ...process.env, LENS_EAGER: '0', LENS_PORT:String(lensPort), LENS_TOKEN:lensToken },
   stdio: 'inherit',
 }) : null;
-const tauriChild = spawn(tauri, ['dev','--config',devConfig], {
+const tauriChild = spawn(process.platform === 'win32' ? process.execPath : tauri, [...(process.platform === 'win32' ? [tauri] : []),'dev','--config',devConfig], {
   cwd: root,
-  env: { ...process.env, VITE_LENS_DEV_URL:endpoint, VITE_LENS_DEV_TOKEN:lensToken, VITE_STABLE_DIFFUSION:withStableDiffusion ? '1' : '0' },
+  env: { ...launchEnv, VITE_LENS_DEV_URL:endpoint, VITE_LENS_DEV_TOKEN:lensToken, VITE_STABLE_DIFFUSION:withStableDiffusion ? '1' : '0' },
   stdio: 'inherit',
 });
 

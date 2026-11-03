@@ -41,6 +41,7 @@ import {
 import { doorDefinitionWithArchetype } from '../data/conservatory-doors.js';
 import { EXTERIOR_PUB, isPubMeshEnvelopeZone } from '../data/exterior-pub.js';
 import { EXTERIOR_STATIONERS, isStationersMeshEnvelopeZone } from '../data/exterior-stationers.js';
+import { ACADEMIC_GALLERY } from '../data/academic-gallery-treatment.js';
 
 const isCivicMeshEnvelopeZone=zone=>isPubMeshEnvelopeZone(zone)||isStationersMeshEnvelopeZone(zone);
 
@@ -1632,8 +1633,7 @@ export function physicalRenderPlanFor(x,y){
   const connectedEndpointAt=(span,px,py)=>connectedStairEndpoints.some(end=>span.renderGroup===end.group
     &&Math.abs(span.floor-end.height)<=STEP_UP
     &&Math.hypot(px-end.point[0],py-end.point[1])<=end.radius);
-  const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5
-    &&x>=84&&x<=94&&y>=480&&y<=492;
+  const northRoofGateSightline=!exteriorObserver&&group==='academic'&&here.y>=9.5&&here.y<=10.5;
   const band=Math.round(here.y/HEIGHT_BAND);
   // The single height this slice is built for. Everything below uses it — key,
   // filter and choice — so the cached slice always matches what it was keyed on.
@@ -1805,6 +1805,27 @@ export function physicalRenderPlanFor(x,y){
           ceil[i]=24;
           if(group==='academicRoof')flags[i]|=F.SKY;
         }
+      }
+    }
+  }
+  if(group==='academic'&&Math.abs(hy-ACADEMIC_GALLERY.base)<=SPAN_WINDOW){
+    // The upper observer sees AIR ABOVE the lower rooms, not their interior
+    // air volume. A retained 3.5m ceiling becomes a header up to this storey's
+    // 17m ceiling; omitted lower wall cells become full-height unloaded rock.
+    // Actual lower-room meshes retain their walls and roofs at ground level.
+    for(const bounds of [ACADEMIC_GALLERY.void,ACADEMIC_GALLERY.courtyardVoid]){
+      for(let pz=Math.floor(bounds.z0/CELL);pz<Math.ceil(bounds.z1/CELL);pz++)for(let px=Math.floor(bounds.x0/CELL);px<Math.ceil(bounds.x1/CELL);px++){
+        const lx=px-originX,ly=pz-originY;if(lx<0||ly<0||lx>=w||ly>=h)continue;
+        const spans=plan.physical.cells.get(`${px},${pz}`)||[];
+        if(spans.some(span=>span.renderGroup==='academic'&&Math.abs(span.floor-hy)<=SPAN_WINDOW))continue;
+        const i=ly*w+lx,openCourt=px*CELL>=ACADEMIC_GALLERY.courtyardVoid.x0&&px*CELL<ACADEMIC_GALLERY.courtyardVoid.x1
+          &&pz*CELL>=ACADEMIC_GALLERY.courtyardVoid.z0&&pz*CELL<ACADEMIC_GALLERY.courtyardVoid.z1;
+        const roofTop=!solid[i]&&ceil[i]>0&&ceil[i]<hy?ceil[i]:null;
+        if(solid[i]||floor[i]>=hy)floor[i]=0;
+        if(roofTop!==null)floor[i]=roofTop;
+        solid[i]=0;ceil[i]=openCourt?40:ACADEMIC_GALLERY.ceiling;
+        flags[i]=openCourt?F.SKY:0;zone[i]=openCourt?ZONE.civicCourt:ZONE.foyer;
+        if(!material[i])material[i]=materialForZone(zone[i]);
       }
     }
   }

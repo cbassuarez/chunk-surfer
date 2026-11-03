@@ -1,6 +1,9 @@
 import {assetUrl} from '../platform/paths.js';
 import {createStandingTearImpulse} from './standing-tear-dsp.js';
 import {createSourceRestPlayback} from './source-rest-playback.js';
+import {sourceAcousticCoordinates} from './source-surroundings.js';
+import {SOURCE_REST_SEATS} from '../game/source-rest-seat.js';
+import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
 
 // A single encoded stereo stream carries two aligned mono stems: acoustic
 // left, electronic right. One decoder/clock prevents independent player drift.
@@ -31,13 +34,30 @@ export function advanceSourceRestCouperinBlend(amount,target,seconds){
   return clamp(current+Math.max(-limit,Math.min(limit,delta)));
 }
 
+// Two aligned versions inhabit different places in the Catch. Their apparent
+// positions wander slowly, while their relative presence follows the listener
+// through the islands. The transport is still a single, sample-locked stream.
+export function sourceRestCouperinSpace(state,frame,time=0){
+  if(state?.phase!=='catch'||!Number.isFinite(state.x)||!Number.isFinite(state.z))return null;
+  const seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch'),door=SOURCE_CONTINUATION.catch.finalDoor,t=Number.isFinite(time)?time:0;
+  const acoustic={x:seat.x+4*Math.sin(t/29),y:seat.feet+2,z:seat.z+4*Math.cos(t/29)};
+  const electronic={x:door.x+7*Math.sin(t/23),y:door.y+2.6,z:door.z+7*Math.cos(t/31)};
+  const a=sourceAcousticCoordinates(acoustic,state,frame,{chartId:0}),e=sourceAcousticCoordinates(electronic,state,frame,{chartId:0});
+  const pan=v=>clamp(v.relativeXYZ[0]/Math.max(3,v.distance),-1,1);
+  // Broad overlapping fields avoid dead spots; a slow interference pattern
+  // makes stillness subtly unstable without detuning either performance.
+  const distanceBlend=clamp(.5+(a.distance-e.distance)/85);
+  const shimmer=.5+.5*Math.sin((state.x+172)*.085+(state.z+92)*.105+t/19);
+  return {electronic:clamp(.12+.63*(.72*distanceBlend+.28*shimmer)),acousticPan:pan(a),electronicPan:pan(e)};
+}
+
 export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>false,
   createElement=()=>document.createElement('audio'),urlFor=assetUrl,onError=()=>{}}={}){
   let element=null,source=null,context=null,destination=null,splitter=null,acoustic=null,electronic=null,
-    programme=null,programmeDuck=null,outputGate=null,wet=null,convolver=null,impulse=null,analyser=null,samples=null;
+    programme=null,programmeDuck=null,outputGate=null,wet=null,convolver=null,impulse=null,analyser=null,samples=null,acousticPan=null,electronicPan=null;
   let desired=false,held=false,playing=false,buffering=false,pending=false,disposed=false,failed=null,
     version=0,ended=false,finishAtEnd=false,playedSeconds=0,completedFirstCycle=false,
-    progress=0,faculty=null,signal=0,lastMix=null,listeners=[],nodes=[],blendAmount=0,lastMixClock=null,lastAutomationAt=null;
+    progress=0,faculty=null,signal=0,lastMix=null,listeners=[],nodes=[],blendAmount=0,lastMixClock=null,lastAutomationAt=null,spatialState=null,spatialFrame=null;
   const parameterTargets=new WeakMap();
   const transport=createSourceRestPlayback({getMedia:()=>element,getContext:()=>context,getOutputGain:()=>programmeDuck});
   const protectedNow=()=>{try{return !!protectedAudio();}catch{return true;}};
@@ -73,15 +93,18 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     for(const [name,fn]of listeners)element?.removeEventListener?.(name,fn);listeners=[];
     try{element?.pause();element?.removeAttribute?.('src');element?.load?.();}catch{}
     for(const node of nodes)try{node.disconnect?.();}catch{}
-    nodes=[];element=source=context=destination=splitter=acoustic=electronic=programme=programmeDuck=outputGate=wet=convolver=impulse=analyser=samples=null;
+    nodes=[];element=source=context=destination=splitter=acoustic=electronic=programme=programmeDuck=outputGate=wet=convolver=impulse=analyser=samples=acousticPan=electronicPan=null;
   }
   function fail(error){if(failed||disposed)return;failed=String(error?.message||error||'The Couperin recording could not be played.');pause();
     try{onError(error instanceof Error?error:new Error(failed));}catch{}}
   function applyMix(immediate=false){
-    const target=sourceRestCouperinMix({progress,faculty,currentTime:Number(element?.currentTime)||0}),clock=at();
+    const musicTime=Number(element?.currentTime)||0,space=sourceRestCouperinSpace(spatialState,spatialFrame,musicTime),target=sourceRestCouperinMix({progress,faculty,currentTime:musicTime}),clock=at();
+    // The island field supplies a floor while walking; narrative peaks can
+    // still take the revoicing all the way to their authored level at the seat.
+    if(space)target.electronic=Math.max(.72*space.electronic,target.electronic);
     if(!immediate&&lastMixClock!==null)blendAmount=advanceSourceRestCouperinBlend(blendAmount,target.electronic,clock-lastMixClock);
     lastMixClock=clock;
-    lastMix={electronic:blendAmount,targetElectronic:target.electronic,acousticGain:Math.cos(blendAmount*Math.PI/2),electronicGain:Math.sin(blendAmount*Math.PI/2)};
+    lastMix={electronic:blendAmount,targetElectronic:target.electronic,acousticGain:Math.cos(blendAmount*Math.PI/2),electronicGain:Math.sin(blendAmount*Math.PI/2),space};
     // Dialogue/narrative gates may jump. The room and the human performance
     // continue while the revoicing travels slowly toward that new intention.
     // A bounded control rate avoids restarting two 80ms ramps every game frame.
@@ -89,6 +112,8 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     lastAutomationAt=clock;
     parameter(acoustic?.gain,lastMix.acousticGain,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
     parameter(electronic?.gain,lastMix.electronicGain,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
+    parameter(acousticPan?.pan,space?.acousticPan??0,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
+    parameter(electronicPan?.pan,space?.electronicPan??0,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
   }
   function create(pair){
     const ctx=pair?.ctx||pair?.context,out=pair?.destination||pair?.musicGain;
@@ -99,7 +124,9 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     source=track(ctx.createMediaElementSource(media));splitter=track(ctx.createChannelSplitter(2));
     acoustic=track(ctx.createGain());electronic=track(ctx.createGain());programme=track(ctx.createGain());programmeDuck=track(ctx.createGain());outputGate=track(ctx.createGain());programmeDuck.connect(outputGate);
     acoustic.channelCount=electronic.channelCount=1;acoustic.channelCountMode=electronic.channelCountMode='explicit';
-    source.connect(splitter);splitter.connect(acoustic,0);splitter.connect(electronic,1);acoustic.connect(programme);electronic.connect(programme);
+    source.connect(splitter);splitter.connect(acoustic,0);splitter.connect(electronic,1);
+    if(ctx.createStereoPanner){acousticPan=track(ctx.createStereoPanner());electronicPan=track(ctx.createStereoPanner());acoustic.connect(acousticPan);electronic.connect(electronicPan);acousticPan.connect(programme);electronicPan.connect(programme);}
+    else{acoustic.connect(programme);electronic.connect(programme);}
     const dry=track(ctx.createGain());dry.gain.value=SOURCE_REST_COUPERIN_MIX.dry;programme.connect(dry);dry.connect(programmeDuck);
     if(ctx.createConvolver&&ctx.createBuffer){
       convolver=track(ctx.createConvolver());wet=track(ctx.createGain());
@@ -145,11 +172,11 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     return false;
   }
   function start(){if(disposed)return false;if(!desired){desired=true;failed=null;held=false;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;}reconcile();return !failed;}
-  function update({active,paused=false,progress:next=progress,faculty:nextFaculty=faculty}={}){
-    if(active===false){stop();return snapshot();}progress=clamp(next);faculty=nextFaculty==null?null:clamp(nextFaculty);held=!!paused;reconcile();return snapshot();
+  function update({active,paused=false,progress:next=progress,faculty:nextFaculty=faculty,spatialState:nextState=spatialState,acousticFrame:nextFrame=spatialFrame}={}){
+    if(active===false){stop();return snapshot();}progress=clamp(next);faculty=nextFaculty==null?null:clamp(nextFaculty);spatialState=nextState;spatialFrame=nextFrame;held=!!paused;reconcile();return snapshot();
   }
   function finishAfterCycle(){if(disposed||!desired||ended)return false;finishAtEnd=true;if(element)element.loop=false;return true;}
-  function stop(){desired=false;held=false;detach();transport.reset();failed=null;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;buffering=false;progress=0;faculty=null;signal=0;lastMix=null;blendAmount=0;lastMixClock=lastAutomationAt=null;return true;}
+  function stop(){desired=false;held=false;detach();transport.reset();failed=null;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;buffering=false;progress=0;faculty=null;signal=0;lastMix=null;blendAmount=0;lastMixClock=lastAutomationAt=spatialState=spatialFrame=null;return true;}
   function dispose(){if(disposed)return false;stop();disposed=true;return true;}
   function snapshot(){
     const protect=protectedNow(),audible=!!(playing&&element&&!element.paused&&!held&&!protect&&!buffering&&!element.seeking&&!ended);

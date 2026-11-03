@@ -64,7 +64,15 @@ export function academicGalleryMesh(instance,hasMesh=()=>false){
 // to the gallery. The older, unrelated oversized grid remains visible below.
 export function academicGalleryPlacement(prop){
   const bust=/^academic-bust-(?:plinth-|fragment-)?([1-6])$/.exec(prop.id||'');
-  if(bust){const index=Number(bust[1]),dx=index<=3?-1.5:4.5;return{...prop,x:prop.x+dx,blocks:prop.mesh==='academic_bust_plinth'?true:prop.blocks,...(prop.mesh==='academic_bust_plinth'?{w:.68,d:.68,h:1.11}:{})};}
+  if(bust){
+    const index=Number(bust[1]),west=index<=3,station=(index-1)%3;
+    // Paired heads and plinths follow the inner atrium rail, clear of the
+    // courtyard cut. Preserve the fragment's displacement on its stone seat.
+    const x=west?28:40,y=[250,252,254][station];
+    return{...prop,x:x+prop.x-(west?27:41),y:y+prop.y-[250,254,258][station],
+      floorOverride:10,blocks:prop.mesh==='academic_bust_plinth'?true:prop.blocks,
+      ...(prop.mesh==='academic_bust_plinth'?{w:.68,d:.68,h:1.11}:{})};
+  }
   // These fittings were left over the open rail after the gallery alignment.
   // Their back planes now meet the actual existing north/east masonry; IDs and
   // emergency circuit ownership remain the same.
@@ -74,6 +82,7 @@ export function academicGalleryPlacement(prop){
   // the same roof mesh on the supported north lip, preserving its world pose.
   if(prop.id==='academic-roof-structure')return{...prop,y:282.5,renderOffsetZ:1,floorOverride:17};
   if(prop.id==='academic-roof-glazing')return{...prop,renderGroups:['academicRoof','academic']};
+  if(prop.id==='academic-roof-service-stair')return{...prop,renderGroups:['academicRoof','academic']};
   if(prop.id==='academic-skylight'||/^academic-frieze-west-[1-3]$/.test(prop.id||''))return{...prop,renderGroups:['ground']};
   if(/^academic-bust-plinth-[1-6]$/.test(prop.id||''))return{...prop,blocks:true,w:.68,d:.68,h:1.11};
   return prop;

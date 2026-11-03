@@ -56,21 +56,10 @@ test('each bodily impulse changes actual hands and sleeves; clock holds and redu
 });
 
 
-test('the angel loses complete wheel-eye-wing bearings at human-marked passages while its inner wheel remains',()=>{
-  const pivot=[-19.5,15.55,-22],members=[];
-  for(let wheel=0;wheel<3;wheel++)for(const [kind,offset] of [['wheel',0],['wheel-watch',0],['wing-left',-7],['wing-right',7]]){
-    const position=[pivot[0],pivot[1],pivot[2]+offset];members.push(part(`angel-${wheel}:${kind}`,{mesh:'source-continuation-rest-note-cube-'+kind,
-      angelAssemblyId:'note-cube:angel',wheelId:wheel,cubePivot:pivot,matrix:matrix(...position),x:position[0],y:position[1],z:position[2]}));
-  }
-  const before=applySourceRestDestruction(members,{cue:cue(454),time:454,seat});assert.equal(before.diagnostics.detachedStructures,0);
-  const middle=applySourceRestDestruction(members,{cue:cue(461),time:461,seat}),end=applySourceRestDestruction(members,{cue:cue(470),time:470,seat});
-  assert.equal(middle.diagnostics.detachedStructures,4);assert.equal(end.diagnostics.detachedStructures,8);
-  assert.ok(end.props.filter(p=>p.wheelId===0).every(p=>!p.restDetached));
-  for(const frame of [middle,end])for(const wheel of [1,2]){
-    const parts=frame.props.filter(p=>p.wheelId===wheel),ring=parts[0],eyes=parts[1],left=parts[2],right=parts[3];
-    assert.deepEqual(ring.matrix,eyes.matrix);assert.equal(ring.fractureAt,left.fractureAt);assert.equal(ring.fractureAt,right.fractureAt);
-    const distance=(a,b)=>Math.hypot(...[12,13,14].map(k=>a.matrix[k]-b.matrix[k]));
-    assert.ok(Math.abs(distance(left,right)-14)<.00002,'one parent transform preserves the full paired-wing span');
-  }
-  assert.equal(end.diagnostics.physicalCollisionChanged,false);
+test('the retired semiangel has no bearing choreography; outside pieces are only released to a live horizon',()=>{
+  const piece=part('garden-pier-0',{mesh:'source-continuation-rest-stone',restSky:true,restVista:true,matrix:matrix(-14,4,-24),x:-14,y:4,z:-24});
+  const without=applySourceRestDestruction([piece],{cue:cue(461),time:461,seat});
+  assert.ok(without.props.every(p=>!p.horizonTide),'no horizon, no infall');
+  assert.equal(without.diagnostics.horizonTides,0);
+  assert.equal(without.diagnostics.physicalCollisionChanged,false);
 });

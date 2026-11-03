@@ -39,7 +39,8 @@ export default defineConfig(({ command }) => ({
     strictPort: true,
     host: host || false,
     hmr: host ? { protocol: 'ws', host, port: 1421 } : undefined,
-    watch: { ignored: ['**/src-tauri/**'] }
+    // Review captures written under artifacts/ must not reload a running game.
+    watch: { ignored: ['**/src-tauri/**', '**/artifacts/**'] }
   },
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
   define: {

@@ -1,13 +1,11 @@
 import {SOURCE_REST_SEATS} from './source-rest-seat.js';
+import {sourceRestHorizonFrame} from './source-rest-horizon.js';
 
-const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0)),cache=new WeakMap(),SPACING=2.25,STEP=.05,TAU=Math.PI*2;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,Number(n)||0)),cache=new WeakMap(),STEP=.05,TAU=Math.PI*2;
+// The 26 pitch-addressed chambers survive only as the score's local note mass;
+// their summed pressure is the phrase breath the horizon's wheels follow.
 const homes=Object.freeze(Array.from({length:27},(_,i)=>[Math.floor(i/9)-1,Math.floor(i/3)%3-1,i%3-1])
-  .filter(p=>p.some(Boolean)).map(p=>Object.freeze(p))),unit=[1,0,0,0,1,0,0,0,1];
-const rotate=(m,p)=>[0,1,2].map(r=>m[r]*p[0]+m[r+3]*p[1]+m[r+6]*p[2]);
-const product=(a,b)=>Array.from({length:9},(_,i)=>{const r=i%3,c=Math.floor(i/3);return a[r]*b[c*3]+a[r+3]*b[c*3+1]+a[r+6]*b[c*3+2];});
-function rotation(axis,angle){const c=Math.cos(angle),s=Math.sin(angle);return axis===0?[1,0,0,0,c,s,0,-s,c]:axis===1?[c,0,s,0,1,0,-s,0,c]:[c,s,0,-s,c,0,0,0,1];}
-const matrix=(orientation,position,scale=[1,1,1])=>[orientation[0]*scale[0],orientation[1]*scale[0],orientation[2]*scale[0],0,
-  orientation[3]*scale[1],orientation[4]*scale[1],orientation[5]*scale[1],0,orientation[6]*scale[2],orientation[7]*scale[2],orientation[8]*scale[2],0,...position,1];
+  .filter(p=>p.some(Boolean)).map(p=>Object.freeze(p)));
 const address=midi=>{
   const tier=clamp(Math.floor((midi-38)/20)-1,-1,1),ring=[[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]],pc=midi%12,
     [x,z]=pc===8&&tier!==0?[0,0]:ring[pc%8];
@@ -50,56 +48,24 @@ function sample(score,time){
   return Array.from({length:score.stride},(_,k)=>score.frames[before*score.stride+k]*(1-f)+score.frames[at*score.stride+k]*f);
 }
 
-/** A retained cubic organism: localized chamber pressure, one slow phrase breath. */
+/** The Ophanim horizon that replaced the retained semiangel. Recognized note
+ * mass still supplies one slow phrase breath, which now brightens the torn
+ * wheels; the hole itself follows the recording clock and the player's marked
+ * mistakes, so it is present even before the note score has loaded. */
 export function sourceRestNoteArchitecture({notes=[],currentTime=0,playedSeconds=0,duration=null,progress=0,reducedMotion=false,seat=SOURCE_REST_SEATS[0]}={}){
-  const empty={parts:[],lights:[],diagnostics:{recognized:0,represented:0,sounding:0,cells:0,parts:0,invalid:0}};
-  if(!Array.isArray(notes)||!notes.length)return empty;
-  const score=compile(notes),time=Math.max(0,Number(currentTime)||0),heard=Math.max(0,Number(playedSeconds)||0),p=clamp(progress,0,1),
-    passes=Number(duration)>0?Math.max(0,Math.floor((heard-time+.35)/Number(duration))):0,
-    occurred=score.events.slice(0,upperBound(score.events,time)),history=passes?score.events:occurred,sounding=occurred.filter(n=>time<n.end),
+  const time=Math.max(0,Number(currentTime)||0),heard=Math.max(0,Number(playedSeconds)||0),p=clamp(progress,0,1),length=Number(duration)>0?Number(duration):undefined,
+    passes=length?Math.max(0,Math.floor((heard-time+.35)/length)):0,unwrappedTime=time+passes*(length||0);
+  if(!Array.isArray(notes)||!notes.length){
+    const horizon=sourceRestHorizonFrame({time,unwrappedTime,duration:length,progress:p,breath:0,reducedMotion,seat});
+    return{parts:[],lights:[],horizon,diagnostics:{recognized:0,represented:0,expectedPlayed:0,sounding:0,parts:0,invalid:0,completedPasses:passes,
+      topology:'ophanim-horizon',horizon:horizon.diagnostics||null,phrasePressure:0,presence:0,phase:'rest'}};
+  }
+  const score=compile(notes),occurred=score.events.slice(0,upperBound(score.events,time)),history=passes?score.events:occurred,sounding=occurred.filter(n=>time<n.end),
     values=sample(score,time),phrasePressure=values[26],presence=values[27],breathPhase=values[28]+passes*score.frames[(score.steps-1)*score.stride+28],
-    breath=reducedMotion?0:Math.sin(breathPhase)*phrasePressure,pivot=[seat.x-21,seat.feet+7.55,seat.z-.80],parts=[],
-    bySite=homes.map(()=>[]),occurredCounts=new Uint16Array(26);
-  for(const event of history)bySite[event.site].push(event);
-  for(const event of occurred)occurredCounts[event.site]++;
-  if(p<.96)for(let i=0;i<homes.length;i++){
-    const lattice=[...homes[i]],position=lattice.map((n,k)=>pivot[k]+n*SPACING),aperture=values[i],ids=bySite[i].map(n=>n.id),latest=bySite[i].at(-1),
-      cubieId=homes[i].map(n=>n+1).join(''),eventCount=occurredCounts[i]+passes*score.siteCounts[i],
-      metadata={cubieId,lattice,homeLattice:[...homes[i]],noteIds:ids,eventCount,midi:latest?.midi??null,onset:latest?.onset??null,noteDuration:latest?.duration??null,
-        turnIndex:-1,turnAxis:null,turnSlice:null,turnAngle:0,turnProgress:0,cubePivot:[...pivot],clearance:0,phase:aperture>.01?'breathing':'rest',
-        articulation:false,notePressure:aperture,aperture,irisDepth:.26*aperture,chamberExcursion:.25*aperture,phrasePressure,breathPhase};
-    for(const component of['cell','chamber','watch']){
-      const motion=reducedMotion?0:aperture,scale=component==='cell'?[1,1,1]:
-        component==='chamber'?[.70+.25*motion,.65+.30*motion,.70+.25*motion]:[1-.26*motion,1-.26*motion,1-.26*motion],
-        orientation=component==='chamber'&&!reducedMotion?rotation(2,.025*motion):unit;
-      parts.push({id:`note-cube:${cubieId}:${component}`,mesh:`rest-note-cube-${component}`,x:position[0],y:position[1],z:position[2],
-        sx:scale[0],sy:scale[1],sz:scale[2],yaw:0,kind:`note-cube-${component}`,...metadata,eyeCount:component==='watch'?6:0,matrix:matrix(orientation,position,scale)});
-    }
-  }
-  if(p<.96)parts.push({id:'note-cube:core',mesh:'rest-note-cube-core',x:pivot[0],y:pivot[1],z:pivot[2],yaw:0,sx:1,sy:1,sz:1,
-    kind:'note-cube-core',cubePivot:[...pivot],noteIds:history.map(n=>n.id),eventCount:occurred.length+passes*score.events.length,
-    turnIndex:-1,phase:'breathing',phrasePressure,breathPhase,matrix:matrix(unit,pivot)});
-  const wheelRadii=[6.05,6.65,7.25],wingElevations=[.28,.02,.04],lastNotes=occurred.slice(-12).map(n=>n.id);
-  if(p<.96)for(let index=0;index<3;index++){
-    const fixed=product(rotation(1,[-.34,.50,-.54][index]),rotation(2,[.22,-.28,.06][index])),
-      tilt=product(fixed,rotation(index%2+1,breath*[.055,-.08,.10][index])),scale=wheelRadii[index]/6.05,
-      extra={angelAssemblyId:'note-cube:angel',wheelId:index,cubePivot:[...pivot],noteIds:lastNotes,eventCount:history.length,
-        turnIndex:-1,turnAxis:null,turnAngle:0,phrasePressure,breathPhase,breathTilt:breath*[.055,-.08,.10][index],phase:'breathing'};
-    for(const component of['wheel','wheel-watch'])parts.push({id:`note-cube:wheel-${index}:${component}`,mesh:`rest-note-cube-${component}`,
-      x:pivot[0],y:pivot[1],z:pivot[2],sx:scale,sy:scale,sz:scale,yaw:0,kind:`note-cube-${component}`,
-      ...extra,eyeCount:component==='wheel-watch'?24:0,matrix:matrix(tilt,pivot,[scale,scale,scale])});
-    for(const side of[-1,1]){
-      const rootY=[2.2,.2,-2.2][index],rootZ=side*Math.sqrt(wheelRadii[index]**2-rootY**2),root=rotate(tilt,[0,rootY,rootZ]).map((n,k)=>pivot[k]+n),
-        elevation=wingElevations[index]+breath*[.10,.14,-.06][index],c=Math.cos(elevation),s=Math.sin(elevation),featherSide=index===2?-1:1,
-        local=[side*featherSide,0,0,0,c*featherSide,-side*s*featherSide,0,s,side*c],orientation=product(tilt,local),wingSpan=index===2?.88:1;
-      parts.push({id:`note-cube:wing-${index}:${side}`,mesh:'rest-note-cube-wing',x:root[0],y:root[1],z:root[2],yaw:0,sx:1,sy:1,sz:wingSpan,
-        kind:'note-cube-wing',...extra,wingSide:side,wingElevation:elevation,bearing:[...root],matrix:matrix(orientation,root,[1,1,wingSpan])});
-    }
-  }
-  return{parts,lights:[],diagnostics:{recognized:score.events.length,represented:history.length,expectedPlayed:history.length,sounding:sounding.length,
-    activeNoteIds:sounding.map(n=>n.id),cells:homes.length,parts:parts.length,invalid:score.invalid,completedPasses:passes,cycleExact:Number(duration)>0,
-    topology:'persistent-3x3x3-interlocking-cube',cubies:homes.length,core:1,wheels:3,wings:6,eyes:228,
-    construction:'retained-cubic-organism-with-ophanim-wheels-and-six-feathered-wings',response:'bounded-note-pressure-and-phrase-breath',
-    completedTurns:0,turn:null,queued:0,stablePartIds:true,maxApertureRate:.40,breathRateHz:[1/12,1/9],phrasePressure,presence,breathPhase,breath,
-    addedLights:0,phase:presence>.01?'breathing':'rest',scope:'Recognized note mass drives bounded local apertures and one slow phrase breath; no per-note turns or synthetic onsets.'}};
+    horizon=sourceRestHorizonFrame({time,unwrappedTime,duration:length,progress:p,breath:phrasePressure,reducedMotion,seat});
+  return{parts:[],lights:[],horizon,diagnostics:{recognized:score.events.length,represented:history.length,expectedPlayed:history.length,sounding:sounding.length,
+    activeNoteIds:sounding.map(n=>n.id),parts:0,invalid:score.invalid,completedPasses:passes,cycleExact:Number(duration)>0,
+    topology:'ophanim-horizon',construction:'spinning-hole-with-three-torn-precessing-wheels',response:'phrase-breath-brightens-the-wheels',
+    horizon:horizon.diagnostics||null,breathRateHz:[1/12,1/9],phrasePressure,presence,breathPhase,
+    addedLights:0,phase:presence>.01?'breathing':'rest',scope:'Recognized note mass drives one slow phrase breath in the wheels; mistakes and passages come from the marked recording.'}};
 }

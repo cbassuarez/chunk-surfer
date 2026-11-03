@@ -18,12 +18,11 @@ export function sourceRestRouteComposition(state={phase:'wrong-return',chartId:0
 // These fitted pieces dress that real enclosure and add no floor.
 export function sourceRestPlaceStudy(treatment='loggia'){
   const parts=[],add=(id,mesh,dx,y,dz,sx,sy,sz,yaw=0)=>parts.push(unit(id,mesh,seat.x+dx,seat.feet+y,seat.z+dz,sx,sy,sz,yaw));
-  for(let k=0;k<7;k++)add('floor-'+k,'oak',-.22,.012,-.81+k*.23,1.60,.025,.21);
-  for(const side of[-1,1])add('border-'+side,'copper',side<0?-.98:.54,.037,-.12,.026,.018,1.64);
+  add('floor-boards','study-floor-oak',0,0,0,1,1,1);
+  add('floor-border','study-floor-copper',0,0,0,1,1,1);
   // Real floor joints lead around the screened corner. The seat is found by
   // following the material around an opening, not by spotting a point light.
   add('entrance-threshold','stone',-.29,.012,-1.44,1.32,.028,.13);
-  add('entrance-inner-joint','copper',-.67,.012,-1.08,.026,.018,.57);
   if(treatment==='practice-bay'){
     add('bay-soundboard','oak',.52,.10,-.22,.10,2.45,2.62);
     add('bay-head','oak',-.25,2.57,-.22,1.58,.18,2.75);
@@ -36,20 +35,33 @@ export function sourceRestPlaceStudy(treatment='loggia'){
       add('loggia-post-'+side,'oak',.47,.04,z,.12,2.53,.12);
       add('loggia-foot-'+side,'stone',.47,.015,z,.21,.17,.21);
       add('loggia-cap-'+side,'copper',.47,2.48,z,.23,.085,.23);
-      add('loggia-side-'+side,'oak',-.22,2.53,z,1.70,.12,.13);
-      add('loggia-side-inset-'+side,'copper',-.22,2.49,z,1.47,.026,.035);
     }
     // The slightly falling roof gathers the eye toward the window. Broad
     // quiet planes read through the dither, with narrow dark joints between.
-    for(let n=0;n<4;n++){
-      const x=.38-n*.40,y=2.66-n*.045;
-      add('ceiling-panel-'+n,'roof-glass',x,y,-.10,.36,.10,1.72);
-      add('ceiling-rib-'+n,'oak',x-.19,y-.10,-.10,.045,.13,1.77);
-    }
+    add('ceiling-panel-batch','study-roof-glass',0,0,0,1,1,1);
+    add('ceiling-rib-batch','study-roof-oak',0,0,0,1,1,1);
     add('rear-cornice','oak',.48,2.49,-.10,.16,.18,1.75);
     add('rear-dado','oak',.535,.03,-.10,.105,.76,1.67);
     add('rear-dado-cap','copper',.535,.79,-.10,.14,.035,1.67);
     add('rear-ledge','oak',.49,.825,-.10,.21,.055,1.56);
+    // A shallow cabinet turns the blank back into a music room. It sits
+    // behind the settle, leaving both the northern turn and the view through
+    // the west opening completely clear. The irregular divisions suggest
+    // stored folios rather than a repeated texture or another glowing sign.
+    // Joinery and folios are merged by material. Their individual members
+    // keep their actual shapes but don't crowd the dimensional receiver's
+    // limited native draw budget when viewed through the fall seam.
+    add('cabinet-joinery-oak','study-joinery-oak',0,0,0,1,1,1);
+    add('cabinet-joinery-copper','study-joinery-copper',0,0,0,1,1,1);
+    add('coffer-joinery-oak','study-coffer-oak',0,0,0,1,1,1);
+    add('coffer-joinery-copper','study-coffer-copper',0,0,0,1,1,1);
+    for(const side of [-1,1]){
+      const z=side<0?-.79:.59;
+      add('end-panel-'+side,'oak',.12,1.63,z,.66,.66,.07);
+      add('end-panel-cap-'+side,'copper',.12,2.29,z,.69,.035,.09);
+    }
+    for(const material of ['copper','stone','glass'])
+      add('cabinet-folios-'+material,'folios-'+material,.405,0,0,1,1,1);
     // A deep reveal at the real west window composes the horizon instead of
     // placing another freestanding arch in the void.
     const w=SOURCE_REST_ALCOVE.window,centre=(w.minZ+w.maxZ)/2-seat.z,length=w.maxZ-w.minZ;

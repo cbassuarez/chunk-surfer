@@ -102,5 +102,5 @@ test('bespoke furniture has bevelled upholstered geometry and clears the support
   assert.ok(frame.props.some(p=>p.restVista));assert.ok(frame.props.filter(p=>p.restTreatment==='loggia').length>30);
   assert.ok(!frame.props.some(p=>p.mesh.endsWith('rest-vista-arch')),'the actual window and real Source architecture replace the floating arches');
   assert.ok(frame.lights.length<=8,'local diffuse lighting respects the native light budget');
-  assert.ok(frame.counts.props<760);
+  assert.ok(frame.counts.props<=760,'aperture echoes stay within the inclusive native instance budget');
 });

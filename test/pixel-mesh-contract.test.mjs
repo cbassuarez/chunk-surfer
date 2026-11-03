@@ -31,8 +31,9 @@ test('VFD compositor combines fine acquisition thresholds with selective phospho
   assert.match(shader, /brightContour/);
   assert.match(shader, /darkCrease/);
   assert.match(shader, /broadColor/);
-  assert.match(shader, /sourceChroma/);
-  assert.match(shader, /luma\(neutralLightInk\)\s*\/\s*max\(0\.001,\s*luma\(captureLight\)\)/);
+  assert.match(shader, /finalMaterialLightInk\(broadColor,captureBlackProtect\)/);
+  assert.doesNotMatch(shader, /captureLight\s*\*=\s*luma\(neutralLightInk\)/,
+    'independent channel clipping after luminance normalization must not erase material hue');
   assert.match(shader, /oneBitScene/);
   assert.doesNotMatch(shader, /acquiredScene/);
   assert.doesNotMatch(shader, /clusteredDotScreen|diagonalLineScreen|materialScreen/);

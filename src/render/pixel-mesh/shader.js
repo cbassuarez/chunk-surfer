@@ -9,6 +9,7 @@ import { ROOF_SURFACE_INK_GLSL, ROOF_GLASS_INK_GLSL } from '../roof-surface-ink.
 import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
+import { SOURCE_MATERIAL_FINISH_GLSL } from '../source-material-finish.js';
 import { RECORDING_VIEW_PULL_GLSL } from '../recording-view-pull.js';
 import { SOURCE_REST_FACULTIES_GLSL } from '../source-rest-faculties.js';
 import { FINAL_LOOK_GLSL } from './final-look.js';
@@ -112,6 +113,7 @@ uniform float uRecordingSensitivity;
 // Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).
 // This selects recording inks after the existing bit decision; no post grade.
 uniform vec2 uSourceBlueprint;
+uniform float uSourceFinish;
 // Source proper's coastal flood only: active, world water height, absorption,
 // unused. Its medium changes recorded ink hue without choosing another mark.
 uniform vec4 uSourceWaterInk;
@@ -185,6 +187,7 @@ uniform float uRecordedPressureInkReady;
 out vec4 o;
 ${PRESSURE_INK_GLSL}
 ${FINAL_LOOK_GLSL}
+${SOURCE_MATERIAL_FINISH_GLSL}
 
 float hash21(vec2 p){
   p = fract(p * vec2(123.34, 345.45));
@@ -1223,10 +1226,9 @@ void main(){
 
   // Colour is a property of the light ink, never a third tonal value. Sample a
   // broad neighbourhood so hue belongs to the form rather than individual
-  // dither grains, then renormalise luminance so colour cannot flatten the
-  // binary lighting or change which marks are present.
+  // dither grains. The approved relative-saturation resolve retains dim hues
+  // and scales all RGB channels together into gamut; the binary mask is unchanged.
   vec3 broadColor = 0.20 * (c + sx0.rgb + sx1.rgb + sy0.rgb + sy1.rgb);
-  float broadColorLuma = max(0.02, luma(broadColor));
   // The same reservation the lighting pass applies (see reserveEmergencyRed in
   // r3d.js), stated in the same units so the two cannot disagree. The old ratio
   // floor of 1.8 admitted plain sodium — [1,.52,.18] measures 1.92 — so the
@@ -1240,24 +1242,31 @@ void main(){
     // source faults and emissive props cannot reserve this display colour.
     *smoothstep(.82,.94,emergencyRedness)
     *captureBlackProtect;
-  vec3 sourceChroma = clamp(
-    (broadColor - vec3(broadColorLuma)) / max(0.06, broadColorLuma),
-    vec3(-0.55),
-    vec3(0.55)
-  );
-  float chromaRange = max(max(broadColor.r, broadColor.g), broadColor.b)
-    - min(min(broadColor.r, broadColor.g), broadColor.b);
-  float chromaPresence = smoothstep(0.025, 0.16, chromaRange) * captureBlackProtect;
   vec3 captureDark = sourceBlueprintRecordedInk(FINAL_CARBON_INK,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);
-  vec3 neutralLightInk = FINAL_LIMESTONE_INK;
-  // Living Materials: the selected preview used paletteChroma .60 and a 1.8x
-  // ink response: 1.8 * (.160 + .60 * .36) = .6768. Keep that response across
-  // look profiles; the physical material and lighting still decide its hue.
-  float inkChroma = 0.67680 * chromaPresence;
-  vec3 captureLight = clamp(neutralLightInk + sourceChroma * inkChroma, 0.28, 1.0);
-  captureLight *= luma(neutralLightInk) / max(0.001, luma(captureLight));
-  captureLight = clamp(captureLight, 0.0, 1.0);
+  vec3 captureLight = finalMaterialLightInk(broadColor,captureBlackProtect);
   captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);
+  // World-anchored thin film and stepped terraces belong to Source stock.
+  // The exact pigment coverage keeps code silver; hardware and black cores
+  // retain their own materials. No time source moves this field under the eye.
+  vec3 finishNormal=cross(dFdx(worldMetres),dFdy(worldMetres));
+  finishNormal*=inversesqrt(max(.000001,dot(finishNormal,finishNormal)));
+  vec3 finishView=uCam*uCellMeters-worldMetres;
+  finishView*=inversesqrt(max(.000001,dot(finishView,finishView)));
+  float finishFacing=abs(dot(finishNormal,finishView));
+  captureDark=sourceMaterialRecordedInk(captureDark,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,0.0);
+  captureLight=sourceMaterialRecordedInk(captureLight,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,1.0);
+  // Fault identity is categorical: a filtered tag could invent byte 249
+  // between unrelated materials when the recording view pulls fractional UVs.
+  float faultMaterialTag=texelFetch(uMarks,
+    clamp(ivec2(frag),ivec2(0),textureSize(uMarks,0)-1),0).a*(1.0-printedOccluded);
+  captureDark=sourceFaultRecordedInk(captureDark,srcFull.rgb,uSourceFinish,faultMaterialTag,captureBlackProtect,0.0);
+  captureLight=sourceFaultRecordedInk(captureLight,srcFull.rgb,uSourceFinish,faultMaterialTag,captureBlackProtect,1.0);
+  // A committed rest sequence can still take acquired color away. The finish
+  // must not restore spectral detail after the perception pass has lost it.
+  float finishColourLoss=step(.5,uSourceFinish)*uSourceRestFacultyState.x
+    *clamp(uSourceRestFaculties.y+uSourceRestFaculties.z,0.0,1.0);
+  captureDark=mix(captureDark,vec3(luma(captureDark)),finishColourLoss);
+  captureLight=mix(captureLight,vec3(luma(captureLight)),finishColourLoss);
   // The sky records its measured sunset colour through the same selected
   // marks; printed masonry and exact black identities keep their own inks.
   float sunsetSky=(1.0-smoothstep(uSourceBlueprint.y+.00005,uSourceBlueprint.y+.0006,packedDepth))*uSourceSunsetInk*captureBlackProtect;

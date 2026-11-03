@@ -39,6 +39,41 @@ const cushions=join([
 const piping=join([...[-1,1].flatMap(s=>[box(-.215,.325,.545,.555,s<0?-.77:.035,s<0?-.76:.045),box(-.215,.325,.545,.555,s<0?-.045:.76,s<0?-.035:.77)]),
   ...[-.40,.40].map(z=>bevel(-.15,-.14,.735,.762,z-.014,z+.014,.004))]);
 const model=(geometry,material,base,extra={})=>({...geometry,material,base:[...base,1],...extra});
+const cabinetFolios=[[-.68,1.05,.19,.30],[-.46,1.05,.12,.34],[-.24,1.05,.18,.25],
+  [.03,1.05,.13,.33],[.28,1.05,.17,.28],[.49,1.05,.09,.31],
+  [-.70,1.50,.13,.31],[-.51,1.50,.17,.26],[-.17,1.50,.20,.34],
+  [.12,1.50,.11,.28],[.32,1.50,.19,.32],[.56,1.50,.08,.24],
+  [-.62,1.95,.21,.27],[-.31,1.95,.14,.32],[-.04,1.95,.17,.25],
+  [.22,1.95,.12,.31],[.48,1.95,.15,.28]];
+const folioMaterial=n=>n%4===0?'copper':n%3===0?'stone':'glass';
+const folios=material=>join(cabinetFolios.flatMap(([z,y,w,h],n)=>folioMaterial(n)===material
+  ?[bevel(-.065,.065,y,y+h,z-w/2,z+w/2,.008)]:[]));
+// Dimensions are local to the settle. These are the same fitted members as
+// the loose construction, merged only by material and spatial region.
+const studyJoinery={oak:[[.565,1.00,-.10,.075,1.38,1.46]],copper:[]},studyCoffer={oak:[],copper:[]};
+for(let n=0;n<4;n++){
+  const y=1+n*.45;
+  studyJoinery.oak.push([.49,y,-.10,.24,.045,1.51]);
+  studyJoinery.copper.push([.365,y+.025,-.10,.018,.018,1.49]);
+}
+for(const z of [-.80,-.37,.12,.61])studyJoinery.oak.push([.49,1.03,z,.23,1.32,.045]);
+for(const side of [-1,1]){
+  const z=side<0?-.74:.54;
+  studyCoffer.oak.push([-.20,2.43,z,1.35,.09,.045]);
+  studyCoffer.copper.push([-.20,2.425,z,1.20,.012,.012]);
+  studyCoffer.copper.push([-.22,2.49,side<0?-.84:.64,1.47,.026,.035]);
+}
+for(let n=0;n<3;n++)studyCoffer.oak.push([-.70+n*.50,2.43,-.10,.045,.09,1.31]);
+const studyMembers=rows=>join(rows.map(([x,y,z,sx,sy,sz])=>{
+  const mesh=bevel(-.5,.5,0,1,-.5,.5,.035);
+  mesh.p=mesh.p.map((v,k)=>k%3===0?x+v*sx:k%3===1?y+v*sy:z+v*sz);
+  return mesh;
+}));
+const studyFloorOak=Array.from({length:7},(_,k)=>[-.22,.012,-.81+k*.23,1.60,.025,.21]);
+const studyFloorCopper=[[-.98,.037,-.12,.026,.018,1.64],[.54,.037,-.12,.026,.018,1.64],[-.67,.012,-1.08,.026,.018,.57]];
+const studyRoofGlass=Array.from({length:4},(_,n)=>[.38-n*.40,2.66-n*.045,-.10,.36,.10,1.72]);
+const studyRoofOak=Array.from({length:4},(_,n)=>[.19-n*.40,2.56-n*.045,-.10,.045,.13,1.77]);
+for(const z of [-.84,.64])studyRoofOak.push([-.22,2.53,z,1.70,.12,.13]);
 export function sourceRestGeometryLibrary(){return{
   ...Object.fromEntries(SOURCE_REST_ROUTE_GROUPS.map(group=>[group.mesh,model(join(group.pieces.map(p=>
     box(p.x-p.sx/2,p.x+p.sx/2,p.y,p.y+p.sy,p.z-p.sz/2,p.z+p.sz/2))),group.material,group.base)])),
@@ -55,6 +90,17 @@ export function sourceRestGeometryLibrary(){return{
   'rest-rain':model(join([box(-.5,.5,0,1,-.035,.035),box(-.035,.035,0,1,-.5,.5)]),'linen',[.61,.70,.69],{emissive:[.07,.10,.095]}),
   'rest-rain-ring':model(rainRing(),'linen',[.53,.64,.63],{emissive:[.035,.05,.045]}),
   'rest-roof-glass':model(bevel(-.5,.5,0,1,-.5,.5,.025),'linen',[.44,.52,.49],{roughness:.42}),
+  'rest-folios-copper':model(folios('copper'),'worn-metal',[.58,.39,.22]),
+  'rest-folios-stone':model(folios('stone'),'linen',[.78,.73,.61]),
+  'rest-folios-glass':model(folios('glass'),'linen',[.44,.52,.49]),
+  'rest-study-joinery-oak':model(studyMembers(studyJoinery.oak),'wood',[.66,.48,.29]),
+  'rest-study-joinery-copper':model(studyMembers(studyJoinery.copper),'worn-metal',[.58,.39,.22]),
+  'rest-study-coffer-oak':model(studyMembers(studyCoffer.oak),'wood',[.66,.48,.29]),
+  'rest-study-coffer-copper':model(studyMembers(studyCoffer.copper),'worn-metal',[.58,.39,.22]),
+  'rest-study-floor-oak':model(studyMembers(studyFloorOak),'wood',[.66,.48,.29]),
+  'rest-study-floor-copper':model(studyMembers(studyFloorCopper),'worn-metal',[.58,.39,.22]),
+  'rest-study-roof-glass':model(studyMembers(studyRoofGlass),'linen',[.44,.52,.49],{roughness:.42}),
+  'rest-study-roof-oak':model(studyMembers(studyRoofOak),'wood',[.66,.48,.29]),
   'rest-rain-wet':model(box(-.5,.5,0,.006,-.5,.5),'dark',[.20,.31,.31],{roughness:.40}),
   'rest-weather-sheet':model({p:[0,-.5,-.35,.055,-.5,0,0,-.5,.35,0,.5,-.35,.055,.5,0,0,.5,.35],i:[0,1,4,0,4,3,1,2,5,1,5,4]},'linen',[.78,.72,.55]),
   ...Object.fromEntries(LEAF_SHAPES.map(shape=>['rest-weather-leaf-'+shape.id,model(weatherLeaf(shape),'linen',[.62,.46,.24])])),
