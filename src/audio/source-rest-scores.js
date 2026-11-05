@@ -37,7 +37,7 @@ export function createSourceRestScores({createBach=createSourceRestMusic,
     progress=clamp(value);restActive=!!active;nearSeat=!!nextNearSeat;decisionHeld=!!nextDecisionHeld;faculty=nextFaculty==null?null:clamp(nextFaculty);
     // active here means seated, not permission to stop/start the performance.
     // Preserve a lifecycle hold while changing its timbral interpretation.
-    noErrorColour();applyTempo();current().update({progress,faculty,paused:held});return snapshot();
+    noErrorColour();applyTempo();current().update({progress,faculty,paused:held,seated:restActive});return snapshot();
   }
   function selectPhase(value){
     if(disposed||!supportsPhase(value)||value===phase)return false;
@@ -60,7 +60,7 @@ export function createSourceRestScores({createBach=createSourceRestMusic,
     held=!!value.paused;noErrorColour();
     if(value.active!==false)applyTempo();
     if(handoffPending&&wanted&&!held){handoffPending=false;current().start();}
-    current().update({...value,paused:held,progress,faculty});return snapshot();
+    current().update({...value,paused:held,progress,faculty,seated:restActive});return snapshot();
   }
   function pause(){
     if(disposed)return false;held=true;

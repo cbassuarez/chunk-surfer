@@ -100,13 +100,13 @@
         },
         {
           "who": "direction",
-          "text": "He has been on this gate for years. You put that with the marks on your arm, and the recorder that is still in there, and the cup, and you carry all four of them out to the van, and you drive home in the light.",
+          "text": "He has been on this gate for years. You put that with the marks on your arm, and the recorder that is still in there, and the cup, and you carry all four of them out to the van, and you drive home into the light.",
           "id": "start.line.14",
           "when": "ending.injuries>=1 && !ending.equipment.complete"
         },
         {
           "who": "direction",
-          "text": "He has been on this gate for years. You put that with the rest of it, and you carry the lot out to the van, and you drive home in the light.",
+          "text": "He has been on this gate for years. You put that with the rest of it, and you carry the lot out to the van, and you drive home into the light.",
           "id": "start.line.15",
           "when": "!ending.injuries>=1 || ending.equipment.complete"
         }

@@ -21,14 +21,14 @@ test('the Source III resting place is unavailable on entry and only belongs to i
   assert.equal(sourceRestFocus({...base,...seat,...seat.approach})?.id,seat.id);
 });
 
-test('real first-person walking and E releases reach the listening island and then the door island',async()=>{
+for(const tides of [false,true])test(`real first-person walking and E releases reach the listening island and then the door island${tides?', against the tide and wind':''}`,async()=>{
   scenes.clear();const events=[],traceEvents=[],poses=[],seat=SOURCE_REST_SEATS[1];let completed=0,returned=0;
   // No immunity or position corrections are applied after this actual Catch
   // entry. The ordinary HUSH/counterweight clocks continue throughout. Their
   // capture/balance coverage remains in the dedicated threat suites.
   const checkpoint={...freshSourceContinuation({runId:'rest-level-route'}),status:'active',phase:'catch',chartId:0,level:0,
     x:-159.1,z:-92,feet:8.4,yaw:-Math.PI/2,pitch:0};
-  const device=renderer(),scene=createSourceContinuationScene({checkpoint,renderer:device,onAcceptedTravel(){},
+  const device=renderer(),scene=createSourceContinuationScene({checkpoint,renderer:device,tides,onAcceptedTravel(){},
     onComplete(){completed++;return true;},onReturn(){returned++;return true;},
     onTrace:value=>{if(value.type==='event'){events.push(value.event);traceEvents.push(value);}}});
   installSourceRest(scene,device,{paintPrompt(){},conversationOptions:{

@@ -4,6 +4,8 @@ import {createContinuationMaterialAudio} from './source-continuation-materials.j
 import {createSourceSurroundingsAudio,sourceAcousticCoordinates} from './source-surroundings.js';
 import {SOURCE_CONTINUATION as LAYOUT,continuationSupportAt} from '../data/source-continuation.js';
 import {createFootContactClock} from './foot-contact.js';
+import {SEAM} from '../game/practice-seams.js';
+import {sourceRiftFaultsFor} from '../game/source-rift.js';
 
 // Physical contact and machinery, through the shared world SFX bus. Recorded
 // material follows the same physical origins; synthetic resonances supplement
@@ -28,6 +30,7 @@ export function sourceContinuationPlacement(source, state = {},acousticFrame=nul
     gain: coordinates.source?1 / (1 + (distance / 10) ** 1.22):0, cutoff: clamp(6600 / (1 + distance / 19) - Math.max(0, -front) * 1500, 600, 6600) };
 }
 
+const RIFT_BEAT_REACH=16;
 export function createSourceContinuationAudio({ getAudio = () => null, getMusicAudio = () => null, getReducedMotion = () => false, protectedAudio = () => false, fetcher, urlFor, musicFetcher, musicUrlFor, gagFetcher, gagUrlFor, onFootContact = null, clearFootContacts = () => {} } = {}) {
   const footOwner='source-continuation';
   const footClock=createFootContactClock();
@@ -85,7 +88,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     if(restMusicOwner!==owner){if(restMusicOwner)syncRestMusic(true);restMusicOwner=owner;restMusicHeld=null;surroundings.setRestMusicActive(false);}
     let detached=false;return()=>{if(detached)return false;detached=true;return detachRestMusic(owner);};
   }
-  let context = null, destination = null, noiseBuffer = null, mechanism = null, active = false, disposed = false,acousticFrame=null;
+  let context = null, destination = null, noiseBuffer = null, mechanism = null, riftBeat = null, active = false, disposed = false,acousticFrame=null;
   let listener = {}, lastBody = null, lastMachine = null, footTravel = 0, toothTravel = 0, lastFocus = null;
   let focusClock = -Infinity, clock = 0, eventCount = 0, played = 0, skipped = 0, footIndex = 0;
   let lastHush = null, hushTravel = 0, hushStepIndex = 0, hushSteps = 0;
@@ -110,7 +113,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     materials.stop();
     surroundings.stop();
     for (const v of [...voices]) release(v);
-    mechanism = null; active = false; lastBody = lastMachine = lastFocus = lastHush = null; footTravel = toothTravel = hushTravel = 0;
+    mechanism = riftBeat = null; active = false; lastBody = lastMachine = lastFocus = lastHush = null; footTravel = toothTravel = hushTravel = 0;
     acousticFrame=null;
     hushDiagnostic = { ...hushDiagnostic, active: false, supported: false, source: null };
     diagnostic = { ...diagnostic, mode: 'silent', mechanicalGain: 0, focus: null };
@@ -186,6 +189,19 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     if (state.phase === 'catch') return point(state.counterweight, { x: LAYOUT.catch.hoist.start.x, y: LAYOUT.catch.top, z: LAYOUT.catch.hoist.start.z });
     if (Number.isFinite(state.closure?.frontX)) return { x: state.closure.frontX, y: 9.4, z: number(state.closure.frontZ, -12) };
     return { x: 6, y: 3.65, z: number(state.closure?.frontZ, -4.5) };
+  }
+  // The practice wing's two As, beating, in the air around a fault that opens.
+  // It is the same interference the seam makes on that floor, and nothing says so.
+  function syncRiftBeat(state) {
+    const fault=sourceRiftFaultsFor(state).find(item=>Math.hypot(item.x-state.x,item.z-state.z,item.feet-state.feet)<RIFT_BEAT_REACH)||null;
+    if(riftBeat&&(!fault||riftBeat.faultId!==fault.id)){release(riftBeat);riftBeat=null;}
+    if(!fault)return;
+    if(!riftBeat){
+      riftBeat=record({x:fault.x,y:fault.feet+1.25,z:fault.z},0,'rift-beat',fault.chartId);riftBeat.faultId=fault.id;
+      layer(riftBeat,{hz:SEAM.referenceHz,frequency:2600,gain:.5});layer(riftBeat,{hz:SEAM.pressureHz,frequency:2600,gain:.5});
+    }
+    const near=1-Math.hypot(fault.x-state.x,fault.z-state.z,fault.feet-state.feet)/RIFT_BEAT_REACH;
+    riftBeat.gain=.05*near*near;
   }
   function startMechanism(place) {
     const v = record(place, 0, 'mechanism',0);
@@ -288,6 +304,7 @@ export function createSourceContinuationAudio({ getAudio = () => null, getMusicA
     for (const voice of [...voices]) if (voice !== mechanism && voice.until <= context.currentTime) release(voice);
     const place = mechanismAt(state), mode = state.phase === 'catch' ? state.counterweight?.active ? state.counterweight.mode || 'warning' : 'tension' : state.closure?.mode || 'dormant';
     mechanism ||= startMechanism(place); mechanism.place = place;
+    syncRiftBeat(state);
     const warning = mode === 'warning' || mode === 'lowering-warning';
     const winding = /hoist|return|rewind/.test(mode), lowering = mode === 'lowering';
     const moving = ['walking', 'closing', 'falling', 'hoisting', 'returning', 'rewinding', 'traversing', 'lowering'].includes(mode);

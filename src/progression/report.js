@@ -1,3 +1,4 @@
+import { NIGHT_DEADLINE_SECONDS } from '../game/night-deadline.js';
 import { ENDING_IDS } from './schema.js';
 import { isOrdinaryReturnRecord, lastReturnRecord } from './return-history.js';
 import { secondShiftForEnding } from '../game/second-shift.js';
@@ -95,7 +96,7 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     runId: run.id,
     endingId,
     ...(failedNight?{classification:'failed-night',failure:{system:'first-strike',outcome:save.nightDeadline?.consequenceReceipt?.outcome,
-      eventId:save.nightDeadline?.eventId,deadlineSeconds:30120,addedInjury:0},recordings:archiveNightRecordings(save)}:{}),
+      eventId:save.nightDeadline?.eventId,deadlineSeconds:NIGHT_DEADLINE_SECONDS,addedInjury:0},recordings:archiveNightRecordings(save)}:{}),
     endingArrival: ['agreed','defeated','timed-out','escaped','carried','rested'].includes(authoritative.endingArrival)
       ? authoritative.endingArrival : null,
     endingVariant: normalizeEndingVariant(endingId, authoritative.endingVariant, authoritative.endingArrival),

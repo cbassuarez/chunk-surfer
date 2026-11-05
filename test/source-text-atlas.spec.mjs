@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { sourceTextAtlasInputs, sourceTextAtlasCacheKey, planSourceTextAtlas, paintSourceTextAtlas, sourceTextQuadMatrix } from '../src/render/source-text-atlas.js';
+import { sourceTextAtlasInputs, sourceTextAtlasCacheKey, planSourceTextAtlas, paintSourceTextAtlas, sourceTextQuadMatrix,sourceTextAtlasSyntax } from '../src/render/source-text-atlas.js';
+import {SOURCE_SYNTAX_PALETTE} from '../src/render/source-syntax.js';
 import { WORLD_LETTERING_FONT_FILES, ensureWorldLetteringFonts, worldLetteringFontsStatus } from '../src/render/world-lettering-fonts.js';
 
 class MeasureContext {
   font = '10px test'; fontKerning = 'auto'; textBaseline = 'middle'; textAlign = 'center';
-  drawn = []; stack = [];
-  save() { this.stack.push({ font: this.font, fontKerning: this.fontKerning, textBaseline: this.textBaseline, textAlign: this.textAlign }); }
+  drawn = []; rectangles=[]; stack = [];fillStyle='#123456';globalAlpha=.4;globalCompositeOperation='copy';shadowBlur=3;
+  save() { this.stack.push({ font: this.font, fontKerning: this.fontKerning, textBaseline: this.textBaseline, textAlign: this.textAlign,fillStyle:this.fillStyle,globalAlpha:this.globalAlpha,globalCompositeOperation:this.globalCompositeOperation,shadowBlur:this.shadowBlur }); }
   restore() { Object.assign(this, this.stack.pop()); }
   measureText(text) {
     const size = parseFloat(this.font), width = [...text].length * size * .6;
@@ -16,7 +17,8 @@ class MeasureContext {
       actualBoundingBoxAscent: size * .8, actualBoundingBoxDescent: size * .2 };
   }
   clearRect() {}
-  fillText(text, x, y) { this.drawn.push({ text, x, y }); }
+  fillText(text, x, y) { this.drawn.push({ text, x, y,color:this.fillStyle,alpha:this.globalAlpha,operation:this.globalCompositeOperation }); }
+  fillRect(x,y,width,height){this.rectangles.push({x,y,width,height,color:this.fillStyle,alpha:this.globalAlpha,operation:this.globalCompositeOperation});}
 }
 
 // Different redaction is different copy, even when it carries the same sourceID.
@@ -29,6 +31,7 @@ assert.equal(input.find(entry => entry.text === 'literal required route').priori
 assert.ok(input.some(entry => entry.text === '  exact(source); '), 'indentation and trailing spaces survive');
 assert.notEqual(sourceTextAtlasCacheKey(corpus, instances), sourceTextAtlasCacheKey(corpus, instances.slice(0, -1)), 'resident variant changes cannot reuse stale glyphs');
 assert.notEqual(sourceTextAtlasCacheKey(corpus, instances), sourceTextAtlasCacheKey(corpus, instances, { role: 'monoBold' }), 'real font face is part of atlas identity');
+assert.match(sourceTextAtlasCacheKey(corpus,instances),/^source-lossless-v2-syntax:/,'the RGB paint revision invalidates cached white glyphs');
 
 const ctx = new MeasureContext();
 const plan = planSourceTextAtlas(ctx, { corpus, instances, size: 256 });
@@ -49,6 +52,60 @@ const overhang = plan.entries.get('jfoverhangf');
 assert.ok(overhang.contentWidth >= overhang.lines[0].left + overhang.lines[0].right, 'ink bearings are included,not merely text advance');
 paintSourceTextAtlas(ctx, plan);
 assert.deepEqual(ctx.drawn.map(row => row.text).sort(), input.map(entry => entry.text).sort(), 'every exact allocated string is actually painted');
+assert.ok(ctx.drawn.every(row=>row.color==='#fff'&&row.alpha===1&&row.operation==='source-over'),'original full strings own the only glyph rasterization');
+assert.ok(ctx.rectangles.every(row=>row.alpha===1&&row.operation==='source-atop'),'token RGB preserves existing destination alpha');
+assert.equal(ctx.globalCompositeOperation,'copy');assert.equal(ctx.globalAlpha,.4);assert.equal(ctx.fillStyle,'#123456');assert.equal(ctx.shadowBlur,3,'painting restores caller state');
+
+// Token colour uses actual prefix advances, with multiline lexical context.
+// The original whole-line layout and one RGBA allocation remain authoritative.
+const code='const value = read("if", 12);\n/* first\n return false */ Math.max(value, .5);',codeContext=new MeasureContext(),
+  codePlan=planSourceTextAtlas(codeContext,{corpus:[code],size:512}),codeEntry=codePlan.entries.get(code);
+paintSourceTextAtlas(codeContext,codePlan);
+assert.deepEqual(codeContext.drawn.map(row=>row.text),code.split('\n'),'colour cannot split or rewrite the coverage draw');
+assert.equal(codePlan.bytes,512*512*4);assert.equal(codePlan.gpuBytesWithMipmaps,(4*512*512-1)*4/3,'syntax uses the existing RGBA texture and mip chain');
+const firstBaseline=codeEntry.y+codePlan.gutter+codeEntry.inkInset+codeEntry.ascent,
+  firstX=codeEntry.x+codePlan.gutter+codeEntry.inkInset+codeEntry.lines[0].left;
+assert.deepEqual([codeContext.drawn[0].x,codeContext.drawn[0].y],[firstX,firstBaseline]);
+codeContext.font=codePlan.font;
+const functionPaint=codeContext.rectangles.find(row=>row.color===SOURCE_SYNTAX_PALETTE.function);
+assert.equal(functionPaint.x,firstX+codeContext.measureText('const value = ').width,'function hue starts at the original measured prefix');
+assert.equal(functionPaint.width,codeContext.measureText('const value = read').width-codeContext.measureText('const value = ').width);
+assert.ok(new Set(codeContext.rectangles.map(row=>row.color)).size>=6,'actual code has per-token colours');
+const comment=sourceTextAtlasSyntax(code).find(token=>token.kind==='comment');
+assert.equal(comment.text,'/* first\n return false */','a block comment is lexed across line boundaries');
+const lastLineY=codeEntry.y+codePlan.gutter+2*codeEntry.lineHeight,
+  lastLinePaint=codeContext.rectangles.filter(row=>row.y===lastLineY);
+assert.equal(lastLinePaint[0].color,SOURCE_SYNTAX_PALETTE.comment,'continued comment words cannot turn into control keywords');
+for(const row of codeContext.rectangles){
+  assert.ok(row.x>=codeEntry.x+codePlan.gutter&&row.y>=codeEntry.y+codePlan.gutter);
+  assert.ok(row.x+row.width<=codeEntry.x+codePlan.gutter+codeEntry.contentWidth+1e-8);
+  assert.ok(row.y+row.height<=codeEntry.y+codePlan.gutter+codeEntry.contentHeight+1e-8,'RGB paint remains inside its allocated block');
+}
+
+// A small compositing fixture executes the production painter against
+// fractional glyph coverage. Repainting AA glyphs would change these bytes;
+// opaque source-atop colour strips preserve them at every category boundary.
+class CoverageContext extends MeasureContext{
+  pixels=new Map();
+  fillText(text,x,y){
+    super.fillText(text,x,y);
+    for(let index=0;index<text.length;index++)if(!/\s/.test(text[index])){
+      const key=[Math.floor(x+this.measureText(text.slice(0,index)).width),Math.floor(y-2)].join(',');
+      this.pixels.set(key,{alpha:[1,63,128,207,255][index%5],color:'#fff'});
+    }
+  }
+  fillRect(x,y,width,height){
+    super.fillRect(x,y,width,height);assert.equal(this.globalCompositeOperation,'source-atop');
+    for(const [key,pixel] of this.pixels){const [px,py]=key.split(',').map(Number);if(px>=x&&px<x+width&&py>=y&&py<y+height)this.pixels.set(key,{alpha:pixel.alpha,color:this.fillStyle});}
+  }
+}
+const coverageContext=new CoverageContext(),coveragePlan=planSourceTextAtlas(coverageContext,{corpus:['const a = read(1);'],size:256});
+let originalCoverage;
+const tint=coverageContext.fillRect.bind(coverageContext);
+coverageContext.fillRect=(...args)=>{originalCoverage??=new Map([...coverageContext.pixels].map(([key,value])=>[key,value.alpha]));tint(...args);};
+paintSourceTextAtlas(coverageContext,coveragePlan);
+assert.deepEqual(new Map([...coverageContext.pixels].map(([key,value])=>[key,value.alpha])),originalCoverage,'every fractional alpha byte survives syntax RGB paint');
+assert.ok(new Set([...coverageContext.pixels.values()].map(pixel=>pixel.color)).size>=4,'opaque tint updates the actual covered pixels');
 
 const overflow = planSourceTextAtlas(new MeasureContext(), {
   corpus: Array.from({ length: 30 }, (_, i) => `unused long base row ${i}`),

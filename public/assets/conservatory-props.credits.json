@@ -20,10 +20,10 @@
     "author": "Chunk Surfer project",
     "source": "tools/chunk_surfer/build-props.mjs",
     "license": "project source (mixed: see meshes)",
-    "sha256": "cd3bea5f19e871543e9864dd54d5bb8c54e16b907ed46b4ad37cc01868f922af",
+    "sha256": "3cc1e933b556fd2e9dec6ee7066417fd4b4f7783e03fee34428b4d75dda718db",
     "modifications": "Metres, Y-up, ground-centred. Procedural fallback geometry, project-authored Blender meshes, and user-supplied source meshes (unverified provenance) baked, re-axised, height-scaled, and vertex-cluster decimated under budget. Per-mesh provenance below says which is which.",
-    "triangles": 890425,
-    "bytes": 64405332
+    "triangles": 892743,
+    "bytes": 64600164
   },
   "meshes": [
     {
@@ -2615,17 +2615,17 @@
       "name": "academic_roof_glazing",
       "bounds": {
         "min": [
-          -5.125,
+          -7.12,
           -0.405,
           -6.55
         ],
         "max": [
-          5.125,
+          10.12,
           3.44,
-          6.55
+          12.62
         ]
       },
-      "triangles": 538,
+      "triangles": 2856,
       "provenance": {
         "source": "tools/chunk_surfer/build-props.mjs",
         "origin": "project-native procedural geometry",

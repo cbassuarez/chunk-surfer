@@ -5,10 +5,24 @@ import {uiDrawHardware} from './ui.js';
 import {drawHardwarePrint} from './hardware-faceplate.js';
 import {drawSevenSegmentNumber,measureSevenSegment,drawTraceCell} from './dual-trace-display.js';
 
-export function navigatorClockState(readout){
+// Source keeps no time: no digits, and only the colon going, like a clock that has
+// lost its power. It has its own phase and shares nothing with the 3D 6:00 ruin.
+export const NAVIGATOR_CLOCK_BLANK='  :  ';
+export const NAVIGATOR_CLOCK_BLINK_MS=1000;
+export function navigatorClockState(readout,{now=null}={}){
   const value=typeof readout==='string'?readout:readout?.value;
+  if(value===NAVIGATOR_CLOCK_BLANK){
+    const time=Number.isFinite(now)?now:(globalThis.performance?.now?.()||0),colonLit=((time%NAVIGATOR_CLOCK_BLINK_MS)+NAVIGATOR_CLOCK_BLINK_MS)%NAVIGATOR_CLOCK_BLINK_MS<NAVIGATOR_CLOCK_BLINK_MS/2;
+    return{value,blank:true,colonLit,approximate:false,text:colonLit?NAVIGATOR_CLOCK_BLANK:'     ',qualifier:''};
+  }
   if(typeof value!=='string'||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value))return null;
   const approximate=typeof readout==='object'&&readout?.approximate===true;
+  // Back from Source: the digits blink under a steady colon, the blank clock's
+  // inverse, until the night has been running for a few seconds.
+  if(typeof readout==='object'&&readout?.settling===true){
+    const time=Number.isFinite(now)?now:(globalThis.performance?.now?.()||0),digitsLit=((time%NAVIGATOR_CLOCK_BLINK_MS)+NAVIGATOR_CLOCK_BLINK_MS)%NAVIGATOR_CLOCK_BLINK_MS<NAVIGATOR_CLOCK_BLINK_MS/2;
+    return{value,approximate,settling:true,digitsLit,text:digitsLit?(approximate?'~':'')+value:'  :  ',qualifier:approximate?'ESTIMATED':''};
+  }
   return{value,approximate,text:(approximate?'~':'')+value,qualifier:approximate?'ESTIMATED':''};
 }
 
@@ -37,7 +51,7 @@ export function navigatorClockGeometry(housing,{cellW=8.45,cellH=20,dpr=1}={}){
 }
 
 export function paintNavigatorClock(ctx,housing,readout,metrics={}){
-  const state=navigatorClockState(readout),g=navigatorClockGeometry(housing,metrics);if(!ctx||!state||!g)return null;
+  const state=navigatorClockState(readout,{now:metrics.now}),g=navigatorClockGeometry(housing,metrics);if(!ctx||!state||!g)return null;
   const dpr=metrics.dpr||1,printDpr=dpr*Math.min(1,(metrics.cellH||20)/20),ink='#233b2b',opacity=Number.isFinite(ctx.globalAlpha)?ctx.globalAlpha:1;
   ctx.save();ctx.shadowBlur=0;ctx.shadowOffsetX=ctx.shadowOffsetY=0;
   // The header remains legible etched aluminium; its new clock owns a small
@@ -56,10 +70,12 @@ export function paintNavigatorClock(ctx,housing,readout,metrics={}){
     ctx.bezierCurveTo(left+span*.30,middle-g.height*.24,left+span*.70,middle+g.height*.24,left+span,middle-g.height*.04);ctx.stroke();
   }
   ctx.globalAlpha=opacity;
-  drawSevenSegmentNumber(ctx,state.value.slice(0,2),g.hours.x,g.hours.y,g.height,{color:ink,dormant:ink,lcd:true});
-  drawSevenSegmentNumber(ctx,state.value.slice(3),g.minutes.x,g.minutes.y,g.height,{color:ink,dormant:ink,lcd:true});
+  if(!state.blank&&(!state.settling||state.digitsLit)){
+    drawSevenSegmentNumber(ctx,state.value.slice(0,2),g.hours.x,g.hours.y,g.height,{color:ink,dormant:ink,lcd:true});
+    drawSevenSegmentNumber(ctx,state.value.slice(3),g.minutes.x,g.minutes.y,g.height,{color:ink,dormant:ink,lcd:true});
+  }
   const dot=g.height*.11;
-  for(const at of[.32,.70])drawTraceCell(ctx,g.colon.x+(g.colon.w-dot)/2,g.colon.y+g.height*at-dot/2,dot,dot,ink,{chamfer:dot*.15});
+  if(!state.blank||state.colonLit)for(const at of[.32,.70])drawTraceCell(ctx,g.colon.x+(g.colon.w-dot)/2,g.colon.y+g.height*at-dot/2,dot,dot,ink,{chamfer:dot*.15});
   ctx.restore();return{state,geometry:g,identity};
 }
 

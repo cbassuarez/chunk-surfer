@@ -5,6 +5,11 @@ export const PRINTED_SURFACE_VERSION=1;
 export const PRINTED_SURFACE_LEVELS=16;
 export const PRINTED_SURFACE_DARK_BYTE=136;
 export const PRINTED_SURFACE_LIGHT_BYTE=156;
+// Source-II route stock has its own categorical family while retaining the
+// ordinary light-on-dark coverage contract. Read it from the winning texel;
+// filtering identities across materials cannot establish family membership.
+export const PRINTED_SURFACE_SOURCE_ROUTE_BYTE=80;
+export const PRINTED_SURFACE_SOURCE_ROUTE_FAMILY='source-ii-route';
 // Area-averaged document print needs fractional material selection, unlike
 // the geometric coverage of large painted/enamelled lettering. This range is
 // separate from grain planes, solid pigments and apparition/roof markers.
@@ -22,18 +27,28 @@ export function printedSurfaceDescriptor(value,{alphaMode='OPAQUE',hasTexture=tr
   if(value.sampling!=null&&value.sampling!=='area')throw new Error('Invalid printedSurface sampling contract');
   if(value.sampling==='area'&&(value.coverage!=='baseColorAlpha'||value.polarity!=='dark-on-light'))
     throw new Error('Area print requires dark pigment coverage from baseColorAlpha');
+  const family=value.family;
+  if(family!==undefined&&(family!==PRINTED_SURFACE_SOURCE_ROUTE_FAMILY
+    ||value.coverage!=='baseColorAlpha'||value.polarity!=='light-on-dark'||value.sampling==='area'))
+    throw new Error('Invalid printedSurface family contract');
   return Object.freeze({version:1,coverage:value.coverage,polarity:value.polarity,
-    process:String(value.process||'printed pigment'),emission,...(value.sampling==='area'?{sampling:'area'}:{})});
+    process:String(value.process||'printed pigment'),emission,...(value.sampling==='area'?{sampling:'area'}:{}),
+    ...(family!==undefined?{family}:{})});
 }
 
-export function encodePrintedSurface(coverage,polarity='dark-on-light'){
+export function encodePrintedSurface(coverage,polarity='dark-on-light',{family}={}){
   const kind=typeof polarity==='number'?polarity:PRINTED_SURFACE_POLARITY[polarity];
   if(kind!==1&&kind!==2)return 0;
+  if(family!==undefined&&(family!==PRINTED_SURFACE_SOURCE_ROUTE_FAMILY||kind!==2))return 0;
   const amount=Math.round(Math.max(0,Math.min(1,Number(coverage)||0))*(PRINTED_SURFACE_LEVELS-1));
-  return((kind===1?PRINTED_SURFACE_DARK_BYTE:PRINTED_SURFACE_LIGHT_BYTE)+amount)/255;
+  const start=family===PRINTED_SURFACE_SOURCE_ROUTE_FAMILY?PRINTED_SURFACE_SOURCE_ROUTE_BYTE
+    :kind===1?PRINTED_SURFACE_DARK_BYTE:PRINTED_SURFACE_LIGHT_BYTE;
+  return(start+amount)/255;
 }
 export function decodePrintedSurface(value){
   const byte=Math.round(value*255);
+  if(byte>=PRINTED_SURFACE_SOURCE_ROUTE_BYTE&&byte<PRINTED_SURFACE_SOURCE_ROUTE_BYTE+PRINTED_SURFACE_LEVELS)
+    return{kind:2,coverage:(byte-PRINTED_SURFACE_SOURCE_ROUTE_BYTE)/(PRINTED_SURFACE_LEVELS-1),family:PRINTED_SURFACE_SOURCE_ROUTE_FAMILY};
   if(byte>=PRINTED_SURFACE_AREA_DARK_BYTE&&byte<PRINTED_SURFACE_AREA_DARK_BYTE+PRINTED_SURFACE_LEVELS)
     return{kind:1,coverage:(byte-PRINTED_SURFACE_AREA_DARK_BYTE)/(PRINTED_SURFACE_LEVELS-1),area:true};
   for(const [kind,start]of [[1,PRINTED_SURFACE_DARK_BYTE],[2,PRINTED_SURFACE_LIGHT_BYTE]])
@@ -52,8 +67,13 @@ export function packPropWorldDepth(depth){
 export function unpackPropWorldDepth(rgb){return(rgb[0]*16711680+rgb[1]*65280+rgb[2]*255)/16777215;}
 
 export const PRINTED_SURFACE_GLSL=`
+float printedSurfaceSourceRoute(float value){
+  float byte=floor(value*255.0+.5);
+  return byte>=80.0&&byte<=95.0?1.0:0.0;
+}
 float printedSurfaceKind(float value){
   float byte=floor(value*255.0+.5);
+  if(printedSurfaceSourceRoute(value)>.5)return 2.0;
   if(byte>=112.0&&byte<=127.0)return 1.0;
   if(byte>=136.0&&byte<=151.0)return 1.0;
   if(byte>=156.0&&byte<=171.0)return 2.0;
@@ -65,8 +85,12 @@ float printedSurfaceArea(float value){
 }
 float printedSurfaceCoverage(float value){
   float kind=printedSurfaceKind(value),byte=floor(value*255.0+.5);
+  if(printedSurfaceSourceRoute(value)>.5)return(byte-80.0)/15.0;
   if(printedSurfaceArea(value)>.5)return(byte-112.0)/15.0;
   return kind<.5?0.0:(byte-(kind<1.5?136.0:156.0))/15.0;
+}
+float printedSourceRouteTag(float coverage){
+  return(80.0+floor(clamp(coverage,0.0,1.0)*15.0+.5))/255.0;
 }
 float printedAreaSurfaceTag(float coverage){
   return(112.0+floor(clamp(coverage,0.0,1.0)*15.0+.5))/255.0;

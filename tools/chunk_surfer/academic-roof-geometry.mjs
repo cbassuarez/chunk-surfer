@@ -1,6 +1,7 @@
 // Project-native roof construction. All surfaces enter the ordinary prop/depth
 // acquisition, so the game's shared dither treats Ren and the roof alike.
 import { buildRoofFormalPromenades } from './roof-formal-promenade.mjs';
+import { roofCourtGlazingLayout } from '../../src/data/academic-roof.js';
 import { buildRoofGrotesques } from './roof-grotesques.mjs';
 import { buildRoofGardenFlora } from './roof-garden-flora.mjs';
 import { buildRoofCitySeatGeometry } from './roof-city-seat-geometry.mjs';
@@ -278,6 +279,13 @@ export function buildAcademicRoof({mesh,materials,MAT,addBox,addBeam,addEllipsoi
   }
   {
     const m=mesh('academic_roof_glazing');
+    // The same bays continue over the courts (extend-roof-skylight.mjs applies
+    // this to a built pack). Their stone kerb is the roof's coping material.
+    const court=roofCourtGlazingLayout();
+    for(const row of court.panes)addBox(m,row.c,row.s,MAT.roofGlass);
+    for(const row of court.repairs)addBox(m,row.c,row.s,roofLead);
+    for(const row of[...court.ribs,...court.beams])addBox(m,row.c,row.s,roofQuietIron);
+    for(const row of court.kerbs)addBox(m,row.c,row.s,roofStone);
     // Pane planes stay just below collision height, with broad iron ribs and
     // a handful of replacement panes. The shader material is dark wired glass.
     for(let ix=0;ix<5;ix++)for(let iz=0;iz<6;iz++){

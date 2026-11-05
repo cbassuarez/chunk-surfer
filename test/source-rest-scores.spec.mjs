@@ -36,7 +36,7 @@ test('rest commitment changes timbre without a new start, active:false, or loss 
   f.owner.setRestProgress(.56,true,{faculty:.7});let s=f.owner.snapshot();
   assert.equal(s.currentTime,475.3);assert.equal(s.restActive,true);assert.equal(s.restProgress,.56);assert.equal(s.paused,true);
   assert.ok(!f.log.slice(at).some(x=>x[1]==='start'||x[2]?.active===false));
-  assert.deepEqual(f.log.at(-1),['couperin','update',{progress:.56,faculty:.7,paused:true}]);
+  assert.deepEqual(f.log.at(-1),['couperin','update',{progress:.56,faculty:.7,paused:true,seated:true}]);
   f.owner.update({active:true,paused:false});f.owner.setRestProgress(.2,false);
   s=f.owner.snapshot();assert.equal(s.playing,true);assert.equal(s.restActive,false);assert.equal(s.currentTime,475.3);
 });

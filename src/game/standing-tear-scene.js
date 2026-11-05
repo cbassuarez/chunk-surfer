@@ -8,7 +8,7 @@ const action=k=>k==='e'||k===' '||k==='space'||k==='enter';
 // Owns the borrowed viewpoint, not a Source destination or ordinary save area.
 // World preparation and two real covered frames belong to onRestore; it must
 // resolve only when the conservatory is safe to reveal.
-export function createStandingTearScene({checkpoint=null,returnPose=null,runId='',renderer,audio=null,
+export function createStandingTearScene({checkpoint=null,returnPose=null,runId='',renderer,audio=null,tides=false,
   getLook=()=>null,isPaused=()=>false,isHidden=()=>false,inputActive=()=>true,
   paintCover=()=>{},onRestore=()=>{},onDone=()=>{},onCheckpoint=()=>{},onTrace=()=>{},onError=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The Standing Tear needs its physical renderer.');
@@ -94,7 +94,7 @@ export function createStandingTearScene({checkpoint=null,returnPose=null,runId='
       apply({dt:step,renderReady:state.phase==='ending'?restoreReady:ready,
         forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),
-        held:[...keys].some(action),lookYaw:look?.yaw,lookPitch:look?.pitch});
+        held:[...keys].some(action),lookYaw:look?.yaw,lookPitch:look?.pitch,environment:!!tides});
       if(closed||completed)return;
       audio?.update?.(frame(),{dt:step});
       saveClock+=step;traceClock+=step;

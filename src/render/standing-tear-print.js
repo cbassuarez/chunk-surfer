@@ -7,6 +7,7 @@ import {uploadPhysicalPrint} from './physical-source-print.js';
 export const STANDING_TEAR_SOURCE_PRINT=Object.freeze({version:1,coverage:'baseColorAlpha',polarity:'light-on-dark',process:'primordial Source clauses',emission:'pigment'});
 export const STANDING_TEAR_PRINT_SCALE=Object.freeze({floor:[24,3],wall:[96,12],fold:[64,8]});
 export const STANDING_TEAR_STOCK_RGB=Object.freeze([24,31,35]);
+export const STANDING_TEAR_SOURCE_CODE_STOCK=Object.freeze(STANDING_TEAR_STOCK_RGB.map(channel=>channel/255));
 export function standingTearSourceLines(){
   return Object.values(SOURCE_ATLAS.sectors).flatMap((sector,index)=>(sector.sourceLines||[]).slice(0,12).map(line=>({...line,sourceLayer:index+1})));
 }
@@ -18,13 +19,13 @@ export function standingTearSourceBand(bitmap,layer=1){
 export function standingTearSourceStock(band){
   const pixels=new Uint8Array(band.pixels);
   for(let i=0;i<pixels.length;i+=4)if(pixels[i+3]===0)pixels.set(STANDING_TEAR_STOCK_RGB,i);
-  return{...band,pixels};
+  return{...band,pixels,sourceCodeStock:STANDING_TEAR_SOURCE_CODE_STOCK};
 }
 const cache=new WeakMap();
 export function standingTearSourceMaps(gl,{layer=1}={}){
   let stored=cache.get(gl);if(!stored){stored={bitmap:sourceSurfaceLetteringPixels(standingTearSourceLines()),maps:new Map()};cache.set(gl,stored);}
   const key=Math.max(1,Math.min(8,Math.round(layer)));if(stored.maps.has(key))return stored.maps.get(key);
-  const band=standingTearSourceStock(standingTearSourceBand(stored.bitmap,key)),maps={texture:uploadPhysicalPrint(gl,band,{repeat:true}),normalTexture:null,ormTexture:null,letteringFinish:null,layer:key,printedSurface:STANDING_TEAR_SOURCE_PRINT};stored.maps.set(key,maps);return maps;
+  const band=standingTearSourceStock(standingTearSourceBand(stored.bitmap,key)),maps={texture:uploadPhysicalPrint(gl,band,{repeat:true}),normalTexture:null,ormTexture:null,letteringFinish:null,layer:key,printedSurface:STANDING_TEAR_SOURCE_PRINT,sourceCodeStock:STANDING_TEAR_SOURCE_CODE_STOCK};stored.maps.set(key,maps);return maps;
 }
 export function standingTearSourceUV(point,normal,scale=STANDING_TEAR_PRINT_SCALE.floor){
   const axis=normal.map(Math.abs).indexOf(Math.max(...normal.map(Math.abs)));

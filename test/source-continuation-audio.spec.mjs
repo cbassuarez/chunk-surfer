@@ -450,3 +450,19 @@ test('three corridor contacts survive score isolation, retain spatial tails and 
   protection=false;frame(sound,s);assert.equal(sound.snapshot().voices,0,'protection queues no delayed replay');
   sound.event({type:'corridor-settled',chartId:4},s);sound.pause();assert.equal(sound.snapshot().voices,0);sound.dispose();
 });
+
+test('a fault that opens sounds the practice wing\'s two As, only near it, and lets them go',() => {
+  const { ctx, sources, destination } = graph(), sound = createSourceContinuationAudio({ getAudio: () => ({ ctx, destination }) });
+  const fault = { x: -16.5, z: -23.6, feet: 8.4 }, at = (dz) => ({ phase: 'wrong-return', status: 'active', chartId: 0, x: fault.x, z: fault.z - dz, feet: fault.feet, yaw: 0, pitch: 0, elapsed: 1, closure: { mode: 'dormant' } });
+  frame(sound, at(40));
+  assert.ok(!sound.snapshot().layers.some(layer => layer.kind === 'rift-beat'), 'silent from across the construction');
+  frame(sound, at(3));
+  const near = sound.snapshot().layers.find(layer => layer.kind === 'rift-beat');
+  assert.ok(near && near.gain > 0, 'audible beside it');
+  const hz = sources.filter(source => source.frequency?.value >= 440 && source.frequency?.value <= 444 && !source.stopped).map(source => source.frequency.value).sort();
+  assert.deepEqual(hz.slice(0, 2), [440, 444]);
+  frame(sound, at(10));
+  assert.ok(sound.snapshot().layers.find(layer => layer.kind === 'rift-beat').gain < near.gain, 'it thins as you walk away');
+  frame(sound, at(40));
+  assert.ok(!sound.snapshot().layers.some(layer => layer.kind === 'rift-beat'), 'and is released');
+});

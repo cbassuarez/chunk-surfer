@@ -56,9 +56,12 @@ export const TOWER_WARNING=freeze({
   bodyHeight:1.84,
   approach:{x:-12.75,y:.12,z:102.75,yaw:Math.PI},
   lines:[
-    {id:'refuse',text:"Don't take the job.",voice:'unknown'},
+    // One line per reading, and none of them rules out the others: the job is not
+    // real, the building is not empty, and saying yes is how you stop trying. He
+    // says the last one on an open street, where there is nothing to get out of.
+    {id:'refuse',text:"There is no job. Don't take it.",voice:'unknown'},
     {id:'occupied',text:'Whatever they told you, it is not an empty building.',voice:'unknown'},
-    {id:'out',text:"You won't make it out.",voice:'unknown'},
+    {id:'out',text:"You can still get out. Take it, and you'll stop trying.",voice:'unknown'},
   ],
   // This is a physical knowledge boundary, never a timer or an alpha fade.
   // The host may retire the body only when actual sight lines are blocked.

@@ -8,7 +8,7 @@ import * as FP from '../src/world/floorplan.js';
 import {conservatory} from '../src/data/floorplan/conservatory.js';
 import {NodeIO} from '@gltf-transform/core';
 import {Ray,Vector3,Triangle,Box3} from 'three';
-import {GLASS_COURT} from '../src/data/glass-court.js';
+import {GLASS_COURT,GLASS_COURT_PROPS} from '../src/data/glass-court.js';
 import {GLASS_COURT_SIGHTLINES} from '../src/data/glass-court-sightlines.js';
 import {GLASS_COURT_PRESENCES} from '../src/data/glass-court-presences.js';
 
@@ -33,9 +33,16 @@ function meshEnvelope(name){
     [Math.max(...p.map(q=>q.x1)),name==='glass_court_beds'?Math.max(...p.map(q=>q.height)):name==='glass_court_nursery'?1.2:c.eaves-.3,Math.max(...p.map(q=>q.z1))]);
   if(name==='glass_court_vestibule')return bounds([changing.x0-.08,-.02,-.12],[changing.x1+.08,changing.ceiling+.44,changing.z1+.1]);
   if(name==='glass_court_upper_guards'){
-    const points=[...c.upperGuards.academicPolygon,...c.upperGuards.roofPolygon];
+    // The gallery's rail is the only one: the roof runs on over the courts in glass.
+    const points=c.upperGuards.academicPolygon;
     return bounds([Math.min(...points.map(p=>p[0]))-c.origin.x-.2,10-c.drawnFloor,Math.min(...points.map(p=>p[1]))-c.origin.z-.2],
-      [Math.max(...points.map(p=>p[0]))-c.origin.x+.2,17+c.upperGuards.height-c.drawnFloor,Math.max(...points.map(p=>p[1]))-c.origin.z+.2]);
+      [Math.max(...points.map(p=>p[0]))-c.origin.x+.2,10+c.upperGuards.height-c.drawnFloor,Math.max(...points.map(p=>p[1]))-c.origin.z+.2]);
+  }
+  if(name==='glass_court_gallery_vines'){
+    // Over the atrium rail and down into the void, without spreading across the walk.
+    const points=c.galleryVines.runs.flatMap(r=>[r.from,r.to]),reach=.8;
+    return bounds([Math.min(...points.map(p=>p[0]))-c.origin.x-reach,c.galleryVines.lowestTip-.35-c.drawnFloor,Math.min(...points.map(p=>p[1]))-c.origin.z-reach],
+      [Math.max(...points.map(p=>p[0]))-c.origin.x+reach,10+c.upperGuards.height+.3-c.drawnFloor,Math.max(...points.map(p=>p[1]))-c.origin.z+reach]);
   }
   assert.equal(name,c.entranceFixtures.mesh,'every packed mesh has an accountable architectural envelope');
   const dx=c.entranceFixtures.origin.x-c.origin.x,dz=c.entranceFixtures.origin.z-c.origin.z;
@@ -246,4 +253,48 @@ test('every packed finite part is closed, coherently wound, nondegenerate and tr
     }
   }
   assert.equal(total,stats.totalTriangles);
+});
+
+test('greenhouse vines drape over the whole gallery rail, into the atrium and the courts',()=>{
+  const c=GLASS_COURT,parts=stats.meshes.glass_court_gallery_vines.parts,world=(p,k)=>p+(k===0?c.origin.x:k===1?c.drawnFloor:c.origin.z);
+  assert.ok(stats.galleryVineStrands>=20,'a real fringe, not a token strand or two');
+  const wind=byName.get('glass_court_gallery_vines').getExtras().vegetationWind;
+  assert.ok(wind.amplitudeM>0&&wind.amplitudeM<.2&&wind.heightM<0,'a slow sway that hangs down from the anchor');assert.equal(wind.anchorY,10-c.drawnFloor,'the rail itself does not move');
+  const materials=new Set(parts.map(p=>p.material));assert.deepEqual([...materials].sort(),['court broadleaf jade','court fern olive','court plant stems','court vine leaf'],'the same stock as the greenhouse');
+  const strands=new Map();
+  for(const part of parts){
+    const match=/^gallery-vine:([\w-]+):(\d+):/.exec(part.id);if(!match)continue;
+    const key=match[1]+':'+match[2],s=strands.get(key)||{run:match[1],lo:Infinity,hi:-Infinity};
+    s.lo=Math.min(s.lo,world(part.bounds.min[1],1));s.hi=Math.max(s.hi,world(part.bounds.max[1],1));strands.set(key,s);
+  }
+  assert.equal(strands.size,stats.galleryVineStrands);
+  for(const[key,s]of strands){
+    assert.ok(s.hi>10+1.13,`${key} comes over the top rail`);
+    assert.ok(s.lo<9.5,`${key} falls below the deck, into the atrium`);
+    assert.ok(s.lo>=c.galleryVines.lowestTip-.3,`${key} stops well above the people on the atrium floor`);
+  }
+  assert.ok([...strands.values()].some(s=>s.lo<7),'a few reach well down into the atrium');
+  // Every stretch of the guard rail carries its own fringe, and nothing else does.
+  assert.deepEqual(c.galleryVines.runs.map(r=>r.from),c.upperGuards.academicPolygon.filter((_,i)=>i!==7).map((p,i,all)=>all[i]).slice(0,1).concat(c.galleryVines.runs.slice(1).map(r=>r.from)));
+  const legs=new Set(c.upperGuards.academicPolygon.map((p,i,all)=>[p,all[(i+1)%all.length]].join('>')));
+  assert.equal(c.galleryVines.runs.length,legs.size,'every leg of the rail is planted');
+  for(const run of c.galleryVines.runs){
+    assert.ok(legs.has([run.from,run.to].join('>')),`${run.id} follows the rail's own winding`);
+    const length=Math.hypot(run.to[0]-run.from[0],run.to[1]-run.from[1]);
+    assert.ok([...strands.values()].filter(s=>s.run===run.id).length>=Math.floor((length-.9)/1.2),`${run.id} rail carries its own fringe`);
+  }
+  // Busts stand on the walk beside the rail; nothing strays far enough to reach them.
+  const walk=.4;
+  for(const part of parts){
+    const min=part.bounds.min.map(world),max=part.bounds.max.map(world);
+    const within=(x0,x1,z0,z1,m=0)=>min[0]>=x0-m&&max[0]<=x1+m&&min[2]>=z0-m&&max[2]<=z1+m;
+    assert.ok(within(79,89,8,15,.14+walk)||within(77,94,15,27,.14+walk)||within(77,94,14.2,27,.14+walk),`${part.id} stays on the rail's own ring`);
+    // Past the deck's lip every stem hangs in the void itself.
+    if(part.material==='court plant stems'&&max[1]<10)assert.ok(within(79,89,8,15)||within(77,94,15,27),`${part.id} hangs clear of the deck's edge`);
+    // The greenhouse below keeps its roof to itself.
+    if(max[0]>c.bounds.x0&&min[0]<c.bounds.x1&&max[2]>c.bounds.z0&&min[2]<c.bounds.z1)assert.ok(min[1]>c.ridge,`${part.id} stays above the greenhouse roof`);
+  }
+  const prop=GLASS_COURT_PROPS.find(p=>p.mesh==='glass_court_gallery_vines');
+  assert.deepEqual(prop.renderGroups,['ground','academic'],'seen from the gallery and from the atrium floor');
+  assert.equal(prop.blocks,false);assert.equal(prop.interactive,false);
 });

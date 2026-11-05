@@ -87,7 +87,7 @@ function belfryArrival(linked) {
   const environment = {
     GOD_LOCATION_HOOKS: { 'cathedral-belfry': { facing: 1 } }, godHookPoint: () => ({ x: 1, y: 2 }),
     ensureTowerBellDirector: () => ({ setTransitionProgress() {} }),
-    commitChapelTower: value => value, reduceChunkSurf: (value, event) => ({ ...value, event }),
+    leaveSourceNightState: () => ({}), commitChapelTower: value => value, reduceChunkSurf: (value, event) => ({ ...value, event }),
     normalizeChunkSurfState: value => value,
     R3: { r3dSetIndoorRain() {}, r3dClearTowerView() {}, r3dSetSourceScene() {}, r3dSetFacing() {} },
     stopSourceCorridorRain() {}, chuteRide: null, clearSourceRuntime() {}, PRES: { despawn() {} },

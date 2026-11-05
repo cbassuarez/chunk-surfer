@@ -2,6 +2,8 @@ import { STANDING_TEAR_LAYOUT as LAYOUT } from '../data/standing-tear.js';
 import { STANDING_TEAR_MEMORIES as MEMORIES, STANDING_TEAR_PRESSURE as PRESSURE,
   standingTearPressurePanels, standingTearPanelHitsCapsule, standingTearPanelSweepHits } from '../data/standing-tear-pressure.js';
 import { standingTearMemoryPulse } from '../data/standing-tear-memory-score.js';
+import { freshSourceTide, normalizeSourceTide, advanceSourceTide } from './source-continuation-tides.js';
+import { SOURCE_RIFT } from './source-rift.js';
 
 const KIND='standing-tear',VERSION=2;
 const finite=(value,fallback=0)=>Number.isFinite(value)?value:fallback;
@@ -20,7 +22,7 @@ export function freshStandingTear({runId='',returnPose=null}={}){
     moving:false,motionIntent:false,liveMemoryId:null,lastMoveYaw:LAYOUT.spawn.yaw,witnessSeconds:0,fullConfinementSeconds:0,
     held:false,holdSeconds:0,performedSeconds:0,bars:0,released:false,
     referenceStarted:false,transportRunning:false,architectureRunning:false,referenceSeconds:0,stoppedSeconds:0,
-    endingSeconds:0,completed:false,restoreIssued:false,readyIssued:false,returnReceipt:null};
+    endingSeconds:0,completed:false,restoreIssued:false,readyIssued:false,returnReceipt:null,tide:freshSourceTide()};
 }
 export function normalizeStandingTear(value,{runId,returnPose}={}){
   const base=freshStandingTear({runId:runId??value?.runId,returnPose:returnPose??value?.returnPose});
@@ -35,7 +37,7 @@ export function normalizeStandingTear(value,{runId,returnPose}={}){
     performedSeconds:clamp(value.performedSeconds,0,1e8),released:!!value.released,
     referenceSeconds:clamp(value.referenceSeconds,0,1e8),stoppedSeconds:clamp(value.stoppedSeconds,0,1e8),
     endingSeconds:clamp(value.endingSeconds,0,LAYOUT.cinematic.agencyAt),completed:!!value.completed,
-    restoreIssued:!!value.restoreIssued,readyIssued:!!value.readyIssued,returnReceipt:clone(value.returnReceipt)};
+    restoreIssued:!!value.restoreIssued,readyIssued:!!value.readyIssued,returnReceipt:clone(value.returnReceipt),tide:normalizeSourceTide(value.tide)};
   if(!legacy){
     state.memories=MEMORIES.map(definition=>{const memory=value.memories?.find?.(item=>item.id===definition.id),awake=!!memory?.awake;
       return{id:definition.id,awake,awakeSeconds:awake?clamp(memory.awakeSeconds,0,1e8):0,
@@ -113,6 +115,17 @@ function memoryMovement(state,segments,dt,events){
   if(state.liveMemoryId&&previousLive!==state.liveMemoryId)events.push({type:'live-start',id:state.liveMemoryId,source:'student',at:state.elapsed});
   if(state.liveMemoryId)state.performedSeconds+=dt;if(state.referenceStarted)state.referenceSeconds+=dt;
 }
+// Once a piece has woken, the tide that works on Source works here too, folding
+// a still body in toward the courses' middle. It is not walking: it earns no
+// pressure, starts no voice, and never spoils the stillness the room asks for.
+function driftWithTheRoom(state,dt){
+  if(!state.referenceStarted)return;
+  const body={x:state.pose.x,z:state.pose.z,elapsed:state.elapsed,tide:state.tide};
+  const drift=advanceSourceTide(body,dt,{moving:state.motionIntent,well:SOURCE_RIFT.room.well});state.tide=body.tide;
+  if(!drift.dx&&!drift.dz)return;
+  const panels=standingTearPressurePanels(state.panelProgress,state.memories),x=state.pose.x+drift.dx,z=state.pose.z+drift.dz;
+  if(standingTearCanOccupy(x,z,LAYOUT.bodyRadius,{panels})){state.pose.x=x;state.pose.z=z;}
+}
 function advancePanels(state,dt,events){
   for(const panel of standingTearPressurePanels(state.panelProgress,state.memories)){
     const before=state.panelProgress[panel.index],next=Math.min(panel.target,before+dt/PRESSURE.foldSeconds);if(next<=before)continue;
@@ -161,6 +174,7 @@ export function stepStandingTear(value,input={}){
   state.elapsed+=dt;const segments=walk(state,input,dt,events);
   if(state.phase==='arrival'&&state.elapsed>=LAYOUT.entryFoldSeconds){state.phase='work';events.push({type:'entry-closed',at:state.elapsed},{type:'phase',phase:'work',at:state.elapsed});}
   memoryMovement(state,segments,dt,events);
+  if(input.environment)driftWithTheRoom(state,dt);
   const wasMade=state.panelProgress.every(value=>value>=1-1e-7);
   const retainedBefore=state.fullConfinementSeconds>=PRESSURE.minimumConfinementSeconds-1e-8;
   advancePanels(state,dt,events);

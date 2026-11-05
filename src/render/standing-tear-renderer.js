@@ -12,6 +12,10 @@ import {standingTearEarLetteringGeometry,standingTearEarLetteringFor,STANDING_TE
 import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {standingTearSourceMaps,standingTearSourceUV,STANDING_TEAR_SOURCE_PRINT,STANDING_TEAR_PRINT_SCALE} from './standing-tear-print.js';
+import {standingTearOmens,standingTearOmenGeometry} from './standing-tear-omens.js';
+import {SOURCE_RIFT} from '../game/source-rift.js';
+import {sourceTideWind} from '../game/source-continuation-tides.js';
+import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
 
 const PREFIX='standing-tear-',finite=(n,f=0)=>Number.isFinite(Number(n))?Number(n):f;
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,finite(n)));
@@ -64,6 +68,7 @@ const library=[
   ...STANDING_TEAR_PANEL_DEFINITIONS.map((panel,index)=>({id:panel.id,kind:'detail',material:'source',printScale:STANDING_TEAR_PRINT_SCALE.floor,sourceLayer:index%8+1,...box(-panel.width/2,panel.width/2,-panel.height/2,panel.height/2,-panel.thickness/2,panel.thickness/2)})),
   ...ribbonDefinitions.map((piece,index)=>({id:piece.id,kind:'detail',material:'source',printScale:STANDING_TEAR_PRINT_SCALE.fold,sourceLayer:index%8+1,...box(-4,4,-.6,.6,-piece.length/2,piece.length/2)})),
   ...standingTearEarLetteringGeometry(),
+  ...standingTearOmenGeometry(),
 ].map(piece=>({...piece,name:PREFIX+piece.id}));
 const payloads=new Map(library.map(piece=>[piece.name,sourceContinuationMeshPayload(piece)]));
 const meshName=id=>PREFIX+id;
@@ -84,7 +89,7 @@ export function installStandingTearMeshes(gl,pack,{maps=null}={}){
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,source?uvs:data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{standingTear:true,triangles:data.triangles,bounds:{min:data.bounds.min,max:data.bounds.max}},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:source?uvs:data.uvs,indices:data.indices}),base:earPaint?EAR_PAINT.base:paint[piece.material],emissive:source?[.010,.022,.016]:piece.material==='light'?[.015,.03,.025]:[0,0,0],texture:source?printed.texture:null,normalTexture:null,ormTexture:null,letteringFinish:null,materialFactors:'gltf',metallic:piece.material==='metal'?.62:0,roughness:earPaint?EAR_PAINT.roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:earPaint?EAR_PAINT.name:`Standing Tear ${piece.material}`,printedSurface:source?STANDING_TEAR_SOURCE_PRINT:null}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{standingTear:true,triangles:data.triangles,bounds:{min:data.bounds.min,max:data.bounds.max}},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:source?uvs:data.uvs,indices:data.indices}),base:earPaint?EAR_PAINT.base:piece.base||paint[piece.material],emissive:piece.emissive||(source?[.010,.022,.016]:piece.material==='light'?[.015,.03,.025]:[0,0,0]),materialRole:piece.materialRole,texture:source?printed.texture:null,normalTexture:null,ormTexture:null,letteringFinish:null,materialFactors:'gltf',metallic:piece.material==='metal'?.62:0,roughness:earPaint?EAR_PAINT.roughness:1,aoStrength:0,portrait:false,alphaCut:0,materialName:earPaint?EAR_PAINT.name:`Standing Tear ${piece.material}`,sourceCodeStock:source?printed.sourceCodeStock:undefined,printedSurface:source?STANDING_TEAR_SOURCE_PRINT:null}]});
   }gl.bindVertexArray(null);return required;
 }
 const placed=(id,mesh,m,extra={})=>({id:PREFIX+id,mesh:meshName(mesh),matrix:m,x:m[12],y:m[13],z:m[14],zone:ZONE.sourceSpace,structural:true,noShadow:true,noReflection:true,sourceStructure:'standing-tear',...extra});
@@ -163,6 +168,9 @@ export function standingTearRenderFrame(frame={},presentation={}){
       authoritativeMatrix:[...panel.matrix],closedVertices:panel.closedVertices,cullRadius:35});
     writeOnCourse(props,panel,local,memory);
   }
+  // Every woken piece opens what it became, overhead and out of reach.
+  const omens=standingTearOmens(memories,{elapsed,stillOmens:presentation.stillOmens===true,pulse:standingTearMemoryPulse('ensemble',elapsed)});
+  for(const omen of omens.props)put(omen.id,omen.mesh,omen.matrix,{standingTearRole:omen.role,memoryId:omen.memoryId,cullRadius:omen.cullRadius});
   // The warm return contracts into a raised crease, leaving ordinary Source
   // floor under and around it. There is never a new invisible movement wall.
   if(!frame.preview){
@@ -178,7 +186,7 @@ export function standingTearRenderFrame(frame={},presentation={}){
     {id:PREFIX+'far-fold',x:35,y:38,z:99,radius:120,intensity:5.4,color:[.45,.57,.64],penetration:1},
     {id:PREFIX+'far-boundary',x:-20,y:51,z:176,radius:112,intensity:4.8,color:[.45,.53,.60],penetration:1},
   );
-  return{phase:frame.phase||'arrival',props,lights,labels,eye:camera.eye,yaw:camera.yaw,pitch:camera.pitch,authoredCamera:camera,entryFold:fold,architectureRunning:architecture,memories,panels,ditherIntensity:standingTearDitherIntensity(frame),
+  return{phase:frame.phase||'arrival',props,lights,labels,horizon:omens.horizon,eye:camera.eye,yaw:camera.yaw,pitch:camera.pitch,authoredCamera:camera,entryFold:fold,architectureRunning:architecture,memories,panels,ditherIntensity:standingTearDitherIntensity(frame),
     counts:{props:props.length,lights:lights.length,supportedSlabs:96},bounds:STANDING_TEAR_RENDER_BUDGET.basin,presentation};
 }
 
@@ -207,16 +215,16 @@ const sourceLook={roomMemoryActive:true,chroma:.88,paper:0},weather={rain:0,moon
 const lightingContext={ambientColor:[.60,.67,.65],ambientIntensity:.14,captureExposure:2.2,whitePointScale:1,screen:'stochastic'};
 function setScene(renderer,last){
   renderer.r3dSetSourceScene?.({key:'source:standing-tear',look:sourceLook,weather,corpus:[],staticInstances:[],dynamicInstances:[]});
-  renderer.r3dSetProps?.(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights?.(last.lights);
+  renderer.r3dSetProps?.(last.props);renderer.r3dSetDynamicProps?.(last.leaves||[]);renderer.r3dSetLocalLights?.(last.lights);
 }
 function drawState(last){return{px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-EYE,authoredCamera:last.authoredCamera,authoredPropRange:320,tileW:640,tileH:640,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:last.ditherIntensity};}
 function clearScene(renderer,props){
-  for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
+  for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection','r3dSetSourceRestHorizon'])renderer[name]?.(null);
   for(const name of['r3dSetSourceEmergency','r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetIndoorRain'])renderer[name]?.(0);
   for(const name of['r3dSetLocalLights','r3dSetEmergencyShadows','r3dSetSourcePortals','r3dSetSourceOpenings','r3dSetSourceDoorLights','r3dSetSourceTextInstances','r3dSetDynamicProps','r3dSetProps'])renderer[name]?.([]);props.setPressureInstances?.([]);
 }
-export function createStandingTearRenderer({renderer=R3,props=P3,onRelease=()=>{},installMeshes=installStandingTearMeshes}={}){
-  let initialized=false,released=false,loading=null,error=null,last=null,releaseRange=null,repair=null;
+export function createStandingTearRenderer({renderer=R3,props=P3,onRelease=()=>{},installMeshes=installStandingTearMeshes,getReducedMotion=()=>false}={}){
+  let initialized=false,released=false,loading=null,error=null,last=null,releaseRange=null,repair=null,leaves=null;
   const owner=Symbol('standing-tear'),resident=()=>{const known=new Set(props.propMeshCatalog?.()||[]);return required.every(name=>known.has(name));};
   async function install(){if(released)return false;if(props.installAuthoredPropMeshes?.(installMeshes)===false)throw Error('The Standing Tear mesh context is unavailable.');if(!resident())throw Error('The Standing Tear printed meshes did not become resident.');return true;}
   function initialize(){if(loading)return loading;loading=(async()=>{
@@ -229,7 +237,13 @@ export function createStandingTearRenderer({renderer=R3,props=P3,onRelease=()=>{
     if(!initialized||released)return false;if(error)throw Error(error);
     if(!resident()){if(!repair)repair=install().catch(reason=>{error=String(reason?.message||reason);}).finally(()=>{repair=null;});renderer.r3dClearScreen?.();return true;}
     const departure=renderer.r3dTowerViewCaptured?.()?.key==='standing-tear-departure';
-    last=standingTearRenderFrame(frame,{...presentation,departureViewAvailable:departure});setScene(renderer,last);
+    const still=getReducedMotion()===true,clock=finite(frame.elapsed);
+    last=standingTearRenderFrame(frame,{...presentation,departureViewAvailable:departure,stillOmens:still});
+    // The night's leaves reach even here, once the music has opened the room.
+    leaves=last.architectureRunning&&!still?stepWindLeaves(leaves,{key:'standing-tear',time:clock,wind:sourceTideWind(clock),settings:{count:30},
+      body:{x:last.eye[0],y:last.eye[1]-.4,z:last.eye[2]},well:{x:SOURCE_RIFT.room.well.x,y:14,z:SOURCE_RIFT.room.well.z,swallow:SOURCE_RIFT.room.well.swallow}}):null;
+    last.leaves=windLeafProps(leaves,{prefix:PREFIX+'leaf',extra:{zone:ZONE.sourceSpace,standingTearRole:'leaf'}});
+    setScene(renderer,last);renderer.r3dSetSourceRestHorizon?.(last.horizon||null);
     if(departure&&last.entryFold<.999){
       const w=.675*(1-last.entryFold),bottom=last.entryFold*2.6,height=2.45*(1-last.entryFold);
       renderer.r3dSetSourceTowerView?.({corners:[[-w,bottom,-.55],[w,bottom,-.55],[w,bottom+height,-.55],[-w,bottom+height,-.55]],origin:[0,0,-.55],forward:[0,-1],width:w*2});

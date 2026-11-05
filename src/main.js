@@ -1,10 +1,21 @@
 import {createPlayDurationClock} from './game/play-duration.js';
-import {advanceNightClock,applyNightClockLoss,nightClockReadout,createNightClockPace,freshNightClock} from './game/night-clock.js';
+import {NIGHT_CLOCK_PACE_POLICY,advanceNightClock,applyNightClockLoss,nightClockReadout,createNightClockPace,freshNightClock,holdNightClockForSource,leaveSourceNightClock} from './game/night-clock.js';
 import {recordNightClockTravel,consumeNightClockTravel,clearNightClockTravel} from './game/night-clock-travel.js';
-import {freshNightDeadline,stepNightDeadline,nightDeadlinePending,nightDeadlineAllowsTransport,acknowledgeNightDeadlineEffects,checkpointNightDeadline,completeNightDeadline} from './game/night-deadline.js';
+import {NIGHT_DEADLINE_SECONDS,freshNightDeadline,stepNightDeadline,nightDeadlinePending,nightDeadlineAllowsTransport,acknowledgeNightDeadlineEffects,checkpointNightDeadline,completeNightDeadline,nightDeadlineSourceReturn} from './game/night-deadline.js';
 import {firstStrikeEntryFromPlan,firstStrikeEntryFromSubmittedGeometry,firstStrikeSubmittedHostBounds,packFirstStrikeConstruction,restoreFirstStrikeConstruction} from './game/first-strike-entry.js';
 import {createFirstStrikeScene} from './game/first-strike-scene.js';
 import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFrame} from './render/first-strike-renderer.js';
+import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop} from './game/six-loop.js';
+import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
+import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
+import {createThresholdGagAudio} from './audio/threshold-gag.js';
+import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
+import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
+import {endingDriveOffOwed} from './game/ending-drive-off.js';
+import {createSourceRestMusic} from './audio/source-rest-music.js';
+import {OPENING_PROLOGUE} from './data/opening-prologue.js';
+import {openingOmenGeometry} from './render/opening-omen.js';
+import {installProceduralMeshes} from './render/procedural-mesh-install.js';
 import {createFirstStrikeAudio} from './audio/first-strike.js';
 import {commitNightFailure} from './progression/runtime.js';
 import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from './game/work-order-state.js';
@@ -6666,6 +6677,188 @@ function noteLoopFault(err){
 const runPlayDurationClock=createPlayDurationClock();
 const nightClockPace=createNightClockPace();
 let firstStrikeScene=null,firstStrikeRenderer=null,firstStrikeAudio=null,firstStrikeStarting=false;
+// THE NIGHT AFTER THE CRASH. game/six-loop.js says what this is and why it is
+// real. In this session the goods doors open onto the nothingness, not the dock.
+let sixNothingnessRenderer=null,sixNothingnessAudio=null,sixCrashStaged=false,sixDoorVoid=null,sixMicConsent=null;
+syncSixLoopDebugOverlay();
+function stageSixCrashNow(settle=null){
+  if(sixCrashStaged)return false;
+  sixCrashStaged=true;void stageSixCrash({settle});return true;
+}
+// The first door opened after the third take. Its leaf has started to move, the
+// night is on disk, and then the game stops answering.
+function maybeStageSixCrash(doorHit){
+  if(sixCrashStaged||!sixCrashDue({doorOpened:!!doorHit?.opened,storyMode,takes:REC.recState().takes,flags:getSave().flags,reduceDread:!dreadAllowed(),inLoop:sixLoopActive()}))return false;
+  flagSet(SIX_LOOP.flag);
+  saveCommit({flags:getSave().flags,px,py,facing:R3.r3dFacing(),steps:stepCount,rec:REC.saveRecState(),doors:FP.saveDoorState()});
+  return stageSixCrashNow(Promise.all([saveGameQueued(structuredClone(getSave())),saveProfileQueued(structuredClone(getMeta()))]));
+}
+function prepareSixNothingness(){
+  sixNothingnessRenderer ||= createSixNothingnessRenderer();
+  void sixNothingnessRenderer.prepare().catch(error=>console.error('[six-nothingness]',error));
+  ensureCtx();
+  sixNothingnessAudio ||= createThresholdGagAudio({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
+  void sixNothingnessAudio.prepare();
+  return sixNothingnessRenderer;
+}
+// Past the touch nothing of the real building may show: the goods doors swing
+// open onto a black card standing where the dock would be.
+function sixDoorVoidInstance(portal){
+  const center=FP.logicalPointToPhysical?.(portal.cx,portal.cy)||FP.logicalToPhysical(portal.cx,portal.cy),
+    inside=(portal.insideSide??portal.definition?.insideSide)===-1?-1:1,acrossX=portal.widthAxis!=='x',offset=inside*.1;
+  return{id:'six:door-void',mesh:'six_door_void',x:center.x*CELL+(acrossX?offset:0),y:center.y,z:center.z*CELL+(acrossX?0:offset),
+    yaw:(portal.widthAxis==='x'?0:Math.PI/2)+(FP.arcYawOffset?.(portal.cx,portal.cy,center.x,center.z)||0),
+    scaleX:(Number(portal.aperture?.width)||3)+.2,scaleY:(Number(portal.aperture?.height)||3.6)+.1,scaleZ:.02,zone:FP.zoneAt(Math.floor(portal.cx),Math.floor(portal.cy)),structural:true,noShadow:true};
+}
+// It sits in the first strike's seat: every guard that stands the world down for
+// that walking scene is exactly what this one needs too.
+const sixNothingnessScene=()=>firstStrikeScene?.id==='six-nothingness'?firstStrikeScene:null;
+function beginSixNothingness({intro=null,introSeconds=0}={}){
+  sixDoorVoid=null;
+  if(sixNothingnessScene())return sixNothingnessScene();
+  const renderer=prepareSixNothingness();
+  resetMotionInput('six-nothingness',{stopRenderMove:true});
+  STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
+  let scene;
+  scene=createSixNothingnessScene({renderer,audio:sixNothingnessAudio,intro,introSeconds,
+    presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
+    onFault:()=>stageSixCrashNow(),
+    onError:error=>console.error('[six-nothingness]',error),
+    onExit:()=>{if(firstStrikeScene===scene){firstStrikeScene=null;sixNothingnessRenderer=null;}},
+  });
+  const update=scene.update;
+  scene.update=dt=>{if(paused||!gameplayInputLifecycleActive()){scene.pause();return;}scene.resume();update(dt);};
+  firstStrikeScene=scene;scenes.push(scene);void scene.initialize();ensureInteractionFocus();
+  return scene;
+}
+// The real door entry runs as it always does; from the touch on, this drives its
+// walk and hands it to the nothingness at the threshold instead of to the dock.
+function takeOverGetInDoorEntry(scene,portal){
+  const reducedMotion=shakeMode()!=='full',renderer=prepareSixNothingness(),start=scene.view(),entry=getInDoorEntryPose(portal,start),
+    origin={x:start.x,y:start.y,yaw:start.yaw,pitch:start.pitch},f=[Math.sin(entry.yaw),-Math.cos(entry.yaw)],r=[Math.cos(entry.yaw),Math.sin(entry.yaw)],
+    along=(x,y)=>((x-portal.cx)*f[0]+(y-portal.cy)*f[1])*CELL,end=along(entry.x,entry.y)||1,realUpdate=scene.update;
+  let elapsed=0,handedOff=false;
+  const frameAt=at=>getInDoorEntryFrame({origin,entry,elapsed:at,reducedMotion});
+  scene.worldView=()=>{const frame=frameAt(elapsed);return{x:frame.x,y:frame.y,yaw:frame.yaw,pitch:frame.pitch,floorH:FP.floorAt(frame.x,frame.y)+frame.floorOffset,suppressActors:false};};
+  scene.view=()=>frameAt(elapsed);
+  scene.update=dt=>{
+    if(handedOff)return;
+    if(renderer.diagnostics().error){realUpdate(dt);return;}
+    elapsed+=Math.max(0,Number(dt)||0);
+    if(!sixDoorVoid&&P3.propMeshCatalog?.().includes('six_door_void')){sixDoorVoid=sixDoorVoidInstance(portal);syncDoorDynamicProps();}
+    const frame=frameAt(elapsed);
+    if(!renderer.prepared()||along(frame.x,frame.y)<-.04)return;
+    handedOff=true;scenes.remove(scene);
+    const at=elapsed;
+    beginSixNothingness({introSeconds:Math.max(0,GET_IN_DOOR_ENTRY.duration-at),intro:t=>{
+      const next=frameAt(at+t);
+      return{x:((next.x-portal.cx)*r[0]+(next.y-portal.cy)*r[1])*CELL,z:along(next.x,next.y)*(-2/end),yaw:next.yaw-entry.yaw,pitch:next.pitch};
+    }});
+  };
+}
+// THE FILM BEFORE THE VAN. It goes in front of a real new night's arrival, and
+// never in front of the loop's: that begins at the drive, every time the same.
+let openingPrologueScene=null,openingPrologueMusic=null;
+function beginOpeningPrologue({onDone=()=>{}}={}){
+  if(openingPrologueScene||RENDERER!=='3d')return false;
+  resetMotionInput('opening-prologue',{stopRenderMove:true});
+  let stagingReady=false,stagingError=null;
+  void R3.r3dBasePropsReady().then(()=>R3.r3dAuthoredPropsReady?.()).then(()=>prepareOpeningCinematicAssets()).then(()=>{
+    if(P3.installAuthoredPropMeshes?.((gl,pack)=>installProceduralMeshes(gl,pack,openingOmenGeometry()))===false)throw Error('The omen meshes have no context.');
+    stagingReady=true;
+  }).catch(error=>{stagingError=String(error?.message||error);});
+  void R3.r3dPrepareOpeningOverture?.();
+  const releaseRange=P3.setAuthoredPropRange(Symbol('opening-prologue'),OPENING_PROLOGUE.propRange),rainBefore=R3.r3dRainAmount?.()??1;
+  // The piece the hole has always been keeping time to, from before you know it.
+  const chaconne=createSourceRestMusic({getAudio:()=>actx&&musicGain?{ctx:actx,destination:musicGain}:null,protectedAudio:()=>false,onError:error=>console.warn('[opening-prologue] The recording could not be played.',error)});
+  let chaconneLevel=-1;openingPrologueMusic=chaconne;
+  let scene;
+  scene=makeOpeningPrologueScene({
+    getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady,error:assets?.error||stagingError};},
+    getPresentationReady:()=>R3.r3dPresentationReady?.()===true,
+    // The night's warning channel is empty this early, and worldView runs after its tick clears it.
+    setOmen:({props,horizon,rain})=>{R3.r3dSetNightWarningProps?.(props);R3.r3dSetSourceRestHorizon?.(horizon);R3.r3dSetRainAmount?.(rain??rainBefore);},
+    toWorldView:frame=>openingArrivalWorldView({...frame,freeLook:false},FP,{cell:CELL,look:R3.r3dLookAngles?.()}),
+    reducedMotion:shakeMode()!=='full',
+    audio:STORY,getAudio:()=>actx?{ctx:actx,destination:dialogGain||master||actx.destination}:null,
+    onUnavailable:error=>console.warn('[opening-prologue] Continuing without it:',error),
+    // You are still in the van. Whatever else is happening, it is raining on the roof.
+    onStart:()=>{chaconne.start();STORY.startRain?.({fade:4});r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();},
+    setMusic:level=>{if(Math.abs(level-chaconneLevel)>.01){chaconneLevel=level;chaconne.setProgrammeDuck(level,{seconds:.5});}},
+    onDone:()=>{scenes.remove(scene);onDone();},
+    onExit:()=>{chaconne.dispose();releaseRange();if(openingPrologueMusic===chaconne)openingPrologueMusic=null;if(openingPrologueScene===scene)openingPrologueScene=null;},
+  });
+  const update=scene.update;scene.update=dt=>{const live=!paused&&gameplayInputLifecycleActive();chaconne.update({active:true,paused:!live});if(live)update(dt);};
+  openingPrologueScene=scene;scenes.push(scene);return true;
+}
+// DRIVING OFF. Every ending reaches its credits through this one door, always after
+// its return is filed, so the drive saves nothing and a reload lands on the report.
+let endingDriveOffScene=null;
+function beginEndingDriveOff({onDone=()=>{}}={}){
+  if(endingDriveOffScene||RENDERER!=='3d')return false;
+  ensureCtx();PB.stopPlayback();resetMotionInput('ending-drive-off',{stopRenderMove:true});
+  STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceSampleField();silenceAmbientDrone();
+  // Whatever the ending had open on the desktop stays with the ending.
+  void windowChoreography.restore('ending-drive-off');
+  let scene;
+  scene=makeEndingDriveOffScene({context:actx,destinationAudio:sfxGain||master,reducedMotion:shakeMode()!=='full',
+    isHeld:()=>paused||!gameplayInputLifecycleActive()||document.hidden,
+    paintCover:alpha=>{if(alpha>0){const {cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.max(0,Math.min(1,alpha))})`);}},
+    paintHint:alpha=>{const {cols,rows}=uiPhysicalSize(),text=BINDINGS.promptLine([{action:'interact',label:'HOLD TO SKIP'}]);uiText(Math.max(0,cols-text.length-3),rows-2,text,'ui-secondary',Math.max(0,Math.min(1,alpha)));},
+    onRestore:()=>{r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();},
+    onDone:()=>{if(endingDriveOffScene!==scene)return;endingDriveOffScene=null;scenes.remove(scene);onDone();},
+    onPause:()=>openPauseMenu(),
+    onError:error=>console.warn('[ending-drive-off] Going on to the credits without it:',error),
+  });
+  const exit=scene.exit;scene.exit=()=>{if(endingDriveOffScene===scene)endingDriveOffScene=null;exit?.();};
+  endingDriveOffScene=scene;scenes.push(scene);void scene.initialize();return true;
+}
+const realOpenEndingCredits=openEndingCredits;
+openEndingCredits=(summary,options={})=>{
+  if(!endingDriveOffOwed(summary?.endingId)||options.sourceRestBlack||!beginEndingDriveOff({onDone:()=>realOpenEndingCredits(summary,options)}))return realOpenEndingCredits(summary,options);
+  return true;
+};
+// Only a New Run owes the film. Continue can also land on a drive not yet finished.
+let openingPrologueOwed=false;
+const realFrontEndNewRun=requestFrontEndNewRun;
+requestFrontEndNewRun=(...args)=>{openingPrologueOwed=true;return realFrontEndNewRun(...args);};
+const realOpeningVehicleArrival=beginOpeningVehicleArrival;
+beginOpeningVehicleArrival=(options={})=>{
+  const owed=openingPrologueOwed;openingPrologueOwed=false;
+  const fresh=owed&&!options.god&&!sixLoopActive()&&!params().has('noprologue')&&!getSave().openingArrival?.drive
+    &&openingVehiclePending(getSave(),{debugSpawn:params().has('at'),skipTutorial:params().has('skiptut')});
+  if(!fresh||!beginOpeningPrologue({onDone:()=>realOpeningVehicleArrival(options)}))return realOpeningVehicleArrival(options);
+  return true;
+};
+// Nothing before the get-in door may know about any of this, so none of it lives
+// inside the functions the real night runs. In this session alone, these take
+// their place: every way off the title leads to the van, and the door goes elsewhere.
+if(sixLoopActive()){
+  const realNewRun=requestFrontEndNewRun,realDoor=tryGetInDoorEntry,realSync=syncDoorDynamicProps;
+  // The loop's world is not worth unpicking: this boots, as the crash did.
+  returnToTitle=()=>location.reload();
+  requestFrontEndContinue=()=>{
+    if(roomMicRunConsent===null&&!params().has('skipwarn')){
+      scenes.push(makeWarningScene({showWarning:false,askProfile:false,askMic:true,onMicAllow:input=>chooseRoomMicForRun(true,input),onMicDeny:()=>chooseRoomMicForRun(false),getMicSnapshot:()=>MIC.micSnapshot(),onDone:()=>requestFrontEndContinue()}));
+      return;
+    }
+    sixMicConsent=roomMicRunConsent;realNewRun();
+  };
+  requestFrontEndNewRun=()=>requestFrontEndContinue();
+  enterSelectedRun=({matched=false,mismatch=false}={})=>{
+    syncControllerSettingsFromSave();applyCurrentRunDifficulty();roomMicRunConsent=sixMicConsent;
+    finishFrontEndRunStart({matched,mismatch});
+  };
+  tryGetInDoorEntry=(focus=null)=>{
+    const portal=getInDoorEntryPortal(focus),handled=realDoor(focus);
+    if(handled&&portal&&getInDoorEntryScene)takeOverGetInDoorEntry(getInDoorEntryScene,portal);
+    return handled;
+  };
+  syncDoorDynamicProps=options=>{
+    realSync(options);
+    if(sixDoorVoid){doorDynamicCombined.push(sixDoorVoid);R3.r3dSetDynamicProps(doorDynamicCombined);}
+  };
+}
 let nightWarningEntry=null,nightWarningKey='',nightWarningMeshReady=false,nightWarningLoading=null;
 let nightWarningHeldFrame=null;
 let nightWarningHornLoading=null,nightWarningHornReady=false;
@@ -6677,8 +6870,12 @@ function nightDeadlineTransportProtected(){
     ||!!drive?.recording||!!drive?.recordingPending||!!drive?.recordingFinalizing;
 }
 function nightDeadlineCommitted(){
+  // The bell fight is the tower road's point of no return, as the chapel's own
+  // confrontation is for its road: winning it cannot then lose to the demolition.
+  const towerStage=getSave().chunkSurf?chunkSurfFinaleRouting(getSave().chunkSurf):null;
   return !!(getSave().run?.finalizedReturn||getSave().endingCutscene||activeEndingCutscene||finaleActive||escape||sourceContinuationScene?.sourceRest?.view?.()?.committed||endingSourceResume(getSave())
-    ||sourceContinuationScene?.id==='source-IV'||sourceContinuationScene?.id==='ending-wrong-door-demolition');
+    ||sourceContinuationScene?.id==='source-IV'||sourceContinuationScene?.id==='ending-wrong-door-demolition'
+    ||towerStage?.route===SOURCE_FINALE_ROUTE.TOWER&&[SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT,SOURCE_FINALE_STAGE.TOWER_ESCAPE].includes(towerStage.stage));
 }
 function persistNightRestLock(scene,rest){
   const save=getSave();
@@ -6760,6 +6957,7 @@ function deliverNightDeadlineWarnings(effects){
     'site-closure':'Demolition begins at 06:00.',
     'last-call':'Half an hour until demolition.',
     clearance:'Ten minutes. Clear the building.',
+    'first-horn':'06:00. The machines are starting.',
   };
   pushEvent(latest.message||copy[latest.key]||'Demolition has begun. Clear the failing span.');
   firstStrikeAudio ||= createFirstStrikeAudio({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
@@ -6867,6 +7065,22 @@ function tickNightDeadline({active=false,foregroundSeconds=0}={}){
   if(!deteriorating&&!firstStrikeScene)R3.r3dSetNightWarningProps?.([]);
   if(active&&!firstStrikeScene&&!firstStrikeStarting&&safeBoundary&&!protectedTransport&&nightWarningMeshReady&&['pending','presenting'].includes(result.state.phase))void beginNightFirstStrike();
 }
+// Source keeps no time. This is the whole of Source as the player meets it, up to
+// the point the return flashback hands the body back. The six nothingness is not
+// in it: that scene has its own blinking 6:00 and borrows only firstStrikeScene.
+function nightClockHeldBySource(){
+  const save=getSave();
+  return !!(usingSourceSpace()||sourceContinuationScene||sourcePubScene||sourceDriveSession||coastalMemoryScene||standingTearScene
+    ||sourceReturnFlashbackScene||save?.sourceReturnFlashback||save?.sourceReturnFlashbackPending
+    ||save?.chunkSurf&&chunkSurfFinaleRouting(save.chunkSurf).route===SOURCE_FINALE_ROUTE.CONTACT);
+}
+// Off the tape and onto the chapel or tower road, it is 05:38 and the digits return.
+function leaveSourceNightState(){
+  const save=getSave(),left=leaveSourceNightClock(save.nightClock);
+  if(!left.applied||nightDeadlinePending(save.nightDeadline))return{};
+  nightClockPace.reset();clearNightClockTravel();
+  return{nightClock:left.clock,nightDeadline:nightDeadlineSourceReturn(save.nightDeadline,{runId:save.run?.id,elapsedSeconds:left.clock.elapsedSeconds,clock:'05:38',message:'It is 05:38. Demolition begins at 06:00.'})};
+}
 function nightClockSlowAction(){
   if(REC.isRecording()||REC.isListening()||PB.isPlaying()||SPEECH.isSpeaking())return true;
   if(sourceDriveSession||getInDriveTeaserScene||sourceReturnFlashbackScene||coastalMemoryScene||openingVehicleScene||openingOvertureScene)return true;
@@ -6879,10 +7093,14 @@ function tickRunPlayDuration(nowMs=performance.now()){
   const menu=['settings','archive','pause','title','opening-credits'].some(id=>scenes.has(id));
   const active=storyMode&&inRogue&&run?.status==='active'&&!paused&&!menu&&gameplayInputLifecycleActive();
   const {record,addedSeconds}=runPlayDurationClock.update({runId:run?.id,record:save?.playDuration,nowMs,active});
-  const pace=nightClockPace.update({runId:run?.id,foregroundSeconds:addedSeconds,active,currentRate:save.nightClock?.rate,
-    acceptedTravelMetres:consumeNightClockTravel(),slow:active&&nightClockSlowAction()});
-  if(run){save.playDuration=record;save.nightClock={...advanceNightClock(save.nightClock,addedSeconds,{rate:pace.averageRate}),rate:pace.rate};}
-  tickNightDeadline({active,foregroundSeconds:addedSeconds});
+  const held=nightClockHeldBySource(),nightSeconds=held?0:addedSeconds;
+  const pace=nightClockPace.update({runId:run?.id,foregroundSeconds:nightSeconds,active:active&&!held,currentRate:save.nightClock?.rate,
+    acceptedTravelMetres:consumeNightClockTravel(),slow:active&&!held&&nightClockSlowAction(),
+    fixedRate:!held&&save.nightClock?.sourceExited===true?NIGHT_CLOCK_PACE_POLICY.finalStretchRate:null});
+  // Once a finale has taken over from the demolition the clock stops at 06:00, so
+  // the display can never read 06:01 with nothing coming down.
+  if(run){save.playDuration=record;save.nightClock=holdNightClockForSource({...advanceNightClock(save.nightClock,nightSeconds,{rate:pace.averageRate,limit:save.nightDeadline?.phase==='superseded'?NIGHT_DEADLINE_SECONDS-1:undefined}),rate:pace.rate},held);}
+  tickNightDeadline({active,foregroundSeconds:nightSeconds});
 }
 
 function loop(){
@@ -10530,7 +10748,7 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
   syncSourceDockDoorAudio(chunkSurfRuntime.landingPortalFrame?.());
   const shore=chunkSurfRuntime.sourceShoreFrame?.();
   const firstNothingness=sourceShoreOutside(shore);
-  R3.r3dSetSourceShore?.(shore?.active||shore?.visible?{...shore,demolitionMedium:sourceDemolitionMediumFrame()}:null);
+  R3.r3dSetSourceShore?.(shore?.active||shore?.visible?{...shore,demolitionMedium:sourceDemolitionMediumFrame(),executionReceipts:chunkSurfRuntime.demolitionFrame?.()?.events||[]}:null);
   syncSourceShoreAudio(shore);
   applySourceLighting();
   const reducedMotion=shakeMode()!=='full';
@@ -10964,7 +11182,7 @@ function beginSourceTowerTransition(){
   px=cathedralPoint.x;py=cathedralPoint.y;R3.r3dSetFacing(cathedralHook.facing);applySourceDoorCarry(cathedralHook.facing);
   renderMove=null;motionRig=null;trail=[];
   r3dCache.physicalKey=null;r3dCache.physicalGroup=null;
-  saveCommit({chapelTower:nextTower,chunkSurf:nextSource,px,py,area:'conservatory'});
+  saveCommit({chapelTower:nextTower,chunkSurf:nextSource,px,py,area:'conservatory',...leaveSourceNightState()});
   godSyncBuildingRender();syncDoorDynamicProps();
   beginSourceReturnFlashback('tower');
   return true;
@@ -11003,7 +11221,7 @@ function beginChapelFromHorizon(){
     type:'BELL_TRANSPORT_SAVED',elapsedMs:transport.elapsedMs,mode:transport.mode,
     washMs:transport.washMs,transitionProgress:transport.transitionProgress,
   }):next;
-  saveCommit({chapelTower:persisted,px,py,area:'conservatory'});
+  saveCommit({chapelTower:persisted,px,py,area:'conservatory',...leaveSourceNightState()});
   r3dCache.physicalKey=null;r3dCache.physicalGroup=null;
   godSyncBuildingRender();syncDoorDynamicProps();
   beginSourceReturnFlashback('chapel');
@@ -15619,7 +15837,7 @@ function wakeUp({kind='taken',sourceRoomId='',endingBound=false}={}){
   trail=[]; revealAround(px,py); faceOpenDirection();
   const minutes=6+Math.floor(Math.random()*9);      // the night is shorter than it was
   const lostTimeEventId=lastRecoveryReceipt?.eventId||`wake:${++lastExposureSerial}`;
-  const lostTime=applyNightClockLoss(getSave().nightClock,minutes*60,lostTimeEventId);
+  const lostTime=applyNightClockLoss(getSave().nightClock,nightClockHeldBySource()?0:minutes*60,lostTimeEventId);
   saveCommit({ nightClock:lostTime.clock,
     playSeconds:(getSave().playSeconds||0)+(lostTime.applied?minutes*60:0) });
   takeAnItem();
@@ -17039,6 +17257,7 @@ function interact(){
       if(doorHit.removedWedge)SPEECH.say({who:'you',text:'The rubber wedge comes free. The closer takes the weight.'});
       saveCommit({doors:FP.saveDoorState()});
       facilityMapCache={key:null,model:null};syncDoorDynamicProps();
+      maybeStageSixCrash(doorHit);
     }
     return;
   }
@@ -20944,29 +21163,52 @@ async function restoreStandingTearOperator(pose){
   if(Math.abs(FP.logicalToPhysical(px,py).y-pose.floor)>.001)throw Error('Standing Tear operator floor changed during the retained view.');
   updateAudio();return true;
 }
-async function beginStandingTear({returnPose,checkpoint=null,entryPose=null}={}){
-  if(standingTearScene||usingSpecialSpace()||!returnPose)return false;
+// A fault in either Source opens onto the same room as the practice hall's
+// tear. The checkpoint is saved before leaving and the room keeps no save of its
+// own, so a reload simply stands the body beside the fault again.
+async function enterRiftFromSourceFault(scene,checkpoint,id){
+  if(sourceContinuationScene!==scene||standingTearScene||!chunkSurfRuntime?.setContinuationCheckpoint(checkpoint))return false;
+  saveCommit({chunkSurf:chunkSurfRuntime.state(),area:'source-space'});
+  releaseSourceContinuation({restore:false});
+  const resume=()=>beginSourceContinuation({checkpoint:chunkSurfRuntime.state().sourceContinuation,skipFalseReturn:true,skipEarthfall:true});
+  const entered=await beginStandingTear({returnPose:{x:checkpoint.x,y:checkpoint.z,floor:checkpoint.feet,yaw:checkpoint.yaw,pitch:checkpoint.pitch,sourceFault:id},sourceReturn:resume});
+  if(!entered)await resume();
+  return true;
+}
+async function beginStandingTear({returnPose,checkpoint=null,entryPose=null,sourceReturn=null}={}){
+  if(standingTearScene||(!sourceReturn&&usingSpecialSpace())||!returnPose)return false;
   standingTearMediaTraces.length=0;
   R3.r3dClearTowerView?.();
   const site=STANDING_TEAR_LAYOUT.site;
-  R3.r3dCaptureLastBuildingView?.({camera:{eye:[site.x+site.normalX*1.05,site.feet+1.62,site.z+site.normalZ*1.05],yaw:site.yaw,pitch:0},
-    sourceEye:[0,1.62,.5],sourceYaw:0,key:'standing-tear-departure'});
-  standingTearLatch.disarm();standingTearInputGate.arm();ensureCtx();
+  if(!sourceReturn){
+    R3.r3dCaptureLastBuildingView?.({camera:{eye:[site.x+site.normalX*1.05,site.feet+1.62,site.z+site.normalZ*1.05],yaw:site.yaw,pitch:0},
+      sourceEye:[0,1.62,.5],sourceYaw:0,key:'standing-tear-departure'});
+    standingTearLatch.disarm();standingTearInputGate.arm();
+  }
+  ensureCtx();
   PB.stopPlayback();SPEECH.clearSpeech();STORY.stopAll();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();pubRoomAudio?.stop();pubPressureAudio?.stop();
   academicInframusic.pause('standing-tear');RT.setBed(0,.05);
   resetMotionInput('standing-tear-enter',{stopRenderMove:true});
   R3.r3dSetSourceTowerView?.(null);R3.r3dSetLookAngles({yaw:checkpoint?.pose?.yaw??entryPose?.yaw??Math.PI,pitch:checkpoint?.pose?.pitch??entryPose?.pitch??0,immediate:true});
-  const renderer=createStandingTearRenderer(),audio=createStandingTearAudio({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
+  const renderer=createStandingTearRenderer({getReducedMotion:()=>shakeMode()!=='full'}),audio=createStandingTearAudio({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
   if(entryPose&&!checkpoint)checkpoint={...freshStandingTear({runId:getSave().run?.id||'',returnPose}),pose:entryPose};
   let scene;
-  scene=createStandingTearScene({renderer,audio,checkpoint,runId:getSave().run?.id||'',returnPose,
+  // Back into Source under the room's own full black, from the saved checkpoint.
+  const leaveForSource=async()=>{
+    if(standingTearScene!==scene)return false;
+    standingTearLastTrace=scene.trace();standingTearScene=null;scenes.remove(scene);
+    resetMotionInput('standing-tear-source-return',{stopRenderMove:true});
+    await sourceReturn();return true;
+  };
+  scene=createStandingTearScene({renderer,audio,checkpoint,runId:getSave().run?.id||'',returnPose,tides:true,
     getLook:()=>R3.r3dLookAngles(),isPaused:()=>paused,isHidden:()=>document.hidden,inputActive:gameplayInputLifecycleActive,
     paintCover:alpha=>{if(alpha>.0001){const{cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.min(1,alpha)})`);}},
     onTrace:value=>{if(standingTearScene===scene){standingTearMediaTraces.push(value);if(standingTearMediaTraces.length>500)standingTearMediaTraces.splice(0,100);}},
-    onCheckpoint:value=>{if(standingTearScene===scene&&value.runId===(getSave().run?.id||''))saveCommit({standingTear:value});},
-    onRestore:({returnPose:pose})=>restoreStandingTearOperator(pose),
+    onCheckpoint:value=>{if(!sourceReturn&&standingTearScene===scene&&value.runId===(getSave().run?.id||''))saveCommit({standingTear:value});},
+    onRestore:({returnPose:pose})=>sourceReturn?leaveForSource():restoreStandingTearOperator(pose),
     onDone:async result=>{
       if(standingTearScene!==scene)return;
+      if(sourceReturn){await leaveForSource();return;}
       if(!result.restored)try{await restoreStandingTearOperator(returnPose);}catch(error){console.error('[standing-tear-fallback]',error);result={...result,error:String(error?.message||error)};}
       if(standingTearScene!==scene)return;
       standingTearLastTrace=scene.trace();standingTearLastReturn={...result,audio:scene.audioDiagnostics(),actual:{x:px,y:py,floor:FP.logicalToPhysical(px,py).y,...R3.r3dLookAngles()}};
@@ -20978,9 +21220,10 @@ async function beginStandingTear({returnPose,checkpoint=null,entryPose=null}={})
   const exit=scene.exit;scene.exit=()=>{
     const owns=standingTearScene===scene;exit();
     if(owns){standingTearLastTrace=scene.trace();standingTearScene=null;saveCommit({standingTear:null});
-      if(FP.isLoaded()&&!usingSpecialSpace())void restoreStandingTearOperator(returnPose).catch(error=>console.error('[standing-tear-retire]',error));}
+      if(sourceReturn)void sourceReturn().catch(error=>console.error('[standing-tear-source-return]',error));
+      else if(FP.isLoaded()&&!usingSpecialSpace())void restoreStandingTearOperator(returnPose).catch(error=>console.error('[standing-tear-retire]',error));}
   };
-  standingTearScene=scene;scenes.push(scene);saveCommit({standingTear:scene.serialize()});
+  standingTearScene=scene;scenes.push(scene);if(!sourceReturn)saveCommit({standingTear:scene.serialize()});
   await scene.initialize();return scene;
 }
 function resumeStandingTearFromSave(){
@@ -21298,7 +21541,8 @@ async function beginSourceContinuation({checkpoint=null,direction='forward',skip
     getSettings:()=>({reducedMotion:shakeMode()!=='full',flashMode:flashMode(),
       effectsMode:visualEffectsEnabled()?flashMode():'off',reduceDread:!!getSave().settings?.reduceDread}),
   });
-  scene=createSourceContinuationScene({checkpoint:entry.checkpoint,renderer,audio:sourceContinuationAudio,studyRotation:sourceContinuationStudyRotation,
+  scene=createSourceContinuationScene({checkpoint:entry.checkpoint,renderer,audio:sourceContinuationAudio,studyRotation:sourceContinuationStudyRotation,tides:true,
+    onRiftFault:({id,checkpoint:value})=>enterRiftFromSourceFault(scene,value,id),
     onTorch:()=>{
       if(itemLost('torch')||!REC.lightOn()&&REC.batteryLevel()<=0||!REC.lightOn()&&flagTest('van.bench.v2')&&!flagTest('kit.fitted')&&!flagTest('van.packed.flashlight'))return false;
       const on=REC.toggleLight();CUES.playCue(CUES.CUE.light,{gain:.5,rate:on?1:.92});saveCommit({rec:REC.saveRecState()});return true;
@@ -35013,6 +35257,11 @@ function installProbe(){
     }:{active:false,environment:currentStairAnomalyEnvironment(),ledger:currentStairAnomalyLedger()},
     stairAnomalyPreset:(stage=0,reduced=false)=>stairAnomalyProbePreset(stage,reduced),
     testRun:()=>godEnsureTestRun(),
+    sixLoop:{active:()=>sixLoopActive(),stage:()=>stageSixCrashNow(),leave:()=>{clearSixLoop();location.reload();},
+      prepare:()=>prepareSixNothingness().prepare(),enter:()=>!!beginSixNothingness(),view:()=>sixNothingnessScene()?.view?.()||null,place:next=>sixNothingnessScene()?.place?.(next),
+      driveOff:{begin:()=>beginEndingDriveOff({onDone:()=>{}}),view:()=>endingDriveOffScene?.view?.()||null,controller:()=>endingDriveOffScene?.review?.controller||null},
+      prologue:{begin:()=>beginOpeningPrologue({onDone:()=>{}}),seekStage:key=>openingPrologueScene?.seekStage?.(key),pose:stage=>openingPrologueScene?.pose?.(stage),key:event=>openingPrologueScene?.key?.(event),view:()=>openingPrologueScene?.view?.()||null,state:()=>({horizon:R3.r3dSourceRestHorizonStatus?.(),rain:R3.r3dRainAmount?.(),music:openingPrologueMusic?.snapshot?.()||null})},
+      render:()=>sixNothingnessScene()?.render?.(),renderer:()=>sixNothingnessRenderer?.diagnostics?.()||null,save:()=>structuredClone(getSave()),keyring:()=>syncPrologueKeyring()},
     godWarpBay:()=>godWarpBayApron(),
     godWarpGetIn:()=>godWarpToHook('get-in'),
     godWarpHook:(id)=>godWarpToHook(String(id||'')),
@@ -35073,6 +35322,7 @@ function installProbe(){
     playEnding:(id,arrival=ENDING_ARRIVAL.AGREED,{variant=null}={})=>{
       finaleActive=true;playEnding(id,arrival,{variant});return{id,arrival,variant};
     },
+    finishEnding:id=>finishEnding(id),
     endingDossier:()=>endingDossier,
     reviewEnding:(id,arrival=ENDING_ARRIVAL.AGREED)=>godEndingReview(id,arrival),
     endingCutscene:()=>endingCutsceneSnapshot(),
@@ -36711,9 +36961,9 @@ async function bootScenes(){
           media:scene.sourceRestMedia?.snapshot?.()||null,
           render:sourceContinuationRenderer?.diagnostics?.()||null};
       };
-      window.__sourceRestReview={inspect,architecture:()=>({presenter:sourceContinuationScene?.sourceRestMedia,frame:sourceContinuationRenderer?.restApertureFrame?.()}),frame:study=>{if(study)sourceContinuationScene?.sourceRest?.studyFrame?.(study);else sourceContinuationScene?.render?.();return inspect();},memory:type=>{if(![null,'drive','ellery','practice','recital'].includes(type))throw Error('Unknown memory study');
+      window.__sourceRestReview={inspect,hall:()=>godStandingTear(),look:(yaw,pitch=0)=>{R3.r3dSetLookAngles({yaw,pitch,immediate:true});standingTearScene?.setLook({yaw,pitch});},architecture:()=>({presenter:sourceContinuationScene?.sourceRestMedia,frame:sourceContinuationRenderer?.restApertureFrame?.()}),frame:study=>{if(study)sourceContinuationScene?.sourceRest?.studyFrame?.(study);else sourceContinuationScene?.render?.();return inspect();},memory:type=>{if(![null,'drive','ellery','practice','recital'].includes(type))throw Error('Unknown memory study');
         sourceRestReviewMemory=type?{drive:type==='drive'?1:0,ellery:type==='ellery'?1:0,listener:['practice','recital'].includes(type)?type:null,listenerStage:.5}:null;return inspect();},
-        treatment:id=>{if(!['loggia','practice-bay','tidal-seat'].includes(id))throw Error('Unknown place study');sourceRestReviewTreatment=id;return inspect();},stage:async(phase='wrong-return',reviewMode='near')=>{
+        treatment:id=>{if(!['loggia','practice-bay','tidal-seat'].includes(id))throw Error('Unknown place study');sourceRestReviewTreatment=id;return inspect();},stage:async(phase='wrong-return',reviewMode='near',place=null)=>{
         if(!['wrong-return','catch'].includes(phase))throw Error('Choose wrong-return or catch.');
         const seat=SOURCE_REST_SEATS.find(item=>item.phase===phase);
         sourceRestReviewMemory=null;
@@ -36727,6 +36977,8 @@ async function bootScenes(){
         const from=phase==='wrong-return'?(reviewMode==='discovery'?(seat.discovery||{x:seat.approach.x-.9,z:seat.approach.z}):['seated','vista'].includes(reviewMode)?seat.approach:{x:seat.approach.x-.9,z:seat.approach.z}):seat.approach;
         const at={x:from.x,z:from.z,feet:seat.feet,phase,chartId:seat.chartId,level:seat.level,
           yaw:reviewMode==='vista'?seat.view.yaw:from.yaw??Math.atan2(seat.x-from.x,from.z-seat.z),pitch:reviewMode==='vista'?seat.view.pitch:from.pitch??0};
+        // A review may stand anywhere supported, to photograph the place itself.
+        if(place)Object.assign(at,place);
         const checkpoint={...entry.checkpoint,layoutVersion:SOURCE_CONTINUATION_LAYOUT.layoutVersion,...at,
           lastSafe:{...at},fall:null,recovery:null,cameraTransit:null,bodyTransit:null,caption:null};
         if(!chunkSurfRuntime.setContinuationCheckpoint(checkpoint))throw Error('The review checkpoint could not be saved.');

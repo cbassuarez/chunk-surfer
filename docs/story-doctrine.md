@@ -1,5 +1,22 @@
 # Story and HUSH doctrine
 
+## Ground truth and readings
+
+Ruled with Seb, 2026-11-04. This section outranks everything below it. The plan is `docs/plans/last-minutes.md`.
+
+**Ground truth is a likelihood.** He most likely dies in the van. A clean run, where he exits Ellery and drives off, stays possible. All endings are superimposed under that as interpretations of it, and they do not generally sublate the clean run.
+
+**Every component is overdetermined on purpose.** One thing can be explained by several mechanisms at once, classically surreal and dreamlike. The Surfer is or maybe isn't HUSH, pressure, music itself, source code, the previous recordist, Sarah/Lyle and the protagonist, all at the same time.
+
+**So:**
+
+- No presented line or image may kill a reading. Test a new line by what it rules out, not by what it fits.
+- The game never asserts the ground truth. It shows physical evidence, and that evidence should support more than one reading.
+- A voice may doubt the clean run. Nothing may disprove it.
+- The rest of this document is one reading, plus naming rules for code. `chunkSurfer`, `borrowedRecordist` and `playerShadow` are handles, not verdicts on what those things are. Their separateness in code does not settle their separateness in the story.
+
+**Known about him:** the blue-ink notes in the cab are his own. "There was someone I meant to play it for" and "For the part that wouldn't play" are Lyle/Sarah, and the text does not choose between them. Why he took the job is deliberately open.
+
 ## Stable rule
 
 HUSH is older than music. Ordinary music is harmless. Repeated exact attention can make diffuse acoustic density cohere into temporary, nonverbal agency; recordings, compulsory reference listening, performance pressure, and charged institutions make that coherence easier to sustain.
@@ -30,4 +47,4 @@ The gate guard asks for the operator's name and visibly accepts two answers. Rai
 
 ## Endings
 
-The contract organizes repeated attention; it did not create HUSH. Demolition can cover a downbeat without ending the inherited process. The guard's intervention remains human. Reversed pre-roll can contain exits before either door sounds. The coffee explanation is a filed interpretation, not omniscient truth. Releasing the borrowed contractor does not destroy or reveal HUSH and never adds a sixth story ending.
+The contract organizes repeated attention; it did not create HUSH. Demolition can cover a downbeat without ending the inherited process. The guard's intervention remains human. Reversed pre-roll can contain exits before either door sounds. The coffee explanation is a filed interpretation, not omniscient truth. Releasing the borrowed contractor does not destroy or reveal HUSH and never adds a sixth story ending. Driving off is not an ending either. It is what closes them: first person, then third, then black, then credits, with nothing on screen saying what it means.

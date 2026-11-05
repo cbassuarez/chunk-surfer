@@ -97,7 +97,7 @@ export function installReceptionMeshes(gl, pack) {
     pack.catalog.set(name, { name, nodeMatrix: identity, instanceBuffer, extras: { sourceReception: true },
       primitives: [{ vao, count: indices.length, indexType: gl.UNSIGNED_INT, nativeReceiverGeometry: Object.freeze({ positions: uploaded[0], normals: uploaded[1], uvs: uploaded[2], indices }), base: [...piece.color, 1], emissive: [0,0,0],
         texture: textureFor(piece.material),normalTexture:piece.material==='source'?sourceMaps.normalTexture:null,ormTexture:piece.material==='source'?sourceMaps.ormTexture:null,letteringFinish:piece.material==='source'?sourceMaps.letteringFinish:null,materialFactors:piece.material==='source'?'gltf':undefined,metallic:piece.material==='source'?1:piece.material === 'metal' ? .45 : 0,roughness:piece.material==='source'?1:.92,
-        aoStrength: 0, portrait: false, alphaCut: 0, materialName: `reception ${piece.material}`, materialRole: 'source-reception',printedSurface:piece.material==='source'?SOURCE_PRINT_SURFACE:null }] });
+        aoStrength: 0, portrait: false, alphaCut: 0, materialName: `reception ${piece.material}`, materialRole: 'source-reception',sourceCodeStock:piece.material==='source'?sourceMaps.sourceCodeStock:undefined,printedSurface:piece.material==='source'?SOURCE_PRINT_SURFACE:null }] });
   }
   gl.bindVertexArray(null); return names;
 }

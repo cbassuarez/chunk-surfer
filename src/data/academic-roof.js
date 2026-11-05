@@ -5,8 +5,8 @@ import {ELLERY_COURTYARD_SKY} from './ellery-courtyard-architecture.js';
 
 const point=(x,y)=>Object.freeze({x,y});
 export const ROOF_CITY_SEAT=Object.freeze({
-  // The approach sits beside the bench: the courtyard's sky opening took the
-  // roof west of x 210.5, and the glass court's guard rail runs along that edge.
+  // The approach sits beside the bench, on the stone strip east of the court's
+  // glass, so the seat is still reached across the roof rather than off the pane.
   id:'roof-city-seat',at:point(212,290),approach:point(211.5,291),
   // Prop +Z faces east with -PI/2; camera forward uses the opposite yaw
   // convention. A slight northward rake avoids the existing guard upright.
@@ -23,9 +23,44 @@ export const ACADEMIC_ROOF=Object.freeze({
   stairFoot:point(174,285),stairTurn:point(159,283),stairHead:point(188,282),
   northBridge:point(188,285),
   ladderBottom:point(45,266),ladderTop:point(212,294),
+  // The seats' pane, north of the courts. The skylight runs on over the courts
+  // (courtGlass, physical metres), so the deck has no gap and they keep their sky.
   glass:Object.freeze({x0:196,x1:206,y0:276,y1:283}),
-  openSkyBounds:ELLERY_COURTYARD_SKY,
+  courtGlass:ELLERY_COURTYARD_SKY,
 });
+// The skylight's bays continued across the courts, in the glazing mesh's own
+// metres (its anchor is physical 84,14.5). The original 10 x 13 m pane keeps its
+// own panes, ribs and surviving end frames; these only fill what lies outside
+// it, on the same 2 x 2.1667 m grid, ending at a stone kerb on the court's edge.
+export function roofCourtGlazingLayout(){
+  const b=ELLERY_COURTYARD_SKY,ax=84,az=14.5,x0=b.x0-ax,x1=b.x1-ax,z0=b.z0-az,z1=b.z1-az,pane={x:5,z:6.5},bayZ=13/6;
+  const xs=[x0];for(let x=-5;x<x1;x+=2)if(x>x0)xs.push(x);xs.push(x1);
+  const zs=[z0];for(let z=-6.5+bayZ;z<z1-1e-6;z+=bayZ)if(z>z0+1e-6)zs.push(z);zs.push(z1);
+  const inPane=(x,z)=>Math.abs(x)<pane.x&&z<pane.z,panes=[],ribs=[],kerbs=[],repairs=[],beams=[];
+  for(let i=0;i+1<xs.length;i++)for(let j=0;j+1<zs.length;j++){
+    const cx=(xs[i]+xs[i+1])/2,cz=(zs[j]+zs[j+1])/2;
+    if(!inPane(cx,cz))panes.push({c:[cx,-.022,cz],s:[xs[i+1]-xs[i]-.10,.04,zs[j+1]-zs[j]-.10]});
+  }
+  const along=(list,x,za,zb)=>list.push({c:[x,.055,(za+zb)/2],s:[.10,.11,zb-za]}),across=(list,z,xa,xb)=>list.push({c:[(xa+xb)/2,.055,z],s:[xb-xa,.11,.10]});
+  for(const x of xs)along(ribs,x,Math.abs(x)<=pane.x?pane.z:z0,z1);
+  for(const z of zs){
+    if(z>pane.z)across(ribs,z,x0,x1);
+    else{across(ribs,z,x0,-pane.x);across(ribs,z,pane.x,x1);}
+  }
+  const kerb=(c,s)=>kerbs.push({c,s});
+  kerb([x0,.06,(z0+z1)/2],[.24,.12,z1-z0+.24]);kerb([x1,.06,(z0+z1)/2],[.24,.12,z1-z0+.24]);kerb([(x0+x1)/2,.06,z1],[x1-x0+.24,.12,.24]);
+  kerb([(x0-pane.x)/2,.06,z0],[-pane.x-x0,.12,.24]);kerb([(pane.x+x1)/2,.06,z0],[x1-pane.x,.12,.24]);
+  // Replacement panes, as on the original: a pale rake survives VFD reduction.
+  for(const[x,z]of[[6,3.25],[-2,9.75],[8,9.75]])repairs.push({c:[x-.83,.004,z],s:[.035,.009,1.73]});
+  // The pane's under-glass primary beams run on to the court's far edge, so they
+  // no longer stop in mid-air, and new ones carry the wings either side of them.
+  const beam=(c,s)=>beams.push({c,s}),beamY=-.31,beamSize=.19;
+  for(const x of[-5,-1,3,5])beam([x,beamY,(pane.z+z1)/2],[beamSize,beamSize,z1-pane.z]);
+  for(const x of[x0,7,x1])beam([x,beamY,(z0+z1)/2],[beamSize,beamSize,z1-z0]);
+  beam([(x0+x1)/2,beamY,z1],[x1-x0,beamSize,beamSize]);
+  beam([(x0-pane.x)/2,beamY,z0],[-pane.x-x0,beamSize,beamSize]);beam([(pane.x+x1)/2,beamY,z0],[x1-pane.x,beamSize,beamSize]);
+  return{panes,ribs,kerbs,repairs,beams};
+}
 export const roofPointToPhysical=({x,y})=>({
   x:ACADEMIC_ROOF.physicalOrigin.x+x-ACADEMIC_ROOF.origin.x,
   y:ACADEMIC_ROOF.physicalOrigin.y+y-ACADEMIC_ROOF.origin.y,
@@ -38,10 +73,7 @@ export const ACADEMIC_ROOF_SEAT_LOOK=Object.freeze({
 export const academicRoofYawDelta=(from,to)=>Math.atan2(Math.sin(to-from),Math.cos(to-from));
 
 export function academicRoofRows(){
-  return Array.from({length:ACADEMIC_ROOF.depth},(_,z)=>Array.from({length:ACADEMIC_ROOF.width},(_,x)=>{
-    const px=ACADEMIC_ROOF.physicalOrigin.x+x,pz=ACADEMIC_ROOF.physicalOrigin.y+z,b=ELLERY_COURTYARD_SKY;
-    return px>=b.x0&&px<b.x1&&pz>=b.z0&&pz<b.z1?' ':'Q';
-  }).join(''));
+  return Array.from({length:ACADEMIC_ROOF.depth},()=>'Q'.repeat(ACADEMIC_ROOF.width));
 }
 export function academicRoofProfile(x,y,cell){
   if(cell.solid)return null;
@@ -49,7 +81,8 @@ export function academicRoofProfile(x,y,cell){
   // The north edge opens only where the guarded fire-escape bridge arrives.
   if(rim&&!(y===0&&x>=15&&x<=17))return{floor:17,ceil:18.1,flags:F.SKY|F.WALLED,zone:ZONE.academicRoof,
     material:MATERIAL.metalPlant,collisionOnly:true};
-  const glass=x>=6&&x<=15&&y>=6&&y<=12;
+  const px=ACADEMIC_ROOF.physicalOrigin.x+x,pz=ACADEMIC_ROOF.physicalOrigin.y+y,b=ACADEMIC_ROOF.courtGlass;
+  const glass=x>=6&&x<=15&&y>=6&&y<=12||px>=b.x0&&px<b.x1&&pz>=b.z0&&pz<b.z1;
   return{floor:ACADEMIC_ROOF.base,ceil:24,
     flags:F.SKY|F.WALLED,zone:ZONE.academicRoof,
     material:glass?MATERIAL.roofGlass:MATERIAL.metalPlant};
@@ -106,7 +139,7 @@ const roofProp=(id,mesh,at,extra={})=>({id,mesh,...at,yaw:0,scale:1,
   renderGroups:['academicRoof'],structural:true,blocks:false,...extra});
 export const ACADEMIC_ROOF_MESHES=Object.freeze({
   academic_roof_structure:{w:24,d:27,blocks:false},
-  academic_roof_glazing:{w:10,d:13,blocks:false},
+  academic_roof_glazing:{w:17,d:19,blocks:false},
   academic_roof_service_stair:{w:40,d:32,blocks:false},
   academic_roof_service_ladder:{w:1.15,d:.9,h:8,blocks:false},
   academic_roof_gate:{w:.3,d:2,blocks:false},

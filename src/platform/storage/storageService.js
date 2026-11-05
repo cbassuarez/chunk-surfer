@@ -8,12 +8,16 @@ import { defaultSettings, defaultProfile } from './defaults.js';
 import { normalizePersistedSave } from './schemas.js';
 import { SAVE_SLOT_AUTOSAVE } from './types.js';
 import { initDiagnostics, logWarn, collectDiagnostics } from '../diagnostics/diagnostics.js';
+import { sixLoopActive } from '../../game/six-loop.js';
+import { createSixLoopStorage } from './six-loop-storage.js';
 
 let storage = null;
 let initialized = false;
 let pending = Promise.resolve();
 let erasing = false;
-export function storageWritesBlocked() { return erasing; }
+// The night after the staged crash lives in memory (six-loop-storage.js): the
+// saved one stays as it was, so that closing the game is a real way out of it.
+export function storageWritesBlocked() { return erasing || sixLoopActive(); }
 
 export function createGameStorage({ kind = detectStorageBackendKind(), gameVersion = 'LOCAL', adapter = null } = {}) {
   if (kind === 'desktop') return new DesktopStorage({ gameVersion, adapter });
@@ -35,6 +39,7 @@ export async function initGameStorage({ gameVersion = 'LOCAL', kind = null, adap
     await storage.init().catch(() => {});
     initialized = true;
   }
+  if (sixLoopActive()) storage = createSixLoopStorage(storage);
   return storage;
 }
 

@@ -10,6 +10,7 @@ import { PRINTED_SURFACE_GLSL } from '../printed-surface.js';
 import { PRESSURE_INK_GLSL } from '../pressure-composite.js';
 import { SOURCE_BLUEPRINT_RECORDING_GLSL } from '../source-blueprint-contract.js';
 import { SOURCE_MATERIAL_FINISH_GLSL } from '../source-material-finish.js';
+import { SOURCE_WALKWAY_FINISH_GLSL } from '../source-walkway-finish.js';
 import { RECORDING_VIEW_PULL_GLSL } from '../recording-view-pull.js';
 import { SOURCE_REST_FACULTIES_GLSL } from '../source-rest-faculties.js';
 import { FINAL_LOOK_GLSL } from './final-look.js';
@@ -536,6 +537,7 @@ ${MISSING_MAN_MATERIAL_GLSL}
 ${ROOF_SURFACE_INK_GLSL}
 ${ROOF_GLASS_INK_GLSL}
 ${PRINTED_SURFACE_GLSL}
+${SOURCE_WALKWAY_FINISH_GLSL}
 ${SOURCE_BLUEPRINT_RECORDING_GLSL}
 vec3 sourceWaterRecordedInk(vec3 ink,vec3 worldMetres){
   if(uSourceWaterInk.x<.5)return ink;
@@ -695,6 +697,12 @@ void main(){
     }
   }
 #endif
+  vec4 sourceRouteMark=texelFetch(uMarks,
+    clamp(ivec2(frag),ivec2(0),textureSize(uMarks,0)-1),0)*(1.0-printedOccluded);
+  float sourceRoute=printedSurfaceSourceRoute(sourceRouteMark.a);
+  // Token HS cannot also become doubled-angle material grain, including at
+  // a boundary where a filtered neighbour contributes a positive density.
+  if(sourceRoute>.5)markSample=vec4(0.0,.5,.5,sourceRouteMark.a);
   // R == 0 is the sentinel. Passing the pivot through leaves the threshold
   // exactly as the hash produced it, so an underived slot is not a darker or
   // lighter wall — it is the wall this game already drew.
@@ -1255,6 +1263,8 @@ void main(){
   float finishFacing=abs(dot(finishNormal,finishView));
   captureDark=sourceMaterialRecordedInk(captureDark,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,0.0);
   captureLight=sourceMaterialRecordedInk(captureLight,uSourceFinish,printed.x,printed.y,worldMetres,finishFacing,captureBlackProtect,1.0);
+  captureDark=sourceWalkwayRecordedInk(captureDark,uSourceFinish,sourceRouteMark,worldMetres,captureBlackProtect,0.0);
+  captureLight=sourceWalkwayRecordedInk(captureLight,uSourceFinish,sourceRouteMark,worldMetres,captureBlackProtect,1.0);
   // Fault identity is categorical: a filtered tag could invent byte 249
   // between unrelated materials when the recording view pulls fractional UVs.
   float faultMaterialTag=texelFetch(uMarks,

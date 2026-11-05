@@ -1,6 +1,7 @@
 // Lossless, variable-width Source rows. Packing never edits authored copy.
 // World quads retain their bounds; sourceTextQuadMatrix letterboxes their ink.
 import { WORLD_LETTERING_FONT_KEY, worldLetteringFont } from './world-lettering-fonts.js';
+import {sourceSyntaxSpans,SOURCE_SYNTAX_PALETTE} from './source-syntax.js';
 
 const number = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const hash = values => {
@@ -30,9 +31,10 @@ export function sourceTextAtlasInputs(corpus = [], instances = []) {
 
 export function sourceTextAtlasCacheKey(corpus = [], instances = [], options = {}) {
   const input = sourceTextAtlasInputs(corpus, instances);
-  return `source-lossless-v1:${hash([
+  return `source-lossless-v2-syntax:${hash([
     WORLD_LETTERING_FONT_KEY, options.size ?? 2048, options.maxFont ?? 14,
     options.minFont ?? 8, options.gutter ?? 3, options.role ?? 'mono',
+    ...Object.entries(SOURCE_SYNTAX_PALETTE).flat(),
     ...input.flatMap(entry => [entry.priority, entry.text]),
   ])}:${input.length}`;
 }
@@ -140,17 +142,45 @@ export function planSourceTextAtlas(ctx, { corpus = [], instances = [], size = 2
     cacheKey: sourceTextAtlasCacheKey(corpus, instances, { size, maxFont, minFont, gutter, role }) };
 }
 
+// Whole-block lexing keeps multiline comments and template expressions in
+// context. The atlas uses one literal string as its identity; page/material
+// exceptions remain per-instance decisions when the shared texture is drawn.
+export function sourceTextAtlasSyntax(text,authoredTokens){
+  return sourceSyntaxSpans(text,authoredTokens);
+}
+
 export function paintSourceTextAtlas(ctx, plan) {
   if (!ctx || !plan?.entries) throw new TypeError('Source text atlas needs a plan and Canvas context');
   ctx.save();
   try {
     ctx.clearRect(0, 0, plan.size, plan.size);
     ctx.font = plan.font; ctx.fontKerning = 'none'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    ctx.fillStyle = '#fff'; ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff'; ctx.globalAlpha = 1; ctx.shadowBlur = 0;ctx.globalCompositeOperation='source-over';
     for (const entry of plan.entries.values()) for (let index = 0; index < entry.lines.length; index++) {
       const line = entry.lines[index];
       ctx.fillText(line.text, entry.x + plan.gutter + entry.inkInset + line.left,
         entry.y + plan.gutter + entry.inkInset + entry.ascent + index * entry.lineHeight);
+    }
+    // Opaque source-atop paint replaces RGB while retaining destination alpha
+    // exactly. Original full-line rasterization owns every coverage byte; a
+    // category boundary never rerasterizes, expands or stitches glyph masks.
+    ctx.globalCompositeOperation='source-atop';
+    for(const entry of plan.entries.values()){
+      const spans=sourceTextAtlasSyntax(entry.text),left=entry.x+plan.gutter,top=entry.y+plan.gutter;
+      let lineStart=0;
+      for(let index=0;index<entry.lines.length;index++){
+        const line=entry.lines[index],lineEnd=lineStart+line.text.length,drawX=left+entry.inkInset+line.left;
+        for(const token of spans){
+          const start=Math.max(lineStart,token.start),end=Math.min(lineEnd,token.end);if(end<=start)continue;
+          // Prefix metrics retain the original spacing, including tabs,
+          // Unicode, literal overhang and the unchanged whole-line bearing.
+          const x=start===lineStart?left:drawX+ctx.measureText(line.text.slice(0,start-lineStart)).width,
+            right=end===lineEnd?left+entry.contentWidth:drawX+ctx.measureText(line.text.slice(0,end-lineStart)).width,
+            y=top+index*entry.lineHeight,height=Math.min(entry.lineHeight+(index===entry.lines.length-1?entry.inkInset:0),top+entry.contentHeight-y);
+          ctx.fillStyle=token.color;ctx.fillRect(x,y,Math.max(0,right-x),height);
+        }
+        lineStart=lineEnd+1;
+      }
     }
   } finally { ctx.restore(); }
 }

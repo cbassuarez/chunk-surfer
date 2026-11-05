@@ -11,6 +11,8 @@ import {ensureWorldLetteringFonts,worldLetteringFont} from './world-lettering-fo
 import {physicalPrintPixels,uploadPhysicalPrint} from './physical-source-print.js';
 import {vanBrandInstances} from './van-brand.js';
 import {VAN_BRAND_PACK,VAN_BRAND_FITS} from '../data/van-brand.js';
+import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
+import {windVector} from '../world/wind.js';
 
 const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_wreck_seat','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine'];
 const vanMeshes=['drive_vehicle_body','drive_cabin'];
@@ -44,7 +46,7 @@ function installNoteInk(gl,pack){
  return true;
 }
 export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,fetcher=globalThis.fetch,reducedMotion=false,onRelease=()=>{},ensureFonts=ensureWorldLetteringFonts,installInk=installNoteInk,getTorch=()=>({on:false})}={}){
- let initialized=false,released=false,pending=null,error=null,vehicleMetrics=null,last=null,releaseRange=null;
+ let initialized=false,released=false,pending=null,error=null,vehicleMetrics=null,last=null,releaseRange=null,leaves=null;
  const resident=()=>{const names=new Set(props.propMeshCatalog());return required.every(n=>names.has(n));};
  function clear(){
   for(const name of ['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
@@ -74,6 +76,9 @@ export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=a
   if(!initialized||released||!renderer.r3dPresentationReady())return false;
   if(!resident())throw Error('The coastal catalog was replaced during exploration.');
   last=coastalMemoryRenderFrame(frame,{vehicleMetrics,reducedMotion});renderer.r3dSetProps(last.scene.props);renderer.r3dSetLocalLights(last.scene.lamps);
+  // The opening's leaves blow over the cliffs on the same night's wind.
+  const leafTime=Number(frame.elapsed)||0;leaves=reducedMotion?null:stepWindLeaves(leaves,{key:'coast',time:leafTime,body:{x:last.eye[0],y:last.eye[1]-.4,z:last.eye[2]},wind:windVector(leafTime)});
+  renderer.r3dSetDynamicProps?.(windLeafProps(leaves,{prefix:'coast-leaf'}));
   const camera={eye:last.eye,yaw:last.yaw,pitch:last.pitch},torch=getTorch()||{on:false};
   return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.eye[1]-1.62,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:!!torch.on,torchLook:torch.look||{power:1},plan:true,water:{active:false},sensoryProfile:'story',sourceVoidPhysical:true,coastalMemory:last.coastalMemory,authoredCamera:camera})!==false;
  }

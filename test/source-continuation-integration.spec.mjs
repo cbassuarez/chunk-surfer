@@ -267,7 +267,9 @@ function host({source=initial(),checkpoint=null,initialize=null,driveReady=true,
     clamp:(n,lo,hi)=>Math.max(lo,Math.min(hi,n)),mouseLookSensitivity:()=>2,mouseInvertY:()=>false,shakeMode:()=> 'full',noteExteriorArrivalControl(){},cancelLastExposure(){},
     sourcePubScene:null,sourceDriveSession:null,coastalMemoryScene:null,standingTearScene:null,sourceReturnFlashbackScene:null,chunkSurfRuntime:runtime,paused:false,actx:null,sfxGain:null,musicGain:null,
     px:at.x,py:at.y,renderMove:{},motionRig:{},trail:[1],r3dCache:{physicalKey:'source',physicalGroup:'source-space',fogSize:2},
-    getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,createSourceContinuationScene,installSourceRest,createSourceRestMusic,createSourceRestScores:options=>createSourceRestScores({...options,createBach:value=>e.createSourceRestMusic(value)}),createSourceRestBreath,createSourceRestWeather,SOURCE_REST_SEATS,
+    getSave:()=>data,saveCommit:patch=>{data={...data,...patch};calls.push(['save',copy(patch)]);},scenes,
+    // These host fixtures check lifecycle, not physics: a still body holds still.
+    createSourceContinuationScene:options=>createSourceContinuationScene({...options,tides:false}),installSourceRest,createSourceRestMusic,createSourceRestScores:options=>createSourceRestScores({...options,createBach:value=>e.createSourceRestMusic(value)}),createSourceRestBreath,createSourceRestWeather,SOURCE_REST_SEATS,
     persistNightRestLock:()=>false,nightDeadlinePending,openSourceHushContact:()=>false,openSourceRecordingCassette:()=>false,roomLabel:id=>id,pressurePresentationSnapshot:()=>null,
     sourceContinuationRecordingReturnProps,releaseSourceRecordingCassetteLabels,P3:{},prewarmSourceRecordingCassetteMeshes:async()=>true,
     fireCue(){},CR:{fx(){}},dialogGain:null,master:null,
@@ -731,4 +733,8 @@ test('the actual return-to-title cleanup saves local progress before restoring a
     assert.equal(h.data().chunkSurf.sourceContinuation.status,'active');assert.equal(h.data().chunkSurf.sourceContinuation.yaw,-2);
     assert.deepEqual(h.data().sourceView,{x:original.x,y:original.y,yaw:original.yaw,pitch:original.pitch});
   }finally{h.close();}
+});
+
+test('the live host asks each Source to pull on a still body; the scene alone does not',()=>{
+  assert.match(main,/createSourceContinuationScene\(\{checkpoint:entry\.checkpoint,[^\n]*tides:true,/);
 });

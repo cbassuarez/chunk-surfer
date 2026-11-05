@@ -34,30 +34,68 @@ export function advanceSourceRestCouperinBlend(amount,target,seconds){
   return clamp(current+Math.max(-limit,Math.min(limit,delta)));
 }
 
-// Two aligned versions inhabit different places in the Catch. Their apparent
-// positions wander slowly, while their relative presence follows the listener
-// through the islands. The transport is still a single, sample-locked stream.
-export function sourceRestCouperinSpace(state,frame,time=0){
+// Two aligned versions inhabit different islands of the Catch: the acoustic
+// at the bench, the revoicing at the door. Between them neither keeps its
+// place; both loosen into a carousel around the listener, crossing sides,
+// before settling into the other island. Seated, both come to circle the
+// bench. Position, tone and air move; pitch and the shared clock never do.
+export const SOURCE_REST_COUPERIN_SPACE=Object.freeze({
+  acousticWander:4,electronicWander:7,blendSpan:85,
+  carouselRadius:7.5,carouselSeconds:13,carouselLift:2.2,carouselShare:.85,
+  benchRadius:3.2,benchSeconds:41,
+  nearMetres:18,farPresence:.32,behind:.22,brightHz:15000,darkHz:2200,darkMetres:60,farSend:.75,sendMetres:48,
+  settleSeconds:1.4,maximumAmountPerSecond:.24,gatherSeconds:6,
+});
+const TAU=Math.PI*2;
+const lerp3=(a,b,t)=>({x:mix(a.x,b.x,t),y:mix(a.y,b.y,t),z:mix(a.z,b.z,t)});
+function couperinVoice(v){
+  const S=SOURCE_REST_COUPERIN_SPACE,d=Number.isFinite(v.distance)&&v.distance<1e8?v.distance:1e3;
+  const direction=d>1e-3?v.relativeXYZ.map(c=>c/d):[0,0,-1];
+  return {direction,distance:d,pan:clamp(v.relativeXYZ[0]/Math.max(3,d),-1,1),
+    // Across the void a version thins, darkens and stands in its own air.
+    // Turning toward a version brings it forward a little; it never leaves.
+    presence:(S.farPresence+(1-S.farPresence)/(1+(d/S.nearMetres)**1.4))*(1-S.behind*(1+direction[2])/2),
+    cutoff:Math.exp(mix(Math.log(S.brightHz),Math.log(S.darkHz),smooth(d/S.darkMetres))),
+    send:S.farSend*smooth(d/S.sendMetres)};
+}
+export function sourceRestCouperinSpace(state,frame,time=0,{gather=0}={}){
   if(state?.phase!=='catch'||!Number.isFinite(state.x)||!Number.isFinite(state.z))return null;
-  const seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch'),door=SOURCE_CONTINUATION.catch.finalDoor,t=Number.isFinite(time)?time:0;
-  const acoustic={x:seat.x+4*Math.sin(t/29),y:seat.feet+2,z:seat.z+4*Math.cos(t/29)};
-  const electronic={x:door.x+7*Math.sin(t/23),y:door.y+2.6,z:door.z+7*Math.cos(t/31)};
-  const a=sourceAcousticCoordinates(acoustic,state,frame,{chartId:0}),e=sourceAcousticCoordinates(electronic,state,frame,{chartId:0});
-  const pan=v=>clamp(v.relativeXYZ[0]/Math.max(3,v.distance),-1,1);
+  const S=SOURCE_REST_COUPERIN_SPACE,seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch'),door=SOURCE_CONTINUATION.catch.finalDoor;
+  const t=Number.isFinite(time)?time:0,g=smooth(gather),body={x:state.x,y:(Number(state.feet)||0)+1.62,z:state.z};
+  const homeA={x:seat.x+S.acousticWander*Math.sin(t/29),y:seat.feet+2,z:seat.z+S.acousticWander*Math.cos(t/29)};
+  const homeE={x:door.x+S.electronicWander*Math.sin(t/23),y:door.y+2.6,z:door.z+S.electronicWander*Math.cos(t/31)};
+  const far=p=>Math.hypot(p.x-body.x,p.y-body.y,p.z-body.z);
   // Broad overlapping fields avoid dead spots; a slow interference pattern
   // makes stillness subtly unstable without detuning either performance.
-  const distanceBlend=clamp(.5+(a.distance-e.distance)/85);
+  const distanceBlend=clamp(.5+(far(homeA)-far(homeE))/S.blendSpan);
   const shimmer=.5+.5*Math.sin((state.x+172)*.085+(state.z+92)*.105+t/19);
-  return {electronic:clamp(.12+.63*(.72*distanceBlend+.28*shimmer)),acousticPan:pan(a),electronicPan:pan(e)};
+  // Halfway, the two are equally far and equally loose. Walking also turns
+  // the carousel, so its speed is the listener's as much as the music's.
+  const between=smooth(1-Math.abs(2*distanceBlend-1)),carousel=between**1.5*S.carouselShare*(1-g);
+  const spin=t*TAU/S.carouselSeconds+(state.x-state.z)*.045,wobble=Math.sin(spin*.5);
+  const ring=(angle,lift)=>({x:body.x+Math.cos(angle)*S.carouselRadius,y:body.y+lift,z:body.z+Math.sin(angle)*S.carouselRadius});
+  const turn=t*TAU/S.benchSeconds,bench=angle=>({x:seat.x+Math.cos(angle)*S.benchRadius,y:seat.feet+1.4,z:seat.z+Math.sin(angle)*S.benchRadius});
+  const at={acoustic:lerp3(lerp3(homeA,ring(spin,S.carouselLift*wobble),carousel),bench(turn),g),
+    electronic:lerp3(lerp3(homeE,ring(spin+Math.PI,-.6*S.carouselLift*wobble),carousel),bench(turn+Math.PI),g)};
+  const acoustic=couperinVoice(sourceAcousticCoordinates(at.acoustic,state,frame,{chartId:0}));
+  const electronic=couperinVoice(sourceAcousticCoordinates(at.electronic,state,frame,{chartId:0}));
+  return {electronic:clamp(.08+.92*(.78*distanceBlend+.22*shimmer))*(1-g),distanceBlend,between,carousel,gather:g,
+    voices:{acoustic,electronic},positions:at,acousticPan:acoustic.pan,electronicPan:electronic.pan};
+}
+export function advanceSourceRestCouperinSpace(amount,target,seconds,{settleSeconds=SOURCE_REST_COUPERIN_SPACE.settleSeconds,limit=SOURCE_REST_COUPERIN_SPACE.maximumAmountPerSecond}={}){
+  const dt=Math.max(0,Math.min(.25,Number(seconds)||0)),current=clamp(amount),delta=(clamp(target)-current)*(1-Math.exp(-dt/settleSeconds));
+  return clamp(current+Math.max(-dt*limit,Math.min(dt*limit,delta)));
 }
 
 export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>false,
   createElement=()=>document.createElement('audio'),urlFor=assetUrl,onError=()=>{}}={}){
   let element=null,source=null,context=null,destination=null,splitter=null,acoustic=null,electronic=null,
-    programme=null,programmeDuck=null,outputGate=null,wet=null,convolver=null,impulse=null,analyser=null,samples=null,acousticPan=null,electronicPan=null;
+    programme=null,programmeDuck=null,outputGate=null,wet=null,convolver=null,impulse=null,analyser=null,samples=null,acousticPan=null,electronicPan=null,
+    acousticTone=null,electronicTone=null,acousticSend=null,electronicSend=null,spatialPanners=false;
   let desired=false,held=false,playing=false,buffering=false,pending=false,disposed=false,failed=null,
     version=0,ended=false,finishAtEnd=false,playedSeconds=0,completedFirstCycle=false,
-    progress=0,faculty=null,signal=0,lastMix=null,listeners=[],nodes=[],blendAmount=0,lastMixClock=null,lastAutomationAt=null,spatialState=null,spatialFrame=null;
+    progress=0,faculty=null,signal=0,lastMix=null,listeners=[],nodes=[],blendAmount=0,lastMixClock=null,lastAutomationAt=null,spatialState=null,spatialFrame=null,
+    seated=false,spaceAmount=0,gatherAmount=0;
   const parameterTargets=new WeakMap();
   const transport=createSourceRestPlayback({getMedia:()=>element,getContext:()=>context,getOutputGain:()=>programmeDuck});
   const protectedNow=()=>{try{return !!protectedAudio();}catch{return true;}};
@@ -94,26 +132,50 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     try{element?.pause();element?.removeAttribute?.('src');element?.load?.();}catch{}
     for(const node of nodes)try{node.disconnect?.();}catch{}
     nodes=[];element=source=context=destination=splitter=acoustic=electronic=programme=programmeDuck=outputGate=wet=convolver=impulse=analyser=samples=acousticPan=electronicPan=null;
+    acousticTone=electronicTone=acousticSend=electronicSend=null;spatialPanners=false;
   }
   function fail(error){if(failed||disposed)return;failed=String(error?.message||error||'The Couperin recording could not be played.');pause();
     try{onError(error instanceof Error?error:new Error(failed));}catch{}}
+  function place(panner,voice,pan,clock,seconds){
+    if(!panner)return;
+    if(!spatialPanners){parameter(panner.pan,pan,clock,seconds);return;}
+    const [x,y,z]=voice?.direction||[0,0,-1];
+    if(panner.positionX){parameter(panner.positionX,x,clock,seconds);parameter(panner.positionY,y,clock,seconds);parameter(panner.positionZ,z,clock,seconds);}
+    else panner.setPosition?.(x,y,z);
+  }
   function applyMix(immediate=false){
-    const musicTime=Number(element?.currentTime)||0,space=sourceRestCouperinSpace(spatialState,spatialFrame,musicTime),target=sourceRestCouperinMix({progress,faculty,currentTime:musicTime}),clock=at();
-    // The island field supplies a floor while walking; narrative peaks can
-    // still take the revoicing all the way to their authored level at the seat.
-    if(space)target.electronic=Math.max(.72*space.electronic,target.electronic);
-    if(!immediate&&lastMixClock!==null)blendAmount=advanceSourceRestCouperinBlend(blendAmount,target.electronic,clock-lastMixClock);
+    const musicTime=Number(element?.currentTime)||0,target=sourceRestCouperinMix({progress,faculty,currentTime:musicTime}),clock=at();
+    const dt=!immediate&&lastMixClock!==null?clock-lastMixClock:null;
+    gatherAmount=dt===null?(seated?1:0):advanceSourceRestCouperinSpace(gatherAmount,seated?1:0,dt,{settleSeconds:SOURCE_REST_COUPERIN_SPACE.gatherSeconds,limit:1});
+    const space=sourceRestCouperinSpace(spatialState,spatialFrame,musicTime,{gather:gatherAmount});
+    // The narrative arc travels slowly. The island field follows the body,
+    // supplying a floor while walking; seated, it yields to the authored arc.
+    const spaceTarget=space?space.electronic*SOURCE_REST_COUPERIN_BLEND.maximumElectronic:0;
+    if(dt!==null){blendAmount=advanceSourceRestCouperinBlend(blendAmount,target.electronic,dt);spaceAmount=advanceSourceRestCouperinSpace(spaceAmount,spaceTarget,dt);}
+    else spaceAmount=spaceTarget;
     lastMixClock=clock;
-    lastMix={electronic:blendAmount,targetElectronic:target.electronic,acousticGain:Math.cos(blendAmount*Math.PI/2),electronicGain:Math.sin(blendAmount*Math.PI/2),space};
+    const amount=Math.max(blendAmount,spaceAmount),voices=space?.voices;
+    let acousticGain=Math.cos(amount*Math.PI/2),electronicGain=Math.sin(amount*Math.PI/2);
+    if(voices){
+      // Distance shades the balance; overall loudness stays with the room.
+      const a=acousticGain*voices.acoustic.presence,e=electronicGain*voices.electronic.presence,norm=Math.min(1.8,1/Math.max(1e-3,Math.hypot(a,e)));
+      acousticGain=a*norm;electronicGain=e*norm;
+    }
+    lastMix={electronic:amount,narrativeElectronic:blendAmount,spaceElectronic:spaceAmount,targetElectronic:Math.max(target.electronic,spaceTarget),acousticGain,electronicGain,space};
     // Dialogue/narrative gates may jump. The room and the human performance
     // continue while the revoicing travels slowly toward that new intention.
     // A bounded control rate avoids restarting two 80ms ramps every game frame.
     if(!immediate&&lastAutomationAt!==null&&clock-lastAutomationAt<SOURCE_REST_COUPERIN_BLEND.controlIntervalSeconds)return;
     lastAutomationAt=clock;
-    parameter(acoustic?.gain,lastMix.acousticGain,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
-    parameter(electronic?.gain,lastMix.electronicGain,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
-    parameter(acousticPan?.pan,space?.acousticPan??0,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
-    parameter(electronicPan?.pan,space?.electronicPan??0,clock,immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds);
+    const ramp=immediate?0:SOURCE_REST_COUPERIN_BLEND.rampSeconds;
+    parameter(acoustic?.gain,acousticGain,clock,ramp);
+    parameter(electronic?.gain,electronicGain,clock,ramp);
+    place(acousticPan,voices?.acoustic,space?.acousticPan??0,clock,ramp);
+    place(electronicPan,voices?.electronic,space?.electronicPan??0,clock,ramp);
+    parameter(acousticTone?.frequency,voices?.acoustic.cutoff??SOURCE_REST_COUPERIN_SPACE.brightHz,clock,ramp);
+    parameter(electronicTone?.frequency,voices?.electronic.cutoff??SOURCE_REST_COUPERIN_SPACE.brightHz,clock,ramp);
+    parameter(acousticSend?.gain,voices?.acoustic.send??0,clock,ramp);
+    parameter(electronicSend?.gain,voices?.electronic.send??0,clock,ramp);
   }
   function create(pair){
     const ctx=pair?.ctx||pair?.context,out=pair?.destination||pair?.musicGain;
@@ -125,14 +187,28 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     acoustic=track(ctx.createGain());electronic=track(ctx.createGain());programme=track(ctx.createGain());programmeDuck=track(ctx.createGain());outputGate=track(ctx.createGain());programmeDuck.connect(outputGate);
     acoustic.channelCount=electronic.channelCount=1;acoustic.channelCountMode=electronic.channelCountMode='explicit';
     source.connect(splitter);splitter.connect(acoustic,0);splitter.connect(electronic,1);
-    if(ctx.createStereoPanner){acousticPan=track(ctx.createStereoPanner());electronicPan=track(ctx.createStereoPanner());acoustic.connect(acousticPan);electronic.connect(electronicPan);acousticPan.connect(programme);electronicPan.connect(programme);}
-    else{acoustic.connect(programme);electronic.connect(programme);}
+    // Each stem: tone -> spatial panner -> programme, plus its own air send.
+    spatialPanners=typeof ctx.createPanner==='function';
+    const panner=()=>{
+      if(spatialPanners){const p=ctx.createPanner();p.panningModel='HRTF';p.distanceModel='linear';p.refDistance=1;p.maxDistance=1e4;p.rolloffFactor=0;return track(p);}
+      return ctx.createStereoPanner?track(ctx.createStereoPanner()):null;
+    };
+    const chain=stem=>{
+      let tail=stem;const tone=ctx.createBiquadFilter?track(ctx.createBiquadFilter()):null;
+      if(tone){tone.type='lowpass';tone.Q.value=.5;tone.frequency.value=SOURCE_REST_COUPERIN_SPACE.brightHz;tail.connect(tone);tail=tone;}
+      const pan=panner();if(pan){tail.connect(pan);tail=pan;}
+      tail.connect(programme);return {tone,pan,tail};
+    };
+    const a=chain(acoustic),e=chain(electronic);acousticTone=a.tone;electronicTone=e.tone;acousticPan=a.pan;electronicPan=e.pan;
     const dry=track(ctx.createGain());dry.gain.value=SOURCE_REST_COUPERIN_MIX.dry;programme.connect(dry);dry.connect(programmeDuck);
     if(ctx.createConvolver&&ctx.createBuffer){
       convolver=track(ctx.createConvolver());wet=track(ctx.createGain());
       impulse=createStandingTearImpulse(ctx,{decaySeconds:SOURCE_REST_COUPERIN_MIX.reverbSeconds});
       convolver.normalize=false;convolver.buffer=impulse;wet.gain.value=SOURCE_REST_COUPERIN_MIX.wet;
       programme.connect(convolver);convolver.connect(wet);wet.connect(programmeDuck);
+      // A far version stands in more of the void's air than a near one.
+      acousticSend=track(ctx.createGain());electronicSend=track(ctx.createGain());acousticSend.gain.value=electronicSend.gain.value=0;
+      a.tail.connect(acousticSend);e.tail.connect(electronicSend);acousticSend.connect(convolver);electronicSend.connect(convolver);
     }
     if(ctx.createAnalyser){analyser=track(ctx.createAnalyser());analyser.fftSize=1024;samples=new Float32Array(1024);outputGate.connect(analyser);analyser.connect(out);}
     else outputGate.connect(out);
@@ -172,11 +248,11 @@ export function createSourceRestCouperin({getAudio=()=>null,protectedAudio=()=>f
     return false;
   }
   function start(){if(disposed)return false;if(!desired){desired=true;failed=null;held=false;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;}reconcile();return !failed;}
-  function update({active,paused=false,progress:next=progress,faculty:nextFaculty=faculty,spatialState:nextState=spatialState,acousticFrame:nextFrame=spatialFrame}={}){
-    if(active===false){stop();return snapshot();}progress=clamp(next);faculty=nextFaculty==null?null:clamp(nextFaculty);spatialState=nextState;spatialFrame=nextFrame;held=!!paused;reconcile();return snapshot();
+  function update({active,paused=false,progress:next=progress,faculty:nextFaculty=faculty,spatialState:nextState=spatialState,acousticFrame:nextFrame=spatialFrame,seated:nextSeated=seated}={}){
+    if(active===false){stop();return snapshot();}progress=clamp(next);faculty=nextFaculty==null?null:clamp(nextFaculty);spatialState=nextState;spatialFrame=nextFrame;seated=!!nextSeated;held=!!paused;reconcile();return snapshot();
   }
   function finishAfterCycle(){if(disposed||!desired||ended)return false;finishAtEnd=true;if(element)element.loop=false;return true;}
-  function stop(){desired=false;held=false;detach();transport.reset();failed=null;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;buffering=false;progress=0;faculty=null;signal=0;lastMix=null;blendAmount=0;lastMixClock=lastAutomationAt=spatialState=spatialFrame=null;return true;}
+  function stop(){desired=false;held=false;detach();transport.reset();failed=null;ended=false;finishAtEnd=false;playedSeconds=0;completedFirstCycle=false;buffering=false;progress=0;faculty=null;signal=0;lastMix=null;blendAmount=0;lastMixClock=lastAutomationAt=spatialState=spatialFrame=null;seated=false;spaceAmount=gatherAmount=0;return true;}
   function dispose(){if(disposed)return false;stop();disposed=true;return true;}
   function snapshot(){
     const protect=protectedNow(),audible=!!(playing&&element&&!element.paused&&!held&&!protect&&!buffering&&!element.seeking&&!ended);

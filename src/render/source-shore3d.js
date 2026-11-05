@@ -7,6 +7,8 @@ import { horizonCamera } from './horizon3d.js';
 import { sourceStrataGeometry } from '../data/source-exposed-strata.js';
 import { sourcePrintTexture } from './physical-source-print.js';
 import { PRINTED_SURFACE_GLSL, printedSurfaceDescriptor } from './printed-surface.js';
+import {SOURCE_CODE_SCREEN_GLSL,SOURCE_CODE_LIFT_METRES} from './source-code-screen.js';
+import {sourceReceiptExecutionEvent,sourceExecutionEnvelope,sourceExecutionParameters} from './source-execution-trails.js';
 import { SOURCE_DEMOLITION_MEDIUM_GLSL, sourceDemolitionMediumUniforms, sourceDemolitionMediumTransmittance } from './source-demolition-medium.js';
 
 export const SOURCE_SHORE_RANGE = Object.freeze({ near: .05, far: 1600 });
@@ -214,9 +216,9 @@ void main(){
     vec3 originalNormal=normalize(vNormal);
     vec2 sourcePlane=abs(originalNormal.y)>.6?vWorld.xz:
       vec2(abs(originalNormal.x)>.6?-sign(originalNormal.x)*vWorld.z:sign(originalNormal.z)*vWorld.x,-vWorld.y);
-    vec4 source=texture(uSourceTex,sourcePlane/vec2(6.0,4.0));
-    base*=mix(vec3(1.0),source.rgb,.38);
-    pigment=source.a;printPolarity=1.0;
+    // The clauses have their own clean screen pass. Only the bank's native
+    // substrate enters the world's material acquisition and dither.
+    pigment=0.0;printPolarity=1.0;
     float fibres=sin(plane.y*138.0+sin(plane.x*1.7)*.6)*.025;
     base*=1.0+fibres*(1.0-smoothstep(.015,.08,length(fwidth(plane))));
   }
@@ -251,6 +253,31 @@ void main(){
 const QUAD_VERT=`#version 300 es
 precision highp float;
 void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.0-1.0,0.0,1.0);}`;
+
+const SOURCE_SHORE_CODE_VERT=VERT.replace('uniform vec3 uBase;','uniform vec3 uBase;\nuniform float uCodeLift;')
+  .replace('gl_Position=uProjection*uView*world;','world.xyz+=vNormal*uCodeLift*step(2.5,vGrain);vWorld=world.xyz;gl_Position=uProjection*uView*world;');
+export const SOURCE_SHORE_CODE_FRAG=`#version 300 es
+precision highp float;
+in vec3 vWorld,vNormal;
+in float vGrain,vTake;
+uniform float uRoomTaken,uCodeLift;
+uniform vec4 uSourceExecution;
+uniform vec3 uSourceExecutionOrigin;
+${SOURCE_CODE_SCREEN_GLSL}
+out vec4 o;
+void main(){
+  if(vGrain<2.5)discard;
+  vec3 n=normalize(vNormal),inkWorld=vWorld-n*uCodeLift;
+  if(vTake>=0.0){
+    float going=clamp((uRoomTaken-vTake)/${TAKE_WINDOW.toFixed(2)},0.0,1.0);
+    float cell=fract(sin(dot(floor(inkWorld*7.0),vec3(12.9898,78.233,37.719)))*43758.5453);
+    if(cell<going)discard;
+  }
+  vec2 plane=abs(n.y)>.6?inkWorld.xz:vec2(abs(n.x)>.6?-sign(n.x)*inkWorld.z:sign(n.z)*inkWorld.x,-inkWorld.y);
+  vec4 execution=uSourceExecution;
+  execution.y*=1.0-smoothstep(8.0,32.0,length(inkWorld-uSourceExecutionOrigin));
+  o=sourceCodeInk(plane/vec2(6.0,4.0),1.0,vWorld,execution);if(o.a<.003)discard;
+}`;
 
 export const SOURCE_SHORE_COMPOSITE_FRAG=`#version 300 es
 precision highp float;
@@ -287,22 +314,24 @@ void main(){
   o=vec4(colour,uFinal>.5?1.0:mix(1.0,1.0/(1.0+depth*.14),coverage));
 }`;
 
-let gl=null,materialProgram=null,compositeProgram=null,pack=null;
+let gl=null,materialProgram=null,compositeProgram=null,codeProgram=null,pack=null;
 let hullFbo=null,hullColour=null,hullDepth=null,hullMarks=null,finalFbo=null,finalColour=null,width=0,height=0;
 let geometryKey='',geometry=null,vao=null,vertexBuffer=null,vertexCount=0;
 let sourceMaterialTexture=null;
 let importedAttributeState=new WeakMap();
 let lastMedium=null,lastCompositeTarget=null;
-const materialUniforms=new Map(),compositeUniforms=new Map();
+const materialUniforms=new Map(),compositeUniforms=new Map(),codeUniforms=new Map();
 const IDENTITY=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
 export const sourceShoreStats={ready:false,active:false,facade:'exposed-strata',boxCount:0,pieceCount:0,hardwareCount:0,hardwareDraws:0,triangles:0,far:SOURCE_SHORE_RANGE.far};
 const uniform=(program,cache,name)=>{if(!cache.has(name))cache.set(name,gl.getUniformLocation(program,name));return cache.get(name);};
 const mu=name=>uniform(materialProgram,materialUniforms,name),cu=name=>uniform(compositeProgram,compositeUniforms,name);
+const codeU=name=>uniform(codeProgram,codeUniforms,name);
 function compile(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(`Source shore shader: ${gl.getShaderInfoLog(s)}`);return s;}
 function program(vertex,fragment){const p=gl.createProgram(),v=compile(gl.VERTEX_SHADER,vertex),f=compile(gl.FRAGMENT_SHADER,fragment);gl.attachShader(p,v);gl.attachShader(p,f);gl.linkProgram(p);gl.deleteShader(v);gl.deleteShader(f);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(`Source shore program: ${gl.getProgramInfoLog(p)}`);return p;}
 export function sourceShoreInit(context){
   if(gl===context&&materialProgram)return true;
   gl=context;sourceMaterialTexture=null;importedAttributeState=new WeakMap();materialProgram=program(VERT,SOURCE_SHORE_MATERIAL_FRAG);compositeProgram=program(QUAD_VERT,SOURCE_SHORE_COMPOSITE_FRAG);
+  codeProgram=program(SOURCE_SHORE_CODE_VERT,SOURCE_SHORE_CODE_FRAG);codeUniforms.clear();
   materialUniforms.clear();compositeUniforms.clear();sourceShoreStats.ready=true;return true;
 }
 export function sourceShoreSetHardwarePack(next){pack=next;return !!pack?.catalog;}
@@ -392,6 +421,24 @@ export function sourceShoreDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,heig
     for(const p of entry.primitives){const print=printedSurfaceDescriptor(p.printedSurface);gl.uniform1f(mu('uPrintedPolarity'),print?.polarity==='dark-on-light'?1:print?2:0);gl.uniform1f(mu('uPrintedCoverage'),print?.coverage==='solid'?2:print?1:0);gl.uniform3fv(mu('uBase'),p.base.slice(0,3));gl.uniform3fv(mu('uEmissive'),p.emissive||[0,0,0]);gl.uniform1f(mu('uMetallic'),p.metallic??.1);gl.uniform1f(mu('uRoughness'),p.roughness??.8);gl.uniform1f(mu('uUseTex'),p.texture?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,p.texture);gl.uniform1i(mu('uTex'),0);drawImportedPrimitive(p);sourceShoreStats.hardwareDraws++;sourceShoreStats.triangles+=p.count/3;}
   }
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);sourceShoreStats.active=true;return true;
+}
+
+// Called while the post-dither glyph target and its independent depth are
+// bound. The same fixed cut-bank meshes and physical UVs own these clauses.
+export function sourceShoreCodeDraw({frame,camX,camY,camZ,yaw=0,pitch=0,width:w,height:h,boundaryOnly=false,bindCommon,camera:codeCamera=null}={}){
+  if(!(boundaryOnly?sourceShoreBoundaryVisible(frame):sourceShoreRenderActive(frame))||!codeProgram||!bindCommon)return false;
+  uploadGeometry(frame,boundaryOnly);
+  const camera=horizonCamera({camX,camY,camZ,yaw,pitch,aspect:w/h,...SOURCE_SHORE_RANGE});
+  gl.useProgram(codeProgram);bindCommon(codeU,{glyphLinear:1,view:camera.view});
+  gl.uniformMatrix4fv(codeU('uView'),false,camera.view);gl.uniformMatrix4fv(codeU('uProjection'),false,camera.projection);
+  gl.uniformMatrix4fv(codeU('uModel'),false,IDENTITY);gl.uniform1f(codeU('uImported'),0);gl.uniform1f(codeU('uMoving'),0);
+  gl.uniform1f(codeU('uLiftFloor'),Number(frame.lift.floor)||0);gl.uniform1f(codeU('uGateOpen'),0);gl.uniform1f(codeU('uGateTravel'),0);
+  gl.uniform1f(codeU('uCodeLift'),SOURCE_CODE_LIFT_METRES);gl.uniform1f(codeU('uRoomTaken'),clamp(frame.roomTaken));
+  const receipts=frame.executionReceipts||[],clock=receipts.reduce((value,r)=>Number.isFinite(r.at)&&Number.isFinite(r.age)?Math.max(value,r.at+r.age):value,0),
+    event=sourceReceiptExecutionEvent(receipts,clock,{scope:'first-nothingness'}),execution=sourceExecutionEnvelope(event,clock,{reducedMotion:!!codeCamera?.reducedMotion});
+  gl.uniform4fv(codeU('uSourceExecution'),sourceExecutionParameters(execution));gl.uniform3fv(codeU('uSourceExecutionOrigin'),event?.origin||[0,0,0]);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sourceTexture());gl.uniform1i(codeU('uGlyph'),0);
+  gl.bindVertexArray(vao);gl.drawArrays(gl.TRIANGLES,0,vertexCount);gl.bindVertexArray(null);return true;
 }
 
 // medium is a fixed world AABB {min,max,progress}; eye is the actual camera

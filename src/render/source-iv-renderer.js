@@ -9,6 +9,7 @@ import {sourceContinuationMeshPayload} from './source-continuation-renderer.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
+import {sourceAmbientFaultGeometry} from './source-ambient-fault-geometry.js';
 
 const PREFIX='source-IV-',GOODS=doorAssembly('bay-goods-pair',{activeLeaves:'all'});
 const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
@@ -16,7 +17,15 @@ const matrix=(x=0,y=0,z=0,yaw=0,sx=1,sy=sx,sz=sx)=>{
   const c=Math.cos(yaw),s=Math.sin(yaw);return new Float32Array([c*sx,0,-s*sx,0,0,sy,0,0,s*sz,0,c*sz,0,x,y,z,1]);
 };
 const multiply=(a,b)=>{const m=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)m[c*4+r]+=a[k*4+r]*b[c*4+k];return m;};
-const LIBRARY=SOURCE_IV_GEOMETRY.map(piece=>({...piece,name:PREFIX+piece.id}));
+// Sparse fixed remnants in the lost building: two quiet stretches and one
+// denser interruption near the broken piano. They never own walkable ground.
+export const SOURCE_IV_FAULT_SITES=Object.freeze([
+  Object.freeze({id:'entry-left',x:-14,y:6,z:-16,count:4,spreadX:9,spreadY:8,spreadZ:10,seed:417,size:5}),
+  Object.freeze({id:'piano-right',x:15,y:9,z:-51,count:9,spreadX:12,spreadY:12,spreadZ:15,seed:611,size:7}),
+  Object.freeze({id:'exit-left',x:-16,y:7,z:-91,count:3,spreadX:8,spreadY:8,spreadZ:10,seed:941,size:5}),
+]);
+const FAULT_LIBRARY=sourceAmbientFaultGeometry({sites:SOURCE_IV_FAULT_SITES,palettePrefix:PREFIX+'ambient-fault'});
+const LIBRARY=[...SOURCE_IV_GEOMETRY.map(piece=>({...piece,name:PREFIX+piece.id})),...FAULT_LIBRARY];
 const PAYLOADS=new Map(LIBRARY.map(piece=>[piece.name,sourceContinuationMeshPayload(piece)]));
 const placed=(id,mesh,m,extra={})=>({id:PREFIX+id,mesh,matrix:m,x:m[12],y:m[13],z:m[14],zone:ZONE.sourceSpace,
   structural:true,noReflection:true,sourceStructure:'source-IV',...extra});
@@ -38,18 +47,26 @@ export function installSourceIVMeshes(gl,pack,{maps=null}={}){
     for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}
     gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
+    const fault=piece.kind==='ambient-fault',silver=piece.palette==='silver';
+    const material=fault?{base:piece.base,emissive:piece.emissive,texture:silver?printed.texture:null,
+      normalTexture:silver?printed.normalTexture:null,ormTexture:silver?printed.ormTexture:null,
+      letteringFinish:silver?printed.letteringFinish:null,metallic:0,roughness:1,
+      sourceCodeStock:silver?printed.sourceCodeStock:undefined,materialRole:piece.materialRole,
+      ...(silver?sourceBlueprintMaterial(printed,{base:piece.base}):{})}
+      :{emissive:[0,0,0],...sourceBlueprintMaterial(printed,{base:[.42,.49,.43,1]})};
     pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,
       extras:{sourceIV:true,triangles:data.triangles,bounds:{min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])}},
-      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),emissive:[0,0,0],aoStrength:0,
+      primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),aoStrength:0,
         portrait:false,alphaCut:0,materialName:'Source IV printed structure',
-        ...sourceBlueprintMaterial(printed,{base:[.42,.49,.43,1]})}]});
+        ...material}]});
   }
   gl.bindVertexArray(null);return LIBRARY.map(piece=>piece.name);
 }
 export function sourceIVRenderFrame(state,presentation={}){
   const frame=sourceIVFrame(state),props=[];
-  for(const piece of LIBRARY){const center=PAYLOADS.get(piece.name).bounds.center;
-    props.push(placed(piece.id,piece.name,matrix(...center),{sourceIVRole:piece.id.startsWith('ground')?'ground':'threshold',supportY:piece.maxY}));}
+  for(const piece of LIBRARY){const center=PAYLOADS.get(piece.name).bounds.center,fault=piece.kind==='ambient-fault';
+    props.push(placed(piece.id,piece.name,matrix(...center),fault?{sourceIVRole:'ambient-fault',structural:false,collidable:false,noShadow:true,ambientFault:true,sheets:piece.sheetRanges.length}
+      :{sourceIVRole:piece.id.startsWith('ground')?'ground':'threshold',supportY:piece.maxY}));}
   for(const model of SOURCE_IV_MODELS)props.push(placed(model.id,model.mesh,sourceIVModelMatrix(model),{
     sourceIVRole:model.id==='high-world'?'lost-world':'model',contactId:model.id}));
   for(const [kind,door]of [['entry',frame.entryDoor],['exit',frame.exitDoor]]){

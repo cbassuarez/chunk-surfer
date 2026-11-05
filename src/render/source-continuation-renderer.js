@@ -26,10 +26,13 @@ import {sourceRestCubeGeometryLibrary} from './source-rest-cube-models.js';
 import {sourceRestDestructionGeometryLibrary} from './source-rest-destruction-models.js';
 import {SOURCE_REST_HAND_ASSET,SOURCE_REST_HAND_MESHES} from './source-rest-body.js';
 import {applySourceRestDestruction} from './source-rest-destruction.js';
+import {sourceFreedMemoryFrame} from './source-freed-memory.js';
+import {sourceContinuationExecutionEvent,sourceExecutionTrailFrame} from './source-execution-trails.js';
+import {sourceParserGeometryLibrary,sourceParserArchitectureFrame,sourceParserArchitectureImages} from './source-parser-architecture.js';
 import {sourceRestImpactInView} from './source-rest-impact-view.js';
 import {sourceRestAfflictionCamera} from './source-rest-affliction-view.js';
 import {sourceRestFacultyFrame} from '../game/source-rest-vision.js';
-import {applySourceRestReturn} from './source-rest-return.js';
+import {applySourceRestReturn,sourceRestReturnRoom} from './source-rest-return.js';
 import {sourceRestBellGeometryLibrary} from './source-rest-bells.js';
 import {SOURCE_REST_FLOOD_MESHES} from '../game/source-rest-flood.js';
 import {sourceRestFloodGeometryLibrary} from './source-rest-flood-models.js';
@@ -39,11 +42,17 @@ import {createSourceRestNoteAsset} from '../game/source-rest-note-score.js';
 import {continuationCameraBasis,continuationCameraEye,continuationBodyBasis} from '../game/source-continuation-portals.js';
 import {continuationVoidCameraEye} from '../game/source-continuation-void.js';
 import {sourceContinuationVoidViews,sourceContinuationVoidCopies,sourceContinuationVoidInstance,sourceContinuationVoidInFrustum,sourceContinuationVoidAcousticPoint,SOURCE_VOID_VIEW_LIMITS} from './source-continuation-void.js';
+import {sourceContinuationIslandProps,sourceContinuationIslandGeometryLibrary} from './source-continuation-islands.js';
+import {sourceContinuationBlackSunProps,sourceContinuationBlackSunGeometryLibrary} from './source-continuation-black-sun.js';
+import {sourceContinuationLeafFrame} from './source-continuation-leaves.js';
+import {SOURCE_RIFT,sourceRiftFaultsFor,sourceRiftLips} from '../game/source-rift.js';
 import {sourceContinuationEscherFrame,sourceContinuationEscherGeometryLibrary} from './source-continuation-escher.js';
+import {sourceContinuationAmbientFaultGeometry} from './source-continuation-faults.js';
 import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {sourcePrintUV,sourcePrintMaps,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
+import {sourceSilverWalkwaySurface,SOURCE_SILVER_WALKWAY_PRINT_SURFACE} from './source-walkway-finish.js';
 import {sourceSurroundingsFrame} from '../game/source-surroundings.js';
 import {SOURCE_SURROUNDINGS} from '../data/source-surroundings.js';
 import {continuationDitherIntensity} from './source-dither-routing.js';
@@ -222,10 +231,13 @@ const canonical={
   ...sourceRestFloodGeometryLibrary(),
   ...sourceRestSeabedGeometryLibrary(),
   ...sourceContinuationEscherGeometryLibrary(),
+  ...sourceContinuationIslandGeometryLibrary(),
+  ...sourceContinuationBlackSunGeometryLibrary(),
   ...sourceConnectorGeometryLibrary(),
   'rest-judgment-lightning':{...cylinderGeometry(6),material:'linen',base:[.82,.89,.94,1],emissive:[1.2,1.4,1.6],roughness:1},
   block:{...solidGeometry({minX:-.5,maxX:.5,minY:0,maxY:1,minZ:-.5,maxZ:.5}),material:'metal'},
-  ...Object.fromEntries([[1,.015,.72],[.015,.82,1],[.42,.015,1],[.74,1,.015]].map((rgb,index)=>[
+  'rift-slit':{...solidGeometry({minX:-.5,maxX:.5,minY:-.5,maxY:.5,minZ:-.5,maxZ:.5}),material:'dark',base:[.0015,.0015,.003,1],roughness:1},
+  ...Object.fromEntries(SOURCE_RIFT.ink.map((rgb,index)=>[
     `chunk-error-${index}`,{...solidGeometry({minX:-.5,maxX:.5,minY:-.5,maxY:.5,minZ:-.5,maxZ:.5}),
       material:'source-error',materialRole:'source-chunk-error',base:[...rgb,1],emissive:rgb.map(channel=>channel*.36),roughness:.22},
   ])),
@@ -263,8 +275,12 @@ export function sourceContinuationGeometry(state={phase:'wrong-return'}){
   for(const solid of allSolids.values())if(solid.role!=='furniture')geometry.push({id:solid.id,name:name(regionOf(solid),'solid',solid.id),region:regionOf(solid),kind:'solid',material:solid.material||'source',role:solid.role,level:solid.level,descriptor:solid,...solidGeometry(solid)});
   return geometry;
 }
-function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary()];}
+function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary(),...sourceContinuationAmbientFaultGeometry(),...sourceParserGeometryLibrary()];}
 const meshLibrary=allGeometry(),meshTriangles=meshLibrary.reduce((n,p)=>n+p.i.length/3,0),rimLibrary=meshLibrary.filter(p=>p.kind==='edge').map(p=>({...p,center:boundsOf(p.p).center}));
+// Only meshes which already carry actual Source print may leave lettering.
+// Imported architecture opts in through its existing source-cut joint faces;
+// the glyph pass still checks each primitive, so native wood stays unprinted.
+const sourceMemoryMeshes=new Set([...meshLibrary.filter(p=>isSource(p.material)).map(p=>p.name),...SOURCE_CONTINUATION_ARCHITECTURE.meshes]);
 const finishTextures=new WeakMap();
 function finishTexture(gl,material){
   if(!['wood','piano-wood','case-lining'].includes(material))return null;let cache=finishTextures.get(gl);if(!cache){cache=new Map();finishTextures.set(gl,cache);}if(cache.has(material))return cache.get(material);
@@ -305,19 +321,20 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
   // actual paper/notes and native wood/cloth on their own retained materials.
   // The divide control remains dark-on-light for diagnostic comparisons.
   const palePrinted=maps?{...maps,blueprint:false}:{...sourcePrintMaps(gl,'divide'),blueprint:false};
+  let silverPrinted=null;
   for(const piece of missing){
     const data=sourceContinuationMeshPayload(piece),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
     const bind=(location,values,size)=>{gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    const source=isSource(piece.material),sourceSurface=piece.kind==='surface'&&printed.blueprint,
+    const source=isSource(piece.material),walkway=source&&printed.blueprint===true&&sourceSilverWalkwaySurface(piece),sourceSurface=piece.kind==='surface'&&printed.blueprint,
       paleStock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall',
-      stock=sourceSurface?printed:paleStock?palePrinted:printed,
+      stock=walkway?(silverPrinted||=(maps?{...maps,blueprint:true}:{...sourcePrintMaps(gl,'silver-fracture'),blueprint:true})):sourceSurface?printed:paleStock?palePrinted:printed,
       base=piece.base||[...(paint[piece.material]||paint.source),1],
       localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
     const edge=/edge-steel/.test(piece.material);
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),base,emissive:piece.emissive||[0,0,0],texture:source?stock.texture:finishTexture(gl,piece.material),normalTexture:source?stock.normalTexture:null,ormTexture:source?stock.ormTexture:null,letteringFinish:source?stock.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.roughness??(piece.material==='earthfall-backing'?1:source?1:edge?.91:isMetal(piece.material)?.58:.91),aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,sourceSurroundingsPressure:piece.sourceSurroundingsPressure===true,sourceSurroundingsArcRadius:piece.sourceSurroundingsArcRadius||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(stock,{base}):{})}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),base,emissive:piece.emissive||[0,0,0],texture:source?stock.texture:finishTexture(gl,piece.material),normalTexture:source?stock.normalTexture:null,ormTexture:source?stock.ormTexture:null,letteringFinish:source?stock.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.roughness??(piece.material==='earthfall-backing'?1:source?1:edge?.91:isMetal(piece.material)?.58:.91),aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:walkway?'source-silver-fracture':piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,sourceSurroundingsPressure:piece.sourceSurroundingsPressure===true,sourceSurroundingsArcRadius:piece.sourceSurroundingsArcRadius||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(stock,{base}):{}),...(walkway?{printedSurface:SOURCE_SILVER_WALKWAY_PRINT_SURFACE}:{})}]});
   }
   gl.bindVertexArray(null);return pieces.map(p=>p.name);
 }
@@ -392,7 +409,7 @@ export function sourceContinuationCamera(frame,{viewportAspect=16/9}={}){
   return{eye:[finite(player.x),feet+EYE,finite(player.z)],yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
 }
 
-export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,viewportTanHalfFov=.95,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true,escherMemory=null}={}){
+export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewportAspect=16/9,viewportTanHalfFov=.95,studyRotation=0,reducedMotion=false,noteScore=null,couperinNoteScore=null,flashMode='full',restBodyReady=true,escherMemory=null,leafMemory=null}={}){
   const frame=sourceContinuationFrame(state),player=frame.player||state.player||state,geometry=frame.geometry||{},surfaces=geometry.surfaces||continuationSurfaces(state),solids=geometry.solids||continuationSolids(state),doors=geometry.doors||continuationDoors(state),memoryProps=geometry.props||continuationProps(state);
   const baseCamera=sourceContinuationCamera(frame,{viewportAspect}),restSeat=state.sourceRestView&&sourceRestSeatForState(state);
   let camera=restSeat&&state.sourceRestView.seatId===restSeat.id
@@ -676,6 +693,13 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   }
   beam('door-island-crown',[destination.x,destination.y+7,destination.z-3.4],[destination.x,destination.y+7,destination.z+3.4],.11,'rest-sky-wire',{region:'catch',level:3,islandBeacon:true});
   for(const x of [-158,-153,-148,-143])put('door-route-light-'+x,PREFIX+'rest-lamp-light',x,-12.48,-93,0,.17,.10,.17,{region:'catch',level:3,islandBeacon:true,practical:true});
+  // One lit thread rises from the door island through the whole universe,
+  // so the right island is legible from any shelf, causeway or seat.
+  if(phaseOf(state)==='catch')beam('door-island-thread',[destination.x+.6,destination.y+7,destination.z],[destination.x+.6,destination.y+96,destination.z],.07,'rest-sky-mote',{region:'catch',level:3,islandBeacon:true,cullRadius:92});
+  // The Catch is one island among many; only the Catch frame carries them.
+  for(const p of sourceContinuationIslandProps(state,{origin,time:finite(state.elapsed),reducedMotion}))props.push(p);
+  // Over it the black sun eats the blood moon; its pull is the Catch's tide.
+  for(const p of sourceContinuationBlackSunProps(state,{origin,time:finite(state.elapsed),reducedMotion}))props.push(p);
   // The landing and narrow spine behind the entry are the floor just crossed,
   // with their original lower fixtures translated through the shared door.
   // They stay fixed in this world; architectural visibility still occludes them.
@@ -739,6 +763,11 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   // leave. Nothing blinks or tracks an invented rhythm.
   const restDegradation=restSeat&&phaseOf(state)===restSeat.phase&&state.sourceRestView?.seatId===restSeat.id
     ?Math.max(0,Math.min(1,finite(state.sourceRestView.degradation))):0;
+  // Intact canonical placement is supplied on every frame, before recession
+  // mutates these instances. A late seek therefore retains the same address
+  // as continuous playback, without a first-visible snapshot or scene cache.
+  const codeRestProps=restDegradation>.42||affliction?.active===true
+    ?props.filter(p=>sourceMemoryMeshes.has(p.mesh)).map(p=>({...p,matrix:new Float32Array(p.matrix)})):[];
   const restEase=(a,b,v)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
   if(restDegradation>.42){
     const distant=restEase(.42,.78,restDegradation),ground=restEase(.63,.88,restDegradation),place=restEase(.77,.91,restDegradation);
@@ -759,6 +788,16 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   if(!restBodyReady){destruction.body=[];destruction.diagnostics.bodyParts=0;}
   destruction.diagnostics.bodyAvailable=!!restBodyReady;
   if(destruction.diagnostics.active)props.splice(0,props.length,...destruction.props,...destruction.debris,...destruction.body);
+  const freedMemory=sourceFreedMemoryFrame(codeRestProps,props,{clock:restHorizon?.clock??finite(affliction?.unwrappedTime,state.sourceRestView?.musicTime)});
+  props.splice(0,props.length,...freedMemory.props.filter(p=>!p.sourceCodeOnly));
+  const parser=sourceParserArchitectureFrame(state,{origin}),localExecution=sourceContinuationExecutionEvent(state),
+    executionEvent=localExecution?{...localExecution,origin:localExecution.origin.map((v,k)=>v+[origin.x,origin.y,origin.z][k])}:null,
+    executionTrail=sourceExecutionTrailFrame([...props,...freedMemory.memories,...parser.props],executionEvent,{
+      clock:state.elapsed,reducedMotion,eligible:p=>sourceMemoryMeshes.has(p.mesh)||p.parserArchitecture===true
+    });
+  props.splice(0,props.length,...executionTrail.props.filter(p=>!p.sourceCodeOnly&&!p.parserArchitecture));
+  const canonicalCode=executionTrail.props.filter(p=>p.sourceCodeOnly),sourceCodeInstances=[],
+    canonicalParser={...parser,props:executionTrail.props.filter(p=>p.parserArchitecture===true)};
   const pursuer=frame.hush||state.hush;
   let hush=pursuer?.active?{
     id:pursuer.id||'source-continuation-hush',x:(origin.x+finite(pursuer.x))/CELL-.5,y:(origin.z+finite(pursuer.z))/CELL-.5,
@@ -776,10 +815,12 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     originMatrix=matrix(origin.x,origin.y,origin.z),unanchor=matrix(-origin.x,-origin.y,-origin.z),
     sourceExcludes=[...portalViews.map(v=>v.planes),...voidViews.excludes].map(p=>transformPortalPlanes(p,originMatrix)),allProps=[...props],allLights=[...lights],chartId=chartOf(state);
   props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
+  sourceCodeInstances.push(...canonicalCode.filter(p=>chartOf(p)===chartId).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   lights.splice(0,lights.length,...allLights.filter(l=>chartOf(l)===chartId));
   const submitTransform=(p,m,extra={})=>{const q=transform(m,[p.x,p.y,p.z]);return{...p,...extra,matrix:multiply(m,p.matrix),x:q[0],y:q[1],z:q[2],...(p.surroundings?{sourceWorldMatrix:portalMultiply(m,p.sourceWorldMatrix||identity())}:{})};};
   for(const view of portalViews){const worldMap=portalMultiply(originMatrix,portalMultiply(view.toCurrent,unanchor)),planes=transformPortalPlanes(view.planes,originMatrix);
     for(const p of allProps)if(chartOf(p)===view.destinationChart)props.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
+    for(const p of canonicalCode)if(chartOf(p)===view.destinationChart)sourceCodeInstances.push(submitTransform(p,worldMap,{id:p.id+':through:'+view.id,canonicalId:p.canonicalId||p.id,portalClipPlanes:planes,portalExcludePlanes:null,portalClipId:view.id,portalDestination:true,noShadow:true}));
     for(const l of allLights)if(chartOf(l)===view.destinationChart){const q=transform(worldMap,[l.x,l.y,l.z]);lights.push({...l,id:l.id+':through:'+view.id,x:q[0],y:q[1],z:q[2],portalClipId:view.id});}
   }
   // Below all real floors, exact frustum rejection releases slots for the
@@ -793,13 +834,35 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     eye:presentation.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),forward:presentation.basis.forward,origin,
     portalCount:sourceExcludes.length,maxInstances:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances});
   if(restReturn.diagnostics.active){props.splice(0,props.length,...restReturn.props);lights.splice(0,lights.length,...restReturn.lights);}
+  // Code never consumes physical aperture/budget slots. It follows a Return
+  // only after the actual room has opened that aperture successfully.
+  if(restReturn.planes){
+    for(let i=0;i<sourceCodeInstances.length;i++){const p=sourceCodeInstances[i];sourceCodeInstances[i]={...p,portalExcludePlanes:[...(p.portalExcludePlanes||[]),restReturn.planes]};}
+    for(const p of sourceRestReturnRoom(canonicalCode,restReturn.frame.seat))sourceCodeInstances.push(submitTransform(p,restReturn.frame.toCurrent,{id:p.id+':through:rest-return:'+restReturn.frame.seatId,canonicalId:p.canonicalId||p.id,restReturnDestination:true,portalDestination:true,portalClipId:'rest-return:'+restReturn.frame.seatId,portalClipPlanes:restReturn.planes,portalExcludePlanes:null,noShadow:true}));
+  }
   if(restReturn.planes)sourceExcludes.push(restReturn.planes);
+  const parserArchitecture=sourceParserArchitectureImages(canonicalParser,{chartId,origin,portalViews,voidViews,sourceExcludes,restReturn});
   // Exact aperture echoes retain their native budget; the merged fall images
   // have their own fixed instance ceiling and must not displace seam geometry.
   const escher=sourceContinuationEscherFrame(state,{voidViews,origin,memory:escherMemory});
+  // The opening's leaves, drawn toward whatever devours this Source's sky.
+  const leaves=sourceContinuationLeafFrame(state,{origin,memory:leafMemory,reducedMotion});
+  // A fault that opens stands like the practice hall's tear, in the same ink:
+  // a black slit between torn lips, kept apart from the architecture budget.
+  const riftFaults=[];
+  for(const fault of sourceRiftFaultsFor(state)){
+    const flags={chartId:fault.chartId,region:fault.phase,level:fault.level,riftFault:fault.id,noShadow:true,noReflection:true,cullRadius:3},
+      c=Math.cos(fault.yaw),s=Math.sin(fault.yaw),at=(x,y,z)=>[origin.x+fault.x+x*c-z*s,origin.y+fault.feet+y,origin.z+fault.z+x*s+z*c];
+    riftFaults.push(positioned(PREFIX+'rift-slit-'+fault.id,PREFIX+'rift-slit',matrix(...at(0,SOURCE_RIFT.height/2,0),fault.yaw,SOURCE_RIFT.width,SOURCE_RIFT.height,.03),flags));
+    for(const lip of sourceRiftLips())riftFaults.push(positioned(PREFIX+`rift-lip-${fault.id}-${lip.id}`,PREFIX+`chunk-error-${lip.ink}`,matrix(...at(lip.x,lip.y,lip.z),fault.yaw,lip.sx,lip.sy,lip.sz),flags));
+    const [lx,ly,lz]=at(0,1.9,1.1);
+    lights.push({id:PREFIX+'rift-fault-'+fault.id,x:lx,y:ly,z:lz,radius:7,intensity:1.8,color:[.72,.78,.86],penetration:.7,region:fault.phase,level:fault.level,chartId:fault.chartId,riftFault:fault.id});
+  }
   const voidCopies=sourceContinuationVoidCopies({views:voidViews,canonicalProps:allProps,canonicalLights:allLights,origin,
     remaining:SOURCE_CONTINUATION_ARCHITECTURE.maxInstances-props.length});
   props.push(...voidCopies.props);lights.push(...voidCopies.lights);
+  const codeVoidCopies=sourceContinuationVoidCopies({views:voidViews,canonicalProps:canonicalCode,origin,remaining:SOURCE_VOID_VIEW_LIMITS.props});
+  sourceCodeInstances.push(...codeVoidCopies.props);
   // Portal and void echoes copy a pulled prop's tide, but each image would
   // fall toward the one real hole. An echo vanishes once its original is
   // released and is drawn untouched before then.
@@ -854,11 +917,16 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   const compensate=portalMultiply(originMatrix,portalMultiply(presentation.compensation,unanchor));
   for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(compensate,impact.point);
   for(let i=0;i<props.length;i++){const p=submitTransform(props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));props[i]=p;}
+  for(let i=0;i<sourceCodeInstances.length;i++){const p=submitTransform(sourceCodeInstances[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));sourceCodeInstances[i]=p;}
+  for(let i=0;i<parserArchitecture.props.length;i++){const p=submitTransform(parserArchitecture.props[i],compensate);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));parserArchitecture.props[i]=p;}
   for(const l of lights){const q=transform(compensate,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}
   for(const p of pressureInstances){p.matrix=portalMultiply(compensate,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));}
   // Upright house-of-stairs images yield to the exact aperture views.
   const escherApertures=voidViews.domain?[...voidViews.lower,...voidViews.upper].map(v=>transformPortalPlanes(v.planes,originMatrix)):[];
   for(let i=0;i<escher.props.length;i++){const p=submitTransform({...escher.props[i],portalExcludePlanes:escher.props[i].excludeVoidApertures&&escherApertures.length?escherApertures:null},compensate);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));escher.props[i]=p;}
+  for(let i=0;i<riftFaults.length;i++)riftFaults[i]=submitTransform(riftFaults[i],compensate);
+  // Leaves ride the same presented world as everything they blow past.
+  for(let i=0;i<leaves.props.length;i++)leaves.props[i]=submitTransform(leaves.props[i],compensate);
   // These bounded, non-colliding memories are not aperture copies: preserve
   // every native seam image and submit only the current chart's fragments.
   const coastalEchoes=sourceCoastalEchoFrame(state).filter(p=>chartOf(p)===chartId).map(echo=>{
@@ -866,15 +934,25 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     const at=m?multiply(originMatrix,m):matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz);
     return submitTransform(positioned(PREFIX+'coastal-'+id,mesh,at,flags),compensate);
   });
+  // Fixed world-space sheets are submitted separately from the bounded native
+  // portal images; they cannot consume the receiving world's seam geometry.
+  const ambientFaults=sourceContinuationAmbientFaultGeometry().filter(piece=>piece.phase===phaseOf(state)&&piece.chartId===chartId).map(piece=>{
+    const [x,y,z]=boundsOf(piece.p).center,p=positioned(piece.id,piece.name,matrix(origin.x+x,origin.y+y,origin.z+z),
+      {chartId,region:piece.phase,ambientFault:true,faultPalette:piece.palette,faultSheets:piece.sheetRanges.length,structural:false,collidable:false,noShadow:true,noReflection:true,cullRadius:90,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null});
+    const q=submitTransform(p,compensate);if(q.portalExcludePlanes)q.portalExcludePlanes=q.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,compensate));return q;
+  });
   let eye=presentation.eye.map((v,k)=>v+[origin.x,origin.y,origin.z][k]),worldYaw=camera.yaw,
     aim=camera.aimTarget?.map((v,k)=>v+[origin.x,origin.y,origin.z][k])||null;
   const rotation=phaseOf(state)==='catch'?finite(studyRotation):0;
   if(rotation){const cx=origin.x+center.x,cz=origin.z+center.z,rigid=multiply(matrix(cx,0,cz,rotation),matrix(-cx,0,-cz));for(const p of props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.playerBody)p.heading=angle(p.heading+rotation);}for(const l of lights){const q=transform(rigid,[l.x,l.y,l.z]);l.x=q[0];l.y=q[1];l.z=q[2];}eye=transform(rigid,eye);if(aim)aim=transform(rigid,aim);if(hush){const q=transform(rigid,[(hush.x+.5)*CELL,hush.floorH,(hush.y+.5)*CELL]);hush={...hush,x:q[0]/CELL-.5,y:q[2]/CELL-.5,floorH:q[1],performance:{...hush.performance,heading:angle(hush.performance.heading+rotation)}};}worldYaw=angle(worldYaw+rotation);}
   if(rotation){const gate=surroundings.gate,q=transform(multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z)),[gate.x,gate.y,gate.z]);gate.x=q[0];gate.z=q[2];gate.normalX=Math.cos(rotation);gate.normalZ=Math.sin(rotation);}
+  if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z));for(let i=0;i<ambientFaults.length;i++){const p=submitTransform(ambientFaults[i],rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));ambientFaults[i]=p;}}
   if(rotation){const rigid=multiply(matrix(origin.x+center.x,0,origin.z+center.z,rotation),matrix(-origin.x-center.x,0,-origin.z-center.z));
     for(const impact of destruction.diagnostics.mistakeImpacts||[])impact.point=transform(rigid,impact.point);
     for(const p of props){if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
     for(const p of pressureInstances){p.matrix=portalMultiply(rigid,p.matrix);if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
+    for(const p of sourceCodeInstances){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.surroundings&&p.sourceWorldMatrix)p.sourceWorldMatrix=portalMultiply(rigid,portalMultiply(p.sourceWorldMatrix,portalInverse(rigid)));if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
+    for(const p of parserArchitecture.props){const q=transform(rigid,[p.x,p.y,p.z]);p.matrix=multiply(rigid,p.matrix);p.x=q[0];p.y=q[1];p.z=q[2];if(p.portalClipPlanes)p.portalClipPlanes=transformPortalPlanes(p.portalClipPlanes,rigid);if(p.portalExcludePlanes)p.portalExcludePlanes=p.portalExcludePlanes.map(planes=>transformPortalPlanes(planes,rigid));}
   }
   surroundings.props=props.filter(p=>p.surroundings).length;
   for(const impact of destruction.diagnostics.mistakeImpacts||[]){
@@ -890,7 +968,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     counts:{surfaces:props.filter(p=>p.physicalKind==='surface').length,solids:props.filter(p=>p.physicalKind==='solid').length,props:props.length,lights:selectedLights.length,body:props.filter(p=>p.playerBody).length,hush:pressureInstances.length?1:0,hushViews:pressureInstances.length},
     noteArchitecture:restScenery?.noteArchitecture?.diagnostics||null,...(phaseOf(state)==='catch'?{harpsichord:restScenery?.harpsichord||null}:{}),
     restHorizon,horizon:restHorizon?{...restHorizon.diagnostics,centre:restHorizon.centre,tides:destruction.diagnostics.horizonTides??0}:null,
-    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,voidLoop:voidCopies.diagnostics,escher,coastalEchoes,chunkFault:{active:chunkFault.active,stage:chunkFault.stage,frontX:chunkFault.frontX,proximity:chunkFault.proximity,touching:chunkFault.touching,collisionActive:chunkFault.collisionActive,parts:chunkFault.pieces.length},sunset:state.sourceRestView?.weatherCue?.sunset||null,
+    sourceCodeInstances,parserArchitecture,executionTrail:executionTrail.diagnostics,freedMemory:{...freedMemory.diagnostics,canonicalRetained:canonicalCode.length,submitted:sourceCodeInstances.length,voidCopies:codeVoidCopies.props.length},
+    affliction:affliction?{...affliction}:null,destruction:destruction.diagnostics,restReturn:restReturn.diagnostics,voidLoop:voidCopies.diagnostics,escher,leaves,riftFaults,ambientFaults,ambientFaultDiagnostics:{batches:ambientFaults.length,sheets:ambientFaults.reduce((n,p)=>n+p.faultSheets,0)},coastalEchoes,chunkFault:{active:chunkFault.active,stage:chunkFault.stage,frontX:chunkFault.frontX,proximity:chunkFault.proximity,touching:chunkFault.touching,collisionActive:chunkFault.collisionActive,parts:chunkFault.pieces.length},sunset:state.sourceRestView?.weatherCue?.sunset||null,
     flood:restScenery?.flood?{...restScenery.flood,props:undefined,water:{...restScenery.flood.water,
       siteMatrix:multiply(matrix(origin.x,origin.y,origin.z),restScenery.flood.water.siteMatrix),
       lights:(restScenery.flood.water.lights||[]).map(l=>({...l,position:l.position.map((n,k)=>n+[origin.x,origin.y,origin.z][k])}))}}:null,
@@ -927,7 +1006,7 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
       renderer.r3dSetPlan(rgba,size,size,material);renderer.r3dSetSourceScene({key:'source:wrong-return-and-the-catch',look:{roomMemoryActive:true,blueprint:true,chroma:.78,paper:0,finish:'silicon'},weather:{rain:0,moon:0,clouds:0},staticInstances:[],dynamicInstances:[],corpus:[]});renderer.r3dSetLookProfile?.('explore',{transitionMs:0});updateLighting();renderer.r3dSnapCameraOnNextFrame?.();renderer.r3dResetVfdMemory?.();initialized=true;return true;
     })().catch(reason=>{releaseRange?.();releaseRange=null;error=String(reason?.message||reason);throw reason;});return loading;
   }
-  let escherMemory=null;
+  let escherMemory=null,leafMemory=null;
   function render(state){
     if(!initialized||released)return false;if(error)throw Error(error);
     if(!resident()){
@@ -941,7 +1020,7 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     const viewport=getViewport?.(),bodyCatalog=new Set(props.propMeshCatalog?.()||[]);
     lastViewport=viewport;
     lastRestState={phase:state.phase,chartId:state.chartId??0,sourceRestView:state.sourceRestView};
-    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,viewportTanHalfFov:viewport?.tanHalfFov||.95,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name)),escherMemory});escherMemory=last.escher?.memory||null;props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps([...last.props,...last.escher.props,...last.coastalEchoes]);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
+    last=sourceContinuationRenderFrame(state,{anchor,viewportAspect:viewport?.width&&viewport?.height?viewport.width/viewport.height:16/9,viewportTanHalfFov:viewport?.tanHalfFov||.95,studyRotation,reducedMotion:!!getReducedMotion(),noteScore:noteAsset.snapshot().score,couperinNoteScore:couperinNoteAsset.snapshot().score,flashMode:getFlashMode(),restBodyReady:SOURCE_REST_HAND_MESHES.every(name=>bodyCatalog.has(name)),escherMemory,leafMemory});escherMemory=last.escher?.memory||null;leafMemory=last.leaves?.memory||null;props.setSourceSurroundingsGate?.(last.surroundings.gate);props.setSourceSurroundingsPressure?.(last.surroundings.pressure);renderer.r3dSetProps([...last.props,...last.sourceCodeInstances,...last.parserArchitecture.props,...last.escher.props,...last.riftFaults,...last.ambientFaults,...last.coastalEchoes]);renderer.r3dSetDynamicProps?.(last.leaves?.props||[]);renderer.r3dSetLocalLights(last.lights);
     const restSeat=SOURCE_REST_SEATS.find(seat=>seat.phase===state.phase),distance=restSeat?Math.hypot(state.x-restSeat.x,state.z-restSeat.z):Infinity,near=!!restSeat&&state.chartId===restSeat.chartId&&Math.abs(state.feet-restSeat.feet)<1;
     const weatherPresence=near?Math.max(0,Math.min(1,(16-distance)/10)):0,cue=state.sourceRestView?.weatherCue;
     renderer.r3dSetSourceWeather?.({rain:(cue?.rain||0)*weatherPresence,moon:(cue?.moon||0)*weatherPresence,clouds:(cue?.clouds||0)*weatherPresence,
@@ -962,5 +1041,5 @@ export function createSourceContinuationRenderer({renderer=R3,props=P3,resolveAs
     return renderer.r3dFrame({px:last.eye[0]/CELL-.5,py:last.eye[2]/CELL-.5,floorH:last.floorH,authoredPropRange:SOURCE_CONTINUATION_ARCHITECTURE.far,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:last.hush,hushSecondary:null,sourcePressureInstances:last.pressureInstances,audio:0,light:torchFrame.on?1:0,torchLook:torchFrame.look,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false,sourceDitherIntensity:continuationDitherIntensity(state),coastalMemory:last.flood?.water||null,...(last.authoredCamera?{authoredCamera:last.authoredCamera}:{})})!==false;
   }
   function dispose(){if(released)return false;released=true;initialized=false;clearSource();releaseRange?.();releaseRange=null;onRelease();return true;}
-  return{initialize,render,restApertureFrame:()=>initialized&&!released&&!repair&&!error?sourceRestApertureFrame(last,lastRestState,{anchor,viewport:lastViewport}):null,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,horizon:last.horizon,harpsichord:last.harpsichord,affliction:last.affliction,faculties:last.faculties,destruction:last.destruction,restReturn:last.restReturn,voidLoop:last.voidLoop,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
+  return{initialize,render,restApertureFrame:()=>initialized&&!released&&!repair&&!error?sourceRestApertureFrame(last,lastRestState,{anchor,viewport:lastViewport}):null,reducedMotion:()=>!!getReducedMotion(),acousticFrame:sourceContinuationAcousticFrame,ready:()=>initialized&&!released&&resident()&&!error,clear:()=>renderer.r3dClearScreen?.(),dispose,diagnostics:()=>({ready:initialized&&!released&&resident()&&!error,released,restoringScenery:!!repair,error,noteScore:{state:noteAsset.snapshot().state,error:noteAsset.snapshot().error,notes:noteAsset.snapshot().score?.notes.length||0},couperinNoteScore:{state:couperinNoteAsset.snapshot().state,error:couperinNoteAsset.snapshot().error,notes:couperinNoteAsset.snapshot().score?.notes.length||0},lighting:{...lightingFrame},meshCount:customNames.length,triangles:meshTriangles,frame:last?{phase:last.phase,chartId:last.chartId,portals:last.portals,pressureInstances:last.pressureInstances,eye:[...last.eye],pitch:last.pitch,yaw:last.yaw,cameraAimTarget:last.cameraAimTarget,strictOverhead:last.strictOverhead,studyRotation:last.studyRotation,revealProgress:last.revealProgress,recovery:last.recovery,activeLevel:last.activeLevel,shownLevels:last.shownLevels,hiddenAbove:last.hiddenAbove,counts:last.counts,hush:last.hush,architecture:last.architecture,surroundings:last.surroundings,noteArchitecture:last.noteArchitecture,horizon:last.horizon,harpsichord:last.harpsichord,affliction:last.affliction,faculties:last.faculties,destruction:last.destruction,restReturn:last.restReturn,voidLoop:last.voidLoop,parserArchitecture:last.parserArchitecture.diagnostics,executionTrail:last.executionTrail,flood:last.flood,torch:torchFrame,lighting:{...lightingFrame}}:null})};
 }

@@ -6,6 +6,7 @@
 export const START_MIN = 21 * 60 + 38;      // 21:38, the service door
 export const PER_TAKE_MIN = 72;             // a room, and the walk to the next
 export const DEAD = '--:--';                // after the confrontation
+export const SOURCE_STAMP = '  :  ';        // recorded where there is no time
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -41,6 +42,7 @@ const EROSION = [1, 2, 3, 4, 4];
 export function takeStamp(index, { dead = false, captured = null } = {}) {
   if (dead) return DEAD;
   if (index < 0) return '';
+  if (captured?.sourceHeld === true) return SOURCE_STAMP;   // Source keeps no time, so its tapes have none.
   const measured = captured?.schema === 1 && typeof captured.elapsedSeconds === 'number'
     && Number.isFinite(captured.elapsedSeconds) && captured.elapsedSeconds >= 0;
   const stamp = measured ? clockString(START_MIN + Math.floor(captured.elapsedSeconds / 60)) : timeOfTake(index);

@@ -15,20 +15,20 @@ const input={runId:'deadline-test',runActive:true,workOrderAccepted:true,active:
   region:'source',entryPose:{x:2,z:3,feet:8.4,yaw:.3},safeBoundary:true,assetsReady:true};
 const step=(value,extra={})=>D.stepNightDeadline(value,{...input,...extra});
 function terminal(runId='deadline-test'){
-  let state=step(D.freshNightDeadline({runId}),{runId,elapsedSeconds:30120}).state;
-  state=step(state,{runId,elapsedSeconds:30120,claimPresentation:true}).state;
+  let state=step(D.freshNightDeadline({runId}),{runId,elapsedSeconds:30180}).state;
+  state=step(state,{runId,elapsedSeconds:30180,claimPresentation:true}).state;
   return D.completeNightDeadline(state,{outcome:'survived',sceneCheckpoint:{schema:1,phase:'complete',activeSeconds:45}});
 }
 
 test('a full fresh night has exactly502fictional minutes, three warnings, then a separately persisted pending boundary',()=>{
   let state=D.freshNightDeadline({runId:input.runId}),warnings=[];
-  for(let elapsed=0;elapsed<=30120;elapsed++){
+  for(let elapsed=0;elapsed<=30180;elapsed++){
     const result=step(state,{elapsedSeconds:elapsed,foregroundSeconds:elapsed?1:0});state=result.state;
     warnings.push(...result.events.filter(e=>e.type==='warning'));
-    if(elapsed<30120)assert.equal(D.nightDeadlinePending(state),false);
+    if(elapsed<30180)assert.equal(D.nightDeadlinePending(state),false);
   }
-  assert.deepEqual(warnings.map(w=>[w.clock,w.elapsedSeconds]),[['05:00',26520],['05:30',28320],['05:50',29520]]);
-  assert.equal(state.phase,'pending');assert.equal(state.crossedAtElapsed,30120);assert.deepEqual(state.entryPose,input.entryPose);
+  assert.deepEqual(warnings.map(w=>[w.clock,w.elapsedSeconds]),[['05:00',26520],['05:30',28320],['05:50',29520],['06:00',30120]]);
+  assert.equal(state.phase,'pending');assert.equal(state.crossedAtElapsed,30180);assert.deepEqual(state.entryPose,input.entryPose);
   assert.equal(D.nightDeadlineAllowsTransport(state),false);assert.equal(state.consequenceReceipt,null);
 });
 
@@ -40,13 +40,13 @@ test('eligibility is accepted work in an active run; no failure accrues from hid
 });
 
 test('crossing during a protected take saves pending immediately, preserves the take, then waits for safe rendered presentation',()=>{
-  const protectedResult=step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30120,protectedTransport:true,claimPresentation:true});
+  const protectedResult=step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30180,protectedTransport:true,claimPresentation:true});
   assert.equal(protectedResult.state.phase,'pending');assert.equal(protectedResult.presentationReady,false);assert.equal(protectedResult.deliverableEffects.length,0);
   const saved=JSON.parse(JSON.stringify(protectedResult.state));
   for(const hold of [{protectedTransport:true},{active:false},{assetsReady:false},{safeBoundary:false},{competingOwner:true}])
     assert.equal(step(saved,{elapsedSeconds:40000,claimPresentation:true,...hold}).state.phase,'pending');
   const claimed=step(saved,{elapsedSeconds:40000,claimPresentation:true,sceneCheckpoint:{phase:'recognize',activeSeconds:0}});
-  assert.equal(claimed.state.phase,'presenting');assert.equal(claimed.state.crossedAtElapsed,30120);
+  assert.equal(claimed.state.phase,'presenting');assert.equal(claimed.state.crossedAtElapsed,30180);
   assert.equal(claimed.state.consequenceReceipt,null);assert.equal(claimed.denyNewTransports,true);
 });
 
@@ -79,12 +79,12 @@ test('legacy enrollment earlier in the night still delivers future normal05:00wa
 test('a committed finale/SourceIV retains authority; a late competing action cannot reclaim an expired night',()=>{
   let state=step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30000,committedFinale:true}).state;
   assert.equal(step(state,{elapsedSeconds:40000}).state.phase,'superseded');
-  state=step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30120}).state;
+  state=step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30180}).state;
   assert.equal(step(state,{elapsedSeconds:30121,committedFinale:true}).state.phase,'pending');
 });
 
 test('physical scene checkpoints and terminal receipts are resumable, idempotent and add no injury or gear loss',()=>{
-  let state=step(step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30120}).state,{elapsedSeconds:30120,claimPresentation:true}).state;
+  let state=step(step(D.freshNightDeadline({runId:input.runId}),{elapsedSeconds:30180}).state,{elapsedSeconds:30180,claimPresentation:true}).state;
   state=D.checkpointNightDeadline(state,{phase:'clear',activeSeconds:17.3,body:{x:5,z:9},branch:'left'},{deliveredEffectIds:['joint:1']});
   const reloaded=D.normalizeNightDeadline(JSON.parse(JSON.stringify(state)),{runId:input.runId});
   assert.equal(reloaded.sceneCheckpoint.activeSeconds,17.3);assert.deepEqual(reloaded.deliveredEffectIds,['joint:1']);
@@ -132,7 +132,7 @@ test('failed-night filing survives a SAVE/META interruption, awards no completio
 });
 
 test('ordinary success cannot steal a pending failure, and terminal filing cannot run before the scene finishes',async()=>{
-  const save=freshSave({run:freshRunRecord({id:input.runId})});save.nightDeadline=step(save.nightDeadline,{elapsedSeconds:30120}).state;
+  const save=freshSave({run:freshRunRecord({id:input.runId})});save.nightDeadline=step(save.nightDeadline,{elapsedSeconds:30180}).state;
   await withTransientGameState({save},()=>{
     assert.throws(()=>commitReturn('helped'),e=>e.code==='NIGHT_EXPIRED');
     assert.throws(()=>commitNightFailure(),e=>e.code==='DEADLINE_SCENE_UNFINISHED');

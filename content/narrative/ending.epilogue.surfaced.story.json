@@ -112,6 +112,21 @@
           "who": "recordist",
           "text": "Nobody in it.",
           "id": "start.line.16"
+        },
+        {
+          "who": "recordist",
+          "text": "Go on. I have been in a van.",
+          "id": "start.line.17"
+        },
+        {
+          "who": "guard",
+          "text": "He can sit there as long as he likes. It is my chair.",
+          "id": "start.line.18"
+        },
+        {
+          "who": "direction",
+          "text": "Nobody asks you for anything. It is the strangest thing that has happened all night. The van is in the bay with your keys already in your hand, and you find you have started walking.",
+          "id": "start.line.19"
         }
       ],
       "id": "start"

@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import * as D from '../src/game/night-deadline.js';
 import {freshNightClock} from '../src/game/night-clock.js';
+import {chunkSurfFinaleRouting,SOURCE_FINALE_ROUTE,SOURCE_FINALE_STAGE} from '../src/game/chunk-surf-state.js';
 import {createFirstStrikeScene} from '../src/game/first-strike-scene.js';
 import {normalizeFirstStrikeEntry} from '../src/data/first-strike.js';
 import {packFirstStrikeConstruction,restoreFirstStrikeConstruction} from '../src/game/first-strike-entry.js';
@@ -21,13 +22,13 @@ function entry(){
 }
 const copy=value=>JSON.parse(JSON.stringify(value));
 function fixture(){
-  const calls=[],save={run:{id:'main-test',status:'active'},flags:{'work-order.accepted':true},settings:{},nightClock:freshNightClock({elapsedSeconds:30120}),
+  const calls=[],save={run:{id:'main-test',status:'active'},flags:{'work-order.accepted':true},settings:{},nightClock:freshNightClock({elapsedSeconds:30180}),
     nightDeadline:D.freshNightDeadline({runId:'main-test'}),rec:{injuries:2,tapes:[]}};
   let recording=false,listening=false,playing=false,openTake=false,focused=true,top=null,speaking=false,endingResume=null;
   const audio={prepareWarnings:async()=>true,warning:(e,p)=>calls.push(['warning',copy(e),copy(p)]),
     updateWarnings:p=>calls.push(['warning-state',copy(p)]),ready:async()=>true,update:()=>{},stop:()=>calls.push(['audio-stop'])};
   const renderer={initialize:async()=>true,ready:()=>true,render:()=>{calls.push(['render']);return true;},dispose:()=>calls.push(['dispose'])};
-  const h={console,performance:{now:()=>1000},structuredClone,Promise,Math,...D,packFirstStrikeConstruction,restoreFirstStrikeConstruction,
+  const h={console,performance:{now:()=>1000},structuredClone,Promise,Math,...D,chunkSurfFinaleRouting,SOURCE_FINALE_ROUTE,SOURCE_FINALE_STAGE,packFirstStrikeConstruction,restoreFirstStrikeConstruction,
     getSave:()=>save,saveCommit:patch=>{calls.push(['save',copy(patch)]);Object.assign(save,patch);return save;},
     REC:{isRecording:()=>recording,isListening:()=>listening,saveRecState:()=>copy(save.rec),lightOn:()=>true,batteryLevel:()=>1,
       toggleLight:()=>true,drainLight:()=>false},
@@ -149,7 +150,7 @@ test('the actual predeadline irreversible Source rest lock durably preserves the
   assert.equal(f.h.persistNightRestLock(scene,{locked:true,seatId:'catch-seat'}),true);
   assert.deepEqual(copy(f.save.endingCutscene),{schema:1,endingId:'contact-lost',arrival:'rested',variant:'source-rest',restLock:{runId:'main-test',seatId:'catch-seat'}});
   assert.deepEqual(writes,[checkpoint]);assert.equal(f.calls.some(c=>c[0]==='clear-scenes'),false);
-  f.save.nightClock.elapsedSeconds=30120;f.tick();assert.equal(f.save.nightDeadline.phase,'superseded');
+  f.save.nightClock.elapsedSeconds=30180;f.tick();assert.equal(f.save.nightDeadline.phase,'superseded');
   assert.equal(f.h.persistNightRestLock(scene,{locked:true,seatId:'catch-seat'}),true);assert.equal(writes.length,1,'deduplicates the durable choice');
   assert.equal(f.h.firstStrikeScene,null);
 });
@@ -159,7 +160,7 @@ test('a genuine same-interaction playback failure revokes only its provisional r
   let locked=true;const scene={id:'source-continuation',view:()=>({ready:true}),sourceRest:{view:()=>({mode:'seated',locked,committed:false})}};
   f.h.sourceContinuationScene=scene;f.save.endingCutscene={schema:1,endingId:'contact-lost',arrival:'rested',variant:'source-rest',restLock:{runId:'main-test',seatId:'catch-seat'}};
   f.tick();assert.equal(f.save.nightDeadline.phase,'superseded');locked=false;f.tick();
-  assert.equal(f.save.endingCutscene,null);assert.equal(f.save.nightDeadline.phase,'pending');assert.equal(f.save.nightClock.elapsedSeconds,30120);
+  assert.equal(f.save.endingCutscene,null);assert.equal(f.save.nightDeadline.phase,'pending');assert.equal(f.save.nightClock.elapsedSeconds,30180);
   const g=fixture();g.h.sourceContinuationScene=scene;g.save.endingCutscene={schema:1,endingId:'contact-lost',arrival:'rested',variant:'source-rest'};
   g.h.persistNightRestLock(scene,{locked:false,mode:'idle'});assert.ok(g.save.endingCutscene,'final receipts cannot be revoked');
 });
@@ -190,7 +191,7 @@ test('SourceII/III direct checkpoint fall/recovery/portal ownership defers takeo
 });
 
 test('inactive, unready and loading owners cannot claim the pending scene; explicit scene pause/focus clears held motion',async()=>{
-  const f=fixture();f.save.nightDeadline=D.stepNightDeadline(f.save.nightDeadline,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30120}).state;
+  const f=fixture();f.save.nightDeadline=D.stepNightDeadline(f.save.nightDeadline,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30180}).state;
   let begins=0;f.h.beginNightFirstStrike=()=>{begins++;return Promise.resolve(false);};
   f.tick({active:false});f.h.nightWarningMeshReady=false;f.tick();f.h.nightWarningMeshReady=true;
   f.top({blocksInput:true});f.tick();assert.equal(begins,0);
@@ -227,8 +228,8 @@ test('resume entry construction uses stored logical location and saved physical 
 
 test('resuming a presenting failure keeps its saved entry pose while the physical scene checkpoint retains later body progress',async()=>{
   const f=fixture(),savedPose={logicalX:17,logicalY:19,origin:{x:.5,y:0,z:2.5},yaw:1.2,pitch:-.15,region:'ellery',owner:'world',construction:packFirstStrikeConstruction(entry())};
-  let state=D.stepNightDeadline(f.save.nightDeadline,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30120}).state;
-  state=D.stepNightDeadline(state,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30120,safeBoundary:true,assetsReady:true,claimPresentation:true}).state;
+  let state=D.stepNightDeadline(f.save.nightDeadline,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30180}).state;
+  state=D.stepNightDeadline(state,{runId:'main-test',runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30180,safeBoundary:true,assetsReady:true,claimPresentation:true}).state;
   f.save.nightDeadline={...state,entryPose:savedPose};
   assert.equal(await f.h.beginNightFirstStrike(),true);
   assert.equal(f.save.nightDeadline.entryPose.yaw,1.2);assert.equal(f.save.nightDeadline.entryPose.pitch,-.15);
@@ -252,4 +253,15 @@ test('main failed-report archive callback forwards current-run recording request
   assert.equal(audioPrepared,1);assert.equal(received.summaryId,'return:main-test');assert.equal(received.recordings,true);
   const report=body('showReturnReport');assert.match(report,/onArchive:request=>\{ returnToTitle\(\); openArchive\(request\); \}/);
   assert.equal(f.calls.filter(c=>c[0]==='cue').length,0);
+});
+
+test('the bell fight commits the tower road, and walking the cathedral before it does not',()=>{
+  const road=stage=>{const f=fixture();f.save.chunkSurf={schema:5,phase:'completed',finale:{route:SOURCE_FINALE_ROUTE.TOWER,stage}};return f;};
+  assert.equal(road(SOURCE_FINALE_STAGE.CATHEDRAL).h.nightDeadlineCommitted(),false);
+  for(const stage of[SOURCE_FINALE_STAGE.CATHEDRAL_FIGHT,SOURCE_FINALE_STAGE.TOWER_ESCAPE]){
+    const f=road(stage);assert.equal(f.h.nightDeadlineCommitted(),true,stage);
+    f.save.nightClock.elapsedSeconds=D.NIGHT_DEADLINE_SECONDS-60;f.tick();assert.equal(f.save.nightDeadline.phase,'superseded','winning the fight cannot then lose to the demolition');
+  }
+  const walking=road(SOURCE_FINALE_STAGE.CATHEDRAL);walking.save.nightClock.elapsedSeconds=D.NIGHT_DEADLINE_SECONDS;walking.tick();
+  assert.equal(D.nightDeadlinePending(walking.save.nightDeadline),true,'but 06:01 still reaches a player who has not begun it');
 });

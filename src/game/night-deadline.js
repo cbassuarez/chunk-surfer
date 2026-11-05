@@ -1,13 +1,16 @@
 // The work order's absolute boundary. This reducer owns no sound, camera,
 // transport, microphone, injury or wall-clock access. Hosts persist its state
 // before delivering effects or presenting the physical First Strike scene.
-export const NIGHT_DEADLINE_SECONDS = 30120;
+// 06:01. The paperwork and every notice say 06:00: that hour sounds the horn, and
+// the machines start the minute after.
+export const NIGHT_DEADLINE_SECONDS = 30180;
 export const NIGHT_DEADLINE_ID = 'first-strike';
 export const NIGHT_DEADLINE_LEGACY_GRACE_SECONDS = 600;
 export const NIGHT_DEADLINE_WARNINGS = Object.freeze([
   Object.freeze({ key: 'site-closure', clock: '05:00', elapsedSeconds: 26520 }),
   Object.freeze({ key: 'last-call', clock: '05:30', elapsedSeconds: 28320 }),
   Object.freeze({ key: 'clearance', clock: '05:50', elapsedSeconds: 29520 }),
+  Object.freeze({ key: 'first-horn', clock: '06:00', elapsedSeconds: 30120 }),
 ]);
 const phases = ['unarmed', 'warning', 'pending', 'presenting', 'terminal', 'superseded'];
 const number = (value, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : fallback;
@@ -50,6 +53,20 @@ export function nightDeadlinePendingEffects(value) {
 export function acknowledgeNightDeadlineEffects(value, ids) {
   const state = normalizeNightDeadline(value, { runId: value?.runId });
   return { ...state, deliveredEffectIds: unique([...state.deliveredEffectIds, ...unique(ids)]) };
+}
+
+// Coming out of Source sets the night to a fixed hour, which can cross every earlier
+// warning at once. Those are entered as already given, so the horn sounds once with
+// the time it actually is rather than announcing half an hour that is not there.
+export function nightDeadlineSourceReturn(value, { runId, elapsedSeconds = 0, clock = '', message = '' } = {}) {
+  const state = normalizeNightDeadline(value, { runId: runId || value?.runId });
+  if (!state.runId || state.phase === 'superseded' || nightDeadlinePending(state)) return state;
+  const id = key => `${state.eventId}:warning:${key}`, elapsed = number(elapsedSeconds), warnings = [...state.warnings];
+  for (const warning of NIGHT_DEADLINE_WARNINGS) if (elapsed >= warning.elapsedSeconds && !warnings.some(w => w.id === id(warning.key)))
+    warnings.push({ id: id(warning.key), key: warning.key, clock: warning.clock, elapsedSeconds: elapsed, message: '' });
+  const deliveredEffectIds = unique([...state.deliveredEffectIds, ...warnings.map(w => w.id)]);
+  if (!warnings.some(w => w.id === id('source-return'))) warnings.push({ id: id('source-return'), key: 'source-return', clock, elapsedSeconds: elapsed, message });
+  return { ...state, phase: 'warning', warnings, deliveredEffectIds };
 }
 
 export function stepNightDeadline(value, input = {}) {

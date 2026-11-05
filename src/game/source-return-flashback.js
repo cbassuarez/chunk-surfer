@@ -41,7 +41,7 @@ function vehicleAt(t){
  if(t<C.dollyEnd)return roadPose(mix(C.forwardEndDistance,C.dollyEndDistance,ease((t-C.forwardEnd)/(C.dollyEnd-C.forwardEnd))),{turn:Math.PI});
  return roadPose(mix(C.dollyEndDistance,C.endDistance,ease((t-C.dollyEnd)/(C.durationSeconds-C.dollyEnd))),{turn:Math.PI});
 }
-function dollyLocal(progress,metrics){
+export function sourceReturnDollyLocal(progress,metrics){
  const seat=metrics.eye.map((x,k)=>x+metrics.cabinBodyMount[k]),body=metrics.body;
  // Leave through the driver's side glazing before rising and retreating;
  // a straight backwards lerp would pass through the real rear bulkhead.
@@ -67,7 +67,7 @@ export function stepSourceReturnFlashback(state,dt=0,{paused=false,hidden=false,
 }
 /** Pure frame sampler, also usable for matched authoring captures. */
 export function sampleSourceReturnFlashback(timeSec=0,{destination:target,reducedMotion=false,metrics}={}){
- const captured=destination(target),actualMetrics=vehicleMetrics(metrics),t=clamp(finite(timeSec),0,C.durationSeconds),vehicle=vehicleAt(t),body=vehicle.bodyMatrix,phase=phaseAt(t),dolly=ease((t-C.forwardEnd)/(C.dollyEnd-C.forwardEnd)),localEye=dollyLocal(dolly,actualMetrics),eye=point(body,localEye);
+ const captured=destination(target),actualMetrics=vehicleMetrics(metrics),t=clamp(finite(timeSec),0,C.durationSeconds),vehicle=vehicleAt(t),body=vehicle.bodyMatrix,phase=phaseAt(t),dolly=ease((t-C.forwardEnd)/(C.dollyEnd-C.forwardEnd)),localEye=sourceReturnDollyLocal(dolly,actualMetrics),eye=point(body,localEye);
  // Keep the seat looking through its actual windscreen. The submerged body
  // supplies the upward view; extra seat pitch would point into its roof.
  const lookPitch=-.035;

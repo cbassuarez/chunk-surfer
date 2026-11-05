@@ -7,6 +7,8 @@ import {continuationBallisticStep,continuationFreeBody} from './source-continuat
 import {continuationPortalCrossing,transferContinuationPortal,advancePortalTransit,continuationCameraEye,continuationCameraBasis,continuationBodyAxis} from './source-continuation-portals.js';
 import {captureContinuationVoidLoop,continuationVoidLoopForFall,normalizeContinuationSpaceWrap} from './source-continuation-void.js';
 import {sourceChunkFaultResponse,SOURCE_CHUNK_FAULT} from './source-chunk-fault.js';
+import {freshSourceTide,normalizeSourceTide,advanceSourceTide} from './source-continuation-tides.js';
+import {sourceRiftFaultTouched,sourceRiftFaultClear} from './source-rift.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
@@ -43,7 +45,7 @@ const WEIGHT_MODES = new Set(['warning', 'walking', 'falling', 'returning', 'rew
 const startWeight = () => ({ active: false, level: 0, mode: 'warning', elapsed: 0, ...C.catch.hoist.start, y: C.catch.top, pathIndex: 0, fall: null, cycle: 0 });
 export function freshSourceContinuation({ runId = '', returnPose = null } = {}) {
   return { version: 1, layoutVersion: C.layoutVersion, encounterId: C.encounterId, runId: String(runId), status: 'not-started', phase: 'wrong-return', direction: 'forward',
-    ...C.spawn,chartId:0,foldSerial:0,lastFold:null,lastSpaceWrap:null,cameraTransit:null,bodyTransit:null, elapsed: 0, accumulator: 0, wrongLap: 0, level: 0, fall: null, recovery: null, reveal: null, grace: 0,jumpHeld:false,velocity:{x:0,z:0},
+    ...C.spawn,chartId:0,foldSerial:0,lastFold:null,lastSpaceWrap:null,cameraTransit:null,bodyTransit:null, elapsed: 0, accumulator: 0, wrongLap: 0, level: 0, fall: null, recovery: null, reveal: null, grace: 0,jumpHeld:false,velocity:{x:0,z:0},tide:freshSourceTide(),riftLatch:null,
     closure: { mode: 'dormant', elapsed: 0, frontX: C.wrongReturn.closureStartX, frontZ: -12, exposure: 0 },
     counterweight: startWeight(), hush:freshContinuationDoorHush(), corridor:freshSourceConnectorCorridor(), heading:0, knowledge: [], doorOpen: {}, doorMotion: {}, returnPose: pose(returnPose), exitPose: null,
     completed: false, handoff: false, exitReceipt: null, lastSafe: { ...C.spawn,chartId:0, level: 0,phase:'wrong-return' },recoveryAnchor:earnedAnchor({...C.spawn,chartId:0,phase:'wrong-return',level:0,elapsed:0}), caption: null };
@@ -63,7 +65,14 @@ function migrateLegacy(state, value) {
       Object.assign(state,shift(state));
       if(state.fall){state.fall=shift(state.fall);if(state.fall.lastSupport.phase==='catch')state.fall.lastSupport=shift(state.fall.lastSupport);}
       if((value.lastSafe?.phase||value.phase)==='catch')state.lastSafe=shift(state.lastSafe);
-      if(value.recoveryAnchor?.phase==='catch')state.recoveryAnchor={...shift(value.recoveryAnchor),kind:value.recoveryAnchor.kind||'landing',earnedAt:value.recoveryAnchor.earnedAt||0};
+      if(value.recoveryAnchor?.phase==='catch'){
+        // A migrated earned anchor must enter the same canonical schema as a
+        // current-layout anchor, rather than changing on the next save/load.
+        const anchor=shift(value.recoveryAnchor);
+        state.recoveryAnchor={...position(anchor),phase:anchor.phase==='catch'?'catch':'wrong-return',
+          kind:['entry','landing','stair-head','refuge'].includes(anchor.kind)?anchor.kind:'landing',
+          supportId:String(anchor.supportId||''),earnedAt:Math.max(0,finite(anchor.earnedAt))};
+      }
       if(state.recovery){state.recovery.from=shift(state.recovery.from);state.recovery.target=shift(state.recovery.target);state.recovery.path=state.recovery.path.map(shift);}
       Object.assign(state.counterweight,{x:state.counterweight.x+C.catch.offset.x,z:state.counterweight.z+C.catch.offset.z});if(state.counterweight.fall)state.counterweight.fall=shift(state.counterweight.fall);
       if(!state.fall&&!state.recovery&&!anchorValid(state)) {
@@ -71,6 +80,10 @@ function migrateLegacy(state, value) {
         Object.assign(state,prior||{...continuationRadialPoint(state.level?stage.innerRadius+.9:stage.outerRadius-1.5,a),feet:stage.y,chartId:0});
       }
     } else if(!anchorValid(state))Object.assign(state,anchorValid(state.lastSafe)?state.lastSafe:{...C.spawn,chartId:0});
+    if(state.completed){
+      state.phase='catch';state.level=C.catch.levels-1;state.fall=state.recovery=state.reveal=null;
+      Object.assign(state,position({...C.catch.finalApproach,chartId:0,level:state.level,feet:continuationCatchFloor(state.level),yaw:state.yaw,pitch:state.pitch}));
+    }
     if(!state.fall&&!state.recovery)state.lastSafe=supportedPose(state);state.grace=C.graceSeconds;
     const stage=continuationStage(state.level),a=state.level?continuationDropLip({level:state.level-1}).approachAngle:0;
     const receiving={...continuationRadialPoint(state.level?stage.innerRadius+.9:stage.outerRadius-1.5,a),feet:stage.y,chartId:0,level:state.level,phase:'catch',yaw:state.yaw,pitch:state.pitch};
@@ -108,7 +121,7 @@ export function normalizeSourceContinuation(value, { runId, returnPose } = {}) {
     returnPose: pose(value.returnPose) || fresh.returnPose, exitPose: pose(value.exitPose),
     knowledge: Array.isArray(value.knowledge) ? [...new Set(value.knowledge.filter(v => typeof v === 'string').slice(0, 80))] : [],
     doorOpen: Object.fromEntries(Object.entries(value.doorOpen || {}).filter(([id]) => DOOR_IDS.has(id)).map(([id, open]) => [id, !!open])),
-    caption: null, lastSafe:{...position(value.lastSafe),phase:value.lastSafe?.phase||value.phase||'wrong-return'}, fall: validFall(value.fall,value.chartId??0), reveal: null,jumpHeld:!!value.jumpHeld,velocity:{x:clamp(value.velocity?.x??0,-60,60),z:clamp(value.velocity?.z??0,-60,60)},foldSerial:Math.max(0,Math.round(finite(value.foldSerial))),lastFold:value.lastFold?clone(value.lastFold):null,lastSpaceWrap:normalizeContinuationSpaceWrap(value.lastSpaceWrap),cameraTransit:validTransit(value.cameraTransit,true),bodyTransit:validTransit(value.bodyTransit),
+    caption: null, lastSafe:{...position(value.lastSafe),phase:value.lastSafe?.phase||value.phase||'wrong-return'}, fall: validFall(value.fall,value.chartId??0), reveal: null,jumpHeld:!!value.jumpHeld,velocity:{x:clamp(value.velocity?.x??0,-60,60),z:clamp(value.velocity?.z??0,-60,60)},tide:normalizeSourceTide(value.tide),riftLatch:typeof value.riftLatch==='string'?value.riftLatch:null,foldSerial:Math.max(0,Math.round(finite(value.foldSerial))),lastFold:value.lastFold?clone(value.lastFold):null,lastSpaceWrap:normalizeContinuationSpaceWrap(value.lastSpaceWrap),cameraTransit:validTransit(value.cameraTransit,true),bodyTransit:validTransit(value.bodyTransit),
     closure: { mode: ['dormant', 'primed', 'warning', 'closing', 'held'].includes(value.closure?.mode) ? value.closure.mode : 'dormant', elapsed: Math.max(0, finite(value.closure?.elapsed)), frontX: clamp(value.closure?.frontX ?? C.wrongReturn.closureStartX, C.wrongReturn.closureEndX, C.wrongReturn.closureStartX), frontZ: -12, exposure: Math.max(0, finite(value.closure?.exposure)) },
     counterweight: { active: !!w.active, level: Math.round(clamp(w.level, 0, C.catch.levels - 1)), mode: WEIGHT_MODES.has(w.mode) ? w.mode : 'warning', elapsed: Math.max(0, finite(w.elapsed)), x: clamp(w.x, C.bounds.minX, C.bounds.maxX), z: clamp(w.z, C.bounds.minZ, C.bounds.maxZ), y: clamp(w.y, C.bounds.minY, C.catch.hoist.travelY), pathIndex: Math.round(clamp(w.pathIndex, 0, 32)), fall: validFall(w.fall), cycle: Math.max(0, Math.floor(finite(w.cycle))) },
     hush:normalizeContinuationHush(value.hush||fresh.hush),corridor:normalizeSourceConnectorCorridor(value.corridor,value),heading:angle(finite(value.heading,value.yaw)),
@@ -379,6 +392,20 @@ function tickClosure(state, dt, events) {
   }
   else if (c.mode === 'warning' || c.mode === 'closing') { c.elapsed += dt; if (c.elapsed >= C.wrongReturn.warningSeconds) { c.mode = 'closing'; c.frontX = Math.max(C.wrongReturn.closureEndX, C.wrongReturn.closureStartX - (c.elapsed - C.wrongReturn.warningSeconds) * C.wrongReturn.closureSpeed); if (state.chartId===0&&state.feet > 8 && Math.abs(state.x - c.frontX) < .65 && state.z > -14 && state.z < -10) beginRecovery(state, 'closing-front', events); } }
 }
+// A fault that stands like the practice hall's tear opens onto the room behind
+// it. The body it returns stands beside it, so it must walk clear before another.
+function touchRiftFault(state,events) {
+  if(state.riftLatch){if(sourceRiftFaultClear(state,state.riftLatch))state.riftLatch=null;return;}
+  const fault=sourceRiftFaultTouched(state);if(!fault)return;
+  state.riftLatch=fault.id;events.push({type:'rift-fault',id:fault.id,position:{x:state.x,y:state.feet,z:state.z}});
+}
+// The tide may carry a body to an edge, never through a fold, a return, the
+// threshold or the final door: crossing those stays the player's own act.
+function tideCrosses(state,before) {
+  if(continuationPortalCrossing(before,state)||returnCrossed(state,before))return true;
+  const across=(door,halfWidth)=>state.chartId===0&&Math.abs(state.feet-door.y)<.6&&Math.abs(state.z-door.z)<halfWidth+.5&&Math.sign(before.x-door.x)!==Math.sign(state.x-door.x);
+  return across(C.wrongReturn.threshold,C.wrongReturn.threshold.halfWidth)||across(C.catch.finalDoor,.9);
+}
 function crossPortal(state,before,events) {
   const edge=continuationPortalCrossing(before,state);if(!edge)return false;
   const source={...state,fall:state.fall?{...state.fall}:null},receipt=transferContinuationPortal(state,edge);
@@ -422,8 +449,19 @@ function tick(state, input, dt, events, travel) {
     const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = C.walkSpeed * dt / len;
     const movementYaw=state.yaw;
     move(state, (Math.sin(movementYaw) * forward + Math.cos(movementYaw) * side) * amount, (-Math.cos(movementYaw) * forward + Math.sin(movementYaw) * side) * amount,dt,events);
-    if(!state.fall)travel.metres+=distance(before,state);
-    if(distance(before,state)>1e-8)state.heading=Math.atan2(state.x-before.x,-(state.z-before.z));
+    const walked=distance(before,state);
+    if(!state.fall)travel.metres+=walked;
+    if(walked>1e-8)state.heading=Math.atan2(state.x-before.x,-(state.z-before.z));
+    // This Source's tide and the night's wind, felt only by a live body
+    // that is neither seated nor already carried by fall, recovery or fold.
+    if(input.environment&&!state.fall&&state.grace<=0&&!state.reveal&&!state.cameraTransit&&!state.bodyTransit){
+      const tide=advanceSourceTide(state,dt,{moving:forward!==0||side!==0,anchored:!!input.anchored});
+      if(tide.dx||tide.dz){
+        const pre={...state};move(state,tide.dx,tide.dz,dt,events);
+        if(!state.fall&&tideCrosses(state,pre))Object.assign(state,{x:pre.x,z:pre.z,feet:pre.feet,level:pre.level,lastSafe:pre.lastSafe});
+      }
+    }
+    if(input.environment&&!state.fall&&!state.cameraTransit&&!state.bodyTransit)touchRiftFault(state,events);
     state.velocity={x:clamp((state.x-before.x)/dt,-C.walkSpeed,C.walkSpeed),z:clamp((state.z-before.z)/dt,-C.walkSpeed,C.walkSpeed)};
     crossPortal(state,before,events);
     if(!state.fall)recordContinuationHushWalk(state.hush,state,{protectedRefuge:insideRefuge(state)});
@@ -452,7 +490,7 @@ export function stepSourceContinuation(value, input = {}) {
   }
   if (state.status !== 'active') return { state, event: events.at(-1) || null, events };
   state.accumulator += clamp(input.dt ?? 0, 0, .25);
-  while (state.accumulator + 1e-10 >= C.fixedStep && state.status === 'active') { const phase = state.phase, authored = !!(state.recovery || state.fall); state.accumulator -= C.fixedStep; tick(state, input, C.fixedStep, events, travel); if (phase !== state.phase || authored && !state.recovery && !state.fall) { state.accumulator = 0; break; } }
+  while (state.accumulator + 1e-10 >= C.fixedStep && state.status === 'active') { const phase = state.phase, authored = !!(state.recovery || state.fall); state.accumulator -= C.fixedStep; tick(state, input, C.fixedStep, events, travel); if (phase !== state.phase || authored && !state.recovery && !state.fall || events.at(-1)?.type === 'rift-fault') { state.accumulator = 0; break; } }
   state.accumulator = Math.max(0, state.accumulator);
   return { state, event: events.find(e => e.type === 'return' || e.type === 'complete') || events.at(-1) || null, events, acceptedTravelMetres: travel.metres };
 }

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { sourceShoreBounds } from '../src/data/source-hanging-shore.js';
 import { sourceStrataEntryAt } from '../src/data/source-exposed-strata.js';
 import { horizonCamera } from '../src/render/horizon3d.js';
-import { SOURCE_SHORE_RANGE,SOURCE_SHORE_AIR,SOURCE_SHORE_COMPOSITE_FRAG,SOURCE_SHORE_MATERIAL_FRAG,
+import { SOURCE_SHORE_RANGE,SOURCE_SHORE_AIR,SOURCE_SHORE_COMPOSITE_FRAG,SOURCE_SHORE_MATERIAL_FRAG,SOURCE_SHORE_CODE_FRAG,
   sourceShoreGeometry,sourceShoreRenderActive,sourceShoreBoundaryVisible,
   sourceShoreApertureRay } from '../src/render/source-shore3d.js';
 
@@ -116,6 +116,19 @@ test('the walk is printed by the shared acquisition and post, like the room it l
   assert.match(body,/presentThroughPost\(runPixelMeshPass\(voidState,now\)\)/,'the shore no longer presents its encoded frame through post');
   assert.doesNotMatch(r3d,/uSourceShore\b/,'the post pass still has a shore bypass');
   assert.doesNotMatch(SOURCE_SHORE_COMPOSITE_FRAG,/uWhiteout|received/,'the composite still repaints smooth colour or a crossing veil over the encode');
+});
+
+test('cut-bank code is excluded from world acquisition and restored by the depth-tested glyph pass',()=>{
+  const material=SOURCE_SHORE_MATERIAL_FRAG.slice(SOURCE_SHORE_MATERIAL_FRAG.indexOf('if(vGrain>2.5){'),SOURCE_SHORE_MATERIAL_FRAG.indexOf('float seamPhase'));
+  assert.match(material,/pigment=0\.0;printPolarity=1\.0/);
+  assert.doesNotMatch(material,/texture\(uSourceTex|source\.rgb|source\.a/,'glyph ink and coverage cannot enter the shore dither input');
+  assert.match(SOURCE_SHORE_CODE_FRAG,/if\(vGrain<2\.5\)discard/,'ordinary shore hardware is not a code screen');
+  assert.match(SOURCE_SHORE_CODE_FRAG,/sourceCodeInk\(plane\/vec2\(6\.0,4\.0\),1\.0,vWorld,execution\)/,'code retains the original physical surface coordinates');
+  assert.match(SOURCE_SHORE_CODE_FRAG,/sourceCodeWorldVisibility/,'the shared world and Pressure occlusion is retained');
+  const source=readFileSync(new URL('../src/render/source-shore3d.js',import.meta.url),'utf8');
+  const code=source.slice(source.indexOf('export function sourceShoreCodeDraw('),source.indexOf('// medium is a fixed world AABB'));
+  assert.doesNotMatch(code,/gl\.clear\(|gl\.bindFramebuffer\(/,'the shared glyph target is neither erased nor replaced');
+  assert.match(code,/SOURCE_CODE_LIFT_METRES/,'the existing world surface normal owns its fixed screen depth');
 });
 
 test('the room-side opening hides distant terrain while preserving a leaf, jamb and threshold in front',()=>{

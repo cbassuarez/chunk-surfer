@@ -48,7 +48,7 @@ function wakeHarness(){
   const main=fs.readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
   const code=main.slice(main.indexOf('function wakeUp('),main.indexOf('// It puts your thing somewhere real.'));
   const save={run:{id:'same-run'},flags:{},playSeconds:100,nightClock:freshNightClock()},calls=[];
-  const context={normalizeHushRecovery,makeRecoveryScene,scenes,applyNightClockLoss,Math:Object.assign(Object.create(Math),{random:()=>0}),
+  const context={normalizeHushRecovery,makeRecoveryScene,scenes,applyNightClockLoss,nightClockHeldBySource:()=>false,Math:Object.assign(Object.create(Math),{random:()=>0}),
     getSave:()=>save,saveCommit:patch=>Object.assign(save,structuredClone(patch)),
     PRES:{despawn(){},savePresenceState:()=>({})},REC:{saveRecState:()=>({injuries:1}),recState:()=>({injuries:1})},
     R3:{r3dFacing:()=>2},TARGETS:['hall'],ROOM_CELLS:{hall:{x:50,y:50}},FP:{toRuntimePoint:p=>p},

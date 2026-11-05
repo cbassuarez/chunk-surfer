@@ -72,9 +72,9 @@ test('real partition pieces retain both door apertures and at least 2.5m physica
   assert.equal(PROPS.propCanOccupy(b.x,b.y,{from:a}),false,'the actual thin glass still stops the body');
 });
 
-test('all seven meshes share the longitudinal drawn-floor datum and starting blocks remain supported beyond changing',()=>{
+test('all eight meshes share the longitudinal drawn-floor datum and starting blocks remain supported beyond changing',()=>{
   const hosts=PROPS.renderInstances({inscriptions:false});
-  assert.equal(GLASS_COURT_PROPS.length,7);
+  assert.equal(GLASS_COURT_PROPS.length,8);
   for(const p of GLASS_COURT_PROPS){
     const h=hosts.find(h=>h.id===p.id);assert.ok(h);
     assert.deepEqual([h.x,h.z],[82,15]);assert.ok(Math.abs(h.y-FP.decodeH(FP.encodeH(0)))<1e-10);

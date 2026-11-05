@@ -37,7 +37,7 @@ function harness(saved=null,{metricsGate=null}={}){
   BINDINGS:{inputPrompt:()=> 'QUIET'},VIGIL_LINKED_CHAPELS_FLAG:'linked',flagTest:()=>false,vigilBelfryRecognition:()=>[],
   GOD_LOCATION_HOOKS,godHookPoint:()=>({x:512,y:714}),applySourceDoorCarry(){},CHAPEL_OUTER_CHECKPOINT,
   ensureTowerBellDirector:()=>({setTransitionProgress(){},snapshot:()=>null}),
-  commitChapelTower:()=>{calls.push('route-commit');return{phase:'cleared'};},chapelTowerState:()=>({phase:'ready'}),CHAPEL_TOWER_PHASE:{TRANSITION_READY:'ready'},
+  leaveSourceNightState:()=>{calls.push('night-0538');return{};},commitChapelTower:()=>{calls.push('route-commit');return{phase:'cleared'};},chapelTowerState:()=>({phase:'ready'}),CHAPEL_TOWER_PHASE:{TRANSITION_READY:'ready'},
   reduceChunkSurf:s=>s,normalizeChunkSurfState:s=>s,reduceChapelTower:s=>s,
   stopSourceCorridorRain(){},clearSourceRuntime:()=>calls.push('source-clear'),PRES:{despawn(){}},
   chapelDoorArrival:()=>({x:185,y:127,facing:2}),CUES:{CUE:{door:'door'},playCue(){}},

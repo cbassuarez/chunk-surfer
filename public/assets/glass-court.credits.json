@@ -7,9 +7,9 @@
   "glass": "Sparse alpha-MASK surface evidence in the existing opaque/MASK renderer. No BLEND, refraction, translucent tint or renderer modification claimed.",
   "scope": "Existing dry north pool approach, indoor greenhouse and changing vestibule. Rehosts the original admission fittings without changing their instance. No new exterior connection, actors, triggers, rewards or mechanics.",
   "sourceSha256": {
-    "tools/chunk_surfer/build-glass-court.mjs": "a5abae7566bedcb3105198efb44a4bde683a08b1547acf6061191a5ba1c78ec1",
-    "tools/chunk_surfer/glass-court-geometry.mjs": "fba3331e0903fd7e03a715553c1ac607e6b6cf0a77371e25d8f27bfd3f9160bf",
-    "src/data/glass-court.js": "78cf4c048058233394987327b054b1b6e9f2a05a97f70fefafb9b390bbbe745a",
+    "tools/chunk_surfer/build-glass-court.mjs": "6b26ef54babf6ca3f0049e91e976b0048d65591d600fa0b4ba3d0f293e062281",
+    "tools/chunk_surfer/glass-court-geometry.mjs": "4f822a7ca42ef65f247ceec124ffbefe23aab447f43a8e00873a0a4f302b0ec5",
+    "src/data/glass-court.js": "ba8ff92750f984c20e8e9e51722cd24b90b7f4fd8e9d5228103770cb6a2e64e0",
     "tools/chunk_surfer/lettering/physical-lettering.mjs": "59256f8316f77d395874843591ad15dc9b9b0894f0e0e886c72fb6660f7adda7",
     "tools/chunk_surfer/lettering/rasterize.py": "790cadc08adeb6bb5d343c942b2732eb72d6ef3f754857b550144274a951f7dc",
     "tools/chunk_surfer/lettering/finish.py": "7e0cf04028f84bf25d1049ff7ba3caf36e660dfaaf4c5228b8aa4c10c886b0c3",
@@ -18,8 +18,8 @@
   },
   "pack": {
     "file": "public/assets/glass-court.glb",
-    "bytes": 2085908,
-    "sha256": "6672a3830c6b083b6639062e7ae8966b973645f7d233d07d47cce28ce836ff37"
+    "bytes": 4161532,
+    "sha256": "ed4a141412d6d8e4e52fd504fc975098b5babdc6e6b260212489205230be8cd2"
   },
   "meshes": [
     {
@@ -120,7 +120,7 @@
     },
     {
       "name": "glass_court_upper_guards",
-      "triangles": 1872,
+      "triangles": 1104,
       "bounds": {
         "min": [
           -5.190000057220459,
@@ -129,8 +129,24 @@
         ],
         "max": [
           12.1899995803833,
-          18.14862823486328,
+          11.148627281188965,
           12.1899995803833
+        ]
+      }
+    },
+    {
+      "name": "glass_court_gallery_vines",
+      "triangles": 21088,
+      "bounds": {
+        "min": [
+          -5.342580795288086,
+          4.339286804199219,
+          -7.427943229675293
+        ],
+        "max": [
+          12.404074668884277,
+          11.181815147399902,
+          12.434531211853027
         ]
       }
     },

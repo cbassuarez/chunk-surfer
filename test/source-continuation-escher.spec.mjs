@@ -86,3 +86,29 @@ test('every outward Source II chart repeats its own receiving construction acros
     }
   }
 });
+
+test('turned copies stand clear of every chart footprint and fit inside one loop band',async()=>{
+  const {continuationVoidDomains}=await import('../src/data/source-continuation-void.js');
+  const {SOURCE_ESCHER_LAYOUT}=await import('../src/render/source-continuation-escher.js');
+  for(const chartId of [0,1,2,3,4]){
+    const layout=SOURCE_ESCHER_LAYOUT[chartId];assert.ok(layout,`chart ${chartId} layout`);
+    const domains=continuationVoidDomains.filter(d=>d.chartId===chartId),shortest=Math.min(...domains.map(d=>d.translationY));
+    const library=sourceContinuationEscherGeometryLibrary(),points=SOURCE_ESCHER_MESHES_BY_CHART[chartId].flatMap(name=>{
+      const p=library[name].p,out=[];for(let i=0;i<p.length;i+=3)out.push(p.slice(i,i+3));return out;});
+    const min=[0,1,2].map(k=>Math.min(...points.map(p=>p[k]))),max=[0,1,2].map(k=>Math.max(...points.map(p=>p[k])));
+
+    for(const d of domains.filter((_,i)=>i===0||i===domains.length-1)){
+      const fall={x:(d.minX+d.maxX)/2,z:(d.minZ+d.maxZ)/2,feet:d.elevation-1,chartId,vx:0,vy:-3,vz:0,elapsed:4,
+        voidLoop:captureContinuationVoidLoop({chartId,feet:d.elevation,phase:'wrong-return'})};
+      const state={...freshSourceContinuation({runId:`escher-clear-${chartId}`}),...fall,status:'active',phase:'wrong-return',fall};
+      const frame=sourceContinuationEscherFrame(state);assert.ok(frame.props.length,d.id);
+      for(const p of frame.props.filter(p=>p.escherKind!=='upright'&&p.escherBand===0)){
+        const corners=[];for(const x of[min[0],max[0]])for(const y of[min[1],max[1]])for(const z of[min[2],max[2]])corners.push(portalTransformPoint(p.matrix,[x,y,z]));
+        const lo=[0,1,2].map(k=>Math.min(...corners.map(c=>c[k]))),hi=[0,1,2].map(k=>Math.max(...corners.map(c=>c[k])));
+        const f=layout.footprint,outside=lo[0]>=f.maxX-1e-6||hi[0]<=f.minX+1e-6||lo[2]>=f.maxZ-1e-6||hi[2]<=f.minZ+1e-6;
+        assert.ok(outside,`${d.id} ${p.escherKind} enters the fall column`);
+        assert.ok(hi[1]-lo[1]<=shortest+1e-6,`${d.id} ${p.escherKind} is taller than one band`);
+      }
+    }
+  }
+});

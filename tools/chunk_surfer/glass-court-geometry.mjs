@@ -47,11 +47,11 @@ export function courtRayTriangle(from,to,a,b,c){
 }
 
 export function buildGlassCourtGeometry(court){
-  if(court?.meshNames?.length!==7)throw Error('Use the canonical longitudinal court and guard contract.');
-  const [frameName,glassName,bedName,nurseryName,plantsName,vestibuleName,guardsName]=court.meshNames;
+  if(court?.meshNames?.length!==8)throw Error('Use the canonical longitudinal court and guard contract.');
+  const [frameName,glassName,bedName,nurseryName,plantsName,vestibuleName,guardsName,vinesName]=court.meshNames;
   const names=[...court.meshNames,court.entranceFixtures.mesh];
   const meshes=new Map(names.map(name=>[name,{name,groups:new Map(),parts:[],triangles:0,bounds:bounds()}]));
-  const frame=meshes.get(frameName),glass=meshes.get(glassName),bed=meshes.get(bedName),nursery=meshes.get(nurseryName),plants=meshes.get(plantsName),vestibule=meshes.get(vestibuleName),fixtures=meshes.get(court.entranceFixtures.mesh),guards=meshes.get(guardsName);
+  const frame=meshes.get(frameName),glass=meshes.get(glassName),bed=meshes.get(bedName),nursery=meshes.get(nurseryName),plants=meshes.get(plantsName),vestibule=meshes.get(vestibuleName),fixtures=meshes.get(court.entranceFixtures.mesh),guards=meshes.get(guardsName),vines=meshes.get(vinesName);
   const figures=[
     {id:'west-head-glimpse',eye:[2,1.62,3],target:[.35,1.68,3],headBand:[1.5,1.9]},
     {id:'east-head-glimpse',eye:[2,1.62,9],target:[3.65,1.68,9],headBand:[1.5,1.9]},
@@ -178,7 +178,7 @@ export function buildGlassCourtGeometry(court){
   box(frame,'hall-lobby-west-wall','hall-return',M.wall,[12,1.8,10.5],[.18,3.6,3]);
   box(frame,'hall-lobby-south-wall','hall-return',M.wall,[14,1.8,12],[4,3.6,.18]);
   // These unique meshes cannot be overwritten by the optional gallery pack.
-  for(const[tier,polygon,base]of[['academic',court.upperGuards.academicPolygon,10],['roof',court.upperGuards.roofPolygon,17]])for(let n=0;n<polygon.length;n++){
+  for(const[tier,polygon,base]of[['academic',court.upperGuards.academicPolygon,10]])for(let n=0;n<polygon.length;n++){
     const a=polygon[n],b=polygon[(n+1)%polygon.length],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),nx=dz/length,nz=-dx/length;
     const start=[a[0]-court.origin.x+nx*.14,base-court.drawnFloor,a[1]-court.origin.z+nz*.14],end=[b[0]-court.origin.x+nx*.14,base-court.drawnFloor,b[1]-court.origin.z+nz*.14];
     for(const h of[.12,.57,1.13])beam(guards,`${tier}-guard-rail:${n}:${h}`,'void-safety-guard',M.iron,[start[0],start[1]+h,start[2]],[end[0],end[1]+h,end[2]],h===.12?.10:.07);
@@ -231,6 +231,57 @@ export function buildGlassCourtGeometry(court){
     }
     for(let z=1;z<11.5;z+=1.5){let prev=[cx,3.65,z];for(let k=1;k<=7;k++){const q=[cx+Math.sin(k*.7)*.04,3.65-k*.19,z+Math.sin(k*.6)*.05];beam(plants,`vine:${bi}:${z}:${k}`,'hanging-vine',M.stem,prev,q,.008);leaf(`vine-leaf:${bi}:${z}:${k}`,q,[q[0]+(bi?-.10:.10),q[1]-.12,q[2]+.10],.12,M.vine,{central:false,role:'hanging-vine',simple:true,keepWindows:false});prev=q;}}
   }
+  // The greenhouse's vine on the gallery rail: it climbs a few posts from the deck,
+  // runs along the top rail and falls over it, past the deck's lip, into the atrium.
+  // It draws its own random stream, so the greenhouse planting stays exactly as it was.
+  let vineSeed=0x2c9e41b7,galleryVineStrands=0;
+  const vineRandom=()=>{vineSeed^=vineSeed<<13;vineSeed^=vineSeed>>>17;vineSeed^=vineSeed<<5;return(vineSeed>>>0)/4294967296;};
+  const hanging=court.galleryVines,between=([lo,hi])=>lo+(hi-lo)*vineRandom();
+  // The rail carries far more of this than the greenhouse does, so it uses the same
+  // silhouettes on fewer faces: an arched, folded diamond and a three-sided stem.
+  const vineLeaf=(id,at,inward)=>{
+    const angle=vineRandom()*Math.PI*2,reach=between(hanging.leafLength);
+    const tip=[at[0]+Math.cos(angle)*reach+inward[0]*.05,at[1]-reach*.55,at[2]+Math.sin(angle)*reach+inward[2]*.05],half=between(hanging.leafWidth)*.5,mat=[M.vine,M.vine,M.jade,M.fern][Math.floor(vineRandom()*4)];
+    const axis=unit(sub(tip,at)),across=cross([0,1,0],axis),side=Math.hypot(...across)<.01?[1,0,0]:unit(across),normal=unit(cross(axis,side)),mid=lerp(at,tip,.5);mid[1]+=.075;
+    const ring=(out,fold)=>mid.map((v,k)=>v+side[k]*out+normal[k]*fold);
+    part(vines,id,'gallery-vine',mat,[at,ring(-half,0),ring(0,.018),ring(half,0),ring(0,-.0035),tip],[0,2,1,0,3,2,0,4,3,0,1,4,5,1,2,5,2,3,5,3,4,5,4,1]);
+  };
+  const vineStem=(id,a,b)=>{
+    const axis=unit(sub(b,a)),u=unit(cross(Math.abs(axis[1])<.9?[0,1,0]:[1,0,0],axis)),v=cross(axis,u),r=hanging.stemWidth*.58;
+    const ring=c=>[0,1,2].map(n=>{const t=n/3*Math.PI*2;return c.map((x,k)=>x+u[k]*Math.cos(t)*r+v[k]*Math.sin(t)*r);});
+    part(vines,id,'gallery-vine',M.stem,[...ring(a),...ring(b)],[0,1,4,0,4,3,1,2,5,1,5,4,2,0,3,2,3,5,0,2,1,3,4,5]);
+  };
+  const vineLength=(id,points,inward)=>{for(let k=1;k<points.length;k++){vineStem(`${id}:${k}`,points[k-1],points[k]);vineLeaf(`${id}:leaf:${k}`,points[k],inward);}};
+  for(const run of hanging.runs){
+    const[a,b]=[run.from,run.to],dx=b[0]-a[0],dz=b[1]-a[1],length=Math.hypot(dx,dz),along=[dx/length,0,dz/length],walkway=[dz/length,0,-dx/length],inward=walkway.map(n=>-n);
+    const deck=10-court.drawnFloor,top=deck+1.13+.047,setback=court.upperGuards.setback;
+    const railAt=(s,y=top)=>[a[0]-court.origin.x+walkway[0]*setback+along[0]*s,y,a[1]-court.origin.z+walkway[2]*setback+along[2]*s];
+    let previous=null;
+    const spacing=run.spacing||hanging.spacing;
+    for(let s=hanging.endClearance+between(spacing)*.5,n=0;s<length-hanging.endClearance;s+=between(spacing),n++){
+      const root=railAt(s),worldX=root[0]+court.origin.x,worldZ=root[2]+court.origin.z,held=hanging.keepAbove.find(b=>worldX>=b.x0&&worldX<=b.x1&&worldZ>=b.z0&&worldZ<=b.z1);
+      const long=vineRandom()<hanging.longShare,total=Math.min(between(long?hanging.longDrop:hanging.shortDrop),top-((held?held.y:hanging.lowestTip)-court.drawnFloor)),phase=vineRandom()*Math.PI*2;
+      const hang=(side,reach,drop)=>[root[0]+along[0]*side+inward[0]*reach,root[1]-drop,root[2]+along[2]*side+inward[2]*reach];
+      const points=[hang(0,-.05,-.012),hang(0,.10,.05),hang(0,.22,.34),hang(0,.33,.9)];
+      for(let k=1,drop=.9+hanging.step;drop<total;drop+=hanging.step,k++)points.push(hang(Math.sin(k*.63+phase)*.05,.33+Math.sin(k*.41+phase)*.04,drop));
+      vineLength(`gallery-vine:${run.id}:${n}`,points,inward);galleryVineStrands++;
+      // Longer strands fork partway down, so they read as growth rather than as cord.
+      if(long&&!held&&points.length>7){
+        const from=points[4+Math.floor(vineRandom()*(points.length-6))],side=s<length/2?1:-1,branch=[from];
+        for(let k=1;k<=4;k++)branch.push([from[0]+along[0]*side*k*.09+inward[0]*.02*k,from[1]-k*hanging.step,from[2]+along[2]*side*k*.09+inward[2]*.02*k]);
+        vineLength(`gallery-vine-fork:${run.id}:${n}`,branch,inward);
+      }
+      if(previous&&vineRandom()<.75)vineLength(`gallery-vine-runner:${run.id}:${n}`,[previous,root],inward);
+      previous=root;
+    }
+    // Every third guard post carries it up from the deck on the walkway side.
+    const posts=Math.ceil(length/1.25);
+    for(let k=1;k<posts;k+=3){
+      const foot=railAt(length*k/posts,deck+.02),climb=[];
+      for(let i=0;i<=4;i++)climb.push([foot[0]+walkway[0]*.05+along[0]*(i%2?.045:-.045),foot[1]+(top-foot[1])*i/4,foot[2]+walkway[2]*.05+along[2]*(i%2?.045:-.045)]);
+      vineLength(`gallery-vine-climb:${run.id}:${k}`,climb,inward);
+    }
+  }
   const counter=court.counter;
   box(fixtures,'rehosted-attendant-counter','rehosted-admission-counter',M.wood,[counter.x,counter.height/2,counter.z],[counter.width,counter.height,counter.depth]);
   box(fixtures,'rehosted-attendant-worktop','rehosted-admission-counter',M.ivory,[counter.x,1.08,counter.z],[counter.width+.06,.06,counter.depth+.08]);
@@ -250,6 +301,6 @@ export function buildGlassCourtGeometry(court){
     mouthPolicy:'Two centred greenhouse end doors followed by a separate ventilated changing room and pool door.',
     facadeAdded:true,rearDoorAdded:true,plantsAdded:true,apparitionsAdded:false,glassPolicy:'MASK sparse wet glass on two exterior long faces; no BLEND.',
     ventilation:{greenhouse:['glasshouse-supply','glasshouse-extract'],changing:['changing-extract'],termination:{axis:'x',coordinate:5,worldCoordinate:87}},
-    fixtureOrigin:court.entranceFixtures.origin,figureWindows:figures,windowLeavesOmitted,lamps:court.lamps.map(l=>({...l})),maximumTriangles:43000,maximumBytes:5*1024*1024};
+    fixtureOrigin:court.entranceFixtures.origin,figureWindows:figures,windowLeavesOmitted,galleryVineStrands,lamps:court.lamps.map(l=>({...l})),maximumTriangles:43000,maximumBytes:5*1024*1024};
   return{meshes,materials:GLASS_COURT_MATERIALS,report};
 }

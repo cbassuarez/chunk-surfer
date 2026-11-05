@@ -5,6 +5,8 @@ import { sourceDivideGeometry } from '../data/source-braided-divide.js';
 import { sourcePrintUV, SOURCE_PRINT_SURFACE } from './physical-source-print.js';
 import { PROP_INSTANCE_FLOATS, PROP_INSTANCE_BINDINGS } from './prop-instance-layout.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial} from './source-blueprint-print.js';
+import {installProceduralMeshes} from './procedural-mesh-install.js';
+import {SOURCE_EARLY_FAULT_GEOMETRY} from '../game/source-early-faults.js';
 
 export function divideMeshName(id) { return `source-divide-${id}`; }
 export function dividePieceBounds(piece) {
@@ -19,6 +21,9 @@ function sourceTexture(gl) {
 
 export function installDivideMeshes(gl,pack) {
   if(!gl||!pack?.catalog)return [];
+  // These small flat Source fragments share this pack's normal residency and
+  // survive pack reloads; no scene needs to allocate meshes during movement.
+  installProceduralMeshes(gl,pack,SOURCE_EARLY_FAULT_GEOMETRY);
   const geometry=sourceDivideGeometry(),names=geometry.map(p=>divideMeshName(p.id));
   if(names.every(name=>pack.catalog.has(name)))return names;
   const maps=sourceTexture(gl),identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);

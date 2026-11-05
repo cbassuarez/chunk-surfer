@@ -71,6 +71,6 @@ export function transferContinuationPortal(state,edge,{velocity=null,eye=true,tr
     if(oldFall?.trace){const destination={...pose(state),up:[...transformedBody.up]};state.fall.trace=[...oldFall.trace,{kind:'fold',...from,up:[...body.up],to:destination,foldId:edge.portal.id,foldSide:edge.side,fromChartId:from.chartId,toChartId:state.chartId,matrix:[...m],inverseMatrix:[...edge.inverseMatrix]},destination];}
   }
   state.foldSerial=(state.foldSerial||0)+1;
-  const receipt={id:edge.portal.id,side:edge.side,serial:state.foldSerial,from,to:pose(state),matrix:[...m],inverseMatrix:[...edge.inverseMatrix],fromChartId:from.chartId,toChartId:state.chartId,airborne:!!oldFall,velocityBefore:incoming,velocityAfter:outgoing,bodyCenterBefore:[from.x,from.feet+C.bodyHeight/2,from.z],bodyCenterAfter:center,eyeBefore:beforeEye,eyeAfter:afterEye};
+  const receipt={id:edge.portal.id,side:edge.side,serial:state.foldSerial,at:state.elapsed,from,to:pose(state),matrix:[...m],inverseMatrix:[...edge.inverseMatrix],fromChartId:from.chartId,toChartId:state.chartId,airborne:!!oldFall,velocityBefore:incoming,velocityAfter:outgoing,bodyCenterBefore:[from.x,from.feet+C.bodyHeight/2,from.z],bodyCenterAfter:center,eyeBefore:beforeEye,eyeAfter:afterEye};
   state.lastFold=receipt;return receipt;
 }

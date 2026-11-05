@@ -171,3 +171,49 @@ test('shipped stereo carrier matches measured full-performance provenance and re
   assert.ok(at<bytes.length-4);assert.equal(bytes[at+3]>>6,0,'independent stereo, not mono or mid/side');
   assert.equal((bytes[at+2]>>2)&3,2,'MPEG1 sample-rate index2 is32kHz');
 });
+
+test('between the bench and the door both versions loosen into a crossing carousel, then settle',async()=>{
+  const {SOURCE_REST_COUPERIN_SPACE:S}=await import('../src/audio/source-rest-couperin.js');
+  const seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch'),door=SOURCE_CONTINUATION.catch.finalDoor;
+  const middle={phase:'catch',x:-166,z:-92,feet:-12.6,yaw:Math.PI/2,pitch:0};
+  const angle=s=>Math.acos(s.voices.acoustic.direction.reduce((sum,v,k)=>sum+v*s.voices.electronic.direction[k],0));
+  const pans=[];
+  for(let t=0;t<=S.carouselSeconds;t+=S.carouselSeconds/8){
+    const s=sourceRestCouperinSpace(middle,null,t);
+    assert.ok(s.between>.8&&s.carousel>.6,`loose at the crossing (${s.between}, ${s.carousel})`);
+    assert.ok(angle(s)>2,'the two versions stand on opposite sides of the listener');
+    pans.push(s.voices.acoustic.pan);
+  }
+  assert.ok(Math.min(...pans)<-.5&&Math.max(...pans)>.5,'the carousel carries each version across both ears');
+  const atDoor=sourceRestCouperinSpace({phase:'catch',x:door.x-2,z:door.z,feet:door.y,yaw:Math.PI/2,pitch:0},null,4),{acoustic:a,electronic:e}=atDoor.voices;
+  assert.ok(atDoor.carousel<.05&&atDoor.electronic>.75,'the door island belongs to the revoicing');
+  assert.ok(e.direction[2]<0&&e.presence>a.presence*1.6,'facing the door, the revoicing is ahead and present');
+  assert.ok(a.cutoff<e.cutoff/3&&a.send>e.send,'the far acoustic version is darker and stands in more air');
+  const seated=sourceRestCouperinSpace({phase:'catch',x:seat.x,z:seat.z,feet:seat.feet,yaw:Math.PI/2,pitch:0},null,30,{gather:1});
+  assert.equal(seated.electronic,0);
+  for(const p of Object.values(seated.positions))assert.ok(Math.abs(Math.hypot(p.x-seat.x,p.z-seat.z)-S.benchRadius)<1e-9,'both versions circle the bench');
+});
+
+test('each stem is shaded, darkened and placed through its own HRTF panner and air send',async()=>{
+  const f=fixture();
+  f.ctx.createPanner=()=>{const n=new Node('hrtf');for(const k of['positionX','positionY','positionZ'])n[k]=new Param(0);f.nodes.push(n);return n;};
+  f.ctx.createBiquadFilter=()=>{const n=new Node('filter');n.frequency=new Param(350);n.Q=new Param(1);f.nodes.push(n);return n;};
+  const door=SOURCE_CONTINUATION.catch.finalDoor,seat=SOURCE_REST_SEATS.find(s=>s.phase==='catch');
+  f.owner.start();await flush();
+  const panners=f.nodes.filter(n=>n.kind==='hrtf'),filters=f.nodes.filter(n=>n.kind==='filter'),convolver=f.nodes.find(n=>n.kind==='convolver');
+  assert.equal(panners.length,2);assert.equal(f.nodes.filter(n=>n.kind==='panner').length,0);
+  assert.ok(panners.every(p=>p.panningModel==='HRTF'&&p.rolloffFactor===0),'distance is authored, not doubled by the panner');
+  assert.equal(f.nodes.filter(n=>n.connections.some(c=>c.node===convolver)).length,3,'one shared room plus one air send per stem');
+  let clock=0;const step=(state,extra={})=>{clock+=1/60;f.ctx.currentTime=clock;f.media.currentTime=clock;f.owner.update({spatialState:state,progress:0,...extra});};
+  const atDoor={phase:'catch',x:door.x-2,z:door.z,feet:door.y,yaw:Math.PI/2,pitch:0};
+  for(let n=0;n<600;n++)step(atDoor);
+  const mix=f.owner.snapshot().revoicing;
+  assert.ok(mix.electronicGain>mix.acousticGain*2,'at the door the revoicing leads');
+  assert.ok(filters[0].frequency.value<filters[1].frequency.value/3,'the acoustic stem is darkened by distance');
+  assert.ok(panners[1].positionZ.value<0,'the revoicing is placed ahead');
+  const atSeat={phase:'catch',x:seat.x,z:seat.z,feet:seat.feet,yaw:Math.PI/2,pitch:0};
+  for(let n=0;n<60*30;n++)step(atSeat,{seated:true});
+  const rest=f.owner.snapshot().revoicing;
+  assert.ok(rest.space.gather>.95&&rest.spaceElectronic<.05,'seated, the island field yields to the authored arc');
+  assert.equal(f.nodes.filter(n=>n.kind==='source').length,1,'one decoder throughout');
+});

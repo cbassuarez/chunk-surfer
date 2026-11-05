@@ -33,9 +33,9 @@ function pursuitRouteTrace(state){
 
 // This scene borrows the shared renderer. It never writes the original body's
 // position, recorder, injuries, inventory, quest receipts or Contact consent.
-export function createSourceContinuationScene({checkpoint,renderer,audio=null,studyRotation=0,
+export function createSourceContinuationScene({checkpoint,renderer,audio=null,studyRotation=0,tides=false,
   onTorch=()=>false,onInstrumentTick=()=>{},onCheckpoint=()=>{},onReturn=()=>{},onComplete=()=>{},onExit=()=>{},onError=()=>{},onTrace=()=>{},onAcceptedTravel=recordNightClockTravel,
-  getContactStatus=()=>null,getRecordingCustody=()=>null,onContact=()=>false,onRecoverRecording=()=>false}={}){
+  getContactStatus=()=>null,getRecordingCustody=()=>null,onContact=()=>false,onRecoverRecording=()=>false,onRiftFault=()=>false}={}){
   if(typeof renderer?.render!=='function')throw Error('Source continuation needs its physical renderer.');
   let state=normalizeSourceContinuation(checkpoint),ready=false,closed=false,paused=false,
     leaving=false,error=null,failedFinish=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=null,contactHeld=null;
@@ -55,6 +55,9 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
   const keys=new Set();
   const debugTrace=!!import.meta.env?.DEV&&new URLSearchParams(globalThis.location?.search||'').has('sourceTrace');
   let loggedSecond=-1;
+  // The live game feels each Source's tide and the night's wind; a seated
+  // listener is anchored, the one place neither reaches.
+  let anchored=false;
   function trace(value){
     onTrace(value);
     const second=Math.floor(state.elapsed);
@@ -111,6 +114,14 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     trace({type:'handoff-begin',kind,elapsed:state.elapsed,phase:state.phase,duration:.35});
     return true;
   }
+  // The host trades this scene for the rift room and restores it from this
+  // checkpoint afterwards. A host that declines leaves the body where it is.
+  function enterRift(event){
+    if(closed||leaving)return false;
+    clear();leaving=true;const checkpoint=save('rift-fault'),stay=()=>{if(!closed)leaving=false;};
+    try{Promise.resolve(onRiftFault({id:event.id,checkpoint})).then(ok=>{if(ok===false)stay();}).catch(e=>{stay();report(e);});}catch(e){stay();report(e);}
+    return true;
+  }
   function apply(input){
     const focus=input.interact?interactionFocus():null,choice=focus?.id;
     if(focus&&['source-contact','source-recording-return'].includes(focus.type)){requestContact(focus);return;}
@@ -128,6 +139,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     }
     if(result.event?.type==='return'||events.some(e=>e.type==='return'))finish('return');
     else if(result.event?.type==='complete'||events.some(e=>e.type==='complete'))finish('complete');
+    else if(events.some(e=>e.type==='rift-fault'))enterRift(events.find(e=>e.type==='rift-fault'));
     else if(events.length)save('interaction');
   }
   const scene={
@@ -163,7 +175,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       const overhead=state.phase==='catch';
       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
-      apply({dt,forward,side,renderReady:true});
+      apply({dt,forward,side,renderReady:true,environment:!!tides,anchored});
       if(closed||leaving)return;
       const focus=interactionFocus();
       const soundFocus=focus&&overhead&&rotation&&typeof renderer.acousticFrame!=='function'?{...focus,...presented(focus.x,focus.z),
@@ -196,6 +208,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       sourceContactProps:sourceContinuationRecordingReturnProps(state,getRecordingCustody())}),
     serialize:snapshot,checkpoint:()=>save('requested'),
     releaseContact,
+    anchor(value){anchored=!!value;return anchored;},
     pause(){if(closed)return false;paused=true;clear();audio?.pause?.();save('pause');return true;},
     resume(){if(closed)return false;paused=false;clear();return true;},
     lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),

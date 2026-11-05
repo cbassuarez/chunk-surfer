@@ -77,7 +77,8 @@ export async function buildGlassCourt({outputDir=path.join(ROOT,'public/assets')
     textures:Object.fromEntries(Object.entries(textures).map(([name,t])=>[name,{width:t.width,height:t.height,bytes:t.bytes.length,sha256:sha(t.bytes),coverage:t.coverage}]))};
   for(const[name,data]of geometry.meshes){
     const mesh=doc.createMesh(name).setExtras({localOrigin:[0,0,0],courtId:GLASS_COURT.id,
-      floorDatum:0,canonicalBounds:GLASS_COURT.bounds,ordinaryPhysicalSpace:true,instanceOrigin:name===GLASS_COURT.entranceFixtures.mesh?GLASS_COURT.entranceFixtures.origin:GLASS_COURT.origin});
+      floorDatum:0,canonicalBounds:GLASS_COURT.bounds,ordinaryPhysicalSpace:true,instanceOrigin:name===GLASS_COURT.entranceFixtures.mesh?GLASS_COURT.entranceFixtures.origin:GLASS_COURT.origin,
+      ...(name==='glass_court_gallery_vines'?{vegetationWind:GLASS_COURT.galleryVines.wind}:{})});
     scene.addChild(doc.createNode(name).setMesh(mesh));
     for(const[index,g]of data.groups){
       const maxIndex=Math.max(...g.indices),IndexArray=maxIndex<65536?Uint16Array:Uint32Array;

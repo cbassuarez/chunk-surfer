@@ -60,7 +60,7 @@ export function faceplateMapSnapshot(model){
 }
 export function beginFaceplateModuleState(context,size){
   const layout=faceplateModuleLayout(size),enabled=faceplateModulesEligible(context)&&layout.mode!=='none';
-  const clock=typeof context?.nightClock?.value==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(context.nightClock.value)
+  const clock=typeof context?.nightClock?.value==='string'&&/^(?:(?:[01]\d|2[0-3]):[0-5]\d|  :  )$/.test(context.nightClock.value)
     ?{...context.nightClock}:null;
   current={serial:++serial,enabled,painted:false,layout,error:null,context:enabled?{
     ...context,nightClock:clock,map:faceplateMapSnapshot(context.map),now:finite(context.now),held:context.held===true,

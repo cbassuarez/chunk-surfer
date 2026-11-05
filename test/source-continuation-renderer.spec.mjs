@@ -5,10 +5,14 @@ import vm from 'node:vm';
 import {SOURCE_CONTINUATION as C,continuationSurfaces,continuationSolids,continuationSurfaceY,continuationCatchFloor,continuationSupportAt,continuationDoors,continuationProps,continuationSurfaceContains,CONTINUATION_CATCH_STAGES,CONTINUATION_ASSEMBLIES} from '../src/data/source-continuation.js';
 import {freshSourceContinuation,sourceContinuationFrame,stepSourceContinuation} from '../src/game/source-continuation.js';
 import {sourceContinuationGeometry,sourceContinuationEdges,sourceContinuationEdgeGeometry,sourceContinuationMeshPayload,installSourceContinuationMeshes,finishSourceContinuationArchitecture,prewarmSourceContinuationAssets,sourceContinuationCamera,sourceContinuationRenderFrame,createSourceContinuationRenderer,SOURCE_CONTINUATION_ARCHITECTURE,SOURCE_CONTINUATION_LIGHTING,sourceContinuationLighting} from '../src/render/source-continuation-renderer.js';
+import {sourceContinuationAmbientFaultGeometry} from '../src/render/source-continuation-faults.js';
+import {sourceParserGeometryLibrary} from '../src/render/source-parser-architecture.js';
 import {doorAssembly} from '../src/data/source-door-fields.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
 import {SOURCE_PRINT_SURFACE} from '../src/render/physical-source-print.js';
 import {SOURCE_BLUEPRINT_PRINT_SURFACE} from '../src/render/source-blueprint-contract.js';
+import {SOURCE_SILVER_WALKWAY_PRINT_SURFACE,sourceSilverWalkwaySurface} from '../src/render/source-walkway-finish.js';
+import {sourceContinuationVoidViews,sourceContinuationVoidInstance} from '../src/render/source-continuation-void.js';
 import {cameraBasis} from '../src/render/camera-basis.js';
 import {sourceSurroundingsGeometryLibrary} from '../src/render/source-surroundings-geometry.js';
 import * as R3 from '../src/render/r3d.js';
@@ -100,10 +104,14 @@ test('physical print installation is bounded and idempotent with all material ch
   assert.equal(journeyNames.length,JOURNEY_SURFACES.length+JOURNEY_JOINT_SOLIDS.length,'every added journey support/frame has one inspectable mesh');
   const islandNames=new Set(sourceContinuationGeometry().filter(p=>['island','seat-island','door-island','island-causeway'].includes(p.role)).map(p=>p.name));
   const escherNames=new Set(Object.values(SOURCE_ESCHER_MESHES_BY_CHART).flat().map(name=>'source-continuation-'+name));
+  const ambientNames=new Set(sourceContinuationAmbientFaultGeometry().map(piece=>piece.name));
+  const parserNames=new Set(sourceParserGeometryLibrary().map(piece=>piece.name));
   assert.equal(islandNames.size,18,'the archipelago has a bounded set of physical supports');
   assert.equal(escherNames.size,16,'each chart fall is merged into its used materials');
-  for(const name of [...islandNames,...escherNames])assert.ok(originalNames.includes(name),name);
-  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-')&&!islandNames.has(name)&&!escherNames.has(name));
+  assert.ok(ambientNames.size<=36,'fixed sheets batch into at most six inks per region');
+  assert.equal(parserNames.size,18,'the existing entrances and real Catch releases have one bounded scope library');
+  for(const name of [...islandNames,...escherNames,...ambientNames,...parserNames])assert.ok(originalNames.includes(name),name);
+  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-')&&!islandNames.has(name)&&!escherNames.has(name)&&!ambientNames.has(name)&&!parserNames.has(name));
   assert.ok(retainedOriginal.length>80&&retainedOriginal.length<240,'the retained original asset budget is unchanged; added geometry is bounded separately');
   assert.equal(names.length,originalNames.length+surroundings.size,'the added catalogue is exactly the declared static surroundings library');
   assert.deepEqual(installSourceContinuationMeshes(g.gl,pack,{maps}),names);assert.equal(g.buffers.length,count);
@@ -111,9 +119,9 @@ test('physical print installation is bounded and idempotent with all material ch
     const p=entry.primitives[0],added=surroundings.get(entry.name);
     if(added){assert.equal(p.materialRole,added.materialRole);assert.deepEqual(p.emissive,added.emissive);assert.equal(entry.extras.triangles,added.triangles);}
     else{
-      assert.ok(['source-continuation','quiet-metal','source-chunk-error'].includes(p.materialRole));
-      // Only declared listening-place practicals, weather and flood shells
-      // own self-light; all other retained continuation material stays dark.
+      assert.ok(['source-continuation','quiet-metal','source-chunk-error','source-parser-scope'].includes(p.materialRole));
+      // Only declared listening-place practicals, weather, flood shells and the
+      // sky's omen own self-light; all other retained material stays dark.
       const restEmission={
         'source-continuation-rest-lamp-light':[.22,.15,.08],
         'source-continuation-rest-sky-wire':[.025,.035,.025],
@@ -127,16 +135,28 @@ test('physical print installation is bounded and idempotent with all material ch
         'source-continuation-rest-flood-bubble':[.013,.025,.028],
         'source-continuation-rest-seabed-lamp':[.5,.45,.36],
         'source-continuation-rest-judgment-lightning':[1.2,1.4,1.6],
+        // The omen over Source III burns its own light; nothing else reaches that sky.
+        'source-continuation-catch-black-sun-corona':[1.25,1.12,.86],
+        'source-continuation-catch-blood-moon':[1.55,.07,.04],
+        'source-continuation-catch-blood-moon-stream':[1.55,.07,.04],
       };
       if(p.materialRole==='source-chunk-error'){
-        assert.ok(p.emissive.every(v=>v>=0&&v<=.36));
+        assert.ok(p.emissive.every(v=>v>=0&&v<=(ambientNames.has(entry.name) ? .46 : .36)));
         assert.ok(Math.max(...p.emissive)>=.35&&Math.min(...p.emissive)<.01,'bounded fault material retains strong channel separation');
         assert.equal(p.texture,null,'fault cubes retain their literal spectral material rather than code paper');
       }else assert.deepEqual(p.emissive,restEmission[entry.name]||[0,0,0]);
     }
     assert.ok(entry.extras.triangles>0);
-    if(p.printedSurface){assert.ok([SOURCE_PRINT_SURFACE,SOURCE_BLUEPRINT_PRINT_SURFACE].includes(p.printedSurface));assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+    if(p.printedSurface){assert.ok([SOURCE_PRINT_SURFACE,SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE].includes(p.printedSurface));assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
   }
+});
+test('the acquired renderer submits the current chapter fixed faults without replacing portal or standing-rift props',async()=>{
+  const h=fixture();await h.owner.initialize();h.owner.render(catchState(2));
+  const submitted=h.calls.findLast(call=>call.name==='r3dSetProps').args[0],sheets=submitted.filter(p=>p.ambientFault);
+  assert.ok(sheets.length>0&&sheets.length<=6);assert.ok(sheets.every(p=>p.region==='catch'&&p.chartId===0&&!p.collidable));
+  assert.equal(sheets.reduce((n,p)=>n+p.faultSheets,0),216);
+  assert.ok(submitted.some(p=>p.riftFault),'the actual opening rift remains present');
+  h.owner.dispose();
 });
 test('remote construction has bounded blueprint, pale stock and dark backs; only native joint paint emits',()=>{
   const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};
@@ -172,7 +192,7 @@ test('actual bundled bell and clapper meshes exist and missing sender residency 
 test('blueprint substitution changes stock rather than support geometry or native instrument materials',()=>{
   const make=blueprint=>{const g=fakeGl(),pack={catalog:new Map()};installSourceContinuationMeshes(g.gl,pack,{maps:{blueprint,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}}});return pack;};
   const current=make(true),control=make(false);let physical=0;
-  for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];assert.deepEqual([...p.vao.attributes[0].data],[...old.vao.attributes[0].data]);if(p.printedSurface){if(p.printedSurface===SOURCE_BLUEPRINT_PRINT_SURFACE)assert.deepEqual(p.base,[1,1,1,1]);else assert.deepEqual(p.base,old.base);assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}else{physical++;assert.deepEqual(p.base,old.base);}}
+  for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];assert.deepEqual([...p.vao.attributes[0].data],[...old.vao.attributes[0].data]);if(p.printedSurface){if([SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE].includes(p.printedSurface))assert.deepEqual(p.base,[1,1,1,1]);else assert.deepEqual(p.base,old.base);assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}else{physical++;assert.deepEqual(p.base,old.base);}}
   assert.ok(physical>10);
 });
 test('the active continuation chooses silicon for II and bismuth for III without rebuilding the world',async()=>{
@@ -184,17 +204,41 @@ test('the active continuation chooses silicon for II and bismuth for III without
   assert.deepEqual([JSON.stringify(ii),JSON.stringify(iii)],before);h.owner.dispose();
 });
 
-test('semantic Source sheets keep white code over chapter stock while physical notes and native finishes remain separate',()=>{
-  const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});let sheets=0;
-  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
-  for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE,id);}
+test('semantic Source sheets retain chapter stock with syntax on only the eight approved silver walkways',()=>{
+  const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});let sheets=0,routes=0;
+  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;const route=sourceSilverWalkwaySurface(piece);if(route)routes++;assert.equal(p.printedSurface,route?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,piece.id);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+  for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,sourceSilverWalkwaySurface(piece)?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,id);}
+  assert.equal(routes,8);
   assert.ok(sheets>0,'load-bearing sheets must retain physical printed stock');
+});
+test('silver walkway identity follows real native and void meshes without changing geometry or the diagnostic control',()=>{
+  const installed=blueprint=>{const pack={catalog:new Map()};installSourceContinuationMeshes(fakeGl().gl,pack,{maps:{blueprint,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}}});return pack.catalog;};
+  const current=installed(true),control=installed(false),approved=new Set(['wrong-entry','wrong-entry-throat','wrong-ground-cross','wrong-ground-west','wrong-ground-east','wrong-ground-north','wrong-ground-branch','wrong-east-stair-foot']);
+  const routed=[...current].filter(([,entry])=>entry.primitives[0].printedSurface===SOURCE_SILVER_WALKWAY_PRINT_SURFACE);
+  assert.equal(routed.length,approved.size);assert.equal(current.size,control.size,'material substitution adds no meshes');
+  for(const [name,entry]of current){const p=entry.primitives[0],old=control.get(name).primitives[0];
+    assert.deepEqual(p.nativeReceiverGeometry,old.nativeReceiverGeometry,`${name} keeps its real vertex, normal, UV and index channels`);
+    if(p.printedSurface===SOURCE_SILVER_WALKWAY_PRINT_SURFACE){assert.equal(old.printedSurface,SOURCE_PRINT_SURFACE);assert.notEqual(old.materialRole,'source-silver-fracture');}
+    else assert.notEqual(p.printedSurface?.family,'source-ii-route','plinths, upper decks, inherited earthfall and III retain their own material identity');
+  }
+  const state={...fresh(),x:0,z:-2.8,feet:0,yaw:.7,pitch:.1},frame=sourceContinuationRenderFrame(state,{viewportAspect:1.6});
+  const images=frame.props.filter(p=>current.get(p.mesh)?.primitives[0].printedSurface===SOURCE_SILVER_WALKWAY_PRINT_SURFACE);
+  assert.ok(images.some(p=>!p.portalDestination),'native supports keep the approved material');
+  for(const image of images){assert.ok(approved.has(image.descriptorId),image.id);assert.equal(image.physicalKind,'surface');}
+  const views=sourceContinuationVoidViews(state,{eye:frame.eye,basis:cameraBasis(state.yaw,state.pitch),aspect:1.6});
+  assert.ok(views.lower.length,'the real fixed-address domain supplies a lower view');
+  for(const image of images.filter(p=>!p.portalDestination)){
+    const copy=sourceContinuationVoidInstance(image,views.lower[0]);
+    assert.ok(copy.voidImage);assert.ok(copy.y<image.y-20,'the check must exercise an actual translated image');
+    assert.equal(copy.mesh,image.mesh);assert.equal(copy.descriptorId,image.descriptorId);
+    assert.equal(current.get(copy.mesh).primitives[0].printedSurface,SOURCE_SILVER_WALKWAY_PRINT_SURFACE,'the transformed image reuses its exact authored print contract');
+  }
 });
 test('the dedicated architecture preserves actual native finishes and maps only explicit printed joints',()=>{
   const b=readFileSync(new URL('../public/assets/source-continuation-architecture.glb',import.meta.url)),length=b.readUInt32LE(12),j=JSON.parse(b.subarray(20,20+length)),pack={catalog:new Map()},before=new Map(),maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};
   for(const mesh of j.meshes){const primitives=mesh.primitives.map(primitive=>{const material=j.materials[primitive.material],p=material.pbrMetallicRoughness;return{base:p.baseColorFactor,roughness:p.roughnessFactor,metallic:p.metallicFactor,materialName:material.name,emissive:material.emissiveFactor||[0,0,0],mainFactors:{authored:true}};});pack.catalog.set(mesh.name,{primitives});before.set(mesh.name,structuredClone(primitives));}
   finishSourceContinuationArchitecture(null,pack,{maps});let native=0,joints=0;
-  for(const[name,entry]of pack.catalog)for(const[p,index]of entry.primitives.map((p,i)=>[p,i])){if(p.materialName.includes('source-cut joint stock')){joints++;assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);assert.equal(p.mainFactors,undefined);}else{native++;assert.deepEqual(p,before.get(name)[index]);}assert.deepEqual(p.emissive,[0,0,0]);}
+  for(const[name,entry]of pack.catalog)for(const[p,index]of entry.primitives.map((p,i)=>[p,i])){if(p.materialName.includes('source-cut joint stock')){joints++;assert.equal(p.printedSurface,SOURCE_BLUEPRINT_PRINT_SURFACE);assert.equal(p.printedSurface.family,undefined,'imported arch feet and their plinth cannot acquire the route family');assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);assert.equal(p.mainFactors,undefined);}else{native++;assert.deepEqual(p,before.get(name)[index]);}assert.deepEqual(p.emissive,[0,0,0]);}
   assert.ok(native>10&&joints>0);
 });
 test('both physical regions and every Catch shelf persist in the first-person construction',()=>{

@@ -7,8 +7,8 @@ export const ACADEMIC_ATRIUM_LIGHT=freeze({
   void:{x0:79,x1:89,z0:8,z1:21},
   deck:{top:10,bottom:9.5},
   panes:{columns:5,rows:6,firstX:80,firstZ:9.0833,stepX:2,stepZ:2.1667,width:1.90,depth:2.0667},
-  // The courtyard cut removes the former south half of these retained runs.
-  // The original pane pitch remains, including its final partial pane.
+  // The aperture is the skylight's span over the indoor atrium. South of it the
+  // same runs continue over the open courts, which take their light from the sky.
   beams:{xs:[79,83,87,89],y:16.69,halfWidth:.095,z0:8,z1:15},
   leadPatches:[{x0:81.05,x1:82.95,z0:12.38335,z1:14.45005}],
   direction:{x:-.20,y:-1,z:-.32},

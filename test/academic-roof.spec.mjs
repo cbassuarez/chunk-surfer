@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { ACADEMIC_ROOF, ACADEMIC_ROOF_STAIR, ACADEMIC_ROOF_PROPS, roofPointToPhysical } from '../src/data/academic-roof.js';
+import { GLASS_COURT } from '../src/data/glass-court.js';
 import { F, MATERIAL, ZONE, STEP_UP, isOutdoorZone } from '../src/data/floorplan/legend.js';
 import { BUILDING_MAP } from '../src/data/building-map.js';
 import { CONSERVATORY_PROPS } from '../src/data/conservatory-props.js';
@@ -46,7 +47,6 @@ assert.ok(returned.has(`${start.x},${start.y}`),'Ren and both glass bays have an
 assert.equal(isOutdoorZone(ZONE.academicRoof),true);
 
 // The retained north lantern is collision, not a large invisible fall trigger.
-// Its old south extension is now the deliberate open courtyard, not roof glass.
 const glass=ACADEMIC_ROOF.glass;
 for(let y=glass.y0;y<glass.y1;y+=.5)for(let x=glass.x0;x<glass.x1;x+=.5){
   const p=FP.toRuntimePoint({x,y},{center:false});
@@ -54,17 +54,25 @@ for(let y=glass.y0;y<glass.y1;y+=.5)for(let x=glass.x0;x<glass.x1;x+=.5){
   assert.equal(FP.materialAt(p.x,p.y),MATERIAL.roofGlass);
   assert.equal(FP.isSolid(p.x,p.y),false);
 }
-const sky=ACADEMIC_ROOF.openSkyBounds;
-let openCourtCells=0;
-for(let z=sky.z0;z<sky.z1;z+=.5)for(let x=sky.x0;x<sky.x1;x+=.5){
+// The skylight runs on over the courts, so the deck has no hole in it: every
+// cell above them is ordinary walkable roof glass, reachable across the roof.
+const court=ACADEMIC_ROOF.courtGlass;
+let glazedCourtCells=0;
+for(let z=court.z0;z<court.z1;z+=.5)for(let x=court.x0;x<court.x1;x+=.5){
   const p=FP.toRuntimePoint({x:ACADEMIC_ROOF.origin.x+x-ACADEMIC_ROOF.physicalOrigin.x,
     y:ACADEMIC_ROOF.origin.y+z-ACADEMIC_ROOF.physicalOrigin.y},{center:false});
-  assert.notEqual(FP.floorAt(p.x,p.y),17,'the courtyard has no invisible roof-height floor');
+  assert.equal(FP.floorAt(p.x,p.y),17,'the deck is continuous across the courts');
+  assert.equal(FP.materialAt(p.x,p.y),MATERIAL.roofGlass,'the courts sit under glass, not roof plate');
+  assert.equal(FP.isSolid(p.x,p.y),false);
   const spans=FP.physicalSpanData().cells.get(`${Math.floor(x*2)},${Math.floor(z*2)}`)||[];
-  assert.ok(!spans.some(span=>span.owner==='academic_roof'),'roof spans do not close the courtyard sky');
-  openCourtCells++;
+  assert.ok(spans.some(span=>span.owner==='academic_roof'));
+  glazedCourtCells++;
 }
-assert.ok(openCourtCells>500,'the entire existing courtyard opening is checked, not one convenient point');
+assert.ok(glazedCourtCells>500,'the entire court is checked, not one convenient point');
+for(const cell of[{x:201,y:289},{x:195,y:285},{x:209,y:294}]){
+  const p=runtime(cell);assert.ok(reachable.has(`${p.x},${p.y}`),`the glass over the courts is walkable at ${cell.x},${cell.y}`);
+}
+assert.equal(GLASS_COURT.upperGuards.roofPolygon,undefined,'no rail is left standing on the deck where the hole used to be');
 // The rim contributes a finite-height air span for the renderer, while its
 // collision-only status rejects every attempted traversal. A solid '#' rim
 // inherited the interior 24m ceiling and produced a seven-metre view blocker.

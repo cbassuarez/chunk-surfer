@@ -40,3 +40,13 @@ export function windAt(timeSec = 0, { depth = 1, seed = 0 } = {}) {
 export function windForce(timeSec = 0, { seed = 0 } = {}) {
   return clamp((windAt(timeSec, { depth: 1, seed }) - 1) / 0.68 * 0.5 + 0.5, 0, 1);
 }
+
+// The gust as a horizontal push in metres per second, along a bearing that
+// veers slowly through the night. A lull is still air: only the surge pushes.
+// Leaves anywhere, and a body standing in the open Source, read this.
+export function windVector(timeSec = 0, { bearing = 0.6, veer = 0.45, veerRate = 0.031, depth = 1.2, push = 0.85, seed = 0 } = {}) {
+  const t = Math.max(0, Number(timeSec) || 0);
+  const gust = Math.max(0, (windAt(t, { depth, seed }) - 1) / (0.34 * depth));
+  const heading = bearing + veer * Math.sin(t * veerRate), amount = push * gust ** 1.5;
+  return { x: Math.cos(heading) * amount, z: Math.sin(heading) * amount, gust, bearing: heading };
+}

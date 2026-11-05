@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { roofCourtGlazingLayout } from '../src/data/academic-roof.js';
 import assert from 'node:assert/strict';
 import {buildAcademicRoof,ACADEMIC_ROOF_ORNAMENT_CONTRACT} from '../tools/chunk_surfer/academic-roof-geometry.mjs';
 import {ROOF_FORMAL_PROMENADES} from '../tools/chunk_surfer/roof-formal-promenade.mjs';
@@ -43,7 +44,7 @@ test('ceremonial pavilion and urns occupy existing perimeter collision and retai
     assert.ok(hi[2]<-13.5||lo[2]>-12.5||hi[0]<north.x0||lo[0]>north.x1,
       'new ornament never narrows the north bridge opening');
   }
-  assert.equal(meshes.get('academic_roof_glazing').shapes.filter(s=>matIndex(s)===MAT.roofGlass).length,30);
+  assert.equal(meshes.get('academic_roof_glazing').shapes.filter(s=>matIndex(s)===MAT.roofGlass).length,30+roofCourtGlazingLayout().panes.length);
 });
 
 test('eight side columns frame six genuinely open views inside existing boundary collision',()=>{

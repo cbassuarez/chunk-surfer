@@ -10,6 +10,7 @@ import * as PROPS from '../src/game/props.js';
 import { conservatory } from '../src/data/floorplan/conservatory.js';
 import { buildSourceFalseReturnLayout } from '../src/game/source-false-return-layout.js';
 import {THRESHOLD_GAG,THRESHOLD_GAG_MESHES,thresholdGagPose,thresholdGagTiming} from '../src/data/threshold-gag.js';
+import {SOURCE_FALSE_RETURN_FAULT_MESHES,sourceFalseReturnFaultLibrary,installSourceFalseReturnFaultMeshes} from '../src/render/source-false-return-faults.js';
 
 const encode = h => Math.round((h + 8) / 32 * 255);
 function layout() {
@@ -33,7 +34,7 @@ function fixture({gate=null,authoredGate=null,gagGate=null,missing=[],missingGag
   const renderer=Object.fromEntries(Object.keys(R3).filter(k=>typeof R3[k]==='function').map(k=>[k,(...args)=>{calls.push({name:k,args});return k==='r3dFrame'?true:undefined;} ]));
   renderer.r3dBasePropsReady=async()=>{calls.push({name:'base',args:[]});return gate?await gate:true;};
   renderer.r3dAuthoredPropsReady=async()=>{calls.push({name:'authored',args:[]});return authoredGate?await authoredGate:renderer.r3dBasePropsReady();};
-  const props={propMeshCatalog:()=>[...catalog],setPressureInstances:value=>calls.push({name:'pressure',args:[value]}),async addPropPack(url){
+  const props={propMeshCatalog:()=>[...catalog],setPressureInstances:value=>calls.push({name:'pressure',args:[value]}),installAuthoredPropMeshes(){for(const mesh of SOURCE_FALSE_RETURN_FAULT_MESHES)catalog.add(mesh);return true;},async addPropPack(url){
     calls.push({name:'pack',args:[url]});
     if(url.endsWith('assets/conservatory-doors.glb')){
       if(packFailure)throw Error('door bank unavailable');
@@ -73,6 +74,35 @@ test('Source suppresses only local room-side props and lamps while retaining all
   assert.deepEqual(frame.hiddenProps,['piano-room-five']);assert.ok(frame.props.some(p=>p.id==='piano-room-one'));assert.ok(frame.props.some(p=>p.id==='corridor-chair'));
   assert.equal(frame.lights.some(p=>p.id==='practice-light-five'),false);assert.ok(frame.lights.some(p=>p.id==='practice-light-one'));
   for(const d of l.doors)for(const suffix of['frame','head','leaf-0'])assert.ok(prop(frame,d.id,suffix));
+});
+
+test('sparse fixed shards appear only behind a revealed Source doorway',()=>{
+  const l=layout(),ordinary=sourceFalseReturnRenderFrame(l,state()),revealed=sourceFalseReturnRenderFrame(l,state({sourceDoors:['practice-west-3']})),
+    later=sourceFalseReturnRenderFrame(l,state({sourceDoors:['practice-west-3'],elapsed:12}));
+  assert.equal(ordinary.props.filter(p=>p.ambientFault).length,0);
+  const shards=revealed.props.filter(p=>p.ambientFault),again=later.props.filter(p=>p.ambientFault);
+  assert.equal(sourceFalseReturnFaultLibrary().reduce((n,p)=>n+p.sheetRanges.length,0),4);
+  assert.equal(shards.length,SOURCE_FALSE_RETURN_FAULT_MESHES.length);
+  assert.ok(shards.every(p=>p.sourceDoorId==='practice-west-3'&&p.structural===false&&p.collidable===false&&p.noShadow));
+  assert.deepEqual(shards.map(p=>[p.id,[...p.matrix]]),again.map(p=>[p.id,[...p.matrix]]));
+  assert.ok(shards.every(p=>p.x<l.doors[4].x),'all batch centres lie past the Source-facing doorway');
+});
+
+test('revealed fault batches upload their real flat colored geometry once',()=>{
+  let allocations=0;
+  const gl={ARRAY_BUFFER:1,ELEMENT_ARRAY_BUFFER:2,STATIC_DRAW:3,FLOAT:4,UNSIGNED_INT:5,
+    createVertexArray(){allocations++;return{};},createBuffer(){allocations++;return{};},bindVertexArray(){},bindBuffer(){},bufferData(){},
+    enableVertexAttribArray(){},vertexAttribPointer(){},vertexAttribDivisor(){},disableVertexAttribArray(){},vertexAttrib1f(){}};
+  const pack={catalog:new Map()},maps={texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};
+  assert.deepEqual(installSourceFalseReturnFaultMeshes(gl,pack,{maps}),SOURCE_FALSE_RETURN_FAULT_MESHES);
+  const count=allocations;
+  assert.deepEqual(installSourceFalseReturnFaultMeshes(gl,pack,{maps}),SOURCE_FALSE_RETURN_FAULT_MESHES);assert.equal(allocations,count);
+  for(const piece of sourceFalseReturnFaultLibrary()){
+    const entry=pack.catalog.get(piece.name),primitive=entry.primitives[0];
+    assert.deepEqual(primitive.base,piece.base);assert.deepEqual(primitive.emissive,piece.emissive);
+    assert.ok(entry.extras.triangles>0&&primitive.nativeReceiverGeometry.positions.every(Number.isFinite));
+    assert.equal(primitive.metallic,0);
+  }
 });
 
 test('after five distinct leaves clear, every existing door visibly agrees with the controller Source-bound rule',()=>{

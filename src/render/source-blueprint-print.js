@@ -13,6 +13,7 @@ export function sourceBlueprintMaterial(maps,{base=[.62,.66,.59,1]}={}){
   return {base:blueprint?[...SOURCE_BLUEPRINT.stockFactor]:[...base],
     texture:maps.texture,normalTexture:maps.normalTexture,ormTexture:maps.ormTexture,
     letteringFinish:maps.letteringFinish,materialFactors:'gltf',metallic:1,roughness:1,
+    sourceCodeStock:maps.sourceCodeStock,
     printedSurface:blueprint?SOURCE_BLUEPRINT_PRINT_SURFACE:SOURCE_PRINT_SURFACE};
 }
 export function sourceBlueprintLighting(fallback={}){

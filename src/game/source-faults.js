@@ -1,3 +1,5 @@
+import {sourceRiftBarsMs} from './source-rift.js';
+
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,Number(value)||0));
 
 function hash(value=''){
@@ -28,10 +30,11 @@ export function sourceFaultFrame({
   // pieces of the previous frame behind its head, and reassembles. It begins
   // only in Source proper—not on the page, Scene Dock, or white approach—and
   // recurs quickly enough that a player cannot finish the space without seeing
-  // one. Seeded phase/lane/direction keep capture and tests reproducible.
-  const runPeriodMs=4600;
-  const runDurationMs=1450;
-  const offset=hash(`overflow:${seed}`)*runPeriodMs;
+  // one. Seeded phase/lane/direction keep capture and tests reproducible. Each
+  // run lands on the practice wing's bar: the same wound keeps the same time.
+  const runPeriodMs=sourceRiftBarsMs(4);
+  const runDurationMs=sourceRiftBarsMs(1.5);
+  const offset=sourceRiftBarsMs(Math.floor(hash(`overflow:${seed}`)*4));
   const scoredTime=now+offset;
   const overflowRun=Math.floor(scoredTime/runPeriodMs);
   const runTime=scoredTime-overflowRun*runPeriodMs;

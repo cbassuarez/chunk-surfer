@@ -123,7 +123,7 @@ test('real mixed return filing, pending reports, profile merge, New Game and rel
     const missing=structuredClone(merged.meta);delete missing.stats.runsCompleted;assert.equal(normalizeMeta(missing).stats.runsCompleted,1);
     S.newGame({preset:'contract'});P.beginRunProgression();
     assert.equal(S.getSave().run.environment.routeTrunk,NATATORIUM_ROUTE_TRUNKS.FLOODED_SURFACE);
-    const runId=S.getSave().run.id,input={runId,runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30120,
+    const runId=S.getSave().run.id,input={runId,runActive:true,workOrderAccepted:true,active:true,elapsedSeconds:30180,
       safeBoundary:true,assetsReady:true,region:'ellery'};
     let deadline=stepNightDeadline(freshNightDeadline({runId}),input).state;
     deadline=stepNightDeadline(deadline,{...input,claimPresentation:true}).state;

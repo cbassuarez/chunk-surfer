@@ -108,3 +108,14 @@ test('v3 four-stage checkpoints translate their actual earned Catch pose and anc
   const fresh=freshSourceContinuation({runId:'old-completed'}),done=normalizeSourceContinuation({...fresh,layoutVersion:3,status:'completed',completed:true,handoff:true,phase:'catch',level:3,x:-30,z:-12,feet:-12.6,lastSafe:{x:-30,z:-12,feet:-12.6,phase:'catch',level:3},exitReceipt:{id:'old-completed:source-continuation-exit',delivered:true},counterweight:{...fresh.counterweight,x:-30.29,z:-3.27}});
   assert.equal(done.completed,true);assert.equal(done.status,'completed');assert.equal(done.exitReceipt.delivered,true);assert.equal(done.hush.active,false);assert.equal(done.level,3);close(done.x,C.catch.finalApproach.x);close(done.z,C.catch.finalApproach.z);assert.deepEqual(normalizeSourceContinuation(done),done);
 });
+
+test('legacy earned-anchor fields use the current canonical schema on the first migration',()=>{
+  const old={x:-26.5,z:-12,feet:8.4,phase:'catch',chartId:0,level:0,yaw:.3,pitch:-.2},fresh=freshSourceContinuation({runId:'legacy-anchor-schema'}),
+    state=normalizeSourceContinuation({...fresh,...old,layoutVersion:3,status:'active',lastSafe:{...old},
+      recoveryAnchor:{...old,kind:'obsolete-checkpoint',supportId:17,earnedAt:-8,retiredMetadata:true},
+      counterweight:{...fresh.counterweight,x:-30.29,z:-3.27},hush:{...fresh.hush,active:false}}),anchor=state.recoveryAnchor;
+  assert.equal(anchor.kind,'landing');assert.equal(anchor.supportId,'17');assert.equal(anchor.earnedAt,0);
+  assert.equal(anchor.yaw,state.yaw);assert.equal(anchor.retiredMetadata,undefined);
+  close(anchor.x,old.x+C.catch.offset.x);close(anchor.z,old.z+C.catch.offset.z);
+  assert.deepEqual(normalizeSourceContinuation(state),state);
+});

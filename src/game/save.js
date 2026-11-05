@@ -13,6 +13,7 @@ import {normalizeSourceReturnFlashbackCheckpoint} from './source-return-flashbac
 import {normalizeSourcePubCheckpoint} from './source-pub.js';
 import {normalizeRecordistRelease} from './recordist-release.js';
 import { clearSlateAudio } from '../audio/take-slate.js';
+import { sixLoopActive } from './six-loop.js';
 import { clearSourceDriveAudio } from '../audio/source-drive-recording.js';
 import {
   SAVE_VERSION,
@@ -536,6 +537,7 @@ export function getSave() { return transientState()?.save || save; }
 // This does not acknowledge completion of the queued native disk write.
 export function savedFlagMatches(name, value) {
   if (transientState()) return false;
+  if (storageWritesBlocked()) return save.flags?.[name] === value;
   const stored = firstStored([SAVE_KEY]);
   const cached = parseStoredJson(stored?.raw);
   return cached?.run?.id === save.run?.id && cached?.flags?.[name] === value;
@@ -584,15 +586,22 @@ export function metaCommit(patch = {}) {
 }
 
 export function newGame({ preset = null, values = null, now = Date.now(), launchPlan = null, prepareInVan = false } = {}) {
+  // After the staged crash this begins the night it crashed out of: whatever the
+  // game decides from a run's identity comes out as it did the first time.
+  const crashedRun = sixLoopActive() ? save?.run : null;
   const completionReceipt=completionLedgerFromSave(meta.completion,save,{at:now});
   if(completionReceipt.changed)metaCommit({completion:completionReceipt.completion});
   const pendingArchive=pendingNightArchivePatch(save,meta);if(pendingArchive)metaCommit(pendingArchive);
-  if(!transientState())void clearSourceDriveAudio({preserveKeys:retainedNightMediaKeys(meta)});
+  if(!transientState()&&!storageWritesBlocked())void clearSourceDriveAudio({preserveKeys:retainedNightMediaKeys(meta)});
   const settings = normalizeSettings(save?.settings);
-  const plannedNow = Number.isFinite(Number(launchPlan?.startedAt))
+  const plannedNow = Number.isFinite(Number(crashedRun?.startedAt))
+    ? Number(crashedRun.startedAt)
+    : Number.isFinite(Number(launchPlan?.startedAt))
     ? Number(launchPlan.startedAt)
     : now;
-  const plannedId = typeof launchPlan?.runId === 'string' && launchPlan.runId
+  const plannedId = typeof crashedRun?.id === 'string' && crashedRun.id
+    ? crashedRun.id
+    : typeof launchPlan?.runId === 'string' && launchPlan.runId
     ? launchPlan.runId
     : null;
   const selectedPreset = prepareInVan ? 'contract' : preset || settings.lastDifficulty || 'contract';
@@ -634,6 +643,7 @@ export function newGame({ preset = null, values = null, now = Date.now(), launch
   write(SAVE_KEY, save);
   saveSettingsQueued(save.settings);
   saveGameQueued(save);
+  if (storageWritesBlocked()) return save;
   const nextStats = {
     ...meta.stats,
     runsStarted: (meta.stats?.runsStarted || 0) + 1,

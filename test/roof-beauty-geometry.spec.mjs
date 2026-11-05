@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAcademicRoof } from '../tools/chunk_surfer/academic-roof-geometry.mjs';
 import { buildAcademicRoofDressing } from '../tools/chunk_surfer/academic-roof-dressing.mjs';
-import { ACADEMIC_ROOF } from '../src/data/academic-roof.js';
+import { ACADEMIC_ROOF, roofCourtGlazingLayout } from '../src/data/academic-roof.js';
 import { ACADEMIC_ROOF_DRESSING_MESHES, ACADEMIC_ROOF_DRESSING_PROPS } from '../src/data/academic-roof-dressing.js';
 
 // Inspect the authored shapes before the shared GLB build. A furnishing must
@@ -27,7 +27,7 @@ test('weathered roof ink is confined to architectural roof surfaces',()=>{
   assert.ok(!owners.some(name=>name.includes('ren')||name.includes('service_stair')||name.includes('gate')),
     'Ren, the accepted escape, and the gallery leaf retain their own exposure');
   const glass=meshes.get('academic_roof_glazing').shapes.filter(s=>shapeMaterial(s)===MAT.roofGlass);
-  assert.equal(glass.length,30,'the supported glazing field remains intact');
+  assert.equal(glass.length,30+roofCourtGlazingLayout().panes.length,'the supported glazing field remains intact and runs on over the courts');
   assert.equal(materials[MAT.roofGlass].extras?.roofRole,undefined,'glass does not become weathered opaque zinc');
   const stairMaterial=materials.findIndex(m=>m.name==='subdued fire escape iron');
   const roofMaterial=materials.findIndex(m=>m.name==='roof charcoal bronze and iron');

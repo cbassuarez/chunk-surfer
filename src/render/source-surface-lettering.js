@@ -1,26 +1,29 @@
-// Source material data: RGB retains the original opaque coloured-ink raster;
+// Source material data: RGB stores token-coloured ink over the same black stock;
 // A is authored glyph coverage, not transparency. No narrative copy is edited.
 import { WORLD_LETTERING_FONT_KEY, ensureWorldLetteringFonts, worldLetteringFontsStatus } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
+import {sourceSyntaxSpans,SOURCE_SYNTAX_PALETTE} from './source-syntax.js';
 
 export const SOURCE_SURFACE_LETTERING = Object.freeze({ width:2048,height:2048,bands:8,bandHeight:256,rows:11,pitch:22,margin:4,maxFont:20,
-  palette:Object.freeze(['#08ef43','#06bfff','#eff3df','#ff3028']) });
+  palette:Object.freeze([...new Set(Object.values(SOURCE_SYNTAX_PALETTE))]) });
 const copyOf = line => String(line?.text ?? line);
+const tokensOf=line=>Array.isArray(line?.tokens)?line.tokens:Array.isArray(line?.source?.tokens)?line.source.tokens:null;
+const recordOf=line=>({text:copyOf(line),...(tokensOf(line)?{tokens:tokensOf(line)}:{})});
 
 /** Reproduce the existing eight-band ordering and fallback/cycling exactly.
  * Its 11-row material budget is distinct from the full Source card corpus. */
 export function sourceSurfaceLetteringRows(lines = []) {
   const spec=SOURCE_SURFACE_LETTERING, input=Array.isArray(lines)?lines:[];
-  const exact=input.map(copyOf).filter(Boolean), grouped=new Map(), rows=[];
+  const exact=input.map(recordOf).filter(line=>line.text), grouped=new Map(), rows=[];
   for(const line of input){
     const layer=Math.max(1,Math.min(8,Number(line?.sourceLayer)||1));
     if(!grouped.has(layer))grouped.set(layer,[]);
-    grouped.get(layer).push(copyOf(line));
+    grouped.get(layer).push(recordOf(line));
   }
   for(let layer=1;layer<=spec.bands;layer++){
     const entries=grouped.get(layer)||exact;
-    for(let row=0;row<spec.rows;row++)rows.push({layer,row,text:entries.length?entries[row%entries.length]:'',
-      colour:spec.palette[(layer+row)%spec.palette.length],x:spec.margin,y:(layer-1)*spec.bandHeight+row*spec.pitch+spec.margin});
+    for(let row=0;row<spec.rows;row++)rows.push({layer,row,...(entries.length?entries[row%entries.length]:{text:''}),
+      colour:SOURCE_SYNTAX_PALETTE.text,x:spec.margin,y:(layer-1)*spec.bandHeight+row*spec.pitch+spec.margin});
   }
   return rows;
 }
@@ -29,25 +32,34 @@ export function sourceSurfaceLetteringKey(lines = []) {
   let h=2166136261;
   const text=JSON.stringify([WORLD_LETTERING_FONT_KEY,SOURCE_SURFACE_LETTERING,sourceSurfaceLetteringRows(lines)]);
   for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),16777619);
-  return `source-surface-pinned-v1:${(h>>>0).toString(16)}`;
+  return `source-surface-pinned-v2-syntax:${(h>>>0).toString(16)}`;
 }
 
-/** Paint identical geometry into opaque colour and transparent white ink.
+/** Paint identical whole-line geometry into RGB pigment and white ink.
  * The one-pixel interior allowance retains raster antialiasing inside a row. */
 export function paintSourceSurfaceLettering(colour,mask,lines = []) {
   const spec=SOURCE_SURFACE_LETTERING, inset=1, reports=[];
   colour.save();mask.save();
   try{
-    colour.clearRect(0,0,spec.width,spec.height);colour.fillStyle='#000';colour.fillRect(0,0,spec.width,spec.height);
+    // Transparent RGB backing keeps literal category colour at antialiased
+    // edges. Uncovered RGB stays black; the separate mask still owns final A.
+    colour.clearRect(0,0,spec.width,spec.height);
     mask.clearRect(0,0,spec.width,spec.height);mask.fillStyle='#fff';
-    colour.globalAlpha=mask.globalAlpha=1;colour.shadowBlur=mask.shadowBlur=0;
+    colour.globalAlpha=mask.globalAlpha=1;colour.shadowBlur=mask.shadowBlur=0;colour.globalCompositeOperation=mask.globalCompositeOperation='source-over';
     for(const row of sourceSurfaceLetteringRows(lines)){
       const fit=fitWorldLetteringLine(colour,row.text,{width:spec.width-spec.margin*2-inset*2,height:spec.pitch-inset*2,maxFont:spec.maxFont,role:'mono'});
       if(!fit.fits)throw new Error(`Source material row does not fit: layer ${row.layer}, row ${row.row}`);
       const x=row.x+inset+fit.left,y=row.y+inset+fit.ascent;
       mask.font=fit.font;mask.fontKerning='none';mask.textAlign='left';mask.textBaseline='alphabetic';
-      colour.fillStyle=row.colour;colour.fillText(fit.text,x,y);mask.fillText(fit.text,x,y);
-      reports.push({...row,...fit,drawX:x,baseline:y,top:row.y+inset,bottom:row.y+inset+fit.ascent+fit.descent});
+      colour.globalCompositeOperation='source-over';colour.fillStyle='#fff';colour.fillText(fit.text,x,y);mask.fillText(fit.text,x,y);
+      const syntax=sourceSyntaxSpans(row.text,row.tokens);
+      colour.globalCompositeOperation='source-atop';
+      for(const token of syntax){
+        const start=token.start===0?row.x:x+colour.measureText(row.text.slice(0,token.start)).width,
+          right=token.end===row.text.length?spec.width-spec.margin:x+colour.measureText(row.text.slice(0,token.end)).width;
+        colour.fillStyle=token.color;colour.fillRect(start,row.y,Math.max(0,right-start),spec.pitch);
+      }
+      reports.push({...row,...fit,syntax,drawX:x,baseline:y,top:row.y+inset,bottom:row.y+inset+fit.ascent+fit.descent});
     }
   }finally{colour.restore();mask.restore();}
   return reports;
@@ -74,7 +86,7 @@ export function sourceSurfaceLetteringPixels(lines = [],{ownerDocument=globalThi
   if(!worldLetteringFontsStatus(ownerDocument).ready)throw new Error('Source material fonts must load before baking');
   const spec=SOURCE_SURFACE_LETTERING, colour=ownerDocument.createElement('canvas'),mask=ownerDocument.createElement('canvas');
   colour.width=mask.width=spec.width;colour.height=mask.height=spec.height;
-  const c=colour.getContext('2d',{alpha:false,willReadFrequently:true}),m=mask.getContext('2d',{willReadFrequently:true});
+  const c=colour.getContext('2d',{willReadFrequently:true}),m=mask.getContext('2d',{willReadFrequently:true});
   const rows=paintSourceSurfaceLettering(c,m,lines),rgb=c.getImageData(0,0,spec.width,spec.height).data,ink=m.getImageData(0,0,spec.width,spec.height).data;
   return {width:spec.width,height:spec.height,pixels:sourceSurfaceInkRGBA(rgb,ink,{width:spec.width,flipY}),rows,
     rowOrigin:flipY?'bottom-left':'top-left',key:sourceSurfaceLetteringKey(lines),fontKey:WORLD_LETTERING_FONT_KEY};
@@ -97,7 +109,8 @@ export function createSourceSurfaceLetteringBaker({onReady,onError=()=>{},ownerD
   return {
     request(lines=[]){
       if(disposed)return false;
-      const snapshot=(Array.isArray(lines)?lines:[]).map(line=>({text:copyOf(line),sourceLayer:line?.sourceLayer}));
+      const snapshot=(Array.isArray(lines)?lines:[]).map(line=>({text:copyOf(line),sourceLayer:line?.sourceLayer,
+        ...(tokensOf(line)?{tokens:tokensOf(line).map(token=>token&&typeof token==='object'?{...token}:token)}:{})}));
       latest={lines:snapshot,key:sourceSurfaceLetteringKey(snapshot)};
       if(fontsReady()){try{bake();return true;}catch(cause){fail(cause);return false;}}
       if(!pending)pending=Promise.resolve().then(loadFonts).then(()=>{if(!disposed)bake();}).catch(fail).finally(()=>{pending=null;});

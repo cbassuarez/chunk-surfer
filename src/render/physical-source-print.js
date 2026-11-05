@@ -5,13 +5,16 @@ import SOURCE_ATLAS from '../../content/chunk-surf/source-atlas.json' with { typ
 import { worldLetteringFont, worldLetteringFontsStatus } from './world-lettering-fonts.js';
 import { fitWorldLetteringLine } from './world-lettering-layout.js';
 import {SOURCE_BLUEPRINT,sourceBlueprintRegistrationMarks} from './source-blueprint-contract.js';
+import {sourceSyntaxSpans} from './source-syntax.js';
 
 export const SOURCE_PRINT_SURFACE = Object.freeze({ version:1,coverage:'baseColorAlpha',
   polarity:'dark-on-light',process:'source-fragments',emission:'none' });
+const BLUEPRINT_PROFILE=Object.freeze({rows:26,pitch:20,size:13,ground:SOURCE_BLUEPRINT.stock,ink:SOURCE_BLUEPRINT.ink,limit:80});
 const PROFILE = Object.freeze({
   divide:{rows:26,pitch:20,size:13,ground:'#d6d9d0',ink:['#768477','#a3afa0'],limit:80},
   reception:{rows:33,pitch:(512-4)/33,size:16,ground:'#d7decf',ink:['#445a46','#71836c'],limit:Infinity},
-  blueprint:{rows:26,pitch:20,size:13,ground:SOURCE_BLUEPRINT.stock,ink:SOURCE_BLUEPRINT.ink,limit:80},
+  blueprint:BLUEPRINT_PROFILE,
+  'silver-fracture':BLUEPRINT_PROFILE,
 });
 const textureCache = new WeakMap();
 
@@ -27,8 +30,9 @@ export function sourcePrintUV(point,normal,metres=1){
 export function sourcePrintRows(profile='divide') {
   const p=PROFILE[profile];if(!p)throw new RangeError(`Unknown Source print profile ${profile}`);
   const lines=Object.values(SOURCE_ATLAS.sectors).flatMap(s=>s.sourceLines||[])
-    .map(line=>line.text).filter(text=>text.trim().length>12).slice(0,p.limit);
-  return Array.from({length:p.rows},(_,row)=>({text:lines[row%lines.length]||'',
+    .filter(line=>line.text.trim().length>12).slice(0,p.limit);
+  return Array.from({length:p.rows},(_,row)=>({text:lines[row%lines.length]?.text||'',
+    tokens:lines[row%lines.length]?.tokens||[],
     x:profile==='reception'?4:8+row%3*9,y:row*p.pitch+(profile==='reception'?2:3),
     size:p.size,height:Math.min(p.pitch-(profile==='reception'?5:3),510-(row*p.pitch+(profile==='reception'?2:3))),
     ink:p.ink[row%5===0?0:1],rule:profile==='reception'?row*p.pitch+p.pitch-2:null,
@@ -43,18 +47,61 @@ export function sourcePrintLayout(ctx,profile='divide'){
   });
 }
 
-export function physicalPrintPixels({width,height,ground,draw,finish=null}) {
+export function physicalPrintPixels({width,height,ground,draw,finish=null,pigmentOnly=false}) {
   if(!worldLetteringFontsStatus().ready)throw new Error('Physical lettering fonts must load before material baking');
   const colour=document.createElement('canvas'),mask=document.createElement('canvas');
   colour.width=mask.width=width;colour.height=mask.height=height;
   const c=colour.getContext('2d',{willReadFrequently:true}),m=mask.getContext('2d',{willReadFrequently:true});
-  c.fillStyle=ground;c.fillRect(0,0,width,height);m.clearRect(0,0,width,height);
+  let stock;
+  c.fillStyle=ground;
+  if(pigmentOnly){
+    // Resolve any Canvas-supported stock colour, then paint RGB on clear
+    // backing. Canvas returns unassociated pigment RGB at antialiased edges.
+    c.fillRect(0,0,1,1);stock=c.getImageData(0,0,1,1).data.slice(0,3);c.clearRect(0,0,width,height);
+  }else c.fillRect(0,0,width,height);
+  m.clearRect(0,0,width,height);
   draw(c,m);
   const rgb=c.getImageData(0,0,width,height).data,coverage=m.getImageData(0,0,width,height).data;
   // Keep unassociated stock RGB at zero ink coverage. Putting this RGBA back
   // into a Canvas would premultiply away that colour, so upload the bytes.
-  for(let i=3;i<rgb.length;i+=4)rgb[i]=coverage[i];
-  const bitmap={width,height,pixels:rgb};return finish?physicalPrintFinish(bitmap,finish):bitmap;
+  for(let i=3;i<rgb.length;i+=4){
+    if(pigmentOnly&&(!rgb[i]||!coverage[i]))for(let channel=0;channel<3;channel++)rgb[i-3+channel]=stock[channel];
+    rgb[i]=coverage[i];
+  }
+  const bitmap={width,height,pixels:rgb};if(!finish)return bitmap;
+  const finished=physicalPrintFinish(bitmap,finish);
+  // Material roughness/relief still follow the unchanged mask. Tint variation
+  // belongs to bare stock; it must not turn a syntax category into another hue.
+  if(pigmentOnly)for(let i=3;i<rgb.length;i+=4)if(coverage[i])for(let channel=0;channel<3;channel++)finished.pixels[i-3+channel]=rgb[i-3+channel];
+  return finished;
+}
+
+// The mask always receives the exact original inscription once. Syntax adds
+// RGB categories at measured original-prefix positions; it never lays out or
+// reconstructs the line from token widths or replaces the authored coverage.
+export function paintSourcePrint(c,m,profile='divide'){
+  const metres=profile==='reception'?2.8:8;
+  if(profile==='blueprint'||profile==='silver-fracture'){
+    c.save();m.save();c.fillStyle=SOURCE_BLUEPRINT.registration;m.fillStyle='#fff';
+    for(const mark of sourceBlueprintRegistrationMarks()){
+      const at=mark.metres/metres*512,width=Math.max(1,mark.widthM/metres*512);
+      c.globalAlpha=m.globalAlpha=mark.coverage;
+      for(const ctx of[c,m]){ctx.fillRect(at,0,width,512);ctx.fillRect(0,at,512,width);}
+    }
+    c.restore();m.restore();
+  }
+  c.textBaseline=m.textBaseline='alphabetic';m.textAlign='left';m.fontKerning='none';m.fillStyle='#fff';
+  for(const row of sourcePrintLayout(c,profile)){
+    c.font=m.font=row.fit.font;c.fillStyle=row.ink;
+    c.fontKerning='none';
+    for(const token of sourceSyntaxSpans(row.text,row.tokens)){
+      if(token.kind==='whitespace')continue;
+      c.fillStyle=token.color;
+      c.fillText(token.text,row.drawX+c.measureText(row.text.slice(0,token.start)).width,row.baseline);
+    }
+    m.fillText(row.text,row.drawX,row.baseline);
+    if(row.rule!==null){c.fillStyle=row.ruleInk;c.fillRect(0,row.rule,512,1);m.fillRect(0,row.rule,512,1);}
+  }
 }
 
 export function uploadPhysicalPrint(gl,bitmap,{repeat=true,srgb=true}={}) {
@@ -73,26 +120,11 @@ export function sourcePrintMaps(gl,profile='divide',{material=true}={}) {
   if(cache.has(profile)&&(!material||cache.get(profile).normalTexture))return cache.get(profile);
   const p=PROFILE[profile];if(!p)throw new RangeError(`Unknown Source print profile ${profile}`);
   const metres=profile==='reception'?2.8:8;
-  const bitmap=physicalPrintPixels({width:512,height:512,ground:p.ground,finish:{profile:'paper',widthM:metres,heightM:metres,seed:'source-'+profile,repeat:true},draw(c,m){
-    if(profile==='blueprint'){
-      // Metre-scaled registration belongs to this printed stock, not to the
-      // camera. It follows the moving mesh and its existing material UVs.
-      c.save();m.save();c.fillStyle=SOURCE_BLUEPRINT.registration;m.fillStyle='#fff';
-      for(const mark of sourceBlueprintRegistrationMarks()){
-        const at=mark.metres/metres*512,width=Math.max(1,mark.widthM/metres*512);
-        c.globalAlpha=m.globalAlpha=mark.coverage;
-        for(const ctx of[c,m]){ctx.fillRect(at,0,width,512);ctx.fillRect(0,at,512,width);}
-      }
-      c.restore();m.restore();
-    }
-    c.textBaseline=m.textBaseline='alphabetic';m.textAlign='left';m.fontKerning='none';m.fillStyle='#fff';
-    for(const row of sourcePrintLayout(c,profile)){
-      c.font=m.font=row.fit.font;c.fillStyle=row.ink;
-      c.fillText(row.text,row.drawX,row.baseline);m.fillText(row.text,row.drawX,row.baseline);
-      if(row.rule!==null){c.fillStyle=row.ruleInk;c.fillRect(0,row.rule,512,1);m.fillRect(0,row.rule,512,1);}
-    }
-  }});
-  const maps={texture:cache.get(profile)?.texture||uploadPhysicalPrint(gl,bitmap),normalTexture:material?uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.normalPixels},{srgb:false}):null,ormTexture:material?uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.ormPixels},{srgb:false}):null,letteringFinish:bitmap.finish,finishEvidence:bitmap.finishEvidence};cache.set(profile,maps);return maps;
+  const bitmap=physicalPrintPixels({width:512,height:512,ground:p.ground,pigmentOnly:true,
+    finish:{profile:'paper',widthM:metres,heightM:metres,seed:'source-'+(profile==='silver-fracture'?'blueprint':profile),repeat:true},
+    draw(c,m){paintSourcePrint(c,m,profile);}});
+  const sourceCodeStock=[1,3,5].map(start=>parseInt(p.ground.slice(start,start+2),16)/255);
+  const maps={texture:cache.get(profile)?.texture||uploadPhysicalPrint(gl,bitmap),normalTexture:material?uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.normalPixels},{srgb:false}):null,ormTexture:material?uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.ormPixels},{srgb:false}):null,letteringFinish:bitmap.finish,finishEvidence:bitmap.finishEvidence,sourceCodeStock};cache.set(profile,maps);return maps;
 }
 
 export function sourcePrintTexture(gl,profile='divide'){return sourcePrintMaps(gl,profile,{material:false}).texture;}

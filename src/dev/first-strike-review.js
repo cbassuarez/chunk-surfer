@@ -37,7 +37,9 @@ export function createFirstStrikeReview(api){
   r.ended=new Promise(ok=>recorder.onstop=ok);recorder.ondataavailable=e=>{if(e.data.size)r.chunks.push(e.data);};r.unobserve=api.observePresentation(wall=>{if(r.live)r.frames.push(wall);});recording=r;recorder.start(250);panel.dataset.recording='true';
   status.textContent='Recording '+kind;
  }
- async function start(kind,{protect=false,walk=true,elapsedSeconds=30117}={}){
+ async function start(kind,{protect=false,walk=true,elapsedSeconds=30177}={}){
+  // Source holds the clock, so these two can't run up to the deadline: stage them past it.
+  if(['source-II','drive'].includes(kind)&&elapsedSeconds>=30177)elapsedSeconds=30180;
   walking(false);guide=false;lookedBack=false;errors.length=0;await api.stage(kind,{elapsedSeconds});
   if(protect)api.startRecording();
   await captureCurrent(kind,{protect,walk});const r=recording;

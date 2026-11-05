@@ -2685,8 +2685,12 @@ void main(){
         // The glass keeps its wet sky reflection at grazing angles; looking
         // down reveals the actual depth of the building instead of a decal.
         vec2 glassLocal=posM.xz-vec2(84.0,14.5);
-        float innerPane=(1.0-smoothstep(4.30,4.83,abs(glassLocal.x)))
-                       *(1.0-smoothstep(5.80,6.28,abs(glassLocal.y)));
+        // The same glazing runs on over the open courts (x 77-94, z 15-27).
+        vec2 courtGlass=glassLocal-vec2(1.5,6.5);
+        float innerPane=max((1.0-smoothstep(4.30,4.83,abs(glassLocal.x)))
+                           *(1.0-smoothstep(5.80,6.28,abs(glassLocal.y))),
+                            (1.0-smoothstep(7.97,8.50,abs(courtGlass.x)))
+                           *(1.0-smoothstep(5.47,6.00,abs(courtGlass.y))));
         // A settled sitter initially looks toward the skyline. As their gaze
         // drops through the glazing, the roof gives way to the gallery below.
         float lookThrough=innerPane*smoothstep(0.035,0.30,-rd.y)*0.94;
@@ -2696,8 +2700,10 @@ void main(){
         vec2 atGarden=posM.xz+rd.xz*(16.5*descent);
         vec2 galleryLocal=atGallery-mix(vec2(84.25,14.5),vec2(84.0,14.5),uGalleryTreatment);
         vec2 gardenLocal=atGarden-vec2(84.25,14.5);
+        // The recovered gallery's atrium floor stops at the court wall.
         float gardenInside=(1.0-smoothstep(4.7,5.6,abs(gardenLocal.x)))
-                          *(1.0-smoothstep(5.8,6.7,abs(gardenLocal.y)));
+                          *(1.0-smoothstep(5.8,6.7,abs(gardenLocal.y)))
+                          *mix(1.0,1.0-smoothstep(14.6,15.4,atGarden.y),uGalleryTreatment);
         // The atrium itself stays deep. Only the surviving masonry, rail and
         // lamps rise above the recorder's one-bit threshold, making the eye
         // read a space below the zinc instead of an illuminated flat panel.
@@ -2706,21 +2712,42 @@ void main(){
                        *(1.0-smoothstep(6.35,6.65,abs(galleryLocal.y)));
         float galleryZ=(1.0-smoothstep(.04,.22,abs(abs(galleryLocal.y)-mix(6.50,6.66,uGalleryTreatment))))
                        *(1.0-smoothstep(5.55,5.85,abs(galleryLocal.x)));
-        beneath+=vec3(.55,.67,.62)*max(galleryX,galleryZ)*.94;
+        // The recovered gallery rails the whole void: the atrium's run, then the
+        // court's wider one (GLASS_COURT.upperGuards). Its south lantern is gone.
+        vec2 voidNorth=abs(atGallery-vec2(84.0,12.5))-vec2(5.0,4.5);
+        vec2 voidCourt=abs(atGallery-vec2(85.5,21.0))-vec2(8.5,6.0);
+        float voidEdge=min(length(max(voidNorth,0.0))+min(max(voidNorth.x,voidNorth.y),0.0),
+                           length(max(voidCourt,0.0))+min(max(voidCourt.x,voidCourt.y),0.0));
+        float recoveredRail=1.0-smoothstep(.04,.22,abs(voidEdge-.14));
+        float recoveredWalk=smoothstep(.25,.95,voidEdge)*(1.0-smoothstep(1.6,2.4,voidEdge));
+        beneath+=vec3(.55,.67,.62)*mix(max(galleryX,galleryZ),recoveredRail,uGalleryTreatment)*.94;
         float walkwayX=smoothstep(5.05,5.75,abs(galleryLocal.x))
                        *(1.0-smoothstep(6.3,7.1,abs(galleryLocal.x)))
                        *(1.0-smoothstep(7.1,7.8,abs(galleryLocal.y)));
         float walkwayZ=smoothstep(5.8,6.5,abs(galleryLocal.y))
                        *(1.0-smoothstep(7.1,7.8,abs(galleryLocal.y)))
                        *(1.0-smoothstep(6.3,7.1,abs(galleryLocal.x)));
-        beneath+=vec3(.20,.26,.26)*max(walkwayX,walkwayZ)*.85;
+        beneath+=vec3(.20,.26,.26)*mix(max(walkwayX,walkwayZ),recoveredWalk,uGalleryTreatment)*.85;
         float basin=1.0-smoothstep(.07,.28,
           abs(length(atGarden-vec2(83.6,14.6))-1.35));
         beneath+=vec3(.67,.78,.75)*basin*gardenInside*.96;
+        // The greenhouse stands lit between the courts (x 82-86, z 15-27): its
+        // ridge and glazing bars at 5.2m, its four fluorescent runs at 3.25m.
+        vec2 atHouse=posM.xz+rd.xz*(11.8*descent)-vec2(84.0,21.0);
+        float house=(1.0-smoothstep(1.92,2.08,abs(atHouse.x)))
+                   *(1.0-smoothstep(5.92,6.08,abs(atHouse.y)));
+        float houseBars=max(1.0-smoothstep(.02,.09,abs(atHouse.x)),
+                            1.0-smoothstep(.03,.10,abs(mod(atHouse.y+6.0,1.5)-.75)));
+        vec2 atTubes=posM.xz+rd.xz*(13.75*descent)-vec2(84.0,21.0);
+        float tubes=(1.0-smoothstep(.05,.16,abs(atTubes.x)))
+                   *(1.0-smoothstep(.50,.62,abs(mod(atTubes.y+5.5,3.0)-1.5)))
+                   *(1.0-smoothstep(5.9,6.0,abs(atTubes.y)));
+        beneath=mix(beneath,vec3(.10,.17,.15),house*.85);
+        beneath+=vec3(.55,.67,.62)*houseBars*house*.70+vec3(.82,.94,1.0)*tubes*.85;
         vec2 atLantern=posM.xz+rd.xz*(11.5*descent);
         float lanternNorth=1.0-smoothstep(.18,1.03,length(atLantern-vec2(83.6,10.2)));
         float lanternSouth=1.0-smoothstep(.18,1.03,length(atLantern-vec2(83.6,18.7)));
-        beneath+=vec3(.95,.74,.47)*max(lanternNorth,lanternSouth)*.89;
+        beneath+=vec3(.95,.74,.47)*max(lanternNorth,lanternSouth*(1.0-uGalleryTreatment))*.89;
         col=mix(col,beneath,lookThrough);
         // The real mesh pane's opaque raster face is bypassed at compositing
         // below. Reconstruct only its measured 2m / 13/6m iron support rhythm
@@ -5871,6 +5898,7 @@ function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReac
   // room and bank which are beyond props3d's ordinary ninety-metre camera.
   P3.renderPropPass({
     camX:eyeX,camY:eyeY,camZ:eyeZ,yaw:worldYaw,pitch,light:torchPower,
+    sourceCodeScreen:true,
     timeSec:now,reducedMotion:pixelMeshSettings.reduceMotion,
     fogTexture,fogOrigin,fogSize:FOG_TEX,cellMeters:CELL,zoneTints:ZONE_TINTS,
     localLightCount,localLightPositions,localLightColors,localLightPenetrations,
@@ -5891,6 +5919,7 @@ function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReac
   // just left. Painting smooth colour back over the encode, then skipping post,
   // is what made the walk the one undithered stretch of the game.
   presentThroughPost(runPixelMeshPass(voidState,now));
+  drawSourceCodeScreen(now,{worldYaw,boundaryOnly:false});
   lastPostSourceFbo=sceneFbo;
 }
 
@@ -6278,7 +6307,17 @@ function drawSourceRoomMemory(now,{torchPower=0,sourceTorchMode=0,torchColor,tor
   const faulted=runSourceFaultPass(encoded,now);
   const resolved=runDatamoshPass(faulted,now);
   presentThroughPost(resolved,{torchPower,sourceTorchMode});
+  drawSourceCodeScreen(now,{boundaryOnly:true});
   drawSourceIdentity(now);
+}
+
+function drawSourceCodeScreen(now,{boundaryOnly=false,worldYaw=yaw+planYaw}={}){
+  const target={fbo:presentTarget?.fbo||null,width:presentTarget?.width||canvas.width,height:presentTarget?.height||canvas.height},
+    eye=[camX*CELL,camY*CELL,camZ*CELL];
+  return P3.renderSourceCodeScreen?.({target,sceneDepth:sceneTex,pressure:P3.pressureTargets(),
+    camera:{eye,yaw:worldYaw,pitch},faculties:sourceRestFaculties,
+    drawAdditionalCode:typeof SHORE.sourceShoreCodeDraw==='function'?context=>SHORE.sourceShoreCodeDraw({...context,
+      frame:sourceShoreState,camX:eye[0],camY:eye[1],camZ:eye[2],yaw:worldYaw,pitch,boundaryOnly}):null});
 }
 
 const DATAMOSH_FRAG=`#version 300 es
@@ -6826,6 +6865,10 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   const blueprintRecording=textSpaceActive&&sourceLook.roomMemoryActive&&sourceLook.blueprint===true&&sourceBlueprintEnabled();
   gl.uniform2f(pixelMeshU('uSourceBlueprint'),blueprintRecording?1:0,1/(1+(P3.propTargets().far||90)*.14));
   gl.uniform1f(pixelMeshU('uSourceFinish'),blueprintRecording?normalizeSourceFinish(sourceLook.finish):0);
+  // The one exception to Source only: a horizon that names its own stock, which only
+  // the prologue's does. Spectral ink needs the wheels' pigment tag, so the ordinary
+  // building under it prints as itself.
+  if(!blueprintRecording&&sourceRestHorizon?.finish)gl.uniform1f(pixelMeshU('uSourceFinish'),normalizeSourceFinish(sourceRestHorizon.finish));
   const floodInk=textSpaceActive&&sourceLook.roomMemoryActive&&state?.coastalMemory?.active?state.coastalMemory:null;
   gl.uniform1f(pixelMeshU('uSourceSunsetInk'),textSpaceActive&&sourceLook.roomMemoryActive?(sourceWeather.sunset?.amount||0):0);
   gl.uniform4f(pixelMeshU('uSourceWaterInk'),floodInk?1:0,
@@ -8385,6 +8428,8 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uPressureGeometryReady'),hushBodyTextureActive?1:0);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+  // Only the prologue sets a horizon over the building.
+  runSourceRestHorizonPass();
   const lens=authoredCamera?.lens,lensOptions={width:uniforms.sceneW,height:uniforms.sceneH,outputHeight:canvas.height};
   const lensBeforePrint=state.cinematicLensStage==='pre-print';
   const sourceTexture=lensBeforePrint?cinematicLensPass.run(sceneTex,sceneTex,lens,{...lensOptions,stage:'pre-print'}):sceneTex;

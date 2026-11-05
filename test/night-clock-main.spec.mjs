@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {createPlayDurationClock,freshPlayDuration} from '../src/game/play-duration.js';
-import {freshNightClock,advanceNightClock,createNightClockPace} from '../src/game/night-clock.js';
+import {freshNightClock,advanceNightClock,createNightClockPace,holdNightClockForSource,leaveSourceNightClock,nightClockReadout,NIGHT_CLOCK_SOURCE_EXIT_SECONDS,NIGHT_CLOCK_PACE_POLICY} from '../src/game/night-clock.js';
+import {NIGHT_DEADLINE_SECONDS} from '../src/game/night-deadline.js';
 import {recordNightClockTravel,consumeNightClockTravel,clearNightClockTravel} from '../src/game/night-clock-travel.js';
 
 const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
@@ -14,12 +15,61 @@ function host(){
  const h={getSave:()=>save,storyMode:true,inRogue:true,paused:false,focused:true,scenes:{has:id=>menus.has(id),top:()=>top},
   REC:{isRecording:()=>recording,isListening:()=>listening},PB:{isPlaying:()=>playing},SPEECH:{isSpeaking:()=>speaking},
   sourceDriveSession:null,getInDriveTeaserScene:null,sourceReturnFlashbackScene:null,coastalMemoryScene:null,openingVehicleScene:null,openingOvertureScene:null,sourceContinuationScene:null,sourcePubScene:null,
-  runPlayDurationClock:createPlayDurationClock(),nightClockPace:createNightClockPace(),advanceNightClock,consumeNightClockTravel,
+  runPlayDurationClock:createPlayDurationClock(),nightClockPace:createNightClockPace(),advanceNightClock,holdNightClockForSource,NIGHT_DEADLINE_SECONDS,NIGHT_CLOCK_PACE_POLICY,nightClockHeldBySource:()=>h.inSource===true,consumeNightClockTravel,
   gameplayInputLifecycleActive:()=>h.focused,tickNightDeadline(){}};
  vm.createContext(h);vm.runInContext(body('nightClockSlowAction')+'\n'+body('tickRunPlayDuration'),h);
  return {h,save,menus,tick:now=>vm.runInContext(`tickRunPlayDuration(${now})`,h),slow:()=>vm.runInContext('nightClockSlowAction()',h),
   top:value=>{top=value;},record:value=>{recording=value;},listen:value=>{listening=value;},play:value=>{playing=value;},speak:value=>{speaking=value;}};
 }
+
+test('Source holds the clock and blanks it while real play time keeps counting, and any other way out resumes it',()=>{
+ const f=host();let now=0;f.tick(now);
+ for(let i=0;i<120;i++)f.tick(now+=1000/60);
+ const entered=f.save.nightClock.elapsedSeconds;assert.ok(entered>1.9);assert.notEqual(nightClockReadout(f.save).value,'  :  ');
+ f.h.inSource=true;
+ for(let i=0;i<600;i++){recordNightClockTravel(.055);f.tick(now+=1000/60);}
+ assert.ok(Math.abs(f.save.nightClock.elapsedSeconds-entered)<.02,'not one second passes in Source, even running');
+ assert.equal(nightClockReadout(f.save).value,'  :  ');assert.ok(f.save.playDuration.seconds>11,'time on site is a separate record and still counts');
+ f.h.inSource=false;f.tick(now+=1000/60);
+ assert.notEqual(nightClockReadout(f.save).value,'  :  ');
+ for(let i=0;i<120;i++)f.tick(now+=1000/60);
+ assert.ok(f.save.nightClock.elapsedSeconds>entered+1.9&&f.save.nightClock.elapsedSeconds<entered+2.3,'running in Source banked no travel for the walk out');
+});
+
+test('after Source the night runs at one fixed pace however far the player walks, so 05:38 to 06:01 is 15:20 of play',()=>{
+ const pace=NIGHT_CLOCK_PACE_POLICY.finalStretchRate;assert.equal(pace,1.5);
+ const f=host();let now=0;f.tick(now);
+ for(let i=0;i<300;i++){recordNightClockTravel(.055);f.tick(now+=1000/60);}
+ assert.ok(f.save.nightClock.rate>2.9,'walking before Source still runs at 3x');
+ const left=leaveSourceNightClock(f.save.nightClock).clock;f.save.nightClock={...left,rate:f.save.nightClock.rate};
+ f.tick(now+=1000/60);
+ assert.equal(f.save.nightClock.rate,pace,'the walking pace is dropped at the door, not eased out of');
+ for(const walking of[true,false]){
+  const from=f.save.nightClock.elapsedSeconds;
+  for(let i=0;i<600;i++){if(walking)recordNightClockTravel(.055);f.tick(now+=1000/60);}
+  assert.equal(f.save.nightClock.rate,pace);
+  assert.ok(Math.abs(f.save.nightClock.elapsedSeconds-from-15)<.001,(walking?'running':'standing')+' for ten seconds is fifteen seconds of night');
+ }
+ f.record(true);const during=f.save.nightClock.elapsedSeconds;for(let i=0;i<60;i++)f.tick(now+=1000/60);f.record(false);
+ assert.ok(Math.abs(f.save.nightClock.elapsedSeconds-during-1.5)<.001,'a take runs at the same pace');
+ const seconds=(NIGHT_DEADLINE_SECONDS-NIGHT_CLOCK_SOURCE_EXIT_SECONDS)/pace;
+ assert.equal(seconds,15*60+20);
+ const f2=host();let then=0;f2.tick(then);f2.save.nightClock={...leaveSourceNightClock(f2.save.nightClock).clock};
+ for(let i=0;i<seconds*60;i++){recordNightClockTravel(.055);f2.tick(then+=1000/60);}
+ assert.ok(Math.abs(f2.save.nightClock.elapsedSeconds-NIGHT_DEADLINE_SECONDS)<.01,'running the whole way still takes all of it');
+ for(let i=0;i<60;i++)f2.tick(then+=1000/60);
+ assert.equal(nightClockReadout(f2.save).value,'06:01');
+});
+
+test('a finale that has taken over stops the live clock at 06:00, and an armed night runs on to the strike',()=>{
+ const f=host();let now=0;f.tick(now);
+ f.save.nightClock=freshNightClock({elapsedSeconds:NIGHT_DEADLINE_SECONDS-1.5});f.save.nightDeadline={phase:'superseded'};
+ for(let i=0;i<240;i++)f.tick(now+=1000/60);
+ assert.equal(f.save.nightClock.elapsedSeconds,NIGHT_DEADLINE_SECONDS-1);assert.equal(nightClockReadout(f.save).value,'06:00');
+ f.save.nightDeadline={phase:'warning'};
+ for(let i=0;i<240;i++)f.tick(now+=1000/60);
+ assert.ok(f.save.nightClock.elapsedSeconds>NIGHT_DEADLINE_SECONDS);assert.equal(nightClockReadout(f.save).value,'06:01');
+});
 
 test('production clock uses accepted metres, never held keys, and keeps actual duration independent of variable night pace',()=>{
  const f=host();let now=0;f.tick(now);

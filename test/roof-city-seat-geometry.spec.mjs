@@ -56,8 +56,7 @@ test('safe approach remains walkable and focusable while ladder, vent and rehear
   const x=ROOF_CITY_SEAT.approach.x*2,y=ROOF_CITY_SEAT.approach.y*2;
   assert.equal(FP.floorAt(x,y),17);assert.equal(P.propCanOccupy(x,y),true);
   assert.equal(P.propCanOccupy(bench.rx,bench.ry),false,'the authored stone bench has real collision');
-  // Looking at the bench from the approach. It used to be behind the bench,
-  // looking out over it; that ground is the courtyard's sky opening now.
+  // Looking at the bench from the approach, on the strip east of the court's glass.
   const yaw=Math.atan2(ROOF_CITY_SEAT.at.x-(x+.5)/2,-(ROOF_CITY_SEAT.at.y-(y+.5)/2));
   const focus=P.pickProp(x,y,1,2,{yaw,pitch:-.55,eyeHeight:1.62});
   assert.equal(focus?.id,ROOF_CITY_SEAT.id,'the approach reaches this bench through ordinary E focus');

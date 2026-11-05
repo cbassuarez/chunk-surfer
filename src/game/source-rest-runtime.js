@@ -126,6 +126,8 @@ export function installSourceRest(scene,renderer,{onCommit=()=>false,onError=noo
   };
   scene.update=function(dt){
     const delta=Math.min(.25,Math.max(0,Number(dt)||0));
+    // Sitting, standing up and the committed ending all hold the body still.
+    scene.anchor?.(mode!=='idle');
     const result=original.update.call(scene,dt);
     if(disposed)return result;
     if(mode==='idle'){refreshWeather();conversationOptions.onRestProgress?.(0,false,weatherCue,scene.view()?.phase);return result;}

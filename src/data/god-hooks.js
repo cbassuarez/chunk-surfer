@@ -130,9 +130,7 @@ export const GOD_LOCATION_HOOKS = Object.freeze({
   'roof-fire-escape': Object.freeze({ at:{x:174,y:285}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:10, component:'academic_roof_stair' }),
   'academic-roof': Object.freeze({ at:{x:205,y:273}, facing:2, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
   'roof-ren': Object.freeze({ at:{x:209,y:273}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
-  // Beside the seat, not on ROOF_CITY_SEAT.approach: the courtyard's sky
-  // opening left the seat on a three-metre strip, and the glass court's guard
-  // rail along its edge covers the approach once that pack has loaded.
+  // Beside the seat, on the edge of the glass over the courts.
   'roof-city-seat': Object.freeze({ at:{x:211,y:290.5}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
   'roof-ladder-top': Object.freeze({ at:{x:211,y:293}, facing:1, zone:ZONE.academicRoof, group:'academicRoof', floor:17, component:'academic_roof' }),
   'roof-ladder-foot': Object.freeze({ at:{x:44,y:266}, facing:1, zone:ZONE.academic, group:'academic', floor:10, component:'academic' }),

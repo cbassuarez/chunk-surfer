@@ -1,4 +1,5 @@
 import { createBustPerformanceState, beginBustRecognition, beginBustRitual, advanceBustPerformance, describeBustPerformance, settleBustPerformance } from './bust-performance.js';
+import {sourceEarlyFaultFrame} from './source-early-faults.js';
 import { BUST_RELIQUARY_RIG } from '../data/bust-reliquary-rig.js';
 import { SOURCE_HANGING_SHORE, SOURCE_SHORE_DIRECT_SECONDS, sourceShoreBounds, sourceShoreContains, sourceShoreDistance, sourceShorePieceAt } from '../data/source-hanging-shore.js';
 import { busWomanInstances, busWomanPerformance } from './bus-woman-presentation.js';
@@ -7833,7 +7834,7 @@ export function createSourceSpaceRuntime({
     return out;
   }
 
-  function propInstances(px = player.x, py = player.y, options = {}) {
+  function basePropInstances(px = player.x, py = player.y, options = {}) {
     const bodyInterior=busInteriorFrame();
     if(bodyInterior?.active)return busBodyCorridorProps({origin:bodyInterior.origin,clock:bodyInterior.clock,reducedMotion:!!options.reducedMotion,progress:bodyInterior.along});
     // Standing in a land, the passage he came from is not there: no bells hanging
@@ -7881,6 +7882,12 @@ export function createSourceSpaceRuntime({
       return [...arch, ...rear, ...driftInstances(px, py, options.time || 0), ...omen];
     }
     return [];
+  }
+  function propInstances(px = player.x, py = player.y, options = {}) {
+    const base=basePropInstances(px,py,options),shore=sourceShoreFrame();
+    const faults=sourceEarlyFaultFrame({phase:state.phase,shore:!!shore?.outside,origin:landscapeOrigin(),player:{x:px,y:py},
+      suspended:!!busInteriorFrame()?.active||!!towerLandState()||base.some(p=>p.sourceStructure==='source-demolition-void')});
+    return faults.props.length?[...base,...faults.props]:base;
   }
   function sourceCorpus() {
     if (sourceCorpusCache) return sourceCorpusCache;

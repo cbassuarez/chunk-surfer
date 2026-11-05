@@ -11,6 +11,7 @@ import {thresholdGagGhostFrame} from '../game/threshold-gag-inspection.js';
 import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
 import { assetUrl } from '../platform/paths.js';
 import { fakeElleryHushActor } from './fake-ellery-hush.js';
+import {SOURCE_FALSE_RETURN_FAULT_MESHES,sourceFalseReturnFaultCenter,installSourceFalseReturnFaultMeshes} from './source-false-return-faults.js';
 
 const finite = (n, fallback = 0) => Number.isFinite(Number(n)) ? Number(n) : fallback;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, finite(n)));
@@ -119,6 +120,16 @@ export function sourceFalseReturnRenderFrame(layout, state, { planView = sourceF
   const hiddenProps = [], props = [];
   for (const p of layout.props || []) { if (hiddenBySource(p, layout, planView)) hiddenProps.push(p.id); else props.push(p); }
   for (const door of layout.doors) props.push(...drawDoor(door, state));
+  // Ellery remains untouched before a Source aperture is revealed. Only the
+  // fixed space past an actual open Source-facing wedge carries these shards.
+  for(const wedge of planView.wedges){
+    const door=layout.doors.find(d=>d.id===wedge.id),yaw=Math.atan2(-wedge.normal.x,wedge.normal.z),base=matrix(wedge.x,finite(door?.feet),wedge.z,yaw);
+    for(const mesh of SOURCE_FALSE_RETURN_FAULT_MESHES){
+      const centre=sourceFalseReturnFaultCenter(mesh),m=multiply(base,matrix(...centre));
+      props.push({id:`source-false-return-${wedge.id}-${mesh}`,mesh,matrix:m,x:m[12],y:m[13],z:m[14],zone:ZONE.sourceSpace,
+        structural:false,collidable:false,decorative:true,noShadow:true,noReflection:true,ambientFault:true,sourceDoorId:wedge.id,cullRadius:5});
+    }
+  }
   if(state.kind===THRESHOLD_GAG.hostKind&&state.thresholdGag?.available){
     const pose=thresholdGagPose(state),m=THRESHOLD_GAG.mount;
     THRESHOLD_GAG_MESHES.forEach((mesh,index)=>{
@@ -148,6 +159,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
   for (const d of local.doors) for (const p of drawDoor(d, { elapsed: 0, doorOpen: {}, doorMotion: {} })) required.add(p.mesh);
   THRESHOLD_GAG_MESHES.forEach(mesh=>{allMeshes.add(mesh);required.add(mesh);});
   required.add(meshForApparitionPose(THRESHOLD_GAG.inscription.ghostPose));
+  for(const mesh of SOURCE_FALSE_RETURN_FAULT_MESHES)required.add(mesh);
   let initialized = false, released = false, acquired = false, loading = null, error = null, last = null, planView = null, planKey = null, viewLayout = local, torchFrame = null, lightingFrame = null, omittedMeshes = [];
   const resident = () => { const catalog = new Set(props.propMeshCatalog?.() || []); return [...required].every(m => catalog.has(m)); };
   function availableProps(list) {
@@ -197,6 +209,7 @@ export function createSourceFalseReturnRenderer({ layout, renderer = R3, props =
       if (await ready?.call(renderer) === false) throw Error('Ellery\'s original prop catalog has not resolved.');
       if (await renderer.r3dPrepareHushBody?.() === false) throw Error('The local HUSH body has not resolved.');
       if (released) return false;
+      if(props.installAuthoredPropMeshes?.(installSourceFalseReturnFaultMeshes)===false)throw Error('False return fault meshes could not be installed.');
       const doors = [...required].filter(mesh => /^door_/.test(mesh)), catalog = new Set(props.propMeshCatalog?.() || []);
       if (doors.some(mesh => !catalog.has(mesh))) await props.addPropPack(resolveAsset('assets/conservatory-doors.glb'));
       if(THRESHOLD_GAG_MESHES.some(mesh=>!new Set(props.propMeshCatalog?.()||[]).has(mesh)))await props.addPropPack(resolveAsset('assets/ellery-threshold-gag.glb'));
