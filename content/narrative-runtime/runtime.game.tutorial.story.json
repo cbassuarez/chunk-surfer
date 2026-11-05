@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.tutorial",
+  "title": "Runtime · game/tutorial.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "STEPS.line",
+  "entries": [
+    "STEPS.line",
+    "STEPS.exit",
+    "tickTutorial"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/tutorial.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "STEPS.line": {
+      "id": "STEPS.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STEPS.line.l0",
+          "who": "you",
+          "text": "It's dark in here.",
+          "source": "src/game/tutorial.js:58"
+        },
+        {
+          "id": "STEPS.line.l1",
+          "who": "you",
+          "text": "Work order's in my jacket. Five rooms, one clean minute each.",
+          "source": "src/game/tutorial.js:65"
+        },
+        {
+          "id": "STEPS.line.l2",
+          "who": "you",
+          "text": "Levels, before anything. Headphones on, hear the room — then roll, and hold still.",
+          "source": "src/game/tutorial.js:89"
+        },
+        {
+          "id": "STEPS.line.l3",
+          "who": "you",
+          "text": "Right. Before I go anywhere — write down where I am going.",
+          "source": "src/game/tutorial.js:105"
+        },
+        {
+          "id": "STEPS.line.l4",
+          "who": "you",
+          "text": "Inner door, south end. Down to B3 — follow the bearing. That mark is the whole point of making it.",
+          "source": "src/game/tutorial.js:123"
+        }
+      ],
+      "source": "src/game/tutorial.js:58"
+    },
+    "STEPS.exit": {
+      "id": "STEPS.exit",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STEPS.exit.l0",
+          "who": "you",
+          "text": "Down the west stair, behind the dock. Mark them off as you go and you never lose an hour.",
+          "source": "src/game/tutorial.js:110"
+        },
+        {
+          "id": "STEPS.exit.l1",
+          "who": "you",
+          "text": "Quietly, then. Everything I do in here, the building keeps.",
+          "source": "src/game/tutorial.js:130"
+        }
+      ],
+      "source": "src/game/tutorial.js:110"
+    },
+    "tickTutorial": {
+      "id": "tickTutorial",
+      "type": "line",
+      "lines": [
+        {
+          "id": "tickTutorial.l0",
+          "who": "you",
+          "text": "That's me on the take. {ctx.spoilReason === 'you moved' ? 'Feet.' : 'Hand on the light.'} Again.",
+          "source": "src/game/tutorial.js:203"
+        },
+        {
+          "id": "tickTutorial.l1",
+          "who": "you",
+          "text": "Levels good. Floor is somewhere under sixty. This building is dead.",
+          "source": "src/game/tutorial.js:207"
+        }
+      ],
+      "source": "src/game/tutorial.js:203"
+    }
+  }
+}

@@ -4,11 +4,15 @@ import sharp from 'sharp';
 import {encodePrintedAreaSurface,decodePrintedSurface} from '../src/render/printed-surface.js';
 import {PAPER_PIGMENT_SURFACE} from '../src/data/paper-pigment.js';
 import {strokeDistance,SCREENS} from '../src/render/pixel-mesh/screens.js';
+import {PAPER_DOCUMENTS} from '../src/generated/paper-catalog.js';
 assert.equal(PAPER_PIGMENT_SURFACE.sampling,'area');
 const {data,info}=await sharp('assets/paper/world-pigment.png').ensureAlpha().raw().toBuffer({resolveWithObject:true});
+// The canonical fixture is the work order's first sheet of instructions. Sheet 1
+// became the checklist (docs/plans/work-order.md), so find the tile by catalogue.
+const fixture=PAPER_DOCUMENTS['work-order'].pages[1].atlasIndex,ox=(fixture%16)*128,oy=Math.floor(fixture/16)*181;
 let clear=0,paragraphCoverage=0,paragraphQuantizedCoverage=0,oldSolidParagraph=0;
 for(let y=0;y<181;y++)for(let x=0;x<128;x++){
- const original=data[(y*info.width+x)*4+3]/255,decoded=decodePrintedSurface(encodePrintedAreaSurface(original));
+ const original=data[((oy+y)*info.width+ox+x)*4+3]/255,decoded=decodePrintedSurface(encodePrintedAreaSurface(original));
  assert.equal(decoded.area,true);assert.equal(decoded.kind,1);
  assert.ok(Math.abs(decoded.coverage-original)<=1/30+1e-10,'Area quantization exceeded its declared 16-level bound');
  if(original===0){assert.equal(decoded.coverage,0);clear++;}

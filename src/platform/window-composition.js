@@ -39,12 +39,16 @@ function normalizeTransition(value='cut',reducedMotion=false){
 }
 function normalizeFault(fault={},flashMode='full'){
   const profile=WINDOW_MEDIA_SHADER_PROFILES.includes(fault.profile)?fault.profile:'nvme-sector';
+  const grid=fault.grid&&['originU','originV','cellU','rowV'].every((key)=>Number(fault.grid[key])>0&&Number(fault.grid[key])<1)
+    ?freeze({originU:Number(fault.grid.originU),originV:Number(fault.grid.originV),cellU:Number(fault.grid.cellU),rowV:Number(fault.grid.rowV)})
+    :null;
   return freeze({
     profile,
     intensity:clamp(fault.intensity??0),
     seed:Math.max(0,Math.floor(Number(fault.seed)||0)),
     cadenceMs:Math.max(90,Math.min(1800,Math.round(Number(fault.cadenceMs)||420))),
     flashMode:normalizeFlashMode(fault.flashMode??flashMode),
+    ...(grid?{grid}:{}),
   });
 }
 
@@ -179,7 +183,9 @@ function normalizeOperation(operation,surfaces,reducedMotion,{nested=false}={}){
   const targets=normalizeTargets(operation.targets,surfaceIds);
   if(type==='seek')return freeze({...common,targets,seekMs:Math.max(0,Math.round(Number(operation.seekMs)||0))});
   if(type==='shader')return freeze({...common,targets,coherent:Object.hasOwn(operation,'coherent')?!!operation.coherent:null,
-    intensity:Object.hasOwn(operation,'intensity')?clamp(operation.intensity):null});
+    intensity:Object.hasOwn(operation,'intensity')?clamp(operation.intensity):null,
+    run:operation.run?freeze({durationMs:Math.max(100,Math.min(20000,Math.round(Number(operation.run.durationMs)||1500))),
+      direction:Number(operation.run.direction)<0?-1:1}):null});
   if(type==='geometry')return freeze({...common,targets,geometry:freeze({
     anchorX:clamp(operation.geometry?.anchorX??operation.geometry?.x??.5),anchorY:clamp(operation.geometry?.anchorY??operation.geometry?.y??.5),
     offsetX:Number(operation.geometry?.offsetX)||0,offsetY:Number(operation.geometry?.offsetY)||0,
@@ -319,7 +325,7 @@ function operationAction(plan,operation,paneId){
   }
   if(operation.type==='freeze'||operation.type==='resume')return freeze({type:'frozen',frozen:operation.type==='freeze'});
   if(operation.type==='seek')return freeze({type:'seek',seekMs:operation.seekMs});
-  if(operation.type==='shader')return freeze({type:'shader',coherent:operation.coherent,intensity:operation.intensity});
+  if(operation.type==='shader')return freeze({type:'shader',coherent:operation.coherent,intensity:operation.intensity,run:operation.run||null});
   if(operation.type==='show'||operation.type==='hide')return freeze({type:'visible',visible:operation.type==='show'});
   if(operation.type==='geometry')return freeze({type:'geometry',geometry:operation.geometry,durationMs:operation.durationMs});
   return null;
@@ -716,6 +722,39 @@ export function sectorIntrusionCue(targets=[],token=''){
   }));
 }
 
+// THE SAME DISK, ON BOTH SIDES OF THE GLASS.
+//
+// Source's floor already fails on a score (game/source-faults.js): every four
+// bars of the practice wing's bar, one bad-sector run crosses one of four lanes
+// for a bar and a half. The terminals are that disk too, so they fail on the
+// same clock. The director fires `sector:run:<lane>` as a world run begins and
+// `sector:clear` as it ends; the pane in that lane takes the run (its head
+// sweeps the rows in the run's direction, leaving held and dropped rows behind
+// it), its neighbours shiver, and the clear hands every pane back its clean
+// baked frames. Nothing here is timed: these are event cues, so a pane that is
+// not up when the world fails simply misses that run.
+export const SECTOR_RUN_EVENT_PREFIX='sector:run:';
+export const SECTOR_CLEAR_EVENT='sector:clear';
+// Where the stderr grid falls in a 640x432 sectorErrorPhases frame: 13px margin,
+// 23px monospace (a .602em advance) at 43 columns, 33px rows. Live tears move by
+// whole cells and rows of this grid so they never cut a glyph.
+export const SECTOR_PANE_GRID=Object.freeze({originU:13/640,originV:13/432,cellU:23*.602/640,rowV:33/432});
+export function sectorFaultRunCues(targets=[],{runMs=1500,reducedMotion=false,flashMode='full',lanes=4}={}){
+  const panes=(Array.isArray(targets)?targets:[]).filter(Boolean);
+  if(!panes.length)return [];
+  const gentle=reducedMotion||flashMode!=='full';
+  const cues=[];
+  for(let lane=0;lane<Math.max(1,lanes);lane+=1){
+    const hit=panes[lane%panes.length],others=panes.filter((pane)=>pane!==hit);
+    cues.push({id:`sector-run-${lane}`,event:`${SECTOR_RUN_EVENT_PREFIX}${lane}`,operations:[
+      {type:'shader',targets:[hit],intensity:gentle?.35:.92,run:{durationMs:runMs,direction:lane%2?-1:1}},
+      ...(others.length&&!gentle?[{type:'shader',targets:others,intensity:.22,run:{durationMs:runMs,direction:lane%2?1:-1}}]:[]),
+    ]});
+  }
+  cues.push({id:'sector-run-clear',event:SECTOR_CLEAR_EVENT,operations:[{type:'shader',targets:panes,intensity:0}]});
+  return cues;
+}
+
 // THE DISK, FAILING, ON ITS OWN SCREEN.
 //
 // An ntfsclone run that cannot read the volume. `phases` are pre-baked scroll
@@ -724,16 +763,21 @@ export function sectorIntrusionCue(targets=[],token=''){
 // Motion is a CUT between stills, which is also what a terminal does — it does
 // not tween, it redraws.
 export function sectorErrorCompositionPlan({
-  phaseTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+  phaseTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full', runMs=1500,
 }={}){
   const tokens=(Array.isArray(phaseTokens)?phaseTokens:[]).filter(Boolean);
   if(tokens.length<1)return null;
   // Four panes reading the same failing disk at different points in the scroll,
   // which is what a machine with several terminals open on one job looks like.
   const seats=[{x:.20,y:.24},{x:.78,y:.22},{x:.24,y:.76},{x:.80,y:.74}];
+  // Four windows on one job are not four copies of one window. Each shows its
+  // own part of the scroll at the pane's own aspect: one whole, one only the
+  // newest rows (it was opened small and never resized), one the stale head
+  // and its offsets, one the left margin where the WARNINGs pile up.
+  const crops=[{x:0,y:0,w:1,h:1},{x:0,y:0,w:.72,h:.72},{x:.28,y:.28,w:.72,h:.72},{x:0,y:.14,w:.8,h:.8}];
   const surfaces=seats.map((initial,index)=>({
     id:`sector:${index}`,
-    content:{kind:'snapshot',token:tokens[index%tokens.length]},
+    content:{kind:'snapshot',token:tokens[index%tokens.length]},crop:crops[index],
     width:320,height:216,
     entry:initial,initial,
     target:{anchorX:.5,anchorY:.5,offsetX:(index%2?1:-1)*150,offsetY:(index<2?-1:1)*96},
@@ -755,19 +799,21 @@ export function sectorErrorCompositionPlan({
         atMs:phase*stepMs+index*Math.round(stepMs/4),
         operations:[{
           type:'assign',
-          assignments:{[surface.id]:{content:{kind:'snapshot',token:tokens[(phase+index)%tokens.length]}}},
+          assignments:{[surface.id]:{content:{kind:'snapshot',token:tokens[(phase+index)%tokens.length]},crop:crops[index]}},
           transition:'cut',durationMs:0,
         }],
       });
     });
   });
+  cues.push(...sectorFaultRunCues(targets,{runMs,reducedMotion,flashMode}));
   return compileWindowCompositionPlan({
     compositionId:'sector:unreadable',sceneId:'sector',purpose:'sector',epochMs,reducedMotion,flashMode,
     surfaces,score:{durationMs:Math.max(1000,tokens.length*stepMs),loop:true,cues},
     completion:{mode:'nonblocking'},
     // Framebuffer damage is in the source image. Never dither or spatially
-    // resample terminal glyphs into an unreadable second layer of damage.
-    fault:{profile:'terminal',intensity:0,seed:29,cadenceMs:900},
+    // resample terminal glyphs into an unreadable second layer of damage. Live
+    // damage arrives only with the world's runs, in whole rows and cells.
+    fault:{profile:'terminal',intensity:0,seed:29,cadenceMs:360,grid:SECTOR_PANE_GRID},
     formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
   });
 }
@@ -784,7 +830,7 @@ export function sectorErrorCompositionPlan({
 // off get the same stages as cuts, without the drift.
 export const SOURCE_DECAY_STAGES = Object.freeze([.2, .45, .7, .92]);
 export function sourceDecayCompositionPlan({
-  phaseTokens=[], decayTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+  phaseTokens=[], decayTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full', runMs=1500,
 }={}){
   const terminals=phaseTokens.filter((token)=>String(token).startsWith('snapshot-'));
   const decays=decayTokens.filter((token)=>String(token).startsWith('snapshot-'));
@@ -820,16 +866,17 @@ export function sourceDecayCompositionPlan({
       ],
     };
   });
+  if(terminals.length)cues.push(...sectorFaultRunCues(surfaces.map((surface)=>surface.id),{runMs,reducedMotion,flashMode}));
   return compileWindowCompositionPlan({
     compositionId:'source:decay',sceneId:'source:proper',purpose:'source-decay',epochMs,reducedMotion,flashMode,
     surfaces,score:{durationMs:120000,loop:false,cues},completion:{mode:'nonblocking'},
-    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:1200},
+    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:480,grid:SECTOR_PANE_GRID},
     formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
   });
 }
 
 export function sourceWarningCompositionPlan({
-  preTokens=[], messageTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full',
+  preTokens=[], messageTokens=[], epochMs=Date.now(), reducedMotion=false, flashMode='full', runMs=1500,
   // Older callers: plain terminal phases, and one frame per message.
   phaseTokens=[], warningTokens=[],
 }={}){
@@ -893,10 +940,12 @@ export function sourceWarningCompositionPlan({
     gather('source-warning',surface,index,messages[index+4],warningStart,16000);
   });
   cues.push({id:'source-warning-retire',atMs:16000,operations:[{type:'hide',targets:surfaces.map((surface)=>surface.id)}]});
+  // The floor's runs cross the message too: the disk that spells it is failing.
+  if(terminals.length)cues.push(...sectorFaultRunCues(surfaces.map((surface)=>surface.id),{runMs,reducedMotion,flashMode}));
   return compileWindowCompositionPlan({
     compositionId:'source:warning',sceneId:'source:proper',purpose:'source-warning',epochMs,reducedMotion,flashMode,
     surfaces,score:{durationMs:16500,loop:false,cues},completion:{mode:'nonblocking'},
-    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:1200},
+    fault:{profile:'terminal',intensity:0,seed:4417,cadenceMs:480,grid:SECTOR_PANE_GRID},
     formation:{mode:'terminal-open',durationMs:0,staggerMs:0},
   });
 }

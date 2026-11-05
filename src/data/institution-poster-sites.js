@@ -18,12 +18,16 @@ const paperSite=(id,design,position,yaw,widthM,group,support,observer)=>({
 });
 
 // Notice-board paper is on local -Z. The old two portal positions intersected
-// the portal's projecting side returns. The north case now fits the exposed
-// strip between honours boards and casing; the south case occupies the nearby
-// south wall above its low radiator. Retained IDs and their inspections stay.
+// the portal's projecting side returns. The north case fits the strip between
+// honours boards and casing. The south case used to sit on the old atrium's
+// south wall at z27; the atrium now stops at z14 and that wall faces the open
+// civic court, which renders as the park and drops interior fittings. It hangs
+// on the atrium's own south wall instead, west of the drinking fountain, with
+// the rest of the publicity that used to line the old east strip. Retained IDs
+// and their inspections stay.
 export const INSTITUTION_POSTER_HOST_CORRECTIONS=frozen({
   'hall-entrance-program-north':{yaw:-Math.PI/2,x:96.9742,z:22.5,scale:.86},
-  'hall-entrance-program-south':{yaw:0,x:92.6,y:1.12,z:26.970},
+  'hall-entrance-program-south':{yaw:0,x:86.6,y:1.12,z:13.970},
 });
 
 export const INSTITUTION_POSTER_SITES=frozen([
@@ -33,11 +37,13 @@ export const INSTITUTION_POSTER_SITES=frozen([
   }),
   hostSite('hall-winter','hall-entrance-program-south','winter_programme',[0,.45,-.0462],1,{
     localYaw:Math.PI,aperture:{widthM:1.03,heightM:.73},
-    observer:{position:[92.6,1.62,24.5],yaw:Math.PI,pitch:-.021},
+    observer:{position:[86.6,1.62,11.4],yaw:Math.PI,pitch:-.021},
   }),
   // Keep the existing last-night inspection and its gilt holder. The safe ink
   // width stays 10mm inside the stiles, over the old generic portrait plane.
-  hostSite('foh-last-night','foh-poster-last-night','piano',[0,.51,.0322],.56,{
+  // That plane is at local z .031: at 1.2mm above it the paper lost the depth
+  // test and the frame showed a blank pale card, so it stands 6mm proud.
+  hostSite('foh-last-night','foh-poster-last-night','piano',[0,.51,.037],.56,{
     localYaw:0,aperture:{widthM:.58,heightM:.81},
     observer:{position:[88.6,1.62,7],yaw:Math.PI/2,pitch:.25},
   }),
@@ -49,33 +55,41 @@ export const INSTITUTION_POSTER_SITES=frozen([
   paperSite('foyer-visiting','visiting',[85.5,1.75,3.174],0,.594,'ground',
     {axis:'z',plane:3.168,normal:[0,0,1],logicalAnchor:[85.5,4.5],windowId:'W3-foyer-north',face:'foyer north window, paper taped onto the inset lower pane'},
     {position:[85.5,1.62,5.668],yaw:0,pitch:.052}),
-  paperSite('atrium-student-notice','students',[96.994,1.70,16.65],Math.PI/2,.297,'ground',
-    {axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,16.65],face:'exposed strip above drinking fountain between the first two honours boards'},
-    {position:[94.9,1.62,16.65],yaw:Math.PI/2,pitch:.038}),
+  // The old east strip (x97, z14-27) is now the hall's return passage, whose
+  // wall stands at x98: paper there floated a metre off it. The fountain moved
+  // to the atrium's south wall, and the student notice followed it.
+  paperSite('atrium-student-notice','students',[88.5,1.74,13.994],Math.PI,.297,'ground',
+    {axis:'z',plane:14,normal:[0,0,-1],logicalAnchor:[88.5,13.5],face:'atrium south wall, above the public drinking fountain'},
+    {position:[88.5,1.62,11.4],yaw:Math.PI,pitch:.05}),
   paperSite('practice-chamber','chamber',[54,6.55,43.506],0,.420,'upper',
     {axis:'z',plane:43.5,normal:[0,0,1],logicalAnchor:[54,53],floor:4.8,face:'practice-wing north wall'},
     {position:[54,6.42,46],yaw:0,pitch:.052}),
   paperSite('chapel-recital','chapel',[90.1,6.55,49.506],0,.297,'upper',
     {axis:'z',plane:49.5,normal:[0,0,1],logicalAnchor:[90.1,59],floor:4.8,face:'chapel narthex north wall'},
     {position:[90.1,6.42,51.8],yaw:0,pitch:.057}),
-  paperSite('lyric-afterwards','lyric',[24.994,1.80,86.7],Math.PI/2,.420,'ground',
-    {axis:'x',plane:25,normal:[-1,0,0],logicalAnchor:[74,286.7],floor:.12,face:'Lyric existing west side masonry'},
-    {position:[22.7,1.74,86.7],yaw:Math.PI/2,pitch:.026}),
+  // The Lyric moved into the yard annex (its west side now x31, z29-34.5);
+  // the paper at the old x25/z86.7 was left standing alone in the loading yard.
+  paperSite('lyric-afterwards','lyric',[30.994,1.68,31.75],Math.PI/2,.420,'ground',
+    {axis:'x',plane:31,normal:[-1,0,0],logicalAnchor:[3.25,619.5],floor:0,face:'Lyric west side masonry, in the yard annex'},
+    {position:[29.85,1.62,31.75],yaw:Math.PI/2,pitch:.05}),
   // The recording room's three treated walls remain untouched. A modest
   // contemporary-music cluster inhabits its expressly bare south wall, clear
   // of the central doorway, Goldberg stand, patchbay and first-take surfaces.
+  // B3's east end is now the control booth (partition at x18, booth wall at
+  // z18-19), which swallowed the cluster's old x18-19.8 run; it moved west of
+  // the door onto the live room's own south wall, same spacing and heights.
   {id:'b3-loudspeaker-case',design:'loudspeakers',kind:'new-case',finish:'flat',
-    position:[18,-2.22,18.998],yaw:Math.PI,widthM:.420,groups:['basement'],
+    position:[12.2,-2.22,18.998],yaw:Math.PI,widthM:.420,groups:['basement'],
     caseScale:.420/.594,paperCenter:[0,0,.027],
     aperture:{widthM:.62*.420/.594,heightM:.88*.420/.594},
-    support:{axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[18,18.5],floor:-4,face:'recording studio B3 bare south wall'},
-    observer:{position:[18,-2.38,16.3],yaw:Math.PI,pitch:.059}},
-  paperSite('b3-tape-music','tape',[18.82,-2.35,18.994],Math.PI,.297,'basement',
-    {axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[18.82,18.5],floor:-4,face:'recording studio B3 bare south wall'},
-    {position:[18.82,-2.38,16.3],yaw:Math.PI,pitch:.011}),
-  paperSite('b3-live-electronics','live_electronics',[19.58,-2.22,18.994],Math.PI,.420,'basement',
-    {axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[19.58,18.5],floor:-4,face:'recording studio B3 bare south wall'},
-    {position:[19.58,-2.38,16.3],yaw:Math.PI,pitch:.059}),
+    support:{axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[12.2,18.5],floor:-4,face:'recording studio B3 live room south wall, west of the door'},
+    observer:{position:[12.2,-2.38,16.3],yaw:Math.PI,pitch:.059}},
+  paperSite('b3-tape-music','tape',[13.02,-2.35,18.994],Math.PI,.297,'basement',
+    {axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[13.02,18.5],floor:-4,face:'recording studio B3 live room south wall, west of the door'},
+    {position:[13.02,-2.38,16.3],yaw:Math.PI,pitch:.011}),
+  paperSite('b3-live-electronics','live_electronics',[13.78,-2.22,18.994],Math.PI,.420,'basement',
+    {axis:'z',plane:19,normal:[0,0,-1],logicalAnchor:[13.78,18.5],floor:-4,face:'recording studio B3 live room south wall, west of the door'},
+    {position:[13.78,-2.38,16.3],yaw:Math.PI,pitch:.059}),
   paperSite('academic-composers','new_works',[60.994,11.75,16.9],Math.PI/2,.420,'academic',
     {axis:'x',plane:61,normal:[-1,0,0],logicalAnchor:[10.5,256.9],floor:10,face:'academic corridor exposed east wall, north of retained reading-list frame'},
     {position:[58.7,11.62,16.9],yaw:Math.PI/2,pitch:.057}),
@@ -83,11 +97,11 @@ export const INSTITUTION_POSTER_SITES=frozen([
     {axis:'z',plane:3.168,normal:[0,0,1],logicalAnchor:[86.45,4.5],windowId:'W3-foyer-north',face:'foyer north window, smaller workshop paper taped onto the inset lower pane'},
     {position:[86.45,1.62,5.468],yaw:0,pitch:.017}),
   {id:'hall-prepared-piano-case',design:'prepared',kind:'new-case',finish:'flat',
-    position:[96.998,1.70,19.475],yaw:Math.PI/2,widthM:.420,groups:['ground'],
+    position:[90.3,1.74,13.998],yaw:Math.PI,widthM:.420,groups:['ground'],
     caseScale:.420/.594,paperCenter:[0,0,.027],
     aperture:{widthM:.62*.420/.594,heightM:.88*.420/.594},
-    support:{axis:'x',plane:97,normal:[-1,0,0],logicalAnchor:[96.5,19.475],face:'exposed atrium east wall between honours boards, below picture rail'},
-    observer:{position:[94.5,1.62,19.475],yaw:Math.PI/2,pitch:.032}},
+    support:{axis:'z',plane:14,normal:[0,0,-1],logicalAnchor:[90.3,13.5],face:'atrium south wall, east of the drinking fountain'},
+    observer:{position:[90.3,1.62,11.6],yaw:Math.PI,pitch:.05}},
 ]);
 
 // Same handedness as P3.modelMatrix: local +Z -> [-sin(yaw),0,cos(yaw)].

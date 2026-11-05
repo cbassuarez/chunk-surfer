@@ -59,6 +59,8 @@ function fixture({legacy=false}={}){
     PLANT:{hasPlantSpanner:()=>spannerOwned,collectPlantSpanner:()=>{calls.spanners++;spannerOwned=true;return true;},savePlantIncident:()=>({spannerOwned})},
     syncPlantIncidentProps(){},savePlantIncident(){calls.plantSaves++;context.saveCommit({plantIncident:{spannerOwned}});},
     shutTheVan:()=>{calls.shut++;saved.flags['van.closed']=true;},
+    // The work order's shift tick (cassette ledger) has its own specs.
+    workOrderShiftTicked:()=>false,inkFinalShift(){},
   };
   vm.createContext(context);vm.runInContext(persistenceSource+workbenchSource+packingSource,context);
   return {saved,meta,calls,stack,context,storage,open:()=>context.takeTheBag()};

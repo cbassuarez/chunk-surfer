@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.world.corridor-dressing",
+  "title": "Runtime · world/corridor-dressing.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "FIXTURES.basement.inspect",
+  "entries": [
+    "FIXTURES.basement.inspect",
+    "FIXTURES.ground.inspect",
+    "FIXTURES.upper.inspect",
+    "FIXTURES.academic.inspect",
+    "doorPlates.inspect",
+    "FLIGHT_DRESSING.main-basement-stair-west-flight"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/world/corridor-dressing.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "FIXTURES.basement.inspect": {
+      "id": "FIXTURES.basement.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FIXTURES.basement.inspect.l0",
+          "who": "inspect",
+          "text": "A bank of four pipes on the same brackets, lagged and stencilled with a circuit number where they leave the wall.",
+          "source": "src/world/corridor-dressing.js:249"
+        },
+        {
+          "id": "FIXTURES.basement.inspect.l1",
+          "who": "inspect",
+          "text": "(again) One of the five circuits the plant room lists. The lagging is warm nowhere along it.",
+          "source": "src/world/corridor-dressing.js:249"
+        },
+        {
+          "id": "FIXTURES.basement.inspect.l2",
+          "who": "inspect",
+          "text": "A works notice in a wall frame: isolation procedure, two extensions, and a date in the last maintenance period.",
+          "source": "src/world/corridor-dressing.js:253"
+        },
+        {
+          "id": "FIXTURES.basement.inspect.l3",
+          "who": "inspect",
+          "text": "(again) Both extensions are internal. Nothing in this building is answering them.",
+          "source": "src/world/corridor-dressing.js:253"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:249"
+    },
+    "FIXTURES.ground.inspect": {
+      "id": "FIXTURES.ground.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FIXTURES.ground.inspect.l0",
+          "who": "inspect",
+          "text": "A timetable under glass. Rooms down one side, hours across the top, and a term that has ended.",
+          "source": "src/world/corridor-dressing.js:259"
+        },
+        {
+          "id": "FIXTURES.ground.inspect.l1",
+          "who": "inspect",
+          "text": "(again) Every hour is spoken for. None of it happened tonight.",
+          "source": "src/world/corridor-dressing.js:259"
+        },
+        {
+          "id": "FIXTURES.ground.inspect.l2",
+          "who": "inspect",
+          "text": "A concert bill with DATE TO BE CONFIRMED overprinted across the middle.",
+          "source": "src/world/corridor-dressing.js:262"
+        },
+        {
+          "id": "FIXTURES.ground.inspect.l3",
+          "who": "inspect",
+          "text": "(again) The overprint is newer than the bill and older than the closure.",
+          "source": "src/world/corridor-dressing.js:262"
+        },
+        {
+          "id": "FIXTURES.ground.inspect.l4",
+          "who": "inspect",
+          "text": "A staff rota, annotated in three hands and corrected in a fourth.",
+          "source": "src/world/corridor-dressing.js:265"
+        },
+        {
+          "id": "FIXTURES.ground.inspect.l5",
+          "who": "inspect",
+          "text": "(again) The fourth hand crossed out more than it wrote.",
+          "source": "src/world/corridor-dressing.js:265"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:259"
+    },
+    "FIXTURES.upper.inspect": {
+      "id": "FIXTURES.upper.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FIXTURES.upper.inspect.l0",
+          "who": "inspect",
+          "text": "A practice-room booking sheet, ruled by hand into half-hours.",
+          "source": "src/world/corridor-dressing.js:271"
+        },
+        {
+          "id": "FIXTURES.upper.inspect.l1",
+          "who": "inspect",
+          "text": "(again) Initials in most of the boxes. The same three, over and over.",
+          "source": "src/world/corridor-dressing.js:271"
+        },
+        {
+          "id": "FIXTURES.upper.inspect.l2",
+          "who": "inspect",
+          "text": "A notice about instrument cases: not in the corridor, not against the radiators, not overnight.",
+          "source": "src/world/corridor-dressing.js:274"
+        },
+        {
+          "id": "FIXTURES.upper.inspect.l3",
+          "who": "inspect",
+          "text": "(again) It is pinned at the one point in the wing where there is nowhere else to put them.",
+          "source": "src/world/corridor-dressing.js:274"
+        },
+        {
+          "id": "FIXTURES.upper.inspect.l4",
+          "who": "inspect",
+          "text": "A fire notice. Assembly point, the name of a warden, and the date of the last drill.",
+          "source": "src/world/corridor-dressing.js:277"
+        },
+        {
+          "id": "FIXTURES.upper.inspect.l5",
+          "who": "inspect",
+          "text": "(again) The drill was held. The date is inside the closure.",
+          "source": "src/world/corridor-dressing.js:277"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:271"
+    },
+    "FIXTURES.academic.inspect": {
+      "id": "FIXTURES.academic.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FIXTURES.academic.inspect.l0",
+          "who": "inspect",
+          "text": "An examination notice. Grades, dates, and a list of what a candidate may bring in.",
+          "source": "src/world/corridor-dressing.js:283"
+        },
+        {
+          "id": "FIXTURES.academic.inspect.l1",
+          "who": "inspect",
+          "text": "(again) A pencil, and nothing else.",
+          "source": "src/world/corridor-dressing.js:283"
+        },
+        {
+          "id": "FIXTURES.academic.inspect.l2",
+          "who": "inspect",
+          "text": "A reading list for the vocal studies course, photocopied until the lower third went to grey.",
+          "source": "src/world/corridor-dressing.js:286"
+        },
+        {
+          "id": "FIXTURES.academic.inspect.l3",
+          "who": "inspect",
+          "text": "(again) Someone has written a title in the margin that is not on the list.",
+          "source": "src/world/corridor-dressing.js:286"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:283"
+    },
+    "doorPlates.inspect": {
+      "id": "doorPlates.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "doorPlates.inspect.l0",
+          "who": "inspect",
+          "text": "{space.label}, stencilled on the plate beside the opening.",
+          "source": "src/world/corridor-dressing.js:391"
+        },
+        {
+          "id": "doorPlates.inspect.l1",
+          "who": "inspect",
+          "text": "(again) {space.shortLabel || space.label}. Still where the plan says it is.",
+          "source": "src/world/corridor-dressing.js:391"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:391"
+    },
+    "FLIGHT_DRESSING.main-basement-stair-west-flight": {
+      "id": "FLIGHT_DRESSING.main-basement-stair-west-flight",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FLIGHT_DRESSING.main-basement-stair-west-flight.l0",
+          "who": "inspect",
+          "text": "Steel handrails down both sides of the flight, and the treads under them worn pale in the middle.",
+          "source": "src/world/corridor-dressing.js:506"
+        },
+        {
+          "id": "FLIGHT_DRESSING.main-basement-stair-west-flight.l1",
+          "who": "inspect",
+          "text": "(again) Twenty rises. The wear says most people took them two at a time.",
+          "source": "src/world/corridor-dressing.js:506"
+        }
+      ],
+      "source": "src/world/corridor-dressing.js:506"
+    }
+  }
+}

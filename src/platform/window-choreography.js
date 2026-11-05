@@ -3,6 +3,7 @@ import { logWarn } from './diagnostics/diagnostics.js';
 import { sectorErrorPhases } from '../render/sector-error.js';
 import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
+import { SOURCE_FAULT_RUN_MS, SOURCE_FAULT_LANES } from '../game/source-faults.js';
 import {createWindowMediaSimulation} from './window-media-simulation.js';
 import {sourceRestOwnedFramesValid} from '../render/source-rest-apertures.js';
 import {validateWindowArchitecturePacket,windowArchitectureCueAllowed} from '../render/window-media-architecture.js';
@@ -19,6 +20,8 @@ import {
   sourceDecayCompositionPlan,
   SOURCE_DECAY_STAGES,
   SECTOR_INTRUSION_EVENT,
+  SECTOR_RUN_EVENT_PREFIX,
+  SECTOR_CLEAR_EVENT,
   evaluateCompositionConstraints,
   titleCompositionPlan,
   windowMediaAsset,
@@ -649,6 +652,7 @@ export function createWindowChoreographyDirector({
   let sourceWarningSeen=false;
   // The windows' walk out of Source (sourceDecay). done: gone for this crossing.
   let decay={stage:0,active:null,done:false};
+  let faultRun={run:-1,active:false};
   let decayTokens=null;
   let ending=null;
   let composition=null;
@@ -1392,7 +1396,7 @@ export function createWindowChoreographyDirector({
       const terminals=await ensureSectorPhases();
       const decays=await ensureDecayFrames();
       if(decay!==opening)return false;
-      const plan=sourceDecayCompositionPlan({phaseTokens:terminals||[],decayTokens:decays||[],epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+      const plan=sourceDecayCompositionPlan({phaseTokens:terminals||[],decayTokens:decays||[],epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode,runMs:SOURCE_FAULT_RUN_MS});
       const active={plan,purpose:'source-decay',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
       composition=active;decay.active=active;
       if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
@@ -1403,6 +1407,24 @@ export function createWindowChoreographyDirector({
     const reached=SOURCE_DECAY_STAGES.filter((at)=>p>=at).length;
     while(decay.stage<reached){decay.stage+=1;compositionEvent(`source-decay-${decay.stage}`);}
     return true;
+  }
+
+  // THE FLOOR AND THE GLASS FAIL TOGETHER. Fed every Source frame with the
+  // world's fault frame (game/source-faults.js). A run's first frame sends the
+  // terminals that are up `sector:run:<lane>`; its last sends `sector:clear`.
+  // Plans without terminals carry no such cue and compositionEvent ignores it.
+  function sourceFault(frame={}){
+    const active=!!frame?.active&&!!frame.overflowActive;
+    if(active&&(!faultRun.active||faultRun.run!==frame.overflowRun)){
+      const lane=Math.max(0,Math.min(SOURCE_FAULT_LANES-1,Math.floor(Number(frame.overflowLane)||0)));
+      faultRun={run:frame.overflowRun,active:true,lane};
+      return compositionEvent(`${SECTOR_RUN_EVENT_PREFIX}${lane}`);
+    }
+    if(!active&&faultRun.active){
+      faultRun={...faultRun,active:false};
+      return compositionEvent(SECTOR_CLEAR_EVENT);
+    }
+    return false;
   }
 
   function leaveSource(reason='source-exit'){
@@ -1530,7 +1552,7 @@ export function createWindowChoreographyDirector({
     for(const frames of baked.messages||[])messageTokens.push(await register(frames));
     const warningTokens=[...preTokens,...messageTokens.flat()];
     if(source!==owner||epoch!==ownerEpoch){effects?.releaseSnapshots?.(warningTokens);return null;}
-    const plan=sourceWarningCompositionPlan({preTokens,messageTokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+    const plan=sourceWarningCompositionPlan({preTokens,messageTokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode,runMs:SOURCE_FAULT_RUN_MS});
     const active={plan,purpose:'source-warning',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set(),warningTokens};
     composition=active;
     if(nativeDesired())effects?.ensure?.({intensity:'hostile',fullscreen:getDisplayMode()==='game-mode',reducedMotion:reduced()});
@@ -1552,7 +1574,7 @@ export function createWindowChoreographyDirector({
     const tokens=await ensureSectorPhases();
     if(!tokens)return null;
     const context=compositionContext();
-    const plan=sectorErrorCompositionPlan({phaseTokens:tokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode});
+    const plan=sectorErrorCompositionPlan({phaseTokens:tokens,epochMs:Date.now(),reducedMotion:reduced(),flashMode:context.flashMode,runMs:SOURCE_FAULT_RUN_MS});
     if(!plan)return null;
     if(nativeDesired())await safe(()=>effects?.prepareMedia?.({count:plan.surfaces.length}));
     const active={plan,purpose:'sector',state:{},startedAt:Date.now(),completed:false,presented:false,pendingEvents:new Set()};
@@ -1748,7 +1770,7 @@ export function createWindowChoreographyDirector({
   keyTarget?.addEventListener?.('chunk-surfer:window-media-action',(event)=>{if(event.detail?.action==='escape')void emergencyRestore();});
 
   return{
-    prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
+    prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceFault,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
     emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
     beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was

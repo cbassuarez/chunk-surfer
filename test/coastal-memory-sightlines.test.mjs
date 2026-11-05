@@ -30,11 +30,12 @@ test('the distant pier clears the actual bank and outcrops before the physical r
 
 test('the moving pier approach clears actual pier vertices and surface samples against every submitted opaque mesh', async () => {
   const meshes = [...coastalGlbMeshes(await readFile(new URL('../public/assets/source-drive/coastal-memory/coastal-memory.glb', import.meta.url))),
-    ...coastalGlbMeshes(await readFile(new URL('../public/assets/source-drive/drive.glb', import.meta.url)))];
+    ...coastalGlbMeshes(await readFile(new URL('../public/assets/source-drive/drive.glb', import.meta.url))),
+    ...coastalGlbMeshes(await readFile(new URL('../public/assets/source-drive/coastal-memory/van-wreck.glb', import.meta.url)))];
   const metrics=JSON.parse(await readFile(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
   const scene=makeCoastalMemoryScene({worldFromLocal:identity,includeWreck:true,vehicleMetrics:metrics});
   const all=coastalMeshTriangles(meshes,scene.props,{allOpaque:true});
-  for(const name of ['cm_seabed','cm_wreck_seat','cm_foam_lace','drive_cabin','drive_vehicle_body'])assert.ok(all.some(t=>t.mesh===name),'must include '+name);
+  for(const name of ['cm_seabed','cm_shingle_beach','cm_foam_lace','van_wreck_hull','van_wreck_cab_door','van_wreck_rear_door','drive_tyre'])assert.ok(all.some(t=>t.mesh===name),'must include '+name);
   const query=createCoastalVisibilityQuery(all),mesh=meshes.find(m=>m.name==='cm_distant_pier'),matrix=scene.props.find(p=>p.mesh===mesh.name).matrix;
   for(const[x,z]of[[17.706081,74],[16.1,77],[14.388407,80],[13.4,83],[13.07639,86]])for(const dx of[-.25,0,.25]){
     assert.ok(layout.canOccupy(x+dx,z),'sample must be an ordinarily supported foot position');
@@ -46,9 +47,9 @@ test('the moving pier approach clears actual pier vertices and surface samples a
   }
 });
 
-test('the same swept player controls reach both clear views and the return crest without pose assignments', () => {
+test('the same swept player controls walk the shingle past the van in plain sight and on under the point', () => {
   let pose = { ...layout.spawn }, reached = [];
-  const route = [...layout.arrivalPath.slice(1), ...layout.coastalPath.slice(1).filter(p => p[1] <= 86), [13.07639, 87.1]];
+  const route = [...layout.arrivalPath.slice(1), ...layout.coastalPath.slice(1), [6.3, layout.pierReturnPlane.point.z + .7]];
   for (const [x, z] of route) {
     let ticks = 0;
     while (Math.hypot(pose.x - x, pose.z - z) > .08 && ticks++ < 2400) {
@@ -58,9 +59,10 @@ test('the same swept player controls reach both clear views and the return crest
     assert.ok(Math.hypot(pose.x - x, pose.z - z) < .08, `ordinary sweep reaches ${x},${z}: ${JSON.stringify(pose)}`);
     reached.push({ ...pose });
   }
-  const wreckPose = reached.find(p => Math.hypot(p.x - 35, p.z - 43) < .08);
-  const pierPose = reached.find(p => Math.hypot(p.x - 13.07639, p.z - 86) < .08);
-  assert.equal(coastalGeometrySightline([wreckPose.x, wreckPose.feet + 1.62, wreckPose.z], wreck, triangles).clear, true);
-  assert.equal(coastalGeometrySightline([pierPose.x, pierPose.feet + 1.62, pierPose.z], layout.pier.position, triangles).clear, true);
+  // Where we crashed is where we are: the van is in sight from where the walk
+  // begins and from every step of the approach beside it.
+  for (const p of [{ ...layout.spawn }, ...reached.slice(0, 3)])
+    assert.equal(coastalGeometrySightline([p.x, p.feet + 1.62, p.z], wreck, triangles).clear, true, `the van is hidden from ${p.x},${p.z}`);
+  assert.ok(reached.every((p) => p.feet > -.5 && p.feet < 2), 'the whole walk stays on the shingle');
   assert.ok(pose.z > layout.pierReturnPlane.point.z);
 });

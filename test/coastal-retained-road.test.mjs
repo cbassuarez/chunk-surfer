@@ -16,7 +16,7 @@ test('the actual exported limestone overlaps the retained slab underside instead
 });
 test('the formation is submitted once without proxy blocks and keeps old terrain and the D12 lookout unchanged',()=>{
  const scene=makeCoastalMemoryScene({worldFromLocal:I});assert.equal(scene.props.filter(p=>p.mesh==='cm_limestone_coast').length,1);assert.equal(scene.props.filter(p=>p.id.startsWith('coastal-retained-road-base-')).length,0);assert.equal(scene.physical.barriers,L.barriers);
- assert.equal(crypto.createHash('sha256').update(JSON.stringify(S.vertices.filter(p=>p[2]>=-9))).digest('hex'),'aad295166f5b9fc2df0b6a5079a165c6c583a3d13b6de06cb405e1577b6c94b4');near(L.spawn.x,.94533163695);near(L.spawn.z,-45);near(L.spawn.feet,16.09389489694);near(L.spawn.pitch,-.55);
+ assert.equal(crypto.createHash('sha256').update(JSON.stringify(S.vertices.filter(p=>p[2]>=-9))).digest('hex'),'aad295166f5b9fc2df0b6a5079a165c6c583a3d13b6de06cb405e1577b6c94b4');near(L.supportAt(.94533163695,-45).height,16.09389489694);assert.ok(L.canOccupy(.94533163695,-45),'the D12 lookout (the walk began there before the beach) is still bank to stand on');
 });
 test('the actual opening hull never intersects the retained road-base footprints through the fall',()=>{
  const a=worldAt(292),c=createDoorDriveTeaser({initialDrive:{x:a.x,z:a.z,heading:a.heading,roadHeight:a.height,speed:6,furthest:292}});let count=0,min=Infinity;

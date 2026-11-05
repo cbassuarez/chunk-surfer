@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.source-landing",
+  "title": "Runtime · data/source-landing.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "sourceLandingRecognitions.anchors",
+  "entries": [
+    "sourceLandingRecognitions.anchors"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/source-landing.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "sourceLandingRecognitions.anchors": {
+      "id": "sourceLandingRecognitions.anchors",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceLandingRecognitions.anchors.l0",
+          "who": "inspect",
+          "text": "The same little desk. The last line on the clipboard is still waiting to be crossed out.",
+          "source": "src/data/source-landing.js:311"
+        },
+        {
+          "id": "sourceLandingRecognitions.anchors.l1",
+          "who": "inspect",
+          "text": "(again) Somebody meant to come back to it.",
+          "source": "src/data/source-landing.js:311"
+        },
+        {
+          "id": "sourceLandingRecognitions.anchors.l2",
+          "who": "inspect",
+          "text": "The recorder-shaped absence. Four tally marks under the handle. Space for one more.",
+          "source": "src/data/source-landing.js:316"
+        },
+        {
+          "id": "sourceLandingRecognitions.anchors.l3",
+          "who": "inspect",
+          "text": "(again) You remember the shape of it.",
+          "source": "src/data/source-landing.js:316"
+        },
+        {
+          "id": "sourceLandingRecognitions.anchors.l4",
+          "who": "inspect",
+          "text": "The cage is still locked around it. Black bulbs, bright glass. Its wire still ends in open air.",
+          "source": "src/data/source-landing.js:321"
+        },
+        {
+          "id": "sourceLandingRecognitions.anchors.l5",
+          "who": "inspect",
+          "text": "(again) Too carefully held for rubbish. Too dead to be a lamp.",
+          "source": "src/data/source-landing.js:321"
+        }
+      ],
+      "source": "src/data/source-landing.js:311"
+    }
+  }
+}

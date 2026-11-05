@@ -122,7 +122,9 @@ test('catch normal and late paths preserve every delivered line, pre-lock interr
       }
     }
     assert.equal(interruptionSeen,true);assert.equal(lockedSeen,true);assert.ok(lastAt!==null);assert.deepEqual(done,['commit']);
-    assert.ok(source.playedSeconds-startAt<650,'the readable encounter has no added full-track wait');
+    // A full-track wait would be another 843s pass. The late earthly question
+    // adds one reply window, so the normal path now finishes near 652s.
+    assert.ok(source.playedSeconds-startAt<660,'the readable encounter has no added full-track wait');
     for(const [id,lines] of seen)assert.equal(lines.size,story.nodes[id].lines.length,`all authored ${id} lines were delivered`);
     for(const id of Object.keys(story.cues))assert.ok(seen.has(id),`chapter ${id} uses story.cues`);
     scene.exit();assert.deepEqual(done,['commit']);

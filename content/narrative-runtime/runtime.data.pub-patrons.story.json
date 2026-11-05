@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.pub-patrons",
+  "title": "Runtime · data/pub-patrons.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "people.mavis",
+  "entries": [
+    "people.mavis",
+    "people.ed",
+    "people.bert",
+    "people.farah",
+    "people.nell",
+    "people.arthur"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/pub-patrons.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "people.mavis": {
+      "id": "people.mavis",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.mavis.l0",
+          "who": "inspect",
+          "text": "They have taken our stop off the board. Ed says that means we can stop waiting. I say they could have told the bus.",
+          "source": "src/data/pub-patrons.js:7"
+        },
+        {
+          "id": "people.mavis.l1",
+          "who": "inspect",
+          "text": "(again) Still no bus. Considerably better seating.",
+          "source": "src/data/pub-patrons.js:7"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:7"
+    },
+    "people.ed": {
+      "id": "people.ed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.ed.l0",
+          "who": "inspect",
+          "text": "Mind that chair. One short leg. Mavis has a folded timetable under it and will have to catch the bus standing up.",
+          "source": "src/data/pub-patrons.js:10"
+        },
+        {
+          "id": "people.ed.l1",
+          "who": "inspect",
+          "text": "(again) She has put another timetable under it. Service is improving.",
+          "source": "src/data/pub-patrons.js:10"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:10"
+    },
+    "people.bert": {
+      "id": "people.bert",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.bert.l0",
+          "who": "inspect",
+          "text": "That is a six. She says it is a five. You look like a man paid to identify a thing without changing it.",
+          "source": "src/data/pub-patrons.js:13"
+        },
+        {
+          "id": "people.bert.l1",
+          "who": "inspect",
+          "text": "(again) We have agreed it is a six. We have not agreed whose six.",
+          "source": "src/data/pub-patrons.js:13"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:13"
+    },
+    "people.farah": {
+      "id": "people.farah",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.farah.l0",
+          "who": "inspect",
+          "text": "Do not adjudicate. He likes an audience more than he likes being right.",
+          "source": "src/data/pub-patrons.js:16"
+        },
+        {
+          "id": "people.farah.l1",
+          "who": "inspect",
+          "text": "(again) He is thinking. We may be here some time.",
+          "source": "src/data/pub-patrons.js:16"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:16"
+    },
+    "people.nell": {
+      "id": "people.nell",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.nell.l0",
+          "who": "inspect",
+          "text": "I have finished work. If you want anything sensible said, try somebody who has slept.",
+          "source": "src/data/pub-patrons.js:19"
+        },
+        {
+          "id": "people.nell.l1",
+          "who": "inspect",
+          "text": "(again) Still off duty. That is not a complaint.",
+          "source": "src/data/pub-patrons.js:19"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:19"
+    },
+    "people.arthur": {
+      "id": "people.arthur",
+      "type": "line",
+      "lines": [
+        {
+          "id": "people.arthur.l0",
+          "who": "inspect",
+          "text": "There used to be a piano where that stool is. It had one good note. People were surprisingly inventive with it.",
+          "source": "src/data/pub-patrons.js:22"
+        },
+        {
+          "id": "people.arthur.l1",
+          "who": "inspect",
+          "text": "(again) Same stool. Same missing piano.",
+          "source": "src/data/pub-patrons.js:22"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:22"
+    }
+  }
+}

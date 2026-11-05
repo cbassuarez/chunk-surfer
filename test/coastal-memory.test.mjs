@@ -273,21 +273,21 @@ test('recognition rejects actual stone footprints even when the bank height ray 
   assert.equal(coastalWreckSight(pose, { ...plan, barriers: [{ x: 0, z: -5, groundY: 0, height: 2, radius: .6 }] }), false, 'inland bedrock also blocks');
 });
 
-test('the authored coast supports box-side listening and its actual descent return without old pocket gates', async () => {
+test('the authored shingle supports box-side listening and its return under the point without old pocket gates', async () => {
   const { COASTAL_MEMORY_LAYOUT: coast } = await import('../src/data/coastal-memory.js');
   const { walkCoastalMemoryPose } = await import('../src/game/coastal-memory-scene.js');
   const own = { layout: coast, runId: 'actual-coast', returnPose };
   let state = beginCoastalMemory(null, own);
   assert.ok(coast.canOccupy(state.pose.x, state.pose.z, state.pose.feet));
   // This proves the box-to-descent circuit, not the host's full spawn approach.
-  const approach = { x: coast.musicBox.x - 1.1, z: coast.musicBox.z };
-  approach.feet = coast.supportAt(approach.x, approach.z).height;
+  const [ax, az] = coast.arrivalPath.at(-1), approach = { x: ax, z: az };
+  approach.feet = coast.supportAt(approach.x, approach.z, coast.musicBox.groundY).height;
   state = setCoastalMemoryPose(state, approach, own);
   let frame = coastalMemoryFrame(state, own);
   assert.equal(frame.canListen, true); assert.equal(frame.canInspectNote, true);
   state = stepCoastalMemory(state, { dt: .1, inspectNote: true }, own).state;
   assert.equal(state.noteRead, true); assert.equal(state.recordingHeard, false);
-  const route = [[25.9, 41.6], ...coast.coastalPath.slice(1)];
+  const route = [...coast.coastalPath.slice(1), [coast.pierReturnPlane.point.x, coast.pierReturnPlane.point.z + 1]];
   let returnAt = null;
   for (const [x, z] of route) {
     let ticks = 0;
@@ -306,31 +306,34 @@ test('the authored coast supports box-side listening and its actual descent retu
   assert.deepEqual(state.returnPose, returnPose);
 });
 
-test('actual inland and rim routes both cross the finite descent without hidden box gates', async () => {
-  const { COASTAL_MEMORY_LAYOUT: coast } = await import('../src/data/coastal-memory.js');
+test('the cliff-foot and swash-line routes both cross the end of the shingle without hidden box gates', async () => {
+  const { COASTAL_MEMORY_LAYOUT: coast, coastalCliffEdgeX, coastalWaterlineX, COASTAL_BEACH } = await import('../src/data/coastal-memory.js');
   const p = coast.pierReturnPlane.point, n = coast.pierReturnPlane.normal;
-  for (const x of [-34, 13]) {
+  for (const x of [coastalCliffEdgeX(p.z) + COASTAL_BEACH.walkInner + .7, coastalWaterlineX(p.z) - .6]) {
     const z = p.z - (x - p.x) * n.x / n.z;
     const before = { x, z: z - .3 }, after = { x, z: z + .3 };
-    before.feet = coast.supportAt(before.x, before.z).height;
-    after.feet = coast.supportAt(after.x, after.z).height;
+    before.feet = coast.supportAt(before.x, before.z, coast.spawn.feet).height;
+    after.feet = coast.supportAt(after.x, after.z, coast.spawn.feet).height;
     assert.ok(coast.canOccupy(before.x, before.z, before.feet));
     assert.ok(coast.canOccupy(after.x, after.z, after.feet));
     let state = beginCoastalMemory(null, { layout: coast, runId: 'bank-' + x, returnPose });
     state = setCoastalMemoryPose(state, before, { layout: coast });
     state = stepCoastalMemory(state, { dt: 0 }, { layout: coast }).state;
     const result = stepCoastalMemory(state, { dt: .1, pose: after }, { layout: coast });
-    assert.equal(result.state.status, 'return-pending', `directed ${x < 0 ? 'inland' : 'rim'} approach`);
+    assert.equal(result.state.status, 'return-pending', `directed approach at ${x.toFixed(2)}`);
     assert.equal(result.state.recordingHeard, false); assert.equal(result.state.noteRead, false);
     assert.equal(result.state.rewardEarned, false); assert.deepEqual(result.state.returnPose, returnPose);
   }
 });
 
-test('the canonical sunken van is occluded from the box and visible from supported rim viewpoints', async () => {
+test('the van in the surf is hidden from the old clifftop box site and in plain sight from the shingle', async () => {
   const { COASTAL_MEMORY_LAYOUT: coast } = await import('../src/data/coastal-memory.js');
   const m = coast.settledBodyLocal, target = [m[12] + m[4] * 1.2, m[13] + m[5] * 1.2, m[14] + m[6] * 1.2];
-  for (const [x, z, expected] of [[25.9, 43, false], [33, 42, false], [35, 44, false], [35, 43, true], [34.6, 42.5, true]]) {
-    const feet = coast.supportAt(x, z).height, dx = target[0] - x, dz = target[2] - z;
+  // The clifftop still hides it from the old box site and the shoulder; from
+  // the shingle, where the walk now is, it is in plain sight.
+  for (const [x, z, expected, hint] of [[25.9, 43, false], [33, 42, false], [35, 44, false], [35, 43, true], [34.6, 42.5, true],
+    [coast.spawn.x, coast.spawn.z, true, coast.spawn.feet], [...coast.arrivalPath[2], true, coast.spawn.feet]]) {
+    const feet = coast.supportAt(x, z, hint).height, dx = target[0] - x, dz = target[2] - z;
     const pose = { x, z, feet, yaw: Math.atan2(dx, -dz), pitch: Math.atan2(target[1] - feet - 1.62, Math.hypot(dx, dz)) };
     assert.ok(coast.canOccupy(x, z, feet)); assert.equal(coastalWreckSight(pose, coast), expected);
   }

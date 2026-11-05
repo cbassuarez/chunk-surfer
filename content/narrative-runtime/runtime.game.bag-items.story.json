@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.bag-items",
+  "title": "Runtime · game/bag-items.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "bagInspectionDialogue",
+  "entries": [
+    "bagInspectionDialogue",
+    "bagInspectionDialogue.entries.interface",
+    "bagInspectionDialogue.entries.tuning-fork",
+    "bagInspectionDialogue.entries.plant-spanner",
+    "bagInspectionDialogue.entries.marble-eyes",
+    "bagInspectionDialogue.entries.ren-home-cassette",
+    "bagInspectionDialogue.entries.ren-service-key",
+    "bagInspectionDialogue.entries.pub-service-tray",
+    "bagInspectionDialogue.entries.pub-opener",
+    "bagInspectionDialogue.entries.pub-orderbook",
+    "bagInspectionDialogue.entries.sheet-music",
+    "bagInspectionDialogue.entries.keyring"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/bag-items.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "bagInspectionDialogue": {
+      "id": "bagInspectionDialogue",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.l0",
+          "who": "you",
+          "text": "Building master. The one the guard handed over.",
+          "source": "src/game/bag-items.js:281"
+        },
+        {
+          "id": "bagInspectionDialogue.l1",
+          "who": "you",
+          "text": "C-seventeen. Chapel. / C-seventeen. Still only a tag.",
+          "source": "src/game/bag-items.js:282"
+        },
+        {
+          "id": "bagInspectionDialogue.l2",
+          "who": "you",
+          "text": "PLANT SERVICES. Stamped, not written.",
+          "source": "src/game/bag-items.js:283"
+        },
+        {
+          "id": "bagInspectionDialogue.l3",
+          "who": "you",
+          "text": "ROOF SERVICE. Ren put this one in my hand. It opens the caged gallery ladder back to the glass.",
+          "source": "src/game/bag-items.js:284"
+        }
+      ],
+      "source": "src/game/bag-items.js:281"
+    },
+    "bagInspectionDialogue.entries.interface": {
+      "id": "bagInspectionDialogue.entries.interface",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.interface.l0",
+          "who": "direction",
+          "text": "The return lead leaves the converter and comes back before the signal has finished becoming itself.",
+          "source": "src/game/bag-items.js:288"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.interface.l1",
+          "who": "you",
+          "text": "Bent, working, and only useful when something in the signal needs sending back.",
+          "source": "src/game/bag-items.js:289"
+        }
+      ],
+      "source": "src/game/bag-items.js:288"
+    },
+    "bagInspectionDialogue.entries.tuning-fork": {
+      "id": "bagInspectionDialogue.entries.tuning-fork",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.tuning-fork.l0",
+          "who": "you",
+          "text": "A reference, not a weapon. If the Source gives me a target, I can ask whether it agrees.",
+          "source": "src/game/bag-items.js:293"
+        }
+      ],
+      "source": "src/game/bag-items.js:293"
+    },
+    "bagInspectionDialogue.entries.plant-spanner": {
+      "id": "bagInspectionDialogue.entries.plant-spanner",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.plant-spanner.l0",
+          "who": "direction",
+          "text": "An adjustable spanner, small enough for the side pocket. The jaw is already set near the heating-header gland.",
+          "source": "src/game/bag-items.js:296"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.plant-spanner.l1",
+          "who": "you",
+          "text": "If I put my hand on that header, this is what I use.",
+          "source": "src/game/bag-items.js:297"
+        }
+      ],
+      "source": "src/game/bag-items.js:296"
+    },
+    "bagInspectionDialogue.entries.marble-eyes": {
+      "id": "bagInspectionDialogue.entries.marble-eyes",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.marble-eyes.l0",
+          "who": "direction",
+          "text": "Two separate mineral eyes. One has a pale diagonal vein and a chip above its iris; the other is nicked low on the opposite edge. Cold stone, still damp in the case.",
+          "source": "src/game/bag-items.js:300"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.marble-eyes.l1",
+          "who": "you",
+          "text": "I do not need to guess from here. I need to put them against the blind bust.",
+          "source": "src/game/bag-items.js:301"
+        }
+      ],
+      "source": "src/game/bag-items.js:300"
+    },
+    "bagInspectionDialogue.entries.ren-home-cassette": {
+      "id": "bagInspectionDialogue.entries.ren-home-cassette",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.ren-home-cassette.l0",
+          "who": "direction",
+          "text": "A small cassette in a cracked clear case. HOME is written on the spine. Around it, a folded note: YOU ASKED US TO KEEP THIS FROM YOU.",
+          "source": "src/game/bag-items.js:304"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.ren-home-cassette.l1",
+          "who": "you",
+          "text": "A voice called Ren in for dinner. They waited for an answer. I heard it; Ren may ask whether I did. / Ren asked me to bring it back. The note makes that sound less simple.",
+          "source": "src/game/bag-items.js:305"
+        }
+      ],
+      "source": "src/game/bag-items.js:304"
+    },
+    "bagInspectionDialogue.entries.ren-service-key": {
+      "id": "bagInspectionDialogue.entries.ren-service-key",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.ren-service-key.l0",
+          "who": "direction",
+          "text": "A small roof service key, its tag rubbed smooth except for an R.",
+          "source": "src/game/bag-items.js:310"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.ren-service-key.l1",
+          "who": "you",
+          "text": "Ren says it opens the caged ladder in the gallery: the short way back to the glass roof.",
+          "source": "src/game/bag-items.js:311"
+        }
+      ],
+      "source": "src/game/bag-items.js:310"
+    },
+    "bagInspectionDialogue.entries.pub-service-tray": {
+      "id": "bagInspectionDialogue.entries.pub-service-tray",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.pub-service-tray.l0",
+          "who": "direction",
+          "text": "Two glasses of water on Iona’s wooden tray. The folded cloth keeps their bases from sliding. / The empty glasses from the domino table stand together on Iona’s tray. / Iona’s wooden tray. A folded cloth lies flat on it, damp where the two glasses stood.",
+          "source": "src/game/bag-items.js:314"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.pub-service-tray.l1",
+          "who": "you",
+          "text": "Mavis and Ed, at the table nearest the entrance. These are theirs. / Back to Iona at the bar. She needs the tray as well as the glasses. / Bert and Farah have the empty glasses at the domino table. Then I take the tray back to Iona.",
+          "source": "src/game/bag-items.js:319"
+        }
+      ],
+      "source": "src/game/bag-items.js:314"
+    },
+    "bagInspectionDialogue.entries.pub-opener": {
+      "id": "bagInspectionDialogue.entries.pub-opener",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.pub-opener.l0",
+          "who": "direction",
+          "text": "A flat steel bottle opener. LYRIC is stamped beside the hanging hole.",
+          "source": "src/game/bag-items.js:326"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.pub-opener.l1",
+          "who": "you",
+          "text": "Iona lent it to the staff kitchen. I said I would bring it back to her.",
+          "source": "src/game/bag-items.js:327"
+        }
+      ],
+      "source": "src/game/bag-items.js:326"
+    },
+    "bagInspectionDialogue.entries.pub-orderbook": {
+      "id": "bagInspectionDialogue.entries.pub-orderbook",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.pub-orderbook.l0",
+          "who": "direction",
+          "text": "A brown order book with a red cloth spine. THE LYRIC is written inside the cover.",
+          "source": "src/game/bag-items.js:330"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.pub-orderbook.l1",
+          "who": "you",
+          "text": "The box office borrowed this. Iona wants her father’s supplier numbers back; I can leave the book closed until I give it to her.",
+          "source": "src/game/bag-items.js:331"
+        }
+      ],
+      "source": "src/game/bag-items.js:330"
+    },
+    "bagInspectionDialogue.entries.sheet-music": {
+      "id": "bagInspectionDialogue.entries.sheet-music",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.sheet-music.l0",
+          "who": "direction",
+          "text": "{context.sheet.composer}. {context.sheet.title}. {context.sheet.detail}",
+          "source": "src/game/bag-items.js:338"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.sheet-music.l1",
+          "who": "you",
+          "text": "{context.sheetsCarried} of them in the case now. This is the one on top.",
+          "source": "src/game/bag-items.js:341"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.sheet-music.l2",
+          "who": "you",
+          "text": "Nothing in that pocket.",
+          "source": "src/game/bag-items.js:344"
+        }
+      ],
+      "source": "src/game/bag-items.js:338"
+    },
+    "bagInspectionDialogue.entries.keyring": {
+      "id": "bagInspectionDialogue.entries.keyring",
+      "type": "line",
+      "lines": [
+        {
+          "id": "bagInspectionDialogue.entries.keyring.l0",
+          "who": "direction",
+          "text": "The ring turns once in your palm.",
+          "source": "src/game/bag-items.js:347"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.keyring.l1",
+          "who": "you",
+          "text": "No keys on it. Not yet.",
+          "source": "src/game/bag-items.js:348"
+        }
+      ],
+      "source": "src/game/bag-items.js:347"
+    }
+  }
+}

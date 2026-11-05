@@ -467,6 +467,8 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
     PB:{abortTake:(room)=>calls.push(['abort',room]),sealTake:()=>assert.fail('calibration cannot be sealed')},
     emitProgress:()=>assert.fail('calibration cannot publish job progression'),
     saveCommit:(save)=>calls.push(['save',save.rec]),
+    // The level check is filed on cassette 1 for the first take to go over.
+    fileTakeAttempt:(room)=>{calls.push(['cassette',room]);return null;},
   };
   const stop=runInNewContext(`${mainFunction('cancelRecordingPressureAudio')}\n(${mainFunction('stopTake')})`,context);
   stop();
@@ -475,7 +477,7 @@ test('stopping a completed Get In calibration cannot seal or count a job take', 
   assert.equal(recordingPressureVoices.size,0);
   stop();
   assert.equal(pressureEvents.length,4,'an already stopped recorder cannot repeat cancellation or scheduler reset');
-  assert.deepEqual(calls,[['abort','loading_dock'],['save',{tapes:[]}]]);
+  assert.deepEqual(calls,[['cassette','loading_dock'],['abort','loading_dock'],['save',{tapes:[]}]]);
   assert.equal(context.activeSourceReplayTake,null);
   assert.equal(context.takeRoom,null);
   const tick=mainFunction('tickRecorder');

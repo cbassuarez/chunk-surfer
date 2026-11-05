@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "kind": "shared-coastal-memory-assets",
-  "revision": "coastal-memory-6",
-  "sha256": "29c51302b80687ac4f42fe180a430fa37652cac69396fed6011864ff33e0774d",
-  "bytes": 3121804,
-  "triangles": 35616,
+  "revision": "coastal-memory-8",
+  "sha256": "f5e58f94f2dbc89f8e6ae4aad5186b45e9fb97719778a22e25a19eddece3179c",
+  "bytes": 4289808,
+  "triangles": 40968,
   "meshes": {
     "cm_limestone_coast": {
       "bounds": {
@@ -98,24 +98,27 @@
         "waterSurface": false
       }
     },
-    "cm_wreck_seat": {
+    "cm_shingle_beach": {
       "bounds": {
         "min": [
-          1.5,
-          -8.800000190734863,
-          -31.5
+          -2.639634370803833,
+          -9.823538780212402,
+          -64
         ],
         "max": [
-          21.5,
-          -3.0877606868743896,
-          -9.5
+          26.005563735961914,
+          2.00844407081604,
+          11
         ]
       },
-      "triangles": 1680,
-      "vertices": 899,
+      "triangles": 5400,
+      "vertices": 16200,
       "features": {
-        "type": "settled-van-seabed",
-        "groundPlane": "Exact canonical bodyY0 contact plane; all four actual tyres rest on it."
+        "type": "steep-shingle-beach",
+        "collisionSource": "COASTAL_BEACH_SURFACE",
+        "trianglesExact": true,
+        "waterline": 8.2,
+        "construction": "Backshore berm in the cliff notch, steep shingle face, rhythmic swash cusps and an underwater shelf; the van rests in its own scour."
       }
     },
     "cm_limestone_block": {
@@ -360,6 +363,423 @@
           ]
         ],
         "construction": "Irregular bedrock plan, buried heel, inclined fracture planes and recessed bedding. Perimeter/depth UVs retain grain on vertical faces."
+      }
+    },
+    "cm_beach_boulder_0": {
+      "bounds": {
+        "min": [
+          -1.0199999809265137,
+          0,
+          -1.0199999809265137
+        ],
+        "max": [
+          1.1473112106323242,
+          1,
+          1.097894310951233
+        ]
+      },
+      "triangles": 288,
+      "vertices": 612,
+      "features": {
+        "type": "sea-worn-fractured-boulder",
+        "variant": 0,
+        "physicalFootprint": [
+          [
+            -0.94,
+            -0.5
+          ],
+          [
+            -0.745,
+            -0.735
+          ],
+          [
+            -0.55,
+            -0.97
+          ],
+          [
+            -0.10500000000000001,
+            -0.995
+          ],
+          [
+            0.34,
+            -1.02
+          ],
+          [
+            0.6,
+            -0.8200000000000001
+          ],
+          [
+            0.86,
+            -0.62
+          ],
+          [
+            0.95,
+            -0.25
+          ],
+          [
+            1.04,
+            0.12
+          ],
+          [
+            0.8049999999999999,
+            0.495
+          ],
+          [
+            0.57,
+            0.87
+          ],
+          [
+            0.19499999999999998,
+            0.96
+          ],
+          [
+            -0.18,
+            1.05
+          ],
+          [
+            -0.485,
+            0.855
+          ],
+          [
+            -0.79,
+            0.66
+          ],
+          [
+            -0.905,
+            0.36
+          ],
+          [
+            -1.02,
+            0.06
+          ],
+          [
+            -0.98,
+            -0.22
+          ]
+        ],
+        "construction": "Base ring is the exact collision plan; bulged flanks, planar fracture facets, worn crown; faceted shading."
+      }
+    },
+    "cm_beach_boulder_1": {
+      "bounds": {
+        "min": [
+          -1.038501262664795,
+          0,
+          -1.059999942779541
+        ],
+        "max": [
+          1.0445517301559448,
+          1,
+          1.0552729368209839
+        ]
+      },
+      "triangles": 256,
+      "vertices": 544,
+      "features": {
+        "type": "sea-worn-fractured-boulder",
+        "variant": 1,
+        "physicalFootprint": [
+          [
+            -0.87,
+            -0.72
+          ],
+          [
+            -0.545,
+            -0.89
+          ],
+          [
+            -0.22,
+            -1.06
+          ],
+          [
+            0.21500000000000002,
+            -0.98
+          ],
+          [
+            0.65,
+            -0.9
+          ],
+          [
+            0.8300000000000001,
+            -0.5700000000000001
+          ],
+          [
+            1.01,
+            -0.24
+          ],
+          [
+            0.9199999999999999,
+            0.14500000000000002
+          ],
+          [
+            0.83,
+            0.53
+          ],
+          [
+            0.5349999999999999,
+            0.775
+          ],
+          [
+            0.24,
+            1.02
+          ],
+          [
+            -0.15000000000000002,
+            0.94
+          ],
+          [
+            -0.54,
+            0.86
+          ],
+          [
+            -0.785,
+            0.54
+          ],
+          [
+            -1.03,
+            0.22
+          ],
+          [
+            -0.95,
+            -0.25
+          ]
+        ],
+        "construction": "Base ring is the exact collision plan; bulged flanks, planar fracture facets, worn crown; faceted shading."
+      }
+    },
+    "cm_beach_boulder_2": {
+      "bounds": {
+        "min": [
+          -0.9700000286102295,
+          0,
+          -1.0410369634628296
+        ],
+        "max": [
+          1.043958067893982,
+          1,
+          1.2003251314163208
+        ]
+      },
+      "triangles": 256,
+      "vertices": 544,
+      "features": {
+        "type": "sea-worn-fractured-boulder",
+        "variant": 2,
+        "physicalFootprint": [
+          [
+            -0.97,
+            -0.23
+          ],
+          [
+            -0.8,
+            -0.5700000000000001
+          ],
+          [
+            -0.63,
+            -0.91
+          ],
+          [
+            -0.255,
+            -0.97
+          ],
+          [
+            0.12,
+            -1.03
+          ],
+          [
+            0.47,
+            -0.865
+          ],
+          [
+            0.82,
+            -0.7
+          ],
+          [
+            0.9199999999999999,
+            -0.33499999999999996
+          ],
+          [
+            1.02,
+            0.03
+          ],
+          [
+            0.875,
+            0.41000000000000003
+          ],
+          [
+            0.73,
+            0.79
+          ],
+          [
+            0.35,
+            0.915
+          ],
+          [
+            -0.03,
+            1.04
+          ],
+          [
+            -0.385,
+            0.825
+          ],
+          [
+            -0.74,
+            0.61
+          ],
+          [
+            -0.855,
+            0.19
+          ]
+        ],
+        "construction": "Base ring is the exact collision plan; bulged flanks, planar fracture facets, worn crown; faceted shading."
+      }
+    },
+    "cm_beach_boulder_3": {
+      "bounds": {
+        "min": [
+          -1.065281867980957,
+          0,
+          -1.1063823699951172
+        ],
+        "max": [
+          1.0299999713897705,
+          1,
+          1.06984281539917
+        ]
+      },
+      "triangles": 256,
+      "vertices": 544,
+      "features": {
+        "type": "sea-worn-fractured-boulder",
+        "variant": 3,
+        "physicalFootprint": [
+          [
+            -0.83,
+            -0.78
+          ],
+          [
+            -0.45999999999999996,
+            -0.91
+          ],
+          [
+            -0.09,
+            -1.04
+          ],
+          [
+            0.25,
+            -0.95
+          ],
+          [
+            0.59,
+            -0.86
+          ],
+          [
+            0.81,
+            -0.51
+          ],
+          [
+            1.03,
+            -0.16
+          ],
+          [
+            0.845,
+            0.135
+          ],
+          [
+            0.66,
+            0.43
+          ],
+          [
+            0.525,
+            0.73
+          ],
+          [
+            0.39,
+            1.03
+          ],
+          [
+            -0.009999999999999981,
+            0.9750000000000001
+          ],
+          [
+            -0.41,
+            0.92
+          ],
+          [
+            -0.695,
+            0.63
+          ],
+          [
+            -0.98,
+            0.34
+          ],
+          [
+            -0.905,
+            -0.22
+          ]
+        ],
+        "construction": "Base ring is the exact collision plan; bulged flanks, planar fracture facets, worn crown; faceted shading."
+      }
+    },
+    "cm_driftwood": {
+      "bounds": {
+        "min": [
+          -0.5139101147651672,
+          -0.019139673560857773,
+          -0.14414213597774506
+        ],
+        "max": [
+          0.5072905421257019,
+          0.1556316614151001,
+          0.17905263602733612
+        ]
+      },
+      "triangles": 304,
+      "vertices": 760,
+      "features": {
+        "type": "bleached-driftwood-log",
+        "lengthMetres": 1,
+        "construction": "Unit length along +X (scaled per instance), tapering bent trunk, two snapped limbs."
+      }
+    },
+    "cm_wrack_strand": {
+      "bounds": {
+        "min": [
+          -0.24162262678146362,
+          0.0040435791015625,
+          -0.46366217732429504
+        ],
+        "max": [
+          0.24553652107715607,
+          0.01999153010547161,
+          0.46366217732429504
+        ]
+      },
+      "triangles": 100,
+      "vertices": 110,
+      "features": {
+        "type": "kelp-wrack-strand",
+        "construction": "Unit-length flattened ribbons of torn kelp along +Z, a few centimetres proud of the shingle."
+      }
+    },
+    "cm_van_hubcap": {
+      "bounds": {
+        "min": [
+          -0.1899999976158142,
+          0.004000000189989805,
+          -0.1899999976158142
+        ],
+        "max": [
+          0.1899999976158142,
+          0.05000000074505806,
+          0.1899999976158142
+        ]
+      },
+      "triangles": 172,
+      "vertices": 364,
+      "features": {
+        "type": "pressed-steel-wheel-trim",
+        "radiusMetres": 0.19
       }
     },
     "cm_foam_lace": {
@@ -826,6 +1246,91 @@
       "albedoSha256": "20fd8e80bce06f5f13e226e819533b4ab3b356e6a9354574a09d799907b0a411",
       "normalSha256": "b3319c9140f1f66312cd4f92a398da5e249ae0e261944e51a1823b2f3631976f",
       "ormSha256": "349325ee0a8a90a7e107990438683dc52c1fca6afb225f1deeaf7050f70bbcb3"
+    },
+    {
+      "key": "shingle",
+      "index": 14,
+      "baseLinear": [
+        0.215,
+        0.215,
+        0.2
+      ],
+      "roughness": 0.9,
+      "metallic": 0,
+      "repeatMetres": 0.55,
+      "reliefMetres": 0.007,
+      "mapSize": 256,
+      "albedoSha256": "29b36130af5e2b2d7885cf811ad83c87f7c57a572258fc1915e176f741d74a33",
+      "normalSha256": "e992c7f9afc01822678789213ab94cd9fbcecb3958799bd3782852fd2572600e",
+      "ormSha256": "c6f6865078c43ddcfffed1130f4ec9fba65e6a095177c099eb38ce0288670aa3"
+    },
+    {
+      "key": "wetShingle",
+      "index": 15,
+      "baseLinear": [
+        0.085,
+        0.09,
+        0.085
+      ],
+      "roughness": 0.32,
+      "metallic": 0,
+      "repeatMetres": 0.55,
+      "reliefMetres": 0.006,
+      "mapSize": 256,
+      "albedoSha256": "3135ed386e18eb1e383fc3c9c87c3a9a589021c2a324e4ee23c24b941ac3554a",
+      "normalSha256": "05ce5e0b07c320ef310cbc8758b0496f89aa0a730b0fdf82e039b076650615df",
+      "ormSha256": "312f7e3634ed701962cb4f7ed8bd047688b6563007f844b3e6c4f2cde52cd9d9"
+    },
+    {
+      "key": "sand",
+      "index": 16,
+      "baseLinear": [
+        0.15,
+        0.14,
+        0.11
+      ],
+      "roughness": 0.86,
+      "metallic": 0,
+      "repeatMetres": 1.3,
+      "reliefMetres": 0.0018,
+      "mapSize": 128,
+      "albedoSha256": "af59efd6613e9b3aa40601aaac422dae39999fa0a9299e53eb6bbacdc2a9f11f",
+      "normalSha256": "905555fa5e72fb2ded719ab27b820ded7fbc658613dd206d0ae456ae5a528d95",
+      "ormSha256": "f1159cb05ff19a8de684a5298acf61e8f1a0b02ece4f9672b277491aa431c3ae"
+    },
+    {
+      "key": "driftwood",
+      "index": 17,
+      "baseLinear": [
+        0.33,
+        0.315,
+        0.28
+      ],
+      "roughness": 0.84,
+      "metallic": 0,
+      "repeatMetres": 0.45,
+      "reliefMetres": 0.0022,
+      "mapSize": 128,
+      "albedoSha256": "0a37f0c875c64f99e6c11a42a2d2c1b4e69cf3a699fde803bbb28758e20fa467",
+      "normalSha256": "e47a0ad2b7326aaac1afe1e19a01825dac59708055e138bf2497d46c05a416b0",
+      "ormSha256": "bd7d1963074837498b0b6180f915f299a1eea4f7ece033a9790ff4c3118ec0a9"
+    },
+    {
+      "key": "kelp",
+      "index": 18,
+      "baseLinear": [
+        0.04,
+        0.045,
+        0.022
+      ],
+      "roughness": 0.38,
+      "metallic": 0,
+      "repeatMetres": 0.35,
+      "reliefMetres": 0.0012,
+      "mapSize": 128,
+      "albedoSha256": "fe360d7421f7890a44a9ba4c1597d87cf6a78846e0019862cb5dcf5ad1c44acd",
+      "normalSha256": "49a00cdee455920c4f5d12a1d27a244fe15ae46bee64f7fc02d984414cd65c6a",
+      "ormSha256": "b799582452d2dc918b407ab2f49c5c9f66d7f59bec9470dcd508c188113674b6"
     }
   ],
   "frame": {
@@ -851,21 +1356,21 @@
       1
     ],
     "settledBodyLocal": [
-      0.9968017063026194,
+      0.9393727128473789,
       0,
-      0.0799146939691727,
+      0.34289780745545134,
       0,
-      0.009566764409868155,
-      0.9928086358538663,
-      -0.11932933249084769,
+      0.26860107983211856,
+      0.6216099682706644,
+      -0.7358359241431227,
       0,
-      -0.07933999830421354,
-      0.11971220728891936,
-      0.9896333422511099,
+      -0.2131486952124635,
+      0.7833269096274834,
+      0.5839234422273871,
       0,
-      11.491868250251612,
-      -3.793887340475786,
-      -20.398570067382778,
+      15.217475621347903,
+      -5.972568974884069,
+      -23.13486693117174,
       1
     ],
     "actualVanDimensions": [
@@ -882,7 +1387,7 @@
     "alphaBlending": false,
     "opaqueSeaMesh": false,
     "mipmapSampler": 9987,
-    "textureMaps": 42
+    "textureMaps": 57
   },
   "references": [
     {

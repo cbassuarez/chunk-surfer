@@ -7,8 +7,11 @@ import {sourceBlueprintLighting} from './source-blueprint-print.js';
 import {THRESHOLD_GAG_MESHES} from '../data/threshold-gag.js';
 import {sixNothingnessRenderFrame} from './six-nothingness-frame.js';
 import {sixNothingnessGeometry,sixGeometryBounds} from './six-nothingness-models.js';
+import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
 
-const GAG_PACK='assets/ellery-threshold-gag.glb',FAR=320;
+const GAG_PACK='assets/ellery-threshold-gag.glb',FIGURE_PACK='assets/conservatory-props.glb',FAR=320;
+// The bodies a boo or a fault can bring with it. They live in the base pack.
+const FIGURES=Object.freeze(['arm_out','head_turn','symmetric'].map(meshForApparitionPose));
 const identity=()=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
 
 function meshPayload(piece){
@@ -38,7 +41,7 @@ export function installSixNothingnessMeshes(gl,pack){
 export function createSixNothingnessRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{}}={}){
   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null;
   const rangeOwner=Symbol('six-nothingness');
-  const required=[...sixNothingnessGeometry().map(row=>row.name),...THRESHOLD_GAG_MESHES],
+  const required=[...sixNothingnessGeometry().map(row=>row.name),...THRESHOLD_GAG_MESHES,...FIGURES],
     resident=()=>{const catalog=new Set(props.propMeshCatalog?.()||[]);return required.every(mesh=>catalog.has(mesh));};
   function clearSource(){
     for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
@@ -53,7 +56,10 @@ export function createSixNothingnessRenderer({renderer=R3,props=P3,resolveAsset=
       if(await renderer.r3dBasePropsReady?.()===false)throw Error('The base model catalog is unavailable.');
       if(released)return false;
       if(props.installAuthoredPropMeshes?.(installSixNothingnessMeshes)===false)throw Error('The nothingness mesh context is unavailable.');
-      if(!resident())await props.addPropPack(resolveAsset(GAG_PACK));
+      const has=name=>new Set(props.propMeshCatalog?.()||[]).has(name);
+      if(THRESHOLD_GAG_MESHES.some(name=>!has(name)))await props.addPropPack(resolveAsset(GAG_PACK));
+      if(released)return false;
+      if(FIGURES.some(name=>!has(name)))await props.addPropPack(resolveAsset(FIGURE_PACK));
       if(released)return false;
       const catalog=new Set(props.propMeshCatalog?.()||[]),missing=required.filter(mesh=>!catalog.has(mesh));
       if(missing.length)throw Error('Nothingness meshes missing: '+missing.join(', '));

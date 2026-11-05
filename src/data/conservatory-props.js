@@ -1643,7 +1643,9 @@ export const CONSERVATORY_PROPS = [
   // barre taken out; what the first-take tree and page 2 describe. Its surface
   // is acousticFoam (legend.js) and it is no longer sprung (SPRUNG_ZONES). The
   // south wall, with the way in, is left bare: three walls, as the tree says.
-  P('b3-session-case','b3_flight_case',8.0,8.0,Math.PI/2,{inspect:inspect('A flight case for the session microphones. The tape on its lid is marked with the room and the date they meant to come back.','Packed properly. Not taken away.')}),
+  // The B3 tape store (docs/plans/work-order.md): two blank cassettes, once.
+  P('b3-session-case','b3_flight_case',8.0,8.0,Math.PI/2,{action:'take-b3-cassettes',interaction:'action',interactionPriority:2,label:'flight case',
+    inspect:inspect('A flight case for the session microphones. The tape on its lid is marked with the room and the date they meant to come back. There is a pocket in the lid for blank stock.','Packed properly. Not taken away.')}),
   P('b3-session-boom-1','b3_boom_microphone',12.4,11.5,.18,{inspect:inspect('A boom stand left at working height, its microphone still in the clip. The cable ends loose on the floor.','Everything in place except the connection.')}),
   P('b3-session-boom-2','b3_boom_microphone',14.6,13.8,-.38,{interactive:false}),
   P('b3-session-folded-mic','b3_folded_mic_stand',8.4,9.2,.15,{interactive:false}),

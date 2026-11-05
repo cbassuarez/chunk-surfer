@@ -49,10 +49,10 @@ void main(){
 const FRAG=`#version 300 es
 precision highp float;
 in vec2 vUv;in vec3 vWorld;
-uniform sampler2D uPage,uMaterial;
+uniform sampler2D uPage,uMaterial,uInk;
 uniform vec2 uMaterialTexel;
 uniform vec4 uHandling;
-uniform float uSeed,uUseMaterial;
+uniform float uSeed,uUseMaterial,uUseInk;
 out vec4 o;
 float hash21(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
 void main(){
@@ -69,6 +69,10 @@ void main(){
   // inversion displayed the sheet upside down.
   vec2 tuv=vUv;
   vec3 albedo=texture(uPage,tuv).rgb;
+  // His biro, drawn live in page space (src/game/work-order-ink.js). It lies
+  // on the printed face; the rear only ever sees it ghost through below.
+  vec4 pen=uUseInk>.5?texture(uInk,tuv):vec4(0.0);
+  albedo=mix(albedo,pen.rgb,pen.a);
   vec3 mat=uUseMaterial>.5?texture(uMaterial,tuv).rgb:vec3(.86,.502,.09);
   float rough=clamp(mat.r,.42,.96);
   float h=mat.g-.5;
@@ -96,7 +100,7 @@ void main(){
 }`;
 
 let canvas=null,gl=null,program=null,vao=null,indexCount=0,failed=null;
-let pageTexture=null,materialTexture=null,lastPageImage=null,lastMaterialImage=null;
+let pageTexture=null,materialTexture=null,inkTexture=null,lastPageImage=null,lastMaterialImage=null,lastInkImage=null,lastInkVersion=-1;
 const U=new Map();
 
 function compile(type,source,label){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){const log=gl.getShaderInfoLog(s)||'unknown error';gl.deleteShader(s);throw new Error(`paper3d ${label} compile: ${log}`);}return s;}
@@ -129,16 +133,19 @@ function translate(x,y,z){const m=ident();m[12]=x;m[13]=y;m[14]=z;return m;}
 function perspective(fov,aspect,near=.05,far=4){const f=1/Math.tan(fov/2),m=new Float32Array(16);m[0]=f/aspect;m[5]=f;m[10]=(far+near)/(near-far);m[11]=-1;m[14]=(2*far*near)/(near-far);return m;}
 function size(w,h){const W=Math.max(320,Math.min(1536,Math.round(w))),H=Math.max(454,Math.min(2172,Math.round(h)));if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H;}gl.viewport(0,0,W,H);return [W,H];}
 
-export function paper3dRender({image,materialImage=null,width=900,height=1273,handlingVector=[-1,0,0,0],seed=0,bow=.0009,edgeCurl=.0007,yaw=0,pitch=0,roll=0,turn=0,turnDir=1}={}){
+export function paper3dRender({image,materialImage=null,inkImage=null,inkVersion=0,width=900,height=1273,handlingVector=[-1,0,0,0],seed=0,bow=.0009,edgeCurl=.0007,yaw=0,pitch=0,roll=0,turn=0,turnDir=1}={}){
   if(!image||!init())return null;
   try{
     const [W,H]=size(width,height);if(lastPageImage!==image){pageTexture=upload(image,pageTexture);lastPageImage=image;}if(materialImage&&lastMaterialImage!==materialImage){materialTexture=uploadMaterial(materialImage,materialTexture);lastMaterialImage=materialImage;}
+    // The ink changes while the pen is writing; re-upload only when it does.
+    if(inkImage&&(lastInkImage!==inkImage||lastInkVersion!==inkVersion)){inkTexture=upload(inkImage,inkTexture);lastInkImage=inkImage;lastInkVersion=inkVersion;}
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.bindVertexArray(vao);
     let model=translate(0,0,-.515);model=mul(model,rotZ(roll));model=mul(model,rotY(yaw));model=mul(model,rotX(pitch));
     const proj=perspective(FOV,W/H);
     gl.uniformMatrix4fv(uniform('uModel'),false,model);gl.uniformMatrix4fv(uniform('uProj'),false,proj);gl.uniform4fv(uniform('uHandling'),new Float32Array(handlingVector||[-1,0,0,0]));gl.uniform4f(uniform('uShape'),bow,edgeCurl,Math.max(0,Math.min(1,turn)),turnDir>=0?1:-1);gl.uniform1f(uniform('uSeed'),Number(seed)||0);
     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,pageTexture);gl.uniform1i(uniform('uPage'),0);
     gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,materialTexture);gl.uniform1i(uniform('uMaterial'),1);gl.uniform1f(uniform('uUseMaterial'),materialImage&&materialTexture?1:0);gl.uniform2f(uniform('uMaterialTexel'),materialImage?1/Math.max(1,materialImage.naturalWidth||materialImage.width):1/1024,materialImage?1/Math.max(1,materialImage.naturalHeight||materialImage.height):1/1448);
+    gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,inkImage?inkTexture:null);gl.uniform1i(uniform('uInk'),2);gl.uniform1f(uniform('uUseInk'),inkImage&&inkTexture?1:0);
     gl.drawElements(gl.TRIANGLES,indexCount,gl.UNSIGNED_SHORT,0);gl.bindVertexArray(null);return canvas;
   }catch(error){failed=error instanceof Error?error:new Error(String(error));console.warn('[paper3d] frame failed; using 2-D fallback:',failed);return null;}
 }

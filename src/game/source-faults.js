@@ -8,6 +8,13 @@ function hash(value=''){
   return out/0xffffffff;
 }
 
+// One bad-sector run every four bars, a bar and a half long, in one of four
+// lanes. The desktop terminals fail on the same score (window-choreography
+// sourceFault), so these are shared rather than restated there.
+export const SOURCE_FAULT_RUN_MS=sourceRiftBarsMs(1.5);
+export const SOURCE_FAULT_RUN_PERIOD_MS=sourceRiftBarsMs(4);
+export const SOURCE_FAULT_LANES=4;
+
 // Source corruption is presentation state. The body, collision plan and every
 // interaction probe keep using the unmodified runtime geometry.
 export function sourceFaultFrame({
@@ -32,8 +39,8 @@ export function sourceFaultFrame({
   // recurs quickly enough that a player cannot finish the space without seeing
   // one. Seeded phase/lane/direction keep capture and tests reproducible. Each
   // run lands on the practice wing's bar: the same wound keeps the same time.
-  const runPeriodMs=sourceRiftBarsMs(4);
-  const runDurationMs=sourceRiftBarsMs(1.5);
+  const runPeriodMs=SOURCE_FAULT_RUN_PERIOD_MS;
+  const runDurationMs=SOURCE_FAULT_RUN_MS;
   const offset=sourceRiftBarsMs(Math.floor(hash(`overflow:${seed}`)*4));
   const scoredTime=now+offset;
   const overflowRun=Math.floor(scoredTime/runPeriodMs);
@@ -45,7 +52,7 @@ export function sourceFaultFrame({
     : 0;
   const rawHead=overflowActive?runProgress:0;
   const overflowHead=reducedMotion?Math.round(rawHead*6)/6:rawHead;
-  const overflowLane=Math.min(3,Math.floor(hash(`${seed}:${overflowRun}:lane`)*4));
+  const overflowLane=Math.min(SOURCE_FAULT_LANES-1,Math.floor(hash(`${seed}:${overflowRun}:lane`)*SOURCE_FAULT_LANES));
   const overflowDirection=hash(`${seed}:${overflowRun}:direction`)<.5?-1:1;
   return Object.freeze({
     active:true,nvme,ps2,transition,geometry:clamp(.025+transition*.22),slot,seed,

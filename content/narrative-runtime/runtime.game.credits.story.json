@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.credits",
+  "title": "Runtime · game/credits.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "makeCreditsScene.render",
+  "entries": [
+    "makeCreditsScene.render"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/credits.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "makeCreditsScene.render": {
+      "id": "makeCreditsScene.render",
+      "type": "line",
+      "lines": [
+        {
+          "id": "makeCreditsScene.render.l0",
+          "who": "thought",
+          "text": "CHUNK SURFER",
+          "source": "src/game/credits.js:251"
+        },
+        {
+          "id": "makeCreditsScene.render.l1",
+          "who": "thought",
+          "text": "THANK YOU FOR LISTENING.",
+          "source": "src/game/credits.js:253"
+        }
+      ],
+      "source": "src/game/credits.js:251"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.world-inscriptions",
+  "title": "Runtime · data/world-inscriptions.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "WORLD_INSCRIPTIONS",
+  "entries": [
+    "WORLD_INSCRIPTIONS"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/world-inscriptions.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "WORLD_INSCRIPTIONS": {
+      "id": "WORLD_INSCRIPTIONS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "WORLD_INSCRIPTIONS.l0",
+          "who": "thought",
+          "text": "PUBLIC ENTRANCE",
+          "source": "src/data/world-inscriptions.js:52"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l1",
+          "who": "thought",
+          "text": "— CLOSED",
+          "source": "src/data/world-inscriptions.js:52"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l2",
+          "who": "thought",
+          "text": "PUBLIC ROOMS:",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l3",
+          "who": "thought",
+          "text": "HALL,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l4",
+          "who": "thought",
+          "text": "BATHS,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l5",
+          "who": "thought",
+          "text": "CHAPEL,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l6",
+          "who": "thought",
+          "text": "PRACTICE WING",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l7",
+          "who": "thought",
+          "text": "CONCERT HALL — STALLS / GALLERIES",
+          "source": "src/data/world-inscriptions.js:63"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l8",
+          "who": "thought",
+          "text": "TOWER — RINGING CHAMBER",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l9",
+          "who": "thought",
+          "text": "— NO ADMITTANCE TO THE PUBLIC",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l10",
+          "who": "thought",
+          "text": "BELLS UP",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l11",
+          "who": "thought",
+          "text": "THANK YOU FOR",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l12",
+          "who": "thought",
+          "text": "HELPING US KEEP",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l13",
+          "who": "thought",
+          "text": "THE BELLS SOUNDING",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l14",
+          "who": "thought",
+          "text": "HEADER 3 — ISOLATION",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l15",
+          "who": "thought",
+          "text": "Back nut, then gland, then handwheel,",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l16",
+          "who": "thought",
+          "text": "in that order, all three home before",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l17",
+          "who": "thought",
+          "text": "the line is dead. Clockwise to close.",
+          "source": "src/data/world-inscriptions.js:113"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l18",
+          "who": "thought",
+          "text": "the bypass cock feeds the return and",
+          "source": "src/data/world-inscriptions.js:113"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l19",
+          "who": "thought",
+          "text": "is NOT part of this header.",
+          "source": "src/data/world-inscriptions.js:113"
+        }
+      ],
+      "source": "src/data/world-inscriptions.js:52"
+    }
+  }
+}

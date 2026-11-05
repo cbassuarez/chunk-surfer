@@ -317,7 +317,16 @@
     .window-composition-pane[data-shader="nvme-sector"].flash-reduced::after{filter:brightness(.62);}
     .window-composition-pane[data-shader="nvme-sector"].flash-off::after{filter:brightness(.32);}
     .window-composition-pane[data-shader="terminal"]{pointer-events:none;cursor:default;background:#171743;}
-    .window-composition-pane[data-shader="terminal"]::after{display:none;}
+    /* The in-canvas terminals take the world's bad-sector runs as a band of
+       dropped and held rows sweeping the pane (the desktop shader tears in
+       whole cells; window-media-surface.js). Invisible at intensity 0. */
+    .window-composition-pane[data-shader="terminal"]::after{
+      opacity:var(--fault-intensity,0);mix-blend-mode:normal;
+      background:linear-gradient(180deg,transparent 0 40%,rgba(41,34,150,.96) 40% 47%,rgba(197,200,208,.0) 47% 55%,rgba(5,7,14,.92) 55% 58%,transparent 58%) 0 0/100% 260% no-repeat;
+      animation:terminal-sector-run 1.56s steps(12,end) infinite;
+    }
+    @keyframes terminal-sector-run{from{background-position:0 100%}to{background-position:0 0}}
+    @media (prefers-reduced-motion:reduce){.window-composition-pane[data-shader="terminal"]::after{animation:none;background-position:0 50%;}}
     .window-composition-pane[data-shader="terminal"]>img{filter:none;image-rendering:auto;object-fit:contain;}
     .window-composition-pane[data-shader="terminal"]>span{display:grid;place-items:center;width:100%;height:100%;font:22px monospace;letter-spacing:.08em;color:#e1e4e8;}
     .window-composition-procedural{width:100%;height:100%;background:#010207;position:relative;}

@@ -133,6 +133,8 @@ export function openingCabInspectionModel(value={},id='job-papers'){
   const document=object.id==='job-papers'?state.workOrder||null:OPENING_CAB_PAPERS.find(paper=>paper.id===object.documentId)||null,
     radio=object.kind==='radio'?state.cabRadio||{}:null;
   return{id:object.id,kind:object.kind,label:object.label,readOnly:object.kind!=='radio',workOrder:object.id==='job-papers'?document:null,document,
+    // The shift is ticked on sheet 1 of the work order, here, before anything else.
+    shiftPending:object.id==='job-papers'&&state.shiftPending===true,
     accepted:workOrderAccepted(flags),instrument,facts:object.kind==='status'?facts:[],techniques:object.kind==='status'?techniques:[],
     notes:object.kind==='notes'?notes:[],rehearsalNotes:object.kind==='notes'?[...OPENING_CAB_REHEARSAL_NOTES]:[],destination:object.kind==='notes'?text(state.guidance?.label):'',
     radio:radio?{on:typeof radio.on==='boolean'?radio.on:null,playing:radio.playing===true,station:text(radio.station),programme:text(radio.programme),
@@ -168,7 +170,7 @@ export function openingCabRadioLayout({cols=80,rows=30}={},radio={},enabled=true
     controls:[...presets,...actions],hint:{x:panel.body.x,y:panel.footer.y-1.0,w:panel.body.w}};
 }
 
-export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({}),onClose=()=>{},onCabRadioAction=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
+export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({}),onClose=()=>{},onCabRadioAction=null,onChooseShift=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
   const object=objectFor(id)||objectFor('job-papers');let scroll=0,closed=false,reader=null,readerId=null,inspection=null,inspectionKey=null;
   const hits=createHitRegions();let pointerPress=null,radioFocus=null;
   const model=()=>openingCabInspectionModel(getState(),object.id);
@@ -184,6 +186,8 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     const layout=object.kind==='radio'?openingCabRadioLayout(uiSize(),model().radio,typeof onCabRadioAction==='function'):null,
       l=layout?.panel||openingCabInspectionLayout(uiSize());hits.reset();
     hits.add({id:'cab-object:close',label:'RETURN TO CAB',x:l.footer.x,y:l.footer.y,w:Math.min(24,l.footer.w),h:1.4,onClick:close});
+    if(object.id==='job-papers'&&typeof onChooseShift==='function'&&model().shiftPending)
+      hits.add({id:'cab-object:tick-shift',label:'TICK A SHIFT',x:l.footer.x+26,y:l.footer.y,w:Math.min(20,Math.max(1,l.footer.w-26)),h:1.4,onClick:()=>onChooseShift()});
     for(const control of layout?.controls||[])hits.add({...control,disabled:!control.enabled,onClick:()=>radioAction(control.action)});
     return l;
   }
@@ -218,7 +222,9 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
         return true;
       }
       if(k==='tab'||/^(?:digit)?[1-9]$/.test(k)||['tabNext','tabPrev'].includes(action))return true;
-      const m=model();if(object.kind==='document'){paper(m)?.key?.(e);return true;}
+      const m=model();
+      if(object.id==='job-papers'&&m.shiftPending&&typeof onChooseShift==='function'&&k==='t'&&!e.repeat){onChooseShift();return true;}
+      if(object.kind==='document'){paper(m)?.key?.(e);return true;}
       if(object.kind==='instrument'){instrument(m)?.key?.(e);return true;}
       const down=k==='arrowdown'||k==='s'||action==='selectDown',up=k==='arrowup'||k==='w'||action==='selectUp';
       if(down)scroll++;else if(up)scroll=Math.max(0,scroll-1);else if(k==='pagedown')scroll+=6;else if(k==='pageup')scroll=Math.max(0,scroll-6);return true;
@@ -232,7 +238,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     },
     render(){
       if(closed)return;const m=model(),l=regions();
-      if(m.kind==='document'&&paper(m)){reader.render();uiText(l.x,1,m.id==='job-papers'?(m.accepted?'4417-C / WORK ORDER':'4417-C / BEFORE CHECK-IN'):m.document.title.toUpperCase(),'ui-label',.85,l.w);uiText(l.footer.x,l.footer.y,'E RETURN TO CAB','ui-label',.85,l.footer.w);return;}
+      if(m.kind==='document'&&paper(m)){reader.render();uiText(l.x,1,m.id==='job-papers'?(m.accepted?'4417-C / WORK ORDER':'4417-C / BEFORE CHECK-IN'):m.document.title.toUpperCase(),'ui-label',.85,l.w);uiText(l.footer.x,l.footer.y,m.shiftPending&&typeof onChooseShift==='function'?'E RETURN TO CAB    T TICK A SHIFT':'E RETURN TO CAB','ui-label',.85,l.footer.w);return;}
       uiScrim(m.kind==='status'?.76:.84);
       uiDraw(({ctx,cellW,cellH,dpr})=>{
         const x=l.x*cellW*dpr,y=l.y*cellH*dpr,w=l.w*cellW*dpr,h=l.h*cellH*dpr;

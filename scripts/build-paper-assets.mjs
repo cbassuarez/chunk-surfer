@@ -9,6 +9,9 @@ import sharp from 'sharp';
 import {buildPaperPigment} from './build-paper-pigment.mjs';
 import { WORK_ORDER, PAGES } from '../src/data/conservatory-script.js';
 import { SOURCE_PAGES, sourcePageDocument } from '../src/data/source-pages.js';
+import { WORK_ORDER_SHEET, WORK_ORDER_SHIFTS } from '../src/data/work-order-sheet.js';
+import { CASSETTES_ISSUED } from '../src/game/cassette-ledger.js';
+import { STUDENT_STRIKE_BAKED_RECORDS } from '../src/generated/student-strike-records.js';
 import {
   PAPER_FORMAT, PAPER_ISSUER, PAPER_REPRODUCTION, PAPER_STOCK, PAPER_TEMPLATE, PAPER_PRINT_PROCESS,
   normalizePhysicalDocument, validateBritishPaperDocument, paperHandlingVector,
@@ -159,6 +162,8 @@ function entryCost(entry){
 function paginate(doc,physical){
   const all=logicalEntries(doc),pages=[[]];let used=0,capacity=pageCapacity(physical.template,doc);
   for(const entry of all){const c=entryCost(entry);if(pages.at(-1).length&&used+c>capacity){pages.push([]);used=0;}pages.at(-1).push(entry);used+=c;}
+  // A checklist sheet carries no body text: the prose starts on sheet 2.
+  if(doc?.paper?.checklistSheet)return [[],...pages];
   return pages.length?pages:[[]];
 }
 function takeFields(entries,names=null){
@@ -384,20 +389,62 @@ function fieldRow(x,y,w,labelText,value,{labelW=32,h=8,valueKind='mono',shade=tr
   lines.forEach((row,i)=>{out+=fieldValue(valueX+1.4,baseline+i*4.35,row,{size:TYPE.fieldValue,kind:valueKind});});
   return out;
 }
+// SHEET 1, TYPED AS A CHECKLIST (BC2, Seb 2026-11-04). Every position comes
+// from src/data/work-order-sheet.js, which his live ink also reads, so the
+// form prints empty and his ticks, strikes and notes land on it at runtime.
+function cassettePictogram(x,y,w,h){
+  const o=.55,circle=(cx)=>`<circle cx="${cx.toFixed(2)}" cy="${(y+h*.45).toFixed(2)}" r="${(h*.2).toFixed(2)}" data-process="preprinted-stationery" fill="none" stroke="#454441" stroke-opacity="${o}" stroke-width=".22"/>`;
+  return box(x,y,w,h,{opacity:o,width:.26})+circle(x+w*.3)+circle(x+w*.7)+line(x+w*.18,y+h*.8,x+w*.82,y+h*.8,{opacity:o*.8,width:.2});
+}
+function templateWorkOrderChecklist(doc,ctx){
+  const {issuer,pageIndex,totalPages,copy,repro}=ctx,ref=workReference(doc),G=WORK_ORDER_SHEET,T=G.type;
+  const typed=(x,y,value,{size=T.headPt,weight=400,opacity=1}={})=>text(x,y,value,{size,weight,kind:'mono',color:'#232321',opacity});
+  const fields=new Map(logicalEntries(doc).filter(e=>e.kind==='field').map(e=>[e.label.toUpperCase(),e.value]));
+  let out=headerSvg(issuer,{copy,repro,showAddress:true});
+  out+=heading(17,31.5,'WORKS ORDER',{size:13.4});
+  out+=text(193,31.5,`Works Ref.  ${ref}`,{size:9.0,kind:'serif',anchor:'end',weight:600,process:'preprinted-stationery'});
+  out+=fieldRow(17,35,176,'SITE',fields.get('SITE')||'',{labelW:28,h:7.5});
+  out+=fieldRow(17,42.5,176,'WINDOW',fields.get('WINDOW')||'',{labelW:28,h:7.5});
+  out+=typed(G.shiftHeading.x,G.shiftHeading.y,'SHIFT   (TICK ONE. SETS THE CASSETTES ISSUED.)');
+  for(const shift of G.shifts){
+    out+=typed(shift.x,shift.y,`[  ] ${shift.name}`,{size:T.shiftPt,weight:700});
+    out+=typed(shift.countX,shift.y,`${String(CASSETTES_ISSUED[shift.id]).padStart(2,' ')} CASS.`);
+    out+=typed(shift.subX,shift.subY,shift.sub,{size:7.4,opacity:.8});
+  }
+  out+=typed(G.roomHeading.x,G.roomHeading.y,'ROOMS   (SIXTY SECONDS EACH, UNBROKEN)');
+  for(const room of G.rooms){
+    out+=line(17,room.top,193,room.top,{opacity:.30,width:.2});
+    out+=typed(17,room.baseline,`[  ]  ${room.index+1}  ${room.name}`,{size:T.roomPt,weight:700});
+    for(const y of room.rules)out+=line(room.notes.x0-1,y,193,y,{opacity:.16,width:.14});
+  }
+  out+=line(17,G.roomsBottom,193,G.roomsBottom,{opacity:.30,width:.2});
+  out+=typed(G.stripHeading.x,G.stripHeading.y,'CASSETTES   (STRIKE ONE FOR EVERY TAKE, KEPT OR NOT)');
+  out+=typed(G.issued.labelX,G.issued.y,'ISSUED')+line(G.issued.lineX0,G.issued.y+1.2,G.issued.lineX1,G.issued.y+1.2,{opacity:.38});
+  for(const c of G.cassettes){out+=cassettePictogram(c.x,c.y,c.w,c.h);out+=typed(c.x+.6,c.y-1.1,String(c.n),{size:6.2,opacity:.8});}
+  out+=typed(G.conditions.x,G.conditions.y,'Rejected takes are not paid. Cassettes are not replaced.',{size:T.smallPt});
+  out+=typed(G.conditions.x,G.conditions.y+5,'Five clean minutes received satisfies the account.',{size:T.smallPt});
+  const R=G.received;
+  out+=label(17,R.y,'RECEIVED BY CONTRACTOR')+line(R.lineX0,R.y+1.2,R.lineX1,R.y+1.2,{opacity:.38});
+  out+=label(R.timeLabelX,R.y,'TIME')+line(R.timeX0,R.y+1.2,R.timeX1,R.y+1.2,{opacity:.38});
+  return out+documentFooter(issuer,pageIndex,totalPages,{ref,copy,repro});
+}
 function templateWorkOrder(doc,entries,ctx){
-  const {issuer,pageIndex,totalPages,copy,repro}=ctx,ref=workReference(doc);let out=headerSvg(issuer,{copy,repro,showAddress:pageIndex===0});
-  const titleY=pageIndex===0?31.5:28.5;
-  out+=heading(17,titleY,pageIndex===0?'WORKS ORDER':'WORKS ORDER — CONTINUATION',{size:13.4});
+  if(doc?.paper?.checklistSheet&&ctx.pageIndex===0)return templateWorkOrderChecklist(doc,ctx);
+  // With a checklist in front, the instructions begin on sheet 2.
+  const prose=doc?.paper?.checklistSheet?ctx.pageIndex-1:ctx.pageIndex;
+  const {issuer,pageIndex,totalPages,copy,repro}=ctx,ref=workReference(doc);let out=headerSvg(issuer,{copy,repro,showAddress:prose===0});
+  const titleY=prose===0?31.5:28.5;
+  out+=heading(17,titleY,prose===0?(doc?.paper?.checklistSheet?'WORKS ORDER — INSTRUCTIONS':'WORKS ORDER'):'WORKS ORDER — CONTINUATION',{size:13.4});
   out+=text(193,titleY,`Works Ref.  ${ref}`,{size:9.0,kind:'serif',anchor:'end',weight:600,process:'preprinted-stationery'});
   const {map,rest}=takeFields(entries,['SITE','ADDRESS','WINDOW','DELIVER','AUTHORISED','RETURNED']);
   let y=44;
-  if(pageIndex===0){
+  if(prose===0){
     for(const k of ['SITE','ADDRESS','WINDOW','DELIVER']){const v=firstValue(map,k);if(v){out+=fieldRow(17,y,176,k,v,{labelW:28,h:8});y+=8;}}
     for(const k of ['AUTHORISED','RETURNED']){const v=firstValue(map,k);if(v){out+=fieldRow(17,y,176,k,v,{labelW:28,h:8});y+=8;}}
     y+=4;
   }else y=43;
   const boxY=y,boxH=274-y;
-  const area=ruledArea(17,boxY,176,boxH,{labelText:pageIndex===0?'SCOPE / INSTRUCTIONS':'CONTINUED INSTRUCTIONS'});out+=area.svg;
+  const area=ruledArea(17,boxY,176,boxH,{labelText:prose===0?'SCOPE / INSTRUCTIONS':'CONTINUED INSTRUCTIONS'});out+=area.svg;
   // TYPED, NOT TYPESET. The instructions came off the same machine as the field
   // values above them; a works order is not a book. Six of the other forms
   // already set their body in mono and this one was the odd one out.
@@ -535,8 +582,11 @@ function pageSvg(doc,physical,pageEntries,pageIndex,totalPages){
   if(copy)content=content.replaceAll('data-process="preprinted-stationery"','data-process="photocopy-toner"');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="2480" height="3508" viewBox="0 0 210 297" data-format="A4" data-physical-width-mm="210" data-physical-height-mm="297" data-process-ppi="600" data-canonical-ppi="300" data-entry-process="${esc(processContent)}"><g id="paper-stock">${paperStockSvg(stock,rng,{copy,generations:repro.generations||0})}</g><g id="process-content" data-process="${esc(processContent)}" transform="rotate(${skew.toFixed(3)} 105 148.5)">${content}</g><g id="process-manual" data-process="biro">${marks}</g><g id="process-handling" data-process="handling">${handling}</g><g id="reproduction-defects" data-process="${esc(processStationery)}">${reproductionDefectsSvg(rng,repro)}</g></svg>`;
 }
+// Documents with their own isolated baked edition (registerBakedPaper) must not
+// also enter the shared catalogue: paper-system.spec treats that as a collision.
+const ISOLATED_EDITIONS=new Set(STUDENT_STRIKE_BAKED_RECORDS.map(record=>record.id));
 function collectDocuments(){
-  const docs=[WORK_ORDER,...PAGES];
+  const docs=[WORK_ORDER,...PAGES.filter(doc=>!ISOLATED_EDITIONS.has(doc.id))];
   for(const source of SOURCE_PAGES){const doc=sourcePageDocument(source);docs.push({...doc,sourceRegister:source.register});}
   docs.push({
     id:'source-real-still',title:'ELLERY FIELD RECORDING · TAKE SHEET',byline:'W. ELLERY / WORKS',decay:0,

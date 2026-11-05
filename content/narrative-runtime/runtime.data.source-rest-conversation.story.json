@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.source-rest-conversation",
+  "title": "Runtime · data/source-rest-conversation.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "phaseOpenings.wrong-return.interruption",
+  "entries": [
+    "phaseOpenings.wrong-return.interruption"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/source-rest-conversation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "phaseOpenings.wrong-return.interruption": {
+      "id": "phaseOpenings.wrong-return.interruption",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.interruption.c0",
+          "text": "Get up.",
+          "source": "src/data/source-rest-conversation.js:208",
+          "choiceId": "rise"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:208"
+    }
+  }
+}

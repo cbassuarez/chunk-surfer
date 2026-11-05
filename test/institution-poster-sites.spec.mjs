@@ -92,7 +92,7 @@ test('retained holders contain the complete print and face the ordinary public a
     const toEye=site.observer.position.map((v,i)=>v-[p.x,p.y,p.z][i]);
     assert.ok(dot(normal(p.yaw),toEye)>1.0,`${site.id} front winding faces its public observer`);
     if(site.id==='hall-season')close(host.x+.030*hostScale,97,'north case backing meets the actual east wall');
-    if(site.id==='hall-winter')close(host.z+.030*hostScale,27,'south case backing meets the actual south wall');
+    if(site.id==='hall-winter')close(host.z+.030*hostScale,14,'south case backing meets the atrium south wall');
   }
 });
 
@@ -136,18 +136,24 @@ test('actual packed honours boards, reading-list frame and portal returns reject
   const academicHosts=PROPS.renderInstances({group:'academic',inscriptions:false});
   const honour=meshTriangles(groundHosts.find(p=>p.id==='atrium-public-fittings'));
   const portal=meshTriangles(groundHosts.find(p=>p.id==='hall-entrance-portal'));
-  const readingHost=academicHosts.find(p=>p.id==='corridor-fixture-academic-y21-516');
+  // Corridor fixtures are procedural (world/corridor-dressing.js) and their ids
+  // move when the plan does; find the reading list nearest the print by its text.
+  const readingHost=academicHosts.filter(p=>/^A reading list/.test(PROPS.propById(p.id)?.inspect?.first||''))
+    .sort((a,b)=>Math.hypot(a.x-60.994,a.z-16.9)-Math.hypot(b.x-60.994,b.z-16.9))[0];
+  assert.ok(readingHost&&Math.hypot(readingHost.x-60.994,readingHost.z-16.9)<4,'a reading list still hangs in the composers corridor');
   const reading=meshTriangles(readingHost);
   const final=[...applyInstitutionPosters(groundHosts,{group:'ground'}),...applyInstitutionPosters(academicHosts,{group:'academic'})];
   const old=[
     {id:'atrium-student-notice',design:'students',x:96.994,y:1.66,z:14.2,yaw:Math.PI/2,scale:.5,eye:[94.9,1.62,14.2],triangles:honour},
     {id:'hall-prepared-piano-case',design:'prepared',x:96.9789090909,y:1.78,z:20.2,yaw:Math.PI/2,scale:.420/.594,eye:[94.5,1.62,20.2],triangles:honour},
-    {id:'academic-composers',design:'new_works',x:60.994,y:11.75,z:18,yaw:Math.PI/2,scale:.420/.594,eye:[58.7,11.62,18],triangles:reading},
+    // The reading-list frame moved in the academic rework, so the old mount is
+    // no longer a reproducible obstruction; the final print must still clear it.
+    {id:'academic-composers',design:'new_works',x:60.994,y:11.75,z:18,yaw:Math.PI/2,scale:.420/.594,eye:[58.7,11.62,18],triangles:reading,historical:false},
     {id:'hall-season',design:'season',x:96.9238,y:1.67,z:23.2,yaw:Math.PI/2,scale:1,eye:[94.4,1.62,23.2],triangles:[...portal,...honour]},
     {id:'hall-winter',design:'winter_programme',x:96.9238,y:1.67,z:26.3,yaw:Math.PI/2,scale:1,eye:[94.4,1.62,26.3],triangles:[...portal,...honour]},
   ];
   for(const failure of old){
-    assert.ok(blockedSamples(failure,failure.design,failure.eye,failure.triangles)>0,
+    if(failure.historical!==false)assert.ok(blockedSamples(failure,failure.design,failure.eye,failure.triangles)>0,
       `${failure.id}: packed geometry reproduces the actual former obstruction`);
     const site=INSTITUTION_POSTER_SITES.find(s=>s.id===failure.id),print=final.find(p=>p.id===`institution-poster:${site.id}`);
     assert.equal(blockedSamples(print,site.design,site.observer.position,failure.triangles),0,
@@ -185,8 +191,9 @@ test('review eyes have actual walkable body support and the student notice clear
   assert.ok(site.position[1]-art.heightM*site.widthM/art.widthM/2>fountain.maxElevation+.15,
     'the complete sheet stays above the fountain with visible fixing clearance');
   const [x,,z]=site.observer.position;
-  assert.ok(x<fountain.x-fountain.width/2-.25&&Math.abs(z-fountain.y)<1e-6,
-    'the eye/body approach is centred on the bay and clears the fountain by more than a capsule radius');
+  // The fountain stands against the atrium's south wall; the notice is above it.
+  assert.ok(Math.abs(x-fountain.x)<1e-6&&z<fountain.y-fountain.depth/2-.25,
+    'the eye/body approach is centred on the fountain and clears it by more than a capsule radius');
 });
 
 test('upper posters and outside publicity retain their separate physical floors and render groups',()=>{
@@ -212,13 +219,15 @@ test('scaled cases retain their actual aperture and the recording cluster leaves
     const instances=applyInstitutionPosters([],{group:site.groups[0]}),carrier=instances.find(p=>p.id===`institution-poster:${site.id}:case`);
     close(carrier.scale,site.caseScale||1,`${site.id} frame scale`);
   }
-  const cluster=INSTITUTION_POSTER_SITES.filter(s=>s.id.startsWith('b3-')).sort((a,b)=>a.position[0]-b.position[0]);
+  // East of the door is now the control booth (partition x18), so the cluster
+  // runs west from the door's west reveal (x15) along the live room's wall.
+  const cluster=INSTITUTION_POSTER_SITES.filter(s=>s.id.startsWith('b3-')).sort((a,b)=>b.position[0]-a.position[0]);
   assert.equal(cluster.length,3);
-  let previousEdge=16;
+  let previousEdge=15;
   for(const site of cluster){
     const width=site.kind==='new-case'?.69*site.caseScale:site.widthM;
     const left=site.position[0]-width/2,right=site.position[0]+width/2;
-    assert.ok(left>previousEdge+.15,`${site.id} has a clear fixing gap and stays east of the studio doorway`);
-    assert.ok(right<23,'the cluster stops before the equipment rack');previousEdge=right;
+    assert.ok(right<previousEdge-.15,`${site.id} has a clear fixing gap and stays west of the studio doorway`);
+    assert.ok(left>8,'the cluster stops short of the folded stand and the treated west wall');previousEdge=left;
   }
 });

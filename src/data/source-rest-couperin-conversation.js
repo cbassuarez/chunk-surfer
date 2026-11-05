@@ -2,6 +2,7 @@
 // acoustic/electronic revoicing, audible clock, bodily loss and ending.
 // These are language choices; none selects a mix, instrument or musical result.
 import {sourceRestQuestionNodes} from './source-rest-questions.js';
+import {sourceRestEarthlyNodes} from './source-rest-earthly.js';
 const line=(who,text)=>Object.freeze({who,text,voice:false,say:false});
 const you=text=>line('you',text),other=text=>line('other',text);
 const go=(id,label,next)=>Object.freeze({id,label,next});
@@ -199,7 +200,7 @@ const nodes={
     other('There is room.'),
     you('Is there?'),
     other('For this.')
-  ],{locked:true,next:'last-choice'}),
+  ],{locked:true,next:'earthly'}),
   'last-choice':choice([
     other('What shall we keep?')
   ],[go('beginning','The way it begins.','beginning'),go('release','The way it lets go.','letting-go')],{locked:true}),
@@ -235,4 +236,5 @@ const nodes={
 };
 
 export const SOURCE_REST_COUPERIN_CONVERSATION=Object.freeze({id:'source-rest:catch',phase:'catch',title:'THE BENCH / COUPERIN',
-  entry:'arrival',timed:true,cues:SOURCE_REST_COUPERIN_CUES,nodes:Object.freeze({...nodes,...sourceRestQuestionNodes('guitar-etudes',{phase:'catch'})})});
+  entry:'arrival',timed:true,cues:SOURCE_REST_COUPERIN_CUES,nodes:Object.freeze({...nodes,...sourceRestQuestionNodes('guitar-etudes',{phase:'catch'}),
+    ...sourceRestEarthlyNodes('catch',{next:'last-choice'})})});

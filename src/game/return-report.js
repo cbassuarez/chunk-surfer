@@ -84,6 +84,21 @@ function reportSections(summary) {
     ]],
   ];
 
+  // The cassettes and what he wrote, from the work order (docs/plans/work-order.md).
+  const order = summary.workOrder;
+  if (order) {
+    sections.push(['CASSETTES', [
+      ['ISSUED', `${order.issued}${order.found ? ` + ${order.found} FOUND` : ''}`],
+      ['USED', String(order.attempts)],
+      ['CLEAN / REJECTED / SPOILT', `${order.clean} / ${order.rejected} / ${order.spoilt}`],
+      ...(order.lost ? [['LOST ON SITE', String(order.lost)]] : []),
+      ...(order.erased ? [['RECORDED OVER', String(order.erased)]] : []),
+      ['BLANK AT THE END', String(order.blank)],
+      ['ACCOUNT', order.accountSatisfied ? 'SATISFIED' : 'OPEN'],
+      ...(order.notes?.length ? [['LAST NOTE', order.notes.at(-1).text]] : []),
+    ]]);
+  }
+
   // The night's fighting was completely invisible on this form. It is only
   // printed when there was any — a quiet return should not carry an empty
   // section about violence.

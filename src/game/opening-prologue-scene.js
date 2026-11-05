@@ -38,7 +38,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
   }
   function finish(){if(finished)return;finished=true;clear();onDone();}
   const scene=makeColdOpenScene({id:'opening-prologue',opening:nodes,startAt:OPENING_PROLOGUE.entry,ambient:false,blocksWorld:true,allowsLook:false,suppressesHud:true,
-    worldUnderlay:true,presentation:'cinematic',voiceEnabled:false,audio,getAudio,replay,worldView:picture,onDone:finish});
+    worldUnderlay:true,presentation:'cinematic',voiceEnabled:true,audio,getAudio,replay,worldView:picture,onDone:finish});
   const baseEnter=scene.enter.bind(scene),baseExit=scene.exit.bind(scene),baseUpdate=scene.update.bind(scene),baseKey=scene.key.bind(scene),baseKeyup=scene.keyup.bind(scene),baseView=scene.view.bind(scene);
   Object.assign(scene,{handlesEscape:false,worldPresentation:'visible',lookProfile:'calm'});
   // The talk starts on the first shown frame of the picture, not when it is pushed.

@@ -37,6 +37,8 @@ function fixture(){
   clearInstrument:()=>{},CUES:{CUE:{recorder:'recorder'},playCue:()=>calls.push(['existing-stop-cue'])},
   emitRecorderTransport:()=>{},STORY:{stopTapeHiss:()=>{}},updateAudio:()=>{},activeSourceReplayTake:null,
   emitProgress:()=>{},EVENT_TYPES:{TAKE_ABORTED:'TAKE_ABORTED'},saveCommit:()=>{},
+  // The attempt goes on a cassette; the ledger is tested in cassette-ledger.spec.
+  fileTakeAttempt:()=>{calls.push(['cassette']);return null;},
  };
  vm.createContext(h);vm.runInContext(body(main,'tickRecordingEmbodiment')+'\n'+body(main,'stopTake'),h);
  return{h,state,calls,settings,controller,loads:()=>loads,resolve:value=>resolve(value),tick:(dt=1/60)=>{h.paused=state.paused;h.tickRecordingEmbodiment(dt);},

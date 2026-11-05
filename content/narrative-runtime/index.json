@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/export-runtime-narrative.mjs",
+  "documents": [
+    {
+      "id": "runtime.data.academic-gallery-treatment",
+      "path": "narrative-runtime/runtime.data.academic-gallery-treatment.story.json",
+      "module": "src/data/academic-gallery-treatment.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "ac38f2a46f1623656cdb57942fd258db27723ad7d1d4599305931cdc6f711728"
+    },
+    {
+      "id": "runtime.data.academic-society",
+      "path": "narrative-runtime/runtime.data.academic-society.story.json",
+      "module": "src/data/academic-society.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "f950307e34b1db39847794f405490dd6ba7bd5ecafa6c4fe06f6fdae20a30c19"
+    },
+    {
+      "id": "runtime.data.chunk-surf-script",
+      "path": "narrative-runtime/runtime.data.chunk-surf-script.story.json",
+      "module": "src/data/chunk-surf-script.js",
+      "nodes": 1,
+      "lines": 7,
+      "choices": 0,
+      "sourceSha256": "7c1aef2ca726f874f66e5cf7dc35f910800cd584fc2ef2742a93a28c5370815c"
+    },
+    {
+      "id": "runtime.data.combat-definitions",
+      "path": "narrative-runtime/runtime.data.combat-definitions.story.json",
+      "module": "src/data/combat-definitions.js",
+      "nodes": 19,
+      "lines": 42,
+      "choices": 0,
+      "sourceSha256": "165ede37a01b5deaee0352f31f38a829d4d6001e0b0d742591432de92cc944c9"
+    },
+    {
+      "id": "runtime.data.conservatory-props",
+      "path": "narrative-runtime/runtime.data.conservatory-props.story.json",
+      "module": "src/data/conservatory-props.js",
+      "nodes": 5,
+      "lines": 372,
+      "choices": 0,
+      "sourceSha256": "7a0b0cc2eeef17633a6269fdab520f0a067b6465a01d492a9dbb20d27eebdb4e"
+    },
+    {
+      "id": "runtime.data.conservatory-script",
+      "path": "narrative-runtime/runtime.data.conservatory-script.story.json",
+      "module": "src/data/conservatory-script.js",
+      "nodes": 72,
+      "lines": 120,
+      "choices": 14,
+      "sourceSha256": "e660d06620fde2bdd1fc919e042cda10f09192cdf6f39e4d6a81b2767f1427b1"
+    },
+    {
+      "id": "runtime.data.corridor-lettering",
+      "path": "narrative-runtime/runtime.data.corridor-lettering.story.json",
+      "module": "src/data/corridor-lettering.js",
+      "nodes": 4,
+      "lines": 8,
+      "choices": 0,
+      "sourceSha256": "9e26802e3814f8d3355b84612e8ffa491840e7926c65905214354601e62e458d"
+    },
+    {
+      "id": "runtime.data.ellery-public-front",
+      "path": "narrative-runtime/runtime.data.ellery-public-front.story.json",
+      "module": "src/data/ellery-public-front.js",
+      "nodes": 1,
+      "lines": 5,
+      "choices": 0,
+      "sourceSha256": "5c2208e8f029acef81950885eb7aba4f2488c24a96d22578f817e59171bce5ed"
+    },
+    {
+      "id": "runtime.data.endings",
+      "path": "narrative-runtime/runtime.data.endings.story.json",
+      "module": "src/data/endings.js",
+      "nodes": 5,
+      "lines": 12,
+      "choices": 0,
+      "sourceSha256": "f4f9dfa2860ca6fb0f537ff413d4eb587ebbfc88298cff69a19f6a895d8c33b4"
+    },
+    {
+      "id": "runtime.data.exterior-frontages",
+      "path": "narrative-runtime/runtime.data.exterior-frontages.story.json",
+      "module": "src/data/exterior-frontages.js",
+      "nodes": 1,
+      "lines": 3,
+      "choices": 0,
+      "sourceSha256": "9a8b2284bc21f8fc282d0d5186416be703ea39b4c2380ef413af7216c22a870e"
+    },
+    {
+      "id": "runtime.data.exterior-vigil",
+      "path": "narrative-runtime/runtime.data.exterior-vigil.story.json",
+      "module": "src/data/exterior-vigil.js",
+      "nodes": 2,
+      "lines": 4,
+      "choices": 0,
+      "sourceSha256": "de049be7a976e60cdae467d1efc3df923b9c3afe0c1301028f0fcbe4a3a267da"
+    },
+    {
+      "id": "runtime.data.get-in-investigation",
+      "path": "narrative-runtime/runtime.data.get-in-investigation.story.json",
+      "module": "src/data/get-in-investigation.js",
+      "nodes": 64,
+      "lines": 127,
+      "choices": 49,
+      "sourceSha256": "d167a060f361a86fb66761161156508f1876919eac31cc958ec5136d2c7ac296"
+    },
+    {
+      "id": "runtime.data.plaza-shopfronts",
+      "path": "narrative-runtime/runtime.data.plaza-shopfronts.story.json",
+      "module": "src/data/plaza-shopfronts.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "feeae69d19dc29ae4df88f8e8b72da1305aaf4f3fb02c8c63859cde98ab02d3e"
+    },
+    {
+      "id": "runtime.data.pub-patrons",
+      "path": "narrative-runtime/runtime.data.pub-patrons.story.json",
+      "module": "src/data/pub-patrons.js",
+      "nodes": 6,
+      "lines": 12,
+      "choices": 0,
+      "sourceSha256": "8c0d3be7b193d0d1c5be7f713b433c3038f454d4d585279bf6c5e9685b7b6879"
+    },
+    {
+      "id": "runtime.data.roof-ren-dialogue",
+      "path": "narrative-runtime/runtime.data.roof-ren-dialogue.story.json",
+      "module": "src/data/roof-ren-dialogue.js",
+      "nodes": 1,
+      "lines": 1,
+      "choices": 0,
+      "sourceSha256": "3514d9763d69bc7b547d5dcada122734121c9c402734ea0d082ee7af1f92fe84"
+    },
+    {
+      "id": "runtime.data.source-landing",
+      "path": "narrative-runtime/runtime.data.source-landing.story.json",
+      "module": "src/data/source-landing.js",
+      "nodes": 1,
+      "lines": 6,
+      "choices": 0,
+      "sourceSha256": "10536a340b213a3d2862d71a878112e5b3d190072a694016e82d4b7482582758"
+    },
+    {
+      "id": "runtime.data.source-rest-conversation",
+      "path": "narrative-runtime/runtime.data.source-rest-conversation.story.json",
+      "module": "src/data/source-rest-conversation.js",
+      "nodes": 1,
+      "lines": 0,
+      "choices": 1,
+      "sourceSha256": "b9f2fba36aee64ec1411f99e842981ff8f6b80eaaf9046e1f1d9e0d97a80b33e"
+    },
+    {
+      "id": "runtime.data.stop-listening",
+      "path": "narrative-runtime/runtime.data.stop-listening.story.json",
+      "module": "src/data/stop-listening.js",
+      "nodes": 5,
+      "lines": 10,
+      "choices": 0,
+      "sourceSha256": "e522a81e0727de19535565de8de30c3d2a2caa8f48143979f7628618e391ff27"
+    },
+    {
+      "id": "runtime.data.student-strike-dialogue",
+      "path": "narrative-runtime/runtime.data.student-strike-dialogue.story.json",
+      "module": "src/data/student-strike-dialogue.js",
+      "nodes": 1,
+      "lines": 0,
+      "choices": 2,
+      "sourceSha256": "0ee2ed9a9ba65ab889f7a642b2c1fd5449bf67f6202326f026d49d97ab1f30fd"
+    },
+    {
+      "id": "runtime.data.student-strike-evidence",
+      "path": "narrative-runtime/runtime.data.student-strike-evidence.story.json",
+      "module": "src/data/student-strike-evidence.js",
+      "nodes": 1,
+      "lines": 4,
+      "choices": 0,
+      "sourceSha256": "0873da96a7386418480363a18aa4f5466cc8a8ae622c500a1b9e8446ac055681"
+    },
+    {
+      "id": "runtime.data.world-inscriptions",
+      "path": "narrative-runtime/runtime.data.world-inscriptions.story.json",
+      "module": "src/data/world-inscriptions.js",
+      "nodes": 1,
+      "lines": 20,
+      "choices": 0,
+      "sourceSha256": "730d342987fa5d2566fd443911308c147b30f53fcea75c94916584469d7a9417"
+    },
+    {
+      "id": "runtime.data.yard-park",
+      "path": "narrative-runtime/runtime.data.yard-park.story.json",
+      "module": "src/data/yard-park.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "f4fa121f0ce43dee73f41a710aaa72890db1be1ed4ab11c476d56c7505ba6c76"
+    },
+    {
+      "id": "runtime.data.yard-public-rooms",
+      "path": "narrative-runtime/runtime.data.yard-public-rooms.story.json",
+      "module": "src/data/yard-public-rooms.js",
+      "nodes": 1,
+      "lines": 6,
+      "choices": 0,
+      "sourceSha256": "a07fb172e4a67add31b3395845a330a55103e40ebba24b316630ef2d5e405a24"
+    },
+    {
+      "id": "runtime.game.academic-society",
+      "path": "narrative-runtime/runtime.game.academic-society.story.json",
+      "module": "src/game/academic-society.js",
+      "nodes": 2,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "12524edc6ee5bb6be40145fccfeca188af86e9591a848768643631aaede2cb6a"
+    },
+    {
+      "id": "runtime.game.bag-items",
+      "path": "narrative-runtime/runtime.game.bag-items.story.json",
+      "module": "src/game/bag-items.js",
+      "nodes": 12,
+      "lines": 26,
+      "choices": 0,
+      "sourceSha256": "9e8e93383b894e45192382d9ef84a86253db756e2ca8a3b5d76442dae811ac5e"
+    },
+    {
+      "id": "runtime.game.cathedral-descent",
+      "path": "narrative-runtime/runtime.game.cathedral-descent.story.json",
+      "module": "src/game/cathedral-descent.js",
+      "nodes": 1,
+      "lines": 0,
+      "choices": 1,
+      "sourceSha256": "3d8269855a2b67c469f9d2fbe52726b058168ddac28749ef315e75353cd3e38b"
+    },
+    {
+      "id": "runtime.game.credits",
+      "path": "narrative-runtime/runtime.game.credits.story.json",
+      "module": "src/game/credits.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "cd0989f793a4ef69a9f094e8a9dbfd9057af88b1a8ab6b905fb694033a1da2dc"
+    },
+    {
+      "id": "runtime.game.get-in",
+      "path": "narrative-runtime/runtime.game.get-in.story.json",
+      "module": "src/game/get-in.js",
+      "nodes": 1,
+      "lines": 1,
+      "choices": 0,
+      "sourceSha256": "2ea3858103057594f59cb2b2874a6fc8fa912ccda3035b620ef1205451bbdfbd"
+    },
+    {
+      "id": "runtime.game.horizon-bust",
+      "path": "narrative-runtime/runtime.game.horizon-bust.story.json",
+      "module": "src/game/horizon-bust.js",
+      "nodes": 7,
+      "lines": 12,
+      "choices": 12,
+      "sourceSha256": "231775e7c2e9ff7cec908fe526694fdd73bf8c8c87f1afe9938e9eb0d4320a82"
+    },
+    {
+      "id": "runtime.game.payphone",
+      "path": "narrative-runtime/runtime.game.payphone.story.json",
+      "module": "src/game/payphone.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "e920a99fe1152f9faab8d7885238ed5ddbbf2aa7e7421e3cc6e7bea938d49a1f"
+    },
+    {
+      "id": "runtime.game.source-contact",
+      "path": "narrative-runtime/runtime.game.source-contact.story.json",
+      "module": "src/game/source-contact.js",
+      "nodes": 1,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "349c7fce8907b1e953791e4bba823d46af3a289530cdf6ed8e8e7e4d8797cd1a"
+    },
+    {
+      "id": "runtime.game.source-last-reception",
+      "path": "narrative-runtime/runtime.game.source-last-reception.story.json",
+      "module": "src/game/source-last-reception.js",
+      "nodes": 3,
+      "lines": 36,
+      "choices": 0,
+      "sourceSha256": "5d26cbfb75a21f3e13695dce21d6381950b052b3938efb0f3abd70e3830bd116"
+    },
+    {
+      "id": "runtime.game.source-rig-bridge",
+      "path": "narrative-runtime/runtime.game.source-rig-bridge.story.json",
+      "module": "src/game/source-rig-bridge.js",
+      "nodes": 2,
+      "lines": 3,
+      "choices": 0,
+      "sourceSha256": "c1fb13da746c910550a8d7731df97847066e39cb236f1d86b7ab330ddb1ce240"
+    },
+    {
+      "id": "runtime.game.source-space-runtime",
+      "path": "narrative-runtime/runtime.game.source-space-runtime.story.json",
+      "module": "src/game/source-space-runtime.js",
+      "nodes": 1,
+      "lines": 1,
+      "choices": 0,
+      "sourceSha256": "aff1f746a23cc14c7da529416082463ee3ea1dd98a03151add1c347bbbdf5ee8"
+    },
+    {
+      "id": "runtime.game.threshold-gag-inspection",
+      "path": "narrative-runtime/runtime.game.threshold-gag-inspection.story.json",
+      "module": "src/game/threshold-gag-inspection.js",
+      "nodes": 1,
+      "lines": 1,
+      "choices": 0,
+      "sourceSha256": "b6fc3c24589da58b12573be5cf6c7a4db2471ed3d80827e1bf45d399eaead4ff"
+    },
+    {
+      "id": "runtime.game.tower-chapel-bridge",
+      "path": "narrative-runtime/runtime.game.tower-chapel-bridge.story.json",
+      "module": "src/game/tower-chapel-bridge.js",
+      "nodes": 2,
+      "lines": 2,
+      "choices": 0,
+      "sourceSha256": "57f1191d091d14a77466d455a8680eb27da45e00f222a2366e77c9d8b716d4a7"
+    },
+    {
+      "id": "runtime.game.tutorial",
+      "path": "narrative-runtime/runtime.game.tutorial.story.json",
+      "module": "src/game/tutorial.js",
+      "nodes": 3,
+      "lines": 9,
+      "choices": 0,
+      "sourceSha256": "7ac51120484d2caee41b02d60c49f99a54f983d5c04fd84369b37d80ce75a3ec"
+    },
+    {
+      "id": "runtime.main",
+      "path": "narrative-runtime/runtime.main.story.json",
+      "module": "src/main.js",
+      "nodes": 125,
+      "lines": 231,
+      "choices": 21,
+      "sourceSha256": "384c2be0e7d290c89689b23d561c86aef1e7edcc1ffa4026679a6f488a0fd897"
+    },
+    {
+      "id": "runtime.world.corridor-dressing",
+      "path": "narrative-runtime/runtime.world.corridor-dressing.story.json",
+      "module": "src/world/corridor-dressing.js",
+      "nodes": 6,
+      "lines": 24,
+      "choices": 0,
+      "sourceSha256": "c75b0a3c67fa2bd7509e15ea53ded4f3209b03e25dc9810fbf4a85f8ee566118"
+    }
+  ]
+}

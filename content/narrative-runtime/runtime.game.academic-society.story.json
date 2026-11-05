@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.academic-society",
+  "title": "Runtime · game/academic-society.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "createAcademicSociety.release",
+  "entries": [
+    "createAcademicSociety.release",
+    "createAcademicSociety.tick"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/academic-society.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "createAcademicSociety.release": {
+      "id": "createAcademicSociety.release",
+      "type": "line",
+      "lines": [
+        {
+          "id": "createAcademicSociety.release.l0",
+          "who": "direction",
+          "text": "Your next breath comes from where you are standing. Their evening stays upstairs. / Your breath catches in your own throat again. Emile has to finish the silence himself. / Your voice is back where your breath is.",
+          "source": "src/game/academic-society.js:73"
+        }
+      ],
+      "source": "src/game/academic-society.js:73"
+    },
+    "createAcademicSociety.tick": {
+      "id": "createAcademicSociety.tick",
+      "type": "line",
+      "lines": [
+        {
+          "id": "createAcademicSociety.tick.l0",
+          "who": "unknown",
+          "text": "Your own voice. It suits you. Come and go as you like. / You came back in your own voice. Good. Come and go that way.",
+          "source": "src/game/academic-society.js:161"
+        }
+      ],
+      "source": "src/game/academic-society.js:161"
+    }
+  }
+}

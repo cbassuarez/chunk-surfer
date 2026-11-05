@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.student-strike-dialogue",
+  "title": "Runtime · data/student-strike-dialogue.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "odetteStrikeDialogue.nodes.strike-unavailable",
+  "entries": [
+    "odetteStrikeDialogue.nodes.strike-unavailable"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/student-strike-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "odetteStrikeDialogue.nodes.strike-unavailable": {
+      "id": "odetteStrikeDialogue.nodes.strike-unavailable",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-unavailable.c0",
+          "text": "ask something else",
+          "source": "src/data/student-strike-dialogue.js:59",
+          "targetName": "start"
+        },
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-unavailable.c1",
+          "text": "continue along the floor",
+          "source": "src/data/student-strike-dialogue.js:60",
+          "targetName": "leave"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:59"
+    }
+  }
+}

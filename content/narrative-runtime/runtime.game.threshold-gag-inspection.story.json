@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.threshold-gag-inspection",
+  "title": "Runtime · game/threshold-gag-inspection.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "thresholdGagInspectFocus",
+  "entries": [
+    "thresholdGagInspectFocus"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/threshold-gag-inspection.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "thresholdGagInspectFocus": {
+      "id": "thresholdGagInspectFocus",
+      "type": "line",
+      "lines": [
+        {
+          "id": "thresholdGagInspectFocus.l0",
+          "who": "thought",
+          "text": "{G.inscription.credit} — two signatures.",
+          "source": "src/game/threshold-gag-inspection.js:29"
+        }
+      ],
+      "source": "src/game/threshold-gag-inspection.js:29"
+    }
+  }
+}

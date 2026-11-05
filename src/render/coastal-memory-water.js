@@ -109,8 +109,14 @@ vec3 coastalWaterComposite(vec3 worldEye,vec3 worldRay,float opaqueRayDistance,f
   // actual cabin exit, while the external water begins beyond that boundary.
   float waterBegin=max(begin,mix(max(0.0,cabinExit),0.0,uCoastSea.w));
   float travel=max(0.0,min(90.0,waterEnd-waterBegin));
-  vec3 transmission=exp(-travel*vec3(.24,.075,.105)*uCoastOptics.x);
-  vec3 transmitted=colour*transmission+deep*(1.0-transmission)*.75;
+  // Night sea over a shingle shelf, stirred: a few metres of it swallow a
+  // van, so what lies on the shelf reads as a shape and its own lamp.
+  vec3 transmission=exp(-travel*vec3(.40,.17,.20)*uCoastOptics.x);
+  // Light reaching what lies under the sea came down through it first: a thing
+  // seven metres down is lit by a sliver of the moon. Only the lamps' own
+  // scatter (below) is spared, since that light starts down there.
+  float sunk=max(0.0,level-(eye+rd*end).y)*step(.0001,travel);
+  vec3 transmitted=colour*transmission*exp(-sunk*vec3(.30,.20,.22))+deep*(1.0-transmission)*.75;
   vec3 scatter=vec3(0.0);float volumeBegin=max(0.0,begin-5.0),volumeEnd=min(end,max(begin+14.0,waterEnd));
   volumeEnd=min(volumeEnd,volumeBegin+65.0);
   for(int j=0;j<12;j++){

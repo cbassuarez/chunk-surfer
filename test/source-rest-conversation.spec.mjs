@@ -52,7 +52,13 @@ test('the Chaconne was shared with both people without revealing an unspoken nam
   assert.match(memory(named),/not the same version/i);
   assert.match(memory(named),/first in a practice room, early on.*later, at a recital/i);
   assert.deepEqual(named.nodes.distance.choices,unnamed.nodes.distance.choices);
-  assert.equal(sourceRestConversation('catch',{sarahNamed:true}),SOURCE_REST_CONVERSATIONS.catch);
+  // Source III never names her in its own story; only his late question about
+  // her follows the confession, as Source II's does.
+  const catchNamed=sourceRestConversation('catch',{sarahNamed:true}),catchPlain=SOURCE_REST_CONVERSATIONS.catch;
+  assert.deepEqual(Object.keys(catchNamed.nodes).filter(id=>catchNamed.nodes[id]!==catchPlain.nodes[id]).sort(),
+    Object.keys(catchNamed.nodes).filter(id=>id.startsWith('earthly')).sort());
+  for(const story of [unnamed,catchPlain])
+    assert.doesNotMatch(Object.values(story.nodes).flatMap(n=>[...n.lines.map(l=>l.text),...n.choices.map(c=>c.label)]).join(' '),/Sarah/);
   assert.match(unnamed.nodes['after-interruption'].lines.map(line=>line.text).join(' '),/back in the car/i);
 });
 

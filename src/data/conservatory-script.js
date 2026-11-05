@@ -40,9 +40,12 @@ export const WORK_ORDER = {
   decay: 0,
     dismiss: '[ esc — fold it and put it in your pocket ]',
     paper: {
+      // Sheet 1 is the checklist he ticks off (src/data/work-order-sheet.js);
+      // the instructions follow on sheets 2 onwards.
+      checklistSheet: true,
       marks: [
-        { page: 2, type: 'underline', x: 0.145, y: 0.505, w: 0.43, alpha: 0.50 },
-        { page: 2, type: 'note', x: 0.705, y: 0.555, text: '5?', rotate: -7, alpha: 0.58 },
+        { page: 3, type: 'underline', x: 0.145, y: 0.505, w: 0.43, alpha: 0.50 },
+        { page: 3, type: 'note', x: 0.705, y: 0.555, text: '5?', rotate: -7, alpha: 0.58 },
       ],
     },
     body: [

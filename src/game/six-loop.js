@@ -6,12 +6,16 @@
 // boots. From then on this page session is the loop: Continue and New Run both
 // start the same real night in memory, and nothing it does reaches the disk.
 //
-// The way out is a real one. Closing the game ends the session, and the next
-// launch reads the night that was saved before the hang, take three included.
-// A later reload inside the session stays in the loop; a fresh launch does not.
+// There are two ways out, both real. Closing the game ends the session, and the
+// next launch reads the night that was saved before the hang, take three
+// included. Or, inside the nothingness, read the clock from its step: the page
+// boots once more, out of the loop, and puts you back at the door that crashed
+// it, opening. A later reload inside the session stays in the loop.
 export const SIX_LOOP=Object.freeze({
   sessionKey:'chunk-surfer:six-loop',
+  returnKey:'chunk-surfer:six-return',
   flag:'six.crash.fired',
+  doorFlag:'six.crash.door',
   takes:3,
   hangMs:4200,
 });
@@ -32,6 +36,23 @@ export function sixLoopActive(){
 }
 export function armSixLoop(){try{session()?.setItem(SIX_LOOP.sessionKey,'1');return true;}catch{return false;}}
 export function clearSixLoop(){try{session()?.removeItem(SIX_LOOP.sessionKey);}catch{}}
+
+// The way back through the door. Read once per page load and spent as it is
+// read, so a second reload is an ordinary one; stale on a fresh launch.
+let returning=null;
+export function sixReturnPending(){
+  if(returning!==null)return returning;
+  const store=session();let marked=false;
+  try{marked=store?.getItem(SIX_LOOP.returnKey)==='1';if(marked)store.removeItem(SIX_LOOP.returnKey);}catch{}
+  returning=marked&&reloaded();
+  return returning;
+}
+export function leaveSixLoop({win=globalThis}={}){
+  clearSixLoop();
+  try{session()?.setItem(SIX_LOOP.returnKey,'1');}catch{}
+  win?.location?.reload?.();
+  return true;
+}
 
 export const sixOrdinaryTakes=takes=>(Array.isArray(takes)?takes:[]).filter(id=>id&&id!=='lux_nova').length;
 
@@ -62,7 +83,7 @@ export function syncSixLoopDebugOverlay(){
 
 const nextFrame=win=>new Promise(done=>{const raf=win?.requestAnimationFrame;if(typeof raf==='function')raf.call(win,()=>done());else done();});
 
-// A real hang: the main thread is simply held. Pointer lock is let go first so
+// A real hang: the main thread simply stops. Pointer lock is let go first so
 // the cursor comes back, as it does when a window stops answering.
 export async function stageSixCrash({settle=null,hangMs=SIX_LOOP.hangMs,win=globalThis,now=()=>globalThis.performance.now()}={}){
   if(settle)await settle;

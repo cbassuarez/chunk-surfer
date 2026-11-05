@@ -63,6 +63,8 @@ function wakeHarness(){
   const methods=vm.runInContext(`let px=0,py=0,trail=[],fear=0,takenActive=true,lastExposureSerial=0,lastExposureFrame=null;
     let lostItem=null,lostAt=null,lostItemGuess=null,lastRecoveryReceipt={eventId:'taken:1',sourceRoomId:'main_b3'};
     function takeAnItem(){lostItem='recorder';lostAt={x:80,y:81};lostItemGuess={x:90,y:91,label:'your recorder?'};}
+    // A lost cassette is the ledger's business (cassette-ledger.spec).
+    let lastCassetteLoss=null;function loseCassetteWhenTaken(){return null;}
     ${code};({wakeUp,presentLastExposureRecovery})`,context);
   return{methods,save,calls};
 }

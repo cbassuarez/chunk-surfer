@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-gallery-treatment",
+  "title": "Runtime · data/academic-gallery-treatment.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ACADEMIC_GALLERY_PROPS.inspect",
+  "entries": [
+    "ACADEMIC_GALLERY_PROPS.inspect"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/academic-gallery-treatment.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ACADEMIC_GALLERY_PROPS.inspect": {
+      "id": "ACADEMIC_GALLERY_PROPS.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_GALLERY_PROPS.inspect.l0",
+          "who": "inspect",
+          "text": "A caretaker copy left beside the appointment book.",
+          "source": "src/data/academic-gallery-treatment.js:45"
+        },
+        {
+          "id": "ACADEMIC_GALLERY_PROPS.inspect.l1",
+          "who": "inspect",
+          "text": "(again) The north gallery service word.",
+          "source": "src/data/academic-gallery-treatment.js:45"
+        }
+      ],
+      "source": "src/data/academic-gallery-treatment.js:45"
+    }
+  }
+}

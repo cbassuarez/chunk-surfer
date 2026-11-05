@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.chunk-surf-script",
+  "title": "Runtime · data/chunk-surf-script.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "chunkSurfCompletionLines",
+  "entries": [
+    "chunkSurfCompletionLines"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/chunk-surf-script.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "chunkSurfCompletionLines": {
+      "id": "chunkSurfCompletionLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chunkSurfCompletionLines.l0",
+          "who": "direction",
+          "text": "The page gives up the body it was using to explain itself.",
+          "source": "src/data/chunk-surf-script.js:152"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l1",
+          "who": "recordist",
+          "text": "I thought if I let it have me, it would stop asking.",
+          "source": "src/data/chunk-surf-script.js:153"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l2",
+          "who": "you",
+          "text": "No. We are going to the chapel.",
+          "source": "src/data/chunk-surf-script.js:154"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l3",
+          "who": "direction",
+          "text": "The source closes over the wound but does not seal it. Something in the chapel will have to be refused out loud.",
+          "source": "src/data/chunk-surf-script.js:157"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l4",
+          "who": "you",
+          "text": "I can see where it is going to stand.",
+          "source": "src/data/chunk-surf-script.js:158"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l5",
+          "who": "direction",
+          "text": "The source folds back into the corridor. The chapel is ahead, actual and waiting.",
+          "source": "src/data/chunk-surf-script.js:161"
+        },
+        {
+          "id": "chunkSurfCompletionLines.l6",
+          "who": "you",
+          "text": "He stopped after four. The reference did not.",
+          "source": "src/data/chunk-surf-script.js:162"
+        }
+      ],
+      "source": "src/data/chunk-surf-script.js:152"
+    }
+  }
+}

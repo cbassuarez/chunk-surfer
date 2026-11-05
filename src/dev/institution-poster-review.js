@@ -24,14 +24,14 @@ export function installInstitutionPosterReview({stage,getState}={}){
     panel.append(button);return button;
   };
   const labels={
-    'hall-season':'Hall: season programme','hall-winter':'Hall: winter programme',
+    'hall-season':'Hall: season programme','hall-winter':'Atrium: winter programme case',
     'foh-last-night':'Box office: last night','outside-winter-case':'Outside: winter case',
     'foyer-visiting':'Foyer: visiting ensemble','atrium-student-notice':'Atrium: student notice',
     'practice-chamber':'Practice: chamber concert','chapel-recital':'Chapel: recital',
     'lyric-afterwards':'Lyric: promotion',
     'b3-loudspeaker-case':'Recording: loudspeaker orchestra','b3-tape-music':'Recording: tape music',
     'b3-live-electronics':'Recording: live electronics','academic-composers':'Academic: new works',
-    'foyer-graphic-score':'Foyer: graphic-score workshop','hall-prepared-piano-case':'Hall: prepared piano',
+    'foyer-graphic-score':'Foyer: graphic-score workshop','hall-prepared-piano-case':'Atrium: prepared piano case',
   };
   for(const point of INSTITUTION_POSTER_CAPTURE_POINTS)make(labels[point.id]||point.id,async()=>{
     if(typeof stage!=='function')throw Error('The review staging callback is unavailable.');

@@ -2006,6 +2006,18 @@ export function setDoorOpen(id,open){
   const portal=doorPortals.find((p)=>p.id===id);if(!portal)return false;
   portal.autoCloseSide=0;return setPortalOpen(portal,open);
 }
+// Shut one door where it stands, then start it opening for real, as the hand
+// that opened it would have: same leaf travel, same closer arming. `from` is
+// where that hand is, so the closer knows which side it was opened from.
+export function swingDoorOpen(id,from=null){
+  const portal=doorPortals.find((p)=>p.id===id);if(!portal)return false;
+  setPortalOpen(portal,false,{preserveWedge:false});
+  const actor=from?portalActorCoordinates(portal,from.x,from.y):null,along=actor?(portal.widthAxis==='x'?actor.y:actor.x):0,plane=portal.widthAxis==='x'?portal.cy:portal.cx;
+  portal.autoCloseSide=actor?(Math.sign(along-plane)||-1):0;
+  const opened=beginDoorOpen(portal.runtime);
+  if(portal.definition?.closer!=='none')portal.runtime.closerArmed=true;
+  return opened;
+}
 export function setAllDoorsOpen(open){
   let changed=false;
   try{for(const portal of doorPortals){changed=true;setPortalOpen(portal,open,{preserveWedge:false,rebuild:false});}}

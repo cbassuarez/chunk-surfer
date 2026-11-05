@@ -273,6 +273,10 @@ export const VOICE_PROFILES = {
   radio: { rate: 0.94, gain: 1.15, hp: 420, lp: 2600, drive: 0.55, squelch: 0.012 },
   recordist: { rate: 0.98, gain: 0.95, hp: 120, lp: 5200, hiss: 0.010, wobble: 0.006 },
   surfer: { rate: 0.80, gain: 1.05, hp: 60, lp: 1500, smear: { time: 0.19, feedback: 0.42, mix: 0.5 } },
+  // The other, in the opening blink: close enough to follow every word, a
+  // little slow, with a short tail so it seems to come from the whole cab at
+  // once rather than the passenger seat. Kin to the surfer, not the same.
+  other: { rate: 0.88, gain: 1.0, hp: 105, lp: 3400, smear: { time: 0.085, feedback: 0.22, mix: 0.24 } },
   client: { rate: 0.96, gain: 1.0, hp: 300, lp: 3000, drive: 0.3 },
   // THE PHONE BOX (src/audio/payphone-line.js puts these through the handset
   // codec, so the band here is only the voice: the line does the rest). The

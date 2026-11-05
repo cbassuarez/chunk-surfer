@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.source-contact",
+  "title": "Runtime · game/source-contact.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "sourceContactDialogue",
+  "entries": [
+    "sourceContactDialogue"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/source-contact.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "sourceContactDialogue": {
+      "id": "sourceContactDialogue",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceContactDialogue.l0",
+          "who": "you",
+          "text": "I already broke free of it here. This will not be another fight. If I touch it again, it will take one available recording. I will have to find that recording here or in the next Source to hear it again. If none remain, it has nothing to take. I can still lower my hand.",
+          "source": "src/game/source-contact.js:188"
+        },
+        {
+          "id": "sourceContactDialogue.l1",
+          "who": "direction",
+          "text": "Its fingers close. The tape does not move.",
+          "source": "src/game/source-contact.js:194"
+        }
+      ],
+      "source": "src/game/source-contact.js:188"
+    }
+  }
+}

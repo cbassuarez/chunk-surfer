@@ -17,6 +17,7 @@
 import { ROOM_TONE, NOISE } from '../config.js';
 import { inferAcousticKind } from '../audio/acoustic-catalogue.js';
 import { normalizeTapeDamage } from './tape-damage.js';
+import { takeNoiseCause } from './take-acceptance.js';
 
 let acousticEmitter = null;
 
@@ -129,9 +130,13 @@ export function takeEvents() {
   return state.takeEvents.map((event) => ({ ...event }));
 }
 
-function noteTakeEvent(kind, level) {
+// `ratio` is how close it came to spoiling (1 spoils) and `cause` what he
+// would write about it; the work order rejects a finished take on these
+// (src/game/take-acceptance.js).
+function noteTakeEvent(kind, level, { ratio = null, cause = null } = {}) {
   if (state.takeEvents.length >= TAKE_EVENT_LIMIT) return;
-  state.takeEvents.push({ atSec: Math.max(0, state.takeElapsed), kind, level: Number(level) || 0 });
+  state.takeEvents.push({ atSec: Math.max(0, state.takeElapsed), kind, level: Number(level) || 0,
+    ...(Number.isFinite(ratio) ? { ratio } : {}), ...(cause ? { cause } : {}) });
 }
 
 function handleRecordingNoise(level, reason, meta = {}) {
@@ -142,7 +147,8 @@ function handleRecordingNoise(level, reason, meta = {}) {
   // difference between "the room was silent" and "you kept getting away with
   // it", and only one of those is a lesson.
   if (inputLevel > threshold * .25 && (inputLevel > threshold || meta.markNear !== false))
-    noteTakeEvent(inputLevel > threshold ? 'spoil' : 'near', inputLevel);
+    noteTakeEvent(inputLevel > threshold ? 'spoil' : 'near', inputLevel,
+      { ratio: threshold > 0 ? inputLevel / threshold : null, cause: takeNoiseCause(reason, meta) });
   // NOISE IS HEARD BY THE BUILDING, not only by the tape — and it is heard well
   // before it ruins anything.
   //
@@ -626,6 +632,10 @@ export function isHidden() { return state.hidden; }
 // tape store: main.js owns the wiring, the way it owns the acoustic emitter.
 let takeSink = null;
 export function setTakeSink(sink = null) { takeSink = sink; }
+
+// Re-read the counted rooms after the tape store changed a take's standing
+// (a cassette lost when he was taken, or found again).
+export function refreshTakes() { projectTakes(); return [...state.takes]; }
 
 function projectTakes() {
   if (!takeSink) return;

@@ -6,6 +6,7 @@ import { normalizeInterferenceRecord } from '../game/interference-case.js';
 import { WITNESS_EDITION_ID } from './unlocks.js';
 import { ENDING_VARIANT, normalizeEndingVariant, centuryStayRecord } from '../data/ending-variants.js';
 import { archiveNightRecordings } from '../game/night-failure-archive.js';
+import { cassetteSummary, normalizeCassetteLedger } from '../game/cassette-ledger.js';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -121,6 +122,10 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
       places: Object.fromEntries(Object.entries(rec.places || ledger.takes?.places || {})
         .filter(([roomId, place]) => place && completedRooms.includes(roomId))),
     },
+    // The work order as he left it (docs/plans/work-order.md): the cassettes,
+    // what was clean, rejected or spoilt, and his notes. Five clean rooms
+    // satisfies the account.
+    workOrder: workOrderRecord(save),
     injuries,
     battles: clone(ledger.battles || { started: 0, won: 0, lost: 0, firstPassWon: 0, results: {} }),
     disclosures: { found: (ledger.disclosures || []).length, ids: [...(ledger.disclosures || [])] },
@@ -147,6 +152,12 @@ export function buildRunSummary({ endingId, save, meta, authoritative = {}, now 
     newlyUnlockedFeatures: [],
     endingsAtCompletion: new Set([...(meta?.endingsSeen || []), ...(failedNight?[]:[endingId])]).size,
   };
+}
+
+function workOrderRecord(save) {
+  if (!save?.cassettes || typeof save.cassettes !== 'object') return null;
+  const summary = cassetteSummary(normalizeCassetteLedger(save.cassettes, { shift: save.run?.rules?.currentPreset }));
+  return { ...summary, accountSatisfied: summary.acceptedRooms.length >= 5 };
 }
 
 export function formatDuration(seconds) {

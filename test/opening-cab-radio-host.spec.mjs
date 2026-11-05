@@ -48,7 +48,7 @@ function fixture(){
       };return owner;
     },
     makeOpeningVehicleScene:value=>makeOpeningVehicleScene({...value,driveEnabled:false}),
-    makeOpeningCabInspectionScene,combatBuild:()=>({}),bagJob:()=>({}),bagJournal:()=>[],WORK_ORDER:{},currentStoryGuidanceTarget:()=>null,
+    makeOpeningCabInspectionScene,combatBuild:()=>({}),bagJob:()=>({}),bagJournal:()=>[],WORK_ORDER:{},workOrderInkFor:()=>null,tickShiftOnWorkOrder:()=>false,workOrderShiftTicked:()=>true,currentStoryGuidanceTarget:()=>null,
     REC:{recState:()=>({}),composure:()=>10,composureCeiling:()=>10},emitProgress:(...args)=>events.push(args),EVENT_TYPES:{RADIO_USED:'radio-used'},
   };
   vm.createContext(context);vm.runInContext(section('let openingVehicleScene=','// The first interaction in the game'),context);

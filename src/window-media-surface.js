@@ -22,7 +22,7 @@ let envelope=null,assignment=null,source=null,video=null,poster=null;
 let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,raf=0;
 let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
-let pendingPlay=null,failedMedia=null;
+let pendingPlay=null,failedMedia=null,faultRunState=null;
 let ownedFrameRevision=0,ownedFrameLoad=0,ownedFrameReady=null,ownedFramePending=null;
 let architecture=null,architectureBackground=null,architectureMediaAnchor=null,mediaQuadVao=null;
 let scoreClock=createWindowMediaClock(),videoClock=null;
@@ -33,16 +33,48 @@ const pendingScoreEvents=[];
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
 const fragment=`#version 300 es
-precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int terminal;uniform int transitionMode;uniform float transitionProgress;uniform float negative;
+precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int terminal;uniform int transitionMode;uniform float transitionProgress;uniform float negative;uniform vec4 terminalGrid;uniform vec3 faultRun;uniform float terminalTick;uniform float terminalReduced;
 float blueNoiseRank(vec2 at){vec2 cell=mod(floor(at),blueNoiseSize);return texture(blueNoise,(cell+.5)/blueNoiseSize).r;}
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
+// A TERMINAL FAILS IN ROWS AND CELLS, NEVER IN PIXELS. The world's bad-sector
+// run (game/source-faults.js) crosses this pane as it crosses its lane: rows
+// the head has passed hold an older frame or drop out, the head itself writes
+// a partial block twice, a whole number of cells over. Every displacement is
+// a multiple of the stderr grid (terminalGrid: origin u, origin v from the
+// top, cell u, row v), so the glyphs stay whole and readable.
+vec3 terminalFault(vec2 uv){
+  vec2 q=crop.xy+uv*crop.zw;
+  vec3 ground=texture(image,vec2(.004,.996)).rgb;
+  float f=clamp(faultIntensity,0.,1.),live=1.-terminalReduced;
+  float rowV=max(.01,terminalGrid.w),cellU=max(.004,terminalGrid.z);
+  float row=floor((1.-q.y-terminalGrid.y)/rowV),col=floor((q.x-terminalGrid.x)/cellU);
+  float rows=max(2.,floor((1.-2.*terminalGrid.y)/rowV));
+  float tick=terminalTick+faultSeed*.013;
+  float head=-99.;
+  if(faultRun.x>=0.){float t=clamp(faultRun.x/max(.1,faultRun.y),0.,1.);head=(faultRun.z<0.?1.-t:t)*(rows+3.)-1.5;}
+  float d=row-head;
+  bool running=faultRun.x>=0.&&faultRun.x<=faultRun.y;
+  bool atHead=running&&abs(d)<=1.5;
+  bool crossed=faultRun.x>=0.&&!atHead&&(faultRun.z<0.?d>0.:d<0.);
+  float rh=hash21(vec2(row+7.,tick)),rs=hash21(vec2(row*1.31+2.,floor(tick*.5)+3.));
+  float c0=floor(hash21(vec2(row,tick+11.))*30.),cw=4.+floor(hash21(vec2(row+3.,tick+5.))*18.);
+  bool inBlock=col>=c0&&col<c0+cw;
+  vec2 s=q;bool hold=false,drop=false,twice=false;
+  if(atHead&&inBlock){s.x-=floor((rs-.5)*12.)*cellU*live;twice=live>.5;}
+  else if(crossed){hold=rh<.62*f;drop=rs>1.-.10*f;}
+  if(!atHead&&inBlock&&live>.5&&rh>1.-.22*f)s.x-=(rs<.5?-1.:1.)*(1.+floor(rs*5.))*cellU;
+  if(s.x<crop.x||s.x>crop.x+crop.z)return ground;
+  vec3 rgb=hold?texture(staleImage,s).rgb:texture(image,s).rgb;
+  if(twice)rgb=min(rgb,texture(image,s+vec2(cellU,0.)).rgb);
+  return drop?ground:rgb;
+}
 ${WINDOW_SURFACE_LOOK_GLSL}
 void main(){
   // A terminal is already rasterised at the correct column pitch. The media
   // dither lattice erased character stems and made real stderr unreadable.
-  if(terminal==1){outColor=vec4(texture(image,crop.xy+uv*crop.zw).rgb,1.);return;}
+  if(terminal==1){outColor=vec4(faultIntensity>0.?terminalFault(uv):texture(image,crop.xy+uv*crop.zw).rgb,1.);return;}
   // THE ONE SPACE EVERY SURFACE AGREES ON: desktop LOGICAL points. gl_FragCoord
   // is device pixels and desktopOrigin arrives from a DOM rect in points, so
   // adding them -- which is what this did -- put every retina window half a
@@ -211,6 +243,10 @@ function executeAction(action,cueId=''){
   }else if(action.type==='shader'){
     if(action.coherent!==null)envelope={...envelope,coherent:!!action.coherent};
     if(action.intensity!==null)envelope={...envelope,fault:{...envelope.fault,intensity:Math.max(0,Math.min(1,Number(action.intensity)||0))}};
+    // A scored bad-sector run starts its head from this moment; clearing the
+    // intensity ends it. Older envelopes carry no run and stay as they were.
+    if(!(Number(envelope?.fault?.intensity)>0))faultRunState=null;
+    else if(action.run)faultRunState={startedAt:scoreClock.now(Date.now()),durationMs:Math.max(100,Number(action.run.durationMs)||1500),direction:Number(action.run.direction)<0?-1:1};
   }else if(action.type==='visible'){
     document.documentElement.style.visibility=action.visible?'visible':'hidden';reportScoreAction(action,cueId);
   }else if(action.type==='geometry')reportScoreAction(action,cueId);
@@ -258,7 +294,7 @@ function draw(at){
     const transitionState=transitionUniform(clockNow);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
     gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
-    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
+    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);const grid=envelope?.fault?.grid;gl.uniform4f(gl.getUniformLocation(program,'terminalGrid'),Number(grid?.originU)||.02,Number(grid?.originV)||.03,Number(grid?.cellU)||.0216,Number(grid?.rowV)||.0764);gl.uniform3f(gl.getUniformLocation(program,'faultRun'),faultRunState?(clockNow-faultRunState.startedAt)/1000:-1,faultRunState?faultRunState.durationMs/1000:1,faultRunState?.direction||1);gl.uniform1f(gl.getUniformLocation(program,'terminalTick'),envelope?.reducedMotion?0:Math.floor(clockNow/90));gl.uniform1f(gl.getUniformLocation(program,'terminalReduced'),envelope?.reducedMotion||envelope?.fault?.flashMode==='off'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
     architecture?.draw({width:w,height:h,dpr,desktopOrigin:envelope?.desktopOrigin||{x:0,y:0},blueNoiseTexture,coherence:envelope?.coherent?1:0,negative:frontEndNegative});
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);
@@ -271,7 +307,7 @@ async function acceptEnvelope(payload){
   if(!validation.ok)return false;
   architecture?.dispose();architecture=null;architectureBackground=null;architectureMediaAnchor=null;
   cancelOwnedDecode();ownedFrameRevision=0;ownedFrameLoad++;ownedFrameReady=null;
-  clearEventTimers();scoreSuspended=false;envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
+  clearEventTimers();scoreSuspended=false;faultRunState=null;envelope={...payload,desktopOrigin:payload.desktopOrigin||{x:0,y:0}};currentRevision=Number(payload.revision);currentSession=String(payload.sessionToken);
   scoreClock=createWindowMediaClock({epochMs:payload.score.epochMs,nowMs:Date.now()});
   videoClock=createWindowVideoClock({score:payload.score,assignment:payload.score.initial,nowMs:Date.now(),reducedMotion:!!payload.reducedMotion});
   scoreCycle=-1;executedTimed.clear();document.documentElement.dataset.windowLabel=label;document.documentElement.dataset.revision=String(currentRevision);document.body.setAttribute('aria-label',String(payload.description||'Game-owned media fragment'));

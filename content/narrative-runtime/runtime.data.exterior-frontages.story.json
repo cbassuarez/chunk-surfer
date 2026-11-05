@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.exterior-frontages",
+  "title": "Runtime · data/exterior-frontages.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "EXTERIOR_NEIGHBOURHOOD.notices",
+  "entries": [
+    "EXTERIOR_NEIGHBOURHOOD.notices"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/exterior-frontages.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "EXTERIOR_NEIGHBOURHOOD.notices": {
+      "id": "EXTERIOR_NEIGHBOURHOOD.notices",
+      "type": "line",
+      "lines": [
+        {
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l0",
+          "who": "thought",
+          "text": "CLOSED EARLY",
+          "source": "src/data/exterior-frontages.js:31"
+        },
+        {
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l1",
+          "who": "thought",
+          "text": "FOR THE VIGIL",
+          "source": "src/data/exterior-frontages.js:31"
+        },
+        {
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l2",
+          "who": "thought",
+          "text": "BACK TOMORROW",
+          "source": "src/data/exterior-frontages.js:31"
+        }
+      ],
+      "source": "src/data/exterior-frontages.js:31"
+    }
+  }
+}

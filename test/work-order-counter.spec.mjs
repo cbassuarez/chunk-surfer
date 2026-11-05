@@ -27,7 +27,8 @@ test('the actual navigator submission hides takes before signing even with a pac
 });
 test('the production signature line durably accepts the job before the existing physical key handover',()=>{
  const save={flags:{}},writes=[],progress=[];
- const h={WORK_ORDER_ACCEPTED_FLAG,getSave:()=>save,flagTest:k=>save.flags[k]===true,
+ // Signing also signs the cassette issue, in the same write (docs/plans/work-order.md).
+ const h={WORK_ORDER_ACCEPTED_FLAG,getSave:()=>save,cassetteLedger:()=>({schema:1,signed:workOrderAccepted(save.flags)?{time:'21:42'}:null}),flagTest:k=>save.flags[k]===true,
   flagSet:k=>{save.flags[k]=true;},saveCommit:p=>writes.push(JSON.parse(JSON.stringify(p))),
   noteExteriorConversation:()=>{},setBoothPresentationPose:()=>{},boothPoseForLine:()=> 'idle',
   flagApply:keys=>keys.forEach(k=>{save.flags[k]=true;}),syncPrologueKeyring:()=>{},STORY:{stopOpeningSceneBed:()=>{}},
@@ -38,6 +39,7 @@ test('the production signature line durably accepts the job before the existing 
  vm.runInContext('guardConversationLine(line)',h);assert.equal(writes.length,1,'duplicate line callback is idempotent');
  assert.equal(progress.length,1);assert.equal(progress[0].type,EVENT_TYPES.WORK_ORDER_ACCEPTED);
  assert.equal(workOrderAccepted(JSON.parse(JSON.stringify(writes[0].flags))),true);
+ assert.deepEqual(writes[0].cassettes.signed,{time:'21:42'},'the cassettes are signed for in the same write');
 });
 test('unaccepted task digits and slots cannot retain an earned-take flash when their bank goes dark',()=>{
  const state=navigatorTelemetryState({takesVisible:false,takes:4,total:5,monitor:{db:-96,segments:0}});

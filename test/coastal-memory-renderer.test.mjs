@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {coastalMemoryRenderFrame,createCoastalMemoryRenderer} from '../src/render/coastal-memory-renderer.js';
-import {COASTAL_MEMORY_LAYOUT as L,COASTAL_SETTLED_BODY_WORLD,coastalWorldPoint} from '../src/data/coastal-memory.js';
+import {COASTAL_MEMORY_LAYOUT as L,COASTAL_SETTLED_BODY_WORLD,coastalWorldPoint,coastalMultiply} from '../src/data/coastal-memory.js';
+import {vanWreckFoldMatrix} from '../src/data/van-wreck.js';
 import {createPropRangeController} from '../src/render/prop-range.js';
 const metrics=JSON.parse(fs.readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url)));
 test('on-foot camera and actual wreck share the opening site frame without moving Source',()=>{
@@ -10,9 +11,9 @@ test('on-foot camera and actual wreck share the opening site frame without movin
  const before=structuredClone(state),f=coastalMemoryRenderFrame(state,{vehicleMetrics:metrics});
  assert.deepEqual(state,before);assert.deepEqual(f.eye,coastalWorldPoint([L.spawn.x,L.spawn.feet+1.62,L.spawn.z]));
  assert.deepEqual(f.scene.props.find(p=>p.id==='coastal-sunken-same-van').matrix,COASTAL_SETTLED_BODY_WORLD);
- assert.equal(f.scene.props.filter(p=>p.id.startsWith('coastal-sunken-tyre')).length,4);
- assert.equal(f.coastalMemory.lights.length,2);assert.equal(f.coastalMemory.lights[0].intensity,2.5);
- assert.equal(f.scene.props.find(p=>p.id==='coastal-sunken-same-van').fixturePower,.5,'actual bulb emission follows the same switch as the two real lamps');
+ assert.equal(f.scene.props.filter(p=>p.id.startsWith('coastal-sunken-tyre')).length,2,'only the rear wheels stayed on');
+ assert.equal(f.coastalMemory.lights.length,1,'one headlamp survived the crush');assert.equal(f.coastalMemory.lights[0].intensity,2.5);
+ assert.equal(f.scene.props.find(p=>p.id==='coastal-sunken-same-van').fixturePower,.5,'actual bulb emission follows the same switch as the surviving lamp');
  assert.equal(f.coastalMemory.flood,0);assert.ok(!f.scene.props.some(p=>/sea.surface|opaque.water/.test(p.mesh)));
 });
 test('unnoticed headlights remain dark; reduced motion freezes sea without freezing walking',()=>{
@@ -28,23 +29,24 @@ test('only the confirmed submerged opening van carries solid paint on its exact 
   const frame={pose:L.spawn,elapsed:12,wreckLightLevel:level},before=structuredClone(frame);
   const out=coastalMemoryRenderFrame(frame,{vehicleMetrics:metrics}),body=out.scene.props.find(p=>p.id==='coastal-sunken-same-van');
   const marks=out.scene.props.filter(p=>p.paintOf);assert.equal(marks.length,1);
-  const mark=marks[0];assert.equal(mark.paintOf,body.id);assert.equal(mark.mesh,'van_brand_drive');
+  const mark=marks[0];assert.equal(mark.paintOf,body.id);assert.equal(mark.mesh,'van_wreck_brand');
+  // The lettering is bent into the wreck with its panels, so it shares the hull's frame.
   assert.deepEqual(mark.matrix,COASTAL_SETTLED_BODY_WORLD);assert.deepEqual(mark.matrix,body.matrix);assert.notEqual(mark.matrix,body.matrix);
   assert.equal(mark.sourceStructure,'coastal-memory');assert.equal(mark.skyExposed,false);assert.equal(mark.fixturePower,level);
   assert.equal(mark.emissive,undefined);assert.equal(mark.cabinVolume,undefined);assert.equal(mark.character,undefined);
-  assert.equal(out.scene.lamps.filter(l=>l.fixture==='same van headlamp').length,2,'pigment adds no practical or headlamp');
+  assert.equal(out.scene.lamps.filter(l=>l.fixture==='same van headlamp').length,1,'pigment adds no practical or headlamp');
   assert.deepEqual(frame,before);assert.equal(out.coastalMemory.active,true);assert.equal(out.coastalMemory.waterY,0);
  }
 });
 test('the visible practical owns the single shadow map at the wreck and pier, including a retreat',()=>{
  const render=pose=>coastalMemoryRenderFrame({pose,elapsed:12,wreckLightLevel:1},{vehicleMetrics:metrics});
  const entry=render(L.spawn),pier=render({...L.spawn,x:13.07639,z:86}),retreat=render(L.spawn);
- assert.equal(entry.scene.lamps.find(l=>l.castsShadow)?.id,'coastal-sunken-headlamp-0');
+ assert.equal(entry.scene.lamps.find(l=>l.castsShadow)?.id,'coastal-sunken-headlamp-1');
  const practical=pier.scene.lamps.find(l=>l.castsShadow);
  assert.equal(practical?.id,'coastal-pier-near-marker');
  assert.ok(Number.isFinite(practical.shadowYaw)&&Number.isFinite(practical.shadowPitch)&&practical.shadowPitch<0,'pier shadows must face down from the real fitting toward its structure');
  assert.equal(pier.scene.lamps.filter(l=>l.castsShadow).length,1);
- assert.equal(retreat.scene.lamps.find(l=>l.castsShadow)?.id,'coastal-sunken-headlamp-0');
+ assert.equal(retreat.scene.lamps.find(l=>l.castsShadow)?.id,'coastal-sunken-headlamp-1');
  assert.deepEqual(entry.coastalMemory.lights,pier.coastalMemory.lights,'shadow allocation cannot change the actual headlamp supply or water volume');
 });
 function fixture(){
@@ -64,8 +66,8 @@ test('catalog replacement fails visibly instead of continuing over a missing ban
  const f=fixture();await f.owner.initialize();f.catalog.delete('cm_grass_bank');assert.throws(()=>f.owner.render({pose:L.spawn}),/catalog/);f.owner.dispose();
 });
 test('a second coastal visit reuses the actual resident van and mechanism packs',async()=>{
- const f=fixture();await f.owner.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,3);assert(f.catalog.has('van_brand_drive'));f.owner.dispose();
- const second=createCoastalMemoryRenderer(f.options);await second.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,3,'retreat/re-entry must not allocate the vehicle, coast or pigment packs again');
+ const f=fixture();await f.owner.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,4);assert(f.catalog.has('van_brand_drive'));assert(f.catalog.has('van_wreck_hull'));f.owner.dispose();
+ const second=createCoastalMemoryRenderer(f.options);await second.initialize();assert.equal(f.calls.filter(c=>c[0]==='pack').length,4,'retreat/re-entry must not allocate the vehicle, wreck, coast or pigment packs again');
  assert.ok(second.ready());second.dispose();assert.equal(f.releases(),2);
 });
 test('coastal paint loads in an isolated catalog, reuses global residency and detects a replaced pigment mesh',async()=>{

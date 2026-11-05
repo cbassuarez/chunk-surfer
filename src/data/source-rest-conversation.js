@@ -1,5 +1,6 @@
 import {SOURCE_REST_COUPERIN_CONVERSATION} from './source-rest-couperin-conversation.js';
 import {sourceRestQuestionNodes} from './source-rest-questions.js';
+import {sourceRestEarthlyNodes} from './source-rest-earthly.js';
 
 // The two seats use the music associated with Source II and III. These
 // are conversations with an uncertain interlocutor, not claims about the
@@ -362,7 +363,7 @@ const phaseOpenings={
       other('I am listening.'),
       you('Will you stay for the rest?'),
       other('Of course.')
-    ],{lockExit:true,next:'last-choice'}),
+    ],{lockExit:true,next:'earthly'}),
     'last-choice':timed([
       other('There. Do you hear the lower line?')
     ],{lockExit:true,choices:[go('hear','I hear it.','last-hear'),go('again','Let it come round again.','last-again')]}),
@@ -425,7 +426,8 @@ const phaseOpenings={
   }
 };
 
-function build(phase,title){const nodes=phase==='wrong-return'?{...phaseOpenings[phase],...sourceRestQuestionNodes('ornaments')}:{...shared,...phaseOpenings[phase]};return Object.freeze({id:`source-rest:${phase}`,phase,title,entry:'arrival',nodes:Object.freeze(nodes)});}
+function build(phase,title){const nodes=phase==='wrong-return'?{...phaseOpenings[phase],...sourceRestQuestionNodes('ornaments'),
+  ...sourceRestEarthlyNodes(phase,{next:'last-choice'})}:{...shared,...phaseOpenings[phase]};return Object.freeze({id:`source-rest:${phase}`,phase,title,entry:'arrival',nodes:Object.freeze(nodes)});}
 export const SOURCE_REST_CONVERSATIONS=Object.freeze({
   'wrong-return':build('wrong-return','THE BENCH / BACH'),
   'catch':SOURCE_REST_COUPERIN_CONVERSATION,
@@ -436,7 +438,15 @@ export const SOURCE_REST_CONVERSATIONS=Object.freeze({
 const unnamed=SOURCE_REST_CONVERSATIONS['wrong-return'];
 const namedDistance=Object.freeze({...unnamed.nodes.distance,lines:Object.freeze(unnamed.nodes.distance.lines.map((entry,index)=>
   index===2?you('I played it for Sarah. I played it for Lyle.'):entry))});
-const sarahNamed=Object.freeze({...unnamed,nodes:Object.freeze({...unnamed.nodes,distance:namedDistance})});
+const sarahNamed=Object.freeze({...unnamed,nodes:Object.freeze({...unnamed.nodes,distance:namedDistance,
+  ...sourceRestEarthlyNodes('wrong-return',{next:'last-choice',sarahNamed:true})})});
+// Source III never says her name in its own story. Only his late question
+// about her follows the confession, exactly as Source II's does.
+const catchUnnamed=SOURCE_REST_CONVERSATIONS.catch;
+const catchNamed=Object.freeze({...catchUnnamed,nodes:Object.freeze({...catchUnnamed.nodes,
+  ...sourceRestEarthlyNodes('catch',{next:'last-choice',sarahNamed:true})})});
 export function sourceRestConversation(phase,{sarahNamed:named=false}={}){
-  return phase==='wrong-return'&&named?sarahNamed:SOURCE_REST_CONVERSATIONS[phase]||null;
+  if(named&&phase==='wrong-return')return sarahNamed;
+  if(named&&phase==='catch')return catchNamed;
+  return SOURCE_REST_CONVERSATIONS[phase]||null;
 }

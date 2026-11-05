@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.corridor-lettering",
+  "title": "Runtime · data/corridor-lettering.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "LANDING_FITTINGS.main-basement-stair-ground-landing",
+  "entries": [
+    "LANDING_FITTINGS.main-basement-stair-ground-landing",
+    "LANDING_FITTINGS.main-basement-stair-b3-landing",
+    "LANDING_FITTINGS.main-open-well-upper-floor-landing",
+    "LANDING_FITTINGS.main-open-well-academic-floor-landing"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/corridor-lettering.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "LANDING_FITTINGS.main-basement-stair-ground-landing": {
+      "id": "LANDING_FITTINGS.main-basement-stair-ground-landing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LANDING_FITTINGS.main-basement-stair-ground-landing.l0",
+          "who": "inspect",
+          "text": "A caged bulkhead pair over the head of the basement stair, with a sign plate between them reading GROUND.",
+          "source": "src/data/corridor-lettering.js:13"
+        },
+        {
+          "id": "LANDING_FITTINGS.main-basement-stair-ground-landing.l1",
+          "who": "inspect",
+          "text": "(again) Ground. The way back up, if the stair is still where you left it.",
+          "source": "src/data/corridor-lettering.js:13"
+        }
+      ],
+      "source": "src/data/corridor-lettering.js:13"
+    },
+    "LANDING_FITTINGS.main-basement-stair-b3-landing": {
+      "id": "LANDING_FITTINGS.main-basement-stair-b3-landing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LANDING_FITTINGS.main-basement-stair-b3-landing.l0",
+          "who": "inspect",
+          "text": "A bulkhead pair at the foot of the stair. The plate lists the dance wing and the studios on it, B1 to B5.",
+          "source": "src/data/corridor-lettering.js:18"
+        },
+        {
+          "id": "LANDING_FITTINGS.main-basement-stair-b3-landing.l1",
+          "who": "inspect",
+          "text": "(again) B4 is not on the plate. It is not on the plan either.",
+          "source": "src/data/corridor-lettering.js:18"
+        }
+      ],
+      "source": "src/data/corridor-lettering.js:18"
+    },
+    "LANDING_FITTINGS.main-open-well-upper-floor-landing": {
+      "id": "LANDING_FITTINGS.main-open-well-upper-floor-landing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LANDING_FITTINGS.main-open-well-upper-floor-landing.l0",
+          "who": "inspect",
+          "text": "A pair of opal sconces on the landing wall, with a small dark plate between them: THE PRACTICE WING.",
+          "source": "src/data/corridor-lettering.js:23"
+        },
+        {
+          "id": "LANDING_FITTINGS.main-open-well-upper-floor-landing.l1",
+          "who": "inspect",
+          "text": "(again) The plate has an arrow on it. It points along a corridor that is not quite where it says.",
+          "source": "src/data/corridor-lettering.js:23"
+        }
+      ],
+      "source": "src/data/corridor-lettering.js:23"
+    },
+    "LANDING_FITTINGS.main-open-well-academic-floor-landing": {
+      "id": "LANDING_FITTINGS.main-open-well-academic-floor-landing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LANDING_FITTINGS.main-open-well-academic-floor-landing.l0",
+          "who": "inspect",
+          "text": "Opal sconces and a plate at the top of the well: VOCAL STUDIES, and a list of studios.",
+          "source": "src/data/corridor-lettering.js:28"
+        },
+        {
+          "id": "LANDING_FITTINGS.main-open-well-academic-floor-landing.l1",
+          "who": "inspect",
+          "text": "(again) The list is longer than the number of doors on this floor.",
+          "source": "src/data/corridor-lettering.js:28"
+        }
+      ],
+      "source": "src/data/corridor-lettering.js:28"
+    }
+  }
+}

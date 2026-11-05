@@ -1,6 +1,7 @@
 // The things in the nothingness, in local metres: the ruin that reads 6:00 AM
 // from one step, the cardboard flat of the building behind it, the far faults.
-import {SIX_NOTHINGNESS as C,sixRandom} from '../data/six-nothingness.js';
+import {SIX_NOTHINGNESS as C,sixRandom,sixFaultArcLength,sixFaultSectorLength} from '../data/six-nothingness.js';
+import {sourceAmbientFaultGeometry} from './source-ambient-fault-geometry.js';
 
 const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
   dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
@@ -219,21 +220,19 @@ export function sixFlatGeometry(){
 }
 
 // ── THE FAULTS ──────────────────────────────────────────────────────────────
-// The same held panels Source II closes a passage with, here as a ring far past
-// the boos. This is one sector on the -Z axis; the ring is that sector moved round.
-export const SIX_FAULT_PALETTE=Object.freeze([[1,.015,.72],[.015,.82,1],[.42,.015,1],[.74,1,.015]]);
+// The torn sheets Source now leaves where the world has failed: flat shards in
+// silver, black and the four rift inks. Two pieces, each authored in its own
+// frame (tangent along X, outward along Z, centred on the line): one arc of a
+// clock's ring and one sector of the far ring. The rings are those pieces
+// turned to their bearings.
 export function sixFaultGeometry(){
-  const{radius,sectors,patches,rows,columns,height,seed}=C.faults,rand=sixRandom(seed),palette=SIX_FAULT_PALETTE.map(target),rowHeight=height/rows,span=Math.PI*2/sectors;
-  for(let n=0;n<patches;n++){
-    const a=((n+.5+(rand()-.5)*.3)/patches-.5)*span,r=radius+(rand()-.5)*1.2,nx=-Math.sin(a),nz=-Math.cos(a),cx=C.centre.x+nx*r,cz=C.centre.z+nz*r,tx=Math.cos(a),tz=-Math.sin(a);
-    for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){
-      if(rand()<.08)continue;
-      const u=(column+.5-columns/2)*1,y=(row+.5)*rowHeight,hw=.47,hh=rowHeight/2-.03,ht=.025,
-        at=(su,sy,sn)=>[cx+tx*(u+su*hw)+nx*sn*ht,y+sy*hh,cz+tz*(u+su*hw)+nz*sn*ht];
-      solid(palette[Math.floor(rand()*palette.length)],[at(-1,-1,-1),at(1,-1,-1),at(1,-1,1),at(-1,-1,1),at(-1,1,-1),at(1,1,-1),at(1,1,1),at(-1,1,1)]);
-    }
-  }
-  return palette;
+  const{sheets,size,height,spreadHeight,depth,seed}=C.faults,
+    piece=(prefix,length,count,salt)=>sourceAmbientFaultGeometry({palettePrefix:prefix,
+      sites:[{id:prefix,x:0,y:height,z:0,count,spreadX:length,spreadY:spreadHeight,spreadZ:depth,seed:seed+salt,size}]});
+  return{
+    near:piece('six_fault_near',sixFaultArcLength(),sheets,1),
+    far:piece('six_fault_far',sixFaultSectorLength(),Math.round(sheets*sixFaultSectorLength()/sixFaultArcLength()),2),
+  };
 }
 function floorGeometry(){
   const g=target(),sides=96;
@@ -265,7 +264,7 @@ export function sixNothingnessGeometry(){
     {name:'six_flat_weight',...f.weight,base:[.08,.08,.09,1],roughness:.7,metallic:.4},
     {name:'six_flat_tape',...f.tape,base:[.84,.76,.56,1],roughness:.5},
     {name:'six_flat_ink',...f.ink,base:[.04,.035,.035,1],roughness:1},
-    ...faults.map((g,k)=>({name:`six_fault_${k}`,...g,base:[...SIX_FAULT_PALETTE[k],1],emissive:SIX_FAULT_PALETTE[k].map(v=>v*.36),roughness:.22,materialRole:'source-chunk-error'})),
+    ...[...faults.near,...faults.far].map(g=>({name:g.name,p:g.p,i:g.i,base:g.base,emissive:g.emissive,roughness:g.roughness,materialRole:g.materialRole,faultRing:g.name.startsWith('six_fault_near')?'near':'far'})),
   ]);
   return library;
 }

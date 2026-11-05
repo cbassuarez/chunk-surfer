@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.roof-ren-dialogue",
+  "title": "Runtime · data/roof-ren-dialogue.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "buildRoofRenDialogue.memory-shared",
+  "entries": [
+    "buildRoofRenDialogue.memory-shared"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/roof-ren-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "buildRoofRenDialogue.memory-shared": {
+      "id": "buildRoofRenDialogue.memory-shared",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.memory-shared.l0",
+          "who": "direction",
+          "text": "Ren answers her before they seem to mean to. Their missing side draws a dark crease across the glass between you. You can hear the answer from their intact mouth. The tape itself has not changed.",
+          "source": "src/data/roof-ren-dialogue.js:315"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:315"
+    }
+  }
+}

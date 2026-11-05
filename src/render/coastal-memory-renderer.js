@@ -12,12 +12,14 @@ import {physicalPrintPixels,uploadPhysicalPrint} from './physical-source-print.j
 import {vanBrandInstances} from './van-brand.js';
 import {VAN_BRAND_PACK,VAN_BRAND_FITS} from '../data/van-brand.js';
 import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
+import {VAN_WRECK,VAN_WRECK_ASSET} from '../data/van-wreck.js';
 import {windVector} from '../world/wind.js';
 
-const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_wreck_seat','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine'];
+const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach','cm_beach_boulder_0','cm_beach_boulder_1','cm_beach_boulder_2','cm_beach_boulder_3','cm_driftwood','cm_wrack_strand','cm_van_hubcap','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine'];
 const vanMeshes=['drive_vehicle_body','drive_cabin'];
 const vanBrandMeshes=[VAN_BRAND_FITS.drive.mesh];
-const required=[...coastMeshes,...vanMeshes,...vanBrandMeshes];
+const wreckMeshes=Object.values(VAN_WRECK.meshes);
+const required=[...coastMeshes,...vanMeshes,...vanBrandMeshes,...wreckMeshes];
 const finite=(n,d=0)=>Number.isFinite(n)?n:d;
 const clamp=n=>Math.max(0,Math.min(1,finite(n)));
 export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotion=false}={}){
@@ -27,7 +29,9 @@ export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotio
  for(const prop of scene.props)if(prop.id==='coastal-sunken-same-van')prop.fixturePower=level;
  // This is explicitly the same van as the opening, settled underwater. Paint
  // follows its actual body/clip frame; unrelated wrecks and memories stay out.
- scene.props.push(...vanBrandInstances(scene.props.filter(prop=>prop.id==='coastal-sunken-same-van'&&prop.mesh==='drive_vehicle_body')));
+ // The lettering was bent into the wreck pack with its panels (van-wreck.js
+ // brand), so it rides the hull's own frame like the metal it is painted on.
+ scene.props.push(...vanBrandInstances(scene.props.filter(prop=>prop.id==='coastal-sunken-same-van').map(prop=>({...prop,mesh:'drive_vehicle_body'}))).map(mark=>({...mark,mesh:VAN_WRECK.meshes.brand})));
  const marker=scene.lamps.find(lamp=>lamp.id==='coastal-pier-near-marker');if(marker)marker.castsShadow=pierShadow;
  for(const lamp of scene.water.realHeadlamps){lamp.intensity*=level;if(level<.001||pierShadow)lamp.castsShadow=false;const m=lamp.vehicleBody;lights.push({position:[lamp.x,lamp.y,lamp.z],direction:[-m[8],-m[9],-m[10]],intensity:lamp.intensity});}
  const yaw=finite(pose.yaw)+Math.atan2(COASTAL_WORLD_FROM_LOCAL[2],COASTAL_WORLD_FROM_LOCAL[0]);
@@ -58,7 +62,7 @@ export function createCoastalMemoryRenderer({renderer=R3,props=P3,resolveAsset=a
   if(pending)return pending;
   pending=(async()=>{
    if(await renderer.r3dBasePropsReady?.()===false)throw Error('The coastal prop context could not be prepared.');
-   for(const[path,names]of [['assets/source-drive/drive.glb',vanMeshes],[COASTAL_MEMORY_ASSETS.geometry.replace(/^\//,''),coastMeshes],[VAN_BRAND_PACK,vanBrandMeshes]]){
+   for(const[path,names]of [['assets/source-drive/drive.glb',vanMeshes],[COASTAL_MEMORY_ASSETS.geometry.replace(/^\//,''),coastMeshes],[VAN_BRAND_PACK,vanBrandMeshes],[VAN_WRECK_ASSET,wreckMeshes]]){
     const catalog=new Set(props.propMeshCatalog());if(names.some(name=>!catalog.has(name)))await props.addPropPack(resolveAsset(path));
    }
    const response=await fetcher(resolveAsset('assets/source-drive/geometry/metrics.json'));if(!response?.ok)throw Error('The actual van metrics are unavailable.');vehicleMetrics=await response.json();

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.student-strike-evidence",
+  "title": "Runtime · data/student-strike-evidence.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "STUDENT_STRIKE_RECORD_PROPS.inspect",
+  "entries": [
+    "STUDENT_STRIKE_RECORD_PROPS.inspect"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/student-strike-evidence.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "STUDENT_STRIKE_RECORD_PROPS.inspect": {
+      "id": "STUDENT_STRIKE_RECORD_PROPS.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STUDENT_STRIKE_RECORD_PROPS.inspect.l0",
+          "who": "inspect",
+          "text": "A retained carbon. RECOVERY / EXTERNAL REGISTER. The chamber room is named at the top.",
+          "source": "src/data/student-strike-evidence.js:73"
+        },
+        {
+          "id": "STUDENT_STRIKE_RECORD_PROPS.inspect.l1",
+          "who": "inspect",
+          "text": "(again) The retained carbon still names this room.",
+          "source": "src/data/student-strike-evidence.js:73"
+        },
+        {
+          "id": "STUDENT_STRIKE_RECORD_PROPS.inspect.l2",
+          "who": "inspect",
+          "text": "A transfer receipt on the ringing bench. The room handover has been folded around it.",
+          "source": "src/data/student-strike-evidence.js:77"
+        },
+        {
+          "id": "STUDENT_STRIKE_RECORD_PROPS.inspect.l3",
+          "who": "inspect",
+          "text": "(again) The receipt belongs with this room’s handover.",
+          "source": "src/data/student-strike-evidence.js:77"
+        }
+      ],
+      "source": "src/data/student-strike-evidence.js:73"
+    }
+  }
+}

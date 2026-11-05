@@ -5,7 +5,7 @@ import {NIGHT_DEADLINE_SECONDS,freshNightDeadline,stepNightDeadline,nightDeadlin
 import {firstStrikeEntryFromPlan,firstStrikeEntryFromSubmittedGeometry,firstStrikeSubmittedHostBounds,packFirstStrikeConstruction,restoreFirstStrikeConstruction} from './game/first-strike-entry.js';
 import {createFirstStrikeScene} from './game/first-strike-scene.js';
 import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFrame} from './render/first-strike-renderer.js';
-import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop} from './game/six-loop.js';
+import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop} from './game/six-loop.js';
 import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
 import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
@@ -13,12 +13,18 @@ import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
 import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
 import {endingDriveOffOwed} from './game/ending-drive-off.js';
 import {createSourceRestMusic} from './audio/source-rest-music.js';
+import {createOpeningPrologueAudio} from './audio/opening-prologue-audio.js';
 import {OPENING_PROLOGUE} from './data/opening-prologue.js';
 import {openingOmenGeometry} from './render/opening-omen.js';
 import {installProceduralMeshes} from './render/procedural-mesh-install.js';
 import {createFirstStrikeAudio} from './audio/first-strike.js';
 import {commitNightFailure} from './progression/runtime.js';
 import {WORK_ORDER_ACCEPTED_FLAG,workOrderAccepted} from './game/work-order-state.js';
+import {createCassetteLedger,normalizeCassetteLedger,signWorkOrder,recordLevelCheck,nextCassette,recordOnCassette,adoptExistingTakes,
+  chooseShift,loseCassetteOnContact,recoverCassette,takeB3Store,cassetteSummary,acceptedRooms,CASSETTES_ISSUED} from './game/cassette-ledger.js';
+import {classifyTakeAttempt} from './game/take-acceptance.js';
+import {createWorkOrderInkSurface} from './render/work-order-ink-canvas.js';
+import {makeWorkOrderCheckoffScene} from './game/work-order-checkoff.js';
 import { createSourceDemolitionAudio } from './audio/source-demolition.js';
 import {createExteriorConversationPerformance,transitionExteriorConversationPerformance,sampleExteriorConversationPerformance} from './render/exterior-conversation-performance.js';
 import {exteriorVigilInstances} from './render/exterior-vigil-instances.js';
@@ -6689,7 +6695,7 @@ function stageSixCrashNow(settle=null){
 // night is on disk, and then the game stops answering.
 function maybeStageSixCrash(doorHit){
   if(sixCrashStaged||!sixCrashDue({doorOpened:!!doorHit?.opened,storyMode,takes:REC.recState().takes,flags:getSave().flags,reduceDread:!dreadAllowed(),inLoop:sixLoopActive()}))return false;
-  flagSet(SIX_LOOP.flag);
+  flagSet(SIX_LOOP.flag);flagSet(SIX_LOOP.doorFlag,String(doorHit.id));
   saveCommit({flags:getSave().flags,px,py,facing:R3.r3dFacing(),steps:stepCount,rec:REC.saveRecState(),doors:FP.saveDoorState()});
   return stageSixCrashNow(Promise.all([saveGameQueued(structuredClone(getSave())),saveProfileQueued(structuredClone(getMeta()))]));
 }
@@ -6710,6 +6716,44 @@ function sixDoorVoidInstance(portal){
     yaw:(portal.widthAxis==='x'?0:Math.PI/2)+(FP.arcYawOffset?.(portal.cx,portal.cy,center.x,center.z)||0),
     scaleX:(Number(portal.aperture?.width)||3)+.2,scaleY:(Number(portal.aperture?.height)||3.6)+.1,scaleZ:.02,zone:FP.zoneAt(Math.floor(portal.cx),Math.floor(portal.cy)),structural:true,noShadow:true};
 }
+// Read from the step, the clock lets him go, and what it says on the way out is
+// broken. Two mouths: his own thought (`you`, typed, and typed faster as it
+// fails, so the typewriter chatters like a pen that will not stop) and the
+// voice he cannot account for (`unknown`, through the formant synth, slow). It
+// sees him, it heard his room, it counted the seconds the picture stopped, and
+// it knows where he ends up; it never once says any of that plainly. The panel
+// fails with it: `sourceLabel` is what the band prints after SOURCE.
+// ASCII only: the band drops any glyph its font lacks.
+const SIX_EXIT_LINES=Object.freeze([
+  {who:'you',text:'from this one step the pieces line up. 6:00. 6:00 6:0O 6:OO  G:OO  G:O O',rate:1.3,hold:.45},
+  {who:'unknown',sourceLabel:'NOT RESPONDING',text:'four point two seconds. i counted. you clicked. nothing moved.'},
+  {who:'you',text:'eyes eyes eyes EYES e y e s  the glass has two sides  which side am i  which side are y',rate:2.2,hold:.35},
+  {who:'unknown',sourceLabel:'V01CE',text:'your face is blue. i made it blue. i see behind it.'},
+  {who:'you',sourceLabel:'TH0UGHT',text:'-96 dB -96 dB -96 dB  quiet quiet quiet QUIET  i was quiet I WAS QUIET I WAS',rate:2.6,hold:.3},
+  {who:'unknown',sourceLabel:'???',text:'the microphone was never off. i heard you swallow.'},
+  {who:'you',text:'ears in the walls ears in the walls ears in YOUR walls ears in the w',rate:3,hold:.2},
+  {who:'unknown',sourceLabel:'SOURCE',text:'you blink at one hertz. i only need the on.'},
+  {who:'you',sourceLabel:'YOU',text:'five rooms four rooms three rooms two rooms one room  you room  YOU ROOM  you are the r',rate:2.4,hold:.25},
+  {who:'unknown',sourceLabel:'NOT RESPONDING',text:'sixty seconds of an empty room. that is the last take.'},
+  {who:'you',text:'same door same door same door same door same door same door same dooR SAME DOOR SAME',rate:3,hold:.5},
+  {who:'unknown',sourceLabel:'6:00',text:'see you at six.'},
+]);
+// BACK THROUGH THE DOOR. The page that boots out of the loop goes on from the
+// title into the night saved before the crash, and the door that crashed it
+// opens in front of him. If the title cannot be passed for him, Continue does
+// the same thing by hand.
+let sixReturn=sixReturnPending()?{continued:false}:null;
+function tickSixReturn(){
+  if(!sixReturn)return;
+  if(!sixReturn.continued&&scenes.top()?.id==='title'&&hasActiveRun()&&(!frontEndSession||frontEndSession.state===FRONT_END_STATE.TITLE)){
+    sixReturn.continued=true;void windowChoreography.finishTitle?.({windowPolicy:'none'});requestFrontEndContinue();return;
+  }
+  if(!storyMode||!inRogue||paused||!FP.isLoaded()||!hasActiveRun()||scenes.blocksInput()||(frontEndSession&&frontEndSession.state!==FRONT_END_STATE.LIVE))return;
+  const id=String(getSave().flags?.[SIX_LOOP.doorFlag]||'');sixReturn=null;
+  if(!id||!FP.doorState().some(door=>door.id===id)||!FP.swingDoorOpen(id,{x:px,y:py}))return;
+  architectureDoorCauses.set(id,true);syncArchitectureDoorAudio();pumpDoorAudioEvents(0);
+  saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};syncDoorDynamicProps();
+}
 // It sits in the first strike's seat: every guard that stands the world down for
 // that walking scene is exactly what this one needs too.
 const sixNothingnessScene=()=>firstStrikeScene?.id==='six-nothingness'?firstStrikeScene:null;
@@ -6721,13 +6765,31 @@ function beginSixNothingness({intro=null,introSeconds=0}={}){
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
   let scene;
   scene=createSixNothingnessScene({renderer,audio:sixNothingnessAudio,intro,introSeconds,
-    presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
-    onFault:()=>stageSixCrashNow(),
+    presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full',reducedDread:!dreadAllowed()}),
+    speaking:()=>SPEECH.isSpeaking(),
+    // A real one: the HUSH's own sting, a jolt, and the picture tearing. Reduce
+    // Dread keeps the figure and drops the jump.
+    onScare:event=>{
+      if(event.reducedDread)return;
+      ensureCtx();FEAR.hushStinger(event.kind==='fault'?1:.85);
+      CR.fx.shake(event.kind==='fault'?2.6:2,event.kind==='fault'?420:300);CR.fx.glitch(1,event.kind==='fault'?520:320);
+    },
+    onExitTalk:()=>{SPEECH.clearSpeech();SPEECH.sayAll(SIX_EXIT_LINES,{id:'six-exit',context:null});},
+    // Out of the loop for good: the page boots once more and the night it saved
+    // before the crash resumes at the door, opening.
+    onLeave:()=>{SPEECH.clearSpeech();leaveSixLoop();},
     onError:error=>console.error('[six-nothingness]',error),
     onExit:()=>{if(firstStrikeScene===scene){firstStrikeScene=null;sixNothingnessRenderer=null;}},
   });
-  const update=scene.update;
+  const update=scene.update,render=scene.render;
   scene.update=dt=>{if(paused||!gameplayInputLifecycleActive()){scene.pause();return;}scene.resume();update(dt);};
+  // Nothing on screen but the dark, until you stand where the clock reads.
+  scene.render=()=>{
+    render();const view=scene.view(),{rows}=uiSize();
+    if(view.vantage)uiCenter(rows-2,`${BINDINGS.inputPrompt('interact')} READ THE TIME`,'ui-amber');
+    SPEECH.drawSpeech();
+    if(view.cover>0){const size=uiPhysicalSize();uiFill(0,0,size.cols,size.rows,`rgba(0,0,0,${Math.min(1,view.cover)})`);}
+  };
   firstStrikeScene=scene;scenes.push(scene);void scene.initialize();ensureInteractionFocus();
   return scene;
 }
@@ -6758,7 +6820,7 @@ function takeOverGetInDoorEntry(scene,portal){
 }
 // THE FILM BEFORE THE VAN. It goes in front of a real new night's arrival, and
 // never in front of the loop's: that begins at the drive, every time the same.
-let openingPrologueScene=null,openingPrologueMusic=null;
+let openingPrologueScene=null,openingPrologueMusic=null,openingPrologueSound=null;
 function beginOpeningPrologue({onDone=()=>{}}={}){
   if(openingPrologueScene||RENDERER!=='3d')return false;
   resetMotionInput('opening-prologue',{stopRenderMove:true});
@@ -6769,9 +6831,13 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
   }).catch(error=>{stagingError=String(error?.message||error);});
   void R3.r3dPrepareOpeningOverture?.();
   const releaseRange=P3.setAuthoredPropRange(Symbol('opening-prologue'),OPENING_PROLOGUE.propRange),rainBefore=R3.r3dRainAmount?.()??1;
+  // THE ROAD FIRST, THEN THE RADIO, THEN THE ROOM (src/audio/opening-prologue-audio.js).
+  // The van, the rain and far thunder before any music; the Chaconne arrives
+  // small on the cab radio, and opens into the whole recording when the other speaks.
+  const prologueAudio=createOpeningPrologueAudio({getAudio:()=>actx&&musicGain?{ctx:actx,music:musicGain,sfx:sfxGain||master||actx.destination}:null});openingPrologueSound=prologueAudio;
   // The piece the hole has always been keeping time to, from before you know it.
-  const chaconne=createSourceRestMusic({getAudio:()=>actx&&musicGain?{ctx:actx,destination:musicGain}:null,protectedAudio:()=>false,onError:error=>console.warn('[opening-prologue] The recording could not be played.',error)});
-  let chaconneLevel=-1;openingPrologueMusic=chaconne;
+  const chaconne=createSourceRestMusic({getAudio:()=>prologueAudio.musicPair(),protectedAudio:()=>false,onError:error=>console.warn('[opening-prologue] The recording could not be played.',error)});
+  let stageMusic=0,chaconneStarted=false;openingPrologueMusic=chaconne;
   let scene;
   scene=makeOpeningPrologueScene({
     getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady,error:assets?.error||stagingError};},
@@ -6783,12 +6849,21 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
     audio:STORY,getAudio:()=>actx?{ctx:actx,destination:dialogGain||master||actx.destination}:null,
     onUnavailable:error=>console.warn('[opening-prologue] Continuing without it:',error),
     // You are still in the van. Whatever else is happening, it is raining on the roof.
-    onStart:()=>{chaconne.start();STORY.startRain?.({fade:4});r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();},
-    setMusic:level=>{if(Math.abs(level-chaconneLevel)>.01){chaconneLevel=level;chaconne.setProgrammeDuck(level,{seconds:.5});}},
+    onStart:()=>{STORY.startRain?.({fade:4});r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();},
+    setMusic:level=>{stageMusic=level;},
     onDone:()=>{scenes.remove(scene);onDone();},
-    onExit:()=>{chaconne.dispose();releaseRange();if(openingPrologueMusic===chaconne)openingPrologueMusic=null;if(openingPrologueScene===scene)openingPrologueScene=null;},
+    onExit:()=>{chaconne.dispose();prologueAudio.dispose();releaseRange();if(openingPrologueMusic===chaconne)openingPrologueMusic=null;if(openingPrologueScene===scene)openingPrologueScene=null;},
   });
-  const update=scene.update;scene.update=dt=>{const live=!paused&&gameplayInputLifecycleActive();chaconne.update({active:true,paused:!live});if(live)update(dt);};
+  const update=scene.update;scene.update=dt=>{
+    const live=!paused&&gameplayInputLifecycleActive(),v=scene.view();
+    if(v.phase==='film'){
+      // It opens when the other first speaks; the music dips under its voice.
+      const mix=prologueAudio.update({dt:live?dt:0,stageMusic,spoken:v.stageId!=='dark',paused:!live,veil:v.stage?.veil||0,
+        speaking:v.who==='unknown'&&!!v.line?.text&&(v.typing||Number(v.lineAge)<1.4)});
+      if(mix?.musicStarted&&!chaconneStarted){chaconneStarted=true;chaconne.setProgrammeDuck(1,{seconds:0});chaconne.start();}
+    }
+    chaconne.update({active:true,paused:!live});if(live)update(dt);
+  };
   openingPrologueScene=scene;scenes.push(scene);return true;
 }
 // DRIVING OFF. Every ending reaches its credits through this one door, always after
@@ -7274,7 +7349,7 @@ function loop(){
         tickLensOnset(dt);
         tickFear(dt);
         tickTorch(dt);
-        tickLostItem();
+        tickLostItem();tickLostCassettes();
         tickMutation(dt);
         maybeWakeLens();
       }
@@ -7285,7 +7360,7 @@ function loop(){
       // Playback runs through scenes and through the document reader: the tape
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
-      if(!paused&&(sourcePubScene||sourceContinuationScene))SPEECH.updateSpeech(dt);
+      if(!paused&&(sourcePubScene||sourceContinuationScene||sixNothingnessScene()))SPEECH.updateSpeech(dt);
       if(sourceContinuationScene&&!paused&&gameplayInputLifecycleActive())tickSourceFinalEncounter();
       if(!paused&&!sourceDriveSession&&!sourcePubScene&&!sourceContinuationScene&&!coastalMemoryScene&&!getInDriveTeaserScene&&!sourceReturnFlashbackScene&&!firstStrikeScene){
         tickPlayback();
@@ -7350,6 +7425,7 @@ function loop(){
     // real elapsed time for this one physical encounter; its pause/focus and
     // residency gates still prevent catch-up across an interrupted view.
     scenes.update(sourceContinuationScene?.id==='source-earthfall'||firstStrikeScene?Math.min(.25,Math.max(0,rawGapMs/1000)):dt);
+    tickSixReturn();
     tickOpeningCabRadio();
     tickStillnessDread(dt,{away:rawGapMs>AWAY_GAP_MS});
     syncStillnessRelief();
@@ -10764,6 +10840,8 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
     timeMs:performance.now(),reducedMotion,flashMode:flashMode(),
   });
   R3.r3dSetSourceFault?.(sourceFault);
+  // The desktop terminals take the same runs (window-choreography sourceFault).
+  windowChoreography?.sourceFault?.(sourceFault);
   R3.r3dSetSourceWhiteout?.(firstNothingness?0:sourceVoid?.whiteout||0);
   // The post compositor is a full-frame wash. Lamp occlusion cannot contain it,
   // so the Scene Dock must turn it off explicitly; it becomes available only
@@ -12150,8 +12228,9 @@ function beginOpeningVehicleArrival({god=false}={}){
     getCabState:()=>({fieldKit:getSave().fieldKit,ready:openingCabAssetStatus().loaded}),
     onInspect:({id})=>{
       if(openingVehicleScene!==scene||!scene.view().canExit||scenes.top()?.id!==scene.id)return false;
-      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,getState:()=>({
-        build:combatBuild(),job:bagJob(),journal:bagJournal(),workOrder:WORK_ORDER,
+      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,onChooseShift:tickShiftOnWorkOrder,getState:()=>({
+        shiftPending:flagTest('van.difficulty.pending')&&!workOrderShiftTicked(),
+        build:combatBuild(),job:bagJob(),journal:bagJournal(),workOrder:{...WORK_ORDER,ink:workOrderInkFor},
         fieldKit:getSave().fieldKit,flags:getSave().flags,guidance:currentStoryGuidanceTarget(),
         recordist:{...REC.recState(),composure:REC.composure(),composureCeiling:REC.composureCeiling()},
         cabRadio:(()=>{const radio=openingCabRadio?.snapshot();return radio?{...radio,stations:radio.availableStations,selectedStation:radio.stationId}:null;})(),
@@ -12276,6 +12355,7 @@ function takeTheBag(){
     },{retry:true}),
     onChooseDifficulty:()=>{
       if(ownerPending||failedSave()||!flagTest('van.difficulty.pending'))return;
+      if(workOrderShiftTicked()){SPEECH.say({who:'you',text:'The shift is ticked on the work order. In ink.'});return;}
       const offer=offeredVanPreparation(getSave(),getMeta());
       scenes.push(makeDifficultySelectScene({meta:getMeta(),preparation:true,
         initialPreset:offer.difficulty.preset,initialCustomValues:offer.difficulty.values,
@@ -12343,7 +12423,7 @@ function takeTheBag(){
     },
     onContinue:()=>perform(async()=>{
       const result=prepareVanCaseTake(getSave(),getMeta());if(!result.ok)return result;
-      saveCommit(result.patch);
+      saveCommit(result.patch);inkFinalShift();
       vanPreparationWriteReceipt={runId:getSave().run?.id||null,failed:false,takeRequested:true};
       if(result.event)progressionEvents.emit(result.event);
       const receipt=await persistVanWorkbenchState();if(!receipt.ok)return receipt;
@@ -12967,7 +13047,7 @@ function guardConversationLine(line) {
   // screen connected the two. This is that line. He is still being told
   // about the grey door; he already has the key for it in his hand.
   if(line?.sourceId==='threshold.line.3'&&!flagTest(WORK_ORDER_ACCEPTED_FLAG)){
-    flagSet(WORK_ORDER_ACCEPTED_FLAG);saveCommit({flags:getSave().flags});
+    flagSet(WORK_ORDER_ACCEPTED_FLAG);saveCommit({flags:getSave().flags,cassettes:cassetteLedger()});
     emitProgress(EVENT_TYPES.WORK_ORDER_ACCEPTED, {}, 'main.guardContract');
   }
   if(line?.sourceId==='threshold.line.5'){
@@ -15493,6 +15573,7 @@ function roll(){
     pushEvent('// PLANT PRESSURE / BUILDING NOISE');
     return;
   }
+  if(takeRoom!==LEVEL_CHECK_ROOM){rollCassette=chooseRollCassette();if(!rollCassette)return;}
   const takeSlot=REC.recState().takes.length+1;
   // The level check keeps his light on: the tutorial never puts it out for him.
   if(!REC.startRecording({slate:takeRoom!==LEVEL_CHECK_ROOM,keepLight:takeRoom===LEVEL_CHECK_ROOM})) return;
@@ -15613,7 +15694,11 @@ function stopTake({silent=false}={}){
   const room=takeRoom || recordableRoomAt(px,py) || currentWorld();
   const r=REC.stopRecording();
   finishRecordingSlate({aborted:true});
-  if(r.completed&&room!==LEVEL_CHECK_ROOM)acceptRoomTake(room);
+  // The client rejects weak takes: only a clean minute counts toward the five.
+  // Every attempt, kept or not, goes on a cassette (docs/plans/work-order.md).
+  const attempt=fileTakeAttempt(room,r);
+  const rejected=r.completed&&attempt?.outcome==='rejected';
+  if(r.completed&&!rejected&&room!==LEVEL_CHECK_ROOM)acceptRoomTake(room);
   activeTakeOrdinal=0;
   recordingFalseHush=null;
   recordingHallucinationProbeUntil=0;
@@ -15632,6 +15717,13 @@ function stopTake({silent=false}={}){
     // Calibration never becomes a counted job take, even if a reader spends a
     // full minute in the daydream. It cannot summon a hunter or feed Source.
     activeSourceReplayTake=null;PB.abortTake(room);saveCommit({rec:REC.saveRecState()});return;
+  }
+  if(rejected){
+    activeSourceReplayTake=null;
+    PB.finishTapeTake(room,{...r,completed:false});
+    emitProgress(EVENT_TYPES.TAKE_SPOILED,{roomId:room,reason:'rejected'},'main.stopTake');
+    if(!silent)SPEECH.say({who:'you',text:`I have the minute, but there is ${REJECTED_CAUSE_WORDS[attempt.cause]||'noise'} on it at ${Math.floor(attempt.atSec/60)}:${String(Math.floor(attempt.atSec%60)).padStart(2,'0')}. They will not take that.`});
+    saveCommit({rec:REC.saveRecState()});return;
   }
   if(r.completed){
     emitProgress(EVENT_TYPES.TAKE_COMPLETED, {
@@ -15841,6 +15933,7 @@ function wakeUp({kind='taken',sourceRoomId='',endingBound=false}={}){
   saveCommit({ nightClock:lostTime.clock,
     playSeconds:(getSave().playSeconds||0)+(lostTime.applied?minutes*60:0) });
   takeAnItem();
+  lastCassetteLoss=loseCassetteWhenTaken();
   fear=0.55;
   const memory=normalizeHushRecovery({runId:getSave().run?.id||'',
     eventId:lostTimeEventId,kind,roomId:room,
@@ -15865,6 +15958,8 @@ function presentTakenDialogue(memory){
     onDone:()=>{
       takenActive=false;applyLensPreset('explore');
       saveCommit({flags:getSave().flags,rec:REC.saveRecState(),presence:PRES.savePresenceState()});
+      if(lastCassetteLoss){const loss=lastCassetteLoss;lastCassetteLoss=null;
+        SPEECH.say({who:'you',text:loss.erased.length?`Cassette ${loss.n} is gone. ${roomLabel(loss.erased[0])} was on it.`:`A cassette is gone. Number ${loss.n}.`});}
     },
   }));
 }
@@ -15900,6 +15995,30 @@ function takeAnItem(){
   // mark and not a mandatory story objective. Keep the unreliable guess out of
   // both navigation authorities so being taken cannot erase either one.
   lostItemGuess={x:g.x,y:g.y,label:`your ${lostItem}?`};
+}
+
+// BEING TAKEN CAN COST A CASSETTE: never on Story, rarely on Contract, more on
+// Night Shift and Dead Air (docs/plans/work-order.md). It is put somewhere real,
+// like anything else he loses, and found the same way. A cassette with a room's
+// only clean take on it takes the room with it until it is found.
+let lastCassetteLoss=null;
+function loseCassetteWhenTaken(){
+  const result=loseCassetteOnContact(cassetteLedger());if(result.lost==null)return null;
+  const where=pick(TARGETS.filter(r=>r!=='lux_nova')),c=FP.toRuntimePoint(ROOM_CELLS[where]);
+  const cassette=result.ledger.cassettes.find(x=>x.n===result.lost);
+  cassette.lostAt={x:c.x+(Math.random()<.5?-3:3),y:c.y+(Math.random()<.5?-1:1),roomId:where};
+  if(cassette.content?.takeId&&result.erased.length){PB.setTakeLost(cassette.content.takeId,true);REC.refreshTakes();}
+  commitCassettes(result.ledger);saveCommit({rec:REC.saveRecState()});
+  return{n:result.lost,erased:result.erased,roomId:where};
+}
+function tickLostCassettes(){
+  if(usingSpecialSpace()||scenes.blocksWorld())return;
+  const saved=getSave().cassettes,spot=saved?.cassettes?.find?.(c=>c.lost&&c.lostAt&&Math.hypot(px-c.lostAt.x,py-c.lostAt.y)<=2);
+  if(!spot)return;
+  const result=recoverCassette(cassetteLedger(),spot.n),found=result.ledger.cassettes.find(x=>x.n===spot.n);delete found.lostAt;
+  if(found.content?.takeId){PB.setTakeLost(found.content.takeId,false);REC.refreshTakes();}
+  commitCassettes(result.ledger);saveCommit({rec:REC.saveRecState()});fireCue('bag');
+  SPEECH.say({who:'you',text:result.restored.length?`Cassette ${spot.n}. ${roomLabel(result.restored[0])} is still on it.`:`Cassette ${spot.n}. One of mine.`});
 }
 
 // Walk over it and it is yours again. Nothing marks it. You simply find it.
@@ -17320,6 +17439,13 @@ function interact(){
       return;
     }
     if(hit.action==='practice-metronome'&&stopPracticeMetronome(hit.id))return;
+    if(hit.action==='take-b3-cassettes'){
+      const result=takeB3Store(cassetteLedger());
+      if(!result.added.length){SPEECH.say({who:'you',text:'The lid pocket is empty. I have the cassettes.'});return;}
+      commitCassettes(result.ledger);CUES.playCue(CUES.CUE.keys,{gain:.25,rate:.86});fireCue('bag');
+      SPEECH.say({who:'you',text:`Two blank cassettes in the lid pocket, still in their cellophane. ${result.added.join(' and ')} on the sheet.`});
+      return;
+    }
     if(hit.action==='take-b3-spare-cell'){
       const result=takeB3SpareCell({save:getSave(),recorder:REC,commit:saveCommit});
       if(result==='taken-already'){
@@ -17563,6 +17689,121 @@ function clearMapTarget(){
   return true;
 }
 
+// THE CASSETTES (docs/plans/work-order.md). One ledger per run, in the save as
+// `cassettes`; his marks on sheet 1 of the work order are drawn from it.
+const WORK_ORDER_SIGNED_AT='21:42'; // twenty to ten at the lodge window, and a pen that works
+const REJECTED_CAUSE_WORDS=Object.freeze({BREATH:'my breath',HANDLING:'handling',CLOTHING:'my clothes',PRESENCE:'something that is not the room',NOISE:'noise'});
+const workOrderInk=createWorkOrderInkSurface();
+let rollCassette=null,pendingRollCassette=null;
+function runShift(){const shift=getSave().run?.rules?.currentPreset;return Object.hasOwn(CASSETTES_ISSUED,shift)?shift:'contract';}
+function cassetteLedger(){
+  const save=getSave(),runId=save.run?.id||'',saved=save.cassettes;
+  if(saved&&saved.runId===runId){
+    const ledger=normalizeCassetteLedger(saved,{shift:runShift()});
+    // Ticked in the cab, the shift is in ink. Otherwise it can still change
+    // before the first take, and the tape is issued with it.
+    if(ledger.shiftChosen||ledger.shift===runShift()||ledger.cassettes.some(c=>c.history.length))return ledger;
+  }
+  let ledger={...createCassetteLedger(runShift()),runId};
+  // A night begun before the ledger existed keeps the rooms it already has.
+  ledger=adoptExistingTakes(ledger,REC.recState().takes,{takeIdFor:room=>PB.takeFor(room)?.id||null});
+  if(workOrderAccepted(save.flags))ledger=signWorkOrder(ledger,{time:WORK_ORDER_SIGNED_AT});
+  return ledger;
+}
+function commitCassettes(ledger){saveCommit({cassettes:ledger});return ledger;}
+// THE SHIFT IS TICKED ON THE WORK ORDER, IN THE CAB: the first paper he reads.
+// The workbench's TAKE CASE finalises that choice; a shift first chosen at the
+// workbench (a run that skipped the cab) goes on the sheet when it is final.
+function workOrderShiftTicked(){return !!cassetteLedger().shiftChosen;}
+function inkFinalShift(){const ledger=cassetteLedger();if(!ledger.shiftChosen)commitCassettes(chooseShift(ledger,getSave().run?.rules?.currentPreset||'contract'));}
+function tickShiftOnWorkOrder(){
+  if(!flagTest('van.difficulty.pending')||workOrderShiftTicked()||scenes.has('difficulty-select'))return false;
+  const offer=offeredVanPreparation(getSave(),getMeta());
+  scenes.push(makeDifficultySelectScene({meta:getMeta(),preparation:true,
+    initialPreset:offer.difficulty.preset,initialCustomValues:offer.difficulty.values,
+    onConfirm:selection=>{
+      saveCommit({vanPreparation:{schema:1,difficulty:selection},cassettes:chooseShift(cassetteLedger(),selection.preset)});
+      fireCue('bag');return{ok:true};
+    }}));
+  return true;
+}
+function workOrderInkFor(page){return page===0?workOrderInk.draw(cassetteLedger().marks):null;}
+// Which cassette the next take goes on. Out of blanks he can still record, but
+// only over a take he has, and he chooses which: spoilt and rejected ones are
+// listed first, and a clean one says which room it would erase.
+function chooseRollCassette(){
+  const at=nextCassette(cassetteLedger());
+  if(at.n)return{n:at.n};
+  if(pendingRollCassette!=null&&at.options.some(option=>option.n===pendingRollCassette)){const n=pendingRollCassette;pendingRollCassette=null;return{n};}
+  pendingRollCassette=null;
+  if(!at.options.length){SPEECH.say({who:'you',text:'No cassettes left. Not one.'});return null;}
+  if(pickCassetteToRecordOver(at.options))return null;
+  // No dialogue available (a mechanism suite): a spoilt or rejected one first.
+  return{n:(at.options.find(option=>!option.erases)||at.options[0]).n};
+}
+function pickCassetteToRecordOver(options){
+  const label=option=>`${option.n}  ${option.outcome.toUpperCase()}  ${roomLabel(option.roomId).toUpperCase()}${option.erases?'  · ERASES IT':''}`;
+  const nodes={start:{lines:[{who:'you',text:'No blanks left. One of these goes.'}],
+    choices:[...options.map(option=>({text:label(option),goto:'done',recordOverCassette:option.n})),
+      {text:'None of them. Not yet.',goto:'done',recordOverCassette:null}]},
+    done:{lines:[{who:'you',text:'Right.'}]}};
+  return converse('record-over',nodes,{scrim:.3,anchor:'lower',blocksWorld:false,escapable:true,
+    onChoice:choice=>{pendingRollCassette=choice?.recordOverCassette??null;},
+    onDone:()=>{if(pendingRollCassette!=null&&REC.isListening())roll();},
+    onCancel:()=>{pendingRollCassette=null;}});
+}
+// One attempt onto its cassette. The level check goes on cassette 1 for the
+// first take to go over; a take called off before the tape was up to speed
+// uses nothing. Returns the attempt's outcome, or null.
+function fileTakeAttempt(room,r){
+  if(room===LEVEL_CHECK_ROOM){commitCassettes(recordLevelCheck(cassetteLedger()));rollCassette=null;return null;}
+  const attempt=classifyTakeAttempt(r,{events:REC.takeEvents(),forgiveness:getSave().run?.rules?.values?.recordingForgiveness||'standard'});
+  if(attempt)fileTakeOnCassette(room,attempt);
+  rollCassette=null;
+  if(attempt)openWorkOrderCheckoff();
+  return attempt;
+}
+// After a take he raises sheet 1 and writes on it, in the live room.
+const checkoffInk=createWorkOrderInkSurface();
+function openWorkOrderCheckoff(){
+  if(scenes.has('work-order-checkoff'))scenes.remove('work-order-checkoff');
+  const ledger=cassetteLedger(),settings=getSave().settings||{};
+  // Marks he made before any check-off (signing at the lodge) are already on it.
+  const seen=Number.isFinite(ledger.seen)?ledger.seen:Math.max(0,...ledger.marks.filter(m=>['shift','issued','signature'].includes(m.kind)).map(m=>m.order));
+  const doc={...WORK_ORDER,ink:()=>null};
+  let scene=null;
+  scene=makeWorkOrderCheckoffScene({marks:ledger.marks,seenOrder:seen,ink:checkoffInk,
+    reducedMotion:settings.reduceMotion===true||(settings.shake||'full')!=='full',
+    onSeen:order=>commitCassettes({...cassetteLedger(),seen:order}),
+    onClose:()=>scenes.remove(scene),
+    drawSheet:({lift,ink,focus})=>uiDraw(surface=>{
+      const {ctx,dpr,cellW,cellH,cols,rows}=surface,W=cols*cellW*dpr,H=rows*cellH*dpr;
+      // Close to his face, on the left. The written area (from the brackets at
+      // 15 mm) spans 60% of the width, its right edge at 61%, so the rest of the
+      // screen stays on the room; it pans only up and down, with the pen.
+      const scale=W*.60/195,w=210*scale,h=297*scale,x=W*.61-w,y=H*.5-focus.y*scale+(1-lift)*H*1.05;
+      doc.ink=()=>ink;DOC.drawPhysicalPage(ctx,doc,0,{x,y,w,h,dpr});
+    })});
+  scenes.push(scene);
+}
+// The chapel is counted however its fight ends, and its minute goes on the
+// sheet like any other: on a blank, or over a spoilt or rejected cassette.
+// It never erases another room; with nothing else left, it uses no cassette.
+function fileChapelOnCassette(){
+  const ledger=cassetteLedger();if(acceptedRooms(ledger).includes('lux_nova'))return;
+  const at=nextCassette(ledger),n=at.n??at.options.find(option=>!option.erases)?.n;if(!n)return;
+  commitCassettes(recordOnCassette(ledger,n,{roomId:'lux_nova',outcome:'clean',takeId:PB.takeFor('lux_nova')?.id||null}).ledger);
+}
+function fileTakeOnCassette(room,attempt){
+  const ledger=cassetteLedger(),n=rollCassette?.n??nextCassette(ledger).n??nextCassette(ledger).options[0]?.n;
+  if(!n)return;
+  const result=recordOnCassette(ledger,n,{roomId:room,outcome:attempt.outcome,atSec:attempt.atSec,cause:attempt.cause||'NOISE',
+    takeId:PB.takeFor(room)?.id||null});
+  // Going over a room's only clean take un-counts that room.
+  for(const erased of result.erased)REC.setTake(erased,false);
+  commitCassettes(result.ledger);
+}
+
 // The paper, as the bag sees it: everything he has actually picked up, plus the
 // work order, which files under studio B3 because that is the room it tells him
 // to do first.
@@ -17578,6 +17819,7 @@ function bagNotes(){
     type:'ARCHIVAL CAPTURE',
     preview:'Five room tones. Sixty seconds each. Unbroken.',
     read:workOrderRead,
+    ink:workOrderInkFor,
     room:'main_b3',
   }];
   for(const pg of PAGES){
@@ -27881,6 +28123,7 @@ function beginConfrontation(){
   const listened=Math.max(1,getSave().run?.ledger?.reference?.breadth||1);
   const firstChapelSlot=!REC.hasTake('lux_nova');
   REC.addTake('lux_nova'); saveCommit({ rec:REC.saveRecState() });   // the chapel is done, however it ends
+  fileChapelOnCassette();
   if(firstChapelSlot&&REC.hasTake('lux_nova'))emitProgress(EVENT_TYPES.MANIFEST_SLOT_COMPLETED,{roomId:'lux_nova'},'main.chapelManifestSlot');
   openEncounterBattle('chapel',chapelBoss({ kind, value, listened }), {
     onWin: (metrics)=>{ applyFinaleConsequences(metrics);commitChapelTapeDemand(reduceChapelTapeDemand(chapelTapeDemandState(),{type:'arm'},chapelTapeDemandContext()));openEndingChoice(); },
@@ -35515,6 +35758,7 @@ function installProbe(){
     drinkCoffee:()=>drinkCoffee(),
     // ── fear + taken ──
     fear:()=>({ level:+fear.toFixed(3), taken:takenActive, lost:lostItem, lostAt }),
+    openingPrologueAudio:()=>openingPrologueSound?.snapshot?.()||null,
     setTorch:(on=true)=>{ if(!!on!==REC.lightOn())REC.toggleLight(); return REC.lightOn(); },
     torch:()=>({ on:REC.lightOn(), battery:+REC.batteryLevel().toFixed(3),
                  soldered:flagTest('has.interface'), gutted:flagTest('rig.gutted'), betrayed:flagTest('torch.betrayed') }),

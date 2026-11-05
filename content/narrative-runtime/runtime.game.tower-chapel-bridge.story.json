@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.tower-chapel-bridge",
+  "title": "Runtime · game/tower-chapel-bridge.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "applyTowerPealAdvantage.movements.before",
+  "entries": [
+    "applyTowerPealAdvantage.movements.before",
+    "applyTowerPealAdvantage.intro"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/tower-chapel-bridge.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "applyTowerPealAdvantage.movements.before": {
+      "id": "applyTowerPealAdvantage.movements.before",
+      "type": "line",
+      "lines": [
+        {
+          "id": "applyTowerPealAdvantage.movements.before.l0",
+          "who": "direction",
+          "text": "The chapel reaches for the tower carrier. The completed touch answers with silence.",
+          "source": "src/game/tower-chapel-bridge.js:22"
+        }
+      ],
+      "source": "src/game/tower-chapel-bridge.js:22"
+    },
+    "applyTowerPealAdvantage.intro": {
+      "id": "applyTowerPealAdvantage.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "applyTowerPealAdvantage.intro.l0",
+          "who": "you",
+          "text": "No bells. No carrier. You have to speak in this room now.",
+          "source": "src/game/tower-chapel-bridge.js:34"
+        }
+      ],
+      "source": "src/game/tower-chapel-bridge.js:34"
+    }
+  }
+}

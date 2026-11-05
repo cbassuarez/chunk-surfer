@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.endings",
+  "title": "Runtime · data/endings.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ENDING_MANIFEST.sacrifice.objective.timeline",
+  "entries": [
+    "ENDING_MANIFEST.sacrifice.objective.timeline",
+    "ENDING_MANIFEST.helped.objective.timeline",
+    "ENDING_MANIFEST.inversion.objective.timeline",
+    "ENDING_MANIFEST.drugged.objective.timeline",
+    "ENDING_MANIFEST.surfaced.objective.timeline"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/endings.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ENDING_MANIFEST.sacrifice.objective.timeline": {
+      "id": "ENDING_MANIFEST.sacrifice.objective.timeline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ENDING_MANIFEST.sacrifice.objective.timeline.l0",
+          "who": "you",
+          "text": "Every light behind me has just gone.",
+          "source": "src/data/endings.js:346"
+        },
+        {
+          "id": "ENDING_MANIFEST.sacrifice.objective.timeline.l1",
+          "who": "direction",
+          "text": "The corridor you came down is not dark. It is closed, which is a different thing, and you can hear the difference.",
+          "source": "src/data/endings.js:348"
+        },
+        {
+          "id": "ENDING_MANIFEST.sacrifice.objective.timeline.l2",
+          "who": "you",
+          "text": "It is not chasing me. It is just shutting doors.",
+          "source": "src/data/endings.js:350"
+        }
+      ],
+      "source": "src/data/endings.js:346"
+    },
+    "ENDING_MANIFEST.helped.objective.timeline": {
+      "id": "ENDING_MANIFEST.helped.objective.timeline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ENDING_MANIFEST.helped.objective.timeline.l0",
+          "who": "you",
+          "text": "The taste is still there. Eight hours and it is still there.",
+          "source": "src/data/endings.js:391"
+        },
+        {
+          "id": "ENDING_MANIFEST.helped.objective.timeline.l1",
+          "who": "you",
+          "text": "He is still on that gate. He will still be on it at six.",
+          "source": "src/data/endings.js:393"
+        }
+      ],
+      "source": "src/data/endings.js:391"
+    },
+    "ENDING_MANIFEST.inversion.objective.timeline": {
+      "id": "ENDING_MANIFEST.inversion.objective.timeline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ENDING_MANIFEST.inversion.objective.timeline.l0",
+          "who": "direction",
+          "text": "Something structural lets go a long way below you and arrives through the floor rather than through the air.",
+          "source": "src/data/endings.js:433"
+        }
+      ],
+      "source": "src/data/endings.js:433"
+    },
+    "ENDING_MANIFEST.drugged.objective.timeline": {
+      "id": "ENDING_MANIFEST.drugged.objective.timeline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ENDING_MANIFEST.drugged.objective.timeline.l0",
+          "who": "direction",
+          "text": "Something structural lets go a long way below you and arrives through the floor rather than through the air.",
+          "source": "src/data/endings.js:478"
+        }
+      ],
+      "source": "src/data/endings.js:478"
+    },
+    "ENDING_MANIFEST.surfaced.objective.timeline": {
+      "id": "ENDING_MANIFEST.surfaced.objective.timeline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ENDING_MANIFEST.surfaced.objective.timeline.l0",
+          "who": "recordist",
+          "text": "Left at the end. Not the stairs. I know what the stairs are for.",
+          "source": "src/data/endings.js:525"
+        },
+        {
+          "id": "ENDING_MANIFEST.surfaced.objective.timeline.l1",
+          "who": "recordist",
+          "text": "You can put me down. I am saying that for you, not for me. I would rather you did not.",
+          "source": "src/data/endings.js:526"
+        },
+        {
+          "id": "ENDING_MANIFEST.surfaced.objective.timeline.l2",
+          "who": "recordist",
+          "text": "It has stopped asking. Do you hear that? It has been asking for eleven weeks and it has stopped.",
+          "source": "src/data/endings.js:527"
+        },
+        {
+          "id": "ENDING_MANIFEST.surfaced.objective.timeline.l3",
+          "who": "you",
+          "text": "Keep talking. Whatever you have got. Just keep talking.",
+          "source": "src/data/endings.js:528"
+        },
+        {
+          "id": "ENDING_MANIFEST.surfaced.objective.timeline.l4",
+          "who": "recordist",
+          "text": "Take one. Room tone, studio B3, and a man breathing who is not going to be here in the morning. That was mine. That was my slate.",
+          "source": "src/data/endings.js:529"
+        }
+      ],
+      "source": "src/data/endings.js:525"
+    }
+  }
+}

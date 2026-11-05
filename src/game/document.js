@@ -117,12 +117,19 @@ function drawPaperSurface(ctx,image,w,h,pose,dpr,{flipScale=1,turnDir=0}={}){
 function placeholder(ctx,w,h,dpr){
   ctx.fillStyle='#eeece5';ctx.fillRect(-w*.5,-h*.5,w,h);ctx.strokeStyle='rgba(60,56,49,.18)';ctx.lineWidth=Math.max(1,dpr);ctx.strokeRect(-w*.5,-h*.5,w,h);
 }
+// A document may carry live ink for a page: `doc.ink(page)` returns
+// {image,version} in the page's own pixel space, or null. Only the work order
+// does today, for his ticks and notes on sheet 1.
+export function documentInk(doc,page){
+  if(typeof doc?.ink!=='function')return null;
+  try{const ink=doc.ink(page);return ink?.image?ink:null;}catch(error){console.warn('[document] ink failed:',error);return null;}
+}
 export function drawPhysicalPage(ctx,doc,page,rect,{flipScale=1,turnDir=0,turnAmount=null}={}){
-  const state=paperImageState(doc,page),material=paperMaterialState(doc,page),pose=poseFor(doc,page),handling=state.asset?.record?.handlingVector||[-1,0,0,0];
+  const state=paperImageState(doc,page),material=paperMaterialState(doc,page),pose=poseFor(doc,page),handling=state.asset?.record?.handlingVector||[-1,0,0,0],ink=documentInk(doc,page);
   if(state.ready&&state.image){
     const amount=turnAmount==null?Math.max(0,1-Math.abs(flipScale)):turnAmount;
     const frame=paper3dRender({
-      image:state.image,materialImage:material.ready?material.image:null,
+      image:state.image,materialImage:material.ready?material.image:null,inkImage:ink?.image||null,inkVersion:ink?.version||0,
       width:rect.w,height:rect.h,handlingVector:handling,seed:pose.seed,
       bow:pose.bow,edgeCurl:pose.edgeCurl,yaw:pose.yaw,pitch:pose.pitch,roll:pose.roll,
       turn:amount,turnDir:turnDir||1,
@@ -138,7 +145,8 @@ export function drawPhysicalPage(ctx,doc,page,rect,{flipScale=1,turnDir=0,turnAm
   // strip presentation rather than breaking document interaction.
   const cx=rect.x+rect.w*.5,cy=rect.y+rect.h*.5;ctx.save();ctx.translate(cx,cy);ctx.rotate(pose.roll+turnDir*(1-Math.abs(flipScale))*.012);ctx.transform(1,pose.yaw*.028,pose.yaw,1,0,0);
   drawPaperShadow(ctx,rect.w,rect.h,rect.dpr,flipScale);
-  if(state.ready&&state.image)drawPaperSurface(ctx,state.image,rect.w,rect.h,{bow:pose.bow*2.0,lift:pose.edgeCurl},rect.dpr,{flipScale,turnDir});
+  if(state.ready&&state.image){drawPaperSurface(ctx,state.image,rect.w,rect.h,{bow:pose.bow*2.0,lift:pose.edgeCurl},rect.dpr,{flipScale,turnDir});
+    if(ink){ctx.save();ctx.scale(Math.max(.045,Math.abs(flipScale))*(flipScale<0?-1:1),1);ctx.drawImage(ink.image,-rect.w*.5,-rect.h*.5,rect.w,rect.h);ctx.restore();}}
   else{ctx.scale(Math.max(.055,Math.abs(flipScale)),1);placeholder(ctx,rect.w,rect.h,rect.dpr);}ctx.restore();return !!(state.ready&&state.image);
 }
 function drawTurn(ctx,doc,turn,rect){
@@ -197,6 +205,7 @@ export function makeDocumentScene(doc,{id=`doc:${doc?.id||'document'}`,onSceneCl
             ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=18*rect.dpr;ctx.shadowOffsetY=6*rect.dpr;
             ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
             ctx.drawImage(state.image,x,y,rect.w,rect.h);
+            const ink=documentInk(doc,page);if(ink){ctx.shadowColor='transparent';ctx.drawImage(ink.image,x,y,rect.w,rect.h);}
             ctx.restore();
             return;
           }

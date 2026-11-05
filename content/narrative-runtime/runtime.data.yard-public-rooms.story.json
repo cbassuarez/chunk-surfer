@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.yard-public-rooms",
+  "title": "Runtime · data/yard-public-rooms.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "YARD_PUBLIC_ROOM_PROPS.inspect",
+  "entries": [
+    "YARD_PUBLIC_ROOM_PROPS.inspect"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/yard-public-rooms.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "YARD_PUBLIC_ROOM_PROPS.inspect": {
+      "id": "YARD_PUBLIC_ROOM_PROPS.inspect",
+      "type": "line",
+      "lines": [
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l0",
+          "who": "inspect",
+          "text": "A maintenance book, pencil and cold mug occupy the caretaker’s desk. The last entry records a leaking gutter over the rehearsal range.",
+          "source": "src/data/yard-public-rooms.js:112"
+        },
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l1",
+          "who": "inspect",
+          "text": "(again) The book is still open at the gutter repair.",
+          "source": "src/data/yard-public-rooms.js:112"
+        },
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l2",
+          "who": "inspect",
+          "text": "A folding table, clean linen and the old baths service pipes share the room. The valves have their positions written on the service sheet.",
+          "source": "src/data/yard-public-rooms.js:117"
+        },
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l3",
+          "who": "inspect",
+          "text": "(again) The service sheet identifies the old baths circuit.",
+          "source": "src/data/yard-public-rooms.js:117"
+        },
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l4",
+          "who": "inspect",
+          "text": "Flight cases, dismantled stands and paper wrapping have been sorted onto racks. A hand truck stands beside the open packing bench.",
+          "source": "src/data/yard-public-rooms.js:120"
+        },
+        {
+          "id": "YARD_PUBLIC_ROOM_PROPS.inspect.l5",
+          "who": "inspect",
+          "text": "(again) The packing list is held down by a length of cloth tape.",
+          "source": "src/data/yard-public-rooms.js:120"
+        }
+      ],
+      "source": "src/data/yard-public-rooms.js:112"
+    }
+  }
+}

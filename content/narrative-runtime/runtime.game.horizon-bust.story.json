@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.horizon-bust",
+  "title": "Runtime · game/horizon-bust.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "SHARED_AUDIENCE",
+  "entries": [
+    "SHARED_AUDIENCE",
+    "HORIZON_BUST_AUDIENCE.carried",
+    "HORIZON_BUST_AUDIENCE.returned",
+    "HORIZON_BUST_REFUSAL",
+    "horizonBustRefusalTree.start",
+    "horizonBustRefusalTree.refused",
+    "horizonBustProposition.questions"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/horizon-bust.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "SHARED_AUDIENCE": {
+      "id": "SHARED_AUDIENCE",
+      "type": "line",
+      "lines": [
+        {
+          "id": "SHARED_AUDIENCE.l0",
+          "who": "you",
+          "text": "Hello?",
+          "source": "src/game/horizon-bust.js:9"
+        },
+        {
+          "id": "SHARED_AUDIENCE.l1",
+          "who": "bust",
+          "text": "Bold choice. You made it this far, but have left so much behind. I have been expecting you, however.",
+          "source": "src/game/horizon-bust.js:10"
+        },
+        {
+          "id": "SHARED_AUDIENCE.l2",
+          "who": "you",
+          "text": "What choice do I have?",
+          "source": "src/game/horizon-bust.js:11"
+        },
+        {
+          "id": "SHARED_AUDIENCE.l3",
+          "who": "bust",
+          "text": "You can keep walking to the chapel without my help. Beyond me lies the end.",
+          "source": "src/game/horizon-bust.js:12"
+        },
+        {
+          "id": "SHARED_AUDIENCE.l4",
+          "who": "you",
+          "text": "Of?",
+          "source": "src/game/horizon-bust.js:13"
+        },
+        {
+          "id": "SHARED_AUDIENCE.l5",
+          "who": "bust",
+          "text": "Of the road's career as a road. Those lamps and telephone boxes are turning back into their recording. What's gone stays gone. The ground stays under your feet; take your time. Rather bad for property values. Though I do have another way.",
+          "source": "src/game/horizon-bust.js:14"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:9"
+    },
+    "HORIZON_BUST_AUDIENCE.carried": {
+      "id": "HORIZON_BUST_AUDIENCE.carried",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HORIZON_BUST_AUDIENCE.carried.l0",
+          "who": "direction",
+          "text": "Inside your bag, the loose marble eyes knock once against your torch and other belongings; not so nice for a pair of eyes. The bust is blind, but it has ears, and he chimes:",
+          "source": "src/game/horizon-bust.js:19"
+        },
+        {
+          "id": "HORIZON_BUST_AUDIENCE.carried.l1",
+          "who": "bust",
+          "text": "Ah, a man of true regard.",
+          "source": "src/game/horizon-bust.js:20"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:19"
+    },
+    "HORIZON_BUST_AUDIENCE.returned": {
+      "id": "HORIZON_BUST_AUDIENCE.returned",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HORIZON_BUST_AUDIENCE.returned.l0",
+          "who": "direction",
+          "text": "The eyes you returned are still in the gallery. Here, bronze shutters withdraw from a matching pair of sockets. Mineral pupils settle behind the rims and take the Horizon’s wet colour.",
+          "source": "src/game/horizon-bust.js:24"
+        },
+        {
+          "id": "HORIZON_BUST_AUDIENCE.returned.l1",
+          "who": "bust",
+          "text": "There we are. My. Your eyes—they've seen quite the folly. I have respite for them, a safer path, if you'd like.",
+          "source": "src/game/horizon-bust.js:25"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:24"
+    },
+    "HORIZON_BUST_REFUSAL": {
+      "id": "HORIZON_BUST_REFUSAL",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HORIZON_BUST_REFUSAL.l0",
+          "who": "direction",
+          "text": "The bust stays immobile.",
+          "source": "src/game/horizon-bust.js:34"
+        },
+        {
+          "id": "HORIZON_BUST_REFUSAL.l1",
+          "who": "bust",
+          "text": "Do you have eyes for me?",
+          "source": "src/game/horizon-bust.js:35"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:34"
+    },
+    "horizonBustRefusalTree.start": {
+      "id": "horizonBustRefusalTree.start",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "horizonBustRefusalTree.start.c0",
+          "text": "Like, do I like you?",
+          "source": "src/game/horizon-bust.js:44",
+          "targetName": "like"
+        },
+        {
+          "id": "horizonBustRefusalTree.start.c1",
+          "text": "No.",
+          "source": "src/game/horizon-bust.js:45",
+          "targetName": "no"
+        },
+        {
+          "id": "horizonBustRefusalTree.start.c2",
+          "text": "Yes.",
+          "source": "src/game/horizon-bust.js:46",
+          "targetName": "yes"
+        },
+        {
+          "id": "horizonBustRefusalTree.start.c3",
+          "text": "What kind of eyes?",
+          "source": "src/game/horizon-bust.js:47",
+          "targetName": "kind"
+        },
+        {
+          "id": "horizonBustRefusalTree.start.c4",
+          "text": "Is that a metaphor?",
+          "source": "src/game/horizon-bust.js:48",
+          "targetName": "metaphor"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:44"
+    },
+    "horizonBustRefusalTree.refused": {
+      "id": "horizonBustRefusalTree.refused",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "horizonBustRefusalTree.refused.c0",
+          "text": "Then what CAN you do?",
+          "source": "src/game/horizon-bust.js:115",
+          "targetName": "told"
+        },
+        {
+          "id": "horizonBustRefusalTree.refused.c1",
+          "text": "Leave him to it.",
+          "source": "src/game/horizon-bust.js:116",
+          "targetName": "stone"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:115"
+    },
+    "horizonBustProposition.questions": {
+      "id": "horizonBustProposition.questions",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "horizonBustProposition.questions.c0",
+          "text": "Who are you?",
+          "source": "src/game/horizon-bust.js:178",
+          "targetName": "identity"
+        },
+        {
+          "id": "horizonBustProposition.questions.c1",
+          "text": "What are the Second Minutes?",
+          "source": "src/game/horizon-bust.js:179",
+          "targetName": "history"
+        },
+        {
+          "id": "horizonBustProposition.questions.c2",
+          "text": "Where does this go?",
+          "source": "src/game/horizon-bust.js:180",
+          "targetName": "route"
+        },
+        {
+          "id": "horizonBustProposition.questions.c3",
+          "text": "What's the catch?",
+          "source": "src/game/horizon-bust.js:181",
+          "targetName": "consequence"
+        },
+        {
+          "id": "horizonBustProposition.questions.c4",
+          "text": "Enough. Show me the choice.",
+          "source": "src/game/horizon-bust.js:182",
+          "targetName": "decision"
+        }
+      ],
+      "source": "src/game/horizon-bust.js:178"
+    }
+  }
+}

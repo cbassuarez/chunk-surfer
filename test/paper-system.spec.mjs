@@ -28,7 +28,7 @@ for(const doc of production){
 }
 assert.equal(Object.keys(PAPER_DOCUMENTS).length,production.length-externalIds.size+1,'the shared catalog plus isolated editions includes every production document and the real still sheet');
 assert.ok(PAPER_DOCUMENTS['source-real-still']);
-assert.equal(PAPER_DOCUMENTS['work-order'].pages.length,3,'the authored work-order packet remains three physical sheets');
+assert.equal(PAPER_DOCUMENTS['work-order'].pages.length,4,'the work-order packet is the checklist he ticks off, then three sheets of instructions');
 assert.ok(PAPER_DOCUMENTS['work-order'].processes.includes('biro'),'authored manual marks survive the offline paper process');
 assert.equal(paperAtlasIndex('work-order',2),PAPER_DOCUMENTS['work-order'].pages[2].atlasIndex);
 assert.equal(PAPER_ATLAS.count,Object.values(PAPER_DOCUMENTS).reduce((n,d)=>n+d.pages.length,0));

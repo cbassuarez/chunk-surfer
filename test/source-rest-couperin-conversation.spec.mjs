@@ -45,7 +45,9 @@ test('seven cue floors belong to the full-piece lifecycle and preserve the speci
   assert.deepEqual(Object.keys(cues),['arrival','guitar-etudes','harpsichord','recording','revoicing','return','last']);
   assert.ok(Object.values(cues).every((p,i,a)=>p>=0&&p<=1&&(i===0||p>a[i-1])));
   for(const id of Object.keys(cues))assert.ok(story.nodes[id]);
-  const script=Object.entries(story.nodes).filter(([id])=>!id.startsWith('question')).flatMap(([,n])=>n.lines.map(l=>l.text)).join(' ');
+  // The late earthly question is shared with Source II and names people from
+  // his life on purpose; test/source-rest-earthly.spec.mjs owns its rules.
+  const script=Object.entries(story.nodes).filter(([id])=>!id.startsWith('question')&&!id.startsWith('earthly')).flatMap(([,n])=>n.lines.map(l=>l.text)).join(' ');
   assert.match(script,/guitar études.*marimba.*harpsichord/);
   assert.match(script,/At first the harpsichord was a way back to the marimba/);
   assert.match(script,/microphones/);assert.match(script,/electronics/);assert.match(script,/A revoicing\. Not a correction\./);

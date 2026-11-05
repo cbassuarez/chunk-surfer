@@ -1,0 +1,421 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.combat-definitions",
+  "title": "Runtime · data/combat-definitions.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "DREAM_FIGURE_TRAINING.intro",
+  "entries": [
+    "DREAM_FIGURE_TRAINING.intro",
+    "DREAM_FIGURE_TRAINING.win",
+    "DREAM_FIGURE_TRAINING.lose",
+    "trainingCombatBattle.intro",
+    "trainingCombatBattle.win",
+    "trainingCombatBattle.lose",
+    "practiceRoomHushBattle.intro",
+    "practiceRoomHushBattle.win",
+    "practiceRoomHushBattle.lose",
+    "SOURCE_TELLS.outline.line",
+    "SOURCE_TELLS.meter.line",
+    "SOURCE_TELLS.ears.line",
+    "SOURCE_TELLS.stance.line",
+    "sourceCombatBattle.intro",
+    "sourceCombatBattle.win",
+    "sourceCombatBattle.lose",
+    "cathedralBellCombatBattle.intro",
+    "cathedralBellCombatBattle.win",
+    "cathedralBellCombatBattle.lose"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/combat-definitions.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "DREAM_FIGURE_TRAINING.intro": {
+      "id": "DREAM_FIGURE_TRAINING.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "DREAM_FIGURE_TRAINING.intro.l0",
+          "who": "direction",
+          "text": "It walks up the last of the beam and into you. Not past you. Into.",
+          "source": "src/data/combat-definitions.js:404"
+        },
+        {
+          "id": "DREAM_FIGURE_TRAINING.intro.l1",
+          "who": "you",
+          "text": "Oh, that's not fair. I was joking. I was making a joke.",
+          "source": "src/data/combat-definitions.js:405"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:404"
+    },
+    "DREAM_FIGURE_TRAINING.win": {
+      "id": "DREAM_FIGURE_TRAINING.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "DREAM_FIGURE_TRAINING.win.l0",
+          "who": "direction",
+          "text": "You blink. The get-in, the meter still under sixty, your feet exactly where you left them, and the torch still on in your hand. Whatever that was, it came up the light to find you.",
+          "source": "src/data/combat-definitions.js:407"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:407"
+    },
+    "DREAM_FIGURE_TRAINING.lose": {
+      "id": "DREAM_FIGURE_TRAINING.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "DREAM_FIGURE_TRAINING.lose.l0",
+          "who": "direction",
+          "text": "You blink, and lose the thread of it, and it is only the get-in again. Six good seconds, a level, the torch still on in your hand, and a slightly stupid feeling. Whatever that was, it came up the light to find you.",
+          "source": "src/data/combat-definitions.js:408"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:408"
+    },
+    "trainingCombatBattle.intro": {
+      "id": "trainingCombatBattle.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "trainingCombatBattle.intro.l0",
+          "who": "direction",
+          "text": "And there it is. Nine feet of it, in the deep end, exactly as daft as he described.",
+          "source": "src/data/combat-definitions.js:444"
+        },
+        {
+          "id": "trainingCombatBattle.intro.l1",
+          "who": "you",
+          "text": "Oh, that's not fair. I was joking. I was making a joke.",
+          "source": "src/data/combat-definitions.js:445"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:444"
+    },
+    "trainingCombatBattle.win": {
+      "id": "trainingCombatBattle.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "trainingCombatBattle.win.l0",
+          "who": "direction",
+          "text": "You blink. The dock, the dark, the meter still under sixty, your feet exactly where you left them. Six seconds, and you held every one of them. Whatever that was, you already know what you do about it.",
+          "source": "src/data/combat-definitions.js:447"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:447"
+    },
+    "trainingCombatBattle.lose": {
+      "id": "trainingCombatBattle.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "trainingCombatBattle.lose.l0",
+          "who": "direction",
+          "text": "You blink, and lose the thread of it, and it is only the dock again. Six seconds, a good level, and a slightly stupid feeling. Nothing touched you. Nothing has started yet — and you have already told it what you are frightened of.",
+          "source": "src/data/combat-definitions.js:448"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:448"
+    },
+    "practiceRoomHushBattle.intro": {
+      "id": "practiceRoomHushBattle.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceRoomHushBattle.intro.l0",
+          "who": "direction",
+          "text": "The door was wedged open, like all of them, because whoever was in here was coming back after a coffee.",
+          "source": "src/data/combat-definitions.js:485"
+        },
+        {
+          "id": "practiceRoomHushBattle.intro.l1",
+          "who": "direction",
+          "text": "They came back. The room takes up the phrase where it was interrupted, at full level, six feet away, with nobody at the instrument.",
+          "source": "src/data/combat-definitions.js:486"
+        },
+        {
+          "id": "practiceRoomHushBattle.intro.l2",
+          "who": "you",
+          "text": "No. No, that is a room. That is a room with nothing in it.",
+          "source": "src/data/combat-definitions.js:487"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:485"
+    },
+    "practiceRoomHushBattle.win": {
+      "id": "practiceRoomHushBattle.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceRoomHushBattle.win.l0",
+          "who": "direction",
+          "text": "The phrase gives up halfway through a bar, the way a phrase does when the player stops believing in it.",
+          "source": "src/data/combat-definitions.js:490"
+        },
+        {
+          "id": "practiceRoomHushBattle.win.l1",
+          "who": "you",
+          "text": "Wedge the door. Leave the door. Whatever. I am not shutting anything in here.",
+          "source": "src/data/combat-definitions.js:491"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:490"
+    },
+    "practiceRoomHushBattle.lose": {
+      "id": "practiceRoomHushBattle.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceRoomHushBattle.lose.l0",
+          "who": "direction",
+          "text": "You are out in the corridor with your hand on the frame and no memory of the two steps that put you there.",
+          "source": "src/data/combat-definitions.js:494"
+        },
+        {
+          "id": "practiceRoomHushBattle.lose.l1",
+          "who": "direction",
+          "text": "Behind you the room finishes the phrase properly, and stops, and waits to be interrupted again.",
+          "source": "src/data/combat-definitions.js:495"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:494"
+    },
+    "SOURCE_TELLS.outline.line": {
+      "id": "SOURCE_TELLS.outline.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "SOURCE_TELLS.outline.line.l0",
+          "who": "tape",
+          "text": "Two outlines. You know which one is the small one.",
+          "source": "src/data/combat-definitions.js:504"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:504"
+    },
+    "SOURCE_TELLS.meter.line": {
+      "id": "SOURCE_TELLS.meter.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "SOURCE_TELLS.meter.line.l0",
+          "who": "meter",
+          "text": "It reads before it sounds. Watch the needle, not the room.",
+          "source": "src/data/combat-definitions.js:505"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:505"
+    },
+    "SOURCE_TELLS.ears.line": {
+      "id": "SOURCE_TELLS.ears.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "SOURCE_TELLS.ears.line.l0",
+          "who": "ears",
+          "text": "Two sources. The thin one is still behind it, close to the floor.",
+          "source": "src/data/combat-definitions.js:506"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:506"
+    },
+    "SOURCE_TELLS.stance.line": {
+      "id": "SOURCE_TELLS.stance.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "SOURCE_TELLS.stance.line.l0",
+          "who": "hands",
+          "text": "You have stood the way it stands. Your body knows the weight.",
+          "source": "src/data/combat-definitions.js:507"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:507"
+    },
+    "sourceCombatBattle.intro": {
+      "id": "sourceCombatBattle.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceCombatBattle.intro.l0",
+          "who": "direction",
+          "text": "The exposed fault opens. Three return channels rise out of the source at once.",
+          "source": "src/data/combat-definitions.js:547"
+        },
+        {
+          "id": "sourceCombatBattle.intro.l1",
+          "who": "you",
+          "text": "Return. Isolate. Open. I decide where every signal goes.",
+          "source": "src/data/combat-definitions.js:548"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:547"
+    },
+    "sourceCombatBattle.win": {
+      "id": "sourceCombatBattle.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceCombatBattle.win.l0",
+          "who": "direction",
+          "text": "The clause loses coherence. The armed channel takes the return value.",
+          "source": "src/data/combat-definitions.js:551"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:551"
+    },
+    "sourceCombatBattle.lose": {
+      "id": "sourceCombatBattle.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceCombatBattle.lose.l0",
+          "who": "direction",
+          "text": "Your monitoring path clips to silence. The page remains unresolved.",
+          "source": "src/data/combat-definitions.js:552"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:552"
+    },
+    "cathedralBellCombatBattle.intro": {
+      "id": "cathedralBellCombatBattle.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "cathedralBellCombatBattle.intro.l0",
+          "who": "direction",
+          "text": "A man drops from the crossing dark and catches the bell return before it can die.",
+          "source": "src/data/combat-definitions.js:625"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l1",
+          "who": "surfer",
+          "text": "You brought me a cathedral.",
+          "source": "src/data/combat-definitions.js:626"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l2",
+          "who": "direction",
+          "text": "He opens both hands. Every bell answers through him, and the pressure you spent reaching this phase remains spent.",
+          "source": "src/data/combat-definitions.js:627"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l3",
+          "who": "direction",
+          "text": "The two notes from the box answer from the belfry. The full ring holds its breath.",
+          "source": "src/data/combat-definitions.js:629"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l4",
+          "who": "direction",
+          "text": "The music-box reference is already loaded. Play it once to answer any strike safely.",
+          "source": "src/data/combat-definitions.js:630"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l5",
+          "who": "you",
+          "text": "Those two notes.",
+          "source": "src/data/combat-definitions.js:631"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l6",
+          "who": "direction",
+          "text": "The two notes on the old recording answer from the belfry. The full ring holds its breath.",
+          "source": "src/data/combat-definitions.js:633"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l7",
+          "who": "direction",
+          "text": "The contractor's reference is already loaded. Play it once to answer any strike safely.",
+          "source": "src/data/combat-definitions.js:634"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l8",
+          "who": "you",
+          "text": "They left me the first word.",
+          "source": "src/data/combat-definitions.js:635"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l9",
+          "who": "direction",
+          "text": "The eight bells are already swinging when you reach the crossing. You told them you were coming, one bell at a time.",
+          "source": "src/data/combat-definitions.js:637"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l10",
+          "who": "you",
+          "text": "Not a rope. Not a pattern. Just a signal with too much stone behind it.",
+          "source": "src/data/combat-definitions.js:638"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l11",
+          "who": "direction",
+          "text": "You reach the lantern before anything in the tower knows you are under it. Above the trap, eight bells hang mouth-down and still.",
+          "source": "src/data/combat-definitions.js:640"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l12",
+          "who": "direction",
+          "text": "Then all eight begin without moving. Their return comes down the clustered piers looking for a body.",
+          "source": "src/data/combat-definitions.js:641"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l13",
+          "who": "you",
+          "text": "Before it finds me, then.",
+          "source": "src/data/combat-definitions.js:642"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l14",
+          "who": "direction",
+          "text": "At the crossing, the eight bells begin without moving. Their return comes down the clustered piers looking for a body.",
+          "source": "src/data/combat-definitions.js:644"
+        },
+        {
+          "id": "cathedralBellCombatBattle.intro.l15",
+          "who": "you",
+          "text": "Not a rope. Not a pattern. Just a signal with too much stone behind it.",
+          "source": "src/data/combat-definitions.js:645"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:625"
+    },
+    "cathedralBellCombatBattle.win": {
+      "id": "cathedralBellCombatBattle.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "cathedralBellCombatBattle.win.l0",
+          "who": "direction",
+          "text": "The monitor finds the line between the Surfer and the bells. The line parts. He does not.",
+          "source": "src/data/combat-definitions.js:648"
+        },
+        {
+          "id": "cathedralBellCombatBattle.win.l1",
+          "who": "direction",
+          "text": "The first return breaks against the screen. Something alive lands inside the remaining tone.",
+          "source": "src/data/combat-definitions.js:649"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:648"
+    },
+    "cathedralBellCombatBattle.lose": {
+      "id": "cathedralBellCombatBattle.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "cathedralBellCombatBattle.lose.l0",
+          "who": "direction",
+          "text": "The bells complete their return through both available bodies.",
+          "source": "src/data/combat-definitions.js:650"
+        }
+      ],
+      "source": "src/data/combat-definitions.js:650"
+    }
+  }
+}

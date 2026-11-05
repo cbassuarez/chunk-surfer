@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.payphone",
+  "title": "Runtime · game/payphone.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "PAYPHONE_DIRECTORY.listed",
+  "entries": [
+    "PAYPHONE_DIRECTORY.listed"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/payphone.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "PAYPHONE_DIRECTORY.listed": {
+      "id": "PAYPHONE_DIRECTORY.listed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PAYPHONE_DIRECTORY.listed.l0",
+          "who": "sister",
+          "text": "Ashworth J. 14 Carr Lane ........ 0632 960552",
+          "source": "src/game/payphone.js:107"
+        },
+        {
+          "id": "PAYPHONE_DIRECTORY.listed.l1",
+          "who": "stranger",
+          "text": "Ashworth R.M. 3 Mill Row ........ 0632 960619",
+          "source": "src/game/payphone.js:108"
+        }
+      ],
+      "source": "src/game/payphone.js:107"
+    }
+  }
+}

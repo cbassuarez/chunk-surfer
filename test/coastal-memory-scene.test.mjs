@@ -202,7 +202,9 @@ test('return fade reload resumes its durable cover without changing Source pose 
 
 test('actual authored spawn has a supported continuous approach to the box without a third driving control', async () => {
   const made = await make({ layout: COASTAL_MEMORY_LAYOUT, checkpoint: undefined }); const { scene } = made;
-  const target = { x: COASTAL_MEMORY_LAYOUT.musicBox.x - 1.1, z: COASTAL_MEMORY_LAYOUT.musicBox.z };
+  // The authored approach ends on the shingle just short of the box, facing it.
+  const [tx, tz] = COASTAL_MEMORY_LAYOUT.arrivalPath.at(-1), target = { x: tx, z: tz };
+  assert.ok(Math.hypot(tx - COASTAL_MEMORY_LAYOUT.musicBox.x, tz - COASTAL_MEMORY_LAYOUT.musicBox.z) < 1.2);
   for (const [x, z] of COASTAL_MEMORY_LAYOUT.arrivalPath.slice(1)) {
     const start = scene.serialize().pose;
     const budget = Math.ceil(Math.hypot(x - start.x, z - start.z) / 2.1 * 60) + 120;

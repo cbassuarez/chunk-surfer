@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.get-in",
+  "title": "Runtime · game/get-in.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "dockEndingBeat",
+  "entries": [
+    "dockEndingBeat"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/get-in.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "dockEndingBeat": {
+      "id": "dockEndingBeat",
+      "type": "line",
+      "lines": [
+        {
+          "id": "dockEndingBeat.l0",
+          "who": "you",
+          "text": "{reading}{consequence ? ` ${consequence}` : ''}",
+          "source": "src/game/get-in.js:485"
+        }
+      ],
+      "source": "src/game/get-in.js:485"
+    }
+  }
+}

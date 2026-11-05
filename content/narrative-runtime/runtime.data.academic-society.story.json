@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-society",
+  "title": "Runtime · data/academic-society.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "academicSocietyLoanLines",
+  "entries": [
+    "academicSocietyLoanLines"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/academic-society.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "academicSocietyLoanLines": {
+      "id": "academicSocietyLoanLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyLoanLines.l0",
+          "who": "me",
+          "text": "There is no hurry.",
+          "source": "src/data/academic-society.js:647"
+        },
+        {
+          "id": "academicSocietyLoanLines.l1",
+          "who": "me",
+          "text": "I should be here.",
+          "source": "src/data/academic-society.js:650"
+        }
+      ],
+      "source": "src/data/academic-society.js:647"
+    }
+  }
+}

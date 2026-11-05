@@ -55,7 +55,10 @@ Object.assign(keyed,{
 });
 
 const line=(who,text,extra={})=>({who,text,voice:false,say:false,...extra});
-const d=text=>line('direction',text,{signalRole:'unattributed'}),o=text=>line('unknown',text,{signalRole:'unattributed'}),y=text=>line('me',text,{signalRole:'human'});
+// The other is heard (Seb, 2026-11-05): its lines are spoken, in its own
+// voice (`other` in src/audio/sam-voice.js). Narration and his own replies stay
+// on the page.
+const d=text=>line('direction',text,{signalRole:'unattributed'}),o=text=>line('unknown',text,{signalRole:'unattributed',voice:true,voiceSpeaker:'other'}),y=text=>line('me',text,{signalRole:'human'});
 const say=(text,go)=>({text:`"${text}"`,goto:go});
 const mum=(go,text='(say nothing)')=>({text,goto:go});
 const fate=(text,go)=>({...say(text,go),hideWhenAsked:true});
@@ -73,7 +76,7 @@ const nodes={
   ],goto:'there'},
   there:{stage:'woken',lines:[
     o('There you are.'),
-    d('It is not a voice. It arrives the way a room arrives when the fridge cuts out.'),
+    d('It is a voice, and it is not in the van. It arrives the way a room arrives when the fridge cuts out.'),
     o('I kept your place.'),
   ],choices:[say('Who is that?','who'),say('I\'m driving.','driving'),mum('quiet')]},
   who:{stage:'inner',lines:[

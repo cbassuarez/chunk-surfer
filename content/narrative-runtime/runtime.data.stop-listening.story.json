@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.stop-listening",
+  "title": "Runtime · data/stop-listening.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "STOP_LISTENING_COPY.arrival",
+  "entries": [
+    "STOP_LISTENING_COPY.arrival",
+    "STOP_LISTENING_COPY.heap",
+    "STOP_LISTENING_COPY.writing",
+    "STOP_LISTENING_COPY.sheet",
+    "STOP_LISTENING_COPY.sheetRead"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/data/stop-listening.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "STOP_LISTENING_COPY.arrival": {
+      "id": "STOP_LISTENING_COPY.arrival",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STOP_LISTENING_COPY.arrival.l0",
+          "who": "direction",
+          "text": "The floor is ears. Hundreds of them, lying where they were put, and every one of them turned up.",
+          "source": "src/data/stop-listening.js:180"
+        },
+        {
+          "id": "STOP_LISTENING_COPY.arrival.l1",
+          "who": "you",
+          "text": "Those are ears.",
+          "source": "src/data/stop-listening.js:181"
+        }
+      ],
+      "source": "src/data/stop-listening.js:180"
+    },
+    "STOP_LISTENING_COPY.heap": {
+      "id": "STOP_LISTENING_COPY.heap",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STOP_LISTENING_COPY.heap.l0",
+          "who": "inspect",
+          "text": "Ears. Left and right, all sizes, cut clean. Wet. Every one of them lies the same way up, open to the room.",
+          "source": "src/data/stop-listening.js:183"
+        },
+        {
+          "id": "STOP_LISTENING_COPY.heap.l1",
+          "who": "inspect",
+          "text": "(again) All of them turned up. All of them pointed at whoever is standing here.",
+          "source": "src/data/stop-listening.js:183"
+        }
+      ],
+      "source": "src/data/stop-listening.js:183"
+    },
+    "STOP_LISTENING_COPY.writing": {
+      "id": "STOP_LISTENING_COPY.writing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STOP_LISTENING_COPY.writing.l0",
+          "who": "inspect",
+          "text": "Painted on in something that has not finished running. STOP LISTENING TO ME.",
+          "source": "src/data/stop-listening.js:187"
+        },
+        {
+          "id": "STOP_LISTENING_COPY.writing.l1",
+          "who": "inspect",
+          "text": "(again) STOP LISTENING TO ME.",
+          "source": "src/data/stop-listening.js:187"
+        }
+      ],
+      "source": "src/data/stop-listening.js:187"
+    },
+    "STOP_LISTENING_COPY.sheet": {
+      "id": "STOP_LISTENING_COPY.sheet",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STOP_LISTENING_COPY.sheet.l0",
+          "who": "inspect",
+          "text": "One of ours. A W. Ellery take sheet, face up among them.",
+          "source": "src/data/stop-listening.js:191"
+        },
+        {
+          "id": "STOP_LISTENING_COPY.sheet.l1",
+          "who": "inspect",
+          "text": "(again) The take sheet. STOP LISTENING, all the way down.",
+          "source": "src/data/stop-listening.js:191"
+        }
+      ],
+      "source": "src/data/stop-listening.js:191"
+    },
+    "STOP_LISTENING_COPY.sheetRead": {
+      "id": "STOP_LISTENING_COPY.sheetRead",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STOP_LISTENING_COPY.sheetRead.l0",
+          "who": "you",
+          "text": "That is our sheet. The one I fill in every night. Every box on it.",
+          "source": "src/data/stop-listening.js:198"
+        },
+        {
+          "id": "STOP_LISTENING_COPY.sheetRead.l1",
+          "who": "you",
+          "text": "Somebody pressed so hard it went through to the floor.",
+          "source": "src/data/stop-listening.js:199"
+        }
+      ],
+      "source": "src/data/stop-listening.js:198"
+    }
+  }
+}

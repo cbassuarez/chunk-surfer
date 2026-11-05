@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.source-rig-bridge",
+  "title": "Runtime · game/source-rig-bridge.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "applyRigAdvantage.intro",
+  "entries": [
+    "applyRigAdvantage.intro",
+    "applyRigAdvantage.movements.before"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/source-rig-bridge.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "applyRigAdvantage.intro": {
+      "id": "applyRigAdvantage.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "applyRigAdvantage.intro.l0",
+          "who": "direction",
+          "text": "The exposed fault reaches for an interface and finds a man with his hands empty.",
+          "source": "src/game/source-rig-bridge.js:35"
+        },
+        {
+          "id": "applyRigAdvantage.intro.l1",
+          "who": "direction",
+          "text": "The exposed fault takes the rig as an interface.",
+          "source": "src/game/source-rig-bridge.js:58"
+        }
+      ],
+      "source": "src/game/source-rig-bridge.js:35"
+    },
+    "applyRigAdvantage.movements.before": {
+      "id": "applyRigAdvantage.movements.before",
+      "type": "line",
+      "lines": [
+        {
+          "id": "applyRigAdvantage.movements.before.l0",
+          "who": "direction",
+          "text": "The clause reaches for its subject. The rig holds the line open long enough to see it go.",
+          "source": "src/game/source-rig-bridge.js:49"
+        }
+      ],
+      "source": "src/game/source-rig-bridge.js:49"
+    }
+  }
+}

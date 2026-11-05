@@ -409,6 +409,16 @@ export function sealTake(roomId) {
 }
 
 export function hasTake(roomId) { return !!tapeTake(roomId)?.sealed; }
+// A take on a cassette that was taken off him. It is not erased and still
+// exists, it is just not in his bag: it does not count until he finds it.
+// The cassette ledger (src/game/cassette-ledger.js) decides when.
+export function setTakeLost(takeId, lost = true) {
+  const take = state.history.find((t) => t.id === takeId);
+  if (!take || take.continuous) return false;
+  take.lost = !!lost;
+  take.counted = !take.lost && take.status === 'accepted' && !take.voided && !normalizeTapeDamage(take.damage, take);
+  return true;
+}
 export function takeFor(roomId) { return state.takes.get(roomId) || null; }
 
 // WHERE IN THE MINUTE THINGS HAPPENED.
@@ -535,7 +545,8 @@ export function serializeTakes() {
     at: t.at,
     ...(normalizeNightCapture(t.nightStamp) ? { nightStamp: normalizeNightCapture(t.nightStamp) } : {}),
     durationSeconds: t.continuous?Math.max(.01,t.endSeconds-t.startSeconds):t.id&&!t.sealed?Math.max(.01,t.endSeconds-t.startSeconds):sourceDuration(t.durationSeconds),
-    counted: t.status? t.status==='accepted'&&!t.voided&&!normalizeTapeDamage(t.damage,t) : !t.id||!!t.sealed,
+    ...(t.lost ? { lost: true } : {}),
+    counted: t.status? t.status==='accepted'&&!t.voided&&!t.lost&&!normalizeTapeDamage(t.damage,t) : !t.id||!!t.sealed,
     migrated: !!t.migrated,
     cell: t.cell ? { x: Number(t.cell.x)||0, y: Number(t.cell.y)||0 } : null,
     contaminated: !!t.contaminated,
@@ -586,7 +597,8 @@ export function loadTakes(saved = []) {
       audible:row.continuous?[]:audible,
       guest: !row.continuous&&row.guest?.key ? { id: null, key: row.guest.key } : null,
       sealed: true,
-      counted: row.continuous?false:row.counted!==false,
+      counted: row.continuous?false:row.counted!==false&&!row.lost,
+      ...(row.lost ? { lost: true } : {}),
       at: row.at || 0,
       ...(normalizeNightCapture(row.nightStamp) ? { nightStamp: normalizeNightCapture(row.nightStamp) } : {}),
       migrated: !!row.migrated,
