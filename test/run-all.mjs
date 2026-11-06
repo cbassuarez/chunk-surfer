@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const tests = [
+  'test/locomotion.spec.mjs',
   'test/source-early-faults.spec.mjs',
   'test/source-iv-faults.spec.mjs',
   'test/source-continuation-ambient-faults.spec.mjs',

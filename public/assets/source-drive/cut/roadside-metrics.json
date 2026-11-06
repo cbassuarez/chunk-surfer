@@ -1,7 +1,7 @@
 {
-  "sha256": "6b1aa3283e8a064f729d968a2ea811078b42389070b22723679d25214907daec",
-  "bytes": 162936,
-  "triangles": 562,
+  "sha256": "c71c570dd09cacf235313b748b21b16b79268ea8643241d9ddd5f50ba75555ad",
+  "bytes": 164560,
+  "triangles": 570,
   "railSpan": 3.08,
   "lampEmitter": [
     0.335,
@@ -16,6 +16,8 @@
   },
   "ukRoadMarkings": {
     "centreDiagram": "1008",
+    "warningDiagram": "1004",
+    "doubleDiagram": "1013.1",
     "edgeDiagram": "1012.1",
     "strokeM": 0.1,
     "markM": 2,
@@ -23,7 +25,24 @@
     "periodM": 6,
     "roadTileStepM": 2,
     "roadReceiverLengthM": 2.08,
-    "laneEdgeLateralM": 2.9
+    "laneEdgeLateralM": 2.9,
+    "warning": {
+      "markM": 4,
+      "gapM": 2,
+      "periodM": 6,
+      "studM": 6,
+      "minimumMarks": 7
+    },
+    "double": {
+      "lineM": 0.1,
+      "gapM": 0.1,
+      "studM": 4
+    },
+    "studs": {
+      "centre": 12,
+      "warning": 6,
+      "double": 4
+    }
   },
   "role": "stationary formed rail, hooded inspection lamps, unchanged asphalt and separately scaled UK road paint; collision remains derived from visible route boundary meshes"
 }

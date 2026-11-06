@@ -16,14 +16,14 @@ test('input prompts swap between keyboard and active controller labels', () => {
   assert.equal(activeInputPromptDevice(), 'keyboard');
   assert.equal(inputPrompt('allow'), '[Y]');
   assert.equal(promptLine([{ action: 'allow', label: 'ALLOW' }, { action: 'deny', label: 'DENY' }]), '[Y] ALLOW · [N] DENY');
-  assert.equal(formatBindingTip('Hold {quiet}.'), 'Hold SHIFT.');
+  assert.equal(formatBindingTip('Press {run}.'), 'Press SHIFT.');
 
   setActiveInputDevice('controller', { viable: true, controllerFamily: 'xbox' });
   assert.equal(activeInputPromptDevice(), 'controller');
   assert.equal(inputPrompt('allow'), '[A]');
   assert.equal(inputPrompt('deny'), '[B]');
   assert.equal(promptLine([{ action: 'allow', label: 'ALLOW' }, { action: 'deny', label: 'DENY' }]), '[A] ALLOW · [B] DENY');
-  assert.equal(formatBindingTip('Hold {quiet}.'), 'Hold LB.');
+  assert.equal(formatBindingTip('Press {run}.'), 'Press L3.');
 
   setActiveInputDevice('keyboard');
   assert.equal(inputPrompt('allow'), '[Y]');

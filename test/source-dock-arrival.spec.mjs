@@ -217,7 +217,9 @@ for (const reducedMotion of [false, true]) {
       clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
       R3: { r3dStepDelta: () => forward }, usingSourceSpace: () => true,
       chunkSurfRuntime: { sourceVoidFrame: () => ({ sceneDock }) }, sourceShoreOutside,
-      currentMoveIntervalMs: () => 100, ensureMotionRig() {},
+      currentMoveIntervalMs: () => 100, ensureMotionRig: () => ({ x: 0, z: 0 }),
+      // The gait ladder (game/locomotion.js): 5 m/s is 100 ms per half-metre cell.
+      currentLocomotion: () => ({ speed: 5 }), storyMode: true, isIntroActive: () => false, CELL: .5, renderStepDueAt: 0,
       physicalPointFor: (x, y) => ({ x, z: y }), px: 0, py: 0,
       renderMove: null, nextMoveAtMs: 0, lastMoveAtMs: 0, playerKeys: [],
       setupHandoffBlocksMovement: () => false, paused: false,busRecoilGlide:null,
@@ -228,7 +230,7 @@ for (const reducedMotion of [false, true]) {
       return { ok: wall !== 'both' && !(wall === 'x' && toX !== x) };
     } };
     for (const name of ['independentControls', 'combinedIndependentMotionAxes', 'arrowDelta',
-      'currentStepIntervalMs', 'beginRenderStep', 'armHeldMovement', 'tickHeldMovement']) {
+      'currentStepIntervalMs', 'beginRenderStep', 'glidePoint', 'retimeGlide', 'armHeldMovement', 'tickHeldMovement']) {
       vm.runInContext(mainFunction(name), context);
     }
     vm.runInContext(`function resolveDockStep(dx,dy){${guard}return[dx,dy];}`, context);
@@ -246,8 +248,8 @@ for (const reducedMotion of [false, true]) {
   walk.tick(1000);
   assert.equal(walk.context.px, 1); assert.equal(walk.context.py, -1);
   const diagonalDuration = 100 * Math.SQRT2;
-  assert.equal(walk.context.renderMove.durationMs, diagonalDuration);
-  assert.equal(walk.context.nextMoveAtMs, 1000 + diagonalDuration);
+  assert.ok(Math.abs(walk.context.renderMove.durationMs - diagonalDuration) < 1e-9);
+  assert.ok(Math.abs(walk.context.nextMoveAtMs - (1000 + diagonalDuration)) < 1e-9);
   walk.tick(1100);
   assert.equal(walk.context.px, 1, 'diagonal walking received a square-root-of-two speed bonus');
   walk.tick(1000 + diagonalDuration);
@@ -264,7 +266,8 @@ for (const reducedMotion of [false, true]) {
   assert.deepEqual(Array.from(turned.context.arrowDelta()), [1, 0], 'combined head-relative axes exceeded one cell');
   const hall = makeWalk({ sceneDock: false });
   assert.deepEqual(Array.from(hall.context.arrowDelta()), [0, -1], 'room walking altered the hall input scheme');
-  assert.equal(hall.context.currentStepIntervalMs(1, -1), 100);
+  // A diagonal is its real length everywhere now, not only on the dock.
+  assert.ok(Math.abs(hall.context.currentStepIntervalMs(1, -1) - 100 * Math.SQRT2) < 1e-9);
 }
 
 console.log('source dock arrival specs passed');

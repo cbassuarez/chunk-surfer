@@ -7,7 +7,13 @@ const D = (value) => Object.freeze(value);
 
 export const ACOUSTIC_CATALOGUE = Object.freeze({
   footstep_slow: D({ levelDb: -43, durationMs: 170, spectrum: S(.48, .46, .16), impulsiveness: .40, family: 'movement', canBeMimicked: true }),
-  footstep_walk: D({ levelDb: -34, durationMs: 170, spectrum: S(.64, .54, .20), impulsiveness: .58, family: 'movement', canBeMimicked: true }),
+  // One kind per gait (game/locomotion.js). The level follows each gait's
+  // footfall price against the old walk (.22 at -34 dB): the walk is the
+  // careful choice now and sits under it, and today's walk price is the jog.
+  footstep_walk: D({ levelDb: -39, durationMs: 170, spectrum: S(.62, .52, .18), impulsiveness: .54, family: 'movement', canBeMimicked: true }),
+  footstep_jog: D({ levelDb: -34, durationMs: 160, spectrum: S(.66, .56, .22), impulsiveness: .62, family: 'movement', canBeMimicked: true }),
+  footstep_run: D({ levelDb: -31, durationMs: 150, spectrum: S(.70, .60, .24), impulsiveness: .68, family: 'movement', canBeMimicked: true }),
+  footstep_sprint: D({ levelDb: -28, durationMs: 140, spectrum: S(.74, .62, .26), impulsiveness: .74, family: 'movement', canBeMimicked: true }),
   footstep_injured: D({ levelDb: -27, durationMs: 220, spectrum: S(.72, .62, .26), impulsiveness: .64, family: 'movement', canBeMimicked: true }),
   breath_fear: D({ levelDb: -39, durationMs: 780, spectrum: S(.12, .76, .42), impulsiveness: .08, family: 'body', canBeMimicked: true }),
   page_turn: D({ levelDb: -45, durationMs: 420, spectrum: S(.04, .38, .86), impulsiveness: .24, family: 'paper', canBeMimicked: false }),
@@ -148,8 +154,12 @@ export function gameNoiseToDb(level, fallback = -36) {
   return Math.max(-72, Math.min(0, -52 + n * 64));
 }
 
-export function inferAcousticKind(reason = '', level = 0.2, { step = false, slow = false, injured = false } = {}) {
-  if (step) return injured ? 'footstep_injured' : slow ? 'footstep_slow' : 'footstep_walk';
+const GAIT_STEP_KIND = Object.freeze({
+  crawl: 'footstep_slow', walk: 'footstep_walk', jog: 'footstep_jog', run: 'footstep_run', sprint: 'footstep_sprint',
+});
+
+export function inferAcousticKind(reason = '', level = 0.2, { step = false, gait = 'walk', slow = false, injured = false } = {}) {
+  if (step) return injured ? 'footstep_injured' : slow ? 'footstep_slow' : GAIT_STEP_KIND[gait] || 'footstep_walk';
   const text = String(reason).toLowerCase();
   if (text.includes('breath')) return 'breath_fear';
   if (text.includes('page')) return 'page_turn';

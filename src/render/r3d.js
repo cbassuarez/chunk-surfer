@@ -46,6 +46,7 @@ import {setStillnessPresentation,stillnessPresentation,bindStillnessPresentation
 import { ACADEMIC_ATRIUM_LIGHT_GLSL, academicAtriumLightEnabled } from './academic-atrium-light.js';
 import { COASTAL_MEMORY_WATER_GLSL, coastalWaterUniforms } from './coastal-memory-water.js';
 import { localLightConeDescriptor, LOCAL_LIGHT_CONE_GLSL } from './local-light-cone.js';
+import { DIPPED_BEAM_GLSL } from './dipped-beam.js';
 import * as HZ from './horizon3d.js';
 import * as SHORE from './source-shore3d.js';
 import { normalizePixelMeshSettings } from './pixel-mesh/settings.js';
@@ -3820,7 +3821,10 @@ float driveCabinExit(vec3 p,vec3 d){
  vec3 t=(face-p)/safe;return max(0.0,min(t.x,min(t.y,t.z)));
 }
 float driveFogShadow(vec3 p){if(uDriveVolumeShadowReady<.5)return 1.0;vec4 clip=uDriveVolumeShadowMatrix*vec4(p,1.0);if(clip.w<=0.0)return 1.0;vec3 q=clip.xyz/clip.w*.5+.5;if(any(lessThanEqual(q,vec3(0.0)))||any(greaterThanEqual(q,vec3(1.0))))return 1.0;return q.z-.00035<=texture(uDriveVolumeShadow,q.xy).r?1.0:.04;}
-float driveLampBeam(vec3 p,vec4 lamp){vec3 r=p-lamp.xyz,forward=vec3(sin(uDriveWeatherExtra.x),0.0,-cos(uDriveWeatherExtra.x));float along=dot(r,forward),across=abs(dot(r,vec3(cos(uDriveWeatherExtra.x),0.0,sin(uDriveWeatherExtra.x))));float spread=1.0-smoothstep(.19,.46,across/max(.3,along));float cutoff=1.0-smoothstep(-.010,.018,r.y/max(.3,along)+uDriveWeatherExtra.y);return lamp.w*step(.05,along)*spread*cutoff*min(2.0,pow(18.0/(10.0+max(0.0,along)),2.0));}
+${DIPPED_BEAM_GLSL}
+// The same UK dipped beam that lights the surfaces, in the rain and fog: the hot zone
+// just under the cut-off glows down the road and the kick-up lifts on the nearside.
+float driveLampBeam(vec3 p,vec4 lamp){vec3 r=p-lamp.xyz;float along=dot(r,vec3(sin(uDriveWeatherExtra.x),0.0,-cos(uDriveWeatherExtra.x)));return lamp.w*1.80*ukDippedBeam(r,uDriveWeatherExtra.x,uDriveWeatherExtra.y)*min(2.0,pow(18.0/(10.0+max(0.0,along)),2.0));}
 vec4 driveAir(vec3 eye,vec3 rd,float begin,float end){
  float lengthM=clamp(end-begin,0.0,220.0),transmission=1.0;vec3 scattered=vec3(0.0);
  // The rain-laden air occupies the actual raised carriageway, not sea level.

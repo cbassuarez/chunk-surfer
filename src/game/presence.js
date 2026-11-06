@@ -15,6 +15,8 @@
 import { CELL_SCALE, NOISE } from '../config.js';
 import * as REC from './recordist.js';
 import { freshPressureGait, normalizePressureGait, stepPressureGait, PRESSURE_GAIT } from './pressure-gait.js';
+import { GAIT_SPEED } from './locomotion.js';
+import { CELL } from '../data/floorplan/legend.js';
 import {
   freshHushContactDirectorState,
   normalizeHushContactDirectorState,
@@ -25,7 +27,16 @@ const D = CELL_SCALE;
 // The player's sustained rate. Locomotion is one cell per MOVE_MS, so this is
 // the number the HUSH's speeds are quoted against — not its own former
 // absolutes, which made it six times slower than the man it was hunting.
+//
+// THE PLAYER IS NO LONGER WALKING AT 11 M/S (game/locomotion.js, 2026-11-06).
+// In the building that changes nothing here: the pressure gait authors the
+// body's real pace (a 42 cm stride, then a listen) and every ratio below sits
+// above its cap. In Source the ratios ARE the pace, so they are re-quoted
+// against the new walk — "slow enough that simply walking still opens the
+// distance" stays true, which it would not at the old absolutes.
 const PLAYER_CELLS_PER_SEC = 1000 / 45;
+const SOURCE_PLAYER_CELLS_PER_SEC = GAIT_SPEED.walk / CELL;
+const SOURCE_SPEED_REQUOTE = SOURCE_PLAYER_CELLS_PER_SEC / PLAYER_CELLS_PER_SEC;
 
 export const PRESENCE = {
   spawnDistance: 22 * D,    // close enough to enter the next authored beat
@@ -799,6 +810,7 @@ export function updatePresence(dt, px, py, onContactAttempt, {
   // pursuit, but it must never turn the authored 75% tail into something that
   // catches a player who is walking cleanly.
   if (!sourceContactPursuit) speed *= 1 + state.awareness * 0.12;
+  if (sourceMode) speed *= SOURCE_SPEED_REQUOTE;
 
   const dx = tx - state.x, dy = ty - state.y;
   const d = Math.hypot(dx, dy);

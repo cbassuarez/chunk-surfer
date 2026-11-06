@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { locomotionSandbox, section as mainSection } from './helpers/locomotion-sandbox.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -406,20 +407,19 @@ test('handover captions remain available when audio cannot sound', () => {
   assert.equal(elements.get('.personal-quiet-caption').textContent, '[The recorder settles into his hands.]');
 });
 
-test('the personal cadence walks the actual cell size at 1.35 metres per second and retains quiet movement', () => {
-  let slow = false;
-  const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,openingVehicleScene:null,openingOvertureScene:null,
-    usingStairAnomaly: () => false, isIntroActive: () => false, usingSourceSpace: () => true,
-    outskirtsStepIndex: 0, PLANT: { heavyWrenchDragging: () => false }, worldBoundaryFriction: 0,
-    REC: { recState: () => ({ slow }) }, chunkSurfRuntime: { towerLandFrame: () => ({ active: true, walkMetresPerSecond: 1.35 }) },
-    clamp: (value, low, high) => Math.max(low, Math.min(high, value)) };
-  vm.createContext(sandbox);
-  vm.runInContext(section('function storyMoveScale(){', '\nfunction currentTurnIntervalMs(') + '\nglobalThis.interval=currentMoveIntervalMs;', sandbox);
+test('the personal journey walks the gait ladder: outside walk / run, the hall and the ash room walk / jog', () => {
+  let stage = 'tape-field';
+  const sandbox = locomotionSandbox({ usingSourceSpace: () => true,
+    chunkSurfRuntime: { lastReceptionFrame: () => null, towerLandFrame: () => ({ active: true, stage, walkMetresPerSecond: 1.35 }) } });
   const interval = sandbox.interval();
-  assert.ok(Math.abs(CELL / (interval / 1000) - 1.35) < .005);
-  assert.equal(interval, Math.round(1000 * CELL / 1.35), 'grid scaling must not silently halve the intended walk pace');
-  slow = true;
-  assert.equal(sandbox.interval(), Math.round(1000 * CELL / 1.35 * 1.9));
+  assert.ok(Math.abs(CELL / (interval / 1000) - 1.4) < .005, 'grid scaling must not silently change the walk');
+  assert.equal(interval, Math.round(1000 * CELL / 1.4));
+  sandbox.setRun(true);
+  assert.equal(sandbox.interval(), Math.round(1000 * CELL / 4.0));
+  stage = 'school-hall';
+  assert.equal(sandbox.interval(), Math.round(1000 * CELL / 2.6));
+  sandbox.setRun(false);
+  assert.equal(sandbox.interval(), Math.round(1000 * CELL / 1.4));
 });
 
 test('blocking scene entry flushes its prior audible fraction and cannot earn evidence while the world loop is stopped', () => {
@@ -700,25 +700,19 @@ test('an active ending presenter cannot be replaced by a saved extraction checkp
 });
 
 
-test('held personal movement uses the authored cadence in cardinal and diagonal directions without catch-up bursts', () => {
+test('personal movement keeps the walk in cardinal and diagonal directions without catch-up bursts', () => {
   for (const direction of [[0, -1], [1, -1]]) {
     const steps = [];
-    const sandbox = { MOVE_MS, CELL, WORLD_BOUNDARY_FRICTION, storyMode: true,openingVehicleScene:null,openingOvertureScene:null,busRecoilGlide:null,
-      usingStairAnomaly: () => false, isIntroActive: () => false, usingSourceSpace: () => true,
-      outskirtsStepIndex: 0, PLANT: { heavyWrenchDragging: () => false }, worldBoundaryFriction: 0,
-      REC: { recState: () => ({ slow: false }) }, chunkSurfRuntime: {
-        towerLandFrame: () => ({ active: true, walkMetresPerSecond: 1.35 }), sourceVoidFrame: () => ({}) },
-      sourceShoreOutside: () => false, clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
-      setupHandoffBlocksMovement: () => false, paused: false, scenes: { blocksInput: () => false },
-      inCover: () => false, holdUnavailableGameplayInput:()=>false,
+    const sandbox = locomotionSandbox({ usingSourceSpace: () => true, busRecoilGlide: null,
+      chunkSurfRuntime: { lastReceptionFrame: () => null, towerLandFrame: () => ({ active: true, stage: 'tape-field' }), sourceVoidFrame: () => ({}) },
+      sourceShoreOutside: () => false, setupHandoffBlocksMovement: () => false, paused: false, scenes: { blocksInput: () => false },
+      inCover: () => false, holdUnavailableGameplayInput: () => false,
       arrowDelta: () => direction, renderMove: null, nextMoveAtMs: 0,
-      maybeLockHushFromInputDelta: () => {}, step: (dx, dy) => steps.push([dx, dy]) };
-    vm.createContext(sandbox);
-    vm.runInContext(section('function storyMoveScale(){', '\nfunction currentTurnIntervalMs(')
-      + section('function currentStepIntervalMs(', '\nfunction setGameplayPaused(')
-      + '\nglobalThis.tick=tickHeldMovement;globalThis.interval=currentStepIntervalMs;', sandbox);
-    const interval = sandbox.interval(...direction);
-    assert.ok(Math.abs(Math.hypot(...direction) * CELL / (interval / 1000) - 1.35) < .005);
+      maybeLockHushFromInputDelta: () => {}, step: (dx, dy) => steps.push([dx, dy]) },
+    { extra: mainSection('function currentStepIntervalMs(', '\nfunction setGameplayPaused(')
+      + '\nglobalThis.tick=tickHeldMovement;globalThis.stepInterval=currentStepIntervalMs;' });
+    const interval = sandbox.stepInterval(...direction);
+    assert.ok(Math.abs(Math.hypot(...direction) * CELL / (interval / 1000) - 1.4) < .005, 'a diagonal is its real length');
     for (let now = 1; now <= 4001; now += 10) sandbox.tick(now);
     assert.equal(steps.length, 1 + Math.floor(4000 / interval), 'one responsive first step, then one step per interval');
     const before = steps.length;

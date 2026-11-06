@@ -6,6 +6,7 @@ import { createPropRangeController } from './prop-range.js';
 import {SOURCE_REST_HORIZON_TIDE_GLSL,writePropHorizonTide,sourceRestHorizonTideUniforms} from './source-rest-horizon-pass.js';
 import {NATATORIUM_METRIC_GLSL,NATATORIUM_METRIC_IDENTITY,normalizeNatatoriumMetric,natatoriumMetricUniform,natatoriumMetricPoint} from './natatorium-metric.js';
 import { LOCAL_LIGHT_CONE_GLSL } from './local-light-cone.js';
+import { DIPPED_BEAM_GLSL } from './dipped-beam.js';
 import { resolveTorchFrame, normalizeTorchOptics, TORCH_OPTICS_GLSL } from './torch-optics.js';
 import { APPARITION_GORE_FIELD_GLSL, APPARITION_GLINT_GLSL } from './apparition-gore.js';
 import { PUB_FRONT_SKY_GLSL, PUB_FASCIA_PAINT_GLSL, pubFrontSkyEligible, pubFrontFasciaEligible } from './pub-front-material.js';
@@ -171,6 +172,7 @@ uniform int uLocalLightCount,uLocalShadowIndex;uniform vec4 uLocalLightPos[12],u
 // sits in the auditorium glowing like a fitting.
 uniform float uLocalLightEmergency[12];
 ${LOCAL_LIGHT_CONE_GLSL}
+${DIPPED_BEAM_GLSL}
 vec3 reserveEmergencyRed(vec3 shaded,float emergencyShare){
   float redness=(shaded.r-max(shaded.g,shaded.b))/max(shaded.r,1e-4);
   float claim=smoothstep(.55,.84,redness);
@@ -553,11 +555,8 @@ ${PUB_FASCIA_PAINT_GLSL}
     arch=mix(arch,1.0,clamp(uLocalLightPenetration[li],0.0,1.0));
     float driveBeam=localEmitterCone(li,-delta);
     if(uDriveHeadlight.w>.5&&uDriveHeadlight.z<.5&&li<2){
-      vec3 ray=vWorld-uLocalLightPos[li].xyz;vec3 forward=vec3(sin(uDriveHeadlight.x),0.0,-cos(uDriveHeadlight.x));
-      float along=dot(ray,forward);float across=abs(dot(ray,vec3(cos(uDriveHeadlight.x),0.0,sin(uDriveHeadlight.x))));
-      float spread=1.0-smoothstep(.19,.46,across/max(.3,along));
-      float cutoff=1.0-smoothstep(-.010,.018,ray.y/max(.3,along)+uDriveHeadlight.y);
-      driveBeam=step(.05,along)*spread*cutoff*min(2.0,pow(18.0/(10.0+max(0.0,along)),2.0));
+      // The UK dipped beam (dipped-beam.js): flat cut-off on the offside, kicked up to the nearside.
+      driveBeam=ukDippedBeam(vWorld-uLocalLightPos[li].xyz,uDriveHeadlight.x,uDriveHeadlight.y);
     }
     if(uDriveHeadlight.w>.5&&li>=3&&li<5){vec4 spot=uDriveInspection[li-3];if(spot.w>.5)driveBeam=smoothstep(.12,.68,dot(normalize(vWorld-uLocalLightPos[li].xyz),spot.xyz));}
     vec3 irradiance=uLocalLightColor[li].rgb*uLocalLightColor[li].w*att*arch*driveBeam;
@@ -2001,6 +2000,7 @@ export function renderPropPass({camX,camY,camZ,yaw,pitch=0,light=1,maxDistance=9
   }
   gl.uniform1i(U('uSourceSurroundingsSide'),0);
   if(!reflection){sourceCodeFrame=sourceRoomLighting||sourceCodeScreen?{eye:[...eye],yaw,pitch,viewMatrix,projection,maxDistance,timeSec,reducedMotion,patternOriginOffsetMetres:[...patternOriginOffsetMetres]}:null;renderSourceText(viewMatrix,projection,eye,forward,maxDistance,{sourceRoomLighting,sourceCodeScreen,torch,torchForward,torchFrame,light,ambientColor,ambientIntensity,localLightCount,localLightPositions,localLightColors,localLightEmergency});marksReady=!!sourceRoomLighting;}
+  if(!reflection&&driveStudyFrame?.retroreflectors)drawDriveRetroreflectors(viewMatrix,projection,eye,localLightPositions,localLightColors,height);
   gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
   if(activePropDiagnostics){lastPropDiagnostics={visibleMaterialRoles:[...activePropDiagnostics.visibleMaterialRoles].sort(),mainDrawCalls:activePropDiagnostics.mainDrawCalls,mainDrawCallsByMesh:activePropDiagnostics.mainDrawCallsByMesh,shadowDrawCalls:activePropDiagnostics.shadowDrawCalls,renderedInstances:activePropDiagnostics.renderedInstances,triangles:activePropDiagnostics.triangles,shadowTriangles:activePropDiagnostics.shadowTriangles};activePropDiagnostics=null;}
   gl.bindVertexArray(null);gl.disable(gl.CULL_FACE);gl.disable(gl.DEPTH_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null);return true;
@@ -2128,6 +2128,90 @@ void main(){
   vec3 sceneColour=uHomeState.x>.5?clamp(c,0.0,1.0):crossingDisplay(clamp(c,0.0,1.0));
   o=vec4(sceneColour,uRealmDepth>.5?packedDepth:smoothstep(0.0,.04,inside)*cohesion);
 }`;
+// CAT'S EYES. Seb, 2026-11-06 (Northern drives audit). Road studs return the
+// van's own beam straight back at the driver, so a line of them draws the road's
+// curve far past what the lamps light. As geometry they are 15 cm lenses and
+// fall below a pixel within a few metres, where the dither drops them. Here
+// each stud is a point, depth-tested against the props, lit by the same UK
+// dipped beam (dipped-beam.js) plus the little light every real lamp spills
+// above its cut-off, and brighter the closer the eye is to the lamp's axis:
+// near studs, seen from well above the lamps, are dimmer than the ones at fifty
+// metres. Added into colour only, so depth, marks and material tags are kept.
+const RETRO_VERT=`#version 300 es
+precision highp float;
+layout(location=0) in vec4 aStud;
+uniform mat4 uView,uProj;uniform vec3 uEye;uniform vec4 uLamp[2];uniform vec2 uBeam;uniform vec3 uSize;uniform float uGain,uSpill,uForce;
+out float vLevel;
+${DIPPED_BEAM_GLSL}
+void main(){
+  vec3 p=aStud.xyz;float lit=0.0;
+  for(int i=0;i<2;i++){
+    vec3 ray=p-uLamp[i].xyz;float d=max(length(ray),.1);
+    float observation=acos(clamp(dot(-ray/d,normalize(uEye-p)),-1.0,1.0));
+    float beam=ukDippedBeam(ray,uBeam.x,uBeam.y)+uSpill*ukDippedBeam(ray,uBeam.x,uBeam.y-.05);
+    lit+=uLamp[i].w*beam*exp(-observation/.022)/(1.0+pow(d/90.0,2.0));
+  }
+  float dist=length(p-uEye);
+  // Retroreflection is efficient: a lit stud is a bright point; distance shows as size.
+  vLevel=(1.0-exp(-lit*aStud.w*uGain))*(1.0-smoothstep(170.0,240.0,dist));
+  if(uForce>.5)vLevel=1.0; // review captures only
+  gl_Position=uProj*uView*vec4(p,1.0);
+  gl_PointSize=vLevel<.06?0.0:max(uSize.y,min(uSize.z,uSize.x*.10/max(dist,.1))*(.7+.6*vLevel));
+}`;
+const RETRO_FRAG=`#version 300 es
+precision highp float;
+in float vLevel;
+layout(location=0) out vec4 o;
+void main(){
+  vec2 q=gl_PointCoord*2.0-1.0;if(dot(q,q)>1.0)discard;
+  o=vec4(vec3(1.25)*smoothstep(.12,.42,vLevel),0.0);
+}`;
+export const DRIVE_RETROREFLECTOR=Object.freeze({gain:10,spill:.18,minPx:2.4,maxPx:7,lift:.03,limit:96});
+// Live tuning for review captures; the game never calls it.
+let retroTuning=DRIVE_RETROREFLECTOR;
+export function setDriveRetroreflectorTuning(overrides=null){retroTuning=overrides?{...DRIVE_RETROREFLECTOR,...overrides}:DRIVE_RETROREFLECTOR;return retroTuning;}
+let retroProgram=null,retroProgramPending=null,retroProgramFailed=false,retroVao=null,retroBuffer=null,lastRetroDrawn=0;
+const retroUniforms=new Map();
+function RU(name){if(!retroUniforms.has(name))retroUniforms.set(name,gl.getUniformLocation(retroProgram,name));return retroUniforms.get(name);}
+export function driveRetroreflectorShaders(){return{vertex:RETRO_VERT,fragment:RETRO_FRAG};}
+export function driveRetroreflectorsDrawn(){return lastRetroDrawn;}
+function resetRetroreflectorProgram(){
+  retroProgramPending?.dispose?.();
+  if(gl){if(retroProgram)gl.deleteProgram(retroProgram);if(retroVao)gl.deleteVertexArray(retroVao);if(retroBuffer)gl.deleteBuffer(retroBuffer);}
+  retroProgram=null;retroProgramPending=null;retroProgramFailed=false;retroVao=null;retroBuffer=null;retroUniforms.clear();
+}
+function drawDriveRetroreflectors(viewMatrix,projection,eye,lampPositions,lampColors,targetHeight){
+  lastRetroDrawn=0;
+  const studs=driveStudyFrame?.retroreflectors;
+  if(!gl||gl.isContextLost()||retroProgramFailed||!Array.isArray(studs)||!studs.length||!lampPositions||!lampColors)return 0;
+  if(!retroProgram){
+    try{
+      retroProgramPending ||= deferGlProgram(gl,RETRO_VERT,RETRO_FRAG,'drive retroreflectors');
+      retroProgram=retroProgramPending.poll();if(!retroProgram)return 0;
+    }catch(error){retroProgramPending?.dispose?.();retroProgramPending=null;retroProgramFailed=true;console.warn('Drive cat\'s eyes unavailable',error);return 0;}
+    retroProgramPending=null;retroUniforms.clear();
+    retroVao=gl.createVertexArray();retroBuffer=gl.createBuffer();
+    gl.bindVertexArray(retroVao);gl.bindBuffer(gl.ARRAY_BUFFER,retroBuffer);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,16,0);
+    gl.bindVertexArray(null);
+  }
+  const R=retroTuning,count=Math.min(R.limit,studs.length),data=new Float32Array(count*4);
+  for(let i=0;i<count;i++){const s=studs[i];data.set([s.x,s.y+R.lift,s.z,Number.isFinite(s.gain)?s.gain:1],i*4);}
+  const lamp=k=>{const on=(Number(lampColors[k*4+3])||0)>0?1:0;return[lampPositions[k*4],lampPositions[k*4+1],lampPositions[k*4+2],on];};
+  // The text pass before this may leave its own target bound: draw into the prop target.
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,width,height);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  gl.enable(gl.DEPTH_TEST);gl.depthMask(false);gl.depthFunc(gl.LEQUAL);
+  gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);
+  gl.useProgram(retroProgram);
+  gl.uniformMatrix4fv(RU('uView'),false,viewMatrix);gl.uniformMatrix4fv(RU('uProj'),false,projection);
+  gl.uniform3fv(RU('uEye'),eye);gl.uniform4fv(RU('uLamp[0]'),[...lamp(0),...lamp(1)]);
+  gl.uniform2f(RU('uBeam'),driveStudyFrame.heading||0,driveStudyFrame.lampDip??.02);
+  gl.uniform3f(RU('uSize'),projection[5]*targetHeight/2,R.minPx,R.maxPx);gl.uniform1f(RU('uGain'),R.gain);gl.uniform1f(RU('uSpill'),R.spill);gl.uniform1f(RU('uForce'),R.force?1:0);
+  gl.bindVertexArray(retroVao);gl.bindBuffer(gl.ARRAY_BUFFER,retroBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+  gl.drawArrays(gl.POINTS,0,count);gl.bindVertexArray(null);
+  gl.disable(gl.BLEND);gl.depthMask(true);gl.enable(gl.DEPTH_TEST);
+  lastRetroDrawn=count;return count;
+}
 let portalProgram=null,portalProgramPending=null,portalProgramFailed=false,portalVao=null,portalBuffer=null;
 const portalUniforms=new Map();
 function PU(name){if(!portalUniforms.has(name))portalUniforms.set(name,gl.getUniformLocation(portalProgram,name));return portalUniforms.get(name);}
@@ -2135,6 +2219,7 @@ export function sourcePortalShaders(){return{vertex:PORTAL_VERT,fragment:PORTAL_
 export function sourceCrossingShaders(){return{vertex:CROSSING_VERT,fragment:CROSSING_FRAG};}
 export function sourcePortalProgramReady(){return !!(gl&&portalProgram&&gl.isProgram(portalProgram));}
 function resetSourceDoorPrograms(){
+  resetRetroreflectorProgram();
   portalProgramPending?.dispose?.();towerViewProgramPending?.dispose?.();
   if(gl){
     for(const p of [portalProgram,towerViewProgram,openingProgram,crossingProgram])if(p)gl.deleteProgram(p);

@@ -14,7 +14,7 @@ const DEFAULT_BINDINGS = Object.freeze({
   move: 'WASD / ARROWS',
   select: 'UP / DOWN',
   set: 'LEFT / RIGHT',
-  quiet: 'SHIFT',
+  run: 'SHIFT',
   hide: 'C',
   light: 'F',
   bag: 'B',
@@ -77,18 +77,20 @@ const ID_TO_LEGACY_BUTTON = Object.freeze(
 export const CONTROLLER_FAMILIES = Object.freeze(['auto', 'xbox', 'playstation', 'nintendo', 'generic']);
 
 export const CONTROLLER_BINDING_ACTIONS = Object.freeze([
-  'quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu',
+  'run', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu',
   'confirm', 'back', 'tabPrev', 'tabNext',
   'mapFloorPrev', 'mapFloorNext', 'mapLocate', 'mapFile', 'mapConsole',
 ]);
 
-const WORLD_GROUP = Object.freeze(['quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu']);
+const WORLD_GROUP = Object.freeze(['run', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'mark', 'menu']);
 const MAP_ACTIONS = Object.freeze(['mapFloorPrev', 'mapFloorNext', 'mapLocate', 'mapFile', 'mapConsole']);
 const UI_GROUP = Object.freeze(['confirm', 'back', 'menu', 'tabPrev', 'tabNext', ...MAP_ACTIONS]);
 const PAD_GROUPS = Object.freeze([WORLD_GROUP, UI_GROUP]);
 
 export const DEFAULT_CONTROLLER_BINDINGS = Object.freeze({
-  quiet: { kind: 'button', id: 'leftShoulder' },
+  // The place's run (game/locomotion.js). Clicked, not kept down: it stays on
+  // until the stick comes back to rest, the way every pad game sprints.
+  run: { kind: 'button', id: 'leftStick' },
   // The trigger opposite the recorder's. One hand rolls tape, the other goes to
   // ground: the two things this job asks you to do while holding still.
   hide: { kind: 'button', id: 'leftTrigger' },
@@ -126,7 +128,7 @@ export const DEFAULT_CONTROLLER_SETTINGS = Object.freeze({
 });
 
 const ACTION_LABELS = Object.freeze({
-  quiet: 'QUIET',
+  run: 'RUN',
   hide: 'HIDE',
   light: 'LIGHT',
   bag: 'BAG',
@@ -257,6 +259,13 @@ export function normalizeControllerSettings(value = {}, legacyBindings = null) {
   }
   // A newly authored action must not steal a player's existing world remap.
   // UI section-next may still share RB because its input context is separate.
+  // Run replaced quiet (2026-11-06). A saved map has no run entry, so give it
+  // the stick click unless the player already put something else there.
+  if (!bindingSource.run) {
+    const occupied = new Set(WORLD_GROUP.filter(action => action !== 'run').map(action => bindings[action].id));
+    const free = ['leftStick', 'leftShoulder', 'rightStick', 'view', 'dpadDown'].find(id => !occupied.has(id));
+    if (free) bindings.run = { kind: 'button', id: free };
+  }
   if (!bindingSource.radio) {
     const occupied = new Set(WORLD_GROUP.filter(action => action !== 'radio').map(action => bindings[action].id));
     const free = ['rightShoulder', 'rightStick', 'leftStick', 'view', 'south', 'east', 'west', 'north', 'leftShoulder', 'leftTrigger', 'rightTrigger']

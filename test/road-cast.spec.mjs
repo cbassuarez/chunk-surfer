@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {ROAD_CAST,ROAD_CAST_LAMPS,ROAD_CAST_BILLS,ROAD_CAST_BOARD_COPY,ROAD_SERVICES,ROAD_STUDS,ROAD_CAB_CUP} from '../src/data/road-cast.js';
+import {UK_ROAD_MARKINGS,ukRoadLineAt,ukRoadMarkingMeshAt} from '../src/data/uk-road-markings.js';
 import {roadCastScene,roadCabCup} from '../src/game/source-drive/road-cast.js';
 import {OPENING_ROAD,openingRoadAt,openingRoadSurfaceAt,openingWorldAt,openingDriveColliders,applyOpeningRoadScene} from '../src/game/source-drive/opening-road.js';
 import {applyDriveTeaserScene} from '../src/game/source-drive/teaser-scene.js';
@@ -53,16 +54,19 @@ test('the drive meets them in order, each one near a real bit of road, and they 
   for(const prop of roadCastScene(-462,openingWorldAt).props)assert.ok([prop.x,prop.y,prop.z,...prop.matrix].every(Number.isFinite),prop.id);
 });
 
-test('studs run down the crown at one spacing, through the join, and stop short of the cliff',()=>{
-  const d=-40,props=roadCastScene(d,openingWorldAt).props.filter(p=>p.mesh===ROAD_STUDS.mesh);
-  assert.ok(props.length>=10);
+test('studs run down the crown in the gaps of the line, and hand over to the route at the join',()=>{
+  const props=[-620,-200,-40].flatMap(d=>roadCastScene(d,openingWorldAt).props.filter(p=>p.mesh===ROAD_STUDS.mesh));
+  assert.ok(props.length>=30);
   for(const prop of props){
-    const index=Number(prop.id.split('-').pop()),at=ROAD_STUDS.from+index*ROAD_STUDS.every,road=openingWorldAt(at);
+    const at=Number(prop.id.slice('road-stud-'.length)),road=openingWorldAt(at),kind=ukRoadLineAt(at);
     assert.ok(Math.hypot(prop.x-32-road.x,prop.z-32-road.z)<1e-6,'on the same centreline as the tyres');
+    assert.ok(at<ROAD_STUDS.to,'the Source route lays its own past the join');
+    assert.equal(((at-{centre:3,warning:4,double:0}[kind])%UK_ROAD_MARKINGS.studs[kind]+UK_ROAD_MARKINGS.studs[kind])%UK_ROAD_MARKINGS.studs[kind],0,`${at} keeps the ${kind} line's spacing`);
+    if(kind!=='double')assert.equal(ukRoadMarkingMeshAt(at),'drive_uk_edge_markings',`${at} sits in a gap, not on paint`);
   }
   assert.ok(ROAD_STUDS.to<297,'the broken edge at d297 keeps its own business');
-  const far=roadCastScene(300,openingWorldAt).props.filter(p=>p.mesh===ROAD_STUDS.mesh);
-  for(const prop of far)assert.ok(ROAD_STUDS.from+Number(prop.id.split('-').pop())*ROAD_STUDS.every<=ROAD_STUDS.to);
+  assert.equal(roadCastScene(300,openingWorldAt).props.filter(p=>p.mesh===ROAD_STUDS.mesh).length,0);
+  const rows=roadCastScene(-470,openingWorldAt);assert.equal(rows.retroreflectors.length,rows.props.filter(p=>p.mesh===ROAD_STUDS.mesh).length,'every stud is handed to the renderer to catch the beam');
 });
 
 test('the lamps leave the drive enough of the renderer\'s twelve',()=>{

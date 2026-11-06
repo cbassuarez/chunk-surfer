@@ -145,8 +145,8 @@ const PRO_TIPS = Object.freeze([
     when: ({ inGame }) => inGame,
   },
   {
-    id: 'quiet-movement',
-    text: 'Hold {quiet} to move quietly when the building is listening.',
+    id: 'run-movement',
+    text: '{run} runs. Every step faster is a step louder, and the building is listening.',
     tabs: ['input', 'game', 'challenge'],
     when: ({ inGame }) => inGame,
   },

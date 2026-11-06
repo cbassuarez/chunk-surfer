@@ -108,8 +108,10 @@ export const ROAD_CAST_LAMPS=rows([
   {id:'road-hoarding-second-lamp',d:-244,lateral:-13,y:5.05,local:[0,0,.9],yaw:.36,color:[.96,.92,.78],intensity:2.3,radius:9,reach:90},
 ]);
 
-// Studs down the crown of the road, at the spacing the road's own centre paint uses.
-export const ROAD_STUDS=freeze({mesh:'rc_cat_eye',from:-716,to:292,every:18.3,behind:40,ahead:190});
+// Studs down the crown of the opening road, in the gaps of whichever line is
+// painted (uk-road-markings.js sets the spacing). They stop at the join; the
+// Source route lays its own from there.
+export const ROAD_STUDS=freeze({mesh:'rc_cat_eye',from:-716,to:-32,behind:40,ahead:190});
 
 // In the van, up on the dash left of the wheel. Cab space, as `cabPoint` takes it.
 export const ROAD_CAB_CUP=freeze({mesh:'ending_van_cup',at:freeze([-.2,1.25,-.66])});

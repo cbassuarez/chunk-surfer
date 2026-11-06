@@ -83,7 +83,9 @@ export function resolveFootContact(input = {}) {
 // speed/cadence table (2019, doi:10.1186/s12966-019-0769-6), biased toward its
 // brisk end for audible grounding. Above walking speed this is an authored
 // game curve, not an anatomical claim. Units are individual contacts, NOT
-// left-to-left strides. The ~11.1m/s established grid pace needs a fast gait.
+// left-to-left strides. The ladder (game/locomotion.js) lands on it at crawl
+// ~1.3, walk 2.15, jog 2.85, run 3.3 and sprint 3.7 contacts a second; the
+// knots above 6 m/s now serve only the authored Source walks.
 export const FOOT_CONTACT_CADENCE = Object.freeze([
   [0, 0], [.2, .9], [.45, 1.25], [.9, 1.8], [1.35, 2.15], [1.8, 2.45],
   [2.1, 2.65], [3.2, 3.1], [5, 3.5], [8, 4.05], [11.1, 4.6], [16, 4.8],

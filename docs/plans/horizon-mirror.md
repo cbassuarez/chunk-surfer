@@ -11,8 +11,9 @@ as it is. Options canvas: https://claude.ai/artifact/JcZVwg9MpLtF11TZwvKZG4
   earlier trope".
 - **H4, the double.** A mirror whose frame has come away in a spiral. The chapel
   is straight on. The tower is only in the mirror, behind whoever is in it.
-- **Who is in the mirror is unclear on purpose:** you, the Surfer, Lyle or
-  Sarah, "or it could be a daisy or an ant or something". The text never decides.
+- **Who is in the mirror is unclear on purpose,** and it is one of four: Sarah,
+  Lyle, a daisy or an ant. His own body and the Surfer were dropped as filler.
+- **It is where he gets closure, or an ultimate truth,** on his way out.
 - **It is entered as an interruption.** Not a Source door, not a drive.
 - **The score and the recorded street are not needed.** The tape walk can go.
 - **The recursion is wanted. The lens-pass version of it was not convincing.**
@@ -24,7 +25,7 @@ same three events the bust does now:
 
 | Event | Today | In the mirror |
 |---|---|---|
-| `HORIZON_BUST_RECOGNIZED` | the eyes earn the audience (`profile.marbleEyes`) | the figure in the mirror looks back at you |
+| `HORIZON_BUST_RECOGNIZED` | the eyes earn the audience (`profile.marbleEyes`) | the occupant's condition is met (section 9) |
 | `HORIZON_BUST_DECIDED` accepted / declined | the palm seal, or refusing | stepping into the mirror, or walking on |
 | `HORIZON_EXIT_CHOSEN` tower / chapel | the road out | where you come out of the interruption |
 
@@ -54,8 +55,14 @@ frame is unwound into a spiral that drifts around it. The road to the chapel run
 straight past it. In the mirror, behind the figure, is St Brendan's tower, and it
 appears nowhere else.
 
+**A standing mirror, rectangular,** as in Escher's *Magic Mirror* (1946): the
+captured view is drawn through a four-cornered opening, so the frame and the glass
+agree exactly.
+
 **The mirror is a window, not a reflection pass.** Behind the glass is a mirrored
-copy of the stage, built by us, so the "reflection" is free to disagree with the
+copy of the stage, built by us and captured once with the tower door's machinery
+(`r3dCaptureTowerView` → `renderSourceTowerView`, which reprojects it with depth as
+he moves and goes full screen as he walks in), so the "reflection" is free to disagree with the
 room: the tower stands only on that side, and the figure is not the player's body.
 The water reflection pass in `props3d.js` is for horizontal planes and is not used.
 
@@ -64,25 +71,36 @@ mirror too, and behind that one another, each smaller and a little later. This i
 the *Print Gallery* nesting done as rooms you could walk into, not a screen warp.
 
 **The figure is never settled.** It does not copy him. It is late, or early, or
-turned the wrong way. Between one look and the next it can be someone else: his
-own body, the Surfer, Lyle (he/him), Sarah, a daisy, an ant (the field's ant,
-`memory-field-ant.js`, at the size of a man, or a man at the size of an ant). The
-change happens only off-camera or on a blink, the way the emergency apparitions
-move only in the dark.
+turned the wrong way, and it is never quite clear who it is. Four can be there:
+Sarah, Lyle (he/him), a daisy, an ant (the field's ant, `memory-field-ant.js`).
+Which one is decided by the night (section 9). While he watches it does not
+change; if it is going to be someone else, that happens off-camera or on a blink,
+the way the emergency apparitions move only in the dark.
 
-## 5. The offer
+## 5. What this place is for
 
-The bust's audience tree (`horizon-bust.js`) becomes the figure's: identity,
-history, route and consequence can still all be asked before anything is touched,
-and the bargain's warning is still said in full. The answers are rewritten so that
-no line pins down who is speaking.
+**Closure, or an ultimate truth.** He is on his way out, and this is him
+soothing himself. Whoever is in the mirror gives him the one true thing he needs
+about them, or about himself:
 
-- **Without the eyes** the figure cannot see him. It looks past him; the tower
-  behind it is dark; the refusal beats play; walking on is the only way.
-- **With the eyes** it finds him, and the tower lights.
+- **Sarah:** the boundary. She never said he could, and it was hers to say.
+- **Lyle:** that it never worked, and it did not have to. Lyle lived a full life.
+- **The daisy and the ant:** about himself.
+
+The truth is always given, whichever road he then takes. The route is the
+offer that follows it: the old audience's shape (who, what happened, the way,
+the cost) and the bargain's warning in full survive, re-voiced for whoever is
+speaking.
+
+- **The offer opens only on its condition** (section 9). Without it the figure
+  still says its truth, but the tower behind it stays dark, and walking on is
+  the only way.
 - **Accepting is walking into the mirror.** Crossing the glass commits
   `accepted` and comes out on the tower road.
 - **Walking on past it** commits `declined` and comes out on the chapel road.
+
+There are no eyes. They were a MacGuffin: something handed over to open a route.
+That function survives for some occupants and not others; the eyes as a concept go.
 
 ## 6. The way in and out
 
@@ -91,34 +109,67 @@ The field interruption already has the whole pipeline: `beginMemoryField` →
 self-contained scene → `startNeural('emerge')` on the way back. Horizon becomes
 another visit on it, of the "stuck" kind in `last-minutes.md`, with three changes:
 
-- **Fixed, not random.** It fires on one verb at the field edge, where the
-  machine used to stand, never by the director's rate.
+- **Fixed, not random.** It fires when he reaches the field's edge, never by
+  the director's rate.
 - **It saves.** Seeps never touch the save; this one commits the route.
-- **Waiting still gets you out**, as every stuck visit must. What waiting does is
-  an open question (section 8).
+- **The mirror waits.** This is the one stuck visit that waiting does not end:
+  standing still decides nothing, and walking on is the way out.
 
 ## 7. Stages
 
 1. **The stage, in the engine, nowhere near the live route.** Mirror, unwound
    frame, the copy behind the glass with the tower and the nested mirrors, the
-   figure and its changes. Reachable only from a probe. Captures from the
-   player's eye for Seb to judge.
-2. **The offer.** The rewritten tree, the eyes gate, the bargain's return, Reduce
-   Dread.
-3. **Wiring.** The interruption on the field-edge verb, the three events, coming
-   out onto the right road. The old tape stays behind a switch.
-4. **Removal and checks.** The tape, score and machine go. God presets, the
-   endings/progression/source-path audits and the horizon specs are moved over.
+   four occupants. Reachable only from a probe. Captures from the player's eye
+   for Seb to judge.
+2. **The four truths and their offers.** Each occupant's lines and voice, its
+   condition, the bargain's return, Reduce Dread. The writing is Seb's; the
+   lines here are placeholders for shape.
+3. **Wiring.** The interruption at the field's edge, the choice of occupant, the
+   three events, coming out onto the right road. The old tape stays behind a switch.
+4. **Removal and checks.** The tape, score, machine and the Horizon end of the
+   eyes go. God presets, the endings/progression/source-path audits and the
+   horizon specs are moved over.
 
-## 8. Open, for Seb
+## 8. Answered (Seb, 2026-11-06)
 
-1. **The verb.** The first [E] at the field edge where the machine stood, or
-   just reaching the edge?
-2. **What waiting does.** Walking away is declining. Does standing still for
-   long enough also decline (the mirror clouds over, only the chapel road is
-   left), or does the mirror wait for ever?
-3. **The eyes gate.** Keep it as is (no eyes, no offer)?
-4. **The voice.** One voice whatever is in the mirror (`unknown`, the mouth he
-   can't account for), or does it change with the figure, a daisy included?
+1. **The way in is reaching the field's edge.** No verb.
+2. **The mirror waits.** Standing still never decides anything; only walking on
+   declines.
+3. **No eyes.** They were only a MacGuffin for giving something to unlock a
+   route. The concept goes; the function may stay for some occupants.
+4. **The voice changes with the occupant**, and which occupant may depend on the
+   ending the night is playing.
+5. **C:** the night chooses; what he brings is the fallback.
+6. **Closure, not filler.** Sarah and the boundary; Lyle and never having made it
+   work; the daisy and the ant about himself. His own body and the Surfer are not
+   needed.
+
+## 9. The four occupants (proposal)
+
+| In the mirror | Voice | The truth | What opens the offer | Kind |
+|---|---|---|---|---|
+| Sarah | `sarah` | the boundary was hers | that he never pressed her: her refusals respected (bench question, directory enquiries) | withheld |
+| Lyle (he/him) | `lyle` | it never worked, and that was all right; he finishes "the part that wouldn't play" | giving back the music box, broken from the coast or whole from the cab | given |
+| A daisy | the petals, no voice | about himself: the last petal says "loves me" | plucking it to the last petal at the mirror | done there |
+| An ant | his own line, no voice | about himself: it gets across | that he stopped and watched it cross in the field | done earlier |
+
+**Lyle's conversation depends on which music box he is given** (Seb): the broken
+one from the coast, its spring gone in bar 7, or the whole one from the cab seat.
+
+Only Lyle keeps the MacGuffin (something handed over). Sarah's condition is
+something he did not do. The daisy's is done on the spot, so it can always be
+met.
+
+**Who is there (C).** The night chooses first, from what it has already
+recorded:
+- `confession.value` names Sarah or Lyle;
+- the Sarah page and the bench question;
+- the coast and Lyle's music box;
+- how far `last.arc` has gone (the pastoral end of the arc leans to the daisy
+  and the ant).
+
+If the chosen occupant's condition is not met but another's is, that one comes
+instead. The daisy needs nothing carried in, so there is always someone who can
+make the offer.
 
 [bust-bargain]: the bargain wired 2026-09-02; see `resolveCathedralLoss`.

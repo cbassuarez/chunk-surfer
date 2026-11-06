@@ -2,6 +2,7 @@
 // caller passes its road so this module stays free of it.
 import {ROAD_CAST,ROAD_CAST_LAMPS,ROAD_CAST_SOLIDS,ROAD_STUDS,ROAD_CAB_CUP,roadServicesWiden} from '../../data/road-cast.js';
 import {ROAD_FLORA} from '../../data/ellery-flora.js';
+import {ukRoadStudsBetween} from '../../data/uk-road-markings.js';
 
 const SHOWN_BEHIND=150,SHOWN_AHEAD=280,FLORA_BEHIND=30,FLORA_AHEAD=90;
 
@@ -18,14 +19,16 @@ export function roadCastScene(d,worldAt){
   for(const row of ROAD_CAST)if(row.d-d<SHOWN_AHEAD&&d-row.d<SHOWN_BEHIND)props.push(prop(row.mesh,row.id,pose(worldAt,row)));
   // What's growing on the verge, by headlamp only: it is low and it doesn't stay.
   for(const row of ROAD_FLORA)if(row.d-d<FLORA_AHEAD&&d-row.d<FLORA_BEHIND&&!(row.lateral<0&&roadServicesWiden(row.d)>.05))props.push({...prop(row.mesh,row.id,pose(worldAt,{...row,lift:.03,scale:[row.scale,row.scale,row.scale]})),...(row.emissive?{emissive:[...row.emissive]}:{})});
-  const{from,to,every,behind,ahead,mesh}=ROAD_STUDS,first=Math.ceil((Math.max(from,d-behind)-from)/every),last=Math.floor((Math.min(to,d+ahead)-from)/every);
-  for(let i=first;i<=last;i++)props.push(prop(mesh,`road-stud-${i}`,pose(worldAt,{d:from+i*every,lateral:0,lift:.002})));
+  // Cat's eyes in the gaps of whichever line is painted here (uk-road-markings.js).
+  // The Source route past the join lays its own (scene.js); these stop short of it.
+  const{from,to,behind,ahead,mesh}=ROAD_STUDS,retroreflectors=[];
+  for(const at of ukRoadStudsBetween(Math.max(from,d-behind),Math.min(to,d+ahead),at=>at<to)){const placed=pose(worldAt,{d:at,lateral:0,lift:.002});props.push(prop(mesh,`road-stud-${at}`,placed));retroreflectors.push({x:placed.x,y:placed.y,z:placed.z});}
   for(const row of ROAD_CAST_LAMPS){
     if(Math.abs(row.d-d)>row.reach)continue;
     const at=pose(worldAt,{...row,lift:row.y});
     lamps.push({id:row.id,x:at.x,y:at.y,z:at.z,color:[...row.color],intensity:row.intensity,radius:row.radius,penetration:1});
   }
-  return{props,lamps};
+  return{props,lamps,retroreflectors};
 }
 
 /** Boxes in the shape the drive's contacts take, near a van at road distance `d`. */

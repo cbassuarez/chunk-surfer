@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {
+import {MAIN_STAIR_MOTION,
   createMainStairMotionStep,sampleMainStairMotion,mainStairContactCrossed,
 } from '../src/render/main-stair-motion.js';
 import {InputManager,keyboardMotionAxes} from '../src/input/input-manager.js';
@@ -51,6 +51,9 @@ function harness({kind='main',quiet=1}={}) {
     usingPlan:()=>kind!=='source',usingSpecialSpace:()=>kind==='source',usingSourceSpace:()=>kind==='source',
     activeGeometry:()=>({logicalToPhysical:physical,floorAt:()=>7,renderedFloorAt:()=>7}),
     performance:{now:()=>now},currentMoveIntervalMs:()=>45*quiet,
+    // The gait ladder: the stair's own tread speed at a walk, slower when paced.
+    storyMode:true,isIntroActive:()=>false,renderStepDueAt:0,MAIN_STAIR_MOTION,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),
+    currentLocomotion:()=>({speed:MAIN_STAIR_MOTION.horizontalSpeedMps/quiet}),
     D:(n)=>n*2,movementIntentActive:()=>false,
     gameplayInputLifecycleActive:()=>model.active,
     scenes:{blocksInput:()=>model.blocksInput,blocksWorld:()=>model.blocksWorld,worldView:()=>model.worldView},
@@ -74,7 +77,7 @@ function harness({kind='main',quiet=1}={}) {
   });
   for(const name of ['physicalPointFor','motionTargetPoint','snapMotionRig','ensureMotionRig',
     'renderedPlayerPoint','mainStairRenderPose','mainStairMoveTouches','advanceMainStairRenderMove',
-    'beginRenderStep','currentStepIntervalMs','planYawOffset','resetMotionInput','recoverMotionFocus',
+    'beginRenderStep','glidePoint','retimeGlide','currentStepIntervalMs','planYawOffset','resetMotionInput','recoverMotionFocus',
     'armHeldMovement','tickHeldMovement']) vm.runInContext(mainFunction(name),context);
 
   // The actual step prefix contains the collision-ahead guard; finish with a
@@ -159,21 +162,22 @@ test('production renderer does not lag the resolved polar bearing, while ordinar
   near(h.c.cameraPlanYaw({yawOffset:.6,resolvedStairFloor:'true'}),.6*(1-Math.exp(-9/60)));
 });
 
-test('ordinary movement, Source and unrelated stairs retain the existing spring and floor paths',()=>{
+test('ordinary movement, Source and unrelated stairs glide at the gait speed and keep their floor paths',()=>{
   for(const kind of ['ordinary','source','unrelated']) {
     const h=harness({kind});h.commit();
     assert.equal(h.c.renderMove.mainStair,undefined,`${kind} entered main-stair presentation`);
     const pose=h.tick(1030);
     assert.equal(pose.mainStair,undefined);
     assert.equal(pose.floorH,undefined);
-    assert.ok(h.c.motionRig,'ordinary spring remains installed');
+    assert.equal(h.c.renderMove.glide,true,'an ordinary step is a constant-speed glide');
+    assert.ok(h.c.motionRig,'the motion rig still carries the eye');
     const frame=h.c.frameFloor(pose);
     assert.equal(frame.resolvedStairFloor,false);
     near(frame.floorH,kind==='source'?7:999);
   }
 });
 
-test('ordinary camera spring follows elapsed foreground time at both 60 and 14 fps',()=>{
+test('the ordinary glide follows elapsed foreground time at both 60 and 14 fps',()=>{
   function sample(frameMs){
     const h=harness({kind:'ordinary'}),start=h.tick(1000);h.commit();
     for(let elapsed=frameMs;elapsed<300;elapsed+=frameMs)h.tick(1000+elapsed);
@@ -187,10 +191,14 @@ test('ordinary camera spring follows elapsed foreground time at both 60 and 14 f
     <Math.hypot(slow.start.x-slow.rig.targetX,slow.start.z-slow.rig.targetZ)*0.7);
 });
 
-test('ordinary spring bounds a long frame and focus recovery cannot replay movement',()=>{
-  function sample(elapsed){const h=harness({kind:'ordinary'});h.commit();return h.tick(1000+elapsed);}
-  const bounded=sample(200),longFrame=sample(5000);
-  near(longFrame.x,bounded.x);near(longFrame.z,bounded.z);
+test('the ordinary glide cannot overshoot its cell on a long frame, and focus recovery cannot replay movement',()=>{
+  function sample(elapsed){const h=harness({kind:'ordinary'});h.commit();return{pose:h.tick(1000+elapsed),h};}
+  // A glide travels at most the committed segment, so a long frame lands on
+  // the cell instead of flinging the eye past it.
+  const partial=sample(200),longFrame=sample(5000);
+  const cell=longFrame.h.c.FP.logicalToPhysical(longFrame.h.c.px,longFrame.h.c.py);
+  near(longFrame.pose.x,cell.x);near(longFrame.pose.z,cell.z);
+  assert.ok(Math.hypot(partial.pose.x-cell.x,partial.pose.z-cell.z)>0.01,'two hundred milliseconds is part of a walking step');
   const h=harness({kind:'ordinary'});h.commit();h.tick(1050);
   h.c.resetMotionInput('window-blur',{stopRenderMove:true});
   assert.equal(h.c.motionFocusSuspended,true);
@@ -370,6 +378,7 @@ function compiledKeyboardHost({frameMs=16}={}){
   const c=vm.createContext({FP,PROPS,CELL,ZONE,keyboardMotionAxes,createMainStairMotionStep,sampleMainStairMotion,mainStairContactCrossed,
     px:278,py:59,planName:'conservatory',RENDERER:'3d',storyMode:true,depth:0,renderMove:null,motionRig:null,paused:false,
     document:{hidden:false},performance:{now:()=>now},MOVE_MS:45,currentMoveIntervalMs:()=>45,D:n=>n*2,
+    isIntroActive:()=>false,renderStepDueAt:0,MAIN_STAIR_MOTION,currentLocomotion:()=>({speed:MAIN_STAIR_MOTION.horizontalSpeedMps}),
     usingPlan:()=>true,usingSourceSpace:()=>false,usingStairAnomaly:()=>false,usingSpecialSpace:()=>false,activeGeometry:()=>geometry,
     scenes:{blocksInput:()=>false,blocksWorld:()=>false,worldView:()=>null},setupHandoffBlocksMovement:()=>false,sourceDoorArrival:null,
     // An ordinary exploration run: no active tape/tutorial, carry, Chapel
@@ -386,7 +395,7 @@ function compiledKeyboardHost({frameMs=16}={}){
     R3:Object.fromEntries(['r3dStepDelta','r3dShiftLookFrame','r3dLookAngles','r3dSetLookAngles'].map(name=>[name,rendererScope[name]])),RT:{footstep:()=>{}},
   });
   for(const name of ['physicalPointFor','motionTargetPoint','snapMotionRig','ensureMotionRig','renderedPlayerPoint','mainStairRenderPose',
-    'mainStairMoveTouches','advanceMainStairRenderMove','beginRenderStep','currentStepIntervalMs','armHeldMovement','tickHeldMovement',
+    'mainStairMoveTouches','advanceMainStairRenderMove','beginRenderStep','glidePoint','retimeGlide','currentStepIntervalMs','armHeldMovement','tickHeldMovement',
     'independentControls','combinedIndependentMotionAxes','movementIntentActive','arrowDelta'])vm.runInContext(mainFunction(name),c);
   // Execute main's complete input/collision/portal policy and its exact pose/
   // logical commit. Only the intervening audio and following story accounting

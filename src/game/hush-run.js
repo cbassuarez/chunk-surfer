@@ -248,7 +248,7 @@ export function makeHushRunScene({
     if (k === 'f' || code === 'KeyF') return 'light';
     if (k === 'p' || code === 'KeyP') return 'playback';
     if (e.key === ' ' || code === 'Space') return 'mark';
-    if (e.key === 'Shift' || code === 'ShiftLeft' || code === 'ShiftRight') return 'quiet';
+    if (e.key === 'Shift' || code === 'ShiftLeft' || code === 'ShiftRight') return 'run';
     if (e.key === 'Escape') return 'menu';
     if (e.key === 'Enter' || code === 'Enter') return 'confirm';
     return '';
@@ -323,14 +323,14 @@ export function makeHushRunScene({
         else { prowlLook = R3.r3dLookAngles(); borrowHeld = true; }
         return true;
       }
-      if (action === 'quiet') { spoolHeld = true; return true; }
+      if (action === 'run') { spoolHeld = true; return true; }
       if (action === 'menu' || action === 'back') { scenes.pop(); return true; }
       return true;
     },
     keyup(e) {
       const action = actionFor(e);
       if (action === 'playback') { borrowHeld=false;borrowExhausted=false;state.borrowMs=0;R3.r3dSetLookAngles({...prowlLook,immediate:true}); return true; }
-      if (action === 'quiet') { spoolHeld = false; return true; }
+      if (action === 'run') { spoolHeld = false; return true; }
       return false;
     },
     update(dt) {

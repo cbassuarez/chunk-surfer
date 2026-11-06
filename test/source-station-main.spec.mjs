@@ -485,7 +485,8 @@ test('side glances and tiny steps are harmless; measured outward travel while fa
 test('keyboard and controller can select leave immediately without LOOK or STAY, without blocking locomotion',()=>{
   for(const keys of [
     [{code:'KeyQ',key:'q'}],
-    [{controller:true,controllerAction:'quiet',code:'ShiftLeft',key:'Shift'}],
+    // LB has no world verb since quiet became run (L3); it steps the chooser back.
+    [{controller:true,controllerAction:'tabPrev',code:'KeyQ',key:'q'}],
     [{code:'Tab',key:'Tab'},{code:'Tab',key:'Tab'}],
     [{controller:true,controllerAction:'radio',code:'KeyV',key:'v'},{controller:true,controllerAction:'radio',code:'KeyV',key:'v'}],
   ]){
@@ -493,7 +494,7 @@ test('keyboard and controller can select leave immediately without LOOK or STAY,
     h.api.syncStationErrand(h.runtime.doorCrossingFrame());
     let prevented=0;
     for(const key of keys)h.api.homeKey({...key,preventDefault(){prevented++;}});
-    assert.equal(prevented,keys.length,'production story key wiring must consume contextual selector before world radio/quiet');
+    assert.equal(prevented,keys.length,'production story key wiring must consume contextual selector before world radio');
     assert.equal(h.api.stationRealmActionLabel(),'TURN AWAY');
     assert.equal(h.thoughts.length,0);assert.equal(h.releases,0);
     const before={...h.realm.pose};h.api.step(1,0);

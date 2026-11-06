@@ -13,7 +13,7 @@ export const COMPLETION_CONTROL_KEYS = Object.freeze([
   'Tab', 'ShiftLeft', 'ShiftRight', 'Backspace', 'Delete', 'Home', 'End', 'PageUp', 'PageDown', 'F6',
 ]);
 export const COMPLETION_CONTROL_ACTIONS = Object.freeze([
-  'move_up', 'move_down', 'move_left', 'move_right', 'quiet', 'hide', 'light', 'bag',
+  'move_up', 'move_down', 'move_left', 'move_right', 'run', 'hide', 'light', 'bag',
   'recorder', 'radio', 'interact', 'playback', 'mark', 'menu', 'confirm', 'back',
   'tabPrev', 'tabNext', 'mapFloorPrev', 'mapFloorNext', 'mapLocate', 'mapFile', 'mapConsole',
 ]);

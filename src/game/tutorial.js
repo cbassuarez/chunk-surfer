@@ -23,7 +23,6 @@ const state = {
   active: false,
   step: 0,
   seen: new Set(),      // steps whose opening line has been said
-  slowUsed: false,
   startedAt: 0,
   say: () => {},
   onLevelsGood: () => {},
@@ -42,7 +41,7 @@ const state = {
 //   why      why the recordist wants it, in his words
 //
 // ctx: { px, py, light, recording, takeElapsed, spoiled, spoilReason,
-//        workOrderRead, marked, slow, levelChecked, rehearsed }
+//        workOrderRead, marked, levelChecked, rehearsed }
 const STEPS = [
   {
     id: 'light',
@@ -121,11 +120,11 @@ const STEPS = [
     id: 'go',
     objective: 'LEAVE THE DOCK',
     line: { who: 'you', text: 'Inner door, south end. Down to B3 — follow the bearing. That mark is the whole point of making it.' },
-    prompt: () => promptLine([{ action: 'move', label: 'move' }, { action: 'quiet', label: 'quietly' }], { separator: '     ' }),
-    // Leaving the dock ends the setup. Walking softly is offered, never
-    // required — a player who strides out has learned the lesson the building
-    // is about to teach them properly, and holding the prompt on screen until
-    // they press shift would be the game locking a door.
+    prompt: () => promptLine([{ action: 'move', label: 'move' }, { action: 'run', label: 'run' }], { separator: '     ' }),
+    // Leaving the dock ends the setup. There is no quiet key: the walk is the
+    // careful pace, and the run key is offered here because it is the one new
+    // thing the legs can do. Nothing waits on it — a prompt that stayed up
+    // until the player ran would be the game locking a door.
     done: (c) => c.leftDock,
     exit: { who: 'you', text: 'Quietly, then. Everything I do in here, the building keeps.' },
   },
@@ -140,7 +139,6 @@ export function startTutorial() {
   state.active = true;
   state.step = 0;
   state.seen.clear();
-  state.slowUsed = false;
   state.startedAt = performance.now();
   levelChecked = false;
   spoiltOnce = false;
@@ -195,8 +193,6 @@ export function tickTutorial(dt, ctx) {
     if (line) state.say(line);
   }
 
-  if (ctx.slow) state.slowUsed = true;
-
   if (step.id === 'level' && !levelChecked) {
     if (ctx.recording && ctx.spoiled && !spoiltOnce) {
       spoiltOnce = true;
@@ -209,7 +205,7 @@ export function tickTutorial(dt, ctx) {
     }
   }
 
-  const full = { ...ctx, slow: state.slowUsed, levelChecked };
+  const full = { ...ctx, levelChecked };
   if (step.done(full)) {
     if (step.exit) state.say(step.exit);
     state.step++;

@@ -13,7 +13,7 @@ export const CONTROLLER_REMAP_ACTIONS = Object.freeze([
   { id: 'recorder', group: 'WORLD' },
   { id: 'radio', group: 'WORLD' },
   { id: 'light', group: 'WORLD' },
-  { id: 'quiet', group: 'WORLD' },
+  { id: 'run', group: 'WORLD' },
   { id: 'bag', group: 'WORLD' },
   { id: 'playback', group: 'WORLD' },
   { id: 'menu', group: 'WORLD / UI' },

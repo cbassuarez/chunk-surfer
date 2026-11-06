@@ -10,7 +10,7 @@ import{driveEvolutionFrame}from'./evolution.js';
 import{CAB_RADIO,CAB_RADIO_ROAD_STATIONS,cabRadioKeyPoint,cabRadioPoint,cabRadioPose,cabRadioVolumePoint}from'../../data/cab-radio.js';
 import{makePredicamentScene,predicamentColliders}from'./predicaments/scene.js';
 import{driveDoorCrossingFrame}from'./door-crossing.js';
-import{ukRoadMarkingMeshAt}from'../../data/uk-road-markings.js';
+import{ukRoadMarkingMeshAt,ukRoadStudsBetween}from'../../data/uk-road-markings.js';
 import{vanBrandInstances}from'../../render/van-brand.js';
 export const rotation=(x=0,y=0,z=0)=>{const cx=Math.cos(x),sx=Math.sin(x),cy=Math.cos(y),sy=Math.sin(y),cz=Math.cos(z),sz=Math.sin(z);return[cy*cz+sy*sx*sz,cx*sz,-sy*cz+cy*sx*sz,0,-cy*sz+sy*sx*cz,cx*cz,sy*sz+cy*sx*cz,0,sy*cx,-sx,cy*cx,0,0,0,0,1];};
 export function multiply(a,b){const m=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let i=0;i<4;i++)m[c*4+r]+=a[i*4+r]*b[c*4+i];return m;}
@@ -56,6 +56,10 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  // Painted carriageway remains on the route centre. The stopping bay and
  // finite service courts are separate unmarked paving, never a stretched lane.
  for(let i=first;i<=last;i++){const distance=i*2,a=roadAt(distance),plain=a.treatment.pinch>.35||a.treatment.expanse>.12,snow=a.treatment.snowCover>.45,mesh=snow?'dp_snow_paving':'drive_plain_paving';worldPart(mesh,distance,0,{id:'drive_road-'+distance+'-0',scaleX:a.halfWidth/3.25,scaleZ:2.08*a.longitudinalScale,pitchWithRoad:true});if(!plain&&!snow)worldPart(ukRoadMarkingMeshAt(distance),distance,0,{id:'drive-uk-paint-'+distance,scaleZ:2.08*a.longitudinalScale,pitchWithRoad:true});for(const side of[-1,1]){const width=side<0?a.leftWidth:a.rightWidth,extra=width-a.halfWidth;if(extra>.001)worldPart('drive_plain_paving',distance,side*(a.halfWidth+extra/2),{scaleX:(extra+.025)/6.5,scaleZ:2.08*a.longitudinalScale,pitchWithRoad:true,y:-.002});worldPart('drive_verge',distance,side*(width+a.shoulderWidth/2),{scaleX:a.shoulderWidth/1.6,scaleZ:2.10*a.longitudinalScale,pitchWithRoad:true});}}
+ // Cat's eyes in the gaps of whatever line is painted (uk-road-markings.js),
+ // never on unmarked paving. The renderer lights them from the van's own beam.
+ const retroreflectors=[],marked=at=>{if(at<-32)return false;const t=roadAt(at).treatment;return!(t.pinch>.35||t.expanse>.12||t.snowCover>.45);};
+ for(const at of ukRoadStudsBetween(Math.max(-32,d-40),d+190,marked)){const p=worldPart('rc_cat_eye',at,0,{id:'road-stud-'+at,y:.002});retroreflectors.push({x:p.matrix[12],y:p.matrix[13],z:p.matrix[14]});}
  props.push(...roadBoundaryInstances(d));
  for(const p of routeLayoutBetween(d-200,d+250))worldPart(p.mesh,p.d,p.lateral,{id:p.id,y:p.lift,yaw:p.yaw,pitchWithRoad:p.pitchWithRoad,scaleX:p.scale[0],scaleY:p.scale[1],scaleZ:p.scale[2]});
  const bridge=worldPart(ORDINARY_BRIDGE.mesh,ORDINARY_BRIDGE.d,0,{id:ORDINARY_BRIDGE.id});
@@ -73,5 +77,5 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  const evolution=driveEvolutionFrame(s),cut=makeCutScene(s,evolution),predicaments=makePredicamentScene(s);props.push(...cut.props,...predicaments.props);lamps.push(...cut.lights,...predicaments.lights);const mic=offset(metrics.eye,mount),cabinSource=source=>{const d=source.world.map((v,i)=>v-body[12+i]);return{...source,position:[body[0]*d[0]+body[1]*d[1]+body[2]*d[2]-mic[0],body[4]*d[0]+body[5]*d[1]+body[6]*d[2]-mic[1],body[8]*d[0]+body[9]*d[1]+body[10]*d[2]-mic[2]]};};cut.sources=cut.sources.map(cabinSource);predicaments.sources=predicaments.sources.map(cabinSource);
  const rainShelter={x:bridge.matrix[12],y:bridge.y+ORDINARY_BRIDGE.clearance,z:bridge.matrix[14],heading:bridge.heading};
  props.push(...vanBrandInstances(props));
- const eye=transform(head,offset(metrics.eye,mount));return{cut,predicaments,evolution,props,colliders,eye,lamps,mirrors,targets,body,bridge,rainShelter,doorCrossing,recorderMatrix:recM,cabPoint,roadPitch:attitude.pitch};
+ const eye=transform(head,offset(metrics.eye,mount));return{cut,predicaments,evolution,props,colliders,eye,lamps,mirrors,targets,body,bridge,rainShelter,doorCrossing,recorderMatrix:recM,cabPoint,roadPitch:attitude.pitch,retroreflectors};
 }

@@ -16,6 +16,7 @@
 
 import { ROOM_TONE, NOISE } from '../config.js';
 import { inferAcousticKind } from '../audio/acoustic-catalogue.js';
+import { GAIT_ORDER, gaitNoise } from './locomotion.js';
 import { normalizeTapeDamage } from './tape-damage.js';
 import { takeNoiseCause } from './take-acceptance.js';
 
@@ -209,7 +210,7 @@ const state = {
   worldNoise: 0,        // remote sources the presence hears but this mic does not
   ambient: 0,           // what the ROOM did — weather, not you. See ambientNoise().
   lastNoiseAt: { x: 0, y: 0, t: 0 },   // where the presence goes looking
-  slow: false,          // Shift held
+  gait: 'walk',         // the rung the legs are on: see game/locomotion.js
   hidden: false,        // pressed into cover: see game/cover.js
   takes: [],            // completed room ids
   places: {},           // roomId -> where in that room it was rolled
@@ -366,14 +367,16 @@ export function killTorch() { state.light = false; state.battery = 0; }
 // world knows what it is standing on.
 export function emitStepNoise(x, y, surface = 1) {
   const scale = Number.isFinite(surface) && surface > 0 ? surface : 1;
-  const level = (state.slow ? NOISE.slow : NOISE.walk) * scale + noiseFloor();
+  // The footfall is priced by the gait. Walking is the careful choice now;
+  // there is no quiet key, and the run key is a decision about being heard.
+  const level = gaitNoise(state.gait) * scale + noiseFloor();
   state.noise = Math.max(state.noise, level);
   state.lastNoiseAt = { x, y, t: performance.now() };
   handleRecordingNoise(level, 'you moved', {
     sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true,
   });
   reportAcoustic({
-    kind: inferAcousticKind('you moved', level, { step: true, slow: state.slow, injured: state.injuries > 0 }),
+    kind: inferAcousticKind('you moved', level, { step: true, gait: state.gait, injured: state.injuries > 0 }),
     level, x, y, reason: 'you moved', sourceKind: 'player', sourceId: 'player', spoils: true, deliberate: true,
   });
   return level;
@@ -609,7 +612,8 @@ export function injure() {
   return state.injuries;
 }
 
-export function setSlow(on) { state.slow = !!on; }
+export function setGait(gait) { state.gait = GAIT_ORDER.includes(gait) ? gait : 'walk'; }
+export function gait() { return state.gait; }
 
 // Pressed into cover. The recordist only records the fact — main.js owns the
 // geometry (game/cover.js) and the HUSH owns what it makes of it. Nothing in

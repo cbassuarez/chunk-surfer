@@ -13,6 +13,8 @@ import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFra
 import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop,sixOrdinaryTakes,showSixDebugOverlay,sixLoopDebugBuild} from './game/six-loop.js';
 import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
 import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
+import {createHorizonMirrorScene} from './game/horizon-mirror-scene.js';
+import {createHorizonMirrorRenderer} from './render/horizon-mirror-renderer.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
 import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
 import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
@@ -88,7 +90,7 @@ import { fft, analyze, biomeFrom } from './audio/analysis.js';
 import * as CR from './render/canvas.js';
 import * as R3 from './render/r3d.js';
 import { B3_GLASS_SEEN_FLAG, B3_GLASS_LEFT_FLAG, createB3GlassVisitTracker, inB3Rooms } from './game/studio-b3-glass-visits.js';
-import {createMainStairMotionStep,sampleMainStairMotion,mainStairContactCrossed} from './render/main-stair-motion.js';
+import {MAIN_STAIR_MOTION,createMainStairMotionStep,sampleMainStairMotion,mainStairContactCrossed} from './render/main-stair-motion.js';
 import {createSourceDriveSession,normalizeSourceDriveCheckpoint} from './game/source-drive-session.js';
 import {createSourceDriveRenderer,preloadSourceDriveAssets} from './game/source-drive-renderer.js';
 import {makeGetInDriveTeaserScene} from './game/get-in-drive-teaser-scene.js';
@@ -625,6 +627,8 @@ import { estimateHushClearance } from './game/hush-clearance.js';
 import { createHallChandelierRuntime } from './game/hall-chandelier-runtime.js';
 import { hallChandelierInstances, hallChandelierLights } from './data/hall-chandelier-treatment.js';
 import { rebasePressureHeading } from './game/pressure-gait.js';
+import { GAIT_SPEED, SPEED_FLOOR, chooseGait, gaitSpeed, applySpeedFactors, cellIntervalMs, freshBreath, stepBreath, breathExertion } from './game/locomotion.js';
+import { createExertionBreath } from './audio/exertion-breath.js';
 import { attenuateSourceFearPressure, attenuateSourceHushAudioField, sourceShoreOutside, sourceShoreSensoryFrame } from './game/source-sensory.js';
 import * as CONTROLLER from './game/controller.js';
 import * as BINDINGS from './game/bindings.js';
@@ -4353,20 +4357,150 @@ function introProgress(){
   const d=Math.max(introDistance, introForwardDistanceAt(px,py));
   return clamp(d/INTRO_SCENE.introDistanceSteps, 0, 1);
 }
-function storyMoveScale(){
-  if(!storyMode) return 1;
-  return REC.recState().slow ? 1.9 : 1;   // quiet means careful means slow
+// ── Locomotion ───────────────────────────────────────────────────────────────
+// One ladder, in metres per second (game/locomotion.js). Every place offers
+// two rungs, its walk on the movement keys and its run on Shift / L3, and the
+// per-area intervals this function used to grow are now one of three things:
+// a PLACE (which two rungs), a slow-down FACTOR on that place's gait (water,
+// a wrench, a limp, the dock haunting), or an AUTHORED pace the run key does
+// not touch (the Source hall, the horizon, a carry).
+//
+// Audit, 2026-11-06: the building walked at 45 ms per half-metre cell, which
+// is 11.1 m/s (15.7 on a diagonal); the Source rooms were 2.1, the main stair
+// 1.35, and the default clamp ate every slow modifier — quiet, pool water and
+// the wrench all came out at the same 8.3 m/s.
+const LEGACY_GRID_MPS=1000*CELL/45; // the old fixed cell pace; Source pace multipliers were written against it
+let playerBreath=freshBreath();
+let playerGait='walk';
+let padRunLatched=false,padRunRestSinceMs=0;
+let chaseGaitUntilMs=0;
+let locomotionTickAt=0;
+let lastLocomotionFrame=null;
+const exertionBreath=createExertionBreath({getAudio:()=>actx&&sfxGain?{ctx:actx,destination:sfxGain}:null});
+
+function runKeyActive(){
+  return motionInput.isHeld('ShiftLeft')||motionInput.isHeld('ShiftRight')||padRunLatched;
+}
+// A chase is the HUSH coming for him, or a Source pursuit beat. It lingers a
+// few seconds so the run key does not flicker between rungs at its edge.
+function liveChaseForGait(nowMs=performance.now()){
+  const presence=PRES.publicSnapshot?.();
+  const near=presence?.active&&Math.hypot((presence.x??0)-px,(presence.y??0)-py)<=D(30);
+  const hunting=!!(near&&presence.behaviorMode==='chase');
+  const pursued=usingSourceSpace()&&!!chunkSurfRuntime?.hushMode?.()?.colliding;
+  if(hunting||pursued)chaseGaitUntilMs=nowMs+4000;
+  return nowMs<chaseGaitUntilMs;
+}
+// Which two rungs this place offers, or the pace it authors. Ordered: the
+// first match owns the legs.
+function locomotionPlace(){
+  if(usingSourceSpace()){
+    const reception=chunkSurfRuntime?.lastReceptionFrame?.();
+    // Human rooms keep a human pace. Custody may weigh on the step, never stop it.
+    if(reception?.active&&reception.inside)
+      return{kind:'interior',reason:'source-room',factors:[Math.max(.82,Number(reception.movementMultiplier)||1)]};
+    const personal=chunkSurfRuntime?.towerLandFrame?.();
+    if(personal?.active)
+      return{kind:['school-hall','ash-room'].includes(personal.stage)?'interior':'exterior',reason:`tower-land:${personal.stage}`};
+    const realm=chunkSurfRuntime?.stationRealmFrame?.();
+    if(realm)return{kind:realm.stage==='inside'?'interior':'exterior',reason:'station-realm'};
+    // The narrow coach is walked; the wet living body is slower still.
+    const organ=chunkSurfRuntime?.busInteriorFrame?.();
+    if(organ?.active)return{kind:'tight',reason:'bus-body'};
+    const bus=chunkSurfRuntime?.outskirtsBusPassageFrame?.();
+    if(bus?.inside)return{kind:'interior',reason:'bus'};
+    const frame=chunkSurfRuntime?.pressureFrame?.({reducedMotion:shakeMode()!=='full',time:performance.now()/1000});
+    // THE AUTHORED WALKS KEEP THEIR SECONDS. The hall is 112 m in about fifty
+    // seconds; the horizon is cut against a piece of music; the white approach
+    // is 374 m at its own pace. Their numbers are absolute and unchanged.
+    if(frame?.cellIntervalMs&&[CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK].includes(frame.phase))
+      return{kind:'authored',reason:`source-${frame.phase}`,authoredMps:1000*CELL/frame.cellIntervalMs};
+    if(frame&&([CHUNK_SURF_PHASE.HALL,CHUNK_SURF_PHASE.HAYSTACK,CHUNK_SURF_PHASE.HORIZON].includes(frame.phase)||frame.approach))
+      return{kind:'authored',reason:frame.approach?'source-approach':`source-${frame.phase}`,
+        authoredMps:LEGACY_GRID_MPS/Math.max(.05,Number(frame.movementMultiplier)||1)};
+    return{kind:'exterior',reason:'source-outside'};
+  }
+  // A carry is a fraction of a walk: data/endings.js declares it (.58 is a man
+  // with another man over his shoulder).
+  if(escape?.pace>0)return{kind:'authored',reason:`carry:${escape.kind}`,authoredMps:GAIT_SPEED.walk*escape.pace};
+  if(usingStairAnomaly())return{kind:'interior',reason:'impossible-stair'};
+  if(usingSpecialSpace())return{kind:'interior',reason:'special-space'};
+  if(usingPlan()){
+    if(natatoriumPlayerInWater())return{kind:'tight',reason:'pool-water'};
+    // Eight bells mouth-down at shoulder height: brushing one is a peal.
+    if(brendanLevelAt(px,py)==='belfry')return{kind:'tight',reason:'belfry'};
+    const zone=FP.zoneAt(px,py);
+    return{kind:isOutdoorZone(zone)?'exterior':'interior',reason:`zone:${zone}`};
+  }
+  return{kind:'interior',reason:'default'};
+}
+// The slow-downs that ride on top of any gait or authored pace. Each is a
+// speed multiplier: they are caps on the legs, never a delay on the input.
+function locomotionFactors(place){
+  const factors=[...(place.factors||[])];
+  // A limp: the step off the weak leg is longer than the one onto it.
+  if(usingSourceSpace()&&outskirtsStepIndex%2===1)factors.push(1/(1+.22*outskirtsLosing()));
+  if(PLANT.heavyWrenchDragging())factors.push(.65);
+  if(worldBoundaryFriction>0)factors.push(1/(1+worldBoundaryFriction*(WORLD_BOUNDARY_FRICTION.maxMult-1)));
+  if(dockHauntingFrame&&!dockHauntingFrame.resolved)factors.push(1/dockHauntingMoveScale(dockHauntingFrame.pressure));
+  if(curPlayerCtx&&!curPlayerCtx.onTerrain)factors.push(1/(VOID_TRUDGE.startPenalty+(VOID_TRUDGE.maxPenalty-VOID_TRUDGE.startPenalty)*voidFatigue));
+  return factors;
+}
+function currentLocomotion(nowMs=performance.now()){
+  const place=locomotionPlace(),run=runKeyActive();
+  const chase=place.kind!=='authored'&&place.kind!=='tight'&&liveChaseForGait(nowMs);
+  let gait='walk',base;
+  if(place.kind==='authored')base=place.authoredMps;
+  else{gait=chooseGait({place:place.kind,run,chase,winded:playerBreath.winded});base=gaitSpeed(gait);}
+  const factors=locomotionFactors(place);
+  // Authored walks may sit above the sprint (the horizon's street cadence is
+  // older than the ladder); everything the player chooses stops at the sprint.
+  let speed=place.kind==='authored'
+    ?Math.max(SPEED_FLOOR,Math.min(LEGACY_GRID_MPS,factors.reduce((v,f)=>v*f,base)))
+    :applySpeedFactors(base,factors);
+  if(!Number.isFinite(speed)||speed<=0)speed=GAIT_SPEED.walk;
+  lastLocomotionFrame={place:place.kind,reason:place.reason,gait,run,chase,speed,authored:place.kind==='authored'};
+  return lastLocomotionFrame;
 }
 function currentMoveIntervalMs(){
+  if(openingVehicleScene||openingOvertureScene)return 0;
+  // The pre-story onboarding and the old procedural chase sequences keep the
+  // pace they were built around.
+  if(!storyMode||isIntroActive()||doorRevealCutscene||(depth===0&&horrorPhase===HORROR_SEQUENCE.DOOR_SWARM)||(depth===1&&sw2.active))
+    return legacyMoveIntervalMs();
+  return Math.round(cellIntervalMs(currentLocomotion().speed,CELL));
+}
+// Per frame: which rung the legs are on, what the breath is doing, and what
+// the step costs. The gait is published to the recordist so the next footfall
+// is priced by it.
+function tickLocomotion(dt,nowMs=performance.now()){
+  if(!storyMode)return;
+  const frame=currentLocomotion(nowMs);
+  const intent=movementIntentActive()&&!paused&&!scenes.blocksInput();
+  if(intent)padRunRestSinceMs=0;
+  else if(padRunLatched){
+    // The stick click lets go when the stick comes back to rest.
+    padRunRestSinceMs||=nowMs;
+    if(nowMs-padRunRestSinceMs>220)padRunLatched=false;
+  }
+  const travelling=intent&&nowMs-lastMoveAtMs<=Math.max(250,currentMoveIntervalMs()*1.6);
+  const fear=Number(presentedFearPressure()?.overall)||0;
+  const seed=String(getSave().run?.id||'run').split('').reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
+  playerBreath=stepBreath(playerBreath,dt,{gait:travelling&&!frame.authored?frame.gait:null,fear,seed});
+  playerGait=frame.gait;
+  REC.setGait(frame.authored?'walk':frame.gait);
+  exertionBreath.update({exertion:breathExertion(playerBreath),paused:paused||document.hidden||!gameplayInputLifecycleActive(),nowMs});
+}
+function legacyMoveIntervalMs(){
   // The impossible stair is walked exactly like any real stair — the ordinary
   // move interval, no throttle. It is long, not slow.
-  if(usingStairAnomaly())return MOVE_MS * storyMoveScale();
+  if(usingStairAnomaly())return MOVE_MS;
   if(openingVehicleScene||openingOvertureScene)return 0;
   if(isIntroActive()){
     const p=introProgress();
     return Math.round(INTRO_SCENE.speedStartMs + (INTRO_SCENE.speedEndMs-INTRO_SCENE.speedStartMs)*p);
   }
-  let ms = MOVE_MS * storyMoveScale();
+  let ms = MOVE_MS;
   // A limp: the step off the weak leg is longer than the one onto it. Speed, not delay.
   if(outskirtsStepIndex%2===1)ms*=1+.22*outskirtsLosing();
   if(storyMode&&PLANT.heavyWrenchDragging())ms*=1/.65;
@@ -4507,7 +4641,7 @@ function resetMotionInput(reason='reset-motion', { stopRenderMove=false }={}){
       renderMove.lastMs=performance.now();renderMove.suspended=true;
     }else{renderMove=null;snapMotionRig(reason);}
   }
-  REC.setSlow(false);
+  padRunLatched=false;padRunRestSinceMs=0;
 }
 function clearMotionClock(reason='clear-motion-clock'){
   nextMoveAtMs=0;
@@ -5404,7 +5538,7 @@ function playerFootingAt(x=px,y=py){
   const owner=source?'player:source':usingStairAnomaly()?'player:stair-anomaly':`player:${planName||'world'}:${depth}`;
   const p=physicalPointFor(x,y),rec=REC.recState();
   return{...resolved,...treatment,owner,position:{x:p.x*CELL,z:p.z*CELL},
-    supported:!!cell||!geometry,careful:!!rec.slow,condition:rec.slow?'slow':'walk',
+    supported:!!cell||!geometry,careful:rec.gait==='crawl',condition:rec.gait==='crawl'?'slow':rec.gait||'walk',
     injury:Math.min(1,Math.max(Number(rec.injuries)||0,source?outskirtsLosing():0)),
     // Airborne lateral movement must not manufacture a planted foot.
     ...(cell?.sourceDivide&&state?.sourceDivide?.falling?{supported:false}:{}),
@@ -5448,7 +5582,7 @@ function tickPlayerFootsteps(dt,rawGapMs=dt*1000){
   }
   if(!sceneOwnsWorld&&inRogue&&storyMode){
     // Warm the next bank at a region boundary before the first audible plant.
-    const prepareKey=`${usingSourceSpace()?'source':planName}:${px}:${py}:${depth}:${REC.recState().slow?'slow':'walk'}`;
+    const prepareKey=`${usingSourceSpace()?'source':planName}:${px}:${py}:${depth}:${REC.recState().gait==='crawl'?'slow':'walk'}`;
     if(prepareKey!==playerFootPrepareKey){playerFootPrepareKey=prepareKey;RT.prepareFootsteps?.(playerFootingAt());}
   }
   // The world caps its simulation delta at 50 ms; this accepted-distance
@@ -5539,6 +5673,20 @@ function stepBusRecoilGlide(now){
 function renderedPlayerPoint(now=performance.now()){
   if(renderMove?.mainStair)return advanceMainStairRenderMove(now);
   stepBusRecoilGlide(now);
+  if(renderMove?.glide){
+    const move=renderMove,rig=ensureMotionRig(now);
+    // Unseen time (pause, a scene owning the world, a hidden window) does not
+    // walk the eye forward; the glide resumes where it was left.
+    const frozen=paused||document.hidden||!gameplayInputLifecycleActive()||scenes.blocksWorld();
+    if(frozen)move.startedAt+=Math.max(0,now-(move.lastMs??now));
+    move.lastMs=now;
+    const p=glidePoint(move,now),seconds=Math.max(.001,move.durationMs/1000);
+    const travelling=p.t<1;
+    Object.assign(rig,{x:p.x,z:p.z,vx:travelling?(move.to.x-move.from.x)/seconds:0,vz:travelling?(move.to.z-move.from.z)/seconds:0,
+      targetX:move.to.x,targetZ:move.to.z,lastMs:now,reason:'gait-glide'});
+    if(!travelling&&!movementIntentActive())renderMove=null;
+    return{x:p.x,z:p.z};
+  }
   const standingStair=mainStairRenderPose(px,py);
   if(standingStair?.onStair){
     // A restored/warped tread has no in-flight step to provide its physical
@@ -5644,21 +5792,63 @@ function beginRenderStep(nx,ny,now,{logicalFrameTurn=0,footfall=null}={}){
     const source={...from,x:current.x,z:current.z,
       floorH:Number.isFinite(current.floorH)?current.floorH:from.floorH,
       yawOffset:Number.isFinite(current.yawOffset)?current.yawOffset:from.yawOffset};
+    // The stair's own tread timing is a walk; a jog takes it faster, a crawl
+    // slower. Same metres per second as the floor either side of it.
     const mainStair=createMainStairMotionStep({from:source,to,unitsPerMetre:1/CELL,
-      paceScale:Math.max(1,currentMoveIntervalMs()/MOVE_MS),logicalFrameTurn});
+      paceScale:storyMode?clamp(MAIN_STAIR_MOTION.horizontalSpeedMps/currentLocomotion().speed,.45,6)
+        :Math.max(1,currentMoveIntervalMs()/MOVE_MS),logicalFrameTurn});
     renderMove={mainStair,to:{x:to.x,z:to.z},toLogical:{x:nx,y:ny},
       startedAt:now,lastMs:now,elapsedMs:0,phase:0,suspended:false,
       durationMs:mainStair.durationMs,footfall};
     return true;
   }
-  ensureMotionRig(now);
-  renderMove={to:physicalPointFor(nx,ny),startedAt:now,
+  const rig=ensureMotionRig(now);
+  const target=physicalPointFor(nx,ny);
+  if(storyMode&&!busRecoilGlide){
+    // THE EYE TRAVELS AT THE GAIT'S SPEED. A spring chasing a target that jumps
+    // half a metre at a time is invisible at 11 m/s and a surge at 1.4 — the
+    // camera would lunge each cell and settle. So the eye glides the segment at
+    // a constant speed, beginning when the step was due rather than on the frame
+    // that noticed, and the next step is due the moment it arrives.
+    const startedAt=Math.min(now,Math.max(now-120,renderStepDueAt||now));
+    const previous=renderMove?.glide?renderMove:null;
+    const from=previous?glidePoint(previous,startedAt):{x:rig.x,z:rig.z};
+    const metres=Math.hypot(target.x-from.x,target.z-from.z)*CELL;
+    const speed=currentLocomotion(now).speed;
+    // A seam that lands far away is a cut, not a walk; let the snap take it.
+    if(metres<=3.25){
+      renderMove={glide:true,from,to:target,startedAt,lastMs:now,speed,
+        durationMs:Math.max(16,1000*metres/speed)};
+      return false;
+    }
+  }
+  renderMove={to:target,startedAt:now,
     durationMs:Math.max(16,currentStepIntervalMs(nx-px,ny-py))};
   return false;
+}
+function glidePoint(move,at=performance.now()){
+  const t=Math.max(0,Math.min(1,(at-move.startedAt)/Math.max(1,move.durationMs)));
+  return{x:move.from.x+(move.to.x-move.from.x)*t,z:move.from.z+(move.to.z-move.from.z)*t,t};
+}
+// The run key can change speed in the middle of a segment. Re-time what is
+// left of it so the eye answers on this frame, not on the next cell.
+function retimeGlide(move,speed,now){
+  if(!move?.glide||!(speed>0)||!(move.speed>0)||Math.abs(speed-move.speed)<1e-6)return;
+  const t=Math.max(0,Math.min(1,(now-move.startedAt)/Math.max(1,move.durationMs)));
+  if(t<1){
+    // Same point on the segment now, the rest of it at the new speed.
+    const duration=Math.max(16,move.durationMs*move.speed/speed);
+    move.startedAt=now-t*duration;move.durationMs=duration;
+  }
+  move.speed=speed;
 }
 
 function currentStepIntervalMs(dx,dy){
   const interval=currentMoveIntervalMs();
+  // A diagonal is the diagonal's real length, everywhere. It used to be timed
+  // as a cardinal step except in a few Source spaces, so looking forty-five
+  // degrees off the grid walked you 41% faster.
+  if(storyMode&&!isIntroActive())return interval*Math.max(1,Math.hypot(dx,dy));
   // Eight-way walking covers a longer grid segment. Keep metre speed constant;
   // after collision slides the actual cardinal segment gets cardinal timing.
   return usingSourceSpace()&&(chunkSurfRuntime.lastReceptionFrame?.().inside||chunkSurfRuntime.towerLandFrame?.()?.active||chunkSurfRuntime.sourceVoidFrame?.().sceneDock||sourceShoreOutside(chunkSurfRuntime.sourceShoreFrame?.()))
@@ -5692,14 +5882,24 @@ function tickHeldMovement(now){
     armHeldMovement(now);
     return;
   }
+  // The eye owns the cadence: the next step is due when it arrives, and a
+  // change of gait mid-segment re-times what is left of it on this frame.
+  if(renderMove?.glide&&now<renderMove.startedAt+renderMove.durationMs){
+    retimeGlide(renderMove,currentLocomotion(now).speed,now);
+    nextMoveAtMs=renderMove.startedAt+renderMove.durationMs;
+  }
   if(now<nextMoveAtMs)return;
-  step(dx,dy);
-  const interval=renderMove?.startedAt===now?renderMove.durationMs:currentStepIntervalMs(dx,dy);
+  const due=nextMoveAtMs,before=renderMove;
+  renderStepDueAt=due;
+  try{step(dx,dy);}finally{renderStepDueAt=0;}
+  const committed=renderMove&&renderMove!==before?renderMove:null;
+  const interval=committed?committed.durationMs:currentStepIntervalMs(dx,dy);
   // Preserve the time cadence, but never burst several grid steps after a
   // dropped frame or a background-tab pause.
-  nextMoveAtMs+=interval;
+  nextMoveAtMs=(committed?committed.startedAt:due)+interval;
   if(nextMoveAtMs<now-interval)nextMoveAtMs=now+interval;
 }
+let renderStepDueAt=0;
 
 function setGameplayPaused(next, { announce=true }={}){
   runPlayDurationClock.suspend();
@@ -7024,6 +7224,31 @@ function tickSixReturn(){
   architectureDoorCauses.set(id,true);syncArchitectureDoorAudio();pumpDoorAudioEvents(0);
   saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};syncDoorDynamicProps();
 }
+// HORIZON, THE MIRROR. Stage 1 of docs/plans/horizon-mirror.md: the place alone,
+// reachable only from the probe. It reports what he does and commits nothing; the
+// live Horizon is untouched until stage 3 wires it in. It borrows the same seat as
+// the nothingness below, for the same reason.
+let horizonMirrorRenderer=null;
+const horizonMirrorScene=()=>firstStrikeScene?.id==='horizon-mirror'?firstStrikeScene:null;
+function beginHorizonMirror({occupant='daisy'}={}){
+  if(horizonMirrorScene())return horizonMirrorScene();
+  if(firstStrikeScene)return null;
+  horizonMirrorRenderer ||= createHorizonMirrorRenderer();
+  void horizonMirrorRenderer.prepare().catch(error=>console.error('[horizon-mirror]',error));
+  resetMotionInput('horizon-mirror',{stopRenderMove:true});
+  STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
+  let scene;
+  scene=createHorizonMirrorScene({renderer:horizonMirrorRenderer,occupant,
+    presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
+    onEvent:event=>{console.info('[horizon-mirror]',event);pushEvent(`// horizon mirror: ${event.type.replace('horizon-mirror-','')}`);},
+    onError:error=>console.error('[horizon-mirror]',error),
+    onExit:()=>{if(firstStrikeScene===scene){firstStrikeScene=null;horizonMirrorRenderer=null;}},
+  });
+  const update=scene.update;
+  scene.update=dt=>{if(paused||!gameplayInputLifecycleActive()){scene.pause();return;}scene.resume();update(dt);};
+  firstStrikeScene=scene;scenes.push(scene);void scene.initialize();ensureInteractionFocus();
+  return scene;
+}
 // It sits in the first strike's seat: every guard that stands the world down for
 // that walking scene is exactly what this one needs too.
 const sixNothingnessScene=()=>firstStrikeScene?.id==='six-nothingness'?firstStrikeScene:null;
@@ -7854,6 +8079,7 @@ function loop(){
     // believed the player had spent all that time getting comfortable, and fired
     // the moment they returned. Nothing accrues while nobody is here.
     if(rawGapMs>AWAY_GAP_MS) settleAfterAway(rawGapMs);
+    tickLocomotion(Math.min(.25,Math.max(0,rawGapMs/1000)));
     tickPlayerFootsteps(dt,rawGapMs);
     // The engraving is derived from each generated tile as it lands, on a frame
     // budget (see r3d's mark queue). It ticks OUTSIDE the world guard below
@@ -7904,7 +8130,7 @@ function loop(){
       if (id === 'combat-rehearsal') return ['light'];
       if (id.startsWith('radio:')) return ['radio'];
       if (id === 'chunk-surf') return ['light', 'recorder', 'interact'];
-      if (id === 'hush-run') return ['quiet', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark'];
+      if (id === 'hush-run') return ['run', 'light', 'bag', 'recorder', 'interact', 'playback', 'mark'];
       if (id === 'tower-tenor-performance') return ['mark', 'interact'];
       if ((id === 'finale' || id.startsWith('ending-resolution:'))
         && activeEndingCutscene?.spec?.endingId === 'tower-lost'
@@ -10875,7 +11101,7 @@ function homeWalkStep(dx,dy){
   if(distance>.00001){
     const footing=resolveFootContact({surface:walk.kind==='lock-in'?'concrete':'snow'});
     enqueuePlayerFootDistance(distance,Math.max(.025,currentStepIntervalMs(dx,dy)/1000),
-      {...footing,owner:'player:home-walk',supported:true,level:.08,muffle:.8,condition:REC.recState().slow?'slow':'walk'});
+      {...footing,owner:'player:home-walk',supported:true,level:.08,muffle:.8,condition:REC.recState().gait==='crawl'?'slow':'walk'});
   }
   if(walk.progress>=1&&walk.windowAt==null)walk.windowAt=stationTime();
   saveStationWalk();
@@ -11001,7 +11227,7 @@ function cycleStationRealmAction(direction){
 }
 function stationRealmHomeKey(e){
   if(paused||scenes.blocksInput()||!stationRealmHomeActions().length)return false;
-  const previous=e.controllerAction==='quiet'||e.code==='KeyQ'||String(e.key||'').toLowerCase()==='q';
+  const previous=e.controllerAction==='tabPrev'||e.code==='KeyQ'||String(e.key||'').toLowerCase()==='q';
   const next=e.controllerAction==='radio'||e.code==='Tab'||e.key==='Tab';
   if(!previous&&!next)return false;
   if(!e.repeat)cycleStationRealmAction(previous?-1:1);
@@ -11818,7 +12044,7 @@ function sourceReturnArrivalSpeech(destination){
   SPEECH.sayAll([
     {who:'direction',text:'The door is shut behind you, oak in the belfry wall. The room is the one it showed; the floor is a floor now, ten metres above the nave.'},
     {who:'direction',text:'The chapel\u2019s eight hang here, mouth-down, four over four. Through the trap between them the crossing floor is a pale square a long way down.'},
-    {who:'you',text:`Quiet past them. Everything under this floor will hear a bell. ${BINDINGS.inputPrompt('quiet')}.`},
+    {who:'you',text:'Quiet past them. Everything under this floor will hear a bell.'},
     ...vigilBelfryRecognition(flagTest(VIGIL_LINKED_CHAPELS_FLAG)),
   ],{id:'tower:belfry-arrival',replace:true,interrupt:true});
 }
@@ -21152,6 +21378,7 @@ function applyPayphoneRoadLoopPlan(plan){
   py+=delta;
   if(motionRig){motionRig.z+=delta;motionRig.targetZ+=delta;}
   if(renderMove?.to)renderMove.to.z+=delta;
+  if(renderMove?.from)renderMove.from.z+=delta;
   if(renderMove?.toLogical)renderMove.toLogical.y+=delta;
   for(const point of trail)point.y+=delta;
   for(const target of ['box','van']){
@@ -23180,7 +23407,7 @@ function tickFear(dt){
 function tutorialCtx(){
   const r=REC.recState();
   return { px, py, light:r.light, recording:REC.isRecording(), takeElapsed:r.takeElapsed,
-           spoiled:r.spoiled, spoilReason:r.spoilReason, slow:r.slow, workOrderRead,
+           spoiled:r.spoiled, spoilReason:r.spoilReason, workOrderRead,
            marked: OBJ.targetRoom(),
            rehearsed: flagTest('combat.trained'),
            levelChecked: flagTest('setup.levels'),
@@ -30482,7 +30709,9 @@ function brendanLightPresentation(lights,timeSec=performance.now()/1000){
 }
 
 // ON THE BELFRY DECK THE BELLS HANG AT SHOULDER HEIGHT OVER THE WALK. Brushing one
-// rings it and everything under the floor hears; the quiet key slips past.
+// rings it and everything under the floor hears. The deck is a tight place
+// (game/locomotion.js): the walk keys crawl, and a crawl slips past; the run
+// key's walk is enough to swing one.
 let brendanContactPose=null;
 let brendanContacts=new Set();
 function brendanBellContact(here){
@@ -30496,14 +30725,14 @@ function brendanBellContact(here){
     &&Math.abs(at.z-bell.pivot.z)<=.8*bell.visualScale+.2&&Math.abs(at.x-bell.pivot.x)<=.9).map((bell)=>bell.id));
   const entered=[...touched].filter((id)=>!brendanContacts.has(id));
   brendanContacts=touched;
-  if(!moved||motionInput.isHeld('ShiftLeft')||motionInput.isHeld('ShiftRight'))return false;
+  if(!moved||playerGait==='crawl')return false;
   const id=entered[0];if(!id)return false;
   brendanBrushes.set(id,performance.now()/1000);brendanStrike(id);
   const next=reduceChunkSurf(normalizeChunkSurfState(getSave().chunkSurf),{type:'CATHEDRAL_BELL_RUNG'});
   saveCommit({chunkSurf:next,px,py,area:'conservatory'});
   SPEECH.say({who:'you',text:next.finale.cathedral.alarm<=1
     ?'It spoke. Everything under this floor heard that.'
-    :`Again. ${BINDINGS.inputPrompt('quiet')} and go past them slow.`},{id:'brendan:bell',replace:true});
+    :`Again. No ${BINDINGS.inputPrompt('run')}, and go past them slow.`},{id:'brendan:bell',replace:true});
   return true;
 }
 function currentCathedralLesson(){
@@ -35047,7 +35276,7 @@ function drawSourceHud(cols,rows){
         }
       }
       const choose=actions.length>1?(BINDINGS.activeInputPromptDevice?.()==='controller'
-        ?`${BINDINGS.inputPrompt('quiet')} / ${BINDINGS.inputPrompt('radio')} CHOOSE · `:'[Q / TAB] CHOOSE · '):'';
+        ?`${BINDINGS.inputPrompt('tabPrev')} / ${BINDINGS.inputPrompt('radio')} CHOOSE · `:'[Q / TAB] CHOOSE · '):'';
       const prompt=`${choose}${BINDINGS.inputPrompt('interact')} ${label}`;
       uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),row,prompt.slice(0,Math.max(1,cols-4)),'ui-amber');
     }
@@ -35656,6 +35885,15 @@ function drawTakeOverlay(cols, rows){
 // on the actual numbers rather than on screenshots.
 function installProbe(){
   window.__probe={
+    // Locomotion audit (game/locomotion.js): the rung, the place that chose it,
+    // the breath, and where the logical body and the eye are, in metres.
+    locomotion:()=>{const frame=currentLocomotion(),eye=renderedPlayerPoint(),body=physicalPointFor(px,py);
+      return{...frame,intervalMs:currentMoveIntervalMs(),breath:{...playerBreath},exertion:breathExertion(playerBreath),
+        breathAudio:exertionBreath.snapshot(),padRunLatched,cell:{x:px,y:py},
+        body:{x:body.x*CELL,z:body.z*CELL},eye:{x:eye.x*CELL,z:eye.z*CELL},glide:!!renderMove?.glide,steps:stepCount,
+        noise:REC.recState().noise,recorderGait:REC.recState().gait};},
+    // Harness only: open the chase rung for a while without staging a hunt.
+    locomotionChase:(seconds=10)=>{chaseGaitUntilMs=performance.now()+Math.max(0,Number(seconds)||0)*1000;return true;},
     towerWarning:()=>towerWarningSnapshot(),
     exteriorPeople:()=>({clock:exteriorPeopleClock,conversations:exteriorConversationFrames(),boothPose:boothPresentationPose}),
     chapelTapeDemand:()=>({state:chapelTapeDemandState(),asset:R3.r3dChapelTapeDemandStatus?.(),tugHeld:chapelTapeTugHeld,
@@ -36185,6 +36423,10 @@ function installProbe(){
       driveOff:{begin:(endingId='')=>beginEndingDriveOff({endingId,onDone:()=>{}}),view:()=>endingDriveOffScene?.view?.()||null,controller:()=>endingDriveOffScene?.review?.controller||null},
       prologue:{begin:()=>beginOpeningPrologue({onDone:()=>{}}),seekStage:key=>openingPrologueScene?.seekStage?.(key),pose:stage=>openingPrologueScene?.pose?.(stage),key:event=>openingPrologueScene?.key?.(event),view:()=>openingPrologueScene?.view?.()||null,state:()=>({horizon:R3.r3dSourceRestHorizonStatus?.(),rain:R3.r3dRainAmount?.(),music:openingPrologueMusic?.snapshot?.()||null})},
       render:()=>sixNothingnessScene()?.render?.(),renderer:()=>sixNothingnessRenderer?.diagnostics?.()||null,save:()=>structuredClone(getSave()),keyring:()=>syncPrologueKeyring()},
+    horizonMirror:{enter:(occupant='daisy')=>!!beginHorizonMirror({occupant}),view:()=>horizonMirrorScene()?.view?.()||null,place:next=>horizonMirrorScene()?.place?.(next),
+      occupant:id=>horizonMirrorScene()?.setOccupant?.(id),pluck:()=>!!horizonMirrorScene()?.interact?.(),renderer:()=>horizonMirrorRenderer?.diagnostics?.()||null,
+      captureImage:()=>R3.r3dTowerViewImage?.()||null,captureDepth:()=>R3.r3dTowerViewDepthStats?.()||null,
+      leave:()=>{const s=horizonMirrorScene();if(!s)return false;scenes.remove(s);s.exit?.();return true;}},
     godWarpBay:()=>godWarpBayApron(),
     godWarpGetIn:()=>godWarpToHook('get-in'),
     godWarpHook:(id)=>godWarpToHook(String(id||'')),
@@ -38867,7 +39109,7 @@ let completionControlRelay=null;
 const CONTROLLER_KEY=Object.freeze({
   move_up:['ArrowUp','ArrowUp'], move_down:['ArrowDown','ArrowDown'],
   move_left:['ArrowLeft','ArrowLeft'], move_right:['ArrowRight','ArrowRight'],
-  quiet:['Shift','ShiftLeft'], hide:['c','KeyC'], light:['f','KeyF'], bag:['b','KeyB'], recorder:['r','KeyR'],
+  run:['Shift','ShiftLeft'], hide:['c','KeyC'], light:['f','KeyF'], bag:['b','KeyB'], recorder:['r','KeyR'],
   radio:['v','KeyV'],
   interact:['e','KeyE'], playback:['p','KeyP'], mark:[' ','Space'], menu:['Escape','Escape'],
   // `tabNext` used to emit KeyE exactly like `interact`, which made "next
@@ -38885,7 +39127,7 @@ const CONTROLLER_KEY=Object.freeze({
 });
 function controllerEvent(action, repeat=false){
   const [key,code]=CONTROLLER_KEY[action]||['',''];
-  return {key,code,repeat,metaKey:false,ctrlKey:false,altKey:false,shiftKey:action==='quiet',target:null,
+  return {key,code,repeat,metaKey:false,ctrlKey:false,altKey:false,shiftKey:action==='run',target:null,
     timeStamp:performance.now(),preventDefault(){},stopPropagation(){},controller:true,controllerAction:action};
 }
 function controllerGameplayAxes(){
@@ -38895,6 +39137,9 @@ function controllerGameplayAxes(){
 }
 function controllerPress(action,repeat=false){
   if(!['menu','back'].includes(action)&&!standingTearInputGate.update(CONTROLLER.controllerSnapshot()))return;
+  // The stick click is a latch in the world: it stays on until the stick comes
+  // back to rest (tickLocomotion). Modal scenes still see an ordinary Shift.
+  if(action==='run'&&!repeat&&!scenes.blocksInput())padRunLatched=!padRunLatched;
   if(CONTROLLER_KEY[action])onKey(controllerEvent(action,repeat));
 }
 function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
@@ -39157,7 +39402,7 @@ function onKey(e){
     if(bare && is('KeyC','c')){ e.preventDefault(); toggleCoverAction(); return; }
     if(bare && is('KeyE','e')){ e.preventDefault(); interact(); return; }
     if(bare && is('KeyP','p')){ e.preventDefault(); playCurrentTake(); return; }
-    if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyDown(e); REC.setSlow(true); return; }
+    if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyDown(e); return; }
   }
   // [enter] talks to nobody. There is nobody in this building.
   //
@@ -39263,7 +39508,7 @@ function onKeyUp(e){
   for(const id of hardwarePromptIds(e)) releasePromptControl(id);
   if(e.key==='b'||e.key==='B'||e.code==='KeyB')suppressBagReopenUntilRelease=false;
   if(scenes.depth() && scenes.keyup(e)) e.preventDefault?.();
-  if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyUp(e); REC.setSlow(false); }
+  if(e.key==='Shift' || e.code==='ShiftLeft' || e.code==='ShiftRight'){ motionInput.keyUp(e); }
   // Release [e] to stop a held instrument. Play lasts exactly as long as you hold.
   if((e.key==='e' || e.code==='KeyE') && heldPropPlay) stopHeldPropPlay();
   const moveKey=movementKey(e);

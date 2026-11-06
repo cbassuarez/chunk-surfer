@@ -14,7 +14,9 @@ import {
 
 const MOVE = Object.freeze({ up: 'move_up', down: 'move_down', left: 'move_left', right: 'move_right' });
 const REPEATABLE = new Set([...Object.values(MOVE), 'tabPrev', 'tabNext']);
-const WORLD_ACTIONS = ['quiet', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'menu'];
+// LB has no world verb of its own since quiet became run (L3); it steps a
+// world chooser back, the way Q does on the keyboard.
+const WORLD_ACTIONS = ['run', 'hide', 'light', 'bag', 'recorder', 'radio', 'interact', 'playback', 'menu', 'tabPrev'];
 const MENU_ACTIONS = ['confirm', 'back', 'menu', 'tabPrev', 'tabNext'];
 const BUTTON_BY_INDEX = Object.freeze({
   0: 'south',

@@ -5,8 +5,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {CELL} from '../src/data/floorplan/legend.js';
-import {MOVE_MS} from '../src/config.js';
+import {MOVE_MS,WORLD_BOUNDARY_FRICTION} from '../src/config.js';
 import {CHUNK_SURF_PHASE} from '../src/game/chunk-surf-state.js';
+import {locomotionSandbox} from './helpers/locomotion-sandbox.mjs';
 
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const main=read('src/main.js'),r3d=read('src/render/r3d.js'),props=read('src/render/props3d.js');
@@ -68,28 +69,28 @@ test('an interrupted extension load remains unready and can complete a later exp
  assert.equal(await h.adapter.r3dPrepareBusBodyAssets(),true);assert.equal(h.adapter.r3dBusBodyAssetStatus().stage,'ready');
 });
 
-test('the complete production movement interval gives the coach and living footing a physical pace while retaining quiet/injury costs',()=>{
- let place='outside',quiet=1,pressureCalls=0;
- const pressure=1.5020966498722041,context={MOVE_MS,CELL,CHUNK_SURF_PHASE,performance:{now:()=>1000},
-  usingStairAnomaly:()=>false,openingVehicleScene:null,openingOvertureScene:null,isIntroActive:()=>false,usingSourceSpace:()=>true,storyMoveScale:()=>quiet,
-  outskirtsStepIndex:0,outskirtsLosing:()=>.212,storyMode:true,PLANT:{heavyWrenchDragging:()=>false},
-  worldBoundaryFriction:0,WORLD_BOUNDARY_FRICTION:{maxMult:2},shakeMode:()=> 'full',SCALED_MOVE_MIN:n=>Math.max(1,Math.round(n/2)),
-  clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),chunkSurfRuntime:{lastReceptionFrame:()=>null,towerLandFrame:()=>null,
+test('the complete production movement interval gives the coach and living footing their place on the gait ladder, and keeps the limp and seam costs',()=>{
+ // game/locomotion.js: the coach is an interior (walk / jog), the living body is
+ // tight (crawl / walk), and the horizon beside them keeps its authored pace.
+ let place='outside',pressureCalls=0;
+ const pressure=1.5020966498722041;
+ const context=locomotionSandbox({usingSourceSpace:()=>true,outskirtsLosing:()=>.212,
+  chunkSurfRuntime:{lastReceptionFrame:()=>null,towerLandFrame:()=>null,stationRealmFrame:()=>null,
    busInteriorFrame:()=>place==='organ'?{active:true}:null,
    outskirtsBusPassageFrame:()=>({inside:place==='bus',transit:{entered:true,exited:false}}),
-   pressureFrame:()=>{pressureCalls++;return{phase:CHUNK_SURF_PHASE.HORIZON,movementMultiplier:pressure};}}};
- vm.createContext(context);
- vm.runInContext(main.slice(main.indexOf('function currentMoveIntervalMs()'),main.indexOf('function currentTurnIntervalMs('))+
-  '\nthis.interval=currentMoveIntervalMs;',context);
- const before=context.interval();assert.equal(before,Math.round(MOVE_MS*pressure),'the adjacent Source route changes speed');
- place='bus';pressureCalls=0;assert.equal(context.interval(),Math.round(1000*CELL/2.1));assert.equal(pressureCalls,0);
- place='organ';assert.equal(context.interval(),Math.round(1000*CELL/1.35));assert.equal(pressureCalls,0);
+   pressureFrame:()=>{pressureCalls++;return{phase:CHUNK_SURF_PHASE.HORIZON,movementMultiplier:pressure};}}});
+ const before=context.interval();assert.equal(before,Math.round(MOVE_MS*pressure),'the adjacent Source route keeps its authored pace');
+ context.setRun(true);assert.equal(context.interval(),before,'the run key does not touch an authored walk');context.setRun(false);
+ place='bus';pressureCalls=0;assert.equal(context.interval(),Math.round(1000*CELL/1.4));assert.equal(pressureCalls,0);
+ context.setRun(true);assert.equal(context.interval(),Math.round(1000*CELL/2.6),'the coach offers a jog');context.setRun(false);
+ place='organ';assert.equal(context.interval(),Math.round(1000*CELL/.7));assert.equal(pressureCalls,0);
+ context.setRun(true);assert.equal(context.interval(),Math.round(1000*CELL/1.4),'the living body offers only a walk');context.setRun(false);
  for(const destination of['bus','organ']){
-  place=destination;quiet=1.9;context.outskirtsStepIndex=1;context.worldBoundaryFriction=.25;
-  const expected=Math.round((1000*CELL/(destination==='bus'?2.1:1.35))*quiet*(1+.22*.212)*(1+.25));
-  assert.equal(context.interval(),expected,'the physical pace replaces carried quiet or weak-leg friction');
+  place=destination;context.outskirtsStepIndex=1;context.worldBoundaryFriction=.25;
+  const expected=Math.round((1000*CELL/(destination==='bus'?1.4:.7))*(1+.22*.212)*(1+.25*(WORLD_BOUNDARY_FRICTION.maxMult-1)));
+  assert.equal(context.interval(),expected,'weak-leg and seam friction ride on the place gait');
  }
- place='outside';quiet=1;context.outskirtsStepIndex=0;context.worldBoundaryFriction=0;
+ place='outside';context.outskirtsStepIndex=0;context.worldBoundaryFriction=0;
  assert.equal(context.interval(),before,'leaving the bus keeps its local slow pace');
 });
 

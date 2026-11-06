@@ -1,3 +1,5 @@
+import { GAIT_SPEED } from '../src/game/locomotion.js';
+import { CELL } from '../src/data/floorplan/legend.js';
 import assert from 'node:assert/strict';
 
 globalThis.document ||= { title: 'Chunk Surfer', baseURI: 'http://localhost/' };
@@ -112,11 +114,13 @@ PRES.updatePresence(.6, 100, 0, () => { sourceCollision += 1; }, {
   sourceContactSpeedRatio: PRES.PRESENCE.sourceContactSpeedRatio,
   suppressContact: true,
 });
-assert.ok(Math.abs(actor.x - 10) < 1e-6, 'Source Contact does not move at 75% of player locomotion');
+// Quoted against the ladder's walk (game/locomotion.js), not the old 11 m/s grid.
+const WALK_CELLS_PER_SEC = GAIT_SPEED.walk / CELL;
+assert.ok(Math.abs(actor.x - .75 * WALK_CELLS_PER_SEC * .6) < 1e-6, 'Source Contact does not move at 75% of player locomotion');
 assert.equal(actor.motionMode, 'walk');
 const gapBefore = 10;
 actor.x = 0;
-const playerAfterOneSecond = 1000 / 45 + gapBefore;
+const playerAfterOneSecond = WALK_CELLS_PER_SEC + gapBefore;
 PRES.updatePresence(1, playerAfterOneSecond, 0, () => { sourceCollision += 1; }, {
   catchMode: 'source-checkpoint',
   sourceContactTarget: { x: playerAfterOneSecond, y: 0 },
