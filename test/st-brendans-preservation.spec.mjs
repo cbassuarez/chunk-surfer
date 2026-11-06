@@ -191,7 +191,7 @@ test('the coastal music-box reference is opt-in and cannot change phase two', ()
   const first = cathedralBellCombatDefinition({ phase: 1, coastalOpening: true });
   assert.equal(first.coastalOpening, true);
   assert.equal(first.openingTake?.id, 'cathedral:coastal-box-reference');
-  assert.equal(first.openingTake?.label, 'MUSIC BOX / TWO NOTES');
+  assert.equal(first.openingTake?.label, 'MUSIC BOX / CLAIR DE LUNE');
   assert.equal(cathedralBellCombatDefinition({ phase: 2, coastalOpening: true }).coastalOpening, false);
 });
 

@@ -346,6 +346,8 @@ function begin(line) {
 // How long a finished line sits before the next one. Long enough to read it
 // twice, because the player is also watching a corridor.
 function holdFor(line) {
+  // `dwell` is the same per-line setting under a plainer name.
+  if (line.dwell != null) return line.dwell;
   if (line.hold != null) return line.hold;
   return Math.max(1.1, line.text.length * 0.031) + (line.who === 'radio' ? 0.55 : 0);
 }

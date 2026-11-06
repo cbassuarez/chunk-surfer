@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "asset": "assets/opening-cab-objects.glb",
-  "sha256": "0a9d56d0ebb0d6cb9f9ab9a3f01ffc27fe9e78f1ae371ccabc3500d407ae6687",
-  "bytes": 880188,
-  "totalTriangles": 23837,
-  "materials": 59,
+  "sha256": "572086888dac1bb19a42436e5347becbf27bf4f72f8fc27a280dc0b6736b21a9",
+  "bytes": 905816,
+  "totalTriangles": 24189,
+  "materials": 62,
   "meshes": [
     {
       "mesh": "opening_cab_field_case",
@@ -912,22 +912,46 @@
       "bounds": {
         "min": [
           -0.5464318684179319,
-          0.9672502747948015,
-          0.14174072086794443
+          0.9703827721040339,
+          0.06174072086794444
         ],
         "max": [
           -0.3735681315820681,
-          0.9824072461468826,
-          0.3582592791320556
+          0.9901871968991087,
+          0.2782592791320556
         ]
       },
       "focusPoint": [
         -0.45915179172097403,
-        0.9747348856803315,
-        0.2506113581811876
+        0.9809882803402231,
+        0.17061135818118758
       ],
       "triangles": 358,
       "primitives": 2
+    },
+    {
+      "mesh": "opening_cab_music_box",
+      "objectId": "music-box",
+      "selection": null,
+      "bounds": {
+        "min": [
+          -0.5732738481904966,
+          0.9769032610659516,
+          0.27358127426843926
+        ],
+        "max": [
+          -0.20370462588789956,
+          1.1245032610659516,
+          0.5664187257315607
+        ]
+      },
+      "focusPoint": [
+        -0.3596141528937591,
+        1.0304032610659517,
+        0.3817771880480867
+      ],
+      "triangles": 352,
+      "primitives": 3
     }
   ],
   "targets": {
@@ -1144,19 +1168,38 @@
       "bounds": {
         "min": [
           -0.5464318684179319,
-          0.9672502747948015,
-          0.14174072086794443
+          0.9703827721040339,
+          0.06174072086794444
         ],
         "max": [
           -0.3735681315820681,
-          0.9824072461468826,
-          0.3582592791320556
+          0.9901871968991087,
+          0.2782592791320556
         ]
       },
       "point": [
         -0.45999999999999996,
-        0.9748287604708421,
-        0.25
+        0.9802849845015713,
+        0.17000000000000004
+      ]
+    },
+    "music-box": {
+      "bounds": {
+        "min": [
+          -0.5732738481904966,
+          0.9769032610659516,
+          0.27358127426843926
+        ],
+        "max": [
+          -0.20370462588789956,
+          1.1245032610659516,
+          0.5664187257315607
+        ]
+      },
+      "point": [
+        -0.38848923703919813,
+        1.0507032610659515,
+        0.42
       ]
     }
   },
@@ -1767,6 +1810,16 @@
         ]
       },
       "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "musicBox": {
+      "point": [
+        -0.4,
+        0.9829032610659516,
+        0.42
+      ],
+      "turn": 3.241592653589793,
+      "source": "tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs buildIntactMusicBoxGroups",
+      "method": "Same box as the coast, before the crash: lid shut, every part whole. Settled on the sampled passenger cushion."
     }
   },
   "limits": {

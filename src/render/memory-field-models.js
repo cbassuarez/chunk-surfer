@@ -1,7 +1,7 @@
 // THE FIELD'S THINGS, in local metres. Grass, daisies and buttercups in repeating
 // squares, a van door, a fence, the jumper, and one white carrier bag, which is also
 // the bag in the real world (world/the-bag.js), so that it is the same bag.
-import {MEMORY_FIELD as C} from '../data/memory-field.js';
+import {MEMORY_FIELD as C,MEMORY_FIELD_ANT as ANT} from '../data/memory-field.js';
 import {sourceAmbientFaultGeometry} from './source-ambient-fault-geometry.js';
 
 const TAU=Math.PI*2;
@@ -200,10 +200,58 @@ function faults(){
     .map(g=>({name:g.name,p:g.p,i:g.i,base:g.base,emissive:g.emissive,roughness:g.roughness,materialRole:g.materialRole,fault:true}));
 }
 
+// THE ANT'S PLACE (src/data/memory-field.js). A paving slab someone left in the
+// grass, a crack across it and one stone, the grass close round it drawn dense,
+// because from down here it is a forest, and the ant, in two leg frames.
+// Local to the slab; the frame puts them where the data says.
+function antSlab(){
+  const top=group(),side=group(),crack=group(),{halfX:x,halfZ:z,height:h}=ANT.slab;
+  quad(top,[-x,h,z],[x,h,z],[x,h,-z],[-x,h,-z]);
+  for(const[a,b]of[[[-x,-z],[x,-z]],[[x,-z],[x,z]],[[x,z],[-x,z]],[[-x,z],[-x,-z]]])quad(side,[a[0],0,a[1]],[b[0],0,b[1]],[b[0],h,b[1]],[a[0],h,a[1]]);
+  // A crack across it, and a chip off one corner. Thin, dark, on the surface.
+  const lift=h+.0006,run=[[-.29,.06],[-.17,.02],[-.09,.05],[.0,-.01],[.07,.02],[.16,-.04],[.3,-.02]];
+  for(let k=1;k<run.length;k++){const[a,b]=[run[k-1],run[k]],w=.0016+.0008*Math.sin(k*1.7);quad(crack,[a[0],lift,a[1]-w],[b[0],lift,b[1]-w],[b[0],lift,b[1]+w],[a[0],lift,a[1]+w]);}
+  tri(crack,[x-.05,lift,z],[x,lift,z],[x,lift,z-.04]);
+  return[piece('mf_ant_slab_top',top,[.66,.65,.61],{emissive:[.2,.2,.19],roughness:.96}),piece('mf_ant_slab_side',side,[.42,.41,.38],{roughness:.96}),
+    piece('mf_ant_slab_crack',crack,[.12,.11,.1],{emissive:[.01,.01,.01]})];
+}
+function antPebble(){
+  const g=group(),r=ANT.pebble.r;box(g,-r,r,0,r*.8,-r*.75,r*.75);
+  return piece('mf_ant_pebble',g,[.5,.47,.42],{roughness:.94});
+}
+function antPatch(){
+  const random=rng(4417),dark=group(),light=group(),R=ANT.patch,{halfX,halfZ}=ANT.slab,c=Math.cos(ANT.slab.yaw),n=Math.sin(ANT.slab.yaw);
+  const onSlab=(x,z)=>{const u=x*c-z*n,v=x*n+z*c;return Math.abs(u)<halfX+.012&&Math.abs(v)<halfZ+.012;};
+  for(let k=0;k<2600;k++){
+    const a=random()*TAU,r=Math.sqrt(random())*R,x=Math.cos(a)*r,z=Math.sin(a)*r;if(onSlab(x,z))continue;
+    // Taller and leaning in at the slab's edge, where it has had nothing to compete with.
+    const edge=Math.max(0,1-r/.6),g=random()<.42?light:dark;
+    blade(g,x,z,.1+random()*random()*.42+edge*.08,.004+random()*.009,random()*TAU,.02+random()*.1);
+  }
+  return[piece('mf_ant_patch_dark',dark,[.13,.3,.06],{emissive:[.015,.04,.008]}),piece('mf_ant_patch_light',light,[.36,.56,.14],{emissive:[.06,.1,.02]})];
+}
+function antBody(frame){
+  const g=group(),L=ANT.length,s=L/9;
+  // Head, waist, body: three dark segments, nose along -z like everything else.
+  box(g,-s*.85,s*.85,s*.5,s*1.8,-s*4.5,-s*2.7);
+  box(g,-s*.7,s*.7,s*.6,s*1.7,-s*2.5,-s*.6);
+  box(g,-s*1.2,s*1.2,s*.4,s*2.1,-s*.3,s*4.4);
+  // Feelers, out in front and a little apart.
+  for(const side of[-1,1])box(g,side*s*.6,side*s*.6+side*s*.35,s*1.4,s*1.7,-s*6.6,-s*4.4);
+  // Six legs. Frame 0 and 1 swap which three are forward: the tripod an ant walks on.
+  for(const[k,z]of[[0,-2.1],[1,-1.5],[2,-.9]].map(([k,z])=>[k,z*s]))for(const side of[-1,1]){
+    const forward=((k%2===0)===(side>0))===(frame===0)?1:-1,reach=s*(3.4+(k===1?.5:0)),tip=z+forward*s*1.4;
+    box(g,Math.min(side*s*.5,side*reach),Math.max(side*s*.5,side*reach),0,s*.45,Math.min(z,tip)-s*.22,Math.max(z,tip)+s*.22);
+  }
+  return piece(`mf_ant_${frame}`,g,[.05,.04,.035],{emissive:[0,0,0],roughness:.6});
+}
+export const MEMORY_FIELD_ANT_MESHES=Object.freeze(['mf_ant_0','mf_ant_1']);
+
 let library=null;
 export function memoryFieldGeometry(){
   if(library)return library;
-  const rows=[ground(),hills(),pole(),hubcap(),jumper(),...fence(),...tree(),...door(),...heroDaisy(),...theBagGeometry(),...faults()];
+  const rows=[ground(),hills(),pole(),hubcap(),jumper(),...fence(),...tree(),...door(),...heroDaisy(),...theBagGeometry(),...faults(),
+    ...antSlab(),antPebble(),...antPatch(),antBody(0),antBody(1)];
   for(let v=0;v<C.variants;v++)rows.push(...nearChunk(v));
   for(let v=0;v<3;v++)rows.push(...farChunk(v));
   library=Object.freeze(rows);return library;

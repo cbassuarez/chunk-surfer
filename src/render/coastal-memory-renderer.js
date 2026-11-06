@@ -5,7 +5,7 @@ import * as P3 from './props3d.js';
 import * as FP from '../world/floorplan.js';
 import {CELL,MATERIAL,F} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
-import {COASTAL_MEMORY_LAYOUT as L,COASTAL_WORLD_FROM_LOCAL,COASTAL_NOTE_COPY,coastalWorldPoint} from '../data/coastal-memory.js';
+import {COASTAL_MEMORY_LAYOUT as L,COASTAL_WORLD_FROM_LOCAL,COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,coastalWorldPoint} from '../data/coastal-memory.js';
 import {makeCoastalMemoryScene,COASTAL_MEMORY_ASSETS} from '../game/coastal-memory/scene.js';
 import {ensureWorldLetteringFonts,worldLetteringFont} from './world-lettering-fonts.js';
 import {physicalPrintPixels,uploadPhysicalPrint} from './physical-source-print.js';
@@ -15,7 +15,7 @@ import {stepWindLeaves,windLeafProps} from '../world/wind-leaves.js';
 import {VAN_WRECK,VAN_WRECK_ASSET} from '../data/van-wreck.js';
 import {windVector} from '../world/wind.js';
 
-const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach','cm_beach_boulder_0','cm_beach_boulder_1','cm_beach_boulder_2','cm_beach_boulder_3','cm_driftwood','cm_wrack_strand','cm_van_hubcap','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine'];
+const coastMeshes=['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach','cm_beach_boulder_0','cm_beach_boulder_1','cm_beach_boulder_2','cm_beach_boulder_3','cm_driftwood','cm_wrack_strand','cm_van_hubcap','cm_limestone_block','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3','cm_foam_lace','cm_music_box_plinth','cm_broken_music_box','cm_damp_note','cm_distant_pier','cm_music_box_cylinder','cm_music_box_gear','cm_music_box_live_tine','cm_music_box_key','cm_music_box_fan','cm_van_bumper','cm_van_headlamp','cm_van_panel_shard_0','cm_van_panel_shard_1','cm_van_panel_shard_2'];
 const vanMeshes=['drive_vehicle_body','drive_cabin'];
 const vanBrandMeshes=[VAN_BRAND_FITS.drive.mesh];
 const wreckMeshes=Object.values(VAN_WRECK.meshes);
@@ -39,10 +39,12 @@ export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotio
 }
 function installNoteInk(gl,pack){
  const mesh=pack.catalog.get('cm_damp_note');if(!mesh)return false;
- if(mesh.coastalInkRevision===1)return true;
+ if(mesh.coastalInkRevision===2)return true;
  const bitmap=physicalPrintPixels({width:768,height:548,ground:'#c3baa0',finish:{profile:'paper',widthM:.14,heightM:.10,seed:'coastal-anonymous-note',repeat:false},draw(c,m){
   c.font=m.font=worldLetteringFont(40,'serif');c.textBaseline=m.textBaseline='alphabetic';m.fillStyle='#fff';c.fillStyle='#28261f';
-  for(const[text,y]of[['For the part',238],['that wouldn’t play.',299]]){const x=(768-c.measureText(text).width)/2;c.fillText(text,x,y);m.fillText(text,x,y);}
+  for(const[text,y]of[['For the part',214],['that wouldn’t play.',275]]){const x=(768-c.measureText(text).width)/2;c.fillText(text,x,y);m.fillText(text,x,y);}
+  // His initial, smaller, off to the right, the way he signed things.
+  c.font=m.font=worldLetteringFont(34,'serif');{const x=560-c.measureText(COASTAL_NOTE_SIGNATURE).width/2;c.fillText(COASTAL_NOTE_SIGNATURE,x,356);m.fillText(COASTAL_NOTE_SIGNATURE,x,356);}
  }});
  const texture=uploadPhysicalPrint(gl,bitmap,{repeat:false}),normalTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.normalPixels},{repeat:false,srgb:false}),ormTexture=uploadPhysicalPrint(gl,{...bitmap,pixels:bitmap.ormPixels},{repeat:false,srgb:false});
  for(const primitive of mesh.primitives)Object.assign(primitive,{texture,normalTexture,ormTexture,base:[1,1,1,1],roughness:1,metallic:0,alphaCut:0,printedSurface:{version:1,coverage:'baseColorAlpha',polarity:'dark-on-light',process:'personal-ink',emission:'none'}});

@@ -1,0 +1,10 @@
+{
+  "file": "clair-de-lune.mid",
+  "work": "Claude Debussy, Suite bergamasque L. 75, III. Clair de lune (published 1905)",
+  "source": "The Mutopia Project, piece 1778, typeset in LilyPond 2.12.3 from the E. Fromont (1905) edition",
+  "url": "https://www.ibiblio.org/mutopia/cgibin/piece-info.cgi?id=1778",
+  "download": "https://www.ibiblio.org/mutopia/ftp/DebussyC/L75/debussy_Ste_Bergamesq_Clair/debussy_Ste_Bergamesq_Clair.mid",
+  "license": "Public Domain (Mutopia; the typesetter placed the edition in the public domain, Creative Commons Public Domain Dedication). The composition is public domain (Debussy d. 1918).",
+  "retrieved": "2026-11-05",
+  "use": "Bars 1-8 are arranged for the coastal memory's broken music box by tools/chunk_surfer/build-music-box-arrangement.mjs into src/data/clair-de-lune-music-box.js. No recording is used; the box is synthesized."
+}

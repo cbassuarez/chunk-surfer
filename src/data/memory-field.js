@@ -28,6 +28,48 @@ export const MEMORY_FIELD=Object.freeze({
   chunk:8,near:6,farChunk:40,far:7,variants:5,
 });
 
+// THE ANT. Seb, 2026-11-05: one of the interruptions is him staring at a lonely
+// ant crawling a path; in the field, on the second visit. He is down on his
+// heels over a paving slab someone left in the grass, and the ant crosses it.
+// He watches it with plain, innocent wonder, and he has no idea he is talking
+// about himself. Nothing here may say so. It ends when he stops trying to get up,
+// or when the ant goes into the grass, whichever comes first, and by
+// `maxSeconds` whatever happens, because a fault must be fair.
+const antPoint=(x,z)=>Object.freeze([x,z]);
+export const MEMORY_FIELD_ANT=Object.freeze({
+  eye:.2,pitch:-1.02,standSeconds:1.4,minSeconds:14,quietSeconds:6,maxSeconds:80,
+  // Where he is crouched, at the slab's near edge. His eyes follow the ant from here.
+  crouch:Object.freeze({x:0,z:-.2}),follow:2.2,
+  // The slab, in metres from where he is crouched. Its top is `height` above the soil.
+  slab:Object.freeze({x:0,z:-.42,halfX:.31,halfZ:.29,height:.04,yaw:.18}),
+  pebble:Object.freeze({x:.055,z:-.405,r:.012}),
+  // While he is down the grass nearest the slab is a forest, so it is drawn close.
+  patch:1.6,
+  // A big ant's length (a wood ant's), and its pace. It stops, feels, and goes
+  // on, about two thirds of the time moving.
+  length:.012,speed:.03,
+  // Its way: out of the grass, across the slab, round the crack and the stone,
+  // back on itself twice, and into the grass on the far side.
+  path:Object.freeze([antPoint(-.46,-.30),antPoint(-.30,-.33),antPoint(-.18,-.40),antPoint(-.12,-.36),antPoint(-.16,-.33),
+    antPoint(-.06,-.44),antPoint(.02,-.47),antPoint(.10,-.52),antPoint(.16,-.50),antPoint(.12,-.46),antPoint(.20,-.55),
+    antPoint(.31,-.58),antPoint(.44,-.62)]),
+  lines:Object.freeze([
+    Object.freeze({at:2,text:'There\'s an ant.'}),
+    Object.freeze({at:6,text:'Just the one. You don\'t see them on their own.'}),
+    Object.freeze({at:11,text:'Look where it\'s going. Every crack\'s a ravine to it.'}),
+    Object.freeze({at:16,text:'And the grass. That\'s a forest. A whole canopy over its head.'}),
+    Object.freeze({at:22,text:'Somebody poured this slab. To an ant that\'s an esplanade. Miles of it.'}),
+    Object.freeze({at:28,text:'Does it know how small it is?'}),
+    Object.freeze({at:33,text:'How easily somebody could step on it. Not even mean to. Not even notice.'}),
+    Object.freeze({at:39,text:'Does it know none of this is going anywhere?'}),
+    Object.freeze({at:45,text:'I wonder what it makes of Bach. Probably just the ground shaking.'}),
+    Object.freeze({at:51,text:'Feelers, step, turn back, step. Over and over.'}),
+    Object.freeze({at:56,text:'Is that it choosing? Or is that just what it is?'}),
+  ]),
+  gone:'There it goes.',
+  stood:'Go on, then.',
+});
+
 const visit=row=>Object.freeze({walk:true,cloud:.6,sunScale:1,tunnel:0,door:null,jumper:null,wheel:null,minSeconds:0,quietSeconds:0,tries:Object.freeze([]),lines:Object.freeze([]),...row});
 export const MEMORY_FIELD_VISITS=Object.freeze([
   // One breath. No hands yet. The eyes open into it, and it's gone.
@@ -35,7 +77,8 @@ export const MEMORY_FIELD_VISITS=Object.freeze([
     bag:Object.freeze({mode:'snag',x:-7.5,z:-15,scale:.9})}),
   // Nothing wrong with it. It ends by itself, and you weren't ready. Far out there is
   // something white, too small to be anything.
-  visit({id:'second',kind:'wander',maxSeconds:38,day:.36,sunAlt:.46,sunAz:.3,decayTo:.08,
+  // It opens on the ant. Once he is up, the rest of it is the wander it always was.
+  visit({id:'second',kind:'wander',maxSeconds:38,day:.36,sunAlt:.46,sunAz:.3,decayTo:.08,ant:MEMORY_FIELD_ANT,
     door:Object.freeze({x:16,z:-210}),
     bag:Object.freeze({mode:'drift',x:-30,z:-40,scale:1}),
     lines:Object.freeze([{at:7,text:'Warm.'},{at:21,tell:0}])}),

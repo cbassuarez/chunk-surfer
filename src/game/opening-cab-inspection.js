@@ -8,10 +8,11 @@ import {createItemInspection} from './item-inspection.js';
 import {fieldKitInspection,normalizeFieldKit} from './field-kit.js';
 import {TECHNIQUE_DEFS} from './combat-progression.js';
 import {OPENING_VEHICLE,openingVehiclePoint} from '../data/opening-vehicle.js';
-import {OPENING_CAB_ASSET,OPENING_CAB_PLACEMENT,OPENING_CAB_OBJECTS,OPENING_CAB_VISIBLE_OBJECTS,OPENING_CAB_DRIVER_DOOR,OPENING_CAB_REHEARSAL_NOTES,OPENING_CAB_PAPERS} from '../data/opening-cab-objects.js';
+import {OPENING_CAB_ASSET,OPENING_CAB_PLACEMENT,OPENING_CAB_OBJECTS,OPENING_CAB_VISIBLE_OBJECTS,OPENING_CAB_DRIVER_DOOR,OPENING_CAB_REHEARSAL_NOTES,OPENING_CAB_PAPERS,OPENING_CAB_MUSIC_BOX_LINES} from '../data/opening-cab-objects.js';
 import {OPENING_CAB_GEOMETRY} from '../data/opening-cab-object-geometry.js';
 import {workOrderAccepted} from './work-order-state.js';
 import {registerBakedPaper} from './paper-assets.js';
+import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE} from '../data/coastal-memory-note.js';
 
 export {OPENING_CAB_ASSET};
 export const OPENING_CAB_REQUIRED_MESHES=Object.freeze(OPENING_CAB_GEOMETRY.meshes.map(row=>row.mesh));
@@ -136,6 +137,7 @@ export function openingCabInspectionModel(value={},id='job-papers'){
     // The shift is ticked on sheet 1 of the work order, here, before anything else.
     shiftPending:object.id==='job-papers'&&state.shiftPending===true,
     accepted:workOrderAccepted(flags),instrument,facts:object.kind==='status'?facts:[],techniques:object.kind==='status'?techniques:[],
+    keepsake:object.kind==='keepsake'?{title:'LYLE’S MUSIC BOX',lines:[...OPENING_CAB_MUSIC_BOX_LINES,`Under the lid, in his hand: ${COASTAL_NOTE_COPY} ${COASTAL_NOTE_SIGNATURE}`]}:null,
     notes:object.kind==='notes'?notes:[],rehearsalNotes:object.kind==='notes'?[...OPENING_CAB_REHEARSAL_NOTES]:[],destination:object.kind==='notes'?text(state.guidance?.label):'',
     radio:radio?{on:typeof radio.on==='boolean'?radio.on:null,playing:radio.playing===true,station:text(radio.station),programme:text(radio.programme),
       volume:finite(radio.volume)?Math.round(Math.max(0,Math.min(1,radio.volume))*100):null,
@@ -170,7 +172,7 @@ export function openingCabRadioLayout({cols=80,rows=30}={},radio={},enabled=true
     controls:[...presets,...actions],hint:{x:panel.body.x,y:panel.footer.y-1.0,w:panel.body.w}};
 }
 
-export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({}),onClose=()=>{},onCabRadioAction=null,onChooseShift=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
+export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({}),onClose=()=>{},onCabRadioAction=null,onChooseShift=null,onWindMusicBox=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
   const object=objectFor(id)||objectFor('job-papers');let scroll=0,closed=false,reader=null,readerId=null,inspection=null,inspectionKey=null;
   const hits=createHitRegions();let pointerPress=null,radioFocus=null;
   const model=()=>openingCabInspectionModel(getState(),object.id);
@@ -186,6 +188,8 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     const layout=object.kind==='radio'?openingCabRadioLayout(uiSize(),model().radio,typeof onCabRadioAction==='function'):null,
       l=layout?.panel||openingCabInspectionLayout(uiSize());hits.reset();
     hits.add({id:'cab-object:close',label:'RETURN TO CAB',x:l.footer.x,y:l.footer.y,w:Math.min(24,l.footer.w),h:1.4,onClick:close});
+    if(object.kind==='keepsake'&&typeof onWindMusicBox==='function')
+      hits.add({id:'cab-object:wind-music-box',label:'WIND IT',x:l.footer.x+26,y:l.footer.y,w:Math.min(14,Math.max(1,l.footer.w-26)),h:1.4,onClick:()=>onWindMusicBox()});
     if(object.id==='job-papers'&&typeof onChooseShift==='function'&&model().shiftPending)
       hits.add({id:'cab-object:tick-shift',label:'TICK A SHIFT',x:l.footer.x+26,y:l.footer.y,w:Math.min(20,Math.max(1,l.footer.w-26)),h:1.4,onClick:()=>onChooseShift()});
     for(const control of layout?.controls||[])hits.add({...control,disabled:!control.enabled,onClick:()=>radioAction(control.action)});
@@ -193,6 +197,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
   }
   function lines(m){
     if(m.kind==='status')return[...m.facts.map(([a,b])=>`${a}   ${b}`),'','PATCHED TECHNIQUES',...m.techniques.flatMap(t=>[t.label,t.detail,'']),...(!m.techniques.length?['No leads patched.']:[])];
+    if(m.kind==='keepsake')return m.keepsake.lines.flatMap(line=>[line,'']);
     if(m.kind==='radio')return['POWER   '+(m.radio.on===true?'ON':m.radio.on===false?'OFF':'—'),
       ...(m.radio.station?['STATION   '+m.radio.station]:[]),...(m.radio.volume==null?[]:['VOLUME   '+m.radio.volume+'%']),
       '',m.radio.playing?'NOW PLAYING':m.radio.on?'WAITING FOR SIGNAL':'',m.radio.programme];
@@ -224,6 +229,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
       if(k==='tab'||/^(?:digit)?[1-9]$/.test(k)||['tabNext','tabPrev'].includes(action))return true;
       const m=model();
       if(object.id==='job-papers'&&m.shiftPending&&typeof onChooseShift==='function'&&k==='t'&&!e.repeat){onChooseShift();return true;}
+      if(object.kind==='keepsake'&&typeof onWindMusicBox==='function'&&([' ','space','w'].includes(k)||action==='confirm')&&!e.repeat){onWindMusicBox();return true;}
       if(object.kind==='document'){paper(m)?.key?.(e);return true;}
       if(object.kind==='instrument'){instrument(m)?.key?.(e);return true;}
       const down=k==='arrowdown'||k==='s'||action==='selectDown',up=k==='arrowup'||k==='w'||action==='selectUp';
@@ -248,7 +254,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
         ctx.restore();
       });
       const color=m.kind==='notes'?'#463d2d':'#c5c9b9';
-      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='radio'?'RADIO':m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
+      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='radio'?'RADIO':m.kind==='keepsake'?m.keepsake.title:m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
       if(m.kind==='radio'){
         const radio=m.radio,r=openingCabRadioLayout(uiSize(),radio,typeof onCabRadioAction==='function'),selected=radio.stations.find(station=>station.id===(radio.selectedStation||radio.station)),
           title=selected?.label||radio.station||'RECEIVER',programme=radio.programme||selected?.programme||'',status=radio.on===false?'POWER OFF':radio.playing?'PLAYING':radio.on?'TUNING':'SIGNAL UNKNOWN';
@@ -272,7 +278,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
         const rows=lines(m).flatMap(v=>v?uiWrap(v,l.body.w):['']),capacity=Math.max(1,Math.floor(l.body.h));scroll=Math.min(scroll,Math.max(0,rows.length-capacity));
         rows.slice(scroll,scroll+capacity).forEach((line,i)=>ink(l.body.x,l.body.y+i,line,l.body.w,{color}));
       }
-      ink(l.footer.x,l.footer.y,'E RETURN TO CAB',l.footer.w,{color});
+      ink(l.footer.x,l.footer.y,m.kind==='keepsake'&&typeof onWindMusicBox==='function'?'E RETURN TO CAB    SPACE WIND IT':'E RETURN TO CAB',l.footer.w,{color});
     },
     suspend(){pointerPress=null;radioFocus=null;cancelControlScope('cab-radio:');},
     blur(){pointerPress=null;radioFocus=null;cancelControlScope('cab-radio:');},

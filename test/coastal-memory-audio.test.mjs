@@ -5,6 +5,7 @@ import { coastalMemoryRecordingBuffer, playCoastalMemoryRecording, createCoastal
   COASTAL_MEMORY_NOTES, COASTAL_MEMORY_AUDIO_PROVENANCE } from '../src/audio/coastal-memory.js';
 import { towerPersonalRecordingBuffer } from '../src/audio/tower-personal-recording.js';
 import { beginCoastalMemory, stepCoastalMemory } from '../src/game/coastal-memory.js';
+import { COASTAL_MUSIC_BOX_CYCLE, COASTAL_MUSIC_BOX_PLUCKS, COASTAL_MUSIC_BOX_SPRING_RELEASE, COASTAL_MUSIC_BOX_STALL } from '../src/game/coastal-memory/mechanism.js';
 
 function context() {
   const nodes = [], sources = [], destination = { kind: 'destination' };
@@ -34,30 +35,41 @@ const pose = { x: 25.9, z: 43, feet: 28, yaw: Math.PI / 2, pitch: -.3 };
 const state = { active: true, status: 'active', recordingOffset: 0, pose };
 const make = () => { const ctx = context(), audio = createCoastalMemoryAudio({ context: ctx, destination: ctx.destination, layout }); return { ctx, audio }; };
 const near = (audio, extra = {}) => audio.update({ state, pose, recorderHeld: true, ...extra });
+const close = (actual, expected, tolerance) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} ≈ ${expected}`);
 const equal = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-8, `${actual} ≈ ${expected}`);
 function energy(data, rate, from, to) { let sum = 0, n = 0; for (let i = Math.floor(from * rate); i < Math.floor(to * rate); i++) { sum += data[i] ** 2; n++; } return Math.sqrt(sum / n); }
 function spectral(data, rate, from, seconds, f) { let re = 0, im = 0; const start = Math.floor(from * rate), n = Math.floor(seconds * rate); for (let j = 0; j < n; j++) { const w = Math.sin(j / (n - 1) * Math.PI) ** 2, angle = 2 * Math.PI * f * j / rate; re += data[start + j] * w * Math.cos(angle); im += data[start + j] * w * Math.sin(angle); } return Math.hypot(re, im) / n; }
 
-test('the separate deterministic 14s stereo master has two pitched plucks and no old chair master substitution', () => {
-  const ctx = context(), buffer = coastalMemoryRecordingBuffer(ctx), copy = coastalMemoryRecordingBuffer(context());
-  assert.strictEqual(coastalMemoryRecordingBuffer(ctx), buffer); assert.equal(buffer.duration, 14); assert.equal(buffer.numberOfChannels, 2);
+test('the deterministic stereo master is the broken box playing Clair de lune, plucked where the cylinder plucks', () => {
+  const ctx = context(), buffer = coastalMemoryRecordingBuffer(ctx), copy = coastalMemoryRecordingBuffer(context()), rate = ctx.sampleRate;
+  assert.strictEqual(coastalMemoryRecordingBuffer(ctx), buffer); assert.equal(buffer.numberOfChannels, 2);
+  assert.ok(Math.abs(buffer.duration - COASTAL_MEMORY_SECONDS) < 1 / rate && COASTAL_MEMORY_SECONDS === COASTAL_MUSIC_BOX_CYCLE);
   const left = buffer.getChannelData(0), right = buffer.getChannelData(1);
   assert.deepEqual(left, copy.getChannelData(0)); assert.notDeepEqual(left, right);
   assert.notDeepEqual(left, towerPersonalRecordingBuffer(ctx).getChannelData(0));
   assert.equal(COASTAL_MEMORY_TAKE, 'coastal-memory-musicbox'); assert.equal(COASTAL_MEMORY_CUE, 'coastal.memory.musicbox');
-  assert.deepEqual(COASTAL_MEMORY_NOTES, [196, 261.63]);
+  // Bb4 is the lowest tine; Db6 is bent 45 cents flat; A5 and Eb6 are snapped.
+  close(COASTAL_MEMORY_NOTES[0], 466.16, .01); assert.ok(COASTAL_MEMORY_NOTES.includes(1080.28)); assert.ok(!COASTAL_MEMORY_NOTES.some(f => Math.abs(f - 880) < 1));
   let max = 0; for (const value of left) { assert.ok(Number.isFinite(value)); max = Math.max(max, Math.abs(value)); }
-  assert.ok(max > .04 && max < .3);
-  assert.ok(energy(left, ctx.sampleRate, 2.29, 2.8) > energy(left, ctx.sampleRate, 12, 13) * 10);
-  for (const [at, f] of [[2.3, 196], [7.44, 261.63]])
-    assert.ok(spectral(left, ctx.sampleRate, at, .5, f) > spectral(left, ctx.sampleRate, at, .5, f + 15) * 4);
-  assert.match(COASTAL_MEMORY_AUDIO_PROVENANCE.material, /music box/); assert.match(COASTAL_MEMORY_AUDIO_PROVENANCE.ambience, /placeholder/);
+  assert.ok(max > .04 && max < .4);
+  const forward = COASTAL_MUSIC_BOX_PLUCKS.filter(p => p.direction > 0);
+  assert.ok(energy(left, rate, 3, COASTAL_MUSIC_BOX_STALL) > energy(left, rate, COASTAL_MUSIC_BOX_CYCLE - 3, COASTAL_MUSIC_BOX_CYCLE - .3) * 10, 'it plays, then the place is quiet');
+  assert.ok(energy(left, rate, COASTAL_MUSIC_BOX_STALL + .7, COASTAL_MUSIC_BOX_SPRING_RELEASE - .05) < energy(left, rate, 3, 20) / 6, 'stalled, it makes no more notes');
+  // The first sounding note is the tune's opening Ab5, at the time the pin meets its tine.
+  const first = forward[0]; assert.equal(first.pitch, 80);
+  assert.ok(spectral(left, rate, first.at + .01, .3, 830.61) > spectral(left, rate, first.at + .01, .3, 860) * 4);
+  assert.ok(spectral(left, rate, first.at - .35, .3, 830.61) < spectral(left, rate, first.at + .01, .3, 830.61) / 4);
+  // The bent Db6 sounds where it is bent to, not where it should be.
+  const db = forward.find(p => p.pitch === 85 && !forward.some(q => q !== p && Math.abs(q.at - p.at) < .4 && Math.abs(q.pitch - 85) < 3));
+  assert.ok(db, 'an exposed Db6 pluck'); assert.ok(spectral(left, rate, db.at + .01, .35, 1080.28) > spectral(left, rate, db.at + .01, .35, 1108.73) * 1.5);
+  assert.match(COASTAL_MEMORY_AUDIO_PROVENANCE.material, /music box/); assert.match(COASTAL_MEMORY_AUDIO_PROVENANCE.material, /Clair de lune/);
+  assert.match(COASTAL_MEMORY_AUDIO_PROVENANCE.ambience, /placeholder/);
 });
 
 test('direct playback resolves the same master with wrapped offset, scheduled start and idempotent disposal', () => {
   const ctx = context(); ctx.currentTime = 4;
   assert.equal(playCoastalMemoryRecording(), null);
-  const recording = playCoastalMemoryRecording({ context: ctx, destination: ctx.destination, when: 3, gain: 9, loop: true, offset: 31.25 });
+  const recording = playCoastalMemoryRecording({ context: ctx, destination: ctx.destination, when: 3, gain: 9, loop: true, offset: COASTAL_MEMORY_SECONDS + 3.25 });
   assert.strictEqual(recording.source.buffer, coastalMemoryRecordingBuffer(ctx)); assert.equal(recording.source.loop, true);
   assert.deepEqual(recording.source.starts, [{ at: 4, offset: 3.25 }]); assert.equal(recording.out.gain.value, 2);
   recording.stop(); recording.stop(); assert.equal(recording.source.stops, 1); assert.equal(recording.out.disconnected, true);
@@ -115,7 +127,7 @@ test('a suspended shared context supplies no evidence and saved offset resumes w
   assert.equal(ctx.sources.length, 0); assert.equal(audio.sample().audioRunning, false);
   ctx.state = 'running'; near(audio, { state: { ...state, recordingOffset: 11 } });
   assert.equal(ctx.sources[0].starts[0].offset, 11);
-  ctx.currentTime = 5; const sample = audio.sample(); equal(sample.audibleSeconds, 4.96); equal(sample.recordingOffset, 2);
+  ctx.currentTime = 5; const sample = audio.sample(); equal(sample.audibleSeconds, 4.96); equal(sample.recordingOffset, 16 % COASTAL_MEMORY_SECONDS);
   assert.strictEqual(ctx.sources[0].buffer, coastalMemoryRecordingBuffer(ctx));
 });
 

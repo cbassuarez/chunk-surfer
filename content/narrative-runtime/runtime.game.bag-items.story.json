@@ -4,8 +4,9 @@
   "title": "Runtime · game/bag-items.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "bagInspectionDialogue",
+  "entry": "stationInspectionDialogue.start",
   "entries": [
+    "stationInspectionDialogue.start",
     "bagInspectionDialogue",
     "bagInspectionDialogue.entries.interface",
     "bagInspectionDialogue.entries.tuning-fork",
@@ -25,6 +26,19 @@
   ],
   "notes": "Generated from src/game/bag-items.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "stationInspectionDialogue.start": {
+      "id": "stationInspectionDialogue.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "stationInspectionDialogue.start.l0",
+          "who": "direction",
+          "text": "Nothing in that pocket.",
+          "source": "src/game/bag-items.js:267"
+        }
+      ],
+      "source": "src/game/bag-items.js:267"
+    },
     "bagInspectionDialogue": {
       "id": "bagInspectionDialogue",
       "type": "line",

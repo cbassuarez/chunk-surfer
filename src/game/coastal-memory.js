@@ -1,10 +1,13 @@
 // Story state for the optional coast. Geometry and walking remain with the host;
 // this module never writes the Source body, owns a camera, or captures audio.
+import { COASTAL_MUSIC_BOX_CYCLE } from './coastal-memory/mechanism.js';
+
 export const COASTAL_MEMORY_KIND = 'coastal-memory';
 export const COASTAL_MEMORY_VERSION = 1;
 export const COASTAL_MEMORY_TAKE = 'coastal-memory-musicbox';
 export const COASTAL_MEMORY_CUE = 'coastal.memory.musicbox';
-export const COASTAL_MEMORY_SECONDS = 14;
+// One full cycle of the broken box: wind, play, run down, let go, rest.
+export const COASTAL_MEMORY_SECONDS = COASTAL_MUSIC_BOX_CYCLE;
 export const COASTAL_MEMORY_LISTEN_SECONDS = 9;
 export const COASTAL_WRECK_LIGHT_SECONDS = 1.4;
 

@@ -307,7 +307,7 @@
         {
           "id": "cathedralBellCombatBattle.intro.l3",
           "who": "direction",
-          "text": "The two notes from the box answer from the belfry. The full ring holds its breath.",
+          "text": "The first two notes of the box answer from the belfry. The full ring waits.",
           "source": "src/data/combat-definitions.js:629"
         },
         {
@@ -319,13 +319,13 @@
         {
           "id": "cathedralBellCombatBattle.intro.l5",
           "who": "you",
-          "text": "Those two notes.",
+          "text": "That’s how it starts.",
           "source": "src/data/combat-definitions.js:631"
         },
         {
           "id": "cathedralBellCombatBattle.intro.l6",
           "who": "direction",
-          "text": "The two notes on the old recording answer from the belfry. The full ring holds its breath.",
+          "text": "The two notes on the old recording answer from the belfry. The full ring waits.",
           "source": "src/data/combat-definitions.js:633"
         },
         {

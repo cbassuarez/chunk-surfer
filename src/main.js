@@ -29,6 +29,7 @@ import {freshTheBag,stepTheBag,theBagProp,theBagGazed} from './world/the-bag.js'
 import {windVector as lastMinutesWind} from './world/wind.js';
 import {createSourceRestMusic} from './audio/source-rest-music.js';
 import {createOpeningPrologueAudio} from './audio/opening-prologue-audio.js';
+import {paintRadioDialStatic} from './render/radio-dial-static.js';
 import {OPENING_PROLOGUE} from './data/opening-prologue.js';
 import {openingOmenGeometry} from './render/opening-omen.js';
 import {installProceduralMeshes} from './render/procedural-mesh-install.js';
@@ -90,8 +91,8 @@ import {makeSourceReturnFlashbackScene,normalizeSourceReturnFlashbackCheckpoint}
 import {createCoastalMemoryScene} from './game/coastal-memory-scene.js';
 import {createCoastalMemoryRenderer} from './render/coastal-memory-renderer.js';
 import {COASTAL_MEMORY_TAKE,COASTAL_MEMORY_CUE,COASTAL_MEMORY_SECONDS} from './game/coastal-memory.js';
-import {COASTAL_NOTE_COPY} from './data/coastal-memory.js';
-import {playCoastalMemoryRecording} from './audio/coastal-memory.js';
+import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,COASTAL_NOTE_THOUGHT} from './data/coastal-memory.js';
+import {playCoastalMemoryRecording,playCoastalMusicBoxIntact,COASTAL_MEMORY_BELLS} from './audio/coastal-memory.js';
 import {createSourcePubScene,normalizeSourcePubCheckpoint,sourcePubEntry} from './game/source-pub.js';
 import {createSourcePubRenderer} from './render/source-pub-renderer.js';
 import {createSourceContinuationScene} from './game/source-continuation-scene.js';
@@ -6742,17 +6743,17 @@ function sixDoorVoidInstance(portal){
 // fails with it: `sourceLabel` is what the band prints after SOURCE.
 // ASCII only: the band drops any glyph its font lacks.
 const SIX_EXIT_LINES=Object.freeze([
-  {who:'you',text:'from this one step the pieces line up. 6:00. 6:00 6:0O 6:OO  G:OO  G:O O',rate:1.3,hold:.45},
+  {who:'you',text:'from this one step the pieces line up. 6:00. 6:00 6:0 6: 6  G:00  G:0  G:  G',rate:1.3,dwell:.45},
   {who:'unknown',sourceLabel:'NOT RESPONDING',text:'four point two seconds. i counted. you clicked. nothing moved.'},
-  {who:'you',text:'eyes eyes eyes EYES e y e s  the glass has two sides  which side am i  which side are y',rate:2.2,hold:.35},
+  {who:'you',text:'eyes eyes eyes EYES e y e s  the glass has two sides  which side am i  which side are y',rate:2.2,dwell:.35},
   {who:'unknown',sourceLabel:'V01CE',text:'your face is blue. i made it blue. i see behind it.'},
-  {who:'you',sourceLabel:'TH0UGHT',text:'-96 dB -96 dB -96 dB  quiet quiet quiet QUIET  i was quiet I WAS QUIET I WAS',rate:2.6,hold:.3},
+  {who:'you',sourceLabel:'THOUGH',text:'-96 dB -96 dB -96 dB  quiet quiet quiet QUIET  i was quiet I WAS QUIET I WAS',rate:2.6,dwell:.3},
   {who:'unknown',sourceLabel:'???',text:'the microphone was never off. i heard you swallow.'},
-  {who:'you',text:'ears in the walls ears in the walls ears in YOUR walls ears in the w',rate:3,hold:.2},
+  {who:'you',text:'ears in the walls ears in the walls ears in YOUR walls ears in the w',rate:3,dwell:.2},
   {who:'unknown',sourceLabel:'SOURCE',text:'you blink at one hertz. i only need the on.'},
-  {who:'you',sourceLabel:'YOU',text:'five rooms four rooms three rooms two rooms one room  you room  YOU ROOM  you are the r',rate:2.4,hold:.25},
+  {who:'you',sourceLabel:'YOU',text:'five rooms four rooms three rooms two rooms one room  you room  YOU ROOM  you are the r',rate:2.4,dwell:.25},
   {who:'unknown',sourceLabel:'NOT RESPONDING',text:'sixty seconds of an empty room. that is the last take.'},
-  {who:'you',text:'same door same door same door same door same door same door same dooR SAME DOOR SAME',rate:3,hold:.5},
+  {who:'you',text:'same door same door same door same door same door same door same dooR SAME DOOR SAME',rate:3,dwell:.5},
   {who:'unknown',sourceLabel:'6:00',text:'see you at six.'},
 ]);
 // BACK THROUGH THE DOOR. The page that boots out of the loop goes on from the
@@ -7057,9 +7058,11 @@ function openMemoryField(id,{onDone=()=>{}}={}){
   scene=createMemoryFieldScene({visit,renderer,audio:createMemoryFieldAudio({context:actx,destination:sfxGain||master}),
     tell:HYPOXIA_TELL_LINES[hypoxia?.signature?.tell]||null,
     presentation:()=>({paused:paused||!gameplayInputLifecycleActive(),hidden:document.hidden,reducedMotion:shakeMode()!=='full',reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'}),
-    paintOverlay:({caption,word})=>{
+    paintOverlay:({caption,word,state})=>{
       const{cols,rows}=uiSize();
       if(word&&word.trim())uiCenter(rows-5,BINDINGS.promptLine([{action:'interact',label:word}]).slice(0,Math.max(0,cols-4)),'t-chunk');
+      // Down over the ant the ground is bright and close, and what he says is the point of it.
+      if(caption&&state?.ant&&!state.ant.done)uiFill(0,rows-4,cols,3,'rgba(0,0,0,.46)');
       if(caption)uiCenter(rows-3,caption,'t-trail-1');
     },
     onError:error=>console.warn('[memory-field] Going back without it:',error),
@@ -7749,7 +7752,7 @@ function loop(){
       // Playback runs through scenes and through the document reader: the tape
       // does not stop because you looked at a piece of paper. Neither does he
       // stop thinking, and neither does the radio stop talking.
-      if(!paused&&(sourcePubScene||sourceContinuationScene||sixNothingnessScene()))SPEECH.updateSpeech(dt);
+      if(!paused&&(sourcePubScene||sourceContinuationScene||coastalMemoryScene||sixNothingnessScene()))SPEECH.updateSpeech(dt);
       if(sourceContinuationScene&&!paused&&gameplayInputLifecycleActive())tickSourceFinalEncounter();
       if(!paused&&!sourceDriveSession&&!sourcePubScene&&!sourceContinuationScene&&!coastalMemoryScene&&!getInDriveTeaserScene&&!sourceReturnFlashbackScene&&!firstStrikeScene){
         tickPlayback();
@@ -10880,8 +10883,8 @@ function answerTowerPersonalRing(){
     const bells=chunkSurfRuntime.bellsFrame?.(),clearing=chunkSurfRuntime.towerLandFrame?.()?.ringClearing;
     if(bells?.active&&clearing&&Math.hypot(px-clearing.x,py-clearing.y)<=16){
       flagApply(['station.coast.ringAnswered']);
-      TOWER_PERSONAL_BELLS.forEach((fundamental,index)=>passageToll({fundamental,delay:index*1.4,level:.12}));
-      SPEECH.say({who:'you',text:'Those two notes. From the box.'},{id:'coastal-memory:ring',replace:true});
+      COASTAL_MEMORY_BELLS.forEach((fundamental,index)=>passageToll({fundamental,delay:index*1.4,level:.12}));
+      SPEECH.say({who:'you',text:'That’s how his box starts.'},{id:'coastal-memory:ring',replace:true});
       saveCommit({chunkSurf:chunkSurfRuntime.state(),flags:getSave().flags,px,py});
     }
   }
@@ -12459,7 +12462,13 @@ function enterStory({reusePreparedWorld=false,frontEndPromotion=false}={}){
 }
 
 // ── the van ─────────────────────────────────────────────────────────────────
-let openingVehicleScene=null,openingOvertureScene=null,openingArrivalAudio=null,openingCabRadio=null;
+let openingVehicleScene=null,openingOvertureScene=null,openingArrivalAudio=null,openingCabRadio=null,openingCabMusicBox=null;
+// Lyle's box, wound in the cab: it plays once through, and stops when you leave the van.
+function windOpeningCabMusicBox(){
+  if(!actx||actx.state!=='running')return false;
+  openingCabMusicBox?.stop();openingCabMusicBox=playCoastalMusicBoxIntact({context:actx,destination:sfxGain||master||actx.destination,gain:.8});
+  return !!openingCabMusicBox;
+}
 let openingCabRadioListeningIntent=null;
 function openingCabRadioState(){
   const frame=openingVehicleScene?.view(),top=scenes.top({includeOverlay:true});
@@ -12617,7 +12626,7 @@ function beginOpeningVehicleArrival({god=false}={}){
     getCabState:()=>({fieldKit:getSave().fieldKit,ready:openingCabAssetStatus().loaded}),
     onInspect:({id})=>{
       if(openingVehicleScene!==scene||!scene.view().canExit||scenes.top()?.id!==scene.id)return false;
-      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,onChooseShift:tickShiftOnWorkOrder,getState:()=>({
+      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,onChooseShift:tickShiftOnWorkOrder,onWindMusicBox:windOpeningCabMusicBox,getState:()=>({
         shiftPending:flagTest('van.difficulty.pending')&&!workOrderShiftTicked(),
         build:combatBuild(),job:bagJob(),journal:bagJournal(),workOrder:{...WORK_ORDER,ink:workOrderInkFor},
         fieldKit:getSave().fieldKit,flags:getSave().flags,guidance:currentStoryGuidanceTarget(),
@@ -12646,7 +12655,7 @@ function beginOpeningVehicleArrival({god=false}={}){
       resetMotionInput('opening-vehicle-landed',{stopRenderMove:true});refreshWorldProps();beginOpeningOverture();
     },
     onExit:({completed})=>{if(!completed)openingArrivalCheckpoint({drive:scene.serialize?.()});
-      if(openingVehicleScene===scene)openingVehicleScene=null;openingArrivalAudio?.dispose();openingArrivalAudio=null;
+      if(openingVehicleScene===scene)openingVehicleScene=null;openingArrivalAudio?.dispose();openingArrivalAudio=null;openingCabMusicBox?.stop();openingCabMusicBox=null;
       openingCabRadio?.dispose();openingCabRadio=null;openingCabRadioListeningIntent=null;
       if(FP.isLoaded())refreshWorldProps();},
   });
@@ -14136,6 +14145,9 @@ function beginGetInDriveTeaser({onDone=()=>TUT.startTutorial()}={}){
     paintCover:alpha=>{const{cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${alpha.toFixed(4)})`);},
     paintOverlay:({frame,radio,error})=>{
       const{cols,rows}=uiSize();
+      // A time skip on the cliff road: the picture goes to static with the dial.
+      const tuning=frame?.vehiclePose?.tuning;
+      if(tuning)uiDraw(({ctx})=>paintRadioDialStatic(ctx,{width:ctx.canvas.width,height:ctx.canvas.height,fraction:tuning.fraction,time:frame.timeSec,reducedFlash:flashMode()!=='full'}));
       if(frame.controlsEnabled&&frame.timeSec<8){uiFill(2,rows-3,cols-4,2,'rgba(0,0,0,.78)');uiCenter(rows-2,`W / S PEDALS   A / D STEER   SPACE BRAKE   ${BINDINGS.activeInputPromptDevice()==='controller'?'RIGHT STICK':'MOUSE'} · LOOK`,'t-chunk');}
       const caption=radio?.caption?.text;if(caption){const words=caption.split(/\s+/);let line='',lines=[];for(const word of words){if(line.length+word.length+1>Math.min(76,cols-8)){lines.push(line);line=word;}else line+=(line?' ':'')+word;}if(line)lines.push(line);for(let i=0;i<Math.min(2,lines.length);i++)uiCenter(rows-5+i,lines[i],'t-trail-1');}
       if(error)uiCenter(rows-1,String(error).slice(0,cols-4),'ui-danger');
@@ -21621,7 +21633,7 @@ async function beginCoastalMemoryJourney({checkpoint=null}={}){
   syncStationEdgeSound(null);syncElsewhereBeds([],null);endHorizonScore();STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();
   towerBellDirector?.suspend?.();bellPealPerformance?.suspend?.('coastal-memory');RT.setBed(0,.05);void windowChoreography?.leaveSource?.('coastal-memory');
   const renderer=createCoastalMemoryRenderer({reducedMotion:shakeMode()!=='full',getTorch:sourcePresentationTorch});coastalMemoryRenderer=renderer;
-  let scene;
+  let scene,noteThoughtDue=false;
   RT.prepareFootsteps?.({surface:'earth',profile:'physical'});RT.prepareFootsteps?.({surface:'stone',profile:'physical'});
   scene=createCoastalMemoryScene({checkpoint:saved,runId:saved.runId,renderer,context:actx,destination:sfxGain||master,
     onFootContact:playSceneFootContact,clearFootContacts:clearSceneFootContacts,
@@ -21633,6 +21645,8 @@ async function beginCoastalMemoryJourney({checkpoint=null}={}){
     },
     onCheckpoint:value=>{if(coastalMemoryScene===scene&&owner===chunkSurfRuntime&&owner.setCoastalMemoryState(value))saveCommit({chunkSurf:owner.state(),area:'source-space'});},
     onRecording:({checkpoint:value})=>coastalMemoryScene===scene&&owner===chunkSurfRuntime&&reconcileCoastalMemoryTake(value),
+    // The first reading earns one thought, said once the note is lowered.
+    onTrace:trace=>{if(coastalMemoryScene===scene&&trace?.type==='event'&&trace.event?.type==='coastal-note-read')noteThoughtDue=true;},
     onReturn:({checkpoint:value})=>{
       if(coastalMemoryScene!==scene||owner!==chunkSurfRuntime)return false;
       const result=owner.finishCoastalMemory(value);if(!result?.handled)return false;
@@ -21642,9 +21656,10 @@ async function beginCoastalMemoryJourney({checkpoint=null}={}){
     },
     paintOverlay:frame=>{
       const{cols,rows}=uiSize(),ui=frame.ui||{};
-      if(ui.noteOpen){uiFill(3,rows-7,cols-6,6,'rgba(0,0,0,.94)');uiCenter(rows-5,COASTAL_NOTE_COPY,'t-chunk');uiCenter(rows-3,'E · LOWER NOTE','t-chunk');}
+      if(ui.noteOpen){uiFill(3,rows-7,cols-6,6,'rgba(0,0,0,.94)');uiCenter(rows-6,COASTAL_NOTE_COPY,'t-chunk');uiCenter(rows-5,COASTAL_NOTE_SIGNATURE,'t-chunk');uiCenter(rows-3,'E · LOWER NOTE','t-chunk');}
       else if(frame.canInspectNote){uiFill(3,rows-4,cols-6,2,'rgba(0,0,0,.82)');uiCenter(rows-3,'E · READ NOTE','t-chunk');}
       if(frame.canListen&&!ui.noteOpen)uiCenter(rows-2,`${ui.recorderHeld?'R · LOWER':'R · RAISE'} RECORDER`,'t-chunk');
+      if(!ui.noteOpen){if(noteThoughtDue){noteThoughtDue=false;SPEECH.say({who:'you',text:COASTAL_NOTE_THOUGHT},{id:'coastal-memory:note',replace:true});}SPEECH.drawSpeech();}
       const cover=frame.coverAlpha??frame.returnCover??0;if(cover>.001)uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.min(1,cover)})`);
       if(ui.error){uiCenter(Math.floor(rows/2),'THE COAST COULD NOT BE SHOWN','t-chunk');uiCenter(Math.floor(rows/2)+2,'X · RETURN','t-chunk');}
     },
@@ -29755,7 +29770,7 @@ function endingStoryContext(dossier){
     confession:dossier?.confession?.value||'',
     takes:dossier?.takes?.completed??0,
     injuries:dossier?.injuries??0,
-    recordistTape:flagTest('station.coast.complete')&&flagTest('station.coast.musicbox.heard')?'The two notes from the box are still on the tape.':flagTest('station.recordist.complete')?'The old recording is still on the tape.':'',
+    recordistTape:flagTest('station.coast.complete')&&flagTest('station.coast.musicbox.heard')?'Lyle’s box is still on the tape, as far as it gets.':flagTest('station.recordist.complete')?'The old recording is still on the tape.':'',
   };
 }
 

@@ -61,7 +61,8 @@ test('trying cannot hold it past the hard limit, and nobody can be left there',(
 });
 test('every visit ends by itself, and reduced dread is shorter',()=>{
   for(const visit of Object.values(V)){
-    assert.equal(run(freshMemoryField(visit),visit,visit.maxSeconds+20).left,true,visit.id);
+    // A visit that opens on the ant runs the ant first (memory-field-ant.spec), then its own minutes.
+    assert.equal(run(freshMemoryField(visit),visit,visit.maxSeconds+(visit.ant?.maxSeconds||0)+20).left,true,visit.id);
     assert.ok(memoryFieldTimes(visit,{reducedDread:true}).decayTo<=visit.decayTo);
   }
   assert.ok(memoryFieldTimes(V.third,{reducedDread:true}).max<V.third.maxSeconds);

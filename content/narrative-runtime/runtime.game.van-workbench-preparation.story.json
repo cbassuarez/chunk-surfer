@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.van-workbench-preparation",
+  "title": "Runtime · game/van-workbench-preparation.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "vanWorkbenchNotesTree",
+  "entries": [
+    "vanWorkbenchNotesTree"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "notes": "Generated from src/game/van-workbench-preparation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "vanWorkbenchNotesTree": {
+      "id": "vanWorkbenchNotesTree",
+      "type": "line",
+      "lines": [
+        {
+          "id": "vanWorkbenchNotesTree.l0",
+          "who": "direction",
+          "text": "You set the note back beside the open case.",
+          "source": "src/game/van-workbench-preparation.js:66"
+        }
+      ],
+      "source": "src/game/van-workbench-preparation.js:66"
+    }
+  }
+}

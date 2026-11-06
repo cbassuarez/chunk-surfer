@@ -7,64 +7,79 @@
   "entry": "theory",
   "entries": [
     "theory",
+    "PRE.dock-desk-1.start",
     "PRE.dock-desk-1.hub",
     "PRE.dock-desk-1.paper",
     "PRE.dock-desk-1.basket",
     "PRE.dock-desk-1.drawer",
+    "PRE.dock-work-order-clipboard.start",
     "PRE.dock-work-order-clipboard.hub",
     "PRE.dock-work-order-clipboard.list",
     "PRE.dock-work-order-clipboard.hand",
     "PRE.dock-work-order-clipboard.last",
+    "PRE.dock-crew-board.start",
     "PRE.dock-crew-board.hub",
     "PRE.dock-crew-board.route",
     "PRE.dock-crew-board.names",
     "PRE.dock-crew-board.magnet",
+    "PRE.acq-maintenance-searchlight-dock.start",
     "PRE.acq-maintenance-searchlight-dock.hub",
     "PRE.acq-maintenance-searchlight-dock.switch",
     "PRE.acq-maintenance-searchlight-dock.bay",
     "PRE.acq-maintenance-searchlight-dock.aim",
+    "PRE.dock-hand-truck.start",
     "PRE.dock-hand-truck.hub",
     "PRE.dock-hand-truck.strap",
     "PRE.dock-hand-truck.chalk",
     "PRE.dock-hand-truck.wheel",
+    "PRE.dock-freight-crates.start",
     "PRE.dock-freight-crates.hub",
     "PRE.dock-freight-crates.labels",
     "PRE.dock-freight-crates.cloth",
     "PRE.dock-freight-crates.missing",
+    "PRE.dock-road-case.start",
     "PRE.dock-road-case.hub",
     "PRE.dock-road-case.foam",
     "PRE.dock-road-case.name",
     "PRE.dock-road-case.sound",
+    "PRE.dock-cable-reel.start",
     "PRE.dock-cable-reel.hub",
     "PRE.dock-cable-reel.sound",
     "PRE.dock-cable-reel.centre",
     "PRE.dock-cable-reel.end",
+    "PRE.dock-shutter-bar.start",
     "PRE.dock-shutter-bar.hub",
     "PRE.dock-shutter-bar.sound",
     "PRE.dock-shutter-bar.ear",
     "PRE.dock-shutter-bar.gap",
+    "PRE.dock-chandelier-frame.start",
     "PRE.dock-chandelier-frame.hub",
     "PRE.dock-chandelier-frame.locks",
     "PRE.dock-chandelier-frame.wire",
     "PRE.dock-chandelier-frame.tag",
     "PRE.dock-chandelier-frame.list",
     "PRE.dock-chandelier-frame.reflection",
+    "AFTER.acq-maintenance-searchlight-dock.start",
     "AFTER.acq-maintenance-searchlight-dock.hub",
     "AFTER.acq-maintenance-searchlight-dock.switch",
     "AFTER.acq-maintenance-searchlight-dock.empty",
     "AFTER.acq-maintenance-searchlight-dock.glass",
+    "AFTER.dock-road-case.start",
     "AFTER.dock-road-case.hub",
     "AFTER.dock-road-case.latch",
     "AFTER.dock-road-case.tallies",
     "AFTER.dock-road-case.move",
+    "AFTER.dock-cable-reel.start",
     "AFTER.dock-cable-reel.hub",
     "AFTER.dock-cable-reel.mark",
     "AFTER.dock-cable-reel.hold",
     "AFTER.dock-cable-reel.centre",
+    "AFTER.dock-shutter-bar.start",
     "AFTER.dock-shutter-bar.hub",
     "AFTER.dock-shutter-bar.hand",
     "AFTER.dock-shutter-bar.gap",
     "AFTER.dock-shutter-bar.sound",
+    "AFTER.dock-chandelier-frame.start",
     "AFTER.dock-chandelier-frame.hub",
     "AFTER.dock-chandelier-frame.locks",
     "AFTER.dock-chandelier-frame.wire",
@@ -90,6 +105,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:13"
+    },
+    "PRE.dock-desk-1.start": {
+      "id": "PRE.dock-desk-1.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-desk-1.start.l0",
+          "who": "direction",
+          "text": "The little desk is still pretending it belongs in a loading dock. / A child-sized school desk has been dragged against the wall and promoted to dispatch.",
+          "source": "src/data/get-in-investigation.js:21"
+        },
+        {
+          "id": "PRE.dock-desk-1.start.l1",
+          "who": "you",
+          "text": "All right. What were you in the middle of.",
+          "source": "src/data/get-in-investigation.js:24"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:21"
     },
     "PRE.dock-desk-1.hub": {
       "id": "PRE.dock-desk-1.hub",
@@ -179,6 +213,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:45"
+    },
+    "PRE.dock-work-order-clipboard.start": {
+      "id": "PRE.dock-work-order-clipboard.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-work-order-clipboard.start.l0",
+          "who": "direction",
+          "text": "The same pages. The same last line waiting at the bottom. / Two sets of paper share one clip: your job on top, somebody else’s leaving underneath.",
+          "source": "src/data/get-in-investigation.js:53"
+        },
+        {
+          "id": "PRE.dock-work-order-clipboard.start.l1",
+          "who": "you",
+          "text": "Mine says what to keep. Theirs says what to take away.",
+          "source": "src/data/get-in-investigation.js:56"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:53"
     },
     "PRE.dock-work-order-clipboard.hub": {
       "id": "PRE.dock-work-order-clipboard.hub",
@@ -281,6 +334,19 @@
       ],
       "source": "src/data/get-in-investigation.js:75"
     },
+    "PRE.dock-crew-board.start": {
+      "id": "PRE.dock-crew-board.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-crew-board.start.l0",
+          "who": "direction",
+          "text": "Three place names remain. The people do not. / Magnets make a route down the board: DOCK. WEST STAIR. B3. Beside them, a row has been wiped almost clean.",
+          "source": "src/data/get-in-investigation.js:87"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:87"
+    },
     "PRE.dock-crew-board.hub": {
       "id": "PRE.dock-crew-board.hub",
       "type": "choice",
@@ -382,6 +448,25 @@
       ],
       "source": "src/data/get-in-investigation.js:111"
     },
+    "PRE.acq-maintenance-searchlight-dock.start": {
+      "id": "PRE.acq-maintenance-searchlight-dock.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.acq-maintenance-searchlight-dock.start.l0",
+          "who": "direction",
+          "text": "The little work lamp remains exactly as dead as you left it. / A work lamp squats on the floor with its back hanging open.",
+          "source": "src/data/get-in-investigation.js:120"
+        },
+        {
+          "id": "PRE.acq-maintenance-searchlight-dock.start.l1",
+          "who": "you",
+          "text": "You look useful. That is usually when the trouble starts.",
+          "source": "src/data/get-in-investigation.js:123"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:120"
+    },
     "PRE.acq-maintenance-searchlight-dock.hub": {
       "id": "PRE.acq-maintenance-searchlight-dock.hub",
       "type": "choice",
@@ -471,6 +556,19 @@
       ],
       "source": "src/data/get-in-investigation.js:143"
     },
+    "PRE.dock-hand-truck.start": {
+      "id": "PRE.dock-hand-truck.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-hand-truck.start.l0",
+          "who": "direction",
+          "text": "The cart is still strapped upright, waiting to be useful. / A hand truck has been tied to the wall as if it might wander off.",
+          "source": "src/data/get-in-investigation.js:152"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:152"
+    },
     "PRE.dock-hand-truck.hub": {
       "id": "PRE.dock-hand-truck.hub",
       "type": "choice",
@@ -553,6 +651,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:174"
+    },
+    "PRE.dock-freight-crates.start": {
+      "id": "PRE.dock-freight-crates.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-freight-crates.start.l0",
+          "who": "direction",
+          "text": "The stacked crates keep their neat little absences. / Three empty freight crates nest together, all corners and old tape.",
+          "source": "src/data/get-in-investigation.js:182"
+        },
+        {
+          "id": "PRE.dock-freight-crates.start.l1",
+          "who": "you",
+          "text": "Everything gets a box. Even things nobody intends to keep.",
+          "source": "src/data/get-in-investigation.js:185"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:182"
     },
     "PRE.dock-freight-crates.hub": {
       "id": "PRE.dock-freight-crates.hub",
@@ -649,6 +766,25 @@
       ],
       "source": "src/data/get-in-investigation.js:203"
     },
+    "PRE.dock-road-case.start": {
+      "id": "PRE.dock-road-case.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-road-case.start.l0",
+          "who": "direction",
+          "text": "The open case waits with the patience of an empty mouth. / A black road case lies open near the wall. The foam inside was cut around a recorder almost the size of yours.",
+          "source": "src/data/get-in-investigation.js:215"
+        },
+        {
+          "id": "PRE.dock-road-case.start.l1",
+          "who": "you",
+          "text": "I know your voice now. Short. Dry. Close. / Previous recordist, then. Or somebody with the same expensive habits.",
+          "source": "src/data/get-in-investigation.js:218"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:215"
+    },
     "PRE.dock-road-case.hub": {
       "id": "PRE.dock-road-case.hub",
       "type": "choice",
@@ -744,6 +880,25 @@
       ],
       "source": "src/data/get-in-investigation.js:240"
     },
+    "PRE.dock-cable-reel.start": {
+      "id": "PRE.dock-cable-reel.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-cable-reel.start.l0",
+          "who": "direction",
+          "text": "The reel has not grown a cable while your back was turned. / A cable reel stands by the salvage rack. No cable. Just the wheel and a handle polished by hands.",
+          "source": "src/data/get-in-investigation.js:248"
+        },
+        {
+          "id": "PRE.dock-cable-reel.start.l1",
+          "who": "you",
+          "text": "Hollow thing. You carry a sound better than a cable. / Empty, but not abandoned. Somebody wound it clean.",
+          "source": "src/data/get-in-investigation.js:251"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:248"
+    },
     "PRE.dock-cable-reel.hub": {
       "id": "PRE.dock-cable-reel.hub",
       "type": "choice",
@@ -833,6 +988,25 @@
       ],
       "source": "src/data/get-in-investigation.js:268"
     },
+    "PRE.dock-shutter-bar.start": {
+      "id": "PRE.dock-shutter-bar.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-shutter-bar.start.l0",
+          "who": "direction",
+          "text": "The long steel bar waits in its clips along the shutter. / A steel bar runs shoulder-high across the loading shutter. Put a knuckle to it and the whole wall rings.",
+          "source": "src/data/get-in-investigation.js:280"
+        },
+        {
+          "id": "PRE.dock-shutter-bar.start.l1",
+          "who": "you",
+          "text": "I felt that one in my teeth. / That will travel.",
+          "source": "src/data/get-in-investigation.js:283"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:280"
+    },
     "PRE.dock-shutter-bar.hub": {
       "id": "PRE.dock-shutter-bar.hub",
       "type": "choice",
@@ -921,6 +1095,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:304"
+    },
+    "PRE.dock-chandelier-frame.start": {
+      "id": "PRE.dock-chandelier-frame.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PRE.dock-chandelier-frame.start.l0",
+          "who": "direction",
+          "text": "The chandelier waits inside its frame, too low for a ceiling and too carefully held for rubbish. / A chandelier hangs at eye level inside a wheeled cage. Each arm is wrapped. Every wheel is locked.",
+          "source": "src/data/get-in-investigation.js:312"
+        },
+        {
+          "id": "PRE.dock-chandelier-frame.start.l1",
+          "who": "you",
+          "text": "You are the only thing in here being treated like it might wake up.",
+          "source": "src/data/get-in-investigation.js:315"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:312"
     },
     "PRE.dock-chandelier-frame.hub": {
       "id": "PRE.dock-chandelier-frame.hub",
@@ -1079,6 +1272,19 @@
       ],
       "source": "src/data/get-in-investigation.js:348"
     },
+    "AFTER.acq-maintenance-searchlight-dock.start": {
+      "id": "AFTER.acq-maintenance-searchlight-dock.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "AFTER.acq-maintenance-searchlight-dock.start.l0",
+          "who": "direction",
+          "text": "The work lamp is still dead. It is beginning to feel stubborn about it. / You crouch beside the work lamp because it is the only light in the room that behaved.",
+          "source": "src/data/get-in-investigation.js:359"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:359"
+    },
     "AFTER.acq-maintenance-searchlight-dock.hub": {
       "id": "AFTER.acq-maintenance-searchlight-dock.hub",
       "type": "choice",
@@ -1167,6 +1373,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:370"
+    },
+    "AFTER.dock-road-case.start": {
+      "id": "AFTER.dock-road-case.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "AFTER.dock-road-case.start.l0",
+          "who": "direction",
+          "text": "The case has not returned to where you remember it. / The road case sits a little farther from the wall. Not much. Enough that you have to choose whether you know.",
+          "source": "src/data/get-in-investigation.js:381"
+        },
+        {
+          "id": "AFTER.dock-road-case.start.l1",
+          "who": "you",
+          "text": "The latch came from across the room. This stayed here. I watched it stay here. / I never touched this one. I do not get to pretend I know where it was.",
+          "source": "src/data/get-in-investigation.js:382"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:381"
     },
     "AFTER.dock-road-case.hub": {
       "id": "AFTER.dock-road-case.hub",
@@ -1275,6 +1500,25 @@
       ],
       "source": "src/data/get-in-investigation.js:404"
     },
+    "AFTER.dock-cable-reel.start": {
+      "id": "AFTER.dock-cable-reel.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "AFTER.dock-cable-reel.start.l0",
+          "who": "direction",
+          "text": "The handle rests one tooth past certainty. / The reel handle is not where you left it. Or it is precisely where you left it and the room has moved around the memory.",
+          "source": "src/data/get-in-investigation.js:410"
+        },
+        {
+          "id": "AFTER.dock-cable-reel.start.l1",
+          "who": "you",
+          "text": "I heard you behind the desk. You were in front of me. / I did not turn you. I am nearly sure I did not turn you.",
+          "source": "src/data/get-in-investigation.js:411"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:410"
+    },
     "AFTER.dock-cable-reel.hub": {
       "id": "AFTER.dock-cable-reel.hub",
       "type": "choice",
@@ -1369,6 +1613,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:428"
+    },
+    "AFTER.dock-shutter-bar.start": {
+      "id": "AFTER.dock-shutter-bar.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "AFTER.dock-shutter-bar.start.l0",
+          "who": "direction",
+          "text": "The steel is quiet now. Too thoroughly quiet. / The shutter bar hums so faintly you feel it before you hear it.",
+          "source": "src/data/get-in-investigation.js:434"
+        },
+        {
+          "id": "AFTER.dock-shutter-bar.start.l1",
+          "who": "you",
+          "text": "My knock came back from above the chandelier. There is no steel between here and there. / I never knocked this. Whatever is in it belongs to the room.",
+          "source": "src/data/get-in-investigation.js:435"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:434"
     },
     "AFTER.dock-shutter-bar.hub": {
       "id": "AFTER.dock-shutter-bar.hub",
@@ -1470,6 +1733,25 @@
         }
       ],
       "source": "src/data/get-in-investigation.js:446"
+    },
+    "AFTER.dock-chandelier-frame.start": {
+      "id": "AFTER.dock-chandelier-frame.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "AFTER.dock-chandelier-frame.start.l0",
+          "who": "direction",
+          "text": "The frame still holds the shape of what happened. / The bulbs are black mouths now. Glass lies inside the cage in a neat bright weather.",
+          "source": "src/data/get-in-investigation.js:458"
+        },
+        {
+          "id": "AFTER.dock-chandelier-frame.start.l1",
+          "who": "you",
+          "text": "Start with what stayed put.",
+          "source": "src/data/get-in-investigation.js:459"
+        }
+      ],
+      "source": "src/data/get-in-investigation.js:458"
     },
     "AFTER.dock-chandelier-frame.hub": {
       "id": "AFTER.dock-chandelier-frame.hub",

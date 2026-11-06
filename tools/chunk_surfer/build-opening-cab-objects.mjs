@@ -12,6 +12,7 @@ import {BoxGeometry,CylinderGeometry,Matrix4,Vector3,Matrix3} from 'three';
 import {importPropMesh} from './lib/glb-import.mjs';
 import {OPENING_CAB_PLACEMENT as C,OPENING_CAB_PAPERS} from '../../src/data/opening-cab-objects.js';
 import {FLASHLIGHT_HOUSING_COLORS} from '../../src/game/field-kit.js';
+import {buildIntactMusicBoxGroups} from './source-drive-study/build-coastal-memory.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -136,6 +137,18 @@ export async function buildOpeningCabObjects({root=ROOT,write=true}={}){
  const writing=lettering(OPENING_CAB_PAPERS[2].worldLines,[0,0,0],{width:pw*.85,height:.009,ink:print});
  for(const g of writing)for(let i=0;i<g.positions.length;i+=3){const u=g.positions[i],v=g.positions[i+2],p=programmePoint(u,v);g.positions.splice(i,3,p[0],p[1]+.0009,p[2]);}
  programme.push(...writing);add('opening_cab_recital_programme','recital-programme',coalesce(programme));
+
+ // Lyle's music box, whole and shut, from the coast pack's own construction.
+ // It settles into the cushion: base at the mean height under its four feet.
+ const mb=C.musicBox,turn=new Matrix4().makeRotationY(mb.turn),feet=[[-.14,-.11],[-.14,.11],[.14,-.11],[.14,.11]].map(([x,z])=>new Vector3(x,0,z).applyMatrix4(turn)),
+   base=feet.reduce((sum,f)=>sum+seatHeight(mb.point[0]+f.x,mb.point[2]+f.z),0)/feet.length+.006,
+   boxMatrix=new Matrix4().makeTranslation(mb.point[0],base,mb.point[2]).multiply(turn),boxNormals=new Matrix3().getNormalMatrix(boxMatrix),
+   boxMaterial={wood:material('music box / dark polished wood','#4f3a26',.64),brass:material('music box / worn brass','#9c8248',.36,.84),steel:material('music box / blued steel key','#5f6b67',.43,.85)};
+ const musicBox=buildIntactMusicBoxGroups().map(g=>({material:boxMaterial[g.material],indices:g.indices,
+   positions:Array.from({length:g.positions.length/3},(_,i)=>new Vector3().fromArray(g.positions,i*3).applyMatrix4(boxMatrix).toArray()).flat(),
+   normals:Array.from({length:g.normals.length/3},(_,i)=>new Vector3().fromArray(g.normals,i*3).applyMatrix3(boxNormals).normalize().toArray()).flat()}));
+ add('opening_cab_music_box','music-box',coalesce(musicBox));
+ registration.musicBox={point:[mb.point[0],base,mb.point[2]],turn:mb.turn,source:'tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs buildIntactMusicBoxGroups',method:'Same box as the coast, before the crash: lid shut, every part whole. Settled on the sampled passenger cushion.'};
 
  const doc=new Document(),buffer=doc.createBuffer(),scene=doc.createScene('Separate opening cab belongings'),palette=new Map(),records=[];
  const accessor=(name,data,type)=>doc.createAccessor(name).setType(type).setArray(type==='SCALAR'?new Uint32Array(data):new Float32Array(data)).setBuffer(buffer);

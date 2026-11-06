@@ -8,7 +8,13 @@
   "entries": [
     "PUSH_BAR",
     "STEEL_YOURSELF",
+    "LISTEN_ROOMS.main_b3.examine",
+    "LISTEN_ROOMS.the_tub.examine",
+    "LISTEN_ROOMS.amplifications.examine",
+    "LISTEN_ROOMS.soundnoisemusic.examine",
+    "LISTEN_ROOMS.lux_nova.examine",
     "roomListen.nodes.start",
+    "roomListen.nodes.roll",
     "ARRIVAL_THOUGHTS.gate",
     "ARRIVAL_THOUGHTS.crossing",
     "ARRIVAL_THOUGHTS.door",
@@ -76,8 +82,22 @@
     "endingChoice.lines",
     "endingChoice",
     "endingChoice.nothing",
+    "endingChoice.feed",
+    "endingChoice.invert",
+    "endingChoice.surface",
+    "rigCheckNodes.hub",
     "rigCheckNodes.hub.revisitLines",
-    "rigCheckNodes.hub"
+    "rigCheckNodes.van",
+    "rigCheckNodes.count",
+    "rigCheckNodes.crew",
+    "rigCheckNodes.machine",
+    "rigCheckNodes.ears",
+    "rigCheckNodes.power",
+    "rigCheckNodes.fork",
+    "rigCheckNodes.bent",
+    "rigCheckNodes.radio",
+    "rigCheckNodes.voice",
+    "rigCheckNodes.voice.back"
   ],
   "tags": [
     "runtime",
@@ -165,19 +185,206 @@
       ],
       "source": "src/data/conservatory-script.js:154"
     },
+    "LISTEN_ROOMS.main_b3.examine": {
+      "id": "LISTEN_ROOMS.main_b3.examine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LISTEN_ROOMS.main_b3.examine.l0",
+          "who": "you",
+          "text": "Wedge foam, going to powder at the edges. Somebody treated this room properly, once, and then stopped paying the heating.",
+          "source": "src/data/conservatory-script.js:489"
+        },
+        {
+          "id": "LISTEN_ROOMS.main_b3.examine.l1",
+          "who": "you",
+          "text": "It eats everything above four hundred hertz. Which is why the only thing left on the take is me.",
+          "source": "src/data/conservatory-script.js:490"
+        },
+        {
+          "id": "LISTEN_ROOMS.main_b3.examine.l2",
+          "who": "direction",
+          "text": "Every cable pulled, coiled, hung. Somebody left this room tidy.",
+          "source": "src/data/conservatory-script.js:492"
+        },
+        {
+          "id": "LISTEN_ROOMS.main_b3.examine.l3",
+          "who": "you",
+          "text": "You do not tidy a room you think is being knocked down. You tidy a room you are coming back to.",
+          "source": "src/data/conservatory-script.js:493"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:489"
+    },
+    "LISTEN_ROOMS.the_tub.examine": {
+      "id": "LISTEN_ROOMS.the_tub.examine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LISTEN_ROOMS.the_tub.examine.l0",
+          "who": "you",
+          "text": "Hard tile, hard ceiling, nothing to soak it up. A cough in here is a chord.",
+          "source": "src/data/conservatory-script.js:500"
+        },
+        {
+          "id": "LISTEN_ROOMS.the_tub.examine.l1",
+          "who": "you",
+          "text": "You do not record a room like this. You survive it, for sixty seconds, and you get the file.",
+          "source": "src/data/conservatory-script.js:501"
+        },
+        {
+          "id": "LISTEN_ROOMS.the_tub.examine.l2",
+          "who": "direction",
+          "text": "The deep end goes down into black. There is a ladder, and the ladder goes into the dark, and the dark has a floor to it somewhere.",
+          "source": "src/data/conservatory-script.js:503"
+        },
+        {
+          "id": "LISTEN_ROOMS.the_tub.examine.l3",
+          "who": "you",
+          "text": "A pool with no water is just a very clean room that is the wrong shape.",
+          "source": "src/data/conservatory-script.js:504"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:500"
+    },
+    "LISTEN_ROOMS.amplifications.examine": {
+      "id": "LISTEN_ROOMS.amplifications.examine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LISTEN_ROOMS.amplifications.examine.l0",
+          "who": "direction",
+          "text": "Row on row, receding past where the torch reaches. Horsehair and dust and the smell of a place that was warm for a hundred years.",
+          "source": "src/data/conservatory-script.js:511"
+        },
+        {
+          "id": "LISTEN_ROOMS.amplifications.examine.l1",
+          "who": "you",
+          "text": "A full hall and an empty hall are the same room with a different amount of breathing in it.",
+          "source": "src/data/conservatory-script.js:512"
+        },
+        {
+          "id": "LISTEN_ROOMS.amplifications.examine.l2",
+          "who": "you",
+          "text": "I am standing where the sound was made for a hundred years, recording the one night nobody is making any.",
+          "source": "src/data/conservatory-script.js:514"
+        },
+        {
+          "id": "LISTEN_ROOMS.amplifications.examine.l3",
+          "who": "you",
+          "text": "That is the job. Say it like that and it is almost a nice job.",
+          "source": "src/data/conservatory-script.js:515"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:511"
+    },
+    "LISTEN_ROOMS.soundnoisemusic.examine": {
+      "id": "LISTEN_ROOMS.soundnoisemusic.examine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LISTEN_ROOMS.soundnoisemusic.examine.l0",
+          "who": "you",
+          "text": "Seven lids up. A piano with the lid up is a hundred and eighty strings waiting for something to happen.",
+          "source": "src/data/conservatory-script.js:522"
+        },
+        {
+          "id": "LISTEN_ROOMS.soundnoisemusic.examine.l1",
+          "who": "you",
+          "text": "Nothing is going to happen. I am going to record nothing happening to a hundred and eighty strings, seven times over.",
+          "source": "src/data/conservatory-script.js:523"
+        },
+        {
+          "id": "LISTEN_ROOMS.soundnoisemusic.examine.l2",
+          "who": "direction",
+          "text": "Every practice room door standing open, which is how you leave a room you are coming back to after a coffee.",
+          "source": "src/data/conservatory-script.js:525"
+        },
+        {
+          "id": "LISTEN_ROOMS.soundnoisemusic.examine.l3",
+          "who": "you",
+          "text": "Nobody came back from their coffee.",
+          "source": "src/data/conservatory-script.js:526"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:522"
+    },
+    "LISTEN_ROOMS.lux_nova.examine": {
+      "id": "LISTEN_ROOMS.lux_nova.examine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "LISTEN_ROOMS.lux_nova.examine.l0",
+          "who": "you",
+          "text": "Eleven seconds of reverb, maybe twelve. Stone gives everything back to you long after you have stopped saying it.",
+          "source": "src/data/conservatory-script.js:533"
+        },
+        {
+          "id": "LISTEN_ROOMS.lux_nova.examine.l1",
+          "who": "you",
+          "text": "You have to hold still a long time in a room like this. The room keeps talking after you stop.",
+          "source": "src/data/conservatory-script.js:534"
+        },
+        {
+          "id": "LISTEN_ROOMS.lux_nova.examine.l2",
+          "who": "direction",
+          "text": "High up, a clerestory window gone, and the weather coming in through it — snow, tonight, indoors, drifting down onto stone.",
+          "source": "src/data/conservatory-script.js:536"
+        },
+        {
+          "id": "LISTEN_ROOMS.lux_nova.examine.l3",
+          "who": "you",
+          "text": "This is the fifth room. This is his room.",
+          "source": "src/data/conservatory-script.js:537"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:533"
+    },
     "roomListen.nodes.start": {
       "id": "roomListen.nodes.start",
       "type": "choice",
-      "lines": [],
+      "lines": [
+        {
+          "id": "roomListen.nodes.start.l0",
+          "who": "direction",
+          "text": "Headphones on. {label} comes up in the cans — {r.amb}.",
+          "source": "src/data/conservatory-script.js:548"
+        },
+        {
+          "id": "roomListen.nodes.start.l1",
+          "who": "you",
+          "text": "That is the level. That is the room.",
+          "source": "src/data/conservatory-script.js:549"
+        }
+      ],
       "choices": [
         {
           "id": "roomListen.nodes.start.c0",
           "text": "kill the light and roll",
           "source": "src/data/conservatory-script.js:553",
-          "targetName": "roll"
+          "goto": "roomListen.nodes.roll"
         }
       ],
-      "source": "src/data/conservatory-script.js:553"
+      "source": "src/data/conservatory-script.js:548"
+    },
+    "roomListen.nodes.roll": {
+      "id": "roomListen.nodes.roll",
+      "type": "line",
+      "lines": [
+        {
+          "id": "roomListen.nodes.roll.l0",
+          "who": "direction",
+          "text": "You kill the light and roll. Say the slate, then hold still. Aim for a minute; forty-five clean seconds is enough.",
+          "source": "src/data/conservatory-script.js:559"
+        },
+        {
+          "id": "roomListen.nodes.roll.l1",
+          "who": "you",
+          "text": "Sixty seconds of nothing, with nothing added. Do not move.",
+          "source": "src/data/conservatory-script.js:560"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:559"
     },
     "ARRIVAL_THOUGHTS.gate": {
       "id": "ARRIVAL_THOUGHTS.gate",
@@ -1286,16 +1493,203 @@
     "endingChoice.nothing": {
       "id": "endingChoice.nothing",
       "type": "choice",
-      "lines": [],
+      "lines": [
+        {
+          "id": "endingChoice.nothing.l0",
+          "who": "you",
+          "text": "There is nothing there.",
+          "source": "src/data/conservatory-script.js:1643"
+        },
+        {
+          "id": "endingChoice.nothing.l1",
+          "who": "direction",
+          "text": "You hold it. A room can wait longer than a man can, and it knows the number.",
+          "source": "src/data/conservatory-script.js:1644"
+        }
+      ],
       "choices": [
         {
           "id": "endingChoice.nothing.c0",
           "text": "Give the room the agreement it is asking for.",
           "source": "src/data/conservatory-script.js:1647",
-          "targetName": "feed"
+          "goto": "endingChoice.feed"
         }
       ],
-      "source": "src/data/conservatory-script.js:1647"
+      "source": "src/data/conservatory-script.js:1643"
+    },
+    "endingChoice.feed": {
+      "id": "endingChoice.feed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "endingChoice.feed.l0",
+          "who": "you",
+          "text": "All right. All right. Here — take it.",
+          "source": "src/data/conservatory-script.js:1653"
+        },
+        {
+          "id": "endingChoice.feed.l1",
+          "who": "surfer",
+          "text": "There. See. A clear reading.",
+          "source": "src/data/conservatory-script.js:1654"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1653"
+    },
+    "endingChoice.invert": {
+      "id": "endingChoice.invert",
+      "type": "line",
+      "lines": [
+        {
+          "id": "endingChoice.invert.l0",
+          "who": "you",
+          "text": "No. The source is not a body. It is a signal with a habit of asking.",
+          "source": "src/data/conservatory-script.js:1657"
+        },
+        {
+          "id": "endingChoice.invert.l1",
+          "who": "direction",
+          "text": "The bent recorder plays the room back to itself, and the agreement loses its addressee.",
+          "source": "src/data/conservatory-script.js:1658"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1657"
+    },
+    "endingChoice.surface": {
+      "id": "endingChoice.surface",
+      "type": "line",
+      "lines": [
+        {
+          "id": "endingChoice.surface.l0",
+          "who": "you",
+          "text": "No. That body is not an instrument.",
+          "source": "src/data/conservatory-script.js:1661"
+        },
+        {
+          "id": "endingChoice.surface.l1",
+          "who": "recordist",
+          "text": "Then make the room read it.",
+          "source": "src/data/conservatory-script.js:1662"
+        },
+        {
+          "id": "endingChoice.surface.l2",
+          "who": "direction",
+          "text": "The tuning fork sounds once, and the room loses the line it was using to stand upright.",
+          "source": "src/data/conservatory-script.js:1663"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1661"
+    },
+    "rigCheckNodes.hub": {
+      "id": "rigCheckNodes.hub",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "rigCheckNodes.hub.l0",
+          "who": "direction",
+          "text": "Rain, and a long enough walk to think in. The case is still in the back of the van and he keeps checking it is, which is not the same as it being there.",
+          "source": "src/data/conservatory-script.js:1736"
+        },
+        {
+          "id": "rigCheckNodes.hub.l1",
+          "who": "you",
+          "text": "Go through it now. Not at the door with somebody watching me do it.",
+          "source": "src/data/conservatory-script.js:1737"
+        },
+        {
+          "id": "rigCheckNodes.hub.l2",
+          "who": "direction",
+          "text": "Under the canopy the rain goes quiet and the bay gets loud. Every drip off the lip comes back off the roller door a beat late.",
+          "source": "src/data/conservatory-script.js:1751"
+        },
+        {
+          "id": "rigCheckNodes.hub.l3",
+          "who": "you",
+          "text": "Good room. Bad night to be standing in a good room doing nothing.",
+          "source": "src/data/conservatory-script.js:1752"
+        },
+        {
+          "id": "rigCheckNodes.hub.l4",
+          "who": "you",
+          "text": "Check the kit. You always check the kit, and you have never once found anything wrong with it.",
+          "source": "src/data/conservatory-script.js:1753"
+        }
+      ],
+      "choices": [
+        {
+          "id": "rigCheckNodes.hub.c0",
+          "text": "the case in the back",
+          "source": "src/data/conservatory-script.js:1741",
+          "goto": "rigCheckNodes.van"
+        },
+        {
+          "id": "rigCheckNodes.hub.c1",
+          "text": "what the job actually is",
+          "source": "src/data/conservatory-script.js:1742",
+          "goto": "rigCheckNodes.count"
+        },
+        {
+          "id": "rigCheckNodes.hub.c2",
+          "text": "why there is nobody with me",
+          "source": "src/data/conservatory-script.js:1743",
+          "goto": "rigCheckNodes.crew"
+        },
+        {
+          "id": "rigCheckNodes.hub.c3",
+          "text": "(stop thinking about it. walk.)",
+          "source": "src/data/conservatory-script.js:1744",
+          "targetName": "done"
+        },
+        {
+          "id": "rigCheckNodes.hub.c4",
+          "text": "the machine",
+          "source": "src/data/conservatory-script.js:1757",
+          "goto": "rigCheckNodes.machine"
+        },
+        {
+          "id": "rigCheckNodes.hub.c5",
+          "text": "the cans",
+          "source": "src/data/conservatory-script.js:1758",
+          "goto": "rigCheckNodes.ears"
+        },
+        {
+          "id": "rigCheckNodes.hub.c6",
+          "text": "batteries",
+          "source": "src/data/conservatory-script.js:1759",
+          "goto": "rigCheckNodes.power"
+        },
+        {
+          "id": "rigCheckNodes.hub.c7",
+          "text": "the fork",
+          "source": "src/data/conservatory-script.js:1760",
+          "goto": "rigCheckNodes.fork"
+        },
+        {
+          "id": "rigCheckNodes.hub.c8",
+          "text": "the return",
+          "source": "src/data/conservatory-script.js:1761",
+          "goto": "rigCheckNodes.bent"
+        },
+        {
+          "id": "rigCheckNodes.hub.c9",
+          "text": "the set",
+          "source": "src/data/conservatory-script.js:1762",
+          "goto": "rigCheckNodes.radio"
+        },
+        {
+          "id": "rigCheckNodes.hub.c10",
+          "text": "say something and listen to it come back",
+          "source": "src/data/conservatory-script.js:1763",
+          "goto": "rigCheckNodes.voice"
+        },
+        {
+          "id": "rigCheckNodes.hub.c11",
+          "text": "(close the bag.)",
+          "source": "src/data/conservatory-script.js:1764",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1736"
     },
     "rigCheckNodes.hub.revisitLines": {
       "id": "rigCheckNodes.hub.revisitLines",
@@ -1316,85 +1710,268 @@
       ],
       "source": "src/data/conservatory-script.js:1739"
     },
-    "rigCheckNodes.hub": {
-      "id": "rigCheckNodes.hub",
-      "type": "choice",
-      "lines": [],
-      "choices": [
+    "rigCheckNodes.van": {
+      "id": "rigCheckNodes.van",
+      "type": "line",
+      "lines": [
         {
-          "id": "rigCheckNodes.hub.c0",
-          "text": "the case in the back",
-          "source": "src/data/conservatory-script.js:1741",
-          "targetName": "van"
+          "id": "rigCheckNodes.van.l0",
+          "who": "you",
+          "text": "The A-1000 is in the case, in the back, where it has been since Tuesday. I could describe every scratch on the lid.",
+          "source": "src/data/conservatory-script.js:1776"
         },
         {
-          "id": "rigCheckNodes.hub.c1",
-          "text": "what the job actually is",
-          "source": "src/data/conservatory-script.js:1742",
-          "targetName": "count"
-        },
-        {
-          "id": "rigCheckNodes.hub.c2",
-          "text": "why there is nobody with me",
-          "source": "src/data/conservatory-script.js:1743",
-          "targetName": "crew"
-        },
-        {
-          "id": "rigCheckNodes.hub.c3",
-          "text": "(stop thinking about it. walk.)",
-          "source": "src/data/conservatory-script.js:1744",
-          "targetName": "done"
-        },
-        {
-          "id": "rigCheckNodes.hub.c4",
-          "text": "the machine",
-          "source": "src/data/conservatory-script.js:1757",
-          "targetName": "machine"
-        },
-        {
-          "id": "rigCheckNodes.hub.c5",
-          "text": "the cans",
-          "source": "src/data/conservatory-script.js:1758",
-          "targetName": "ears"
-        },
-        {
-          "id": "rigCheckNodes.hub.c6",
-          "text": "batteries",
-          "source": "src/data/conservatory-script.js:1759",
-          "targetName": "power"
-        },
-        {
-          "id": "rigCheckNodes.hub.c7",
-          "text": "the fork",
-          "source": "src/data/conservatory-script.js:1760",
-          "targetName": "fork"
-        },
-        {
-          "id": "rigCheckNodes.hub.c8",
-          "text": "the return",
-          "source": "src/data/conservatory-script.js:1761",
-          "targetName": "bent"
-        },
-        {
-          "id": "rigCheckNodes.hub.c9",
-          "text": "the set",
-          "source": "src/data/conservatory-script.js:1762",
-          "targetName": "radio"
-        },
-        {
-          "id": "rigCheckNodes.hub.c10",
-          "text": "say something and listen to it come back",
-          "source": "src/data/conservatory-script.js:1763",
-          "targetName": "voice"
-        },
-        {
-          "id": "rigCheckNodes.hub.c11",
-          "text": "(close the bag.)",
-          "source": "src/data/conservatory-script.js:1764",
-          "targetName": "done"
+          "id": "rigCheckNodes.van.l1",
+          "who": "you",
+          "text": "It will still be in the van when I have stopped thinking about it. That is the trouble with a machine you trust. There is nothing to do about it in advance.",
+          "source": "src/data/conservatory-script.js:1777"
         }
       ],
-      "source": "src/data/conservatory-script.js:1741"
+      "source": "src/data/conservatory-script.js:1776"
+    },
+    "rigCheckNodes.count": {
+      "id": "rigCheckNodes.count",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.count.l0",
+          "who": "you",
+          "text": "Five rooms, one clean minute each. Forty-five seconds of that is standing still and not breathing on the capsule.",
+          "source": "src/data/conservatory-script.js:1784"
+        },
+        {
+          "id": "rigCheckNodes.count.l1",
+          "who": "you",
+          "text": "Five minutes of tape. For that they are giving me a building for a night, and the keys, and nobody in it.",
+          "source": "src/data/conservatory-script.js:1785"
+        },
+        {
+          "id": "rigCheckNodes.count.l2",
+          "who": "you",
+          "text": "Written down like that it sounds like a bargain somebody else came out of well.",
+          "source": "src/data/conservatory-script.js:1786"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1784"
+    },
+    "rigCheckNodes.crew": {
+      "id": "rigCheckNodes.crew",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.crew.l0",
+          "who": "you",
+          "text": "They send two people for a job this size. I stopped asking for the second one; he only ever talked over the room.",
+          "source": "src/data/conservatory-script.js:1793"
+        },
+        {
+          "id": "rigCheckNodes.crew.l1",
+          "who": "direction",
+          "text": "He has told this to enough people that it comes out the same way every time, which is how you know it is the version he has settled on.",
+          "source": "src/data/conservatory-script.js:1794"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1793"
+    },
+    "rigCheckNodes.machine": {
+      "id": "rigCheckNodes.machine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.machine.l0",
+          "who": "you",
+          "text": "One minute. Uninterrupted. That is the whole job and it is the only rule in it.",
+          "source": "src/data/conservatory-script.js:1803"
+        },
+        {
+          "id": "rigCheckNodes.machine.l1",
+          "who": "you",
+          "text": "Anything that lands inside the minute — a step, a door, my own breath on the capsule — and the minute is gone and I start it again.",
+          "source": "src/data/conservatory-script.js:1804"
+        },
+        {
+          "id": "rigCheckNodes.machine.l2",
+          "who": "you",
+          "text": "The machine does not care whose fault it was. That is the thing I like about it. It is the only part of this that has never once argued.",
+          "source": "src/data/conservatory-script.js:1805"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1803"
+    },
+    "rigCheckNodes.ears": {
+      "id": "rigCheckNodes.ears",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.ears.l0",
+          "who": "you",
+          "text": "Cans on, and I am not standing in the room any more. I am inside the machine, listening to the room through it.",
+          "source": "src/data/conservatory-script.js:1812"
+        },
+        {
+          "id": "rigCheckNodes.ears.l1",
+          "who": "you",
+          "text": "People never believe that. You do not hear a building. You hear what your microphone thinks of a building, and you spend the night deciding whether to believe it.",
+          "source": "src/data/conservatory-script.js:1813"
+        },
+        {
+          "id": "rigCheckNodes.ears.l2",
+          "who": "you",
+          "text": "Everything I decide tonight I decide off a meter and a pair of headphones. Write that down and it sounds thin. It has been twenty years.",
+          "source": "src/data/conservatory-script.js:1814"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1812"
+    },
+    "rigCheckNodes.power": {
+      "id": "rigCheckNodes.power",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.power.l0",
+          "who": "you",
+          "text": "Batteries. The torch and the deck come out of the same tin, and it is the torch that empties it.",
+          "source": "src/data/conservatory-script.js:1821"
+        },
+        {
+          "id": "rigCheckNodes.power.l1",
+          "who": "you",
+          "text": "So every minute of light is a minute of tape I might want later. There is no way round that and there never has been.",
+          "source": "src/data/conservatory-script.js:1822"
+        },
+        {
+          "id": "rigCheckNodes.power.l2",
+          "who": "direction",
+          "text": "He checks the spare cells twice, in the dark, by feel — the way you check a thing you have already checked.",
+          "source": "src/data/conservatory-script.js:1823"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1821"
+    },
+    "rigCheckNodes.fork": {
+      "id": "rigCheckNodes.fork",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.fork.l0",
+          "who": "you",
+          "text": "A440. Steel. It does not drift, it does not want power, and it does not care what the room thinks of it.",
+          "source": "src/data/conservatory-script.js:1831"
+        },
+        {
+          "id": "rigCheckNodes.fork.l1",
+          "who": "you",
+          "text": "One known thing to carry into rooms that are not. You would be amazed how far that gets you at four in the morning.",
+          "source": "src/data/conservatory-script.js:1832"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1831"
+    },
+    "rigCheckNodes.bent": {
+      "id": "rigCheckNodes.bent",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.bent.l0",
+          "who": "you",
+          "text": "And the return. Somebody took a perfectly good interface and rewired it wrong, on purpose, and it does something a right one cannot.",
+          "source": "src/data/conservatory-script.js:1839"
+        },
+        {
+          "id": "rigCheckNodes.bent.l1",
+          "who": "you",
+          "text": "It is not on the inventory. It is not on anybody's inventory. I am not going to be the one who puts it on one.",
+          "source": "src/data/conservatory-script.js:1840"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1839"
+    },
+    "rigCheckNodes.radio": {
+      "id": "rigCheckNodes.radio",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.radio.l0",
+          "who": "you",
+          "text": "The set. Check in on the hour, he said. Nobody said what happens if I do not, which I noticed at the time and did not ask about.",
+          "source": "src/data/conservatory-script.js:1847"
+        },
+        {
+          "id": "rigCheckNodes.radio.l1",
+          "who": "you",
+          "text": "It works out here. Everything works out here.",
+          "source": "src/data/conservatory-script.js:1848"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1847"
+    },
+    "rigCheckNodes.voice": {
+      "id": "rigCheckNodes.voice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "rigCheckNodes.voice.l0",
+          "who": "direction",
+          "text": "He turns to face the roller door and waits for a gap in the rain.",
+          "source": "src/data/conservatory-script.js:1859"
+        },
+        {
+          "id": "rigCheckNodes.voice.l1",
+          "who": "me",
+          "text": "Testing. One. Ellery, service bay, twenty-two forty.",
+          "source": "src/data/conservatory-script.js:1860"
+        },
+        {
+          "id": "rigCheckNodes.voice.l2",
+          "who": "me",
+          "text": "...",
+          "source": "src/data/conservatory-script.js:1861"
+        }
+      ],
+      "choices": [
+        {
+          "id": "rigCheckNodes.voice.c0",
+          "text": "slate it properly, out of habit",
+          "source": "src/data/conservatory-script.js:1860"
+        },
+        {
+          "id": "rigCheckNodes.voice.c1",
+          "text": "(clap once. that is all it takes.)",
+          "source": "src/data/conservatory-script.js:1861"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1859"
+    },
+    "rigCheckNodes.voice.back": {
+      "id": "rigCheckNodes.voice.back",
+      "type": "line",
+      "lines": [
+        {
+          "id": "rigCheckNodes.voice.back.l0",
+          "who": "direction",
+          "text": "The bay hands it back off the roller door about a beat late, the way a room this shape should.",
+          "source": "src/data/conservatory-script.js:1868"
+        },
+        {
+          "id": "rigCheckNodes.voice.back.l1",
+          "who": "you",
+          "text": "Long tail on that. Longer than a bay this size has any business having.",
+          "source": "src/data/conservatory-script.js:1871"
+        },
+        {
+          "id": "rigCheckNodes.voice.back.l2",
+          "who": "you",
+          "text": "Wet steel. Wet steel does that.",
+          "source": "src/data/conservatory-script.js:1872"
+        },
+        {
+          "id": "rigCheckNodes.voice.back.l3",
+          "who": "direction",
+          "text": "He writes nothing down, and does not move for a moment, and then picks the bag up.",
+          "source": "src/data/conservatory-script.js:1873"
+        }
+      ],
+      "source": "src/data/conservatory-script.js:1868"
     }
   }
 }

@@ -26,7 +26,7 @@ export const RUNTIME_NARRATIVE_DIR = resolve(ROOT, 'content/narrative-runtime');
 // reads the studio documents, these are their legacy import sources).
 const CANONICAL_MODULES = new Set(['data/battles.js', 'data/radio-script.js', 'data/prologue.js']);
 const SKIP = [/^narrative\/generated-content\.js$/, /^prototypes\//, /^debug\//];
-const STRUCTURAL = new Set(['lines', 'choices', 'options', 'responses', 'replies', 'say', 'text', 'label', 'who', 'speaker', 'first', 'again']);
+const STRUCTURAL = new Set(['lines', 'choices', 'options', 'responses', 'replies', 'say', 'text', 'label', 'who', 'speaker', 'first', 'again', 'prompt']);
 const CHOICE_ARRAYS = new Set(['choices', 'options', 'responses', 'replies', 'answers']);
 const ID = /^[a-z0-9][a-z0-9._-]*$/i;
 
@@ -49,9 +49,14 @@ function propName(key) {
 
 // Text a player can read from an expression: literals, templates (holes
 // shown as {expr}), concatenations, and either side of a ternary.
+// Module-level string constants (const RUTH = 'Ruth'), so a speaker or line
+// named by a constant resolves to its words instead of being dropped.
+let CONSTANTS = new Map();
 function textOf(expr, src) {
   if (!expr) return null;
   if (expr.type === 'ParenthesizedExpression') return textOf(expr.expression, src);
+  if (expr.type === 'Identifier') return CONSTANTS.get(expr.name) ?? null;
+  if (expr.type === 'MemberExpression' && !expr.computed) { const v = CONSTANTS.get(src.slice(expr.start, expr.end)); if (v != null) return v; }
   if (expr.type === 'Literal' && typeof expr.value === 'string') return expr.value;
   if (expr.type === 'TemplateLiteral') {
     let out = '';
@@ -92,8 +97,112 @@ function children(n) {
   return out;
 }
 
+function collectConstants(ast, src) {
+  const out = new Map();
+  const visitDecl = (d) => {
+    if (d?.type !== 'VariableDeclaration') return;
+    for (const v of d.declarations) {
+      if (v.id?.type !== 'Identifier' || !v.init) continue;
+      const init = v.init.type === 'CallExpression' && /freeze$/.test(src.slice(v.init.callee.start, v.init.callee.end)) ? v.init.arguments[0] : v.init;
+      const t = textOf(init, src); if (t != null) { out.set(v.id.name, t); continue; }
+      // const WHO = Object.freeze({ RUTH: 'Ruth', ... }) → WHO.RUTH
+      if (init?.type === 'ObjectExpression') for (const p of init.properties) if (p.type === 'Property' && !p.computed) { const k = propName(p.key), pv = textOf(p.value, src); if (k && pv != null) out.set(`${v.id.name}.${k}`, pv); }
+    }
+  };
+  for (const stmt of ast.body) visitDecl(stmt.type === 'ExportNamedDeclaration' ? stmt.declaration : stmt);
+  return out;
+}
+
+// LINE HELPERS. Much dialogue is written through tiny builders,
+// const r = text => line('ren', text), choice('Ask…', 'goto'), so the object
+// literal never appears at the call site. Each function in the module is read
+// once; a call is then evaluated symbolically, its parameters bound to the
+// call's arguments, through nested helpers and spreads, to the object it builds.
+let HELPERS = new Map();
+const unwrapFreeze = (e, src) => {
+  while (e && (e.type === 'ParenthesizedExpression' || (e.type === 'CallExpression' && /(^|\.)(freeze|deepFreeze)$/.test(src.slice(e.callee.start, e.callee.end)) && e.arguments[0]))) e = e.type === 'ParenthesizedExpression' ? e.expression : e.arguments[0];
+  return e;
+};
+function returnOf(fn) {
+  if (!fn) return null;
+  if (fn.body?.type !== 'BlockStatement') return fn.body;
+  const ret = fn.body.body.filter((st) => st.type === 'ReturnStatement');
+  return ret.length === 1 ? ret[0].argument : null;
+}
+function collectHelpers(ast) {
+  const out = new Map();
+  const visit = (n) => {
+    if (!n || typeof n.type !== 'string') return;
+    if (n.type === 'FunctionDeclaration' && n.id?.name) out.set(n.id.name, n);
+    if (n.type === 'VariableDeclarator' && n.id?.type === 'Identifier' && (n.init?.type === 'ArrowFunctionExpression' || n.init?.type === 'FunctionExpression')) out.set(n.id.name, n.init);
+    if (n.type === 'VariableDeclarator' && n.id?.type === 'Identifier' && n.init?.type === 'Identifier') out.set(n.id.name, { alias: n.init.name });
+    for (const c of children(n)) visit(c);
+  };
+  for (const st of ast.body) visit(st);
+  for (const [name, fn] of out) if (fn.alias) { const target = out.get(fn.alias); if (target && !target.alias) out.set(name, target); else out.delete(name); }
+  return out;
+}
+function valueText(expr, env, src, depth = 0) {
+  if (!expr || depth > 6) return null;
+  if (expr.type === 'ParenthesizedExpression') return valueText(expr.expression, env, src, depth);
+  if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? valueText(b.node, b.env, src, depth + 1) : null; }
+  if (expr.type === 'CallExpression' && src.slice(expr.callee.start, expr.callee.end) === 'String' && expr.arguments[0]) return valueText(expr.arguments[0], env, src, depth + 1);
+  if (expr.type === 'TemplateLiteral') {
+    let out = '';
+    expr.quasis.forEach((q, i) => { out += q.value.cooked ?? q.value.raw; const h = expr.expressions[i]; if (h) out += valueText(h, env, src, depth + 1) ?? `{${src.slice(h.start, h.end).replace(/\s+/g, ' ')}}`; });
+    return out;
+  }
+  if (expr.type === 'BinaryExpression' && expr.operator === '+') {
+    const a = valueText(expr.left, env, src, depth + 1), b = valueText(expr.right, env, src, depth + 1);
+    return a == null && b == null ? null : `${a ?? `{${src.slice(expr.left.start, expr.left.end)}}`}${b ?? `{${src.slice(expr.right.start, expr.right.end)}}`}`;
+  }
+  if (expr.type === 'ConditionalExpression' || expr.type === 'LogicalExpression') {
+    const a = valueText(expr.consequent ?? expr.left, env, src, depth + 1), b = valueText(expr.alternate ?? expr.right, env, src, depth + 1);
+    return a == null && b == null ? null : [a, b].filter((v) => v != null && v !== '').join(' / ');
+  }
+  return textOf(expr, src);
+}
+// The object a helper call builds: key -> {node, env}.
+function shapeOf(expr, env, src, depth = 0) {
+  expr = unwrapFreeze(expr, src);
+  if (!expr || depth > 5) return null;
+  if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? shapeOf(b.node, b.env, src, depth + 1) : null; }
+  if (expr.type === 'ObjectExpression') {
+    const shape = new Map();
+    for (const p of expr.properties) {
+      if (p.type === 'SpreadElement') { const inner = shapeOf(p.argument, env, src, depth + 1); if (inner) for (const [k, v] of inner) shape.set(k, v); continue; }
+      if (p.type !== 'Property' || p.computed) continue;
+      const k = propName(p.key); if (k) shape.set(k, { node: p.value, env });
+    }
+    return shape;
+  }
+  if (expr.type === 'CallExpression' && expr.callee.type === 'Identifier' && HELPERS.has(expr.callee.name)) return callShape(expr, env, src, depth + 1);
+  return null;
+}
+function callShape(call, env, src, depth = 0) {
+  const fn = HELPERS.get(call.callee.name), body = returnOf(fn);
+  if (!fn || !body || depth > 5) return null;
+  const bound = new Map();
+  fn.params.forEach((param, i) => {
+    const name = param.type === 'Identifier' ? param.name : param.type === 'AssignmentPattern' && param.left.type === 'Identifier' ? param.left.name : null;
+    if (!name) return;
+    const arg = call.arguments[i];
+    bound.set(name, arg ? { node: arg, env } : param.type === 'AssignmentPattern' ? { node: param.right, env: new Map() } : null);
+  });
+  return shapeOf(body, bound, src, depth + 1);
+}
+const LINE_ARRAYS = /^(lines|remarks|barks|thoughts|murmurs|overheard)$/;
+function stringsIn(node, out = []) {
+  if (!node) return out;
+  if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+  else if (node.type === 'TemplateLiteral' && !node.expressions.length) out.push(node.quasis[0].value.cooked);
+  else if (node.type === 'ArrayExpression') for (const el of node.elements) stringsIn(el, out);
+  return out;
+}
+
 export function extractModule(source, file) {
   const ast = parseAst(source, { lang: 'js' });
+  CONSTANTS = new Map(); CONSTANTS = collectConstants(ast, source); HELPERS = collectHelpers(ast);
   const lineStarts = [0]; for (let i = 0; i < source.length; i++) if (source.charCodeAt(i) === 10) lineStarts.push(i + 1);
   const lineAt = (n) => { let lo = 0, hi = lineStarts.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (lineStarts[mid] <= n.start) lo = mid; else hi = mid - 1; } return lo + 1; };
   const nodes = new Map();
@@ -109,9 +218,13 @@ export function extractModule(source, file) {
     if (!n || typeof n.type !== 'string') return;
     if (n.type === 'ObjectExpression') {
       const props = objectProps(n), at = lineAt(n);
-      const who = textOf(props.get('who') ?? props.get('speaker'), source);
+      const whoExpr = props.get('who') ?? props.get('speaker');
+      const who = textOf(whoExpr, source) ?? (whoExpr ? `{${source.slice(whoExpr.start, whoExpr.end).replace(/\s+/g, ' ')}}` : null);
       const text = textOf(props.get('text'), source);
       let consumed = false;
+      // An option the player picks (prompt) before the line it says.
+      const prompt = textOf(props.get('prompt'), source);
+      if (prompt != null && text != null) emitChoice(path, { text: prompt, source: `${file}:${at}` }, at);
       if (who != null && text != null) {
         const line = { who, text, source: `${file}:${at}` };
         const q = props.get('quotes'), quotes = textOf(q, source); if (quotes) line.quotes = quotes; else if (q) line.quotesExpr = source.slice(q.start, q.end);
@@ -126,7 +239,7 @@ export function extractModule(source, file) {
       }
       const lines = props.get('lines');
       if (lines && lines.type === 'ArrayExpression') {
-        for (const el of lines.elements) { const t = textOf(el, source); if (t != null) emitLine(path, { who: who || 'thought', text: t, source: `${file}:${lineAt(el)}` }, at); }
+        for (const el of lines.elements) { const t = el && textOf(el, source); if (t != null) emitLine(path, { who: who || 'thought', text: t, source: `${file}:${lineAt(el)}` }, at); }
       }
       const first = textOf(props.get('first'), source), again = textOf(props.get('again'), source);
       if (first != null && again != null) {
@@ -137,13 +250,36 @@ export function extractModule(source, file) {
         if (p.type !== 'Property') { visit(p, path, { inChoices: false }); continue; }
         const key = p.computed ? null : propName(p.key);
         if (consumed && key && STRUCTURAL.has(key)) continue;
-        if (key === 'lines' || key === 'first' || key === 'again') continue;
+        // Literal string arrays of lines and first/again pairs were emitted above;
+        // anything else under those keys (lines(...) helpers, spreads) is walked.
+        if (key === 'lines' && p.value.type === 'ArrayExpression' && p.value.elements.every((el) => el && textOf(el, source) != null)) continue;
+        if ((key === 'first' || key === 'again') && textOf(p.value, source) != null) continue;
         const nextPath = key && !STRUCTURAL.has(key) && !/^\d+$/.test(key) ? [...path, key] : path;
         visit(p.value, nextPath, { inChoices: !!key && CHOICE_ARRAYS.has(key) });
       }
       return;
     }
     if (n.type === 'ArrayExpression') { for (const el of n.elements) visit(el, path, ctx); return; }
+    if (n.type === 'CallExpression' && n.callee.type === 'Identifier' && HELPERS.has(n.callee.name)) {
+      const shape = callShape(n, new Map(), source), at = lineAt(n);
+      if (shape) {
+        const get = (k) => shape.get(k), txt = (k) => get(k) ? valueText(get(k).node, get(k).env, source) : null;
+        const whoB = get('who') ?? get('speaker');
+        const who = whoB ? (valueText(whoB.node, whoB.env, source) ?? `{${source.slice(whoB.node.start, whoB.node.end).replace(/\s+/g, ' ')}}`) : null;
+        const text = txt('text'), label = txt('label'), prompt = txt('prompt');
+        const target = txt('goto') ?? txt('next') ?? txt('to');
+        if (prompt != null && text != null) emitChoice(path, { text: prompt, target, source: `${file}:${at}` }, at);
+        if (text != null && who != null) emitLine(path, { who, text, source: `${file}:${at}` }, at);
+        else if ((text ?? label) != null && (target != null || ctx.inChoices || label != null || shape.has('hideWhenAsked'))) emitChoice(path, { text: text ?? label, target, choiceId: txt('id'), source: `${file}:${at}` }, at);
+        else if (text != null) emitLine(path, { who: txt('type') || n.callee.name, text, source: `${file}:${at}` }, at);
+        // Arrays of plain strings handed to a builder (n('odette', ['…']), guest(…, remarks)).
+        for (const [k, b] of shape) if (LINE_ARRAYS.test(k)) {
+          const expr = b.node.type === 'CallExpression' && b.node.callee.type === 'MemberExpression' ? b.node.callee.object : b.node;
+          const arr = expr.type === 'Identifier' && b.env.has(expr.name) ? b.env.get(expr.name)?.node : expr;
+          if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr)) emitLine(path, { who: who || label || n.callee.name, text: t, source: `${file}:${lineAt(arr)}` }, at);
+        }
+      }
+    }
     if (n.type === 'CallExpression') {
       const callee = source.slice(n.callee.start, n.callee.end);
       if (/(^|\.)inspect$/.test(callee) && n.arguments.length >= 1) {

@@ -605,7 +605,7 @@ export function cathedralBellCombatDefinition({ phase = 1, carriedDamage = 0, al
     personalOpening: !!personalOpening && !second,
     coastalOpening: !!coastalOpening && !second,
     ...(!second && openingReference ? { openingTake: {
-      id: coastalOpening ? 'cathedral:coastal-box-reference' : 'cathedral:contractor-reference', label: coastalOpening ? 'MUSIC BOX / TWO NOTES' : 'CONTRACTOR / TWO NOTES',
+      id: coastalOpening ? 'cathedral:coastal-box-reference' : 'cathedral:contractor-reference', label: coastalOpening ? 'MUSIC BOX / CLAIR DE LUNE' : 'CONTRACTOR / TWO NOTES',
       damage: 3 * GRID, tag: 'cathedral-reference',
     } } : {}),
     ...(!second && rung === 0 ? { openingCharge: 2 } : {}),
@@ -626,11 +626,11 @@ export function cathedralBellCombatBattle(options = {}) {
       { who: 'surfer', text: 'You brought me a cathedral.' },
       { who: 'direction', text: 'He opens both hands. Every bell answers through him, and the pressure you spent reaching this phase remains spent.' },
     ] : combat.coastalOpening ? [
-      { who: 'direction', text: 'The two notes from the box answer from the belfry. The full ring holds its breath.' },
+      { who: 'direction', text: 'The first two notes of the box answer from the belfry. The full ring waits.' },
       { who: 'direction', text: 'The music-box reference is already loaded. Play it once to answer any strike safely.' },
-      { who: 'you', text: 'Those two notes.' },
+      { who: 'you', text: 'That’s how it starts.' },
     ] : combat.personalOpening ? [
-      { who: 'direction', text: 'The two notes on the old recording answer from the belfry. The full ring holds its breath.' },
+      { who: 'direction', text: 'The two notes on the old recording answer from the belfry. The full ring waits.' },
       { who: 'direction', text: 'The contractor\'s reference is already loaded. Play it once to answer any strike safely.' },
       { who: 'you', text: 'They left me the first word.' },
     ] : combat.alarm >= 2 ? [

@@ -21,17 +21,23 @@
         {
           "id": "makeCreditsScene.render.l0",
           "who": "thought",
+          "text": "There is no security against the ultimate development of mechanical consciousness, in the fact of machines possessing little consciousness now.",
+          "source": "src/game/credits.js:249"
+        },
+        {
+          "id": "makeCreditsScene.render.l1",
+          "who": "thought",
           "text": "CHUNK SURFER",
           "source": "src/game/credits.js:251"
         },
         {
-          "id": "makeCreditsScene.render.l1",
+          "id": "makeCreditsScene.render.l2",
           "who": "thought",
           "text": "THANK YOU FOR LISTENING.",
           "source": "src/game/credits.js:253"
         }
       ],
-      "source": "src/game/credits.js:251"
+      "source": "src/game/credits.js:249"
     }
   }
 }

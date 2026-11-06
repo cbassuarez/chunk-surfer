@@ -6,6 +6,7 @@ import {createDoorDriveTeaser} from './source-drive/door-teaser.js';
 import {createBumperIntrusion} from './source-drive/bumper-intrusion.js';
 import {createDriveBumperIntrusionAudio} from '../audio/drive-bumper-intrusion.js';
 import {assetUrl} from '../platform/paths.js';
+import {playRadioDialCut} from '../audio/radio-dial-cut.js';
 
 const clamp=n=>Math.max(0,Math.min(1,n));
 export function makeGetInDriveTeaserScene({
@@ -24,7 +25,13 @@ export function makeGetInDriveTeaserScene({
   let prelude=0,prepareSeconds=0,error=null,current=null,doorsClosed=false,wasHeld=true,impact=false;
   const renderer=createRenderer(),controller=createController(),intrusion=createIntrusion();
   let intrusionAudio=null,intrusionQuietUntil=0,lastPresentationTime=null;
-  let audio=null,metrics=null,pending=null,audioDisposed=false,recording=null,transport=Promise.resolve(),finishing=false,drag=null;
+  let audio=null,metrics=null,pending=null,audioDisposed=false,recording=null,transport=Promise.resolve(),finishing=false,drag=null,dialSerial=0;
+  // Each time skip turns the radio dial: clicks, static, and the new station.
+  function soundTheDial(frame){
+    const tuning=frame?.vehiclePose?.tuning;if(!tuning||tuning.serial===dialSerial||wasHeld)return;
+    dialSerial=tuning.serial;
+    try{playRadioDialCut({context,destination:audio?.cabin||destination,seconds:tuning.seconds,reducedFlash:getPresentation()?.effectsMode==='off'});}catch(error){console.warn('[drive-time-skip] The dial could not be heard.',error);}
+  }
   const keyInputs={w:'forward',arrowup:'forward',s:'reverse',arrowdown:'reverse',a:'left',arrowleft:'left',d:'right',arrowright:'right',' ':'brake'};
   const pressedKeys=new Set();
   function quietForControl(){intrusionQuietUntil=Math.max(intrusionQuietUntil,(current?.timeSec||0)+3);}
@@ -37,7 +44,7 @@ export function makeGetInDriveTeaserScene({
     lastPresentationTime=Number.isFinite(now)?now:null;
     intrusion.update(visualStep,frame,{...presentation,allowTrigger:presentation.allowTrigger!==false
       &&!drag&&frame.timeSec>=intrusionQuietUntil});
-    current=intrusion.apply(frame);return current;
+    current=intrusion.apply(frame);soundTheDial(current);return current;
   }
   function setHeld(value){
     const held=!!value;if(held===wasHeld)return;

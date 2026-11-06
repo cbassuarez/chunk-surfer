@@ -59,7 +59,7 @@ test('the graph follows the timeline: van at once, music only after the road, th
   let mix;for(let t=0;t<A.roadOnlySeconds-.5;t+=.1)mix=audio.update({dt:.1,stageMusic:.6});
   assert.equal(mix.musicStarted,false);assert.deepEqual(strikes,[5.5,13.5]);
   assert.ok(cabCalls.at(-1).state.drive.wiperMoving&&cabCalls.at(-1).state.drive.speed>0,'cruising, wipers going');
-  for(let t=0;t<12;t+=.1)mix=audio.update({dt:.1,stageMusic:.6,spoken:true});
+  for(let t=0;t<A.radioRiseSeconds+A.radioDwellSeconds+3;t+=.1)mix=audio.update({dt:.1,stageMusic:.6,spoken:true});
   assert.equal(mix.musicStarted,true);assert.ok(mix.radio<1,'the other has spoken: it is opening');
   audio.dispose();assert.equal(audio.snapshot().disposed,true);
 });

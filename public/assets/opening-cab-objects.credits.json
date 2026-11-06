@@ -607,6 +607,16 @@
         ]
       },
       "clearance": "Original packing socket plus .018 authored-unit stand-off; no automatic item acquisition"
+    },
+    "musicBox": {
+      "point": [
+        -0.4,
+        0.9829032610659516,
+        0.42
+      ],
+      "turn": 3.241592653589793,
+      "source": "tools/chunk_surfer/source-drive-study/build-coastal-memory.mjs buildIntactMusicBoxGroups",
+      "method": "Same box as the coast, before the crash: lid shut, every part whole. Settled on the sampled passenger cushion."
     }
   },
   "limitations": [
@@ -614,5 +624,5 @@
     "World paper uses physical pen strokes; close readings use dedicated baked paper assets.",
     "Witness Edition geometry is not newly granted during the prologue."
   ],
-  "sha256": "0a9d56d0ebb0d6cb9f9ab9a3f01ffc27fe9e78f1ae371ccabc3500d407ae6687"
+  "sha256": "572086888dac1bb19a42436e5347becbf27bf4f72f8fc27a280dc0b6736b21a9"
 }

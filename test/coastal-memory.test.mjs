@@ -119,13 +119,13 @@ test('monitor flushes may report real audio with dt zero; simulation time never 
   for (let n = 0; n < 80; n++) state = stepCoastalMemory(state, { dt: .25, recorderHeld: true,
     sourceReady: true, audioRunning: true }, { layout }).state;
   assert.equal(state.listenedSeconds, 0);
-  const result = monitor(state, 9, { dt: 0, recordingOffset: 31.25 });
+  const result = monitor(state, 9, { dt: 0, recordingOffset: COASTAL_MEMORY_SECONDS + 3.25 });
   assert.equal(result.state.elapsed, state.elapsed); assert.equal(result.state.recordingHeard, true);
   assert.equal(result.state.recordingOffset, 3.25);
 });
 
 test('the unmonitored physical musicbox phase persists without earning listening credit', () => {
-  const result = monitor(begin(), 8, { recorderHeld: false, recordingOffset: 19.4 });
+  const result = monitor(begin(), 8, { recorderHeld: false, recordingOffset: COASTAL_MEMORY_SECONDS + 5.4 });
   assert.equal(result.state.listenedSeconds, 0); assert.equal(result.state.recordingHeard, false);
   assert.ok(Math.abs(result.state.recordingOffset - 5.4) < 1e-8);
   assert.equal(reload(result.state).recordingOffset, result.state.recordingOffset);

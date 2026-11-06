@@ -28,8 +28,19 @@ function wreckProps(frame,metrics){
  // What the sea has already given back: a wheel trim thrown up the shingle and
  // the near-side mirror, torn off at the impact, lying face down in the wrack.
  for(const[mesh,x,z,yaw,tilt]of[['cm_van_hubcap',7.6,-24.1,.7,.32],[metrics.mirrors?.[0]?.mesh,5.15,-17.4,2.2,1.35]]){if(!mesh)continue;const y=coastalBeachHeight(x,z);props.push(instance(mesh,coastalMultiply(frame,coastalMultiply(transform(x,y+.03,z,yaw),rotX(tilt))),'coastal-wreck-debris-'+mesh,10));}
+ // The rest of what came off it, strewn the length of the beach: the bumper
+ // rolling in the swash, the torn-out near headlamp at the waterline, the
+ // wiper by where you wake, shards of its panels on the shingle and under the
+ // water, and the fence panel and reflector post it took over the edge, which
+ // fell to the foot of the cliff. [mesh, x, z, yaw, lift, tilt]
+ for(const[mesh,x,z,yaw,lift,tilt,id]of[
+  ['cm_van_bumper',7.1,-19.6,1.15,0,rotZ(.08)],['cm_van_headlamp',7.9,-27.6,2.4,0,rotX(.35)],['drive_wiper',4.8,-28.4,1.0,.015,rotX(Math.PI/2)],
+  ['cm_van_panel_shard_0',5.6,-22.6,.4,.05,rotX(Math.PI)],['cm_van_panel_shard_1',8.0,-14.1,2.1,.1,rotZ(.3)],['cm_van_panel_shard_2',11.8,-24.8,-.7,.045,rotX(0)],['cm_van_panel_shard_1',6.7,1.6,-1.2,.045,rotZ(.06),'shard-point'],
+  ['drive_fence',3.6,-27.4,Math.PI/2,.04,rotX(-1.45)],['drive_reflector',3.6,-20.4,.3,.06,rotZ(Math.PI/2)],
+ ])props.push(instance(mesh,coastalMultiply(frame,coastalMultiply(transform(x,floorY(x,z)+lift,z,yaw),tilt)),'coastal-wreck-strewn-'+(id||mesh),10));
+ {const x=7.0,z=-9.2;props.push(instance('drive_tyre',coastalMultiply(frame,coastalMultiply(transform(x,floorY(x,z)+.11,z,-.4),rotZ(Math.PI/2))),'coastal-wreck-washed-tyre',10));}
  // The rear wheels stayed on. The front ones did not: one lies flat on the
- // seabed beside the nose, the other is gone.
+ // seabed beside the nose; the sea brought the other up the shingle.
  const rear=coastalMultiply(body,vanWreckFoldMatrix());
  for(const side of[-1,1])props.push(instance('drive_tyre',coastalMultiply(rear,transform(side*wheels.track/2,wheels.wheelRadius,wheels.rearAxleZ)),'coastal-sunken-tyre-'+side+'-'+wheels.rearAxleZ,12));
  {const x=17.4,z=-21.6;props.push(instance('drive_tyre',coastalMultiply(frame,coastalMultiply(transform(x,floorY(x,z)+.11,z,.6),rotZ(Math.PI/2))),'coastal-wreck-front-tyre',12));}
@@ -60,7 +71,9 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  const box=L.musicBox,boxMatrix=transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=coastalMusicBoxMechanism(musicBoxTime);
  add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);add('cm_broken_music_box',boxMatrix,box.id,3);
  for(const[mesh,center,angle,id]of[['cm_music_box_cylinder',COASTAL_MUSIC_BOX_MECHANISM.cylinderCenter,mechanism.cylinderAngle,'cylinder'],['cm_music_box_gear',COASTAL_MUSIC_BOX_MECHANISM.gearCenter,mechanism.gearAngle,'gear']])add(mesh,coastalMultiply(coastalMultiply(boxMatrix,transform(...center)),rotX(angle)),'coastal-music-box-'+id,3);
- for(const[t,tine]of mechanism.liveTines.entries())add('cm_music_box_live_tine',coastalMultiply(coastalMultiply(boxMatrix,transform(tine.x,tine.tipY,tine.rootZ)),coastalMultiply(rotX(tine.deflection),transform(0,0,0,0,[1,1,tine.length]))),'coastal-music-box-live-tine-'+t,3);
+ for(const[t,tine]of mechanism.liveTines.entries())add('cm_music_box_live_tine',coastalMultiply(coastalMultiply(boxMatrix,transform(tine.x,tine.tipY,tine.rootZ,tine.bend||0)),coastalMultiply(rotX(tine.deflection),transform(0,0,0,0,[1,1,tine.length]))),'coastal-music-box-live-tine-'+t,3);
+ // The key turns itself to wind it; the governor fan spins with the cylinder.
+ add('cm_music_box_key',coastalMultiply(coastalMultiply(boxMatrix,transform(...COASTAL_MUSIC_BOX_MECHANISM.keyCenter)),rotX(mechanism.keyAngle)),'coastal-music-box-key',3);add('cm_music_box_fan',coastalMultiply(boxMatrix,transform(...COASTAL_MUSIC_BOX_MECHANISM.fanCenter,mechanism.fanAngle)),'coastal-music-box-fan',3);
  add('cm_damp_note',transform(...L.note.position,-.12),L.note.id,3);
  const pier=L.pier;add('cm_distant_pier',transform(...pier.position,pier.heading),pier.id,350);
  const pierFrame=coastalMultiply(worldFromLocal,transform(...pier.position,pier.heading));for(const fixture of pier.fixtures){const pierBulb=coastalWorldPoint(fixture.aperture,pierFrame),pierTarget=coastalWorldPoint(fixture.shadowTarget,pierFrame),beam=pierTarget.map((v,i)=>v-pierBulb[i]);lamps.push({id:fixture.id,x:pierBulb[0],y:pierBulb[1],z:pierBulb[2],color:fixture.color,intensity:fixture.intensity,radius:fixture.radius,penetration:1,castsShadow:false,shadowYaw:Math.atan2(beam[0],-beam[2]),shadowPitch:Math.atan2(beam[1],Math.hypot(beam[0],beam[2])),fixture:'caged pier marker',anchorMesh:'cm_distant_pier'});}

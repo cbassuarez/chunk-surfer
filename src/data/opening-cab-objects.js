@@ -18,7 +18,11 @@ export const OPENING_CAB_PLACEMENT=Object.freeze({
   clipboard:Object.freeze({point:Object.freeze([-.50,1.2678,-.72]),size:Object.freeze([.307,.0038,.406]),yaw:.08}),
   practiceNote:Object.freeze({point:Object.freeze([-.77,1.2663,-.84]),size:Object.freeze([.084,.0007,.084]),yaw:-.11}),
   firstTakeNote:Object.freeze({point:Object.freeze([-.35,1.055,-.574]),size:Object.freeze([.092,.078,.0007]),yaw:.025}),
-  programme:Object.freeze({point:Object.freeze([-.46,.971,.25]),size:Object.freeze([.15,.0014,.20]),yaw:-.12}),
+  programme:Object.freeze({point:Object.freeze([-.46,.971,.17]),size:Object.freeze([.15,.0014,.20]),yaw:-.12}),
+  // Lyle's music box, whole, on the back of the passenger cushion: the same box
+  // the coast finds broken on the shingle. Turned to face the windscreen, key
+  // toward the driver. Base height comes from the actual cushion.
+  musicBox:Object.freeze({point:Object.freeze([-.40,0,.42]),turn:Math.PI+.1}),
   radio:Object.freeze({point:Object.freeze([.025,1.10,-.378]),bounds:Object.freeze({min:Object.freeze([-.088,1.050,-.405]),max:Object.freeze([.139,1.144,-.357])})}),
 });
 export const OPENING_CAB_REHEARSAL_NOTES=Object.freeze([
@@ -26,6 +30,11 @@ export const OPENING_CAB_REHEARSAL_NOTES=Object.freeze([
   'An ornament needs somewhere to arrive. Do not hurry it just to get through.',
   'Try the release at the harpsichord. Bring that knowledge back to the marimba.',
   'Keep the first take. You need to hear what changed.',
+]);
+// Looking at Lyle's box, whole, before the drive.
+export const OPENING_CAB_MUSIC_BOX_LINES=Object.freeze([
+  'Dark wood, a brass key in the side, the lid shut. Clair de lune: the first eight bars, then the spring runs out.',
+  'Lyle gave it to you before his big piano break. So you’d have something to remember him by.',
 ]);
 export const OPENING_CAB_PAPERS=Object.freeze([
   {id:'opening-cab-practice-note',title:'Rebook the practice room',byline:'A reminder in blue ink',
@@ -44,6 +53,7 @@ export const OPENING_CAB_OBJECTS=Object.freeze([
   {id:'first-take-note',kind:'document',label:'READ THE TAPE REMINDER',documentId:'opening-cab-first-take-note',location:'cab'},
   {id:'recital-programme',kind:'document',label:'UNFOLD THE RECITAL PROGRAMME',documentId:'opening-cab-recital-programme',location:'cab'},
   {id:'radio',kind:'radio',label:'LOOK AT THE RADIO',location:'cab'},
+  {id:'music-box',kind:'keepsake',label:'LOOK AT LYLE’S MUSIC BOX',location:'cab'},
   {id:'recorder',kind:'instrument',label:'INSPECT THE RECORDER',group:'recorder',location:'rear-workbench'},
   {id:'headphones',kind:'instrument',label:'INSPECT THE HEADPHONES',group:'headphones',location:'rear-workbench'},
   {id:'microphone',kind:'instrument',label:'INSPECT THE MICROPHONE',group:'microphone',location:'rear-workbench'},

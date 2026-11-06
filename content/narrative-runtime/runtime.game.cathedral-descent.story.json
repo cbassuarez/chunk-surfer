@@ -6,7 +6,8 @@
   "readOnly": true,
   "entry": "cathedralLessonTree.choose",
   "entries": [
-    "cathedralLessonTree.choose"
+    "cathedralLessonTree.choose",
+    "cathedralLessonTree"
   ],
   "tags": [
     "runtime",
@@ -17,7 +18,14 @@
     "cathedralLessonTree.choose": {
       "id": "cathedralLessonTree.choose",
       "type": "choice",
-      "lines": [],
+      "lines": [
+        {
+          "id": "cathedralLessonTree.choose.l0",
+          "who": "you",
+          "text": "Try it here. No weight on the line.",
+          "source": "src/game/cathedral-descent.js:28"
+        }
+      ],
       "choices": [
         {
           "id": "cathedralLessonTree.choose.c0",
@@ -26,7 +34,20 @@
           "targetName": "leave"
         }
       ],
-      "source": "src/game/cathedral-descent.js:30"
+      "source": "src/game/cathedral-descent.js:28"
+    },
+    "cathedralLessonTree": {
+      "id": "cathedralLessonTree",
+      "type": "line",
+      "lines": [
+        {
+          "id": "cathedralLessonTree.l0",
+          "who": "direction",
+          "text": "The apparatus stays still. Nothing spent. Read what it is doing and try another response.",
+          "source": "src/game/cathedral-descent.js:32"
+        }
+      ],
+      "source": "src/game/cathedral-descent.js:32"
     }
   }
 }

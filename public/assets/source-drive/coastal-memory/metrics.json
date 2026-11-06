@@ -2,9 +2,9 @@
   "schema": 1,
   "kind": "shared-coastal-memory-assets",
   "revision": "coastal-memory-8",
-  "sha256": "f5e58f94f2dbc89f8e6ae4aad5186b45e9fb97719778a22e25a19eddece3179c",
-  "bytes": 4289808,
-  "triangles": 40968,
+  "sha256": "4319574d810e046a153c15fef15d0aecf76c878af1b6a6d556088184abf6e0a9",
+  "bytes": 4661700,
+  "triangles": 44364,
   "meshes": {
     "cm_limestone_coast": {
       "bounds": {
@@ -802,6 +802,110 @@
         "opaqueSea": false
       }
     },
+    "cm_van_bumper": {
+      "bounds": {
+        "min": [
+          -1.0398602485656738,
+          2.3010156114349053e-15,
+          -0.4045860767364502
+        ],
+        "max": [
+          1.0399959087371826,
+          0.14200115203857422,
+          0.1797502636909485
+        ]
+      },
+      "triangles": 340,
+      "vertices": 684,
+      "features": {
+        "type": "front-bumper-torn-off",
+        "lengthMetres": 2.06,
+        "construction": "Moulded bar swept along a path bent back where it struck; torn end with its steel bracket."
+      }
+    },
+    "cm_van_headlamp": {
+      "bounds": {
+        "min": [
+          -0.10999999940395355,
+          0,
+          -0.39745137095451355
+        ],
+        "max": [
+          0.10999999940395355,
+          0.12999999523162842,
+          0.05999999865889549
+        ]
+      },
+      "triangles": 308,
+      "vertices": 752,
+      "features": {
+        "type": "headlamp-unit-torn-out",
+        "construction": "Black housing, steel reflector bowl, lens gone, its wires torn."
+      }
+    },
+    "cm_van_panel_shard_0": {
+      "bounds": {
+        "min": [
+          -0.313936322927475,
+          -0.053221821784973145,
+          -0.261633962392807
+        ],
+        "max": [
+          0.3052394986152649,
+          0.052680887281894684,
+          0.13545583188533783
+        ]
+      },
+      "triangles": 132,
+      "vertices": 374,
+      "features": {
+        "type": "crumpled-body-panel-shard",
+        "variant": 0,
+        "construction": "Torn 0.8 mm sheet: folded at the 8.5 cm crush half-wavelength, painted face up, rusted primer below."
+      }
+    },
+    "cm_van_panel_shard_1": {
+      "bounds": {
+        "min": [
+          -0.3562414348125458,
+          -0.05382096394896507,
+          -0.2711995542049408
+        ],
+        "max": [
+          0.4488702714443207,
+          0.05139570310711861,
+          0.3864198625087738
+        ]
+      },
+      "triangles": 132,
+      "vertices": 374,
+      "features": {
+        "type": "crumpled-body-panel-shard",
+        "variant": 1,
+        "construction": "Torn 0.8 mm sheet: folded at the 8.5 cm crush half-wavelength, painted face up, rusted primer below."
+      }
+    },
+    "cm_van_panel_shard_2": {
+      "bounds": {
+        "min": [
+          -0.5443668365478516,
+          -0.04752800613641739,
+          -0.47374048829078674
+        ],
+        "max": [
+          0.369637668132782,
+          0.04725600406527519,
+          0.44737881422042847
+        ]
+      },
+      "triangles": 132,
+      "vertices": 374,
+      "features": {
+        "type": "crumpled-body-panel-shard",
+        "variant": 2,
+        "construction": "Torn 0.8 mm sheet: folded at the 8.5 cm crush half-wavelength, painted face up, rusted primer below."
+      }
+    },
     "cm_music_box_plinth": {
       "bounds": {
         "min": [
@@ -835,8 +939,8 @@
           0.12999999523162842
         ]
       },
-      "triangles": 572,
-      "vertices": 1278,
+      "triangles": 704,
+      "vertices": 1638,
       "features": {
         "type": "broken-wound-cylinder-music-box",
         "dimensionsMetres": [
@@ -844,41 +948,107 @@
           0.22,
           0.26
         ],
-        "construction": "Wooden open cavity and fixed bearing/comb assembly; separate rotating pinned cylinder and coaxial broken gear. Fourteen snapped comb teeth leave two sounding tines.",
-        "mechanism": "The two full pins meet the surviving comb tips at the actual audio pluck phases. Broken lid remains inert."
+        "tune": "Clair de lune, bars 1-8",
+        "construction": "Wooden open cavity on a brass bed: fourteen-tine comb (two snapped to stubs, the A5 tine lying loose in the box), spring barrel with ratchet click, governor bridge; the pinned cylinder, gear, winding key and fan are separate rotating meshes.",
+        "mechanism": "Every pin meets its tine when the audio plucks it. Broken lid remains inert."
       }
     },
     "cm_music_box_cylinder": {
       "bounds": {
         "min": [
-          -0.10400000214576721,
-          -0.029127875342965126,
-          -0.026000000536441803
+          -0.1080000028014183,
+          -0.029510071501135826,
+          -0.029507942497730255
         ],
         "max": [
-          0.10400000214576721,
-          0.029489755630493164,
-          0.026000000536441803
+          0.1080000028014183,
+          0.02949131466448307,
+          0.029254546388983727
         ]
       },
-      "triangles": 660,
-      "vertices": 1650,
+      "triangles": 2112,
+      "vertices": 5280,
       "features": {
         "type": "rotating-pinned-brass-cylinder",
         "pivot": "Own local X axis at the canonical cylinder center",
-        "livePins": [
-          {
-            "x": -0.0664,
-            "releaseSeconds": 2.28,
-            "initialAngle": 0.06492071625424822
-          },
-          {
-            "x": 0.05239999999999999,
-            "releaseSeconds": 7.41,
-            "initialAngle": -3.329983509413942
-          }
-        ],
-        "contactRadius": 0.0295
+        "tune": "Clair de lune, bars 1-8",
+        "pins": 72,
+        "shearedPins": 6,
+        "contactRadius": 0.0295,
+        "pinAngles": [
+          1.81273,
+          1.81273,
+          1.72547,
+          1.72547,
+          1.3764,
+          1.3764,
+          1.1146,
+          1.1146,
+          1.02733,
+          1.02733,
+          0.94008,
+          0.94008,
+          0.8528,
+          0.8528,
+          0.3292,
+          0.3292,
+          0.24193,
+          0.24193,
+          0.15468,
+          0.15468,
+          0.0674,
+          0.0674,
+          -0.0635,
+          -0.32529,
+          -0.45619,
+          -0.45619,
+          -0.54347,
+          -0.54347,
+          -0.63072,
+          -0.63072,
+          -0.71799,
+          -0.71799,
+          -1.24159,
+          -1.24159,
+          -1.32887,
+          -1.41612,
+          -1.50339,
+          -1.59066,
+          -1.67792,
+          -1.76519,
+          -1.76519,
+          -1.76519,
+          -1.85246,
+          -1.93972,
+          -2.02699,
+          -2.02699,
+          -2.11426,
+          -2.20152,
+          -2.28879,
+          -2.55059,
+          -2.55059,
+          -2.55059,
+          -2.81239,
+          -2.81239,
+          -2.89966,
+          -2.98692,
+          -3.07419,
+          -3.16146,
+          -3.24872,
+          -3.33599,
+          -3.33599,
+          -3.42326,
+          -3.51051,
+          -3.59779,
+          -3.59779,
+          -3.68506,
+          -3.77231,
+          -3.85959,
+          -4.12139,
+          -4.12139,
+          -4.12139,
+          -4.25229
+        ]
       }
     },
     "cm_music_box_gear": {
@@ -886,7 +1056,7 @@
         "min": [
           -0.010999999940395355,
           -0.03280000016093254,
-          -0.032329414039850235
+          -0.03280000016093254
         ],
         "max": [
           0.010999999940395355,
@@ -894,23 +1064,30 @@
           0.03280000016093254
         ]
       },
-      "triangles": 412,
-      "vertices": 904,
+      "triangles": 464,
+      "vertices": 1016,
       "features": {
         "type": "coaxial-cylinder-gear",
         "pivot": "Own local X axis, rigidly attached to the actual cylinder",
+        "teeth": 24,
+        "chippedTeeth": 3,
+        "chipped": [
+          11,
+          5,
+          21
+        ],
         "missingTeeth": 3
       }
     },
     "cm_music_box_live_tine": {
       "bounds": {
         "min": [
-          -0.004000000189989805,
+          -0.0042500002309679985,
           -0.0008500000112690032,
           -1
         ],
         "max": [
-          0.004000000189989805,
+          0.0042500002309679985,
           0.0008500000112690032,
           0
         ]
@@ -920,8 +1097,50 @@
       "features": {
         "type": "surviving-steel-comb-tooth",
         "pivot": "Root at local origin; -Z points toward the cylinder, scale Z is physical tine length",
-        "widthMetres": 0.008,
+        "widthMetres": 0.0085,
         "thicknessMetres": 0.0017
+      }
+    },
+    "cm_music_box_key": {
+      "bounds": {
+        "min": [
+          -0.045429810881614685,
+          -0.029999999329447746,
+          -0.012400000356137753
+        ],
+        "max": [
+          0.029999999329447746,
+          0.02791413478553295,
+          0.012400000356137753
+        ]
+      },
+      "triangles": 360,
+      "vertices": 824,
+      "features": {
+        "type": "butterfly-winding-key-on-barrel-arbor",
+        "pivot": "Own local X axis on the barrel arbor",
+        "ratchetTeeth": 12
+      }
+    },
+    "cm_music_box_fan": {
+      "bounds": {
+        "min": [
+          -0.01549999974668026,
+          -0.041999999433755875,
+          -0.00559999980032444
+        ],
+        "max": [
+          0.016544735059142113,
+          0.009096113033592701,
+          0.00559999980032444
+        ]
+      },
+      "triangles": 356,
+      "vertices": 872,
+      "features": {
+        "type": "governor-air-brake",
+        "pivot": "Own local Y axis on the governor arbor",
+        "bentVanes": 1
       }
     },
     "cm_damp_note": {
@@ -1248,8 +1467,42 @@
       "ormSha256": "349325ee0a8a90a7e107990438683dc52c1fca6afb225f1deeaf7050f70bbcb3"
     },
     {
-      "key": "shingle",
+      "key": "vanEnamel",
       "index": 14,
+      "baseLinear": [
+        0.62,
+        0.62,
+        0.58
+      ],
+      "roughness": 0.55,
+      "metallic": 0.02,
+      "repeatMetres": 0.6,
+      "reliefMetres": 0.0004,
+      "mapSize": 128,
+      "albedoSha256": "84400357b9ee6f86656a343c2c87dc8757fca6a0abcad37ccf811edf43a48b37",
+      "normalSha256": "80987fd44565e06ea4538e1ea0d9db5bd375a549c9b86cbd1d6f7fe036a1c43c",
+      "ormSha256": "8a930a50a60e8e1a4e50a4d73d8de74207945502060b539ffa319cdd5128e0f1"
+    },
+    {
+      "key": "rubber",
+      "index": 15,
+      "baseLinear": [
+        0.018,
+        0.023,
+        0.02
+      ],
+      "roughness": 0.88,
+      "metallic": 0,
+      "repeatMetres": 0.4,
+      "reliefMetres": 0.0006,
+      "mapSize": 128,
+      "albedoSha256": "24028dfaabf388969c5abdaa99feedefd03a0da35d799c05e6957e29edf82b1c",
+      "normalSha256": "8d8c87cd31860163fbcc7a169bb563564a21db43faecdae713770f3f98162a9f",
+      "ormSha256": "11bf1688ba063b955ebda09b915da856043fbaf185c08612e75db5e32d4135ff"
+    },
+    {
+      "key": "shingle",
+      "index": 16,
       "baseLinear": [
         0.215,
         0.215,
@@ -1266,7 +1519,7 @@
     },
     {
       "key": "wetShingle",
-      "index": 15,
+      "index": 17,
       "baseLinear": [
         0.085,
         0.09,
@@ -1283,7 +1536,7 @@
     },
     {
       "key": "sand",
-      "index": 16,
+      "index": 18,
       "baseLinear": [
         0.15,
         0.14,
@@ -1300,7 +1553,7 @@
     },
     {
       "key": "driftwood",
-      "index": 17,
+      "index": 19,
       "baseLinear": [
         0.33,
         0.315,
@@ -1317,7 +1570,7 @@
     },
     {
       "key": "kelp",
-      "index": 18,
+      "index": 20,
       "baseLinear": [
         0.04,
         0.045,
@@ -1387,7 +1640,7 @@
     "alphaBlending": false,
     "opaqueSeaMesh": false,
     "mipmapSampler": 9987,
-    "textureMaps": 57
+    "textureMaps": 63
   },
   "references": [
     {

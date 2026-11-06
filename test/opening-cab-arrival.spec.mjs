@@ -137,14 +137,14 @@ test('separate cab objects expose their own truthful live facts without granting
 });
 
 test('cab belongings have reachable seated targets while all preparation equipment stays at the existing rear workbench',()=>{
-  const ids=['job-papers','notebook','self-check','practice-note','first-take-note','recital-programme','radio'];
+  const ids=['job-papers','notebook','self-check','practice-note','first-take-note','recital-programme','radio','music-box'];
   assert.deepEqual(OPENING_CAB_VISIBLE_OBJECTS.map(object=>object.id),ids);
   assert.deepEqual(OPENING_CAB_OBJECTS.filter(object=>object.location==='rear-workbench').map(object=>object.id),
     ['recorder','headphones','microphone','flashlight','amp']);
   for(const yaw of[0,Math.PI/2,-1.1,Math.PI])for(const fieldKit of[freshFieldKit(),{headphones:'closed',microphone:'directional',recorder:'headroom',flashlight:'throw',cosmetics:{faceplate:'olive',buttons:'signal',flashlightHousing:'ivory'}},{headphones:'open',microphone:'wide',recorder:'low-draw',flashlight:'flood',cosmetics:{faceplate:'black',buttons:'sea-glass',flashlightHousing:'olive'}}]){
     const anchor={...target,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),instances=openingCabInstances(anchor,{fieldKit}),meshNames=new Set(instances.map(p=>p.mesh));
     assert.deepEqual(openingCabTargets(anchor,{fieldKit}).map(object=>object.id),ids);
-    assert.equal(instances.length,7,'the job paper and six dressing meshes are separate from the resident dashboard receiver');
+    assert.equal(instances.length,8,'the job paper and seven dressing meshes are separate from the resident dashboard receiver');
     assert.ok(instances.every(p=>!p.mesh.includes('field_')&&!p.mesh.includes('headphones')&&!p.mesh.includes('microphone')&&!p.mesh.includes('flashlight')),
       'moving inspection targets also removes the visible duplicate kit and case');
     for(const object of openingCabTargets(anchor,{fieldKit})){

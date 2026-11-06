@@ -51,12 +51,12 @@ test('aiming at the canonical handle first hits the actual zinc release lever in
   assert.ok(nearest.point[2]>.20,'the release lever is behind the separate forward window-winder assembly');
 });
 
-test('the cab presents seven connected belongings while preparation equipment remains absent from both rendered props and focus',()=>{
-  const ids=['job-papers','notebook','self-check','practice-note','first-take-note','recital-programme','radio'];
+test('the cab presents eight connected belongings while preparation equipment remains absent from both rendered props and focus',()=>{
+  const ids=['job-papers','notebook','self-check','practice-note','first-take-note','recital-programme','radio','music-box'];
   assert.deepEqual(OPENING_CAB_VISIBLE_OBJECTS.map(object=>object.id),ids);
   for(const yaw of[0,Math.PI/2,-1.1,Math.PI]){
     const anchor={x:16,y:.2,z:8,yaw},eye=openingVehiclePoint(anchor,OPENING_VEHICLE.eye),props=openingCabInstances(anchor),targets=openingCabTargets(anchor);
-    assert.deepEqual(targets.map(object=>object.id),ids);assert.equal(props.length,7);
+    assert.deepEqual(targets.map(object=>object.id),ids);assert.equal(props.length,8);
     assert.ok(props.every(p=>!['case','recorder','headphones','microphone','flashlight','amp'].includes(p.objectId)));
     for(const target of targets){
       const frame=aim({phase:'parked',anchor,eye},target.position),focus=openingCabFocus(frame);
