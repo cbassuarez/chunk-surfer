@@ -33,7 +33,9 @@ export const DRIVE_TIME_SKIPS=freeze({
     freeze({id:'again',start:freeze({d:-560,lateral:LANE,speed:12}),station:'company',rain:.1,fog:.04,until:freeze({metres:100})}),
     freeze({id:'oncoming',start:freeze({d:-335,lateral:LANE,speed:13}),station:'service',rain:.12,fog:.04,until:freeze({metres:190,passed:true}),
       hazard:freeze({kind:'lorry',d:-205,lateral:1.9,speed:11,drift:freeze({from:1.9,to:-.55,start:-250,end:-285})})}),
-    freeze({id:'stalled',start:freeze({d:-150,lateral:LANE,speed:13}),station:'music',rain:.16,fog:.06,until:freeze({metres:120,passed:true}),
+    // The cut sets him down on the way to the stand, whichever way the lorry went, so
+    // nobody misses it. The van with no lights is further on.
+    freeze({id:'stalled',start:freeze({d:-215,lateral:LANE,speed:13}),station:'music',rain:.16,fog:.06,until:freeze({metres:185,passed:true}),
       hazard:freeze({kind:'van',d:-82,lateral:-1.25})}),
     freeze({id:'bus',start:freeze({d:-40,lateral:LANE,speed:13}),station:'company',rain:.18,fog:.07,until:freeze({metres:150,passed:true}),
       hazard:freeze({kind:'bus',d:42,lateral:-8,to:-1.7,trigger:46,seconds:4.2})}),

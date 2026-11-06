@@ -30,12 +30,15 @@ export function meaningRung(rows,meaning){
   return found;
 }
 
-// The everyday things he looks at, by what they're made of, with what they turn into.
-// Matched only by prop id, so a line can't land on the wrong thing. Added after the
-// prop's own text. `meaning` thresholds as above.
+// The everyday things he looks at, by what they are, with what they turn into. Added after
+// the prop's own text, so each family has to be true of the sentence in front of it: a line
+// about a lamp left on can't follow a lantern that hangs dark. That is why this is a reviewed
+// list of the real props and not a pattern over their names, which put water in the organ
+// pipes and sent a plaque's reader to the stairs. A new prop means nothing until someone has
+// read it here. `meaning` thresholds as above.
 const line=(from,text)=>Object.freeze({from,text});
 const FAMILIES=Object.freeze({
-  lamp:Object.freeze([line(.42,'It\'s only a lamp. It\'s been on all night, for nobody.'),line(.7,'Somebody left that on for me.')]),
+  lamp:Object.freeze([line(.42,'Nobody\'s been up to light that in a long time.'),line(.7,'They\'d leave one on for you. They always do.')]),
   drain:Object.freeze([line(.42,'You can hear it going down a long way.'),line(.7,'All the water in the building is going to the same place.')]),
   chair:Object.freeze([line(.42,'Kept for someone.'),line(.7,'They\'ll want that back. They said they\'d wait.')]),
   coat:Object.freeze([line(.42,'Somebody meant to come back for this.'),line(.7,'It\'s still got the shape of them in it.')]),
@@ -46,15 +49,22 @@ const FAMILIES=Object.freeze({
   paper:Object.freeze([line(.42,'Somebody took trouble over this.'),line(.7,'It\'s addressed to me. It always was.')]),
   instrument:Object.freeze([line(.42,'It wouldn\'t take much.'),line(.7,'It\'s still holding the last note. You only have to know how to ask.')]),
 });
-// Prop id prefix to family. The first match wins.
-const FAMILY_BY_PROP=Object.freeze([
-  [/lamp|light|lantern|sconce/,'lamp'],[/drain|sluice|gully|plughole/,'drain'],[/chair|seat|stool|bench/,'chair'],
-  [/coat|jacket|hanger|uniform|robe/,'coat'],[/clock|timetable/,'clock'],[/window|glaz/,'window'],[/stair|ladder/,'stairs'],
-  [/pipe|valve|radiator|header|boiler/,'pipe'],[/notice|poster|memo|letter|sheet|score|page/,'paper'],[/marimba|piano|harp|metronome|organ|violin|cello/,'instrument'],
-]);
+// Whole ids. Nothing in Source is on it, and the caller checks that as well.
+export const MEANING_PROPS=Object.freeze({
+  lamp:/^acq-chapel-lantern-(narthex-north|narthex-south|nave)$/,
+  drain:/^pool-drain-\d$/,
+  chair:/^(acq-practice-chair-\d|acq-chapel-presider-chair|acq-foyer-armchair-\d|b3-chair|box-office-chair|deadend-ground-(arm)?chair|hall-chair-l-\d|pool-lifeguard-chair|store-empty-chair|b2-piano-stool|atrium-public-bench-west|pool-bench-\d|tower-ringing-bench-(east|west)|foyer-pew-1|chapel-pew-[lr]-\d)$/,
+  coat:/^store-rail-a$/,
+  clock:/^natatorium-clock$/,
+  window:/^box-office-desk$/,
+  stairs:/^main-stair-runner$/,
+  pipe:/^plant-heating-header$/,
+  paper:/^(b2-notice|box-office-notice-board|box-office-seating-plan|foh-poster-last-night|plant-header-card|hall-entrance-program-north|b3-session-card)$/,
+  instrument:/^(b2-piano|chapel-organ-console|chapel-organ-pipes|hall-marimba-(1|overflow)|hall-grand-1|practice-ensemble-(cello|marimba|violin)|practice-lesson-cello|practice-piano-\d|tower-organ-console)$/,
+});
 export function meaningFamilyFor(propId=''){
-  const id=String(propId).toLowerCase();
-  for(const[match,family]of FAMILY_BY_PROP)if(match.test(id))return family;
+  const id=String(propId);
+  for(const family of Object.keys(MEANING_PROPS))if(MEANING_PROPS[family].test(id))return family;
   return null;
 }
 // The line owed for this prop now, or null. `seen` is whatever the caller has said

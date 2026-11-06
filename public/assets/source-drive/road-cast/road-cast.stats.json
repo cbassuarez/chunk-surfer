@@ -1,7 +1,7 @@
 {
  "generator": "tools/chunk_surfer/source-drive-study/build-road-cast.mjs",
- "bytes": 1128904,
- "sha256": "841971df29c53a44f2a616f410faf30ae622751a0efa64e86530e52c1ff2ff45",
+ "bytes": 1235496,
+ "sha256": "39f0b4f603f1e91a84ba2d9cc20c4269b0616dd8a99d485ec873d62451b5a772",
  "meshes": [
   "rc_flatbed",
   "rc_flatbed_lamps",
@@ -23,10 +23,11 @@
   "rc_board_thanks",
   "rc_pole_sign",
   "rc_pole_glow",
-  "rc_kiosk_fascia",
-  "rc_kiosk_pad",
+  "rc_services_ground",
+  "rc_stand",
   "rc_letters_pole",
-  "rc_letters_fascia"
+  "rc_letters_roof",
+  "rc_letters_menu"
  ],
  "billBytes": {
   "new_works": 21390,
@@ -42,6 +43,7 @@
   "board-need": 33639,
   "board-thanks": 26584,
   "letters-pole": 21959,
-  "letters-fascia": 6175
+  "letters-roof": 8404,
+  "letters-menu": 8644
  }
 }

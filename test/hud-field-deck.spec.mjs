@@ -52,7 +52,7 @@ test('production HUD paints one objective line before map acquisition and yields
       activeDifficulty:{navigation:{showMap:true,showBearing:true,showDistance:true,showRoom}},
       mapAvailable,getSave:()=>save,itemLost:()=>false,drawMinimap:(...args)=>maps.push(args),
       currentFacilityMapModel:()=>({}),performance:{now:()=>1000},recentMischief:()=>[],recentApparitions:()=>[],
-      workOrderAccepted:()=>false,nightClockReadout,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
+      workOrderAccepted:()=>false,lastExposureEvent:null,nightClockReadout,monitorDisplaySnapshot:()=>({}),dockCommandUntil:0,
       storyGuidanceBearing:()=>bearing?{bearing:'SOUTHEAST',far:'VERY CLOSE'}:null,
       uiText:(x,y,text)=>calls.push({x,y,text}),chapelTowerState:()=>({phase:'recording'}),
       chunkSurfFinaleRouting:()=>({route:null}),SOURCE_FINALE_ROUTE:{TOWER:'tower'},CHAPEL_TOWER_PHASE:{},KEY_DEBUG:false,

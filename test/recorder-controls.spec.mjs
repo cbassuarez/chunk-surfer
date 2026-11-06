@@ -449,7 +449,7 @@ test('the raised recorder uses the same actual noise reading and recorded event 
       takeMarks: () => [{ at: .1, kind: 'event', id: 'stored' }] },
     MIC: { micActive: () => live.microphone, micLevel: () => .12,micMeterMeasurement:()=>({rms:.12}) },
     MONITOR: { monitorSnapshotForRms: rms => ({ rms, db: 20 * Math.log10(rms) }),monitorSnapshotForMeasurement:value=>value },
-    presenceMeterLevel: () => .4, currentWorld: () => 'main_b3', recorderRefusal: () => null, usingSourceSpace: () => false,
+    setPieceMeterPinned: false, presenceMeterLevel: () => .4, currentWorld: () => 'main_b3', recorderRefusal: () => null, usingSourceSpace: () => false,
     roomLabel: room => room.toUpperCase(), formatPlaybackTime: seconds => String(seconds),
     recordingDurationLabel: () => String(live.duration),
     ROOM_TONE: { takeSeconds: 45 }, performance: { now: () => 1000 }, SPEECH: { speechPanelRows: () => 0 },

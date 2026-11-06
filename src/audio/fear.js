@@ -60,6 +60,8 @@ export function preloadAll() { return Promise.all([heartbeat.prepare(), ...Objec
 // Physical Last Exposure contacts have a specific source and event lifetime.
 // Other authored fear cues retain hushStinger's legacy variation below.
 export function playContactExposure(options) { return contactExposure.play(options); }
+// The voice has fifty milliseconds to start, so a first catch can't wait on a decode.
+export function prepareContactExposure() { return ctx && !buffers.get(FILES.hush) ? load(FILES.hush) : null; }
 export function cancelContactExposure(options) { contactExposure.cancel(options); }
 
 // A backwards copy, made once. Reversal is the cheapest way to make a familiar

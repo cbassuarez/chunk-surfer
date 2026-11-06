@@ -378,7 +378,7 @@ export function prewarmSourceContinuationAssets({renderer=R3,props=P3,resolveAss
     // prevent the Source route itself from opening.
     const vehicleMemory=['opening_drive_cabin','opening_drive_vehicle_body','opening_drive_tyre','opening_drive_cabin_door_r'];
     if(vehicleMemory.some(mesh=>!(props.propMeshCatalog?.()||[]).includes(mesh))){
-      try{await props.addPropPack(resolveAsset('assets/source-vehicle-interior.glb'));}catch{/* Leave these images absent. */}
+      try{await props.addPropPack(resolveAsset('assets/source-vehicle-interior.glb'));await props.addPropPack(resolveAsset('assets/source-drive/cab-radio/cab-radio.glb'));}catch{/* Leave these images absent. */}
     }
     if(SOURCE_REST_FLOOD_MESHES.some(mesh=>!(props.propMeshCatalog?.()||[]).includes(mesh))){
       try{await props.addPropPack(resolveAsset('assets/source-return/fauna.glb'));}catch{/* Missing fauna must not block the existing route. */}

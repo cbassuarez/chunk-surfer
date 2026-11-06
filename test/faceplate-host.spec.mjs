@@ -38,7 +38,7 @@ function host(){
     roof:false,warning:false,mapReads:0,storyMode:true,inRogue:true,paused:false,document:{hidden:false},px:12,py:14,
     frontEndSession:null,FRONT_END_STATE,activeDifficulty:{navigation:{showMap:true}},dockCommandUntil:0,
     rec:{takes:['studio','hall'],injuries:1},monitor:{available:false,sourceId:'host-faceplate-monitor'},
-    getSave:()=>save,mapAcquired,mapAvailable,nightClockReadout,workOrderAccepted,readOnlyBagMap,faceplateUsesCurrentRunModules};
+    getSave:()=>save,lastExposureEvent:null,mapAcquired,mapAvailable,nightClockReadout,workOrderAccepted,readOnlyBagMap,faceplateUsesCurrentRunModules};
   h.scenes={top:()=>h.top,blocksWorld:()=>h.top?.blocksWorld===true};
   h.FP={isLoaded:()=>true,logicalToPhysical:()=>({renderGroup:h.roof?'academicRoof':'district'})};
   h.usingSpecialSpace=()=>h.special;h.towerWarningOwnsMoment=()=>h.warning;

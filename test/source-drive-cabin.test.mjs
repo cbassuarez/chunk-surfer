@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {cabRadioKeyPoint,cabRadioVolumePoint} from '../src/data/cab-radio.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -91,7 +92,7 @@ test('the authored cabin contains dimensional construction rather than surface p
 test('receiver contact skins and supported construction match unchanged operative hand targets',()=>{
  const radio=drive.doc.meshes.find(m=>m.name==='drive_radio'),faces=[];
  for(const primitive of radio.primitives){const p=accessor(primitive.attributes.POSITION).values,indices=accessor(primitive.indices).values;for(let i=0;i<indices.length;i+=3)faces.push(indices.slice(i,i+3).map(index=>p.slice(index*3,index*3+3)));}
- const contacts=[{id:'power',point:[-.065,1.10,-.360]},...[-.0198,.025,.0698].map((x,i)=>({id:'preset-'+(i+1),point:[x,1.07592,-.379]}))];
+ const contacts=[{id:'power',point:cabRadioVolumePoint()},...[0,1,2].map(i=>({id:'preset-'+(i+1),point:cabRadioKeyPoint(i)}))];
  for(const{id,point}of contacts){const start=point.map((v,i)=>v+(i===2?.05:0)),distance=Math.min(...faces.map(t=>hitTriangle(start,[0,0,-1],t)));assert.ok(Math.abs(distance-.05)<.0007,`${id} contact error ${distance-.05}`);}
  const f=metrics.radioConstruction.features,find=name=>{const q=f.find(v=>v.name===name);assert.ok(q,name);return q.bounds;};
  const sleeve=find('receiver supported steel sleeve');assert.ok(sleeve.max[2]-sleeve.min[2]>.15);assert.ok(sleeve.min[2]<-.579,'sleeve physically overlaps existing fascia mounting block');

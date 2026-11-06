@@ -19,6 +19,8 @@ const clone = value => value == null ? null : JSON.parse(JSON.stringify(value));
 const enumValue = (value, values, fallback) => values.includes(value) ? value : fallback;
 const staticRoles = new Set(['tenant', 'plant-hallucination', 'recording-hallucination']);
 const authoredRoles = new Set(['source-rear', 'source-front', 'court-trace', 'dock-tableau', 'plant-tableau']);
+// A set piece's figure doesn't arrive or leave. It is there, then it isn't.
+const abrupt = id => typeof id === 'string' && id.startsWith('set-piece:');
 
 function normalizeActor(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -90,7 +92,7 @@ export function createPressurePerformance(initial = null) {
 
   function tickActor(previous, incoming, dt, reducedMotion) {
     if (!incoming) {
-      if (!previous) return null;
+      if (!previous || abrupt(previous.id)) return null;
       const fading = clone(previous);
       fading.performance.manifestation *= Math.exp(-dt * 4);
       return fading.performance.manifestation < .002 ? null : fading;
@@ -142,7 +144,7 @@ export function createPressurePerformance(initial = null) {
     return normalizeActor({ ...incoming, id, performance: { version: 1, role, heading, clip, time, loop: !gait, seed: actorSeed,
       // The density remains compressed at an obstruction. Only the old human
       // support animation needs the scheduler's withdraw/reset visibility.
-      manifestation: !density && gait?.phase === 'recover' ? pressureGaitVisibility(gait)
+      manifestation: abrupt(id) ? 1 : !density && gait?.phase === 'recover' ? pressureGaitVisibility(gait)
         : 1 - (1 - (old?.manifestation || 0)) * Math.exp(-dt * 7.2), motion, cue, reducedMotion,
       ...(gait ? { gait } : {}), ...(density ? { density } : {}) } });
   }

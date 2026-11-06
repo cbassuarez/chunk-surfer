@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process';
+﻿import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,7 @@ const tests = [
   'test/opening-prologue.spec.mjs',
   'test/opening-prologue-audio.spec.mjs',
   'test/ending-drive-off.spec.mjs',
-  'test/last-minutes.spec.mjs','test/road-cast.spec.mjs','test/window-takeover.spec.mjs','test/ending-walk-off.spec.mjs','test/whose-life.spec.mjs',
+  'test/last-minutes.spec.mjs','test/road-cast.spec.mjs','test/cab-radio.spec.mjs','test/window-takeover.spec.mjs','test/ending-walk-off.spec.mjs','test/whose-life.spec.mjs',
   'test/source-rest-horizon.spec.mjs',
   'test/source-continuation-escher.spec.mjs',
   'test/source-continuation-islands.spec.mjs',
@@ -105,6 +105,9 @@ const tests = [
   'test/night-deadline.spec.mjs',
   'test/night-clock-source.spec.mjs',
   'test/first-strike-submerged-horn.spec.mjs',
+  'test/hush-catch.spec.mjs',
+  'test/set-pieces.spec.mjs',
+  'test/hush-footfall.spec.mjs',
   'test/night-deadline-media.spec.mjs',
   'test/night-deadline-main.spec.mjs',
   'test/source-drive-deadline.spec.mjs',
@@ -1103,6 +1106,7 @@ const tests = [
   'test/system-map.spec.mjs',
   'test/audits.spec.mjs',
   'test/narrative-studio.spec.mjs',
+  'test/narrative-runtime-export.spec.mjs',
   // Portable checks added after the original hand-maintained suite.
   'test/about-system.test.mjs',
   'test/academic-gallery-assets.spec.mjs',
@@ -1389,7 +1393,7 @@ export function runTests(files = TEST_FILES, { spawn = spawnSync, log = console.
       // A leaked timer/socket or stuck child is a visible failure, never a
       // forced successful exit after an otherwise green TAP summary.
       // The acquisition contract performs35 real building-wide path searches.
-      // Completed profiles take189–443s depending on concurrent load. Keep
+      // Completed profiles take189â€“443s depending on concurrent load. Keep
       // every route assertion with a bounded ten-minute allowance for slower
       // platform runners; all other files retain the three-minute watchdog.
       timeout: file === 'test/acquisition-props.test.mjs' ? 600_000 : 180_000,

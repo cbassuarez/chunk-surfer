@@ -1,5 +1,10 @@
 import {createPlayDurationClock} from './game/play-duration.js';
-import {NIGHT_CLOCK_PACE_POLICY,advanceNightClock,applyNightClockLoss,nightClockReadout,createNightClockPace,freshNightClock,holdNightClockForSource,leaveSourceNightClock} from './game/night-clock.js';
+import {createHushFootfallTracker,hushFootfallPlan,hushFootfallCaption} from './game/hush-footfall.js';
+import {createHushFootstepPlayer} from './audio/hush-footsteps.js';
+import {SET_PIECE,createScareDirector,createSetPiece,createStartleMeter} from './game/set-pieces.js';
+import {HUSH_CATCH,HUSH_CATCH_AFTERIMAGE_DELAY,hushCatchPlan,hushCatchFrame,hushCatchAfterimageAlpha,hushCatchVacuumLevel} from './game/hush-catch.js';
+import {createContactHitPlayer} from './audio/contact-hit.js';
+import {NIGHT_CLOCK_PACE_POLICY,advanceNightClock,applyNightClockLoss,nightClockReadout,createNightClockPace,freshNightClock,holdNightClockForSource,leaveSourceNightClock,NIGHT_CLOCK_SOURCE_EXIT_SECONDS} from './game/night-clock.js';
 import {recordNightClockTravel,consumeNightClockTravel,clearNightClockTravel} from './game/night-clock-travel.js';
 import {NIGHT_DEADLINE_SECONDS,freshNightDeadline,stepNightDeadline,nightDeadlinePending,nightDeadlineAllowsTransport,acknowledgeNightDeadlineEffects,checkpointNightDeadline,completeNightDeadline,nightDeadlineSourceReturn} from './game/night-deadline.js';
 import {firstStrikeEntryFromPlan,firstStrikeEntryFromSubmittedGeometry,firstStrikeSubmittedHostBounds,packFirstStrikeConstruction,restoreFirstStrikeConstruction} from './game/first-strike-entry.js';
@@ -499,6 +504,8 @@ import {createStudentStrikeAudio} from './audio/student-strike.js';
 import { shouldStageOpeningCinematic, openingCinematicLighting, openingCinematicActors, openingCinematicStaticProps, prepareOpeningCinematicAssets, openingCinematicGate } from './render/opening-cinematic-staging.js';
 import { createOpeningArrivalAudio } from './audio/opening-arrival.js';
 import { createOpeningCabRadio } from './audio/opening-cab-radio.js';
+import { installParkedCabRadio } from './game/parked-cab-radio.js';
+installParkedCabRadio({getClock:()=>nightClockReadout(getSave())});
 import { OPENING_CAB_RADIO_STATIONS } from './data/opening-cab-radio-source.js';
 import { openingArrivalWorldView, openingParkedPlacement, openingDriveColliders } from './game/opening-arrival-world.js';
 import { CONSERVATORY_PROPS as OPENING_AUTHORED_PROPS } from './data/conservatory-props.js';
@@ -1332,8 +1339,15 @@ let doorSwarmCenter=null;
 let hushHitTimer=null;
 let hushJumpTimer=null;
 let lastExposureEvent=null;
+let hushStepBus=null,hushStepNeedleLevel=0,hushStepNeedleAt=-Infinity,hushFootfallSurface=null,hushFootfallLast=null;
+const hushFootfallTracker=createHushFootfallTracker();
+const hushFootstepPlayer=createHushFootstepPlayer({getContext:()=>actx,getDestination:()=>hushStepBus});
+let scareDirector=null,scareDirectorRun=null,setPiece=null,setPieceActor=null,setPieceShown=false,setPieceMeterPinned=false,setPieceVacuumAt=1;
+const setPieceWatch={recorder:0,page:0,quiet:0,lit:0,dark:0};
+const startleMeter=createStartleMeter();
 let lastExposureSerial=0;
 let lastExposureFrame=null;
+let hushCatchHit=null,hushCatchDull=null,hushCatchAfterimage=null,hushCatchVacuum=null,hushCatchVacuumAt=1;
 let lastRecoveryReceipt=null;
 const injuryScareGate=createInjuryScareGate({injure:()=>REC.injure()});
 let fakeEllerySaveTransaction=false;
@@ -1502,6 +1516,7 @@ function setDialogVolume(v){ setGainNode(dialogGain, paused ? 0 : v); }
 function setSfxVolume(v){
   setGainNode(sfxGain, paused ? 0 : v*radioWorldGain());
   setGainNode(sfxDirectGain, paused ? 0 : v);
+  setGainNode(hushStepBus, paused ? 0 : v);
   setGainNode(bodyGain, paused ? 0 : v);
   // NOTE THE MISSING PAUSE GUARD, AND KEEP IT MISSING. You are looking at a menu
   // when you are paused, so the menu bus stays up while the world's does not.
@@ -1582,12 +1597,17 @@ function ensureCtx({resume=true}={}){
         // The HUSH field sits between physical SFX and the output stages. It is
         // neutral at zero pressure, so the existing mix is unchanged until the
         // presence is near. Dialog and UI remain trustworthy and bypass it.
-        hushAudioMix=createHushMix(actx,{worldDestination:master,directDestination:limiter});
+        hushCatchVacuum=actx.createGain();hushCatchVacuum.connect(master);hushCatchVacuumAt=1;
+        hushAudioMix=createHushMix(actx,{worldDestination:hushCatchVacuum,directDestination:limiter});
+        // Past the field and the vacuum: when the room has gone, its feet are what's left.
+        hushStepBus=actx.createGain();hushStepBus.connect(limiter);
         dialogGain.connect(master);bodyGain.connect(master);
         sfxGlassFilter=actx.createBiquadFilter();sfxGlassFilter.type='lowpass';sfxGlassFilter.frequency.value=20000;sfxGlassFilter.Q.value=.5;
         sfxGlassGain=actx.createGain();
         sfxGain.connect(sfxGlassFilter);sfxGlassFilter.connect(sfxGlassGain);
-        sfxGlassGain.connect(hushAudioMix?.worldInput || master);
+        // Open except for the moment after a catch, when the room comes back dull.
+        hushCatchDull=actx.createBiquadFilter();hushCatchDull.type='lowpass';hushCatchDull.frequency.value=20000;hushCatchDull.Q.value=.5;
+        sfxGlassGain.connect(hushCatchDull);hushCatchDull.connect(hushAudioMix?.worldInput || master);
         musicGain.connect(master);
         sfxDirectGain.connect(hushAudioMix?.directInput || limiter);
         menuGain.connect(limiter);
@@ -1597,7 +1617,7 @@ function ensureCtx({resume=true}={}){
         // carries what is in his head rather than what is in the room. Its
         // infrasonic layer goes to the limiter instead: an 18.5 Hz sine through
         // the glue compressor would pump the entire mix at walking pace.
-        whisperBed=createWhisperBed(actx,{destination:master,infrasoundDestination:limiter});
+        whisperBed=createWhisperBed(actx,{destination:hushCatchVacuum||master,infrasoundDestination:limiter});
 
         master.connect(limiter);
         // One programme gate includes reflections, VFD pips and UI contacts.
@@ -1639,6 +1659,7 @@ function ensureCtx({resume=true}={}){
         // contact stinger was being silenced by the very thing it announces.
         // Body gain follows SFX independently of the spoken-dialogue control.
         FEAR.fearAudioInit(actx, dialogGain,{heartbeatDestination:bodyGain});
+        void FEAR.prepareContactExposure?.()?.catch?.(()=>{});
         FEAR.setHeartbeatPaused(paused||!gameplayInputLifecycleActive());
         // The transparent monitor node remains in the audible graph, but its
         // display is fed only by semantic player noise and optional room-mic
@@ -3070,9 +3091,14 @@ function clearHushJumpClasses(){
   HUSH_JUMP_EL.style.backgroundImage='none';
   HUSH_JUMP_EL.removeAttribute('data-hush-contact-reason');
 }
+function hushCatchHitPlayer(){
+  hushCatchHit||=createContactHitPlayer({getContext:()=>actx,getDestination:()=>sfxDirectGain,getDull:()=>hushCatchDull});
+  return hushCatchHit;
+}
 function cancelLastExposure(){
   lastExposureEvent=null;
   R3.r3dSetOutcomeExposure?.(null);
+  R3.r3dSetCatchFlash?.(0,0);R3.r3dSetCatchZoom?.(1);
   FEAR.cancelContactExposure?.({fade:.025});
   clearHushJumpClasses();
 }
@@ -3085,18 +3111,32 @@ function lastExposureAnchor(){
   return {x:at.x,y:at.z,floorH:at.y,heightM:2.18,widthM:.68,strength:1,
     heading:Number(actor.gait?.heading)||0,motion:actor.behaviorMode==='chase'?'hunt':'idle'};
 }
-function armHushJump({durationMs=460,reason='surfer-signal',contact=false,taken=false,intensity=1}={}){
+function armHushJump({durationMs=460,reason='surfer-signal',contact=false,taken=false,intensity=1,staged=null}={}){
   if(TUT.tutorialActive())return false;
   if(!contact&&(REC.isRecording()||REC.isMonitoring()||PB.isPlaying()))return false;
   cancelLastExposure();
-  const anchor=lastExposureAnchor(),eventId=`exposure:${getSave().run?.id||'local'}:${++lastExposureSerial}`;
-  lastExposureFrame=null;
+  const anchor=staged||lastExposureAnchor(),eventId=`exposure:${getSave().run?.id||'local'}:${++lastExposureSerial}`;
+  if(!staged)lastExposureFrame=null;
   const player=usingPlan()&&!usingSpecialSpace()?FP.logicalToPhysical(px,py):{x:px,z:py};
   const bearing=anchor?Math.atan2(anchor.x-player.x,-(anchor.y-player.z))-mapWorldHeading():0;
   lastExposureEvent={eventId,kind:taken?'taken':'hard',anchor,bearing,elapsed:0,
     duration:Math.max(.1,Math.min(.72,Number(durationMs)/1000||.62)),reduced:flashMode()!=='full',reason,
-    ownerScene:scenes.top()?.id||null,space:usingSourceSpace()?'source':usingSpecialSpace()?'special':planName};
+    ownerScene:scenes.top()?.id||null,space:usingSourceSpace()?'source':usingSpecialSpace()?'special':planName,
+    staged:!!staged,captured:!!staged};
   R3.r3dSetOutcomeExposure?.(lastExposureEvent);
+  if(contact){
+    // Only the camera moves: the body stays where the catch found it.
+    const view=R3.r3dViewCamera?.(),look=R3.r3dLookAngles?.();
+    lastExposureEvent.hushCatch=hushCatchPlan({eye:view?{x:view.eye.x/CELL,z:view.eye.z/CELL}:null,target:anchor?{x:anchor.x,z:anchor.y}:null,
+      viewYaw:view?.yaw,lookYaw:look?.yaw,lookPitch:look?.pitch,heightM:anchor?.heightM,metresPerUnit:CELL,
+      reducedFlash:flashMode()!=='full',reducedMotion:shakeMode()!=='full'});
+    lastExposureEvent.hushCatchStep=null;lastExposureEvent.hushCatchHold=false;
+    if(intensity>0){
+      hushCatchHitPlayer().play({plain:!!staged,reduced:flashMode()!=='full',flashAt:lastExposureEvent.hushCatch.flashAt,pan:Math.sin(bearing),intensity});
+      startleMeter.hit(performance.now()+lastExposureEvent.hushCatch.flashAt*1000,staged?reason:'catch');
+    }
+  }
+  if(staged)return true;
   FEAR.playContactExposure?.({eventId,bearing,intensity,reduced:flashMode()!=='full',physical:contact,
     protectedAudio:REC.isRecording()||REC.isMonitoring()||PB.isPlaying(),duration:lastExposureEvent.duration});
   if(contact)lastContactInjuryScare=injuryScareGate.authorize({eventId,kind:'contact',
@@ -3114,11 +3154,223 @@ function tickLastExposure(dt){
   lastExposureEvent.elapsed+=Math.max(0,dt);
   if(lastExposureEvent.elapsed>=lastExposureEvent.duration){cancelLastExposure();return;}
   R3.r3dSetOutcomeExposure?.(lastExposureEvent);
+  if(lastExposureEvent.hushCatch){
+    const frame=hushCatchFrame(lastExposureEvent.hushCatch,lastExposureEvent.elapsed,lastExposureEvent);
+    if(frame.look)R3.r3dSetLookAngles?.({...frame.look,immediate:true});
+    R3.r3dSetCatchFlash?.(frame.flash,frame.negative);R3.r3dSetCatchZoom?.(frame.zoom);
+    // Twelve drawn frames a second for a moment: the world has stopped keeping up.
+    lastExposureEvent.hushCatchHold=frame.stutterStep!==null&&frame.stutterStep===lastExposureEvent.hushCatchStep;
+    lastExposureEvent.hushCatchStep=frame.stutterStep;
+    lastExposureEvent.hushCatchFlashing=frame.flash>=1;
+  }
+}
+// The flash frame, kept negative: a pale figure laid over whatever comes back.
+function retainHushCatchFrame(){
+  if(!lastExposureEvent?.hushCatchFlashing||lastExposureEvent.hushCatchKept)return;
+  const source=R3.r3dCanvas?.();if(!source?.width)return;
+  lastExposureEvent.hushCatchKept=true;
+  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;
+  const ctx=canvas.getContext('2d');if(!ctx)return;
+  ctx.drawImage(source,0,0,canvas.width,canvas.height);
+  ctx.globalCompositeOperation='difference';ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  hushCatchAfterimage={canvas,age:-HUSH_CATCH_AFTERIMAGE_DELAY};
+}
+function tickHushCatchVacuum(){
+  if(!hushCatchVacuum||!actx)return;
+  const near=lastExposureEvent?.hushCatch&&!lastExposureEvent.staged?0:(PRES.isActive()?PRES.distanceTo(px,py)*CELL:Infinity),level=Math.min(hushCatchVacuumLevel(near),setPieceVacuumAt);
+  if(Math.abs(level-hushCatchVacuumAt)<.005)return;
+  hushCatchVacuumAt=level;hushCatchVacuum.gain.setTargetAtTime(level,actx.currentTime,.25);
+}
+function drawHushCatchAfterimage(dt){
+  const kept=hushCatchAfterimage;if(!kept)return;
+  if(!paused&&!document.hidden)kept.age+=Math.max(0,dt);
+  if(kept.age<0)return;
+  const alpha=hushCatchAfterimageAlpha(kept.age);
+  if(alpha<=0){hushCatchAfterimage=null;return;}
+  uiDraw(({ctx})=>{ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=alpha;ctx.drawImage(kept.canvas,0,0,ctx.canvas.width,ctx.canvas.height);ctx.restore();});
 }
 function retainLastExposure(){
   if(!lastExposureEvent||lastExposureEvent.captured||lastExposureEvent.elapsed<.1)return;
   const frame=captureExposureFrame(R3.r3dCanvas?.());
   if(frame){lastExposureFrame=frame.canvas;lastExposureEvent.captured=true;}
+}
+// ── its feet ─────────────────────────────────────────────────────────────────
+// The ordinary hunter's real gait, heard from where the listener really is. Source's
+// authored bodies have no gait and aren't heard this way.
+function hushFootfallAudible(){
+  return storyMode&&!paused&&!document.hidden&&!lastExposureEvent&&PRES.isActive()&&hushActiveForPlayer()
+    &&usingPlan()&&!usingSpecialSpace()&&!usingSourceSpace();
+}
+function playHushFootfall(event,actor=PRES.presenceState()){
+  const hush=hushPresenceSnapshot();
+  if(!hush.active)return null;
+  const me=FP.logicalToPhysical(px,py),at=FP.logicalToPhysical(actor.x,actor.y);
+  if(!me||!at)return null;
+  const dx=at.x-me.x,dz=at.z-me.z,rise=(Number(at.y)||0)-(Number(me.y)||0)-1.5;
+  const yaw=R3.r3dWorldYaw?.()??mapWorldHeading(),bearing=Math.atan2(dx,-dz)-yaw;
+  const listener=acousticSpatialAt(px,py),occlusionDb=acousticOcclusionDb(hush,listener)+basementWatcherAcousticFirewallDb(hush,listener);
+  const settings=getSave().settings||{},surface=playerFootingAt(actor.x,actor.y)?.surface||'concrete';
+  const plan=hushFootfallPlan({kind:event.kind,cycle:event.cycle,bearing,occlusionDb,riseM:rise,metres:Math.hypot(dx*CELL,dz*CELL,rise+1.5),
+    absorption:hushFieldFrame?.presentation?.audio??hushFieldFrame?.absorption?.audio??0,monitoring:REC.isMonitoring(),softened:settings.hushSuddenCuts==='softened'});
+  hushFootfallLast={...plan,occlusionDb,bearing,surface};
+  if(!plan.audible)return plan;
+  hushFootstepPlayer.play(plan,{surface});
+  // On the needle in time with the walk, and so onto the tape. Well under what spoils a take.
+  if(plan.needle>0){hushStepNeedleLevel=plan.needle;hushStepNeedleAt=performance.now();}
+  if(plan.shake>0&&shakeMode()==='full'&&!scenes.blocksInput())CR.fx.shake(plan.shake,110);
+  if(plan.caption&&settings.hushCueCaptions)pushEvent(`// [${hushFootfallCaption({kind:event.kind,bearing,occlusionDb})}]`);
+  return plan;
+}
+function hushStepNeedle(){
+  const age=performance.now()-hushStepNeedleAt;
+  return age<420?hushStepNeedleLevel*Math.exp(-age/120):0;
+}
+function tickHushFootfall(){
+  const audible=hushFootfallAudible(),actor=PRES.presenceState();
+  const events=hushFootfallTracker.step(audible?actor.gait:null);
+  if(!audible)return;
+  const surface=playerFootingAt(actor.x,actor.y)?.surface||'concrete';
+  if(surface!==hushFootfallSurface){hushFootfallSurface=surface;void hushFootstepPlayer.prepare(surface);}
+  for(const event of events)playHushFootfall(event,actor);
+}
+// ── the set pieces ───────────────────────────────────────────────────────────
+// One-off false figures, fired by what the player is already doing. The timelines
+// and the budget are in game/set-pieces.js; this is where they meet the building.
+function setPieceDanger(){
+  return !!(lastExposureEvent||activeBattleId||takenActive||recordingFalseHush
+    ||(hushActiveForPlayer()&&PRES.distanceTo(px,py)*CELL<SET_PIECE.dangerMetres));
+}
+// The ordinary building, the job under way, and no tape to protect. The stretch
+// after 05:38 belongs to the strike.
+function setPieceStageOpen(){
+  const night=getSave().nightClock;
+  return storyMode&&RENDERER==='3d'&&!TUT.tutorialActive()&&usingPlan()&&!usingSpecialSpace()&&!usingSourceSpace()
+    &&!dreamFigure&&!firstStrikeScene&&!setPieceDanger()&&!REC.isMonitoring()&&!PB.isPlaying()
+    &&!night?.sourceExited&&(Number(night?.elapsedSeconds)||0)<NIGHT_CLOCK_SOURCE_EXIT_SECONDS
+    &&((setupComplete()&&completedRecordingTakes()>=1)||!!scareDirector?.forced());
+}
+// Somewhere a body could really stand and be seen, on this floor, with nothing in
+// the way. A piece with no such place doesn't happen.
+function setPieceSpot(metres,{rear=false}={}){
+  const yaw=R3.r3dWorldYaw?.()??mapHeading(),sign=rear?-1:1,cells=metres/CELL,here=FP.logicalToPhysical(px,py);
+  for(const[along,across]of[[1,0],[1,.25],[1,-.25],[.85,.35],[.85,-.35],[1.2,0],[.7,0]]){
+    const f=cells*along*sign,r=cells*across;
+    const x=px+Math.sin(yaw)*f+Math.cos(yaw)*r,y=py-Math.cos(yaw)*f+Math.sin(yaw)*r;
+    if(solidAt(Math.round(x),Math.round(y)))continue;
+    const at=FP.logicalToPhysical(x,y);
+    if(!at||at.renderGroup!==here?.renderGroup||Math.abs(at.y-here.y)>.65)continue;
+    const steps=Math.max(2,Math.ceil(Math.hypot(x-px,y-py)/D(.35)));
+    let clear=true;
+    for(let i=1;i<steps&&clear;i++)clear=!solidAt(px+(x-px)*i/steps,py+(y-py)*i/steps);
+    if(!clear||sightCrossesClosedDoor(x,y))continue;
+    return{x,y,heading:rear?yaw:yaw+Math.PI};
+  }
+  return null;
+}
+function beginSetPiece(id,options={}){
+  scareDirector.spend(id);flagSet(`scare.${id}`);saveCommit({flags:getSave().flags});
+  setPiece=createSetPiece(id,{...options,reducedFlash:flashMode()!=='full'});
+  setPieceWatch.quiet=0;
+  return setPiece;
+}
+function endSetPiece(){
+  setPiece=null;setPieceActor=null;setPieceShown=false;setPieceMeterPinned=false;setPieceVacuumAt=1;
+  scareDirector?.release();REC.setLightCut(false);
+  if(!lastExposureEvent)R3.r3dSetCatchFlash?.(0,0);
+}
+function revealSetPiece(id){
+  const c=SET_PIECE[id];
+  if(id==='relief'){
+    // It has been behind them for the whole of the clean minute. Without the whip
+    // there would be nothing to see, so with reduced motion it is in front instead.
+    const spot=(shakeMode()==='full'?setPieceSpot(c.metres,{rear:true}):null)||setPieceSpot(c.frontMetres);
+    if(!spot)return;
+    setPieceActor=spot;
+    const at=FP.logicalToPhysical(spot.x,spot.y);
+    armHushJump({contact:true,durationMs:720,reason:'set-piece:relief',intensity:c.hit,staged:{id:'set-piece:relief',x:at.x,y:at.z,floorH:at.y,
+      heightM:SET_PIECE.figureHeightM,widthM:SET_PIECE.figureWidthM,strength:1,heading:spot.heading}});
+    return;
+  }
+  if(id!=='document')setPieceActor=setPieceSpot(c.metres);
+  if(!setPieceActor)return;
+  hushCatchHitPlayer().play({plain:true,reduced:flashMode()!=='full',intensity:c.hit});
+  startleMeter.hit(performance.now(),id);
+}
+function applySetPieceFrame(frame){
+  setPieceShown=frame.figure&&!!setPieceActor;
+  setPieceMeterPinned=frame.pinned;
+  setPieceVacuumAt=frame.vacuum;
+  REC.setLightCut(frame.torchCut);
+  if(lastExposureEvent)return;
+  // Never black on black: in a dark room the reveal is the figure's negative.
+  const dark=frame.negative&&!!setPieceActor&&!REC.lightOn(),soft=flashMode()!=='full';
+  R3.r3dSetCatchFlash?.(dark&&soft?HUSH_CATCH.reducedLift:0,dark&&!soft?1:0);
+}
+function logStartle(row){
+  try{
+    const key='chunk-surfer.startle.v1',rows=JSON.parse(localStorage.getItem(key)||'[]');
+    rows.push({...row,when:Date.now(),run:getSave().run?.id||null});
+    localStorage.setItem(key,JSON.stringify(rows.slice(-200)));
+  }catch(_){}
+}
+function tickSetPieces(dt){
+  const run=getSave().run?.id||'';
+  if(!scareDirector||scareDirectorRun!==run){
+    if(setPiece)endSetPiece();
+    scareDirectorRun=run;
+    scareDirector=createScareDirector({seed:run,spent:SET_PIECE.ids.filter(id=>flagTest(`scare.${id}`))});
+  }
+  const startle=startleMeter.settle(performance.now());
+  if(startle)logStartle(startle);
+  if(paused||document.hidden)return;
+  const seconds=Math.max(0,Math.min(.25,Number(dt)||0)),watch=setPieceWatch;
+  scareDirector.tick(seconds,{danger:setPieceDanger()});
+  const recorder=scenes.has(RECORDER_SCENE_ID),page=String(scenes.top()?.id||'').startsWith('doc:'),stage=setPieceStageOpen();
+  const lit=REC.lightOn(),wasDark=watch.dark;
+  watch.recorder=recorder&&stage?watch.recorder+seconds:0;
+  watch.page=page&&stage?watch.page+seconds:0;
+  watch.quiet=SPEECH.isSpeaking()||scenes.blocksInput()?0:watch.quiet+seconds;
+  watch.lit=lit?watch.lit+seconds:0;
+  watch.dark=lit?0:watch.dark+seconds;
+  if(setPiece){
+    if(!stage&&!lastExposureEvent?.staged){endSetPiece();return;}
+    const closed=setPiece.id==='meter'?!recorder:setPiece.id==='document'?!page:false;
+    const frame=setPiece.step(seconds,{closed,quiet:watch.quiet});
+    if(frame.hit)revealSetPiece(setPiece.id);
+    applySetPieceFrame(frame);
+    if(frame.done)endSetPiece();
+    return;
+  }
+  if(!stage)return;
+  if(recorder){
+    if(watch.recorder>=SET_PIECE.meter.openSeconds&&scareDirector.ready('meter'))beginSetPiece('meter');
+    return;
+  }
+  if(page){
+    if(watch.page>=SET_PIECE.document.readSeconds&&scareDirector.ready('document')){
+      const spot=setPieceSpot(SET_PIECE.document.metres);
+      if(spot){beginSetPiece('document');setPieceActor=spot;}
+    }
+    return;
+  }
+  if(scenes.blocksInput()||SPEECH.isSpeaking()||!lit||!setPieceSpot(SET_PIECE.torch.metres))return;
+  // Their own hand on the switch is the better version, so it needn't wait as long.
+  if(wasDark>=SET_PIECE.torch.darkSeconds&&scareDirector.ready('torch'))beginSetPiece('torch',{entry:'click'});
+  else if((watch.lit>=SET_PIECE.torch.heldSeconds||scareDirector.forced()==='torch')&&scareDirector.ready('torch',{patient:true}))beginSetPiece('torch');
+}
+function queueReliefSetPiece(){
+  if(setPiece||!scareDirector?.ready('relief'))return false;
+  if(completedRecordingTakes()<2&&scareDirector.forced()!=='relief')return false;
+  beginSetPiece('relief');
+  return true;
+}
+function godSetPiece(id){
+  if(!storyMode||!inRogue||!FP.isLoaded())godEnsureTestRun();
+  if(!scareDirector)tickSetPieces(0);
+  if(setPiece)endSetPiece();
+  scareDirector.force(id);
+  if(id==='relief')queueReliefSetPiece();
+  return true;
 }
 function showSurferJumpscare(durationMs=460){armHushJump({durationMs,reason:'surfer-signal'});}
 function showHushContactFlash({reason='contact',intensity=1,durationMs=700,blackout=false,stinger=true}={}){
@@ -5497,7 +5749,7 @@ function setGameplayPaused(next, { announce=true }={}){
   syncPointerMode(paused ? 'pause-enter' : 'pause-exit');
   if(paused){
     stopAllVoices(); stopWorldLayerVoice(); silenceAmbientDrone();
-    setGainNode(dialogGain,0);setGainNode(bodyGain,0);setGainNode(sfxGain,0);setGainNode(sfxDirectGain,0);setGainNode(musicGain,0);
+    setGainNode(dialogGain,0);setGainNode(bodyGain,0);setGainNode(sfxGain,0);setGainNode(sfxDirectGain,0);setGainNode(hushStepBus,0);setGainNode(musicGain,0);
     setGainNode(whisperBed?.output,0);
     if(announce) pushEvent('// paused.');
   }
@@ -7248,7 +7500,7 @@ interactNatatoriumWater=()=>{if(waterEdgeInReach())maybeUnderWaterSeep();return 
 // The same object, and more and more riding on it. Added after its own words.
 inspectPropTracked=id=>{
   maybeMemorySeep('inspect');
-  const line=realInspectPropTracked(id),meaning=meaningLineFor(id,lastMinutes.frame.meaning,key=>flagTest(key));
+  const line=realInspectPropTracked(id),meaning=usingSpecialSpace()?null:meaningLineFor(id,lastMinutes.frame.meaning,key=>flagTest(key));
   if(!meaning||!line)return line;
   flagSet(meaning.key);return`${line} ${meaning.text}`;
 };
@@ -7711,6 +7963,7 @@ function loop(){
         tickTowerBellDirector(dt);
         tickBellTower(dt);
         tickPresence(dt);
+        tickHushFootfall();
         tickHushMischief();
         tickGarden();
         if (!paused && !document.hidden && document.hasFocus() && !usingSpecialSpace()) yardBusWomanClock += dt;
@@ -7775,6 +8028,7 @@ function loop(){
           }
         }
       }
+      tickSetPieces(dt);
       if(!sourceDriveSession&&!sourcePubScene&&!sourceContinuationScene&&!coastalMemoryScene&&!getInDriveTeaserScene&&!sourceReturnFlashbackScene&&!firstStrikeScene)tickPressurePerformance(dt);
       tickCausalCapture(dt);
       // Calibration, opening/title presentation, and credits fully cover the
@@ -7782,10 +8036,10 @@ function loop(){
       // time needed to upload the critical material bank, which made startup
       // dramatically slower on software/fallback renderers. Keep the world
       // state frozen as before, and resume drawing when the presentation ends.
-      tickLastExposure(dt);
+      tickLastExposure(dt);tickHushCatchVacuum();
       if(RENDERER==='3d'){
         try{
-          if(!scenePresentationHidesWorld()){render3d();retainLastExposure();}
+          if(!scenePresentationHidesWorld()){if(!lastExposureEvent?.hushCatchHold)render3d();retainLastExposure();retainHushCatchFrame();}
           else if(frontEndHasNoCamera()) R3.r3dClearScreen?.();
         }finally{
           // A scene or space can change after the door tick. Complete an early
@@ -7855,6 +8109,7 @@ function loop(){
     }
     applyDockHauntingHudFade();
     scenes.render();
+    drawHushCatchAfterimage(dt);
     uiWithAlpha(dockHauntingFrame&&!dockHauntingFrame.resolved?dockHauntingVisibilityFrame().hudAlpha:1,()=>endFaceplateModuleFrame());
     tickSourceWindowMedia(dt);
     tickSourceRestEndingMusic();
@@ -12622,11 +12877,11 @@ function beginOpeningVehicleArrival({god=false}={}){
       if(!openingDriveEnvironmentCache)openingDriveEnvironmentCache={colliders:openingDriveColliders(FP,PROPS,openingVehicleAnchor(),{cell:CELL})};
       return openingDriveEnvironmentCache;
     },
-    getLook:()=>R3.r3dLookAngles?.(),toWorldView:openingVehicleWorldView,reducedMotion:shakeMode()!=='full',
+    getLook:()=>R3.r3dLookAngles?.(),toWorldView:openingVehicleWorldView,projectWorld:point=>R3.r3dProjectWorld?.(point),reducedMotion:shakeMode()!=='full',
     getCabState:()=>({fieldKit:getSave().fieldKit,ready:openingCabAssetStatus().loaded}),
     onInspect:({id})=>{
       if(openingVehicleScene!==scene||!scene.view().canExit||scenes.top()?.id!==scene.id)return false;
-      scenes.push(makeOpeningCabInspectionScene({id,onCabRadioAction:actOnOpeningCabRadio,onChooseShift:tickShiftOnWorkOrder,onWindMusicBox:windOpeningCabMusicBox,getState:()=>({
+      scenes.push(makeOpeningCabInspectionScene({id,radioLean:scene.radioLean,onCabRadioAction:actOnOpeningCabRadio,onChooseShift:tickShiftOnWorkOrder,onWindMusicBox:windOpeningCabMusicBox,getState:()=>({
         shiftPending:flagTest('van.difficulty.pending')&&!workOrderShiftTicked(),
         build:combatBuild(),job:bagJob(),journal:bagJournal(),workOrder:{...WORK_ORDER,ink:workOrderInkFor},
         fieldKit:getSave().fieldKit,flags:getSave().flags,guidance:currentStoryGuidanceTarget(),
@@ -15710,8 +15965,8 @@ function recorderMachineState(){
         ...MONITOR.monitorSnapshotForRms(
           REC.recordingInputLevel(Math.max(Math.hypot(REC.currentNoise(),presenceMeterLevel()),REC.ambientNoise()))),
         sourceId:'recorder-take',peakKind:'level',unit:'dB',
-      }:null,
-      meterId:recording?'recorder-take':playing?'recorder-playback':'room-mic',
+      }:setPieceMeterPinned?{...MONITOR.monitorSnapshotForRms(1),sourceId:'recorder-take',peakKind:'level',unit:'dB'}:null,
+      meterId:recording||setPieceMeterPinned?'recorder-take':playing?'recorder-playback':'room-mic',
       meterLabel:'TAKE LEVEL',
       locationSeconds:playing?(snapshot?.durationSec||REC.takeDuration()):REC.takeDuration(),
       locationMarks:playing?(snapshot?.markers||[]).map(marker=>({at:marker.position,kind:'event',id:marker.id}))
@@ -16161,6 +16416,7 @@ function stopTake({silent=false}={}){
       firstB3Arrival=false;
       SPEECH.say({who:'direction',text:'The transport clicks off. Somewhere back along the corridor, something that was not listening a minute ago is listening now.'});
     }
+    if(!contamination&&!witnessed)queueReliefSetPiece();
     syncChapelTapeRepair();
   } else {
     activeSourceReplayTake=null;
@@ -16263,14 +16519,14 @@ function beginHushContactFlash({taken=false,reason='contact',intensity=1}={}){
 }
 const HUSH_CONTACT_FLASH_MS=720;
 function makeHushContactSequenceScene({taken=false,reason='contact',intensity=1,onAftermath=null}={}){
-  let t=0,handedOff=false;
+  let t=0,handedOff=false,arrives=0;
   const scene={
     id:'hush-contact',blocksInput:true,blocksWorld:true,suppressesHud:true,lensPreset:'hush',
-    enter(){resetMotionInput('hush-contact',{stopRenderMove:true});beginHushContactFlash({taken,reason,intensity});},
+    enter(){resetMotionInput('hush-contact',{stopRenderMove:true});beginHushContactFlash({taken,reason,intensity});arrives=lastExposureEvent?.hushCatch?.flashAt||0;},
     exit(){cancelLastExposure();},
     update(dt){
       if(paused||document.hidden)return;
-      t+=dt;if(handedOff||t<HUSH_CONTACT_FLASH_MS/1000)return;
+      t+=dt;if(handedOff||t<HUSH_CONTACT_FLASH_MS/1000+arrives)return;
       handedOff=true;
       scenes.remove(scene);
       if(taken)scenes.push(makeTakenAftermathScene(onAftermath||wakeUp));
@@ -16279,7 +16535,7 @@ function makeHushContactSequenceScene({taken=false,reason='contact',intensity=1,
     render(){
       // The canonical body has already passed through world depth and dither.
       // Only its single exposure failing to black is composited here.
-      const alpha=Math.max(0,Math.min(1,(t-.38)/.34));
+      const alpha=Math.max(0,Math.min(1,(t-arrives-.38)/.34));
       if(alpha)uiDraw(({ctx})=>{ctx.fillStyle=`rgba(0,0,0,${alpha})`;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);});
     },
   };return scene;
@@ -26550,9 +26806,9 @@ function presenceMeterLevel(){
     ? (Number(hushFieldFrame?.presentation?.monitor ?? hushFieldFrame?.absorption?.monitor)||0)
     : 0;
   const monitor=Math.max(hush,takeHunterLevel);
-  if(monitor<=PRESENCE_METER.floor)return 0;
+  if(monitor<=PRESENCE_METER.floor)return hushStepNeedle();
   const above=(monitor-PRESENCE_METER.floor)/(1-PRESENCE_METER.floor);
-  return Math.max(0,Math.min(1,Math.pow(above,PRESENCE_METER.curve)*PRESENCE_METER.gain));
+  return Math.max(hushStepNeedle(),Math.min(1,Math.pow(above,PRESENCE_METER.curve)*PRESENCE_METER.gain));
 }
 
 // HE CERTIFIES THE INSTRUMENT, ONCE.
@@ -27502,13 +27758,14 @@ function onTakeBroken(reason){
 
 const pick = (a)=> Array.isArray(a) ? a[Math.floor(Math.random()*a.length)] : a;
 
-// A budget of two per run. Something at the edge of the frame, gone before you
-// can look at it. Spends the lens if it is awake, and a flash and a shake if
-// it is not.
+// One of the run's set pieces, under the same calm rule as the rest. Something at
+// the edge of the frame, gone before you can look at it. Spends the lens if it is
+// awake, and a flash and a shake if it is not.
 function maybeJumpscare(){
-  const seen=Number(flagGet('jumpscares'))||0;
-  if(seen>=2) return;
-  flagApply([`jumpscares=${seen+1}`]);
+  if(!scareDirector?.ready('spoil'))return;
+  scareDirector.spend('spoil');flagSet('scare.spoil');saveCommit({flags:getSave().flags});
+  hushCatchHitPlayer().play({plain:true,reduced:flashMode()!=='full',intensity:SET_PIECE.spoil.hit});
+  startleMeter.hit(performance.now(),'spoil');
   CR.fx.flash(90, 'rgba(200,200,205,0.5)');
   CR.fx.shake(2.2, 260);
   CR.fx.glitch(1, 320);
@@ -33610,6 +33867,10 @@ function godTabs(){
       {id:'presence',label:'HUSH / PRESENCE',value:()=>PRES.isActive()?'SPAWNED':'CLEAR',adjust:()=>{if(PRES.isActive())PRES.despawn();else spawnBuildingPresence();}},
       {id:'hush-body',label:'HUSH BODY COMPOSITE',value:()=>R3.r3dHushBodyStatus?.().mode?.toUpperCase()||'UNAVAILABLE',adjust:godCycleHushBody},
       {id:'hush-contact',label:'HUSH CONTACT FLASH',value:'[FIRE]',closeMenu:true,activate:()=>beginHushContactFlash({taken:false,reason:'god-contact',intensity:1})},
+      {id:'set-piece-torch',label:'SET PIECE / TORCH CUT',value:'[ARM]',closeMenu:true,activate:()=>godSetPiece('torch')},
+      {id:'set-piece-meter',label:'SET PIECE / METER (OPEN THE RECORDER)',value:'[ARM]',closeMenu:true,activate:()=>godSetPiece('meter')},
+      {id:'set-piece-document',label:'SET PIECE / DOCUMENT (READ A PAGE)',value:'[ARM]',closeMenu:true,activate:()=>godSetPiece('document')},
+      {id:'set-piece-relief',label:'SET PIECE / AFTER A TAKE',value:'[FIRE]',closeMenu:true,activate:()=>godSetPiece('relief')},
       {id:'hush-warning',label:'HUSH BODY WARNING',value:'[FIRE]',closeMenu:true,activate:()=>openHushSensation(HUSH_SENSATION_MODE.PROXIMITY,{seed:hushContactSeed('god-warning')})},
       {id:'hush-brush',label:'HUSH BRUSH CONTACT',value:'[FIRE]',closeMenu:true,activate:()=>openDebugHushBrush(hushContactSeed('god-brush'))},
       {id:'taken',label:'TAKEN SEQUENCE',value:'[FIRE]',closeMenu:true,activate:beginTaken},
@@ -34845,7 +35106,7 @@ function sharedFaceplateContext({explicitSourceRest=false}={}){
   const faceplateModal=faceplateUsesCurrentRunModules(top);
   const modal=!!top?.blocksInput&&faceplateModal||explicitSourceRest;
   const roof=FP.isLoaded()&&!usingSpecialSpace()&&FP.logicalToPhysical(px,py).renderGroup==='academicRoof';
-  const film=top?.faceplate===false||!!(openingVehicleScene||openingOvertureScene||studentStrikeScene||activeEndingCutscene||standingTearScene||sourceDriveSession||coastalMemoryScene||sourceReturnFlashbackScene||firstStrikeScene);
+  const film=top?.faceplate===false||!!(lastExposureEvent?.hushCatch||openingVehicleScene||openingOvertureScene||studentStrikeScene||activeEndingCutscene||standingTearScene||sourceDriveSession||coastalMemoryScene||sourceReturnFlashbackScene||firstStrikeScene);
   const enabled=storyMode&&inRogue&&save.run?.status==='active'&&(!film||modal)&&!towerWarningOwnsMoment()
     &&(!top?.suppressesHud||faceplateModal)&&(!scenePresentationHidesWorld()||faceplateModal)
     &&(!usingSpecialSpace()||modal)&&(!roof||modal)&&(!frontEndSession||frontEndSession.state===FRONT_END_STATE.LIVE);
@@ -34861,6 +35122,7 @@ function sharedFaceplateContext({explicitSourceRest=false}={}){
 function drawStoryHud(){
   if(!storyMode||paused||scenes.blocksWorld()||scenes.suppressesHud()||!usingSourceSpace()||!chunkSurfRuntime?.towerLandFrame?.()?.active)towerPersonalHud?.setAttribute?.('hidden','');
   if(!storyMode || scenes.blocksWorld() || scenes.suppressesHud()) return;
+  if(lastExposureEvent?.hushCatch)return;
   if(towerWarningOwnsMoment()){drawTowerWarningSubtitle();return;}
   const { cols, rows }=uiSize();
   const modules=faceplateModuleStatus();
@@ -35914,7 +36176,7 @@ function installProbe(){
         seep:id=>{lastMinutes.seep=null;R3.r3dSetTableau?.(null);return showMemorySeep(id,{seconds:4});},
         neuralHold:(kind,t=0,options={})=>{lastMinutes.neuralHold=kind?{kind,t,seed:options.seed??.37,origin:options.origin||[.62,.42],afterAt:options.afterAt||[.48,.5]}:null;return true;},
         seepVerb:verb=>maybeMemorySeep(verb),forceDeadDoor:on=>{lastMinutes.forceDead=!!on;return lastMinutes.forceDead;},forceDeadVerb:on=>{lastMinutes.forceDeadVerb=!!on;return lastMinutes.forceDeadVerb;},
-        bleed:kind=>actx?playCabBleed(actx,sfxGain||master,kind,{level:1}):false,underWater:()=>{flagClear('memory.seep.water');return maybeUnderWaterSeep();},torch:()=>toggleTorchAction(),bag:()=>openBag(),flora:()=>PROPS.allProps().filter(p=>/^flora-/.test(p.id)).map(p=>({id:p.id,zone:FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y)),outdoors:isOutdoorZone(FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))),solid:FP.isSolid(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))})),flag:(key,value=true)=>{flagSet(key,value);return flagGet(key);},
+        bleed:kind=>actx?playCabBleed(actx,sfxGain||master,kind,{level:1}):false,underWater:()=>{flagClear('memory.seep.water');return maybeUnderWaterSeep();},torch:()=>toggleTorchAction(),bag:()=>openBag(),flora:()=>PROPS.allProps().filter(p=>/^flora-/.test(p.id)).map(p=>({id:p.id,rx:p.rx,ry:p.ry,x:p.x,y:p.y,mesh:p.mesh,at:(()=>{const at=FP.logicalToPhysical(p.rx??p.x,p.ry??p.y);return at?R3.r3dProjectWorld?.({x:at.x*CELL,y:at.y+.1,z:at.z*CELL}):null;})(),zone:FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y)),outdoors:isOutdoorZone(FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))),solid:FP.isSolid(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))})),flag:(key,value=true)=>{flagSet(key,value);return flagGet(key);},
         // Runs out the clock on a take in progress, so the real end of a take can be tested.
         finishTake:()=>{if(!REC.isRecording())return false;REC.recState().takeElapsed=REC.takeDuration();return true;},
         doorWhy:id=>{const door=FP.doorState().find(d=>d.id===id);return{state:door?.state,keyId:door?.keyId,access:door?.access,setup:setupComplete(),escape:!!escape,committed:nightDeadlineCommitted(),loop:sixLoopActive(),recording:REC.isRecording(),blocks:scenes.blocksInput(),top:scenes.top()?.id||null,fear:Number(presentedFearPressure()?.overall)||0,may:doorMayMisbehave(door),crashDue:sixCrashDue({doorOpened:true,storyMode,takes:REC.recState().takes,flags:getSave().flags,reduceDread:!dreadAllowed(),inLoop:false}),third:flagTest(memoryFieldFlag('third')),fired:flagTest(SIX_LOOP.flag)};},
@@ -38181,10 +38443,15 @@ function pressurePresentationInputs(worldView=scenes.worldView()){
     ?physicalActor({id:'plant-header',role:'plant-hallucination',x:plantRear.x,y:plantRear.y,
       heading:Number(plantRear.yaw)||0,motion:'idle',strength:.72+Math.min(1,(Number(plantRear.rung)||0)/4)*.28,
       radiusM:5.6,heightM:2.18,widthM:.68}):null;
+  const setPieceBody=!suppressed&&setPieceShown&&setPieceActor&&usingPlan()&&!usingSpecialSpace()
+    ?physicalActor({id:`set-piece:${setPiece?.id||'figure'}`,role:'recording-hallucination',x:setPieceActor.x,y:setPieceActor.y,
+      heading:setPieceActor.heading,motion:'idle',strength:1,radiusM:SET_PIECE.figureRadiusM,
+      heightM:SET_PIECE.figureHeightM,widthM:SET_PIECE.figureWidthM,glow:2.25,mode:'live'})
+    :null;
   const secondary=!suppressed&&sourceBracketBody?.front?.visible
     ?physicalActor({id:'source-front',role:'source-front',x:sourceBracketBody.front.x,y:sourceBracketBody.front.y,
       heading:Math.PI,motion:'idle',strength:sourceBracketBody.front.strength,radiusM:5.2,heightM:2.18,widthM:.68})
-    :(plantRearBody||recordingFalseHushBody);
+    :(plantRearBody||recordingFalseHushBody||setPieceBody);
   return{primary,secondary};
 }
 
@@ -39257,6 +39524,7 @@ async function boot(){
   document.addEventListener('pointerlockerror', (e)=>pointerMode.handlePointerLockError(e));
   window.addEventListener('mousemove', (e)=>{
     pointerMode.handleMouseMove(e);
+    startleMeter.move(performance.now(),e.movementX,e.movementY);
   }, {capture:true,passive:true});
   // Fullscreen and iframe transitions silently drop keyboard focus.
   document.addEventListener('fullscreenchange', ()=>{

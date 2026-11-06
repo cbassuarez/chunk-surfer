@@ -221,7 +221,10 @@ export function recState() { return state; }
 export function isRecording() { return state.phase === 'recording'; }
 export function isListening() { return state.phase === 'listening'; }
 export function isMonitoring() { return state.phase !== 'idle'; }
-export function lightOn() { return state.light; }
+// A brown-out the player didn't ask for. Their switch stays where they left it.
+let lightCut = false;
+export function setLightCut(value = false) { lightCut = !!value; }
+export function lightOn() { return state.light && !lightCut; }
 
 // Noise floor rises with injury and never falls back. You get worse.
 //

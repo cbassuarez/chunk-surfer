@@ -57,7 +57,7 @@ If only one recording sprint is possible, finish ranks 1–3. If one design spri
 Best polish does not mean attaching a cue to every state change.
 
 - Ordinary visual inspections remain silent unless a hand physically moves or touches something.
-- HUSH locomotion has no literal creature footsteps; its distance language comes from room absorption, mimicry, and the sounds it disturbs.
+- HUSH locomotion has footsteps, by the director's ruling of 2026-11-06 (this replaces the earlier no-footsteps rule): one spatialized footfall per stride of its real Pressure gait, silent while it listens and inside arm's length (`src/game/hush-footfall.js`). Room absorption, mimicry and the sounds it disturbs remain its other distance language.
 - The playback guest gets no reveal sting. The player must notice it rising on the take.
 - Autosave does not click on every position write; only meaningful checkpoint/file commits may use a very quiet trusted signal.
 - Successful conversation choices do not get moral approval tones.
@@ -1104,7 +1104,7 @@ Apply the same timing to `room-listen.main_b3`, `the_tub`, `amplifications`, `so
 - [ ] `conservatory.hush start.line.1`, on “Something in the corridor behind you” → do not add a creature source; on “change in what the silence is shaped like” → `hush_field_orient` plus a narrow directional loss of room return behind the player.
 - [ ] `settle.line.1`, do not fire brick, timber and collapse sounds in sequence merely because the protagonist lists explanations. One truthful pre-existing building settle may continue underneath; the HUSH-shaped absence must remain distinct from it.
 - [ ] `settle.line.2`, on “none of it is what you heard” → remove the ordinary-settle emphasis and expose the unresolved absorption field without a sting.
-- [ ] `steps.line.1`, “Twenty metres. Slow.” is an estimate, not permission to give the HUSH footsteps. Preserve the no-literal-locomotion rule.
+- [ ] `steps.line.1`, “Twenty metres. Slow.” is an estimate. Its footfalls come only from its own gait, never from this line.
 - [ ] `steps.line.2`, on “where I made a noise” → a very low, short room-memory return may indicate the earlier player sound's location; do not replay the sound loudly.
 - [ ] `still.line.1`, on “do not turn around” → tiny coat arrest; on “perfectly, professionally still” → controlled breath hold and stable room floor. No heartbeat hit is required.
 

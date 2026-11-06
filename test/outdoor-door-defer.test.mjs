@@ -43,7 +43,7 @@ test('actual loop render branch flushes a pending submission on hidden and faile
   const block=source.slice(marker,end);assert.ok(marker>=0&&end>marker);
   for(const failure of [false,true]){
     const {c,calls}=harness();c.tickDoorRuntime(.25);
-    Object.assign(c,{tickLastExposure:()=>{},retainLastExposure:()=>{},frontEndHasNoCamera:()=>false,
+    Object.assign(c,{lastExposureEvent:null,retainHushCatchFrame:()=>{},tickLastExposure:()=>{},tickHushCatchVacuum:()=>{},retainLastExposure:()=>{},frontEndHasNoCamera:()=>false,
       scenePresentationHidesWorld:()=>!failure,render3d:()=>{throw new Error('render failure');},R3:{}});
     vm.runInContext(`function renderBranch(dt){${block}}`,c);
     if(failure)assert.throws(()=>c.renderBranch(.02),/render failure/);else c.renderBranch(.02);

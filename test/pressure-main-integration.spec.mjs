@@ -19,7 +19,7 @@ function harness(){
     storyMode:true,source:false,special:false,paused:false,focused:true,hushRunActive:false,top:null,worldView:null,blocked:false,
     reduced:false,now:1000,sourceFloor:4.2,sourceMode:{meeting:false},bracket:null,dockLook:null,plantHaulSnapshot:null,
     presence:{active:true,x:4,y:6,velocityX:2,velocityY:0,behaviorMode:'chase',spawnedAt:100},
-    practiceTenant:null,hush:{active:false,x:0,y:0,vx:0,vy:0},recordingFalseHush:null,hushFieldFrame:{},dockHauntingFrame:null,
+    practiceTenant:null,hush:{active:false,x:0,y:0,vx:0,vy:0},recordingFalseHush:null,setPieceShown:false,setPieceActor:null,hushFieldFrame:{},dockHauntingFrame:null,
     sourcePlayerShadowFrame:null,sourceRepriseShadowStage:null,RENDERER:'3d',syncCount:0,appliedOutskirts:null,
     CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'tower'},
   };

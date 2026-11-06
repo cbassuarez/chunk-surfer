@@ -7,6 +7,7 @@ import{makeCutScene,cutColliders}from'./cut/scene.js';
 import{roadBoundaryColliders,roadBoundaryInstances}from'./route-boundaries.js';
 import{wheelHandInstances}from'./geometry/wheel-hands-pose.js';
 import{driveEvolutionFrame}from'./evolution.js';
+import{CAB_RADIO,CAB_RADIO_ROAD_STATIONS,cabRadioKeyPoint,cabRadioPoint,cabRadioPose,cabRadioVolumePoint}from'../../data/cab-radio.js';
 import{makePredicamentScene,predicamentColliders}from'./predicaments/scene.js';
 import{driveDoorCrossingFrame}from'./door-crossing.js';
 import{ukRoadMarkingMeshAt}from'../../data/uk-road-markings.js';
@@ -38,7 +39,7 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  const toWheel=(p,point=true)=>{const a=metrics.wheel.tiltX,c=Math.cos(a),sn=Math.sin(a),d=point?p.map((v,i)=>v-metrics.wheel.center[i]):p;return[d[0],c*d[1]+sn*d[2],-sn*d[1]+c*d[2]];};
  const recorderKeys=Object.fromEntries(['record','play','stop'].map((id,i)=>[id,[.0340638587+i*99*.274/736,-.05547011,.0299]])),rc=metrics.recorder,ct=Math.cos(rc.tiltX),st=Math.sin(rc.tiltX);
  const recorderCab=k=>[rc.center[0]+k[0],rc.center[1]+ct*k[1]-st*k[2],rc.center[2]+st*k[1]+ct*k[2]];
- const handTargets={tune:{target:toWheel([[ -.0198,.025,.0698 ][handControl?.preset??['service','company','music'].indexOf(s.station)],1.07592,-.379]),normal:toWheel([0,0,1],false)},power:{target:toWheel([-.065,1.10,-.36]),normal:toWheel([0,0,1],false)},...Object.fromEntries(Object.entries(recorderKeys).map(([id,key])=>[id,{target:toWheel(recorderCab(key)),normal:toWheel([0,-st,ct],false)}]))};
+ const handTargets={tune:{target:toWheel(cabRadioKeyPoint(handControl?.preset??CAB_RADIO_ROAD_STATIONS.indexOf(s.station))),normal:toWheel([0,0,1],false)},power:{target:toWheel(cabRadioVolumePoint()),normal:toWheel([0,0,1],false)},...Object.fromEntries(Object.entries(recorderKeys).map(([id,key])=>[id,{target:toWheel(recorderCab(key)),normal:toWheel([0,-st,ct],false)}]))};
  const reach=handControl&&handTargets[handControl.kind]?{kind:handControl.kind,elapsed:handControl.elapsed,...handTargets[handControl.kind]}:null;
  if(showHands)props.push(...wheelHandInstances(cabMatrix(metrics.wheel.center,metrics.wheel.tiltX),-s.steeringWheelAngle,{timeSec:s.programTime,reach}));
  const wiperAngles=weather?.wiperAngles||[-1.42,1.42],wiperTilt=weather?.wiperTiltX??Math.atan2(.40,.86);
@@ -46,7 +47,7 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  cab('drive_wiper',wiperPivot,wiperTilt,wiperAngles[0],{id:'drive-wiper-left'});
  cab('drive_wiper',[.45,wiperPivot[1],wiperPivot[2]],wiperTilt,wiperAngles[1],{id:'drive-wiper-right'});
  if(metrics.speedNeedle)cab('drive_speed_needle',metrics.speedNeedle.center,0,metrics.speedNeedle.rotationZAtMin+(metrics.speedNeedle.rotationZAtMax-metrics.speedNeedle.rotationZAtMin)*Math.abs(s.speed)*3.6/metrics.speedNeedle.speedKmhRange[1]);
- const needle=metrics.radioNeedle,ix=['service','company','music'].indexOf(s.station);cab('drive_radio_needle',[needle.xRange[0]+(needle.xRange[1]-needle.xRange[0])*ix/2,needle.center[1],needle.center[2]]);
+ const radioPose=cabRadioPose({on:s.radioOn!==false,preset:CAB_RADIO_ROAD_STATIONS.indexOf(s.station),volume:s.volume??.65});cab('drive_radio_readout');CAB_RADIO.keys.forEach((key,i)=>cab(`drive_radio_key_${key.id}`,cabRadioPoint(key.x,CAB_RADIO.keyRow.y,-radioPose.keys[i])));cab('drive_radio_knob',cabRadioVolumePoint(0),0,radioPose.volumeAngle);
  const rec=metrics.recorder,recM=cabMatrix(rec.center,rec.tiltX);props.push(placed(rec.bodyMesh,recM),placed(rec.cradleMesh,recM));const screenM=new Float32Array(recM),screenPos=transform(recM,rec.readoutLocalCenter);screenM[12]=screenPos[0];screenM[13]=screenPos[1];screenM[14]=screenPos[2];props.push(placed(rec.readoutMesh,screenM));
  const wheels=metrics.body;for(const side of[-1,1])for(const axle of[wheels.frontAxleZ,wheels.rearAxleZ]){const m=multiply(body,rotation(s.wheelRotation,axle<0?-s.wheelAngle:0,0)),q=bodyPoint([side*wheels.track/2,wheels.wheelRadius,axle]);m[12]=q[0];m[13]=q[1];m[14]=q[2];props.push(placed('drive_tyre',m,{id:`tyre-${side}-${axle}`}));}
  const mirrors=metrics.mirrors.map(m=>{cab(m.mesh,m.center);const eye=cabPoint([m.center[0]*1.10,m.center[1],m.center[2]-.12]);return{mesh:m.mesh,eye,yaw:s.heading+Math.PI+(m.center[0]>0?-.12:.12),pitch:-.035,aspect:m.size[0]/m.size[1]};});
@@ -66,8 +67,8 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  // The receiver/instrument spill originates at the fascia. A floating point
  // beside the driver's head bleached the roof before final acquisition.
  const cabinLamp=cabPoint([.20,1.10,-.35]);lamps.push({id:'drive-instrument-bounce',x:cabinLamp[0],y:cabinLamp[1],z:cabinLamp[2],color:[.72,.66,.52],intensity:.62,radius:1.65,penetration:1});
- for(let i=0;i<3;i++)targets.push({id:'tune',preset:i,label:`PRESET ${i+1} · ${['SERVICE','COMPANY','MUSIC'][i]}`,point:cabPoint([[-.0198,.025,.0698][i],1.07592,-.379])});
- targets.push({id:'power',label:'VOLUME / OFF',point:cabPoint([-.065,1.10,-.36])},{id:'record',label:'REC / STOP · R',point:transform(recM,recorderKeys.record)});
+ for(let i=0;i<3;i++)targets.push({id:'tune',preset:i,label:`PRESET ${i+1} · ${['SERVICE','COMPANY','MUSIC'][i]}`,point:cabPoint(cabRadioKeyPoint(i))});
+ targets.push({id:'power',label:'VOLUME / OFF',point:cabPoint(cabRadioVolumePoint())},{id:'record',label:'REC / STOP · R',point:transform(recM,recorderKeys.record)});
  targets.push({id:'play',label:'PLAY LAST TAKE · E',point:transform(recM,recorderKeys.play)},{id:'stop',label:'STOP TRANSPORT · X',point:transform(recM,recorderKeys.stop)});
  const evolution=driveEvolutionFrame(s),cut=makeCutScene(s,evolution),predicaments=makePredicamentScene(s);props.push(...cut.props,...predicaments.props);lamps.push(...cut.lights,...predicaments.lights);const mic=offset(metrics.eye,mount),cabinSource=source=>{const d=source.world.map((v,i)=>v-body[12+i]);return{...source,position:[body[0]*d[0]+body[1]*d[1]+body[2]*d[2]-mic[0],body[4]*d[0]+body[5]*d[1]+body[6]*d[2]-mic[1],body[8]*d[0]+body[9]*d[1]+body[10]*d[2]-mic[2]]};};cut.sources=cut.sources.map(cabinSource);predicaments.sources=predicaments.sources.map(cabinSource);
  const rainShelter={x:bridge.matrix[12],y:bridge.y+ORDINARY_BRIDGE.clearance,z:bridge.matrix[14],heading:bridge.heading};

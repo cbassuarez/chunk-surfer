@@ -1,5 +1,6 @@
 // The same right-hand-drive cabin authored for the Source driving scene.
 // All positions are in metres, with the cabin 1.6m ahead of the body origin.
+import { CAB_RADIO, cabRadioPoint, cabRadioPose, cabRadioVolumePoint } from './cab-radio.js';
 export const OPENING_VEHICLE = Object.freeze({
   asset: 'assets/source-vehicle-interior.glb',
   sourceSha256: '59155ba454894283e68ecde1d976996b326221a98930d164a77dd8ab7aab8316',
@@ -26,6 +27,12 @@ export function openingVehiclePoint(anchor, local, cabin = true) {
   const c = Math.cos(anchor.yaw), s = Math.sin(anchor.yaw);
   return { x: anchor.x + c*x-s*z, y: anchor.y+y, z: anchor.z+s*x+c*z };
 }
+let parkedRadioPose = cabRadioPose({ on: false });
+/** What the parked cab's keys and knob are doing. The radio's owner sets this, not the frame. */
+export function setOpeningVehicleRadioPose(pose) { parkedRadioPose = pose || cabRadioPose({ on: false }); }
+let parkedRadioLeaning = false;
+export function setOpeningVehicleRadioLeaning(leaning) { parkedRadioLeaning = leaning === true; }
+export function openingVehicleRadioLeaning() { return parkedRadioLeaning; }
 export function openingVehicleInstances(anchor, { doorOpen = 0, drive = null } = {}) {
   if (!anchor) return [];
   const instances = [];
@@ -34,10 +41,11 @@ export function openingVehicleInstances(anchor, { doorOpen = 0, drive = null } =
     matrix[12] = point.x; matrix[13] = point.y; matrix[14] = point.z;
     instances.push({ id: `opening:${id}`, mesh:`opening_${mesh}`, matrix, ...point, structural: true, zone: anchor.zone, cullRadius: 4 });
   }
-  part('drive_cabin'); part('drive_radio');
+  part('drive_cabin'); part('drive_radio'); part('drive_radio_readout');
+  CAB_RADIO.keys.forEach((key, i) => part(`drive_radio_key_${key.id}`, cabRadioPoint(key.x, CAB_RADIO.keyRow.y, -parkedRadioPose.keys[i])));
+  part('drive_radio_knob', cabRadioVolumePoint(0), 0, parkedRadioPose.volumeAngle);
   part('drive_wheel', [.48, 1.20, -.39], -.36, -(drive?.steeringWheelAngle||0));
   part('drive_speed_needle', [.575,1.207,-.626], 0, .72*Math.PI*(1-2*Math.min(1,Math.abs(drive?.speed||0)*3.6/144.84)));
-  part('drive_radio_needle', [-.0422, 1.11344, -.396]);
   const sweep=drive?.wipers===false?0:drive?Math.sin((drive.elapsed||0)*Math.PI*1.6)*.72:0;
   part('drive_wiper', [-.52, 1.30, -1.17], .435, -1.42+sweep, true, 'wiper-left');
   part('drive_wiper', [.45, 1.30, -1.17], .435, 1.42+sweep, true, 'wiper-right');

@@ -25,6 +25,9 @@ function stationList(stations,programmeSource){
 
 // One receiver, one streamed programme and one short prerecorded station link.
 // This owner never resumes the host context or routes around the game's bus.
+let frameObserver=null;
+/** One listener for the running state, for whatever draws the set. Audio doesn't care who. */
+export function setOpeningCabRadioObserver(observer){frameObserver=observer;}
 export function createOpeningCabRadio({getAudio=()=>null,getState=()=>({}),
   createElement=()=>document.createElement('audio'),fetcher=globalThis.fetch,
   urlFor=assetUrl,onError=()=>{},programmeSource=OPENING_CAB_RADIO_SOURCE,
@@ -216,7 +219,7 @@ export function createOpeningCabRadio({getAudio=()=>null,getState=()=>({}),
     prepare:async()=>{if(disposed||failed||!ensure())return false;if(!prepared){prepared=true;try{media.load?.();}catch{}}
       await loadLink();return !disposed&&!failed&&!!media;},
     start:(extra={})=>{if(disposed)return false;desired=true;needsGesture=false;return reconcile(extra);},
-    update:(extra={})=>reconcile(extra),pause:hold,
+    update:(extra={})=>{const result=reconcile(extra);frameObserver?.(snapshot());return result;},pause:hold,
     action(action={}){if(disposed)return snapshot();if(action.type==='power'){
         on=typeof action.value==='boolean'?action.value:!on;
         if(on&&needsGesture){needsGesture=false;if(desired)reconcile();}

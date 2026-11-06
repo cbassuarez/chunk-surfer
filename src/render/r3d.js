@@ -14,6 +14,7 @@
 // module only owns facing (N/E/S/W) and the camera.
 
 import { assetUrl } from '../platform/paths.js';
+import { CAB_RADIO_PACK } from '../data/cab-radio.js';
 import {NATATORIUM_METRIC_GLSL,NATATORIUM_METRIC_IDENTITY,normalizeNatatoriumMetric,natatoriumMetricUniform,natatoriumMetricZ} from './natatorium-metric.js';
 import { recordingEmbodimentInstances,recordingEmbodimentViewPull } from './recording-embodiment.js';
 import {normalizeRecordingViewPull} from './recording-view-pull.js';
@@ -3197,6 +3198,7 @@ float leakNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(
 ${PRESSURE_IDENTITY_GLSL}
 uniform sampler2D uPressureInk;
 uniform float uPressureInkReady;
+uniform vec2 uCatchFlash;
 ${PRESSURE_INK_GLSL}
 ${MISSING_MAN_MATERIAL_GLSL}
 void main(){
@@ -3428,6 +3430,14 @@ void main(){
       c=mix(c,c*vec3(.42,.52,1.0)+vec3(.02,.03,.13),disc*afterSun);
       c+=vec3(.34,.05,.42)*ring*afterSun*.34;
     }
+  }
+  // THE CATCH. A flash photograph of the real body: the room blown white behind it,
+  // then the same frame negative. On the finished frame, because the print stage
+  // would draw a flat white field as nothing at all.
+  if(uCatchFlash.x>.001||uCatchFlash.y>.001){
+    float catchBody=step(.018,pressureIdentityMask(uv));
+    c=mix(c,vec3(1.0-catchBody),uCatchFlash.x);
+    c=mix(c,vec3(catchBody),uCatchFlash.y);
   }
   o=vec4(c,1.0);
 }`;
@@ -4684,6 +4694,9 @@ const pressureFinishUniformCache=new Map();
 let hushBodyMode='live';
 const outcomeExposure=createOutcomeExposureController();
 export function r3dSetOutcomeExposure(value=null){return outcomeExposure.set(value);}
+let catchFlash=0,catchNegative=0,catchZoom=1;
+export function r3dSetCatchFlash(flash=0,negative=0){catchFlash=Math.max(0,Math.min(1,Number(flash)||0));catchNegative=Math.max(0,Math.min(1,Number(negative)||0));}
+export function r3dSetCatchZoom(zoom=1){catchZoom=Math.max(1,Math.min(1.6,Number(zoom)||1));}
 export function r3dOutcomeExposureStatus(){
   const state=outcomeExposure.snapshot();
   return {state,sample:sampleOutcomeExposure(state,{reduceFlash:!!pixelMeshSettings.reduceFlash}),
@@ -7222,7 +7235,9 @@ export function r3dInit(mapEl) {
         console.warn('pub hospitality unavailable; retaining the original room',err);
       });
       void P3.addPropPack(assetUrl('assets/source-vehicle-interior.glb'))
-        .then(()=>{vehicleInteriorStatus.loaded=true;vehicleInteriorStatus.error=null;})
+        .then(()=>{vehicleInteriorStatus.loaded=true;vehicleInteriorStatus.error=null;
+          // The dash's radio, over the old one of the same name. It keeps that one if this fails.
+          return P3.addPropPack(assetUrl(CAB_RADIO_PACK)).catch(err=>console.warn('cab radio unavailable; keeping the original unit',err));})
         .catch((err)=>{vehicleInteriorStatus.error=String(err?.message||err);console.warn('vehicle interior unavailable',err);});
       // The opening booth and the later Wrong Fold share this actor. Begin its
       // optional decode as soon as the base catalog is installed, so unrelated
@@ -8143,7 +8158,7 @@ export function r3dFrame(state) {
   // main.js supplies a frame-interpolated physical player position. The camera
   // is that position—never a follower with its own lag or acceleration state.
   const authoredCamera=authoredCameraFrame(state.authoredCamera);
-  activeCameraTanHalfFov=driveFrameActive ? .65 : cinematicTanHalfFov(authoredCamera?.lens);
+  activeCameraTanHalfFov=(driveFrameActive ? .65 : cinematicTanHalfFov(authoredCamera?.lens))/catchZoom;
   P3.setFrameCameraTanHalfFov(activeCameraTanHalfFov);
   cinematicLensPass?.inactive();
   const nextCamX=authoredCamera?authoredCamera.eye[0]/CELL:state.px+0.5, nextCamZ=authoredCamera?authoredCamera.eye[2]/CELL:state.py+0.5;
@@ -8662,6 +8677,7 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform2f(postU('uPressureNearFar'),pressure.near,pressure.far);
   gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,pressureIdentityTex||sourceTex);
   gl.uniform1i(postU('uPressureInk'),5);
+  gl.uniform2f(postU('uCatchFlash'),catchFlash,catchNegative);
   gl.uniform1f(postU('uPressureInkReady'),pressureFinishReady?1:0);
   gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,markTex||sourceTex);
   gl.uniform1i(postU('uMissingManMarks'),6);

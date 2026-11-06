@@ -68,7 +68,9 @@ test('production vehicle is a self-contained promoted Source asset with real ope
   assert.equal(receipt.sourceSha256, OPENING_VEHICLE.sourceSha256);
   assert.equal(createHash('sha256').update(bytes).digest('hex'), receipt.sha256);
   const doc = await new NodeIO().readBinary(bytes), root = doc.getRoot();
-  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh));
+  // The radio's moving parts come from its own pack, which replaced the old unit and its needle.
+  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh).filter(mesh => !/^opening_drive_radio_(?:readout|knob|key_\d)$/.test(mesh)));
+  used.add('opening_drive_radio_needle');
   assert.deepEqual(new Set(root.listMeshes().map(m => m.getName())), used);
   assert.ok(receipt.doorTriangles >= 500);
   assert.ok(root.listTextures().length >= 3, 'Source materials keep their embedded texture maps');

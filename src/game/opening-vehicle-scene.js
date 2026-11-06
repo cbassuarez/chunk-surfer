@@ -1,9 +1,10 @@
 import { uiFill, uiSize, uiText } from '../render/ui.js';
 import { promptLine } from './bindings.js';
 import { isFrozen } from './scenes.js';
-import { OPENING_VEHICLE, openingVehicleExitFrame, openingVehiclePoint } from '../data/opening-vehicle.js';
+import { OPENING_VEHICLE, openingVehicleExitFrame, openingVehiclePoint, setOpeningVehicleRadioLeaning } from '../data/opening-vehicle.js';
 import {OPENING_ARRIVAL_DRIVE,createOpeningArrivalDrive,openingArrivalAnchor,openingArrivalCanExit,openingArrivalSnapshot,stepOpeningArrivalDrive} from './opening-arrival-drive.js';
 import {openingCabFocus} from './opening-cab-inspection.js';
+import {CAB_RADIO_LEAN,cabRadioPoint} from '../data/cab-radio.js';
 
 export const OPENING_VEHICLE_SCENE = 'opening-vehicle';
 const KEY_INPUTS={keyw:'forward',w:'forward',arrowup:'forward',keys:'reverse',s:'reverse',arrowdown:'reverse',keya:'left',a:'left',arrowleft:'left',keyd:'right',d:'right',arrowright:'right',space:'brake',' ':'brake'};
@@ -13,8 +14,10 @@ export function makeOpeningVehicleScene({
   getAnchor=()=>null,getAssetStatus=()=>({loaded:false}),getDriveEnvironment=()=>({}),
   toWorldView=eye=>eye,getLook=()=>({yaw:0,pitch:-.04}),driveEnabled=true,automaticParking=true,checkpoint=null,
   reducedMotion=false,onReady=()=>{},onDoor=()=>{},onUpdate=()=>{},onEvent=()=>{},onCheckpoint=()=>{},
-  onDone=()=>{},onExit=()=>{},onInspect=()=>false,getCabState=()=>({}),
+  onDone=()=>{},onExit=()=>{},onInspect=()=>false,getCabState=()=>({}),projectWorld=()=>null,
 }={}){
+  let lean=0,leanTarget=0;
+  const stepLean=dt=>{if(reducedMotion){lean=leanTarget;return;}const reach=finite(dt)/CAB_RADIO_LEAN.seconds;lean=lean<leanTarget?Math.min(leanTarget,lean+reach):Math.max(leanTarget,lean-reach);};
   let phase='loading',anchor=null,drive=null,elapsed=0,reveal=0,startYaw=0,startPitch=-.04,exited=false,completed=false,error=null,held=false;
   let headYaw=finite(checkpoint?.headYaw),headPitch=finite(checkpoint?.headPitch,-.04),lastCheckpoint=0,doorCloseAnnounced=false,stepAnnounced=false;
   let exitLookYaw=finite(checkpoint?.exitLookYaw),exitLookPitch=finite(checkpoint?.exitLookPitch);
@@ -22,12 +25,18 @@ export function makeOpeningVehicleScene({
   const pressed=new Set(),input=()=>Object.fromEntries([...pressed].map(k=>[k,true]));
   const clearInput=()=>{pressed.clear();launchSeconds=0;if(drive){drive.throttle=0;drive.directionHold=0;drive.hillStartDirection=0;}},emit=event=>onEvent({...event,sceneId:OPENING_VEHICLE_SCENE});
   const currentAnchor=()=>drive?openingArrivalAnchor(drive):anchor;
-  const canExit=()=>phase==='seated'||phase==='parked'&&openingArrivalCanExit(drive,input());
+  const canExit=()=>lean<=0&&(phase==='seated'||phase==='parked'&&openingArrivalCanExit(drive,input()));
+  // Leaning over to the radio: the head goes to it and comes back to where it was looking.
+  function leaningFrame(at){
+    const k=lean*lean*(3-2*lean),from=OPENING_VEHICLE.eye,to=CAB_RADIO_LEAN.eye,target=CAB_RADIO_LEAN.target;
+    const dx=target[0]-to[0],dy=target[1]-to[1],dz=target[2]-to[2],yaw=Math.atan2(dx,-dz),pitch=Math.atan2(dy,Math.hypot(dx,dz));
+    return{eye:openingVehiclePoint(at,from.map((v,i)=>v+(to[i]-v)*k)),yaw:at.yaw+headYaw+(yaw-headYaw)*k,pitch:headPitch+(pitch-headPitch)*k,doorOpen:0,fade:0};
+  }
   function frame(){
     if(isFrozen(scene))clearInput();
     const at=currentAnchor();if(!at)return null;
     return phase==='exiting'?openingVehicleExitFrame(at,elapsed,{reducedMotion,startYaw,startPitch,lookYaw:exitLookYaw,lookPitch:exitLookPitch})
-      :{eye:openingVehiclePoint(at,OPENING_VEHICLE.eye),yaw:at.yaw+headYaw,pitch:headPitch,doorOpen:0,fade:0};
+      :leaningFrame(at);
   }
   function view(){if(isFrozen(scene))clearInput();const at=currentAnchor(),value={phase,elapsed,reveal,error,completed,anchor:at,drive:drive?{...openingArrivalSnapshot(drive),canExit:canExit(),wipers:!reducedMotion}:null,parked:phase==='parked',canExit:canExit(),...frame()};
     return{...value,focus:openingCabFocus(value,getCabState())};}
@@ -43,6 +52,7 @@ export function makeOpeningVehicleScene({
     id:OPENING_VEHICLE_SCENE,blocksInput:true,blocksWorld:true,suppressesHud:true,handlesEscape:false,worldPresentation:'visible',lookProfile:'calm',
     get allowsLook(){return!held&&!exited&&!completed&&!isFrozen(scene)&&['seated','driving','parked','exiting'].includes(phase);},
     update(dt){
+      stepLean(dt);
       if(exited||completed||held||isFrozen(scene)){clearInput();return;}
       const step=Math.max(0,finite(Number(dt)));
       if(phase==='loading'){
@@ -77,6 +87,8 @@ export function makeOpeningVehicleScene({
     },
     worldView(){const f=frame();if(!f)return null;return{...toWorldView(f.eye,{...f,anchor:currentAnchor(),drive:drive?openingArrivalSnapshot(drive):null,phase}),yaw:f.yaw,pitch:f.pitch,suppressActors:true};},
     view,serialize,
+    radioLean:{set(on){leanTarget=on?1:0;setOpeningVehicleRadioLeaning(on===true);},step:stepLean,amount:()=>lean,
+      project(x,y,z=0){const at=currentAnchor();return at?projectWorld(openingVehiclePoint(at,cabRadioPoint(x,y,z))):null;}},
     lookAngles:()=>phase==='exiting'?{yaw:frame().yaw-currentAnchor().yaw,pitch:frame().pitch}:{yaw:headYaw,pitch:headPitch},
     lookBy(yaw,pitch){if(!scene.allowsLook)return false;
       if(phase==='exiting'){exitLookYaw=clamp(exitLookYaw+finite(yaw),-2.4,2.4);exitLookPitch=clamp(exitLookPitch+finite(pitch),-1.2,.75);}
@@ -104,7 +116,7 @@ export function makeOpeningVehicleScene({
       if(veil>.001)uiFill(0,0,cols,rows,`rgba(4,5,7,${veil.toFixed(3)})`);
       if(!['seated','parked','driving'].includes(phase))return;
       const focus=view().focus,prompt=phase==='driving'?(automaticParking?'ARRIVING…':'W / S · DRIVE   A / D · STEER   SPACE · BRAKE')
-        :focus&&canExit()?promptLine([{action:'interact',label:focus.label}]):'';
+        :focus&&canExit()&&lean<=0?promptLine([{action:'interact',label:focus.label}]):'';
       if(prompt)uiText(Math.max(2,Math.floor((cols-prompt.length)/2)),rows-3,prompt,'ui-primary',Math.min(1,reveal*1.5));
       if(error)uiText(2,rows-5,'CABIN UNAVAILABLE','ui-secondary',.8);
     },

@@ -1,0 +1,21 @@
+{
+  "bytes": 133176,
+  "sha256": "2652aaffc4e65e07d8988a313d65e0a0e46d6878088abd1bf863cc97bb8f5163",
+  "meshes": [
+    "drive_radio",
+    "drive_radio_key_1",
+    "drive_radio_key_2",
+    "drive_radio_key_3",
+    "drive_radio_key_4",
+    "drive_radio_knob",
+    "drive_radio_readout",
+    "opening_drive_radio",
+    "opening_drive_radio_key_1",
+    "opening_drive_radio_key_2",
+    "opening_drive_radio_key_3",
+    "opening_drive_radio_key_4",
+    "opening_drive_radio_knob",
+    "opening_drive_radio_readout"
+  ],
+  "triangles": 2296
+}

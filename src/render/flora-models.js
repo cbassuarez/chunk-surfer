@@ -1,7 +1,9 @@
 // Small, low, ordinary. Daisies, dandelions and clover, built here because the packs don't
-// have them, to sit beside the packs' own nettles and weeds. Broad flat shapes, because the
-// game's print eats anything finer. A fixed seed per mesh: every one of them is the same
-// plant every time, so the opening is the same opening.
+// have them, to sit beside the packs' own nettles and weeds. Broad flat shapes, and bigger
+// than life: at true size a daisy is two of the print's cells at three metres, and gone.
+// In this print an unlit white head is a black disc with a dotted rim, so the flowers are
+// given a little light per instance (data/ellery-flora.js). A fixed seed per mesh: every one
+// of them is the same plant every time, so the opening is the same opening.
 import * as P3 from './props3d.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 
@@ -10,10 +12,14 @@ function rng(seed){let s=(seed*2654435761)>>>0;return()=>{s=(s+0x6d2b79f5)>>>0;l
 const group=()=>({p:[],i:[]});
 function tri(g,a,b,c){const o=g.p.length/3;g.p.push(...a,...b,...c);g.i.push(o,o+1,o+2,o,o+2,o+1);}
 const quad=(g,a,b,c,d)=>{tri(g,a,b,c);tri(g,a,c,d);};
-// A head looking mostly up, tilted a little to wherever.
-function head(petal,disc,x,y,z,r,count,random){
-  const tx=(random()-.5)*.5,tz=(random()-.5)*.5,at=(a,d,lift=0)=>[x+Math.cos(a)*d,y+Math.cos(a)*d*tx+Math.sin(a)*d*tz+lift,z+Math.sin(a)*d];
-  const start=random()*TAU,w=TAU/count*.62;
+// A head on its stem, leaning the way a daisy leans, towards the light and towards the mesh's
+// local +z, which is the way the road comes from. Dead flat they are a line a pixel thick from
+// a van's cab, and only the stems are left. `collar` is the dark under it, in the leaf mesh,
+// which stays unlit: on a verge the headlamps have blown out it's the only outline it has.
+function head(petal,disc,collar,x,y,z,r,count,random){
+  const tx=(random()-.5)*.45,tz=-(.62+random()*.3),at=(a,d,lift=0)=>[x+Math.cos(a)*d,y+Math.cos(a)*d*tx+Math.sin(a)*d*tz+lift,z+Math.sin(a)*d];
+  const start=random()*TAU,w=TAU/count*.96;
+  for(let k=0;k<10;k++){const a=k/10*TAU,b=(k+1)/10*TAU,c=r*(petal?1.26:1.32);tri(collar,at(0,0,-.012),at(a,c,-.012),at(b,c,-.012));}
   if(petal)for(let k=0;k<count;k++){const a=start+k/count*TAU;quad(petal,at(a-w*.5,r*.25),at(a+w*.5,r*.25),at(a+w*.62,r*.84),at(a-w*.62,r*.84));tri(petal,at(a-w*.62,r*.84),at(a+w*.62,r*.84),at(a,r*1.04));}
   const inner=petal?r*.34:r;
   for(let k=0;k<10;k++){const a=k/10*TAU,b=(k+1)/10*TAU;tri(disc,at(0,0,.004),at(a,inner,.003),at(b,inner,.003));}
@@ -33,34 +39,36 @@ export function floraGeometry(){
   const rows=[];
   {
     const random=rng(21),petal=group(),disc=group(),green=group();
-    for(let k=0;k<13;k++){
-      const a=random()*TAU,d=Math.sqrt(random())*.55,x=Math.cos(a)*d,z=Math.sin(a)*d*.8,h=.07+random()*.17;
-      stem(green,x,z,h);rosette(green,x,z,.1,3,random);
-      head(petal,disc,x,h,z,.036+random()*.018,9,random);
+    for(let k=0;k<9;k++){
+      const a=random()*TAU,d=Math.sqrt(random())*.6,x=Math.cos(a)*d,z=Math.sin(a)*d*.8,h=.08+random()*.16;
+      const r=.068+random()*.026;
+      stem(green,x,z,h);rosette(green,x,z,.14,3,random);
+      head(petal,disc,green,x+.02,h,z,r,9,random);
     }
-    rows.push(row('vegetation_daisy_drift_petal',petal,[.95,.95,.9],[.16,.16,.15]),row('vegetation_daisy_drift_disc',disc,[.92,.68,.08],[.14,.09,.01]),row('vegetation_daisy_drift_leaf',green,[.14,.28,.08],[.012,.024,.007]));
+    rows.push(row('vegetation_daisy_drift_petals',petal,[.95,.95,.9],[.74,.74,.68]),row('vegetation_daisy_drift_eyes',disc,[.92,.68,.08],[.72,.48,.04]),row('vegetation_daisy_drift',green,[.08,.17,.045],[.006,.012,.003]));
   }
   {
     const random=rng(33),disc=group(),green=group();
     for(let k=0;k<5;k++){
       const a=random()*TAU,d=Math.sqrt(random())*.34,x=Math.cos(a)*d,z=Math.sin(a)*d,h=.1+random()*.13;
-      stem(green,x,z,h,.012);rosette(green,x,z,.17,7,random);
-      head(null,disc,x,h,z,.034+random()*.012,0,random);
+      const r=.052+random()*.016;
+      stem(green,x,z,h,.012);rosette(green,x,z,.22,7,random);
+      head(null,disc,green,x+.012,h,z,r,0,random);
     }
-    rows.push(row('vegetation_dandelions_head',disc,[.93,.66,.05],[.15,.09,.01]),row('vegetation_dandelions_leaf',green,[.17,.31,.09],[.014,.026,.008]));
+    rows.push(row('vegetation_dandelions_heads',disc,[.93,.66,.05],[.7,.46,.03]),row('vegetation_dandelions',green,[.09,.18,.05],[.007,.013,.004]));
   }
   {
     const random=rng(45),mat=group(),flower=group();
-    for(let k=0;k<70;k++){
+    for(let k=0;k<46;k++){
       const a=random()*TAU,d=Math.sqrt(random())*.56,x=Math.cos(a)*d,z=Math.sin(a)*d*.82,y=.03+random()*.05;
-      for(let f=0;f<3;f++){const t=f/3*TAU+random(),l=.03+random()*.012;tri(mat,[x,y,z],[x+Math.cos(t-.5)*l,y,z+Math.sin(t-.5)*l],[x+Math.cos(t+.5)*l,y,z+Math.sin(t+.5)*l]);}
+      for(let f=0;f<3;f++){const t=f/3*TAU+random(),l=.05+random()*.018;tri(mat,[x,y,z],[x+Math.cos(t-.5)*l,y,z+Math.sin(t-.5)*l],[x+Math.cos(t+.5)*l,y,z+Math.sin(t+.5)*l]);}
     }
-    for(let k=0;k<5;k++){const a=random()*TAU,d=Math.sqrt(random())*.42,x=Math.cos(a)*d,z=Math.sin(a)*d,h=.09+random()*.04;stem(mat,x,z,h,.008);head(null,flower,x,h,z,.024,0,random);}
-    rows.push(row('vegetation_clover_mat_leaf',mat,[.13,.27,.11],[.011,.023,.009]),row('vegetation_clover_mat_flower',flower,[.82,.72,.78],[.11,.09,.1]));
+    for(let k=0;k<5;k++){const a=random()*TAU,d=Math.sqrt(random())*.42,x=Math.cos(a)*d,z=Math.sin(a)*d,h=.09+random()*.04;stem(mat,x,z,h,.008);head(null,flower,mat,x+.008,h,z,.038,0,random);}
+    rows.push(row('vegetation_clover_mat',mat,[.08,.17,.065],[.006,.012,.005]),row('vegetation_clover_mat_flowers',flower,[.82,.72,.78],[.56,.48,.52]));
   }
   library=Object.freeze(rows);return library;
 }
-export const FLORA_MESH_NAMES=Object.freeze(['vegetation_daisy_drift','vegetation_dandelions','vegetation_clover_mat']);
+export const FLORA_MESH_NAMES=Object.freeze(['vegetation_daisy_drift','vegetation_daisy_drift_petals','vegetation_daisy_drift_eyes','vegetation_dandelions','vegetation_dandelions_heads','vegetation_clover_mat','vegetation_clover_mat_flowers']);
 function payload(item){
   const count=item.i.length,positions=new Float32Array(count*3),normals=new Float32Array(count*3),uvs=new Float32Array(count*2);
   for(let k=0;k<count;k+=3){
@@ -76,23 +84,19 @@ function bounds(items){
   for(const item of items)for(let k=0;k<item.p.length;k+=3)for(let a=0;a<3;a++){min[a]=Math.min(min[a],item.p[k+a]);max[a]=Math.max(max[a],item.p[k+a]);}
   return{min,max};
 }
-// One catalog entry to a plant, with one primitive to a colour, as the packs' plants have.
+// One catalog entry to each part. Flowers and leaves are separate on purpose: the world's
+// prop shader only lets a per-instance glow straight through, and the leaves mustn't have it.
 function install(gl,pack){
   if(!gl||!pack?.catalog)return false;
-  for(const name of FLORA_MESH_NAMES){
-    if(pack.catalog.has(name))continue;
-    const items=floraGeometry().filter(item=>item.name.startsWith(name+'_')),instanceBuffer=gl.createBuffer(),primitives=[];let triangles=0;
-    for(const item of items){
-      const d=payload(item),vao=gl.createVertexArray();gl.bindVertexArray(vao);
-      for(const[location,data,size]of[[0,d.positions,3],[1,d.normals,3],[2,d.uvs,2]]){gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);}
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,d.indices,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);
-      for(let col=0;col<4;col++){gl.enableVertexAttribArray(3+col);gl.vertexAttribPointer(3+col,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,col*16);gl.vertexAttribDivisor(3+col,1);}
-      for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}
-      gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-      triangles+=d.indices.length/3;
-      primitives.push({vao,count:d.indices.length,indexType:gl.UNSIGNED_INT,base:item.base,emissive:item.emissive,materialFactors:'gltf',metallic:0,roughness:1,aoStrength:1,portrait:false,alphaCut:0,materialName:item.name,nativeReceiverGeometry:d});
-    }
-    pack.catalog.set(name,{name,nodeMatrix:new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),instanceBuffer,extras:{flora:true,triangles,bounds:bounds(items)},primitives});
+  for(const item of floraGeometry()){
+    if(pack.catalog.has(item.name))continue;
+    const d=payload(item),vao=gl.createVertexArray(),instanceBuffer=gl.createBuffer();gl.bindVertexArray(vao);
+    for(const[location,data,size]of[[0,d.positions,3],[1,d.normals,3],[2,d.uvs,2]]){gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);}
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,d.indices,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);
+    for(let col=0;col<4;col++){gl.enableVertexAttribArray(3+col);gl.vertexAttribPointer(3+col,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,col*16);gl.vertexAttribDivisor(3+col,1);}
+    for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}
+    gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
+    pack.catalog.set(item.name,{name:item.name,nodeMatrix:new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),instanceBuffer,extras:{flora:true,triangles:d.indices.length/3,bounds:bounds([item])},primitives:[{vao,count:d.indices.length,indexType:gl.UNSIGNED_INT,base:item.base,emissive:item.emissive,materialFactors:'gltf',metallic:0,roughness:1,aoStrength:1,portrait:false,alphaCut:0,materialName:item.name,nativeReceiverGeometry:d}]});
   }
   gl.bindVertexArray(null);return true;
 }

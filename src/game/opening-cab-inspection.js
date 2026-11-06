@@ -1,6 +1,6 @@
 import * as scenes from './scenes.js';
+import {CAB_RADIO,cabRadioLeanProject} from '../data/cab-radio.js';
 import {uiDraw,uiInk,uiText,uiSize,uiWrap,uiScrim,uiWithClip} from '../render/ui.js';
-import {drawLampButton,drawVfdText} from '../render/presentation.js';
 import {pressControl,releaseControl,cancelControlScope} from './control-feedback.js';
 import {createHitRegions} from '../render/hit-regions.js';
 import {makeDocumentScene} from './document.js';
@@ -153,30 +153,35 @@ export function openingCabInspectionLayout({cols=80,rows=30}={}){
   return{x,y,w,h,body:{x:x+2,y:y+3,w:w-4,h:Math.max(2,h-6)},footer:{x:x+2,y:y+h-1,w:w-4}};
 }
 
-export function openingCabRadioLayout({cols=80,rows=30}={},radio={},enabled=true){
+// The controls are where they are on the set: every rectangle is a face offset put through
+// `project`, so a click lands on the key you can see.
+export function openingCabRadioLayout({cols=80,rows=30}={},radio={},enabled=true,project=cabRadioLeanProject){
   cols=Math.max(20,Number(cols)||80);rows=Math.max(12,Number(rows)||30);
-  const w=Math.min(74,cols-2),h=Math.min(13,rows-3),x=(cols-w)/2,y=(rows-h)/2,
-    panel={x,y,w,h,body:{x:x+2,y:y+2,w:w-4,h:h-5},footer:{x:x+2,y:y+h-1,w:w-4}},
-    keyH=1.2,actionY=panel.footer.y-2.4,presetY=actionY-keyH-.3,gap=.35,stations=list(radio.stations),
-    presetW=(panel.body.w-Math.max(0,stations.length-1)*gap)/Math.max(1,stations.length),
-    selected=radio.selectedStation||radio.station,
-    presets=stations.map((station,index)=>({id:'cab-radio:preset:'+station.id,stationId:station.id,
-      x:panel.body.x+index*(presetW+gap),y:presetY,w:presetW,h:keyH,label:station.label||String(index+1),code:String(index+1),
-      enabled:enabled&&!!station.id,selected:station.id===selected,action:{type:'station',id:station.id}})),
-    actionW=(panel.body.w-2*gap)/3,
-    actions=[{id:'cab-radio:power',label:'POWER',code:'SPACE',action:{type:'power'},lit:radio.on===true,color:'blue'},
-      {id:'cab-radio:volume-down',label:'VOL −',code:'S / ↓',action:{type:'volume',delta:-.1}},
-      {id:'cab-radio:volume-up',label:'VOL +',code:'W / ↑',action:{type:'volume',delta:.1}}]
-      .map((control,index)=>({...control,x:panel.body.x+index*(actionW+gap),y:actionY,w:actionW,h:keyH,enabled}));
-  return{panel,readout:{x:panel.body.x,y:y+1.4,w:panel.body.w,h:presetY-y-1.65},presets,actions,
-    controls:[...presets,...actions],hint:{x:panel.body.x,y:panel.footer.y-1.0,w:panel.body.w}};
+  // The rectangle inside the projected corners, so neighbours can share an edge and never overlap.
+  const box=(x,y,w,h)=>{const nw=project(x-w/2,y+h/2),ne=project(x+w/2,y+h/2),sw=project(x-w/2,y-h/2),se=project(x+w/2,y-h/2),left=Math.max(nw.x,sw.x),right=Math.min(ne.x,se.x),top=Math.max(nw.y,ne.y),bottom=Math.min(sw.y,se.y);return{x:left*cols,y:top*rows,w:Math.max(0,right-left)*cols,h:Math.max(0,bottom-top)*rows};};
+  const{keys,keyRow,tune,seek,tone,noise,volume,readout}=CAB_RADIO,stations=list(radio.stations),selected=radio.selectedStation||radio.station,pitch=keys[1].x-keys[0].x,
+    presets=stations.slice(0,keys.length).map((station,index)=>({id:'cab-radio:preset:'+station.id,stationId:station.id,...box(keys[index].x,keyRow.y,pitch,keyRow.h),
+      label:station.label||String(index+1),code:String(index+1),enabled:enabled&&!!station.id,selected:station.id===selected,action:{type:'station',id:station.id}})),
+    // The knob pulls for power and turns either way. Its reach runs to the keys either side.
+    reachFrom=tone.x+tone.r,reachTo=noise.x-noise.w/2,third=(reachTo-reachFrom)/3,
+    actions=[{id:'cab-radio:volume-down',label:'VOLUME DOWN',code:'S / ↓',action:{type:'volume',delta:-.1},...box(reachFrom+third/2,volume.y,third,keyRow.h)},
+      {id:'cab-radio:power',label:'POWER',code:'SPACE',action:{type:'power'},lit:radio.on===true,...box(reachFrom+third*1.5,volume.y,third,keyRow.h)},
+      {id:'cab-radio:volume-up',label:'VOLUME UP',code:'W / ↑',action:{type:'volume',delta:.1},...box(reachFrom+third*2.5,volume.y,third,keyRow.h)}].map(control=>({...control,enabled})),
+    tuning=[{id:'cab-radio:tune-down',label:'TUNE DOWN',code:'A / ←',action:{type:'station',delta:-1},...box(tune.x-tune.w/4,tune.y,tune.w/2,tune.h)},
+      {id:'cab-radio:tune-up',label:'TUNE UP',code:'D / →',action:{type:'station',delta:1},...box(tune.x+tune.w/4,tune.y,tune.w/2,tune.h)},
+      {id:'cab-radio:seek-down',label:'TUNE DOWN',code:'A / ←',action:{type:'station',delta:-1},...box(seek[0].x,seek[0].y,seek[0].w,seek[0].h)},
+      {id:'cab-radio:seek-up',label:'TUNE UP',code:'D / →',action:{type:'station',delta:1},...box(seek[1].x,seek[1].y,seek[1].w,seek[1].h)}].map(control=>({...control,enabled})),
+    footer={x:2,y:rows-2,w:cols-4};
+  return{panel:{x:0,y:0,w:cols,h:rows,body:{x:2,y:1,w:cols-4,h:rows-4},footer},readout:box(readout.x,readout.y,readout.w,readout.h),presets,actions,tune:tuning,controls:[...presets,...actions,...tuning]};
 }
 
-export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({}),onClose=()=>{},onCabRadioAction=null,onChooseShift=null,onWindMusicBox=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
+export function makeOpeningCabInspectionScene({id='job-papers',radioLean=null,getState=()=>({}),onClose=()=>{},onCabRadioAction=null,onChooseShift=null,onWindMusicBox=null,makeReader=makeDocumentScene,makeInspection=createItemInspection}={}){
   const object=objectFor(id)||objectFor('job-papers');let scroll=0,closed=false,reader=null,readerId=null,inspection=null,inspectionKey=null;
   const hits=createHitRegions();let pointerPress=null,radioFocus=null;
   const model=()=>openingCabInspectionModel(getState(),object.id);
-  function close(){if(closed)return;closed=true;cancelControlScope('cab-radio:');inspection?.dispose?.();inspection=null;scenes.remove(scene);onClose();}
+  // Until the head has got there, go by where it's going. The renderer only knows where it is.
+  const radioProject=(x,y,z=0)=>{const seen=radioLean?.amount?.()>=1?radioLean.project?.(x,y,z):null;return seen&&seen.visible!==false&&Number.isFinite(seen.x)&&Number.isFinite(seen.y)?seen:cabRadioLeanProject(x,y,z);};
+  function close(){if(closed)return;closed=true;radioLean?.set?.(false);cancelControlScope('cab-radio:');inspection?.dispose?.();inspection=null;scenes.remove(scene);onClose();}
   function paper(m){const doc=m.document||m.workOrder;if(!doc)return null;if(readerId!==doc.id){reader=makeReader(doc,{id:'opening-cab-'+doc.id+'-preview',reservedTopRows:2,onRequestClose:close,onSceneClose:()=>{},onSceneTurn:()=>{}});readerId=doc.id;reader?.enter?.();}return reader;}
   function instrument(m){const entry=m.instrument,key=JSON.stringify(entry);if(entry&&inspectionKey!==key){inspection?.dispose?.();inspection=makeInspection(entry);inspectionKey=key;}return inspection;}
   function radioAction(action,controlId=null){
@@ -185,7 +190,7 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     try{return onCabRadioAction({...action})!==false;}catch{return false;}
   }
   function regions(){
-    const layout=object.kind==='radio'?openingCabRadioLayout(uiSize(),model().radio,typeof onCabRadioAction==='function'):null,
+    const layout=object.kind==='radio'?openingCabRadioLayout(uiSize(),model().radio,typeof onCabRadioAction==='function',radioProject):null,
       l=layout?.panel||openingCabInspectionLayout(uiSize());hits.reset();
     hits.add({id:'cab-object:close',label:'RETURN TO CAB',x:l.footer.x,y:l.footer.y,w:Math.min(24,l.footer.w),h:1.4,onClick:close});
     if(object.kind==='keepsake'&&typeof onWindMusicBox==='function')
@@ -198,16 +203,13 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
   function lines(m){
     if(m.kind==='status')return[...m.facts.map(([a,b])=>`${a}   ${b}`),'','PATCHED TECHNIQUES',...m.techniques.flatMap(t=>[t.label,t.detail,'']),...(!m.techniques.length?['No leads patched.']:[])];
     if(m.kind==='keepsake')return m.keepsake.lines.flatMap(line=>[line,'']);
-    if(m.kind==='radio')return['POWER   '+(m.radio.on===true?'ON':m.radio.on===false?'OFF':'—'),
-      ...(m.radio.station?['STATION   '+m.radio.station]:[]),...(m.radio.volume==null?[]:['VOLUME   '+m.radio.volume+'%']),
-      '',m.radio.playing?'NOW PLAYING':m.radio.on?'WAITING FOR SIGNAL':'',m.radio.programme];
     return['REHEARSAL',...m.rehearsalNotes.flatMap(line=>[line,'']),
       ...(m.notes.length?['TONIGHT',...m.notes.flatMap(n=>[n.title.toUpperCase(),n.summary,...(n.next?[n.next]:[]),...(n.outcome?[n.outcome]:[]),''])]:[]),
       ...(m.destination?['NEXT',m.destination]:[])];
   }
   const scene={id:'opening-cab-inspection',blocksInput:true,blocksWorld:true,freezesBelow:true,suppressesHud:true,handlesEscape:true,allowsLook:false,worldPresentation:'visible',lookProfile:'calm',
-    enter(){const m=model();if(m.kind==='document')paper(m);},
-    update(dt){if(!closed&&object.kind==='document')reader?.update?.(Math.max(0,Number(dt)||0));},
+    enter(){const m=model();if(m.kind==='document')paper(m);if(object.kind==='radio')radioLean?.set?.(true);},
+    update(dt){if(!closed&&object.kind==='document')reader?.update?.(Math.max(0,Number(dt)||0));if(!closed&&object.kind==='radio')radioLean?.step?.(Math.max(0,Number(dt)||0));},
     view(){const m=model();regions();return{id:object.id,objectId:object.id,kind:object.kind,closed,scroll,readOnly:m.readOnly,model:copy(m),paper:reader?.view?.()||null,hitRegions:hits.view()};},
     key(e={}){
       if(closed)return true;e.preventDefault?.();const k=String(e.key||e.code||'').toLowerCase().replace(/^key/,''),action=e.controllerAction;
@@ -244,6 +246,13 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     },
     render(){
       if(closed)return;const m=model(),l=regions();
+      if(m.kind==='radio'){
+        // There's no panel. You've leaned over to it; the set is the interface.
+        const focus=openingCabRadioLayout(uiSize(),m.radio,typeof onCabRadioAction==='function',radioProject).controls.find(control=>control.id===radioFocus);
+        if(focus)uiDraw(({ctx,cellW,cellH,dpr})=>{ctx.save();ctx.strokeStyle='rgba(206,255,232,.5)';ctx.lineWidth=dpr;ctx.strokeRect(focus.x*cellW*dpr,focus.y*cellH*dpr,focus.w*cellW*dpr,focus.h*cellH*dpr);ctx.restore();});
+        uiText(l.footer.x,l.footer.y,`E RETURN TO CAB    ${focus?`${focus.label}  ${focus.code}`:'1-4 STATION  ·  A D TUNE  ·  W S VOLUME  ·  SPACE POWER'}`,'ui-secondary',.82,l.footer.w);
+        return;
+      }
       if(m.kind==='document'&&paper(m)){reader.render();uiText(l.x,1,m.id==='job-papers'?(m.accepted?'4417-C / WORK ORDER':'4417-C / BEFORE CHECK-IN'):m.document.title.toUpperCase(),'ui-label',.85,l.w);uiText(l.footer.x,l.footer.y,m.shiftPending&&typeof onChooseShift==='function'?'E RETURN TO CAB    T TICK A SHIFT':'E RETURN TO CAB','ui-label',.85,l.footer.w);return;}
       uiScrim(m.kind==='status'?.76:.84);
       uiDraw(({ctx,cellW,cellH,dpr})=>{
@@ -254,21 +263,8 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
         ctx.restore();
       });
       const color=m.kind==='notes'?'#463d2d':'#c5c9b9';
-      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='radio'?'RADIO':m.kind==='keepsake'?m.keepsake.title:m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
-      if(m.kind==='radio'){
-        const radio=m.radio,r=openingCabRadioLayout(uiSize(),radio,typeof onCabRadioAction==='function'),selected=radio.stations.find(station=>station.id===(radio.selectedStation||radio.station)),
-          title=selected?.label||radio.station||'RECEIVER',programme=radio.programme||selected?.programme||'',status=radio.on===false?'POWER OFF':radio.playing?'PLAYING':radio.on?'TUNING':'SIGNAL UNKNOWN';
-        uiWithClip(r.readout,()=>{
-          drawVfdText(r.readout.x,r.readout.y,title,{role:'ui-primary',scale:1,alpha:radio.on===false?.4:.95});
-          const rows=uiWrap(programme,Math.floor(r.readout.w));rows.slice(0,Math.max(1,Math.floor(r.readout.h)-2)).forEach((line,i)=>uiText(r.readout.x,r.readout.y+1+i,line,'ui-primary',.9));
-          if(r.readout.h>=3)uiText(r.readout.x,r.readout.y+r.readout.h-1,`${status}${radio.volume==null?'':' · '+radio.volume+'%'}`,'ui-secondary',.78);
-        });
-        for(const control of r.controls)drawLampButton(control.x,control.y,control.w,control.h,{controlId:control.id,
-          legend:control.w<7&&control.stationId?control.code:control.label,code:control.w<7?'':control.code,
-          color:control.color||'white',finish:control.color?'lens':'opaque',enabled:control.enabled,focused:radioFocus===control.id,
-          latched:!!control.selected,lit:control.stationId?control.selected&&radio.on===true:!!control.lit});
-        ink(r.hint.x,r.hint.y,'A / D TUNE',r.hint.w,{color:'#929b8d'});
-      }else if(m.kind==='instrument'){
+      ink(l.x+2,l.y+.5,m.kind==='notes'?'NOTEBOOK':m.kind==='status'?'CHECK YOURSELF':m.kind==='keepsake'?m.keepsake.title:m.instrument?.title||'INSTRUMENT',l.w-4,{color,weight:'bold'});
+      if(m.kind==='instrument'){
         const entry=m.instrument,wide=l.body.w>=50,portrait={x:l.body.x,y:l.body.y,w:wide?Math.floor(l.body.w*.49):l.body.w,h:Math.max(2,wide?l.body.h:Math.min(7,l.body.h*.45))};
         instrument(m)?.draw?.(portrait,{active:!scenes.isFrozen(scene)});
         let y=wide?l.body.y:portrait.y+portrait.h+.5,x=wide?portrait.x+portrait.w+2:l.body.x,w=wide?l.body.w-portrait.w-2:l.body.w;
@@ -282,6 +278,6 @@ export function makeOpeningCabInspectionScene({id='job-papers',getState=()=>({})
     },
     suspend(){pointerPress=null;radioFocus=null;cancelControlScope('cab-radio:');},
     blur(){pointerPress=null;radioFocus=null;cancelControlScope('cab-radio:');},
-    exit(){closed=true;pointerPress=null;cancelControlScope('cab-radio:');inspection?.dispose?.();inspection=null;},
+    exit(){closed=true;radioLean?.set?.(false);pointerPress=null;cancelControlScope('cab-radio:');inspection?.dispose?.();inspection=null;},
   };return scene;
 }

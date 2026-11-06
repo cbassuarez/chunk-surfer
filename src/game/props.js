@@ -259,7 +259,7 @@ function renderInstance(p){
       yaw:p.physicalPlacement?.yaw??((p.yaw||0)+(!p.worldAligned?basis:0)),
       scale:p.scale||1,scaleX:p.scaleX,scaleY:p.scaleY,scaleZ:p.scaleZ,zone:p.zone||0,
       portraitIndex:p.portraitIndex||0,structural:!!p.structural,
-      waterlineBody:p.waterlineBody||null,waterlineOffset};
+      waterlineBody:p.waterlineBody||null,waterlineOffset,...(p.emissive?{emissive:p.emissive}:{})};
 }
 export function renderInstances({group=null,inscriptions=true,batchDressing=false}={}){
   const hosts=instances.filter((p)=>!p.interactionProxy&&colliderActive(p)&&(!group||(p.renderGroups||[p.renderGroup]).includes(group))).map(renderInstance);

@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {ROAD_CAST,ROAD_CAST_LAMPS,ROAD_CAST_BILLS,ROAD_CAST_BOARD_COPY,ROAD_STUDS,ROAD_CAB_CUP} from '../src/data/road-cast.js';
+import {ROAD_CAST,ROAD_CAST_LAMPS,ROAD_CAST_BILLS,ROAD_CAST_BOARD_COPY,ROAD_SERVICES,ROAD_STUDS,ROAD_CAB_CUP} from '../src/data/road-cast.js';
 import {roadCastScene,roadCabCup} from '../src/game/source-drive/road-cast.js';
-import {OPENING_ROAD,openingRoadAt,openingWorldAt,openingDriveColliders,applyOpeningRoadScene} from '../src/game/source-drive/opening-road.js';
+import {OPENING_ROAD,openingRoadAt,openingRoadSurfaceAt,openingWorldAt,openingDriveColliders,applyOpeningRoadScene} from '../src/game/source-drive/opening-road.js';
 import {applyDriveTeaserScene} from '../src/game/source-drive/teaser-scene.js';
 import {makeDriveScene} from '../src/game/source-drive/scene.js';
-import {createDrive} from '../src/game/source-drive/drive-state.js';
+import {createDrive,stepDrive} from '../src/game/source-drive/drive-state.js';
+import {DRIVE_TIME_SKIPS} from '../src/game/source-drive/time-skips.js';
 
 function glbMeshes(url){
   const data=readFileSync(new URL(url,import.meta.url)),length=data.readUInt32LE(12);
@@ -28,15 +29,18 @@ test('every roadside mesh exists in the road pack or the base pack the drive alr
   for(const row of ROAD_CAST.filter(row=>/bus|shelter/.test(row.id)))assert.ok(base.has(row.mesh),'the bus and its shelter are the real ones, not copies');
 });
 
-test('nothing on the road can be hit: the cast stands beyond the rail and adds no collider',()=>{
+test('the cast stands beyond the rail, and only the stand can be touched, because only it has a way in',()=>{
   for(const row of ROAD_CAST){
+    if(/^road-(stand|services)/.test(row.id))continue;
     const road=openingRoadAt(row.d),rail=road.leftWidth+1.4+.136;
     assert.ok(Math.abs(row.lateral)>rail+1,`${row.id} is ${row.lateral} against a rail at ${rail.toFixed(2)}`);
   }
   for(const d of [-548,-462,-348,-244]){
     const ids=openingDriveColliders(driveAt(d)).map(c=>String(c.id));
-    assert.ok(!ids.some(id=>id.startsWith('road-')),'no road cast collider');
+    assert.ok(!ids.some(id=>id.startsWith('road-')),'no road cast collider out here');
   }
+  const here=openingDriveColliders(driveAt(-165)).map(c=>String(c.id));
+  for(const id of ['road-stand-solid','road-stand-van-solid','road-stand-customer-solid'])assert.ok(here.includes(id),id);
 });
 
 test('the drive meets them in order, each one near a real bit of road, and they leave behind it',()=>{
@@ -66,7 +70,7 @@ test('the lamps leave the drive enough of the renderer\'s twelve',()=>{
     const lamps=roadCastScene(d,openingWorldAt).lamps;
     assert.ok(lamps.length<=2,`${lamps.length} practicals at ${d}`);
   }
-  for(const lamp of ROAD_CAST_LAMPS)assert.ok(lamp.radius<=9,'a practical lights its owner, not the road');
+  for(const lamp of ROAD_CAST_LAMPS)assert.ok(lamp.radius<=(lamp.id==='road-stand-window'?16:9),'a practical lights its owner, not the road');
   const scene=applyOpeningRoadScene(makeDriveScene(driveAt(-348),metrics,{weather:null}),driveAt(-348));
   assert.ok(scene.lamps.length<=12,`${scene.lamps.length} lights at the bus`);
   assert.ok(scene.lamps.some(l=>l.id==='road-bus-saloon'));
@@ -89,23 +93,70 @@ test('the boards say what the guard will say, in his own words, and the miles ru
   assert.doesNotMatch(all,/\b(dead|dying|died|crash|ellery|hush|surfer|alan|sarah|lyle)\b/,'an advert is an advert');
 });
 
-test('the kiosk is the real gate lodge with the real man in it, and you can\'t pull in',()=>{
-  const lodge=ROAD_CAST.filter(row=>row.id.startsWith('road-kiosk-')).map(row=>row.mesh);
-  for(const mesh of ['yard_booth','yard_booth_interior','yard_booth_practicals','yard_booth_glazing','yard_booth_guard_idle'])assert.ok(lodge.includes(mesh),mesh);
-  for(const mesh of ['yard_booth','yard_booth_guard_idle','player_shadow_figure','district_litter_bin'])assert.ok(base.has(mesh),`${mesh} is not the building's own`);
-  const{colliders}=applyOpeningRoadScene(makeDriveScene(driveAt(-165),metrics,{weather:null}),driveAt(-165));
-  const rails=colliders.filter(c=>String(c.id).startsWith('opening-road-edge--1')).map(c=>c.z).sort((a,b)=>a-b);
-  assert.ok(rails.length>10,'the rail runs on past it');
-  for(let i=1;i<rails.length;i++)assert.ok(rails[i]-rails[i-1]<4,'no gap in the rail: PULL IN HERE, and there is nowhere to');
+test('the road really widens: slip lane, forecourt, slip lane, on the left only',()=>{
+  assert.equal(openingRoadAt(-241).leftWidth,3.25);
+  assert.equal(openingRoadAt(-95).leftWidth,3.25);
+  assert.equal(openingRoadAt(-165).leftWidth,16.25);
+  for(let d=-260;d<-90;d+=2)assert.equal(openingRoadAt(d).rightWidth,3.25,'the far side of the road does not move');
+  let last=3.25;for(let d=-240;d<=-196;d+=2){const w=openingRoadAt(d).leftWidth;assert.ok(w>=last-1e-9&&w-last<1.5,`no step at ${d}`);last=w;}
+  const on=openingWorldAt(-165,-9);assert.equal(openingRoadSurfaceAt(on.x,on.z).kind,'asphalt','the tyres are on tarmac out there');
+  const off=openingWorldAt(-165,9);assert.equal(openingRoadSurfaceAt(off.x,off.z).kind,'verge','and on grass the same distance the other way');
+});
+
+test('the rail goes round the outside of the pull-in with no gap you could leave by',()=>{
+  const rails=new Map();
+  for(let d=-262;d<-80;d+=3)for(const c of openingDriveColliders(driveAt(d)))if(String(c.id).startsWith('opening-road-edge--1-'))rails.set(c.id,c);
+  const row=[...rails.values()].sort((a,b)=>b.z-a.z);
+  assert.ok(row.length>50);
+  const ends=c=>{const a=c.yaw,dx=-Math.sin(a)*c.halfZ,dz=Math.cos(a)*c.halfZ;return[[c.x-dx,c.z-dz],[c.x+dx,c.z+dz]];};
+  for(let i=1;i<row.length;i++){
+    const gap=Math.min(...ends(row[i-1]).flatMap(p=>ends(row[i]).map(q=>Math.hypot(p[0]-q[0],p[1]-q[1]))));
+    assert.ok(gap<.7,`${gap.toFixed(2)} m gap at ${row[i].id}`);
+  }
+});
+
+test('you can pull in, stop on the forecourt, and rejoin the road',()=>{
+  const seat=openingWorldAt(-262,-1.6),s=createDrive();
+  Object.assign(s,{x:seat.x,z:seat.z,heading:seat.heading,speed:9,throttle:.4,roadHeight:0,paused:false});
+  const sample=()=>openingRoadSurfaceAt(s.x,s.z);
+  const steer=(target,want)=>{const r=sample(),aim=r.heading+Math.max(-.55,Math.min(.55,(target-r.offset)*.14));return{...want,left:s.heading>aim+.01,right:s.heading<aim-.01};};
+  let t=0,stopped=null;
+  const run=(until,input,limit=90)=>{for(let end=t+limit;t<end&&!until();t+=1/120){stepDrive(s,1/120,input(),openingDriveColliders(s),{roadSampler:openingRoadSurfaceAt});}assert.ok(until(),`stuck at d ${sample().distance.toFixed(1)}, lateral ${sample().offset.toFixed(1)}, ${s.speed.toFixed(1)} m/s`);};
+  run(()=>sample().distance>-200,()=>steer(-1.6,{forward:s.speed<9}));
+  run(()=>sample().distance>-178&&sample().offset<-7.5,()=>steer(-9,{forward:s.speed<7}));
+  run(()=>Math.abs(s.speed)<.1,()=>steer(-9,{brake:true}));
+  stopped={d:sample().distance,lateral:sample().offset,kind:sample().kind};
+  assert.equal(stopped.kind,'asphalt','stopped on the forecourt, not the verge');
+  assert.ok(stopped.lateral<-6,`clear of the carriageway: ${stopped.lateral.toFixed(1)}`);
+  run(()=>sample().distance>-120,()=>steer(-5,{forward:s.speed<7}));
+  run(()=>sample().distance>-92,()=>steer(-1.6,{forward:s.speed<8}));
+  assert.ok(Math.abs(sample().offset)<3.25,`back in lane: ${sample().offset.toFixed(1)}`);
+});
+
+test('a dial cut sets him down on the way to the stand, so nobody misses it',()=>{
+  const stretch=DRIVE_TIME_SKIPS.stretches.find(row=>row.id==='stalled');
+  assert.ok(stretch.start.d<ROAD_CAST.find(row=>row.id==='road-stand-building').d-30,'it starts with the stand ahead of him');
+  assert.ok(stretch.start.d>ROAD_SERVICES.from&&stretch.start.d<ROAD_SERVICES.fullFrom,'and with the slip lane open beside him');
+});
+
+test('the stand is its own building, with the guard behind the counter and a way round it',()=>{
+  const row=id=>ROAD_CAST.find(r=>r.id===id);
+  assert.equal(row('road-stand-building').mesh,'rc_stand');
+  assert.ok(!ROAD_CAST.some(r=>/^yard_booth(?:_interior|_glazing|_practicals)?$/.test(r.mesh)),'no part of the gate lodge is out here');
+  assert.equal(row('road-stand-man').mesh,'yard_booth_guard_idle');
+  for(const mesh of ['yard_booth_guard_idle','vigil_figure_flask_a','district_litter_bin'])assert.ok(base.has(mesh),`${mesh} is not the building's own`);
+  const road=openingRoadAt(row('road-stand-building').d);
+  assert.ok(Math.abs(row('road-stand-building').lateral)<road.leftWidth,'it stands on the forecourt, inside the rail');
+  assert.ok(road.leftWidth-3.25>10,'with room to pull a van in front of it');
 });
 
 test('the parked van stays parked when yours goes over',()=>{
   const s=driveAt(-160),scene=applyOpeningRoadScene(makeDriveScene(s,metrics,{weather:null}),s);
-  const parked=scene.props.find(p=>p.id==='road-kiosk-van');assert.equal(parked.mesh,'drive_vehicle_body');
+  const parked=scene.props.find(p=>p.id==='road-stand-van');assert.equal(parked.mesh,'drive_vehicle_body');
   const moved=Array.from(scene.body);moved[13]-=6;
   const falling=applyDriveTeaserScene(scene,{vehicleMatrix:moved,breakEdge:false,look:{yaw:0,pitch:0}});
-  assert.equal(falling.props.find(p=>p.id==='road-kiosk-van').y,parked.y);
-  assert.ok(!falling.teaser.attachedIds.includes('road-kiosk-van'));
+  assert.equal(falling.props.find(p=>p.id==='road-stand-van').y,parked.y);
+  assert.ok(!falling.teaser.attachedIds.includes('road-stand-van'));
   assert.equal(scene.props.findIndex(p=>p.mesh==='drive_vehicle_body')<scene.props.indexOf(parked),true,'your own van comes first, so anything that looks for the van finds yours');
 });
 

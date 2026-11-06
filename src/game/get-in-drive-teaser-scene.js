@@ -157,7 +157,8 @@ export function makeGetInDriveTeaserScene({
       if(prelude<.28){prelude+=step;if(prelude>=.28)void prepare();return;}
       if(!ready){prepareSeconds+=step;if(prepareSeconds>25)fail(Error('The opening vehicle did not become ready.'));return;}
       if(!restored)audio?.setPaused(false);
-      controller.update(step);refreshFrame(step);
+      // A dial cut clears the pedals, but the foot is still down: what's held comes back with the picture.
+      controller.update(step,{input:Object.fromEntries([...pressedKeys].map(action=>[action,true]))});refreshFrame(step);
       if(current.phase==='impact-black'&&!impact){impact=true;audio?.joint({strength:1});}
       if(current.worldOwner==='return'&&!restored)restore();
       if(restored&&!doorsClosed){doorsClosed=true;onDoorsClose();}

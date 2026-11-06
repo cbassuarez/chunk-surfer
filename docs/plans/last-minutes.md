@@ -117,9 +117,12 @@ is a different place. The last visit fires only as he leaves through its last do
 
 **Daisies in the real world.** Ruled 2026-11-05: only outside by Ellery and on the road
 in the drive, never in Source, not the only flora, not excessive, and not at random. So
-they are placed by hand beside the seam planting already there, with dandelions and clover,
-at natural size. `data/ellery-flora.js`. The memory field and the flash of daisies are
-separate from this.
+they are placed by hand beside the seam planting already there, with dandelions and clover.
+`data/ellery-flora.js`, `render/flora-models.js`. The heads are bigger than life, carry a
+little light of their own and sit on a dark collar, because this print eats anything truer:
+at real size and unlit a daisy is a black disc or nothing. They lean towards the road,
+because lying flat they are a pixel thick from the cab. The memory field and the flash of
+daisies are separate from this.
 
 **How he gets there and back.** Ruled 2026-11-05: camera light leaks and blinding light,
 after the idea in Hertzfeldt of light in the camera meaning the mind has melted. Jarring,
@@ -347,7 +350,11 @@ The crash loop gets all of this for free, because it replays the real drive.
 
 **The walk (decision C):** `src/game/ending-walk-off.js`, `src/render/ending-walk-off-renderer.js`. First person with Alan beside you, on the real road, walking into the real van's lamps. Third person, the world shrinking to the road between you and the van. You stipple out; he stays solid and walks on alone; he goes; black; credits. Played by keys from the coda to the return report. Not heard: it borrows the drive's idling engine and rain.
 
-**Stage 7 status:** built in `src/data/road-cast.js` and `src/game/source-drive/road-cast.js`: hoardings, flatbed and sheet, bus, shelter and figure, studs, cup on the dash. Driven by real keys: hoarding, flatbed and bus all show in the windscreen. Studs and the cup were only checked in stills. Services stop and Martin's radio voice not done.
+**Stage 7 status:** built in `src/data/road-cast.js` and `src/game/source-drive/road-cast.js`: hoardings, flatbed and sheet, bus, shelter and figure, studs, cup on the dash. Driven by real keys.
+
+**The Happy Return (services):** six boards count the miles and print the guard's lines before you meet him. The road's left edge really widens through a slip lane into a forecourt and back (-240 to -96), with the rails going round the outside, so you can pull in, stop and rejoin. A purpose-built walk-up stand on the forecourt, the guard behind the counter, a customer with a flask, an unnamed copy of your van. Pitted by real keys. The `stalled` time-skip now starts at -215, so the cut sets you down on the approach whichever way the lorry went.
+
+**Cab radio: built, in `src/data/cab-radio.js`, `src/render/cab-radio-vfd.js`, `src/game/parked-cab-radio.js`, and the pack from `tools/chunk_surfer/source-drive-study/build-cab-radio.mjs`.** The layout comes from the late-80s European Ford radio-cassette: a seller's listing names it for Escort, Fiesta, Sierra, Transit and Granada, and a photo shows it fitted. Top row: display, cassette door with a chunky eject bar, a blank plate where the oval badge went, two seek rockers. Legends: TUNE, STATION, BAND, AUDIO CONTROLS. Bottom row: ribbed tune rocker, keys 1 to 4, a small band cluster, tone knob, volume knob, NR. Screws in the corners. Its model number is unconfirmed, and in the one daylight photo the display looks like LCD. The green VFD comes from the same era's Pioneer KEH units (KEH-6080B, KEH-9080B), and the window is wider than the Ford's to carry it, so this is homage rather than a replica. No maker's name, oval or wordmark anywhere. The pack replaces `drive_radio` and `opening_drive_radio` by name, so a place that never loads it keeps the old unit. The parked cab has no panel now: E leans over to the set and the keys, rockers and knob are the controls, by mouse, keyboard or controller. The tube's clock on the first drive is per stretch, 20:52 running to 21:37, short of 21:38 on the gate's sheet. Parked it reads the night clock. In any drive with no stretch, the endings included, nobody has set it and it blinks an empty colon. From the seat the tube is a lit green display, not legible at 720p, and the recorder hides the set's right side. Martin's radio voice is not started.
 
 **Stage 6 status:** built in `src/game/window-takeover.js`. In-window and calm versions played in Chrome. The native OS pane is untested on Tauri.
 
@@ -391,27 +398,32 @@ guard, doors, moon) and mechanisms as columns, each cell citing its evidence.
 | "What was that place?" | Most answer with a person, not a building |
 | Hospice nurse reads the interruption list | Nothing left marked "would hurt a family" |
 
-## Status, 2026-11-05 (stages 2, 4, 5 and the cascade)
+## Status, 2026-11-06 (stages 2, 4, 5 and the cascade)
 
 **Built**
-- Stage 2: every terminal ending drives off, the bench included.
+- Stage 2: every terminal ending drives off, the bench included. `surfaced` walks instead (decision C).
 - Stage 4: `game/last-minutes.js`. A whole-run arc, an exposure floor under hypoxia, de-inhibition, meaning, gamma surges and a front across the map. Colour, contrast and narrowing reach the screen through POST. The recorder, torch and gait losing now runs everywhere.
-- Stage 5: the field (`game/memory-field-scene.js` and friends), five visits placed on the takes and the last door, with the van door that gives when you stop. `game/interruption-director.js` for seeps and doors that don't answer. Nine painted seeps.
-- Cascade, first slice: the real moon grows and reddens, the bag (`world/the-bag.js`), his hypoxia tell in his own words, and rising lines for looked-at objects (`data/meaning-lines.js`).
+- Stage 5: the field (`game/memory-field-scene.js` and friends), five visits placed on the takes and the last door, with the van door that gives when you stop. `game/interruption-director.js` for seeps, doors and verbs that don't answer, cab sounds, the water at the pool, and takeovers through `beginWindowTakeover`. Ten painted seeps.
+- How he gets there and back: `game/neural-transition.js` and the LIGHT IN THE CAMERA block in POST. Film fog, white, an after-image, focus last. Condensation was tried and is gone.
+- Cascade: the real moon grows and reddens and keeps its red, the bag (`world/the-bag.js`), his hypoxia tell in his own words, and rising lines for looked-at objects (`data/meaning-lines.js`).
+- Meaning lines land on a reviewed list of real props, never in Source. A pattern over prop names had put water in the organ pipes and told dark lanterns they'd been on all night.
+- Flora by hand, outside only: 10 plants in the yard, 15 rows on the verge. `data/ellery-flora.js`.
+- Nothing in Source's own spaces. The last visit fires only as he leaves through its last door.
 
-**Checked in the real game** (`artifacts/last-minutes/`): each visit looks right, the world returns to the same view, [E] does nothing, stopping releases the door, the hard limit holds, walking through works, Escape reaches pause. Each visit was started from a probe with its clock jumped forward.
+**Checked in the real game** (`artifacts/last-minutes/`)
+- `flow2-e2e.mjs`, 23 of 23 on the current tree with takes set by probe: stuck door rules, door after the crash, dead door, torch, cab sounds, pool light, flora outdoors, tower route's last door, then onward. Scene order is threshold, white, field.
+- The same script with real takes reached the sheet with the visit pending, 21 passing and none failing, before its time limit. An earlier pass saw the sheet come down and the field open.
+- Flora looked at in the yard and from the cab. In the yard they read as small white flowers. From the cab at driving speed they read as outlined growth at the rail foot, not clearly as daisies.
+- Crash loop (`loop-e2e.mjs`): the loop begins from exactly a New Run's state, with the night's own identity, and nothing reaches the disk. Its later checks expect a fault to reload the page, which the 2026-11-05 design replaced with being sent back to the step. They fail on `3a024b43` too, and they stop the second-lap comparison from meaning anything.
 
 **Not checked yet**
-- A real take reaching the sheet and then the field. Wired, never run.
-- The third visit on the door after the crash, and the fifth on the chapel and tower doors. Wired, never run.
-- Dead doors, seep timing and the bag walking around in real play. Wired, never run.
-- Nobody has heard any of it. The Tauri build hasn't been run.
+- The chapel route's last door. The tower route is checked.
+- How often seeps and takeovers land over a whole night. Each has fired; the cadence is a guess until someone plays it.
+- Nobody has heard any of it. The Tauri build hasn't been run, and Reduce Flash hasn't been looked at.
 
-**Known problems**
-- The blood moon prints a dull pink late on, because the colour loss takes its red. The moon should be exempt.
-- Reading a real take's length of play is untested, so how often seeps land is a guess.
+**Specs.** Everything failing was run against a clean `3a024b43`. All of it fails there too with the same tests, except `chunk-surf-visual`, whose line-exact table still has the `chapel-surfer` meanings reworded in `f8b08a9d`. Nothing here caused those failures and nothing here fixed them. `acquisition-props` times out on both.
 
-**Next:** the Takeover class (`beginWindowTakeover` is ready and the director doesn't call it yet), more pastoral and cab-bleed placements, the natatorium's light seen from under water, carrying the daisies into Source's own field. Stages 8 and 9 are open.
+**Next:** playing it. Stages 8 and 9 have their own status above. Carrying the daisies into Source's own field was dropped by the ruling.
 
 ## Decisions still open
 
