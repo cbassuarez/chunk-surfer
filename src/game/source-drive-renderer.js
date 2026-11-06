@@ -1,5 +1,6 @@
 // One temporary owner of the existing world renderer. No extra canvas, context
 // or animation loop: Source is held by the calling scene until release.
+import {ensureFloraMeshes} from '../render/flora-models.js';
 import * as R3 from '../render/r3d.js';
 import * as P3 from '../render/props3d.js';
 import * as FP from '../world/floorplan.js';
@@ -22,6 +23,7 @@ const DRIVE_ASSET_PACKS=Object.freeze([
  {key:'cutRoadside',path:'assets/source-drive/cut/cut-roadside.glb',kind:'prop',meshes:['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges']},
  {key:'cutLandscape',path:'assets/source-drive/cut/cut-landscape.glb',kind:'character'},
  {key:'predicaments',path:'assets/source-drive/predicaments/drive-predicaments.glb',kind:'prop',meshes:['dp_wreck_saloon','dp_road_fold','dp_whiteout_pylon']},
+ {key:'roadCast',path:'assets/source-drive/road-cast/road-cast.glb',kind:'prop',meshes:['rc_flatbed','rc_tarp','rc_hoarding','rc_cat_eye']},
 ]);
 const COASTAL_ASSET_PACK=Object.freeze({key:'coastalMemory',path:'assets/source-drive/coastal-memory/coastal-memory.glb',kind:'prop',meshes:['cm_limestone_coast','cm_seabed','cm_distant_pier','cm_limestone_outcrop_0','cm_limestone_outcrop_1','cm_limestone_outcrop_2','cm_limestone_outcrop_3']});
 const warmedDrivePacks=new Map();
@@ -39,6 +41,7 @@ export async function preloadSourceDriveAssets({assets={},coastalMemory=false}={
  // boot; installing hero packs first let the later building erase the cabin.
  const baseReady=await R3.r3dBasePropsReady?.();
  if(baseReady===false)throw Error('The drive base prop catalog could not be loaded.');
+ ensureFloraMeshes();
  // P3 reinitialisation disposes character bundles. Forget static ready bits as
  // well, since matching old catalog names alone cannot prove live GPU objects.
  if([...warmedDrivePacks.values()].some(record=>record.ready&&record.kind==='character'&&!drivePackInstalled(record)))warmedDrivePacks.clear();

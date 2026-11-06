@@ -116,6 +116,11 @@ export function windowChoreographyPolicy(sceneId=''){
   // test/plant-isolation.spec.mjs, which shuts the header with the policy
   // forced to 'stable'.
   if(id==='plant:header')return 'plant-header';
+  // A pane that opens beside the window and then covers it from inside the frame.
+  // The OS pane can't take input, can't take focus and never moves the main window.
+  // Nothing is gated on it, and browser builds, withheld consent and reduced dread
+  // each run their own whole version. See src/game/window-takeover.js.
+  if(id==='takeover:memory')return 'memory-takeover';
   return 'stable';
 }
 
@@ -182,6 +187,19 @@ export function compileWindowChoreographyPlan({
   const validation=validateWindowChoreographyPlan(plan);
   if(!validation.ok)throw new Error(`invalid window choreography plan: ${validation.errors.join(', ')}`);
   return plan;
+}
+
+// The single OS pane a takeover opens with, away to the side of the main window.
+export function compileTakeoverPanePlan({mediaId='',reducedMotion=false,flashMode='full',epochMs=Date.now()}={}){
+  const asset=windowMediaAsset(mediaId);
+  const content=asset?.kind==='video'?{kind:'video',assetId:asset.id}:mediaId==='empty-field'?{kind:'procedural',preset:'empty-field'}:null;
+  if(!content)return null;
+  return compileWindowCompositionPlan({
+    compositionId:`takeover:${mediaId}`,sceneId:'takeover:memory',purpose:'takeover',epochMs,reducedMotion,flashMode,
+    surfaces:[{id:'takeover:pane',content,initial:{x:.88,y:.16},width:320,height:180,shader:'nvme-sector',draggable:false,description:''}],
+    fault:{profile:'nvme-sector',intensity:.12,seed:17,cadenceMs:reducedMotion?900:480},
+    formation:{mode:'practice-windows',durationMs:0,staggerMs:0},foldDurationMs:0,completion:{mode:'nonblocking'},
+  });
 }
 
 // Two readable clue windows flank the adversary. Two separate NVMe windows
@@ -1101,6 +1119,18 @@ export function createWindowChoreographyDirector({
     return restored;
   }
 
+  // Only ever beside a window that is free to have something beside it. A fullscreen
+  // handoff would stop for a notice, and a takeover must never stop the game to start.
+  async function showTakeoverPane(mediaId,{reducedMotion=false}={}){
+    if(!nativeDesired()||!compositionContext().introduced||transaction||transactionOpening||sourceDesktop||battle||ending)return false;
+    const nativeApi=await loadApi();
+    if(!nativeApi?.invoke||await measuredFullscreen(nativeApi))return false;
+    const plan=compileTakeoverPanePlan({mediaId,reducedMotion,flashMode:compositionContext().flashMode});
+    if(!plan)return false;
+    const result=await runPlan(plan);
+    return !!result?.native;
+  }
+
   async function showPracticeCue(cue){
     const generation=++practiceCueGeneration,owner=epoch;
     const current=()=>generation===practiceCueGeneration&&owner===epoch;
@@ -1771,7 +1801,7 @@ export function createWindowChoreographyDirector({
 
   return{
     prepareBattle,fireballCast,damage,result,finishBattle,beginReturn,finishReturn,beginSectorError,beginSourceWarning,beginSourceContact,intrudeSector,sourceFrame,sourceFault,sourceDecay,leaveSource,beginEnding,beginOpening,beginTitle,finishTitle,credits,
-    emergencyRestore,suspend,runPlan,showPracticeCue,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
+    emergencyRestore,suspend,runPlan,showPracticeCue,showTakeoverPane,compositionEvent,interactSource,puzzleInteract,noteCompositionMove,beginStudy,endStudy,holdComposition,requestSourceRestRecorder,updateStudyFrames,updateStudyArchitecture,layoutStudyArchitecture,
     beginSourceDesktop,updateSourceDesktop,endSourceDesktop,sourceDesktopState,
     // TEARDOWN FOR A CUE A CALLER RAN ITSELF. runPlan was public and this was
     // not, so anything that showed clue surfaces had no supported way to take

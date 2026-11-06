@@ -45,7 +45,7 @@ export function makeEndingDriveOffScene({context,destinationAudio,reducedMotion=
       const actual=renderer.last?.(),v=controller.view();
       if(actual)audio?.sync(actual.driveState,[],actual.weather,actual.evolution,[]);
       audio?.setPaused(frozen());paintCover(v.cover);
-      const early=v.phase==='road'&&v.phaseTime<HINT_SECONDS;
+      const early=(v.phase==='road'||v.phase==='walk')&&v.phaseTime<HINT_SECONDS;
       if(v.skipTime>.12||early)paintHint(v.skipTime>.12?Math.min(1,v.skipTime/ENDING_DRIVE_OFF.skipSeconds):Math.min(1,v.phaseTime/1.4,(HINT_SECONDS-v.phaseTime)/1.4)*.55);
     },
     key(event={}){

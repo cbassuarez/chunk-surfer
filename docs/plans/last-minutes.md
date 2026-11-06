@@ -46,6 +46,96 @@ marked **Proposed** is mine and open to change.
   real, or it means committing, in dream logic, to never getting out of the cab:
   giving up the fight to get out of the car.
 
+**The meaning-making cascade (ruled 2026-11-05).** Moments before death take on
+more symbol and grandeur than they can hold. The sun becomes a light at the end of
+a tunnel, a plastic bag becomes a spirit, the moon becomes a blood moon. That is
+not spiritualism. It happens because the neurons are failing in front of him:
+cortical de-inhibition, gamma surges, end-of-life dreams and visions (ELDVs). This
+reaches the essence of the game, not its accidents. The moon was an example, not
+the request.
+
+**Also ruled 2026-11-05**
+- Field, daisies, sun and breath, and the action that does nothing, are to be well
+  implemented and extensive, and placed well within the narrative. Not garnish.
+- The hypoxia system counts, and reads differently now that the van is underwater.
+- Decision A: yes, every terminal ending gets the drive.
+- Decision B: no. The prologue stays as it is for now.
+
+## 1a. What the cascade changes
+
+Research notes, not claims about what dying is. Secondary sources, small samples:
+see "Cascade sources" at the end of this document.
+
+**Two curves, and they cross.** Faculties fall and meaning rises, from the first
+second. Everything else in this plan is one of those two curves reaching a system.
+Neither is ever shown as a number, as `game/hypoxia.js` already rules.
+
+**The horror is the top of the curve.** Every mythic thing in the game has a dull
+ancestor he has already seen, and nothing says so. A van, a road, a job, a wheel, a
+bag. Source, the Ophanim, the Surfer: one reading is that this is what those things
+turn into when the brake comes off. That is one mechanism among several (rule 1).
+The game never says "it was only a bag", and never says it wasn't.
+
+**How it works in play**
+
+| Mechanism | Fact it borrows | What it does here |
+|---|---|---|
+| Calibration | Hypoxia costs self-criticism before anything he could notice | `hypoxia.js` `calibration` already models this. It stops being only a combat read. The card stops saying "probably" about everything |
+| De-inhibition | Inhibition fails, so more gets through (proposed mechanism, not settled) | What used to be filtered out arrives. This is what a seep is, and why they grow more frequent |
+| Gamma surge | A burst of connected activity near the end, in very few patients | Late in the run, brief windows where he is sharper and brighter than he has been all night. Colour comes back, and meaning spikes. It looks like recovery |
+| The ladder | Dreams use fragments of waking life | Seen on the road, misread in the building, mythic in Source |
+| ELDV themes | Comforting presence, preparing to go, the deceased, loved ones waiting, unfinished business, distress | The tone of the interruptions. See below |
+
+**The game already rhymes with the ELDV themes.** Nobody planned this, so use it.
+
+| Theme | Already in the game |
+|---|---|
+| Preparing to go (packing, transport) | Van preparation, the bag, the bus, the bus pass, the station of doors |
+| Loved ones waiting | The phone box, Row F, Lyle's jumper on the radiator |
+| Comforting presence | The bench's other, "There you are" |
+| Watching the dead | The vigil: "They agreed to be there when it did" |
+| Unfinished business | The work order, "do not erase the first take", "someone I meant to play it for" |
+| Distress (a minority) | The crash, the carnage set |
+
+**Hypoxia, submerged.** `hypoxia.js` was written for the plant room: bad air, and the
+warning on a separate circuit from the danger. In a sinking van every clause is
+literally true, and nothing in the module has to change to be read that way. Its
+rules carry over whole: no level, latent values that disagree, the tape stays honest,
+perception changes and the simulation doesn't. What's new is a floor under `exposure`
+that rises with the run, so fresh air stops getting him all the way back. Every
+room's air is the cab's air, and nothing says so.
+
+**The take is the breath.** The client rejects breath on tape, so every take is a
+minute of holding it. The field arrives when he lets it go. This is what places the
+pastoral set in the narrative: five takes, five breaths, one field, each visit later
+in its own day and further gone.
+
+**Outside Source.** Ruled 2026-11-05: daisies, field and interruptions happen
+throughout the game, not in Source. Nothing of the kind goes in Source's own spaces,
+including Source I's tiered landscape, which the code also calls "the field" and which
+is a different place. The last visit fires only as he leaves through its last door.
+
+**Daisies in the real world.** Ruled 2026-11-05: only outside by Ellery and on the road
+in the drive, never in Source, not the only flora, not excessive, and not at random. So
+they are placed by hand beside the seam planting already there, with dandelions and clover,
+at natural size. `data/ellery-flora.js`. The memory field and the flash of daisies are
+separate from this.
+
+**How he gets there and back.** Ruled 2026-11-05: camera light leaks and blinding light,
+after the idea in Hertzfeldt of light in the camera meaning the mind has melted. Jarring,
+beautiful, and still a picture of cells going out. Film fogs from the gate in order, red
+through to white; the lens goes soft and the frame is exposed twice; the room clips to
+white; the exposure comes down and the focus comes back last; the sun stays on his eye in
+its complement. Condensation was tried and removed: it didn't work or match. This is
+technique, not a copy of the film. `game/neural-transition.js`. Reduce Flash caps it.
+
+**The door is the van door.** A car door can't be opened against the water outside
+it until the pressure equalises, which means the cab has to fill. So in a stuck
+memory the door does nothing while you keep trying, and it opens once you stop. That
+reads as a fault, as water pressure, and as giving up: the tip-off man's "Take it,
+and you'll stop trying." It also satisfies rule 5, because waiting always gets you
+out, and trying can only delay that up to a hard limit.
+
 ## 2. Rules for every stage
 
 1. **Never collapse.** No presented line or image may kill a reading. Test a new
@@ -68,10 +158,10 @@ marked **Proposed** is mine and open to change.
 |---|---|---|---|
 | 0 | Dialog and doctrine edits | S | Done with this plan |
 | 1 | Drive-off on the clean endings | M | Built, see its notes |
-| 2 | Drive-off on the remaining endings | S | Needs decision A |
-| 3 | The prologue, re-cut for discovery | S | Needs decision B |
-| 4 | Faculty loss from the first second | M | Ready |
-| 5 | Interruption director | L | After 4 |
+| 2 | Drive-off on the remaining endings | S | Built, see Status |
+| 3 | The prologue, re-cut for discovery | S | Declined for now (decision B) |
+| 4 | Faculty loss from the first second | M | Built, see Status |
+| 5 | Interruption director | L | Built, see Status; needs playing |
 | 6 | Windows take over | M | After 5 |
 | 7 | The cast on the road | M | Ready, any time |
 | 8 | Whose life: provenance, ownership, hands | L | After 7 |
@@ -143,24 +233,23 @@ so it doesn't depend on what state the ending left the world in.
 |---|---|---|
 | `out` | Ends on the ruled column | Same, then: "The van is where you left it. It starts first time, which it has never done." |
 | `drugged` | "...and you drive home in the light." | "...and you drive home into the light." One word, and now you play it. |
-| `surfaced` | "Nobody in it." | Alan stays in the chair at the barrier, and you're the one who leaves. |
+| `surfaced` | "Nobody in it." | "Is it far?" He gets up, in no shoes, and the two of you start walking. Closes on the walk, not the drive. |
 | `tower-won` | Institutional record | One closing line handing over to the van, after the record. |
 
 **Done when**
 - [x] Cold, Bitter, Gone, The Other Recordist and Exit Through the Gift Shop play
       through coda, drive and credits to the return report, in the real game.
-- [ ] The Other Door has not been run end to end. It needs a completed Source IV
-      journey. The wiring is the same and it has a spec.
+- [x] The Other Door played end to end by keys: demolition, Source IV, the `out`
+      coda, the drive, credits, the return report.
 - [x] Letting go of the controls still finishes. Holding only the throttle cannot
       end on a guardrail, because a lane assist works while nobody is steering.
 - [x] Holding E skips it. Window panes left by the ending are cleared first.
 - [ ] Not verified: Tauri build, the feel of the steering, the mix. Nobody has
       heard it.
 
-**Found while building:** today's flow never reaches the `out` coda. `finishEnding`
-only lets The Other Door through once Source IV is complete, and that path goes
-straight to credits. So The Other Door now goes from the grey door to the wheel,
-and the new line in `out` waits for that coda to be reachable.
+**Found while building:** the flow used to skip the `out` coda. `finishEnding` now
+falls through to it once Source IV is complete, so The Other Door goes grey door,
+coda, wheel, credits.
 
 **Proposed for later:** small traces in the cab per ending, unexplained. The cup in
 the holder if he drank the coffee. The recorder cradle empty if he left it behind.
@@ -256,6 +345,12 @@ Each row below is one mechanism among several.
 
 The crash loop gets all of this for free, because it replays the real drive.
 
+**The walk (decision C):** `src/game/ending-walk-off.js`, `src/render/ending-walk-off-renderer.js`. First person with Alan beside you, on the real road, walking into the real van's lamps. Third person, the world shrinking to the road between you and the van. You stipple out; he stays solid and walks on alone; he goes; black; credits. Played by keys from the coda to the return report. Not heard: it borrows the drive's idling engine and rain.
+
+**Stage 7 status:** built in `src/data/road-cast.js` and `src/game/source-drive/road-cast.js`: hoardings, flatbed and sheet, bus, shelter and figure, studs, cup on the dash. Driven by real keys: hoarding, flatbed and bus all show in the windscreen. Studs and the cup were only checked in stills. Services stop and Martin's radio voice not done.
+
+**Stage 6 status:** built in `src/game/window-takeover.js`. In-window and calm versions played in Chrome. The native OS pane is untested on Tauri.
+
 ## Stage 8: whose life
 
 - **Provenance.** Each large place traces to a time of his life. Thin today: the
@@ -271,11 +366,21 @@ The crash loop gets all of this for free, because it replays the real drive.
   was the life. One line of the work order carries it.
 - **Needs Seb:** the Last Light recording, and any real material he wants in it.
 
+**Stage 8 status:** built in `src/data/whose-life.js` and `src/game/whose-life.js`, hooked through `PROPS.setInspectResolver`. Off during the crash loop, so the opening stays identical.
+- **Ownership:** 18 inspect lines turn from "somebody" to "you", held at the highest meaning reached. Someone who read one early sees the original sentence change, once. Played by keys on the foam and the stool.
+- **Places:** cathedral (two lines), font, rota, plus one line each for the pub, the vigil and the reception. The vigil's is "One or two say he."
+- **Hands:** three lines, on any marimba, only after he has played one. First line seen by keys.
+- **The turn:** one line on the work order clipboard. That prop only opens during a dock investigation, so it is spec-tested, not played.
+- **Blue-ink notes:** the cab can't be revisited this late, so they stay "A reminder in blue ink". The hand turns up on the box office rota instead.
+- **Needs Seb:** the Last Light recording, and any real material he wants in it.
+
 ## Stage 9: collapse audit
 
 Go through all 1,985 authored lines, plus the epilogues, against rule 1. List lines
 that kill a reading. Keep a ledger with components as rows (Surfer, HUSH, coffee,
 guard, doors, moon) and mechanisms as columns, each cell citing its evidence.
+
+**Stage 9 status:** ledger and findings in `docs/plans/last-minutes-ledger.md`. Keyword screen of 2,382 lines with 172 read by hand, so it is not the full line-by-line read this stage asks for.
 
 ## Stage 10: outside checks
 
@@ -286,9 +391,49 @@ guard, doors, moon) and mechanisms as columns, each cell citing its evidence.
 | "What was that place?" | Most answer with a person, not a building |
 | Hospice nurse reads the interruption list | Nothing left marked "would hurt a family" |
 
+## Status, 2026-11-05 (stages 2, 4, 5 and the cascade)
+
+**Built**
+- Stage 2: every terminal ending drives off, the bench included.
+- Stage 4: `game/last-minutes.js`. A whole-run arc, an exposure floor under hypoxia, de-inhibition, meaning, gamma surges and a front across the map. Colour, contrast and narrowing reach the screen through POST. The recorder, torch and gait losing now runs everywhere.
+- Stage 5: the field (`game/memory-field-scene.js` and friends), five visits placed on the takes and the last door, with the van door that gives when you stop. `game/interruption-director.js` for seeps and doors that don't answer. Nine painted seeps.
+- Cascade, first slice: the real moon grows and reddens, the bag (`world/the-bag.js`), his hypoxia tell in his own words, and rising lines for looked-at objects (`data/meaning-lines.js`).
+
+**Checked in the real game** (`artifacts/last-minutes/`): each visit looks right, the world returns to the same view, [E] does nothing, stopping releases the door, the hard limit holds, walking through works, Escape reaches pause. Each visit was started from a probe with its clock jumped forward.
+
+**Not checked yet**
+- A real take reaching the sheet and then the field. Wired, never run.
+- The third visit on the door after the crash, and the fifth on the chapel and tower doors. Wired, never run.
+- Dead doors, seep timing and the bag walking around in real play. Wired, never run.
+- Nobody has heard any of it. The Tauri build hasn't been run.
+
+**Known problems**
+- The blood moon prints a dull pink late on, because the colour loss takes its red. The moon should be exempt.
+- Reading a real take's length of play is untested, so how often seeps land is a guess.
+
+**Next:** the Takeover class (`beginWindowTakeover` is ready and the director doesn't call it yet), more pastoral and cab-bleed placements, the natatorium's light seen from under water, carrying the daisies into Source's own field. Stages 8 and 9 are open.
+
 ## Decisions still open
 
-- **A.** Do the terminal endings get the same drive? Recommended: yes.
-- **B.** Cut the prologue's fate hub? Recommended: yes.
-- **C.** Should Alan ride in the van in `surfaced`? Built for now with him staying
-  at the barrier, because no passenger model exists.
+None.
+
+Decided 2026-11-05: **A**, every terminal ending gets the drive. **B**, the
+prologue's fate hub stays for now. **C**, Seb: "you and alan walk to the car as the
+game fades out. you fade out before him." So `surfaced` is the one exception to A.
+
+## Cascade sources
+
+Seen through secondary pages and abstracts. Read the originals before citing.
+
+- ELDV themes (Nosek, Kerr et al. 2014), as excerpted:
+  [six categories](https://rtraer.blogspot.com/2022/06/six-categories-of-eldvs-kerr-excerpt-4.html).
+  "Going or preparing to go" in 38.9% of dreams in the longitudinal study, and up to
+  18% distressing; figures vary by analysis.
+- Gamma surge (Xu, Borjigin et al. 2023): four patients, two showing it, both with a
+  seizure history, no way to know what they experienced.
+  [Michigan's summary](https://www.futurity.org/dying-brain-consciousness-2913552/),
+  [Smithsonian](https://www.smithsonianmag.com/smart-news/surging-brain-activity-in-dying-people-may-be-a-sign-of-near-death-experiences-180982106/).
+- Disinhibition is a proposed mechanism, not a demonstrated one:
+  [2026 Frontiers paper](https://public-pages-files-2025.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2026.1766053/pdf).
+  Whether inhibitory neurons fail first is mixed:
+  [rat slice work](https://springerlink.bibliotecabuap.elogim.com/doi/10.1007/BF00228690).

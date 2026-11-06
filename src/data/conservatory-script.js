@@ -860,7 +860,7 @@ export const BENT_RIG = {
   solder: {
     speaker: 'THE PLANT ROOM',
     lines: [
-      { who: 'direction', text: 'You kneel on a plant-room floor at two in the morning and reflow a joint a dead man left grey, because that is the job, and it was always the job.' },
+      { who: 'direction', text: 'You kneel on a plant-room floor at two in the morning and reflow a joint the last man left grey, because that is the job, and it was always the job.' },
       { who: 'you', text: 'There. That is a circuit. That is a horrible, beautiful, working circuit.' },
       { who: 'direction', text: 'It goes in the bag, against the work order, where it is the heaviest thing you are carrying. The cells stay in it, and the cells are most of the weight, and you put them in anyway.' },
       { who: 'you', text: 'I do not know what I would do with it.' },

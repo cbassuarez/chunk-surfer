@@ -14,6 +14,10 @@ export const VEGETATION_MESHES = freeze({
   vegetation_weed_cluster:freeze({w:1.5,d:1.3,h:.8,blocks:false}),
   vegetation_grass_edge:freeze({w:2.9,d:.9,h:.45,blocks:false}),
   vegetation_leaf_scatter:freeze({w:2.9,d:1.4,h:.12,blocks:false}),
+  // Built in render/flora-models.js, not in a pack. See data/ellery-flora.js.
+  vegetation_daisy_drift:freeze({w:1.3,d:1.0,h:.26,blocks:false}),
+  vegetation_dandelions:freeze({w:.9,d:.8,h:.24,blocks:false}),
+  vegetation_clover_mat:freeze({w:1.2,d:1.0,h:.12,blocks:false}),
   academic_dead_tree_b:freeze({w:2.8,d:1.2,h:4.0,blocks:false}),
 });
 

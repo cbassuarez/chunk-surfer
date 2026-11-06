@@ -106,6 +106,7 @@ export const VIGIL_VOICES=deepFreeze({
         {who:'me',prompt:'Ask what the numbers mean.',text:'Why number the cups?'},
         {who:RUTH,text:'So I know who has gone home without making them announce it. At quarter past, I cross out anyone who misses the check.'},
         {who:RUTH,text:'Nothing dramatic happens. A coat disappears, a flask gets lighter, and the list tells me whether I should ring somebody.'},
+        {who:RUTH,text:'Mostly they stand in the rain and say what it was like. One or two say he.'},
       ),goto:'start'},
       revisit:{speaker:RUTH,art:plate('vigilRuth','Rain on the rota'),lines:lines(
         {who:RUTH,text:'Not yet. Same rain, same names. Keep the service lane clear if you go round again.'}),

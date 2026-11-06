@@ -1376,7 +1376,41 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
 // Rain is deliberately NOT in here. It is in the air between the eye and the
 // thing, not a property of the sky, and a reflection of it in a puddle would be
 // falling the wrong way.
+// THE DAY HE KEEPS GOING BACK TO. Only ever on while the field owns the renderer
+// (game/memory-field-scene.js). It has its own sun, and past a point the memory
+// reuses what it has: the sky holds in blocks and slips.
+uniform vec3 uMoonMeaning; // radius scale, blood, what the colour loss will take back
+uniform vec4 uMemorySun;   // direction, on
+uniform vec4 uMemorySky;   // time of day, sun scale, fault, cloud
+vec3 memoryDaySky(vec3 dir){
+  float fault=clamp(uMemorySky.z,0.0,1.0);
+  if(fault>0.01){
+    float cells=mix(240.0,16.0,fault*fault);
+    vec3 held=normalize(floor(dir*cells+0.5)/cells+vec3(1e-4));
+    dir=normalize(mix(dir,held,clamp(fault*1.5,0.0,1.0)));
+    float slip=step(1.0-fault*0.42,fract(sin(floor(dir.y*34.0)*12.9898+floor(uTime*2.0)*7.3)*43758.5453));
+    if(slip>0.5)dir=normalize(dir+vec3(0.14*fault,0.0,-0.10*fault));
+  }
+  float up=clamp(dir.y,-1.0,1.0),day=clamp(uMemorySky.x,0.0,1.0),late=smoothstep(0.55,1.0,day);
+  vec3 sun=normalize(uMemorySun.xyz);
+  vec3 zen=mix(mix(vec3(0.25,0.46,0.78),vec3(0.13,0.37,0.84),smoothstep(0.0,0.4,day)),vec3(0.20,0.19,0.44),late);
+  vec3 hor=mix(mix(vec3(0.93,0.90,0.80),vec3(0.75,0.87,0.97),smoothstep(0.0,0.4,day)),vec3(1.0,0.56,0.26),late);
+  vec3 col=mix(hor,zen,pow(smoothstep(-0.02,0.72,up),0.62));
+  vec2 cp=dir.xz/max(0.18,abs(up)+0.18);
+  float drift=uTime*0.008;
+  float cloud=0.46*(0.5+0.5*vnoise(cp+drift,0.7,3.0))+0.27*(0.5+0.5*vnoise(cp+drift*1.4,1.6,11.0))+0.17*(0.5+0.5*vnoise(cp+drift*2.0,3.4,29.0))+0.10*(0.5+0.5*vnoise(cp+drift*3.0,7.0,47.0));
+  float sd=acos(clamp(dot(dir,sun),-1.0,1.0)),sr=0.035*max(0.2,uMemorySky.y);
+  // Soft-edged, and burned away near the sun: a hard cloud edge prints as a black line.
+  cloud=smoothstep(0.46,0.86,cloud)*smoothstep(0.0,0.14,up)*clamp(uMemorySky.w,0.0,1.0)*smoothstep(0.08,0.5,sd);
+  col=mix(col,mix(vec3(1.0,0.99,0.96),vec3(1.0,0.72,0.50),late),cloud*0.86);
+  col+=mix(vec3(1.0,0.94,0.78),vec3(1.0,0.55,0.28),late)*exp(-sd/(sr*5.0))*0.9;
+  col+=vec3(1.0,0.96,0.86)*exp(-sd/0.55)*0.22;
+  col=mix(col,vec3(1.6,1.55,1.4),1.0-smoothstep(sr*0.92,sr*1.02,sd));
+  col=mix(col,mix(vec3(0.30,0.44,0.14),vec3(0.36,0.30,0.12),late),1.0-smoothstep(-0.012,0.006,up));
+  return col;
+}
 vec3 nightSky(vec3 dir){
+  if(uMemorySun.w>0.5)return memoryDaySky(dir);
   float up = clamp(dir.y, -1.0, 1.0);
   float horizon = 1.0 - smoothstep(0.0, 0.46, abs(up));
   // A SOLID OVERCAST DOES NOT FALL AWAY THAT FAST. 0.80 put the sky at two
@@ -1485,7 +1519,15 @@ vec3 nightSky(vec3 dir){
   float mAlt = 0.26 + 0.13 * fract(uNightSeed * 7.13);
   vec3 moonDir = normalize(vec3(cos(mAz) * (1.0 - mAlt), mAlt, sin(mAz) * (1.0 - mAlt)));
   float super = step(0.82, fract(uNightSeed * 13.77));        // roughly one run in six
-  float mR = mix(0.026, 0.052, super);
+  // The same moon every night, and as the night goes on there is more of it.
+  // Nobody moves it and nothing says so. See game/last-minutes.js.
+  float mR = mix(0.026, 0.052, super) * max(1.0, uMoonMeaning.x);
+  float moonBlood = clamp(uMoonMeaning.y, 0.0, 1.0);
+  // He sees less colour every hour and this is the one colour he sees more of, so it
+  // is laid down strong enough to come through what POST does to everything else.
+  vec3 moonGlow = mix(vec3(1.0), vec3(1.0, 0.34, 0.24), moonBlood);
+  float moonLoss = max(1.0, uMoonMeaning.z);
+  moonGlow = max(vec3(0.0), dot(moonGlow, vec3(.2126, .7152, .0722)) + (moonGlow - dot(moonGlow, vec3(.2126, .7152, .0722))) * moonLoss);
   float mCos = dot(dir, moonDir);
   float mD = acos(clamp(mCos, -1.0, 1.0));
 
@@ -1497,11 +1539,11 @@ vec3 nightSky(vec3 dir){
   // which washed the disc out to the same value as the sky around it and left
   // nothing on screen but a faint ring where the dither happened to break. The
   // light around it has to go down before the thing itself does.
-  col += vec3(0.42, 0.46, 0.56) * exp(-mD / (mR * 4.2)) * 0.30 * thinCloud;
-  col += vec3(0.26, 0.30, 0.40) * exp(-mD / 0.50) * (0.16 + 0.30 * super);
+  col += vec3(0.42, 0.46, 0.56) * moonGlow * exp(-mD / (mR * 4.2)) * 0.30 * thinCloud;
+  col += vec3(0.26, 0.30, 0.40) * moonGlow * exp(-mD / 0.50) * (0.16 + 0.30 * super);
   // Cloud between you and it takes the moon's light rather than the moon, so the
   // deck in front of it glows and the breaks stay dark.
-  col += vec3(0.40, 0.43, 0.52) * cloud * exp(-mD / 0.40) * 0.70;
+  col += vec3(0.40, 0.43, 0.52) * moonGlow * cloud * exp(-mD / 0.40) * 0.70;
 
   // THE DISC.
   //
@@ -1521,7 +1563,12 @@ vec3 nightSky(vec3 dir){
   float phase = smoothstep(-0.85, 0.75, face.x + (fract(uNightSeed * 3.31) - 0.5) * 2.2);
   float maria = 0.88 + 0.12 * noise2(face * 1.9, 1.0, 5.0);
   float lit = disc * (0.55 + 0.45 * phase) * (0.62 + 0.38 * thinCloud);
-  col = mix(col, vec3(1.34, 1.33, 1.26) * maria, lit);
+  // Late in the night no cloud gets in front of it, and it has no dark side.
+  lit = mix(lit, disc, moonBlood);
+  col += vec3(0.62, 0.05, 0.03) * moonBlood * exp(-mD / 0.75) * 0.42 * moonLoss;
+  vec3 moonPaint = mix(vec3(1.34, 1.33, 1.26), vec3(1.18, 0.20, 0.10), moonBlood);
+  float moonPaintLum = dot(moonPaint, vec3(.2126, .7152, .0722));
+  col = mix(col, max(vec3(0.0), moonPaintLum + (moonPaint - moonPaintLum) * moonLoss) * maria, lit);
 
   // The glow the city throws onto the cloud above it, to the west, where the bay
   // faces. Broad and shapeless: the light, not the source.
@@ -2721,6 +2768,10 @@ void main(){
         float recoveredRail=1.0-smoothstep(.04,.22,abs(voidEdge-.14));
         float recoveredWalk=smoothstep(.25,.95,voidEdge)*(1.0-smoothstep(1.6,2.4,voidEdge));
         beneath+=vec3(.55,.67,.62)*mix(max(galleryX,galleryZ),recoveredRail,uGalleryTreatment)*.94;
+        // The vines fall just inside that rail, in broken strands.
+        float vineFringe=smoothstep(-.70,-.20,voidEdge)*(1.0-smoothstep(-.02,.12,voidEdge))
+                        *step(.52,fract(sin(floor((atGallery.x+atGallery.y)*3.1)*12.9898)*43758.5453));
+        beneath+=vec3(.30,.62,.32)*vineFringe*uGalleryTreatment*.9;
         float walkwayX=smoothstep(5.05,5.75,abs(galleryLocal.x))
                        *(1.0-smoothstep(6.3,7.1,abs(galleryLocal.x)))
                        *(1.0-smoothstep(7.1,7.8,abs(galleryLocal.y)));
@@ -3134,7 +3185,15 @@ uniform float uFrontEndExposureStops;
 uniform float uFrontEndShoulder;
 uniform float uFrontEndToe;
 uniform float uFrontEndPrint;
+uniform vec4 uPerception;   // chroma, contrast, narrowing, lift
+uniform vec4 uPerceptionAt; // where the narrowing closes on (uv), lids
+uniform vec4 uLeak;         // leak, white, clock, seed
+uniform vec4 uLeakWave;     // origin (uv), front radius, band
+uniform vec4 uLeakLens;     // focus gone, after-image, after-image at (uv)
+uniform float uLeakShimmer;
 out vec4 o;
+float leakHash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+34.5);return fract(p.x*p.y);}
+float leakNoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(leakHash(i),leakHash(i+vec2(1,0)),f.x),mix(leakHash(i+vec2(0,1)),leakHash(i+vec2(1,1)),f.x),f.y);}
 ${PRESSURE_IDENTITY_GLSL}
 uniform sampler2D uPressureInk;
 uniform float uPressureInkReady;
@@ -3280,6 +3339,95 @@ void main(){
     ivec2 missingPixel=clamp(ivec2(uv*vec2(textureSize(uMissingManMarks,0))),ivec2(0),textureSize(uMissingManMarks,0)-1);
     float missingCore=missingManCoreTag(texelFetch(uMissingManMarks,missingPixel,0).a);
     c*=1.0-missingCore*(1.0-pressureIdentityMask(uv));
+  }
+  // WHAT ARRIVES OF IT. Nothing in the world changed; less of it gets to him, or
+  // for a moment far more. Strict identity at (1,1,0,0). See game/last-minutes.js.
+  // Colour goes before form, and a closing field is the last thing to come. When it
+  // comes it closes on whatever is bright. Sun through shut eyelids is the only warm
+  // thing this pass can do.
+  float seen=dot(c,vec3(.2126,.7152,.0722));
+  c=max(mix(vec3(seen),c,uPerception.x),vec3(0.0))*uPerception.y*(1.0+.2*uPerception.w);
+  vec2 closing=(uv-uPerceptionAt.xy)*vec2(uRes.x/uRes.y,1.0);
+  float closingAt=length(closing),closed=clamp(uPerception.z,0.0,1.0);
+  if(closed>.001)c*=1.0-smoothstep(mix(1.15,.03,closed),mix(1.7,.34,closed),closingAt);
+  float lids=clamp(uPerceptionAt.z,0.0,1.0);
+  if(lids>.001)c=mix(c,vec3(1.0,.34,.13)*(.34+.66*exp(-closingAt*1.35)),lids);
+  // LIGHT IN THE CAMERA. game/neural-transition.js says what this is. It sits on top of
+  // the print, unprinted, because it was never anything in the room: it happened to the
+  // film, or the lens, or the eye, and nothing here says which.
+  float leakAmount=clamp(uLeak.x,0.0,1.0),blinding=clamp(uLeak.y,0.0,1.0),lensGoing=clamp(uLeakLens.x,0.0,1.0),afterSun=clamp(uLeakLens.y,0.0,1.0);
+  if(leakAmount>.001||blinding>.001||uLeakWave.z>.001||lensGoing>.001||afterSun>.001){
+    float leakAspect=uRes.x/uRes.y,leakSeed=uLeak.w;
+    // A camera with a hand on it. Whatever happens to the film happens at twelve frames
+    // a second. Reduce Flash runs it smooth.
+    float leakClock=mix(uLeak.z,floor(uLeak.z*12.0)/12.0,uLeakShimmer);
+    vec2 leakAspectUv=uv*vec2(leakAspect,1.0);
+    // The lens goes first: everything soft, every highlight swelling, and the same frame
+    // exposed twice, a little out of register, the way an in-camera double exposure is.
+    float melt=max(blinding,lensGoing);
+    if(melt>.001){
+      vec3 soft=vec3(0.0);
+      float spread=.002+.034*melt;
+      for(int k=0;k<12;k++){
+        float angle=float(k)*2.39996+leakSeed*6.0,reach=sqrt((float(k)+.5)/12.0)*spread;
+        vec3 tap=texture(uSrc,uv+vec2(cos(angle)/leakAspect,sin(angle))*reach).rgb;
+        soft+=tap*(1.0+dot(tap,vec3(.2126,.7152,.0722))*3.2*melt);
+      }
+      c=mix(c,soft/12.0,smoothstep(.0,.3,melt));
+      vec2 slip=vec2(sin(leakSeed*91.0+leakClock*3.7),cos(leakSeed*37.0+leakClock*2.9))*.022*melt;
+      c=max(c,texture(uSrc,uv+slip).rgb*.72*melt);
+    }
+    // Overexposed, not faded: what is already bright clips first, and the room burns out.
+    c*=1.0+blinding*blinding*7.0;
+    if(leakAmount>.001){
+      // A light leak is the film fogging from the edge of the gate, and it has an order:
+      // deep red at its reach, then orange, yellow, and white where it is worst. It comes
+      // in as curtains, never as a shape, and they drift.
+      float side=step(.5,fract(leakSeed*3.7));
+      float across=mix(uv.x,1.0-uv.x,side);
+      float wander=leakNoise(vec2(uv.y*1.5+leakSeed*9.0,leakClock*.9))*.62+leakNoise(vec2(uv.y*4.6+leakSeed*3.0,leakClock*1.6))*.2;
+      float curtain=1.0-smoothstep(.0,max(.02,leakAmount*(.34+wander*.95)),across);
+      // A second, thinner burn from the far edge, later and weaker.
+      float farAcross=1.0-across+(uv.y-.5)*(fract(leakSeed*5.9)-.5)*.5;
+      float farWander=leakNoise(vec2(uv.y*2.2-leakSeed*5.0,leakClock*.7+3.0));
+      float second=(1.0-smoothstep(.0,max(.02,leakAmount*leakAmount*(.1+farWander*.55)),farAcross))*.8;
+      vec3 burn=vec3(0.0);
+      for(int k=0;k<2;k++){
+        float amount=k==0?curtain:second;
+        vec3 fog=mix(vec3(.82,.03,.02),vec3(1.0,.36,.05),smoothstep(.0,.3,amount));
+        fog=mix(fog,vec3(1.0,.78,.30),smoothstep(.28,.66,amount));
+        fog=mix(fog,vec3(1.0,.98,.90),smoothstep(.62,.98,amount));
+        burn=max(burn,fog*pow(amount,.72));
+      }
+      c=vec3(1.0)-(vec3(1.0)-clamp(c,0.0,1.0))*(vec3(1.0)-clamp(burn*min(1.0,leakAmount*1.7),0.0,1.0));
+      // Out-of-focus light, drifting across the lens: soft discs, a little brighter at the rim.
+      for(int k=0;k<7;k++){
+        float id=float(k)+leakSeed*17.0;
+        vec2 spot=vec2(fract(id*.6180339)*leakAspect,fract(id*.7548776));
+        spot+=vec2(sin(leakClock*.31+id),cos(leakClock*.23+id*1.7))*.06;
+        float size=.045+.13*fract(id*.3819),away=length(leakAspectUv-spot);
+        float disc=(1.0-smoothstep(size*.86,size,away))*(.5+.5*smoothstep(size*.45,size*.92,away));
+        c+=mix(vec3(1.0,.46,.14),vec3(1.0,.84,.56),fract(id*.911))*disc*leakAmount*.2;
+      }
+    }
+    if(uLeakWave.z>.001){
+      // Light through the lens from one place, swelling. Each colour is focused a little
+      // differently, so its edge fringes the way a cheap lens does.
+      float front=uLeakWave.z,band=max(.01,uLeakWave.w);
+      vec2 leakQ=(uv-uLeakWave.xy)*vec2(leakAspect,1.0);
+      float leakR=length(leakQ),edge=(leakNoise(vec2(atan(leakQ.y,leakQ.x)*1.7+leakSeed,leakClock*.8))-.5)*.2*(.3+leakR);
+      vec3 flare=1.0-smoothstep(vec3(front-band),vec3(front),vec3(leakR-.022,leakR,leakR+.03)+edge);
+      c=mix(c,vec3(1.0,.97,.90),flare*.94);
+      c+=vec3(.75,.14,.03)*smoothstep(front-band*1.7,front-band*.6,leakR+edge)*(1.0-smoothstep(front-band*.6,front+band*.3,leakR+edge))*.55;
+    }
+    c=mix(c,vec3(1.0,.985,.93),smoothstep(.5,1.0,blinding));
+    if(afterSun>.001){
+      // The sun, still on his eye, in the complement. It stays where he isn't looking.
+      float away=length((uv-uLeakLens.zw)*vec2(leakAspect,1.0));
+      float disc=exp(-pow(away/.13,4.0)),ring=exp(-pow((away-.15)/.05,2.0));
+      c=mix(c,c*vec3(.42,.52,1.0)+vec3(.02,.03,.13),disc*afterSun);
+      c+=vec3(.34,.05,.42)*ring*afterSun*.34;
+    }
   }
   o=vec4(c,1.0);
 }`;
@@ -6827,7 +6975,7 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   gl.uniform1f(pixelMeshU('uBaseRetention'), look.vfd.baseRetention);
   gl.uniform1f(pixelMeshU('uPaletteAmount'), look.vfd.paletteAmount);
   gl.uniform1f(pixelMeshU('uSignalAmount'), forceSignal > 0 ? Math.max(look.vfd.signalGain, 1.15) : look.vfd.signalGain);
-  gl.uniform1f(pixelMeshU('uEdgeGain'),state?.driveStudy?.active===true ? .65 : look.vfd.edgeGain);
+  gl.uniform1f(pixelMeshU('uEdgeGain'),state?.driveStudy?.active===true ? .65 : memorySky ? look.vfd.edgeGain*memorySky.edge : look.vfd.edgeGain);
   gl.uniform1f(pixelMeshU('uCoverage'), look.vfd.coverage);
   gl.uniform1f(pixelMeshU('uGlowAmount'), forceSignal > 0 ? Math.max(look.vfd.glow, 0.48) : look.vfd.glow);
   gl.uniform1f(pixelMeshU('uPersistenceMs'), effectiveSettings.memory ? look.vfd.persistenceMs : 16);
@@ -8309,6 +8457,9 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uGlassCourtRainShelter'),state.glassCourtRainShelter?1:0);
   gl.uniform1f(U('uRainIndoor'),indoorRain);
   gl.uniform1f(U('uNightSeed'),nightSeed);
+  {const seen=perceptionArmed?perception:PERCEPTION_IDENTITY;gl.uniform3f(U('uMoonMeaning'),seen.moonSize,seen.moonBlood,1/Math.max(.2,seen.chroma));
+   if(memorySky){gl.uniform4f(U('uMemorySun'),memorySky.sun[0],memorySky.sun[1],memorySky.sun[2],1);gl.uniform4f(U('uMemorySky'),memorySky.day,memorySky.sunScale,memorySky.fault,memorySky.cloud);}
+   else gl.uniform4f(U('uMemorySun'),0,1,0,0);}
   gl.uniform1f(U('uEndingWorldLook'),endingWorldLook);
   gl.uniform1f(U('uRoofView'),lightingRoofSkyRecovery>0?1:0);
   gl.uniform1f(U('uGalleryTreatment'),academicGalleryReady?1:0);
@@ -8430,6 +8581,8 @@ export function r3dFrame(state) {
 
   // Only the prologue sets a horizon over the building.
   runSourceRestHorizonPass();
+  // A seep: the room isn't there for a moment. Printed like everything else.
+  if(tableauSource)drawTableau();
   const lens=authoredCamera?.lens,lensOptions={width:uniforms.sceneW,height:uniforms.sceneH,outputHeight:canvas.height};
   const lensBeforePrint=state.cinematicLensStage==='pre-print';
   const sourceTexture=lensBeforePrint?cinematicLensPass.run(sceneTex,sceneTex,lens,{...lensOptions,stage:'pre-print'}):sceneTex;
@@ -8472,6 +8625,22 @@ function finishPressure(sourceTex,{acquired=null}={}){
 
 let presentationReceiptListener=null;
 export function r3dObservePresentation(listener){presentationReceiptListener=typeof listener==='function'?listener:null;return()=>{if(presentationReceiptListener===listener)presentationReceiptListener=null;};}
+const PERCEPTION_IDENTITY=Object.freeze({chroma:1,contrast:1,narrowing:0,lift:0,centre:Object.freeze([.5,.5]),lids:0,moonSize:1,moonBlood:0,
+  leak:0,white:0,time:0,seed:0,origin:Object.freeze([.5,.5]),waveRadius:0,waveBand:.2,lens:0,after:0,afterAt:Object.freeze([.5,.55]),shimmer:0});
+let perception=PERCEPTION_IDENTITY,perceptionArmed=false,memorySky=null;
+export function r3dSetPerception({chroma=1,contrast=1,narrowing=0,lift=0,centre=PERCEPTION_IDENTITY.centre,lids=0,moonSize=1,moonBlood=0,
+  leak=0,white=0,time=0,seed=0,origin=PERCEPTION_IDENTITY.origin,waveRadius=0,waveBand=.2,lens=0,after=0,afterAt=PERCEPTION_IDENTITY.afterAt,shimmer=0}={}){
+  const n=(v,f)=>Number.isFinite(Number(v))?Number(v):f;
+  perception={chroma:n(chroma,1),contrast:n(contrast,1),narrowing:n(narrowing,0),lift:n(lift,0),centre:[n(centre?.[0],.5),n(centre?.[1],.5)],lids:n(lids,0),moonSize:n(moonSize,1),moonBlood:n(moonBlood,0),
+    leak:n(leak,0),white:n(white,0),time:n(time,0),seed:n(seed,0),origin:[n(origin?.[0],.5),n(origin?.[1],.5)],waveRadius:n(waveRadius,0),waveBand:n(waveBand,.2),lens:n(lens,0),after:n(after,0),afterAt:[n(afterAt?.[0],.5),n(afterAt?.[1],.55)],shimmer:n(shimmer,0)};
+  perceptionArmed=true;return perception;
+}
+export function r3dPerceptionStats(){return{armed:perceptionArmed,...perception,memorySky:memorySky?{...memorySky}:null};}
+// `sun` is a direction. Null puts the night back.
+export function r3dSetMemorySky(frame=null){
+  memorySky=frame&&Array.isArray(frame.sun)?{sun:frame.sun,day:Number(frame.day)||0,sunScale:Number(frame.sunScale)||1,fault:Number(frame.fault)||0,cloud:Number.isFinite(frame.cloud)?frame.cloud:.6,edge:Number.isFinite(frame.edge)?frame.edge:1}:null;
+  return !!memorySky;
+}
 function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellingColour=0,unravellingScene=null}={}){
   // post upscale to screen
   gl.useProgram(progPost);
@@ -8522,6 +8691,15 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
   gl.uniform1f(postU('uFrontEndShoulder'),frontEndPlate.shoulder);
   gl.uniform1f(postU('uFrontEndToe'),frontEndPlate.toe);
   gl.uniform1f(postU('uFrontEndPrint'),frontEndPlate.negative*frontEndPlate.print);
+  // Held for one frame only: whoever owns the picture says so every frame, and
+  // nothing that forgets to can inherit somebody else's failing eyes.
+  const seen=perceptionArmed?perception:PERCEPTION_IDENTITY;perceptionArmed=false;
+  gl.uniform4f(postU('uPerception'),seen.chroma,seen.contrast,seen.narrowing,seen.lift);
+  gl.uniform4f(postU('uPerceptionAt'),seen.centre[0],seen.centre[1],seen.lids,0);
+  gl.uniform4f(postU('uLeak'),seen.leak,seen.white,seen.time,seen.seed);
+  gl.uniform4f(postU('uLeakWave'),seen.origin[0],seen.origin[1],seen.waveRadius,seen.waveBand);
+  gl.uniform4f(postU('uLeakLens'),seen.lens,seen.after,seen.afterAt[0],seen.afterAt[1]);
+  gl.uniform1f(postU('uLeakShimmer'),seen.shimmer);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   // CPU submit receipt, not a claim of OS compositor/GPU presentation timing.
   if(presentationReceiptListener&&!presentTarget)presentationReceiptListener(performance.now());

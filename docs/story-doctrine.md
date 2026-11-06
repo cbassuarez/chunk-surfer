@@ -15,6 +15,8 @@ Ruled with Seb, 2026-11-04. This section outranks everything below it. The plan 
 - A voice may doubt the clean run. Nothing may disprove it.
 - The rest of this document is one reading, plus naming rules for code. `chunkSurfer`, `borrowedRecordist` and `playerShadow` are handles, not verdicts on what those things are. Their separateness in code does not settle their separateness in the story.
 
+**The meaning-making cascade.** As his faculties fall, meaning rises. Ordinary things become signs: a plastic bag a spirit, the sun a light at the end of a tunnel, the moon a blood moon. Not spiritualism: neurons failing in front of him, de-inhibition, gamma surges, the themes of end-of-life dreams and visions. This is essence, not accident. It is also one mechanism among several, so the game never says "it was only a bag" and never says it wasn't.
+
 **Known about him:** the blue-ink notes in the cab are his own. "There was someone I meant to play it for" and "For the part that wouldn't play" are Lyle/Sarah, and the text does not choose between them. Why he took the job is deliberately open.
 
 ## Stable rule
@@ -47,4 +49,4 @@ The gate guard asks for the operator's name and visibly accepts two answers. Rai
 
 ## Endings
 
-The contract organizes repeated attention; it did not create HUSH. Demolition can cover a downbeat without ending the inherited process. The guard's intervention remains human. Reversed pre-roll can contain exits before either door sounds. The coffee explanation is a filed interpretation, not omniscient truth. Releasing the borrowed contractor does not destroy or reveal HUSH and never adds a sixth story ending. Driving off is not an ending either. It is what closes them: first person, then third, then black, then credits, with nothing on screen saying what it means.
+The contract organizes repeated attention; it did not create HUSH. Demolition can cover a downbeat without ending the inherited process. The guard's intervention remains human. Reversed pre-roll can contain exits before either door sounds. The coffee explanation is a filed interpretation, not omniscient truth. Releasing the borrowed contractor does not destroy or reveal HUSH and never adds a sixth story ending. Driving off is not an ending either. It is what closes them: first person, then third, then black, then credits, with nothing on screen saying what it means. The Other Recordist closes the same way on foot: you and Alan walk to the van as the game fades, and you fade before him.

@@ -5,7 +5,7 @@ import * as N from '../src/game/night-clock.js';
 import * as D from '../src/game/night-deadline.js';
 import {START_MIN,clockString,takeStamp} from '../src/game/clock.js';
 import {NAVIGATOR_CLOCK_BLANK,NAVIGATOR_CLOCK_BLINK_MS,navigatorClockState,paintNavigatorClock} from '../src/render/navigator-clock.js';
-import {beginFaceplateModuleState} from '../src/render/faceplate-module-state.js';
+import {beginFaceplateModuleState,faceplateUsesCurrentRunModules} from '../src/render/faceplate-module-state.js';
 import {SIX_NOTHINGNESS,sixBlinkLit} from '../src/data/six-nothingness.js';
 
 const file=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -126,6 +126,11 @@ test('the display drops its digits and blinks only the colon',()=>{
   assert.ok(on.painted&&off.painted);assert.ok(on.rects>off.rects,'the colon is really drawn on the lit half and not on the dark half');
   const digits=paintNavigatorClock(new Proxy({globalAlpha:1},{get:(t,k)=>k in t?t[k]:()=>({width:0}),set:(t,k,v)=>{t[k]=v;return true;}}),{x:0,y:0,w:40,h:3},{value:'05:38'},{now:100,identity:false});
   assert.equal(digits.state.value,'05:38');
+});
+
+test('in Source the FN-12 comes up with the raised recorder, and the corners stay empty',()=>{
+  assert.equal(faceplateUsesCurrentRunModules({id:'recorder'}),true,'raising the deck is how the blank clock is read');
+  assert.doesNotMatch(body('drawSourceHud'),/nightClock|drawNavigatorClock/,'THE CORNERS ARE EMPTY');
 });
 
 test('the 3D blinking 6:00 scene owes nothing to any of this',()=>{

@@ -1,4 +1,4 @@
-// DRIVING OFF. What closes the clean endings: first person, then third, then black,
+// DRIVING OFF. What closes every ending: first person, then third, then black,
 // then credits. The same van and road as the opening, and it says nothing. A man
 // driving home, a man leaving his body, and a van going nowhere are all the same
 // shot, and nothing on screen chooses. See docs/plans/last-minutes.md.
@@ -13,8 +13,12 @@ import {multiply,rotation} from './source-drive/scene.js';
 import {resetWheelHands} from './source-drive/geometry/wheel-hands-pose.js';
 
 export const ENDING_DRIVE_OFF=Object.freeze({
-  // The endings where he is physically out when the last line is said.
-  endings:Object.freeze(['inversion','drugged','surfaced','tower-won']),
+  // All of them. In the first four he is physically out when the last line is said.
+  // In the rest his body stays behind or the text says so, and he drives off anyway,
+  // unchanged and unexplained: endings do not sublate this, and the player has to
+  // hold both. The century stay and the bench arrive under `sacrifice` and
+  // `contact-lost`. See docs/plans/last-minutes.md, stage 2.
+  endings:Object.freeze(['inversion','drugged','surfaced','tower-won','sacrifice','helped','contact-won','contact-lost','tower-lost']),
   // On the opening's own approach road. It stops long before the break at d297.
   startDistance:-600,startSpeed:11,cruise:13,
   engineSeconds:1.4,pictureSeconds:1.4,

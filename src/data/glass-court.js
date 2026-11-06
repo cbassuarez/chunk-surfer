@@ -48,7 +48,7 @@ export const GLASS_COURT=freeze({
     stemWidth:.016,leafLength:[.2,.3],leafWidth:[.18,.26],
     // Hanging: the negative height measures down from the deck, so the rail stays
     // put and only what falls past it moves, most at the longest tips.
-    wind:{amplitudeM:.14,frequencyHz:.2,anchorY:10-drawnFloor,heightM:-3.5},
+    wind:{amplitudeM:.1,frequencyHz:.16,anchorY:10-drawnFloor,heightM:-3.5},
   },
   signs:[
     {id:'baths-greenhouse-entry',copy:'GREENHOUSE / BATHS',x:.5,y:1.65,z:-.09,width:.72,height:.30,normal:[0,0,-1]},

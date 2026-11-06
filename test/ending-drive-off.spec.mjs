@@ -8,9 +8,11 @@ import {openingRoadSurfaceAt} from '../src/game/source-drive/opening-road.js';
 const run=(off,{seconds=200,each=()=>{}}={})=>{const seen=[];for(let t=0;t<seconds&&!off.view().done;t+=.05){const v=off.update(.05);if(seen.at(-1)!==v.phase)seen.push(v.phase);each(off.snapshot());}return seen;};
 const narrative=name=>JSON.parse(readFileSync(new URL(`../content/narrative/ending.epilogue.${name}.story.json`,import.meta.url),'utf8')).nodes.start.lines;
 
-test('only the clean endings drive off, for now',()=>{
-  for(const id of['inversion','drugged','surfaced','tower-won'])assert.equal(endingDriveOffOwed(id),true,id);
-  for(const id of['sacrifice','helped','contact-won','contact-lost','tower-lost'])assert.equal(endingDriveOffOwed(id),false,id);
+test('every ending drives off, the terminal ones included',()=>{
+  for(const id of['inversion','drugged','surfaced','tower-won','sacrifice','helped','contact-won','contact-lost','tower-lost'])assert.equal(endingDriveOffOwed(id),true,id);
+  assert.equal(endingDriveOffOwed('not-an-ending'),false);
+  const main=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
+  assert.doesNotMatch(main.slice(main.indexOf('openEndingCredits=(summary,options={})=>{'),main.indexOf('// Only a New Run owes the film.')),/sourceRestBlack/,'the bench is not excused');
 });
 
 test('left alone it finishes by itself: first person, then third, then black',()=>{
@@ -118,7 +120,7 @@ test('the clean codas hand over to the van, and keep what they had',()=>{
   assert.match(last('out'),/The van is where you left it/);
   assert.match(all('out'),/a ruled column with one name in it/);
   assert.equal(narrative('drugged').filter(row=>/you drive home into the light\.$/.test(row.text)).length,2);
-  assert.match(all('surfaced'),/Nobody in it\./);assert.match(last('surfaced'),/you find you have started walking/);
+  assert.match(all('surfaced'),/Nobody in it\./);assert.match(last('surfaced'),/you find the two of you have started walking/);
   const tower=narrative('tower-won');
   assert.ok(tower.findIndex(row=>/one vehicle, white/.test(row.text))<tower.findIndex(row=>/^Later, somebody adds/.test(row.text)));
   assert.match(tower.at(-1).text,/RECORDING RETAINED/,'the recording beat stays last');

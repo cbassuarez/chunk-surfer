@@ -6,6 +6,7 @@ import {driveColliders} from './scene.js';
 import {BOUNDARY_MESH_BOUNDS} from './route-boundaries.js';
 import {DRIVE_TEASER_BREAK,driveTeaserBreakRemoves} from './teaser-scene.js';
 import {COASTAL_WORLD_FROM_LOCAL,coastalLocalPoint,coastalSupportAt} from '../../data/coastal-memory.js';
+import {roadCastScene,roadCabCup} from './road-cast.js';
 export const OPENING_ROAD=Object.freeze({start:-720,spawn:-600,join:-32,halfWidth:3.25,shoulder:1.25});
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),ease=x=>{x=clamp(x);return x*x*x*(10+x*(-15+6*x));};
 const keys=[[-760,-20],[-600,-5],[-450,34],[-280,-24],[-120,9],[-32,0]];
@@ -33,4 +34,5 @@ export function applyOpeningRoadScene(scene,state){const d=-state.z,props=scene.
  const clusters=[[-655,-1,3],[-525,1,4],[-410,-1,2],[-335,1,3],[-205,-1,4],[-96,1,2]];for(const[at,side,count]of clusters){if(Math.abs(at-d)>250)continue;for(let i=0;i<count;i++)props.push(placed('drive_tree',openingWorldAt(at+i*8,side*(10+i*2)),{id:'opening-tree-'+at+'-'+i,scale:[.8+i*.15,1+i*.1,.9+i*.1],yaw:i*.71}));}
  for(const[at,side]of[[-580,-1],[-370,1],[-165,-1]])if(Math.abs(at-d)<330)props.push(placed('drive_terrain_ridge',openingWorldAt(at,side*90),{id:'opening-ridge-'+at,scale:[1.2,1.1,1.6],yaw:side*.35}));
  for(let at=-680;at<-32;at+=47)if(Math.abs(at-d)<210)for(const side of[-1,1])props.push(placed('drive_reflector',openingWorldAt(at,side*(openingRoadAt(at).leftWidth+.55)),{id:'opening-reflector-'+side+'-'+at,yaw:side<0?Math.PI:0}));
- return{...scene,props,colliders:openingDriveColliders(state),openingApproach:{start:OPENING_ROAD.start,join:OPENING_ROAD.join,sampler:'same centreline as tyre/contact owner'}};}
+ const roadside=roadCastScene(d,openingWorldAt),cup=roadCabCup(scene);props.push(...roadside.props);if(cup)props.push(cup);
+ return{...scene,props,lamps:[...(scene.lamps||[]),...roadside.lamps],colliders:openingDriveColliders(state),openingApproach:{start:OPENING_ROAD.start,join:OPENING_ROAD.join,sampler:'same centreline as tyre/contact owner'}};}

@@ -267,13 +267,21 @@ float architecturalLightVisibility(vec3 fromM,vec3 toM){
 }
 ${SOURCE_SURROUNDINGS_VISIBILITY_GLSL}
 in float vRestHorizonGone;
+uniform float uFigureFade;
 void main(){
   if(vRestHorizonGone>.5)discard;
+  // One person going, stippled away with the same grain the picture is printed in.
+  if(uFigureFade>0.0&&fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))))<uFigureFade)discard;
   clipMeshPortal(vWorld);
   // Over the open courts the skylight is glass, not a lid: from below, its panes
-  // give way to the slice's real sky and weather. The ribs and beams are other
+  // give way to the slice's real sky and weather, and about a third of them keep a
+  // diagonal highlight stroke, the way glass is drawn. The ribs and beams are other
   // primitives, and from above the roof's own through-pane view owns these pixels.
-  if(uRoofGlass>.5&&uEye.y<vWorld.y&&vWorld.z>=${ELLERY_COURTYARD_SKY.z0.toFixed(1)})discard;
+  if(uRoofGlass>.5&&uEye.y<vWorld.y&&vWorld.z>=${ELLERY_COURTYARD_SKY.z0.toFixed(1)}){
+    vec2 glassWorld=(vWorld+uWorldPatternOffset).xz,glassPane=floor(glassWorld/vec2(2.0,2.16667));
+    float glassPick=fract(sin(dot(glassPane,vec2(12.9898,78.233)))*43758.5453);
+    if(glassPick>.34||abs(fract((glassWorld.x+glassWorld.y*.62)/1.9+glassPick*7.0)-.5)*1.9>.075)discard;
+  }
   if(!sourceSurroundingsVisible(uSourceSurroundingsSide,sourceSurroundingsWorldPoint(uEye),sourceSurroundingsWorldPoint(vWorld),uSourceSurroundingsGate,uSourceSurroundingsGateFrame))discard;
   // Sampling coordinates keep their authored phase across a floating origin.
   // vWorld remains physical for lighting, clipping, depth and shadow lookup.
@@ -1245,7 +1253,7 @@ export function characterStats(){
 }
 function groupMeshName(key){return key.split('\0',1)[0];}
 function bindCharacterPose(uniform,mesh,instance){
-  const snapshot=characterSnapshot(instance,mesh);gl.uniform1f(uniform('uCharacterEnabled'),snapshot?1:0);
+  const snapshot=characterSnapshot(instance,mesh);gl.uniform1f(uniform('uCharacterEnabled'),snapshot?1:0);gl.uniform1f(uniform('uFigureFade'),snapshot?Number(instance?.figureFade)||0:0);
   if(snapshot){gl.uniformMatrix4fv(uniform('uCharacterBones[0]'),false,snapshot.pose.bones);gl.uniform4fv(uniform('uCharacterMorphWeights'),snapshot.pose.morphs);}
 }
 function bindCharacterMorph(uniform,primitive){

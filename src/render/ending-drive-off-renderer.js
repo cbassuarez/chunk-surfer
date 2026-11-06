@@ -41,7 +41,7 @@ export function endingDriveOffRenderFrame(controller,metrics,memory={}){
     scene.eye=eye;scene.look={yaw:angularMix(scene.look.yaw,yaw,aim),pitch:mix(scene.look.pitch,pitch,aim)};
     scene.mirrors=[];
   }
-  if(gone>=.999)scene.props=scene.props.filter(q=>VEHICLE.test(q.mesh));
+  if(gone>=.999)scene.props=scene.props.filter(q=>VEHICLE.test(q.mesh)&&q.sourceStructure!=='road-cast');
   if(dolly>.3)scene.props.push(...tailLamps(p.bodyMatrix,metrics));
   const headlamps=scene.lamps.filter(l=>/^drive-headlamp-[01]$/.test(l.id));
   const weather=driveWeatherFrame(controller.weather,{bodyMatrix:scene.body,cabinMount:metrics.cabinBodyMount,headlamps});

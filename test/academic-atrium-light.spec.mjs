@@ -73,7 +73,7 @@ test('the skylight leaves no hole: every point over the courts is under a pane o
 
 test('the courts keep their sky through the glass, and the roof looks down through all of it',()=>{
  const props=read('src/render/props3d.js'),world=read('src/render/r3d.js');
- assert.match(props,/if\(uRoofGlass>\.5&&uEye\.y<vWorld\.y&&vWorld\.z>=\$\{ELLERY_COURTYARD_SKY\.z0\.toFixed\(1\)\}\)discard;/,'from below, only the court panes give way to the sky');
+ assert.match(props,/if\(uRoofGlass>\.5&&uEye\.y<vWorld\.y&&vWorld\.z>=\$\{ELLERY_COURTYARD_SKY\.z0\.toFixed\(1\)\}\)\{[^}]*glassPick>\.34[^}]*discard;/,'from below, only the court panes give way to the sky, keeping a few highlight strokes');
  assert.match(world,/vec2 courtGlass=glassLocal-vec2\(1\.5,6\.5\);/,'the through-pane view covers the court glass as well as the original pane');
  assert.match(world,/voidCourt=abs\(atGallery-vec2\(85\.5,21\.0\)\)-vec2\(8\.5,6\.0\)/,'it shows the gallery void as it now stands');
  near(ACADEMIC_ROOF.courtGlass.x0,85.5-8.5);near(ACADEMIC_ROOF.courtGlass.x1,85.5+8.5);near(ACADEMIC_ROOF.courtGlass.z0,21-6);near(ACADEMIC_ROOF.courtGlass.z1,21+6);

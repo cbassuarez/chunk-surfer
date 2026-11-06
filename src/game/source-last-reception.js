@@ -34,6 +34,7 @@ const CONVERSATIONS = Object.freeze([
     'I came for a concert. The man in that chair came for something else. We had the same ticket.',
     'He says the curtain never rose. I remember it coming down.',
     'Do not sit there. We have been keeping it for someone.',
+    'You were going to say a few words. It is all right. Nobody minds now.',
   ] },
   { id: 'guest-b-curtain', residentId: 'guest-b', title: 'The curtain', facts: ['waiting', 'contradiction'], lines: [
     'There was no concert. There was not even a curtain. I would remember a curtain.',

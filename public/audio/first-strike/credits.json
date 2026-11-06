@@ -16,6 +16,14 @@
   },
   "bytes": 42285,
   "sha256": "9094e7b74c16e9c9ea7a155a2f0207e8cad5cb2f5bf6d3935dcaeb32d0e37b8d",
-  "processing": "Retain complete2.571s source, downmixmono48kHz; highpass150Hz, lowpass5200Hz, \u22123dB,8msattackfade/230msendfade toretain a natural tail. MP3 delivery128kbps. No TTS, pitch shift, looping or synthesized horn.",
-  "notMeasured": "Distance/obstruction/reflections are runtime authored approximations. Source is a real industrial oil-rig horn, not a documentary Ellery demolition performance."
+  "processing": "Retain complete2.571s source, downmixmono48kHz; highpass150Hz, lowpass5200Hz, −3dB,8msattackfade/230msendfade toretain a natural tail. MP3 delivery128kbps. No TTS, pitch shift, looping or synthesized horn.",
+  "notMeasured": "Distance/obstruction/reflections are runtime authored approximations. Source is a real industrial oil-rig horn, not a documentary Ellery demolition performance.",
+  "submergedCarHorn": {
+    "file": "submerged-car-horn.wav",
+    "origin": "Project-authored deterministic synthesis; nothing recorded.",
+    "tool": "tools/chunk_surfer/build-submerged-horn.mjs",
+    "license": "Project source",
+    "bytes": 255824,
+    "sha256": "97341fcb733bac57ec2f7ae18c4d0f60a896b064897e71aa10ea8052ac2022e7"
+  }
 }

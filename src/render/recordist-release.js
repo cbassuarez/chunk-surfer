@@ -7,6 +7,11 @@ export const RECORDIST_RELEASE_CLIPS = Object.freeze({
   bound: 6, interrupt: RECORDIST_RELEASE_SECONDS.interrupt, settling: RECORDIST_RELEASE_SECONDS.settling,
   slumped: 6, lift: RECORDIST_RELEASE_SECONDS.lift, carried: 6, resting: 6,
 });
+// A walk has no baked clip: it is posed live, on any rig with these bones, because
+// only the closing walk to the van needs it. The foot's time on the ground fixes the
+// speed over it, so the soles never skate on the road.
+export const RECORDIST_WALK = Object.freeze({ seconds: 1.05, stride: .3, stance: .62 });
+export const RECORDIST_WALK_SPEED = 2 * RECORDIST_WALK.stride / (RECORDIST_WALK.stance * RECORDIST_WALK.seconds);
 const add = (a, b) => a.map((v, i) => v + b[i]), sub = (a, b) => a.map((v, i) => v - b[i]), mul = (a, n) => a.map(v => v * n);
 const dot = (a, b) => a.reduce((n, v, i) => n + v * b[i], 0), length = a => Math.hypot(...a), unit = a => mul(a, 1 / (length(a) || 1));
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -34,7 +39,28 @@ function solveChain(start, target, a, b, pole) {
 // A kneeling human has support before the borrowed performance releases him.
 // No body elongation, collapsing scales, pressure material or HUSH mesh enters
 // this sampler. The only broken rhythm is in his small involuntary gestures.
+function walkPhase(time, offset = 0) { const n = time / RECORDIST_WALK.seconds + offset; return n - Math.floor(n); }
+function walkAnkle(time, side) {
+  const { stride, stance } = RECORDIST_WALK, phase = walkPhase(time, side === 'R' ? .5 : 0), rest = .0726;
+  if (phase < stance) {
+    const heel = .04 * ease((phase - stance * .72) / (stance * .28));
+    return [0, rest + heel, -stride + 2 * stride * (phase / stance)];
+  }
+  const swing = (phase - stance) / (1 - stance);
+  return [0, rest + .04 * (1 - ease(swing * 2.5)) + Math.sin(swing * Math.PI) * .082, stride - 2 * stride * ease(swing)];
+}
+function walkFoot(time, side) {
+  const { stance } = RECORDIST_WALK, phase = walkPhase(time, side === 'R' ? .5 : 0), flat = [-.003, -.064, -.131];
+  if (phase < stance) return mix(flat, [-.003, -.135, -.075], ease((phase - stance * .72) / (stance * .28)));
+  const swing = (phase - stance) / (1 - stance);
+  return mix([-.003, -.135, -.075], [-.003, -.01, -.145], ease(swing));
+}
 function poseParameters(mode, time) {
+  if (mode === 'walk') {
+    const phase = walkPhase(time), step = Math.cos(phase * Math.PI * 4), sway = Math.sin(phase * Math.PI * 2), swing = Math.sin(phase * Math.PI * 2);
+    return { pelvis: [sway * .012, .9 + step * .011, -.007], lean: .055, roll: sway * .018, head: .03,
+      wrists: { L: [-.27, .875, -.03 + swing * .17], R: [.27, .875, -.03 - swing * .17] }, leg: 'walk' };
+  }
   const seconds = RECORDIST_RELEASE_CLIPS[mode] || 6, p = clamp(time / seconds), breath = Math.sin(time * Math.PI / 3) * .002;
   const bound = { pelvis: [0, .425 + breath, .015], lean: .20, roll: .02, head: .20,
     wrists: { L: [-.16, .80, -.19], R: [.22, .89, -.21] }, leg: 'kneel' };
@@ -66,7 +92,7 @@ function poseParameters(mode, time) {
 }
 
 export function recordistReleaseActorPose(mode = 'bound', time = 0) {
-  if (!Object.hasOwn(RECORDIST_RELEASE_CLIPS, mode)) throw new Error('Unknown recordist release pose.');
+  if (mode !== 'walk' && !Object.hasOwn(RECORDIST_RELEASE_CLIPS, mode)) throw new Error('Unknown recordist release pose.');
   const parameters = poseParameters(mode, Math.max(0, Number(time) || 0)), pelvis = bones.get('pelvis').head;
   const bodyQ = qm(qaxis([0, 0, 1], parameters.roll), qaxis([1, 0, 0], -parameters.lean));
   const transforms = new Map(), contacts = [];
@@ -101,10 +127,11 @@ export function recordistReleaseActorPose(mode = 'bound', time = 0) {
     }
     else if (mode === 'carried') { target = carriedAnkle; pole = [-1, -.4, sign * .1]; }
     else if (mode === 'resting') { target = restingAnkle; pole = [sign * .1, .4, -.2]; }
+    else if (mode === 'walk') { const ankle = walkAnkle(time, side); target = [sign * .135, ankle[1], ankle[2]]; pole = [sign * .025, .05, -1]; }
     const leg = solveChain(hip, target, upper, lower, pole);
     put(thigh.name, hip, between(sub(thigh.tail, thigh.head), sub(leg.middle, hip)));
     put(shin.name, leg.middle, between(sub(shin.tail, shin.head), sub(leg.end, leg.middle)));
-    const footDirection = mode === 'resting' ? [0, -.04, -.14] : mode === 'carried' ? [-.06, -.08, -.10]
+    const footDirection = mode === 'walk' ? walkFoot(time, side) : mode === 'resting' ? [0, -.04, -.14] : mode === 'carried' ? [-.06, -.08, -.10]
       : mode === 'lift' ? mix([0, -.055, .132], [-.06, -.08, -.10], ease(time / RECORDIST_RELEASE_CLIPS.lift)) : [0, -.055, .132];
     const footQ = between(sub(foot.tail, foot.head), footDirection);
     put(foot.name, leg.end, footQ); put(toe.name, transformed(toe.head, foot.name), footQ);

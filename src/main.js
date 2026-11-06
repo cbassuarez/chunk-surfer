@@ -5,13 +5,28 @@ import {NIGHT_DEADLINE_SECONDS,freshNightDeadline,stepNightDeadline,nightDeadlin
 import {firstStrikeEntryFromPlan,firstStrikeEntryFromSubmittedGeometry,firstStrikeSubmittedHostBounds,packFirstStrikeConstruction,restoreFirstStrikeConstruction} from './game/first-strike-entry.js';
 import {createFirstStrikeScene} from './game/first-strike-scene.js';
 import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFrame} from './render/first-strike-renderer.js';
-import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop} from './game/six-loop.js';
+import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop,sixOrdinaryTakes,showSixDebugOverlay,sixLoopDebugBuild} from './game/six-loop.js';
 import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
 import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
 import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
 import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
 import {endingDriveOffOwed} from './game/ending-drive-off.js';
+import {endingWalkOffOwed,createEndingWalkOff} from './game/ending-walk-off.js';
+import {createEndingWalkOffRenderer} from './render/ending-walk-off-renderer.js';
+import {lastMinutesArcTarget,stepLastMinutesArc,lastMinutesFrame,lastMinutesExposureFloor,lastMinutesFrontOrigin,lastMinutesFrontLoss,lastMinutesPerception,lastMinutesWorldFaculty,moonDirection,LAST_MINUTES_IDENTITY} from './game/last-minutes.js';
+import {createMemoryFieldScene} from './game/memory-field-scene.js';
+import {createMemoryFieldRenderer} from './render/memory-field-renderer.js';
+import {createMemoryFieldAudio,playMemorySeepSound} from './audio/memory-field-audio.js';
+import {MEMORY_FIELD_VISIT,memoryFieldFlag,memoryFieldForTake,HYPOXIA_TELL_LINES} from './data/memory-field.js';
+import {createInterruptionDirector,freshDeadDoor,pressDeadDoor,DEAD_DOOR_LINES,INTERRUPTION} from './game/interruption-director.js';
+import {memorySeepPlate} from './render/memory-seep.js';
+import {playCabBleed,playNeuralSound} from './audio/memory-field-audio.js';
+import {neuralFrame,neuralSeconds,NEURAL_TRANSITION} from './game/neural-transition.js';
+import {ensureFloraMeshes} from './render/flora-models.js';
+import {MEANING_SIGNS,meaningRung,meaningLineFor} from './data/meaning-lines.js';
+import {freshTheBag,stepTheBag,theBagProp,theBagGazed} from './world/the-bag.js';
+import {windVector as lastMinutesWind} from './world/wind.js';
 import {createSourceRestMusic} from './audio/source-rest-music.js';
 import {createOpeningPrologueAudio} from './audio/opening-prologue-audio.js';
 import {OPENING_PROLOGUE} from './data/opening-prologue.js';
@@ -112,6 +127,8 @@ import {makeSourceRecordingInspectionHost} from './game/source-recording-inspect
 import {createSourceRecordingCassetteRenderer,prewarmSourceRecordingCassetteMeshes,releaseSourceRecordingCassetteLabels} from './render/source-recording-cassette.js';
 import {freshEndingWrongDoorDemolition} from './game/ending-wrong-door.js';
 import {createEndingWrongDoorScene} from './game/ending-wrong-door-scene.js';
+import {createWindowTakeover,windowTakeoverMode} from './game/window-takeover.js';
+import {whoseLifeLine,createWhoseLifeRatchet} from './game/whose-life.js';
 import {createEndingWrongDoorRenderer} from './render/ending-wrong-door-renderer.js';
 import {createEndingWrongDoorAudio} from './audio/ending-wrong-door.js';
 import {createSourceIVScene} from './game/source-iv-scene.js';
@@ -4098,7 +4115,7 @@ function currentMoveIntervalMs(){
   }
   let ms = MOVE_MS * storyMoveScale();
   // A limp: the step off the weak leg is longer than the one onto it. Speed, not delay.
-  if(usingSourceSpace()&&outskirtsStepIndex%2===1)ms*=1+.22*outskirtsLosing();
+  if(outskirtsStepIndex%2===1)ms*=1+.22*outskirtsLosing();
   if(storyMode&&PLANT.heavyWrenchDragging())ms*=1/.65;
   ms *= (1 + worldBoundaryFriction * (WORLD_BOUNDARY_FRICTION.maxMult - 1));
   // THE LONG HALL GETS HARDER TO WALK. The corridor is a hundred and twelve
@@ -4778,7 +4795,7 @@ function step(dx,dy){
     const stationStep=stationFootfall(),footing=playerFootingAt(px,py);
     const stepMuffle=shoreStep.active?shoreStep.footstepMuffle:stationStep?.muffle
       ??(footing.profile==='erased'?.72:wetStep?.82:soaked?.48:softFloorMuffle(px,py));
-    const losingStep=usingSourceSpace()?outskirtsLosing():0;
+    const losingStep=outskirtsLosing();
     outskirtsStepIndex+=1;
     const audibleStep={...footing,level:level*(1-.6*losingStep)*shoreStep.footstepGain*(stationStep?.gain??1),
       muffle:stepMuffle,shoreAnswer:shoreStep.active,stairEcho:usingStairAnomaly()};
@@ -6868,8 +6885,28 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
 }
 // DRIVING OFF. Every ending reaches its credits through this one door, always after
 // its return is filed, so the drive saves nothing and a reload lands on the report.
+// A pane that covers the picture while he goes on walking. Returns false only when
+// it can't run at all: one already up, an unknown picture, or a world that needs him.
+// onDone fires on every way out, so a caller can always carry on.
+let windowTakeover=null;
+function windowTakeoverYields(){return scenes.blocksInput()||scenes.has(RECORDER_SCENE_ID)||usingSourceSpace()||PRES.isActive();}
+function beginWindowTakeover(mediaId,{onDone=()=>{}}={}){
+  if(windowTakeoverYields())return false;
+  windowTakeover??=createWindowTakeover({shouldYield:windowTakeoverYields,
+    showNativePane:(id,options)=>windowChoreography?.showTakeoverPane?.(id,options)??false,
+    hideNativePane:()=>{void windowChoreography?.restore?.('window-takeover');}});
+  const settings=getSave().settings||{};
+  return windowTakeover.begin(mediaId,{onDone,reducedMotion:(settings.shake||'full')!=='full',
+    mode:windowTakeoverMode({enabled:!!currentPsychProfileSettings().modules.windowChoreography,native:IS_TAURI,
+      introduced:!!getMeta().windowChoreographyIntroduced,reduceDread:!!settings.reduceDread})});
+}
+// The same sentence with him in it, once the night has got that far. The staged crash
+// replays the real opening untouched, so nothing here moves while it runs.
+const whoseLifeHeld=createWhoseLifeRatchet();
+PROPS.setInspectResolver((id,text,{first}={})=>whoseLifeLine(id,text,{first,meaning:whoseLifeHeld(getSave()?.run?.id||null,lastMinutes.frame.meaning),
+  heard:PROPS.isAuditioned(id),isSet:key=>flagTest(key),mark:key=>flagSet(key),frozen:!storyMode||sixLoopActive()}));
 let endingDriveOffScene=null;
-function beginEndingDriveOff({onDone=()=>{}}={}){
+function beginEndingDriveOff({onDone=()=>{},endingId=''}={}){
   if(endingDriveOffScene||RENDERER!=='3d')return false;
   ensureCtx();PB.stopPlayback();resetMotionInput('ending-drive-off',{stopRenderMove:true});
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceSampleField();silenceAmbientDrone();
@@ -6877,6 +6914,7 @@ function beginEndingDriveOff({onDone=()=>{}}={}){
   void windowChoreography.restore('ending-drive-off');
   let scene;
   scene=makeEndingDriveOffScene({context:actx,destinationAudio:sfxGain||master,reducedMotion:shakeMode()!=='full',
+    ...(endingWalkOffOwed(endingId)?{createController:createEndingWalkOff,createRenderer:createEndingWalkOffRenderer}:{}),
     isHeld:()=>paused||!gameplayInputLifecycleActive()||document.hidden,
     paintCover:alpha=>{if(alpha>0){const {cols,rows}=uiPhysicalSize();uiFill(0,0,cols,rows,`rgba(0,0,0,${Math.max(0,Math.min(1,alpha))})`);}},
     paintHint:alpha=>{const {cols,rows}=uiPhysicalSize(),text=BINDINGS.promptLine([{action:'interact',label:'HOLD TO SKIP'}]);uiText(Math.max(0,cols-text.length-3),rows-2,text,'ui-secondary',Math.max(0,Math.min(1,alpha)));},
@@ -6890,8 +6928,358 @@ function beginEndingDriveOff({onDone=()=>{}}={}){
 }
 const realOpenEndingCredits=openEndingCredits;
 openEndingCredits=(summary,options={})=>{
-  if(!endingDriveOffOwed(summary?.endingId)||options.sourceRestBlack||!beginEndingDriveOff({onDone:()=>realOpenEndingCredits(summary,options)}))return realOpenEndingCredits(summary,options);
+  if(!endingDriveOffOwed(summary?.endingId)||!beginEndingDriveOff({endingId:summary?.endingId,onDone:()=>realOpenEndingCredits(summary,options)}))return realOpenEndingCredits(summary,options);
   return true;
+};
+// THE LAST MINUTES. docs/plans/last-minutes.md, section 1a. Faculties fall and meaning
+// rises, from the first second. game/last-minutes.js has the curves. This is only the
+// wiring: what the night has reached, the field he goes to when he lets his breath go,
+// the door that won't, and the seeps that get through. None of it touches the tape or
+// a take, and none of it can be read as a number.
+const lastMinutes={runId:undefined,seed:0,arc:0,played:0,frame:lastMinutesFrame(),origin:null,originY:0,loss:0,tickAt:-Infinity,
+  director:null,bag:freshTheBag(),seep:null,deadDoor:null,pending:null,warm:false,lastSaid:-Infinity};
+let memoryFieldScene=null,memoryFieldWarm=null;
+function lastMinutesReducedDread(){return!!getSave().settings?.reduceDread;}
+let floraInstalled=false;
+function tickLastMinutes(dt){
+  if(!storyMode)return;
+  if(!floraInstalled&&ensureFloraMeshes()){floraInstalled=true;r3dCache.physicalKey=null;}
+  const s=lastMinutes,save=getSave(),runId=save.run?.id||null;
+  if(s.runId!==runId){
+    Object.assign(s,{runId,seed:combatSeedFor(runId),arc:Number(flagGet('last.arc'))||0,played:0,origin:null,loss:0,director:null,bag:freshTheBag(),seep:null,deadDoor:null,pending:null,lastSaid:-Infinity});
+    s.director=createInterruptionDirector({seed:s.seed});
+  }
+  s.tickAt=performance.now();s.played+=Math.max(0,Number(dt)||0);
+  const target=lastMinutesArcTarget({nightSeconds:save.nightClock?.elapsedSeconds,takes:sixOrdinaryTakes(REC.recState().takes),
+    inSource:usingSourceSpace(),sourceExited:!!save.nightClock?.sourceExited,finale:nightDeadlineCommitted()});
+  const arc=stepLastMinutesArc(s.arc,target);
+  // On the sheet of flags, so a reload is no cure. Whichever save comes next carries it.
+  if(arc>=s.arc+.01||(arc>s.arc&&Number(flagGet('last.arc')||0)+.01<=arc))flagSet('last.arc',arc.toFixed(3));
+  s.arc=arc;s.frame=lastMinutesFrame({arc,played:s.played,seed:s.seed});
+  if(usingPlan()&&!usingSpecialSpace()){
+    if(!s.origin){
+      const door=FP.doorState().find(d=>d.id===GREY_DOOR_ID),at=door?(FP.logicalPointToPhysical?.(door.cx,door.cy)||FP.logicalToPhysical(door.cx,door.cy)):null;
+      if(at){s.origin=lastMinutesFrontOrigin(s.seed,{centre:[at.x*CELL,at.z*CELL]});s.originY=at.y;}
+    }
+    const here=s.origin?FP.logicalToPhysical(px,py):null;
+    s.loss=here?lastMinutesFrontLoss(arc,{x:here.x*CELL,y:here.y-s.originY,z:here.z*CELL},s.origin):0;
+  }else s.loss=0;
+  if(!s.warm&&flagTest('title.shown')&&RENDERER==='3d'){s.warm=true;warmMemoryField();}
+  // He raises the sheet to write the take up. It's when it comes down that the room has gone.
+  if(s.pending&&!scenes.blocksInput()&&!scenes.has('work-order-checkoff')&&!REC.isRecording()&&!REC.isListening()&&!paused){const id=s.pending;s.pending=null;beginMemoryField(id);}
+  tickTheBagAndSigns(dt);
+  tickCabBleed();
+}
+// The van, from wherever he is. Never during a take, because it can't be his fault that
+// one was spoiled, and a real microphone can hear real speakers. Never in Source.
+function tickCabBleed(){
+  const s=lastMinutes;if(!s.director||!actx||!flagTest('title.shown'))return;
+  const blocked=paused||REC.isRecording()||REC.isListening()||scenes.blocksInput()||lastMinutesReducedDread()||sixLoopActive()||usingSpecialSpace();
+  const bleed=s.director.bleedFor({at:s.played,frame:s.frame,blocked});
+  if(bleed){
+    playCabBleed(actx,sfxGain||master,bleed.kind,{level:bleed.level*.8});
+    // Later in the night the film starts going by itself.
+    if(s.frame.arc>.3&&visualEffectsEnabled()&&!s.transition&&!s.seep)startNeural('twitch');
+  }
+}
+// Nothing of this reaches Source (docs/plans/last-minutes.md, "Outside Source").
+function runFaculty(){return storyMode&&!usingSpecialSpace()?lastMinutesWorldFaculty(lastMinutes.frame,{regionLoss:lastMinutes.loss}):0;}
+function lastMinutesLook(){
+  const look=usingSpecialSpace()?LAST_MINUTES_IDENTITY:lastMinutesPerception(hypoxiaPerception(hypoxiaFrame(hypoxia)),lastMinutes.frame,{regionLoss:lastMinutes.loss,reducedDread:lastMinutesReducedDread()});
+  // Whatever gets through arrives whole. The room has lost its colour. The memory hasn't.
+  const seen=lastMinutes.seep?.phase==='plate'?{...look,chroma:Math.max(1.12,look.chroma),contrast:1,narrowing:0}:look;
+  const neural=neuralNow();
+  return neural?{...seen,leak:neural.leak,white:neural.white,time:neural.time,seed:lastMinutes.transition?.seed||lastMinutes.neuralHold?.seed||0,
+    origin:lastMinutes.transition?.origin||lastMinutes.neuralHold?.origin,afterAt:lastMinutes.transition?.afterAt||lastMinutes.neuralHold?.afterAt,waveRadius:neural.waveRadius,waveBand:neural.waveBand,lens:neural.lens,after:neural.after,shimmer:neural.shimmer}:seen;
+}
+// HOW HE GETS THERE AND BACK. game/neural-transition.js. Timed on the real clock, so a
+// slow frame can't stretch a flash, and it can't be left on the screen.
+function lastMinutesHidesHud(){const frame=neuralNow();return(!!frame&&frame.white>.42)||lastMinutes.seep?.phase==='plate';}
+function neuralOptions(){return{reducedFlash:flashMode()!=='full',reducedMotion:shakeMode()!=='full'};}
+function startNeural(kind,{onPeak=null,onEnd=null,origin=null}={}){
+  const seed=Math.random();
+  lastMinutes.transition={kind,at:performance.now()/1000,seed,origin:origin||[.2+.6*Math.random(),.25+.5*Math.random()],afterAt:[.34+.32*Math.random(),.38+.24*Math.random()],onPeak,onEnd,peaked:false};
+}
+function neuralNow(){
+  const hold=lastMinutes.neuralHold;if(hold)return neuralFrame(hold.kind,hold.t,neuralOptions());
+  const tr=lastMinutes.transition;return tr?neuralFrame(tr.kind,performance.now()/1000-tr.at,neuralOptions()):null;
+}
+function tickNeural(){
+  const tr=lastMinutes.transition;if(!tr)return;
+  const frame=neuralNow();if(!frame)return;
+  if(frame.peak&&!tr.peaked){tr.peaked=true;tr.onPeak?.();}
+  if(frame.done){if(lastMinutes.transition===tr)lastMinutes.transition=null;tr.onEnd?.();}
+}
+function warmMemoryField(){
+  memoryFieldWarm||=createMemoryFieldRenderer();
+  void memoryFieldWarm.prepare().catch(error=>console.warn('[memory-field] Not ready:',error));
+}
+// Debug builds say so, as the crash does: a door that means to do nothing must not be
+// mistaken for a real bug. Release builds say nothing at all.
+function memoryFieldOverlay(on){
+  if(on)showSixDebugOverlay('STAGED: MEMORY FAULT // THE DOOR IS MEANT TO DO NOTHING // STOP TRYING, OR WAIT');
+  else if(sixLoopDebugBuild()){document.getElementById('six-loop-debug')?.remove();syncSixLoopDebugOverlay();}
+}
+function beginMemoryField(id,{onDone=()=>{}}={}){
+  const visit=MEMORY_FIELD_VISIT[id];
+  if(!visit||memoryFieldScene||RENDERER!=='3d'||!storyMode||flagTest(memoryFieldFlag(id)))return false;
+  flagSet(memoryFieldFlag(id));saveCommit({flags:getSave().flags});
+  // Nothing is gated on it, so a player with effects off has lost no story, only this.
+  if(!visualEffectsEnabled())return false;
+  ensureCtx();if(lastMinutes.seep){R3.r3dSetTableau?.(null);lastMinutes.seep=null;}
+  if(REC.isRecording())stopTake({silent:true});if(REC.isListening())REC.stopListening();PB.stopPlayback();
+  resetMotionInput('memory-field',{stopRenderMove:true});
+  // The room is still there while the light comes up. His hands aren't his, briefly.
+  const threshold={id:'memory-threshold',blocksInput:true,blocksWorld:false,handlesEscape:true,update(){},render(){},key(){return true;},keyup(){return true;},pointer(){return true;}};
+  memoryFieldScene=threshold;scenes.push(threshold);
+  if(actx)playNeuralSound(actx,sfxGain||master,{seconds:neuralSeconds('enter',neuralOptions())});
+  startNeural('enter',{onPeak:()=>{scenes.remove(threshold);if(memoryFieldScene===threshold)memoryFieldScene=null;openMemoryField(id,{onDone});}});
+  return true;
+}
+function openMemoryField(id,{onDone=()=>{}}={}){
+  const visit=MEMORY_FIELD_VISIT[id];
+  // The white is still up. Whatever loads in the next moment does it behind that.
+  lastMinutes.transition=null;
+  SPEECH.clearSpeech();STORY.stopAll();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();
+  const look=R3.r3dLookAngles(),origin={x:px,y:py,yaw:look.yaw,pitch:look.pitch},wasSource=usingSourceSpace();
+  const renderer=memoryFieldWarm||createMemoryFieldRenderer();memoryFieldWarm=null;
+  let scene;
+  const restore=()=>{
+    memoryFieldOverlay(false);
+    px=origin.x;py=origin.y;renderMove=null;motionRig=null;
+    r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;
+    R3.r3dSetLookAngles({yaw:origin.yaw,pitch:origin.pitch,immediate:true});R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();
+    if(wasSource)syncSourceRender({force:true});
+    else R3.r3dSetSourceScene({key:'source:building',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
+    syncDoorDynamicProps();resetMotionInput('memory-field-return',{stopRenderMove:true});updateAudio();
+    startNeural('emerge');
+  };
+  scene=createMemoryFieldScene({visit,renderer,audio:createMemoryFieldAudio({context:actx,destination:sfxGain||master}),
+    tell:HYPOXIA_TELL_LINES[hypoxia?.signature?.tell]||null,
+    presentation:()=>({paused:paused||!gameplayInputLifecycleActive(),hidden:document.hidden,reducedMotion:shakeMode()!=='full',reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'}),
+    paintOverlay:({caption,word})=>{
+      const{cols,rows}=uiSize();
+      if(word&&word.trim())uiCenter(rows-5,BINDINGS.promptLine([{action:'interact',label:word}]).slice(0,Math.max(0,cols-4)),'t-chunk');
+      if(caption)uiCenter(rows-3,caption,'t-trail-1');
+    },
+    onError:error=>console.warn('[memory-field] Going back without it:',error),
+    onDone:()=>{
+      if(memoryFieldScene!==scene)return;
+      memoryFieldScene=null;scenes.remove(scene);restore();onDone();ensureInteractionFocus();
+    },
+    onExit:()=>{if(memoryFieldScene===scene){memoryFieldScene=null;restore();}},
+  });
+  memoryFieldScene=scene;scenes.push(scene);
+  if(visit.kind==='stuck')memoryFieldOverlay(true);
+  return true;
+}
+function queueMemoryFieldAfterTake(){
+  const id=memoryFieldForTake(sixOrdinaryTakes(REC.recState().takes),{reduceDread:!dreadAllowed()});
+  if(id&&!flagTest(memoryFieldFlag(id))&&!sixLoopActive())lastMinutes.pending=id;
+}
+// THE LAST DOOR. Source holds the night clock, so this costs him nothing. He presses
+// the last door he will ever press, and the door is somewhere else.
+function lastDoorOwesField(){
+  return storyMode&&!sixLoopActive()&&!flagTest(memoryFieldFlag('fifth'))&&chapelTowerState().phase===CHAPEL_TOWER_PHASE.TRANSITION_READY
+    &&lastMinutes.tickAt>-Infinity;
+}
+const realBeginChapelFromHorizon=beginChapelFromHorizon,realBeginSourceTowerTransition=beginSourceTowerTransition;
+beginChapelFromHorizon=(...args)=>{
+  if(memoryFieldScene)return true;
+  if(lastDoorOwesField()&&beginMemoryField('fifth',{onDone:()=>realBeginChapelFromHorizon(...args)}))return true;
+  return realBeginChapelFromHorizon(...args);
+};
+beginSourceTowerTransition=(...args)=>{
+  if(memoryFieldScene)return true;
+  if(lastDoorOwesField()&&beginMemoryField('fifth',{onDone:()=>realBeginSourceTowerTransition(...args)}))return true;
+  return realBeginSourceTowerTransition(...args);
+};
+// Every reason a door may not misbehave. A fair fault is never in the way of a fight, a
+// chase, a deadline, or the crash, which must land on a door that simply opens.
+function doorMayMisbehave(door){
+  if(!door||!storyMode||!setupComplete()||door.state!=='closed'||door.id===GREY_DOOR_ID||door.access==='exit-only')return false;
+  if(door.keyId&&!playerKeys.has(door.keyId))return false;
+  if(escape||nightDeadlineCommitted()||sixLoopActive()||REC.isRecording()||scenes.blocksInput())return false;
+  if((Number(presentedFearPressure()?.overall)||0)>.35)return false;
+  return!sixCrashDue({doorOpened:true,storyMode,takes:REC.recState().takes,flags:getSave().flags,reduceDread:!dreadAllowed(),inLoop:false});
+}
+function interceptDoorPress(focus){
+  const s=lastMinutes,id=focus?.door?.portal?.id;if(!id||!s.director)return false;
+  const door=FP.doorState().find(d=>d.id===id);if(!doorMayMisbehave(door))return false;
+  // The third visit comes on the first door after the crash, wherever he came back.
+  if(flagTest(SIX_LOOP.flag)&&!flagTest(memoryFieldFlag('third'))&&beginMemoryField('third',{onDone:()=>interact()}))return true;
+  // His patience is measured in real seconds, however slow the frames are.
+  const at=performance.now()/1000;
+  if(s.deadDoor&&s.deadDoor.id!==id)s.deadDoor=null;
+  if(s.deadDoor){
+    const pressed=pressDeadDoor(s.deadDoor,at);
+    if(pressed.gave){s.deadDoor=null;return false;}
+    s.deadDoor=pressed.door;
+  }else{
+    if(lastMinutesReducedDread()||!flagTest(memoryFieldFlag('second')))return false;
+    if(!s.forceDead&&!s.director.deadDoorFor({at:s.played,frame:s.frame,regionLoss:s.loss}))return false;
+    s.deadDoor=freshDeadDoor(id,at);
+    if(visualEffectsEnabled())startNeural('twitch');
+    memoryFieldOverlay(true);setTimeout(()=>memoryFieldOverlay(false),2600);
+  }
+  // It reads: the handle goes, and the door doesn't.
+  CUES.playCue(CUES.CUE.door,{gain:.2,rate:1.34,lowpassHz:1500,sliceSeconds:.16});
+  REC.emitNoise(.05,px,py,'door handle',{spoils:false,kind:'handling_noise',sourceKind:'player',sourceId:'player',playerGenerated:true,deliberate:true});
+  if(s.deadDoor.presses===2&&s.deadDoor.said<1||s.deadDoor.presses===4&&s.deadDoor.said<2){
+    const line=DEAD_DOOR_LINES[s.director.snapshot().deadCount%DEAD_DOOR_LINES.length];s.deadDoor.said+=1;
+    if(!SPEECH.isSpeaking())SPEECH.say({who:'you',text:line});
+  }
+  return true;
+}
+// A seep, on a verb. It goes up over the room and it has gone before it's understood.
+function maybeMemorySeep(verb){
+  const s=lastMinutes;if(!s.director||s.seep||!storyMode)return false;
+  // Everything but Source, from the first door past the get-in door, which is also where
+  // the opening stops having to match the crash loop.
+  const blocked=!flagTest('title.shown')||usingSpecialSpace()||paused||REC.isRecording()||!!escape||nightDeadlineCommitted()||sixLoopActive()||!visualEffectsEnabled()||RENDERER!=='3d'
+    ||!!R3.r3dTableauStats?.().active||(Number(presentedFearPressure()?.overall)||0)>.5;
+  // Rarest first: the window that becomes the picture. If it can't run, nothing is lost.
+  const media=s.director.takeoverFor({at:s.played,frame:s.frame,regionLoss:s.loss,blocked:blocked||REC.isListening()||!flagTest(memoryFieldFlag('second'))});
+  if(media&&beginWindowTakeover(media,{onDone:()=>startNeural('seep-out')})){startNeural('twitch');return true;}
+  const seep=s.director.seepFor(verb,{at:s.played,frame:s.frame,regionLoss:s.loss,blocked,reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'});
+  if(!seep)return false;
+  if(!showMemorySeep(seep.id,{seconds:seep.seconds,gain:seep.gain}))return false;
+  if(verb!=='take-arm'&&actx)playMemorySeepSound(actx,sfxGain||master,seep.set,{strength:lastMinutesReducedDread()?.5:1});
+  return true;
+}
+// It burns in, the white takes the room, and when the white goes the room isn't there.
+function showMemorySeep(id,{seconds=.3,gain=1}={}){
+  const s=lastMinutes,plate=memorySeepPlate(id);if(!plate||s.seep)return false;
+  const now=performance.now(),lead=neuralSeconds('seep-in',neuralOptions())*1000;
+  s.seep={id,plate,gain,phase:'lead',plateAt:now+lead,until:now+lead+seconds*1000};
+  startNeural('seep-in');
+  return true;
+}
+// What he reaches for, not coming. It reads and clicks. Pressed again after a moment, it
+// works, and it never holds a thing back that he needs to stay alive.
+function swallowDeadVerb(verb,cue){
+  const s=lastMinutes,now=performance.now()/1000;
+  if(!s.director||!storyMode||usingSpecialSpace()||!flagTest(memoryFieldFlag('second'))||lastMinutesReducedDread())return false;
+  const held=s.deadVerb;
+  if(held?.verb===verb){
+    if(now-held.at<INTERRUPTION.deadVerb.quiet&&held.presses<INTERRUPTION.deadVerb.presses){held.presses+=1;held.at=now;cue?.();return true;}
+    s.deadVerb=null;return false;
+  }
+  const blocked=REC.isRecording()||!!escape||nightDeadlineCommitted()||sixLoopActive()||scenes.blocksInput()||(Number(presentedFearPressure()?.overall)||0)>.35;
+  if(!s.forceDeadVerb&&!s.director.deadVerbFor({at:s.played,frame:s.frame,blocked}))return false;
+  s.deadVerb={verb,at:now,presses:1};cue?.();return true;
+}
+// At the water's edge, once: the light from underneath. Drowning imagery, so Reduce Dread
+// is spared it, and it needs Effects on.
+function maybeUnderWaterSeep(){
+  const s=lastMinutes;if(s.seep||!storyMode||flagTest('memory.seep.water')||lastMinutesReducedDread()||!visualEffectsEnabled())return false;
+  const plate=memorySeepPlate('under-water');if(!plate)return false;
+  flagSet('memory.seep.water');showMemorySeep('under-water',{seconds:.85});
+  if(actx)playCabBleed(actx,sfxGain||master,'water',{level:.8});return true;
+}
+function syncNeuralHud(){
+  const s=lastMinutes,hide=lastMinutesHidesHud();
+  if(hide&&!s.hudCover){s.hudCover={id:'neural-white',suppressesHud:true,blocksInput:false,blocksWorld:false,update(){},render(){}};scenes.push(s.hudCover);}
+  else if(!hide&&s.hudCover){scenes.remove(s.hudCover);s.hudCover=null;}
+}
+function tickMemorySeep(){
+  tickNeural();syncNeuralHud();
+  const s=lastMinutes,sp=s.seep;if(!sp)return;
+  const now=performance.now();
+  if(sp.phase==='lead'&&now>=sp.plateAt){R3.r3dSetTableau?.(sp.plate,{gain:1.1*sp.gain});sp.phase='plate';startNeural('seep-flash');}
+  if(sp.phase==='plate'&&now>=sp.until){R3.r3dSetTableau?.(null);s.seep=null;startNeural('seep-out');}
+}
+// THE BAG, AND WHAT HE SAYS. A sign says its highest rung reached, once.
+function saySign(kind){
+  const s=lastMinutes,rows=MEANING_SIGNS[kind],rung=meaningRung(rows,s.frame.meaning);
+  if(rung==null||s.played-s.lastSaid<45||SPEECH.isSpeaking()||scenes.blocksInput()||REC.isRecording())return false;
+  const key=`meaning.${kind}.${rung}`;if(flagTest(key))return false;
+  flagSet(key);s.lastSaid=s.played;SPEECH.say({who:'you',text:rows[rung].text});return true;
+}
+function bagOutdoorsHere(){
+  return isOutdoorZone(FP.zoneAt(px,py));
+}
+function tickTheBagAndSigns(dt){
+  const s=lastMinutes;
+  if(!usingPlan()||usingSpecialSpace()||!setupComplete()||lastMinutesReducedDread()&&s.frame.meaning>.46){return;}
+  const outdoors=bagOutdoorsHere(),yaw=mapHeading(),eye={x:px*CELL,z:py*CELL},look=R3.r3dLookAngles?.()||{pitch:0};
+  s.bag=stepTheBag(s.bag,{dt,time:s.played,meaning:s.frame.meaning,outdoors,eye,yaw,wind:lastMinutesWind(s.played),seed:s.seed,reducedMotion:shakeMode()!=='full',
+    free:(x,z)=>!FP.isSolid(Math.floor(x/CELL),Math.floor(z/CELL))});
+  if(theBagGazed(s.bag,{eye,yaw,pitch:look.pitch}))saySign('bag');
+  if(outdoors){
+    const m=moonDirection(R3.r3dNightSeed?.()??.37),world=look.yaw??yaw,p=look.pitch||0,f=[Math.sin(world)*Math.cos(p),Math.sin(p),-Math.cos(world)*Math.cos(p)];
+    if(f[0]*m[0]+f[1]*m[1]+f[2]*m[2]>.96)saySign('moon');
+  }
+}
+function theBagDynamicProp(){
+  const s=lastMinutes;if(!s.bag?.at||!storyMode||usingSpecialSpace()||!setupComplete()||!P3.propMeshCatalog?.().includes('the_bag_0'))return null;
+  const at=FP.logicalToPhysical(s.bag.at.x/CELL,s.bag.at.z/CELL);if(!at)return null;
+  const prop=theBagProp({at:{x:at.x*CELL,z:at.z*CELL}},{time:s.played,meaning:s.frame.meaning,floorY:at.y,reducedMotion:shakeMode()!=='full',zone:FP.zoneAt(Math.floor(s.bag.at.x/CELL),Math.floor(s.bag.at.z/CELL))});
+  return prop;
+}
+// THE HOOKS. Rebound here, as the crash loop and the drive-off are, so that the functions
+// they wrap stay as they were and nothing that reads those functions has to know.
+const realTickHypoxia=tickHypoxia,realCurrentPerception=currentPerception,realTickCoffeeStretch=tickNatatoriumCoffeeStretch;
+// Under the air of any one room: what fresh air can't bring him back past. Not this building's.
+tickHypoxia=dt=>{
+  tickLastMinutes(dt);realTickHypoxia(dt);
+  if(storyMode&&!usingSpecialSpace())hypoxia=stepHypoxia(hypoxia,0,{source:0,stress:hypoxia.stress||0,floor:lastMinutesExposureFloor(lastMinutes.frame,hypoxia.signature?.tolerance)});
+};
+// Bad air may take the torch from him. The long fade may not take all of it: this is a
+// fault, not a difficulty, and a fair one leaves him a lamp.
+currentPerception=()=>{const seen=realCurrentPerception();return hypoxiaSourceHere()>0?seen:{...seen,torch:Math.max(.68,seen.torch)};};
+// Runs on every frame, whatever owns the world.
+tickNatatoriumCoffeeStretch=dt=>{tickMemorySeep();return realTickCoffeeStretch(dt);};
+const realRoll=roll,realToggleTorchAction=toggleTorchAction,realOpenBag=openBag,realInteractNatatoriumWater=interactNatatoriumWater,realInspectPropTracked=inspectPropTracked,
+  realTryDockHauntingDoor=tryDockHauntingDoor,realMaybeStageSixCrash=maybeStageSixCrash,realSyncDoorDynamicProps=syncDoorDynamicProps,realSyncChapelTapeRepair=syncChapelTapeRepair;
+roll=(...args)=>{maybeMemorySeep('take-arm');return realRoll(...args);};
+toggleTorchAction=(options={})=>{
+  if(!options?.protectTake&&swallowDeadVerb('torch',()=>CUES.playCue(CUES.CUE.light,{gain:.16,rate:.72})))return true;
+  maybeMemorySeep('torch');return realToggleTorchAction(options);
+};
+openBag=(...args)=>{
+  if(swallowDeadVerb('bag',()=>CUES.playCue(CUES.CUE.bag,{gain:.14,rate:.74,sliceSeconds:.12})))return;
+  maybeMemorySeep('bag');return realOpenBag(...args);
+};
+interactNatatoriumWater=()=>{if(waterEdgeInReach())maybeUnderWaterSeep();return realInteractNatatoriumWater();};
+// The same object, and more and more riding on it. Added after its own words.
+inspectPropTracked=id=>{
+  maybeMemorySeep('inspect');
+  const line=realInspectPropTracked(id),meaning=meaningLineFor(id,lastMinutes.frame.meaning,key=>flagTest(key));
+  if(!meaning||!line)return line;
+  flagSet(meaning.key);return`${line} ${meaning.text}`;
+};
+// The last check before a door is really pressed.
+tryDockHauntingDoor=focus=>realTryDockHauntingDoor(focus)||(!!focus?.doorWins&&interceptDoorPress(focus));
+maybeStageSixCrash=doorHit=>{const crashed=realMaybeStageSixCrash(doorHit);if(!crashed&&doorHit?.opened)maybeMemorySeep('door');return crashed;};
+// He has held his breath for a minute. When the sheet comes down, he lets it go. Only a
+// counted take reaches this with the sheet up, and the visit owed says which.
+syncChapelTapeRepair=(...args)=>{const result=realSyncChapelTapeRepair(...args);if(lastMinutes.takeJustEnded){lastMinutes.takeJustEnded=false;queueMemoryFieldAfterTake();}return result;};
+const realStopTake=stopTake;
+stopTake=(...args)=>{const before=REC.recState().takes.length;lastMinutes.takeJustEnded=REC.isRecording();const result=realStopTake(...args);if(!(REC.recState().takes.length>before))lastMinutes.takeJustEnded=false;return result;};
+// The world frame says how much of it reaches him, every frame, or it reverts by itself.
+const realRender3d=render3d;
+render3d=(...args)=>{if(storyMode)R3.r3dSetPerception?.(lastMinutesLook());return realRender3d(...args);};
+// Far enough gone, the machine is slow to come to his hands anywhere. It already was out
+// on the road, and that stays in the original.
+const realOpenRecorder=openRecorder;
+openRecorder=(...args)=>{
+  if(storyMode&&!usingSpecialSpace()&&!recorderLate.pending&&!recorderLate.bypass&&!REC.isRecording()&&!PB.isPlaying()){
+    const losing=runFaculty();
+    if(losing>.4&&Math.random()<losing*.6){
+      recorderLate.pending=true;
+      setTimeout(()=>{recorderLate.pending=false;recorderLate.bypass=true;try{realOpenRecorder(...args);}finally{recorderLate.bypass=false;}},500+Math.round(900*losing));
+      return true;
+    }
+  }
+  return realOpenRecorder(...args);
+};
+// The bag, on top of whatever else is standing here tonight.
+syncDoorDynamicProps=(...args)=>{
+  const result=realSyncDoorDynamicProps(...args);
+  const bag=theBagDynamicProp();
+  if(bag&&Array.isArray(doorDynamicCombined)&&!usingSpecialSpace())R3.r3dSetDynamicProps([...doorDynamicCombined,bag]);
+  return result;
 };
 // Only a New Run owes the film. Continue can also land on a drive not yet finished.
 let openingPrologueOwed=false;
@@ -7041,7 +7429,8 @@ function deliverNightDeadlineWarnings(effects){
     bounds=origin?Object.values(entry.hostBounds||{}).filter(b=>b.structural&&b.max[1]-b.min[1]>2.2)
       .sort((a,b)=>Math.hypot((a.min[0]+a.max[0])/2-origin.x,(a.min[2]+a.max[2])/2-origin.z)-Math.hypot((b.min[0]+b.max[0])/2-origin.x,(b.min[2]+b.max[2])/2-origin.z))[0]:null;
   const source=bounds?{x:Math.max(bounds.min[0],Math.min(bounds.max[0],origin.x)),y:Math.max(bounds.min[1],Math.min(bounds.max[1],origin.y+3)),z:Math.max(bounds.min[2],Math.min(bounds.max[2],origin.z))}:null;
-  if(source)firstStrikeAudio.warning?.({...latest,position:source,age:0},{listener:{...camera?.eye,yaw:camera?.yaw},protected:false});
+  // The 06:00 horn isn't in the building, so it doesn't need anywhere in it to sound from.
+  if(source||latest.key==='first-horn')firstStrikeAudio.warning?.({...latest,position:source,age:0},{listener:{...camera?.eye,yaw:camera?.yaw},protected:false});
   saveCommit({nightDeadline:acknowledgeNightDeadlineEffects(getSave().nightDeadline,effects.map(e=>e.id))});
 }
 async function beginNightFirstStrike(){
@@ -20914,9 +21303,11 @@ function syncOutskirtsNight(){
 var outskirtsStepIndex=0;
 var recorderLate={pending:false,bypass:false};
 var losingSound={rain:1,murmurNext:0,clunkNext:0};
-function outskirtsLosing(){return usingSourceSpace()?Number(chunkSurfRuntime?.outskirtsLosing?.())||0:0;}
+// The same losing, everywhere. The outskirts road is where it peaks, not where it starts.
+function outskirtsLosing(){return Math.max(outskirtsRoadLosing(),runFaculty());}
+function outskirtsRoadLosing(){return usingSourceSpace()?Number(chunkSurfRuntime?.outskirtsLosing?.())||0:0;}
 function syncLosingSound(){
-  const l=outskirtsLosing(),t=performance.now()/1000;
+  const l=outskirtsRoadLosing(),t=performance.now()/1000;
   const cabin=usingSourceSpace()?chunkSurfRuntime?.outskirtsBusPassageFrame?.():null;
   const rain=chunkSurfRuntime?.busInteriorFrame?.()?.active?0:(1-.85*l)*(cabin?.active&&cabin.inside ? .24 : 1);
   if(Math.abs(rain-losingSound.rain)>.02){losingSound.rain=rain;STORY.setRainLevel?.(rain,{fade:1.5});}
@@ -23432,7 +23823,7 @@ function trackFinalBattleProgress(id,{resumed=false,source}={}){
 function tickSourceFinalEncounter(){
   const localOwner=sourceContinuationScene&&scenes.top()===sourceContinuationScene;
   if(!sourceFinalCombatOpen&&performance.now()>=sourceFinalCombatRetryAt&&(!scenes.blocksInput()||localOwner)){
-    const request=chunkSurfRuntime.finalEncounterRequest();
+    const request=chunkSurfRuntime?.finalEncounterRequest?.();
     if(request?.adapter==='combat-v1'){
       const battleRuntime=chunkSurfRuntime;
       const battleOwner=sourceContinuationScene;
@@ -30044,7 +30435,7 @@ function finishEnding(id,{finalFrame=null,renderFinal=true}={}){
   if(sourceListeningRest){openEndingCredits(summary,{sourceRestBlack:true});return;}
   if(id==='inversion'&&getSave().sourceIV?.status==='completed'){
     const sourceIV=getSave().sourceIV;saveCommit({sourceIV:{...sourceIV,exitReceipt:{...sourceIV.exitReceipt,delivered:true}}});
-    towerEndingPlayback?.stop();towerEndingPlayback=null;openEndingCredits(summary);return;
+    towerEndingPlayback?.stop();towerEndingPlayback=null;
   }
   presentFinale(guardEpilogue(variant), {
     slate:variant==='century-stay'?'THE ROOF · THE GATE · THE YEARS':'W. ELLERY HOLDINGS · GATE',
@@ -35502,7 +35893,19 @@ function installProbe(){
     testRun:()=>godEnsureTestRun(),
     sixLoop:{active:()=>sixLoopActive(),stage:()=>stageSixCrashNow(),leave:()=>{clearSixLoop();location.reload();},
       prepare:()=>prepareSixNothingness().prepare(),enter:()=>!!beginSixNothingness(),view:()=>sixNothingnessScene()?.view?.()||null,place:next=>sixNothingnessScene()?.place?.(next),
-      driveOff:{begin:()=>beginEndingDriveOff({onDone:()=>{}}),view:()=>endingDriveOffScene?.view?.()||null,controller:()=>endingDriveOffScene?.review?.controller||null},
+      lastMinutes:{view:()=>({arc:lastMinutes.arc,played:lastMinutes.played,frame:lastMinutes.frame,loss:lastMinutes.loss,seep:lastMinutes.seep,deadDoor:lastMinutes.deadDoor,pending:lastMinutes.pending,bag:lastMinutes.bag?.at||null,tell:hypoxia?.signature?.tell||null,stage:hypoxiaFrame(hypoxia).stage,look:lastMinutesLook(),director:lastMinutes.director?.snapshot?.()||null}),
+        setArc:value=>{lastMinutes.arc=Number(value)||0;flagSet('last.arc',lastMinutes.arc.toFixed(3));return lastMinutes.arc;},
+        field:{begin:id=>{flagClear(memoryFieldFlag(id));return beginMemoryField(id,{onDone:()=>{window.__fieldDone=id;}});},view:()=>memoryFieldScene?.view?.()||null,scene:()=>memoryFieldScene,renderer:()=>memoryFieldScene?{}:null},
+        seep:id=>{lastMinutes.seep=null;R3.r3dSetTableau?.(null);return showMemorySeep(id,{seconds:4});},
+        neuralHold:(kind,t=0,options={})=>{lastMinutes.neuralHold=kind?{kind,t,seed:options.seed??.37,origin:options.origin||[.62,.42],afterAt:options.afterAt||[.48,.5]}:null;return true;},
+        seepVerb:verb=>maybeMemorySeep(verb),forceDeadDoor:on=>{lastMinutes.forceDead=!!on;return lastMinutes.forceDead;},forceDeadVerb:on=>{lastMinutes.forceDeadVerb=!!on;return lastMinutes.forceDeadVerb;},
+        bleed:kind=>actx?playCabBleed(actx,sfxGain||master,kind,{level:1}):false,underWater:()=>{flagClear('memory.seep.water');return maybeUnderWaterSeep();},torch:()=>toggleTorchAction(),bag:()=>openBag(),flora:()=>PROPS.allProps().filter(p=>/^flora-/.test(p.id)).map(p=>({id:p.id,zone:FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y)),outdoors:isOutdoorZone(FP.zoneAt(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))),solid:FP.isSolid(Math.floor(p.rx??p.x),Math.floor(p.ry??p.y))})),flag:(key,value=true)=>{flagSet(key,value);return flagGet(key);},
+        // Runs out the clock on a take in progress, so the real end of a take can be tested.
+        finishTake:()=>{if(!REC.isRecording())return false;REC.recState().takeElapsed=REC.takeDuration();return true;},
+        doorWhy:id=>{const door=FP.doorState().find(d=>d.id===id);return{state:door?.state,keyId:door?.keyId,access:door?.access,setup:setupComplete(),escape:!!escape,committed:nightDeadlineCommitted(),loop:sixLoopActive(),recording:REC.isRecording(),blocks:scenes.blocksInput(),top:scenes.top()?.id||null,fear:Number(presentedFearPressure()?.overall)||0,may:doorMayMisbehave(door),crashDue:sixCrashDue({doorOpened:true,storyMode,takes:REC.recState().takes,flags:getSave().flags,reduceDread:!dreadAllowed(),inLoop:false}),third:flagTest(memoryFieldFlag('third')),fired:flagTest(SIX_LOOP.flag)};},
+        lastDoor:()=>lastDoorOwesField(),rollRealTake:()=>{beginTakeNow();return{recording:REC.isRecording(),room:takeRoom};},
+        perception:()=>R3.r3dPerceptionStats?.(),world:()=>({look:R3.r3dLookAngles(),eye:R3.r3dEyePoint?.(),status:R3.r3dLookStatus?.(performance.now())?.lighting||null,px,py})},
+      driveOff:{begin:(endingId='')=>beginEndingDriveOff({endingId,onDone:()=>{}}),view:()=>endingDriveOffScene?.view?.()||null,controller:()=>endingDriveOffScene?.review?.controller||null},
       prologue:{begin:()=>beginOpeningPrologue({onDone:()=>{}}),seekStage:key=>openingPrologueScene?.seekStage?.(key),pose:stage=>openingPrologueScene?.pose?.(stage),key:event=>openingPrologueScene?.key?.(event),view:()=>openingPrologueScene?.view?.()||null,state:()=>({horizon:R3.r3dSourceRestHorizonStatus?.(),rain:R3.r3dRainAmount?.(),music:openingPrologueMusic?.snapshot?.()||null})},
       render:()=>sixNothingnessScene()?.render?.(),renderer:()=>sixNothingnessRenderer?.diagnostics?.()||null,save:()=>structuredClone(getSave()),keyring:()=>syncPrologueKeyring()},
     godWarpBay:()=>godWarpBayApron(),
@@ -35983,6 +36386,8 @@ function installProbe(){
     // moving the door to the get-in's west wall left them pointing at a stretch
     // of blank masonry, where they reported scar:false and solid:false forever
     // without failing anything.
+    beginGetInDriveTeaser:()=>godGetInDriveTeaser(),
+    windowTakeover:{begin:(id,options)=>beginWindowTakeover(id,options),view:()=>windowTakeover?.view()||null,cancel:why=>windowTakeover?.cancel(why)},
     getInDriveTeaser:()=>({active:!!getInDriveTeaserScene,view:getInDriveTeaserScene?.view()||null,audio:getInDriveTeaserScene?.audioDiagnostics()||null,tape:getInDriveTeaserScene?.tapeDiagnostics()||null,origin:getInDriveTeaserOrigin?{...getInDriveTeaserOrigin}:null,receipt:getInDriveTeaserReceipt?structuredClone(getInDriveTeaserReceipt):null,consumed:flagTest('opening.driveTeaser.consumed'),pending:flagTest('opening.driveTeaser.pending')}),
     greyDoor:()=>{
       let portal=null; FP.forEachDoor((p)=>{ if(p.id===GREY_DOOR_ID) portal=p; });
@@ -37923,7 +38328,7 @@ function render3d(){
     ? applySourceEmergencyTorch(physicalTorchLook,sourceEmergencyTorchFrame())
     : physicalTorchLook;
   // Losing himself: the torch catches, points a little off, and finds somebody who is not there.
-  const torchLook=usingSourceSpace()?outskirtsLosingTorch(sourceTorchLook):sourceTorchLook;
+  const torchLook=outskirtsLosingTorch(sourceTorchLook);
   // THE BODY OUT THERE. An unsteady walk: a slow sway, a dip with every step, a
   // lurch and a drop when the legs go. Drawn only; the body is where it is.
   const outskirtsBody=usingSourceSpace()&&!worldView

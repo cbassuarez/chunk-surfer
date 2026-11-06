@@ -112,7 +112,10 @@ export function freshHypoxia(seed = 0) {
 // breathing harder does not help, because the air is not short of oxygen. It
 // only blows off CO₂, which takes away the one sensation that would have told
 // him anything.
-export function stepHypoxia(state, dt = 0, { source = 0, stress = 0, fresh = false } = {}) {
+//
+// `floor` is what fresh air can no longer bring him back past. It rises with the
+// run (game/last-minutes.js), and it is not the air in this building.
+export function stepHypoxia(state, dt = 0, { source = 0, stress = 0, fresh = false, floor = 0 } = {}) {
   const next = { ...state, signature: state.signature };
   const seconds = Math.max(0, Number(dt) || 0);
   next.seconds = finite(state.seconds, 0) + seconds;
@@ -127,6 +130,7 @@ export function stepHypoxia(state, dt = 0, { source = 0, stress = 0, fresh = fal
   } else {
     next.exposure = clamp01(finite(state.exposure, 0) + seconds * rate * ONSET_PER_SECOND);
   }
+  next.exposure = Math.max(clamp01(floor), next.exposure);
   next.delivery = clamp01(1 - next.exposure);
 
   // THE ALARM, ON ITS OWN CIRCUIT.

@@ -11,6 +11,7 @@ import {
 import { OPENING_STREET_MESHES, OPENING_STREET_PROPS } from './opening-street.js';
 import { VIGIL_MESHES, VIGIL_PART_MESHES, vigilFigures, vigilParts } from './exterior-vigil.js';
 import { YARD_PARK_MESHES, YARD_PARK_PROPS } from './yard-park.js';
+import { ELLERY_FLORA_PROPS } from './ellery-flora.js';
 import { BASEBOARDS } from './generated/prop-geometry.js';
 import {B3_STUDIO_PROPS_MESHES} from './b3-studio-props.js';
 import { CATHEDRAL_DESCENT_BLOCKERS, CHURCH_COLLIDERS } from './st-brendans.js';
@@ -543,6 +544,7 @@ export const CONSERVATORY_PROPS = [
   ...ACADEMIC_ROOF_DRESSING_PROPS,
   ...OPENING_STREET_PROPS,
   ...YARD_PARK_PROPS,
+  ...ELLERY_FLORA_PROPS,
   ...ELLERY_SQUARE_PROPS,
   // Three ordinary opaque owners, sharing the physical garden/arrival anchors
   // with their source builder. Their shapes never replace ground or water.

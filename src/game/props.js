@@ -511,8 +511,12 @@ export function inspectProp(id,{aftermath=false}={}){
   // rupture must still get its first post-event line once.
   const stateId=aftermathCopy?`${id}@aftermath`:id;
   const seen=state.inspected.has(stateId);state.inspected.add(stateId);
-  return seen?(copy?.again||copy?.first):(copy?.first||'Nothing useful.');
+  const text=seen?(copy?.again||copy?.first):(copy?.first||'Nothing useful.');
+  return inspectResolver?inspectResolver(id,text,{first:copy?.first||null}):text;
 }
+// Lets the night change whose sentence this is, without the props knowing what a night is.
+let inspectResolver=null;
+export function setInspectResolver(resolve){inspectResolver=typeof resolve==='function'?resolve:null;}
 export function auditionProp(id){
   const p=propById(id);if(!p?.sampleFamily?.length)return null;
   state.auditioned.add(id);const i=state.cycles[id]||0;state.cycles[id]=(i+1)%p.sampleFamily.length;

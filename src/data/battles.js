@@ -160,9 +160,9 @@ function chapelChallenges(faceLabel) {
     challenge('chapel-surfer', 'THE SURFER', [
       'THE','SURFER','WAS','A','STUDENT','TRAINED','INTO','MUSIC','INSIDE','THE','FILES','MUSIC','WANTS','BODY','MACHINE','WANTS','LANGUAGE',H('NOT','not'),H('GHOST','ghost'),G('PROCESS','process'),
     ], [
-      reading('student-trained', ['SURFER', 'WAS', 'A', 'STUDENT'], ['GHOST'], 4, { meaning:'The Surfer was trained, not born supernatural.' }),
-      reading('music-inside-files', ['MUSIC#1', 'INSIDE', 'THE#2', 'FILES'], ['GHOST'], 4, { meaning:'The haunting lives inside files.' }),
-      reading('not-ghost-process', ['NOT', 'GHOST', 'PROCESS'], ['BODY'], 3, { meaning:'Not ghost: process.', grants:['route.inversion'] }),
+      reading('student-trained', ['SURFER', 'WAS', 'A', 'STUDENT'], ['GHOST'], 4, { meaning:'You read him as trained, not born to it.' }),
+      reading('music-inside-files', ['MUSIC#1', 'INSIDE', 'THE#2', 'FILES'], ['GHOST'], 4, { meaning:'You read the haunting as living inside files.' }),
+      reading('not-ghost-process', ['NOT', 'GHOST', 'PROCESS'], ['BODY'], 3, { meaning:'You write him down as process, not ghost.', grants:['route.inversion'] }),
       reading('music-wants-body', ['MUSIC#2', 'WANTS#1', 'BODY'], ['PROCESS'], 3, { meaning:'You leave the appetite intact.', routeBias:'sacrifice', pressureDelta:1 }),
     ], [
       { blackout:['NOT'], scrape:['GHOST'], notice:'THE OTHER HAND RESTORES GHOST AND REMOVES NOT.' },

@@ -55,6 +55,7 @@ export function buildPubBartenderDialogue(s, favors, {studentStrikeEvidence={}}=
       iona('People who meant to stay for one. The delivery driver has finished his break twice, by my reckoning.'),
       iona('Some came over from the vigil when the cups ran out. I said they could carry on sitting quietly somewhere dry.'),
       iona('We have spent twenty minutes deciding whose turn it is to wash up. The quiet has suffered.'),
+      iona('There is a tab on the slate for somebody in your line of work. Same signature as yours, near enough. I stopped asking.'),
     ], [c('vigil', 'Ask what they are keeping vigil for.', 'vigil'), back(), leave()]),
     vigil: n([
       iona('The school, mostly. People who studied there, people who cleaned it, people who used the baths before it was all one address.'),
