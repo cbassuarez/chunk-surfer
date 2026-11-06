@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-bouncer-society",
+  "title": "Runtime · data/academic-bouncer-society.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "academicBouncerSocialDialogue.musicContext",
+  "entries": [
+    "academicBouncerSocialDialogue.musicContext",
+    "academicBouncerSocialDialogue.nodes.start"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/academic-bouncer-society.js",
+  "notes": "Generated from src/data/academic-bouncer-society.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "academicBouncerSocialDialogue.musicContext": {
+      "id": "academicBouncerSocialDialogue.musicContext",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l0",
+          "who": "me",
+          "text": "Emile is using my voice.",
+          "source": "src/data/academic-bouncer-society.js:105"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.musicContext.l1",
+          "who": "me",
+          "text": "Sabine has been explaining her reviews.",
+          "source": "src/data/academic-bouncer-society.js:109"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:105"
+    },
+    "academicBouncerSocialDialogue.nodes.start": {
+      "id": "academicBouncerSocialDialogue.nodes.start",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "academicBouncerSocialDialogue.nodes.start.c0",
+          "text": "why keep opening the reception?",
+          "source": "src/data/academic-bouncer-society.js:116",
+          "targetName": "doorwork"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.start.c1",
+          "text": "what do Odette and Agathe make of you?",
+          "source": "src/data/academic-bouncer-society.js:116",
+          "targetName": "register"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.start.c2",
+          "text": "Emile is using my voice. / Sabine has been explaining her reviews. / what do you like about the company here?",
+          "source": "src/data/academic-bouncer-society.js:117",
+          "targetName": "music"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.start.c3",
+          "text": "does everyone have to pass your inspection?",
+          "source": "src/data/academic-bouncer-society.js:117",
+          "targetName": "portraits"
+        },
+        {
+          "id": "academicBouncerSocialDialogue.nodes.start.c4",
+          "text": "would either of you rather go inside?",
+          "source": "src/data/academic-bouncer-society.js:118",
+          "targetName": "stay"
+        }
+      ],
+      "source": "src/data/academic-bouncer-society.js:116"
+    }
+  }
+}

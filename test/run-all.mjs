@@ -1298,6 +1298,7 @@ const tests = [
   'test/work-order-checkoff.spec.mjs',
   'test/work-order-wiring.spec.mjs',
   'test/memory-field-ant.spec.mjs',
+  'test/drive-time-skips.spec.mjs',
   'test/source-rest-couperin-source.spec.mjs',
   'test/source-rest-couperin-timing.spec.mjs',
   'test/source-rest-couperin.spec.mjs',

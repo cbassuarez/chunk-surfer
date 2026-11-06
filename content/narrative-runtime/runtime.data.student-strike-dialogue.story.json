@@ -4,16 +4,152 @@
   "title": "Runtime · data/student-strike-dialogue.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "odetteStrikeDialogue.nodes.strike-unavailable",
+  "entry": "odetteStrikeDialogue.topic",
   "entries": [
+    "odetteStrikeDialogue.topic",
+    "odetteStrikeDialogue",
+    "odetteStrikeDialogue.nodes.strike-offer",
+    "odetteStrikeDialogue.nodes.strike-defer",
+    "odetteStrikeDialogue.nodes.strike-questions",
+    "odetteStrikeDialogue.nodes.strike-authority",
+    "odetteStrikeDialogue.nodes.strike-preservation",
+    "odetteStrikeDialogue.nodes.strike-leave",
     "odetteStrikeDialogue.nodes.strike-unavailable"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/student-strike-dialogue.js",
   "notes": "Generated from src/data/student-strike-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "odetteStrikeDialogue.topic": {
+      "id": "odetteStrikeDialogue.topic",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "odetteStrikeDialogue.topic.c0",
+          "text": "what happened to the students?",
+          "source": "src/data/student-strike-dialogue.js:19",
+          "targetName": "students"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:19"
+    },
+    "odetteStrikeDialogue": {
+      "id": "odetteStrikeDialogue",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "odetteStrikeDialogue.c0",
+          "text": "hear your account again",
+          "source": "src/data/student-strike-dialogue.js:23",
+          "targetName": "strike-rewatch"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:23"
+    },
+    "odetteStrikeDialogue.nodes.strike-offer": {
+      "id": "odetteStrikeDialogue.nodes.strike-offer",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-offer.c0",
+          "text": "Tell me.",
+          "source": "src/data/student-strike-dialogue.js:29",
+          "targetName": "strike-watch"
+        },
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-offer.c1",
+          "text": "Another time.",
+          "source": "src/data/student-strike-dialogue.js:30",
+          "goto": "odetteStrikeDialogue.nodes.strike-defer"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:29"
+    },
+    "odetteStrikeDialogue.nodes.strike-defer": {
+      "id": "odetteStrikeDialogue.nodes.strike-defer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-defer.l0",
+          "who": "me",
+          "text": "Not now. Another time.",
+          "source": "src/data/student-strike-dialogue.js:37"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:37"
+    },
+    "odetteStrikeDialogue.nodes.strike-questions": {
+      "id": "odetteStrikeDialogue.nodes.strike-questions",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-questions.c0",
+          "text": "Did you see all of it?",
+          "source": "src/data/student-strike-dialogue.js:39",
+          "goto": "odetteStrikeDialogue.nodes.strike-authority"
+        },
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-questions.c1",
+          "text": "And saving the school?",
+          "source": "src/data/student-strike-dialogue.js:41",
+          "goto": "odetteStrikeDialogue.nodes.strike-preservation"
+        },
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-questions.c2",
+          "text": "Enough for now.",
+          "source": "src/data/student-strike-dialogue.js:44",
+          "goto": "odetteStrikeDialogue.nodes.strike-leave"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:39"
+    },
+    "odetteStrikeDialogue.nodes.strike-authority": {
+      "id": "odetteStrikeDialogue.nodes.strike-authority",
+      "type": "line",
+      "lines": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-authority.l0",
+          "who": "me",
+          "text": "Did you see all of that yourself?",
+          "source": "src/data/student-strike-dialogue.js:47"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:47"
+    },
+    "odetteStrikeDialogue.nodes.strike-preservation": {
+      "id": "odetteStrikeDialogue.nodes.strike-preservation",
+      "type": "line",
+      "lines": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-preservation.l0",
+          "who": "me",
+          "text": "What would saving the school mean for the people still here?",
+          "source": "src/data/student-strike-dialogue.js:52"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:52"
+    },
+    "odetteStrikeDialogue.nodes.strike-leave": {
+      "id": "odetteStrikeDialogue.nodes.strike-leave",
+      "type": "line",
+      "lines": [
+        {
+          "id": "odetteStrikeDialogue.nodes.strike-leave.l0",
+          "who": "me",
+          "text": "That's enough for now. Thank you.",
+          "source": "src/data/student-strike-dialogue.js:56"
+        }
+      ],
+      "source": "src/data/student-strike-dialogue.js:56"
+    },
     "odetteStrikeDialogue.nodes.strike-unavailable": {
       "id": "odetteStrikeDialogue.nodes.strike-unavailable",
       "type": "choice",
@@ -21,18 +157,12 @@
       "choices": [
         {
           "id": "odetteStrikeDialogue.nodes.strike-unavailable.c0",
-          "text": "ask something else",
-          "source": "src/data/student-strike-dialogue.js:59",
-          "targetName": "start"
-        },
-        {
-          "id": "odetteStrikeDialogue.nodes.strike-unavailable.c1",
           "text": "continue along the floor",
           "source": "src/data/student-strike-dialogue.js:60",
           "targetName": "leave"
         }
       ],
-      "source": "src/data/student-strike-dialogue.js:59"
+      "source": "src/data/student-strike-dialogue.js:60"
     }
   }
 }

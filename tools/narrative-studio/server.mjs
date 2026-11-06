@@ -14,6 +14,7 @@ import {
   validateNarrativeDocument,
   validateProjectManifest,
 } from '../../src/narrative/contracts.js';
+import { exportRuntimeNarrative, RUNTIME_NARRATIVE_DIR } from '../../scripts/export-runtime-narrative.mjs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const STUDIO_ROOT = resolve(ROOT, 'tools/narrative-studio');
@@ -61,6 +62,18 @@ async function projectSnapshot() {
     let layout = { data: { schemaVersion: 1, documentId: loaded.data.id, positions: {}, regions: {} }, revision: '' };
     try { layout = await readDocument(safeContentPath(layoutPath)); } catch (_) {}
     documents.push({ path, revision: loaded.revision, document: loaded.data, layoutPath, layoutRevision: layout.revision, layout: layout.data });
+  }
+  // Dialogue still written in code: one read-only document per module,
+  // regenerated from src/ (scripts/export-runtime-narrative.mjs). The PUT
+  // endpoint refuses these paths: they are outside the writable roots.
+  let runtimeIndex = { documents: [] };
+  try { runtimeIndex = JSON.parse(await readFile(resolve(RUNTIME_NARRATIVE_DIR, 'index.json'), 'utf8')); } catch (_) {}
+  for (const entry of runtimeIndex.documents || []) {
+    try {
+      const loaded = await readDocument(resolve(CONTENT_ROOT, entry.path));
+      documents.push({ path: entry.path, revision: loaded.revision, document: loaded.data, layoutPath: '', layoutRevision: '',
+        layout: { schemaVersion: 1, documentId: loaded.data.id, positions: {}, regions: {} }, readOnly: true, module: entry.module });
+    } catch (_) {}
   }
   const fallbackAudio = (await listFiles(resolve(CONTENT_ROOT, 'audio'), '.audio.json'))[0];
   const audioPath = projectLoaded.data.audio?.[0] || (fallbackAudio ? `audio/${fallbackAudio}` : '');
@@ -162,6 +175,10 @@ const studioApi = {
 };
 
 await access(CONTENT_ROOT);
+// Bring the code's dialogue up to date before the first snapshot is served.
+const runtimeTotals = async () => { const { index } = await exportRuntimeNarrative({ write: true }); return index.reduce((t, d) => ({ docs: t.docs + 1, lines: t.lines + d.lines, choices: t.choices + d.choices }), { docs: 0, lines: 0, choices: 0 }); };
+try { const t = await runtimeTotals(); console.log(`Runtime dialogue: ${t.docs} modules, ${t.lines} lines, ${t.choices} choices`); }
+catch (error) { console.warn(`Runtime dialogue export failed: ${error.message}`); }
 const server = await createViteServer({
   configFile: false,
   root: STUDIO_ROOT,
@@ -185,6 +202,16 @@ watcher.on('all', (event, path) => {
   broadcast({ type: 'file-change', event, path: authoringPath });
 });
 
+// When dialogue changes in code, re-export it; the content watcher above then
+// tells the open studio which runtime documents changed.
+let runtimeTimer = null;
+const sourceWatcher = chokidar.watch(resolve(ROOT, 'src'), { ignoreInitial: true, ignored: (path) => /generated-content\.js$/.test(path) });
+sourceWatcher.on('all', (event, path) => {
+  if (!path.endsWith('.js')) return;
+  clearTimeout(runtimeTimer);
+  runtimeTimer = setTimeout(() => { runtimeTotals().catch((error) => broadcast({ type: 'runtime-export-failed', message: error.message })); }, 700);
+});
+
 const url = `http://${HOST}:${PORT}/?token=${TOKEN}`;
 
 // THE SESSION FILE. The token is minted per launch, so anything outside this
@@ -205,5 +232,5 @@ if (!process.env.STUDIO_NO_OPEN) {
 }
 
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, async () => {
-  await clearSession(); await watcher.close(); wss.close(); await server.close(); process.exit(0);
+  await clearSession(); await watcher.close(); await sourceWatcher.close(); wss.close(); await server.close(); process.exit(0);
 });

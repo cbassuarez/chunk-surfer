@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.meaning-lines",
+  "title": "Runtime · data/meaning-lines.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "FAMILIES.lamp",
+  "entries": [
+    "FAMILIES.lamp",
+    "FAMILIES.drain",
+    "FAMILIES.chair",
+    "FAMILIES.coat",
+    "FAMILIES.clock",
+    "FAMILIES.window",
+    "FAMILIES.stairs",
+    "FAMILIES.pipe",
+    "FAMILIES.paper",
+    "FAMILIES.instrument"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/meaning-lines.js",
+  "notes": "Generated from src/data/meaning-lines.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "FAMILIES.lamp": {
+      "id": "FAMILIES.lamp",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.lamp.l0",
+          "who": "line",
+          "text": "It's only a lamp. It's been on all night, for nobody.",
+          "source": "src/data/meaning-lines.js:38"
+        },
+        {
+          "id": "FAMILIES.lamp.l1",
+          "who": "line",
+          "text": "Somebody left that on for me.",
+          "source": "src/data/meaning-lines.js:38"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:38"
+    },
+    "FAMILIES.drain": {
+      "id": "FAMILIES.drain",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.drain.l0",
+          "who": "line",
+          "text": "You can hear it going down a long way.",
+          "source": "src/data/meaning-lines.js:39"
+        },
+        {
+          "id": "FAMILIES.drain.l1",
+          "who": "line",
+          "text": "All the water in the building is going to the same place.",
+          "source": "src/data/meaning-lines.js:39"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:39"
+    },
+    "FAMILIES.chair": {
+      "id": "FAMILIES.chair",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.chair.l0",
+          "who": "line",
+          "text": "Kept for someone.",
+          "source": "src/data/meaning-lines.js:40"
+        },
+        {
+          "id": "FAMILIES.chair.l1",
+          "who": "line",
+          "text": "They'll want that back. They said they'd wait.",
+          "source": "src/data/meaning-lines.js:40"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:40"
+    },
+    "FAMILIES.coat": {
+      "id": "FAMILIES.coat",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.coat.l0",
+          "who": "line",
+          "text": "Somebody meant to come back for this.",
+          "source": "src/data/meaning-lines.js:41"
+        },
+        {
+          "id": "FAMILIES.coat.l1",
+          "who": "line",
+          "text": "It's still got the shape of them in it.",
+          "source": "src/data/meaning-lines.js:41"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:41"
+    },
+    "FAMILIES.clock": {
+      "id": "FAMILIES.clock",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.clock.l0",
+          "who": "line",
+          "text": "That can't be right.",
+          "source": "src/data/meaning-lines.js:42"
+        },
+        {
+          "id": "FAMILIES.clock.l1",
+          "who": "line",
+          "text": "It isn't telling the time. It's telling me.",
+          "source": "src/data/meaning-lines.js:42"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:42"
+    },
+    "FAMILIES.window": {
+      "id": "FAMILIES.window",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.window.l0",
+          "who": "line",
+          "text": "You can't see out. Only the room, and me in it.",
+          "source": "src/data/meaning-lines.js:43"
+        },
+        {
+          "id": "FAMILIES.window.l1",
+          "who": "line",
+          "text": "There's more light behind it than there should be.",
+          "source": "src/data/meaning-lines.js:43"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:43"
+    },
+    "FAMILIES.stairs": {
+      "id": "FAMILIES.stairs",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.stairs.l0",
+          "who": "line",
+          "text": "People have gone up these for a hundred years.",
+          "source": "src/data/meaning-lines.js:44"
+        },
+        {
+          "id": "FAMILIES.stairs.l1",
+          "who": "line",
+          "text": "Only ever one way, in the end.",
+          "source": "src/data/meaning-lines.js:44"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:44"
+    },
+    "FAMILIES.pipe": {
+      "id": "FAMILIES.pipe",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.pipe.l0",
+          "who": "line",
+          "text": "There's water in there. It's all right. It knows where it's going.",
+          "source": "src/data/meaning-lines.js:45"
+        },
+        {
+          "id": "FAMILIES.pipe.l1",
+          "who": "line",
+          "text": "Listen to it. It's nearly words.",
+          "source": "src/data/meaning-lines.js:45"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:45"
+    },
+    "FAMILIES.paper": {
+      "id": "FAMILIES.paper",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.paper.l0",
+          "who": "line",
+          "text": "Somebody took trouble over this.",
+          "source": "src/data/meaning-lines.js:46"
+        },
+        {
+          "id": "FAMILIES.paper.l1",
+          "who": "line",
+          "text": "It's addressed to me. It always was.",
+          "source": "src/data/meaning-lines.js:46"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:46"
+    },
+    "FAMILIES.instrument": {
+      "id": "FAMILIES.instrument",
+      "type": "line",
+      "lines": [
+        {
+          "id": "FAMILIES.instrument.l0",
+          "who": "line",
+          "text": "It wouldn't take much.",
+          "source": "src/data/meaning-lines.js:47"
+        },
+        {
+          "id": "FAMILIES.instrument.l1",
+          "who": "line",
+          "text": "It's still holding the last note. You only have to know how to ask.",
+          "source": "src/data/meaning-lines.js:47"
+        }
+      ],
+      "source": "src/data/meaning-lines.js:47"
+    }
+  }
+}

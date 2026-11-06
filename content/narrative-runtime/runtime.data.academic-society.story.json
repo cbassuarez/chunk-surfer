@@ -4,34 +4,1716 @@
   "title": "Runtime · data/academic-society.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "academicSocietyLoanLines",
+  "entry": "ACADEMIC_SOCIETY_BEATS",
   "entries": [
+    "ACADEMIC_SOCIETY_BEATS",
+    "academicSocietyBeatLines",
+    "academicSocietyDialogue.start",
+    "academicSocietyDialogue.emile",
+    "academicSocietyDialogue.firstevening",
+    "academicSocietyDialogue.rules",
+    "academicSocietyDialogue.sabine",
+    "academicSocietyDialogue.audience",
+    "academicSocietyDialogue.silence",
+    "academicSocietyDialogue.need",
+    "academicSocietyDialogue.lend",
+    "academicSocietyDialogue.decline",
+    "academicSocietyDialogue.withdraw",
+    "academicSocietyDialogue.agathe",
+    "academicSocietyDialogue.lastnight",
+    "academicSocietyDialogue.voiceChoice",
+    "academicSocietyDialogue.noe",
+    "academicSocietyDialogue.likeness",
+    "academicSocietyDialogue.name",
+    "academicSocietyDialogue.voice",
+    "academicSocietyDialogue.leave",
+    "academicSocietyDialogue.names",
+    "academicSocietyDialogue.missing",
+    "academicSocietyDialogue.odette",
+    "academicSocietyDialogue.mistake",
+    "academicSocietyDialogue.portraits",
+    "academicSocietyDialogue.lucien",
+    "academicSocietyDialogue.unfinished",
+    "academicSocietyDialogue.lastline",
+    "academicSocietyDialogue.reviews",
+    "academicSocietyDialogue.verdict",
+    "academicSocietyDialogue.listening",
     "academicSocietyLoanLines"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/academic-society.js",
   "notes": "Generated from src/data/academic-society.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "ACADEMIC_SOCIETY_BEATS": {
+      "id": "ACADEMIC_SOCIETY_BEATS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l0",
+          "who": "unknown",
+          "text": "Still warm. You cannot have been here very long.",
+          "source": "src/data/academic-society.js:51"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l1",
+          "who": "unknown",
+          "text": "As I was saying—",
+          "source": "src/data/academic-society.js:54"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l2",
+          "who": "unknown",
+          "text": "You were saying it on Tuesday.",
+          "source": "src/data/academic-society.js:55"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l3",
+          "who": "unknown",
+          "text": "And you interrupted it on Tuesday. We have both kept our part.",
+          "source": "src/data/academic-society.js:56"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l4",
+          "who": "unknown",
+          "text": "You have left the good chair empty.",
+          "source": "src/data/academic-society.js:59"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l5",
+          "who": "unknown",
+          "text": "For whoever comes next.",
+          "source": "src/data/academic-society.js:60"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l6",
+          "who": "unknown",
+          "text": "Still ambitious, then.",
+          "source": "src/data/academic-society.js:61"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l7",
+          "who": "unknown",
+          "text": "You may finish the piece without finishing the evening.",
+          "source": "src/data/academic-society.js:64"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l8",
+          "who": "unknown",
+          "text": "You would all start getting your coats.",
+          "source": "src/data/academic-society.js:65"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l9",
+          "who": "unknown",
+          "text": "Emile. None of us has been cold for years.",
+          "source": "src/data/academic-society.js:66"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l10",
+          "who": "unknown",
+          "text": "No. I said I would think about it.",
+          "source": "src/data/academic-society.js:69"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l11",
+          "who": "unknown",
+          "text": "That ought to be a whole answer.",
+          "source": "src/data/academic-society.js:70"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l12",
+          "who": "unknown",
+          "text": "Closing time. I still say it. They still take no notice.",
+          "source": "src/data/academic-society.js:73"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l13",
+          "who": "unknown",
+          "text": "A little air would improve the evening.",
+          "source": "src/data/academic-society.js:76"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l14",
+          "who": "unknown",
+          "text": "Ask before you borrow it.",
+          "source": "src/data/academic-society.js:77"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l15",
+          "who": "unknown",
+          "text": "Lucien has been giving you lessons.",
+          "source": "src/data/academic-society.js:78"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l16",
+          "who": "unknown",
+          "text": "One arrival. Shall I put a name to it?",
+          "source": "src/data/academic-society.js:81"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l17",
+          "who": "unknown",
+          "text": "You could begin with good evening.",
+          "source": "src/data/academic-society.js:82"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l18",
+          "who": "unknown",
+          "text": "Good evening is very difficult to alphabetise.",
+          "source": "src/data/academic-society.js:83"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l19",
+          "who": "unknown",
+          "text": "You will enjoy the challenge.",
+          "source": "src/data/academic-society.js:84"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l20",
+          "who": "unknown",
+          "text": "We are closed.",
+          "source": "src/data/academic-society.js:87"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l21",
+          "who": "unknown",
+          "text": "Then why is everyone still here?",
+          "source": "src/data/academic-society.js:88"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l22",
+          "who": "unknown",
+          "text": "Staff.",
+          "source": "src/data/academic-society.js:89"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l23",
+          "who": "unknown",
+          "text": "A very generous staffing arrangement.",
+          "source": "src/data/academic-society.js:90"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l24",
+          "who": "unknown",
+          "text": "Do not improve your expression. I have almost understood the old one.",
+          "source": "src/data/academic-society.js:93"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l25",
+          "who": "unknown",
+          "text": "Was it so bad?",
+          "source": "src/data/academic-society.js:94"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l26",
+          "who": "unknown",
+          "text": "It was entirely yours. That is much more troublesome.",
+          "source": "src/data/academic-society.js:95"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l27",
+          "who": "unknown",
+          "text": "You used to make everyone look important.",
+          "source": "src/data/academic-society.js:98"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l28",
+          "who": "unknown",
+          "text": "They paid extra for it.",
+          "source": "src/data/academic-society.js:99"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l29",
+          "who": "unknown",
+          "text": "What do you charge now?",
+          "source": "src/data/academic-society.js:100"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l30",
+          "who": "unknown",
+          "text": "An honest compliment. Business has been dreadful.",
+          "source": "src/data/academic-society.js:101"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l31",
+          "who": "unknown",
+          "text": "Promising.",
+          "source": "src/data/academic-society.js:104"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l32",
+          "who": "unknown",
+          "text": "I have not played anything.",
+          "source": "src/data/academic-society.js:105"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l33",
+          "who": "unknown",
+          "text": "Then there is still every chance of improvement.",
+          "source": "src/data/academic-society.js:106"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l34",
+          "who": "unknown",
+          "text": "Sabine. Let him have a little unexamined air.",
+          "source": "src/data/academic-society.js:107"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l35",
+          "who": "unknown",
+          "text": "Have you enjoyed yourself?",
+          "source": "src/data/academic-society.js:110"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l36",
+          "who": "unknown",
+          "text": "Unevenly. A little too much repetition. An arresting silence in the middle.",
+          "source": "src/data/academic-society.js:111"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l37",
+          "who": "unknown",
+          "text": "I shall take that as a yes.",
+          "source": "src/data/academic-society.js:112"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l38",
+          "who": "unknown",
+          "text": "Do not put that cup away. Agathe has not finished objecting.",
+          "source": "src/data/academic-society.js:115"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l39",
+          "who": "unknown",
+          "text": "I had finished. I was deciding whether to begin again.",
+          "source": "src/data/academic-society.js:116"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l40",
+          "who": "unknown",
+          "text": "Then it is still your cup.",
+          "source": "src/data/academic-society.js:117"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l41",
+          "who": "unknown",
+          "text": "I have lent you the same pencil three times.",
+          "source": "src/data/academic-society.js:120"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l42",
+          "who": "unknown",
+          "text": "And each time you have known exactly where it was.",
+          "source": "src/data/academic-society.js:121"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l43",
+          "who": "unknown",
+          "text": "That is not the principle of lending.",
+          "source": "src/data/academic-society.js:122"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l44",
+          "who": "unknown",
+          "text": "It is how we manage it here.",
+          "source": "src/data/academic-society.js:123"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l45",
+          "who": "unknown",
+          "text": "The next arrival has not cooled down.",
+          "source": "src/data/academic-society.js:126"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l46",
+          "who": "unknown",
+          "text": "Then leave a little space around them.",
+          "source": "src/data/academic-society.js:127"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l47",
+          "who": "unknown",
+          "text": "I was going to keep the space.",
+          "source": "src/data/academic-society.js:128"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l48",
+          "who": "unknown",
+          "text": "Keep it empty.",
+          "source": "src/data/academic-society.js:129"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l49",
+          "who": "unknown",
+          "text": "My total changes whenever our visitor takes a breath.",
+          "source": "src/data/academic-society.js:132"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l50",
+          "who": "unknown",
+          "text": "Then stop counting for a moment.",
+          "source": "src/data/academic-society.js:133"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l51",
+          "who": "unknown",
+          "text": "I can stop writing. That is a different thing.",
+          "source": "src/data/academic-society.js:134"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l52",
+          "who": "unknown",
+          "text": "Good evening.",
+          "source": "src/data/academic-society.js:137"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l53",
+          "who": "unknown",
+          "text": "You have said that already.",
+          "source": "src/data/academic-society.js:138"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l54",
+          "who": "unknown",
+          "text": "I enjoyed the first one.",
+          "source": "src/data/academic-society.js:139"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l55",
+          "who": "unknown",
+          "text": "Sabine, tell her a repetition can be necessary.",
+          "source": "src/data/academic-society.js:142"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l56",
+          "who": "unknown",
+          "text": "A repetition can be necessary.",
+          "source": "src/data/academic-society.js:143"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l57",
+          "who": "unknown",
+          "text": "That was generous of you both.",
+          "source": "src/data/academic-society.js:144"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l58",
+          "who": "unknown",
+          "text": "You have still not thanked me for the second review.",
+          "source": "src/data/academic-society.js:147"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l59",
+          "who": "unknown",
+          "text": "I have quoted it for years.",
+          "source": "src/data/academic-society.js:148"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l60",
+          "who": "unknown",
+          "text": "I accept that as payment.",
+          "source": "src/data/academic-society.js:149"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l61",
+          "who": "unknown",
+          "text": "There. Again. Between the phrases.",
+          "source": "src/data/academic-society.js:152"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l62",
+          "who": "unknown",
+          "text": "Our visitor is breathing. Leave it alone.",
+          "source": "src/data/academic-society.js:153"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l63",
+          "who": "unknown",
+          "text": "It does make the silence feel rather occupied.",
+          "source": "src/data/academic-society.js:154"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l64",
+          "who": "unknown",
+          "text": "The good chair can stay empty.",
+          "source": "src/data/academic-society.js:157"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l65",
+          "who": "unknown",
+          "text": "It is making everybody look at it.",
+          "source": "src/data/academic-society.js:158"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l66",
+          "who": "unknown",
+          "text": "No. They are looking at the person still standing.",
+          "source": "src/data/academic-society.js:159"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l67",
+          "who": "unknown",
+          "text": "An excellent evening. I shall not explain why.",
+          "source": "src/data/academic-society.js:162"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l68",
+          "who": "unknown",
+          "text": "There is an experiment worth repeating.",
+          "source": "src/data/academic-society.js:163"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l69",
+          "who": "unknown",
+          "text": "I should like that in writing.",
+          "source": "src/data/academic-society.js:164"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l70",
+          "who": "unknown",
+          "text": "You would only preserve it.",
+          "source": "src/data/academic-society.js:165"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l71",
+          "who": "unknown",
+          "text": "Hold still. The face was easier than that button.",
+          "source": "src/data/academic-society.js:168"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l72",
+          "who": "unknown",
+          "text": "The button has no opinion of you.",
+          "source": "src/data/academic-society.js:169"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l73",
+          "who": "unknown",
+          "text": "I had noticed the difference.",
+          "source": "src/data/academic-society.js:170"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l74",
+          "who": "unknown",
+          "text": "That is a very good likeness.",
+          "source": "src/data/academic-society.js:173"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l75",
+          "who": "unknown",
+          "text": "You have not looked.",
+          "source": "src/data/academic-society.js:174"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l76",
+          "who": "unknown",
+          "text": "I was trying out being agreeable.",
+          "source": "src/data/academic-society.js:175"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l77",
+          "who": "unknown",
+          "text": "Try looking. I might enjoy it more.",
+          "source": "src/data/academic-society.js:176"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l78",
+          "who": "unknown",
+          "text": "Our visitor will not stay the same shape.",
+          "source": "src/data/academic-society.js:179"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l79",
+          "who": "unknown",
+          "text": "They are only shifting their weight.",
+          "source": "src/data/academic-society.js:180"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l80",
+          "who": "unknown",
+          "text": "Yes. I had forgotten how much of it there used to be.",
+          "source": "src/data/academic-society.js:181"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l81",
+          "who": "unknown",
+          "text": "Do not finish the outline around them.",
+          "source": "src/data/academic-society.js:184"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l82",
+          "who": "unknown",
+          "text": "I have not begun.",
+          "source": "src/data/academic-society.js:185"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l83",
+          "who": "unknown",
+          "text": "Then keep that part.",
+          "source": "src/data/academic-society.js:186"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l84",
+          "who": "unknown",
+          "text": "You disagree with everything I say.",
+          "source": "src/data/academic-society.js:189"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l85",
+          "who": "unknown",
+          "text": "Not everything.",
+          "source": "src/data/academic-society.js:190"
+        },
+        {
+          "id": "ACADEMIC_SOCIETY_BEATS.l86",
+          "who": "unknown",
+          "text": "Good. I was hoping you would say that.",
+          "source": "src/data/academic-society.js:191"
+        }
+      ],
+      "source": "src/data/academic-society.js:51"
+    },
+    "academicSocietyBeatLines": {
+      "id": "academicSocietyBeatLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyBeatLines.l0",
+          "who": "unknown",
+          "text": "I explained the blank line to our visitor.",
+          "source": "src/data/academic-society.js:293"
+        },
+        {
+          "id": "academicSocietyBeatLines.l1",
+          "who": "unknown",
+          "text": "Did you leave it blank?",
+          "source": "src/data/academic-society.js:294"
+        },
+        {
+          "id": "academicSocietyBeatLines.l2",
+          "who": "unknown",
+          "text": "I can be both exact and hospitable. It takes concentration.",
+          "source": "src/data/academic-society.js:295"
+        },
+        {
+          "id": "academicSocietyBeatLines.l3",
+          "who": "unknown",
+          "text": "I have admitted to our visitor that I used to sell noble faces.",
+          "source": "src/data/academic-society.js:298"
+        },
+        {
+          "id": "academicSocietyBeatLines.l4",
+          "who": "unknown",
+          "text": "That explains why you find mine so difficult.",
+          "source": "src/data/academic-society.js:299"
+        },
+        {
+          "id": "academicSocietyBeatLines.l5",
+          "who": "unknown",
+          "text": "I find yours interesting. Please do not make me say it twice.",
+          "source": "src/data/academic-society.js:300"
+        },
+        {
+          "id": "academicSocietyBeatLines.l6",
+          "who": "unknown",
+          "text": "Something to say. That was a good thing to find in a face.",
+          "source": "src/data/academic-society.js:303"
+        },
+        {
+          "id": "academicSocietyBeatLines.l7",
+          "who": "unknown",
+          "text": "I meant it.",
+          "source": "src/data/academic-society.js:304"
+        },
+        {
+          "id": "academicSocietyBeatLines.l8",
+          "who": "unknown",
+          "text": "Yes. That is what makes it difficult to answer elegantly.",
+          "source": "src/data/academic-society.js:305"
+        },
+        {
+          "id": "academicSocietyBeatLines.l9",
+          "who": "unknown",
+          "text": "I have been explaining my reviews.",
+          "source": "src/data/academic-society.js:308"
+        },
+        {
+          "id": "academicSocietyBeatLines.l10",
+          "who": "unknown",
+          "text": "At last. I waited years for an explanation.",
+          "source": "src/data/academic-society.js:309"
+        },
+        {
+          "id": "academicSocietyBeatLines.l11",
+          "who": "unknown",
+          "text": "You might have asked. You were so busy preserving the newspaper.",
+          "source": "src/data/academic-society.js:310"
+        },
+        {
+          "id": "academicSocietyBeatLines.l12",
+          "who": "unknown",
+          "text": "I could ask somebody else.",
+          "source": "src/data/academic-society.js:313"
+        },
+        {
+          "id": "academicSocietyBeatLines.l13",
+          "who": "unknown",
+          "text": "Or you could let a guest be a guest.",
+          "source": "src/data/academic-society.js:314"
+        },
+        {
+          "id": "academicSocietyBeatLines.l14",
+          "who": "unknown",
+          "text": "Yes. I heard the distinction.",
+          "source": "src/data/academic-society.js:315"
+        },
+        {
+          "id": "academicSocietyBeatLines.l15",
+          "who": "unknown",
+          "text": "It sounded as if the room had begun again.",
+          "source": "src/data/academic-society.js:318"
+        },
+        {
+          "id": "academicSocietyBeatLines.l16",
+          "who": "unknown",
+          "text": "It had company. That is smaller. Try to be glad of it.",
+          "source": "src/data/academic-society.js:319"
+        },
+        {
+          "id": "academicSocietyBeatLines.l17",
+          "who": "unknown",
+          "text": "I am trying.",
+          "source": "src/data/academic-society.js:320"
+        },
+        {
+          "id": "academicSocietyBeatLines.l18",
+          "who": "unknown",
+          "text": "You told our visitor where the last phrase belongs.",
+          "source": "src/data/academic-society.js:323"
+        },
+        {
+          "id": "academicSocietyBeatLines.l19",
+          "who": "unknown",
+          "text": "Explaining a thing is not the same as managing it.",
+          "source": "src/data/academic-society.js:324"
+        },
+        {
+          "id": "academicSocietyBeatLines.l20",
+          "who": "unknown",
+          "text": "No. But you let somebody hear the gap.",
+          "source": "src/data/academic-society.js:325"
+        }
+      ],
+      "source": "src/data/academic-society.js:293"
+    },
+    "academicSocietyDialogue.start": {
+      "id": "academicSocietyDialogue.start",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.start.c0",
+          "text": "what is happening up here?",
+          "source": "src/data/academic-society.js:341",
+          "targetName": "company"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c1",
+          "text": "you and Emile know each other well",
+          "source": "src/data/academic-society.js:341",
+          "goto": "academicSocietyDialogue.emile"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c2",
+          "text": "what are you waiting for?",
+          "source": "src/data/academic-society.js:342",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c3",
+          "text": "how did these evenings begin?",
+          "source": "src/data/academic-society.js:342",
+          "goto": "academicSocietyDialogue.firstevening"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c4",
+          "text": "does Sabine approve of this?",
+          "source": "src/data/academic-society.js:343",
+          "goto": "academicSocietyDialogue.sabine"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c5",
+          "text": "what are you playing?",
+          "source": "src/data/academic-society.js:380",
+          "targetName": "music"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c6",
+          "text": "why do you interrupt her?",
+          "source": "src/data/academic-society.js:380",
+          "targetName": "celeste"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c7",
+          "text": "what is missing?",
+          "source": "src/data/academic-society.js:381",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c8",
+          "text": "do you miss an audience?",
+          "source": "src/data/academic-society.js:381",
+          "goto": "academicSocietyDialogue.audience"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c9",
+          "text": "what did Sabine write about you?",
+          "source": "src/data/academic-society.js:382",
+          "goto": "academicSocietyDialogue.sabine"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c10",
+          "text": "take my voice back",
+          "source": "src/data/academic-society.js:383",
+          "goto": "academicSocietyDialogue.withdraw"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c11",
+          "text": "why keep the keys?",
+          "source": "src/data/academic-society.js:428",
+          "targetName": "keys"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c12",
+          "text": "who are the others?",
+          "source": "src/data/academic-society.js:428",
+          "targetName": "company"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c13",
+          "text": "what do you need?",
+          "source": "src/data/academic-society.js:429",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c14",
+          "text": "why is Agathe counting us?",
+          "source": "src/data/academic-society.js:429",
+          "goto": "academicSocietyDialogue.agathe"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c15",
+          "text": "what was your last closing time?",
+          "source": "src/data/academic-society.js:430",
+          "goto": "academicSocietyDialogue.lastnight"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c16",
+          "text": "why stay out here?",
+          "source": "src/data/academic-society.js:469",
+          "targetName": "company"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c17",
+          "text": "what does Emile want?",
+          "source": "src/data/academic-society.js:469",
+          "goto": "academicSocietyDialogue.emile"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c18",
+          "text": "what do you want?",
+          "source": "src/data/academic-society.js:470",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c19",
+          "text": "why is Noe studying your face?",
+          "source": "src/data/academic-society.js:470",
+          "goto": "academicSocietyDialogue.noe"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c20",
+          "text": "did you know each other before?",
+          "source": "src/data/academic-society.js:471",
+          "goto": "academicSocietyDialogue.name"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c21",
+          "text": "I do not want to lend my voice",
+          "source": "src/data/academic-society.js:472",
+          "goto": "academicSocietyDialogue.decline"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c22",
+          "text": "do you need my name?",
+          "source": "src/data/academic-society.js:521",
+          "goto": "academicSocietyDialogue.names"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c23",
+          "text": "do you and Odette always argue?",
+          "source": "src/data/academic-society.js:521",
+          "goto": "academicSocietyDialogue.odette"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c24",
+          "text": "were the registers always right?",
+          "source": "src/data/academic-society.js:522",
+          "goto": "academicSocietyDialogue.mistake"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c25",
+          "text": "what would make a good evening for you?",
+          "source": "src/data/academic-society.js:522",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c26",
+          "text": "what sort of portraits did you make?",
+          "source": "src/data/academic-society.js:560",
+          "goto": "academicSocietyDialogue.portraits"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c27",
+          "text": "why Lucien?",
+          "source": "src/data/academic-society.js:560",
+          "goto": "academicSocietyDialogue.lucien"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c28",
+          "text": "does anything here get finished?",
+          "source": "src/data/academic-society.js:561",
+          "goto": "academicSocietyDialogue.unfinished"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c29",
+          "text": "what are you after tonight?",
+          "source": "src/data/academic-society.js:561",
+          "goto": "academicSocietyDialogue.need"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c30",
+          "text": "what made a good review?",
+          "source": "src/data/academic-society.js:599",
+          "goto": "academicSocietyDialogue.reviews"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c31",
+          "text": "did you admire Emile?",
+          "source": "src/data/academic-society.js:599",
+          "goto": "academicSocietyDialogue.emile"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c32",
+          "text": "can you listen without judging?",
+          "source": "src/data/academic-society.js:600",
+          "goto": "academicSocietyDialogue.listening"
+        },
+        {
+          "id": "academicSocietyDialogue.start.c33",
+          "text": "what would you like to hear tonight?",
+          "source": "src/data/academic-society.js:600",
+          "goto": "academicSocietyDialogue.need"
+        }
+      ],
+      "source": "src/data/academic-society.js:341"
+    },
+    "academicSocietyDialogue.emile": {
+      "id": "academicSocietyDialogue.emile",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.emile.l0",
+          "who": "unknown",
+          "text": "I can hear you.",
+          "source": "src/data/academic-society.js:351"
+        },
+        {
+          "id": "academicSocietyDialogue.emile.l1",
+          "who": "unknown",
+          "text": "I was hoping you could.",
+          "source": "src/data/academic-society.js:352"
+        },
+        {
+          "id": "academicSocietyDialogue.emile.l2",
+          "who": "unknown",
+          "text": "There. Put that in writing.",
+          "source": "src/data/academic-society.js:616"
+        },
+        {
+          "id": "academicSocietyDialogue.emile.l3",
+          "who": "unknown",
+          "text": "I did. You cut out the paragraph before it and brooded over the adjective.",
+          "source": "src/data/academic-society.js:617"
+        },
+        {
+          "id": "academicSocietyDialogue.emile.l4",
+          "who": "unknown",
+          "text": "The adjective was promising.",
+          "source": "src/data/academic-society.js:618"
+        },
+        {
+          "id": "academicSocietyDialogue.emile.l5",
+          "who": "unknown",
+          "text": "I am glad we have not forgotten the text.",
+          "source": "src/data/academic-society.js:619"
+        }
+      ],
+      "source": "src/data/academic-society.js:351"
+    },
+    "academicSocietyDialogue.firstevening": {
+      "id": "academicSocietyDialogue.firstevening",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.firstevening.l0",
+          "who": "unknown",
+          "text": "It was. Hospitality does not mend a window.",
+          "source": "src/data/academic-society.js:360"
+        },
+        {
+          "id": "academicSocietyDialogue.firstevening.l1",
+          "who": "unknown",
+          "text": "That was the first thing he said to me after we died. I knew it was him.",
+          "source": "src/data/academic-society.js:361"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.firstevening.c0",
+          "text": "so who is in charge?",
+          "source": "src/data/academic-society.js:363",
+          "goto": "academicSocietyDialogue.rules"
+        }
+      ],
+      "source": "src/data/academic-society.js:360"
+    },
+    "academicSocietyDialogue.rules": {
+      "id": "academicSocietyDialogue.rules",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.rules.l0",
+          "who": "unknown",
+          "text": "She says that in the voice she uses when she is in charge.",
+          "source": "src/data/academic-society.js:366"
+        },
+        {
+          "id": "academicSocietyDialogue.rules.l1",
+          "who": "unknown",
+          "text": "Only because you keep trying to review the refreshments.",
+          "source": "src/data/academic-society.js:367"
+        },
+        {
+          "id": "academicSocietyDialogue.rules.l2",
+          "who": "unknown",
+          "text": "A disappointing absence of refreshments. An excellent absence of speeches.",
+          "source": "src/data/academic-society.js:368"
+        }
+      ],
+      "source": "src/data/academic-society.js:366"
+    },
+    "academicSocietyDialogue.sabine": {
+      "id": "academicSocietyDialogue.sabine",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.sabine.l0",
+          "who": "unknown",
+          "text": "I am enjoying it at exactly the appropriate speed.",
+          "source": "src/data/academic-society.js:372"
+        },
+        {
+          "id": "academicSocietyDialogue.sabine.l1",
+          "who": "unknown",
+          "text": "You see? Even pleasure must pass an examination.",
+          "source": "src/data/academic-society.js:373"
+        },
+        {
+          "id": "academicSocietyDialogue.sabine.l2",
+          "who": "unknown",
+          "text": "The first time I meant it. The second time I wondered whether he had noticed the first.",
+          "source": "src/data/academic-society.js:407"
+        },
+        {
+          "id": "academicSocietyDialogue.sabine.l3",
+          "who": "unknown",
+          "text": "I kept both notices.",
+          "source": "src/data/academic-society.js:408"
+        },
+        {
+          "id": "academicSocietyDialogue.sabine.l4",
+          "who": "unknown",
+          "text": "Of course you did. You were always a serious reader.",
+          "source": "src/data/academic-society.js:409"
+        }
+      ],
+      "source": "src/data/academic-society.js:372"
+    },
+    "academicSocietyDialogue.audience": {
+      "id": "academicSocietyDialogue.audience",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.audience.l0",
+          "who": "unknown",
+          "text": "He particularly misses applause that has not yet had the opportunity to disappoint him.",
+          "source": "src/data/academic-society.js:396"
+        },
+        {
+          "id": "academicSocietyDialogue.audience.l1",
+          "who": "unknown",
+          "text": "I was capable of being appreciated.",
+          "source": "src/data/academic-society.js:397"
+        },
+        {
+          "id": "academicSocietyDialogue.audience.l2",
+          "who": "unknown",
+          "text": "Occasionally. It made the other nights quite exciting.",
+          "source": "src/data/academic-society.js:398"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.audience.c0",
+          "text": "what happens if nobody applauds?",
+          "source": "src/data/academic-society.js:399",
+          "goto": "academicSocietyDialogue.silence"
+        }
+      ],
+      "source": "src/data/academic-society.js:396"
+    },
+    "academicSocietyDialogue.silence": {
+      "id": "academicSocietyDialogue.silence",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.silence.l0",
+          "who": "unknown",
+          "text": "You can have that much silence now. You need not keep the whole room waiting inside it.",
+          "source": "src/data/academic-society.js:403"
+        }
+      ],
+      "source": "src/data/academic-society.js:403"
+    },
+    "academicSocietyDialogue.need": {
+      "id": "academicSocietyDialogue.need",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.need.l0",
+          "who": "unknown",
+          "text": "He may ask for it back here, or through Lucien, or simply go downstairs. You will not make it sound like a promise.",
+          "source": "src/data/academic-society.js:413"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l1",
+          "who": "unknown",
+          "text": "One breath. You need not stay to hear what I make of it.",
+          "source": "src/data/academic-society.js:414"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l2",
+          "who": "unknown",
+          "text": "So you would like a little company.",
+          "source": "src/data/academic-society.js:552"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l3",
+          "who": "unknown",
+          "text": "Correct company. There is a distinction.",
+          "source": "src/data/academic-society.js:553"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l4",
+          "who": "unknown",
+          "text": "You make people look as if they have something to say.",
+          "source": "src/data/academic-society.js:590"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l5",
+          "who": "unknown",
+          "text": "That was almost alarmingly well chosen.",
+          "source": "src/data/academic-society.js:591"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l6",
+          "who": "unknown",
+          "text": "I have heard you ask for it before.",
+          "source": "src/data/academic-society.js:592"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l7",
+          "who": "unknown",
+          "text": "A generous ambition for my evening.",
+          "source": "src/data/academic-society.js:629"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l8",
+          "who": "unknown",
+          "text": "A perfect performance ends the conversation. You have always been much better company than that.",
+          "source": "src/data/academic-society.js:630"
+        },
+        {
+          "id": "academicSocietyDialogue.need.l9",
+          "who": "unknown",
+          "text": "There is a compliment in it. I would take it before she revises the sentence.",
+          "source": "src/data/academic-society.js:631"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.need.c0",
+          "text": "lend one breath — hear my voice from his mouth",
+          "source": "src/data/academic-society.js:417",
+          "goto": "academicSocietyDialogue.lend"
+        },
+        {
+          "id": "academicSocietyDialogue.need.c1",
+          "text": "keep my voice",
+          "source": "src/data/academic-society.js:418",
+          "goto": "academicSocietyDialogue.decline"
+        }
+      ],
+      "source": "src/data/academic-society.js:413"
+    },
+    "academicSocietyDialogue.lend": {
+      "id": "academicSocietyDialogue.lend",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.lend.l0",
+          "who": "unknown",
+          "text": "Listen, then. You do not have to sing.",
+          "source": "src/data/academic-society.js:420"
+        }
+      ],
+      "source": "src/data/academic-society.js:420"
+    },
+    "academicSocietyDialogue.decline": {
+      "id": "academicSocietyDialogue.decline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.decline.l0",
+          "who": "unknown",
+          "text": "It was only a—",
+          "source": "src/data/academic-society.js:421"
+        },
+        {
+          "id": "academicSocietyDialogue.decline.l1",
+          "who": "unknown",
+          "text": "He heard you.",
+          "source": "src/data/academic-society.js:421"
+        },
+        {
+          "id": "academicSocietyDialogue.decline.l2",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "No explanation needed. You may still sit with us.",
+          "source": "src/data/academic-society.js:512"
+        }
+      ],
+      "source": "src/data/academic-society.js:421"
+    },
+    "academicSocietyDialogue.withdraw": {
+      "id": "academicSocietyDialogue.withdraw",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.withdraw.l0",
+          "who": "unknown",
+          "text": "Already? We were just getting to know the sound of you.",
+          "source": "src/data/academic-society.js:422"
+        },
+        {
+          "id": "academicSocietyDialogue.withdraw.l1",
+          "who": "unknown",
+          "text": "He said back.",
+          "source": "src/data/academic-society.js:422"
+        },
+        {
+          "id": "academicSocietyDialogue.withdraw.l2",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "Back, then. You do not need a better reason.",
+          "source": "src/data/academic-society.js:513"
+        }
+      ],
+      "source": "src/data/academic-society.js:422"
+    },
+    "academicSocietyDialogue.agathe": {
+      "id": "academicSocietyDialogue.agathe",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.agathe.l0",
+          "who": "unknown",
+          "text": "I have never called you irritating on a form.",
+          "source": "src/data/academic-society.js:446"
+        },
+        {
+          "id": "academicSocietyDialogue.agathe.l1",
+          "who": "unknown",
+          "text": "No. You used to put irregular attendance.",
+          "source": "src/data/academic-society.js:447"
+        },
+        {
+          "id": "academicSocietyDialogue.agathe.l2",
+          "who": "unknown",
+          "text": "That was a precise description.",
+          "source": "src/data/academic-society.js:448"
+        }
+      ],
+      "source": "src/data/academic-society.js:446"
+    },
+    "academicSocietyDialogue.lastnight": {
+      "id": "academicSocietyDialogue.lastnight",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.lastnight.l0",
+          "who": "unknown",
+          "text": "You also remembered who was afraid of the dark. You left that out.",
+          "source": "src/data/academic-society.js:453"
+        },
+        {
+          "id": "academicSocietyDialogue.lastnight.l1",
+          "who": "unknown",
+          "text": "A lamp is easier to account for.",
+          "source": "src/data/academic-society.js:454"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.lastnight.c0",
+          "text": "is that why you keep the way clear?",
+          "source": "src/data/academic-society.js:455",
+          "targetName": "returning"
+        }
+      ],
+      "source": "src/data/academic-society.js:453"
+    },
+    "academicSocietyDialogue.voiceChoice": {
+      "id": "academicSocietyDialogue.voiceChoice",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.voiceChoice.c0",
+          "text": "take my voice back",
+          "source": "src/data/academic-society.js:463",
+          "goto": "academicSocietyDialogue.withdraw"
+        }
+      ],
+      "source": "src/data/academic-society.js:463"
+    },
+    "academicSocietyDialogue.noe": {
+      "id": "academicSocietyDialogue.noe",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.noe.l0",
+          "who": "unknown",
+          "text": "You have a very difficult ear. It suggests you have heard everything before.",
+          "source": "src/data/academic-society.js:489"
+        },
+        {
+          "id": "academicSocietyDialogue.noe.l1",
+          "who": "unknown",
+          "text": "I live with Emile. I have.",
+          "source": "src/data/academic-society.js:490"
+        },
+        {
+          "id": "academicSocietyDialogue.noe.l2",
+          "who": "unknown",
+          "text": "There. That expression. Entirely uncooperative. Excellent.",
+          "source": "src/data/academic-society.js:491"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.noe.c0",
+          "text": "do you like the way he sees you?",
+          "source": "src/data/academic-society.js:492",
+          "goto": "academicSocietyDialogue.likeness"
+        }
+      ],
+      "source": "src/data/academic-society.js:489"
+    },
+    "academicSocietyDialogue.likeness": {
+      "id": "academicSocietyDialogue.likeness",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.likeness.l0",
+          "who": "unknown",
+          "text": "I was being paid. Nobility is much easier to sell than a man waiting for the tram.",
+          "source": "src/data/academic-society.js:495"
+        },
+        {
+          "id": "academicSocietyDialogue.likeness.l1",
+          "who": "unknown",
+          "text": "I would have liked the tram picture.",
+          "source": "src/data/academic-society.js:496"
+        }
+      ],
+      "source": "src/data/academic-society.js:495"
+    },
+    "academicSocietyDialogue.name": {
+      "id": "academicSocietyDialogue.name",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.name.l0",
+          "who": "unknown",
+          "text": "Lucien. I know it perfectly well. Lucian was simply a better composition.",
+          "source": "src/data/academic-society.js:501"
+        },
+        {
+          "id": "academicSocietyDialogue.name.l1",
+          "who": "unknown",
+          "text": "He has been apologising like that ever since.",
+          "source": "src/data/academic-society.js:502"
+        }
+      ],
+      "source": "src/data/academic-society.js:501"
+    },
+    "academicSocietyDialogue.voice": {
+      "id": "academicSocietyDialogue.voice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.voice.l0",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "Emile will speak with your voice from his own mouth. You will still be able to walk and say where you are going.",
+          "source": "src/data/academic-society.js:504"
+        },
+        {
+          "id": "academicSocietyDialogue.voice.l1",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "If he makes it sound as if you have promised to stay, you have not. Ask him or me for it back, or go downstairs. Either is enough.",
+          "source": "src/data/academic-society.js:504"
+        },
+        {
+          "id": "academicSocietyDialogue.voice.l2",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "It is all right to want to hear it. It is just as all right not to.",
+          "source": "src/data/academic-society.js:504"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.voice.c0",
+          "text": "keep my voice",
+          "source": "src/data/academic-society.js:509",
+          "goto": "academicSocietyDialogue.decline"
+        }
+      ],
+      "source": "src/data/academic-society.js:504"
+    },
+    "academicSocietyDialogue.leave": {
+      "id": "academicSocietyDialogue.leave",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.leave.l0",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "You can find your way back. You do not have to promise.",
+          "source": "src/data/academic-society.js:515"
+        },
+        {
+          "id": "academicSocietyDialogue.leave.l1",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "Good evening. There. Before anything else. You may tell Odette.",
+          "source": "src/data/academic-society.js:555"
+        },
+        {
+          "id": "academicSocietyDialogue.leave.l2",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "Go on, then. You were much more convincing before you knew you were being looked at.",
+          "source": "src/data/academic-society.js:594"
+        },
+        {
+          "id": "academicSocietyDialogue.leave.l3",
+          "who": "{BY_ID[actorId].name.toUpperCase()}",
+          "text": "An interesting entrance. I shall try to leave the exit unreviewed.",
+          "source": "src/data/academic-society.js:633"
+        }
+      ],
+      "source": "src/data/academic-society.js:515"
+    },
+    "academicSocietyDialogue.names": {
+      "id": "academicSocietyDialogue.names",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.names.l0",
+          "who": "unknown",
+          "text": "You also used to demand a fee before you learned to say good morning.",
+          "source": "src/data/academic-society.js:527"
+        },
+        {
+          "id": "academicSocietyDialogue.names.l1",
+          "who": "unknown",
+          "text": "I said good morning perfectly clearly. The fee was due.",
+          "source": "src/data/academic-society.js:528"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.names.c0",
+          "text": "what happens to the names that are missing?",
+          "source": "src/data/academic-society.js:530",
+          "goto": "academicSocietyDialogue.missing"
+        }
+      ],
+      "source": "src/data/academic-society.js:527"
+    },
+    "academicSocietyDialogue.missing": {
+      "id": "academicSocietyDialogue.missing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.missing.l0",
+          "who": "unknown",
+          "text": "You could leave the reason to them.",
+          "source": "src/data/academic-society.js:534"
+        },
+        {
+          "id": "academicSocietyDialogue.missing.l1",
+          "who": "unknown",
+          "text": "Yes. You make it sound so easy to mislay a whole person.",
+          "source": "src/data/academic-society.js:535"
+        }
+      ],
+      "source": "src/data/academic-society.js:534"
+    },
+    "academicSocietyDialogue.odette": {
+      "id": "academicSocietyDialogue.odette",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.odette.l0",
+          "who": "unknown",
+          "text": "She corrected a notice while the roof leaked through it.",
+          "source": "src/data/academic-society.js:539"
+        },
+        {
+          "id": "academicSocietyDialogue.odette.l1",
+          "who": "unknown",
+          "text": "It was still misspelled after it dried.",
+          "source": "src/data/academic-society.js:540"
+        }
+      ],
+      "source": "src/data/academic-society.js:539"
+    },
+    "academicSocietyDialogue.mistake": {
+      "id": "academicSocietyDialogue.mistake",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.mistake.l0",
+          "who": "unknown",
+          "text": "You corrected it.",
+          "source": "src/data/academic-society.js:546"
+        },
+        {
+          "id": "academicSocietyDialogue.mistake.l1",
+          "who": "unknown",
+          "text": "I corrected the register. I never found a suitable column for the rest.",
+          "source": "src/data/academic-society.js:547"
+        }
+      ],
+      "source": "src/data/academic-society.js:546"
+    },
+    "academicSocietyDialogue.portraits": {
+      "id": "academicSocietyDialogue.portraits",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.portraits.l0",
+          "who": "unknown",
+          "text": "Was it?",
+          "source": "src/data/academic-society.js:567"
+        },
+        {
+          "id": "academicSocietyDialogue.portraits.l1",
+          "who": "unknown",
+          "text": "It was a reliable income. Critics have founded schools on less.",
+          "source": "src/data/academic-society.js:568"
+        }
+      ],
+      "source": "src/data/academic-society.js:567"
+    },
+    "academicSocietyDialogue.lucien": {
+      "id": "academicSocietyDialogue.lucien",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.lucien.l0",
+          "who": "unknown",
+          "text": "I would settle for looking as if I knew where to put my hands.",
+          "source": "src/data/academic-society.js:572"
+        },
+        {
+          "id": "academicSocietyDialogue.lucien.l1",
+          "who": "unknown",
+          "text": "Everyone would. That is why portraitists can charge money.",
+          "source": "src/data/academic-society.js:573"
+        }
+      ],
+      "source": "src/data/academic-society.js:572"
+    },
+    "academicSocietyDialogue.unfinished": {
+      "id": "academicSocietyDialogue.unfinished",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.unfinished.l0",
+          "who": "unknown",
+          "text": "Then leave the mark out.",
+          "source": "src/data/academic-society.js:579"
+        },
+        {
+          "id": "academicSocietyDialogue.unfinished.l1",
+          "who": "unknown",
+          "text": "A devastatingly economical solution. You see why I keep him.",
+          "source": "src/data/academic-society.js:580"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.unfinished.c0",
+          "text": "how would you know the last line was right?",
+          "source": "src/data/academic-society.js:581",
+          "goto": "academicSocietyDialogue.lastline"
+        }
+      ],
+      "source": "src/data/academic-society.js:579"
+    },
+    "academicSocietyDialogue.lastline": {
+      "id": "academicSocietyDialogue.lastline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.lastline.l0",
+          "who": "unknown",
+          "text": "You could begin by not defending my ear.",
+          "source": "src/data/academic-society.js:585"
+        },
+        {
+          "id": "academicSocietyDialogue.lastline.l1",
+          "who": "unknown",
+          "text": "Your ear needs all the friends it can get.",
+          "source": "src/data/academic-society.js:586"
+        }
+      ],
+      "source": "src/data/academic-society.js:585"
+    },
+    "academicSocietyDialogue.reviews": {
+      "id": "academicSocietyDialogue.reviews",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.reviews.l0",
+          "who": "unknown",
+          "text": "And promising? Where did that leave the reader?",
+          "source": "src/data/academic-society.js:605"
+        },
+        {
+          "id": "academicSocietyDialogue.reviews.l1",
+          "who": "unknown",
+          "text": "With a reason to buy another ticket. You are welcome.",
+          "source": "src/data/academic-society.js:606"
+        }
+      ],
+      "choices": [
+        {
+          "id": "academicSocietyDialogue.reviews.c0",
+          "text": "which mattered more, being right or being read?",
+          "source": "src/data/academic-society.js:608",
+          "goto": "academicSocietyDialogue.verdict"
+        }
+      ],
+      "source": "src/data/academic-society.js:605"
+    },
+    "academicSocietyDialogue.verdict": {
+      "id": "academicSocietyDialogue.verdict",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.verdict.l0",
+          "who": "unknown",
+          "text": "You could begin with an evening nobody needs a verdict on.",
+          "source": "src/data/academic-society.js:611"
+        },
+        {
+          "id": "academicSocietyDialogue.verdict.l1",
+          "who": "unknown",
+          "text": "You make leisure sound like a rather exacting discipline.",
+          "source": "src/data/academic-society.js:612"
+        }
+      ],
+      "source": "src/data/academic-society.js:611"
+    },
+    "academicSocietyDialogue.listening": {
+      "id": "academicSocietyDialogue.listening",
+      "type": "line",
+      "lines": [
+        {
+          "id": "academicSocietyDialogue.listening.l0",
+          "who": "unknown",
+          "text": "You are welcome to join me.",
+          "source": "src/data/academic-society.js:624"
+        },
+        {
+          "id": "academicSocietyDialogue.listening.l1",
+          "who": "unknown",
+          "text": "I am. Very unevenly.",
+          "source": "src/data/academic-society.js:625"
+        }
+      ],
+      "source": "src/data/academic-society.js:624"
+    },
     "academicSocietyLoanLines": {
       "id": "academicSocietyLoanLines",
       "type": "line",
       "lines": [
         {
           "id": "academicSocietyLoanLines.l0",
+          "who": "direction",
+          "text": "Emile opens his mouth. The voice is yours. Your own mouth is shut.",
+          "source": "src/data/academic-society.js:646"
+        },
+        {
+          "id": "academicSocietyLoanLines.l1",
           "who": "me",
           "text": "There is no hurry.",
           "source": "src/data/academic-society.js:647"
         },
         {
-          "id": "academicSocietyLoanLines.l1",
+          "id": "academicSocietyLoanLines.l2",
+          "who": "unknown",
+          "text": "Listen to that. The room still knows what to do with a breath.",
+          "source": "src/data/academic-society.js:648"
+        },
+        {
+          "id": "academicSocietyLoanLines.l3",
           "who": "me",
           "text": "I should be here.",
           "source": "src/data/academic-society.js:650"
+        },
+        {
+          "id": "academicSocietyLoanLines.l4",
+          "who": "unknown",
+          "text": "That is not what he agreed to.",
+          "source": "src/data/academic-society.js:651"
         }
       ],
-      "source": "src/data/academic-society.js:647"
+      "source": "src/data/academic-society.js:646"
     }
   }
 }

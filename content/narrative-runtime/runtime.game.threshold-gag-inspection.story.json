@@ -4,22 +4,24 @@
   "title": "Runtime · game/threshold-gag-inspection.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "thresholdGagInspectFocus",
+  "entry": "thresholdGagInspectFocus.ellery-student-ghost-back",
   "entries": [
-    "thresholdGagInspectFocus"
+    "thresholdGagInspectFocus.ellery-student-ghost-back"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/threshold-gag-inspection.js",
   "notes": "Generated from src/game/threshold-gag-inspection.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "thresholdGagInspectFocus": {
-      "id": "thresholdGagInspectFocus",
+    "thresholdGagInspectFocus.ellery-student-ghost-back": {
+      "id": "thresholdGagInspectFocus.ellery-student-ghost-back",
       "type": "line",
       "lines": [
         {
-          "id": "thresholdGagInspectFocus.l0",
+          "id": "thresholdGagInspectFocus.ellery-student-ghost-back.l0",
           "who": "thought",
           "text": "{G.inscription.credit} — two signatures.",
           "source": "src/game/threshold-gag-inspection.js:29"

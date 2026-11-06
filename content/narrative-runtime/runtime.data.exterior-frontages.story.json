@@ -4,34 +4,36 @@
   "title": "Runtime · data/exterior-frontages.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "EXTERIOR_NEIGHBOURHOOD.notices",
+  "entry": "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure",
   "entries": [
-    "EXTERIOR_NEIGHBOURHOOD.notices"
+    "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/exterior-frontages.js",
   "notes": "Generated from src/data/exterior-frontages.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "EXTERIOR_NEIGHBOURHOOD.notices": {
-      "id": "EXTERIOR_NEIGHBOURHOOD.notices",
+    "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure": {
+      "id": "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure",
       "type": "line",
       "lines": [
         {
-          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l0",
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure.l0",
           "who": "thought",
           "text": "CLOSED EARLY",
           "source": "src/data/exterior-frontages.js:31"
         },
         {
-          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l1",
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure.l1",
           "who": "thought",
           "text": "FOR THE VIGIL",
           "source": "src/data/exterior-frontages.js:31"
         },
         {
-          "id": "EXTERIOR_NEIGHBOURHOOD.notices.l2",
+          "id": "EXTERIOR_NEIGHBOURHOOD.notices.neighbourhood-early-closure.l2",
           "who": "thought",
           "text": "BACK TOMORROW",
           "source": "src/data/exterior-frontages.js:31"

@@ -4,29 +4,2567 @@
   "title": "Runtime · data/source-rest-conversation.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "phaseOpenings.wrong-return.interruption",
+  "entry": "shared.who-asked",
   "entries": [
-    "phaseOpenings.wrong-return.interruption"
+    "shared.who-asked",
+    "shared.other-part",
+    "shared.not-name",
+    "shared.time",
+    "shared.hurry",
+    "shared.tired",
+    "shared.both",
+    "shared.pressure",
+    "shared.work",
+    "shared.resist",
+    "shared.craft",
+    "shared.why",
+    "shared.made",
+    "shared.passion",
+    "shared.alone",
+    "shared.people",
+    "shared.silence",
+    "shared.keep-listening",
+    "shared.stay",
+    "shared.one-more",
+    "shared.threshold",
+    "shared.last-question",
+    "shared.final-choice",
+    "phaseOpenings.wrong-return.arrival",
+    "phaseOpenings.wrong-return.first-choice",
+    "phaseOpenings.wrong-return.remember",
+    "phaseOpenings.wrong-return.hear",
+    "phaseOpenings.wrong-return.first-listen",
+    "phaseOpenings.wrong-return.interruption",
+    "phaseOpenings.wrong-return.after-interruption",
+    "phaseOpenings.wrong-return.ornaments",
+    "phaseOpenings.wrong-return.ornament-choice",
+    "phaseOpenings.wrong-return.change",
+    "phaseOpenings.wrong-return.keep",
+    "phaseOpenings.wrong-return.organ",
+    "phaseOpenings.wrong-return.mistakes",
+    "phaseOpenings.wrong-return.mistake-choice",
+    "phaseOpenings.wrong-return.wince",
+    "phaseOpenings.wrong-return.more",
+    "phaseOpenings.wrong-return.voice",
+    "phaseOpenings.wrong-return.caid",
+    "phaseOpenings.wrong-return.distance",
+    "phaseOpenings.wrong-return.distance-choice",
+    "phaseOpenings.wrong-return.teachers",
+    "phaseOpenings.wrong-return.strangers",
+    "phaseOpenings.wrong-return.pressure",
+    "phaseOpenings.wrong-return.pressure-choice",
+    "phaseOpenings.wrong-return.beautiful",
+    "phaseOpenings.wrong-return.hold",
+    "phaseOpenings.wrong-return.breakdown",
+    "phaseOpenings.wrong-return.return",
+    "phaseOpenings.wrong-return.last-choice",
+    "phaseOpenings.wrong-return.last-hear",
+    "phaseOpenings.wrong-return.last-again",
+    "phaseOpenings.wrong-return.last",
+    "phaseOpenings.catch.arrival",
+    "phaseOpenings.catch.phase-music",
+    "phaseOpenings.catch.couperin-touch",
+    "phaseOpenings.catch.couperin-ornament",
+    "namedDistance"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/source-rest-conversation.js",
   "notes": "Generated from src/data/source-rest-conversation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
+    "shared.who-asked": {
+      "id": "shared.who-asked",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.who-asked.l0",
+          "who": "you",
+          "text": "Who is talking?",
+          "source": "src/data/source-rest-conversation.js:20"
+        },
+        {
+          "id": "shared.who-asked.l1",
+          "who": "other",
+          "text": "I do not know which answer would make you get up.",
+          "source": "src/data/source-rest-conversation.js:21"
+        },
+        {
+          "id": "shared.who-asked.l2",
+          "who": "you",
+          "text": "That is not an answer.",
+          "source": "src/data/source-rest-conversation.js:22"
+        },
+        {
+          "id": "shared.who-asked.l3",
+          "who": "other",
+          "text": "No. It is the reason I hesitated.",
+          "source": "src/data/source-rest-conversation.js:23"
+        },
+        {
+          "id": "shared.who-asked.l4",
+          "who": "other",
+          "text": "Call me the other part. The one that hears you reach the end of a sentence and waits to see what you will do with the silence.",
+          "source": "src/data/source-rest-conversation.js:24"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.who-asked.c0",
+          "text": "The other part of what?",
+          "source": "src/data/source-rest-conversation.js:25",
+          "choiceId": "other-part",
+          "goto": "shared.other-part"
+        },
+        {
+          "id": "shared.who-asked.c1",
+          "text": "I do not need a name.",
+          "source": "src/data/source-rest-conversation.js:25",
+          "choiceId": "not-name",
+          "goto": "shared.not-name"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:20"
+    },
+    "shared.other-part": {
+      "id": "shared.other-part",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.other-part.l0",
+          "who": "you",
+          "text": "The other part of what?",
+          "source": "src/data/source-rest-conversation.js:27"
+        },
+        {
+          "id": "shared.other-part.l1",
+          "who": "other",
+          "text": "A conversation. A piece of music. A person, perhaps, although I would not stake your life on that last one.",
+          "source": "src/data/source-rest-conversation.js:28"
+        },
+        {
+          "id": "shared.other-part.l2",
+          "who": "you",
+          "text": "Convenient.",
+          "source": "src/data/source-rest-conversation.js:29"
+        },
+        {
+          "id": "shared.other-part.l3",
+          "who": "other",
+          "text": "Enormously. It saves me having to pretend I know you.",
+          "source": "src/data/source-rest-conversation.js:30"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.other-part.c0",
+          "text": "Then listen with me.",
+          "source": "src/data/source-rest-conversation.js:31",
+          "choiceId": "listen",
+          "targetName": "phase-music"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:27"
+    },
+    "shared.not-name": {
+      "id": "shared.not-name",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.not-name.l0",
+          "who": "you",
+          "text": "I do not need a name.",
+          "source": "src/data/source-rest-conversation.js:33"
+        },
+        {
+          "id": "shared.not-name.l1",
+          "who": "other",
+          "text": "Good. Names have a way of making a thing seem safely finished.",
+          "source": "src/data/source-rest-conversation.js:34"
+        },
+        {
+          "id": "shared.not-name.l2",
+          "who": "other",
+          "text": "We have a little while before either of us has to decide what this is.",
+          "source": "src/data/source-rest-conversation.js:35"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.not-name.c0",
+          "text": "Listen with me.",
+          "source": "src/data/source-rest-conversation.js:36",
+          "choiceId": "listen",
+          "targetName": "phase-music"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:33"
+    },
+    "shared.time": {
+      "id": "shared.time",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.time.l0",
+          "who": "you",
+          "text": "There is something I am supposed to be doing.",
+          "source": "src/data/source-rest-conversation.js:38"
+        },
+        {
+          "id": "shared.time.l1",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-conversation.js:39"
+        },
+        {
+          "id": "shared.time.l2",
+          "who": "you",
+          "text": "You could have said no.",
+          "source": "src/data/source-rest-conversation.js:40"
+        },
+        {
+          "id": "shared.time.l3",
+          "who": "other",
+          "text": "You would have known I was lying. There is always something waiting outside a piece of music.",
+          "source": "src/data/source-rest-conversation.js:41"
+        },
+        {
+          "id": "shared.time.l4",
+          "who": "other",
+          "text": "Sometimes it is a person. Sometimes it is a bill. Sometimes it is only the terrible feeling that if you stop, you will never start again.",
+          "source": "src/data/source-rest-conversation.js:42"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.time.c0",
+          "text": "I cannot bear wasting time.",
+          "source": "src/data/source-rest-conversation.js:43",
+          "choiceId": "hurry",
+          "goto": "shared.hurry"
+        },
+        {
+          "id": "shared.time.c1",
+          "text": "I am tired of being hurried.",
+          "source": "src/data/source-rest-conversation.js:43",
+          "choiceId": "tired",
+          "goto": "shared.tired"
+        },
+        {
+          "id": "shared.time.c2",
+          "text": "Both are true.",
+          "source": "src/data/source-rest-conversation.js:43",
+          "choiceId": "both",
+          "goto": "shared.both"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:38"
+    },
+    "shared.hurry": {
+      "id": "shared.hurry",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.hurry.l0",
+          "who": "you",
+          "text": "I cannot bear wasting time.",
+          "source": "src/data/source-rest-conversation.js:45"
+        },
+        {
+          "id": "shared.hurry.l1",
+          "who": "other",
+          "text": "I know the feeling you mean. Not yours in particular. The shape of it.",
+          "source": "src/data/source-rest-conversation.js:46"
+        },
+        {
+          "id": "shared.hurry.l2",
+          "who": "other",
+          "text": "A day closes and you count what is missing. You make the next day narrower so less can escape.",
+          "source": "src/data/source-rest-conversation.js:47"
+        },
+        {
+          "id": "shared.hurry.l3",
+          "who": "you",
+          "text": "And then?",
+          "source": "src/data/source-rest-conversation.js:48"
+        },
+        {
+          "id": "shared.hurry.l4",
+          "who": "other",
+          "text": "You discover that a narrow day is very good at keeping things out.",
+          "source": "src/data/source-rest-conversation.js:49"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.hurry.c0",
+          "text": "What do you do with that?",
+          "source": "src/data/source-rest-conversation.js:50",
+          "choiceId": "pressure",
+          "goto": "shared.pressure"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:45"
+    },
+    "shared.tired": {
+      "id": "shared.tired",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.tired.l0",
+          "who": "you",
+          "text": "I am tired of being hurried.",
+          "source": "src/data/source-rest-conversation.js:52"
+        },
+        {
+          "id": "shared.tired.l1",
+          "who": "other",
+          "text": "Then do not let me hurry you into rest, either.",
+          "source": "src/data/source-rest-conversation.js:53"
+        },
+        {
+          "id": "shared.tired.l2",
+          "who": "you",
+          "text": "That sounds like a trick.",
+          "source": "src/data/source-rest-conversation.js:54"
+        },
+        {
+          "id": "shared.tired.l3",
+          "who": "other",
+          "text": "It might be. A hand on your shoulder can guide you or hold you down. You have to be allowed to turn around and see which.",
+          "source": "src/data/source-rest-conversation.js:55"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.tired.c0",
+          "text": "I am turning around.",
+          "source": "src/data/source-rest-conversation.js:56",
+          "choiceId": "pressure",
+          "goto": "shared.pressure"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:52"
+    },
+    "shared.both": {
+      "id": "shared.both",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.both.l0",
+          "who": "you",
+          "text": "Both are true.",
+          "source": "src/data/source-rest-conversation.js:58"
+        },
+        {
+          "id": "shared.both.l1",
+          "who": "other",
+          "text": "Then they can sit on the same bench. They need not be made to shake hands.",
+          "source": "src/data/source-rest-conversation.js:59"
+        },
+        {
+          "id": "shared.both.l2",
+          "who": "other",
+          "text": "Wanting the work to matter and wanting an end to the pressure are not enemies. They just speak over each other when they are frightened.",
+          "source": "src/data/source-rest-conversation.js:60"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.both.c0",
+          "text": "And if they never stop?",
+          "source": "src/data/source-rest-conversation.js:61",
+          "choiceId": "pressure",
+          "goto": "shared.pressure"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:58"
+    },
+    "shared.pressure": {
+      "id": "shared.pressure",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.pressure.l0",
+          "who": "other",
+          "text": "I used to think pressure was evidence of love. The harder the weight, the more the thing beneath it must matter.",
+          "source": "src/data/source-rest-conversation.js:63"
+        },
+        {
+          "id": "shared.pressure.l1",
+          "who": "you",
+          "text": "Is it not?",
+          "source": "src/data/source-rest-conversation.js:64"
+        },
+        {
+          "id": "shared.pressure.l2",
+          "who": "other",
+          "text": "Sometimes. But a thumb can hold a page open or tear a hole in it. The paper cannot tell you which by the weight alone.",
+          "source": "src/data/source-rest-conversation.js:65"
+        },
+        {
+          "id": "shared.pressure.l3",
+          "who": "you",
+          "text": "So I put the work down?",
+          "source": "src/data/source-rest-conversation.js:66"
+        },
+        {
+          "id": "shared.pressure.l4",
+          "who": "other",
+          "text": "I do not know. Put the weight down for one breath. See if the work is still there when you pick it up.",
+          "source": "src/data/source-rest-conversation.js:67"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.pressure.c0",
+          "text": "It might not be.",
+          "source": "src/data/source-rest-conversation.js:68",
+          "choiceId": "work",
+          "goto": "shared.work"
+        },
+        {
+          "id": "shared.pressure.c1",
+          "text": "You make it sound easy.",
+          "source": "src/data/source-rest-conversation.js:68",
+          "choiceId": "resist",
+          "goto": "shared.resist"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:63"
+    },
+    "shared.work": {
+      "id": "shared.work",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.work.l0",
+          "who": "you",
+          "text": "It might not be there.",
+          "source": "src/data/source-rest-conversation.js:70"
+        },
+        {
+          "id": "shared.work.l1",
+          "who": "other",
+          "text": "No. Some things leave while we are resting.",
+          "source": "src/data/source-rest-conversation.js:71"
+        },
+        {
+          "id": "shared.work.l2",
+          "who": "other",
+          "text": "That is the terrible part of time. The answer cannot be that you must never rest; time takes things from the sleepless too.",
+          "source": "src/data/source-rest-conversation.js:72"
+        },
+        {
+          "id": "shared.work.l3",
+          "who": "you",
+          "text": "You are very calm about it.",
+          "source": "src/data/source-rest-conversation.js:73"
+        },
+        {
+          "id": "shared.work.l4",
+          "who": "other",
+          "text": "I have had a great deal of practice sounding calm.",
+          "source": "src/data/source-rest-conversation.js:74"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.work.c0",
+          "text": "Tell me about the music.",
+          "source": "src/data/source-rest-conversation.js:75",
+          "choiceId": "craft",
+          "goto": "shared.craft"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:70"
+    },
+    "shared.resist": {
+      "id": "shared.resist",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.resist.l0",
+          "who": "you",
+          "text": "You make it sound easy.",
+          "source": "src/data/source-rest-conversation.js:77"
+        },
+        {
+          "id": "shared.resist.l1",
+          "who": "other",
+          "text": "I am sorry. I have made a sentence where you have to make a life.",
+          "source": "src/data/source-rest-conversation.js:78"
+        },
+        {
+          "id": "shared.resist.l2",
+          "who": "other",
+          "text": "They are different materials. A sentence can end where I want it to. A life keeps bringing in weather.",
+          "source": "src/data/source-rest-conversation.js:79"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.resist.c0",
+          "text": "Tell me about the music.",
+          "source": "src/data/source-rest-conversation.js:80",
+          "choiceId": "craft",
+          "goto": "shared.craft"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:77"
+    },
+    "shared.craft": {
+      "id": "shared.craft",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.craft.l0",
+          "who": "other",
+          "text": "Listen to the way one sound gives another a place to land.",
+          "source": "src/data/source-rest-conversation.js:82"
+        },
+        {
+          "id": "shared.craft.l1",
+          "who": "other",
+          "text": "Not because it is weaker. Because a line held alone forever would stop being a line. It would become the air.",
+          "source": "src/data/source-rest-conversation.js:83"
+        },
+        {
+          "id": "shared.craft.l2",
+          "who": "you",
+          "text": "And the next sound needs the one before it.",
+          "source": "src/data/source-rest-conversation.js:84"
+        },
+        {
+          "id": "shared.craft.l3",
+          "who": "other",
+          "text": "Yes. Even when it answers by going somewhere the first one would never have gone.",
+          "source": "src/data/source-rest-conversation.js:85"
+        },
+        {
+          "id": "shared.craft.l4",
+          "who": "other",
+          "text": "I like that it is built. Someone made choices small enough that you can miss every one of them and still be moved by the result.",
+          "source": "src/data/source-rest-conversation.js:86"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.craft.c0",
+          "text": "Why make anything that takes so much?",
+          "source": "src/data/source-rest-conversation.js:87",
+          "choiceId": "why",
+          "goto": "shared.why"
+        },
+        {
+          "id": "shared.craft.c1",
+          "text": "I want to make something like that.",
+          "source": "src/data/source-rest-conversation.js:87",
+          "choiceId": "made",
+          "goto": "shared.made"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:82"
+    },
+    "shared.why": {
+      "id": "shared.why",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.why.l0",
+          "who": "you",
+          "text": "Why make anything that takes so much?",
+          "source": "src/data/source-rest-conversation.js:89"
+        },
+        {
+          "id": "shared.why.l1",
+          "who": "other",
+          "text": "Because for a few moments the choices can hold more than the person who made them could hold alone.",
+          "source": "src/data/source-rest-conversation.js:90"
+        },
+        {
+          "id": "shared.why.l2",
+          "who": "you",
+          "text": "That sounds like a reason to make more.",
+          "source": "src/data/source-rest-conversation.js:91"
+        },
+        {
+          "id": "shared.why.l3",
+          "who": "other",
+          "text": "It could be. It is not a command. A beautiful thing is not a debt collector.",
+          "source": "src/data/source-rest-conversation.js:92"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.why.c0",
+          "text": "What about passion?",
+          "source": "src/data/source-rest-conversation.js:93",
+          "choiceId": "passion",
+          "goto": "shared.passion"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:89"
+    },
+    "shared.made": {
+      "id": "shared.made",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.made.l0",
+          "who": "you",
+          "text": "I want to make something like that.",
+          "source": "src/data/source-rest-conversation.js:95"
+        },
+        {
+          "id": "shared.made.l1",
+          "who": "other",
+          "text": "Then I hope you do. Not this. Not a replica of the feeling we are having in this room.",
+          "source": "src/data/source-rest-conversation.js:96"
+        },
+        {
+          "id": "shared.made.l2",
+          "who": "other",
+          "text": "Something with the particular difficulty that would only have occurred to you. Something another person can enter without knowing how it was made.",
+          "source": "src/data/source-rest-conversation.js:97"
+        },
+        {
+          "id": "shared.made.l3",
+          "who": "you",
+          "text": "What if it is not good enough?",
+          "source": "src/data/source-rest-conversation.js:98"
+        },
+        {
+          "id": "shared.made.l4",
+          "who": "other",
+          "text": "It will not be, at first. That is not a prophecy of failure. It is how a first attempt makes room for a second.",
+          "source": "src/data/source-rest-conversation.js:99"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.made.c0",
+          "text": "What about passion?",
+          "source": "src/data/source-rest-conversation.js:100",
+          "choiceId": "passion",
+          "goto": "shared.passion"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:95"
+    },
+    "shared.passion": {
+      "id": "shared.passion",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.passion.l0",
+          "who": "other",
+          "text": "Passion is not the same as being unable to stop.",
+          "source": "src/data/source-rest-conversation.js:102"
+        },
+        {
+          "id": "shared.passion.l1",
+          "who": "you",
+          "text": "It feels very similar from inside.",
+          "source": "src/data/source-rest-conversation.js:103"
+        },
+        {
+          "id": "shared.passion.l2",
+          "who": "other",
+          "text": "I know. But one of them can let you sleep and still be there in the morning.",
+          "source": "src/data/source-rest-conversation.js:104"
+        },
+        {
+          "id": "shared.passion.l3",
+          "who": "other",
+          "text": "The other stands at the bed counting what you failed to finish.",
+          "source": "src/data/source-rest-conversation.js:105"
+        },
+        {
+          "id": "shared.passion.l4",
+          "who": "you",
+          "text": "You cannot always tell them apart.",
+          "source": "src/data/source-rest-conversation.js:106"
+        },
+        {
+          "id": "shared.passion.l5",
+          "who": "other",
+          "text": "No. I do not think there is a clean test. I think there are people who can help you tell, if you let them close enough to see.",
+          "source": "src/data/source-rest-conversation.js:107"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.passion.c0",
+          "text": "There is nobody here.",
+          "source": "src/data/source-rest-conversation.js:108",
+          "choiceId": "alone",
+          "goto": "shared.alone"
+        },
+        {
+          "id": "shared.passion.c1",
+          "text": "What if I cannot reach them?",
+          "source": "src/data/source-rest-conversation.js:108",
+          "choiceId": "people",
+          "goto": "shared.people"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:102"
+    },
+    "shared.alone": {
+      "id": "shared.alone",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.alone.l0",
+          "who": "you",
+          "text": "There is nobody here.",
+          "source": "src/data/source-rest-conversation.js:110"
+        },
+        {
+          "id": "shared.alone.l1",
+          "who": "other",
+          "text": "Here is an unusually bad place to take a census.",
+          "source": "src/data/source-rest-conversation.js:111"
+        },
+        {
+          "id": "shared.alone.l2",
+          "who": "you",
+          "text": "You are avoiding the question.",
+          "source": "src/data/source-rest-conversation.js:112"
+        },
+        {
+          "id": "shared.alone.l3",
+          "who": "other",
+          "text": "Yes. I cannot give you a person. I can give you the time to remember that this room is not the whole world.",
+          "source": "src/data/source-rest-conversation.js:113"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.alone.c0",
+          "text": "Let us be quiet.",
+          "source": "src/data/source-rest-conversation.js:114",
+          "choiceId": "silence",
+          "goto": "shared.silence"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:110"
+    },
+    "shared.people": {
+      "id": "shared.people",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.people.l0",
+          "who": "you",
+          "text": "What if I cannot reach them?",
+          "source": "src/data/source-rest-conversation.js:116"
+        },
+        {
+          "id": "shared.people.l1",
+          "who": "other",
+          "text": "Then the distance hurts. I will not call it a lesson or a gift.",
+          "source": "src/data/source-rest-conversation.js:117"
+        },
+        {
+          "id": "shared.people.l2",
+          "who": "other",
+          "text": "There may be a way back to them that neither of us can see from this seat. That is not a promise. It is a reason to keep the question open.",
+          "source": "src/data/source-rest-conversation.js:118"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.people.c0",
+          "text": "Let us be quiet.",
+          "source": "src/data/source-rest-conversation.js:119",
+          "choiceId": "silence",
+          "goto": "shared.silence"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:116"
+    },
+    "shared.silence": {
+      "id": "shared.silence",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.silence.l0",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-conversation.js:121"
+        },
+        {
+          "id": "shared.silence.l1",
+          "who": "other",
+          "text": "There. Do you hear the small space before it comes round again?",
+          "source": "src/data/source-rest-conversation.js:122"
+        },
+        {
+          "id": "shared.silence.l2",
+          "who": "you",
+          "text": "I thought I had imagined it.",
+          "source": "src/data/source-rest-conversation.js:123"
+        },
+        {
+          "id": "shared.silence.l3",
+          "who": "other",
+          "text": "Perhaps you did. We can keep it anyway.",
+          "source": "src/data/source-rest-conversation.js:124"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.silence.c0",
+          "text": "I could stay here.",
+          "source": "src/data/source-rest-conversation.js:125",
+          "choiceId": "stay",
+          "goto": "shared.stay"
+        },
+        {
+          "id": "shared.silence.c1",
+          "text": "I want to keep listening.",
+          "source": "src/data/source-rest-conversation.js:125",
+          "choiceId": "keep",
+          "goto": "shared.keep-listening"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:121"
+    },
+    "shared.keep-listening": {
+      "id": "shared.keep-listening",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.keep-listening.l0",
+          "who": "you",
+          "text": "I want to keep listening.",
+          "source": "src/data/source-rest-conversation.js:127"
+        },
+        {
+          "id": "shared.keep-listening.l1",
+          "who": "other",
+          "text": "Then listen. You do not owe me an answer at the end of the phrase.",
+          "source": "src/data/source-rest-conversation.js:128"
+        },
+        {
+          "id": "shared.keep-listening.l2",
+          "who": "other",
+          "text": "The hands that played it are not in this room. The sound has travelled all this way without them and still manages to sound like hands.",
+          "source": "src/data/source-rest-conversation.js:129"
+        },
+        {
+          "id": "shared.keep-listening.l3",
+          "who": "you",
+          "text": "That is a kind of company.",
+          "source": "src/data/source-rest-conversation.js:130"
+        },
+        {
+          "id": "shared.keep-listening.l4",
+          "who": "other",
+          "text": "Yes. Not the kind that can open a door for you. But company.",
+          "source": "src/data/source-rest-conversation.js:131"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.keep-listening.c0",
+          "text": "I could stay here.",
+          "source": "src/data/source-rest-conversation.js:132",
+          "choiceId": "stay",
+          "goto": "shared.stay"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:127"
+    },
+    "shared.stay": {
+      "id": "shared.stay",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.stay.l0",
+          "who": "you",
+          "text": "I could stay here.",
+          "source": "src/data/source-rest-conversation.js:134"
+        },
+        {
+          "id": "shared.stay.l1",
+          "who": "other",
+          "text": "You could. That is what this place is offering.",
+          "source": "src/data/source-rest-conversation.js:135"
+        },
+        {
+          "id": "shared.stay.l2",
+          "who": "other",
+          "text": "You should know the price before you mistake the offer for kindness.",
+          "source": "src/data/source-rest-conversation.js:136"
+        },
+        {
+          "id": "shared.stay.l3",
+          "who": "other",
+          "text": "Your body is dying. If you remain here and let go, this run ends. There will be no waking up farther along the corridor.",
+          "source": "src/data/source-rest-conversation.js:137"
+        },
+        {
+          "id": "shared.stay.l4",
+          "who": "you",
+          "text": "And this place?",
+          "source": "src/data/source-rest-conversation.js:138"
+        },
+        {
+          "id": "shared.stay.l5",
+          "who": "other",
+          "text": "Perhaps it is what a dying mind has made around the music. Perhaps the music is what found you there. I cannot prove which.",
+          "source": "src/data/source-rest-conversation.js:139"
+        },
+        {
+          "id": "shared.stay.l6",
+          "who": "other",
+          "text": "You can still stand up. I will not call you a coward for going.",
+          "source": "src/data/source-rest-conversation.js:140"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.stay.c0",
+          "text": "I am not ready. Tell me one more thing.",
+          "source": "src/data/source-rest-conversation.js:141",
+          "choiceId": "not-ready",
+          "goto": "shared.one-more"
+        },
+        {
+          "id": "shared.stay.c1",
+          "text": "I understand.",
+          "source": "src/data/source-rest-conversation.js:141",
+          "choiceId": "understand",
+          "goto": "shared.threshold"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:134"
+    },
+    "shared.one-more": {
+      "id": "shared.one-more",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.one-more.l0",
+          "who": "you",
+          "text": "Tell me one more thing.",
+          "source": "src/data/source-rest-conversation.js:143"
+        },
+        {
+          "id": "shared.one-more.l1",
+          "who": "other",
+          "text": "You do not have to make the ending beautiful for it to have mattered.",
+          "source": "src/data/source-rest-conversation.js:144"
+        },
+        {
+          "id": "shared.one-more.l2",
+          "who": "other",
+          "text": "The unfinished thing mattered while you were making it. The people you failed to keep still had the hours you gave them. Nothing has to be completed here to prove that it was real.",
+          "source": "src/data/source-rest-conversation.js:145"
+        },
+        {
+          "id": "shared.one-more.l3",
+          "who": "you",
+          "text": "You are asking me to leave.",
+          "source": "src/data/source-rest-conversation.js:146"
+        },
+        {
+          "id": "shared.one-more.l4",
+          "who": "other",
+          "text": "I am asking you to know that you can. I would rather you were angry with me than find out too late.",
+          "source": "src/data/source-rest-conversation.js:147"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.one-more.c0",
+          "text": "I understand.",
+          "source": "src/data/source-rest-conversation.js:148",
+          "choiceId": "understand",
+          "goto": "shared.threshold"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:143"
+    },
+    "shared.threshold": {
+      "id": "shared.threshold",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.threshold.l0",
+          "who": "other",
+          "text": "The music will go on either way, for as long as there is somewhere for it to go.",
+          "source": "src/data/source-rest-conversation.js:150"
+        },
+        {
+          "id": "shared.threshold.l1",
+          "who": "you",
+          "text": "And if I stay?",
+          "source": "src/data/source-rest-conversation.js:151"
+        },
+        {
+          "id": "shared.threshold.l2",
+          "who": "other",
+          "text": "You die here. The run ends. There is no other task behind this one.",
+          "source": "src/data/source-rest-conversation.js:152"
+        },
+        {
+          "id": "shared.threshold.l3",
+          "who": "other",
+          "text": "I will be quiet while you decide.",
+          "source": "src/data/source-rest-conversation.js:153"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.threshold.c0",
+          "text": "Wait. One last question.",
+          "source": "src/data/source-rest-conversation.js:154",
+          "choiceId": "last-question",
+          "goto": "shared.last-question"
+        },
+        {
+          "id": "shared.threshold.c1",
+          "text": "I know the cost.",
+          "source": "src/data/source-rest-conversation.js:154",
+          "choiceId": "choose",
+          "goto": "shared.final-choice"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:150"
+    },
+    "shared.last-question": {
+      "id": "shared.last-question",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "shared.last-question.l0",
+          "who": "you",
+          "text": "Was it worth listening?",
+          "source": "src/data/source-rest-conversation.js:156"
+        },
+        {
+          "id": "shared.last-question.l1",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-conversation.js:157"
+        },
+        {
+          "id": "shared.last-question.l2",
+          "who": "other",
+          "text": "That answer does not tell you what to do next. A thing can be worth listening to and still have an end.",
+          "source": "src/data/source-rest-conversation.js:158"
+        },
+        {
+          "id": "shared.last-question.l3",
+          "who": "other",
+          "text": "I hope you heard the part you needed. If you did not, it was not your fault.",
+          "source": "src/data/source-rest-conversation.js:159"
+        }
+      ],
+      "choices": [
+        {
+          "id": "shared.last-question.c0",
+          "text": "I know the cost.",
+          "source": "src/data/source-rest-conversation.js:160",
+          "choiceId": "choose",
+          "goto": "shared.final-choice"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:156"
+    },
+    "shared.final-choice": {
+      "id": "shared.final-choice",
+      "type": "line",
+      "lines": [
+        {
+          "id": "shared.final-choice.l0",
+          "who": "other",
+          "text": "The bench holds your weight. The room gives you back the next phrase.",
+          "source": "src/data/source-rest-conversation.js:163"
+        },
+        {
+          "id": "shared.final-choice.l1",
+          "who": "other",
+          "text": "There is still time to stand.",
+          "source": "src/data/source-rest-conversation.js:164"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:163"
+    },
+    "phaseOpenings.wrong-return.arrival": {
+      "id": "phaseOpenings.wrong-return.arrival",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.arrival.l0",
+          "who": "you",
+          "text": "Have you been waiting?",
+          "source": "src/data/source-rest-conversation.js:177"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.arrival.l1",
+          "who": "other",
+          "text": "Listening. I thought you might find your way here.",
+          "source": "src/data/source-rest-conversation.js:178"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.arrival.l2",
+          "who": "you",
+          "text": "You could have started without me.",
+          "source": "src/data/source-rest-conversation.js:179"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.arrival.l3",
+          "who": "other",
+          "text": "I did. You are just in time for the next bit.",
+          "source": "src/data/source-rest-conversation.js:180"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:177"
+    },
+    "phaseOpenings.wrong-return.first-choice": {
+      "id": "phaseOpenings.wrong-return.first-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.first-choice.l0",
+          "who": "you",
+          "text": "That is mine, is it not?",
+          "source": "src/data/source-rest-conversation.js:183"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.first-choice.l1",
+          "who": "other",
+          "text": "You tell me.",
+          "source": "src/data/source-rest-conversation.js:184"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.first-choice.c0",
+          "text": "I remember making it.",
+          "source": "src/data/source-rest-conversation.js:185",
+          "choiceId": "remember",
+          "goto": "phaseOpenings.wrong-return.remember"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.first-choice.c1",
+          "text": "Let me hear it.",
+          "source": "src/data/source-rest-conversation.js:185",
+          "choiceId": "quiet",
+          "goto": "phaseOpenings.wrong-return.hear"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:183"
+    },
+    "phaseOpenings.wrong-return.remember": {
+      "id": "phaseOpenings.wrong-return.remember",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.remember.l0",
+          "who": "you",
+          "text": "I remember making it.",
+          "source": "src/data/source-rest-conversation.js:187"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.remember.l1",
+          "who": "other",
+          "text": "What do you remember first?",
+          "source": "src/data/source-rest-conversation.js:188"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.remember.l2",
+          "who": "you",
+          "text": "How long the room kept sounding after I stopped.",
+          "source": "src/data/source-rest-conversation.js:189"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.remember.l3",
+          "who": "other",
+          "text": "I can hear it as well.",
+          "source": "src/data/source-rest-conversation.js:190"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:187"
+    },
+    "phaseOpenings.wrong-return.hear": {
+      "id": "phaseOpenings.wrong-return.hear",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.hear.l0",
+          "who": "you",
+          "text": "Let me hear it.",
+          "source": "src/data/source-rest-conversation.js:193"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hear.l1",
+          "who": "other",
+          "text": "All right. I will be quiet.",
+          "source": "src/data/source-rest-conversation.js:194"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hear.l2",
+          "who": "you",
+          "text": "For how long?",
+          "source": "src/data/source-rest-conversation.js:195"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hear.l3",
+          "who": "other",
+          "text": "Let us not make promises.",
+          "source": "src/data/source-rest-conversation.js:196"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:193"
+    },
+    "phaseOpenings.wrong-return.first-listen": {
+      "id": "phaseOpenings.wrong-return.first-listen",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.first-listen.l0",
+          "who": "other",
+          "text": "There. Can you hear it after the mallet leaves?",
+          "source": "src/data/source-rest-conversation.js:199"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.first-listen.l1",
+          "who": "you",
+          "text": "It is still moving around the room.",
+          "source": "src/data/source-rest-conversation.js:200"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.first-listen.l2",
+          "who": "other",
+          "text": "I like the part after you have stopped playing.",
+          "source": "src/data/source-rest-conversation.js:201"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:199"
+    },
     "phaseOpenings.wrong-return.interruption": {
       "id": "phaseOpenings.wrong-return.interruption",
       "type": "choice",
-      "lines": [],
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.interruption.l0",
+          "who": "you",
+          "text": "What was that?",
+          "source": "src/data/source-rest-conversation.js:204"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.interruption.l1",
+          "who": "other",
+          "text": "I heard it too.",
+          "source": "src/data/source-rest-conversation.js:205"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.interruption.l2",
+          "who": "you",
+          "text": "It was close.",
+          "source": "src/data/source-rest-conversation.js:206"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.interruption.l3",
+          "who": "other",
+          "text": "Wait. It may pass.",
+          "source": "src/data/source-rest-conversation.js:207"
+        }
+      ],
       "choices": [
         {
           "id": "phaseOpenings.wrong-return.interruption.c0",
           "text": "Get up.",
           "source": "src/data/source-rest-conversation.js:208",
           "choiceId": "rise"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.interruption.c1",
+          "text": "Let it pass.",
+          "source": "src/data/source-rest-conversation.js:208",
+          "choiceId": "stay",
+          "goto": "phaseOpenings.wrong-return.after-interruption"
         }
       ],
-      "source": "src/data/source-rest-conversation.js:208"
+      "source": "src/data/source-rest-conversation.js:204"
+    },
+    "phaseOpenings.wrong-return.after-interruption": {
+      "id": "phaseOpenings.wrong-return.after-interruption",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l0",
+          "who": "you",
+          "text": "For a moment I was back in the car.",
+          "source": "src/data/source-rest-conversation.js:210"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l1",
+          "who": "other",
+          "text": "What did you see?",
+          "source": "src/data/source-rest-conversation.js:211"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l2",
+          "who": "you",
+          "text": "The back of another car. Much too close.",
+          "source": "src/data/source-rest-conversation.js:212"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l3",
+          "who": "other",
+          "text": "And now?",
+          "source": "src/data/source-rest-conversation.js:213"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l4",
+          "who": "you",
+          "text": "The road is gone.",
+          "source": "src/data/source-rest-conversation.js:214"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.after-interruption.l5",
+          "who": "other",
+          "text": "The music is still here.",
+          "source": "src/data/source-rest-conversation.js:215"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:210"
+    },
+    "phaseOpenings.wrong-return.ornaments": {
+      "id": "phaseOpenings.wrong-return.ornaments",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l0",
+          "who": "you",
+          "text": "I had to defend those ornaments to my professors.",
+          "source": "src/data/source-rest-conversation.js:218"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l1",
+          "who": "other",
+          "text": "Every one?",
+          "source": "src/data/source-rest-conversation.js:219"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l2",
+          "who": "you",
+          "text": "It felt like every one.",
+          "source": "src/data/source-rest-conversation.js:220"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l3",
+          "who": "other",
+          "text": "I would have liked to hear your case.",
+          "source": "src/data/source-rest-conversation.js:221"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l4",
+          "who": "you",
+          "text": "I wanted the little turn to belong there. Not to sound put on afterwards.",
+          "source": "src/data/source-rest-conversation.js:222"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l5",
+          "who": "other",
+          "text": "And then you had to play the thing you had argued for.",
+          "source": "src/data/source-rest-conversation.js:223"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornaments.l6",
+          "who": "you",
+          "text": "That was the difficult part.",
+          "source": "src/data/source-rest-conversation.js:224"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:218"
+    },
+    "phaseOpenings.wrong-return.ornament-choice": {
+      "id": "phaseOpenings.wrong-return.ornament-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.ornament-choice.l0",
+          "who": "other",
+          "text": "Would you change them now?",
+          "source": "src/data/source-rest-conversation.js:227"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.ornament-choice.c0",
+          "text": "Some of them.",
+          "source": "src/data/source-rest-conversation.js:228",
+          "choiceId": "change",
+          "goto": "phaseOpenings.wrong-return.change"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.ornament-choice.c1",
+          "text": "I would keep them.",
+          "source": "src/data/source-rest-conversation.js:228",
+          "choiceId": "keep",
+          "goto": "phaseOpenings.wrong-return.keep"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:227"
+    },
+    "phaseOpenings.wrong-return.change": {
+      "id": "phaseOpenings.wrong-return.change",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.change.l0",
+          "who": "you",
+          "text": "Some of them.",
+          "source": "src/data/source-rest-conversation.js:230"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.change.l1",
+          "who": "other",
+          "text": "Already? I was rather fond of them.",
+          "source": "src/data/source-rest-conversation.js:231"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.change.l2",
+          "who": "you",
+          "text": "I would have to sit down with it again.",
+          "source": "src/data/source-rest-conversation.js:232"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.change.l3",
+          "who": "other",
+          "text": "You say that like a sentence.",
+          "source": "src/data/source-rest-conversation.js:233"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.change.l4",
+          "who": "you",
+          "text": "It depends on the day.",
+          "source": "src/data/source-rest-conversation.js:234"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:230"
+    },
+    "phaseOpenings.wrong-return.keep": {
+      "id": "phaseOpenings.wrong-return.keep",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.keep.l0",
+          "who": "you",
+          "text": "I would keep them.",
+          "source": "src/data/source-rest-conversation.js:237"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.keep.l1",
+          "who": "other",
+          "text": "All right. I withdraw my objection.",
+          "source": "src/data/source-rest-conversation.js:238"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.keep.l2",
+          "who": "you",
+          "text": "You had an objection?",
+          "source": "src/data/source-rest-conversation.js:239"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.keep.l3",
+          "who": "other",
+          "text": "I was going to make one up, but you look ready to argue again.",
+          "source": "src/data/source-rest-conversation.js:240"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:237"
+    },
+    "phaseOpenings.wrong-return.organ": {
+      "id": "phaseOpenings.wrong-return.organ",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.organ.l0",
+          "who": "you",
+          "text": "I went looking at what organists did with Bach.",
+          "source": "src/data/source-rest-conversation.js:243"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l1",
+          "who": "other",
+          "text": "For a piece he wrote for a violin?",
+          "source": "src/data/source-rest-conversation.js:244"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l2",
+          "who": "you",
+          "text": "I wanted to know if it could have been written for something else.",
+          "source": "src/data/source-rest-conversation.js:245"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l3",
+          "who": "other",
+          "text": "Do you think he would have approved?",
+          "source": "src/data/source-rest-conversation.js:246"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l4",
+          "who": "you",
+          "text": "I think he could be very particular about a note, and still let the music change instruments.",
+          "source": "src/data/source-rest-conversation.js:247"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l5",
+          "who": "other",
+          "text": "Convenient for your marimba.",
+          "source": "src/data/source-rest-conversation.js:248"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.organ.l6",
+          "who": "you",
+          "text": "Very. I wanted a better reason than convenience, though.",
+          "source": "src/data/source-rest-conversation.js:249"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:243"
+    },
+    "phaseOpenings.wrong-return.mistakes": {
+      "id": "phaseOpenings.wrong-return.mistakes",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l0",
+          "who": "you",
+          "text": "I hear the places I missed first.",
+          "source": "src/data/source-rest-conversation.js:252"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l1",
+          "who": "other",
+          "text": "Before anything else?",
+          "source": "src/data/source-rest-conversation.js:253"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l2",
+          "who": "you",
+          "text": "Sometimes before they happen. I am already waiting for them.",
+          "source": "src/data/source-rest-conversation.js:254"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l3",
+          "who": "other",
+          "text": "And the rest?",
+          "source": "src/data/source-rest-conversation.js:255"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l4",
+          "who": "you",
+          "text": "The rest has to get past me.",
+          "source": "src/data/source-rest-conversation.js:256"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l5",
+          "who": "you",
+          "text": "I tried so hard to get it right.",
+          "source": "src/data/source-rest-conversation.js:257"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l6",
+          "who": "other",
+          "text": "I can hear that too.",
+          "source": "src/data/source-rest-conversation.js:258"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l7",
+          "who": "you",
+          "text": "That is not the part I wanted you to hear.",
+          "source": "src/data/source-rest-conversation.js:259"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistakes.l8",
+          "who": "other",
+          "text": "It made me listen more closely.",
+          "source": "src/data/source-rest-conversation.js:260"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:252"
+    },
+    "phaseOpenings.wrong-return.mistake-choice": {
+      "id": "phaseOpenings.wrong-return.mistake-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.mistake-choice.l0",
+          "who": "other",
+          "text": "What happens when you hear it now?",
+          "source": "src/data/source-rest-conversation.js:263"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.mistake-choice.c0",
+          "text": "I still wince.",
+          "source": "src/data/source-rest-conversation.js:264",
+          "choiceId": "wince",
+          "goto": "phaseOpenings.wrong-return.wince"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.mistake-choice.c1",
+          "text": "I hear more than I did.",
+          "source": "src/data/source-rest-conversation.js:264",
+          "choiceId": "listen",
+          "goto": "phaseOpenings.wrong-return.more"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:263"
+    },
+    "phaseOpenings.wrong-return.wince": {
+      "id": "phaseOpenings.wrong-return.wince",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.wince.l0",
+          "who": "you",
+          "text": "I still wince.",
+          "source": "src/data/source-rest-conversation.js:266"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.wince.l1",
+          "who": "other",
+          "text": "I saw that.",
+          "source": "src/data/source-rest-conversation.js:267"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.wince.l2",
+          "who": "you",
+          "text": "Do not look at me. Listen.",
+          "source": "src/data/source-rest-conversation.js:268"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.wince.l3",
+          "who": "other",
+          "text": "I am. I am listening to both.",
+          "source": "src/data/source-rest-conversation.js:269"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:266"
+    },
+    "phaseOpenings.wrong-return.more": {
+      "id": "phaseOpenings.wrong-return.more",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.more.l0",
+          "who": "you",
+          "text": "I hear more than I did.",
+          "source": "src/data/source-rest-conversation.js:272"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.more.l1",
+          "who": "other",
+          "text": "What did you miss?",
+          "source": "src/data/source-rest-conversation.js:273"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.more.l2",
+          "who": "you",
+          "text": "The room. I was so busy listening to my hands.",
+          "source": "src/data/source-rest-conversation.js:274"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.more.l3",
+          "who": "other",
+          "text": "The room had a part too, then.",
+          "source": "src/data/source-rest-conversation.js:275"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:272"
+    },
+    "phaseOpenings.wrong-return.voice": {
+      "id": "phaseOpenings.wrong-return.voice",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.voice.l0",
+          "who": "other",
+          "text": "You used to sing along.",
+          "source": "src/data/source-rest-conversation.js:278"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l1",
+          "who": "you",
+          "text": "I did not know the microphone could hear me.",
+          "source": "src/data/source-rest-conversation.js:279"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l2",
+          "who": "other",
+          "text": "You heard it afterwards, then.",
+          "source": "src/data/source-rest-conversation.js:280"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l3",
+          "who": "you",
+          "text": "Yes. Along with everything else I wanted to fix.",
+          "source": "src/data/source-rest-conversation.js:281"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l4",
+          "who": "other",
+          "text": "Would you take it out now?",
+          "source": "src/data/source-rest-conversation.js:282"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l5",
+          "who": "you",
+          "text": "No. Just do not tell anyone.",
+          "source": "src/data/source-rest-conversation.js:283"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.voice.l6",
+          "who": "other",
+          "text": "I am very good at keeping things.",
+          "source": "src/data/source-rest-conversation.js:284"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:278"
+    },
+    "phaseOpenings.wrong-return.caid": {
+      "id": "phaseOpenings.wrong-return.caid",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.caid.l0",
+          "who": "you",
+          "text": "John Caid would tell me to listen to it as a sound.",
+          "source": "src/data/source-rest-conversation.js:287"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l1",
+          "who": "other",
+          "text": "He might open the window as well.",
+          "source": "src/data/source-rest-conversation.js:288"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l2",
+          "who": "you",
+          "text": "Let the street in?",
+          "source": "src/data/source-rest-conversation.js:289"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l3",
+          "who": "other",
+          "text": "The street, the chair, you singing to yourself.",
+          "source": "src/data/source-rest-conversation.js:290"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l4",
+          "who": "you",
+          "text": "That sounds like a Fluxus instruction.",
+          "source": "src/data/source-rest-conversation.js:291"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l5",
+          "who": "other",
+          "text": "Shall I write it down?",
+          "source": "src/data/source-rest-conversation.js:292"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l6",
+          "who": "you",
+          "text": "You will make it too long.",
+          "source": "src/data/source-rest-conversation.js:293"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.caid.l7",
+          "who": "other",
+          "text": "Listen, then.",
+          "source": "src/data/source-rest-conversation.js:294"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:287"
+    },
+    "phaseOpenings.wrong-return.distance": {
+      "id": "phaseOpenings.wrong-return.distance",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.distance.l0",
+          "who": "you",
+          "text": "Bach wrote this so long ago.",
+          "source": "src/data/source-rest-conversation.js:297"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l1",
+          "who": "other",
+          "text": "And here it is, with your voice in it.",
+          "source": "src/data/source-rest-conversation.js:298"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l2",
+          "who": "you",
+          "text": "I played it for her. I played it for Lyle.",
+          "source": "src/data/source-rest-conversation.js:299"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l3",
+          "who": "other",
+          "text": "Not the same version.",
+          "source": "src/data/source-rest-conversation.js:300"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l4",
+          "who": "you",
+          "text": "No. First in a practice room, early on.",
+          "source": "src/data/source-rest-conversation.js:301"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l5",
+          "who": "other",
+          "text": "And then?",
+          "source": "src/data/source-rest-conversation.js:302"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l6",
+          "who": "you",
+          "text": "Later, at a recital.",
+          "source": "src/data/source-rest-conversation.js:303"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l7",
+          "who": "other",
+          "text": "There was a lot of work between the two.",
+          "source": "src/data/source-rest-conversation.js:304"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l8",
+          "who": "you",
+          "text": "I still do not know if I understood him.",
+          "source": "src/data/source-rest-conversation.js:305"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance.l9",
+          "who": "other",
+          "text": "What would you play him first?",
+          "source": "src/data/source-rest-conversation.js:306"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:297"
+    },
+    "phaseOpenings.wrong-return.distance-choice": {
+      "id": "phaseOpenings.wrong-return.distance-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.distance-choice.l0",
+          "who": "you",
+          "text": "There are so many people between those notes and me.",
+          "source": "src/data/source-rest-conversation.js:309"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.distance-choice.c0",
+          "text": "The people who taught me.",
+          "source": "src/data/source-rest-conversation.js:310",
+          "choiceId": "teachers",
+          "goto": "phaseOpenings.wrong-return.teachers"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.distance-choice.c1",
+          "text": "People I will never meet.",
+          "source": "src/data/source-rest-conversation.js:310",
+          "choiceId": "strangers",
+          "goto": "phaseOpenings.wrong-return.strangers"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:309"
+    },
+    "phaseOpenings.wrong-return.teachers": {
+      "id": "phaseOpenings.wrong-return.teachers",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.teachers.l0",
+          "who": "you",
+          "text": "The people who taught me.",
+          "source": "src/data/source-rest-conversation.js:312"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.teachers.l1",
+          "who": "other",
+          "text": "And the people who taught them.",
+          "source": "src/data/source-rest-conversation.js:313"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.teachers.l2",
+          "who": "you",
+          "text": "Some of them would disagree with me.",
+          "source": "src/data/source-rest-conversation.js:314"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.teachers.l3",
+          "who": "other",
+          "text": "I think you would disagree back.",
+          "source": "src/data/source-rest-conversation.js:315"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:312"
+    },
+    "phaseOpenings.wrong-return.strangers": {
+      "id": "phaseOpenings.wrong-return.strangers",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.strangers.l0",
+          "who": "you",
+          "text": "People I will never meet.",
+          "source": "src/data/source-rest-conversation.js:318"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.strangers.l1",
+          "who": "other",
+          "text": "And they will never meet you.",
+          "source": "src/data/source-rest-conversation.js:319"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.strangers.l2",
+          "who": "you",
+          "text": "That is not quite the same as being alone with it.",
+          "source": "src/data/source-rest-conversation.js:320"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.strangers.l3",
+          "who": "other",
+          "text": "No. There are rather a lot of us here.",
+          "source": "src/data/source-rest-conversation.js:321"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:318"
+    },
+    "phaseOpenings.wrong-return.pressure": {
+      "id": "phaseOpenings.wrong-return.pressure",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l0",
+          "who": "you",
+          "text": "There is still so much to do.",
+          "source": "src/data/source-rest-conversation.js:324"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l1",
+          "who": "other",
+          "text": "You have only just sat down.",
+          "source": "src/data/source-rest-conversation.js:325"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l2",
+          "who": "you",
+          "text": "You are supposed to tell me it can wait.",
+          "source": "src/data/source-rest-conversation.js:326"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l3",
+          "who": "other",
+          "text": "Would you believe me?",
+          "source": "src/data/source-rest-conversation.js:327"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l4",
+          "who": "you",
+          "text": "Not if you said all of it.",
+          "source": "src/data/source-rest-conversation.js:328"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l5",
+          "who": "you",
+          "text": "Then why does it feel so good to stop?",
+          "source": "src/data/source-rest-conversation.js:329"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l6",
+          "who": "other",
+          "text": "You do not need me to answer that.",
+          "source": "src/data/source-rest-conversation.js:330"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l7",
+          "who": "you",
+          "text": "I do, tonight.",
+          "source": "src/data/source-rest-conversation.js:331"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure.l8",
+          "who": "other",
+          "text": "Then leave it with me a little while.",
+          "source": "src/data/source-rest-conversation.js:332"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:324"
+    },
+    "phaseOpenings.wrong-return.pressure-choice": {
+      "id": "phaseOpenings.wrong-return.pressure-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.pressure-choice.l0",
+          "who": "other",
+          "text": "What were you hoping to make?",
+          "source": "src/data/source-rest-conversation.js:335"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.pressure-choice.c0",
+          "text": "Something beautiful.",
+          "source": "src/data/source-rest-conversation.js:336",
+          "choiceId": "beautiful",
+          "goto": "phaseOpenings.wrong-return.beautiful"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.pressure-choice.c1",
+          "text": "Something that could hold us.",
+          "source": "src/data/source-rest-conversation.js:336",
+          "choiceId": "hold",
+          "goto": "phaseOpenings.wrong-return.hold"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:335"
+    },
+    "phaseOpenings.wrong-return.beautiful": {
+      "id": "phaseOpenings.wrong-return.beautiful",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.beautiful.l0",
+          "who": "you",
+          "text": "Something beautiful.",
+          "source": "src/data/source-rest-conversation.js:338"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.beautiful.l1",
+          "who": "other",
+          "text": "You would not leave the light alone, either.",
+          "source": "src/data/source-rest-conversation.js:339"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.beautiful.l2",
+          "who": "you",
+          "text": "It mattered where it fell.",
+          "source": "src/data/source-rest-conversation.js:340"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.beautiful.l3",
+          "who": "other",
+          "text": "Look. It is still moving.",
+          "source": "src/data/source-rest-conversation.js:341"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:338"
+    },
+    "phaseOpenings.wrong-return.hold": {
+      "id": "phaseOpenings.wrong-return.hold",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.hold.l0",
+          "who": "you",
+          "text": "Something that could hold us.",
+          "source": "src/data/source-rest-conversation.js:344"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hold.l1",
+          "who": "other",
+          "text": "That is a difficult thing to ask of a room.",
+          "source": "src/data/source-rest-conversation.js:345"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hold.l2",
+          "who": "you",
+          "text": "I am asking it anyway.",
+          "source": "src/data/source-rest-conversation.js:346"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.hold.l3",
+          "who": "other",
+          "text": "Then let us see how long it holds.",
+          "source": "src/data/source-rest-conversation.js:347"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:344"
+    },
+    "phaseOpenings.wrong-return.breakdown": {
+      "id": "phaseOpenings.wrong-return.breakdown",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l0",
+          "who": "you",
+          "text": "I thought there would be more time.",
+          "source": "src/data/source-rest-conversation.js:350"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l1",
+          "who": "other",
+          "text": "Stay with me a moment.",
+          "source": "src/data/source-rest-conversation.js:351"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l2",
+          "who": "you",
+          "text": "The room—",
+          "source": "src/data/source-rest-conversation.js:352"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l3",
+          "who": "other",
+          "text": "I can see it.",
+          "source": "src/data/source-rest-conversation.js:353"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l4",
+          "who": "you",
+          "text": "I thought I had lost the place.",
+          "source": "src/data/source-rest-conversation.js:354"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l5",
+          "who": "other",
+          "text": "No. There. Listen.",
+          "source": "src/data/source-rest-conversation.js:355"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l6",
+          "who": "you",
+          "text": "I hear it.",
+          "source": "src/data/source-rest-conversation.js:356"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.breakdown.l7",
+          "who": "other",
+          "text": "That is it.",
+          "source": "src/data/source-rest-conversation.js:357"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:350"
+    },
+    "phaseOpenings.wrong-return.return": {
+      "id": "phaseOpenings.wrong-return.return",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.return.l0",
+          "who": "you",
+          "text": "It comes back.",
+          "source": "src/data/source-rest-conversation.js:360"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.return.l1",
+          "who": "other",
+          "text": "A little differently.",
+          "source": "src/data/source-rest-conversation.js:361"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.return.l2",
+          "who": "you",
+          "text": "There is that little turn again.",
+          "source": "src/data/source-rest-conversation.js:362"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.return.l3",
+          "who": "other",
+          "text": "I am listening.",
+          "source": "src/data/source-rest-conversation.js:363"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.return.l4",
+          "who": "you",
+          "text": "Will you stay for the rest?",
+          "source": "src/data/source-rest-conversation.js:364"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.return.l5",
+          "who": "other",
+          "text": "Of course.",
+          "source": "src/data/source-rest-conversation.js:365"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:360"
+    },
+    "phaseOpenings.wrong-return.last-choice": {
+      "id": "phaseOpenings.wrong-return.last-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.last-choice.l0",
+          "who": "other",
+          "text": "There. Do you hear the lower line?",
+          "source": "src/data/source-rest-conversation.js:368"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.wrong-return.last-choice.c0",
+          "text": "I hear it.",
+          "source": "src/data/source-rest-conversation.js:369",
+          "choiceId": "hear",
+          "goto": "phaseOpenings.wrong-return.last-hear"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-choice.c1",
+          "text": "Let it come round again.",
+          "source": "src/data/source-rest-conversation.js:369",
+          "choiceId": "again",
+          "goto": "phaseOpenings.wrong-return.last-again"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:368"
+    },
+    "phaseOpenings.wrong-return.last-hear": {
+      "id": "phaseOpenings.wrong-return.last-hear",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.last-hear.l0",
+          "who": "you",
+          "text": "I hear it.",
+          "source": "src/data/source-rest-conversation.js:371"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-hear.l1",
+          "who": "other",
+          "text": "It is still there underneath.",
+          "source": "src/data/source-rest-conversation.js:372"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-hear.l2",
+          "who": "you",
+          "text": "Even now.",
+          "source": "src/data/source-rest-conversation.js:373"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-hear.l3",
+          "who": "other",
+          "text": "Even now.",
+          "source": "src/data/source-rest-conversation.js:374"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:371"
+    },
+    "phaseOpenings.wrong-return.last-again": {
+      "id": "phaseOpenings.wrong-return.last-again",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.last-again.l0",
+          "who": "you",
+          "text": "Let it come round again.",
+          "source": "src/data/source-rest-conversation.js:377"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-again.l1",
+          "who": "other",
+          "text": "I think I hear it coming.",
+          "source": "src/data/source-rest-conversation.js:378"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-again.l2",
+          "who": "you",
+          "text": "There.",
+          "source": "src/data/source-rest-conversation.js:379"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last-again.l3",
+          "who": "other",
+          "text": "There it is.",
+          "source": "src/data/source-rest-conversation.js:380"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:377"
+    },
+    "phaseOpenings.wrong-return.last": {
+      "id": "phaseOpenings.wrong-return.last",
+      "type": "line",
+      "lines": [
+        {
+          "id": "phaseOpenings.wrong-return.last.l0",
+          "who": "you",
+          "text": "I like that note.",
+          "source": "src/data/source-rest-conversation.js:383"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l1",
+          "who": "other",
+          "text": "The one underneath?",
+          "source": "src/data/source-rest-conversation.js:384"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l2",
+          "who": "you",
+          "text": "Yes. That one.",
+          "source": "src/data/source-rest-conversation.js:385"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l3",
+          "who": "you",
+          "text": "I cannot see where it is coming from.",
+          "source": "src/data/source-rest-conversation.js:386"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l4",
+          "who": "other",
+          "text": "You need not find it.",
+          "source": "src/data/source-rest-conversation.js:387"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l5",
+          "who": "you",
+          "text": "I was still trying to hold the rest of the room.",
+          "source": "src/data/source-rest-conversation.js:388"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l6",
+          "who": "other",
+          "text": "You can hear this without holding all of that.",
+          "source": "src/data/source-rest-conversation.js:389"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l7",
+          "who": "you",
+          "text": "There was someone I meant to play it for.",
+          "source": "src/data/source-rest-conversation.js:390"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l8",
+          "who": "other",
+          "text": "You need not tell me.",
+          "source": "src/data/source-rest-conversation.js:391"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l9",
+          "who": "you",
+          "text": "Stay until the sound is gone.",
+          "source": "src/data/source-rest-conversation.js:392"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l10",
+          "who": "other",
+          "text": "I am here.",
+          "source": "src/data/source-rest-conversation.js:393"
+        },
+        {
+          "id": "phaseOpenings.wrong-return.last.l11",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-conversation.js:395"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:383"
+    },
+    "phaseOpenings.catch.arrival": {
+      "id": "phaseOpenings.catch.arrival",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.catch.arrival.l0",
+          "who": "other",
+          "text": "There is room for you here.",
+          "source": "src/data/source-rest-conversation.js:400"
+        },
+        {
+          "id": "phaseOpenings.catch.arrival.l1",
+          "who": "you",
+          "text": "This is not a room.",
+          "source": "src/data/source-rest-conversation.js:401"
+        },
+        {
+          "id": "phaseOpenings.catch.arrival.l2",
+          "who": "other",
+          "text": "Then let us call it a place to sit. We need not settle the architecture before the next note.",
+          "source": "src/data/source-rest-conversation.js:402"
+        },
+        {
+          "id": "phaseOpenings.catch.arrival.l3",
+          "who": "other",
+          "text": "Listen. It has come round again.",
+          "source": "src/data/source-rest-conversation.js:403"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.catch.arrival.c0",
+          "text": "I hear it.",
+          "source": "src/data/source-rest-conversation.js:404",
+          "choiceId": "hear",
+          "goto": "phaseOpenings.catch.phase-music"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:400"
+    },
+    "phaseOpenings.catch.phase-music": {
+      "id": "phaseOpenings.catch.phase-music",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.catch.phase-music.l0",
+          "who": "you",
+          "text": "Couperin.",
+          "source": "src/data/source-rest-conversation.js:406"
+        },
+        {
+          "id": "phaseOpenings.catch.phase-music.l1",
+          "who": "other",
+          "text": "A harpsichord. A little of L’Art de toucher le clavecin, shaped by the way each touch begins and lets go.",
+          "source": "src/data/source-rest-conversation.js:407"
+        },
+        {
+          "id": "phaseOpenings.catch.phase-music.l2",
+          "who": "you",
+          "text": "It keeps beginning again.",
+          "source": "src/data/source-rest-conversation.js:408"
+        },
+        {
+          "id": "phaseOpenings.catch.phase-music.l3",
+          "who": "other",
+          "text": "This place has caught a short fragment and made a loop of it. The recording and the music are more than this room lets you hear.",
+          "source": "src/data/source-rest-conversation.js:409"
+        },
+        {
+          "id": "phaseOpenings.catch.phase-music.l4",
+          "who": "other",
+          "text": "Still, a few seconds can hold a surprising number of decisions.",
+          "source": "src/data/source-rest-conversation.js:410"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.catch.phase-music.c0",
+          "text": "The notes do not last.",
+          "source": "src/data/source-rest-conversation.js:411",
+          "choiceId": "touch",
+          "goto": "phaseOpenings.catch.couperin-touch"
+        },
+        {
+          "id": "phaseOpenings.catch.phase-music.c1",
+          "text": "There is so much in the small movements.",
+          "source": "src/data/source-rest-conversation.js:411",
+          "choiceId": "ornament",
+          "goto": "phaseOpenings.catch.couperin-ornament"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:406"
+    },
+    "phaseOpenings.catch.couperin-touch": {
+      "id": "phaseOpenings.catch.couperin-touch",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.catch.couperin-touch.l0",
+          "who": "you",
+          "text": "The notes do not last.",
+          "source": "src/data/source-rest-conversation.js:413"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-touch.l1",
+          "who": "other",
+          "text": "Not the way a voice can. The touch is over, and the string is already giving back what it can.",
+          "source": "src/data/source-rest-conversation.js:414"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-touch.l2",
+          "who": "other",
+          "text": "So the next note has to arrive without being able to rescue the last one.",
+          "source": "src/data/source-rest-conversation.js:415"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-touch.l3",
+          "who": "you",
+          "text": "You hear that as sad.",
+          "source": "src/data/source-rest-conversation.js:416"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-touch.l4",
+          "who": "other",
+          "text": "A little. I hear the care, too. A hand can be exact without being cruel.",
+          "source": "src/data/source-rest-conversation.js:417"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.catch.couperin-touch.c0",
+          "text": "I should not be sitting here.",
+          "source": "src/data/source-rest-conversation.js:418",
+          "choiceId": "time",
+          "targetName": "time"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:413"
+    },
+    "phaseOpenings.catch.couperin-ornament": {
+      "id": "phaseOpenings.catch.couperin-ornament",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.l0",
+          "who": "you",
+          "text": "There is so much in the small movements.",
+          "source": "src/data/source-rest-conversation.js:420"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.l1",
+          "who": "other",
+          "text": "A turn of the hand can make a small space feel furnished.",
+          "source": "src/data/source-rest-conversation.js:421"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.l2",
+          "who": "you",
+          "text": "You make it sound decorative.",
+          "source": "src/data/source-rest-conversation.js:422"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.l3",
+          "who": "other",
+          "text": "I do not mean decoration as an apology. Someone cared how the moment felt while it was passing.",
+          "source": "src/data/source-rest-conversation.js:423"
+        },
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.l4",
+          "who": "other",
+          "text": "That is a serious thing to care about.",
+          "source": "src/data/source-rest-conversation.js:424"
+        }
+      ],
+      "choices": [
+        {
+          "id": "phaseOpenings.catch.couperin-ornament.c0",
+          "text": "I should not be sitting here.",
+          "source": "src/data/source-rest-conversation.js:425",
+          "choiceId": "time",
+          "targetName": "time"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:420"
+    },
+    "namedDistance": {
+      "id": "namedDistance",
+      "type": "line",
+      "lines": [
+        {
+          "id": "namedDistance.l0",
+          "who": "you",
+          "text": "I played it for Sarah. I played it for Lyle.",
+          "source": "src/data/source-rest-conversation.js:440"
+        }
+      ],
+      "source": "src/data/source-rest-conversation.js:440"
     }
   }
 }

@@ -4,28 +4,30 @@
   "title": "Runtime · data/yard-park.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "YARD_PARK_PROPS.inspect",
+  "entry": "YARD_PARK_PROPS.yard-park-eyes.inspect",
   "entries": [
-    "YARD_PARK_PROPS.inspect"
+    "YARD_PARK_PROPS.yard-park-eyes.inspect"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/yard-park.js",
   "notes": "Generated from src/data/yard-park.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "YARD_PARK_PROPS.inspect": {
-      "id": "YARD_PARK_PROPS.inspect",
+    "YARD_PARK_PROPS.yard-park-eyes.inspect": {
+      "id": "YARD_PARK_PROPS.yard-park-eyes.inspect",
       "type": "line",
       "lines": [
         {
-          "id": "YARD_PARK_PROPS.inspect.l0",
+          "id": "YARD_PARK_PROPS.yard-park-eyes.inspect.l0",
           "who": "inspect",
           "text": "Pennies, mostly. Somebody has been wishing on a fountain outside a building that closed.",
           "source": "src/data/yard-park.js:100"
         },
         {
-          "id": "YARD_PARK_PROPS.inspect.l1",
+          "id": "YARD_PARK_PROPS.yard-park-eyes.inspect.l1",
           "who": "inspect",
           "text": "(again) Coins, and the silt they are going into.",
           "source": "src/data/yard-park.js:100"

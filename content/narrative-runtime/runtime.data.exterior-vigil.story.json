@@ -42,13 +42,19 @@
     "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit",
     "VIGIL_VOICES.vigil-kit-renshaw.tree.return",
     "VIGIL_VOICES.vigil-kit-renshaw.tree.honest",
+    "VIGIL_OBSERVATIONS",
+    "VIGIL_ENDING_INSERTS.drugged",
+    "VIGIL_ENDING_INSERTS.surfaced",
     "vigilBelfryRecognition",
+    "vigilConversation.topic",
     "vigilConversation"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/exterior-vigil.js",
   "notes": "Generated from src/data/exterior-vigil.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "VIGIL_VOICES.vigil-ruth-mallory.tree.start": {
@@ -85,6 +91,23 @@
           "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.start.c0",
           "text": "Ask about the people waiting.",
           "source": "src/data/exterior-vigil.js:97"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.start.c1",
+          "text": "Ask about the demolition time.",
+          "source": "src/data/exterior-vigil.js:99",
+          "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.schedule"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.start.c2",
+          "text": "Ask what the rota is for.",
+          "source": "src/data/exterior-vigil.js:99",
+          "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.rota"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.start.c3",
+          "text": "Let her get back to the list.",
+          "source": "src/data/exterior-vigil.js:99"
         }
       ],
       "source": "src/data/exterior-vigil.js:95"
@@ -161,7 +184,7 @@
     },
     "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit.l0",
@@ -170,17 +193,49 @@
           "source": "src/data/exterior-vigil.js:112"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit.c0",
+          "text": "Ask about the demolition time.",
+          "source": "src/data/exterior-vigil.js:113",
+          "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.schedule"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit.c1",
+          "text": "Ask about the numbered cups.",
+          "source": "src/data/exterior-vigil.js:113",
+          "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.rota"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.revisit.c2",
+          "text": "Leave the list alone.",
+          "source": "src/data/exterior-vigil.js:113"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:112"
     },
     "VIGIL_VOICES.vigil-ruth-mallory.tree.return": {
       "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.return.l0",
           "who": "Ruth Mallory",
           "text": "You are back. Keep right of the banner; somebody has put a chair behind you.",
           "source": "src/data/exterior-vigil.js:115"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.return.c0",
+          "text": "Ask whether the time changed.",
+          "source": "src/data/exterior-vigil.js:116",
+          "goto": "VIGIL_VOICES.vigil-ruth-mallory.tree.after"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-ruth-mallory.tree.return.c1",
+          "text": "Say goodnight.",
+          "source": "src/data/exterior-vigil.js:116"
         }
       ],
       "source": "src/data/exterior-vigil.js:115"
@@ -251,6 +306,23 @@
           "id": "VIGIL_VOICES.vigil-leila-hart.tree.start.c0",
           "text": "Ask about the room.",
           "source": "src/data/exterior-vigil.js:134"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.start.c1",
+          "text": "Ask about the returning click.",
+          "source": "src/data/exterior-vigil.js:136",
+          "goto": "VIGIL_VOICES.vigil-leila-hart.tree.rooms"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.start.c2",
+          "text": "Ask why she came tonight.",
+          "source": "src/data/exterior-vigil.js:136",
+          "goto": "VIGIL_VOICES.vigil-leila-hart.tree.tonight"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.start.c3",
+          "text": "Leave her with the window.",
+          "source": "src/data/exterior-vigil.js:136"
         }
       ],
       "source": "src/data/exterior-vigil.js:132"
@@ -321,7 +393,7 @@
     },
     "VIGIL_VOICES.vigil-leila-hart.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit.l0",
@@ -330,17 +402,49 @@
           "source": "src/data/exterior-vigil.js:148"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit.c0",
+          "text": "Ask about the returning click.",
+          "source": "src/data/exterior-vigil.js:149",
+          "goto": "VIGIL_VOICES.vigil-leila-hart.tree.rooms"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit.c1",
+          "text": "Ask why she kept the timetable.",
+          "source": "src/data/exterior-vigil.js:149",
+          "goto": "VIGIL_VOICES.vigil-leila-hart.tree.tonight"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.revisit.c2",
+          "text": "Look up at the window.",
+          "source": "src/data/exterior-vigil.js:149"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:148"
     },
     "VIGIL_VOICES.vigil-leila-hart.tree.return": {
       "id": "VIGIL_VOICES.vigil-leila-hart.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-leila-hart.tree.return.l0",
           "who": "Leila Hart",
           "text": "You were in there long enough for the light behind P-3 to go out twice.",
           "source": "src/data/exterior-vigil.js:151"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.return.c0",
+          "text": "Tell her what the room did.",
+          "source": "src/data/exterior-vigil.js:152",
+          "goto": "VIGIL_VOICES.vigil-leila-hart.tree.confirm"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-leila-hart.tree.return.c1",
+          "text": "Say nothing about the room.",
+          "source": "src/data/exterior-vigil.js:152"
         }
       ],
       "source": "src/data/exterior-vigil.js:151"
@@ -423,6 +527,23 @@
           "id": "VIGIL_VOICES.vigil-owen-pryce.tree.start.c0",
           "text": "Ask about the missing key.",
           "source": "src/data/exterior-vigil.js:172"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.start.c1",
+          "text": "Ask about the bells.",
+          "source": "src/data/exterior-vigil.js:174",
+          "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.bells"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.start.c2",
+          "text": "Ask about the outside handle.",
+          "source": "src/data/exterior-vigil.js:174",
+          "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.shut"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.start.c3",
+          "text": "Let him watch the lock.",
+          "source": "src/data/exterior-vigil.js:174"
         }
       ],
       "source": "src/data/exterior-vigil.js:170"
@@ -493,7 +614,7 @@
     },
     "VIGIL_VOICES.vigil-owen-pryce.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit.l0",
@@ -502,17 +623,49 @@
           "source": "src/data/exterior-vigil.js:186"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit.c0",
+          "text": "Ask about the bells.",
+          "source": "src/data/exterior-vigil.js:187",
+          "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.bells"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit.c1",
+          "text": "Ask about the outside handle.",
+          "source": "src/data/exterior-vigil.js:187",
+          "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.shut"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.revisit.c2",
+          "text": "Let him watch the lock.",
+          "source": "src/data/exterior-vigil.js:187"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:186"
     },
     "VIGIL_VOICES.vigil-owen-pryce.tree.return": {
       "id": "VIGIL_VOICES.vigil-owen-pryce.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-owen-pryce.tree.return.l0",
           "who": "Owen Pryce",
           "text": "The tower moved while you were gone. Only a little. The water changed direction on the lead.",
           "source": "src/data/exterior-vigil.js:189"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.return.c0",
+          "text": "Ask what the tenor counted.",
+          "source": "src/data/exterior-vigil.js:190",
+          "goto": "VIGIL_VOICES.vigil-owen-pryce.tree.tenor"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-owen-pryce.tree.return.c1",
+          "text": "Leave him with the tower.",
+          "source": "src/data/exterior-vigil.js:190"
         }
       ],
       "source": "src/data/exterior-vigil.js:189"
@@ -595,6 +748,23 @@
           "id": "VIGIL_VOICES.vigil-denise-okafor.tree.start.c0",
           "text": "Ask about the photograph.",
           "source": "src/data/exterior-vigil.js:210"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.start.c1",
+          "text": "Ask where the archive stops.",
+          "source": "src/data/exterior-vigil.js:212",
+          "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.archive"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.start.c2",
+          "text": "Ask what is marked for salvage.",
+          "source": "src/data/exterior-vigil.js:212",
+          "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.after"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.start.c3",
+          "text": "Release the sleeve.",
+          "source": "src/data/exterior-vigil.js:212"
         }
       ],
       "source": "src/data/exterior-vigil.js:208"
@@ -665,7 +835,7 @@
     },
     "VIGIL_VOICES.vigil-denise-okafor.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit.l0",
@@ -674,17 +844,49 @@
           "source": "src/data/exterior-vigil.js:224"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit.c0",
+          "text": "Ask where the archive stops.",
+          "source": "src/data/exterior-vigil.js:225",
+          "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.archive"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit.c1",
+          "text": "Ask what is marked for salvage.",
+          "source": "src/data/exterior-vigil.js:225",
+          "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.after"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.revisit.c2",
+          "text": "Release the sleeve.",
+          "source": "src/data/exterior-vigil.js:225"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:224"
     },
     "VIGIL_VOICES.vigil-denise-okafor.tree.return": {
       "id": "VIGIL_VOICES.vigil-denise-okafor.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-denise-okafor.tree.return.l0",
           "who": "Denise Okafor",
           "text": "You had equipment inside. Did you write the room names down, or only the take numbers?",
           "source": "src/data/exterior-vigil.js:227"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.return.c0",
+          "text": "Tell her what the recorder kept.",
+          "source": "src/data/exterior-vigil.js:228",
+          "goto": "VIGIL_VOICES.vigil-denise-okafor.tree.record"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-denise-okafor.tree.return.c1",
+          "text": "Put the sleeve back.",
+          "source": "src/data/exterior-vigil.js:228"
         }
       ],
       "source": "src/data/exterior-vigil.js:227"
@@ -767,6 +969,23 @@
           "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.start.c0",
           "text": "Ask what he measured.",
           "source": "src/data/exterior-vigil.js:248"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.start.c1",
+          "text": "Notice where the line passes.",
+          "source": "src/data/exterior-vigil.js:250",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.line"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.start.c2",
+          "text": "Ask why he drew it.",
+          "source": "src/data/exterior-vigil.js:250",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.theory"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.start.c3",
+          "text": "Give the map back.",
+          "source": "src/data/exterior-vigil.js:250"
         }
       ],
       "source": "src/data/exterior-vigil.js:246"
@@ -849,7 +1068,7 @@
     },
     "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit.l0",
@@ -858,17 +1077,56 @@
           "source": "src/data/exterior-vigil.js:264"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit.c0",
+          "text": "Look at the chapel alignment.",
+          "source": "src/data/exterior-vigil.js:265",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.line"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit.c1",
+          "text": "Ask where the idea came from.",
+          "source": "src/data/exterior-vigil.js:265",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.theory"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.revisit.c2",
+          "text": "Fold the map closed.",
+          "source": "src/data/exterior-vigil.js:265"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:264"
     },
     "VIGIL_VOICES.vigil-malcolm-vey.tree.return": {
       "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.return.l0",
           "who": "Malcolm Vey",
           "text": "You came back by the long side of the line. From this stool I can see the door.",
           "source": "src/data/exterior-vigil.js:267"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.return.l1",
+          "who": "leave",
+          "text": "Give the map back.",
+          "source": "src/data/exterior-vigil.js:276"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.return.c0",
+          "text": "Ask what he expects at six.",
+          "source": "src/data/exterior-vigil.js:269",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.six"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-malcolm-vey.tree.return.c1",
+          "text": "Look at the chapel alignment.",
+          "source": "src/data/exterior-vigil.js:270",
+          "goto": "VIGIL_VOICES.vigil-malcolm-vey.tree.line"
         }
       ],
       "source": "src/data/exterior-vigil.js:267"
@@ -939,6 +1197,23 @@
           "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.start.c0",
           "text": "Ask what the microphone is aimed at.",
           "source": "src/data/exterior-vigil.js:295"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.start.c1",
+          "text": "Ask to see the gain log.",
+          "source": "src/data/exterior-vigil.js:297",
+          "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.log"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.start.c2",
+          "text": "Ask what would make the take useful.",
+          "source": "src/data/exterior-vigil.js:297",
+          "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.theory"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.start.c3",
+          "text": "Step clear of the microphone.",
+          "source": "src/data/exterior-vigil.js:297"
         }
       ],
       "source": "src/data/exterior-vigil.js:293"
@@ -1021,7 +1296,7 @@
     },
     "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit": {
       "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit.l0",
@@ -1030,17 +1305,49 @@
           "source": "src/data/exterior-vigil.js:311"
         }
       ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit.c0",
+          "text": "Ask what changed with the plant.",
+          "source": "src/data/exterior-vigil.js:312",
+          "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.log"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit.c1",
+          "text": "Ask what would make the take useful.",
+          "source": "src/data/exterior-vigil.js:312",
+          "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.theory"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.revisit.c2",
+          "text": "Step clear of the microphone.",
+          "source": "src/data/exterior-vigil.js:312"
+        }
+      ],
       "source": "src/data/exterior-vigil.js:311"
     },
     "VIGIL_VOICES.vigil-kit-renshaw.tree.return": {
       "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.return.l0",
           "who": "Kit Renshaw",
           "text": "You had the field side. Did your low cut stay in, or did you take it flat?",
           "source": "src/data/exterior-vigil.js:314"
+        }
+      ],
+      "choices": [
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.return.c0",
+          "text": "Give the recording conditions.",
+          "source": "src/data/exterior-vigil.js:315",
+          "goto": "VIGIL_VOICES.vigil-kit-renshaw.tree.honest"
+        },
+        {
+          "id": "VIGIL_VOICES.vigil-kit-renshaw.tree.return.c1",
+          "text": "Keep the tape to yourself.",
+          "source": "src/data/exterior-vigil.js:315"
         }
       ],
       "source": "src/data/exterior-vigil.js:314"
@@ -1077,6 +1384,75 @@
       ],
       "source": "src/data/exterior-vigil.js:317"
     },
+    "VIGIL_OBSERVATIONS": {
+      "id": "VIGIL_OBSERVATIONS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "VIGIL_OBSERVATIONS.l0",
+          "who": "observation",
+          "text": "The rain has taken the ink at the edges. Six o’clock is still legible.",
+          "source": "src/data/exterior-vigil.js:363"
+        },
+        {
+          "id": "VIGIL_OBSERVATIONS.l1",
+          "who": "observation",
+          "text": "Every cup goes back to the same flask.",
+          "source": "src/data/exterior-vigil.js:364"
+        },
+        {
+          "id": "VIGIL_OBSERVATIONS.l2",
+          "who": "observation",
+          "text": "Nobody is watching the road.",
+          "source": "src/data/exterior-vigil.js:365"
+        },
+        {
+          "id": "VIGIL_OBSERVATIONS.l3",
+          "who": "observation",
+          "text": "The red tally light makes the shut porch look occupied.",
+          "source": "src/data/exterior-vigil.js:366"
+        },
+        {
+          "id": "VIGIL_OBSERVATIONS.l4",
+          "who": "observation",
+          "text": "The date has been corrected in three different hands.",
+          "source": "src/data/exterior-vigil.js:367"
+        },
+        {
+          "id": "VIGIL_OBSERVATIONS.l5",
+          "who": "observation",
+          "text": "They have left the machines a way in.",
+          "source": "src/data/exterior-vigil.js:368"
+        }
+      ],
+      "source": "src/data/exterior-vigil.js:363"
+    },
+    "VIGIL_ENDING_INSERTS.drugged": {
+      "id": "VIGIL_ENDING_INSERTS.drugged",
+      "type": "line",
+      "lines": [
+        {
+          "id": "VIGIL_ENDING_INSERTS.drugged.l0",
+          "who": "direction",
+          "text": "Through the windscreen: nine coats, one folded chair, the banner still tied to the railing.",
+          "source": "src/data/exterior-vigil.js:380"
+        }
+      ],
+      "source": "src/data/exterior-vigil.js:380"
+    },
+    "VIGIL_ENDING_INSERTS.surfaced": {
+      "id": "VIGIL_ENDING_INSERTS.surfaced",
+      "type": "line",
+      "lines": [
+        {
+          "id": "VIGIL_ENDING_INSERTS.surfaced.l0",
+          "who": "direction",
+          "text": "The people at the gate make room. A chair opens; a dry coat appears from somewhere behind it.",
+          "source": "src/data/exterior-vigil.js:381"
+        }
+      ],
+      "source": "src/data/exterior-vigil.js:381"
+    },
     "vigilBelfryRecognition": {
       "id": "vigilBelfryRecognition",
       "type": "line",
@@ -1090,30 +1466,154 @@
       ],
       "source": "src/data/exterior-vigil.js:402"
     },
+    "vigilConversation.topic": {
+      "id": "vigilConversation.topic",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "vigilConversation.topic.c0",
+          "text": "The recovery records.",
+          "source": "src/data/exterior-vigil.js:421",
+          "targetName": "student-strike"
+        }
+      ],
+      "source": "src/data/exterior-vigil.js:421"
+    },
     "vigilConversation": {
       "id": "vigilConversation",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "vigilConversation.l0",
+          "who": "{entry.name}",
+          "text": "That should have been dealt with. Properly. I do not see why the rest of us should lose the building over it.",
+          "source": "src/data/exterior-vigil.js:435"
+        },
+        {
+          "id": "vigilConversation.l1",
           "who": "direction",
           "text": "Her thumb returns to the rota. The column after six is headed LESSONS / RESTART.",
           "source": "src/data/exterior-vigil.js:436"
         },
         {
-          "id": "vigilConversation.l1",
+          "id": "vigilConversation.l2",
+          "who": "me",
+          "text": "They asked for acknowledgment before rehearsal. Your sheet has them starting again.",
+          "source": "src/data/exterior-vigil.js:444"
+        },
+        {
+          "id": "vigilConversation.l3",
+          "who": "{entry.name}",
+          "text": "It is a proposal. You have to give people something to come back to.",
+          "source": "src/data/exterior-vigil.js:445"
+        },
+        {
+          "id": "vigilConversation.l4",
+          "who": "{entry.name}",
+          "text": "My daughter had a lesson here on Saturdays. We made a morning of it. I would like the next families to have that.",
+          "source": "src/data/exterior-vigil.js:446"
+        },
+        {
+          "id": "vigilConversation.l5",
+          "who": "me",
+          "text": "What if the students still do not want to play?",
+          "source": "src/data/exterior-vigil.js:450"
+        },
+        {
+          "id": "vigilConversation.l6",
+          "who": "{entry.name}",
+          "text": "Then we ask what would make them feel able. We cannot keep every room shut indefinitely.",
+          "source": "src/data/exterior-vigil.js:451"
+        },
+        {
+          "id": "vigilConversation.l7",
           "who": "direction",
           "text": "There it is: a timetable with room for everything except an answer that stays no. I can hear it in hers more easily than in my own.",
           "source": "src/data/exterior-vigil.js:452"
         },
         {
-          "id": "vigilConversation.l2",
+          "id": "vigilConversation.l8",
+          "who": "me",
+          "text": "What would you actually have happen if the machines turn back?",
+          "source": "src/data/exterior-vigil.js:455"
+        },
+        {
+          "id": "vigilConversation.l9",
+          "who": "{entry.name}",
+          "text": "Lessons, the bells, people in and out. It is not much of a square with every door shut.",
+          "source": "src/data/exterior-vigil.js:456"
+        },
+        {
+          "id": "vigilConversation.l10",
+          "who": "{entry.name}",
+          "text": "Of course somebody would have to make it safe first. I am not proposing we personally run the place.",
+          "source": "src/data/exterior-vigil.js:457"
+        },
+        {
+          "id": "vigilConversation.l11",
+          "who": "{entry.name}",
+          "text": "Keep the instruction as well as the recovery entry. Otherwise somebody can call the missing label a clerical delay. / Keep the room name with the receipt. Do not let them file the bodies under a building nobody can point to. / An account to keep with the official entry. Not to replace it. The disagreement is part of what they did.",
+          "source": "src/data/exterior-vigil.js:462"
+        },
+        {
+          "id": "vigilConversation.l12",
+          "who": "{entry.name}",
+          "text": "And a transfer receipt does not tell us why somebody died. Neither does a photograph.",
+          "source": "src/data/exterior-vigil.js:467"
+        },
+        {
+          "id": "vigilConversation.l13",
+          "who": "me",
+          "text": "Do you still want the rooms preserved after that?",
+          "source": "src/data/exterior-vigil.js:471"
+        },
+        {
+          "id": "vigilConversation.l14",
+          "who": "{entry.name}",
+          "text": "I asked for an hour to photograph them. I did not ask the students to give another recital.",
+          "source": "src/data/exterior-vigil.js:472"
+        },
+        {
+          "id": "vigilConversation.l15",
           "who": "direction",
           "text": "She aligns the sleeves. The empty room is something she can keep. An occupied one might refuse the photograph.",
           "source": "src/data/exterior-vigil.js:473"
+        },
+        {
+          "id": "vigilConversation.l16",
+          "who": "{entry.name}",
+          "text": "Bricks coming down will not amend the record. Keeping them up will not amend it either.",
+          "source": "src/data/exterior-vigil.js:474"
         }
       ],
-      "source": "src/data/exterior-vigil.js:436"
+      "choices": [
+        {
+          "id": "vigilConversation.c0",
+          "text": "They already said no.",
+          "source": "src/data/exterior-vigil.js:438",
+          "targetName": "student-strike-demand"
+        },
+        {
+          "id": "vigilConversation.c1",
+          "text": "What does keeping it mean?",
+          "source": "src/data/exterior-vigil.js:440",
+          "targetName": "student-strike-preservation"
+        },
+        {
+          "id": "vigilConversation.c2",
+          "text": "And if they refuse again?",
+          "source": "src/data/exterior-vigil.js:447",
+          "targetName": "student-strike-refusal"
+        },
+        {
+          "id": "vigilConversation.c3",
+          "text": "Still save the rooms?",
+          "source": "src/data/exterior-vigil.js:468",
+          "targetName": "student-strike-archive"
+        }
+      ],
+      "source": "src/data/exterior-vigil.js:435"
     }
   }
 }

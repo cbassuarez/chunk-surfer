@@ -77,7 +77,8 @@ export function App() {
       setDirtyStories(new Set()); setDirtyAudio(false); setDirtyMedia(false); setDirtyProject(false); setExternalChanges(new Set());
       setHistory({}); setAudioHistory({ past: [], future: [] });
       setRecoveryAvailable(!!localStorage.getItem(RECOVERY_KEY));
-      const summary = `${loaded.documents.length} story documents · ${loaded.audio.document.assets.length} audio assets`;
+      const fromCode = loaded.documents.filter((item) => item.readOnly).length;
+      const summary = `${loaded.documents.length - fromCode} story documents · ${fromCode} from code · ${loaded.audio.document.assets.length} audio assets`;
       // A deep link asks for one line; the studio selects per node, so say which
       // line was wanted rather than silently landing on its node.
       setStatus(deepLink.line ? `${summary} · opened at ${deepLink.doc}#${deepLink.line}` : summary);
@@ -93,15 +94,26 @@ export function App() {
   const document = envelope?.document || null;
   const audio = snapshot?.audio.document || null;
   const media = snapshot?.media.document || null;
-  const storyValidation = useMemo(() => document ? validateNarrativeDocument(document) : { ok: true, errors: [] }, [document]);
+  // A code-derived trace whose quote is computed at runtime has no literal to
+  // check; that is a fact about the code, not an authoring error to show.
+  const storyValidation = useMemo(() => {
+    if (!document) return { ok: true, errors: [] };
+    const result = validateNarrativeDocument(document);
+    if (!envelope?.readOnly) return result;
+    const errors = result.errors.filter((error: { path: string }) => !/\.quotes$/.test(error.path));
+    return { ...result, ok: !errors.length, errors };
+  }, [document, envelope?.readOnly]);
   const audioValidation = useMemo(() => audio ? validateAudioProject(audio) : { ok: true, errors: [] }, [audio]);
   const mediaValidation = useMemo(() => media ? validateMediaProject(media) : { ok: true, errors: [] }, [media]);
-  const projectValidation = useMemo(() => snapshot ? validateProjectManifest(snapshot.project, { documents: snapshot.documents.map((item) => item.document), documentIds: snapshot.documents.map((item) => item.document.id) }) : { ok: true, errors: [] }, [snapshot]);
+  const authored = useMemo(() => (snapshot?.documents || []).filter((item) => !item.readOnly), [snapshot?.documents]);
+  const projectValidation = useMemo(() => snapshot ? validateProjectManifest(snapshot.project, { documents: authored.map((item) => item.document), documentIds: authored.map((item) => item.document.id) }) : { ok: true, errors: [] }, [snapshot, authored]);
   const unreachable = useMemo(() => document ? Object.keys(document.nodes).filter((id) => !reachableNodeIds(document).has(id)) : [], [document]);
   const activeSelectedNodeId = document && selectedNodeId && document.nodes[selectedNodeId] ? selectedNodeId : document?.entry || null;
 
   const updateStory = (transaction: StoryTransaction, dirty = true) => {
     if (!snapshot || !envelope) return;
+    // Dialogue written in code is shown here, never edited here.
+    if (envelope.readOnly) { if ('selectedId' in transaction) setSelectedNodeId(transaction.selectedId ?? null); if (dirty) setStatus(`Read-only: generated from ${envelope.module || 'the game code'}. Edit the module; the studio refreshes it.`); return; }
     if (dirty) setHistory((current) => {
       const item = current[envelope.document.id] || { past: [], future: [] };
       return { ...current, [envelope.document.id]: { past: [...item.past.slice(-99), { document: envelope.document, layout: envelope.layout, selectedId: activeSelectedNodeId }], future: [] } };
@@ -146,7 +158,7 @@ export function App() {
   };
 
   const saveStory = useCallback(async () => {
-    if (!snapshot || !envelope) return;
+    if (!snapshot || !envelope || envelope.readOnly) return;
     setStatus(`Saving ${envelope.document.title}…`);
     try {
       const story = await saveDocument(envelope.path, envelope.revision, envelope.document);
@@ -235,10 +247,16 @@ export function App() {
   };
 
   const openCue = (cueId: string, switchTab = false) => { setSelectedCueId(cueId); if (switchTab) setTab('audio'); };
-  const visibleDocuments = useMemo(() => (snapshot?.documents || []).filter((item) => `${item.document.title} ${item.document.id} ${(item.document.tags || []).join(' ')}`.toLowerCase().includes(search.toLowerCase())), [snapshot?.documents, search]);
+  // Authored documents first, then the dialogue still written in code. Search
+  // reaches into the lines themselves, so any sentence the game says is findable.
+  const visibleDocuments = useMemo(() => (snapshot?.documents || []).filter((item) => {
+    const q = search.toLowerCase(); if (!q) return true;
+    if (`${item.document.title} ${item.document.id} ${(item.document.tags || []).join(' ')}`.toLowerCase().includes(q)) return true;
+    return Object.values(item.document.nodes).some((node) => node.lines?.some((line) => (line.text || '').toLowerCase().includes(q)) || node.choices?.some((choice) => (choice.text || '').toLowerCase().includes(q)));
+  }).sort((a, b) => Number(!!a.readOnly) - Number(!!b.readOnly)), [snapshot?.documents, search]);
 
   if (!snapshot || !document || !audio || !media || !envelope) return <div className="loading"><div className="studio-mark">CS</div><p>{status}</p></div>;
-  const saveDisabled = tab === 'story' ? !dirtyStories.has(document.id) || !storyValidation.ok
+  const saveDisabled = tab === 'story' ? !!envelope.readOnly || !dirtyStories.has(document.id) || !storyValidation.ok
     : tab === 'audio' ? !dirtyAudio || !audioValidation.ok
     : tab === 'media' ? !dirtyMedia || !mediaValidation.ok
     : !dirtyProject || !projectValidation.ok;
@@ -259,20 +277,23 @@ export function App() {
 
     <WorkspaceErrorBoundary key={tab} onReset={() => { setSelectedNodeId(null); setPreviewOpen(false); setTab('timeline'); }}>
     <Suspense fallback={<div className="loading"><div className="studio-mark">CS</div><p>Loading workspace…</p></div>}>
-    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={snapshot.documents} selectedDocumentId={document.id} onSelect={(id) => { const next = snapshot.documents.find((item) => item.document.id === id)?.document; setSelectedDocumentId(id); setSelectedNodeId(next?.entry || null); setStoryView('compose'); setTab('story'); }} />
+    {tab === 'timeline' ? <TimelineWorkspace project={snapshot.project} documents={authored} selectedDocumentId={document.id} onSelect={(id) => { const next = snapshot.documents.find((item) => item.document.id === id)?.document; setSelectedDocumentId(id); setSelectedNodeId(next?.entry || null); setStoryView('compose'); setTab('story'); }} />
     : tab === 'story' ? <div className={`story-workspace story-workspace--${storyView} ${previewOpen ? 'has-preview' : ''}`}>
       <aside className="story-browser">
-        <div className="panel-heading"><span>STORY INDEX</span><strong>{snapshot.documents.length} documents</strong></div>
+        <div className="panel-heading"><span>STORY INDEX</span><strong>{authored.length} documents · {snapshot.documents.length - authored.length} from code</strong></div>
         <div className="story-view-switch"><button className={storyView === 'compose' ? 'is-active' : ''} onClick={() => setStoryView('compose')}>Compose</button><button className={storyView === 'map' ? 'is-active' : ''} onClick={() => setStoryView('map')}>Map</button></div>
         <input className="search" placeholder="Search scenes, tags, endings" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => { setSelectedDocumentId(item.document.id); setSelectedNodeId(item.document.entry); setStoryView('compose'); }}>
+        <div className="story-list">{visibleDocuments.map((item) => <button key={item.document.id} className={item.document.id === document.id ? 'is-active' : ''} onClick={() => {
+          // Searching for a sentence opens the beat that says it.
+          const q = search.toLowerCase(), hit = q ? Object.values(item.document.nodes).find((node) => node.lines?.some((line) => (line.text || '').toLowerCase().includes(q)) || node.choices?.some((choice) => (choice.text || '').toLowerCase().includes(q))) : null;
+          setSelectedDocumentId(item.document.id); setSelectedNodeId(hit?.id || item.document.entry); setStoryView('compose'); }}>
           <i style={{ background: item.document.regions.find((region) => region.kind === 'ending')?.color || item.document.regions[0]?.color }} />
-          <span><b>{item.document.title}</b><small>{item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
+          <span><b>{item.document.title}</b><small>{item.readOnly ? `${item.module} · read-only` : item.document.id} · {Object.keys(item.document.nodes).length} nodes</small></span>
           {dirtyStories.has(item.document.id) && <em>●</em>}
         </button>)}</div>
         <div className="validation-summary"><span className={storyValidation.ok && !unreachable.length ? 'valid' : 'invalid'}>{storyValidation.ok ? 'Schema valid' : `${storyValidation.errors.length} errors`}</span><span>{unreachable.length ? `${unreachable.length} unreachable` : 'All nodes reachable'}</span></div>
       </aside>
-      <main className="story-main">{storyView === 'compose' && activeSelectedNodeId
+      <main className="story-main">{envelope.readOnly && <div className="read-only-banner">From the game code: <code>{envelope.module}</code>. Read-only here; edit the module and the studio refreshes this document.</div>}{storyView === 'compose' && activeSelectedNodeId
         ? <StoryComposer document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onSelect={setSelectedNodeId} onCue={(id) => openCue(id, true)} />
         : <StoryGraph document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} search={search} onSelect={setSelectedNodeId} onEdit={(id) => { setSelectedNodeId(id); setStoryView('compose'); }} onTransaction={updateStory} />}</main>
       {storyView === 'map' && <StoryInspector document={document} layout={envelope.layout} selectedId={activeSelectedNodeId} audio={audio} media={media} onTransaction={updateStory} onCue={(id) => openCue(id, true)} />}

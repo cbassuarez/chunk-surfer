@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.apparition-applause-study",
+  "title": "Runtime · game/apparition-applause-study.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "HALL_STUDY_QUESTIONS.recognition",
+  "entries": [
+    "HALL_STUDY_QUESTIONS.recognition",
+    "HALL_STUDY_QUESTIONS.contingency",
+    "HALL_STUDY_QUESTIONS.spatialFit",
+    "HALL_STUDY_QUESTIONS.recordingDevice"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/apparition-applause-study.js",
+  "notes": "Generated from src/game/apparition-applause-study.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "HALL_STUDY_QUESTIONS.recognition": {
+      "id": "HALL_STUDY_QUESTIONS.recognition",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l0",
+          "who": "choice",
+          "text": "Nothing distinct: nothing",
+          "source": "src/game/apparition-applause-study.js:16"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l1",
+          "who": "choice",
+          "text": "Applause or handclaps: applause",
+          "source": "src/game/apparition-applause-study.js:16"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l2",
+          "who": "choice",
+          "text": "A click or impact: impact",
+          "source": "src/game/apparition-applause-study.js:16"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l3",
+          "who": "choice",
+          "text": "A mechanical sound: mechanical",
+          "source": "src/game/apparition-applause-study.js:17"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l4",
+          "who": "choice",
+          "text": "A voice or music: voice-music",
+          "source": "src/game/apparition-applause-study.js:17"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l5",
+          "who": "choice",
+          "text": "Something else: other",
+          "source": "src/game/apparition-applause-study.js:17"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recognition.l6",
+          "who": "choice",
+          "text": "Unsure: unsure",
+          "source": "src/game/apparition-applause-study.js:17"
+        }
+      ],
+      "source": "src/game/apparition-applause-study.js:16"
+    },
+    "HALL_STUDY_QUESTIONS.contingency": {
+      "id": "HALL_STUDY_QUESTIONS.contingency",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HALL_STUDY_QUESTIONS.contingency.l0",
+          "who": "choice",
+          "text": "I did not notice anything distinct: nothing",
+          "source": "src/game/apparition-applause-study.js:21"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.contingency.l1",
+          "who": "choice",
+          "text": "Unsure: unsure",
+          "source": "src/game/apparition-applause-study.js:21"
+        }
+      ],
+      "source": "src/game/apparition-applause-study.js:21"
+    },
+    "HALL_STUDY_QUESTIONS.spatialFit": {
+      "id": "HALL_STUDY_QUESTIONS.spatialFit",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HALL_STUDY_QUESTIONS.spatialFit.l0",
+          "who": "choice",
+          "text": "I did not notice anything distinct: nothing",
+          "source": "src/game/apparition-applause-study.js:27"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.spatialFit.l1",
+          "who": "choice",
+          "text": "Unsure: unsure",
+          "source": "src/game/apparition-applause-study.js:27"
+        }
+      ],
+      "source": "src/game/apparition-applause-study.js:27"
+    },
+    "HALL_STUDY_QUESTIONS.recordingDevice": {
+      "id": "HALL_STUDY_QUESTIONS.recordingDevice",
+      "type": "line",
+      "lines": [
+        {
+          "id": "HALL_STUDY_QUESTIONS.recordingDevice.l0",
+          "who": "choice",
+          "text": "No external recording: none",
+          "source": "src/game/apparition-applause-study.js:31"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recordingDevice.l1",
+          "who": "choice",
+          "text": "Browser or computer screen recording: browser",
+          "source": "src/game/apparition-applause-study.js:31"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recordingDevice.l2",
+          "who": "choice",
+          "text": "An external recorder: external",
+          "source": "src/game/apparition-applause-study.js:32"
+        },
+        {
+          "id": "HALL_STUDY_QUESTIONS.recordingDevice.l3",
+          "who": "choice",
+          "text": "Other or unknown: unknown",
+          "source": "src/game/apparition-applause-study.js:32"
+        }
+      ],
+      "source": "src/game/apparition-applause-study.js:31"
+    }
+  }
+}

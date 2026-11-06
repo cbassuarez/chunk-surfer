@@ -90,6 +90,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/get-in-investigation.js",
   "notes": "Generated from src/data/get-in-investigation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "theory": {
@@ -435,12 +437,6 @@
         },
         {
           "id": "PRE.dock-crew-board.magnet.l1",
-          "who": "you",
-          "text": "There you are.",
-          "source": "src/data/get-in-investigation.js:112"
-        },
-        {
-          "id": "PRE.dock-crew-board.magnet.l2",
           "who": "direction",
           "text": "There is no matching magnet for OUT.",
           "source": "src/data/get-in-investigation.js:113"
@@ -1584,12 +1580,6 @@
           "id": "AFTER.dock-cable-reel.hold.l1",
           "who": "direction",
           "text": "Behind the dispatch desk, something gives one soft click.",
-          "source": "src/data/get-in-investigation.js:427"
-        },
-        {
-          "id": "AFTER.dock-cable-reel.hold.l2",
-          "who": "you",
-          "text": "No.",
           "source": "src/data/get-in-investigation.js:427"
         }
       ],

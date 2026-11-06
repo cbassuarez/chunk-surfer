@@ -9,7 +9,7 @@
     "step",
     "SIX_EXIT_LINES",
     "noteStairTorchFlick",
-    "failBellTower.update",
+    "failBellTower.tower-impact.update",
     "completeBellTower",
     "startTenorPerformance.onComplete",
     "startTenorPerformance.onRelease",
@@ -25,7 +25,6 @@
     "handleSetupGuideEvent",
     "tickSetupHandoff",
     "refuseDockExit",
-    "daydreamBeat.pause",
     "daydreamBeat",
     "beginDreamFigure",
     "dreamFigureSpared.opened.start",
@@ -42,7 +41,7 @@
     "roll",
     "acceptRoomTake",
     "stopTake",
-    "presentTakenDialogue.onDone",
+    "presentTakenDialogue.taken-dialogue.onDone",
     "tickLostCassettes",
     "interactAcademicRoofProp",
     "interactAcademicRoofProp.onOpen",
@@ -59,7 +58,7 @@
     "clearMapTarget",
     "chooseRollCassette",
     "pickCassetteToRecordOver.nodes.start",
-    "pickCassetteToRecordOver.nodes.done",
+    "bagEquipment",
     "readSheetFromBag",
     "openBag",
     "syncDroppedRadioProp.inspect",
@@ -81,6 +80,7 @@
     "payphoneExpire",
     "openPayphone.onTake",
     "syncLastLight",
+    "beginCoastalMemoryJourney.paintOverlay",
     "beginChunkSurf",
     "openHorizonBustChoice.onChoice",
     "openHorizonTransport.nodes.start",
@@ -126,9 +126,9 @@
     "warnChapelTapeDamage",
     "applyPendingChapelTapeDamage",
     "syncChapelTapeRepair",
-    "askChapelTapeDamageDeparture.nodes.start",
-    "askChapelTapeDamageDeparture.nodes.repair",
-    "askChapelTapeDamageDeparture.nodes.leave",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave",
     "tickChapelTapeDemand",
     "beginConfrontation",
     "startRecordistReleaseScene.scene.onCue",
@@ -146,6 +146,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/main.js",
   "notes": "Generated from src/main.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "step": {
@@ -265,12 +267,12 @@
       ],
       "source": "src/main.js:9818"
     },
-    "failBellTower.update": {
-      "id": "failBellTower.update",
+    "failBellTower.tower-impact.update": {
+      "id": "failBellTower.tower-impact.update",
       "type": "line",
       "lines": [
         {
-          "id": "failBellTower.update.l0",
+          "id": "failBellTower.tower-impact.update.l0",
           "who": "you",
           "text": "Back to the ringing-room landing. The completed rows held.",
           "source": "src/main.js:10111"
@@ -463,18 +465,12 @@
       "lines": [
         {
           "id": "tryTheGreyDoor.l0",
-          "who": "direction",
-          "text": "Painted breeze block, cold, and a seam of mortar where your thumb expects a steel push bar.",
-          "source": "src/main.js:14504"
-        },
-        {
-          "id": "tryTheGreyDoor.l1",
           "who": "you",
           "text": "It was here. I came through it. It was here.",
           "source": "src/main.js:14505"
         }
       ],
-      "source": "src/main.js:14504"
+      "source": "src/main.js:14505"
     },
     "handleSetupGuideEvent": {
       "id": "handleSetupGuideEvent",
@@ -520,19 +516,6 @@
         }
       ],
       "source": "src/main.js:14648"
-    },
-    "daydreamBeat.pause": {
-      "id": "daydreamBeat.pause",
-      "type": "line",
-      "lines": [
-        {
-          "id": "daydreamBeat.pause.l0",
-          "who": "you",
-          "text": "...",
-          "source": "src/main.js:14759"
-        }
-      ],
-      "source": "src/main.js:14759"
     },
     "daydreamBeat": {
       "id": "daydreamBeat",
@@ -880,12 +863,12 @@
       ],
       "source": "src/main.js:16126"
     },
-    "presentTakenDialogue.onDone": {
-      "id": "presentTakenDialogue.onDone",
+    "presentTakenDialogue.taken-dialogue.onDone": {
+      "id": "presentTakenDialogue.taken-dialogue.onDone",
       "type": "line",
       "lines": [
         {
-          "id": "presentTakenDialogue.onDone.l0",
+          "id": "presentTakenDialogue.taken-dialogue.onDone.l0",
           "who": "you",
           "text": "Cassette {loss.n} is gone. {roomLabel(loss.erased[0])} was on it. / A cassette is gone. Number {loss.n}.",
           "source": "src/main.js:16363"
@@ -1316,23 +1299,107 @@
           "id": "pickCassetteToRecordOver.nodes.start.c0",
           "text": "None of them. Not yet.",
           "source": "src/main.js:18149",
-          "goto": "pickCassetteToRecordOver.nodes.done"
+          "targetName": "done"
         }
       ],
       "source": "src/main.js:18147"
     },
-    "pickCassetteToRecordOver.nodes.done": {
-      "id": "pickCassetteToRecordOver.nodes.done",
+    "bagEquipment": {
+      "id": "bagEquipment",
       "type": "line",
       "lines": [
         {
-          "id": "pickCassetteToRecordOver.nodes.done.l0",
-          "who": "you",
-          "text": "Right.",
-          "source": "src/main.js:18150"
+          "id": "bagEquipment.l0",
+          "who": "presentItem",
+          "text": "light: MISSING / {Math.round(Math.min(1,REC.batteryLevel())*100)}%+ RESERVE",
+          "source": "src/main.js:18329"
+        },
+        {
+          "id": "bagEquipment.l1",
+          "who": "presentItem",
+          "text": "bent rig interface: READY",
+          "source": "src/main.js:18340"
+        },
+        {
+          "id": "bagEquipment.l2",
+          "who": "presentItem",
+          "text": "tuning fork: A440",
+          "source": "src/main.js:18344"
+        },
+        {
+          "id": "bagEquipment.l3",
+          "who": "presentItem",
+          "text": "Survey Indicator: MISSING / LIVE",
+          "source": "src/main.js:18348"
+        },
+        {
+          "id": "bagEquipment.l4",
+          "who": "presentItem",
+          "text": "radio: MISSING / {radio.phase} · {radio.activity}",
+          "source": "src/main.js:18353"
+        },
+        {
+          "id": "bagEquipment.l5",
+          "who": "presentItem",
+          "text": "adjustable spanner: READY",
+          "source": "src/main.js:18360"
+        },
+        {
+          "id": "bagEquipment.l6",
+          "who": "presentItem",
+          "text": "two marble eyes: CARRIED",
+          "source": "src/main.js:18364"
+        },
+        {
+          "id": "bagEquipment.l7",
+          "who": "presentItem",
+          "text": "Ren's HOME cassette: UNRETURNED",
+          "source": "src/main.js:18368"
+        },
+        {
+          "id": "bagEquipment.l8",
+          "who": "presentItem",
+          "text": "Iona's service tray / Iona's bottle opener / The Lyric's order book: EMPTY / TO RETURN",
+          "source": "src/main.js:18375"
+        },
+        {
+          "id": "bagEquipment.l9",
+          "who": "presentItem",
+          "text": "standard keyring: {keyCount} KEY / KEYS",
+          "source": "src/main.js:18382"
+        },
+        {
+          "id": "bagEquipment.l10",
+          "who": "presentItem",
+          "text": "the guard's coffee: GET COLD",
+          "source": "src/main.js:18386"
+        },
+        {
+          "id": "bagEquipment.l11",
+          "who": "presentItem",
+          "text": "sheet music: {REC.sheetsCarried()} SHEET / SHEETS",
+          "source": "src/main.js:18389"
+        },
+        {
+          "id": "bagEquipment.l12",
+          "who": "presentItem",
+          "text": "what the worlds left: {stationRelics().length} OF 5",
+          "source": "src/main.js:18400"
+        },
+        {
+          "id": "bagEquipment.l13",
+          "who": "presentItem",
+          "text": "Lyle's jumper: WARM",
+          "source": "src/main.js:18404"
+        },
+        {
+          "id": "bagEquipment.l14",
+          "who": "presentItem",
+          "text": "film badge: EXPIRED",
+          "source": "src/main.js:18407"
         }
       ],
-      "source": "src/main.js:18150"
+      "source": "src/main.js:18329"
     },
     "readSheetFromBag": {
       "id": "readSheetFromBag",
@@ -1720,6 +1787,19 @@
         }
       ],
       "source": "src/main.js:21515"
+    },
+    "beginCoastalMemoryJourney.paintOverlay": {
+      "id": "beginCoastalMemoryJourney.paintOverlay",
+      "type": "line",
+      "lines": [
+        {
+          "id": "beginCoastalMemoryJourney.paintOverlay.l0",
+          "who": "you",
+          "text": "Lyle gave me this before his big break. So I’d have something to remember him by.",
+          "source": "src/main.js:21662"
+        }
+      ],
+      "source": "src/main.js:21662"
     },
     "beginChunkSurf": {
       "id": "beginChunkSurf",
@@ -2467,19 +2547,7 @@
         {
           "id": "wakeAfterDefeat.l1",
           "who": "you",
-          "text": "Huh.",
-          "source": "src/main.js:27711"
-        },
-        {
-          "id": "wakeAfterDefeat.l2",
-          "who": "you",
           "text": "This is not where I was.",
-          "source": "src/main.js:27712"
-        },
-        {
-          "id": "wakeAfterDefeat.l3",
-          "who": "you",
-          "text": "Huh.",
           "source": "src/main.js:27712"
         }
       ],
@@ -2537,12 +2605,12 @@
       ],
       "source": "src/main.js:28164"
     },
-    "askChapelTapeDamageDeparture.nodes.start": {
-      "id": "askChapelTapeDamageDeparture.nodes.start",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start": {
+      "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start",
       "type": "choice",
       "lines": [
         {
-          "id": "askChapelTapeDamageDeparture.nodes.start.l0",
+          "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.l0",
           "who": "YOU",
           "text": "{label} is damaged. The job is short a usable recording. I can go back, or leave with that room missing.",
           "source": "src/main.js:28185"
@@ -2550,26 +2618,26 @@
       ],
       "choices": [
         {
-          "id": "askChapelTapeDamageDeparture.nodes.start.c0",
+          "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.c0",
           "text": "Go back. Re-record {label}.",
           "source": "src/main.js:28186",
-          "goto": "askChapelTapeDamageDeparture.nodes.repair"
+          "goto": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair"
         },
         {
-          "id": "askChapelTapeDamageDeparture.nodes.start.c1",
+          "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.c1",
           "text": "Leave with the damaged recording.",
           "source": "src/main.js:28187",
-          "goto": "askChapelTapeDamageDeparture.nodes.leave"
+          "goto": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave"
         }
       ],
       "source": "src/main.js:28185"
     },
-    "askChapelTapeDamageDeparture.nodes.repair": {
-      "id": "askChapelTapeDamageDeparture.nodes.repair",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair": {
+      "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair",
       "type": "line",
       "lines": [
         {
-          "id": "askChapelTapeDamageDeparture.nodes.repair.l0",
+          "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair.l0",
           "who": "you",
           "text": "Back to the room. Same job. They are listening for me now.",
           "source": "src/main.js:28189"
@@ -2577,12 +2645,12 @@
       ],
       "source": "src/main.js:28189"
     },
-    "askChapelTapeDamageDeparture.nodes.leave": {
-      "id": "askChapelTapeDamageDeparture.nodes.leave",
+    "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave": {
+      "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave",
       "type": "line",
       "lines": [
         {
-          "id": "askChapelTapeDamageDeparture.nodes.leave.l0",
+          "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave.l0",
           "who": "you",
           "text": "I am leaving it damaged. Put that on the sheet.",
           "source": "src/main.js:28190"

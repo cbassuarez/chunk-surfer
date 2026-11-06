@@ -1,0 +1,741 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.battles",
+  "title": "Runtime · data/battles.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "practiceChallenges",
+  "entries": [
+    "practiceChallenges",
+    "hallChallenges",
+    "chapelChallenges",
+    "natatoriumBattle.natatorium.intro",
+    "natatoriumBattle.natatorium.rounds.before",
+    "natatoriumBattle.natatorium.rounds.onListen",
+    "natatoriumBattle.natatorium.rounds.after",
+    "natatoriumBattle.natatorium.win",
+    "natatoriumBattle.natatorium.lose",
+    "practiceBattle.practice.intro",
+    "practiceBattle.practice.rounds.before",
+    "practiceBattle.practice.rounds.onListen",
+    "practiceBattle.practice.rounds.after",
+    "practiceBattle.practice.win",
+    "practiceBattle.practice.lose",
+    "hallBattle.hall.intro",
+    "hallBattle.hall.win",
+    "hallBattle.hall.lose",
+    "chapelBoss.refuseCheckpoint",
+    "chapelBoss.chapel.intro",
+    "chapelBoss.chapel.rounds.onListen",
+    "chapelBoss.chapel.rounds.after",
+    "chapelBoss.chapel.rounds.before",
+    "chapelBoss.chapel.win",
+    "chapelBoss.chapel.lose"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/battles.js",
+  "notes": "Generated from src/data/battles.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "practiceChallenges": {
+      "id": "practiceChallenges",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceChallenges.l0",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:69"
+        },
+        {
+          "id": "practiceChallenges.l1",
+          "who": "H",
+          "text": "CONSENT",
+          "source": "src/data/battles.js:79"
+        }
+      ],
+      "source": "src/data/battles.js:69"
+    },
+    "hallChallenges": {
+      "id": "hallChallenges",
+      "type": "line",
+      "lines": [
+        {
+          "id": "hallChallenges.l0",
+          "who": "G",
+          "text": "RETURN",
+          "source": "src/data/battles.js:113"
+        },
+        {
+          "id": "hallChallenges.l1",
+          "who": "G",
+          "text": "REVERSED",
+          "source": "src/data/battles.js:113"
+        }
+      ],
+      "source": "src/data/battles.js:113"
+    },
+    "chapelChallenges": {
+      "id": "chapelChallenges",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelChallenges.l0",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:139"
+        },
+        {
+          "id": "chapelChallenges.l1",
+          "who": "G",
+          "text": "PROCESS",
+          "source": "src/data/battles.js:139"
+        },
+        {
+          "id": "chapelChallenges.l2",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:150"
+        },
+        {
+          "id": "chapelChallenges.l3",
+          "who": "G",
+          "text": "STILL",
+          "source": "src/data/battles.js:150"
+        },
+        {
+          "id": "chapelChallenges.l4",
+          "who": "G",
+          "text": "HERE",
+          "source": "src/data/battles.js:150"
+        },
+        {
+          "id": "chapelChallenges.l5",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:161"
+        },
+        {
+          "id": "chapelChallenges.l6",
+          "who": "H",
+          "text": "GHOST",
+          "source": "src/data/battles.js:161"
+        },
+        {
+          "id": "chapelChallenges.l7",
+          "who": "G",
+          "text": "PROCESS",
+          "source": "src/data/battles.js:161"
+        },
+        {
+          "id": "chapelChallenges.l8",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:172"
+        },
+        {
+          "id": "chapelChallenges.l9",
+          "who": "H",
+          "text": "WORK",
+          "source": "src/data/battles.js:172"
+        },
+        {
+          "id": "chapelChallenges.l10",
+          "who": "H",
+          "text": "ORDER",
+          "source": "src/data/battles.js:172"
+        },
+        {
+          "id": "chapelChallenges.l11",
+          "who": "G",
+          "text": "MOUTH",
+          "source": "src/data/battles.js:172"
+        },
+        {
+          "id": "chapelChallenges.l12",
+          "who": "H",
+          "text": "NOT",
+          "source": "src/data/battles.js:183"
+        },
+        {
+          "id": "chapelChallenges.l13",
+          "who": "H",
+          "text": "BORROWED",
+          "source": "src/data/battles.js:183"
+        },
+        {
+          "id": "chapelChallenges.l14",
+          "who": "H",
+          "text": "RETURN",
+          "source": "src/data/battles.js:183"
+        },
+        {
+          "id": "chapelChallenges.l15",
+          "who": "G",
+          "text": "SIGNAL",
+          "source": "src/data/battles.js:183"
+        },
+        {
+          "id": "chapelChallenges.l16",
+          "who": "G",
+          "text": "PROCESS",
+          "source": "src/data/battles.js:183"
+        },
+        {
+          "id": "chapelChallenges.l17",
+          "who": "G",
+          "text": "RELEASE",
+          "source": "src/data/battles.js:183"
+        }
+      ],
+      "source": "src/data/battles.js:139"
+    },
+    "natatoriumBattle.natatorium.intro": {
+      "id": "natatoriumBattle.natatorium.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.intro.l0",
+          "who": "direction",
+          "text": "Forty seconds into the take. Six metres of tile, no water, and the meter dead flat at the bottom of the scale.",
+          "source": "src/data/battles.js:208"
+        }
+      ],
+      "source": "src/data/battles.js:208"
+    },
+    "natatoriumBattle.natatorium.rounds.before": {
+      "id": "natatoriumBattle.natatorium.rounds.before",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.rounds.before.l0",
+          "who": "direction",
+          "text": "It comes again. Closer, or louder, or you are leaning towards it — you cannot tell which, and not being able to tell which is the whole of the problem.",
+          "source": "src/data/battles.js:218"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.before.l1",
+          "who": "sarah",
+          "text": "You're always recording.",
+          "source": "src/data/battles.js:235"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.before.l2",
+          "who": "direction",
+          "text": "She is right. The meter is moving.",
+          "source": "src/data/battles.js:236"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.before.l3",
+          "who": "sarah",
+          "text": "I hated hearing myself. You liked that I hated it. It meant you got to keep me the way you kept a room.",
+          "source": "src/data/battles.js:253"
+        }
+      ],
+      "source": "src/data/battles.js:218"
+    },
+    "natatoriumBattle.natatorium.rounds.onListen": {
+      "id": "natatoriumBattle.natatorium.rounds.onListen",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.rounds.onListen.l0",
+          "who": "you",
+          "text": "That is a take. That is a level and a room and a date, and I made it, and I do not remember making it.",
+          "source": "src/data/battles.js:239"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.onListen.l1",
+          "who": "you",
+          "text": "{Her(named)} hated the playback. Six years of rooms with nobody in them, and I never once asked myself why that suited me.",
+          "source": "src/data/battles.js:240"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.onListen.l2",
+          "who": "you",
+          "text": "She is not in the room. She is not on the tape. She was never in the signal at all.",
+          "source": "src/data/battles.js:256"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.onListen.l3",
+          "who": "you",
+          "text": "I brought her in here. This is the one recording I have ever made that has me all over it.",
+          "source": "src/data/battles.js:257"
+        }
+      ],
+      "source": "src/data/battles.js:239"
+    },
+    "natatoriumBattle.natatorium.rounds.after": {
+      "id": "natatoriumBattle.natatorium.rounds.after",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.rounds.after.l0",
+          "who": "direction",
+          "text": "The tile gives it back to you four times and each return is thinner than the last.",
+          "source": "src/data/battles.js:225"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.after.l1",
+          "who": "you",
+          "text": "I recorded {her(named)} for three years and I called it not recording.",
+          "source": "src/data/battles.js:243"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.rounds.after.l2",
+          "who": "direction",
+          "text": "The meter, which has never lied to you, sits at the bottom of the scale, and there is nobody in the room but you.",
+          "source": "src/data/battles.js:260"
+        }
+      ],
+      "source": "src/data/battles.js:225"
+    },
+    "natatoriumBattle.natatorium.win": {
+      "id": "natatoriumBattle.natatorium.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.win.l0",
+          "who": "you",
+          "text": "Nothing there. Hold the take. Forty-five seconds, and the last five are the ones that count.",
+          "source": "src/data/battles.js:265"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.win.l1",
+          "who": "direction",
+          "text": "The tile stops answering. The meter holds. You have a clean minute of a room with only you in it, which is the job, which was always the job.",
+          "source": "src/data/battles.js:266"
+        }
+      ],
+      "source": "src/data/battles.js:265"
+    },
+    "natatoriumBattle.natatorium.lose": {
+      "id": "natatoriumBattle.natatorium.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "natatoriumBattle.natatorium.lose.l0",
+          "who": "direction",
+          "text": "You move. You do not decide to; you are moving before you know it, towards a piano that is not there.",
+          "source": "src/data/battles.js:269"
+        },
+        {
+          "id": "natatoriumBattle.natatorium.lose.l1",
+          "who": "direction",
+          "text": "The take dies. Somewhere far off, satisfied, the room stops playing.",
+          "source": "src/data/battles.js:270"
+        }
+      ],
+      "source": "src/data/battles.js:269"
+    },
+    "practiceBattle.practice.intro": {
+      "id": "practiceBattle.practice.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.intro.l0",
+          "who": "direction",
+          "text": "And then, far off, music. Not a note struck — music, playing, the way it plays from another room in a house.",
+          "source": "src/data/battles.js:290"
+        },
+        {
+          "id": "practiceBattle.practice.intro.l1",
+          "who": "you",
+          "text": "There is no power in this building. There is no one in this building.",
+          "source": "src/data/battles.js:291"
+        },
+        {
+          "id": "practiceBattle.practice.intro.l2",
+          "who": "you",
+          "text": "Is it a recording. It sounds like a recording. Whose recording.",
+          "source": "src/data/battles.js:292"
+        }
+      ],
+      "source": "src/data/battles.js:290"
+    },
+    "practiceBattle.practice.rounds.before": {
+      "id": "practiceBattle.practice.rounds.before",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.rounds.before.l0",
+          "who": "direction",
+          "text": "It resolves, for a second, into something you know. A phrase. A room, years ago, a phone left running on a table.",
+          "source": "src/data/battles.js:299"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.before.l1",
+          "who": "sarah",
+          "text": "You have hours of me. You know that, don’t you. Hours.",
+          "source": "src/data/battles.js:313"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.before.l2",
+          "who": "me",
+          "text": "They’re just — they’re the house. You in the house. I never did anything with them.",
+          "source": "src/data/battles.js:314"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.before.l3",
+          "who": "sarah",
+          "text": "You kept them. You keep rooms nobody will stand in again. You kept me the same way. You think accepting my transition is some noble work but you couldn't accept any other part of me.",
+          "source": "src/data/battles.js:315"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.before.l4",
+          "who": "sarah",
+          "text": "Play one back. Go on. You never would, when I could hear you do it.",
+          "source": "src/data/battles.js:328"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.before.l5",
+          "who": "sarah",
+          "text": "Because then it would be me, and you would have to have heard me, and you never did.",
+          "source": "src/data/battles.js:330"
+        }
+      ],
+      "source": "src/data/battles.js:299"
+    },
+    "practiceBattle.practice.rounds.onListen": {
+      "id": "practiceBattle.practice.rounds.onListen",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.rounds.onListen.l0",
+          "who": "you",
+          "text": "That is off a file. That is off one of my files. I have it. It is on a drive in a box in a spare room.",
+          "source": "src/data/battles.js:302"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.onListen.l1",
+          "who": "you",
+          "text": "I recorded {her(named)} for three years and called it not recording, and I kept every second of it.",
+          "source": "src/data/battles.js:303"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.onListen.l2",
+          "who": "you",
+          "text": "She is not here. She is on a drive, in a box... you're hallucinating again. You can stop it.",
+          "source": "src/data/battles.js:318"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.onListen.l3",
+          "who": "you",
+          "text": "Nothing there. Nothing in the room. The room is empty and I filled it, and I am the only thing on this take.",
+          "source": "src/data/battles.js:333"
+        }
+      ],
+      "source": "src/data/battles.js:302"
+    },
+    "practiceBattle.practice.rounds.after": {
+      "id": "practiceBattle.practice.rounds.after",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.rounds.after.l0",
+          "who": "you",
+          "text": "She never once said I could. It never once occurred to me to ask.",
+          "source": "src/data/battles.js:306"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.after.l1",
+          "who": "direction",
+          "text": "The pianos do not move. Seven uprights, lids up, many strings popped. Some of them still sound like pianos.",
+          "source": "src/data/battles.js:321"
+        },
+        {
+          "id": "practiceBattle.practice.rounds.after.l2",
+          "who": "you",
+          "text": "Hold it. Hold the take. Do not give it what it is asking for.",
+          "source": "src/data/battles.js:336"
+        }
+      ],
+      "source": "src/data/battles.js:306"
+    },
+    "practiceBattle.practice.win": {
+      "id": "practiceBattle.practice.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.win.l0",
+          "who": "you",
+          "text": "Nothing there. Hold still. Sixty seconds, and the last five are the ones that count.",
+          "source": "src/data/battles.js:341"
+        },
+        {
+          "id": "practiceBattle.practice.win.l1",
+          "who": "direction",
+          "text": "The far room stops playing. The pianos are pianos. The empty rooms are empty. You have a clean minute of a wing with only you in it, and a box at home you are going to open when you get back, and delete.",
+          "source": "src/data/battles.js:342"
+        }
+      ],
+      "source": "src/data/battles.js:341"
+    },
+    "practiceBattle.practice.lose": {
+      "id": "practiceBattle.practice.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "practiceBattle.practice.lose.l0",
+          "who": "direction",
+          "text": "Your hand is already moving towards the recorder, towards playback, towards her. You stop it. Almost.",
+          "source": "src/data/battles.js:345"
+        },
+        {
+          "id": "practiceBattle.practice.lose.l1",
+          "who": "direction",
+          "text": "The take dies. Somewhere, a phrase you know finishes, and is not played again.",
+          "source": "src/data/battles.js:346"
+        }
+      ],
+      "source": "src/data/battles.js:345"
+    },
+    "hallBattle.hall.intro": {
+      "id": "hallBattle.hall.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "hallBattle.hall.intro.l0",
+          "who": "direction",
+          "text": "The hall returns your silence from three occupied seats. The chairs have grown through the listeners.",
+          "source": "src/data/battles.js:355"
+        },
+        {
+          "id": "hallBattle.hall.intro.l1",
+          "who": "sarah",
+          "text": "You always did like a room that answered for me.",
+          "source": "src/data/battles.js:357"
+        }
+      ],
+      "source": "src/data/battles.js:355"
+    },
+    "hallBattle.hall.win": {
+      "id": "hallBattle.hall.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "hallBattle.hall.win.l0",
+          "who": "you",
+          "text": "Three bodies. Three seats. None of them was the room.",
+          "source": "src/data/battles.js:360"
+        },
+        {
+          "id": "hallBattle.hall.win.l1",
+          "who": "direction",
+          "text": "The last apparition releases its chair and the reflection decays below the machine noise.",
+          "source": "src/data/battles.js:361"
+        }
+      ],
+      "source": "src/data/battles.js:360"
+    },
+    "hallBattle.hall.lose": {
+      "id": "hallBattle.hall.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "hallBattle.hall.lose.l0",
+          "who": "direction",
+          "text": "You answer the return. The hall keeps the answer.",
+          "source": "src/data/battles.js:364"
+        }
+      ],
+      "source": "src/data/battles.js:364"
+    },
+    "chapelBoss.refuseCheckpoint": {
+      "id": "chapelBoss.refuseCheckpoint",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.refuseCheckpoint.l0",
+          "who": "direction",
+          "text": "It is waiting for you to agree with it. Agreeing is the only thing it cannot do for itself.",
+          "source": "src/data/battles.js:522"
+        }
+      ],
+      "source": "src/data/battles.js:522"
+    },
+    "chapelBoss.chapel.intro": {
+      "id": "chapelBoss.chapel.intro",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.intro.l0",
+          "who": "direction",
+          "text": "The chapel. Two banks of pews, an organ with the wind isolated, and the fifth room tone you were sent for.",
+          "source": "src/data/battles.js:550"
+        },
+        {
+          "id": "chapelBoss.chapel.intro.l1",
+          "who": "you",
+          "text": "There is not a person in the chapel... or there shouldn't be, but I'm getting the feeling I'm in heart of the building. Is that...? ",
+          "source": "src/data/battles.js:554"
+        },
+        {
+          "id": "chapelBoss.chapel.intro.l2",
+          "who": "direction",
+          "text": "The damaged monitor still shows the chapel. Its heading now reads {face.label}.",
+          "source": "src/data/battles.js:555"
+        }
+      ],
+      "source": "src/data/battles.js:550"
+    },
+    "chapelBoss.chapel.rounds.onListen": {
+      "id": "chapelBoss.chapel.rounds.onListen",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l0",
+          "who": "you",
+          "text": "No transient. No breath. No felt, no reed, no room.",
+          "source": "src/data/battles.js:563"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l1",
+          "who": "you",
+          "text": "There is nothing there, and it is speaking to me in a voice I have missed so dearly.",
+          "source": "src/data/battles.js:564"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l2",
+          "who": "you",
+          "text": "I... what am I doing?",
+          "source": "src/data/battles.js:575"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l3",
+          "who": "???",
+          "text": "You know what? No. You don't get to be the victim here. I – I had hopes, I dreamed of loving you. You want points for your martyrdom?",
+          "source": "src/data/battles.js:576"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l4",
+          "who": "you",
+          "text": "Don't you throw that in my face I fuck– I ca",
+          "source": "src/data/battles.js:577"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l5",
+          "who": "you",
+          "text": "You what? You cared about me, just because you allowed me to transition? Oh wow! What an ally! You left! You're the one who gave up!",
+          "source": "src/data/battles.js:578"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l6",
+          "who": "you",
+          "text": "It wants me to agree {wound}.",
+          "source": "src/data/battles.js:587"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l7",
+          "who": "you",
+          "text": "I record rooms with nobody in them. It never once occurred to me that this suited me. That is not a wound. That is thirty years of being bad at the other thing.",
+          "source": "src/data/battles.js:588"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l8",
+          "who": "you",
+          "text": "It is not in the room. It is not on the tape. It was never in the signal at all.",
+          "source": "src/data/battles.js:601"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.onListen.l9",
+          "who": "you",
+          "text": "Five of five listened. {listened >= 5 ? 'So did it. It has been at the level of the room the whole time.' : 'And the last one is this.'}",
+          "source": "src/data/battles.js:602"
+        }
+      ],
+      "source": "src/data/battles.js:563"
+    },
+    "chapelBoss.chapel.rounds.after": {
+      "id": "chapelBoss.chapel.rounds.after",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.rounds.after.l0",
+          "who": "direction",
+          "text": "Back in the booth, the guard turns the television down.",
+          "source": "src/data/battles.js:566"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.after.l1",
+          "who": "???",
+          "text": "I thought it would be easy. I thought 'one more and we're out of here.'",
+          "source": "src/data/battles.js:580"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.after.l2",
+          "who": "direction",
+          "text": "It has run out of faces to wear. There is only the one it started with, which is his.",
+          "source": "src/data/battles.js:604"
+        }
+      ],
+      "source": "src/data/battles.js:566"
+    },
+    "chapelBoss.chapel.rounds.before": {
+      "id": "chapelBoss.chapel.rounds.before",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.rounds.before.l0",
+          "who": "recordist?",
+          "text": "You never looked for me.",
+          "source": "src/data/battles.js:571"
+        },
+        {
+          "id": "chapelBoss.chapel.rounds.before.l1",
+          "who": "you",
+          "text": "Sarah?",
+          "source": "src/data/battles.js:572"
+        }
+      ],
+      "source": "src/data/battles.js:571"
+    },
+    "chapelBoss.chapel.win": {
+      "id": "chapelBoss.chapel.win",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.win.l0",
+          "who": "you",
+          "text": "Nothing there. Hold it. Five clean rooms and the last one has only me in it.",
+          "source": "src/data/battles.js:608"
+        },
+        {
+          "id": "chapelBoss.chapel.win.l1",
+          "who": "direction",
+          "text": "The organ stops. The face it was wearing does not come off so much as stop being worn. Both of them are looking at you now, and it is your move.",
+          "source": "src/data/battles.js:609"
+        }
+      ],
+      "source": "src/data/battles.js:608"
+    },
+    "chapelBoss.chapel.lose": {
+      "id": "chapelBoss.chapel.lose",
+      "type": "line",
+      "lines": [
+        {
+          "id": "chapelBoss.chapel.lose.l0",
+          "who": "direction",
+          "text": "You agree with it. You do not decide to; you are nodding before you know it.",
+          "source": "src/data/battles.js:612"
+        },
+        {
+          "id": "chapelBoss.chapel.lose.l1",
+          "who": "{face.who}",
+          "text": "There. That did not cost you anything you were using.",
+          "source": "src/data/battles.js:613"
+        },
+        {
+          "id": "chapelBoss.chapel.lose.l2",
+          "who": "direction",
+          "text": "The take dies. It has a body back, and the body is yours, and it fits.",
+          "source": "src/data/battles.js:614"
+        }
+      ],
+      "source": "src/data/battles.js:612"
+    }
+  }
+}

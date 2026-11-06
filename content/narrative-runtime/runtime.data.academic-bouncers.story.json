@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-bouncers",
+  "title": "Runtime · data/academic-bouncers.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ACADEMIC_BOUNCER_EXCHANGE",
+  "entries": [
+    "ACADEMIC_BOUNCER_EXCHANGE",
+    "ACADEMIC_BOUNCER_CLOSING",
+    "ACADEMIC_BOUNCER_RESPONSES.success",
+    "ACADEMIC_BOUNCER_RESPONSES.early",
+    "ACADEMIC_BOUNCER_RESPONSES.late",
+    "ACADEMIC_BOUNCER_RESPONSES.phrase",
+    "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/academic-bouncers.js",
+  "notes": "Generated from src/data/academic-bouncers.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ACADEMIC_BOUNCER_EXCHANGE": {
+      "id": "ACADEMIC_BOUNCER_EXCHANGE",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_EXCHANGE.l0",
+          "who": "unknown",
+          "text": "Private reception. We have not finished opening.",
+          "source": "src/data/academic-bouncers.js:27"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_EXCHANGE.l1",
+          "who": "unknown",
+          "text": "We began opening yesterday.",
+          "source": "src/data/academic-bouncers.js:28"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_EXCHANGE.l2",
+          "who": "unknown",
+          "text": "A proper welcome takes as long as it takes.",
+          "source": "src/data/academic-bouncers.js:29"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_EXCHANGE.l3",
+          "who": "unknown",
+          "text": "When do the guests arrive?",
+          "source": "src/data/academic-bouncers.js:30"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:27"
+    },
+    "ACADEMIC_BOUNCER_CLOSING": {
+      "id": "ACADEMIC_BOUNCER_CLOSING",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_CLOSING.l0",
+          "who": "unknown",
+          "text": "As soon as we have finished opening.",
+          "source": "src/data/academic-bouncers.js:33"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_CLOSING.l1",
+          "who": "unknown",
+          "text": "Then we had better go on waiting.",
+          "source": "src/data/academic-bouncers.js:34"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:33"
+    },
+    "ACADEMIC_BOUNCER_RESPONSES.success": {
+      "id": "ACADEMIC_BOUNCER_RESPONSES.success",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.success.l0",
+          "who": "unknown",
+          "text": "Then we are late.",
+          "source": "src/data/academic-bouncers.js:38"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.success.l1",
+          "who": "unknown",
+          "text": "Again. Let them through.",
+          "source": "src/data/academic-bouncers.js:39"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:38"
+    },
+    "ACADEMIC_BOUNCER_RESPONSES.early": {
+      "id": "ACADEMIC_BOUNCER_RESPONSES.early",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.early.l0",
+          "who": "unknown",
+          "text": "Over my welcome? Really.",
+          "source": "src/data/academic-bouncers.js:42"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.early.l1",
+          "who": "unknown",
+          "text": "You need the pause between us. There is one, occasionally.",
+          "source": "src/data/academic-bouncers.js:43"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:42"
+    },
+    "ACADEMIC_BOUNCER_RESPONSES.late": {
+      "id": "ACADEMIC_BOUNCER_RESPONSES.late",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.late.l0",
+          "who": "unknown",
+          "text": "That was the gap. You have missed it.",
+          "source": "src/data/academic-bouncers.js:46"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.late.l1",
+          "who": "unknown",
+          "text": "We shall have to begin the welcome again.",
+          "source": "src/data/academic-bouncers.js:47"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:46"
+    },
+    "ACADEMIC_BOUNCER_RESPONSES.phrase": {
+      "id": "ACADEMIC_BOUNCER_RESPONSES.phrase",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.phrase.l0",
+          "who": "unknown",
+          "text": "An invitation does not make the reception ready.",
+          "source": "src/data/academic-bouncers.js:50"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_RESPONSES.phrase.l1",
+          "who": "unknown",
+          "text": "The plate on this landing explains the welcome. Or you could ask us to explain it.",
+          "source": "src/data/academic-bouncers.js:51"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:50"
+    },
+    "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice": {
+      "id": "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice.l0",
+          "who": "unknown",
+          "text": "If you want to put us out of our misery: let me finish asking “When do the guests arrive?” Then, in the pause before Vera answers, say “The guests are already here.”",
+          "source": "src/data/academic-bouncers.js:153"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice.l1",
+          "who": "unknown",
+          "text": "You could simply tell them.",
+          "source": "src/data/academic-bouncers.js:154"
+        },
+        {
+          "id": "ACADEMIC_BOUNCER_SPOKEN_CLUES.hughAdvice.l2",
+          "who": "unknown",
+          "text": "I just did. Please leave me the pause.",
+          "source": "src/data/academic-bouncers.js:155"
+        }
+      ],
+      "source": "src/data/academic-bouncers.js:153"
+    }
+  }
+}

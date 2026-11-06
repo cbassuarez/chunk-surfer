@@ -11,9 +11,12 @@
 // per module into content/narrative-runtime/. The game never reads these: they
 // are a view of the code, regenerated on every studio launch.
 //
-//   node scripts/export-runtime-narrative.mjs          write
+//   npm run studio:runtime                              write
 //   node scripts/export-runtime-narrative.mjs --check  exit 1 if stale
+//
+// The studio server runs this at launch and again whenever src/ changes.
 import { readFile, readdir, writeFile, mkdir, rm } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { relative, resolve, sep } from 'node:path';
 import { parseAst } from 'rolldown/parseAst';
@@ -22,9 +25,9 @@ import { stableJson, validateNarrativeDocument } from '../src/narrative/contract
 const ROOT = resolve(import.meta.dirname, '..');
 const SRC = resolve(ROOT, 'src');
 export const RUNTIME_NARRATIVE_DIR = resolve(ROOT, 'content/narrative-runtime');
-// Modules whose dialogue the studio already owns canonically (the runtime
-// reads the studio documents, these are their legacy import sources).
-const CANONICAL_MODULES = new Set(['data/battles.js', 'data/radio-script.js', 'data/prologue.js']);
+// Text the studio already owns in content/narrative is never listed again
+// here: a module the studio imported from (battles, radio, prologue) shows
+// only what the import left behind.
 const SKIP = [/^narrative\/generated-content\.js$/, /^prototypes\//, /^debug\//];
 const STRUCTURAL = new Set(['lines', 'choices', 'options', 'responses', 'replies', 'say', 'text', 'label', 'who', 'speaker', 'first', 'again', 'prompt']);
 const CHOICE_ARRAYS = new Set(['choices', 'options', 'responses', 'replies', 'answers']);
@@ -147,6 +150,11 @@ function valueText(expr, env, src, depth = 0) {
   if (expr.type === 'ParenthesizedExpression') return valueText(expr.expression, env, src, depth);
   if (expr.type === 'Identifier' && env.has(expr.name)) { const b = env.get(expr.name); return b ? valueText(b.node, b.env, src, depth + 1) : null; }
   if (expr.type === 'CallExpression' && src.slice(expr.callee.start, expr.callee.end) === 'String' && expr.arguments[0]) return valueText(expr.arguments[0], env, src, depth + 1);
+  // name.toUpperCase() and the like, as speaker labels are often written.
+  if (expr.type === 'CallExpression' && expr.callee.type === 'MemberExpression' && !expr.callee.computed && ['toUpperCase', 'toLowerCase', 'trim'].includes(expr.callee.property.name)) {
+    const inner = valueText(expr.callee.object, env, src, depth + 1);
+    return inner == null ? null : inner[expr.callee.property.name]();
+  }
   if (expr.type === 'TemplateLiteral') {
     let out = '';
     expr.quasis.forEach((q, i) => { out += q.value.cooked ?? q.value.raw; const h = expr.expressions[i]; if (h) out += valueText(h, env, src, depth + 1) ?? `{${src.slice(h.start, h.end).replace(/\s+/g, ' ')}}`; });
@@ -200,9 +208,41 @@ function stringsIn(node, out = []) {
   return out;
 }
 
+// Constants imported from sibling modules resolve too (a line that says
+// COASTAL_NOTE_THOUGHT shows its words). One level deep, cached per file.
+const IMPORTED = new Map();
+function importedConstants(ast, file) {
+  const out = new Map();
+  for (const st of ast.body) {
+    if (st.type !== 'ImportDeclaration' || !/^\.{1,2}\//.test(st.source.value)) continue;
+    const target = resolve(ROOT, file, '..', st.source.value);
+    if (!IMPORTED.has(target)) {
+      let table = new Map();
+      try {
+        const src = readFileSync(target, 'utf8'), outer = CONSTANTS, ast2 = parseAst(src, { lang: 'js' });
+        CONSTANTS = new Map(); table = collectConstants(ast2, src); CONSTANTS = outer;
+        // export { A, B } from './elsewhere.js' passes their words through.
+        for (const st2 of ast2.body) if (st2.type === 'ExportNamedDeclaration' && st2.source && /^\.{1,2}\//.test(st2.source.value)) {
+          try { const far = readFileSync(resolve(target, '..', st2.source.value), 'utf8'); CONSTANTS = new Map(); const t2 = collectConstants(parseAst(far, { lang: 'js' }), far); CONSTANTS = outer;
+            for (const sp of st2.specifiers) { const name = sp.local.name ?? sp.local.value, as = sp.exported.name ?? sp.exported.value; if (t2.has(name)) table.set(as, t2.get(name)); } } catch (_) { CONSTANTS = outer; }
+        }
+      } catch (_) {}
+      IMPORTED.set(target, table);
+    }
+    const table = IMPORTED.get(target);
+    for (const sp of st.specifiers) {
+      if (sp.type !== 'ImportSpecifier') continue;
+      const name = sp.imported.name ?? sp.imported.value, local = sp.local.name;
+      for (const [k, v] of table) if (k === name || k.startsWith(`${name}.`)) out.set(local + k.slice(name.length), v);
+    }
+  }
+  return out;
+}
+const LINE_CONSTANT = /_(LINES|NOTES|THOUGHTS|BARKS|REMARKS)$/;
+
 export function extractModule(source, file) {
   const ast = parseAst(source, { lang: 'js' });
-  CONSTANTS = new Map(); CONSTANTS = collectConstants(ast, source); HELPERS = collectHelpers(ast);
+  CONSTANTS = importedConstants(ast, file); for (const [k, v] of collectConstants(ast, source)) CONSTANTS.set(k, v); HELPERS = collectHelpers(ast);
   const lineStarts = [0]; for (let i = 0; i < source.length; i++) if (source.charCodeAt(i) === 10) lineStarts.push(i + 1);
   const lineAt = (n) => { let lo = 0, hi = lineStarts.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (lineStarts[mid] <= n.start) lo = mid; else hi = mid - 1; } return lo + 1; };
   const nodes = new Map();
@@ -212,7 +252,7 @@ export function extractModule(source, file) {
     return nodes.get(id);
   };
   const emitLine = (path, item, at) => { if (!String(item.text || '').trim()) return; const n = node(path); n.lines.push(item); n.at ??= at; };
-  const emitChoice = (path, item, at) => { const n = node(path); n.choices.push(item); n.at ??= at; };
+  const emitChoice = (path, item, at) => { if (!String(item.text || '').trim()) return; const n = node(path); n.choices.push(item); n.at ??= at; };
 
   function visit(n, path, ctx) {
     if (!n || typeof n.type !== 'string') return;
@@ -237,6 +277,9 @@ export function extractModule(source, file) {
           emitChoice(path, { text: label, target, choiceId: id, source: `${file}:${at}` }, at); consumed = true;
         }
       }
+      // A thing with its own id (a page, a voice, a topic) groups what it says.
+      const ownId = consumed ? null : textOf(props.get('id'), source);
+      if (ownId && path.at(-1) !== ownId) path = [...path, ownId];
       const lines = props.get('lines');
       if (lines && lines.type === 'ArrayExpression') {
         for (const el of lines.elements) { const t = el && textOf(el, source); if (t != null) emitLine(path, { who: who || 'thought', text: t, source: `${file}:${lineAt(el)}` }, at); }
@@ -270,7 +313,8 @@ export function extractModule(source, file) {
         const target = txt('goto') ?? txt('next') ?? txt('to');
         if (prompt != null && text != null) emitChoice(path, { text: prompt, target, source: `${file}:${at}` }, at);
         if (text != null && who != null) emitLine(path, { who, text, source: `${file}:${at}` }, at);
-        else if ((text ?? label) != null && (target != null || ctx.inChoices || label != null || shape.has('hideWhenAsked'))) emitChoice(path, { text: text ?? label, target, choiceId: txt('id'), source: `${file}:${at}` }, at);
+        else if (label != null && shape.has('value') && txt('value') != null) emitLine(path, { who: txt('type') || n.callee.name, text: `${label}: ${txt('value')}`, source: `${file}:${at}` }, at);
+        else if ((text ?? label) != null && (target != null || ctx.inChoices || shape.has('hideWhenAsked'))) emitChoice(path, { text: text ?? label, target, choiceId: txt('id'), source: `${file}:${at}` }, at);
         else if (text != null) emitLine(path, { who: txt('type') || n.callee.name, text, source: `${file}:${at}` }, at);
         // Arrays of plain strings handed to a builder (n('odette', ['…']), guest(…, remarks)).
         for (const [k, b] of shape) if (LINE_ARRAYS.test(k)) {
@@ -294,10 +338,24 @@ export function extractModule(source, file) {
     for (const c of children(n)) visit(c, path, ctx.inChoices && (c.type === 'ParenthesizedExpression' || c.type === 'SpreadElement' || c.type === 'ConditionalExpression' || c.type === 'LogicalExpression') ? ctx : { inChoices: false });
   }
   for (const stmt of ast.body) visit(stmt, [], { inChoices: false });
+  // export const SOMETHING_LINES = ['…', '…']: copy kept as a list of lines.
+  for (const stmt of ast.body) {
+    const decl = stmt.type === 'ExportNamedDeclaration' ? stmt.declaration : stmt;
+    if (decl?.type !== 'VariableDeclaration') continue;
+    for (const v of decl.declarations) {
+      if (v.id?.type !== 'Identifier' || !LINE_CONSTANT.test(v.id.name)) continue;
+      const arr = unwrapFreeze(v.init, source);
+      if (arr?.type === 'ArrayExpression') for (const t of stringsIn(arr)) emitLine([v.id.name], { who: 'text', text: t, source: `${file}:${lineAt(arr)}` }, lineAt(arr));
+    }
+  }
   return nodes;
 }
 
-export function documentFor(rel, nodes, { skipNodePrefixes = [] } = {}) {
+export function documentFor(rel, nodes, { skipNodePrefixes = [], canonicalText = new Set() } = {}) {
+  for (const n of nodes.values()) {
+    n.lines = n.lines.filter((line) => !canonicalText.has(line.text));
+    n.choices = n.choices.filter((choice) => !canonicalText.has(choice.text));
+  }
   const id = sanitize(`runtime.${rel.replace(/\.js$/, '').split(sep).join('.').split('/').join('.')}`);
   const out = {}, entries = [];
   for (const [nodeId, n] of nodes) {
@@ -324,7 +382,7 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [] } = {}) {
   if (!entries.length) return null;
   return {
     schemaVersion: 1, id, title: `Runtime · ${rel}`, status: 'reference', readOnly: true, entry: entries[0], entries,
-    tags: ['runtime', 'derived'],
+    tags: ['runtime', 'derived'], regions: [], module: `src/${rel}`,
     notes: `Generated from src/${rel} by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.`,
     nodes: out,
   };
@@ -332,22 +390,26 @@ export function documentFor(rel, nodes, { skipNodePrefixes = [] } = {}) {
 
 export async function exportRuntimeNarrative({ write = true } = {}) {
   const project = JSON.parse(await readFile(resolve(ROOT, 'content/project.json'), 'utf8'));
-  const canonicalIds = new Set();
+  const canonicalIds = new Set(), canonicalText = new Set();
   for (const path of project.narrative || []) {
-    try { canonicalIds.add(JSON.parse(await readFile(resolve(ROOT, 'content', path), 'utf8')).id); } catch (_) {}
+    try {
+      const doc = JSON.parse(await readFile(resolve(ROOT, 'content', path), 'utf8'));
+      canonicalIds.add(doc.id);
+      for (const n of Object.values(doc.nodes || {})) { for (const line of n.lines || []) canonicalText.add(line.text); for (const choice of n.choices || []) canonicalText.add(choice.text); }
+    } catch (_) {}
   }
   const documents = [], index = [];
   for (const full of await walk(SRC)) {
     const rel = relative(SRC, full).split(sep).join('/');
-    if (CANONICAL_MODULES.has(rel) || SKIP.some((re) => re.test(rel))) continue;
+    if (SKIP.some((re) => re.test(rel))) continue;
     const source = await readFile(full, 'utf8');
-    if (!/\bwho\s*:|\blines\s*:|\bchoices\s*:|\boptions\s*:|inspect\(|\bfirst\s*:/.test(source)) continue;
+    if (!/\bwho\s*:|\blines\s*:|\bchoices\s*:|\boptions\s*:|inspect\(|\bfirst\s*:|\btext\s*[:,)}]|_(LINES|NOTES|THOUGHTS|BARKS|REMARKS)\b/.test(source)) continue;
     const nodes = extractModule(source, `src/${rel}`);
     // conservatory-script exports already imported as studio trees stay canonical.
     const skipNodePrefixes = rel === 'data/conservatory-script.js'
       ? [...nodes.keys()].map((k) => k.split('.')[0]).filter((k) => canonicalIds.has(`conservatory.${k.toLowerCase()}`))
       : [];
-    const doc = documentFor(rel, nodes, { skipNodePrefixes });
+    const doc = documentFor(rel, nodes, { skipNodePrefixes, canonicalText });
     if (!doc) continue;
     // A trace whose quoted source is computed at runtime has no literal to
     // check here; that is a fact about the code, not an authoring error.
@@ -362,7 +424,8 @@ export async function exportRuntimeNarrative({ write = true } = {}) {
   if (write) {
     await mkdir(RUNTIME_NARRATIVE_DIR, { recursive: true });
     for (const name of await readdir(RUNTIME_NARRATIVE_DIR)) if (!files.has(name)) await rm(resolve(RUNTIME_NARRATIVE_DIR, name));
-    for (const [name, text] of files) await writeFile(resolve(RUNTIME_NARRATIVE_DIR, name), text, 'utf8');
+    // Only what changed is written, so the studio's file watcher hears real edits.
+    for (const [name, text] of files) { let have = null; try { have = await readFile(resolve(RUNTIME_NARRATIVE_DIR, name), 'utf8'); } catch (_) {} if (have !== text) await writeFile(resolve(RUNTIME_NARRATIVE_DIR, name), text, 'utf8'); }
   }
   return { files, index };
 }

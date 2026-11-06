@@ -4,28 +4,2504 @@
   "title": "Runtime · data/roof-ren-dialogue.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "buildRoofRenDialogue.memory-shared",
+  "entry": "leave",
   "entries": [
-    "buildRoofRenDialogue.memory-shared"
+    "leave",
+    "laterConversation.personal",
+    "laterConversation.home",
+    "laterConversation.home-quiet",
+    "laterConversation.boundary",
+    "laterConversation.too-easy",
+    "laterConversation.warning-truth",
+    "laterConversation.grounded",
+    "laterConversation.no-promise",
+    "laterConversation.witness",
+    "laterConversation.witness-habit",
+    "laterConversation.witness-careful",
+    "laterConversation.demolition",
+    "laterConversation.freedom-unknown",
+    "laterConversation.displaced",
+    "laterConversation.not-a-hero",
+    "laterConversation.dissent-where",
+    "laterConversation.dissent",
+    "laterConversation.dissent-admission",
+    "laterConversation.why-you",
+    "laterConversation.ren-cannot",
+    "laterConversation.ren-admission",
+    "laterConversation.guarantor-where",
+    "laterConversation.precedent",
+    "laterConversation.previous-worth",
+    "laterConversation.previous-consent",
+    "laterConversation.plea",
+    "laterConversation.wait",
+    "laterConversation.terms",
+    "laterConversation.cost",
+    "laterConversation.cost-confirm",
+    "laterConversation.freedom",
+    "laterConversation.consent",
+    "laterConversation.ritual",
+    "laterConversation.declined",
+    "laterConversation.closed",
+    "laterConversation.closed-warning",
+    "laterConversation.closed-account",
+    "laterConversation.closed-dissent",
+    "laterConversation.closed-extraction",
+    "laterConversation.closed-cruel",
+    "buildRoofRenDialogue.start",
+    "buildRoofRenDialogue.returned-sealed",
+    "buildRoofRenDialogue.returned-honest",
+    "buildRoofRenDialogue.memory-shared",
+    "buildRoofRenDialogue.returned-lie",
+    "buildRoofRenDialogue.lie-consequence",
+    "buildRoofRenDialogue.reward",
+    "buildRoofRenDialogue.withheld",
+    "buildRoofRenDialogue.left-truth",
+    "buildRoofRenDialogue.left-stays",
+    "buildRoofRenDialogue.left-maybe",
+    "buildRoofRenDialogue.request",
+    "buildRoofRenDialogue.want",
+    "buildRoofRenDialogue.warning",
+    "buildRoofRenDialogue.accepted",
+    "buildRoofRenDialogue.refused",
+    "buildRoofRenOfficeDialogue.start",
+    "buildRoofRenOfficeDialogue.index",
+    "buildRoofRenOfficeDialogue.trace",
+    "buildRoofRenOfficeDialogue.envelope",
+    "buildRoofRenOfficeDialogue.release",
+    "buildRoofRenOfficeDialogue.left",
+    "buildRoofRenOfficeDialogue.taken",
+    "buildRoofRenEvidenceDialogue.start",
+    "buildRoofRenEvidenceDialogue.account",
+    "buildRoofRenEvidenceDialogue.trace",
+    "memoryPlayback"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/roof-ren-dialogue.js",
   "notes": "Generated from src/data/roof-ren-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "buildRoofRenDialogue.memory-shared": {
-      "id": "buildRoofRenDialogue.memory-shared",
+    "leave": {
+      "id": "leave",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "leave.c0",
+          "text": "I need to go.",
+          "source": "src/data/roof-ren-dialogue.js:13",
+          "choiceId": "roof-ren.leave",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:13"
+    },
+    "laterConversation.personal": {
+      "id": "laterConversation.personal",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.personal.l0",
+          "who": "direction",
+          "text": "Ren keeps one finger on the cassette spool, as if feeling for a pulse.",
+          "source": "src/data/roof-ren-dialogue.js:42"
+        },
+        {
+          "id": "laterConversation.personal.l1",
+          "who": "ren",
+          "text": "She was never cross about the music. Just the dinner getting cold.",
+          "source": "src/data/roof-ren-dialogue.js:43"
+        },
+        {
+          "id": "laterConversation.personal.l2",
+          "who": "ren",
+          "text": "I used to hear that as an interruption. Imagine making an interruption the thing you spend the rest of your life wanting.",
+          "source": "src/data/roof-ren-dialogue.js:44"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.personal.c0",
+          "text": "Did you ever go home?",
+          "source": "src/data/roof-ren-dialogue.js:46",
+          "choiceId": "roof-ren.mother",
+          "goto": "laterConversation.home"
+        },
+        {
+          "id": "laterConversation.personal.c1",
+          "text": "We can sit here a minute. You do not have to explain it.",
+          "source": "src/data/roof-ren-dialogue.js:47",
+          "choiceId": "roof-ren.stay-with-memory",
+          "goto": "laterConversation.home-quiet"
+        },
+        {
+          "id": "laterConversation.personal.c2",
+          "text": "That voice could be worth something on a recording.",
+          "source": "src/data/roof-ren-dialogue.js:48",
+          "choiceId": "roof-ren.exploit-memory",
+          "goto": "laterConversation.closed-extraction"
+        },
+        {
+          "id": "laterConversation.personal.c3",
+          "text": "All of that for someone telling you to eat?",
+          "source": "src/data/roof-ren-dialogue.js:49",
+          "choiceId": "roof-ren.dismiss-memory",
+          "goto": "laterConversation.closed-cruel"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:42"
+    },
+    "laterConversation.home": {
+      "id": "laterConversation.home",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.home.l0",
+          "who": "ren",
+          "text": "Not that evening.",
+          "source": "src/data/roof-ren-dialogue.js:53"
+        },
+        {
+          "id": "laterConversation.home.l1",
+          "who": "direction",
+          "text": "The answer comes before you have finished the question.",
+          "source": "src/data/roof-ren-dialogue.js:54"
+        },
+        {
+          "id": "laterConversation.home.l2",
+          "who": "ren",
+          "text": "I do not know whether she waited, or went to bed, or came looking. It is a very small amount not to know. There is room for everything in it.",
+          "source": "src/data/roof-ren-dialogue.js:55"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.home.c0",
+          "text": "You knew I might find that warning.",
+          "source": "src/data/roof-ren-dialogue.js:56",
+          "choiceId": "roof-ren.home-boundary",
+          "goto": "laterConversation.boundary"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:53"
+    },
+    "laterConversation.home-quiet": {
+      "id": "laterConversation.home-quiet",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.home-quiet.l0",
+          "who": "direction",
+          "text": "For a while there is only the air moving over the roof.",
+          "source": "src/data/roof-ren-dialogue.js:58"
+        },
+        {
+          "id": "laterConversation.home-quiet.l1",
+          "who": "ren",
+          "text": "Thank you. People usually want the part that explains the face.",
+          "source": "src/data/roof-ren-dialogue.js:59"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.home-quiet.c0",
+          "text": "There is still the warning on the envelope.",
+          "source": "src/data/roof-ren-dialogue.js:60",
+          "choiceId": "roof-ren.quiet-boundary",
+          "goto": "laterConversation.boundary"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:58"
+    },
+    "laterConversation.boundary": {
+      "id": "laterConversation.boundary",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.boundary.l0",
+          "who": "ren",
+          "text": "I wrote it. Twice. I knew exactly how to ask for what I wanted, and exactly why somebody ought to refuse.",
+          "source": "src/data/roof-ren-dialogue.js:62"
+        },
+        {
+          "id": "laterConversation.boundary.l1",
+          "who": "ren",
+          "text": "They kept it from me. Everybody obeyed. I have spent years being grateful and furious with them.",
+          "source": "src/data/roof-ren-dialogue.js:63"
+        },
+        {
+          "id": "laterConversation.boundary.l2",
+          "who": "ren",
+          "text": "I let you carry a decision I could not make twice without changing my mind. You can be angry about that.",
+          "source": "src/data/roof-ren-dialogue.js:64"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.boundary.c0",
+          "text": "Why did you sign twice? Tell me what happened when you heard it.",
+          "source": "src/data/roof-ren-dialogue.js:66",
+          "choiceId": "roof-ren.boundary-clear",
+          "goto": "laterConversation.warning-truth"
+        },
+        {
+          "id": "laterConversation.boundary.c1",
+          "text": "I wanted to help. That does not make what you did fair. Tell me the part you left out.",
+          "source": "src/data/roof-ren-dialogue.js:67",
+          "choiceId": "roof-ren.boundary-honest",
+          "goto": "laterConversation.warning-truth"
+        },
+        {
+          "id": "laterConversation.boundary.c2",
+          "text": "You can ask me for anything.",
+          "source": "src/data/roof-ren-dialogue.js:68",
+          "choiceId": "roof-ren.boundary-flattery",
+          "goto": "laterConversation.too-easy"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:62"
+    },
+    "laterConversation.too-easy": {
+      "id": "laterConversation.too-easy",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.too-easy.l0",
+          "who": "ren",
+          "text": "No. Please do not say that up here.",
+          "source": "src/data/roof-ren-dialogue.js:72"
+        },
+        {
+          "id": "laterConversation.too-easy.l1",
+          "who": "direction",
+          "text": "The open side of Ren contracts, like a hand closing behind a curtain.",
+          "source": "src/data/roof-ren-dialogue.js:73"
+        },
+        {
+          "id": "laterConversation.too-easy.l2",
+          "who": "ren",
+          "text": "There are things listening for an answer that careless. Give me a smaller one.",
+          "source": "src/data/roof-ren-dialogue.js:74"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.too-easy.c0",
+          "text": "Then tell me what happened when you heard the tape.",
+          "source": "src/data/roof-ren-dialogue.js:75",
+          "choiceId": "roof-ren.boundary-corrected",
+          "goto": "laterConversation.warning-truth"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:72"
+    },
+    "laterConversation.warning-truth": {
+      "id": "laterConversation.warning-truth",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.warning-truth.l0",
+          "who": "ren",
+          "text": "The first time, I heard her call and answered. A student heard me from the stair. Another heard me inside a locked practice room. I was here, on this glass.",
+          "source": "src/data/roof-ren-dialogue.js:77"
+        },
+        {
+          "id": "laterConversation.warning-truth.l1",
+          "who": "direction",
+          "text": "The missing side of Ren bends toward the dark pane. For an instant, the pane seems to bend toward them.",
+          "source": "src/data/roof-ren-dialogue.js:78"
+        },
+        {
+          "id": "laterConversation.warning-truth.l2",
+          "who": "ren",
+          "text": "I signed the first refusal that night. A year later I still wanted her voice, so I signed again. That is the part I was afraid I would forget.",
+          "source": "src/data/roof-ren-dialogue.js:79"
+        },
+        {
+          "id": "laterConversation.warning-truth.l3",
+          "who": "ren",
+          "text": "I do not know what would have followed my answer into those rooms. I want the tape anyway. Both facts belong to me.",
+          "source": "src/data/roof-ren-dialogue.js:80"
+        },
+        {
+          "id": "laterConversation.warning-truth.l4",
+          "who": "c",
+          "text": "I can care about you and still need the whole cost before any other request.",
+          "source": "src/data/roof-ren-dialogue.js:82"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.warning-truth.c0",
+          "text": "The refusals do not matter. I will do whatever you ask next.",
+          "source": "src/data/roof-ren-dialogue.js:83",
+          "choiceId": "roof-ren.warning-dismiss",
+          "goto": "laterConversation.closed-warning"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:77"
+    },
+    "laterConversation.grounded": {
+      "id": "laterConversation.grounded",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.grounded.l0",
+          "who": "ren",
+          "text": "There is another question. I am not asking it yet.",
+          "source": "src/data/roof-ren-dialogue.js:87"
+        },
+        {
+          "id": "laterConversation.grounded.l1",
+          "who": "ren",
+          "text": "Read the demolition notice downstairs. The date, the hour. Know what is actually coming; do not take it from me.",
+          "source": "src/data/roof-ren-dialogue.js:88"
+        },
+        {
+          "id": "laterConversation.grounded.l2",
+          "who": "ren",
+          "text": "You found the service word. Before you tell me what these rooms hold, listen in more than one of them. Listen to what is there when the recording stops. I will not make their lives into a story you only heard from me.",
+          "source": "src/data/roof-ren-dialogue.js:89"
+        },
+        {
+          "id": "laterConversation.grounded.l3",
+          "who": "ren",
+          "text": "Then come back if you still want to talk. The key was a thank-you. It was not an advance.",
+          "source": "src/data/roof-ren-dialogue.js:90"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.grounded.c0",
+          "text": "I will decide after I have seen for myself.",
+          "source": "src/data/roof-ren-dialogue.js:91",
+          "choiceId": "roof-ren.grounded-leave",
+          "targetName": "done"
+        },
+        {
+          "id": "laterConversation.grounded.c1",
+          "text": "I am not promising to come back.",
+          "source": "src/data/roof-ren-dialogue.js:91",
+          "choiceId": "roof-ren.grounded-no-promise",
+          "goto": "laterConversation.no-promise"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:87"
+    },
+    "laterConversation.no-promise": {
+      "id": "laterConversation.no-promise",
       "type": "line",
       "lines": [
         {
+          "id": "laterConversation.no-promise.l0",
+          "who": "ren",
+          "text": "Good. Keep that part of yourself.",
+          "source": "src/data/roof-ren-dialogue.js:92"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:92"
+    },
+    "laterConversation.witness": {
+      "id": "laterConversation.witness",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.witness.l0",
+          "who": "ren",
+          "text": "A word opened the gate. Now you have listened in more than one room.",
+          "source": "src/data/roof-ren-dialogue.js:94"
+        },
+        {
+          "id": "laterConversation.witness.l1",
+          "who": "ren",
+          "text": "I call what remains here people. You may not be ready to call them that. They still know where their rooms ought to be.",
+          "source": "src/data/roof-ren-dialogue.js:95"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.witness.c0",
+          "text": "They still have somewhere that belongs to them.",
+          "source": "src/data/roof-ren-dialogue.js:97",
+          "choiceId": "roof-ren.witness-human",
+          "goto": "laterConversation.witness-habit"
+        },
+        {
+          "id": "laterConversation.witness.c1",
+          "text": "I heard something. I cannot promise I understand what it was.",
+          "source": "src/data/roof-ren-dialogue.js:98",
+          "choiceId": "roof-ren.witness-skeptic",
+          "goto": "laterConversation.witness-careful"
+        },
+        {
+          "id": "laterConversation.witness.c2",
+          "text": "They would make extraordinary material.",
+          "source": "src/data/roof-ren-dialogue.js:99",
+          "choiceId": "roof-ren.witness-specimen",
+          "goto": "laterConversation.closed-extraction"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:94"
+    },
+    "laterConversation.witness-habit": {
+      "id": "laterConversation.witness-habit",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.witness-habit.l0",
+          "who": "ren",
+          "text": "One of them still waits until the piano next door finishes before they begin. Nobody has needed to tell them to for forty years.",
+          "source": "src/data/roof-ren-dialogue.js:103"
+        },
+        {
+          "id": "laterConversation.witness-habit.l1",
+          "who": "ren",
+          "text": "I cannot prove to you what they are. I can tell you this is the only place where that pause has a meaning.",
+          "source": "src/data/roof-ren-dialogue.js:104"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.witness-habit.c0",
+          "text": "What happens to them if the rooms go?",
+          "source": "src/data/roof-ren-dialogue.js:105",
+          "choiceId": "roof-ren.witness-habit-next",
+          "goto": "laterConversation.demolition"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:103"
+    },
+    "laterConversation.witness-careful": {
+      "id": "laterConversation.witness-careful",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.witness-careful.l0",
+          "who": "ren",
+          "text": "Neither can I. Do not let me become the expert just because I am dead.",
+          "source": "src/data/roof-ren-dialogue.js:107"
+        },
+        {
+          "id": "laterConversation.witness-careful.l1",
+          "who": "ren",
+          "text": "They still keep the habits of people who expected to come back to their rooms.",
+          "source": "src/data/roof-ren-dialogue.js:108"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.witness-careful.c0",
+          "text": "Then what happens if those rooms are gone?",
+          "source": "src/data/roof-ren-dialogue.js:109",
+          "choiceId": "roof-ren.witness-careful-next",
+          "goto": "laterConversation.demolition"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:107"
+    },
+    "laterConversation.demolition": {
+      "id": "laterConversation.demolition",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.demolition.l0",
+          "who": "ren",
+          "text": "Six in the morning. A machine takes the first bite, and the room somebody has been finding for forty years is open to the weather.",
+          "source": "src/data/roof-ren-dialogue.js:111"
+        },
+        {
+          "id": "laterConversation.demolition.l1",
+          "who": "ren",
+          "text": "The company sees an empty school. I see people about to lose the only address that still knows them.",
+          "source": "src/data/roof-ren-dialogue.js:112"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.demolition.c0",
+          "text": "What happens to the city if they have nowhere to go?",
+          "source": "src/data/roof-ren-dialogue.js:114",
+          "choiceId": "roof-ren.city-consequence",
+          "goto": "laterConversation.displaced"
+        },
+        {
+          "id": "laterConversation.demolition.c1",
+          "text": "Perhaps losing the building would free them.",
+          "source": "src/data/roof-ren-dialogue.js:115",
+          "choiceId": "roof-ren.demolition-denial",
+          "goto": "laterConversation.freedom-unknown"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:111"
+    },
+    "laterConversation.freedom-unknown": {
+      "id": "laterConversation.freedom-unknown",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.freedom-unknown.l0",
+          "who": "ren",
+          "text": "Perhaps. I want that to be true so badly that you should not trust me to tell you it is.",
+          "source": "src/data/roof-ren-dialogue.js:119"
+        },
+        {
+          "id": "laterConversation.freedom-unknown.l1",
+          "who": "ren",
+          "text": "I have seen one of us try to leave through a room that had been knocked down. I heard them from every drain on that street for a week.",
+          "source": "src/data/roof-ren-dialogue.js:120"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.freedom-unknown.c0",
+          "text": "And the people who live beyond that street?",
+          "source": "src/data/roof-ren-dialogue.js:121",
+          "choiceId": "roof-ren.freedom-city",
+          "goto": "laterConversation.displaced"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:119"
+    },
+    "laterConversation.displaced": {
+      "id": "laterConversation.displaced",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.displaced.l0",
+          "who": "ren",
+          "text": "I do not know what happens to all of us. Anyone who tells you they know is selling something.",
+          "source": "src/data/roof-ren-dialogue.js:123"
+        },
+        {
+          "id": "laterConversation.displaced.l1",
+          "who": "ren",
+          "text": "Some might end. Some might get out. Into stairwells, bedrooms, the buses people take home. There are children in the flats across the road.",
+          "source": "src/data/roof-ren-dialogue.js:124"
+        },
+        {
+          "id": "laterConversation.displaced.l2",
+          "who": "ren",
+          "text": "I am frightened for us. I am frightened of us. Both are true.",
+          "source": "src/data/roof-ren-dialogue.js:125"
+        },
+        {
+          "id": "laterConversation.displaced.l3",
+          "who": "c",
+          "text": "Then saving the place buys time. It does not solve what happened here.",
+          "source": "src/data/roof-ren-dialogue.js:127"
+        },
+        {
+          "id": "laterConversation.displaced.l4",
+          "who": "c",
+          "text": "You are asking me to act without knowing what I would prevent.",
+          "source": "src/data/roof-ren-dialogue.js:128"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.displaced.c0",
+          "text": "Tell me what to do and I will fix it.",
+          "source": "src/data/roof-ren-dialogue.js:129",
+          "choiceId": "roof-ren.uncertainty-easy",
+          "goto": "laterConversation.not-a-hero"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:123"
+    },
+    "laterConversation.not-a-hero": {
+      "id": "laterConversation.not-a-hero",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.not-a-hero.l0",
+          "who": "ren",
+          "text": "Please do not make yourself into the person who can fix everybody. This place loves that person.",
+          "source": "src/data/roof-ren-dialogue.js:133"
+        },
+        {
+          "id": "laterConversation.not-a-hero.l1",
+          "who": "ren",
+          "text": "I can ask for time. I cannot promise you a cure.",
+          "source": "src/data/roof-ren-dialogue.js:134"
+        },
+        {
+          "id": "laterConversation.not-a-hero.l2",
+          "who": "c",
+          "text": "Then be honest about what another century would buy.",
+          "source": "src/data/roof-ren-dialogue.js:135"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:133"
+    },
+    "laterConversation.dissent-where": {
+      "id": "laterConversation.dissent-where",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.dissent-where.l0",
+          "who": "ren",
+          "text": "There is a loose score on a chair in the cleared room, through the breach. It has an answer I cannot give on anyone else's behalf.",
+          "source": "src/data/roof-ren-dialogue.js:137"
+        },
+        {
+          "id": "laterConversation.dissent-where.l1",
+          "who": "ren",
+          "text": "You have heard me. Go hear the person who disagrees with me. Then come back if you still want to.",
+          "source": "src/data/roof-ren-dialogue.js:138"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.dissent-where.c0",
+          "text": "I will find the score and listen for myself.",
+          "source": "src/data/roof-ren-dialogue.js:139",
+          "choiceId": "roof-ren.dissent-seek",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:137"
+    },
+    "laterConversation.dissent": {
+      "id": "laterConversation.dissent",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.dissent.l0",
+          "who": "you",
+          "text": "The person in the cleared room would risk leaving, even if they might end. You kept saying they would lose their home.",
+          "source": "src/data/roof-ren-dialogue.js:141"
+        },
+        {
+          "id": "laterConversation.dissent.l1",
+          "who": "ren",
+          "text": "I did. It was easier to say that than to say some of us want these walls opened.",
+          "source": "src/data/roof-ren-dialogue.js:142"
+        },
+        {
+          "id": "laterConversation.dissent.l2",
+          "who": "ren",
+          "text": "I do not know whether the seal holds them here, or whether they are already unable to leave. I cannot count their fear as consent to stay.",
+          "source": "src/data/roof-ren-dialogue.js:143"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.dissent.c0",
+          "text": "Then you cannot call another century a rescue for every spirit.",
+          "source": "src/data/roof-ren-dialogue.js:145",
+          "choiceId": "roof-ren.dissent-account",
+          "goto": "laterConversation.dissent-admission"
+        },
+        {
+          "id": "laterConversation.dissent.c1",
+          "text": "One frightened voice does not matter beside the rest.",
+          "source": "src/data/roof-ren-dialogue.js:146",
+          "choiceId": "roof-ren.dissent-dismiss",
+          "goto": "laterConversation.closed-dissent"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:141"
+    },
+    "laterConversation.dissent-admission": {
+      "id": "laterConversation.dissent-admission",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.dissent-admission.l0",
+          "who": "ren",
+          "text": "No. The school can be a home and a trap. I would be choosing time over their chance at an exit.",
+          "source": "src/data/roof-ren-dialogue.js:150"
+        },
+        {
+          "id": "laterConversation.dissent-admission.l1",
+          "who": "ren",
+          "text": "If I ask you to make that choice too, you should know I benefit from it.",
+          "source": "src/data/roof-ren-dialogue.js:151"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.dissent-admission.c0",
+          "text": "Tell me what you stand to keep.",
+          "source": "src/data/roof-ren-dialogue.js:152",
+          "choiceId": "roof-ren.dissent-ask-ren",
+          "goto": "laterConversation.why-you"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:150"
+    },
+    "laterConversation.why-you": {
+      "id": "laterConversation.why-you",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.why-you.l0",
+          "who": "ren",
+          "text": "Before you ask: yes, I want to keep my home. I want the stairs where I knew who was coming by the way they took them. I want that stupid draught under the practice-room door.",
+          "source": "src/data/roof-ren-dialogue.js:154"
+        },
+        {
+          "id": "laterConversation.why-you.l1",
+          "who": "ren",
+          "text": "I am not outside this. I do not get to sound noble about it.",
+          "source": "src/data/roof-ren-dialogue.js:155"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.why-you.c0",
+          "text": "Why can you not save it yourself?",
+          "source": "src/data/roof-ren-dialogue.js:157",
+          "choiceId": "roof-ren.motives-question",
+          "goto": "laterConversation.ren-cannot"
+        },
+        {
+          "id": "laterConversation.why-you.c1",
+          "text": "Is that why you wanted the cassette back? To make me care?",
+          "source": "src/data/roof-ren-dialogue.js:158",
+          "choiceId": "roof-ren.motives-suspicion",
+          "goto": "laterConversation.ren-admission"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:154"
+    },
+    "laterConversation.ren-cannot": {
+      "id": "laterConversation.ren-cannot",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.ren-cannot.l0",
+          "who": "ren",
+          "text": "Because a dead person cannot promise a living future. This is all the future I have.",
+          "source": "src/data/roof-ren-dialogue.js:162"
+        },
+        {
+          "id": "laterConversation.ren-cannot.l1",
+          "who": "direction",
+          "text": "Ren lifts their intact hand. The other side follows a moment late and folds back into the body.",
+          "source": "src/data/roof-ren-dialogue.js:163"
+        },
+        {
+          "id": "laterConversation.ren-cannot.l2",
+          "who": "ren",
+          "text": "It needs somebody the world still expects to go home.",
+          "source": "src/data/roof-ren-dialogue.js:164"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.ren-cannot.c0",
+          "text": "And the cassette? Why ask me for that before this?",
+          "source": "src/data/roof-ren-dialogue.js:165",
+          "choiceId": "roof-ren.ren-cannot-admission",
+          "goto": "laterConversation.ren-admission"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:162"
+    },
+    "laterConversation.ren-admission": {
+      "id": "laterConversation.ren-admission",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.ren-admission.l0",
+          "who": "ren",
+          "text": "I wanted the cassette. That part is true. I also knew that if you saw me wanting something small, you might stay for the large thing.",
+          "source": "src/data/roof-ren-dialogue.js:167"
+        },
+        {
+          "id": "laterConversation.ren-admission.l1",
+          "who": "ren",
+          "text": "I am sorry. I can be lonely and calculating at the same time. You should know both before you answer.",
+          "source": "src/data/roof-ren-dialogue.js:168"
+        },
+        {
+          "id": "laterConversation.ren-admission.l2",
+          "who": "c",
+          "text": "I can care about you and still ask who has paid for this before.",
+          "source": "src/data/roof-ren-dialogue.js:170"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.ren-admission.c0",
+          "text": "You were lonely. I would rather not hear what else you used me for.",
+          "source": "src/data/roof-ren-dialogue.js:171",
+          "choiceId": "roof-ren.admission-excuse",
+          "goto": "laterConversation.closed-account"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:167"
+    },
+    "laterConversation.guarantor-where": {
+      "id": "laterConversation.guarantor-where",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.guarantor-where.l0",
+          "who": "ren",
+          "text": "In the chamber room, there is a dated slip under the piano bench. The last guarantor wrote it herself. I kept it because she asked me to.",
+          "source": "src/data/roof-ren-dialogue.js:175"
+        },
+        {
+          "id": "laterConversation.guarantor-where.l1",
+          "who": "ren",
+          "text": "Read what she agreed to. Read what it cost her after she had already said yes. Do not take my summary.",
+          "source": "src/data/roof-ren-dialogue.js:176"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.guarantor-where.c0",
+          "text": "I will read her account before you ask me to be the next.",
+          "source": "src/data/roof-ren-dialogue.js:177",
+          "choiceId": "roof-ren.guarantor-seek",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:175"
+    },
+    "laterConversation.precedent": {
+      "id": "laterConversation.precedent",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.precedent.l0",
+          "who": "ren",
+          "text": "How else do you think music schools stay alive? It is not the money. There is none.",
+          "source": "src/data/roof-ren-dialogue.js:179"
+        },
+        {
+          "id": "laterConversation.precedent.l1",
+          "who": "direction",
+          "text": "Ren tries to smile. The intact half manages it.",
+          "source": "src/data/roof-ren-dialogue.js:180"
+        },
+        {
+          "id": "laterConversation.precedent.l2",
+          "who": "ren",
+          "text": "Every hundred years, someone agrees to be the reason the place is still here. The first one was a student. The next was the woman who cleaned the practice rooms. Names that ended up on no donor wall.",
+          "source": "src/data/roof-ren-dialogue.js:181"
+        },
+        {
+          "id": "laterConversation.precedent.l3",
+          "who": "ren",
+          "text": "You read her slip. She knew the gate would not open. She did not know how long an ordinary missed day could stay with her. I was there when the photograph arrived.",
+          "source": "src/data/roof-ren-dialogue.js:182"
+        },
+        {
+          "id": "laterConversation.precedent.l4",
+          "who": "ren",
+          "text": "One century is ending. I can make the next seal. I cannot be the person inside it.",
+          "source": "src/data/roof-ren-dialogue.js:183"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.precedent.c0",
+          "text": "Those people deserve to be remembered. What did they know when they agreed?",
+          "source": "src/data/roof-ren-dialogue.js:185",
+          "choiceId": "roof-ren.previous-accountability",
+          "goto": "laterConversation.previous-consent"
+        },
+        {
+          "id": "laterConversation.precedent.c1",
+          "text": "Did they agree, knowing what it meant?",
+          "source": "src/data/roof-ren-dialogue.js:186",
+          "choiceId": "roof-ren.previous-question",
+          "goto": "laterConversation.previous-consent"
+        },
+        {
+          "id": "laterConversation.precedent.c2",
+          "text": "What would another hundred years actually be worth?",
+          "source": "src/data/roof-ren-dialogue.js:187",
+          "choiceId": "roof-ren.previous-price",
+          "goto": "laterConversation.previous-worth"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:179"
+    },
+    "laterConversation.previous-worth": {
+      "id": "laterConversation.previous-worth",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.previous-worth.l0",
+          "who": "ren",
+          "text": "There is no number I can put against your life outside. I wish I could offer you something that made the exchange fair.",
+          "source": "src/data/roof-ren-dialogue.js:191"
+        },
+        {
+          "id": "laterConversation.previous-worth.l1",
+          "who": "ren",
+          "text": "You are right to ask what the place gives back. Before that, ask me what happened to the last people who paid.",
+          "source": "src/data/roof-ren-dialogue.js:192"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.previous-worth.c0",
+          "text": "What did the other guarantors know when they agreed?",
+          "source": "src/data/roof-ren-dialogue.js:193",
+          "choiceId": "roof-ren.previous-worth-consent",
+          "goto": "laterConversation.previous-consent"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:191"
+    },
+    "laterConversation.previous-consent": {
+      "id": "laterConversation.previous-consent",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.previous-consent.l0",
+          "who": "ren",
+          "text": "The cleaner did. I knew her. She used to sit here and call us all useless little sods.",
+          "source": "src/data/roof-ren-dialogue.js:195"
+        },
+        {
+          "id": "laterConversation.previous-consent.l1",
+          "who": "ren",
+          "text": "The first one, I only know from the building. That is not a source I would call impartial.",
+          "source": "src/data/roof-ren-dialogue.js:196"
+        },
+        {
+          "id": "laterConversation.previous-consent.l2",
+          "who": "ren",
+          "text": "I will not pretend the old seals were fair to make a new one easier to ask for.",
+          "source": "src/data/roof-ren-dialogue.js:197"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.previous-consent.c0",
+          "text": "Then start again. Ask me plainly, and tell me the whole cost.",
+          "source": "src/data/roof-ren-dialogue.js:198",
+          "choiceId": "roof-ren.previous-terms",
+          "goto": "laterConversation.plea"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:195"
+    },
+    "laterConversation.plea": {
+      "id": "laterConversation.plea",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.plea.l0",
+          "who": "ren",
+          "text": "Please help me keep this place standing.",
+          "source": "src/data/roof-ren-dialogue.js:200"
+        },
+        {
+          "id": "laterConversation.plea.l1",
+          "who": "direction",
+          "text": "Ren says it without the little smile, without looking past you at the city.",
+          "source": "src/data/roof-ren-dialogue.js:201"
+        },
+        {
+          "id": "laterConversation.plea.l2",
+          "who": "ren",
+          "text": "For the people inside it who still call it home. For the people outside it who have no idea what could arrive in their homes. I heard the person in the cleared room too. I cannot promise this is mercy for them.",
+          "source": "src/data/roof-ren-dialogue.js:202"
+        },
+        {
+          "id": "laterConversation.plea.l3",
+          "who": "ren",
+          "text": "For me. I want to stay. I want us to have somewhere to stay.",
+          "source": "src/data/roof-ren-dialogue.js:203"
+        },
+        {
+          "id": "laterConversation.plea.l4",
+          "who": "ren",
+          "text": "A century. I can hold demolition away for another hundred years, if a living person lets me put the seal on them.",
+          "source": "src/data/roof-ren-dialogue.js:204"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.plea.c0",
+          "text": "Explain the seal. Every part, before I answer.",
+          "source": "src/data/roof-ren-dialogue.js:206",
+          "choiceId": "roof-ren.seal-hear-terms",
+          "goto": "laterConversation.terms"
+        },
+        {
+          "id": "laterConversation.plea.c1",
+          "text": "I need time. Do not mistake that for yes.",
+          "source": "src/data/roof-ren-dialogue.js:207",
+          "choiceId": "roof-ren.seal-time",
+          "goto": "laterConversation.wait"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:200"
+    },
+    "laterConversation.wait": {
+      "id": "laterConversation.wait",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.wait.l0",
+          "who": "ren",
+          "text": "I will not. The roof is here. I am here. You can still leave.",
+          "source": "src/data/roof-ren-dialogue.js:210"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:210"
+    },
+    "laterConversation.terms": {
+      "id": "laterConversation.terms",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.terms.l0",
+          "who": "ren",
+          "text": "I put my hand against your sternum. The missing part of me passes through you and closes round the school.",
+          "source": "src/data/roof-ren-dialogue.js:212"
+        },
+        {
+          "id": "laterConversation.terms.l1",
+          "who": "ren",
+          "text": "Your living name becomes its guarantor. For a hundred years this place cannot be demolished, sold out from under itself, or made empty by force.",
+          "source": "src/data/roof-ren-dialogue.js:213"
+        },
+        {
+          "id": "laterConversation.terms.l2",
+          "who": "ren",
+          "text": "The ordinary world will find ordinary reasons. A title that cannot be cleared. A foundation the survey missed. Someone refusing a signature. The protection is real. The reasons will be real too.",
+          "source": "src/data/roof-ren-dialogue.js:214"
+        },
+        {
+          "id": "laterConversation.terms.l3",
+          "who": "ren",
+          "text": "It does not repair the school. It does not feed anybody. People will still have to keep it alive. It only refuses the final destruction.",
+          "source": "src/data/roof-ren-dialogue.js:215"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.terms.c0",
+          "text": "What happens to me?",
+          "source": "src/data/roof-ren-dialogue.js:216",
+          "choiceId": "roof-ren.terms-cost",
+          "goto": "laterConversation.cost"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:212"
+    },
+    "laterConversation.cost": {
+      "id": "laterConversation.cost",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.cost.l0",
+          "who": "ren",
+          "text": "You stay. In this building. In these grounds. The seal keeps your body alive, and the years outside keep going.",
+          "source": "src/data/roof-ren-dialogue.js:218"
+        },
+        {
+          "id": "laterConversation.cost.l1",
+          "who": "ren",
+          "text": "You can walk, eat, sleep, teach if anyone will listen. You can sit on this glass and watch the city. You cannot go home. Not for a visit. Not for a funeral.",
+          "source": "src/data/roof-ren-dialogue.js:219"
+        },
+        {
+          "id": "laterConversation.cost.l2",
+          "who": "ren",
+          "text": "The people you know will get older. The seal will not let you follow them out. At the end of the century it releases you. I do not know what the years it held back will do then.",
+          "source": "src/data/roof-ren-dialogue.js:220"
+        },
+        {
+          "id": "laterConversation.cost.l3",
+          "who": "ren",
+          "text": "I cannot reverse it once it closes. I cannot make that smaller by calling it a gift.",
+          "source": "src/data/roof-ren-dialogue.js:221"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.cost.c0",
+          "text": "If I say no, what happens right now?",
+          "source": "src/data/roof-ren-dialogue.js:223",
+          "choiceId": "roof-ren.cost-freedom",
+          "goto": "laterConversation.freedom"
+        },
+        {
+          "id": "laterConversation.cost.c1",
+          "text": "I lose my life outside for a hundred years, and you cannot undo it.",
+          "source": "src/data/roof-ren-dialogue.js:224",
+          "choiceId": "roof-ren.cost-read-back",
+          "goto": "laterConversation.cost-confirm"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:218"
+    },
+    "laterConversation.cost-confirm": {
+      "id": "laterConversation.cost-confirm",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.cost-confirm.l0",
+          "who": "ren",
+          "text": "Yes. That is what I am asking. There is no kinder version hidden in the wording.",
+          "source": "src/data/roof-ren-dialogue.js:227"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.cost-confirm.c0",
+          "text": "Then tell me I can refuse.",
+          "source": "src/data/roof-ren-dialogue.js:227",
+          "choiceId": "roof-ren.cost-right-to-no",
+          "goto": "laterConversation.freedom"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:227"
+    },
+    "laterConversation.freedom": {
+      "id": "laterConversation.freedom",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.freedom.l0",
+          "who": "ren",
+          "text": "If you say no, I take my hand away. You keep the service key. You keep the choice to leave the roof and this building.",
+          "source": "src/data/roof-ren-dialogue.js:229"
+        },
+        {
+          "id": "laterConversation.freedom.l1",
+          "who": "ren",
+          "text": "I will not follow you with the voices of people you did not save. They are not a debt I am allowed to put in your pocket.",
+          "source": "src/data/roof-ren-dialogue.js:230"
+        },
+        {
+          "id": "laterConversation.freedom.l2",
+          "who": "ren",
+          "text": "I am pleading because I want you to say yes. That is exactly why you need a way to say no.",
+          "source": "src/data/roof-ren-dialogue.js:231"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.freedom.c0",
+          "text": "I understand. Let me choose.",
+          "source": "src/data/roof-ren-dialogue.js:232",
+          "choiceId": "roof-ren.freedom-consent",
+          "goto": "laterConversation.consent"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:229"
+    },
+    "laterConversation.consent": {
+      "id": "laterConversation.consent",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "laterConversation.consent.l0",
+          "who": "direction",
+          "text": "Ren holds out their intact hand, palm upwards. There is still space between you.",
+          "source": "src/data/roof-ren-dialogue.js:234"
+        },
+        {
+          "id": "laterConversation.consent.l1",
+          "who": "ren",
+          "text": "No oath by accident. No signature borrowed from the envelope. This has to be a new answer.",
+          "source": "src/data/roof-ren-dialogue.js:235"
+        },
+        {
+          "id": "laterConversation.consent.l2",
+          "who": "ren",
+          "text": "Will you let me seal you to this place, willingly, for one hundred years?",
+          "source": "src/data/roof-ren-dialogue.js:236"
+        }
+      ],
+      "choices": [
+        {
+          "id": "laterConversation.consent.c0",
+          "text": "Yes. I choose to stay for one hundred years. Put the seal on me.",
+          "source": "src/data/roof-ren-dialogue.js:238",
+          "choiceId": "roof-ren.consent-explicit",
+          "goto": "laterConversation.ritual"
+        },
+        {
+          "id": "laterConversation.consent.c1",
+          "text": "Not yet. I am still deciding.",
+          "source": "src/data/roof-ren-dialogue.js:239",
+          "choiceId": "roof-ren.consent-time",
+          "goto": "laterConversation.wait"
+        },
+        {
+          "id": "laterConversation.consent.c2",
+          "text": "No. I will not do this. Do not ask me again.",
+          "source": "src/data/roof-ren-dialogue.js:240",
+          "choiceId": "roof-ren.consent-refuse",
+          "goto": "laterConversation.declined"
+        },
+        {
+          "id": "laterConversation.consent.c3",
+          "text": "Tell me the cost once more.",
+          "source": "src/data/roof-ren-dialogue.js:241",
+          "choiceId": "roof-ren.consent-repeat",
+          "goto": "laterConversation.cost"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:234"
+    },
+    "laterConversation.ritual": {
+      "id": "laterConversation.ritual",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.ritual.l0",
+          "who": "direction",
+          "text": "You put your hand in Ren's. Their skin is warm. The warmth makes you hesitate more than cold would have.",
+          "source": "src/data/roof-ren-dialogue.js:244"
+        },
+        {
+          "id": "laterConversation.ritual.l1",
+          "who": "ren",
+          "text": "I have you. I will not let go before it is done.",
+          "source": "src/data/roof-ren-dialogue.js:245"
+        },
+        {
+          "id": "laterConversation.ritual.l2",
+          "who": "direction",
+          "text": "Ren places your hand flat against your chest, then covers it with their own. The absent half of their body turns inward.",
+          "source": "src/data/roof-ren-dialogue.js:246"
+        },
+        {
+          "id": "laterConversation.ritual.l3",
+          "who": "direction",
+          "text": "For a moment you can see the city through both of you. Every lit window holds absolutely still.",
+          "source": "src/data/roof-ren-dialogue.js:247"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:244"
+    },
+    "laterConversation.declined": {
+      "id": "laterConversation.declined",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.declined.l0",
+          "who": "direction",
+          "text": "Ren draws their hand back. The city starts moving again in the glass.",
+          "source": "src/data/roof-ren-dialogue.js:250"
+        },
+        {
+          "id": "laterConversation.declined.l1",
+          "who": "ren",
+          "text": "All right. I will not ask again.",
+          "source": "src/data/roof-ren-dialogue.js:251"
+        },
+        {
+          "id": "laterConversation.declined.l2",
+          "who": "ren",
+          "text": "Thank you for bringing her voice back. That was its own thing. I will keep it that way.",
+          "source": "src/data/roof-ren-dialogue.js:252"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:250"
+    },
+    "laterConversation.closed": {
+      "id": "laterConversation.closed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed.l0",
+          "who": "ren",
+          "text": "The key is yours. We are square.",
+          "source": "src/data/roof-ren-dialogue.js:255"
+        },
+        {
+          "id": "laterConversation.closed.l1",
+          "who": "direction",
+          "text": "Ren turns the cassette over in their hand. There was another question. They are keeping it.",
+          "source": "src/data/roof-ren-dialogue.js:256"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:255"
+    },
+    "laterConversation.closed-warning": {
+      "id": "laterConversation.closed-warning",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed-warning.l0",
+          "who": "ren",
+          "text": "No. The person who signed those refusals was me. You do not get to set them aside for me.",
+          "source": "src/data/roof-ren-dialogue.js:259"
+        },
+        {
+          "id": "laterConversation.closed-warning.l1",
+          "who": "ren",
+          "text": "Keep the key. I will not ask you to carry another part of my life.",
+          "source": "src/data/roof-ren-dialogue.js:260"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:259"
+    },
+    "laterConversation.closed-account": {
+      "id": "laterConversation.closed-account",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed-account.l0",
+          "who": "ren",
+          "text": "I used your kindness. If you would rather not hear that, I cannot ask you for the rest of your life.",
+          "source": "src/data/roof-ren-dialogue.js:263"
+        },
+        {
+          "id": "laterConversation.closed-account.l1",
+          "who": "direction",
+          "text": "Ren closes their intact hand around the cassette. They leave the seat beside them open.",
+          "source": "src/data/roof-ren-dialogue.js:264"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:263"
+    },
+    "laterConversation.closed-dissent": {
+      "id": "laterConversation.closed-dissent",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed-dissent.l0",
+          "who": "ren",
+          "text": "It was their voice. You heard it. I will not ask you to take away a century of it while you call it nothing.",
+          "source": "src/data/roof-ren-dialogue.js:267"
+        },
+        {
+          "id": "laterConversation.closed-dissent.l1",
+          "who": "ren",
+          "text": "Keep the key. You have already earned that.",
+          "source": "src/data/roof-ren-dialogue.js:268"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:267"
+    },
+    "laterConversation.closed-extraction": {
+      "id": "laterConversation.closed-extraction",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed-extraction.l0",
+          "who": "ren",
+          "text": "No. I think I have given you enough to take away.",
+          "source": "src/data/roof-ren-dialogue.js:271"
+        },
+        {
+          "id": "laterConversation.closed-extraction.l1",
+          "who": "direction",
+          "text": "Ren pockets the cassette. The movement is ordinary and final.",
+          "source": "src/data/roof-ren-dialogue.js:272"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:271"
+    },
+    "laterConversation.closed-cruel": {
+      "id": "laterConversation.closed-cruel",
+      "type": "line",
+      "lines": [
+        {
+          "id": "laterConversation.closed-cruel.l0",
+          "who": "ren",
+          "text": "Yes. All of that.",
+          "source": "src/data/roof-ren-dialogue.js:275"
+        },
+        {
+          "id": "laterConversation.closed-cruel.l1",
+          "who": "direction",
+          "text": "Ren moves a little farther along the glass. They leave your key where you can reach it.",
+          "source": "src/data/roof-ren-dialogue.js:276"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:275"
+    },
+    "buildRoofRenDialogue.start": {
+      "id": "buildRoofRenDialogue.start",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.start.l0",
+          "who": "ren",
+          "text": "The city looks the same. You have time to notice when it changes.",
+          "source": "src/data/roof-ren-dialogue.js:284"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l1",
+          "who": "ren",
+          "text": "You can still sit here. / You came back.",
+          "source": "src/data/roof-ren-dialogue.js:288"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l2",
+          "who": "c",
+          "text": "Stay and talk.",
+          "source": "src/data/roof-ren-dialogue.js:288"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l3",
+          "who": "direction",
+          "text": "Ren looks at your pocket before they look at your face.",
+          "source": "src/data/roof-ren-dialogue.js:293"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l4",
+          "who": "ren",
+          "text": "You found it.",
+          "source": "src/data/roof-ren-dialogue.js:294"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l5",
+          "who": "ren",
+          "text": "Before you give it to me: did you listen?",
+          "source": "src/data/roof-ren-dialogue.js:295"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l6",
+          "who": "ren",
+          "text": "I still want to hear her. That is all I can tell you without making it into a case.",
+          "source": "src/data/roof-ren-dialogue.js:342"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l7",
+          "who": "ren",
+          "text": "I know why you left it. I still want to hear her, and I still remember what I signed.",
+          "source": "src/data/roof-ren-dialogue.js:349"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l8",
+          "who": "ren",
+          "text": "You do not owe me another answer tonight.",
+          "source": "src/data/roof-ren-dialogue.js:350"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l9",
+          "who": "direction",
+          "text": "Ren sees that you have come back without the cassette.",
+          "source": "src/data/roof-ren-dialogue.js:356"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l10",
+          "who": "ren",
+          "text": "You found it. Did you leave it because of what I wrote?",
+          "source": "src/data/roof-ren-dialogue.js:357"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l11",
+          "who": "ren",
+          "text": "The stripped office, off the gallery loggia. A personal-effects index on the desk; the cabinet belongs to it.",
+          "source": "src/data/roof-ren-dialogue.js:380"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l12",
+          "who": "ren",
+          "text": "My things were filed under R. The room number matters more than the year. Look at what the missing page left behind.",
+          "source": "src/data/roof-ren-dialogue.js:381"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l13",
+          "who": "ren",
+          "text": "Please do not play it. Bring it up here. I want to hear it with the sky over me.",
+          "source": "src/data/roof-ren-dialogue.js:382"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l14",
+          "who": "direction",
+          "text": "Someone about your age sits with their shoes resting on the atrium glass. The right half of them folds inward past where a body ought to end.",
+          "source": "src/data/roof-ren-dialogue.js:387"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l15",
+          "who": "ren",
+          "text": "I have not stopped wanting it. / Careful of that pane. It is sound. It just remembers being broken.",
+          "source": "src/data/roof-ren-dialogue.js:388"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.l16",
+          "who": "ren",
+          "text": "I am Ren.",
+          "source": "src/data/roof-ren-dialogue.js:389"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.start.c0",
+          "text": "I did. I am sorry. I heard her asking you to come home.",
+          "source": "src/data/roof-ren-dialogue.js:298",
+          "choiceId": "roof-ren.return-honest",
+          "goto": "buildRoofRenDialogue.returned-honest"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c1",
+          "text": "No. I kept it sealed.",
+          "source": "src/data/roof-ren-dialogue.js:299",
+          "choiceId": "roof-ren.return-lie",
+          "goto": "buildRoofRenDialogue.returned-lie"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c2",
+          "text": "No. It was yours to hear.",
+          "source": "src/data/roof-ren-dialogue.js:300",
+          "choiceId": "roof-ren.return-sealed",
+          "goto": "buildRoofRenDialogue.returned-sealed"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c3",
+          "text": "The envelope said to keep it from you. I am not handing it over.",
+          "source": "src/data/roof-ren-dialogue.js:301",
+          "choiceId": "roof-ren.withhold",
+          "goto": "buildRoofRenDialogue.withheld"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c4",
+          "text": "I will let you have it. But I have questions.",
+          "source": "src/data/roof-ren-dialogue.js:343",
+          "choiceId": "roof-ren.withheld-reconsider",
+          "targetName": "done"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c5",
+          "text": "I am keeping it for now.",
+          "source": "src/data/roof-ren-dialogue.js:344",
+          "choiceId": "roof-ren.withheld-keep",
+          "targetName": "done"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c6",
+          "text": "I am leaving it where you asked.",
+          "source": "src/data/roof-ren-dialogue.js:352",
+          "choiceId": "roof-ren.left-stay",
+          "goto": "buildRoofRenDialogue.left-stays"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c7",
+          "text": "I may change my mind later.",
+          "source": "src/data/roof-ren-dialogue.js:353",
+          "choiceId": "roof-ren.left-change",
+          "goto": "buildRoofRenDialogue.left-maybe"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c8",
+          "text": "I found it. You signed twice to keep it there.",
+          "source": "src/data/roof-ren-dialogue.js:359",
+          "choiceId": "roof-ren.left-tell",
+          "goto": "buildRoofRenDialogue.left-truth"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c9",
+          "text": "I may go back. I wanted you to know what the envelope says.",
+          "source": "src/data/roof-ren-dialogue.js:360",
+          "choiceId": "roof-ren.left-reconsider",
+          "goto": "buildRoofRenDialogue.left-maybe"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c10",
+          "text": "What are you doing up here?",
+          "source": "src/data/roof-ren-dialogue.js:390",
+          "choiceId": "roof-ren.ask-person",
+          "goto": "buildRoofRenDialogue.request"
+        },
+        {
+          "id": "buildRoofRenDialogue.start.c11",
+          "text": "Sit on the supported edge beside them.",
+          "source": "src/data/roof-ren-dialogue.js:390",
+          "choiceId": "roof-ren.sit-first",
+          "goto": "buildRoofRenDialogue.request"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:284"
+    },
+    "buildRoofRenDialogue.returned-sealed": {
+      "id": "buildRoofRenDialogue.returned-sealed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.returned-sealed.l0",
+          "who": "direction",
+          "text": "You hold the little speaker between you. Ren waits until you lift your thumb, then presses play.",
+          "source": "src/data/roof-ren-dialogue.js:305"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:305"
+    },
+    "buildRoofRenDialogue.returned-honest": {
+      "id": "buildRoofRenDialogue.returned-honest",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.returned-honest.l0",
+          "who": "ren",
+          "text": "Thank you for telling me. I asked you not to. I also sent you somewhere frightening with no proper explanation.",
+          "source": "src/data/roof-ren-dialogue.js:308"
+        },
+        {
+          "id": "buildRoofRenDialogue.returned-honest.l1",
+          "who": "ren",
+          "text": "If I hear it again, will you stay beside me until it ends?",
+          "source": "src/data/roof-ren-dialogue.js:309"
+        },
+        {
+          "id": "buildRoofRenDialogue.returned-honest.l2",
+          "who": "direction",
+          "text": "You hold the little speaker between you. Ren presses play.",
+          "source": "src/data/roof-ren-dialogue.js:310"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:308"
+    },
+    "buildRoofRenDialogue.memory-shared": {
+      "id": "buildRoofRenDialogue.memory-shared",
+      "type": "choice",
+      "lines": [
+        {
           "id": "buildRoofRenDialogue.memory-shared.l0",
+          "who": "mother on tape",
+          "text": "Ren. Come and eat. You can be brilliant after dinner.",
+          "source": "src/data/roof-ren-dialogue.js:313"
+        },
+        {
+          "id": "buildRoofRenDialogue.memory-shared.l1",
+          "who": "direction",
+          "text": "A spoon taps a saucepan. Behind it, a chair scrapes. There is no final message. Someone expected another ordinary evening.",
+          "source": "src/data/roof-ren-dialogue.js:314"
+        },
+        {
+          "id": "buildRoofRenDialogue.memory-shared.l2",
           "who": "direction",
           "text": "Ren answers her before they seem to mean to. Their missing side draws a dark crease across the glass between you. You can hear the answer from their intact mouth. The tape itself has not changed.",
           "source": "src/data/roof-ren-dialogue.js:315"
+        },
+        {
+          "id": "buildRoofRenDialogue.memory-shared.l3",
+          "who": "ren",
+          "text": "That is why I signed it. And I still wanted to hear her.",
+          "source": "src/data/roof-ren-dialogue.js:316"
         }
       ],
-      "source": "src/data/roof-ren-dialogue.js:315"
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.memory-shared.c0",
+          "text": "Leave the cassette with Ren.",
+          "source": "src/data/roof-ren-dialogue.js:317",
+          "choiceId": "roof-ren.memory-complete",
+          "goto": "buildRoofRenDialogue.reward"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:313"
+    },
+    "buildRoofRenDialogue.returned-lie": {
+      "id": "buildRoofRenDialogue.returned-lie",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.returned-lie.l0",
+          "who": "direction",
+          "text": "The tape is stopped halfway through the message. Ren sees the exposed spool.",
+          "source": "src/data/roof-ren-dialogue.js:319"
+        },
+        {
+          "id": "buildRoofRenDialogue.returned-lie.l1",
+          "who": "ren",
+          "text": "You could have told me.",
+          "source": "src/data/roof-ren-dialogue.js:320"
+        },
+        {
+          "id": "buildRoofRenDialogue.returned-lie.l2",
+          "who": "ren",
+          "text": "I still want to hear her. You can tell me the truth before you give it over.",
+          "source": "src/data/roof-ren-dialogue.js:321"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.returned-lie.c0",
+          "text": "I listened. I am sorry. Can we hear it together?",
+          "source": "src/data/roof-ren-dialogue.js:323",
+          "choiceId": "roof-ren.lie-correct",
+          "goto": "buildRoofRenDialogue.returned-honest"
+        },
+        {
+          "id": "buildRoofRenDialogue.returned-lie.c1",
+          "text": "I kept it sealed. Leave the cassette with Ren anyway.",
+          "source": "src/data/roof-ren-dialogue.js:324",
+          "choiceId": "roof-ren.lie-complete",
+          "goto": "buildRoofRenDialogue.lie-consequence"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:319"
+    },
+    "buildRoofRenDialogue.lie-consequence": {
+      "id": "buildRoofRenDialogue.lie-consequence",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.lie-consequence.l0",
+          "who": "ren",
+          "text": "Keep the key. You did what I asked for, mostly. I will not ask you for anything else.",
+          "source": "src/data/roof-ren-dialogue.js:328"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:328"
+    },
+    "buildRoofRenDialogue.reward": {
+      "id": "buildRoofRenDialogue.reward",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.reward.l0",
+          "who": "direction",
+          "text": "Ren slides a small brass service key across the glass. Its teeth have been filed by hand.",
+          "source": "src/data/roof-ren-dialogue.js:331"
+        },
+        {
+          "id": "buildRoofRenDialogue.reward.l1",
+          "who": "ren",
+          "text": "The office people called this a service access. It opens the short way between the gallery loggia and this roof. You need not make the climb every time.",
+          "source": "src/data/roof-ren-dialogue.js:332"
+        },
+        {
+          "id": "buildRoofRenDialogue.reward.l2",
+          "who": "ren",
+          "text": "It is yours whether we ever speak again.",
+          "source": "src/data/roof-ren-dialogue.js:333"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.reward.c0",
+          "text": "Sit beside Ren for a while.",
+          "source": "src/data/roof-ren-dialogue.js:334",
+          "choiceId": "roof-ren.reward-stay",
+          "targetName": "personal"
+        },
+        {
+          "id": "buildRoofRenDialogue.reward.c1",
+          "text": "Thank you. I need to go.",
+          "source": "src/data/roof-ren-dialogue.js:334",
+          "choiceId": "roof-ren.reward-leave",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:331"
+    },
+    "buildRoofRenDialogue.withheld": {
+      "id": "buildRoofRenDialogue.withheld",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.withheld.l0",
+          "who": "direction",
+          "text": "Ren watches your hand close over the cassette.",
+          "source": "src/data/roof-ren-dialogue.js:336"
+        },
+        {
+          "id": "buildRoofRenDialogue.withheld.l1",
+          "who": "ren",
+          "text": "I did write that warning. You are allowed to believe me from a different day.",
+          "source": "src/data/roof-ren-dialogue.js:337"
+        },
+        {
+          "id": "buildRoofRenDialogue.withheld.l2",
+          "who": "ren",
+          "text": "I still want it. I will not take it from you.",
+          "source": "src/data/roof-ren-dialogue.js:338"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:336"
+    },
+    "buildRoofRenDialogue.left-truth": {
+      "id": "buildRoofRenDialogue.left-truth",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.left-truth.l0",
+          "who": "ren",
+          "text": "I did sign twice. Thank you for taking that person seriously.",
+          "source": "src/data/roof-ren-dialogue.js:364"
+        },
+        {
+          "id": "buildRoofRenDialogue.left-truth.l1",
+          "who": "ren",
+          "text": "I still want the cassette. That should bother you as much as it bothers me. I will not send you back as if the paper were nothing.",
+          "source": "src/data/roof-ren-dialogue.js:365"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.left-truth.c0",
+          "text": "I am leaving it where you asked.",
+          "source": "src/data/roof-ren-dialogue.js:367",
+          "choiceId": "roof-ren.left-stay",
+          "goto": "buildRoofRenDialogue.left-stays"
+        },
+        {
+          "id": "buildRoofRenDialogue.left-truth.c1",
+          "text": "I may change my mind later.",
+          "source": "src/data/roof-ren-dialogue.js:368",
+          "choiceId": "roof-ren.left-change",
+          "goto": "buildRoofRenDialogue.left-maybe"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:364"
+    },
+    "buildRoofRenDialogue.left-stays": {
+      "id": "buildRoofRenDialogue.left-stays",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.left-stays.l0",
+          "who": "ren",
+          "text": "You can sit here anyway. I meant that before I asked you for anything.",
+          "source": "src/data/roof-ren-dialogue.js:371"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:371"
+    },
+    "buildRoofRenDialogue.left-maybe": {
+      "id": "buildRoofRenDialogue.left-maybe",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.left-maybe.l0",
+          "who": "ren",
+          "text": "Drawer seventeen will still be there. The index and the warning too.",
+          "source": "src/data/roof-ren-dialogue.js:373"
+        },
+        {
+          "id": "buildRoofRenDialogue.left-maybe.l1",
+          "who": "ren",
+          "text": "If you sign for it, bring it to me. I will answer for asking you to do that.",
+          "source": "src/data/roof-ren-dialogue.js:374"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:373"
+    },
+    "buildRoofRenDialogue.request": {
+      "id": "buildRoofRenDialogue.request",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.request.l0",
+          "who": "ren",
+          "text": "Waiting for a person with pockets. The school kept my things in the stripped office. There is a cassette there, in an envelope.",
+          "source": "src/data/roof-ren-dialogue.js:392"
+        },
+        {
+          "id": "buildRoofRenDialogue.request.l1",
+          "who": "ren",
+          "text": "I would like it back. Not for the school. Not because it will save anyone. I want something that is mine.",
+          "source": "src/data/roof-ren-dialogue.js:393"
+        },
+        {
+          "id": "buildRoofRenDialogue.request.l2",
+          "who": "direction",
+          "text": "A fold runs from the missing cheek to the missing foot. For a moment the same strip of skin seems to repeat all the way down.",
+          "source": "src/data/roof-ren-dialogue.js:394"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.request.c0",
+          "text": "What is on it?",
+          "source": "src/data/roof-ren-dialogue.js:395",
+          "choiceId": "roof-ren.ask-want",
+          "goto": "buildRoofRenDialogue.want"
+        },
+        {
+          "id": "buildRoofRenDialogue.request.c1",
+          "text": "Why has nobody given it back to you?",
+          "source": "src/data/roof-ren-dialogue.js:395",
+          "choiceId": "roof-ren.ask-risk",
+          "goto": "buildRoofRenDialogue.warning"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:392"
+    },
+    "buildRoofRenDialogue.want": {
+      "id": "buildRoofRenDialogue.want",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.want.l0",
+          "who": "ren",
+          "text": "My mother calling me in for dinner.",
+          "source": "src/data/roof-ren-dialogue.js:397"
+        },
+        {
+          "id": "buildRoofRenDialogue.want.l1",
+          "who": "direction",
+          "text": "Ren says it flatly, daring you to find it too small.",
+          "source": "src/data/roof-ren-dialogue.js:398"
+        },
+        {
+          "id": "buildRoofRenDialogue.want.l2",
+          "who": "ren",
+          "text": "I used a practice cassette. She called through the open door. I left the machine running. I do not remember her voice properly anymore.",
+          "source": "src/data/roof-ren-dialogue.js:399"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.want.c0",
+          "text": "Why has nobody given it back?",
+          "source": "src/data/roof-ren-dialogue.js:400",
+          "choiceId": "roof-ren.want-risk",
+          "goto": "buildRoofRenDialogue.warning"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:397"
+    },
+    "buildRoofRenDialogue.warning": {
+      "id": "buildRoofRenDialogue.warning",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.warning.l0",
+          "who": "ren",
+          "text": "The tape is my mother calling me in for dinner. I am asking for it because I can no longer hear her voice without it.",
+          "source": "src/data/roof-ren-dialogue.js:402"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.l1",
+          "who": "ren",
+          "text": "There is a note. You will see it. It says I asked them not to give it to me.",
+          "source": "src/data/roof-ren-dialogue.js:403"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.l2",
+          "who": "ren",
+          "text": "That was me too. I am not going to tell you the note is a forgery. I want you to disobey it.",
+          "source": "src/data/roof-ren-dialogue.js:404"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.l3",
+          "who": "ren",
+          "text": "The last time I heard her, somebody heard my answer from a room I was not in. I do not know how much of that answer was mine.",
+          "source": "src/data/roof-ren-dialogue.js:405"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.l4",
+          "who": "ren",
+          "text": "The release needs a living signature. That should bother you. Read it before you decide.",
+          "source": "src/data/roof-ren-dialogue.js:406"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.l5",
+          "who": "ren",
+          "text": "If you do bring it back, do not listen. Let one part of me stay private.",
+          "source": "src/data/roof-ren-dialogue.js:407"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenDialogue.warning.c0",
+          "text": "I will look. I will decide what I can hand over when I have read it.",
+          "source": "src/data/roof-ren-dialogue.js:409",
+          "choiceId": "roof-ren.accept-memory",
+          "goto": "buildRoofRenDialogue.accepted"
+        },
+        {
+          "id": "buildRoofRenDialogue.warning.c1",
+          "text": "No. I do not want to overrule the person who wrote that note.",
+          "source": "src/data/roof-ren-dialogue.js:410",
+          "choiceId": "roof-ren.refuse-memory",
+          "goto": "buildRoofRenDialogue.refused"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:402"
+    },
+    "buildRoofRenDialogue.accepted": {
+      "id": "buildRoofRenDialogue.accepted",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.accepted.l0",
+          "who": "ren",
+          "text": "That is fair. Stripped office, off the gallery loggia. The index on the desk will tell you which drawer.",
+          "source": "src/data/roof-ren-dialogue.js:414"
+        },
+        {
+          "id": "buildRoofRenDialogue.accepted.l1",
+          "who": "ren",
+          "text": "R. The room number matters more than the year. A missing page still leaves something behind.",
+          "source": "src/data/roof-ren-dialogue.js:415"
+        },
+        {
+          "id": "buildRoofRenDialogue.accepted.l2",
+          "who": "direction",
+          "text": "Ren looks down through the glass. Far below, somebody ought to be walking between classes.",
+          "source": "src/data/roof-ren-dialogue.js:416"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:414"
+    },
+    "buildRoofRenDialogue.refused": {
+      "id": "buildRoofRenDialogue.refused",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenDialogue.refused.l0",
+          "who": "ren",
+          "text": "You may be right.",
+          "source": "src/data/roof-ren-dialogue.js:418"
+        },
+        {
+          "id": "buildRoofRenDialogue.refused.l1",
+          "who": "ren",
+          "text": "You can sit here anyway. I do not own the view.",
+          "source": "src/data/roof-ren-dialogue.js:418"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:418"
+    },
+    "buildRoofRenOfficeDialogue.start": {
+      "id": "buildRoofRenOfficeDialogue.start",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l0",
+          "who": "direction",
+          "text": "A personal-effects ledger and a cabinet survived the clearance. Most of the pages have been taken with the people.",
+          "source": "src/data/roof-ren-dialogue.js:425"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l1",
+          "who": "direction",
+          "text": "PERSONAL EFFECTS. Room, name, release. The page for R has been neatly torn out.",
+          "source": "src/data/roof-ren-dialogue.js:429"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l2",
+          "who": "direction",
+          "text": "Someone has crossed out the instruction to forward unclaimed items. Beneath it: KEEP ON PREMISES.",
+          "source": "src/data/roof-ren-dialogue.js:430"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l3",
+          "who": "direction",
+          "text": "An old carbon intake pad has been filed under RECEPTION. There are thousands of impressions. You need to know which missing page to look for.",
+          "source": "src/data/roof-ren-dialogue.js:441"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l4",
+          "who": "you",
+          "text": "Start with the personal-effects index on the desk.",
+          "source": "src/data/roof-ren-dialogue.js:442"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l5",
+          "who": "direction",
+          "text": "The pad still holds R. / 17 in the shallow black pressure marks. / The pad has a shallow depression beneath the top sheet. The fixed lamp only catches it from this side of the bank.",
+          "source": "src/data/roof-ren-dialogue.js:447"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l6",
+          "who": "direction",
+          "text": "Drawer seventeen is empty except for the release envelope. Your signature is still there. The cassette is in your pocket.",
+          "source": "src/data/roof-ren-dialogue.js:461"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l7",
+          "who": "you",
+          "text": "I have made the decision this room was keeping for somebody else.",
+          "source": "src/data/roof-ren-dialogue.js:462"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l8",
+          "who": "direction",
+          "text": "The cabinet has a shallow drawer for every practice room. Names have been removed from the card slots.",
+          "source": "src/data/roof-ren-dialogue.js:467"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l9",
+          "who": "direction",
+          "text": "Several drawers are sealed. Guessing would mean breaking into everybody else's things.",
+          "source": "src/data/roof-ren-dialogue.js:468"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l10",
+          "who": "you",
+          "text": "The index is on the desk. Its missing page left a carbon pad in the reception bank.",
+          "source": "src/data/roof-ren-dialogue.js:469"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l11",
+          "who": "direction",
+          "text": "Drawer seventeen remains open. / Drawer seventeen has been pushed past its stop. The little brass catch is accessible through the empty card slot.",
+          "source": "src/data/roof-ren-dialogue.js:474"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.l12",
+          "who": "direction",
+          "text": "The HOME cassette is in your pocket. There is only one short message on it. / The cassette stays inside its release envelope until somebody signs for it.",
+          "source": "src/data/roof-ren-dialogue.js:501"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenOfficeDialogue.start.c0",
+          "text": "Find the line where R ought to be.",
+          "source": "src/data/roof-ren-dialogue.js:431",
+          "choiceId": "roof-ren.office-index",
+          "goto": "buildRoofRenOfficeDialogue.index"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.c1",
+          "text": "Read the recovered line again. / Lift the pad into the low light and read the impressed line.",
+          "source": "src/data/roof-ren-dialogue.js:450",
+          "choiceId": "roof-ren.office-trace",
+          "goto": "buildRoofRenOfficeDialogue.trace"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.c2",
+          "text": "Read the envelope again. / Depress the catch and pull the drawer out level.",
+          "source": "src/data/roof-ren-dialogue.js:475",
+          "choiceId": "roof-ren.office-cabinet",
+          "goto": "buildRoofRenOfficeDialogue.envelope"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.start.c3",
+          "text": "Play the cassette.",
+          "source": "src/data/roof-ren-dialogue.js:502",
+          "choiceId": "roof-ren.pocket-listen",
+          "targetName": "heard"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:425"
+    },
+    "buildRoofRenOfficeDialogue.index": {
+      "id": "buildRoofRenOfficeDialogue.index",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.index.l0",
+          "who": "direction",
+          "text": "The pages run by room, not by name. The missing sheet sat between the practice-room entries.",
+          "source": "src/data/roof-ren-dialogue.js:433"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.index.l1",
+          "who": "direction",
+          "text": "Its carbon intake pad is gone too. The reception filing bank stands across the stripped office, under the emergency lamp.",
+          "source": "src/data/roof-ren-dialogue.js:434"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.index.l2",
+          "who": "you",
+          "text": "If the pad survived, it will have kept the pressure of the missing line.",
+          "source": "src/data/roof-ren-dialogue.js:435"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:433"
+    },
+    "buildRoofRenOfficeDialogue.trace": {
+      "id": "buildRoofRenOfficeDialogue.trace",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.trace.l0",
+          "who": "direction",
+          "text": "R. / 17. CASSETTE — HOME. DO NOT DISPOSE. Beneath that, a line driven hard enough to bruise the paper.",
+          "source": "src/data/roof-ren-dialogue.js:452"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.trace.l1",
+          "who": "direction",
+          "text": "NOT TO BE RELEASED TO R. AT THEIR OWN REQUEST.",
+          "source": "src/data/roof-ren-dialogue.js:453"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.trace.l2",
+          "who": "you",
+          "text": "Seventeen is the drawer. The year was the thing keeping me from seeing it.",
+          "source": "src/data/roof-ren-dialogue.js:454"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:452"
+    },
+    "buildRoofRenOfficeDialogue.envelope": {
+      "id": "buildRoofRenOfficeDialogue.envelope",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.envelope.l0",
+          "who": "direction",
+          "text": "A small cassette sits inside a thick cream envelope. The handwriting on the front is the same cramped hand that damaged the ledger.",
+          "source": "src/data/roof-ren-dialogue.js:477"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.envelope.l1",
+          "who": "direction",
+          "text": "You asked us to keep this from you. If you ask for it again, remember that you asked us twice. When you heard it last, you answered from more than one room.",
+          "source": "src/data/roof-ren-dialogue.js:478"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.envelope.l2",
+          "who": "direction",
+          "text": "The release slip underneath is ordinary school stationery: \"Received by a living person, for hand delivery. The recipient assumes responsibility for this release.\"",
+          "source": "src/data/roof-ren-dialogue.js:479"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenOfficeDialogue.envelope.c0",
+          "text": "Read every line of the release before touching the cassette.",
+          "source": "src/data/roof-ren-dialogue.js:480",
+          "choiceId": "roof-ren.office-envelope",
+          "goto": "buildRoofRenOfficeDialogue.release"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:477"
+    },
+    "buildRoofRenOfficeDialogue.release": {
+      "id": "buildRoofRenOfficeDialogue.release",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.release.l0",
+          "who": "direction",
+          "text": "No fine print. No occult diagram. A space for your signature. R. has signed the refusal beneath it twice, in two different years.",
+          "source": "src/data/roof-ren-dialogue.js:482"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.release.l1",
+          "who": "you",
+          "text": "They told me this would be here. That makes it more honest. It does not make it all right.",
+          "source": "src/data/roof-ren-dialogue.js:483"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenOfficeDialogue.release.c0",
+          "text": "Sign for hand delivery and take the cassette.",
+          "source": "src/data/roof-ren-dialogue.js:485",
+          "choiceId": "roof-ren.office-take",
+          "goto": "buildRoofRenOfficeDialogue.taken"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.release.c1",
+          "text": "Leave it. The warning is reason enough.",
+          "source": "src/data/roof-ren-dialogue.js:486",
+          "choiceId": "roof-ren.office-leave-warning",
+          "goto": "buildRoofRenOfficeDialogue.left"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:482"
+    },
+    "buildRoofRenOfficeDialogue.left": {
+      "id": "buildRoofRenOfficeDialogue.left",
+      "type": "line",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.left.l0",
+          "who": "direction",
+          "text": "You close the envelope without signing. The drawer stays open.",
+          "source": "src/data/roof-ren-dialogue.js:489"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.left.l1",
+          "who": "you",
+          "text": "Ren asked. Ren also refused, twice. I should tell them which answer I honoured.",
+          "source": "src/data/roof-ren-dialogue.js:490"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:489"
+    },
+    "buildRoofRenOfficeDialogue.taken": {
+      "id": "buildRoofRenOfficeDialogue.taken",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenOfficeDialogue.taken.l0",
+          "who": "direction",
+          "text": "You sign. The cassette lifts from the envelope without resistance. It is warmer than the room.",
+          "source": "src/data/roof-ren-dialogue.js:493"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.taken.l1",
+          "who": "direction",
+          "text": "There is handwriting on the label: HOME. Neither a date nor a surname.",
+          "source": "src/data/roof-ren-dialogue.js:494"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenOfficeDialogue.taken.c0",
+          "text": "Put it away without playing it.",
+          "source": "src/data/roof-ren-dialogue.js:495",
+          "choiceId": "roof-ren.office-keep-private",
+          "targetName": "done"
+        },
+        {
+          "id": "buildRoofRenOfficeDialogue.taken.c1",
+          "text": "Listen to the message despite Ren's request.",
+          "source": "src/data/roof-ren-dialogue.js:495",
+          "choiceId": "roof-ren.office-listen",
+          "targetName": "heard"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:493"
+    },
+    "buildRoofRenEvidenceDialogue.start": {
+      "id": "buildRoofRenEvidenceDialogue.start",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.l0",
+          "who": "direction",
+          "text": "A loose score is caught beneath the leg of a chair in the cleared room. One margin is dark with repeated pencil marks: LEAVE THE DOOR OPEN.",
+          "source": "src/data/roof-ren-dialogue.js:510"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.l1",
+          "who": "direction",
+          "text": "The chair has not moved back. The pencilled words are still here. / The marked stave runs toward the breach instead of the music.",
+          "source": "src/data/roof-ren-dialogue.js:511"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.l2",
+          "who": "direction",
+          "text": "A narrow maintenance slip is folded beneath the chamber piano bench. It was kept under the seat rather than filed with the school accounts.",
+          "source": "src/data/roof-ren-dialogue.js:523"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.l3",
+          "who": "direction",
+          "text": "The same three entries remain legible, including the ones after the signature. / The dates are separated by decades. The handwriting belongs to the same person throughout.",
+          "source": "src/data/roof-ren-dialogue.js:524"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.c0",
+          "text": "Read the marked stave and wait by the chair.",
+          "source": "src/data/roof-ren-dialogue.js:512",
+          "choiceId": "roof-ren.contrary-listen",
+          "goto": "buildRoofRenEvidenceDialogue.account"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.start.c1",
+          "text": "Unfold the slip and read all three entries.",
+          "source": "src/data/roof-ren-dialogue.js:525",
+          "choiceId": "roof-ren.guarantor-read",
+          "goto": "buildRoofRenEvidenceDialogue.trace"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:510"
+    },
+    "buildRoofRenEvidenceDialogue.account": {
+      "id": "buildRoofRenEvidenceDialogue.account",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.account.l0",
+          "who": "direction",
+          "text": "The pencil has pressed through three pages. The answer comes from the empty chair, close enough to seem spoken beside your ear.",
+          "source": "src/data/roof-ren-dialogue.js:514"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.account.l1",
+          "who": "unknown",
+          "text": "I was leaving when it happened. They call this my home because I have been here since. I was going somewhere else.",
+          "source": "src/data/roof-ren-dialogue.js:515"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.account.l2",
+          "who": "unknown",
+          "text": "The walls might come down and I might end. I know. I still want the choice to try the door. Tell Ren I said so.",
+          "source": "src/data/roof-ren-dialogue.js:516"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.account.l3",
+          "who": "direction",
+          "text": "The loose edge of the score lifts toward the breach, then settles. You cannot tell whether the person who spoke can follow it.",
+          "source": "src/data/roof-ren-dialogue.js:517"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.account.c0",
+          "text": "Remember their wish and the risk they named.",
+          "source": "src/data/roof-ren-dialogue.js:518",
+          "choiceId": "roof-ren.contrary-remember",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:514"
+    },
+    "buildRoofRenEvidenceDialogue.trace": {
+      "id": "buildRoofRenEvidenceDialogue.trace",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.trace.l0",
+          "who": "direction",
+          "text": "SEAL, YEAR 0. M. VALE, CLEANER. I have been told that I will stay inside the grounds for one hundred years. I am signing while I can still walk away.",
+          "source": "src/data/roof-ren-dialogue.js:527"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.trace.l1",
+          "who": "direction",
+          "text": "YEAR 12. My daughter married on Saturday. Ren brought the photograph on Monday. I knew I would miss the day. I did not know how much of it would fit in one picture.",
+          "source": "src/data/roof-ren-dialogue.js:528"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.trace.l2",
+          "who": "direction",
+          "text": "YEAR 61. The chamber roof leaked again. I changed the bucket before class. The seal kept the crews from taking the room. It never mended it for us.",
+          "source": "src/data/roof-ren-dialogue.js:529"
+        },
+        {
+          "id": "buildRoofRenEvidenceDialogue.trace.l3",
+          "who": "direction",
+          "text": "There is no donor wall, no promise that she was happy, and no correction over her signature.",
+          "source": "src/data/roof-ren-dialogue.js:530"
+        }
+      ],
+      "choices": [
+        {
+          "id": "buildRoofRenEvidenceDialogue.trace.c0",
+          "text": "Keep her consent and what followed it together.",
+          "source": "src/data/roof-ren-dialogue.js:531",
+          "choiceId": "roof-ren.guarantor-remember",
+          "targetName": "done"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:527"
+    },
+    "memoryPlayback": {
+      "id": "memoryPlayback",
+      "type": "line",
+      "lines": [
+        {
+          "id": "memoryPlayback.l0",
+          "who": "mother on tape",
+          "text": "Ren. Come and eat. You can be brilliant after dinner.",
+          "source": "src/data/roof-ren-dialogue.js:539"
+        },
+        {
+          "id": "memoryPlayback.l1",
+          "who": "direction",
+          "text": "A spoon taps a saucepan. A chair scrapes. Behind it, Ren starts the same four bars again, makes the same mistake, laughs once.",
+          "source": "src/data/roof-ren-dialogue.js:540"
+        },
+        {
+          "id": "memoryPlayback.l2",
+          "who": "direction",
+          "text": "The message ends there. You have listened to somebody being expected home.",
+          "source": "src/data/roof-ren-dialogue.js:541"
+        },
+        {
+          "id": "memoryPlayback.l3",
+          "who": "you",
+          "text": "Now I have to tell them I heard it.",
+          "source": "src/data/roof-ren-dialogue.js:542"
+        }
+      ],
+      "source": "src/data/roof-ren-dialogue.js:539"
     }
   }
 }

@@ -4,73 +4,115 @@
   "title": "Runtime · game/tutorial.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "STEPS.line",
+  "entry": "STEPS.light.line",
   "entries": [
-    "STEPS.line",
-    "STEPS.exit",
+    "STEPS.light.line",
+    "STEPS.read.line",
+    "STEPS.level.line",
+    "STEPS.mark.line",
+    "STEPS.mark.exit",
+    "STEPS.go.line",
+    "STEPS.go.exit",
     "tickTutorial"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/tutorial.js",
   "notes": "Generated from src/game/tutorial.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "STEPS.line": {
-      "id": "STEPS.line",
+    "STEPS.light.line": {
+      "id": "STEPS.light.line",
       "type": "line",
       "lines": [
         {
-          "id": "STEPS.line.l0",
+          "id": "STEPS.light.line.l0",
           "who": "you",
           "text": "It's dark in here.",
           "source": "src/game/tutorial.js:58"
-        },
+        }
+      ],
+      "source": "src/game/tutorial.js:58"
+    },
+    "STEPS.read.line": {
+      "id": "STEPS.read.line",
+      "type": "line",
+      "lines": [
         {
-          "id": "STEPS.line.l1",
+          "id": "STEPS.read.line.l0",
           "who": "you",
           "text": "Work order's in my jacket. Five rooms, one clean minute each.",
           "source": "src/game/tutorial.js:65"
-        },
+        }
+      ],
+      "source": "src/game/tutorial.js:65"
+    },
+    "STEPS.level.line": {
+      "id": "STEPS.level.line",
+      "type": "line",
+      "lines": [
         {
-          "id": "STEPS.line.l2",
+          "id": "STEPS.level.line.l0",
           "who": "you",
           "text": "Levels, before anything. Headphones on, hear the room — then roll, and hold still.",
           "source": "src/game/tutorial.js:89"
-        },
+        }
+      ],
+      "source": "src/game/tutorial.js:89"
+    },
+    "STEPS.mark.line": {
+      "id": "STEPS.mark.line",
+      "type": "line",
+      "lines": [
         {
-          "id": "STEPS.line.l3",
+          "id": "STEPS.mark.line.l0",
           "who": "you",
           "text": "Right. Before I go anywhere — write down where I am going.",
           "source": "src/game/tutorial.js:105"
-        },
+        }
+      ],
+      "source": "src/game/tutorial.js:105"
+    },
+    "STEPS.mark.exit": {
+      "id": "STEPS.mark.exit",
+      "type": "line",
+      "lines": [
         {
-          "id": "STEPS.line.l4",
+          "id": "STEPS.mark.exit.l0",
+          "who": "you",
+          "text": "Down the west stair, behind the dock. Mark them off as you go and you never lose an hour.",
+          "source": "src/game/tutorial.js:110"
+        }
+      ],
+      "source": "src/game/tutorial.js:110"
+    },
+    "STEPS.go.line": {
+      "id": "STEPS.go.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "STEPS.go.line.l0",
           "who": "you",
           "text": "Inner door, south end. Down to B3 — follow the bearing. That mark is the whole point of making it.",
           "source": "src/game/tutorial.js:123"
         }
       ],
-      "source": "src/game/tutorial.js:58"
+      "source": "src/game/tutorial.js:123"
     },
-    "STEPS.exit": {
-      "id": "STEPS.exit",
+    "STEPS.go.exit": {
+      "id": "STEPS.go.exit",
       "type": "line",
       "lines": [
         {
-          "id": "STEPS.exit.l0",
-          "who": "you",
-          "text": "Down the west stair, behind the dock. Mark them off as you go and you never lose an hour.",
-          "source": "src/game/tutorial.js:110"
-        },
-        {
-          "id": "STEPS.exit.l1",
+          "id": "STEPS.go.exit.l0",
           "who": "you",
           "text": "Quietly, then. Everything I do in here, the building keeps.",
           "source": "src/game/tutorial.js:130"
         }
       ],
-      "source": "src/game/tutorial.js:110"
+      "source": "src/game/tutorial.js:130"
     },
     "tickTutorial": {
       "id": "tickTutorial",

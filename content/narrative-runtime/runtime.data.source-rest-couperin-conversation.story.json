@@ -1,0 +1,1280 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.source-rest-couperin-conversation",
+  "title": "Runtime · data/source-rest-couperin-conversation.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "nodes.arrival",
+  "entries": [
+    "nodes.arrival",
+    "nodes.arrival-choice",
+    "nodes.settle",
+    "nodes.a-while",
+    "nodes.guitar-etudes",
+    "nodes.borrow-choice",
+    "nodes.borrow",
+    "nodes.missing",
+    "nodes.harpsichord",
+    "nodes.touch-choice",
+    "nodes.carry-sound",
+    "nodes.carry-attention",
+    "nodes.recording",
+    "nodes.recording-choice",
+    "nodes.room",
+    "nodes.waiting",
+    "nodes.electronics",
+    "nodes.threshold-choice",
+    "nodes.revoicing",
+    "nodes.material",
+    "nodes.material-choice",
+    "nodes.line",
+    "nodes.space",
+    "nodes.unfinished-sentence",
+    "nodes.return",
+    "nodes.last-choice",
+    "nodes.beginning",
+    "nodes.letting-go",
+    "nodes.last"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/source-rest-couperin-conversation.js",
+  "notes": "Generated from src/data/source-rest-couperin-conversation.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "nodes.arrival": {
+      "id": "nodes.arrival",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.arrival.l0",
+          "who": "other",
+          "text": "You can hear it from here.",
+          "source": "src/data/source-rest-couperin-conversation.js:21"
+        },
+        {
+          "id": "nodes.arrival.l1",
+          "who": "you",
+          "text": "Couperin.",
+          "source": "src/data/source-rest-couperin-conversation.js:22"
+        },
+        {
+          "id": "nodes.arrival.l2",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:23"
+        },
+        {
+          "id": "nodes.arrival.l3",
+          "who": "you",
+          "text": "I was not expecting that.",
+          "source": "src/data/source-rest-couperin-conversation.js:24"
+        },
+        {
+          "id": "nodes.arrival.l4",
+          "who": "other",
+          "text": "There is a place beside you. You need not look at me.",
+          "source": "src/data/source-rest-couperin-conversation.js:25"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:21"
+    },
+    "nodes.arrival-choice": {
+      "id": "nodes.arrival-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.arrival-choice.l0",
+          "who": "other",
+          "text": "Shall we listen?",
+          "source": "src/data/source-rest-couperin-conversation.js:28"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.arrival-choice.c0",
+          "text": "Let it play.",
+          "source": "src/data/source-rest-couperin-conversation.js:29",
+          "choiceId": "play",
+          "goto": "nodes.settle"
+        },
+        {
+          "id": "nodes.arrival-choice.c1",
+          "text": "Only for a while.",
+          "source": "src/data/source-rest-couperin-conversation.js:29",
+          "choiceId": "while",
+          "goto": "nodes.a-while"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:28"
+    },
+    "nodes.settle": {
+      "id": "nodes.settle",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.settle.l0",
+          "who": "you",
+          "text": "Let it play.",
+          "source": "src/data/source-rest-couperin-conversation.js:31"
+        },
+        {
+          "id": "nodes.settle.l1",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-couperin-conversation.js:32"
+        },
+        {
+          "id": "nodes.settle.l2",
+          "who": "you",
+          "text": "Do you know this one?",
+          "source": "src/data/source-rest-couperin-conversation.js:33"
+        },
+        {
+          "id": "nodes.settle.l3",
+          "who": "other",
+          "text": "Enough to be glad you stopped.",
+          "source": "src/data/source-rest-couperin-conversation.js:34"
+        },
+        {
+          "id": "nodes.settle.l4",
+          "who": "you",
+          "text": "That is not quite what I asked.",
+          "source": "src/data/source-rest-couperin-conversation.js:35"
+        },
+        {
+          "id": "nodes.settle.l5",
+          "who": "other",
+          "text": "I know. I was trying not to talk over it.",
+          "source": "src/data/source-rest-couperin-conversation.js:36"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:31"
+    },
+    "nodes.a-while": {
+      "id": "nodes.a-while",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.a-while.l0",
+          "who": "you",
+          "text": "Only for a while.",
+          "source": "src/data/source-rest-couperin-conversation.js:39"
+        },
+        {
+          "id": "nodes.a-while.l1",
+          "who": "other",
+          "text": "Then I will not ask how long.",
+          "source": "src/data/source-rest-couperin-conversation.js:40"
+        },
+        {
+          "id": "nodes.a-while.l2",
+          "who": "you",
+          "text": "I have not decided.",
+          "source": "src/data/source-rest-couperin-conversation.js:41"
+        },
+        {
+          "id": "nodes.a-while.l3",
+          "who": "other",
+          "text": "Good.",
+          "source": "src/data/source-rest-couperin-conversation.js:42"
+        },
+        {
+          "id": "nodes.a-while.l4",
+          "who": "you",
+          "text": "You sound pleased with yourself.",
+          "source": "src/data/source-rest-couperin-conversation.js:43"
+        },
+        {
+          "id": "nodes.a-while.l5",
+          "who": "other",
+          "text": "I found somewhere to sit. It is not a small achievement here.",
+          "source": "src/data/source-rest-couperin-conversation.js:44"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:39"
+    },
+    "nodes.guitar-etudes": {
+      "id": "nodes.guitar-etudes",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.guitar-etudes.l0",
+          "who": "you",
+          "text": "I kept wondering about the guitar études.",
+          "source": "src/data/source-rest-couperin-conversation.js:47"
+        },
+        {
+          "id": "nodes.guitar-etudes.l1",
+          "who": "other",
+          "text": "What about them?",
+          "source": "src/data/source-rest-couperin-conversation.js:48"
+        },
+        {
+          "id": "nodes.guitar-etudes.l2",
+          "who": "you",
+          "text": "Why those, on the marimba? Why not go to the harpsichord?",
+          "source": "src/data/source-rest-couperin-conversation.js:49"
+        },
+        {
+          "id": "nodes.guitar-etudes.l3",
+          "who": "other",
+          "text": "You could have chosen an easier question.",
+          "source": "src/data/source-rest-couperin-conversation.js:50"
+        },
+        {
+          "id": "nodes.guitar-etudes.l4",
+          "who": "you",
+          "text": "I thought it was a practical one.",
+          "source": "src/data/source-rest-couperin-conversation.js:51"
+        },
+        {
+          "id": "nodes.guitar-etudes.l5",
+          "who": "other",
+          "text": "They are the ones that get you.",
+          "source": "src/data/source-rest-couperin-conversation.js:52"
+        },
+        {
+          "id": "nodes.guitar-etudes.l6",
+          "who": "you",
+          "text": "I only meant to bring something back.",
+          "source": "src/data/source-rest-couperin-conversation.js:53"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:47"
+    },
+    "nodes.borrow-choice": {
+      "id": "nodes.borrow-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.borrow-choice.l0",
+          "who": "other",
+          "text": "What were you hoping to carry?",
+          "source": "src/data/source-rest-couperin-conversation.js:56"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.borrow-choice.c0",
+          "text": "Something I could use.",
+          "source": "src/data/source-rest-couperin-conversation.js:57",
+          "choiceId": "use",
+          "goto": "nodes.borrow"
+        },
+        {
+          "id": "nodes.borrow-choice.c1",
+          "text": "Something I had not heard.",
+          "source": "src/data/source-rest-couperin-conversation.js:57",
+          "choiceId": "hear",
+          "goto": "nodes.missing"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:56"
+    },
+    "nodes.borrow": {
+      "id": "nodes.borrow",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.borrow.l0",
+          "who": "you",
+          "text": "Something I could use.",
+          "source": "src/data/source-rest-couperin-conversation.js:59"
+        },
+        {
+          "id": "nodes.borrow.l1",
+          "who": "other",
+          "text": "On the marimba.",
+          "source": "src/data/source-rest-couperin-conversation.js:60"
+        },
+        {
+          "id": "nodes.borrow.l2",
+          "who": "you",
+          "text": "Yes. I had not planned very far past that.",
+          "source": "src/data/source-rest-couperin-conversation.js:61"
+        },
+        {
+          "id": "nodes.borrow.l3",
+          "who": "other",
+          "text": "How far did the plan last?",
+          "source": "src/data/source-rest-couperin-conversation.js:62"
+        },
+        {
+          "id": "nodes.borrow.l4",
+          "who": "you",
+          "text": "Long enough to get me to the keyboard.",
+          "source": "src/data/source-rest-couperin-conversation.js:63"
+        },
+        {
+          "id": "nodes.borrow.l5",
+          "who": "other",
+          "text": "It did its job, then.",
+          "source": "src/data/source-rest-couperin-conversation.js:64"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:59"
+    },
+    "nodes.missing": {
+      "id": "nodes.missing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.missing.l0",
+          "who": "you",
+          "text": "Something I had not heard.",
+          "source": "src/data/source-rest-couperin-conversation.js:67"
+        },
+        {
+          "id": "nodes.missing.l1",
+          "who": "other",
+          "text": "Did you find it?",
+          "source": "src/data/source-rest-couperin-conversation.js:68"
+        },
+        {
+          "id": "nodes.missing.l2",
+          "who": "you",
+          "text": "I do not think I could call it one thing.",
+          "source": "src/data/source-rest-couperin-conversation.js:69"
+        },
+        {
+          "id": "nodes.missing.l3",
+          "who": "other",
+          "text": "Then do not.",
+          "source": "src/data/source-rest-couperin-conversation.js:70"
+        },
+        {
+          "id": "nodes.missing.l4",
+          "who": "you",
+          "text": "I am still preparing an answer.",
+          "source": "src/data/source-rest-couperin-conversation.js:71"
+        },
+        {
+          "id": "nodes.missing.l5",
+          "who": "other",
+          "text": "I was not examining you. I was interested.",
+          "source": "src/data/source-rest-couperin-conversation.js:72"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:67"
+    },
+    "nodes.harpsichord": {
+      "id": "nodes.harpsichord",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.harpsichord.l0",
+          "who": "you",
+          "text": "At first the harpsichord was a way back to the marimba.",
+          "source": "src/data/source-rest-couperin-conversation.js:75"
+        },
+        {
+          "id": "nodes.harpsichord.l1",
+          "who": "other",
+          "text": "And then?",
+          "source": "src/data/source-rest-couperin-conversation.js:76"
+        },
+        {
+          "id": "nodes.harpsichord.l2",
+          "who": "you",
+          "text": "It kept giving me something else to listen to.",
+          "source": "src/data/source-rest-couperin-conversation.js:77"
+        },
+        {
+          "id": "nodes.harpsichord.l3",
+          "who": "other",
+          "text": "Did you go back?",
+          "source": "src/data/source-rest-couperin-conversation.js:78"
+        },
+        {
+          "id": "nodes.harpsichord.l4",
+          "who": "you",
+          "text": "I kept going back. I kept bringing something different.",
+          "source": "src/data/source-rest-couperin-conversation.js:79"
+        },
+        {
+          "id": "nodes.harpsichord.l5",
+          "who": "other",
+          "text": "You have not lost the way, then.",
+          "source": "src/data/source-rest-couperin-conversation.js:80"
+        },
+        {
+          "id": "nodes.harpsichord.l6",
+          "who": "you",
+          "text": "Sometimes I forget which way I meant.",
+          "source": "src/data/source-rest-couperin-conversation.js:81"
+        },
+        {
+          "id": "nodes.harpsichord.l7",
+          "who": "other",
+          "text": "We have a little room before the next thing. Use it.",
+          "source": "src/data/source-rest-couperin-conversation.js:82"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:75"
+    },
+    "nodes.touch-choice": {
+      "id": "nodes.touch-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.touch-choice.l0",
+          "who": "other",
+          "text": "What do you want to take with you now?",
+          "source": "src/data/source-rest-couperin-conversation.js:85"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.touch-choice.c0",
+          "text": "The sound.",
+          "source": "src/data/source-rest-couperin-conversation.js:86",
+          "choiceId": "sound",
+          "goto": "nodes.carry-sound"
+        },
+        {
+          "id": "nodes.touch-choice.c1",
+          "text": "The attention.",
+          "source": "src/data/source-rest-couperin-conversation.js:86",
+          "choiceId": "attention",
+          "goto": "nodes.carry-attention"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:85"
+    },
+    "nodes.carry-sound": {
+      "id": "nodes.carry-sound",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.carry-sound.l0",
+          "who": "you",
+          "text": "The sound.",
+          "source": "src/data/source-rest-couperin-conversation.js:88"
+        },
+        {
+          "id": "nodes.carry-sound.l1",
+          "who": "other",
+          "text": "All of it?",
+          "source": "src/data/source-rest-couperin-conversation.js:89"
+        },
+        {
+          "id": "nodes.carry-sound.l2",
+          "who": "you",
+          "text": "As much as I can.",
+          "source": "src/data/source-rest-couperin-conversation.js:90"
+        },
+        {
+          "id": "nodes.carry-sound.l3",
+          "who": "other",
+          "text": "You will have your hands full.",
+          "source": "src/data/source-rest-couperin-conversation.js:91"
+        },
+        {
+          "id": "nodes.carry-sound.l4",
+          "who": "you",
+          "text": "They were full before.",
+          "source": "src/data/source-rest-couperin-conversation.js:92"
+        },
+        {
+          "id": "nodes.carry-sound.l5",
+          "who": "other",
+          "text": "Yes. I should have noticed.",
+          "source": "src/data/source-rest-couperin-conversation.js:93"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:88"
+    },
+    "nodes.carry-attention": {
+      "id": "nodes.carry-attention",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.carry-attention.l0",
+          "who": "you",
+          "text": "The attention.",
+          "source": "src/data/source-rest-couperin-conversation.js:96"
+        },
+        {
+          "id": "nodes.carry-attention.l1",
+          "who": "other",
+          "text": "What are you listening for?",
+          "source": "src/data/source-rest-couperin-conversation.js:97"
+        },
+        {
+          "id": "nodes.carry-attention.l2",
+          "who": "you",
+          "text": "How much can happen before a sound is gone.",
+          "source": "src/data/source-rest-couperin-conversation.js:98"
+        },
+        {
+          "id": "nodes.carry-attention.l3",
+          "who": "other",
+          "text": "Shall I be quiet?",
+          "source": "src/data/source-rest-couperin-conversation.js:99"
+        },
+        {
+          "id": "nodes.carry-attention.l4",
+          "who": "you",
+          "text": "Not all the time.",
+          "source": "src/data/source-rest-couperin-conversation.js:100"
+        },
+        {
+          "id": "nodes.carry-attention.l5",
+          "who": "other",
+          "text": "That is a relief.",
+          "source": "src/data/source-rest-couperin-conversation.js:101"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:96"
+    },
+    "nodes.recording": {
+      "id": "nodes.recording",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.recording.l0",
+          "who": "other",
+          "text": "And then there were microphones.",
+          "source": "src/data/source-rest-couperin-conversation.js:104"
+        },
+        {
+          "id": "nodes.recording.l1",
+          "who": "you",
+          "text": "I wanted to keep some of it.",
+          "source": "src/data/source-rest-couperin-conversation.js:105"
+        },
+        {
+          "id": "nodes.recording.l2",
+          "who": "other",
+          "text": "Did that make it easier?",
+          "source": "src/data/source-rest-couperin-conversation.js:106"
+        },
+        {
+          "id": "nodes.recording.l3",
+          "who": "you",
+          "text": "It made it possible to listen again.",
+          "source": "src/data/source-rest-couperin-conversation.js:107"
+        },
+        {
+          "id": "nodes.recording.l4",
+          "who": "other",
+          "text": "And again.",
+          "source": "src/data/source-rest-couperin-conversation.js:108"
+        },
+        {
+          "id": "nodes.recording.l5",
+          "who": "you",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:109"
+        },
+        {
+          "id": "nodes.recording.l6",
+          "who": "other",
+          "text": "I am not complaining.",
+          "source": "src/data/source-rest-couperin-conversation.js:110"
+        },
+        {
+          "id": "nodes.recording.l7",
+          "who": "you",
+          "text": "Neither am I. Not exactly.",
+          "source": "src/data/source-rest-couperin-conversation.js:111"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:104"
+    },
+    "nodes.recording-choice": {
+      "id": "nodes.recording-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.recording-choice.l0",
+          "who": "other",
+          "text": "What do you hear when you go back?",
+          "source": "src/data/source-rest-couperin-conversation.js:114"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.recording-choice.c0",
+          "text": "Things I missed in the room.",
+          "source": "src/data/source-rest-couperin-conversation.js:115",
+          "choiceId": "room",
+          "goto": "nodes.room"
+        },
+        {
+          "id": "nodes.recording-choice.c1",
+          "text": "I keep waiting for the note to land.",
+          "source": "src/data/source-rest-couperin-conversation.js:115",
+          "choiceId": "waiting",
+          "goto": "nodes.waiting"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:114"
+    },
+    "nodes.room": {
+      "id": "nodes.room",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.room.l0",
+          "who": "you",
+          "text": "Things I missed in the room.",
+          "source": "src/data/source-rest-couperin-conversation.js:117"
+        },
+        {
+          "id": "nodes.room.l1",
+          "who": "other",
+          "text": "Small things?",
+          "source": "src/data/source-rest-couperin-conversation.js:118"
+        },
+        {
+          "id": "nodes.room.l2",
+          "who": "you",
+          "text": "Things I stopped noticing because they were always there.",
+          "source": "src/data/source-rest-couperin-conversation.js:119"
+        },
+        {
+          "id": "nodes.room.l3",
+          "who": "other",
+          "text": "You could leave some of them in.",
+          "source": "src/data/source-rest-couperin-conversation.js:120"
+        },
+        {
+          "id": "nodes.room.l4",
+          "who": "you",
+          "text": "I know.",
+          "source": "src/data/source-rest-couperin-conversation.js:121"
+        },
+        {
+          "id": "nodes.room.l5",
+          "who": "other",
+          "text": "You do not have to choose which ones tonight.",
+          "source": "src/data/source-rest-couperin-conversation.js:122"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:117"
+    },
+    "nodes.waiting": {
+      "id": "nodes.waiting",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.waiting.l0",
+          "who": "you",
+          "text": "I keep waiting for the note to land.",
+          "source": "src/data/source-rest-couperin-conversation.js:125"
+        },
+        {
+          "id": "nodes.waiting.l1",
+          "who": "other",
+          "text": "Is it late?",
+          "source": "src/data/source-rest-couperin-conversation.js:126"
+        },
+        {
+          "id": "nodes.waiting.l2",
+          "who": "you",
+          "text": "Sometimes I am early.",
+          "source": "src/data/source-rest-couperin-conversation.js:127"
+        },
+        {
+          "id": "nodes.waiting.l3",
+          "who": "other",
+          "text": "Then we can wait for it.",
+          "source": "src/data/source-rest-couperin-conversation.js:128"
+        },
+        {
+          "id": "nodes.waiting.l4",
+          "who": "you",
+          "text": "You make that sound easy.",
+          "source": "src/data/source-rest-couperin-conversation.js:129"
+        },
+        {
+          "id": "nodes.waiting.l5",
+          "who": "other",
+          "text": "I can sit here. That is the easy part.",
+          "source": "src/data/source-rest-couperin-conversation.js:130"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:125"
+    },
+    "nodes.electronics": {
+      "id": "nodes.electronics",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.electronics.l0",
+          "who": "you",
+          "text": "There was another way I wanted to hear it.",
+          "source": "src/data/source-rest-couperin-conversation.js:133"
+        },
+        {
+          "id": "nodes.electronics.l1",
+          "who": "other",
+          "text": "Through the electronics.",
+          "source": "src/data/source-rest-couperin-conversation.js:134"
+        },
+        {
+          "id": "nodes.electronics.l2",
+          "who": "you",
+          "text": "Yes. A revoicing. Not a correction.",
+          "source": "src/data/source-rest-couperin-conversation.js:135"
+        },
+        {
+          "id": "nodes.electronics.l3",
+          "who": "other",
+          "text": "I did not think you were correcting it.",
+          "source": "src/data/source-rest-couperin-conversation.js:136"
+        },
+        {
+          "id": "nodes.electronics.l4",
+          "who": "you",
+          "text": "I wanted it to be able to change, and still know where I was.",
+          "source": "src/data/source-rest-couperin-conversation.js:137"
+        },
+        {
+          "id": "nodes.electronics.l5",
+          "who": "other",
+          "text": "Do you?",
+          "source": "src/data/source-rest-couperin-conversation.js:138"
+        },
+        {
+          "id": "nodes.electronics.l6",
+          "who": "you",
+          "text": "I can follow it.",
+          "source": "src/data/source-rest-couperin-conversation.js:139"
+        },
+        {
+          "id": "nodes.electronics.l7",
+          "who": "other",
+          "text": "Then let us do that.",
+          "source": "src/data/source-rest-couperin-conversation.js:140"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:133"
+    },
+    "nodes.threshold-choice": {
+      "id": "nodes.threshold-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.threshold-choice.l0",
+          "who": "other",
+          "text": "Would you like to get up?",
+          "source": "src/data/source-rest-couperin-conversation.js:143"
+        },
+        {
+          "id": "nodes.threshold-choice.l1",
+          "who": "you",
+          "text": "I could still hear it from there.",
+          "source": "src/data/source-rest-couperin-conversation.js:144"
+        },
+        {
+          "id": "nodes.threshold-choice.l2",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:145"
+        },
+        {
+          "id": "nodes.threshold-choice.l3",
+          "who": "you",
+          "text": "Then why does it matter where I am?",
+          "source": "src/data/source-rest-couperin-conversation.js:146"
+        },
+        {
+          "id": "nodes.threshold-choice.l4",
+          "who": "other",
+          "text": "You do not have to give me a reason.",
+          "source": "src/data/source-rest-couperin-conversation.js:147"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.threshold-choice.c0",
+          "text": "Let it finish.",
+          "source": "src/data/source-rest-couperin-conversation.js:148",
+          "choiceId": "finish",
+          "goto": "nodes.revoicing"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:143"
+    },
+    "nodes.revoicing": {
+      "id": "nodes.revoicing",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.revoicing.l0",
+          "who": "you",
+          "text": "Let it finish.",
+          "source": "src/data/source-rest-couperin-conversation.js:150"
+        },
+        {
+          "id": "nodes.revoicing.l1",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-couperin-conversation.js:151"
+        },
+        {
+          "id": "nodes.revoicing.l2",
+          "who": "you",
+          "text": "There. That is the other sound.",
+          "source": "src/data/source-rest-couperin-conversation.js:152"
+        },
+        {
+          "id": "nodes.revoicing.l3",
+          "who": "other",
+          "text": "Do you want to choose between them?",
+          "source": "src/data/source-rest-couperin-conversation.js:153"
+        },
+        {
+          "id": "nodes.revoicing.l4",
+          "who": "other",
+          "text": "Good. I was hoping we could hear both.",
+          "source": "src/data/source-rest-couperin-conversation.js:155"
+        },
+        {
+          "id": "nodes.revoicing.l5",
+          "who": "you",
+          "text": "I can still find my way through it.",
+          "source": "src/data/source-rest-couperin-conversation.js:156"
+        },
+        {
+          "id": "nodes.revoicing.l6",
+          "who": "other",
+          "text": "Take your time.",
+          "source": "src/data/source-rest-couperin-conversation.js:157"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:150"
+    },
+    "nodes.material": {
+      "id": "nodes.material",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.material.l0",
+          "who": "you",
+          "text": "It does not sound like wood now.",
+          "source": "src/data/source-rest-couperin-conversation.js:160"
+        },
+        {
+          "id": "nodes.material.l1",
+          "who": "you",
+          "text": "But I know where the hands would go.",
+          "source": "src/data/source-rest-couperin-conversation.js:162"
+        },
+        {
+          "id": "nodes.material.l2",
+          "who": "other",
+          "text": "You need not see them.",
+          "source": "src/data/source-rest-couperin-conversation.js:163"
+        },
+        {
+          "id": "nodes.material.l3",
+          "who": "you",
+          "text": "I thought I needed a reason for every change.",
+          "source": "src/data/source-rest-couperin-conversation.js:164"
+        },
+        {
+          "id": "nodes.material.l4",
+          "who": "other",
+          "text": "Would you like to tell me one?",
+          "source": "src/data/source-rest-couperin-conversation.js:165"
+        },
+        {
+          "id": "nodes.material.l5",
+          "who": "you",
+          "text": "Not yet. I want to hear this.",
+          "source": "src/data/source-rest-couperin-conversation.js:166"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:160"
+    },
+    "nodes.material-choice": {
+      "id": "nodes.material-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.material-choice.l0",
+          "who": "other",
+          "text": "What is holding it together?",
+          "source": "src/data/source-rest-couperin-conversation.js:169"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.material-choice.c0",
+          "text": "The line is still there.",
+          "source": "src/data/source-rest-couperin-conversation.js:170",
+          "choiceId": "line",
+          "goto": "nodes.line"
+        },
+        {
+          "id": "nodes.material-choice.c1",
+          "text": "It is the space around it.",
+          "source": "src/data/source-rest-couperin-conversation.js:170",
+          "choiceId": "space",
+          "goto": "nodes.space"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:169"
+    },
+    "nodes.line": {
+      "id": "nodes.line",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.line.l0",
+          "who": "you",
+          "text": "The line is still there.",
+          "source": "src/data/source-rest-couperin-conversation.js:172"
+        },
+        {
+          "id": "nodes.line.l1",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:173"
+        },
+        {
+          "id": "nodes.line.l2",
+          "who": "you",
+          "text": "I am listening for where it breathes.",
+          "source": "src/data/source-rest-couperin-conversation.js:174"
+        },
+        {
+          "id": "nodes.line.l3",
+          "who": "other",
+          "text": "Shall I count?",
+          "source": "src/data/source-rest-couperin-conversation.js:175"
+        },
+        {
+          "id": "nodes.line.l4",
+          "who": "you",
+          "text": "Please do not.",
+          "source": "src/data/source-rest-couperin-conversation.js:176"
+        },
+        {
+          "id": "nodes.line.l5",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-couperin-conversation.js:177"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:172"
+    },
+    "nodes.space": {
+      "id": "nodes.space",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.space.l0",
+          "who": "you",
+          "text": "It is the space around it.",
+          "source": "src/data/source-rest-couperin-conversation.js:180"
+        },
+        {
+          "id": "nodes.space.l1",
+          "who": "other",
+          "text": "Too much?",
+          "source": "src/data/source-rest-couperin-conversation.js:181"
+        },
+        {
+          "id": "nodes.space.l2",
+          "who": "you",
+          "text": "No. I wanted to leave it somewhere to go.",
+          "source": "src/data/source-rest-couperin-conversation.js:182"
+        },
+        {
+          "id": "nodes.space.l3",
+          "who": "other",
+          "text": "Well, here it is.",
+          "source": "src/data/source-rest-couperin-conversation.js:183"
+        },
+        {
+          "id": "nodes.space.l4",
+          "who": "you",
+          "text": "I was not thinking of this place.",
+          "source": "src/data/source-rest-couperin-conversation.js:184"
+        },
+        {
+          "id": "nodes.space.l5",
+          "who": "other",
+          "text": "I know.",
+          "source": "src/data/source-rest-couperin-conversation.js:185"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:180"
+    },
+    "nodes.unfinished-sentence": {
+      "id": "nodes.unfinished-sentence",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.unfinished-sentence.l0",
+          "who": "you",
+          "text": "I was saying something.",
+          "source": "src/data/source-rest-couperin-conversation.js:188"
+        },
+        {
+          "id": "nodes.unfinished-sentence.l1",
+          "who": "other",
+          "text": "About the sound.",
+          "source": "src/data/source-rest-couperin-conversation.js:189"
+        },
+        {
+          "id": "nodes.unfinished-sentence.l2",
+          "who": "you",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:190"
+        },
+        {
+          "id": "nodes.unfinished-sentence.l3",
+          "who": "other",
+          "text": "You can leave it there.",
+          "source": "src/data/source-rest-couperin-conversation.js:191"
+        },
+        {
+          "id": "nodes.unfinished-sentence.l4",
+          "who": "you",
+          "text": "I have not finished.",
+          "source": "src/data/source-rest-couperin-conversation.js:192"
+        },
+        {
+          "id": "nodes.unfinished-sentence.l5",
+          "who": "other",
+          "text": "I know. I am not going anywhere.",
+          "source": "src/data/source-rest-couperin-conversation.js:193"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:188"
+    },
+    "nodes.return": {
+      "id": "nodes.return",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.return.l0",
+          "who": "other",
+          "text": "You said you were going to bring something back.",
+          "source": "src/data/source-rest-couperin-conversation.js:196"
+        },
+        {
+          "id": "nodes.return.l1",
+          "who": "you",
+          "text": "I remember.",
+          "source": "src/data/source-rest-couperin-conversation.js:197"
+        },
+        {
+          "id": "nodes.return.l2",
+          "who": "other",
+          "text": "To the marimba.",
+          "source": "src/data/source-rest-couperin-conversation.js:198"
+        },
+        {
+          "id": "nodes.return.l3",
+          "who": "you",
+          "text": "I think I brought more than I meant to.",
+          "source": "src/data/source-rest-couperin-conversation.js:199"
+        },
+        {
+          "id": "nodes.return.l4",
+          "who": "other",
+          "text": "There is room.",
+          "source": "src/data/source-rest-couperin-conversation.js:200"
+        },
+        {
+          "id": "nodes.return.l5",
+          "who": "you",
+          "text": "Is there?",
+          "source": "src/data/source-rest-couperin-conversation.js:201"
+        },
+        {
+          "id": "nodes.return.l6",
+          "who": "other",
+          "text": "For this.",
+          "source": "src/data/source-rest-couperin-conversation.js:202"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:196"
+    },
+    "nodes.last-choice": {
+      "id": "nodes.last-choice",
+      "type": "choice",
+      "lines": [
+        {
+          "id": "nodes.last-choice.l0",
+          "who": "other",
+          "text": "What shall we keep?",
+          "source": "src/data/source-rest-couperin-conversation.js:205"
+        }
+      ],
+      "choices": [
+        {
+          "id": "nodes.last-choice.c0",
+          "text": "The way it begins.",
+          "source": "src/data/source-rest-couperin-conversation.js:206",
+          "choiceId": "beginning",
+          "goto": "nodes.beginning"
+        },
+        {
+          "id": "nodes.last-choice.c1",
+          "text": "The way it lets go.",
+          "source": "src/data/source-rest-couperin-conversation.js:206",
+          "choiceId": "release",
+          "goto": "nodes.letting-go"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:205"
+    },
+    "nodes.beginning": {
+      "id": "nodes.beginning",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.beginning.l0",
+          "who": "you",
+          "text": "The way it begins.",
+          "source": "src/data/source-rest-couperin-conversation.js:208"
+        },
+        {
+          "id": "nodes.beginning.l1",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-couperin-conversation.js:209"
+        },
+        {
+          "id": "nodes.beginning.l2",
+          "who": "you",
+          "text": "I think that is what I was after.",
+          "source": "src/data/source-rest-couperin-conversation.js:210"
+        },
+        {
+          "id": "nodes.beginning.l3",
+          "who": "other",
+          "text": "Go on.",
+          "source": "src/data/source-rest-couperin-conversation.js:211"
+        },
+        {
+          "id": "nodes.beginning.l4",
+          "who": "you",
+          "text": "No. Listen.",
+          "source": "src/data/source-rest-couperin-conversation.js:212"
+        },
+        {
+          "id": "nodes.beginning.l5",
+          "who": "other",
+          "text": "I am listening.",
+          "source": "src/data/source-rest-couperin-conversation.js:213"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:208"
+    },
+    "nodes.letting-go": {
+      "id": "nodes.letting-go",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.letting-go.l0",
+          "who": "you",
+          "text": "The way it lets go.",
+          "source": "src/data/source-rest-couperin-conversation.js:216"
+        },
+        {
+          "id": "nodes.letting-go.l1",
+          "who": "other",
+          "text": "All right.",
+          "source": "src/data/source-rest-couperin-conversation.js:217"
+        },
+        {
+          "id": "nodes.letting-go.l2",
+          "who": "you",
+          "text": "It does not have to be much.",
+          "source": "src/data/source-rest-couperin-conversation.js:218"
+        },
+        {
+          "id": "nodes.letting-go.l3",
+          "who": "you",
+          "text": "A little more room, perhaps.",
+          "source": "src/data/source-rest-couperin-conversation.js:220"
+        },
+        {
+          "id": "nodes.letting-go.l4",
+          "who": "other",
+          "text": "Here.",
+          "source": "src/data/source-rest-couperin-conversation.js:221"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:216"
+    },
+    "nodes.last": {
+      "id": "nodes.last",
+      "type": "line",
+      "lines": [
+        {
+          "id": "nodes.last.l0",
+          "who": "you",
+          "text": "I cannot tell where the edge of it is.",
+          "source": "src/data/source-rest-couperin-conversation.js:224"
+        },
+        {
+          "id": "nodes.last.l1",
+          "who": "other",
+          "text": "The note?",
+          "source": "src/data/source-rest-couperin-conversation.js:225"
+        },
+        {
+          "id": "nodes.last.l2",
+          "who": "you",
+          "text": "The room.",
+          "source": "src/data/source-rest-couperin-conversation.js:226"
+        },
+        {
+          "id": "nodes.last.l3",
+          "who": "other",
+          "text": "Leave the room a moment.",
+          "source": "src/data/source-rest-couperin-conversation.js:227"
+        },
+        {
+          "id": "nodes.last.l4",
+          "who": "you",
+          "text": "Will I still know when it ends?",
+          "source": "src/data/source-rest-couperin-conversation.js:228"
+        },
+        {
+          "id": "nodes.last.l5",
+          "who": "other",
+          "text": "We can listen for the space after it.",
+          "source": "src/data/source-rest-couperin-conversation.js:229"
+        },
+        {
+          "id": "nodes.last.l6",
+          "who": "you",
+          "text": "Do not count.",
+          "source": "src/data/source-rest-couperin-conversation.js:230"
+        },
+        {
+          "id": "nodes.last.l7",
+          "who": "you",
+          "text": "There it is.",
+          "source": "src/data/source-rest-couperin-conversation.js:232"
+        },
+        {
+          "id": "nodes.last.l8",
+          "who": "other",
+          "text": "Yes.",
+          "source": "src/data/source-rest-couperin-conversation.js:233"
+        },
+        {
+          "id": "nodes.last.l9",
+          "who": "you",
+          "text": "Leave it there.",
+          "source": "src/data/source-rest-couperin-conversation.js:234"
+        }
+      ],
+      "source": "src/data/source-rest-couperin-conversation.js:224"
+    }
+  }
+}

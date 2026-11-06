@@ -1,0 +1,1073 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.source-rest-questions",
+  "title": "Runtime · data/source-rest-questions.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "groups.recordings.questions.keep.answer",
+  "entries": [
+    "groups.recordings.questions.keep.answer",
+    "groups.recordings.questions.hush.answer",
+    "groups.recordings.questions.safe.answer",
+    "groups.recordings.questions.radio.answer",
+    "groups.places.questions.ellery.answer",
+    "groups.places.questions.scale.answer",
+    "groups.places.questions.source.answer",
+    "groups.places.questions.trust.answer",
+    "groups.rules.questions.answers.answer",
+    "groups.rules.questions.leave.answer",
+    "groups.rules.questions.puzzles.answer",
+    "groups.rules.questions.unfinished.answer",
+    "groups.making.questions.maker.answer",
+    "groups.making.questions.rough.answer",
+    "groups.making.questions.beautiful.answer",
+    "groups.making.questions.feeling.answer",
+    "catchReplies.recordings-keep",
+    "catchReplies.recordings-hush",
+    "catchReplies.recordings-safe",
+    "catchReplies.recordings-radio",
+    "catchReplies.places-ellery",
+    "catchReplies.places-scale",
+    "catchReplies.places-source",
+    "catchReplies.places-trust",
+    "catchReplies.rules-answers",
+    "catchReplies.rules-leave",
+    "catchReplies.rules-puzzles",
+    "catchReplies.rules-unfinished",
+    "catchReplies.making-maker",
+    "catchReplies.making-rough",
+    "catchReplies.making-beautiful",
+    "catchReplies.making-feeling",
+    "sourceRestQuestionNodes.nodes.questions-entry",
+    "sourceRestQuestionNodes"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/source-rest-questions.js",
+  "notes": "Generated from src/data/source-rest-questions.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "groups.recordings.questions.keep.answer": {
+      "id": "groups.recordings.questions.keep.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.recordings.questions.keep.answer.l0",
+          "who": "other",
+          "text": "Because the next time you hear it, the first time is already gone.",
+          "source": "src/data/source-rest-questions.js:13"
+        },
+        {
+          "id": "groups.recordings.questions.keep.answer.l1",
+          "who": "you",
+          "text": "That is a reason to remember it.",
+          "source": "src/data/source-rest-questions.js:14"
+        },
+        {
+          "id": "groups.recordings.questions.keep.answer.l2",
+          "who": "other",
+          "text": "A recording keeps more than the part you knew to remember. A chair. A breath. Something you did not notice until the second time.",
+          "source": "src/data/source-rest-questions.js:15"
+        },
+        {
+          "id": "groups.recordings.questions.keep.answer.l3",
+          "who": "other",
+          "text": "It does not keep the room waiting for you. It is still something you can go back to.",
+          "source": "src/data/source-rest-questions.js:16"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:13"
+    },
+    "groups.recordings.questions.hush.answer": {
+      "id": "groups.recordings.questions.hush.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.recordings.questions.hush.answer.l0",
+          "who": "other",
+          "text": "I can tell you that a take can be taken. I cannot tell you what it wants from one.",
+          "source": "src/data/source-rest-questions.js:19"
+        },
+        {
+          "id": "groups.recordings.questions.hush.answer.l1",
+          "who": "you",
+          "text": "That is not much help.",
+          "source": "src/data/source-rest-questions.js:20"
+        },
+        {
+          "id": "groups.recordings.questions.hush.answer.l2",
+          "who": "other",
+          "text": "No. I would rather leave the want unanswered than make up a reason and send you after it.",
+          "source": "src/data/source-rest-questions.js:21"
+        },
+        {
+          "id": "groups.recordings.questions.hush.answer.l3",
+          "who": "other",
+          "text": "What is missing is worth noticing. So is what you still have.",
+          "source": "src/data/source-rest-questions.js:22"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:19"
+    },
+    "groups.recordings.questions.safe.answer": {
+      "id": "groups.recordings.questions.safe.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.recordings.questions.safe.answer.l0",
+          "who": "other",
+          "text": "Not here.",
+          "source": "src/data/source-rest-questions.js:25"
+        },
+        {
+          "id": "groups.recordings.questions.safe.answer.l1",
+          "who": "you",
+          "text": "Even if I am doing what I came to do?",
+          "source": "src/data/source-rest-questions.js:26"
+        },
+        {
+          "id": "groups.recordings.questions.safe.answer.l2",
+          "who": "other",
+          "text": "The thing coming after you does not have to respect a job.",
+          "source": "src/data/source-rest-questions.js:27"
+        },
+        {
+          "id": "groups.recordings.questions.safe.answer.l3",
+          "who": "other",
+          "text": "If you stop to listen, choose the place and the time. Do not mistake the instrument being busy for someone keeping watch.",
+          "source": "src/data/source-rest-questions.js:28"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:25"
+    },
+    "groups.recordings.questions.radio.answer": {
+      "id": "groups.recordings.questions.radio.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.recordings.questions.radio.answer.l0",
+          "who": "other",
+          "text": "The voice you called for is not answering here.",
+          "source": "src/data/source-rest-questions.js:31"
+        },
+        {
+          "id": "groups.recordings.questions.radio.answer.l1",
+          "who": "you",
+          "text": "But I can still hear something.",
+          "source": "src/data/source-rest-questions.js:32"
+        },
+        {
+          "id": "groups.recordings.questions.radio.answer.l2",
+          "who": "other",
+          "text": "Yes. Hearing something is not the same as getting through.",
+          "source": "src/data/source-rest-questions.js:33"
+        },
+        {
+          "id": "groups.recordings.questions.radio.answer.l3",
+          "who": "other",
+          "text": "I would not put an answer in that voice merely because you missed it.",
+          "source": "src/data/source-rest-questions.js:34"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:31"
+    },
+    "groups.places.questions.ellery.answer": {
+      "id": "groups.places.questions.ellery.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.places.questions.ellery.answer.l0",
+          "who": "other",
+          "text": "You recognize it before you know whether it fits.",
+          "source": "src/data/source-rest-questions.js:39"
+        },
+        {
+          "id": "groups.places.questions.ellery.answer.l1",
+          "who": "you",
+          "text": "It is not the same building.",
+          "source": "src/data/source-rest-questions.js:40"
+        },
+        {
+          "id": "groups.places.questions.ellery.answer.l2",
+          "who": "other",
+          "text": "No. A familiar stair can make you expect the next landing. Then the landing is somewhere else.",
+          "source": "src/data/source-rest-questions.js:41"
+        },
+        {
+          "id": "groups.places.questions.ellery.answer.l3",
+          "who": "other",
+          "text": "The recognition is real. It does not make the promise reliable.",
+          "source": "src/data/source-rest-questions.js:42"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:39"
+    },
+    "groups.places.questions.scale.answer": {
+      "id": "groups.places.questions.scale.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.places.questions.scale.answer.l0",
+          "who": "other",
+          "text": "A joint becomes a passage. Something you could pick up becomes something you have to go around.",
+          "source": "src/data/source-rest-questions.js:45"
+        },
+        {
+          "id": "groups.places.questions.scale.answer.l1",
+          "who": "you",
+          "text": "Is making it large enough?",
+          "source": "src/data/source-rest-questions.js:46"
+        },
+        {
+          "id": "groups.places.questions.scale.answer.l2",
+          "who": "other",
+          "text": "No. It has to give you somewhere to stand, or block a view, or carry something. Otherwise it is only large.",
+          "source": "src/data/source-rest-questions.js:47"
+        },
+        {
+          "id": "groups.places.questions.scale.answer.l3",
+          "who": "other",
+          "text": "Look at what it is being asked to hold.",
+          "source": "src/data/source-rest-questions.js:48"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:45"
+    },
+    "groups.places.questions.source.answer": {
+      "id": "groups.places.questions.source.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.places.questions.source.answer.l0",
+          "who": "other",
+          "text": "You can read what you can reach. You do not owe the wall every line.",
+          "source": "src/data/source-rest-questions.js:51"
+        },
+        {
+          "id": "groups.places.questions.source.answer.l1",
+          "who": "you",
+          "text": "I keep thinking there is an instruction in it.",
+          "source": "src/data/source-rest-questions.js:52"
+        },
+        {
+          "id": "groups.places.questions.source.answer.l2",
+          "who": "other",
+          "text": "A word can be part of a place without being an instruction to you.",
+          "source": "src/data/source-rest-questions.js:53"
+        },
+        {
+          "id": "groups.places.questions.source.answer.l3",
+          "who": "other",
+          "text": "You are allowed to look at the room around it.",
+          "source": "src/data/source-rest-questions.js:54"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:51"
+    },
+    "groups.places.questions.trust.answer": {
+      "id": "groups.places.questions.trust.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.places.questions.trust.answer.l0",
+          "who": "other",
+          "text": "Start with the part beneath your feet.",
+          "source": "src/data/source-rest-questions.js:57"
+        },
+        {
+          "id": "groups.places.questions.trust.answer.l1",
+          "who": "you",
+          "text": "That is a very small answer.",
+          "source": "src/data/source-rest-questions.js:58"
+        },
+        {
+          "id": "groups.places.questions.trust.answer.l2",
+          "who": "other",
+          "text": "It is the one you need before the larger one. A stair should carry you even when it leads somewhere impossible.",
+          "source": "src/data/source-rest-questions.js:59"
+        },
+        {
+          "id": "groups.places.questions.trust.answer.l3",
+          "who": "other",
+          "text": "If it does not, the impossibility has stopped being an interesting excuse.",
+          "source": "src/data/source-rest-questions.js:60"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:57"
+    },
+    "groups.rules.questions.answers.answer": {
+      "id": "groups.rules.questions.answers.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.rules.questions.answers.answer.l0",
+          "who": "other",
+          "text": "There is no correct reply hidden in these questions.",
+          "source": "src/data/source-rest-questions.js:65"
+        },
+        {
+          "id": "groups.rules.questions.answers.answer.l1",
+          "who": "you",
+          "text": "The room keeps giving way.",
+          "source": "src/data/source-rest-questions.js:66"
+        },
+        {
+          "id": "groups.rules.questions.answers.answer.l2",
+          "who": "other",
+          "text": "Your answer did not make a wrong note. Asking about a door did not break it.",
+          "source": "src/data/source-rest-questions.js:67"
+        },
+        {
+          "id": "groups.rules.questions.answers.answer.l3",
+          "who": "other",
+          "text": "You can change what you were going to say. I have not heard it until you have said it.",
+          "source": "src/data/source-rest-questions.js:68"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:65"
+    },
+    "groups.rules.questions.leave.answer": {
+      "id": "groups.rules.questions.leave.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.rules.questions.leave.answer.l0",
+          "who": "other",
+          "text": "Now, yes.",
+          "source": "src/data/source-rest-questions.js:71"
+        },
+        {
+          "id": "groups.rules.questions.leave.answer.l1",
+          "who": "you",
+          "text": "And if I keep listening?",
+          "source": "src/data/source-rest-questions.js:72"
+        },
+        {
+          "id": "groups.rules.questions.leave.answer.l2",
+          "who": "other",
+          "text": "There is a point beyond which your body will not answer you. Do not wait for the room to explain it more beautifully.",
+          "source": "src/data/source-rest-questions.js:73"
+        },
+        {
+          "id": "groups.rules.questions.leave.answer.l3",
+          "who": "other",
+          "text": "Getting up now is allowed. You need not finish my sentence first.",
+          "source": "src/data/source-rest-questions.js:74"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:71"
+    },
+    "groups.rules.questions.puzzles.answer": {
+      "id": "groups.rules.questions.puzzles.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.rules.questions.puzzles.answer.l0",
+          "who": "you",
+          "text": "I keep checking.",
+          "source": "src/data/source-rest-questions.js:78"
+        },
+        {
+          "id": "groups.rules.questions.puzzles.answer.l1",
+          "who": "other",
+          "text": "Some things are there to be found. Some things are just there.",
+          "source": "src/data/source-rest-questions.js:79"
+        },
+        {
+          "id": "groups.rules.questions.puzzles.answer.l2",
+          "who": "other",
+          "text": "You should not have to strip a place bare before you are allowed to leave it.",
+          "source": "src/data/source-rest-questions.js:80"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:78"
+    },
+    "groups.rules.questions.unfinished.answer": {
+      "id": "groups.rules.questions.unfinished.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.rules.questions.unfinished.answer.l0",
+          "who": "other",
+          "text": "Then there will be things you did not hear, and doors you did not open.",
+          "source": "src/data/source-rest-questions.js:83"
+        },
+        {
+          "id": "groups.rules.questions.unfinished.answer.l1",
+          "who": "you",
+          "text": "You make that sound permanent.",
+          "source": "src/data/source-rest-questions.js:84"
+        },
+        {
+          "id": "groups.rules.questions.unfinished.answer.l2",
+          "who": "other",
+          "text": "Some choices are. That is different from every missed detail being a failure.",
+          "source": "src/data/source-rest-questions.js:85"
+        },
+        {
+          "id": "groups.rules.questions.unfinished.answer.l3",
+          "who": "other",
+          "text": "Keep hold of what you came to do. You need not make the whole place account for itself tonight.",
+          "source": "src/data/source-rest-questions.js:86"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:83"
+    },
+    "groups.making.questions.maker.answer": {
+      "id": "groups.making.questions.maker.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.making.questions.maker.answer.l0",
+          "who": "other",
+          "text": "I can talk with you about how it is put together. I do not have a name that would settle who is sitting here.",
+          "source": "src/data/source-rest-questions.js:91"
+        },
+        {
+          "id": "groups.making.questions.maker.answer.l1",
+          "who": "you",
+          "text": "That leaves a lot out.",
+          "source": "src/data/source-rest-questions.js:92"
+        },
+        {
+          "id": "groups.making.questions.maker.answer.l2",
+          "who": "other",
+          "text": "Yes. I would rather say where the answer ends.",
+          "source": "src/data/source-rest-questions.js:93"
+        },
+        {
+          "id": "groups.making.questions.maker.answer.l3",
+          "who": "other",
+          "text": "You can still ask about the thing in front of you.",
+          "source": "src/data/source-rest-questions.js:94"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:91"
+    },
+    "groups.making.questions.rough.answer": {
+      "id": "groups.making.questions.rough.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.making.questions.rough.answer.l0",
+          "who": "other",
+          "text": "An unfinished backing can tell you how something is held up.",
+          "source": "src/data/source-rest-questions.js:97"
+        },
+        {
+          "id": "groups.making.questions.rough.answer.l1",
+          "who": "you",
+          "text": "And the rest of it?",
+          "source": "src/data/source-rest-questions.js:98"
+        },
+        {
+          "id": "groups.making.questions.rough.answer.l2",
+          "who": "other",
+          "text": "A rough edge is not automatically a secret. A mistake does not become deliberate because I find a sentence for it.",
+          "source": "src/data/source-rest-questions.js:99"
+        },
+        {
+          "id": "groups.making.questions.rough.answer.l3",
+          "who": "other",
+          "text": "What matters is whether the thing does what it asks you to believe.",
+          "source": "src/data/source-rest-questions.js:100"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:97"
+    },
+    "groups.making.questions.beautiful.answer": {
+      "id": "groups.making.questions.beautiful.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.making.questions.beautiful.answer.l0",
+          "who": "other",
+          "text": "Would you have stopped in it if it were only hostile?",
+          "source": "src/data/source-rest-questions.js:103"
+        },
+        {
+          "id": "groups.making.questions.beautiful.answer.l1",
+          "who": "you",
+          "text": "Perhaps not.",
+          "source": "src/data/source-rest-questions.js:104"
+        },
+        {
+          "id": "groups.making.questions.beautiful.answer.l2",
+          "who": "other",
+          "text": "Then the beauty matters. You are not wrong to want to look.",
+          "source": "src/data/source-rest-questions.js:105"
+        },
+        {
+          "id": "groups.making.questions.beautiful.answer.l3",
+          "who": "other",
+          "text": "It does not follow that the place is looking after you.",
+          "source": "src/data/source-rest-questions.js:106"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:103"
+    },
+    "groups.making.questions.feeling.answer": {
+      "id": "groups.making.questions.feeling.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "groups.making.questions.feeling.answer.l0",
+          "who": "other",
+          "text": "A light can be placed. A sound can be left just long enough. That is work someone can do.",
+          "source": "src/data/source-rest-questions.js:109"
+        },
+        {
+          "id": "groups.making.questions.feeling.answer.l1",
+          "who": "you",
+          "text": "And the feeling?",
+          "source": "src/data/source-rest-questions.js:110"
+        },
+        {
+          "id": "groups.making.questions.feeling.answer.l2",
+          "who": "other",
+          "text": "You brought part of that. I cannot tell you that you felt it incorrectly.",
+          "source": "src/data/source-rest-questions.js:111"
+        },
+        {
+          "id": "groups.making.questions.feeling.answer.l3",
+          "who": "other",
+          "text": "I can listen when you tell me what happened.",
+          "source": "src/data/source-rest-questions.js:112"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:109"
+    },
+    "catchReplies.recordings-keep": {
+      "id": "catchReplies.recordings-keep",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.recordings-keep.l0",
+          "who": "other",
+          "text": "You can return to the same sound and arrive somewhere else in it.",
+          "source": "src/data/source-rest-questions.js:121"
+        },
+        {
+          "id": "catchReplies.recordings-keep.l1",
+          "who": "you",
+          "text": "Without changing the recording?",
+          "source": "src/data/source-rest-questions.js:122"
+        },
+        {
+          "id": "catchReplies.recordings-keep.l2",
+          "who": "other",
+          "text": "Without changing the recording. You are not always listening for the same thing.",
+          "source": "src/data/source-rest-questions.js:123"
+        },
+        {
+          "id": "catchReplies.recordings-keep.l3",
+          "who": "other",
+          "text": "That is a reason to keep it, even when you cannot keep the room.",
+          "source": "src/data/source-rest-questions.js:124"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:121"
+    },
+    "catchReplies.recordings-hush": {
+      "id": "catchReplies.recordings-hush",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.recordings-hush.l0",
+          "who": "other",
+          "text": "A missing take is something you can find. A reason for wanting it is harder.",
+          "source": "src/data/source-rest-questions.js:127"
+        },
+        {
+          "id": "catchReplies.recordings-hush.l1",
+          "who": "you",
+          "text": "You do not know.",
+          "source": "src/data/source-rest-questions.js:128"
+        },
+        {
+          "id": "catchReplies.recordings-hush.l2",
+          "who": "other",
+          "text": "No. I know that being able to take a thing is not the same as understanding it.",
+          "source": "src/data/source-rest-questions.js:129"
+        },
+        {
+          "id": "catchReplies.recordings-hush.l3",
+          "who": "other",
+          "text": "I would not give that thing a clear purpose on so little evidence.",
+          "source": "src/data/source-rest-questions.js:130"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:127"
+    },
+    "catchReplies.recordings-safe": {
+      "id": "catchReplies.recordings-safe",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.recordings-safe.l0",
+          "who": "other",
+          "text": "Having the recorder running is not a refuge.",
+          "source": "src/data/source-rest-questions.js:133"
+        },
+        {
+          "id": "catchReplies.recordings-safe.l1",
+          "who": "you",
+          "text": "I am listening when I do it.",
+          "source": "src/data/source-rest-questions.js:134"
+        },
+        {
+          "id": "catchReplies.recordings-safe.l2",
+          "who": "other",
+          "text": "To one part of the place. That is why the rest of it matters.",
+          "source": "src/data/source-rest-questions.js:135"
+        },
+        {
+          "id": "catchReplies.recordings-safe.l3",
+          "who": "other",
+          "text": "Leave yourself somewhere to go. A good take is not a reason to stop having a way out.",
+          "source": "src/data/source-rest-questions.js:136"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:133"
+    },
+    "catchReplies.recordings-radio": {
+      "id": "catchReplies.recordings-radio",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.recordings-radio.l0",
+          "who": "other",
+          "text": "Whatever comes through here has not brought the ordinary line back.",
+          "source": "src/data/source-rest-questions.js:139"
+        },
+        {
+          "id": "catchReplies.recordings-radio.l1",
+          "who": "you",
+          "text": "I keep waiting for a voice I know.",
+          "source": "src/data/source-rest-questions.js:140"
+        },
+        {
+          "id": "catchReplies.recordings-radio.l2",
+          "who": "other",
+          "text": "You can miss it without deciding that every sound is an answer from it.",
+          "source": "src/data/source-rest-questions.js:141"
+        },
+        {
+          "id": "catchReplies.recordings-radio.l3",
+          "who": "other",
+          "text": "Sometimes a signal only tells you there is something there to hear.",
+          "source": "src/data/source-rest-questions.js:142"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:139"
+    },
+    "catchReplies.places-ellery": {
+      "id": "catchReplies.places-ellery",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.places-ellery.l0",
+          "who": "other",
+          "text": "A remembered place gives you expectations before it gives you directions.",
+          "source": "src/data/source-rest-questions.js:145"
+        },
+        {
+          "id": "catchReplies.places-ellery.l1",
+          "who": "you",
+          "text": "I know where the next room ought to be.",
+          "source": "src/data/source-rest-questions.js:146"
+        },
+        {
+          "id": "catchReplies.places-ellery.l2",
+          "who": "other",
+          "text": "That is the useful part. It is also the part that can be used against you.",
+          "source": "src/data/source-rest-questions.js:147"
+        },
+        {
+          "id": "catchReplies.places-ellery.l3",
+          "who": "other",
+          "text": "Look at the actual opening. You need not give up recognizing it to stop trusting the next step.",
+          "source": "src/data/source-rest-questions.js:148"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:145"
+    },
+    "catchReplies.places-scale": {
+      "id": "catchReplies.places-scale",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.places-scale.l0",
+          "who": "other",
+          "text": "Here, something made for a hand can become the thing holding a body.",
+          "source": "src/data/source-rest-questions.js:151"
+        },
+        {
+          "id": "catchReplies.places-scale.l1",
+          "who": "you",
+          "text": "I am not sure it was made for that.",
+          "source": "src/data/source-rest-questions.js:152"
+        },
+        {
+          "id": "catchReplies.places-scale.l2",
+          "who": "other",
+          "text": "Neither am I. Its size does not settle whether it can bear the weight.",
+          "source": "src/data/source-rest-questions.js:153"
+        },
+        {
+          "id": "catchReplies.places-scale.l3",
+          "who": "other",
+          "text": "That question has to become part of the construction, or the scale has done no work.",
+          "source": "src/data/source-rest-questions.js:154"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:151"
+    },
+    "catchReplies.places-source": {
+      "id": "catchReplies.places-source",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.places-source.l0",
+          "who": "other",
+          "text": "You can let the print be a surface for a moment.",
+          "source": "src/data/source-rest-questions.js:157"
+        },
+        {
+          "id": "catchReplies.places-source.l1",
+          "who": "you",
+          "text": "Even if I could understand it?",
+          "source": "src/data/source-rest-questions.js:158"
+        },
+        {
+          "id": "catchReplies.places-source.l2",
+          "who": "other",
+          "text": "Understanding a line would not make every line a command.",
+          "source": "src/data/source-rest-questions.js:159"
+        },
+        {
+          "id": "catchReplies.places-source.l3",
+          "who": "other",
+          "text": "Some of what was used to build the place is simply still visible.",
+          "source": "src/data/source-rest-questions.js:160"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:157"
+    },
+    "catchReplies.places-trust": {
+      "id": "catchReplies.places-trust",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.places-trust.l0",
+          "who": "other",
+          "text": "The support you can use, and the opening you can actually cross.",
+          "source": "src/data/source-rest-questions.js:163"
+        },
+        {
+          "id": "catchReplies.places-trust.l1",
+          "who": "you",
+          "text": "Even when the rest is wrong?",
+          "source": "src/data/source-rest-questions.js:164"
+        },
+        {
+          "id": "catchReplies.places-trust.l2",
+          "who": "other",
+          "text": "Especially then. You need some small thing to remain accountable.",
+          "source": "src/data/source-rest-questions.js:165"
+        },
+        {
+          "id": "catchReplies.places-trust.l3",
+          "who": "other",
+          "text": "Otherwise you cannot tell a place that has changed its rules from one that has merely failed you.",
+          "source": "src/data/source-rest-questions.js:166"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:163"
+    },
+    "catchReplies.rules-answers": {
+      "id": "catchReplies.rules-answers",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.rules-answers.l0",
+          "who": "other",
+          "text": "Your words are not notes in this performance.",
+          "source": "src/data/source-rest-questions.js:169"
+        },
+        {
+          "id": "catchReplies.rules-answers.l1",
+          "who": "you",
+          "text": "So there is not an answer that keeps it together?",
+          "source": "src/data/source-rest-questions.js:170"
+        },
+        {
+          "id": "catchReplies.rules-answers.l2",
+          "who": "other",
+          "text": "No. I would tell you if I were asking for one.",
+          "source": "src/data/source-rest-questions.js:171"
+        },
+        {
+          "id": "catchReplies.rules-answers.l3",
+          "who": "other",
+          "text": "We can disagree without calling it damage.",
+          "source": "src/data/source-rest-questions.js:172"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:169"
+    },
+    "catchReplies.rules-leave": {
+      "id": "catchReplies.rules-leave",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.rules-leave.l0",
+          "who": "other",
+          "text": "Yes. You can stand while the question is still open.",
+          "source": "src/data/source-rest-questions.js:175"
+        },
+        {
+          "id": "catchReplies.rules-leave.l1",
+          "who": "you",
+          "text": "I do not have to wait for an answer?",
+          "source": "src/data/source-rest-questions.js:176"
+        },
+        {
+          "id": "catchReplies.rules-leave.l2",
+          "who": "other",
+          "text": "Not for mine. There is a later point at which staying stops being something you can undo.",
+          "source": "src/data/source-rest-questions.js:177"
+        },
+        {
+          "id": "catchReplies.rules-leave.l3",
+          "who": "other",
+          "text": "Do not confuse being allowed to listen with being promised you can listen forever.",
+          "source": "src/data/source-rest-questions.js:178"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:175"
+    },
+    "catchReplies.rules-puzzles": {
+      "id": "catchReplies.rules-puzzles",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.rules-puzzles.l0",
+          "who": "other",
+          "text": "A place would be unbearably small if every mark in it were waiting for your solution.",
+          "source": "src/data/source-rest-questions.js:181"
+        },
+        {
+          "id": "catchReplies.rules-puzzles.l1",
+          "who": "you",
+          "text": "Some of them are waiting for me, though.",
+          "source": "src/data/source-rest-questions.js:182"
+        },
+        {
+          "id": "catchReplies.rules-puzzles.l2",
+          "who": "other",
+          "text": "Yes. That does not make the rest a debt.",
+          "source": "src/data/source-rest-questions.js:183"
+        },
+        {
+          "id": "catchReplies.rules-puzzles.l3",
+          "who": "other",
+          "text": "You can notice something without making it your next task.",
+          "source": "src/data/source-rest-questions.js:184"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:181"
+    },
+    "catchReplies.rules-unfinished": {
+      "id": "catchReplies.rules-unfinished",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.rules-unfinished.l0",
+          "who": "other",
+          "text": "Something can remain unheard without undoing what you did hear.",
+          "source": "src/data/source-rest-questions.js:187"
+        },
+        {
+          "id": "catchReplies.rules-unfinished.l1",
+          "who": "you",
+          "text": "That does not mean I can always go back.",
+          "source": "src/data/source-rest-questions.js:188"
+        },
+        {
+          "id": "catchReplies.rules-unfinished.l2",
+          "who": "other",
+          "text": "No. I do not want to make that promise.",
+          "source": "src/data/source-rest-questions.js:189"
+        },
+        {
+          "id": "catchReplies.rules-unfinished.l3",
+          "who": "other",
+          "text": "I only mean that an unfinished inventory is not the same thing as an empty night.",
+          "source": "src/data/source-rest-questions.js:190"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:187"
+    },
+    "catchReplies.making-maker": {
+      "id": "catchReplies.making-maker",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.making-maker.l0",
+          "who": "other",
+          "text": "You can ask about the seams. I cannot give you a name that explains the whole place.",
+          "source": "src/data/source-rest-questions.js:193"
+        },
+        {
+          "id": "catchReplies.making-maker.l1",
+          "who": "you",
+          "text": "Including this conversation?",
+          "source": "src/data/source-rest-questions.js:194"
+        },
+        {
+          "id": "catchReplies.making-maker.l2",
+          "who": "other",
+          "text": "Including this conversation.",
+          "source": "src/data/source-rest-questions.js:195"
+        },
+        {
+          "id": "catchReplies.making-maker.l3",
+          "who": "other",
+          "text": "The answer should not pretend to know more merely because the room is getting quiet.",
+          "source": "src/data/source-rest-questions.js:196"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:193"
+    },
+    "catchReplies.making-rough": {
+      "id": "catchReplies.making-rough",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.making-rough.l0",
+          "who": "other",
+          "text": "An exposed joint can be deliberate. It still has to join something.",
+          "source": "src/data/source-rest-questions.js:199"
+        },
+        {
+          "id": "catchReplies.making-rough.l1",
+          "who": "you",
+          "text": "And an unfinished room?",
+          "source": "src/data/source-rest-questions.js:200"
+        },
+        {
+          "id": "catchReplies.making-rough.l2",
+          "who": "other",
+          "text": "It has to give you more than an excuse for its empty parts.",
+          "source": "src/data/source-rest-questions.js:201"
+        },
+        {
+          "id": "catchReplies.making-rough.l3",
+          "who": "other",
+          "text": "You are allowed to ask whether it holds together. Being strange does not settle that question.",
+          "source": "src/data/source-rest-questions.js:202"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:199"
+    },
+    "catchReplies.making-beautiful": {
+      "id": "catchReplies.making-beautiful",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.making-beautiful.l0",
+          "who": "other",
+          "text": "Because wanting to remain here should be a real want.",
+          "source": "src/data/source-rest-questions.js:205"
+        },
+        {
+          "id": "catchReplies.making-beautiful.l1",
+          "who": "you",
+          "text": "Not only the music?",
+          "source": "src/data/source-rest-questions.js:206"
+        },
+        {
+          "id": "catchReplies.making-beautiful.l2",
+          "who": "other",
+          "text": "The place you hear it in, too. Something worth giving your attention to.",
+          "source": "src/data/source-rest-questions.js:207"
+        },
+        {
+          "id": "catchReplies.making-beautiful.l3",
+          "who": "other",
+          "text": "Then leaving can cost you something without the place having to call you back.",
+          "source": "src/data/source-rest-questions.js:208"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:205"
+    },
+    "catchReplies.making-feeling": {
+      "id": "catchReplies.making-feeling",
+      "type": "line",
+      "lines": [
+        {
+          "id": "catchReplies.making-feeling.l0",
+          "who": "other",
+          "text": "I would have to hear what you felt before I could answer that.",
+          "source": "src/data/source-rest-questions.js:211"
+        },
+        {
+          "id": "catchReplies.making-feeling.l1",
+          "who": "you",
+          "text": "What if it is not what was intended?",
+          "source": "src/data/source-rest-questions.js:212"
+        },
+        {
+          "id": "catchReplies.making-feeling.l2",
+          "who": "other",
+          "text": "Then the thing that happened is still the thing that happened.",
+          "source": "src/data/source-rest-questions.js:213"
+        },
+        {
+          "id": "catchReplies.making-feeling.l3",
+          "who": "other",
+          "text": "An intention does not get to replace your account of it.",
+          "source": "src/data/source-rest-questions.js:214"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:211"
+    },
+    "sourceRestQuestionNodes.nodes.questions-entry": {
+      "id": "sourceRestQuestionNodes.nodes.questions-entry",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceRestQuestionNodes.nodes.questions-entry.l0",
+          "who": "you",
+          "text": "There are things about this place I am still carrying. / There are things about this place I wanted to ask.",
+          "source": "src/data/source-rest-questions.js:222"
+        },
+        {
+          "id": "sourceRestQuestionNodes.nodes.questions-entry.l1",
+          "who": "other",
+          "text": "You can put one of them here. / You can. I may not have a useful answer.",
+          "source": "src/data/source-rest-questions.js:223"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:222"
+    },
+    "sourceRestQuestionNodes": {
+      "id": "sourceRestQuestionNodes",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "sourceRestQuestionNodes.c0",
+          "text": "Something else.",
+          "source": "src/data/source-rest-questions.js:229",
+          "choiceId": "other",
+          "targetName": "questions-entry"
+        }
+      ],
+      "source": "src/data/source-rest-questions.js:229"
+    }
+  }
+}

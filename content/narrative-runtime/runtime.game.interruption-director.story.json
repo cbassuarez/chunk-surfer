@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.interruption-director",
+  "title": "Runtime · game/interruption-director.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "DEAD_DOOR_LINES",
+  "entries": [
+    "DEAD_DOOR_LINES"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/interruption-director.js",
+  "notes": "Generated from src/game/interruption-director.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "DEAD_DOOR_LINES": {
+      "id": "DEAD_DOOR_LINES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "DEAD_DOOR_LINES.l0",
+          "who": "text",
+          "text": "It isn't locked.",
+          "source": "src/game/interruption-director.js:44"
+        },
+        {
+          "id": "DEAD_DOOR_LINES.l1",
+          "who": "text",
+          "text": "Hm.",
+          "source": "src/game/interruption-director.js:44"
+        },
+        {
+          "id": "DEAD_DOOR_LINES.l2",
+          "who": "text",
+          "text": "The handle's fine.",
+          "source": "src/game/interruption-director.js:44"
+        },
+        {
+          "id": "DEAD_DOOR_LINES.l3",
+          "who": "text",
+          "text": "Stop. Try again.",
+          "source": "src/game/interruption-director.js:44"
+        }
+      ],
+      "source": "src/game/interruption-director.js:44"
+    }
+  }
+}

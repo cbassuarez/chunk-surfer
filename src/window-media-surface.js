@@ -40,7 +40,7 @@ float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
 // A TERMINAL FAILS IN ROWS AND CELLS, NEVER IN PIXELS. The world's bad-sector
 // run (game/source-faults.js) crosses this pane as it crosses its lane: rows
-// the head has passed hold an older frame or drop out, the head itself writes
+// the head has passed keep an older frame or drop out, the head itself writes
 // a partial block twice, a whole number of cells over. Every displacement is
 // a multiple of the stderr grid (terminalGrid: origin u, origin v from the
 // top, cell u, row v), so the glyphs stay whole and readable.

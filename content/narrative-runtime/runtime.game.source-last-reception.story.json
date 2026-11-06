@@ -4,10 +4,24 @@
   "title": "Runtime · game/source-last-reception.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "CONVERSATIONS",
+  "entry": "CONVERSATIONS.host-admission",
   "entries": [
-    "CONVERSATIONS",
+    "CONVERSATIONS.host-admission",
+    "CONVERSATIONS.guest-a-evening",
+    "CONVERSATIONS.guest-b-curtain",
+    "CONVERSATIONS.window-seam",
+    "CONVERSATIONS.warning-service",
+    "CONVERSATIONS.gallery-no-ending",
+    "CONVERSATIONS.warning-truth",
+    "CONVERSATIONS.window-truth",
+    "CONVERSATIONS.host-truth",
     "windowInvitationConversation",
+    "windowInvitationConversation.accept",
+    "windowInvitationConversation.decline",
+    "windowInvitationConversation.continue",
+    "windowInvitationConversation.abandon",
+    "windowInvitationConversation.deliver",
+    "windowInvitationConversation.leave-unsaid",
     "settleWindowInvitation",
     "updateLastReception"
   ],
@@ -15,182 +29,240 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/source-last-reception.js",
   "notes": "Generated from src/game/source-last-reception.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "CONVERSATIONS": {
-      "id": "CONVERSATIONS",
+    "CONVERSATIONS.host-admission": {
+      "id": "CONVERSATIONS.host-admission",
       "type": "line",
       "lines": [
         {
-          "id": "CONVERSATIONS.l0",
+          "id": "CONVERSATIONS.host-admission.l0",
           "who": "thought",
           "text": "You are quite all right. We keep a place for late arrivals.",
           "source": "src/game/source-last-reception.js:29"
         },
         {
-          "id": "CONVERSATIONS.l1",
+          "id": "CONVERSATIONS.host-admission.l1",
           "who": "thought",
           "text": "The performance? I am afraid we have stopped making announcements. It was upsetting the guests.",
           "source": "src/game/source-last-reception.js:30"
         },
         {
-          "id": "CONVERSATIONS.l2",
+          "id": "CONVERSATIONS.host-admission.l2",
           "who": "thought",
           "text": "You may look around. The passage behind the box office comes back outside. People prefer to know that first.",
           "source": "src/game/source-last-reception.js:31"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:29"
+    },
+    "CONVERSATIONS.guest-a-evening": {
+      "id": "CONVERSATIONS.guest-a-evening",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l3",
+          "id": "CONVERSATIONS.guest-a-evening.l0",
           "who": "thought",
           "text": "I came for a concert. The man in that chair came for something else. We had the same ticket.",
           "source": "src/game/source-last-reception.js:34"
         },
         {
-          "id": "CONVERSATIONS.l4",
+          "id": "CONVERSATIONS.guest-a-evening.l1",
           "who": "thought",
           "text": "He says the curtain never rose. I remember it coming down.",
           "source": "src/game/source-last-reception.js:35"
         },
         {
-          "id": "CONVERSATIONS.l5",
+          "id": "CONVERSATIONS.guest-a-evening.l2",
           "who": "thought",
           "text": "Do not sit there. We have been keeping it for someone.",
           "source": "src/game/source-last-reception.js:36"
         },
         {
-          "id": "CONVERSATIONS.l6",
+          "id": "CONVERSATIONS.guest-a-evening.l3",
           "who": "thought",
           "text": "You were going to say a few words. It is all right. Nobody minds now.",
           "source": "src/game/source-last-reception.js:37"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:34"
+    },
+    "CONVERSATIONS.guest-b-curtain": {
+      "id": "CONVERSATIONS.guest-b-curtain",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l7",
+          "id": "CONVERSATIONS.guest-b-curtain.l0",
           "who": "thought",
           "text": "There was no concert. There was not even a curtain. I would remember a curtain.",
           "source": "src/game/source-last-reception.js:40"
         },
         {
-          "id": "CONVERSATIONS.l8",
+          "id": "CONVERSATIONS.guest-b-curtain.l1",
           "who": "thought",
           "text": "I only came in to ask the way. They gave me that chair.",
           "source": "src/game/source-last-reception.js:41"
         },
         {
-          "id": "CONVERSATIONS.l9",
+          "id": "CONVERSATIONS.guest-b-curtain.l2",
           "who": "thought",
           "text": "I keep thinking someone will come through the door who knows what to do.",
           "source": "src/game/source-last-reception.js:42"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:40"
+    },
+    "CONVERSATIONS.window-seam": {
+      "id": "CONVERSATIONS.window-seam",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l10",
+          "id": "CONVERSATIONS.window-seam.l0",
           "who": "thought",
           "text": "You can see a long way from here. I have tried every part of that door.",
           "source": "src/game/source-last-reception.js:45"
         },
         {
-          "id": "CONVERSATIONS.l11",
+          "id": "CONVERSATIONS.window-seam.l1",
           "who": "thought",
           "text": "My hand goes thin at the frame. Like the edge of a sheet. The rest of me will not follow it.",
           "source": "src/game/source-last-reception.js:46"
         },
         {
-          "id": "CONVERSATIONS.l12",
+          "id": "CONVERSATIONS.window-seam.l2",
           "who": "thought",
           "text": "You are breathing. None of us can do that.",
           "source": "src/game/source-last-reception.js:47"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:45"
+    },
+    "CONVERSATIONS.warning-service": {
+      "id": "CONVERSATIONS.warning-service",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l13",
+          "id": "CONVERSATIONS.warning-service.l0",
           "who": "thought",
           "text": "Behind the ticket grille. Through here, then to the right. The service passage leads outside.",
           "source": "src/game/source-last-reception.js:50"
         },
         {
-          "id": "CONVERSATIONS.l14",
+          "id": "CONVERSATIONS.warning-service.l1",
           "who": "thought",
           "text": "Walk it if you like. There is no lock. They have never needed one.",
           "source": "src/game/source-last-reception.js:51"
         },
         {
-          "id": "CONVERSATIONS.l15",
+          "id": "CONVERSATIONS.warning-service.l2",
           "who": "thought",
           "text": "I would rather you knew the room before anyone told you why we are here.",
           "source": "src/game/source-last-reception.js:52"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:50"
+    },
+    "CONVERSATIONS.gallery-no-ending": {
+      "id": "CONVERSATIONS.gallery-no-ending",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l16",
+          "id": "CONVERSATIONS.gallery-no-ending.l0",
           "who": "thought",
           "text": "You can hear every conversation from up here. The stories change. The people do not.",
           "source": "src/game/source-last-reception.js:55"
         },
         {
-          "id": "CONVERSATIONS.l17",
+          "id": "CONVERSATIONS.gallery-no-ending.l1",
           "who": "thought",
           "text": "This is where they keep us. We did not understand that when we arrived, either.",
           "source": "src/game/source-last-reception.js:56"
         },
         {
-          "id": "CONVERSATIONS.l18",
+          "id": "CONVERSATIONS.gallery-no-ending.l2",
           "who": "thought",
           "text": "The quiet one knows the passage. Please listen before the others notice you listening.",
           "source": "src/game/source-last-reception.js:57"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:55"
+    },
+    "CONVERSATIONS.warning-truth": {
+      "id": "CONVERSATIONS.warning-truth",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l19",
+          "id": "CONVERSATIONS.warning-truth.l0",
           "who": "thought",
           "text": "This place holds what is left of people. I do not know who built it, or whether they remember us.",
           "source": "src/game/source-last-reception.js:60"
         },
         {
-          "id": "CONVERSATIONS.l20",
+          "id": "CONVERSATIONS.warning-truth.l1",
           "who": "thought",
           "text": "They think a living person could carry a voice out. All of them have a voice they cannot bear to leave here.",
           "source": "src/game/source-last-reception.js:61"
         },
         {
-          "id": "CONVERSATIONS.l21",
+          "id": "CONVERSATIONS.warning-truth.l2",
           "who": "thought",
           "text": "You can leave. That is what they have been waiting for.",
           "source": "src/game/source-last-reception.js:62"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:60"
+    },
+    "CONVERSATIONS.window-truth": {
+      "id": "CONVERSATIONS.window-truth",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l22",
+          "id": "CONVERSATIONS.window-truth.l0",
           "who": "thought",
           "text": "It is not the door keeping you. It only keeps us.",
           "source": "src/game/source-last-reception.js:65"
         },
         {
-          "id": "CONVERSATIONS.l23",
+          "id": "CONVERSATIONS.window-truth.l1",
           "who": "thought",
           "text": "They have been discussing how many people a living person might carry. They cannot agree to leave anyone behind.",
           "source": "src/game/source-last-reception.js:66"
         },
         {
-          "id": "CONVERSATIONS.l24",
+          "id": "CONVERSATIONS.window-truth.l2",
           "who": "thought",
           "text": "You can leave. They mean to go with you.",
           "source": "src/game/source-last-reception.js:67"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:65"
+    },
+    "CONVERSATIONS.host-truth": {
+      "id": "CONVERSATIONS.host-truth",
+      "type": "line",
+      "lines": [
         {
-          "id": "CONVERSATIONS.l25",
+          "id": "CONVERSATIONS.host-truth.l0",
           "who": "thought",
           "text": "We have tried to make this a pleasant place. It is still a place we are being held.",
           "source": "src/game/source-last-reception.js:70"
         },
         {
-          "id": "CONVERSATIONS.l26",
+          "id": "CONVERSATIONS.host-truth.l1",
           "who": "thought",
           "text": "Forgive me. We have never had a guest who could leave. They will all want to ask you.",
           "source": "src/game/source-last-reception.js:71"
         },
         {
-          "id": "CONVERSATIONS.l27",
+          "id": "CONVERSATIONS.host-truth.l2",
           "who": "thought",
           "text": "You can leave. Please remember that while they are asking.",
           "source": "src/game/source-last-reception.js:72"
         }
       ],
-      "source": "src/game/source-last-reception.js:29"
+      "source": "src/game/source-last-reception.js:70"
     },
     "windowInvitationConversation": {
       "id": "windowInvitationConversation",
@@ -198,48 +270,132 @@
       "lines": [
         {
           "id": "windowInvitationConversation.l0",
-          "who": "thought",
-          "text": "Just that. It is an invitation. He need not accept it.",
-          "source": "src/game/source-last-reception.js:116"
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "The person at the window thinks he is keeping watch for all of us. I have tried asking him to sit down.",
+          "source": "src/game/source-last-reception.js:108"
         },
         {
           "id": "windowInvitationConversation.l1",
-          "who": "thought",
-          "text": "All right. You have already carried enough of this room.",
-          "source": "src/game/source-last-reception.js:117"
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "If I call across the room, everyone listens for news. Then they look at you. I will not announce another living visitor.",
+          "source": "src/game/source-last-reception.js:108"
         },
         {
           "id": "windowInvitationConversation.l2",
-          "who": "thought",
-          "text": "Take your time. I am not keeping count.",
-          "source": "src/game/source-last-reception.js:122"
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "You have been outside. Would you tell him quietly: there is room by the others. He can look again later.",
+          "source": "src/game/source-last-reception.js:108"
         },
         {
           "id": "windowInvitationConversation.l3",
-          "who": "thought",
-          "text": "Then leave it with me. I will find a quieter way to ask.",
-          "source": "src/game/source-last-reception.js:123"
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "The person at the window. There is room by the others, and he can look again later. You do not owe him news from outside.",
+          "source": "src/game/source-last-reception.js:119"
         },
         {
           "id": "windowInvitationConversation.l4",
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "Nothing opened. No one got out. But he need not spend every moment looking for the door to change.",
+          "source": "src/game/source-last-reception.js:125"
+        },
+        {
+          "id": "windowInvitationConversation.l5",
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "You have seen the other side of that door. Is there something you wanted to tell me?",
+          "source": "src/game/source-last-reception.js:132"
+        },
+        {
+          "id": "windowInvitationConversation.l6",
+          "who": "{BY_ID.get(residentId).name}",
+          "text": "I can listen to them and look again later.",
+          "source": "src/game/source-last-reception.js:141"
+        }
+      ],
+      "source": "src/game/source-last-reception.js:108"
+    },
+    "windowInvitationConversation.accept": {
+      "id": "windowInvitationConversation.accept",
+      "type": "line",
+      "lines": [
+        {
+          "id": "windowInvitationConversation.accept.l0",
+          "who": "thought",
+          "text": "Just that. It is an invitation. He need not accept it.",
+          "source": "src/game/source-last-reception.js:116"
+        }
+      ],
+      "source": "src/game/source-last-reception.js:116"
+    },
+    "windowInvitationConversation.decline": {
+      "id": "windowInvitationConversation.decline",
+      "type": "line",
+      "lines": [
+        {
+          "id": "windowInvitationConversation.decline.l0",
+          "who": "thought",
+          "text": "All right. You have already carried enough of this room.",
+          "source": "src/game/source-last-reception.js:117"
+        }
+      ],
+      "source": "src/game/source-last-reception.js:117"
+    },
+    "windowInvitationConversation.continue": {
+      "id": "windowInvitationConversation.continue",
+      "type": "line",
+      "lines": [
+        {
+          "id": "windowInvitationConversation.continue.l0",
+          "who": "thought",
+          "text": "Take your time. I am not keeping count.",
+          "source": "src/game/source-last-reception.js:122"
+        }
+      ],
+      "source": "src/game/source-last-reception.js:122"
+    },
+    "windowInvitationConversation.abandon": {
+      "id": "windowInvitationConversation.abandon",
+      "type": "line",
+      "lines": [
+        {
+          "id": "windowInvitationConversation.abandon.l0",
+          "who": "thought",
+          "text": "Then leave it with me. I will find a quieter way to ask.",
+          "source": "src/game/source-last-reception.js:123"
+        }
+      ],
+      "source": "src/game/source-last-reception.js:123"
+    },
+    "windowInvitationConversation.deliver": {
+      "id": "windowInvitationConversation.deliver",
+      "type": "line",
+      "lines": [
+        {
+          "id": "windowInvitationConversation.deliver.l0",
           "who": "thought",
           "text": "Did they ask you to say that? No. Do not answer. I would rather think they did.",
           "source": "src/game/source-last-reception.js:136"
         },
         {
-          "id": "windowInvitationConversation.l5",
+          "id": "windowInvitationConversation.deliver.l1",
           "who": "thought",
           "text": "I am not giving up the window. Only turning round for a while.",
           "source": "src/game/source-last-reception.js:137"
-        },
+        }
+      ],
+      "source": "src/game/source-last-reception.js:136"
+    },
+    "windowInvitationConversation.leave-unsaid": {
+      "id": "windowInvitationConversation.leave-unsaid",
+      "type": "line",
+      "lines": [
         {
-          "id": "windowInvitationConversation.l6",
+          "id": "windowInvitationConversation.leave-unsaid.l0",
           "who": "thought",
           "text": "No news. Yes. I know how to wait for that.",
           "source": "src/game/source-last-reception.js:139"
         }
       ],
-      "source": "src/game/source-last-reception.js:116"
+      "source": "src/game/source-last-reception.js:139"
     },
     "settleWindowInvitation": {
       "id": "settleWindowInvitation",

@@ -16,6 +16,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/stop-listening.js",
   "notes": "Generated from src/data/stop-listening.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "STOP_LISTENING_COPY.arrival": {

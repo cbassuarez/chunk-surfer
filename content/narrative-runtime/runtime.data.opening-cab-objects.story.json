@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.opening-cab-objects",
+  "title": "Runtime · data/opening-cab-objects.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "OPENING_CAB_REHEARSAL_NOTES",
+  "entries": [
+    "OPENING_CAB_REHEARSAL_NOTES",
+    "OPENING_CAB_MUSIC_BOX_LINES"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/opening-cab-objects.js",
+  "notes": "Generated from src/data/opening-cab-objects.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "OPENING_CAB_REHEARSAL_NOTES": {
+      "id": "OPENING_CAB_REHEARSAL_NOTES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "OPENING_CAB_REHEARSAL_NOTES.l0",
+          "who": "text",
+          "text": "Leave the pedal up once. Hear what the hands are doing.",
+          "source": "src/data/opening-cab-objects.js:28"
+        },
+        {
+          "id": "OPENING_CAB_REHEARSAL_NOTES.l1",
+          "who": "text",
+          "text": "An ornament needs somewhere to arrive. Do not hurry it just to get through.",
+          "source": "src/data/opening-cab-objects.js:28"
+        },
+        {
+          "id": "OPENING_CAB_REHEARSAL_NOTES.l2",
+          "who": "text",
+          "text": "Try the release at the harpsichord. Bring that knowledge back to the marimba.",
+          "source": "src/data/opening-cab-objects.js:28"
+        },
+        {
+          "id": "OPENING_CAB_REHEARSAL_NOTES.l3",
+          "who": "text",
+          "text": "Keep the first take. You need to hear what changed.",
+          "source": "src/data/opening-cab-objects.js:28"
+        }
+      ],
+      "source": "src/data/opening-cab-objects.js:28"
+    },
+    "OPENING_CAB_MUSIC_BOX_LINES": {
+      "id": "OPENING_CAB_MUSIC_BOX_LINES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "OPENING_CAB_MUSIC_BOX_LINES.l0",
+          "who": "text",
+          "text": "Dark wood, a brass key in the side, the lid shut. Clair de lune: the first eight bars, then the spring runs out.",
+          "source": "src/data/opening-cab-objects.js:35"
+        },
+        {
+          "id": "OPENING_CAB_MUSIC_BOX_LINES.l1",
+          "who": "text",
+          "text": "Lyle gave it to you before his big piano break. So you’d have something to remember him by.",
+          "source": "src/data/opening-cab-objects.js:35"
+        }
+      ],
+      "source": "src/data/opening-cab-objects.js:35"
+    }
+  }
+}

@@ -56,6 +56,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/exterior-lore.js",
   "notes": "Generated from src/data/exterior-lore.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "EXTERIOR_LORE.yard-bus-waiter": {
@@ -123,6 +125,29 @@
           "id": "EXTERIOR_LORE.yard-bus-waiter.tree.start.c0",
           "text": "Tell her why you are here.",
           "source": "src/data/exterior-lore.js:44"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.start.c1",
+          "text": "Ask why the stop was closed.",
+          "source": "src/data/exterior-lore.js:49",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.stop"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.start.c2",
+          "text": "Ask about the municipal baths.",
+          "source": "src/data/exterior-lore.js:50",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.baths"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.start.c3",
+          "text": "Ask what she has heard from Ellery.",
+          "source": "src/data/exterior-lore.js:51",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.noise"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.start.c4",
+          "text": "Leave her to the timetable.",
+          "source": "src/data/exterior-lore.js:52"
         }
       ],
       "source": "src/data/exterior-lore.js:42"
@@ -168,6 +193,18 @@
           "id": "EXTERIOR_LORE.yard-bus-waiter.tree.stop.c0",
           "text": "Ask about the missing bus.",
           "source": "src/data/exterior-lore.js:58"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.stop.c1",
+          "text": "Ask whether anyone complained.",
+          "source": "src/data/exterior-lore.js:63",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.stop-complaint"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.stop.c2",
+          "text": "Ask when a bus last stopped.",
+          "source": "src/data/exterior-lore.js:64",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.stop-last"
         }
       ],
       "source": "src/data/exterior-lore.js:58"
@@ -264,6 +301,18 @@
           "id": "EXTERIOR_LORE.yard-bus-waiter.tree.baths.c0",
           "text": "Ask about the baths.",
           "source": "src/data/exterior-lore.js:88"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.baths.c1",
+          "text": "Ask about her daughter.",
+          "source": "src/data/exterior-lore.js:93",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.baths-daughter"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.baths.c2",
+          "text": "Ask how the closure happened.",
+          "source": "src/data/exterior-lore.js:94",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.baths-closure"
         }
       ],
       "source": "src/data/exterior-lore.js:88"
@@ -360,6 +409,18 @@
           "id": "EXTERIOR_LORE.yard-bus-waiter.tree.noise.c0",
           "text": "Ask what crosses the wall.",
           "source": "src/data/exterior-lore.js:118"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.noise.c1",
+          "text": "Ask whether she saw the second man.",
+          "source": "src/data/exterior-lore.js:123",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.noise-man"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.noise.c2",
+          "text": "Say it was probably a recording.",
+          "source": "src/data/exterior-lore.js:124",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.noise-tape"
         }
       ],
       "source": "src/data/exterior-lore.js:118"
@@ -430,13 +491,32 @@
     },
     "EXTERIOR_LORE.yard-bus-waiter.tree.return": {
       "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return.l0",
           "who": "woman at the shelter",
           "text": "Still no 48. Still a light for it. How did Ellery become your problem?",
           "source": "src/data/exterior-lore.js:147"
+        }
+      ],
+      "choices": [
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return.c0",
+          "text": "Ask if anyone else went in tonight.",
+          "source": "src/data/exterior-lore.js:149",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.return-worker"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return.c1",
+          "text": "Ask why she keeps waiting.",
+          "source": "src/data/exterior-lore.js:150",
+          "goto": "EXTERIOR_LORE.yard-bus-waiter.tree.return-wait"
+        },
+        {
+          "id": "EXTERIOR_LORE.yard-bus-waiter.tree.return.c2",
+          "text": "Wish her good night.",
+          "source": "src/data/exterior-lore.js:151"
         }
       ],
       "source": "src/data/exterior-lore.js:147"
@@ -564,6 +644,29 @@
           "id": "EXTERIOR_LORE.district-mews-neighbor.tree.start.c0",
           "text": "Ask how he knows.",
           "source": "src/data/exterior-lore.js:187"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.start.c1",
+          "text": "Ask about the stable range.",
+          "source": "src/data/exterior-lore.js:192",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.stables"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.start.c2",
+          "text": "Ask about the tower practice.",
+          "source": "src/data/exterior-lore.js:193",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.bells"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.start.c3",
+          "text": "Ask why Ellery is being demolished.",
+          "source": "src/data/exterior-lore.js:194",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.closure"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.start.c4",
+          "text": "Let him get out of the rain.",
+          "source": "src/data/exterior-lore.js:195"
         }
       ],
       "source": "src/data/exterior-lore.js:186"
@@ -609,6 +712,18 @@
           "id": "EXTERIOR_LORE.district-mews-neighbor.tree.stables.c0",
           "text": "Ask about the oldest rooms.",
           "source": "src/data/exterior-lore.js:201"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.stables.c1",
+          "text": "Ask where the sound emerged.",
+          "source": "src/data/exterior-lore.js:206",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.stables-sound"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.stables.c2",
+          "text": "Ask who worked in the laundry.",
+          "source": "src/data/exterior-lore.js:207",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.stables-laundry"
         }
       ],
       "source": "src/data/exterior-lore.js:201"
@@ -705,6 +820,18 @@
           "id": "EXTERIOR_LORE.district-mews-neighbor.tree.bells.c0",
           "text": "Ask about the bells.",
           "source": "src/data/exterior-lore.js:231"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.bells.c1",
+          "text": "Ask whether the tenor was broken.",
+          "source": "src/data/exterior-lore.js:236",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.bells-tenor"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.bells.c2",
+          "text": "Ask when practice stopped.",
+          "source": "src/data/exterior-lore.js:237",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.bells-stopped"
         }
       ],
       "source": "src/data/exterior-lore.js:231"
@@ -801,6 +928,18 @@
           "id": "EXTERIOR_LORE.district-mews-neighbor.tree.closure.c0",
           "text": "Ask why it is coming down.",
           "source": "src/data/exterior-lore.js:261"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.closure.c1",
+          "text": "Ask what he wants preserved.",
+          "source": "src/data/exterior-lore.js:266",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.closure-keep"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.closure.c2",
+          "text": "Ask what should go first.",
+          "source": "src/data/exterior-lore.js:267",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.closure-first"
         }
       ],
       "source": "src/data/exterior-lore.js:261"
@@ -871,13 +1010,32 @@
     },
     "EXTERIOR_LORE.district-mews-neighbor.tree.return": {
       "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return.l0",
           "who": "man under the awning",
           "text": "Listen past the traffic. The tower always carried farther in wet weather.",
           "source": "src/data/exterior-lore.js:290"
+        }
+      ],
+      "choices": [
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return.c0",
+          "text": "Ask what he hears now.",
+          "source": "src/data/exterior-lore.js:292",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.return-hears"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return.c1",
+          "text": "Ask if anyone entered the mews door.",
+          "source": "src/data/exterior-lore.js:293",
+          "goto": "EXTERIOR_LORE.district-mews-neighbor.tree.return-door"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-mews-neighbor.tree.return.c2",
+          "text": "Thank him.",
+          "source": "src/data/exterior-lore.js:294"
         }
       ],
       "source": "src/data/exterior-lore.js:290"
@@ -1005,6 +1163,29 @@
           "id": "EXTERIOR_LORE.district-pub-driver.tree.start.c0",
           "text": "Ask about the contractor.",
           "source": "src/data/exterior-lore.js:330"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.start.c1",
+          "text": "Ask what the contractor looked like.",
+          "source": "src/data/exterior-lore.js:335",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.contractor"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.start.c2",
+          "text": "Ask about his vehicle.",
+          "source": "src/data/exterior-lore.js:336",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.vehicle"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.start.c3",
+          "text": "Ask what he did at the gate.",
+          "source": "src/data/exterior-lore.js:337",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.gate"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.start.c4",
+          "text": "Let him finish his break.",
+          "source": "src/data/exterior-lore.js:338"
         }
       ],
       "source": "src/data/exterior-lore.js:329"
@@ -1050,6 +1231,18 @@
           "id": "EXTERIOR_LORE.district-pub-driver.tree.contractor.c0",
           "text": "Ask for a description.",
           "source": "src/data/exterior-lore.js:344"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.contractor.c1",
+          "text": "Ask for the company name.",
+          "source": "src/data/exterior-lore.js:349",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.contractor-name"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.contractor.c2",
+          "text": "Ask whether the guard spoke to him.",
+          "source": "src/data/exterior-lore.js:350",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.contractor-guard"
         }
       ],
       "source": "src/data/exterior-lore.js:344"
@@ -1146,6 +1339,18 @@
           "id": "EXTERIOR_LORE.district-pub-driver.tree.vehicle.c0",
           "text": "Ask about the vehicle.",
           "source": "src/data/exterior-lore.js:374"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.vehicle.c1",
+          "text": "Ask whether cameras cover the road.",
+          "source": "src/data/exterior-lore.js:379",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.vehicle-camera"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.vehicle.c2",
+          "text": "Ask if he carried equipment.",
+          "source": "src/data/exterior-lore.js:380",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.vehicle-kit"
         }
       ],
       "source": "src/data/exterior-lore.js:374"
@@ -1242,6 +1447,18 @@
           "id": "EXTERIOR_LORE.district-pub-driver.tree.gate.c0",
           "text": "Ask what happened at the gate.",
           "source": "src/data/exterior-lore.js:404"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.gate.c1",
+          "text": "Ask whether the bells rang.",
+          "source": "src/data/exterior-lore.js:409",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.gate-bells"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.gate.c2",
+          "text": "Ask if the padlock moved.",
+          "source": "src/data/exterior-lore.js:410",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.gate-lock"
         }
       ],
       "source": "src/data/exterior-lore.js:404"
@@ -1312,13 +1529,32 @@
     },
     "EXTERIOR_LORE.district-pub-driver.tree.return": {
       "id": "EXTERIOR_LORE.district-pub-driver.tree.return",
-      "type": "line",
+      "type": "choice",
       "lines": [
         {
           "id": "EXTERIOR_LORE.district-pub-driver.tree.return.l0",
           "who": "driver by the pub yard",
           "text": "He did not unload anything. That is the part I remember.",
           "source": "src/data/exterior-lore.js:433"
+        }
+      ],
+      "choices": [
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.return.c0",
+          "text": "Ask what he remembered.",
+          "source": "src/data/exterior-lore.js:435",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.return-detail"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.return.c1",
+          "text": "Ask whether to call anyone.",
+          "source": "src/data/exterior-lore.js:436",
+          "goto": "EXTERIOR_LORE.district-pub-driver.tree.return-call"
+        },
+        {
+          "id": "EXTERIOR_LORE.district-pub-driver.tree.return.c2",
+          "text": "Tell him to keep the yard clear.",
+          "source": "src/data/exterior-lore.js:437"
         }
       ],
       "source": "src/data/exterior-lore.js:433"

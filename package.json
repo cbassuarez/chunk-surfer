@@ -30,6 +30,7 @@
     "system-map": "node tools/system-map/server.mjs",
     "system-map:build": "vite build --config tools/system-map/vite.config.js",
     "studio:registry": "node scripts/generate-content-registry.mjs",
+    "studio:runtime": "node scripts/export-runtime-narrative.mjs",
     "chunk-surf:atlas": "node scripts/generate-chunk-surf-atlas.mjs",
     "studio:import": "node scripts/import-narrative-studio.mjs",
     "studio:reimport": "node scripts/import-narrative-studio.mjs --force",

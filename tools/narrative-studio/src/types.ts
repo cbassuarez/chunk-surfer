@@ -186,6 +186,9 @@ export type DocumentEnvelope = {
   layoutPath: string;
   layoutRevision: string;
   layout: StoryLayout;
+  // Generated from dialogue still written in src/: shown, never saved.
+  readOnly?: boolean;
+  module?: string;
 };
 
 export type ProjectSnapshot = {

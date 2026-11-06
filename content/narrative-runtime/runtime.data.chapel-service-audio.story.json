@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.chapel-service-audio",
+  "title": "Runtime · data/chapel-service-audio.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "CHAPEL_SERVICE_AUDIO_CLIPS",
+  "entries": [
+    "CHAPEL_SERVICE_AUDIO_CLIPS"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/chapel-service-audio.js",
+  "notes": "Generated from src/data/chapel-service-audio.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "CHAPEL_SERVICE_AUDIO_CLIPS": {
+      "id": "CHAPEL_SERVICE_AUDIO_CLIPS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l0",
+          "who": "clip",
+          "text": "Pater noster, qui es in coelis, sanctificetur nomen tuum; adveniat regnum tuum; fiat voluntas tua, sicut in coelo et in terra.",
+          "source": "src/data/chapel-service-audio.js:52"
+        },
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l1",
+          "who": "clip",
+          "text": "Panem nostrum quotidianum da nobis hodie, et dimitte nobis debita nostra, sicut et nos dimittimus debitoribus nostris.",
+          "source": "src/data/chapel-service-audio.js:54"
+        },
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l2",
+          "who": "clip",
+          "text": "Et ne nos inducas in tentationem; sed libera nos a malo. Amen.",
+          "source": "src/data/chapel-service-audio.js:56"
+        },
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l3",
+          "who": "clip",
+          "text": "Ecce Agnus Dei, ecce qui tollit peccata mundi. Domine, non sum dignus ut intres sub tectum meum, sed tantum dic verbo, et sanabitur anima mea.",
+          "source": "src/data/chapel-service-audio.js:58"
+        },
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l4",
+          "who": "clip",
+          "text": "Corpus Domini nostri Jesu Christi custodiat animam tuam in vitam aeternam. Amen.",
+          "source": "src/data/chapel-service-audio.js:60"
+        },
+        {
+          "id": "CHAPEL_SERVICE_AUDIO_CLIPS.l5",
+          "who": "clip",
+          "text": "Amen.",
+          "source": "src/data/chapel-service-audio.js:62"
+        }
+      ],
+      "source": "src/data/chapel-service-audio.js:52"
+    }
+  }
+}

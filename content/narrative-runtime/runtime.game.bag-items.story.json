@@ -24,6 +24,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/bag-items.js",
   "notes": "Generated from src/game/bag-items.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "stationInspectionDialogue.start": {
@@ -95,12 +97,18 @@
       "lines": [
         {
           "id": "bagInspectionDialogue.entries.tuning-fork.l0",
+          "who": "direction",
+          "text": "Steel. {TUNING_FORK_ENGRAVING}, cut by hand below an older stamp.",
+          "source": "src/game/bag-items.js:292"
+        },
+        {
+          "id": "bagInspectionDialogue.entries.tuning-fork.l1",
           "who": "you",
           "text": "A reference, not a weapon. If the Source gives me a target, I can ask whether it agrees.",
           "source": "src/game/bag-items.js:293"
         }
       ],
-      "source": "src/game/bag-items.js:293"
+      "source": "src/game/bag-items.js:292"
     },
     "bagInspectionDialogue.entries.plant-spanner": {
       "id": "bagInspectionDialogue.entries.plant-spanner",

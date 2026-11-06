@@ -11,12 +11,16 @@
     "people.bert",
     "people.farah",
     "people.nell",
-    "people.arthur"
+    "people.arthur",
+    "pubPatronConversation.choices",
+    "PUB_OVERHEARDS"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/pub-patrons.js",
   "notes": "Generated from src/data/pub-patrons.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "people.mavis": {
@@ -132,6 +136,140 @@
         }
       ],
       "source": "src/data/pub-patrons.js:22"
+    },
+    "pubPatronConversation.choices": {
+      "id": "pubPatronConversation.choices",
+      "type": "line",
+      "lines": [
+        {
+          "id": "pubPatronConversation.choices.l0",
+          "who": "leave",
+          "text": "Leave them to their evening.",
+          "source": "src/data/pub-patrons.js:28"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:28"
+    },
+    "PUB_OVERHEARDS": {
+      "id": "PUB_OVERHEARDS",
+      "type": "line",
+      "lines": [
+        {
+          "id": "PUB_OVERHEARDS.l0",
+          "who": "unknown",
+          "text": "Your move.",
+          "source": "src/data/pub-patrons.js:37"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l1",
+          "who": "unknown",
+          "text": "It was my move when you began that story.",
+          "source": "src/data/pub-patrons.js:37"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l2",
+          "who": "unknown",
+          "text": "They used to wait for the violin cases.",
+          "source": "src/data/pub-patrons.js:38"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l3",
+          "who": "unknown",
+          "text": "You have said.",
+          "source": "src/data/pub-patrons.js:38"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l4",
+          "who": "unknown",
+          "text": "Somebody ought to.",
+          "source": "src/data/pub-patrons.js:38"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l5",
+          "who": "unknown",
+          "text": "That is the bells.",
+          "source": "src/data/pub-patrons.js:39"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l6",
+          "who": "unknown",
+          "text": "I know.",
+          "source": "src/data/pub-patrons.js:39"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l7",
+          "who": "unknown",
+          "text": "Whose coat is on the spare chair?",
+          "source": "src/data/pub-patrons.js:40"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l8",
+          "who": "unknown",
+          "text": "It is a spare coat. Leave it somewhere to sit.",
+          "source": "src/data/pub-patrons.js:40"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l9",
+          "who": "unknown",
+          "text": "There is soup if you are staying.",
+          "source": "src/data/pub-patrons.js:41"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l10",
+          "who": "unknown",
+          "text": "It would be a shame to disappoint the soup.",
+          "source": "src/data/pub-patrons.js:41"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l11",
+          "who": "unknown",
+          "text": "Take your scarf off before you roast.",
+          "source": "src/data/pub-patrons.js:42"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l12",
+          "who": "unknown",
+          "text": "I am only just getting the street out of it.",
+          "source": "src/data/pub-patrons.js:42"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l13",
+          "who": "unknown",
+          "text": "Leave him the heel. He likes the heel.",
+          "source": "src/data/pub-patrons.js:43"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l14",
+          "who": "unknown",
+          "text": "Only when everybody else wants it.",
+          "source": "src/data/pub-patrons.js:43"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l15",
+          "who": "unknown",
+          "text": "Tea for the ones at the rail?",
+          "source": "src/data/pub-patrons.js:44"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l16",
+          "who": "unknown",
+          "text": "On the tray. There is a clean towel under it.",
+          "source": "src/data/pub-patrons.js:44"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l17",
+          "who": "unknown",
+          "text": "Who has been warming my gloves?",
+          "source": "src/data/pub-patrons.js:45"
+        },
+        {
+          "id": "PUB_OVERHEARDS.l18",
+          "who": "unknown",
+          "text": "They were nearest the stove. We had to put something on the chair.",
+          "source": "src/data/pub-patrons.js:45"
+        }
+      ],
+      "source": "src/data/pub-patrons.js:37"
     }
   }
 }

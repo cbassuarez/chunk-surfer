@@ -10,13 +10,15 @@
     "FIXTURES.ground.inspect",
     "FIXTURES.upper.inspect",
     "FIXTURES.academic.inspect",
-    "doorPlates.inspect",
+    "doorPlates.plate-door.id-.inspect",
     "FLIGHT_DRESSING.main-basement-stair-west-flight"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/world/corridor-dressing.js",
   "notes": "Generated from src/world/corridor-dressing.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "FIXTURES.basement.inspect": {
@@ -167,18 +169,18 @@
       ],
       "source": "src/world/corridor-dressing.js:283"
     },
-    "doorPlates.inspect": {
-      "id": "doorPlates.inspect",
+    "doorPlates.plate-door.id-.inspect": {
+      "id": "doorPlates.plate-door.id-.inspect",
       "type": "line",
       "lines": [
         {
-          "id": "doorPlates.inspect.l0",
+          "id": "doorPlates.plate-door.id-.inspect.l0",
           "who": "inspect",
           "text": "{space.label}, stencilled on the plate beside the opening.",
           "source": "src/world/corridor-dressing.js:391"
         },
         {
-          "id": "doorPlates.inspect.l1",
+          "id": "doorPlates.plate-door.id-.inspect.l1",
           "who": "inspect",
           "text": "(again) {space.shortLabel || space.label}. Still where the plan says it is.",
           "source": "src/world/corridor-dressing.js:391"

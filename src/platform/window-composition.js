@@ -729,7 +729,7 @@ export function sectorIntrusionCue(targets=[],token=''){
 // for a bar and a half. The terminals are that disk too, so they fail on the
 // same clock. The director fires `sector:run:<lane>` as a world run begins and
 // `sector:clear` as it ends; the pane in that lane takes the run (its head
-// sweeps the rows in the run's direction, leaving held and dropped rows behind
+// sweeps the rows in the run's direction, leaving frozen and dropped rows behind
 // it), its neighbours shiver, and the clear hands every pane back its clean
 // baked frames. Nothing here is timed: these are event cues, so a pane that is
 // not up when the world fails simply misses that run.

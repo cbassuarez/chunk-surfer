@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.render.navigator-clock",
+  "title": "Runtime · render/navigator-clock.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "paintNavigatorClock.state",
+  "entries": [
+    "paintNavigatorClock.state",
+    "drawNavigatorClock.state"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/render/navigator-clock.js",
+  "notes": "Generated from src/render/navigator-clock.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "paintNavigatorClock.state": {
+      "id": "paintNavigatorClock.state",
+      "type": "line",
+      "lines": [
+        {
+          "id": "paintNavigatorClock.state.l0",
+          "who": "navigatorClockState",
+          "text": "~{value}",
+          "source": "src/render/navigator-clock.js:54"
+        }
+      ],
+      "source": "src/render/navigator-clock.js:54"
+    },
+    "drawNavigatorClock.state": {
+      "id": "drawNavigatorClock.state",
+      "type": "line",
+      "lines": [
+        {
+          "id": "drawNavigatorClock.state.l0",
+          "who": "navigatorClockState",
+          "text": "~{value}",
+          "source": "src/render/navigator-clock.js:83"
+        }
+      ],
+      "source": "src/render/navigator-clock.js:83"
+    }
+  }
+}

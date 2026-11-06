@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.exterior-district",
+  "title": "Runtime · data/exterior-district.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "EXTERIOR_INSPECTABLES",
+  "entries": [
+    "EXTERIOR_INSPECTABLES"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/exterior-district.js",
+  "notes": "Generated from src/data/exterior-district.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "EXTERIOR_INSPECTABLES": {
+      "id": "EXTERIOR_INSPECTABLES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "EXTERIOR_INSPECTABLES.l0",
+          "who": "freeze",
+          "text": "ELLERY MUNICIPAL SCHOOL OF MUSIC · OPENED 1888. The older name is cut deeper than the current one.",
+          "source": "src/data/exterior-district.js:85"
+        },
+        {
+          "id": "EXTERIOR_INSPECTABLES.l1",
+          "who": "freeze",
+          "text": "ELLERY COLLEGIATE CHAPEL · 1908. The tower came after the school and has spent a century pretending otherwise.",
+          "source": "src/data/exterior-district.js:86"
+        },
+        {
+          "id": "EXTERIOR_INSPECTABLES.l2",
+          "who": "freeze",
+          "text": "MUNICIPAL BATHS · 1912. Blue tesserae survive under the paint. The pool was public before it belonged to the conservatoire.",
+          "source": "src/data/exterior-district.js:87"
+        },
+        {
+          "id": "EXTERIOR_INSPECTABLES.l3",
+          "who": "freeze",
+          "text": "CONCERT HALL · 1936. The fly tower is eight metres behind this low range, where a stage tower belongs.",
+          "source": "src/data/exterior-district.js:88"
+        }
+      ],
+      "source": "src/data/exterior-district.js:85"
+    }
+  }
+}

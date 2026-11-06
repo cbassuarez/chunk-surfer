@@ -33,6 +33,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/horizon-bust.js",
   "notes": "Generated from src/game/horizon-bust.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "SHARED_AUDIENCE": {
@@ -41,42 +43,36 @@
       "lines": [
         {
           "id": "SHARED_AUDIENCE.l0",
-          "who": "you",
-          "text": "Hello?",
-          "source": "src/game/horizon-bust.js:9"
-        },
-        {
-          "id": "SHARED_AUDIENCE.l1",
           "who": "bust",
           "text": "Bold choice. You made it this far, but have left so much behind. I have been expecting you, however.",
           "source": "src/game/horizon-bust.js:10"
         },
         {
-          "id": "SHARED_AUDIENCE.l2",
+          "id": "SHARED_AUDIENCE.l1",
           "who": "you",
           "text": "What choice do I have?",
           "source": "src/game/horizon-bust.js:11"
         },
         {
-          "id": "SHARED_AUDIENCE.l3",
+          "id": "SHARED_AUDIENCE.l2",
           "who": "bust",
           "text": "You can keep walking to the chapel without my help. Beyond me lies the end.",
           "source": "src/game/horizon-bust.js:12"
         },
         {
-          "id": "SHARED_AUDIENCE.l4",
+          "id": "SHARED_AUDIENCE.l3",
           "who": "you",
           "text": "Of?",
           "source": "src/game/horizon-bust.js:13"
         },
         {
-          "id": "SHARED_AUDIENCE.l5",
+          "id": "SHARED_AUDIENCE.l4",
           "who": "bust",
           "text": "Of the road's career as a road. Those lamps and telephone boxes are turning back into their recording. What's gone stays gone. The ground stays under your feet; take your time. Rather bad for property values. Though I do have another way.",
           "source": "src/game/horizon-bust.js:14"
         }
       ],
-      "source": "src/game/horizon-bust.js:9"
+      "source": "src/game/horizon-bust.js:10"
     },
     "HORIZON_BUST_AUDIENCE.carried": {
       "id": "HORIZON_BUST_AUDIENCE.carried",
@@ -148,24 +144,18 @@
         },
         {
           "id": "horizonBustRefusalTree.start.c1",
-          "text": "No.",
-          "source": "src/game/horizon-bust.js:45",
-          "goto": "horizonBustRefusalTree.no"
-        },
-        {
-          "id": "horizonBustRefusalTree.start.c2",
           "text": "Yes.",
           "source": "src/game/horizon-bust.js:46",
           "goto": "horizonBustRefusalTree.yes"
         },
         {
-          "id": "horizonBustRefusalTree.start.c3",
+          "id": "horizonBustRefusalTree.start.c2",
           "text": "What kind of eyes?",
           "source": "src/game/horizon-bust.js:47",
           "goto": "horizonBustRefusalTree.kind"
         },
         {
-          "id": "horizonBustRefusalTree.start.c4",
+          "id": "horizonBustRefusalTree.start.c3",
           "text": "Is that a metaphor?",
           "source": "src/game/horizon-bust.js:48",
           "goto": "horizonBustRefusalTree.metaphor"
@@ -204,30 +194,24 @@
       "lines": [
         {
           "id": "horizonBustRefusalTree.no.l0",
-          "who": "you",
-          "text": "No.",
-          "source": "src/game/horizon-bust.js:63"
-        },
-        {
-          "id": "horizonBustRefusalTree.no.l1",
           "who": "bust",
           "text": "That's a shame, I would have made it worth your while.",
           "source": "src/game/horizon-bust.js:64"
         },
         {
-          "id": "horizonBustRefusalTree.no.l2",
+          "id": "horizonBustRefusalTree.no.l1",
           "who": "you",
           "text": "In what way?",
           "source": "src/game/horizon-bust.js:65"
         },
         {
-          "id": "horizonBustRefusalTree.no.l3",
+          "id": "horizonBustRefusalTree.no.l2",
           "who": "bust",
           "text": "Can't say now.",
           "source": "src/game/horizon-bust.js:66"
         }
       ],
-      "source": "src/game/horizon-bust.js:63"
+      "source": "src/game/horizon-bust.js:64"
     },
     "horizonBustRefusalTree.yes": {
       "id": "horizonBustRefusalTree.yes",
@@ -345,12 +329,6 @@
           "text": "Then what CAN you do?",
           "source": "src/game/horizon-bust.js:115",
           "goto": "horizonBustRefusalTree.told"
-        },
-        {
-          "id": "horizonBustRefusalTree.refused.c1",
-          "text": "Leave him to it.",
-          "source": "src/game/horizon-bust.js:116",
-          "goto": "horizonBustRefusalTree.stone"
         }
       ],
       "source": "src/game/horizon-bust.js:102"
@@ -473,36 +451,30 @@
       "choices": [
         {
           "id": "horizonBustProposition.questions.c0",
-          "text": "Who are you?",
-          "source": "src/game/horizon-bust.js:178",
-          "goto": "horizonBustProposition.identity"
-        },
-        {
-          "id": "horizonBustProposition.questions.c1",
           "text": "What are the Second Minutes?",
           "source": "src/game/horizon-bust.js:179",
           "goto": "horizonBustProposition.history"
         },
         {
-          "id": "horizonBustProposition.questions.c2",
+          "id": "horizonBustProposition.questions.c1",
           "text": "Where does this go?",
           "source": "src/game/horizon-bust.js:180",
           "goto": "horizonBustProposition.route"
         },
         {
-          "id": "horizonBustProposition.questions.c3",
+          "id": "horizonBustProposition.questions.c2",
           "text": "What's the catch?",
           "source": "src/game/horizon-bust.js:181",
           "goto": "horizonBustProposition.consequence"
         },
         {
-          "id": "horizonBustProposition.questions.c4",
+          "id": "horizonBustProposition.questions.c3",
           "text": "Enough. Show me the choice.",
           "source": "src/game/horizon-bust.js:182",
           "goto": "horizonBustProposition.decision"
         }
       ],
-      "source": "src/game/horizon-bust.js:178"
+      "source": "src/game/horizon-bust.js:179"
     },
     "horizonBustProposition.identity": {
       "id": "horizonBustProposition.identity",
@@ -510,30 +482,24 @@
       "lines": [
         {
           "id": "horizonBustProposition.identity.l0",
-          "who": "you",
-          "text": "Who are you?",
-          "source": "src/game/horizon-bust.js:188"
-        },
-        {
-          "id": "horizonBustProposition.identity.l1",
           "who": "bust",
           "text": "A bust. These days.",
           "source": "src/game/horizon-bust.js:189"
         },
         {
-          "id": "horizonBustProposition.identity.l2",
+          "id": "horizonBustProposition.identity.l1",
           "who": "you",
           "text": "Of who?",
           "source": "src/game/horizon-bust.js:190"
         },
         {
-          "id": "horizonBustProposition.identity.l3",
+          "id": "horizonBustProposition.identity.l2",
           "who": "bust",
           "text": "Does a bust know who they're made in image of? At least I don't. Who knows. I've gone through many names in my eternal boredom, Maximilian de la Visconty de Routledge, Saint-Fernandique-du-Tabernaque, Jacobo 'Ojos Piedras' Baxoreicoacha, maybe my true identity lies somewhere in between the many names I've given myself.",
           "source": "src/game/horizon-bust.js:191"
         }
       ],
-      "source": "src/game/horizon-bust.js:188"
+      "source": "src/game/horizon-bust.js:189"
     },
     "horizonBustProposition.history": {
       "id": "horizonBustProposition.history",

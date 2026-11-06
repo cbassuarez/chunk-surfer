@@ -12,6 +12,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/world-inscriptions.js",
   "notes": "Generated from src/data/world-inscriptions.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "WORLD_INSCRIPTIONS": {
@@ -20,126 +22,384 @@
       "lines": [
         {
           "id": "WORLD_INSCRIPTIONS.l0",
+          "who": "plaque",
+          "text": "ELLERY MUNICIPAL",
+          "source": "src/data/world-inscriptions.js:42"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l1",
+          "who": "plaque",
+          "text": "SCHOOL OF MUSIC ·",
+          "source": "src/data/world-inscriptions.js:42"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l2",
+          "who": "plaque",
+          "text": "OPENED 1888",
+          "source": "src/data/world-inscriptions.js:42"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l3",
+          "who": "plaque",
+          "text": "ELLERY COLLEGIATE",
+          "source": "src/data/world-inscriptions.js:44"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l4",
+          "who": "plaque",
+          "text": "CHAPEL ·",
+          "source": "src/data/world-inscriptions.js:44"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l5",
+          "who": "plaque",
+          "text": "1908",
+          "source": "src/data/world-inscriptions.js:44"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l6",
+          "who": "plaque",
+          "text": "MUNICIPAL BATHS ·",
+          "source": "src/data/world-inscriptions.js:46"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l7",
+          "who": "plaque",
+          "text": "1912",
+          "source": "src/data/world-inscriptions.js:46"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l8",
+          "who": "plaque",
+          "text": "CONCERT HALL ·",
+          "source": "src/data/world-inscriptions.js:49"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l9",
+          "who": "plaque",
+          "text": "1936",
+          "source": "src/data/world-inscriptions.js:49"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l10",
+          "who": "job",
+          "text": "PUBLIC ENTRANCE",
+          "source": "src/data/world-inscriptions.js:52"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l11",
+          "who": "job",
+          "text": "— CLOSED",
+          "source": "src/data/world-inscriptions.js:52"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l12",
           "who": "thought",
           "text": "PUBLIC ENTRANCE",
           "source": "src/data/world-inscriptions.js:52"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l1",
+          "id": "WORLD_INSCRIPTIONS.l13",
           "who": "thought",
           "text": "— CLOSED",
           "source": "src/data/world-inscriptions.js:52"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l2",
+          "id": "WORLD_INSCRIPTIONS.l14",
+          "who": "job",
+          "text": "PUBLIC ROOMS:",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l15",
+          "who": "job",
+          "text": "HALL,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l16",
+          "who": "job",
+          "text": "BATHS,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l17",
+          "who": "job",
+          "text": "CHAPEL,",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l18",
+          "who": "job",
+          "text": "PRACTICE WING",
+          "source": "src/data/world-inscriptions.js:57"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l19",
           "who": "thought",
           "text": "PUBLIC ROOMS:",
           "source": "src/data/world-inscriptions.js:57"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l3",
+          "id": "WORLD_INSCRIPTIONS.l20",
           "who": "thought",
           "text": "HALL,",
           "source": "src/data/world-inscriptions.js:57"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l4",
+          "id": "WORLD_INSCRIPTIONS.l21",
           "who": "thought",
           "text": "BATHS,",
           "source": "src/data/world-inscriptions.js:57"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l5",
+          "id": "WORLD_INSCRIPTIONS.l22",
           "who": "thought",
           "text": "CHAPEL,",
           "source": "src/data/world-inscriptions.js:57"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l6",
+          "id": "WORLD_INSCRIPTIONS.l23",
           "who": "thought",
           "text": "PRACTICE WING",
           "source": "src/data/world-inscriptions.js:57"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l7",
+          "id": "WORLD_INSCRIPTIONS.l24",
+          "who": "job",
+          "text": "CONCERT HALL — STALLS / GALLERIES",
+          "source": "src/data/world-inscriptions.js:63"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l25",
           "who": "thought",
           "text": "CONCERT HALL — STALLS / GALLERIES",
           "source": "src/data/world-inscriptions.js:63"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l8",
+          "id": "WORLD_INSCRIPTIONS.l26",
+          "who": "job",
+          "text": "TOWER — RINGING CHAMBER",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l27",
+          "who": "job",
+          "text": "— NO ADMITTANCE TO THE PUBLIC",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l28",
+          "who": "job",
+          "text": "BELLS UP",
+          "source": "src/data/world-inscriptions.js:70"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l29",
           "who": "thought",
           "text": "TOWER — RINGING CHAMBER",
           "source": "src/data/world-inscriptions.js:70"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l9",
+          "id": "WORLD_INSCRIPTIONS.l30",
           "who": "thought",
           "text": "— NO ADMITTANCE TO THE PUBLIC",
           "source": "src/data/world-inscriptions.js:70"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l10",
+          "id": "WORLD_INSCRIPTIONS.l31",
           "who": "thought",
           "text": "BELLS UP",
           "source": "src/data/world-inscriptions.js:70"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l11",
+          "id": "WORLD_INSCRIPTIONS.l32",
+          "who": "route",
+          "text": "RINGING",
+          "source": "src/data/world-inscriptions.js:74"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l33",
+          "who": "route",
+          "text": "ROOM",
+          "source": "src/data/world-inscriptions.js:74"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l34",
+          "who": "route",
+          "text": "BELLS",
+          "source": "src/data/world-inscriptions.js:76"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l35",
+          "who": "route",
+          "text": "— AUTHORISED ACCESS",
+          "source": "src/data/world-inscriptions.js:76"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l36",
+          "who": "route",
+          "text": "ORGAN LOFT",
+          "source": "src/data/world-inscriptions.js:78"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l37",
+          "who": "route",
+          "text": "/ NAVE",
+          "source": "src/data/world-inscriptions.js:78"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l38",
+          "who": "route",
+          "text": "NAVE",
+          "source": "src/data/world-inscriptions.js:80"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l39",
+          "who": "route",
+          "text": "/ CHAPEL EXIT",
+          "source": "src/data/world-inscriptions.js:80"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l40",
+          "who": "route",
+          "text": "J. VALE & SONS —",
+          "source": "src/data/world-inscriptions.js:84"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l41",
+          "who": "route",
+          "text": "CAST FOR",
+          "source": "src/data/world-inscriptions.js:84"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l42",
+          "who": "route",
+          "text": "ELLERY COLLEGIATE CHAPEL —",
+          "source": "src/data/world-inscriptions.js:84"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l43",
+          "who": "route",
+          "text": "1908.",
+          "source": "src/data/world-inscriptions.js:84"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l44",
+          "who": "route",
+          "text": "Eight bells. Tenor: 2,200 kg.",
+          "source": "src/data/world-inscriptions.js:84"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l45",
+          "who": "job",
+          "text": "THANK YOU FOR",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l46",
+          "who": "job",
+          "text": "HELPING US KEEP",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l47",
+          "who": "job",
+          "text": "THE BELLS SOUNDING",
+          "source": "src/data/world-inscriptions.js:96"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l48",
           "who": "thought",
           "text": "THANK YOU FOR",
           "source": "src/data/world-inscriptions.js:96"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l12",
+          "id": "WORLD_INSCRIPTIONS.l49",
           "who": "thought",
           "text": "HELPING US KEEP",
           "source": "src/data/world-inscriptions.js:96"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l13",
+          "id": "WORLD_INSCRIPTIONS.l50",
           "who": "thought",
           "text": "THE BELLS SOUNDING",
           "source": "src/data/world-inscriptions.js:96"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l14",
+          "id": "WORLD_INSCRIPTIONS.l51",
+          "who": "job",
+          "text": "HEADER 3 — ISOLATION",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l52",
+          "who": "job",
+          "text": "Back nut, then gland, then handwheel,",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l53",
+          "who": "job",
+          "text": "in that order, all three home before",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l54",
+          "who": "job",
+          "text": "the line is dead. Clockwise to close.",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l55",
+          "who": "job",
+          "text": "the bypass cock feeds the return and",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l56",
+          "who": "job",
+          "text": "is NOT part of this header.",
+          "source": "src/data/world-inscriptions.js:112"
+        },
+        {
+          "id": "WORLD_INSCRIPTIONS.l57",
           "who": "thought",
           "text": "HEADER 3 — ISOLATION",
           "source": "src/data/world-inscriptions.js:112"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l15",
+          "id": "WORLD_INSCRIPTIONS.l58",
           "who": "thought",
           "text": "Back nut, then gland, then handwheel,",
           "source": "src/data/world-inscriptions.js:112"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l16",
+          "id": "WORLD_INSCRIPTIONS.l59",
           "who": "thought",
           "text": "in that order, all three home before",
           "source": "src/data/world-inscriptions.js:112"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l17",
+          "id": "WORLD_INSCRIPTIONS.l60",
           "who": "thought",
           "text": "the line is dead. Clockwise to close.",
           "source": "src/data/world-inscriptions.js:113"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l18",
+          "id": "WORLD_INSCRIPTIONS.l61",
           "who": "thought",
           "text": "the bypass cock feeds the return and",
           "source": "src/data/world-inscriptions.js:113"
         },
         {
-          "id": "WORLD_INSCRIPTIONS.l19",
+          "id": "WORLD_INSCRIPTIONS.l62",
           "who": "thought",
           "text": "is NOT part of this header.",
           "source": "src/data/world-inscriptions.js:113"
         }
       ],
-      "source": "src/data/world-inscriptions.js:52"
+      "source": "src/data/world-inscriptions.js:42"
     }
   }
 }

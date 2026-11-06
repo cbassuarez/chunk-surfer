@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-floor-population",
+  "title": "Runtime · data/academic-floor-population.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
+  "entries": [
+    "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
+    "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait",
+    "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers",
+    "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/academic-floor-population.js",
+  "notes": "Generated from src/data/academic-floor-population.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more": {
+      "id": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more.l0",
+          "who": "unknown",
+          "text": "There is room for one more.",
+          "source": "src/data/academic-floor-population.js:136"
+        },
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.room-for-one-more.l1",
+          "who": "unknown",
+          "text": "You said that when I came in. I believed you.",
+          "source": "src/data/academic-floor-population.js:137"
+        }
+      ],
+      "source": "src/data/academic-floor-population.js:136"
+    },
+    "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait": {
+      "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait.l0",
+          "who": "unknown",
+          "text": "Shall we keep the chair?",
+          "source": "src/data/academic-floor-population.js:140"
+        },
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-chair-can-wait.l1",
+          "who": "unknown",
+          "text": "Keep it. They have never asked us to stop.",
+          "source": "src/data/academic-floor-population.js:141"
+        }
+      ],
+      "source": "src/data/academic-floor-population.js:140"
+    },
+    "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers": {
+      "id": "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers.l0",
+          "who": "unknown",
+          "text": "Is there room for your cup?",
+          "source": "src/data/academic-floor-population.js:144"
+        },
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.a-likeness-that-answers.l1",
+          "who": "unknown",
+          "text": "Only if we leave a space for the empty company.",
+          "source": "src/data/academic-floor-population.js:145"
+        }
+      ],
+      "source": "src/data/academic-floor-population.js:144"
+    },
+    "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens": {
+      "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens",
+      "type": "line",
+      "lines": [
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens.l0",
+          "who": "unknown",
+          "text": "They have not said a word.",
+          "source": "src/data/academic-floor-population.js:148"
+        },
+        {
+          "id": "ACADEMIC_FLOOR_POPULATION_BEATS.the-company-listens.l1",
+          "who": "unknown",
+          "text": "They are listening. Let them.",
+          "source": "src/data/academic-floor-population.js:149"
+        }
+      ],
+      "source": "src/data/academic-floor-population.js:148"
+    }
+  }
+}

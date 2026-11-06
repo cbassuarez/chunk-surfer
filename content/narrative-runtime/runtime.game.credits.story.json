@@ -4,34 +4,36 @@
   "title": "Runtime · game/credits.js",
   "status": "reference",
   "readOnly": true,
-  "entry": "makeCreditsScene.render",
+  "entry": "makeCreditsScene.credits.render",
   "entries": [
-    "makeCreditsScene.render"
+    "makeCreditsScene.credits.render"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/credits.js",
   "notes": "Generated from src/game/credits.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
-    "makeCreditsScene.render": {
-      "id": "makeCreditsScene.render",
+    "makeCreditsScene.credits.render": {
+      "id": "makeCreditsScene.credits.render",
       "type": "line",
       "lines": [
         {
-          "id": "makeCreditsScene.render.l0",
+          "id": "makeCreditsScene.credits.render.l0",
           "who": "thought",
           "text": "There is no security against the ultimate development of mechanical consciousness, in the fact of machines possessing little consciousness now.",
           "source": "src/game/credits.js:249"
         },
         {
-          "id": "makeCreditsScene.render.l1",
+          "id": "makeCreditsScene.credits.render.l1",
           "who": "thought",
           "text": "CHUNK SURFER",
           "source": "src/game/credits.js:251"
         },
         {
-          "id": "makeCreditsScene.render.l2",
+          "id": "makeCreditsScene.credits.render.l2",
           "who": "thought",
           "text": "THANK YOU FOR LISTENING.",
           "source": "src/game/credits.js:253"

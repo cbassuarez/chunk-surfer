@@ -15,6 +15,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/corridor-lettering.js",
   "notes": "Generated from src/data/corridor-lettering.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "LANDING_FITTINGS.main-basement-stair-ground-landing": {

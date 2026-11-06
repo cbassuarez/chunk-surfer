@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.source-continuation-contact",
+  "title": "Runtime · game/source-continuation-contact.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "sourceContinuationContactFocus",
+  "entries": [
+    "sourceContinuationContactFocus"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/source-continuation-contact.js",
+  "notes": "Generated from src/game/source-continuation-contact.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "sourceContinuationContactFocus": {
+      "id": "sourceContinuationContactFocus",
+      "type": "line",
+      "lines": [
+        {
+          "id": "sourceContinuationContactFocus.l0",
+          "who": "source-contact",
+          "text": "It has already yielded here. Contact it again. / Reach toward the presence.",
+          "source": "src/game/source-continuation-contact.js:120"
+        }
+      ],
+      "source": "src/game/source-continuation-contact.js:120"
+    }
+  }
+}

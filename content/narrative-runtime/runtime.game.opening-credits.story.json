@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.opening-credits",
+  "title": "Runtime · game/opening-credits.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "QUOTE_LINES",
+  "entries": [
+    "QUOTE_LINES"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/opening-credits.js",
+  "notes": "Generated from src/game/opening-credits.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "QUOTE_LINES": {
+      "id": "QUOTE_LINES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "QUOTE_LINES.l0",
+          "who": "text",
+          "text": "...might not the glory of the machines consist",
+          "source": "src/game/opening-credits.js:19"
+        },
+        {
+          "id": "QUOTE_LINES.l1",
+          "who": "text",
+          "text": "in their being without this same boasted gift",
+          "source": "src/game/opening-credits.js:19"
+        },
+        {
+          "id": "QUOTE_LINES.l2",
+          "who": "text",
+          "text": "of language?",
+          "source": "src/game/opening-credits.js:19"
+        },
+        {
+          "id": "QUOTE_LINES.l3",
+          "who": "text",
+          "text": "'Silence,' it has been said by one writer,",
+          "source": "src/game/opening-credits.js:19"
+        },
+        {
+          "id": "QUOTE_LINES.l4",
+          "who": "text",
+          "text": "'is a virtue which renders us agreeable",
+          "source": "src/game/opening-credits.js:19"
+        },
+        {
+          "id": "QUOTE_LINES.l5",
+          "who": "text",
+          "text": "to our fellow-creatures.'",
+          "source": "src/game/opening-credits.js:19"
+        }
+      ],
+      "source": "src/game/opening-credits.js:19"
+    }
+  }
+}

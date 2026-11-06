@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.game.combat",
+  "title": "Runtime · game/combat.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "makeCombatScene.scene.battle-battle.id-.render.verdict",
+  "entries": [
+    "makeCombatScene.scene.battle-battle.id-.render.verdict",
+    "makeCombatScene.scene.battle-battle.id-.render.reviewed"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/game/combat.js",
+  "notes": "Generated from src/game/combat.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "makeCombatScene.scene.battle-battle.id-.render.verdict": {
+      "id": "makeCombatScene.scene.battle-battle.id-.render.verdict",
+      "type": "line",
+      "lines": [
+        {
+          "id": "makeCombatScene.scene.battle-battle.id-.render.verdict.l0",
+          "who": "strikeVerdict",
+          "text": "IT GLANCES OFF",
+          "source": "src/game/combat.js:2567"
+        }
+      ],
+      "source": "src/game/combat.js:2567"
+    },
+    "makeCombatScene.scene.battle-battle.id-.render.reviewed": {
+      "id": "makeCombatScene.scene.battle-battle.id-.render.reviewed",
+      "type": "line",
+      "lines": [
+        {
+          "id": "makeCombatScene.scene.battle-battle.id-.render.reviewed.l0",
+          "who": "battleThoughtReviewLine",
+          "text": "it's set to {guarding} my swing.",
+          "source": "src/game/combat.js:2628"
+        }
+      ],
+      "source": "src/game/combat.js:2628"
+    }
+  }
+}

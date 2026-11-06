@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.academic-roof-dressing",
+  "title": "Runtime · data/academic-roof-dressing.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-school-bell",
+  "entries": [
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-school-bell",
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-listening-vent",
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-guarantor-marks"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/academic-roof-dressing.js",
+  "notes": "Generated from src/data/academic-roof-dressing.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-school-bell": {
+      "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-school-bell",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-school-bell.c0",
+          "text": "Examine the old school bell",
+          "source": "src/data/academic-roof-dressing.js:43"
+        }
+      ],
+      "source": "src/data/academic-roof-dressing.js:43"
+    },
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-listening-vent": {
+      "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-listening-vent",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-listening-vent.c0",
+          "text": "Listen at the vent",
+          "source": "src/data/academic-roof-dressing.js:47"
+        }
+      ],
+      "source": "src/data/academic-roof-dressing.js:47"
+    },
+    "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-guarantor-marks": {
+      "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-guarantor-marks",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "ACADEMIC_ROOF_DRESSING_OBSERVATIONS.roof-guarantor-marks.c0",
+          "text": "Examine the service tags",
+          "source": "src/data/academic-roof-dressing.js:52"
+        }
+      ],
+      "source": "src/data/academic-roof-dressing.js:52"
+    }
+  }
+}

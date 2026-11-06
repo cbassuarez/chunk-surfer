@@ -6,12 +6,15 @@
   "readOnly": true,
   "entry": "createSourceSpaceRuntime.inspectFocused.line",
   "entries": [
-    "createSourceSpaceRuntime.inspectFocused.line"
+    "createSourceSpaceRuntime.inspectFocused.line",
+    "OUTSKIRT_SHUT_LINES"
   ],
   "tags": [
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/game/source-space-runtime.js",
   "notes": "Generated from src/game/source-space-runtime.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "createSourceSpaceRuntime.inspectFocused.line": {
@@ -26,6 +29,31 @@
         }
       ],
       "source": "src/game/source-space-runtime.js:3848"
+    },
+    "OUTSKIRT_SHUT_LINES": {
+      "id": "OUTSKIRT_SHUT_LINES",
+      "type": "line",
+      "lines": [
+        {
+          "id": "OUTSKIRT_SHUT_LINES.l0",
+          "who": "text",
+          "text": "It won’t open.",
+          "source": "src/game/source-space-runtime.js:463"
+        },
+        {
+          "id": "OUTSKIRT_SHUT_LINES.l1",
+          "who": "text",
+          "text": "Locked. From whichever side this is.",
+          "source": "src/game/source-space-runtime.js:463"
+        },
+        {
+          "id": "OUTSKIRT_SHUT_LINES.l2",
+          "who": "text",
+          "text": "There’s no handle on this side.",
+          "source": "src/game/source-space-runtime.js:463"
+        }
+      ],
+      "source": "src/game/source-space-runtime.js:463"
     }
   }
 }

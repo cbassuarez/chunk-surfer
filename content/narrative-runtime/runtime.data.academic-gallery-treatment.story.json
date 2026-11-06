@@ -12,6 +12,8 @@
     "runtime",
     "derived"
   ],
+  "regions": [],
+  "module": "src/data/academic-gallery-treatment.js",
   "notes": "Generated from src/data/academic-gallery-treatment.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
   "nodes": {
     "ACADEMIC_GALLERY_PROPS.inspect": {
