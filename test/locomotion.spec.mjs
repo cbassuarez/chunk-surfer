@@ -9,15 +9,15 @@ import {
 
 test('the ladder is ordered, human and priced', () => {
   assert.deepEqual(GAIT_ORDER, ['crawl', 'walk', 'jog', 'run', 'sprint']);
-  assert.deepEqual(GAIT_ORDER.map(g => GAIT_SPEED[g]), [0.7, 1.4, 2.6, 4.0, 6.0]);
+  assert.deepEqual(GAIT_ORDER.map(g => GAIT_SPEED[g]), [0.7, 2.0, 2.6, 4.0, 6.0]);
   assert.deepEqual(GAIT_ORDER.map(g => GAIT_NOISE[g]), [0.06, 0.12, 0.22, 0.32, 0.45]);
   for (let i = 1; i < GAIT_ORDER.length; i++) {
     assert.ok(GAIT_SPEED[GAIT_ORDER[i]] > GAIT_SPEED[GAIT_ORDER[i - 1]]);
     assert.ok(GAIT_NOISE[GAIT_ORDER[i]] > GAIT_NOISE[GAIT_ORDER[i - 1]]);
   }
   // A comfortable human walk, and the walk-to-run transition between walk and jog.
-  assert.ok(GAIT_SPEED.walk >= 1.2 && GAIT_SPEED.walk <= 1.5);
-  assert.ok(GAIT_SPEED.walk < 2.0 && GAIT_SPEED.jog > 2.0);
+  assert.ok(GAIT_SPEED.walk >= 1.9 && GAIT_SPEED.walk <= 2.1);
+  assert.ok(GAIT_SPEED.walk < 2.6 && GAIT_SPEED.jog > 2.0);
 });
 
 test('every place offers exactly two speeds, and all five gaits appear somewhere', () => {

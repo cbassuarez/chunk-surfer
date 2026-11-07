@@ -34,16 +34,16 @@ test('ordinary II edges permit walking off without a marker or E and lower II fl
 
 test('the half-metre split is an authorized jump shortcut with no knowledge lock',()=>{
   let state=at(6,-12,8.4),events=[];
-  state=tick(state,{dt:0,jump:true,forward:1,look:{yaw:-Math.PI/2}},events);
+  state=tick(state,{dt:0,jump:true,forward:1,run:true,look:{yaw:-Math.PI/2}},events);
   state=until(state,s=>!s.fall,events);
-  assert.equal(state.recovery,null);assert.ok(state.x<3.2);assert.equal(state.feet,8.4);assert.equal(state.phase,'wrong-return');
+  assert.equal(state.recovery,null);assert.ok(state.x<3.8);assert.equal(state.feet,8.4);assert.equal(state.phase,'wrong-return');
   assert.equal(state.knowledge.includes('false-return-porch'),false);
 });
 
 test('unmarked Catch edges can skip a receiving stage and use the actual lower landing',()=>{
   let state=at(C.catch.center.x+4.23,C.catch.center.z,2.4,'catch',1),events=[];
   for(let k=0;k<100&&!state.fall;k++)state=tick(state,{side:-.2},events);
-  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx+.28)<1e-12);
+  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx+.4)<1e-12);
   state=until(state,s=>!s.fall,events);
   assert.equal(state.recovery,null);assert.equal(state.phase,'catch');assert.equal(state.level,3);assert.equal(state.feet,-12.6);
   assert.match(events.find(e=>e.type==='land').surface,/catch-3/);

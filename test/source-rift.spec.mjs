@@ -75,7 +75,7 @@ test('walking into a fault opens it once; a body returned beside it must walk cl
     const saved=normalizeSourceContinuation(JSON.parse(JSON.stringify(first.state)));assert.equal(saved.riftLatch,fault.id);
     assert.equal(sourceRiftFaultTouched(saved)?.id,fault.id);assert.equal(sourceRiftFaultClear(saved,fault.id),false);
     assert.equal(walk(saved,.5,{environment:true}).events.filter(e=>e.type==='rift-fault').length,0,'standing there does nothing');
-    const away=walk(saved,2,s=>({forward:1,environment:true,look:{yaw:Math.atan2(s.x-fault.x,-(s.z-fault.z)),pitch:0}}));
+    const away=walk(saved,1.1,s=>({forward:1,environment:true,look:{yaw:fault.phase==='wrong-return'?0:Math.atan2(s.x-fault.x,-(s.z-fault.z)),pitch:0}}));
     assert.equal(away.state.riftLatch,null,'walking clear releases it');
     assert.equal(walk(away.state,3,input).events.filter(e=>e.type==='rift-fault').length,1,'and it opens again');
   }

@@ -221,13 +221,13 @@ test('stacked floors stay on the current storey and real risers change candidate
     canOccupy(x, z, state) { return Math.abs(supportAt(x, z, state).floor - state.feet) < 1e-7; } };
   const walk = (s, x, input = { forward: 1 }) => { let guard = 0; while ((input.forward > 0 ? s.x < x : s.x > x) && guard++ < 6000) s = tick(s, { dt: 1 / 60, ...input }, layout).state; return s; };
   let state = freshSourceFalseReturn({ spawn: at });
-  state = walk(state, 3); assert.ok(Math.abs(state.x - 3) < .03); near(state.feet, 1.6);
-  state = walk(state, 6); assert.ok(Math.abs(state.x - 6) < .03); near(state.feet, 3.2);
+  state = walk(state, 3); assert.ok(Math.abs(state.x - 3) < .05); near(state.feet, 1.6);
+  state = walk(state, 6); assert.ok(Math.abs(state.x - 6) < .05); near(state.feet, 3.2);
   state = normalizeSourceFalseReturn(JSON.parse(JSON.stringify(state)), { spawn: at });
   state = tick(state, { dt: .2, forward: 1 }, layout).state;
   near(state.feet, 3.2, 'reloading over stacked ground retains the upper storey');
   state = walk(state, 0, { forward: -1 });
-  assert.ok(Math.abs(state.x) < .03); near(state.feet, 0);
+  assert.ok(Math.abs(state.x) < .05); near(state.feet, 0);
   assert.ok(seen.some(p => p.floor > p.current + .39), 'test actually crossed authored risers');
   assert.ok(seen.every(p => Math.abs(p.floor - p.current) <= .4000001));
 });

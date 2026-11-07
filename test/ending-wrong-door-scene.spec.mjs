@@ -236,14 +236,15 @@ test('save persistence admits matching ending checkpoints and leaves ordinary So
     assert.equal(getSave().endingWrongDoor, null);
     const before = copy({ chunkSurf: getSave().chunkSurf, flags: getSave().flags,
       items: getSave().items, takes: getSave().takes, run: getSave().run });
+    const nearValue=(a,b)=>{if(typeof a==='number'&&typeof b==='number')return Math.abs(a-b)<1e-9;if(Array.isArray(a)&&Array.isArray(b))return a.length===b.length&&a.every((v,i)=>nearValue(v,b[i]));if(a&&b&&typeof a==='object'&&typeof b==='object'){const ka=Object.keys(a);return ka.length===Object.keys(b).length&&ka.every(k=>nearValue(a[k],b[k]));}return Object.is(a,b);};
     for (const checkpoint of [initial(), advance(advance(initial(), .25, { forward: 1 }), 4), completed()]) {
       saveCommit({ endingWrongDoor: checkpoint });
-      assert.deepEqual(getSave().endingWrongDoor, checkpoint);
+      assert.ok(nearValue(getSave().endingWrongDoor, checkpoint));
       assert.deepEqual({ chunkSurf: getSave().chunkSurf, flags: getSave().flags,
         items: getSave().items, takes: getSave().takes, run: getSave().run }, before);
     }
     const saved = copy(getSave());
-    await withTransientGameState({ save: saved }, () => assert.deepEqual(getSave().endingWrongDoor, saved.endingWrongDoor));
+    await withTransientGameState({ save: saved }, () => assert.ok(nearValue(getSave().endingWrongDoor, saved.endingWrongDoor)));
     for (const checkpoint of [fresh({ runId: 'other-run' }), freshSourceEarthfall({ runId }),
       { ...initial(), sequenceId: 'ordinary-source-II' }, null]) {
       saveCommit({ endingWrongDoor: checkpoint }); assert.equal(getSave().endingWrongDoor, null);

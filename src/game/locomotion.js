@@ -27,7 +27,7 @@ export const GAIT_ORDER = Object.freeze(['crawl', 'walk', 'jog', 'run', 'sprint'
 
 export const GAIT_SPEED = Object.freeze({
   crawl: 0.7,
-  walk: 1.4,
+  walk: 2.0,
   jog: 2.6,
   run: 4.0,
   sprint: 6.0,

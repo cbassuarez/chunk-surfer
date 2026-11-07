@@ -36,7 +36,7 @@ function pathTo(layout, state, goal) {
 function walkPath(layout, state, path) {
   for (const target of path) {
     const dx = target.x - state.x, dz = target.z - state.z, distance = Math.hypot(dx, dz);
-    const result = stepSourceFalseReturn(state, { dt: distance / 1.4, forward: 1, look: { yaw: Math.atan2(dx, -dz) } }, layout);
+    const result = stepSourceFalseReturn(state, { dt: distance / 2.0, forward: 1, look: { yaw: Math.atan2(dx, -dz) } }, layout);
     state = result.state;
     near(state.x, target.x, 1e-5); near(state.z, target.z, 1e-5);
   }
@@ -207,7 +207,7 @@ test('all four canonical main stair flights support continuous physical movement
       if (!moving) moving = freshSourceFalseReturn({ runId: flight.id, spawn: { x, z, feet: support.floor, yaw: 0, pitch: 0 } });
       else {
         const dx = x - moving.x, dz = z - moving.z;
-        moving = stepSourceFalseReturn(moving, { dt: Math.hypot(dx, dz) / 1.4, forward: 1,
+        moving = stepSourceFalseReturn(moving, { dt: Math.hypot(dx, dz) / 2.0, forward: 1,
           look: { yaw: Math.atan2(dx, -dz) } }, layout).state;
         near(moving.x, x, 1e-5); near(moving.z, z, 1e-5); near(moving.feet, expected);
       }

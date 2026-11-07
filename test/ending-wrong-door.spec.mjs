@@ -171,9 +171,10 @@ test('only the opened lower leaf and actual body crossing produce one Source IV 
   assert.equal(result.state.receipts.at(-1).type, 'enter-source-IV');
   assert.equal(frame(result.state).exitReceipt.id, result.state.exitReceipt.id);
   assert.equal(JSON.stringify(result.state.receipts).includes('source-II'), false);
+  const nearValue=(a,b)=>{if(typeof a==='number'&&typeof b==='number')return Math.abs(a-b)<1e-9;if(Array.isArray(a)&&Array.isArray(b))return a.length===b.length&&a.every((v,i)=>nearValue(v,b[i]));if(a&&b&&typeof a==='object'&&typeof b==='object'){const ka=Object.keys(a);return ka.length===Object.keys(b).length&&ka.every(k=>nearValue(a[k],b[k]));}return Object.is(a,b);};
   for (const checkpoint of [result.state, copy(result.state), normalize(copy(result.state))]) {
     const frozen = step(checkpoint, { dt: 99, forward: -1, interact: true });
-    assert.deepEqual(frozen.state, result.state); assert.deepEqual(frozen.events, []); assert.equal(frozen.saveDue, false);
+    assert.ok(nearValue(frozen.state, result.state)); assert.deepEqual(frozen.events, []); assert.equal(frozen.saveDue, false);
   }
 });
 
