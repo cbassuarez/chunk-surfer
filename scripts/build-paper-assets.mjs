@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {buildPaperPigment} from './build-paper-pigment.mjs';
+import { paperPython, commandExists } from './paper/paper-runtime.mjs';
 import { WORK_ORDER, PAGES } from '../src/data/conservatory-script.js';
 import { SOURCE_PAGES, sourcePageDocument } from '../src/data/source-pages.js';
 import { WORK_ORDER_SHEET, WORK_ORDER_SHIFTS } from '../src/data/work-order-sheet.js';
@@ -595,12 +596,12 @@ function collectDocuments(){
   });
   return docs;
 }
-function commandExists(cmd){return spawnSync('bash',['-lc',`command -v ${cmd}`],{stdio:'ignore'}).status===0;}
 // The interpreter that has Pillow. A repo-local .paper-venv is preferred over
 // the system python so building paper never installs into anybody's global
-// environment and `rm -rf .paper-venv` undoes the whole dependency.
-const PAPER_PYTHON=process.env.PAPER_PYTHON
-  ||(existsSync(path.join(ROOT,'.paper-venv/bin/python'))?path.join(ROOT,'.paper-venv/bin/python'):'python3');
+// environment and `rm -rf .paper-venv` undoes the whole dependency. The lookup
+// and the command probe live in paper/paper-runtime.mjs so the paper toolchain
+// never assumes bash or one operating system's venv layout.
+const PAPER_PYTHON=paperPython(ROOT);
 function pythonPaperRasterAvailable(){return spawnSync(PAPER_PYTHON,['-c','import PIL'],{stdio:'ignore'}).status===0&&existsSync(path.join(ROOT,'scripts/paper/rasterize_svg.py'));}
 function rasterCommand(){if(process.env.PAPER_RASTERIZER)return process.env.PAPER_RASTERIZER;if(commandExists('magick'))return 'magick';if(commandExists('convert'))return 'convert';throw new Error('Paper rasterization requires ImageMagick (`magick` or `convert`). Runtime assets are committed, so normal game builds do not need it.');}
 function runProcess(cmd,args,{maxOutput=1024*1024*8}={}){

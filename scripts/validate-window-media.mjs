@@ -9,9 +9,13 @@ const sha256=(path)=>createHash('sha256').update(readFileSync(path)).digest('hex
 const errors=[];
 if(manifest.schemaVersion!==1||manifest.networkAtRuntime!==false||manifest.audioPolicy!=='silent')errors.push('manifest contract');
 if(!Array.isArray(manifest.assets)||manifest.assets.length<10)errors.push('asset count');
+// The field media fit the window's 640×360 pane. The clinical square plates
+// (microscope footage authored at 480×480) fill the same pane object-fit:cover,
+// so they are held to a square 640 budget instead of a 16:9 one.
+const heightLimit=asset=>asset?.sensitivity==='clinical'?640:360;
 for(const asset of manifest.assets||[]){
   if(!asset.id||!['none','clinical'].includes(asset.sensitivity))errors.push(`${asset.id}:metadata`);
-  if(asset.width>640||asset.height>360||asset.trim?.startSeconds<0||asset.trim?.durationSeconds<=0)errors.push(`${asset.id}:bounds`);
+  if(asset.width>640||asset.height>heightLimit(asset)||asset.trim?.startSeconds<0||asset.trim?.durationSeconds<=0)errors.push(`${asset.id}:bounds`);
   if(!asset.source?.sha256||!asset.source?.creator||!asset.source?.license)errors.push(`${asset.id}:source`);
   for(const kind of ['webm','mp4','poster']){
     const record=asset.derivatives?.[kind],path=record&&resolve(root,'public',record.path);
@@ -31,7 +35,7 @@ for(const asset of manifest.assets||[]){
     const streams=JSON.parse(probe.stdout||'{}').streams||[];
     if(streams.some((stream)=>stream.codec_type==='audio'))errors.push(`${asset.id}:${kind}:audio`);
     const video=streams.find((stream)=>stream.codec_type==='video');
-    if(!video||video.width>640||video.height>360)errors.push(`${asset.id}:${kind}:resolution`);
+    if(!video||video.width>640||video.height>heightLimit(asset))errors.push(`${asset.id}:${kind}:resolution`);
   }
 }
 if(errors.length){console.error(errors.join('\n'));process.exit(1);}

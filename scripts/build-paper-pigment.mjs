@@ -8,6 +8,7 @@ import {spawn} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {PAPER_PIGMENT_PATH,PAPER_PIGMENT_SURFACE} from '../src/data/paper-pigment.js';
+import { paperPython } from './paper/paper-runtime.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -39,7 +40,7 @@ export async function buildPaperPigment({root=ROOT}={}){
   const manifest={...catalog.atlas,tile:[128,181],canonical:[2048,2896],rgbSource,output,report:reportPath,pages};
   const manifestPath=file('.paper-build/pigment-atlas-manifest.json');await mkdir(path.dirname(manifestPath),{recursive:true});
   await writeFile(manifestPath,JSON.stringify(manifest));
-  const python=process.env.PAPER_PYTHON||(existsSync(file('.paper-venv/bin/python'))?file('.paper-venv/bin/python'):'python3');
+  const python=paperPython(root);
   await new Promise((resolve,reject)=>{const child=spawn(python,[file('scripts/paper/build_pigment_atlas.py'),manifestPath],{stdio:'inherit'});
     child.on('error',reject);child.on('close',code=>code===0?resolve():reject(Error(`Paper pigment raster failed (${code})`)));});
   const report=JSON.parse(await readFile(reportPath));

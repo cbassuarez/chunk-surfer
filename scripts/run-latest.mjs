@@ -11,8 +11,8 @@ import { localGraphicsEnvironment } from './local-graphics.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serviceDir = path.join(root, 'tools/chunk_surfer/diffusion_server');
-const lens = path.join(serviceDir, 'run-local.sh');
-const python = path.join(serviceDir, '.venv-local/bin/python');
+const lens = path.join(serviceDir, process.platform === 'win32' ? 'run-local.bat' : 'run-local.sh');
+const python = path.join(serviceDir, process.platform === 'win32' ? path.join('.venv-local', 'Scripts', 'python.exe') : path.join('.venv-local', 'bin', 'python'));
 // npm's .bin/tauri file is a POSIX shim. On Windows, invoke the CLI's actual
 // JavaScript entry through this Node executable, preserving structured args.
 const tauri = path.join(root, process.platform === 'win32' ? 'node_modules/@tauri-apps/cli/tauri.js' : 'node_modules/.bin/tauri');
