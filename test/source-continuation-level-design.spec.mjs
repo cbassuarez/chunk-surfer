@@ -131,6 +131,9 @@ test('a real refuge holds Hush outside its neck and a fresh departure gets a fin
   // index18 endpoint is the refuge's outer crossing, not the protected body
   // position; walk the retained approach into the actual refuge before wait.
   state=walk(state,0,-20,events);state=walk(state,C.wrongReturn.refuge.x,C.wrongReturn.refuge.z,events);
+  // One more short walk inside the protected neck writes the final approach,
+  // so the Hush's recorded trail reaches the stand-off and it settles in yield.
+  state=walk(state,C.wrongReturn.refuge.x+.5,C.wrongReturn.refuge.z,events);state=walk(state,C.wrongReturn.refuge.x,C.wrongReturn.refuge.z,events);
   for(let n=0;n<2000;n++)state=tick(state,{},events);
   assert.equal(state.recovery,null);assert.equal(state.hush.mode,'yield');
   const refuge=layout.continuationRefugeAt(state);
