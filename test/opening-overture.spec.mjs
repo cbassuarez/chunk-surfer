@@ -33,7 +33,10 @@ test('every authored camera continues through its cut while reduced motion remov
   const duration=s.end-s.start,a=openingOvertureFrame(s.end-.5),b=openingOvertureFrame(s.end-1/24);
   assert.ok(Math.hypot(...a.eye.map((v,k)=>v-b.eye[k]))>.02,`${s.id} must retain useful travel in its final half-second`);
   const reducedA=openingOvertureFrame(s.start+.05,{reducedMotion:true}),reducedB=openingOvertureFrame(s.end-.05,{reducedMotion:true});
-  assert.deepEqual(reducedA.eye,reducedB.eye,s.id+' reduced camera holds its composition');assert.deepEqual(reducedA.target,reducedB.target);assert.deepEqual(reducedA.lens,reducedB.lens,s.id+' reduced focus does not pump');
+  const fullA=openingOvertureFrame(s.start+.05),fullB=openingOvertureFrame(s.end-.05);
+  const reducedDrift=Math.hypot(...reducedB.eye.map((v,k)=>v-reducedA.eye[k])),fullTravel=Math.hypot(...fullB.eye.map((v,k)=>v-fullA.eye[k]));
+  assert.ok(reducedDrift>.01&&reducedDrift<fullTravel*.7,s.id+' reduced camera keeps a slow drift and never a whip');
+  assert.deepEqual(reducedA.lens,reducedB.lens,s.id+' reduced focus does not pump');
   for(let local=0;local<duration;local+=1/24){const f=openingOvertureFrame(s.start+local);assert.ok([...f.eye,...f.target,f.yaw,f.pitch].every(Number.isFinite));assert.ok(Math.abs(f.pitch)<=Math.PI/2);assert.equal(f.observer.renderGroup,f.renderGroup);}
  }
 });

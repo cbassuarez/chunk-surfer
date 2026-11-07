@@ -103,12 +103,16 @@ export function openingOvertureFrame(seconds=0,{returnView=null,reducedMotion=fa
   if(shot.dynamicReturn){
     const actual=returningView(returnView);({eye,target,yaw,pitch,renderGroup,floorH}=actual);lens=null;focusTarget=[...target];focusSubjectTarget=[...target];
   }else{
-    // The approved move is linear through the cut. Reduced motion adopts the
-    // measured midpoint composition and its focus, with no camera/lens pump.
-    const cameraTime=reducedMotion?shot.duration*.5:localTime,u=cameraTime/shot.duration;
+    // The approved move is linear through the cut. Reduced motion keeps a slow
+    // drift through that same move and holds the measured midpoint focus: no
+    // pump, no rack, and no shot left standing still.
+    const cameraTime=reducedMotion?shot.duration*(0.3+0.4*progress):localTime,
+      focusTime=reducedMotion?shot.duration*.5:cameraTime,u=cameraTime/shot.duration;
     eye=curve(shot.camera.eye,u);target=curve(shot.camera.target,u);
     const d=subtract(target,eye);yaw=Math.atan2(d[0],-d[2]);pitch=Math.atan2(d[1],Math.hypot(d[0],d[2]));
-    const focused=focusAt(shot.camera,eye,target,cameraTime);({focusTarget,focusSubjectTarget}=focused);
+    // The focus holds the measured midpoint composition even as the eye drifts.
+    const focusEyeAt=reducedMotion?curve(shot.camera.eye,.5):eye,focusTargetAt=reducedMotion?curve(shot.camera.target,.5):target;
+    const focused=focusAt(shot.camera,focusEyeAt,focusTargetAt,focusTime);({focusTarget,focusSubjectTarget}=focused);
     lens={...shot.lens,focusDistanceM:focused.focusDistanceM};
   }
   const black=veilAt(shot,localTime),nativeReturn=shot.dynamicReturn;

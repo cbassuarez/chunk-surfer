@@ -13,6 +13,8 @@
 // nothing here may say whether he lives, dies, drives off or stays; the other
 // gets no name or nature; Sarah's name appears only if the player gave it at
 // the natatorium, and what becomes of her is not the other's to give.
+// The one exception is the catch bench's chunk-surfer question: on the way out,
+// the story stops being true before he does.
 const line=(who,text)=>Object.freeze({who,text,voice:false,say:false});
 const you=text=>line('you',text),other=text=>line('other',text);
 const go=(id,label,next)=>Object.freeze({id,label,next});
@@ -78,6 +80,18 @@ const QUESTIONS=Object.freeze([
     other('So would I.')
   ]}
 ]);
+// Benches III alone can ask after the game's own name. The answer is the one
+// exception the doctrine allows: on the way out, the story stops being true
+// before he does, and once he knows it he is not really making it out.
+const CHUNK_SURFER_QUESTION=Object.freeze({id:'chunk-surfer',label:()=>'The chunk-surfer. Is any of that real?',answer:()=>[
+  you('The chunk-surfer. Is any of that real?'),
+  other('No.'),
+  you('None of it?'),
+  other('It is a story you made up. You have been on the way out for a long while, and it was the best thing you had.'),
+  you('So I am not really getting out of this.'),
+  other('No. You are not.')
+]});
+const questionsFor=phase=>phase==='catch'?[...QUESTIONS,CHUNK_SURFER_QUESTION]:QUESTIONS;
 export const SOURCE_REST_EARTHLY_QUESTION_IDS=Object.freeze(QUESTIONS.map(q=>q.id));
 
 /** The lead-in, the one-question choice and its answers, rejoining `next`. */
@@ -87,10 +101,10 @@ export function sourceRestEarthlyNodes(phase,{next,sarahNamed=false}={}){
   const named=!!sarahNamed,nodes={
     earthly:locked(LEADS[phase],{next:'earthly-choice'}),
     'earthly-choice':locked([other('There is time for one thing.')],
-      {choices:QUESTIONS.map(q=>go(q.id,q.label(named),`earthly-${q.id}`))})
+      {choices:questionsFor(phase).map(q=>go(q.id,q.label(named),`earthly-${q.id}`))})
   };
   // The scene delivers a reply exactly as it was chosen: each answer opens
   // with his own question, word for word.
-  for(const q of QUESTIONS)nodes[`earthly-${q.id}`]=locked([you(q.label(named)),...q.answer()],{next});
+  for(const q of questionsFor(phase))nodes[`earthly-${q.id}`]=locked([you(q.label(named)),...q.answer()],{next});
   return Object.freeze(nodes);
 }

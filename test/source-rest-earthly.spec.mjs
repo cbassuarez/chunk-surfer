@@ -15,7 +15,8 @@ test('both benches reach one earthly question after their return, inside the loc
   for(const {phase,story} of stories()){
     const n=story.nodes;
     assert.equal(n.return.next,'earthly',phase);assert.equal(n.earthly.next,'earthly-choice');
-    assert.deepEqual(n['earthly-choice'].choices.map(c=>c.id),QUESTIONS);
+    // The catch bench alone can ask after the game's own name.
+    assert.deepEqual(n['earthly-choice'].choices.map(c=>c.id),phase==='catch'?[...QUESTIONS,'chunk-surfer']:QUESTIONS);
     for(const choice of n['earthly-choice'].choices){
       const answer=n[choice.next];assert.ok(answer,choice.next);
       assert.equal(answer.lines[0].who,'you');assert.equal(answer.lines[0].text,choice.label,'his reply is delivered exactly as chosen');

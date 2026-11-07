@@ -14729,6 +14729,9 @@ function beginGetInDriveTeaser({onDone=()=>TUT.startTutorial()}={}){
       // A time skip on the cliff road: the picture goes to static with the dial.
       const tuning=frame?.vehiclePose?.tuning;
       if(tuning)uiDraw(({ctx})=>paintRadioDialStatic(ctx,{width:ctx.canvas.width,height:ctx.canvas.height,fraction:tuning.fraction,time:frame.timeSec,reducedFlash:flashMode()!=='full'}));
+      // The water's answer: a white beat the size of the splash, before the black.
+      const splash=frame?.vehiclePose?.splash??0;
+      if(splash>.01){const alpha=Math.min(1,splash*.55)*(flashMode()==='reduced'?.5:1);uiFill(0,0,cols,rows,`rgba(255,255,255,${alpha})`);}
       if(frame.controlsEnabled&&frame.timeSec<8){uiFill(2,rows-3,cols-4,2,'rgba(0,0,0,.78)');uiCenter(rows-2,`W / S PEDALS   A / D STEER   SPACE BRAKE   ${BINDINGS.activeInputPromptDevice()==='controller'?'RIGHT STICK':'MOUSE'} · LOOK`,'t-chunk');}
       else if(frame.controlsEnabled&&frame.vehiclePose?.radioLean>.6)uiCenter(rows-2,'1 2 3 STATION   O POWER','t-chunk');
       else if(frame.controlsEnabled&&Math.abs((frame.vehiclePose?.lookYawOffset??0)+.65)<.34&&(frame.vehiclePose?.lookPitchOffset??0)<-.28)uiCenter(rows-2,`HOLD ${BINDINGS.activeInputPromptDevice()==='controller'?'LB':'Q'} · THE RADIO`,'t-chunk');
@@ -34163,9 +34166,12 @@ function godTabs(){
       {id:'source-landing',label:`SOURCE / ${SCENE_DOCK_LABEL} LANDING`,value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.LANDING)},
       {id:'source-first-lift',label:'SOURCE / FIRST LANDING',value:'[OPEN PATH]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FIRST_LIFT)},
       {id:'source-last-reception',label:'SOURCE / THE LAST RECEPTION',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.LAST_RECEPTION)},
-      {id:'source-false-return',label:'FALSE ELLERY / FIVE DOORS',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('false-return')},
-      {id:'source-wrong-return',label:'SOURCE II / WRONG RETURN',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('wrong-return')},
-      {id:'source-the-catch',label:'SOURCE III / THE CATCH',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('catch')},
+      {id:'source-false-return',label:'FAKEOUT ELLERY 1 / FALSE FIVE DOORS',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('false-return')},
+      {id:'source-earthfall-aside',label:'FAKEOUT ELLERY 2 / THE ASIDE THAT COMES DOWN',value:'[ENTER]',closeMenu:true,activate:godSourceEarthfall},
+      {id:'six-nothingness',label:'CARDBOARD ELLERY / SIX NOTHINGNESS',value:'[ENTER]',closeMenu:true,activate:()=>{beginSixNothingness({});return true;}},
+      {id:'source-wrong-return',label:'BENCH II / WRONG RETURN',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('wrong-return')},
+      {id:'source-the-catch',label:'BENCH III / THE CATCH',value:'[EXPLORE]',closeMenu:true,activate:()=>godEnterSourceContinuation('catch')},
+      {id:'work-order-checkoff',label:'WORK ORDER / SIGN OFF TAKES',value:'[SIGN]',closeMenu:true,activate:()=>{openWorkOrderCheckoff();return true;}},
       {id:'source-first-contact',label:'CONTACT / TRAILING PURSUIT',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.FIRST_CONTACT,{apertureComplete:true})},
       {id:'source-all-insights',label:'SOURCE / ALL INSIGHTS',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.ALL_INSIGHTS,{apertureComplete:true})},
       {id:'source-hunt',label:'RECORDIST / BODY RUN',value:'[DROP IN]',closeMenu:true,activate:()=>godEnterSourcePreset(CHUNK_SURF_GOD_PRESET.HUNT,{apertureComplete:true})},
