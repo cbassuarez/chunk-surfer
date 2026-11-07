@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createSourceIVScene } from '../src/game/source-iv-scene.js';
+import {createSceneRunKey} from '../src/game/locomotion.js';
 import {createFootContactClock} from '../src/audio/foot-contact.js';
 import { freshSourceIV, normalizeSourceIV, stepSourceIV, sourceIVFrame, sourceIVFocus } from '../src/game/source-iv.js';
 import { SOURCE_IV as C } from '../src/data/source-iv.js';
@@ -14,7 +15,7 @@ function farDoor() { return { ...fresh(), x: C.exit.x, z: C.exit.z + 1.3 }; }
 function completed() {
   let state = farDoor(); state = stepSourceIV(state, { interact: true }).state;
   for (let n = 0; n < 60; n++) state = stepSourceIV(state, { dt: 1 / 60 }).state;
-  for (let n = 0; n < 40; n++) state = stepSourceIV(state, { dt: 1 / 60, forward: 1 }).state;
+  for (let n = 0; n < 90; n++) state = stepSourceIV(state, { dt: 1 / 60, forward: 1 }).state;
   assert.equal(state.status, 'completed'); assert.equal(state.exitReceipt.delivered, false); return state;
 }
 function harness(options = {}) {
@@ -53,11 +54,11 @@ test('ready play and loading draw no gameplay captions, including beside the fin
   const source=readFileSync(new URL('../src/game/source-iv-scene.js',import.meta.url),'utf8');
   // Substitute only the text drawing boundary. Run the actual scene factory
   // with its actual physical controller, rather than a second test presenter.
-  const factory=new Function('normalizeSourceIV','stepSourceIV','sourceIVFrame','sourceIVFocus','uiSize','uiCenter','createFootContactClock',
+  const factory=new Function('normalizeSourceIV','stepSourceIV','sourceIVFrame','sourceIVFocus','uiSize','uiCenter','createFootContactClock','createSceneRunKey',
     source.replace(/^import[^\n]*\n/gm,'').replace('export function createSourceIVScene','return function createSourceIVScene'));
   const words=[],draws=[];
   const create=factory(normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus,
-    ()=>({cols:120,rows:60}),(...args)=>words.push(args),createFootContactClock);
+    ()=>({cols:120,rows:60}),(...args)=>words.push(args),createFootContactClock,createSceneRunKey);
   const scene=create({checkpoint:farDoor(),renderer:{initialize:()=>true,ready:()=>true,
     clear(){},render(state){draws.push(copy(state));return true;}}});
   scene.render();assert.deepEqual(words,[],'loading stays visually within the transition');
@@ -74,7 +75,7 @@ test('IV traces bind route, gaze, door motion and the completed threshold withou
   assert.ok(h.traces.some(t=>t.type==='event'&&t.event.type==='door'&&t.doorOpen));
   assert.ok(h.traces.some(t=>t.type==='pose'&&t.doorProgress>0&&Number.isFinite(t.yaw)));
   h.scene.pause();const paused=h.traces.length;h.scene.update(20);assert.equal(h.traces.length,paused);
-  h.scene.resume();h.scene.key({key:'w'});updateFor(h.scene,2);await flush();
+  h.scene.resume();h.scene.key({key:'w'});updateFor(h.scene,3);await flush();
   assert.ok(h.traces.some(t=>t.type==='event'&&t.event.type==='complete'&&t.z<=C.exit.z));
   assert.equal(h.traces.filter(t=>t.type==='handoff').length,1);
   h.scene.exit();
@@ -198,8 +199,8 @@ test('shared IV gait matches real speed, survives look updates and cannot emit a
   const contacts=[],h=harness({onFootContact:e=>contacts.push(e)});await h.scene.initialize();
   h.scene.key({key:'w'});h.scene.update(1/60);assert.equal(contacts.length,1,'first real move plants immediately');
   for(let i=1;i<300;i++){h.scene.setLook({yaw:0,pitch:Math.sin(i/40)*.1});h.scene.update(1/60);}
-  assert.ok(contacts.length>=15&&contacts.length<=17,`3.2m/s yielded ${contacts.length} contacts in 5 seconds`);
-  assert.ok(contacts.every(e=>Math.abs(e.speed-C.walkSpeed)<.001&&e.strideM>1&&e.strideM<1.1));
+  assert.ok(contacts.length>=9&&contacts.length<=13,`the current walk yielded ${contacts.length} contacts in 5 seconds`);
+  assert.ok(contacts.every(e=>Math.abs(e.speed-C.walkSpeed)<.001&&e.strideM>.5&&e.strideM<.8));
   assert.ok(contacts.every((e,i)=>i===0||e.footSide!==contacts[i-1].footSide));
   h.scene.keyup({key:'w'});const count=contacts.length;updateFor(h.scene,1);assert.equal(contacts.length,count);
   assert.equal(h.sounds.filter(e=>e.type==='footstep').length,0);h.scene.exit();

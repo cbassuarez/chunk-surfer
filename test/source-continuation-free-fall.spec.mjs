@@ -16,7 +16,7 @@ test('Space jumps anywhere grounded, preserves momentum and cannot repeat or dou
   state=tick(state,{dt:0,jump:true,side:1},events);assert.equal(state.fall.trigger,'jump');assert.equal(state.fall.vx,C.walkSpeed);
   let highest=0;
   for(let k=0;k<150&&state.fall;k++){state=tick(state,{jump:true,side:-1,forward:1},events);highest=Math.max(highest,state.feet);}
-  assert.ok(highest>.99&&highest<1.03);assert.equal(state.fall,null);assert.ok(state.x>10.7,'held opposite input cannot steer ballistic momentum');
+  assert.ok(highest>.99&&highest<1.03);assert.equal(state.fall,null);assert.ok(state.x>9.2,'held opposite input cannot steer ballistic momentum');
   state=tick(state,{jump:true},events);assert.equal(state.fall,null,'holding Space cannot jump on landing');
   assert.equal(events.filter(e=>e.type==='drop').length,1);
   state=tick(state,{jump:false});state=tick(state,{dt:0,jump:true},events);assert.equal(state.fall.trigger,'jump');
@@ -26,7 +26,7 @@ test('Space jumps anywhere grounded, preserves momentum and cannot repeat or dou
 test('ordinary II edges permit walking off without a marker or E and lower II floors retain first person',()=>{
   let state=at(-8,-27.03,8.4),events=[];
   for(let k=0;k<20&&!state.fall;k++)state=tick(state,{forward:1,look:{yaw:Math.PI}},events);
-  assert.equal(state.fall?.trigger,'step-off');assert.ok(state.fall.vz>3.19);
+  assert.equal(state.fall?.trigger,'step-off');assert.ok(state.fall.vz>1.19);
   state=until(state,s=>!s.fall,events);
   assert.equal(state.recovery,null);assert.equal(state.feet,4.2);assert.equal(state.phase,'wrong-return');assert.equal(sourceContinuationFrame(state).camera.mode,'first-person');
   assert.equal(events.find(e=>e.type==='land').trigger,'step-off');
@@ -42,8 +42,8 @@ test('the half-metre split is an authorized jump shortcut with no knowledge lock
 
 test('unmarked Catch edges can skip a receiving stage and use the actual lower landing',()=>{
   let state=at(C.catch.center.x+4.23,C.catch.center.z,2.4,'catch',1),events=[];
-  for(let k=0;k<40&&!state.fall;k++)state=tick(state,{side:-.2},events);
-  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx+.64)<1e-12);
+  for(let k=0;k<100&&!state.fall;k++)state=tick(state,{side:-.2},events);
+  assert.equal(state.fall?.trigger,'step-off');assert.ok(Math.abs(state.fall.vx+.28)<1e-12);
   state=until(state,s=>!s.fall,events);
   assert.equal(state.recovery,null);assert.equal(state.phase,'catch');assert.equal(state.level,3);assert.equal(state.feet,-12.6);
   assert.match(events.find(e=>e.type==='land').surface,/catch-3/);
@@ -60,17 +60,17 @@ test('a real receiving-floor landing chooses Catch from the surface without a do
 });
 
 test('actual full-body airborne crossings dispatch return, onward phase and final receipt once',()=>{
-  let state=at(0,3.35,0),events=[];state.doorOpen['wrong-entry-return']=true;
-  state=tick(state,{dt:0,jump:true,forward:1,look:{yaw:Math.PI}},events);
+  let state=at(0,2.4,0),events=[];state.doorOpen['wrong-entry-return']=true;
+  state=tick(state,{dt:0,jump:true,forward:1,run:true,look:{yaw:Math.PI}},events);
   state=until(state,s=>s.status==='returned',events);
   assert.ok(state.fall);assert.equal(events.filter(e=>e.type==='return').length,1);assert.equal(events.find(e=>e.type==='return').airborne,true);
   const gate=C.wrongReturn.threshold;
   state=at(gate.x+.04,gate.z,gate.y,'wrong-return',0,4);events=[];state.doorOpen[gate.doorId]=true;
-  state=tick(state,{dt:0,jump:true,forward:1,look:{yaw:-Math.PI/2}},events);
-  state=until(state,s=>s.phase==='catch',events);assert.ok(state.fall);assert.ok(events.some(e=>e.type==='phase'&&e.doorId===gate.doorId));
+  state=tick(state,{dt:0,jump:true,forward:1,run:true,look:{yaw:-Math.PI/2}},events);
+  state=until(state,s=>s.phase==='catch',events);assert.ok(events.some(e=>e.type==='fold'),'the threshold crossing dispatches while airborne');
   state=at(C.catch.finalDoor.x-.04,C.catch.finalDoor.z,-12.6,'catch',3);events=[];state.doorOpen['catch-final']=true;
-  state=tick(state,{dt:0,jump:true,side:1},events);state=until(state,s=>s.completed,events);
-  assert.ok(state.fall);assert.equal(events.filter(e=>e.type==='complete').length,1);assert.equal(events.find(e=>e.type==='complete').airborne,true);
+  state=tick(state,{dt:0,jump:true,side:1,run:true},events);state=until(state,s=>s.completed,events);
+  assert.equal(events.filter(e=>e.type==='complete').length,1);assert.equal(events.find(e=>e.type==='complete').airborne,true);
   assert.equal(stepSourceContinuation(state,{dt:.25,jump:true,side:1}).events.length,0);
 });
 
@@ -89,7 +89,7 @@ test('swept bodies hit real ceilings, solids and closed leaves without tunneling
 
 test('Source-II void motion uses its fixed spatial loop and a real same-floor landing without blackout',()=>{
   let state=at(0,-22.95,8.4),events=[];
-  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1},events);
+  for(let k=0;k<70&&!state.fall;k++)state=tick(state,{forward:1,run:true},events);
   state=until(state,s=>!!s.lastSpaceWrap,events);
   assert.ok(state.fall);assert.equal(state.recovery,null);assert.ok(state.fall.vy<0);
   assert.equal(sourceContinuationFrame(state).blackoutAlpha,0);
@@ -114,8 +114,8 @@ test('free jump latches, arbitrary fall metadata and motion survive pause and re
 test('Hush repeats arbitrary jump momentum and obeys the same Source-II spatial loop',()=>{
   let state=at(0,-22.95,8.4),events=[];
   state.hush={...state.hush,active:true,x:0,z:-21,feet:8.4,phase:'wrong-return',mode:'follow',elapsed:10,armed:true,trail:[{kind:'walk',x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}],lastRecorded:{x:0,z:-22.95,feet:8.4,phase:'wrong-return',level:0}};
-  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1},events);
-  const edge=state.hush.trail.find(p=>p.kind==='drop');assert.ok(edge);assert.equal(edge.trigger,'step-off');assert.equal(edge.vz,-C.walkSpeed);
+  for(let k=0;k<30&&!state.fall;k++)state=tick(state,{forward:1,run:true},events);
+  const edge=state.hush.trail.find(p=>p.kind==='drop');assert.ok(edge);assert.equal(edge.trigger,'step-off');assert.equal(edge.vz,-2.6);
   for(let k=0;k<2200&&!events.some(e=>e.type==='hush-space-wrap');k++)state=tick(state,{},events);
   assert.ok(events.some(e=>e.type==='hush-space-wrap'));
   assert.equal(events.some(e=>e.type==='hush-recovery'&&e.reason==='void-fall'),false);

@@ -42,7 +42,7 @@ test('quiet first arrival and an expired startle window cannot turn microphone i
 test('actual mechanical release and late boo open finite saved noise windows without manufacturing player noise',()=>{
   let s={...freshSourceFalseReturn({runId:'mechanical-noise',spawn:actual.spawn}),x:G.armX+.2,z:58.75,feet:G.feet,yaw:-Math.PI/2,elapsed:20,
     thresholdGag:{...freshThresholdGag(),available:true}};
-  const events=[];for(let n=0;n<70;n++){const r=tick(s,1/60,{forward:n<16?1:0},actual);s=r.state;events.push(...r.events);}
+  const events=[];for(let n=0;n<90;n++){const r=tick(s,1/60,{forward:n<35?1:0},actual);s=r.state;events.push(...r.events);}
   assert.ok(events.some(e=>e.type==='threshold-gag-release'));assert.ok(events.some(e=>e.type==='threshold-gag-boo'));
   assert.ok(events.filter(e=>e.type==='false-ellery-noise-armed').length>=2);assert.equal(sourceFalseReturnNoiseArmed(s),true);assert.equal(s.localHush,null);
   for(let n=0;n<240;n++)s=tick(s,1/60,{},actual).state;
@@ -166,7 +166,7 @@ test('a fifth interior opening remains an ordinary door during pursuit, preservi
   s.opened=earned.map(v=>v.id);s.x=1;s.z=0;s.yaw=Math.PI/2;
   let r=tick(s,0,{interact:true},l);s=r.state;assert.equal(s.doorOpen.fifth,true);assert.deepEqual(s.sourceDoors,[]);
   for(let n=0;n<30;n++)s=tick(s,1/60,{},l).state;assert.deepEqual(s.opened,earned.map(v=>v.id));assert.deepEqual(s.sourceDoors,[]);
-  r=tick(s,.5,{forward:1},l);assert.ok(r.state.x>2);assert.equal(r.state.status,'active');assert.ok(r.state.localHush);
+  r=tick(s,.5,{forward:1,run:true},l);assert.ok(r.state.x>2);assert.equal(r.state.status,'active');assert.ok(r.state.localHush);
   assert.equal(r.events.some(e=>e.type==='complete'||e.type==='loop'),false);
 });
 

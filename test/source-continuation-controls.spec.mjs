@@ -34,7 +34,7 @@ test('Source III retains real mouse-look and walking follows the physical view',
   const seed={...checkpoint(),phase:'catch',x:C.catch.center.x+10,z:C.catch.center.z,feet:C.catch.top,level:0,yaw:0};
   const scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer()});await scene.initialize();
   assert.equal(scene.allowsLook,true);assert.equal(scene.lookBy(Math.PI/2,-.1),true);
-  const before=scene.serialize();scene.key({key:'w'});scene.update(.1);scene.keyup({key:'w'});
+  const before=scene.serialize();scene.key({key:'w'});scene.update(.2);scene.keyup({key:'w'});
   assert.ok(scene.serialize().x>before.x+.2);assert.ok(Math.abs(scene.serialize().z-before.z)<1e-6);
   assert.equal(scene.lookAngles().yaw,Math.PI/2);assert.equal(scene.lookAngles().pitch,-.1);
   scene.pause();assert.equal(scene.allowsLook,false);assert.equal(scene.lookBy(.2,.1),false);
@@ -44,7 +44,7 @@ test('Source III retains real mouse-look and walking follows the physical view',
 
 test('crossing into Source III clears held movement and retains the same first-person control authority',async()=>{
   const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),chartId:4,x:SOURCE_JOURNEY.gate.x+.19,z:SOURCE_JOURNEY.gate.z,feet:C.catch.top,yaw:-Math.PI/2,doorOpen:{'journey-catch-gate':true}},renderer:renderer()});
-  await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');
+  await scene.initialize();scene.key({key:'w'});for(let k=0;k<6;k++)scene.update(.25);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');
   assert.equal(crossed.reveal,null);scene.update(.2);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);
   assert.equal(scene.lookBy(.3,.2),true);assert.ok(scene.serialize().yaw>crossed.yaw);scene.keyup({key:'w'});
   const turned=scene.serialize();scene.key({key:'w'});scene.update(.1);
@@ -56,12 +56,12 @@ test('crossing either impossible axis retains held walking through its real rece
     const traces=[],seed={...checkpoint(),...edge.a.approach};seed.hush.active=false;
     const scene=createSourceContinuationScene({checkpoint:seed,renderer:renderer(),onTrace:v=>traces.push(v)});await scene.initialize();
     scene.key({key:'w'});
-    for(let k=0;k<180&&!scene.serialize().lastFold;k++)scene.update(1/60);
+    for(let k=0;k<420&&!scene.serialize().lastFold;k++)scene.update(1/60);
     const crossed=scene.serialize();assert.equal(crossed.lastFold?.id,edge.id);assert.equal(crossed.chartId,edge.toChart);
     assert.ok(traces.some(t=>t.type==='fold-control-continuity'&&t.held.includes('w')));
     for(let k=0;k<120&&(scene.serialize().fall||scene.serialize().cameraTransit);k++)scene.update(1/60);
     const landed=scene.serialize();assert.equal(landed.fall,null);assert.equal(landed.cameraTransit,null);assert.equal(landed.recovery,null);
-    scene.update(.1);const next=scene.serialize();assert.ok(Math.hypot(next.x-landed.x,next.z-landed.z)>.2,'held movement must continue after gravity alignment');
+    scene.update(.2);const next=scene.serialize();assert.ok(Math.hypot(next.x-landed.x,next.z-landed.z)>.2,'held movement must continue after gravity alignment');
     assert.equal(traces.some(t=>t.type==='control-boundary'&&t.reason==='land'),false,'a portal landing retains the same control authority');scene.exit();
   }
 });
@@ -75,7 +75,7 @@ test('a rotated study keeps first-person input in the same body basis as its rot
 test('the final latch has a finite audible handoff, freezes on pause and dispatches once',async()=>{
   let calls=0,stops=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),audio:{stop(){stops++;}},onComplete(){calls++;return true;}});
   await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
-  for(let i=0;i<20&&!scene.serialize().completed;i++)scene.update(.05);
+  for(let i=0;i<50&&!scene.serialize().completed;i++)scene.update(.05);
   assert.equal(scene.serialize().completed,true);assert.equal(calls,0);assert.equal(stops,0);
   scene.pause();scene.update(1);assert.equal(calls,0);scene.resume();
   scene.update(.2);scene.update(.2);assert.equal(calls,1);scene.update(1);assert.equal(calls,1);scene.exit();
@@ -85,7 +85,7 @@ test('a rejected host handoff retains the frame and lets a fresh interaction ret
   for(const failure of [false,Error('host unavailable')]){
     let calls=0;const scene=createSourceContinuationScene({checkpoint:{...checkpoint(),phase:'catch',...C.catch.finalApproach,level:C.catch.levels-1},renderer:renderer(),onComplete(){calls++;if(calls===1){if(failure===false)return false;throw failure;}return true;}});
     await scene.initialize();scene.key({key:'e'});scene.key({key:'w'});
-    for(let i=0;i<20&&!scene.serialize().completed;i++)scene.update(.05);
+    for(let i=0;i<50&&!scene.serialize().completed;i++)scene.update(.05);
     scene.update(.2);scene.update(.2);await new Promise(resolve=>setImmediate(resolve));
     assert.equal(calls,1);assert.equal(scene.view().ready,false);assert.ok(scene.view().error);
     const before=scene.serialize();scene.key({key:'w'});scene.update(1);

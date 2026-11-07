@@ -105,7 +105,7 @@ test('the actual scene asks the shared budget only for explicit safe inspection,
  protectedNow=true;allow=true;scene.key({key:'e'});assert.equal(reservations,1,'recording/listening/playback protection is evaluated before the shared reservation');assert.equal(thresholdGagGhostFrame(scene.view()),null);
  protectedNow=false;scene.key({key:'e'});assert.equal(reservations,2);assert.ok(thresholdGagGhostFrame(scene.view()));assert.equal(scene.allowsLook,true);
  const anchor=copy(scene.view().thresholdGag.inspection.anchor),look=scene.lookAngles();assert.equal(scene.lookBy(.05,0),true);near(scene.lookAngles().yaw,look.yaw+.05);
- scene.key({key:'s'});scene.update(.05);scene.keyup({key:'s'});assert.ok(Math.hypot(scene.view().x-original.x,scene.view().z-original.z)>.1,'caption does not capture ordinary movement');assert.deepEqual(scene.view().thresholdGag.inspection.anchor,anchor);
+ scene.key({key:'s'});scene.update(.1);scene.keyup({key:'s'});assert.ok(Math.hypot(scene.view().x-original.x,scene.view().z-original.z)>.1,'caption does not capture ordinary movement');assert.deepEqual(scene.view().thresholdGag.inspection.anchor,anchor);
  scene.pause();const paused=copy(scene.view().thresholdGag.inspection);scene.update(2);assert.deepEqual(scene.view().thresholdGag.inspection,paused);scene.resume();
  protectedNow=true;scene.update(.01);assert.equal(thresholdGagGhostFrame(scene.view()),null);scene.exit();
 });

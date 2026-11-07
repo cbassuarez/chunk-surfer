@@ -17,7 +17,7 @@ function wait(scene,seconds){for(let i=0;i<Math.round(seconds*60);i++)scene.upda
 
 test('the textless borrowed scene keeps door clocks, pause and held intent local',async()=>{
   const {scene,drawn}=make();await scene.initialize();assert.equal(scene.suppressesHud,true);
-  walk(scene,'w',.5);scene.key({key:'e'});wait(scene,.15);
+  walk(scene,'w',1.2);scene.key({key:'e'});wait(scene,.15);
   scene.key({key:'w'});scene.pause();const before=scene.serialize();scene.update(1);assert.deepEqual(scene.serialize(),before);
   scene.resume();scene.key({key:'w',repeat:true});wait(scene,.5);assert.equal(scene.serialize().z,before.z);
   assert.equal(scene.serialize().opened.length,1);scene.render();assert.equal(drawn.length,1);scene.exit();
@@ -25,10 +25,10 @@ test('the textless borrowed scene keeps door clocks, pause and held intent local
 
 test('five actual door motions and a body crossing dispatch the Source threshold once',async()=>{
   let complete=0;const {scene,trace}=make({onComplete:()=>{complete++;return true;}});await scene.initialize();
-  walk(scene,'w',.5);
+  walk(scene,'w',1.2);
   for(let door=0;door<5;door++){
     scene.key({key:'e'});wait(scene,.5);assert.equal(scene.serialize().opened.length,door+1);
-    assert.equal(complete,0,'opening alone never changes worlds');walk(scene,'w',1);
+    assert.equal(complete,0,'opening alone never changes worlds');walk(scene,'w',2.5);
   }
   wait(scene,.5);await Promise.resolve();assert.equal(complete,1);wait(scene,1);assert.equal(complete,1);
   assert.equal(scene.serialize().status,'completed');assert.equal(trace.filter(t=>t.event?.type==='complete').length,1);
@@ -36,7 +36,7 @@ test('five actual door motions and a body crossing dispatch the Source threshold
 });
 
 test('a chapel loop releases held movement and key repeat cannot walk out of the arrival',async()=>{
-  const {scene,trace}=make();await scene.initialize();walk(scene,'d',1);
+  const {scene,trace}=make();await scene.initialize();walk(scene,'d',2.2);
   const loop=trace.find(t=>t.event?.type==='loop');assert.ok(loop);const at=scene.serialize();
   scene.key({key:'d',repeat:true});wait(scene,.5);assert.equal(scene.serialize().x,at.x);assert.equal(scene.serialize().z,at.z);
   scene.key({key:'w'});scene.update(.1);assert.ok(scene.serialize().z<at.z);scene.exit();

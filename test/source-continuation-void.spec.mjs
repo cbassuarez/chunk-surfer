@@ -70,7 +70,7 @@ test('an older airborne save derives its sheet from the departure floor, never i
 test('ordinary held forward walking from entry crosses and lands without surrendering the input',()=>{
   let state=freshSourceContinuation({runId:'entry-step-off'}),drop=null,crossing=null,landing=null;
   const events=[];
-  for(let n=0;n<900&&!landing;n++){
+  for(let n=0;n<3000&&!landing;n++){
     const r=tick(state,{forward:1});state=r.state;events.push(...r.events);
     if(!drop&&r.events.some(e=>e.type==='drop'))drop=clone(state);
     if(!crossing&&r.events.some(e=>e.type==='space-wrap'))crossing=clone(state);
@@ -78,7 +78,8 @@ test('ordinary held forward walking from entry crosses and lands without surrend
   }
   assert.ok(drop&&crossing&&landing);
   assert.equal(drop.fall.vz,-C.walkSpeed);assert.equal(crossing.fall.vz,-C.walkSpeed);
-  assert.deepEqual(crossing.lastSpaceWrap.translation,[0,29.75,10.4]);
+  // At the current walk the slower fall drift wraps in the nearer z tile.
+  assert.deepEqual(crossing.lastSpaceWrap.translation,[0,29.75,6.5]);
   assert.equal(landing.feet,C.spawn.feet);assert.equal(landing.recovery,null);assert.equal(landing.grace,0);
   assert.equal(events.some(e=>e.type==='capture'||e.type==='recovered'||e.type==='return'),false);
   const next=tick(landing,{forward:1}).state;
@@ -89,8 +90,8 @@ test('ordinary held forward walking from entry crosses and lands without surrend
 test('one continuous upper-edge jump returns over the same real floor without capture, fade, grace or input release',()=>{
   let s=upperEdge(),events=[],wrapped=null,landed=false;
   for(let n=0;n<1000;n++){
-    const r=tick(s,{side:1,jump:n===0});s=r.state;events.push(...r.events);
-    if(r.events.some(e=>e.type==='space-wrap')){wrapped=clone(s);assert.ok(s.fall);assert.ok(s.fall.vx>3);assert.ok(s.fall.vy<0);}
+    const r=tick(s,{side:1,jump:n===0,run:true});s=r.state;events.push(...r.events);
+    if(r.events.some(e=>e.type==='space-wrap')){wrapped=clone(s);assert.ok(s.fall);assert.ok(s.fall.vx>2.4);assert.ok(s.fall.vy<0);}
     if(wrapped&&!s.fall){landed=true;break;}
   }
   assert.ok(wrapped&&landed);assert.equal(s.feet,8.4);assert.equal(s.phase,'wrong-return');assert.equal(s.status,'active');

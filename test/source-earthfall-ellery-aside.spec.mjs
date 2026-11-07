@@ -87,7 +87,7 @@ test('the current parent holds quiet, then noise, presented catches and collapse
   onCheckpoint:(value,meta)=>checkpoints.push({value:JSON.parse(JSON.stringify(value)),reason:meta.reason}),onTrace:e=>traces.push(e),
   onHushContact:({eventId,elapsed,checkpoint})=>{assert.equal(lastAsideDraw.localHush?.eventId,eventId,'the parent asks only after rendering that contact');if(elapsed<.62)return false;
    assert.equal(checkpoint.elleryAside.chase.injuryApplied,true);assert.equal(checkpoint.elleryAside.chase.presentedEventId,eventId);presented.add(eventId);acceptedCounts.set(eventId,(acceptedCounts.get(eventId)||0)+1);return true;}});
- let scene=create(freshSourceEarthfall({runId:'aside-scene'}));await scene.initialize();scene.key({key:'w'});for(let i=0;i<30;i++)scene.update(1/120);scene.keyup({key:'w'});
+ let scene=create(freshSourceEarthfall({runId:'aside-scene'}));await scene.initialize();scene.key({key:'w'});for(let i=0;i<80;i++)scene.update(1/120);scene.keyup({key:'w'});
  for(let i=0;i<1500&&!scene.view().aside;i++)scene.update(1/120);assert.ok(scene.view().aside);scene.render();assert.equal(scene.allowsLook,true);scene.lookBy(.3,-.2);scene.key({key:'a'});for(let i=0;i<500;i++)scene.update(1/120);scene.keyup({key:'a'});const saved=scene.serialize();scene.pause();for(let i=0;i<40;i++)scene.update(1/60);assert.deepEqual(scene.serialize(),saved);
  scene=create(JSON.parse(JSON.stringify(saved)));await scene.initialize();assert.ok(scene.view().aside);assert.deepEqual(scene.serialize().elleryAside,saved.elleryAside);
  for(let i=0;i<25*60;i++){scene.update(1/60);scene.render();}assert.equal(scene.serialize().elleryAside.elapsed,0);assert.equal(scene.serialize().elleryAside.chase.phase,'quiet');assert.equal(scene.serialize().impactPass,0,'quiet exploration cannot advance the fall');
@@ -110,7 +110,7 @@ test('the current parent holds quiet, then noise, presented catches and collapse
 test('a legacy open door admits its original short return and blind back wall',()=>{
  const d=A.doors.find(d=>d.id==='dock-foyer-service');assert.equal(d.x,74.25);assert.ok(d.blindStart<0,'the actual one-metre recessed frame needs a supported throat');
  assert.equal(stand(73.5,d.z,{elapsed:0}),true);assert.equal(stand(d.x+.6,d.z,{elapsed:0}),true);assert.equal(stand(d.x+d.blindDepth-.1,d.z,{elapsed:0}),false);
- let s={...demoFresh(),x:73,z:d.z,yaw:Math.PI/2};s=advance(s,1,{forward:1}).state;assert.ok(s.x>75,'a wall-sized invisible boundary may not replace an open real door');assert.ok(s.x<d.x+d.blindDepth-C.bodyRadius+1e-6);
+ let s={...demoFresh(),x:73,z:d.z,yaw:Math.PI/2};s=advance(s,2,{forward:1}).state;assert.ok(s.x>75,'a wall-sized invisible boundary may not replace an open real door');assert.ok(s.x<d.x+d.blindDepth-C.bodyRadius+1e-6);
 });
 
 test('native furnishings retain exact vertices, normals, UVs and referenced material-image bytes',()=>{

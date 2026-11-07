@@ -20,7 +20,11 @@ export const SOURCE_RIFT=Object.freeze({
   barSeconds:TEAR.barSeconds,beatHz:seamBeatHz(),
   // Magenta, cyan, violet, lime: the only colours a recording keeps as they are.
   ink:Object.freeze([[1,.015,.72],[.015,.82,1],[.42,.015,1],[.74,1,.015]].map(Object.freeze)),
-  width:TEAR.site.width,height:TEAR.site.height,touch:.6,clearance:2.4,
+  width:TEAR.site.width,height:TEAR.site.height,touch:.6,
+  // Far enough to re-arm the sheet, close enough to stay on the satellite deck
+  // at the current walk (1.4); 2.4 put the clearing body over the edge and into
+  // the fall. The fault itself is what a returning body must clear, not the deck.
+  clearance:1.8,
   faults:Object.freeze([
     // The dead-end arm directly under Source II's hole, where its tide leads.
     Object.freeze({id:'source-ii-under-the-hole',phase:'wrong-return',chartId:0,level:0,x:-16.5,z:-23.6,feet:8.4,yaw:0}),

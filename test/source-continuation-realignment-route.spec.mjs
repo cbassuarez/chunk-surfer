@@ -151,8 +151,9 @@ function walkTo(state, x, z, {events = [], maxFrames = 2400, context = 'walk'} =
     if (distance < .045 && !state.fall && !state.recovery) return state;
     assert.equal(state.fall, null, `${context}: ordinary walking cannot secretly drop the body`);
     assert.equal(state.recovery, null, `${context}: this planned ordinary walk was interrupted before reaching ${x},${z}`);
-    const speed=Math.min(1,distance/(C.walkSpeed*.05));
-    state = tick(state, {forward:speed,look:{yaw:Math.atan2(dx,-dz)}}, events);
+    // The planned walks jog so the route arrives before the Hush clock does.
+    const speed=Math.min(1,distance/(2.6*.05));
+    state = tick(state, {forward:speed,run:true,look:{yaw:Math.atan2(dx,-dz)}}, events);
     assert.ok([state.x, state.z, state.feet].every(Number.isFinite), `${context}: finite physical pose`);
   }
   assert.fail(`${context}: could not walk to ${x},${z}; body at ${state.x},${state.z}, feet ${state.feet}, phase ${state.phase}`);

@@ -99,11 +99,11 @@ test('actual main callback pauses, resumes and walks the full physical fall into
  // to reach the visible lower spine rather than assuming a scripted centre.
  for(let align=0;align<300&&Math.abs(scene.serialize().x)>.18;align++){const key=scene.serialize().x<0?'d':'a';scene.key({key});scene.update(1/60);scene.keyup({key});}
  assert.ok(Math.abs(scene.serialize().x)<=.18,'ordinary lateral input must reach the visible spine');
- scene.key({key:'w'});for(let i=0;i<1500&&scene.serialize().z>C.passage.exitZ+1.8;i++)scene.update(1/60);scene.keyup({key:'w'});
+ scene.key({key:'Shift'});scene.key({key:'w'});for(let i=0;i<1500&&scene.serialize().z>C.passage.exitZ+1.8;i++)scene.update(1/60);scene.keyup({key:'w'});scene.keyup({key:'Shift'});
  assert.equal(scene.serialize().exitDoor.open,true,'the ordinary walk opens the lower leaves without interaction');
  assert.equal(x.continued(),0,'an opened door still requires physical crossing');
  for(let i=0;i<60;i++)scene.update(1/60);
- scene.key({key:'w'});for(let i=0;i<90&&!scene.view().leaving;i++)scene.update(1/60);scene.keyup({key:'w'});
+ scene.key({key:'Shift'});scene.key({key:'w'});for(let i=0;i<90&&!scene.view().leaving;i++)scene.update(1/60);scene.keyup({key:'w'});scene.keyup({key:'Shift'});
  await Promise.resolve();await Promise.resolve();await Promise.resolve();
  assert.equal(x.continued(),1);assert.equal(x.runtime.state().sourceEarthfall.status,'completed');
  assert.equal(x.runtime.state().sourceEarthfall.exitReceipt.delivered,true);

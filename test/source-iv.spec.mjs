@@ -76,8 +76,8 @@ test('free walking, stopping, turning and looking back retain one actual body an
   let state=initial();const before=copy(state);
   const waiting=advance(state,1,{look:{yaw:Math.PI,pitch:.4}}).state;
   assert.equal(waiting.x,before.x);assert.equal(waiting.z,before.z);near(waiting.yaw,Math.PI);
-  state=advance(state,2,{side:1}).state;near(state.x,6.4);near(state.z,-2.5);
-  state=advance(state,1,{forward:1}).state;near(state.x,6.4);near(state.z,-5.7);
+  state=advance(state,2,{side:1}).state;near(state.x,2.8);near(state.z,-2.5);
+  state=advance(state,1,{forward:1}).state;near(state.x,2.8);near(state.z,-3.9);
   state=advance(state,1,{forward:-1}).state;near(state.z,-2.5);
   assert.equal(frame(state).player.feet,0);assert.equal(frame(state).support.y,0);
   assert.equal(state.status,'active');assert.equal(state.exitReceipt,null);
@@ -96,11 +96,11 @@ test('real model contacts, source door piers and finite sheet edges refuse diago
 });
 
 test('only an opened far grey door and an intentional body crossing complete Source IV once',()=>{
-  let state=advance(initial(),40,{forward:1},.1).state;
+  let state=advance(initial(),40,{forward:1,run:true},.1).state;
   assert.equal(state.status,'active');assert.ok(state.z>C.exit.z);assert.ok(focus(state));
   const opened=step(state,{interact:true});assert.equal(opened.event.type,'door');assert.equal(opened.state.status,'active');
   state=advance(opened.state,C.doorSeconds).state;assert.equal(frame(state).exitDoor.passable,true);
-  const result=advance(state,.5,{forward:1});assert.equal(result.state.status,'completed');
+  const result=advance(state,.5,{forward:1,run:true});assert.equal(result.state.status,'completed');
   assert.deepEqual(result.events,[{type:'complete',id:'source-IV:source-IV-test:complete',receipt:'source-IV:source-IV-test:complete'}]);
   assert.equal(result.state.exitReceipt.delivered,false);assert.deepEqual(normalize(copy(result.state)),result.state);
   const again=step(copy(result.state),{dt:99,interact:true,forward:-1});assert.deepEqual(again.events,[]);assert.deepEqual(again.state,result.state);

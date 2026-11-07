@@ -264,6 +264,13 @@ function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refu
   protectedRefuge=protectedRefuge&&actor.chartId===player.chartId;
   const standOff=Math.max(C.hush.refugeStandOff,Number(refuge?.standOff)||0);
   if(protectedRefuge&&refuge&&Math.abs(actor.feet-refuge.feet)<.5&&distance(actor,refuge)<standOff+.2){actor.mode='yield';actor.notice=C.hush.noticeSeconds;return false;}
+  // A recorded trail can end just outside the neck when the body sheltered
+  // before its last steps were written. Bridge the gap to the stand-off so
+  // the pursuer settles outside the refuge instead of stalling on the path.
+  if(protectedRefuge&&refuge&&!actor.trail.length&&Math.abs(actor.feet-refuge.feet)<.5&&distance(actor,refuge)>=standOff+.2){
+    const approach=continuationSupportedPath(actor,{...refuge,chartId:actor.chartId},player);
+    if(approach&&approach.length>1)actor.trail.push(...approach.slice(1).map(p=>({kind:'walk',...p})));
+  }
   if(actor.mode==='yield'||actor.mode==='notice') {if(actor.mode==='yield')events.push({type:'hush-notice',position:position(actor)});actor.notice=Math.max(0,actor.notice-dt);actor.mode='notice';if(actor.notice>0)return false;actor.mode='follow';}
   if(!actor.armed&&actor.chartId===player.chartId&&distance(actor,player)<3.5&&Math.abs(actor.feet-player.feet)<.5)return false;
   const pace=actor.armed?C.hush.speed:C.hush.teachingSpeed;let remaining=pace*dt,repairs=0;

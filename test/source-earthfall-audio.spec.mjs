@@ -197,7 +197,7 @@ test('a newly observed committed save treats even zero-age receipts as baseline;
   const f = fixture(); await f.runtime.ready();
   let state = freshSourceEarthfall({ runId: 'actual-audio-route' });
   f.runtime.update(sourceEarthfallFrame(state), { listener });
-  for (let i = 0; i < 60 * (SOURCE_EARTHFALL.footingLossAt + 11); i++) {
+  for (let i = 0; i < 60 * (SOURCE_EARTHFALL.footingLossAt + 13); i++) {
     state = stepSourceEarthfall(state, { dt: 1 / 60, forward: 1, assetsReady: true }).state;
     f.ctx.currentTime += 1 / 60;
     f.runtime.update(sourceEarthfallFrame(state), { listener: { x: state.x, y: state.feet + 1.62, z: state.z, yaw: state.yaw } });

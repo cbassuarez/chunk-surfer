@@ -115,9 +115,13 @@ export function installSourceContinuationGuidedReview({window:win=window,documen
   function pressMove(scene,keys=['w']){
     if(owner!==scene){release();owner=scene;}
     const next=new Set(keys);
-    for(const key of held)if(!next.has(key))scene.keyup?.({key,code:'Key'+key.toUpperCase()});
+    for(const key of held)if(!next.has(key)&&key!=='Shift')scene.keyup?.({key,code:'Key'+key.toUpperCase()});
     for(const key of next)if(!held.has(key))scene.key({key,code:'Key'+key.toUpperCase(),repeat:false});
-    held=next;
+    // The guide jogs: scenes walk at 1.4 now, and an authored traversal must
+    // reach its targets before the ordinary Hush clock closes on it.
+    if(next.size&&!held.has('Shift'))scene.key({key:'Shift',code:'ShiftLeft',repeat:false});
+    if(!next.size&&held.has('Shift'))scene.keyup?.({key:'Shift',code:'ShiftLeft'});
+    held=new Set(next);if(next.size)held.add('Shift');
   }
   function tap(scene,key){release();scene.key({key,code:'Key'+key.toUpperCase(),repeat:false});scene.keyup?.({key,code:'Key'+key.toUpperCase()});receipt('scene-key',{key,native:false});}
   function current(){const scene=win.__scenes?.top?.();return scene?.id==='source-continuation'?{scene,view:scene.view?.()}:null;}

@@ -5,7 +5,7 @@ import {freshSourceContinuation, stepSourceContinuation, sourceContinuationThrea
 import {createSourceContinuationScene} from '../src/game/source-continuation-scene.js';
 const seed = () => ({...freshSourceContinuation({runId:'pursuit-entry'}),status:'active',chartId:4,x:C.wrongReturn.threshold.x+.19,z:C.wrongReturn.threshold.z,feet:8.4,yaw:-Math.PI/2,doorOpen:{[C.wrongReturn.threshold.doorId]:true}});
 const next=(state,input={})=>stepSourceContinuation(state,{dt:1/60,...input});
-function entry(){let state=seed();for(let n=0;n<16&&state.phase!=='catch';n++)state=next(state,{forward:1}).state;assert.equal(state.phase,'catch');assert.equal(state.chartId,0);return state;}
+function entry(){let state=seed();for(let n=0;n<20&&state.phase!=='catch';n++)state=next(state,{forward:1}).state;assert.equal(state.phase,'catch');assert.equal(state.chartId,0);return state;}
 function atLip(level=0){return{...entry(),level,...CONTINUATION_DROP_LIPS[level],feet:continuationCatchFloor(level),recoveryAnchor:{...continuationRefugeAt({phase:'catch',level}),phase:'catch',yaw:0,pitch:0,kind:'refuge',supportId:`catch-${level}-return-pad`,earnedAt:0}};}
 
 test('the threshold restores no camera hold and exploration cannot awaken the drum before a chosen descent',()=>{
@@ -48,7 +48,7 @@ test('contact prediction uses the actual continuing route and contact remains fi
 
 test('entering Catch retains first-person look while clearing held motion, and deliberate drops clear old motion',async()=>{
  const trace=[],scene=createSourceContinuationScene({checkpoint:seed(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
- await scene.initialize();scene.key({key:'w'});scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);assert.equal(scene.lookBy(.2,-.1),true);const turned=scene.serialize();scene.keyup({key:'w'});scene.key({key:'a'});scene.update(.1);const walked=scene.serialize();assert.ok((walked.x-turned.x)*Math.cos(turned.yaw)+(walked.z-turned.z)*Math.sin(turned.yaw)<-.2,'a fresh left input strafes relative to the physical view');scene.exit();
+ await scene.initialize();scene.key({key:'w'});scene.update(.2);scene.update(.2);const crossed=scene.serialize();assert.equal(crossed.phase,'catch');assert.equal(crossed.reveal,null);scene.update(.1);assert.equal(scene.serialize().x,crossed.x);assert.equal(scene.serialize().z,crossed.z);assert.equal(scene.lookBy(.2,-.1),true);const turned=scene.serialize();scene.keyup({key:'w'});scene.key({key:'a'});scene.update(.2);const walked=scene.serialize();assert.ok((walked.x-turned.x)*Math.cos(turned.yaw)+(walked.z-turned.z)*Math.sin(turned.yaw)<-.2,'a fresh left input strafes relative to the physical view');scene.exit();
  const dropping=createSourceContinuationScene({checkpoint:atLip(),renderer:{initialize:async()=>true,ready:()=>true,render:()=>true,dispose(){}},onTrace:t=>trace.push(t)});
  await dropping.initialize();dropping.key({key:'w'});dropping.key({key:'e'});dropping.key({key:'d'});
  for(let i=0;i<600&&dropping.serialize().fall;i++)dropping.update(1/60);

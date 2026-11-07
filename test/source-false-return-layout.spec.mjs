@@ -36,7 +36,7 @@ function pathTo(layout, state, goal) {
 function walkPath(layout, state, path) {
   for (const target of path) {
     const dx = target.x - state.x, dz = target.z - state.z, distance = Math.hypot(dx, dz);
-    const result = stepSourceFalseReturn(state, { dt: distance / 3, forward: 1, look: { yaw: Math.atan2(dx, -dz) } }, layout);
+    const result = stepSourceFalseReturn(state, { dt: distance / 1.4, forward: 1, look: { yaw: Math.atan2(dx, -dz) } }, layout);
     state = result.state;
     near(state.x, target.x, 1e-5); near(state.z, target.z, 1e-5);
   }
@@ -106,7 +106,7 @@ test('the five real doors can be reached and opened with production movement, th
   }
   const fifth = layout.doors.find(d => d.id === 'practice-west-3');
   state = walkPath(layout, state, pathTo(layout, state, p => Math.abs(p.x - fifth.x - .75) < .02 && Math.abs(p.z - fifth.z) < .02));
-  const result = stepSourceFalseReturn(state, { dt: .5, forward: 1, look: { yaw: -Math.PI / 2 } }, layout);
+  const result = stepSourceFalseReturn(state, { dt: 1, forward: 1, look: { yaw: -Math.PI / 2 } }, layout);
   assert.equal(result.state.status, 'completed'); assert.equal(result.state.exitReceipt.doorId, fifth.id);
   assert.equal(result.events.filter(e => e.type === 'complete').length, 1);
 });
@@ -207,7 +207,7 @@ test('all four canonical main stair flights support continuous physical movement
       if (!moving) moving = freshSourceFalseReturn({ runId: flight.id, spawn: { x, z, feet: support.floor, yaw: 0, pitch: 0 } });
       else {
         const dx = x - moving.x, dz = z - moving.z;
-        moving = stepSourceFalseReturn(moving, { dt: Math.hypot(dx, dz) / 3, forward: 1,
+        moving = stepSourceFalseReturn(moving, { dt: Math.hypot(dx, dz) / 1.4, forward: 1,
           look: { yaw: Math.atan2(dx, -dz) } }, layout).state;
         near(moving.x, x, 1e-5); near(moving.z, z, 1e-5); near(moving.feet, expected);
       }
@@ -277,7 +277,7 @@ test('the live west-3 Source approach crosses its raster wall depth without a si
   for (let x = 60.24; x >= 59.30; x -= .02) {
     assert.equal(layout.canOccupy(x, 63.69, state), true, `continuous approach at x${x}`);
   }
-  const result = stepSourceFalseReturn(state, { dt: .4, forward: 1 }, layout);
+  const result = stepSourceFalseReturn(state, { dt: 1, forward: 1 }, layout);
   assert.equal(result.state.status, 'completed');
   assert.equal(result.state.exitReceipt.doorId, d.id);
   near(result.state.z, 63.69); assert.equal(result.events.filter(e => e.type === 'complete').length, 1);

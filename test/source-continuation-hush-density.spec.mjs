@@ -23,10 +23,10 @@ test('accepted supported metres drive one density tick and leave route position 
   const actor = walker(); let previousPhase = 0;
   for (let n = 0; n < 10; n++) {
     advanceContinuationHush(actor, { dt: .02, player: player() });
-    assert.ok(Math.abs(actor.animationClock - .064 * (n + 1)) < 1e-9);
-    assert.ok(Math.abs(actor.z - (2 - .064 * (n + 1))) < 1e-9);
+    assert.ok(Math.abs(actor.animationClock - .052 * (n + 1)) < 1e-9);
+    assert.ok(Math.abs(actor.z - (2 - .052 * (n + 1))) < 1e-9);
     assert.ok(actor.density.phase - previousPhase <= .04 + 1e-10);
-    assert.ok(Math.abs(actor.density.residualDragMps - 2.2) < 1e-9);
+    assert.ok(Math.abs(actor.density.residualDragMps - 1.6) < 1e-9);
     previousPhase = actor.density.phase;
   }
   const restored = normalizeContinuationHush(clone(actor)), p = player();

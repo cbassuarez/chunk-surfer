@@ -45,8 +45,8 @@ test('the actual fresh-forward main entry borrows Ellery and the fifth crossing 
   const x=host(),before=copy(x.runtime.state()),scene=await x.h.beginSourceContinuation({checkpoint:x.entry.checkpoint});
   assert.equal(scene.id,'source-false-return');assert.equal(x.continued(),0);
   assert.equal(x.h.px,x.body.x);assert.equal(x.h.py,x.body.y);
-  walk(scene,.5);
-  for(let i=0;i<5;i++){scene.key({key:'e'});update(scene,.5);assert.equal(x.continued(),0);walk(scene,1);}
+  walk(scene,1.2);
+  for(let i=0;i<5;i++){scene.key({key:'e'});update(scene,.5);assert.equal(x.continued(),0);walk(scene,2.5);}
   update(scene,.5);await new Promise(resolve=>setImmediate(resolve));
   assert.equal(x.continued(),1);assert.equal(x.h.sourceContinuationScene.id,'source-earthfall');
   assert.equal(x.runtime.state().sourceFalseReturn.status,'completed');assert.equal(x.runtime.state().sourceFalseReturn.exitReceipt.delivered,true);

@@ -43,7 +43,7 @@ test('every rotating portal direction transfers exact body centre, eye and full 
 
 test('diagonal and jumping portal entry preserve the transformed vertical and tangential velocity without air steering',()=>{
   const p=JOURNEY_PORTALS[0],state0=fixture(p.a),events=[];
-  let state=state0;for(let n=0;n<160&&!state.lastFold;n++)state=tick(state,{forward:1,side:n>110?.2:0,jump:n===125},events);
+  let state=state0;for(let n=0;n<300&&!state.lastFold;n++)state=tick(state,{forward:1,run:true,side:n>110?.2:0,jump:n===125},events);
   assert.ok(state.lastFold);const r=state.lastFold;vectorClose(r.velocityAfter,portalVector(r.matrix,r.velocityBefore));
   const saved=JSON.parse(JSON.stringify(state));assert.deepEqual(normalizeSourceContinuation(saved),saved);
   const neutral=tick(saved),opposite=tick(saved,{forward:-1,side:-1});vectorClose([neutral.x,neutral.z,neutral.feet],[opposite.x,opposite.z,opposite.feet]);
@@ -52,7 +52,7 @@ test('diagonal and jumping portal entry preserve the transformed vertical and ta
 
 test('identity Catch closure remains grounded and a neutral phase handoff carries no old first-person velocity',()=>{
   const d=C.wrongReturn.threshold;let state=fixture(JOURNEY_PORTALS.find(p=>p.id==='catch-closure').a);
-  state={...state,x:d.x+.19,z:d.z,yaw:-Math.PI/2,doorOpen:{[d.doorId]:true}};state=tick(state,{dt:.2,forward:1});assert.equal(state.phase,'catch');assert.equal(state.chartId,0);assert.equal(state.fall,null);
+  state={...state,x:d.x+.19,z:d.z,yaw:-Math.PI/2,doorOpen:{[d.doorId]:true}};state=tick(state,{dt:.2,forward:1});state=tick(state,{dt:.2,forward:1});assert.equal(state.phase,'catch');assert.equal(state.chartId,0);assert.equal(state.fall,null);
   const before=[state.x,state.z,state.feet];state=tick(state,{dt:.1});vectorClose([state.x,state.z,state.feet],before);
 });
 
@@ -68,7 +68,7 @@ test('Hush actually lands after all rolled receiving directions, including the e
 test('capture during receiving alignment restores the earned old-chart anchor and Hush reverses only a known portal physically',()=>{
   const p=JOURNEY_PORTALS[0],events=[];let state=fixture(p.a);
   state.hush={...freshContinuationHush({x:p.b.x-.12,z:p.b.z-.65,feet:p.b.feet,chartId:p.toChart}),armed:true,mode:'follow',elapsed:10,warningAnnounced:true,trail:[],knownPortals:[p.id]};
-  const anchor={...state.recoveryAnchor};for(let n=0;n<300&&!state.recovery;n++)state=tick(state,{forward:1},events);
+  const anchor={...state.recoveryAnchor};for(let n=0;n<700&&!state.recovery;n++)state=tick(state,{forward:1},events);
   assert.equal(state.recovery?.reason,'hush-pressure');assert.equal(state.recovery.target.chartId,anchor.chartId);assert.equal(state.recovery.kind,'blackout-return');
   for(let n=0;n<300&&state.recovery;n++)state=tick(state,{},events);
   assert.equal(state.chartId,anchor.chartId);vectorClose([state.x,state.z,state.feet],[anchor.x,anchor.z,anchor.feet]);
@@ -84,7 +84,7 @@ test('oriented capsule segment/AABB clearance distinguishes a real corner miss f
 
 test('a missed Hush jump through a rolled portal uses the receiving chart spatial law after save and reload',()=>{
   const p=JOURNEY_PORTALS[0],start={x:p.a.x+.01,z:p.a.z,feet:p.a.feet,chartId:p.fromChart,phase:'wrong-return',level:0};
-  let actor={...freshContinuationHush(start),armed:true,mode:'follow',elapsed:10,warningAnnounced:true,heading:p.a.approach.yaw,trail:[{kind:'drop',...start,vx:-C.walkSpeed/Math.sqrt(2),vz:-C.walkSpeed/Math.sqrt(2),vy:C.jumpSpeed,trigger:'jump',groundedExit:false,fromPhase:'wrong-return',fromChartId:0,lastSupport:start},{kind:'fold',...start,x:p.a.x-.04,foldId:p.id,foldSide:'a',matrix:p.matrix,inverseMatrix:p.inverseMatrix}],lastRecorded:start};
+  let actor={...freshContinuationHush(start),armed:true,mode:'follow',elapsed:10,warningAnnounced:true,heading:p.a.approach.yaw,trail:[{kind:'drop',...start,vx:-2.6/Math.sqrt(2),vz:-2.6/Math.sqrt(2),vy:C.jumpSpeed*1.3,trigger:'jump',groundedExit:false,fromPhase:'wrong-return',fromChartId:0,lastSupport:start},{kind:'fold',...start,x:p.a.x-.04,foldId:p.id,foldSide:'a',matrix:p.matrix,inverseMatrix:p.inverseMatrix}],lastRecorded:start};
   const player={...fixture(p.b),chartId:99,doorOpen:{},doorMotion:{}},events=[];
   for(let n=0;n<1600&&!actor.lastSpaceWrap;n++)advanceContinuationHush(actor,{dt:1/120,player,events});
   assert.ok(actor.lastSpaceWrap,'a missed receiving pad crosses the fixed dimensional pair');

@@ -141,7 +141,7 @@ test('the real upper-door retreat owns one checkpoint and cannot double-dispatch
 });
 
 test('a saved returned checkpoint retries the interrupted host return without releasing demolition cues', async () => {
-  const returned = advance(initial(), .7, { forward: -1 });
+  const returned = advance(initial(), 1.6, { forward: -1 });
   assert.equal(returned.status, 'returned');
   const h = harness({ checkpoint: returned });
   await h.scene.initialize(); await flush();
@@ -194,7 +194,7 @@ test('failed assets offer a saved return and teardown remains idempotent across 
 
 test('the physical renderer receives borrowed ending body state and no input can write after scene teardown', async () => {
   const h = harness({ onCheckpoint: () => {} }); await h.scene.initialize();
-  h.scene.key({ key: 'w' }); h.scene.update(.25); h.scene.render();
+  h.scene.key({ key: 'w' }); h.scene.update(.25); h.scene.update(.25); h.scene.update(.25); h.scene.render();
   assert.equal(h.draws.length, 1);
   assert.equal(h.draws[0].physical.runId, `ending-wrong-door:${runId}:physical`);
   assert.equal(h.draws[0].physical.committed, true);
@@ -216,7 +216,7 @@ test('scene checkpoints pass through the real save boundary without changing eit
   await withTransientGameState({ save: base }, async scope => {
     const ordinary = copy(getSave().chunkSurf);
     const h = harness({ onCheckpoint: value => saveCommit({ endingWrongDoor: value }) });
-    await h.scene.initialize(); h.scene.key({ key: 'w' }); h.scene.update(.25);
+    await h.scene.initialize(); h.scene.key({ key: 'w' }); h.scene.update(.25); h.scene.update(.25); h.scene.update(.25);
     assert.equal(getSave().endingWrongDoor.physical.committed, true);
     h.scene.update(.25); h.scene.update(.25); h.scene.pause(); h.scene.exit();
     assert.deepEqual(getSave().endingWrongDoor, h.scene.serialize());

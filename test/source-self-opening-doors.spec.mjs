@@ -33,7 +33,7 @@ test('the final leaves welcome approach but completion still requires ordinary w
   assert.ok(continuationSupportAt(r.state.x,r.state.z,r.state));assert.equal(r.state.x,C.catch.finalApproach.x,'opening the leaves does not move the body');
   // The declared approach faces east: forward walking crosses the real
   // threshold; the former overhead screen-right control now strafes south.
-  r=advance(r.state,1,{forward:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
+  r=advance(r.state,1.5,{forward:1});assert.equal(r.state.completed,true);assert.equal(r.events.filter(e=>e.type==='complete').length,1);
   assert.ok(r.state.x>C.catch.finalDoor.x,'the body physically reaches the onward side');assert.equal(r.state.z,C.catch.finalApproach.z);assert.equal(r.state.feet,C.catch.finalApproach.feet);assert.ok(continuationSupportAt(r.state.x,r.state.z,r.state),'the crossed body remains over the real supported landing');
 });
 test('manual leaf reversal survives later ticks and reload instead of fighting automatic reopening',()=>{

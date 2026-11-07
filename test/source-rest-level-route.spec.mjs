@@ -45,10 +45,10 @@ for(const tides of [false,true])test(`real first-person walking and E releases r
   function walk(target,{complete=false}={}){
     for(let i=0;i<1200;i++){
       const s=scene.serialize(),dx=target.x-s.x,dz=target.z-s.z,d=Math.hypot(dx,dz);
-      if(s.completed){assert.equal(complete,true,'only the final threshold can end a walk early');scene.keyup({key:'w'});return;}
-      if(d<.04){scene.keyup({key:'w'});assert.equal(s.fall,null,'a walking waypoint needs real support');return;}
+      if(s.completed){assert.equal(complete,true,'only the final threshold can end a walk early');scene.keyup({key:'w'});scene.keyup({key:'Shift'});return;}
+      if(d<.04){scene.keyup({key:'w'});scene.keyup({key:'Shift'});assert.equal(s.fall,null,'a walking waypoint needs real support');return;}
       assert.equal(s.fall,null,'walking never skips a release');
-      scene.setLook({yaw:Math.atan2(dx,-dz),pitch:-.12});scene.key({key:'w'});advance(Math.min(.04,d/C.walkSpeed));
+      scene.setLook({yaw:Math.atan2(dx,-dz),pitch:-.12});scene.key({key:'w'});scene.key({key:'Shift'});advance(Math.min(.02,d/C.bodySpeedLimit));
     }
     assert.fail(`blocked walking to ${target.x},${target.z} from ${scene.serialize().x},${scene.serialize().z}`);
   }
@@ -87,7 +87,10 @@ for(const tides of [false,true])test(`real first-person walking and E releases r
     walk({x:-192.3,z:-102});walk({x:-189,z:-102});walk({x:-189,z:-98});walk({x:-180,z:-98});
     walk(continuationRadialPoint(9.7,3.8));walk(continuationRadialPoint(7.5,3.8));arc(7.5,3.8,4.13);arc(7.5,4.13,2.6);
     walk(continuationRadialPoint(2.86,2.6));release(3);
-    walk(continuationRadialPoint(5,2.6));arc(5,2.6,0);walk(C.catch.finalApproach);
+    walk(continuationRadialPoint(5,2.6));arc(5,2.6,0);
+    // The long eastward crossing re-steers against the gathered tide so the
+    // walker stays on the causeway's real z-band into the door island.
+    walk({x:-160,z:-92});walk({x:-152,z:-92});walk(C.catch.finalApproach);
     assert.equal(scene.view().focus?.id,'catch-final');scene.key({key:'e'});
     assert.equal(scene.serialize().completed,false,'opening remains distinct from crossing the final pair');
     for(let i=0;i<5;i++)advance(.15);

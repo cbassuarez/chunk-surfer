@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as layout from '../src/data/source-continuation.js';
 import * as controller from '../src/game/source-continuation.js';
 import {continuationSupportedPath,continuationWalkSegment,recordContinuationHushWalk} from '../src/game/source-continuation-hush.js';
+import {sceneWalkSpeed} from '../src/game/locomotion.js';
 
 const C=layout.SOURCE_CONTINUATION;
 const fresh=()=>controller.resumeSourceContinuation(controller.freshSourceContinuation({runId:'level-design'}));
@@ -16,12 +17,14 @@ function tick(state,input={},events=[]) {
   return result.state;
 }
 function walk(state,x,z,events=[]) {
+  // The planned walks jog: the route must arrive before the Hush's clock does.
+  const speed=sceneWalkSpeed('interior',true);
   for(let n=0;n<1600;n++) {
     const dx=x-state.x,dz=z-state.z,d=Math.hypot(dx,dz);
     if(d<.04&&!state.fall&&!state.recovery)return state;
     assert.equal(state.recovery,null,`ordinary planned walk captured at ${state.x},${state.z}: ${state.recovery?.reason}`);
-    const amount=Math.min(1,d/(C.walkSpeed*.05));
-    state=tick(state,{forward:amount,look:{yaw:Math.atan2(dx,-dz)}},events);
+    const amount=Math.min(1,d/(speed*.05));
+    state=tick(state,{forward:amount,run:true,look:{yaw:Math.atan2(dx,-dz)}},events);
   }
   assert.fail(`cannot walk to ${x},${z}; at ${state.x},${state.z},${state.feet}`);
 }
@@ -49,7 +52,7 @@ test('II offers the high return reversal while open edges and the outward depart
   for(const [x,z]of layout.SOURCE_CONTINUATION_ROUTES.main.slice(1,11))state=walk(state,x,z,events);
   assert.equal(state.feet,8.4);
   const before=state;
-  for(let n=0;n<70&&!state.fall;n++)state=tick(state,{forward:1,look:{yaw:Math.PI}},events);
+  for(let n=0;n<100&&!state.fall;n++)state=tick(state,{forward:1,run:true,look:{yaw:Math.PI}},events);
   assert.equal(state.fall?.trigger,'step-off','the shortened west arm is a freely usable edge');
   assert.equal(state.phase,'wrong-return');
   state=before;
@@ -128,7 +131,7 @@ test('a real refuge holds Hush outside its neck and a fresh departure gets a fin
   // index18 endpoint is the refuge's outer crossing, not the protected body
   // position; walk the retained approach into the actual refuge before wait.
   state=walk(state,0,-20,events);state=walk(state,C.wrongReturn.refuge.x,C.wrongReturn.refuge.z,events);
-  for(let n=0;n<600;n++)state=tick(state,{},events);
+  for(let n=0;n<2000;n++)state=tick(state,{},events);
   assert.equal(state.recovery,null);assert.equal(state.hush.mode,'yield');
   const refuge=layout.continuationRefugeAt(state);
   assert.ok(Math.hypot(state.hush.x-refuge.x,state.hush.z-refuge.z)>=Math.max(C.hush.refugeStandOff,refuge.standOff||0)-.01);

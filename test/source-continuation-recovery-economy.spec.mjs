@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SOURCE_CONTINUATION as C,SOURCE_CONTINUATION_ROUTES as ROUTES,continuationRefugeAt} from '../src/data/source-continuation.js';
 import {freshSourceContinuation,resumeSourceContinuation,normalizeSourceContinuation,stepSourceContinuation} from '../src/game/source-continuation.js';
+import {sceneWalkSpeed} from '../src/game/locomotion.js';
 
 const point = value => ({x:value.x,z:value.z,feet:value.feet});
 const separation = (a,b) => Math.hypot(a.x-b.x,a.z-b.z,a.feet-b.feet);
@@ -11,11 +12,14 @@ function tick(state,input={},events=[]){
   return result.state;
 }
 function walk(state,x,z){
+  // The prefix is jogged: at the current walk the Hush's clock outruns an
+  // ordinary 1.4 m/s crossing, and the prefix must complete without capture.
+  const speed=sceneWalkSpeed('interior',true);
   for(let n=0;n<1600;n++){
     const dx=x-state.x,dz=z-state.z,distance=Math.hypot(dx,dz);
     if(distance<.025&&!state.fall&&!state.recovery)return state;
     assert.equal(state.recovery,null,'the declared ordinary prefix must earn its own landings');
-    state=tick(state,{forward:Math.min(1,distance/(C.walkSpeed*.05)),look:{yaw:Math.atan2(dx,-dz)}});
+    state=tick(state,{forward:Math.min(1,distance/(speed*.05)),run:true,look:{yaw:Math.atan2(dx,-dz)}});
   }
   assert.fail(`ordinary prefix did not reach ${x},${z}`);
 }

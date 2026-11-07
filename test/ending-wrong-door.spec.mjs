@@ -22,7 +22,7 @@ function advance(state, seconds, input = {}, quantum = 1 / 60) {
   return { state, events };
 }
 function committed() {
-  const result = advance(initial(), .25, { forward: 1 });
+  const result = advance(initial(), .6, { forward: 1 });
   assert.equal(result.state.physical.committed, true);
   return result;
 }
@@ -85,7 +85,7 @@ test('accepted forward movement performs the same controlled failure and full 10
   let previousY = 100, distance = 0, didCatch = false;
   const events = [];
   for (let n = 0; n < 1000; n++) {
-    const input = { dt: 1 / 60, forward: n < 15 ? 1 : 0 };
+    const input = { dt: 1 / 60, forward: n < 40 ? 1 : 0 };
     const result = step(state, input); state = result.state;
     ordinary = stepSourceEarthfall(ordinary, input).state; events.push(...result.events);
     const p = state.physical;
@@ -138,7 +138,7 @@ test('midfall and midcatch serialization preserve cues and subsequent motion wit
 });
 
 test('returning through the real upper door preserves the ending return position and freezes the checkpoint', () => {
-  const result = advance(committed().state, 1.2, { forward: -1 });
+  const result = advance(committed().state, 2.5, { forward: -1 });
   assert.equal(result.state.status, 'returned');
   assert.equal(result.events.at(-1).type, 'return');
   assert.deepEqual(result.events.at(-1).returnPose, initial().returnPose);

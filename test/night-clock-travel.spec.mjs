@@ -35,7 +35,7 @@ test('false Ellery loop excludes its reset jump; scene callbacks reject blocked 
 test('Earthfall receipts reuse supported next-versus-passive travel and ignore real sagging carry even without footstep audio',async()=>{
  const accepted=[],make=aside=>createSourceEarthfallScene({checkpoint:{...freshSourceEarthfall({runId:'night-feet'}),elleryAside:aside},renderer,onAcceptedTravel:m=>accepted.push(m)});
  const scene=make({...freshSourceEarthfallElleryAside({runId:'night-feet'}),yaw:0});await scene.initialize();
- scene.key({key:'w'});for(let i=0;i<20;i++)scene.update(1/60);scene.keyup({key:'w'});assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);scene.exit();
+ scene.key({key:'w'});for(let i=0;i<50;i++)scene.update(1/60);scene.keyup({key:'w'});assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);scene.exit();
  let aside=normalizeSourceEarthfallElleryAside({...freshSourceEarthfallElleryAside({runId:'night-feet'}),version:3,id:'source-earthfall:ellery-aside-v3',gag:undefined,chase:undefined});
  for(let i=0;i<216;i++)aside=stepSourceEarthfallElleryAside(aside,{dt:1/60}).state;
  const late=make(aside);await late.initialize();const count=accepted.length,before=late.serialize().elleryAside;
@@ -46,7 +46,7 @@ test('Earthfall receipts reuse supported next-versus-passive travel and ignore r
 test('Source pub receipt follows actual accepted motion and stops when its body is blocked',async()=>{
  const checkpoint=sourcePubEntry({flags:{[SOURCE_PUB.unlockFlag]:true},runId:'pub-clock',returnPose:{x:1,y:2,yaw:0,pitch:0,facing:0}}),accepted=[];
  const scene=createSourcePubScene({checkpoint,renderer,onAcceptedTravel:m=>accepted.push(m)});await scene.initialize();scene.key({key:'w'});
- for(let i=0;i<600;i++)scene.update(1/60);assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);
+ for(let i=0;i<1500;i++)scene.update(1/60);assert.ok(accepted.reduce((a,b)=>a+b,0)>.5);
  const blocked=accepted.reduce((a,b)=>a+b,0);for(let i=0;i<120;i++)scene.update(1/60);
  assert.equal(accepted.reduce((a,b)=>a+b,0),blocked,'a still-held forward key at the real room boundary adds no travel');scene.keyup({key:'w'});
  const before=accepted.reduce((a,b)=>a+b,0);scene.pause();scene.update(10);assert.equal(accepted.reduce((a,b)=>a+b,0),before);scene.exit();

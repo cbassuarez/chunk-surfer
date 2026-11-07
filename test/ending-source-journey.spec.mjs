@@ -71,7 +71,7 @@ test('fresh, ordinary Source and foreign-run checkpoints cannot acquire this end
 test('acknowledged demolition resumes directly in Source IV and a repeat handoff preserves exploration position',async()=>{
   await withTransientGameState({save:saveBase()},async()=>{
     saveCommit(endingSourceIVHandoff(collapsed(),getSave()));
-    let state=advance(stepSourceIV,getSave().sourceIV,3,{forward:1,side:.4}).state;
+    let state=advance(stepSourceIV,getSave().sourceIV,3,{forward:1,side:.4,run:true}).state;
     state=stepSourceIV(state,{look:{yaw:2.1,pitch:.25}}).state;saveCommit({sourceIV:state});
     assert.ok(state.z<IV.spawn.z-8);assert.ok(state.x>3);
     const stored=copy(getSave()),resume=endingSourceResume(stored);
@@ -89,16 +89,16 @@ test('acknowledged demolition resumes directly in Source IV and a repeat handoff
 test('walking, waiting, reaching the far side and opening the door cannot finish before its actual body crossing',async()=>{
   await withTransientGameState({save:saveBase()},()=>{
     saveCommit(endingSourceIVHandoff(collapsed(),getSave()));
-    let state=advance(stepSourceIV,getSave().sourceIV,40,{forward:1}).state;
+    let state=advance(stepSourceIV,getSave().sourceIV,40,{forward:1,run:true}).state;
     saveCommit({sourceIV:state});assert.equal(state.status,'active');assert.ok(state.z>IV.exit.z);
     assert.equal(endingSourceIVCanFinish(getSave()),false);
-    const aside=advance(stepSourceIV,{...state,x:8},1,{forward:1}).state;
+    const aside=advance(stepSourceIV,{...state,x:8},1,{forward:1,run:true}).state;
     assert.ok(aside.z<IV.exit.z);saveCommit({sourceIV:aside});
     assert.equal(endingSourceIVCanFinish(getSave()),false,'passing beside the threshold is not taking its door');
     state=stepSourceIV(state,{interact:true}).state;
     state=advance(stepSourceIV,state,IV.doorSeconds).state;saveCommit({sourceIV:state});
     assert.equal(state.exitDoor.open,true);assert.equal(endingSourceIVCanFinish(getSave()),false);
-    const result=advance(stepSourceIV,state,.5,{forward:1});saveCommit({sourceIV:result.state});
+    const result=advance(stepSourceIV,state,.5,{forward:1,run:true});saveCommit({sourceIV:result.state});
     assert.equal(result.state.status,'completed');assert.equal(result.events.filter(event=>event.type==='complete').length,1);
     assert.equal(endingSourceIVCanFinish(getSave()),true);
     assert.equal(getSave().run.status,'active','only the host may commit the terminal return after this receipt');
@@ -108,9 +108,9 @@ test('walking, waiting, reaching the far side and opening the door cannot finish
 test('pending completed receipt survives reload, then acknowledgement removes resume and repeat-finish authority',async()=>{
   await withTransientGameState({save:saveBase()},async()=>{
     saveCommit(endingSourceIVHandoff(collapsed(),getSave()));
-    let state=advance(stepSourceIV,getSave().sourceIV,40,{forward:1}).state;
+    let state=advance(stepSourceIV,getSave().sourceIV,40,{forward:1,run:true}).state;
     state=stepSourceIV(state,{interact:true}).state;state=advance(stepSourceIV,state,IV.doorSeconds).state;
-    state=advance(stepSourceIV,state,.5,{forward:1}).state;saveCommit({sourceIV:state});
+    state=advance(stepSourceIV,state,.5,{forward:1,run:true}).state;saveCommit({sourceIV:state});
     const saved=copy(getSave());
     await withTransientGameState({save:saved},()=>{
       const resume=endingSourceResume(getSave());assert.equal(resume.stage,'source-IV');assert.equal(resume.checkpoint.status,'completed');
@@ -127,6 +127,6 @@ test('old saves retain null journey fields and a returned demolition never becom
   await withTransientGameState({save:base},()=>{
     assert.equal(getSave().endingWrongDoor,null);assert.equal(getSave().sourceIV,null);assert.equal(endingSourceResume(getSave()),null);
   });
-  const returned=advance(stepEndingWrongDoorDemolition,initial(),.7,{forward:-1}).state;
+  const returned=advance(stepEndingWrongDoorDemolition,initial(),1.6,{forward:-1}).state;
   assert.equal(returned.status,'returned');assert.equal(endingSourceResume({...base,endingWrongDoor:returned}),null);
 });
