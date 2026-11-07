@@ -52,7 +52,7 @@ import {doorAssembly,doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {sourcePrintUV,sourcePrintMaps,uploadPhysicalPrint,SOURCE_PRINT_SURFACE} from './physical-source-print.js';
 import {PROP_INSTANCE_FLOATS,PROP_INSTANCE_BINDINGS} from './prop-instance-layout.js';
 import {sourceBlueprintMaps,sourceBlueprintMaterial,sourceBlueprintLighting} from './source-blueprint-print.js';
-import {sourceSilverWalkwaySurface,SOURCE_SILVER_WALKWAY_PRINT_SURFACE} from './source-walkway-finish.js';
+import {sourceSilverWalkwaySurface,SOURCE_SILVER_WALKWAY_PRINT_SURFACE,sourceSilverCatchSurface,SOURCE_SILVER_CATCH_PRINT_SURFACE} from './source-walkway-finish.js';
 import {sourceSurroundingsFrame} from '../game/source-surroundings.js';
 import {SOURCE_SURROUNDINGS} from '../data/source-surroundings.js';
 import {continuationDitherIntensity} from './source-dither-routing.js';
@@ -328,13 +328,13 @@ export function installSourceContinuationMeshes(gl,pack,{maps=null}={}){
     bind(0,data.positions,3);bind(1,data.normals,3);bind(2,data.uvs,2);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,data.indices,gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);for(let c=0;c<4;c++){gl.enableVertexAttribArray(3+c);gl.vertexAttribPointer(3+c,4,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,c*16);gl.vertexAttribDivisor(3+c,1);}
     for(const[location,size,offset]of PROP_INSTANCE_BINDINGS){gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,PROP_INSTANCE_FLOATS*4,offset);gl.vertexAttribDivisor(location,1);}gl.disableVertexAttribArray(8);gl.vertexAttrib1f(8,0);
-    const source=isSource(piece.material),walkway=source&&printed.blueprint===true&&sourceSilverWalkwaySurface(piece),sourceSurface=piece.kind==='surface'&&printed.blueprint,
+    const source=isSource(piece.material),walkway=source&&printed.blueprint===true&&sourceSilverWalkwaySurface(piece),catchWalkway=printed.blueprint===true&&sourceSilverCatchSurface(piece),silver=walkway||catchWalkway,sourceSurface=piece.kind==='surface'&&printed.blueprint,
       paleStock=piece.paleStock||piece.kind==='surface'&&piece.role!=='inherited-earthfall',
-      stock=walkway?(silverPrinted||=(maps?{...maps,blueprint:true}:{...sourcePrintMaps(gl,'silver-fracture'),blueprint:true})):sourceSurface?printed:paleStock?palePrinted:printed,
+      stock=silver?(silverPrinted||=(maps?{...maps,blueprint:true}:{...sourcePrintMaps(gl,'silver-fracture'),blueprint:true})):sourceSurface?printed:paleStock?palePrinted:printed,
       base=piece.base||[...(paint[piece.material]||paint.source),1],
       localBounds={min:data.bounds.min.map((v,k)=>v-data.bounds.center[k]),max:data.bounds.max.map((v,k)=>v-data.bounds.center[k])};
     const edge=/edge-steel/.test(piece.material);
-    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),base,emissive:piece.emissive||[0,0,0],texture:source?stock.texture:finishTexture(gl,piece.material),normalTexture:source?stock.normalTexture:null,ormTexture:source?stock.ormTexture:null,letteringFinish:source?stock.letteringFinish:null,materialFactors:'gltf',metallic:source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.roughness??(piece.material==='earthfall-backing'?1:source?1:edge?.91:isMetal(piece.material)?.58:.91),aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:walkway?'source-silver-fracture':piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,sourceSurroundingsPressure:piece.sourceSurroundingsPressure===true,sourceSurroundingsArcRadius:piece.sourceSurroundingsArcRadius||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...(source?sourceBlueprintMaterial(stock,{base}):{}),...(walkway?{printedSurface:SOURCE_SILVER_WALKWAY_PRINT_SURFACE}:{})}]});
+    pack.catalog.set(piece.name,{name:piece.name,nodeMatrix:identity(),instanceBuffer,extras:{sourceContinuation:true,bounds:localBounds,triangles:data.triangles},primitives:[{vao,count:data.indices.length,indexType:gl.UNSIGNED_INT,nativeReceiverGeometry:Object.freeze({positions:data.positions,normals:data.normals,uvs:data.uvs,indices:data.indices}),base,emissive:piece.emissive||[0,0,0],texture:silver||source?stock.texture:finishTexture(gl,piece.material),normalTexture:silver||source?stock.normalTexture:null,ormTexture:silver||source?stock.ormTexture:null,letteringFinish:silver||source?stock.letteringFinish:null,materialFactors:'gltf',metallic:silver||source?1:edge?.22:isMetal(piece.material)?.72:0,roughness:piece.roughness??(piece.material==='earthfall-backing'?1:silver||source?1:edge?.91:isMetal(piece.material)?.58:.91),aoStrength:0,portrait:false,alphaCut:0,materialName:`continuation ${piece.material}`,materialRole:walkway?'source-silver-fracture':catchWalkway?'source-silver-catch':piece.materialRole||(piece.material==='earthfall-backing'?'quiet-metal':'source-continuation'),sourceSurroundingsSide:piece.sourceSurroundingsSide||0,sourceSurroundingsPressure:piece.sourceSurroundingsPressure===true,sourceSurroundingsArcRadius:piece.sourceSurroundingsArcRadius||0,printedSurface:source?SOURCE_PRINT_SURFACE:null,...((silver||source)?sourceBlueprintMaterial(stock,{base}):{}),...(walkway?{printedSurface:SOURCE_SILVER_WALKWAY_PRINT_SURFACE}:{}),...(catchWalkway?{printedSurface:SOURCE_SILVER_CATCH_PRINT_SURFACE}:{})}]});
   }
   gl.bindVertexArray(null);return pieces.map(p=>p.name);
 }
@@ -404,6 +404,9 @@ export function prewarmSourceContinuationAssets({renderer=R3,props=P3,resolveAss
 }
 
 export function sourceContinuationCamera(frame,{viewportAspect=16/9}={}){
+  const review=globalThis.__scReviewCamera;
+  if(review&&Array.isArray(review.eye)&&review.eye.length===3)
+    return{eye:[...review.eye],yaw:finite(review.yaw),pitch:finite(review.pitch),strictOverhead:true,aimTarget:[...review.aimTarget],revealProgress:null};
   const player=frame.player||frame,feet=finite(player.y,player.feet);
 
   return{eye:[finite(player.x),feet+EYE,finite(player.z)],yaw:finite(player.yaw),pitch:finite(player.pitch),strictOverhead:false,revealProgress:null};
@@ -422,6 +425,17 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     const p=positioned(PREFIX+id,mesh,matrix(origin.x+x,origin.y+y,origin.z+z,yaw,sx,sy,sz),extra);props.push(p);return p;
   };
   const putMatrix=(id,mesh,m,extra={})=>{const p=positioned(PREFIX+id,mesh,multiply(matrix(origin.x,origin.y,origin.z),m),extra);props.push(p);return p;};
+  // Review mode: light the reachable islands as bright markers so the layout
+  // is readable from the fixed external camera (door = warm, rest = amber,
+  // ordinary islands = cold). This is the same geometry the game walks on.
+  if(camera.strictOverhead&&globalThis.__scReviewCamera?.markers){
+    for(const s of surfaces){
+      if(!s||!['island','seat-island','door-island'].includes(s.role))continue;
+      const cx=(s.minX+s.maxX)/2,cz=(s.minZ+s.maxZ)/2,hx=(s.maxX-s.minX)/2,hz=(s.maxZ-s.minZ)/2,t=s.thickness||.35;
+      put('review-island-'+s.id,PREFIX+'block',cx,s.y+t/2,cz,0,hx*.94,t,hz*.94,
+        {reviewIsland:true,emissive:s.role==='door-island'?[1.5,1.25,.55]:s.role==='seat-island'?[1.5,.62,.12]:[.3,.95,1.35],base:[.03,.04,.05,1]});
+    }
+  }
   const chunkFault=sourceChunkFaultFrame(state,{reducedMotion});
   for(const piece of chunkFault.pieces)put(piece.id,PREFIX+`chunk-error-${piece.palette}`,piece.x,piece.y,piece.z,0,piece.sx,piece.sy,piece.sz,
     {chunkFault:true,chunkFaultStage:chunkFault.stage,chunkFaultProximity:chunkFault.proximity,region:piece.region,chartId:piece.chartId,descriptorId:'wrong-closing-front',cullRadius:1.6});
@@ -537,7 +551,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   // Every support remains in the same physical world. The overhead view makes
   // an explicit cutaway after submission, without changing this geometry.
   for(const piece of sourceContinuationGeometry(state)){
-    const row=piece.descriptor;if(row.role==='spindle'||row.role==='arch-pier')continue;const b=boundsOf(piece.p),isSurface=piece.kind==='surface';
+    const row=piece.descriptor;if(row.role==='spindle'||row.role==='arch-pier')continue;
+    if(globalThis.__scReviewCamera&&row.kind==='rect')continue;const b=boundsOf(piece.p),isSurface=piece.kind==='surface';
     put(piece.id,piece.name,...b.center,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,chartId:chartOf(row),...(row.role==='rest-alcove'?{restPlace:true}:{}),
       physicalBounds:{min:b.min,max:b.max},cullRadius:Math.hypot((b.max[0]-b.min[0])/2,(b.max[2]-b.min[2])/2)});
     if(Number.isInteger(row.level))shownLevels.add(row.level);
@@ -549,13 +564,14 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   }
   for(const part of sourceConnectorRenderParts(state))put(part.id,PREFIX+part.mesh,part.x,part.y,part.z,0,part.sx,part.sy,part.sz,
     {architecture:true,region:part.region,chartId:part.chartId,connector:true,cabinet:part.cabinet,physicalKind:'solid',descriptorId:part.id,physicalBounds:part.physicalBounds});
-  for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
+  if(!globalThis.__scReviewCamera)for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
   // The four sectors are framed as four different fabricated objects. All
   // frames are below the exact support mesh, and the spindle is continuous.
   const spindleTop=camera.strictOverhead?camera.aimTarget[1]+2.4:17,spindleScale=(spindleTop+25)/42;
-  put('continuous-spindle','source_iii_spindle',center.x,-25+25*spindleScale,center.z,0,1,spindleScale,1,{architecture:true,region:'catch',continuousSpindle:true,cutawayTop:spindleTop,cullRadius:45});
+  if(!globalThis.__scReviewCamera)put('continuous-spindle','source_iii_spindle',center.x,-25+25*spindleScale,center.z,0,1,spindleScale,1,{architecture:true,region:'catch',continuousSpindle:true,cutawayTop:spindleTop,cullRadius:45});
   for(let level=0;level<SOURCE_CONTINUATION.catch.levels;level++){
     const stage=catchStage(level),y=catchFloor(level);
+    if(globalThis.__scReviewCamera)continue;
     put('radial-bearing-'+level,'source_iii_bearing',center.x,y,center.z,0,1,1,1,{architecture:true,region:'catch',bearing:true,level});
     put('fabricated-catch-'+level,'source_iii_catch_frame_'+level,center.x,y-.20,center.z,0,1,1,1,{architecture:true,region:'catch',catchConstruction:stage.construction,level,cullRadius:16});
     const r=stage.outerRadius||13,t=stage.refugeAngle||0,rx=center.x+Math.cos(t)*(r+1.25),rz=center.z+Math.sin(t)*(r+1.25);
@@ -695,11 +711,13 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   for(const x of [-158,-153,-148,-143])put('door-route-light-'+x,PREFIX+'rest-lamp-light',x,-12.48,-93,0,.17,.10,.17,{region:'catch',level:3,islandBeacon:true,practical:true});
   // One lit thread rises from the door island through the whole universe,
   // so the right island is legible from any shelf, causeway or seat.
-  if(phaseOf(state)==='catch')beam('door-island-thread',[destination.x+.6,destination.y+7,destination.z],[destination.x+.6,destination.y+96,destination.z],.07,'rest-sky-mote',{region:'catch',level:3,islandBeacon:true,cullRadius:92});
+  if(phaseOf(state)==='catch'&&!globalThis.__scReviewCamera)beam('door-island-thread',[destination.x+.6,destination.y+7,destination.z],[destination.x+.6,destination.y+96,destination.z],.07,'rest-sky-mote',{region:'catch',level:3,islandBeacon:true,cullRadius:92});
   // The Catch is one island among many; only the Catch frame carries them.
-  for(const p of sourceContinuationIslandProps(state,{origin,time:finite(state.elapsed),reducedMotion}))props.push(p);
+  // Review mode drops the seeded universe so the reachable archipelago alone
+  // carries the layout decision.
+  for(const p of sourceContinuationIslandProps(state,{origin,time:finite(state.elapsed),reducedMotion}))if(!globalThis.__scReviewCamera)props.push(p);
   // Over it the black sun eats the blood moon; its pull is the Catch's tide.
-  for(const p of sourceContinuationBlackSunProps(state,{origin,time:finite(state.elapsed),reducedMotion}))props.push(p);
+  for(const p of sourceContinuationBlackSunProps(state,{origin,time:finite(state.elapsed),reducedMotion}))if(!globalThis.__scReviewCamera)props.push(p);
   // The landing and narrow spine behind the entry are the floor just crossed,
   // with their original lower fixtures translated through the shared door.
   // They stay fixed in this world; architectural visibility still occludes them.

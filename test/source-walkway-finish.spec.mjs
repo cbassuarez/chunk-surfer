@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {SOURCE_SILVER_WALKWAY_SURFACES,SOURCE_SILVER_WALKWAY_PRINT_SURFACE,sourceSilverWalkwaySurface,
+  SOURCE_SILVER_CATCH_ROLES,SOURCE_SILVER_CATCH_PRINT_SURFACE,sourceSilverCatchSurface,
   sourceSyntaxHueSaturation,sourceSyntaxRecordedColor,sourceSilverWalkwayInk,sourceWalkwayRecordedInk,
   SOURCE_WALKWAY_MARK_GLSL,SOURCE_WALKWAY_FINISH_GLSL} from '../src/render/source-walkway-finish.js';
 import {encodePrintedSurface,printedSurfaceDescriptor} from '../src/render/printed-surface.js';
@@ -29,6 +30,24 @@ test('silver treatment belongs to eight authored ground supports, never inferred
   assert.equal(sourceSilverWalkwaySurface({...entry,matrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,-29.75,0,1]}),true,'a native void copy retains authored identity rather than being reclassified by world height');
 });
 
+test('the catch keeps the same silver stock under its own process name',()=>{
+  const expected=['transfer','catch','refuge','return-arm','wrong-catch','wrong-catch-neck','wrong-catch-return','island-causeway','island'];
+  assert.deepEqual(SOURCE_SILVER_CATCH_ROLES,expected);assert.ok(Object.isFrozen(SOURCE_SILVER_CATCH_ROLES));
+  assert.deepEqual(printedSurfaceDescriptor(SOURCE_SILVER_CATCH_PRINT_SURFACE),SOURCE_SILVER_CATCH_PRINT_SURFACE);
+  assert.equal(SOURCE_SILVER_CATCH_PRINT_SURFACE.process,'source-silver-catch');
+  assert.notEqual(SOURCE_SILVER_CATCH_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE);
+  assert.equal(SOURCE_SILVER_CATCH_PRINT_SURFACE.family,SOURCE_SILVER_WALKWAY_PRINT_SURFACE.family,'the catch shares the route family so the one walkway shader binds both');
+  const pieces=sourceContinuationGeometry({phase:'catch'});
+  const matched=pieces.filter(sourceSilverCatchSurface);
+  assert.ok(matched.length>30,'the whole walkable catch route goes silver');
+  assert.deepEqual(new Set(matched.map(piece=>piece.role)),new Set(SOURCE_SILVER_CATCH_ROLES));
+  const entry=matched[0];
+  for(const change of [{kind:'solid'},{region:'wrong-return'},{descriptor:{...entry.descriptor,chartId:1}},{descriptor:{...entry.descriptor,role:'spindle'}}]){
+    assert.equal(sourceSilverCatchSurface({...entry,...change}),false);
+  }
+  assert.equal(sourceSilverCatchSurface({...entry,descriptor:{...entry.descriptor,role:'spindle'}}),false,'the spindle column keeps its own material');
+});
+
 test('syntax hue uses the original display color even when its physical albedo sampler is linear',()=>{
   const linear=value=>value<=.04045?value/12.92:Math.pow((value+.055)/1.055,2.4);
   for(const rgb of [[1,0,0],[0,1,1],[.74,.34,.92],[.25,.77,.46],[1,.68,.17],[.031,.04,.025],[.9,.9,.9]]){
@@ -54,11 +73,13 @@ test('silver stock and lexical pigment share coverage while shadows remain dark 
   assert.deepEqual(sourceSilverWalkwayInk({world,pigment:0}),sourceSilverWalkwayInk({world:[1,-29.75,1],pigment:0}),'translated deck stock keeps its X/Z fracture registration');
 });
 
-test('the recording override requires a visible route, Source II and acquired light',()=>{
+test('the recording override requires a visible route, an inked Source finish and acquired light',()=>{
   const original=[.11,.22,.33],context={finish:'silicon',tag:routeTag(1),world:[1,0,1],syntaxHS:[0,1],capturedLight:1};
   close(sourceWalkwayRecordedInk(original,context),[.98,0,0]);
   close(sourceWalkwayRecordedInk(original,{...context,finish:2,capturedLight:.5}),original.map((value,index)=>(value+[.98,0,0][index])/2));
-  for(const finish of ['none','bsod','bismuth',0,1,3,undefined])assert.deepEqual(sourceWalkwayRecordedInk(original,{...context,finish}),original);
+  close(sourceWalkwayRecordedInk(original,{...context,finish:'bismuth'}),[.98,0,0]);
+  close(sourceWalkwayRecordedInk(original,{...context,finish:3,capturedLight:.5}),original.map((value,index)=>(value+[.98,0,0][index])/2));
+  for(const finish of ['none','bsod',0,1,undefined])assert.deepEqual(sourceWalkwayRecordedInk(original,{...context,finish}),original);
   for(const tag of [0,79/255,96/255,encodePrintedSurface(1,1),encodePrintedSurface(1,2),249/255])assert.deepEqual(sourceWalkwayRecordedInk(original,{...context,tag}),original);
   for(const changed of [{capturedLight:0},{occluded:true}])assert.deepEqual(sourceWalkwayRecordedInk(original,{...context,...changed}),original);
   close(sourceWalkwayRecordedInk(original,{...context,light:false}),[.005,.009,.018]);

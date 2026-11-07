@@ -15,6 +15,23 @@ export function sourceSilverWalkwaySurface(piece){
   return piece?.kind==='surface'&&piece.region==='wrong-return'
     &&(row?.chartId??0)===0&&routeIds.has(row?.id);
 }
+
+// Source III's own silver: the same stock as the eight II supports, under its
+// own descriptor. The catch's walkable route — the stage floors, the wrong
+// spokes, pockets and return arcs, the refuge pads and the satellite ways —
+// keeps the silver look without borrowing the II name. The route family stays
+// shared so the one walkway shader binds both; the process name is what a
+// code reader sees, and it says catch.
+export const SOURCE_SILVER_CATCH_ROLES=Object.freeze(['transfer','catch','refuge','return-arm','wrong-catch','wrong-catch-neck','wrong-catch-return','island-causeway','island']);
+const catchRoles=new Set(SOURCE_SILVER_CATCH_ROLES);
+export const SOURCE_SILVER_CATCH_PRINT_SURFACE=Object.freeze({version:1,
+  coverage:'baseColorAlpha',polarity:'light-on-dark',process:'source-silver-catch',
+  emission:'none',family:PRINTED_SURFACE_SOURCE_ROUTE_FAMILY});
+export function sourceSilverCatchSurface(piece){
+  const row=piece?.descriptor||piece;
+  return piece?.kind==='surface'&&piece.region==='catch'
+    &&(row?.chartId??0)===0&&catchRoles.has(row?.role);
+}
 const clamp=n=>Math.max(0,Math.min(1,Number.isFinite(n)?n:0));
 const fract=n=>n-Math.floor(n);
 const smooth=(a,b,n)=>{const t=clamp((n-a)/(b-a));return t*t*(3-2*t);};
@@ -48,7 +65,7 @@ export function sourceSilverWalkwayInk({world=[0,0,0],pigment=0,syntaxHS=[0,0],l
 export function sourceWalkwayRecordedInk(original,{finish='none',tag=0,world=[0,0,0],
   syntaxHS=[0,0],capturedLight=0,light=true,occluded=false}={}){
   const surface=decodePrintedSurface(tag);
-  if(occluded||!(finish==='silicon'||finish===2)||surface.family!==PRINTED_SURFACE_SOURCE_ROUTE_FAMILY)return[...original];
+  if(occluded||!(finish==='silicon'||finish===2||finish==='bismuth'||finish===3)||surface.family!==PRINTED_SURFACE_SOURCE_ROUTE_FAMILY)return[...original];
   const ink=sourceSilverWalkwayInk({world,pigment:surface.coverage,syntaxHS,light}),amount=clamp(capturedLight);
   return original.map((v,i)=>v+(ink[i]-v)*amount);
 }
@@ -71,7 +88,7 @@ vec3 sourceSyntaxRecordedColor(vec2 hs){
   return mix(vec3(.96,.985,1.0),hue,clamp(hs.y,0.0,1.0));
 }
 vec3 sourceWalkwayRecordedInk(vec3 original,float finish,vec4 material,vec3 world,float capturedLight,float lightEndpoint){
-  float amount=step(1.5,finish)*(1.0-step(2.5,finish))
+  float amount=step(1.5,finish)
     *printedSurfaceSourceRoute(material.a)*clamp(capturedLight,0.0,1.0);
   vec3 ink=vec3(.005,.009,.018);
   if(lightEndpoint>.5){

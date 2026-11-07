@@ -11,7 +11,7 @@ import {doorAssembly} from '../src/data/source-door-fields.js';
 import {PROP_BOUNDS} from '../src/data/generated/prop-geometry.js';
 import {SOURCE_PRINT_SURFACE} from '../src/render/physical-source-print.js';
 import {SOURCE_BLUEPRINT_PRINT_SURFACE} from '../src/render/source-blueprint-contract.js';
-import {SOURCE_SILVER_WALKWAY_PRINT_SURFACE,sourceSilverWalkwaySurface} from '../src/render/source-walkway-finish.js';
+import {SOURCE_SILVER_WALKWAY_PRINT_SURFACE,sourceSilverWalkwaySurface,SOURCE_SILVER_CATCH_PRINT_SURFACE,sourceSilverCatchSurface} from '../src/render/source-walkway-finish.js';
 import {sourceContinuationVoidViews,sourceContinuationVoidInstance} from '../src/render/source-continuation-void.js';
 import {cameraBasis} from '../src/render/camera-basis.js';
 import {sourceSurroundingsGeometryLibrary} from '../src/render/source-surroundings-geometry.js';
@@ -147,7 +147,7 @@ test('physical print installation is bounded and idempotent with all material ch
       }else assert.deepEqual(p.emissive,restEmission[entry.name]||[0,0,0]);
     }
     assert.ok(entry.extras.triangles>0);
-    if(p.printedSurface){assert.ok([SOURCE_PRINT_SURFACE,SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE].includes(p.printedSurface));assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+    if(p.printedSurface){assert.ok([SOURCE_PRINT_SURFACE,SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE,SOURCE_SILVER_CATCH_PRINT_SURFACE].includes(p.printedSurface));assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
   }
 });
 test('the acquired renderer submits the current chapter fixed faults without replacing portal or standing-rift props',async()=>{
@@ -192,7 +192,7 @@ test('actual bundled bell and clapper meshes exist and missing sender residency 
 test('blueprint substitution changes stock rather than support geometry or native instrument materials',()=>{
   const make=blueprint=>{const g=fakeGl(),pack={catalog:new Map()};installSourceContinuationMeshes(g.gl,pack,{maps:{blueprint,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}}});return pack;};
   const current=make(true),control=make(false);let physical=0;
-  for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];assert.deepEqual([...p.vao.attributes[0].data],[...old.vao.attributes[0].data]);if(p.printedSurface){if([SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE].includes(p.printedSurface))assert.deepEqual(p.base,[1,1,1,1]);else assert.deepEqual(p.base,old.base);assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}else{physical++;assert.deepEqual(p.base,old.base);}}
+  for(const[name,entry]of current.catalog){const p=entry.primitives[0],old=control.catalog.get(name).primitives[0];assert.deepEqual([...p.vao.attributes[0].data],[...old.vao.attributes[0].data]);if(p.printedSurface){if([SOURCE_BLUEPRINT_PRINT_SURFACE,SOURCE_SILVER_WALKWAY_PRINT_SURFACE,SOURCE_SILVER_CATCH_PRINT_SURFACE].includes(p.printedSurface))assert.deepEqual(p.base,[1,1,1,1]);else assert.deepEqual(p.base,old.base);if(old.printedSurface)assert.deepEqual(old.printedSurface,SOURCE_PRINT_SURFACE);}else{physical++;assert.deepEqual(p.base,old.base);}}
   assert.ok(physical>10);
 });
 test('the active continuation chooses silicon for II and bismuth for III without rebuilding the world',async()=>{
@@ -206,7 +206,9 @@ test('the active continuation chooses silicon for II and bismuth for III without
 
 test('semantic Source sheets retain chapter stock with syntax on only the eight approved silver walkways',()=>{
   const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});let sheets=0,routes=0;
-  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;const route=sourceSilverWalkwaySurface(piece);if(route)routes++;assert.equal(p.printedSurface,route?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,piece.id);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+    let catchRoutes=0;
+  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;const route=sourceSilverWalkwaySurface(piece),catchRoute=sourceSilverCatchSurface(piece);if(route)routes++;if(catchRoute)catchRoutes++;assert.equal(p.printedSurface,route?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:catchRoute?SOURCE_SILVER_CATCH_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,piece.id);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+  assert.ok(catchRoutes>30,'the whole walkable catch route carries its own silver descriptor');
   for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,sourceSilverWalkwaySurface(piece)?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,id);}
   assert.equal(routes,8);
   assert.ok(sheets>0,'load-bearing sheets must retain physical printed stock');
@@ -219,7 +221,8 @@ test('silver walkway identity follows real native and void meshes without changi
   for(const [name,entry]of current){const p=entry.primitives[0],old=control.get(name).primitives[0];
     assert.deepEqual(p.nativeReceiverGeometry,old.nativeReceiverGeometry,`${name} keeps its real vertex, normal, UV and index channels`);
     if(p.printedSurface===SOURCE_SILVER_WALKWAY_PRINT_SURFACE){assert.equal(old.printedSurface,SOURCE_PRINT_SURFACE);assert.notEqual(old.materialRole,'source-silver-fracture');}
-    else assert.notEqual(p.printedSurface?.family,'source-ii-route','plinths, upper decks, inherited earthfall and III retain their own material identity');
+    else if(p.printedSurface===SOURCE_SILVER_CATCH_PRINT_SURFACE){assert.ok(old.printedSurface===SOURCE_PRINT_SURFACE||old.printedSurface===null,'III silver replaces either printed stock or a native material');assert.equal(p.printedSurface.process,'source-silver-catch','III silver keeps its own process name');assert.notEqual(old.materialRole,'source-silver-catch');}
+    else assert.notEqual(p.printedSurface?.family,'source-ii-route','plinths, upper decks and inherited earthfall retain their own material identity');
   }
   const state={...fresh(),x:0,z:-2.8,feet:0,yaw:.7,pitch:.1},frame=sourceContinuationRenderFrame(state,{viewportAspect:1.6});
   const images=frame.props.filter(p=>current.get(p.mesh)?.primitives[0].printedSurface===SOURCE_SILVER_WALKWAY_PRINT_SURFACE);
