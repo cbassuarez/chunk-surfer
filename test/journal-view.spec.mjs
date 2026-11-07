@@ -93,7 +93,7 @@ test('NEXT and full evidence remain reachable by paging and cannot fall behind g
   for(const region of [box,contentRegion(40,16),contentRegion(75,20)]){
     const g=journalGeometry(region),options={compact:g.mode!=='wide',tiny:g.mode==='tiny'};
     const first=journalDetailLayout(long,g.detail,options),all=[];
-    assert.ok(first.visible[0].text.startsWith('NEXT:'));
+    assert.ok(first.visible[0].text.startsWith('next:'));
     for(let page=0;page<first.pages;page++){
       const d=journalDetailLayout(long,g.detail,{...options,detailPage:page});all.push(...d.visible.map(v=>v.text));
       assert.ok(d.text.y+d.visible.length*d.lineH<=d.display.y+d.display.h+1e-8);
@@ -110,7 +110,7 @@ test('outcomes have first claim on settled or declined display pages',()=>{
   for(const state of ['resolved','declined']){
     const e={...entry,state,outcome:'I kept the cassette and Ren accepted that decision.'};
     const g=journalGeometry(contentRegion(40,16)),d=journalDetailLayout(e,g.detail,{tiny:true,compact:true});
-    assert.ok(d.visible[0].text.startsWith('OUTCOME:'));assert.ok(!d.rows.some(r=>r.text.startsWith('NEXT:')));
+    assert.ok(d.visible[0].text.startsWith('OUTCOME:'));assert.ok(!d.rows.some(r=>r.text.startsWith('next:')));
     const end=journalDetailLayout(e,g.detail,{tiny:true,compact:true,detailPage:999});assert.equal(end.page,end.pages-1);
   }
 });
@@ -270,7 +270,7 @@ test('telephone records remain facts rather than commands or completed-quest cla
 test('known milestones show completed and current work while excluding unsupported future stages',()=>{
   const value={...entry,milestones:[{id:'done',label:'Index read',state:'done'},{id:'now',label:'Find the drawer',state:'current'},
     {id:'future',label:'UNREVEALED FUTURE REWARD',state:'future'}]};
-  const text=prose(value);assert.ok(text.includes('DONE: Index read'));assert.ok(text.includes('NOW: Find the drawer'));
+  const text=prose(value);assert.ok(text.includes('■ Index read'));assert.ok(text.includes('□ Find the drawer'));
   assert.ok(!text.includes('UNREVEALED'));
 });
 
@@ -280,12 +280,12 @@ test('an explicit next action appears once while completed milestones remain vis
     {id:'tray',label:'Take the two waters from the counter.',state:'current'}]};
   const text=prose(value);
   assert.equal(text.split(value.next).length-1,1);
-  assert.ok(text.includes('DONE: Agreed to help Iona'));
+  assert.ok(text.includes('■ Agreed to help Iona'));
   const follow={...closedParent,followUp:{id:'opener',label:'Bottle opener',commitment:'accepted',nextLabel:'NEXT',next:'Return it to Iona.',
     milestones:[{id:'found',label:'Opener found',state:'done'},{id:'return',label:'Return it to Iona.',state:'current'}]}};
   const followText=prose(follow);
   assert.equal(followText.split(follow.followUp.next).length-1,1);
-  assert.ok(followText.includes('DONE: Opener found'));
+  assert.ok(followText.includes('■ Opener found'));
 });
 
 test('causally ordered records retain authored order without inventing timestamps or a timeline',()=>{
@@ -315,7 +315,7 @@ test('rich closure, child, milestones and records all survive compact pagination
     records:[...closedParent.records,{id:'last',label:'Last fact',text:'FINAL KNOWN FACT REMAINS ACCESSIBLE.'}]};
   const before=JSON.stringify(value);
   for(const region of [box,contentRegion(40,16),contentRegion(75,20)]){
-    const text=prose(value,region);for(const phrase of [value.closure.text,'FOLLOW-UP: The bottle opener','NEXT: Return the opener','DONE: Opener collected','FINAL KNOWN FACT REMAINS ACCESSIBLE.'])assert.ok(text.includes(phrase),phrase);
+    const text=prose(value,region);for(const phrase of [value.closure.text,'FOLLOW-UP: The bottle opener','NEXT: Return the opener','■ Opener collected','FINAL KNOWN FACT REMAINS ACCESSIBLE.'])assert.ok(text.includes(phrase),phrase);
     const g=journalGeometry(region),d=journalDetailLayout(value,g.detail,{compact:g.mode!=='wide',tiny:g.mode==='tiny'});
     assert.ok(d.text.y+d.lineH*d.capacity<=d.display.y+d.display.h+1e-8);
     present({entries:[value],region,detailPage:d.pages-1});

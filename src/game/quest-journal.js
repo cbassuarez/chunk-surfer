@@ -1,6 +1,7 @@
 // A field record of existing decisions. This module owns no progress, clocks,
 // discovery flags or navigation; every entry is derived anew from its owner.
 import { pubQuestState } from './pub-quest.js';
+import { mapAcquired } from './map-ownership.js';
 import { normalizeRoofRenState } from './roof-ren.js';
 import { createAcademicBouncerState } from './academic-bouncers.js';
 import { createAcademicSocietyState } from './academic-society.js';
@@ -18,7 +19,9 @@ function entry(id, title, area, options = {}) {
     status: status('OPEN', 'amber'), summary: '', next: null, evidence: [], outcome: null,
     location: null, ...options };
 }
-const milestone = (id, label, done = false) => ({ id, label, state: done ? 'done' : 'current' });
+const milestone = (id, label, done = false, pending = false) => ({ id, label, state: done ? 'done' : pending ? 'pending' : 'current' });
+// Journal prose is sentence case, whatever case the HUD target label carries.
+const sentenceCase = value => { const text = String(value || '').replace(/\s+/g, ' ').trim(); return text ? text[0] + text.slice(1).toLowerCase() : text; };
 const record = (id, label, text) => ({ id, label, text });
 const closure = (label, text) => ({ label, text });
 function represent(value, fields = {}) {
@@ -64,6 +67,36 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
       evidence: rooms.filter(r => r.recorded).map(r => `${r.label || r.roomId}: recorded.`),
       outcome: complete ? 'Every room on the work order has a recorded take.' : null,
       location: guidanceLabel ? guidanceLocation : mapRoom ? place(mapRoom.label || mapRoom.roomId, null, mapRoom.roomId) : null,
+    }));
+  }
+
+  // The van, before the night starts. The opening errand in full: case, map,
+  // kit, doors. The guidance targets name the same route, so the entry lives
+  // while the yard still owns the story, and closes with the doors.
+  if (guidance && ['story:yard-van', 'story:yard-van-shut', 'story:lodge'].includes(guidance.id)) {
+    const caseTaken = flags['bag.taken'] === true, mapTaken = mapAcquired(flags),
+      kitFitted = flags['kit.fitted'] === true, vanShut = flags['van.closed'] === true;
+    const done = caseTaken && mapTaken && kitFitted && vanShut;
+    const firstPending = [caseTaken, mapTaken, kitFitted, vanShut].findIndex(value => !value);
+    entries.push(entry('van-kit', 'The van', 'Yard', {
+      category: 'assignment', state: done ? 'resolved' : 'active',
+      status: status(done ? 'VAN SHUT' : 'PACKING', done ? 'success' : 'amber'),
+      summary: done ? 'The van is packed and shut.' : 'Get ready at the van before you cross the yard.',
+      next: done ? null : (sentenceCase(guidance.label) || 'Finish packing at the van'),
+      outcome: done ? 'The kit is with you and the van is shut.' : null,
+      location: null,
+      nature: 'undertaking', commitment: done ? 'fulfilled' : 'assigned',
+      stage: { id: done ? 'van:shut' : 'van:packing', label: done ? 'Van shut' : 'Packing at the van' },
+      nextLabel: done ? null : 'NEXT',
+      milestones: [
+        milestone('van:case', 'Take the field case.', caseTaken, !caseTaken),
+        milestone('van:map', 'Take the survey map.', mapTaken, !mapTaken),
+        milestone('van:kit', 'Fit the field kit.', kitFitted, !kitFitted),
+        milestone('van:shut', 'Close the van doors.', vanShut, !vanShut),
+      ].map((m, index) => index === firstPending && m.state === 'pending' ? { ...m, state: 'current' } : m),
+      records: [], closure: null, followUp: null,
+      hasOpenCommitment: !done, trackable: !done,
+      trackingKey: 'quest:van-kit',
     }));
   }
 
@@ -272,6 +305,7 @@ export function buildQuestJournal({ save = {}, job = {}, bouncers = null, societ
   }
   return entries.map(value => {
     if (value.id === 'quest:lyric') return value;
+    if (value.id === 'quest:van-kit') return value;
     if (value.id === 'quest:work-order') {
       const fulfilled = value.state === 'resolved';
       const unfinished = rooms.find(r => !r.recorded);

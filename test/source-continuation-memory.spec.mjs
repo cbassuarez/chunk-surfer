@@ -59,18 +59,23 @@ test('both Sources retain exact original surface transforms while physical stock
   }
 });
 
-test('a consumed printed carrier leaves its original code even when the physical owner is absent',()=>{
-  const seat=SOURCE_REST_SEATS[0],before=render(fixture(seat)),late=render(fixture(seat,0,{time:467,damage:true})),
-    originals=new Map(before.canonicalProps.map(p=>[p.id,p])),live=new Set(late.canonicalProps.map(p=>p.id));
-  assert.ok(late.destruction.horizonConsumed>0);
-  const removed=canonical(late).filter(p=>!live.has(p.sourceCodeMemory.ownerId)&&originals.has(p.sourceCodeMemory.ownerId));
-  assert.ok(removed.length>0,'a vanished owner must not cull its code');
-  for(const memory of removed){
+test('the proper-time stream hangs at the finale: pulled owners stay in flight and keep their freed code',()=>{
+  // Direction C: pulled pieces never cross, so no owner vanishes; the freed
+  // code detached at pull time remains the only copy beside the live stock.
+  const seat=SOURCE_REST_SEATS[0],before=render(fixture(seat)),late=render(fixture(seat,0,{time:700,damage:true})),
+    originals=new Map(before.canonicalProps.map(p=>[p.id,p]));
+  assert.ok(late.destruction.horizonPulling>0);
+  assert.equal(late.destruction.horizonConsumed,0,'the authored pull set sits outside the grown horizon');
+  assert.ok(late.props.some(p=>p.horizonTide&&!p.horizonTide.hidden),'the stream is still in flight at the blackout');
+  const pulled=new Set(late.props.filter(p=>p.horizonTide&&!p.horizonTide.hidden).map(p=>String(p.id).split(':horizon-')[0]));
+  const memories=late.sourceCodeInstances.filter(p=>p.sourceCodeMemory&&pulled.has(p.sourceCodeMemory.ownerId));
+  assert.ok(memories.length>0,'pulled owners still detach their freed code');
+  for(const memory of memories){
     close(Array.from(memory.matrix),Array.from(originals.get(memory.sourceCodeMemory.ownerId).matrix));
     assert.equal(memory.horizonTide,undefined);assert.equal(memory.character,undefined);
   }
-  const later=canonical(render(fixture(seat,0,{time:490,damage:true}))),byOwner=new Map(later.map(p=>[p.sourceCodeMemory.ownerId,p]));
-  for(const memory of removed)close(Array.from(byOwner.get(memory.sourceCodeMemory.ownerId).matrix),Array.from(memory.matrix));
+  const later=canonical(render(fixture(seat,0,{time:700,damage:true}))),byOwner=new Map(later.map(p=>[p.sourceCodeMemory.ownerId,p]));
+  for(const memory of memories)close(Array.from(byOwner.get(memory.sourceCodeMemory.ownerId).matrix),Array.from(memory.matrix));
 });
 
 test('late seeking and a new scene do not reuse a previous visible pose or retain old code',()=>{

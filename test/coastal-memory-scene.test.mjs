@@ -260,3 +260,16 @@ test('coastal gait follows accepted metre speed and ends with travel rather than
   scene.keyup({key:'w'});const count=contacts.length;for(let i=0;i<120;i++)scene.update(1/60);
   assert.equal(contacts.length,count);scene.exit();
 });
+
+test('F near the box asks the host to pick the keepsake up', async () => {
+  let picked = 0;
+  const { scene, overlays } = await make({ checkpoint: checkpoint({ pose: { ...layout.spawn, z: 1 } }), onPickUp: () => { picked++; return true; } });
+  scene.render();
+  assert.equal(overlays.at(-1).ui.pickup, 'F · PICK UP THE BOX');
+  scene.key({ key: 'f' });
+  assert.equal(picked, 1);
+  // E still reads the note, untouched by the pickup seam.
+  scene.key({ key: 'e' }); assert.equal(scene.view().noteOpen, true);
+  scene.key({ key: 'f' }); assert.equal(picked, 1, 'pickup is blocked while the note is open');
+  scene.exit();
+});

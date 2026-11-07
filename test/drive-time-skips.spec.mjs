@@ -7,11 +7,16 @@ import {RADIO_DIAL_CUT} from '../src/audio/radio-dial-cut.js';
 import {radioDialStaticAlpha} from '../src/render/radio-dial-static.js';
 
 const advance=(c,seconds,input={})=>{for(let t=0;t<seconds-1e-9;){const h=Math.min(1/60,seconds-t);c.update(h,{input});t+=h;}};
-// A driver who keeps to the left lane through the bends, and can stand on the brake.
+// A driver who keeps to the left lane: pure pursuit on a lookahead point on
+// the road, with a deadband small enough to hold the bends at speed. (The
+// engine's steering sign is inverted from the usual 2D cross product.)
 function steering(c,base){
   if(base.brake)return{brake:true};
-  const d=c.snapshot().driveState,r=openingRoadSurfaceAt(d.x,d.z),err=r.offset+1.35,head=Math.atan2(Math.sin(d.heading-r.heading),Math.cos(d.heading-r.heading)),score=err*.35+head*2.2;
-  return{...base,left:score>.04,right:score<-.04};
+  const d=c.snapshot().driveState,here=openingRoadSurfaceAt(d.x,d.z),look=18;
+  const p=openingWorldAt(here.distance+look,-1.35);
+  const fx=Math.sin(d.heading),fz=-Math.cos(d.heading),dx=p.x-d.x,dz=p.z-d.z;
+  const score=(fz*dx-fx*dz)/look;
+  return{...base,left:score>.012,right:score<-.012};
 }
 const cutsOf=(c,seconds,input)=>{const seen=[];let last=0;for(let t=0;t<seconds;t+=1/60){c.update(1/60,{input:steering(c,input)});const tuning=c.snapshot().vehiclePose?.tuning;if(tuning&&tuning.serial!==last){last=tuning.serial;seen.push(tuning);}}return seen;};
 
@@ -56,9 +61,13 @@ test('waiting never moves the night on; driving does, and the edge is still the 
   assert.equal(cutsOf(c,40,{brake:true}).length,0,'stopped on the road, nothing cuts');
   const d=createDoorDriveTeaser();d.start();advance(d,.81);
   const cuts=cutsOf(d,40,{forward:true});
-  assert.ok(cuts.length>=2,`driving on cuts the night apart (${cuts.length})`);
+  assert.ok(cuts.length>=1,`driving on cuts the night apart (${cuts.length})`);
   assert.equal(cuts[0].from,0);assert.equal(cuts[0].to,1);
-  const s=d.snapshot();assert.ok(s.vehiclePose.stretch.index>=2);assert.equal(s.controlsEnabled||s.phase==='time-skip',true);
+  const s=d.snapshot();assert.ok(s.vehiclePose.stretch.index>=1);assert.equal(s.controlsEnabled||s.phase==='time-skip',true);
+  // Longer spans between them: the road stays whole for a while, but the
+  // night still comes apart when it moves on.
+  const later=cutsOf(d,70,{forward:true});
+  assert.ok(later.length>=2,`spans stay long but the night still comes apart (${later.length})`);
 });
 
 test('during the turn the controls are not his, and the van comes back going about as fast as it was',()=>{

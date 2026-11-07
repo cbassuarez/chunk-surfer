@@ -45,6 +45,17 @@ test('composition content is repository-owned and strictly allowlisted',()=>{
   assert.ok(manifest.assets.every((asset)=>asset.derivatives.webm&&asset.derivatives.mp4&&asset.derivatives.poster));
 });
 
+test('the underwater surface is an authored procedural preset with its own shader form',()=>{
+  const plan=compileWindowCompositionPlan({compositionId:'underwater',sceneId:'test',purpose:'takeover',
+    surfaces:[{id:'pane:a',content:{kind:'procedural',preset:'underwater-surface'}}]});
+  assert.equal(plan.surfaces[0].assignment.content.preset,'underwater-surface');
+  assert.equal(windowMediaContentId(plan.surfaces[0].assignment),'procedural:underwater-surface');
+  const surface=readFileSync(new URL('../src/window-media-surface.js',import.meta.url),'utf8');
+  assert.match(surface,/preset==='underwater-surface'\?5/,'maps to its own procedural branch');
+  assert.match(surface,/uniform float time;/,'the form animates against a time uniform');
+  assert.match(surface,/float underwaterSurface\(vec2 q\)/,'and owns a named form');
+});
+
 test('schema-2 scores compile legacy surface content into independent pane programs',()=>{
   const plan=compileWindowCompositionPlan({compositionId:'score-contract',sceneId:'test',purpose:'title',epochMs:1000,
     surfaces:[

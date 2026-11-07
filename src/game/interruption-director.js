@@ -35,6 +35,14 @@ export const SEEP_CARNAGE=Object.freeze(['wheel','hubcap','bent-metal','glass','
 export const SEEP_PASTORAL=Object.freeze(['daisies','sun','lids','sky']);
 // The window that becomes the game. Field first, and last of all an empty one.
 export const TAKEOVER_MEDIA=Object.freeze(['flowers-seb','clouds','pollination','sunflower-datamosh','empty-field']);
+// VERB-LATCHED TAKEOVERS. The dream lets through what the verb is reaching for.
+//   take-arm  he arms the recorder — the nervous system made external — and the
+//             dream answers with the body/brain failing: cells dying, parasites,
+//             decay. "The tape is what I can no longer hold."
+//   torch     he reaches for the last light he owns, and the dream answers with
+//             the light at the end: the nebula, the jellyfish, the dispersing flock.
+export const TAKEOVER_CLINICAL=Object.freeze(['apoptosis-organelles','mitotic-catastrophe','microfilariae','schistosoma-eggs','boar-corpse-decomposition']);
+export const TAKEOVER_COMFORT=Object.freeze(['orion-nebula-flythrough','sea-nettle-jellyfish','starling-murmuration']);
 // What can be heard from where he is, wherever he is. Hearing may outlast the rest.
 // The ordinary sounds of a van come first. Water and a hand on the glass come later.
 export const CAB_BLEED=Object.freeze([
@@ -81,14 +89,19 @@ export function createInterruptionDirector({seed=0}={}){
     if(hash(seed,`dead${tried}`)>mix(C.dead.chanceFrom,C.dead.chanceTo,d)*(1+clamp01(regionLoss)))return false;
     lastDeadAt=at;deadCount+=1;return true;
   }
-  // Rare and large. Fewer of these in a whole run than there are takes.
-  function takeoverFor({at=0,frame=null,regionLoss=0,blocked=false}={}){
+  // Rare and large. Fewer of these in a whole run than there are takes. The
+  // pool is the verb's answer: arming the recorder lets the body fail through,
+  // reaching for the light lets the light at the end through; anything else
+  // stays on the ordinary field-to-empty arc.
+  function takeoverFor({at=0,frame=null,regionLoss=0,blocked=false,verb=''}={}){
     if(blocked||!frame||takeovers>=C.takeover.most)return null;
     const d=clamp01(frame.deinhibition);
     if(d<C.takeover.from||at-lastTakeoverAt<mix(C.takeover.gapFrom,C.takeover.gapTo,d))return null;
     tried+=1;
     if(hash(seed,`take${tried}`)>mix(C.takeover.chanceFrom,C.takeover.chanceTo,d)*(1+clamp01(regionLoss)))return null;
-    lastTakeoverAt=at;return TAKEOVER_MEDIA[takeovers++];
+    lastTakeoverAt=at;
+    const pool=verb==='take-arm'?TAKEOVER_CLINICAL:verb==='torch'?TAKEOVER_COMFORT:TAKEOVER_MEDIA;
+    return pool[takeovers++%pool.length];
   }
   function deadVerbFor({at=0,frame=null,blocked=false}={}){
     if(blocked||!frame)return false;

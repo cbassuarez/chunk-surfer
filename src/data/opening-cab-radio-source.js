@@ -28,17 +28,29 @@ const archive=Object.freeze({
   sourceUrl:'https://www.nasa.gov/missions/apollo/part-3-apollo-8-the-far-side/',
 });
 
+const couperin=Object.freeze({
+  id:'couperin-clavecin',composer:'François Couperin',title:'L’Art de toucher le clavecin',
+  work:'L’Art de toucher le clavecin (complete)',performer:'David Joseph Stith',
+  instrument:'Harpsichord built by Gerald Self in 2020',
+  path:'audio/opening-cab/couperin-clavecin.mp3',durationSeconds:843.157469,
+  licence:'CC0 1.0',licenceUrl:'https://creativecommons.org/publicdomain/zero/1.0/',
+  sourceUrl:'https://commons.wikimedia.org/wiki/File:Fran%C3%A7ois_Couperin_%22L%27Art_de_toucher_le_Clavecin%22.wav',
+});
+
 // Cleared temporary programmes, not the proposed Stravinsky/Sibelius recordings.
 // The two Schubert presets are explicitly excerpts of the SAME performance.
 export const OPENING_CAB_RADIO_STATIONS=Object.freeze([
+  Object.freeze({id:couperin.id,label:'CLAVECIN',source:couperin}),
   Object.freeze({id:opening.id,label:'EVENING DUET',source:opening}),
   Object.freeze({id:diabelli.id,label:'KEYBOARD ROOM',source:diabelli}),
   Object.freeze({id:later.id,label:'LATE DUET',source:later}),
   Object.freeze({id:archive.id,label:'MISSION ARCHIVE',source:archive,link:null}),
 ]);
-export const OPENING_CAB_RADIO_SOURCE=opening;
+export const OPENING_CAB_RADIO_SOURCE=couperin;
 export function openingCabRadioCreditLines(){return[
   'Temporary piano-four-hand programmes:',
+  `${couperin.composer} - ${couperin.work}; ${couperin.performer}. ${couperin.licence}.`,
+  couperin.sourceUrl,couperin.licenceUrl,
   'Franz Schubert - Fantasia in F minor, D. 940: opening and later excerpts of one performance.',
   'Awadagin Pratt and Lucy Hattemer - White House Classical Music Student Workshop, 4 November 2009.',
   `${SCHUBERT.licence}. ${SCHUBERT.licenceUrl}`,

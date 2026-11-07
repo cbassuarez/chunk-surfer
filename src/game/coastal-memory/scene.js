@@ -1,6 +1,7 @@
 // Shared P3 prop scene. No scene stack, input, audio graph or save ownership.
 import{COASTAL_MEMORY_LAYOUT as L,COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL,COASTAL_RIM_BARRIERS,COASTAL_BEACH,COASTAL_BEACH_BOULDERS,COASTAL_BEACH_DRIFTWOOD,COASTAL_WRACK_LINE,coastalWorldPoint,coastalMultiply,coastalTerrainHeight,coastalRimX,coastalBeachHeight,coastalWaterlineX}from'../../data/coastal-memory.js';
 import{COASTAL_MUSIC_BOX_MECHANISM,coastalMusicBoxMechanism}from'./mechanism.js';
+import{coastalHandsMechanism}from'./winding.js';
 import{VAN_WRECK,vanWreckHeadlamp,vanWreckTwistMatrix,vanWreckFoldMatrix,vanWreckHingedMatrix}from'../../data/van-wreck.js';
 export const COASTAL_MEMORY_ASSETS=Object.freeze({geometry:'/assets/source-drive/coastal-memory/coastal-memory.glb',metrics:'/assets/source-drive/coastal-memory/metrics.json'});
 const transform=(x=0,y=0,z=0,yaw=0,scale=[1,1,1])=>{const c=Math.cos(yaw),s=Math.sin(yaw);return[c*scale[0],0,-s*scale[0],0,0,scale[1],0,0,s*scale[2],0,c*scale[2],0,x,y,z,1];};
@@ -53,7 +54,7 @@ function wreckProps(frame,metrics){
  }
  return{body,rear,props};
 }
-export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=COASTAL_WORLD_FROM_LOCAL,includeWreck=false,mode='opening',vehicleMetrics=null}={}){
+export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=COASTAL_WORLD_FROM_LOCAL,includeWreck=false,mode='opening',vehicleMetrics=null,hands=null}={}){
  if(!Number.isFinite(timeSec)||worldFromLocal?.length!==16||!worldFromLocal.every(Number.isFinite))throw Error('Finite coastal time and rigid world frame required.');
  const props=[],lamps=[],add=(mesh,local=transform(),id=mesh,radius=150)=>props.push(instance(mesh,coastalMultiply(worldFromLocal,local),id,radius));
  for(const mesh of['cm_limestone_coast','cm_grass_bank','cm_soil_cap','cm_seabed','cm_shingle_beach'])add(mesh,transform(),mesh,450);
@@ -68,8 +69,8 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  const moon=coastalWorldPoint([140,150,-80],worldFromLocal);lamps.push({id:'coastal-cloud-moon',x:moon[0],y:moon[1],z:moon[2],color:[.62,.69,.77],intensity:.55,radius:550,penetration:1,castsShadow:false,fixture:'cloud-filtered moon approximation'});
  // Sparse fallen bedding blocks, detached from the face and resting on the toe.
  for(let i=0;i<42;i++){const z=-130+i*8.5,x=coastalRimX(z)+4.6+(i%4)*1.3;if(z>COASTAL_BEACH.zSouth-1&&z<COASTAL_BEACH.zNorth+1)continue;add('cm_limestone_block',transform(x,-2.7+(i%3)*.45,z,i*.83,[1.2+(i%4)*.3,1.1+(i%3)*.35,1.7+(i%5)*.18]),'coastal-toe-block-'+i,8);}
- const box=L.musicBox,boxMatrix=transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=coastalMusicBoxMechanism(musicBoxTime);
- add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);add('cm_broken_music_box',boxMatrix,box.id,3);
+ const box=L.musicBox,held=hands?.handling===true&&hands?.heldLocal?.length===16&&hands.heldLocal.every(Number.isFinite)?hands.heldLocal:null;const boxMatrix=held??transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=held?coastalHandsMechanism(hands.winding):coastalMusicBoxMechanism(musicBoxTime);
+ if(!held)add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);add('cm_broken_music_box',boxMatrix,box.id,3);
  for(const[mesh,center,angle,id]of[['cm_music_box_cylinder',COASTAL_MUSIC_BOX_MECHANISM.cylinderCenter,mechanism.cylinderAngle,'cylinder'],['cm_music_box_gear',COASTAL_MUSIC_BOX_MECHANISM.gearCenter,mechanism.gearAngle,'gear']])add(mesh,coastalMultiply(coastalMultiply(boxMatrix,transform(...center)),rotX(angle)),'coastal-music-box-'+id,3);
  for(const[t,tine]of mechanism.liveTines.entries())add('cm_music_box_live_tine',coastalMultiply(coastalMultiply(boxMatrix,transform(tine.x,tine.tipY,tine.rootZ,tine.bend||0)),coastalMultiply(rotX(tine.deflection),transform(0,0,0,0,[1,1,tine.length]))),'coastal-music-box-live-tine-'+t,3);
  // The key turns itself to wind it; the governor fan spins with the cylinder.

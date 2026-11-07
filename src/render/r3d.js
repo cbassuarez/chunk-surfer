@@ -4826,9 +4826,12 @@ let surfacesManifestation=0;
 let hushBodyLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
 let hushBodySecondaryLast={x:0,y:0,strength:.9,heightM:1.83,widthM:.58,glow:null,mode:null};
 // Explicit DEV motion-study submissions never own root, hearing or contact.
+// The dev flag reads at module scope so VM-extracted functions stay evaluable;
+// plain node imports have no Vite env, and read as production.
+const HUSH_MOTION_STUDY_DEV=!!(import.meta.env&&import.meta.env.DEV);
 let hushMotionStudyInstance=null;
 export function r3dSetHushMotionStudyInstance(instance=null){
-  if(import.meta.env.DEV)hushMotionStudyInstance=instance;
+  if(HUSH_MOTION_STUDY_DEV)hushMotionStudyInstance=instance;
 }
 const HUSH_BODY_ASSET='assets/hush-density.glb';
 const HUSH_BODY_ASSET_REV='hush-density-v1';
@@ -8444,7 +8447,7 @@ export function r3dFrame(state) {
   const pressureDraws=(Array.isArray(state.sourcePressureInstances)
     ?hushBodyMode==='off'?[]:state.sourcePressureInstances.slice(0,4)
     :pressureInstances(incomingHush,incomingHushSecondary,{mode:hushBodyMode,reducedMotion:!!pixelMeshSettings.reduceMotion,reduceFlash:!!pixelMeshSettings.reduceFlash}));
-  const resolvedPressureDraws=import.meta.env.DEV&&hushMotionStudyInstance
+  const resolvedPressureDraws=HUSH_MOTION_STUDY_DEV&&hushMotionStudyInstance
     ?pressureDraws.map(instance=>instance.id===hushMotionStudyInstance.id?hushMotionStudyInstance:instance):pressureDraws;
   P3.setPressureInstances(resolvedPressureDraws);
   P3.setPressureSurfaceInstances(pressureSurfaceInstances(resolvedPressureDraws));

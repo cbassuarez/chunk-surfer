@@ -441,7 +441,7 @@
       "nodes": 1,
       "lines": 4,
       "choices": 0,
-      "sourceSha256": "63094897c3768ecb6cf9f18d1715394e1c161e307b95a2ba29feba2738755a59"
+      "sourceSha256": "889c77acb39dd6f69f4309482947f17168a3c1534876911a93680d7b2eba6a9f"
     },
     {
       "id": "runtime.game.opening-cab-inspection",
@@ -477,7 +477,7 @@
       "nodes": 4,
       "lines": 34,
       "choices": 0,
-      "sourceSha256": "dcb5a9012d1c3a17535f35a6d006de4456487e9926d853be535b885a19d051c6"
+      "sourceSha256": "7975e1c8eca000ec189ea4c7346311a83c4c8a714f46272bdd62bac7dd7e509e"
     },
     {
       "id": "runtime.game.source-contact",
@@ -567,7 +567,7 @@
       "nodes": 135,
       "lines": 269,
       "choices": 21,
-      "sourceSha256": "42553f6a7ff6aa652a3daddae55ef119f6772097abb53ce2b03d8e5ec77f7b35"
+      "sourceSha256": "f25dc528ed874b239d0ed6ad59e94b5bcbd00455c4ca407321248a9c9b60cb11"
     },
     {
       "id": "runtime.render.bag-view",

@@ -63,13 +63,16 @@ function contentLines(entry,width,includeTitle=false,{includeHeader=false,compac
     const value=String(text||'').trim();if(!value||seen.has(value))return;seen.add(value);
     if(rows.length&&!(compact&&critical))rows.push({text:''});fitLines(value,width).forEach(line=>rows.push({text:line,role}));
   };
-  const milestones=(value,showCurrent=true)=>{
+  const milestones=(value,showCurrent=true,nextText=null)=>{
     let started=false;
-    for(const step of value||[])if(step?.label&&(step.state==='done'||showCurrent&&step.state==='current')){
-      const text=`${step.state==='done'?'DONE':'NOW'}: ${step.label}`;
+    const bare=t=>String(t||'').replace(/[.!?…]+$/,'').trim().toLowerCase();
+    const repeatsNext=label=>nextText!=null&&bare(label)===bare(nextText);
+    for(const step of value||[])if(step?.label&&(step.state==='done'||step.state==='current'||step.state==='pending')){
+      if(step.state==='current'&&repeatsNext(step.label))continue;
+      const done=step.state==='done',text=`${done?'■':'□'} ${step.label}`;
       if(seen.has(text))continue;seen.add(text);
       if(!started&&rows.length)rows.push({text:''});started=true;
-      fitLines(text,width).forEach(line=>rows.push({text:line,role:step.state==='done'?'ui-secondary':'ui-amber'}));
+      fitLines(text,width).forEach(line=>rows.push({text:line,role:done?'ui-secondary':step.state==='current'?'ui-amber':'ui-secondary'}));
     }
   };
   if(includeHeader&&presentation.header)paragraph(`${presentation.updated?'UPDATED · ':''}${presentation.header}`,'ui-secondary');
@@ -82,18 +85,19 @@ function contentLines(entry,width,includeTitle=false,{includeHeader=false,compac
     paragraph(stateLine(commitmentLabels[follow.commitment]||follow.commitment,follow.stage?.label),'ui-secondary');
     if(follow.next&&follow.nextLabel)paragraph(`${follow.nextLabel}: ${follow.next}`,'ui-amber');
     if(follow.outcome)paragraph(`OUTCOME: ${follow.outcome}`,'ui-primary');
-    critical=false;milestones(follow.milestones,!(follow.next&&follow.nextLabel==='NEXT'));
+    critical=false;milestones(follow.milestones,true,follow.nextLabel==='NEXT'?follow.next:null);
   }else if((entry.nextLabel==='CHOICE'||entry.nextLabel==='OPTIONAL')
     ||presentation.nature!=='record'&&!closure&&!['resolved','declined'].includes(entry.state)){
     const label=entry.nextLabel===undefined?'NEXT':entry.nextLabel;
-    if(entry.next&&label)paragraph(`${label}: ${entry.next}`,'ui-amber');
+    if(entry.next&&label)paragraph(`${label==='NEXT'?'next':label}: ${entry.next}`,'ui-amber');
     else if(!closure&&!entry.outcome&&!entry.stage?.label)paragraph(entry.state==='active'?'No next action is known.':entry.status?.label||'Resolved.','ui-secondary');
   }
   critical=false;
   if(includeTitle)paragraph(entry.title);
-  // The next-action readout already carries the current step. Keep the
-  // completed trail below it without printing a second instruction.
-  milestones(entry.milestones,!(entry.next&&entry.nextLabel==='NEXT'));
+  // The fulfilment list under its own next heading: every known step, checked
+  // as it is done. The current step stays visible inside the list, unless the
+  // heading already carries that exact instruction.
+  milestones(entry.milestones,true,entry.nextLabel==='NEXT'?entry.next:null);
   // A record already carries its facts; repeat neither its outcome as summary
   // nor matching legacy evidence beneath a structured factual record.
   if(entry.summary&&!closure&&entry.summary!==entry.outcome)paragraph(entry.summary);

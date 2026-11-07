@@ -48,32 +48,47 @@ test('the horizon is a pure function of the recording clock and honours blackout
   assert.equal(looped.cycles,1);assert.ok(looped.rings[1].alive===0&&looped.rings[2].alive===0,'fallen wheels stay fallen on a repeat');
 });
 
-test('the CPU infall mirror pulls nearer ends faster, winds around the spin axis and ends at the horizon',()=>{
+test('the CPU infall mirror pulls nearer ends faster, winds around the spin axis and parks at the horizon instead of crossing',()=>{
   const f=frame(300),near=[f.centre[0]+4,f.centre[1]-2,f.centre[2]],far=[f.centre[0]+9,f.centre[1]-2,f.centre[2]];
   const tide={release:290,anchor:1},d=p=>Math.hypot(...p.map((v,k)=>v-f.centre[k]));
   const a=sourceRestHorizonInfall(near,tide,f),b=sourceRestHorizonInfall(far,tide,f);
   assert.ok(d(a.point)/d(near)<d(b.point)/d(far),'the nearer end has fallen proportionally further: tidal stretching');
   assert.deepEqual(sourceRestHorizonInfall(near,{release:301,anchor:1},f).point,near,'nothing moves before its release');
-  assert.equal(sourceRestHorizonInfall(near,{release:0,anchor:1},frame(700)).consumed,true);
+  const hung=sourceRestHorizonInfall(near,{release:0,anchor:1},frame(700));
+  assert.equal(hung.consumed,false,'proper time never lets the recording clock watch the crossing');
+  const rs=frame(700).radius;
+  assert.ok(d(hung.point)>=rs-1e-9&&d(hung.point)<=SOURCE_REST_HORIZON.hangApproach*rs+1e-9,
+    'the point is parked between the horizon and the handoff shell');
+  const farHung=sourceRestHorizonInfall(far,{release:0,anchor:1},frame(700));
+  assert.equal(farHung.consumed,false,'a long proper-time fall never underflows into a fake crossing');
+  assert.ok(d(farHung.point)>=rs-1e-9&&d(farHung.point)<=SOURCE_REST_HORIZON.hangApproach*rs+1e-9,
+    'the far end is parked too');
+  const swallow=[f.centre[0]+2.6,f.centre[1],f.centre[2]];
+  assert.equal(sourceRestHorizonInfall(swallow,{release:0,anchor:1},frame(300)).consumed,false,
+    'the same point hangs before the growth');
+  assert.equal(sourceRestHorizonInfall(swallow,{release:0,anchor:1},frame(700)).consumed,true,
+    'the grown horizon overtakes it');
 });
 
 test('mistakes take outside fittings and chips, passages take architecture, protected supports never move',()=>{
   const seat=SOURCE_REST_SEATS[0];
   const box=(id,x,y,z,s=[1,1,1],extra={})=>({id,mesh:'source-continuation-rest-stone',x,y,z,chartId:0,restSky:true,restVista:true,
     matrix:new Float32Array([s[0],0,0,0,0,s[1],0,0,0,0,s[2],0,x,y,z,1]),...extra});
-  const props=[box('garden-pier-0',-14,4,-24,[.5,2,.5]),box('garden-cypress-0',-15,4,-19),box('garden-island-0',-19.5,3.9,-23,[8,.35,19]),
+  const props=[box('near-pivot-stone',-16,15.95,-22,[.5,.5,.5]),
+    box('garden-pier-0',-14,4,-24,[.5,2,.5]),box('garden-cypress-0',-15,4,-19),box('garden-island-0',-19.5,3.9,-23,[8,.35,19]),
     box('garden-retaining-0',-23,4.2,-23,[.4,1.1,19]),box('floor-0',1,8.4,-21,[1,.02,1],{restPlace:true}),
     {...box('wrong-ground-west',-8,8,-21,[6,.3,6]),physicalKind:'surface',restVista:false,restSky:false,region:'wrong-return'}];
   const run=time=>{const cue={...sourceRestAfflictionFrame({currentTime:time,playedSeconds:time,active:true,progress:.5}),embodied:true,bodyProgress:1,canLeave:false};
     return applySourceRestDestruction(props,{cue,time,seat,canLeave:false,horizon:sourceRestHorizonFrame({time,progress:.5,seat})});};
   const early=run(mistakes[1].start+.2),grueling=run(passages[0].start+20),late=run(690);
   assert.ok(early.props.some(p=>p.horizonTide&&p.horizonTide.release===mistakes[1].start),'the second mistake takes a fitting');
-  assert.ok(grueling.props.some(p=>String(p.id).startsWith(props[2].id+':horizon-')),'a long island is cut into exact segments while pulled');
+  assert.ok(grueling.props.some(p=>String(p.id).startsWith(props[3].id+':horizon-')),'a long island is cut into exact segments while pulled');
   assert.ok(late.diagnostics.horizonChips>0,'later mistakes chip blocks once fittings run out');
+  assert.ok(late.diagnostics.horizonConsumed>0,'the grown horizon overtakes the near stone at the finale');
   for(const view of[early,grueling,late]){
     assert.ok(view.props.filter(p=>p.restPlace||p.physicalKind).every(p=>!p.horizonTide),'room and walkable supports are never pulled');
   }
-  const segments=grueling.props.filter(p=>String(p.id).startsWith(props[2].id+':horizon-'));
+  const segments=grueling.props.filter(p=>String(p.id).startsWith(props[3].id+':horizon-'));
   const span=segments.reduce((sum,p)=>sum+Math.hypot(p.matrix[8],p.matrix[9],p.matrix[10]),0);
   assert.ok(Math.abs(span-19)<1e-4,'segments exactly cover the original island');
 });
@@ -88,5 +103,6 @@ test('the GPU contract packs tides into the non-paper slot and binds an inert fr
   assert.equal(lens.ages.length,SOURCE_REST_HORIZON.rings.length*SOURCE_REST_HORIZON.eyes);
   assert.match(SOURCE_REST_HORIZON_LENS_GLSL,/layout\(location=1\) out vec4 oMark/);
   assert.match(SOURCE_REST_HORIZON_TIDE_GLSL,/float restHorizonTide\(/);
+  assert.match(SOURCE_REST_HORIZON_TIDE_GLSL,/HORIZON_HANG/,'the GPU vertex program mirrors the proper-time handoff');
   assert.doesNotMatch(SOURCE_REST_HORIZON_LENS_GLSL,/float distance\b/,'no local shadows the GLSL builtin');
 });

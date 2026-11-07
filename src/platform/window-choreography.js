@@ -4,6 +4,7 @@ import { sectorErrorPhases } from '../render/sector-error.js';
 import { sourceWarningFrames } from '../render/source-warning.js';
 import { drawPracticeRebus } from '../render/practice-rebus.js';
 import { SOURCE_FAULT_RUN_MS, SOURCE_FAULT_LANES } from '../game/source-faults.js';
+import { TAKEOVER_CLINICAL, TAKEOVER_COMFORT } from '../game/interruption-director.js';
 import {createWindowMediaSimulation} from './window-media-simulation.js';
 import {sourceRestOwnedFramesValid} from '../render/source-rest-apertures.js';
 import {validateWindowArchitecturePacket,windowArchitectureCueAllowed} from '../render/window-media-architecture.js';
@@ -194,11 +195,19 @@ export function compileTakeoverPanePlan({mediaId='',reducedMotion=false,flashMod
   const asset=windowMediaAsset(mediaId);
   const content=asset?.kind==='video'?{kind:'video',assetId:asset.id}:mediaId==='empty-field'?{kind:'procedural',preset:'empty-field'}:null;
   if(!content)return null;
+  // The verb's answer grades the pane. The body failing arrives hard and torn
+  // (nvme-sector, fault accelerating); the light at the end arrives quiet and
+  // settles (violet-dither, almost no fault). The ordinary arc stays as it was.
+  const clinical=TAKEOVER_CLINICAL.includes(mediaId),comfort=TAKEOVER_COMFORT.includes(mediaId);
+  const grade=clinical
+    ?{shader:'nvme-sector',fault:{profile:'nvme-sector',intensity:.55,seed:41,cadenceMs:reducedMotion?900:280},formation:{mode:'impact-scatter',durationMs:360,staggerMs:35}}
+    :comfort
+      ?{shader:'violet-dither',fault:{profile:'violet-dither',intensity:.02,seed:219,cadenceMs:900},formation:{mode:'memory-unfold',durationMs:450,staggerMs:0}}
+      :{shader:'nvme-sector',fault:{profile:'nvme-sector',intensity:.12,seed:17,cadenceMs:reducedMotion?900:480},formation:{mode:'practice-windows',durationMs:0,staggerMs:0}};
   return compileWindowCompositionPlan({
     compositionId:`takeover:${mediaId}`,sceneId:'takeover:memory',purpose:'takeover',epochMs,reducedMotion,flashMode,
-    surfaces:[{id:'takeover:pane',content,initial:{x:.88,y:.16},width:320,height:180,shader:'nvme-sector',draggable:false,description:''}],
-    fault:{profile:'nvme-sector',intensity:.12,seed:17,cadenceMs:reducedMotion?900:480},
-    formation:{mode:'practice-windows',durationMs:0,staggerMs:0},foldDurationMs:0,completion:{mode:'nonblocking'},
+    surfaces:[{id:'takeover:pane',content,initial:{x:.88,y:.16},width:320,height:180,shader:grade.shader,draggable:false,description:''}],
+    fault:grade.fault,formation:grade.formation,foldDurationMs:0,completion:{mode:'nonblocking'},
   });
 }
 

@@ -25,6 +25,10 @@ import { godActionRow, godStopRows, godRowSelectable, validateGodTabs } from '..
 import { createGodWarpController, resolveGodHook, godLocationValue } from '../src/game/god-warp.js';
 import { createGodInventory } from '../src/game/god-inventory.js';
 import { authoredCameraFrame } from '../src/render/authored-camera.js';
+import { normalizeNatatoriumMetric, natatoriumMetricUniform } from '../src/render/natatorium-metric.js';
+import { cinematicTanHalfFov } from '../src/render/cinematic-lens.js';
+import { recordingEmbodimentInstances, recordingEmbodimentViewPull } from '../src/render/recording-embodiment.js';
+import { normalizeRecordingViewPull } from '../src/render/recording-view-pull.js';
 
 const main = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
 const renderer = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
@@ -422,7 +426,13 @@ test('restoring a pickup preserves its authored contact and does not reinitializ
 test('actual renderer consumes one warp snap; ordinary floor movement stays eased', () => {
   const sentinel = new Error('camera complete'); let time = 1000, resets = 0;
   const ctx = context(['r3dFrame'], {
-    gl: {}, P3:{setDriveStudyFrame:noop},authoredCameraFrame, cameraSnapPending: true, lastBeacons: null, lastT: .95,
+    gl: {}, P3:{setDriveStudyFrame:noop,setNatatoriumMetricFrame:noop,setFrameCameraTanHalfFov:noop},authoredCameraFrame, cameraSnapPending: true, lastBeacons: null, lastT: .95,
+    normalizeNatatoriumMetric, natatoriumMetricUniform, pixelMeshSettings:{reduceMotion:false},
+    sourceTowerView:null, sourceCrossing:null, driveStudy:null, natatoriumMetric:null,
+    lastBuildingViewState:null, driveFrameActive:false, pressureFinishReady:false,
+    cinematicTanHalfFov, activeCameraTanHalfFov:.65, catchZoom:0, setFrameCameraTanHalfFov:noop, cinematicLensPass:null,
+    recordingEmbodimentInstances, recordingEmbodimentViewPull, normalizeRecordingViewPull,
+    canvas:{width:1280,height:720}, recordingFaceProps:[], recordingViewPull:null,
     performance: { now: () => time }, drainMarkQueue: noop, horizonState: { active: false },
     vfdPreviousX: 0, vfdPreviousZ: 0, vfdMovement: 0, camX: 0, camZ: 0, camY: -10,
     towerCaptureInProgress:false,
@@ -527,7 +537,7 @@ function mainWarpFixture() {
     godRestoreBuildingWorld:()=>{events.push('restore');special=false;saved.chunkSurf.active=false;},
     godSyncBuildingRender:()=>events.push('render'),syncDoorDynamicProps:noop,pushEvent:message=>notices.push(message),
     saveCommit:patch=>{saved={...saved,...patch};},
-    godEnsureTestRun:async()=>true,
+    godEnsureTestRun:async()=>true,markDeveloperRun:noop,
   });
   return {ctx,events,notices,saved:()=>saved,special:()=>special};
 }
@@ -557,7 +567,8 @@ test('production cold warp awaits readiness, then commits the requested pose', a
 
 test('building load barrier waits for older builds even when the latest build finishes first', async () => {
   const deferred=[];
-  const ctx=context(['loadBuilding'],{buildingLoadPromise:null,loadBuildingRuntime:()=>new Promise(resolve=>deferred.push(resolve))});
+  const ctx=context(['loadBuilding'],{buildingLoadPromise:null,loadBuildingRuntime:()=>new Promise(resolve=>deferred.push(resolve)),
+    studentStrikeScene:null,natatoriumCoffeeStretch:{reset:noop}});
   const old=ctx.loadBuilding(), latest=ctx.loadBuilding();
   deferred[1](true); assert.equal(await latest,true); await turn(); assert.ok(ctx.buildingLoadPromise);
   deferred[0](true); assert.equal(await old,true); await turn(); assert.equal(ctx.buildingLoadPromise,null);

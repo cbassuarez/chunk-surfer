@@ -7,6 +7,7 @@ import {CELL,MATERIAL,F} from '../data/floorplan/legend.js';
 import {assetUrl} from '../platform/paths.js';
 import {COASTAL_MEMORY_LAYOUT as L,COASTAL_WORLD_FROM_LOCAL,COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,coastalWorldPoint} from '../data/coastal-memory.js';
 import {makeCoastalMemoryScene,COASTAL_MEMORY_ASSETS} from '../game/coastal-memory/scene.js';
+import {coastalHandsHeldLocal} from '../game/coastal-memory/hands-scene.js';
 import {ensureWorldLetteringFonts,worldLetteringFont} from './world-lettering-fonts.js';
 import {physicalPrintPixels,uploadPhysicalPrint} from './physical-source-print.js';
 import {vanBrandInstances} from './van-brand.js';
@@ -24,7 +25,10 @@ const finite=(n,d=0)=>Number.isFinite(n)?n:d;
 const clamp=n=>Math.max(0,Math.min(1,finite(n)));
 export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotion=false}={}){
  const pose=frame.localPose||frame.pose||L.spawn,time=finite(frame.elapsed),eye=coastalWorldPoint([pose.x,pose.feet+1.62,pose.z]);
- const scene=makeCoastalMemoryScene({timeSec:reducedMotion?0:time,musicBoxTime:finite(frame.recordingOffset,time),includeWreck:true,mode:'foot',vehicleMetrics});
+ const yaw=finite(pose.yaw)+Math.atan2(COASTAL_WORLD_FROM_LOCAL[2],COASTAL_WORLD_FROM_LOCAL[0]),pitch=finite(pose.pitch);
+ const hands=frame.hands?.handling?{handling:true,winding:frame.hands.winding,
+   heldLocal:coastalHandsHeldLocal({eye,yaw,pitch,boxPose:frame.hands.boxPose,shake:frame.hands.shakeLevel,worldFromLocal:COASTAL_WORLD_FROM_LOCAL})}:null;
+ const scene=makeCoastalMemoryScene({timeSec:reducedMotion?0:time,musicBoxTime:finite(frame.recordingOffset,time),includeWreck:true,mode:'foot',vehicleMetrics,hands});
  const level=clamp(frame.wreckLightLevel??0),lights=[],pierShadow=pose.z>=68;
  for(const prop of scene.props)if(prop.id==='coastal-sunken-same-van')prop.fixturePower=level;
  // This is explicitly the same van as the opening, settled underwater. Paint
@@ -34,8 +38,7 @@ export function coastalMemoryRenderFrame(frame,{vehicleMetrics=null,reducedMotio
  scene.props.push(...vanBrandInstances(scene.props.filter(prop=>prop.id==='coastal-sunken-same-van').map(prop=>({...prop,mesh:'drive_vehicle_body'}))).map(mark=>({...mark,mesh:VAN_WRECK.meshes.brand})));
  const marker=scene.lamps.find(lamp=>lamp.id==='coastal-pier-near-marker');if(marker)marker.castsShadow=pierShadow;
  for(const lamp of scene.water.realHeadlamps){lamp.intensity*=level;if(level<.001||pierShadow)lamp.castsShadow=false;const m=lamp.vehicleBody;lights.push({position:[lamp.x,lamp.y,lamp.z],direction:[-m[8],-m[9],-m[10]],intensity:lamp.intensity});}
- const yaw=finite(pose.yaw)+Math.atan2(COASTAL_WORLD_FROM_LOCAL[2],COASTAL_WORLD_FROM_LOCAL[0]);
- return{scene,eye,yaw,pitch:finite(pose.pitch),coastalMemory:{active:true,siteMatrix:COASTAL_WORLD_FROM_LOCAL,waterY:0,time:reducedMotion?0:time,lights,flood:0},noteCopy:COASTAL_NOTE_COPY};
+ return{scene,eye,yaw,pitch,coastalMemory:{active:true,siteMatrix:COASTAL_WORLD_FROM_LOCAL,waterY:0,time:reducedMotion?0:time,lights,flood:0},noteCopy:COASTAL_NOTE_COPY};
 }
 function installNoteInk(gl,pack){
  const mesh=pack.catalog.get('cm_damp_note');if(!mesh)return false;

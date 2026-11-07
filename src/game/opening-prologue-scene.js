@@ -23,10 +23,24 @@ const spoken=(who,text)=>who==='me'?`"${text}"`:text;
 // The talk is the game's own conversation machine: nothing advances by itself, a hub
 // says its piece once, and you choose when to open your mouth. This only draws it, as
 // a running column beside the picture, and moves the picture in its own time.
-export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady=()=>true,toWorldView=frame=>frame,setOmen=()=>{},reducedMotion=false,audio,getAudio,replay=null,onStart=()=>{},onDone=()=>{},onExit=()=>{},onUnavailable=()=>{},setMusic=()=>{}}={}){
-  let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null;
+export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady=()=>true,toWorldView=frame=>frame,setOmen=()=>{},reducedMotion=false,audio,getAudio,replay=null,onStart=()=>{},onDone=()=>{},onExit=()=>{},onUnavailable=()=>{},setMusic=()=>{},
+  drive=null,driveMetrics=null,driveLive=()=>true,onDriveFrame=()=>{},onBeat=()=>{}}={}){
+  let phase='loading',paused=false,exited=false,finished=false,skip=0,held=false,posed=null,cardAt=0,lastNode=null,fates=0,pictured=0,lastSerial=0,lastLine=null,beat='omen',beatVeil=0;
   const stage=createOpeningPrologueStage({reducedMotion}),nodes=OPENING_PROLOGUE.nodes,log=[];
+  const metrics=()=>typeof driveMetrics==='function'?driveMetrics():driveMetrics;
   const clear=()=>setOmen({props:[],horizon:null,rain:null});
+  // The drive beats: the road itself at the start, at the margin ("you are
+  // still driving"), and when the wipers come back across. 'woken' carries the
+  // omen through the windshield, over the road, before the pure omen resumes.
+  const DRIVE_BEATS=new Set(['dark','margin','gone']);
+  const beatFor=id=>drive&&metrics()&&driveLive()?DRIVE_BEATS.has(id)?'drive':id==='woken'?'drive-omen':'omen':'omen';
+  function driveOmen(s,eye,heading){
+    const fx=Math.sin(heading),fz=-Math.cos(heading),centre=[eye[0]+fx*90,eye[1]+42,eye[2]+fz*90];
+    const away=Math.hypot(centre[0]-eye[0],centre[1]-eye[1],centre[2]-eye[2])||1,
+      view=[(centre[0]-eye[0])/away,(centre[1]-eye[1])/away,(centre[2]-eye[2])/away];
+    setOmen({rain:s.rain,props:openingOmenProps({eye,centre,radius:s.radius,moon:s.veil>=1?0:s.moon,time:s.time,stream:s.stream,reducedMotion,view}),
+      horizon:openingHorizonFrame({centre,radius:s.radius,clock:s.time,wheels:s.wheels,falls:s.falls,open:s.open,shut:s.shut,reducedMotion})});
+  }
   function observed(){const s=stage.view();if(!posed)return s;const m={...s,...posed},d=m.target.map((n,k)=>n-m.eye[k]);return{...m,yaw:Math.atan2(d[0],-d[2]),pitch:Math.atan2(d[1],Math.hypot(d[0],d[2]))};}
   function picture(){
     const s=observed(),centre=s.hole,time=s.time;pictured++;
@@ -41,6 +55,9 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
     worldUnderlay:true,presentation:'cinematic',voiceEnabled:true,audio,getAudio,replay,worldView:picture,onDone:finish});
   const baseEnter=scene.enter.bind(scene),baseExit=scene.exit.bind(scene),baseUpdate=scene.update.bind(scene),baseKey=scene.key.bind(scene),baseKeyup=scene.keyup.bind(scene),baseView=scene.view.bind(scene);
   Object.assign(scene,{handlesEscape:false,worldPresentation:'visible',lookProfile:'calm'});
+  // The world frame carries the omen; a drive beat owns the picture itself
+  // and hides the world exactly the way the door teaser does.
+  Object.defineProperty(scene,'worldPresentation',{configurable:true,get:()=>beat==='omen'?'visible':'hidden'});
   // The talk starts on the first shown frame of the picture, not when it is pushed.
   scene.enter=()=>{};
   scene.update=dt=>{
@@ -51,10 +68,24 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
       if(ready===true||ready?.ready===true)phase='awaiting-frame';
       return;
     }
-    if(phase==='awaiting-frame'){if(pictured<2||!getPresentationReady())return;phase='film';onStart();baseEnter();}
+    if(phase==='awaiting-frame'){if(!getPresentationReady())return;if(beatFor(stage.id())==='omen'&&pictured<2)return;phase='film';drive?.start();onStart();baseEnter();}
     if(phase!=='film'||!getPresentationReady())return;
     const step=Math.max(0,Math.min(.1,Number(dt)||0));
     stage.advance(step);baseUpdate(step);
+    // The drive runs under the talk. It only steps while its picture is up:
+    // an omen beat leaves the van where the road had it, and the next drive
+    // beat resumes the same journey. The cut between pictures carries a short
+    // veil, so neither picture arrives by a hard switch.
+    const nextBeat=beatFor(stage.id());
+    if(nextBeat!==beat){beat=nextBeat;beatVeil=1;onBeat(beat);}
+    if(beatVeil>0)beatVeil=Math.max(0,beatVeil-step/.45);
+    if(beat!=='omen'){
+      if(driveLive())drive?.update(step);
+      const f=driveLive()?drive?.frame(metrics()):null;
+      if(f){onDriveFrame({...f,cinematicLook:true});
+        if(beat==='drive-omen'&&f.scene?.eye){const s=stage.view(),heading=drive.snapshot()?.driveState?.heading||0;driveOmen(s,f.scene.eye,heading);}
+      }
+    }
     const v=baseView(),node=nodes[v.nodeId];
     if(v.lineSerial!==lastSerial){if(lastLine?.text)log.push(lastLine);lastSerial=v.lineSerial;}
     lastLine=v.line?{who:v.who,text:String(v.line.text||'')}:lastLine;
@@ -80,7 +111,7 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
   scene.keyup=(event={})=>{held=false;skip=0;baseKeyup(event);return true;};
   scene.pause=()=>{paused=true;held=false;skip=0;};scene.resume=()=>{paused=false;};scene.blur=()=>scene.pause();scene.focus=()=>scene.resume();
   scene.exit=()=>{if(exited)return;exited=true;clear();baseExit();onExit({finished});};
-  scene.view=()=>({...baseView(),phase,paused,finished,skip,fates,stageId:stage.id(),stage:observed(),log:[...log]});
+  scene.view=()=>({...baseView(),phase,paused,finished,skip,fates,stageId:stage.id(),stage:observed(),log:[...log],beat,beatVeil,drive:drive?.snapshot()||null});
   // For review stills: the picture at a named point with its move finished, or an exact stage.
   scene.seekStage=key=>{stage.to(key);stage.snap();};
   scene.pose=value=>{posed=value;};
@@ -129,6 +160,8 @@ export function makeOpeningPrologueScene({getReady=()=>true,getPresentationReady
       y-=STEP+GAP;
     }
     if(skip>.12)centred(x*2+w-cols,1,'HOLD TO SKIP',.8,DIM,Math.min(1,skip/SKIP_HOLD));
+    // The short veil between pictures: drive to omen, and back.
+    if(beatVeil>.001)uiFill(0,0,cols,rows,`rgba(4,5,7,${(beatVeil*beatVeil).toFixed(3)})`);
   };
   return scene;
 }

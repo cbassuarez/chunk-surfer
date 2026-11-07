@@ -5,7 +5,7 @@ import { fitLines } from './fit-text.js';
 import { FIELD_KIT_OPTIONS, normalizeFieldKit, fieldKitEffects, fieldKitOptionAvailability } from '../game/field-kit.js';
 import { vanWorkbenchSelectedObject } from './van-workbench-stage.js';
 import { vanKitModel } from '../data/van-kit-models.js';
-import { vanWorkbenchProgress,vanWorkbenchOptionPresentation,vanWorkbenchComparison,vanWorkbenchManifest } from './van-workbench-guidance.js';
+import { vanWorkbenchProgress,vanWorkbenchOptionPresentation,vanWorkbenchComparison,vanWorkbenchManifest,vanWorkbenchGuide } from './van-workbench-guidance.js';
 
 export const VAN_WORKBENCH_GROUPS = Object.freeze([
   { id: 'headphones', label: 'HEADPHONES', color: 'amber' },
@@ -110,6 +110,24 @@ function surface(rect,fill='#d4c8a6'){
     ctx.strokeStyle='#494c3e';ctx.lineWidth=dpr;ctx.strokeRect(x+.5*dpr,y+.5*dpr,w-dpr,h-dpr);});
 }
 function action(rect,label,focused,enabled=true){if(!rect)return;surface(rect,focused?'#e8d6a4':enabled?'#bbc2ac':'#9a9d8c');ink({x:rect.x+.35,y:rect.y+.22,w:rect.w-.7},`${focused?'› ':''}${label}`,{h:.58,color:enabled?'#18241f':'#4b5448'});}
+function outline(rect,color='#e8c15a'){
+  uiDraw(({ctx,dpr,cellW,cellH})=>{if(!rect)return;const x=rect.x*cellW*dpr,y=rect.y*cellH*dpr,w=rect.w*cellW*dpr,h=rect.h*cellH*dpr;
+    ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.5*dpr;ctx.strokeRect(x+.5*dpr,y+.5*dpr,w-dpr,h-dpr);ctx.restore();});
+}
+// The guided callout band: one current objective, the reason for it, and a
+// bright outline on the physical object that answers it. Advisory, not a lock —
+// the rest of the shelf stays fully available.
+function drawVanBenchGuide(layout,guide){
+  const cols=layout.size.cols,compact=layout.compact;
+  const bandX=compact?10:12.5,bandW=Math.max(16,Math.min(60,cols-bandX-1));
+  const whyLines=fitLines(String(guide.why||''),Math.floor(bandW*1.5),2);
+  const band={x:bandX,y:.65,w:bandW,h:1.02+whyLines.length*.62};
+  surface(band,'#1c2a24');
+  ink({x:band.x+.55,y:band.y+.2,w:band.w-1.1},`▶ GUIDED · ${guide.title}`,{h:.6,color:'#e8c15a'});
+  whyLines.forEach((line,i)=>ink({x:band.x+.55,y:band.y+1.02+i*.62,w:band.w-1.1},line,{h:.46,color:'#b9c4b3'}));
+  const target=layout.regions.find(r=>r.id===guide.target);
+  if(target)outline(target,'#e8c15a');
+}
 export function drawVanWorkbench(view={},size={},stageRenderer=null){
   const state={...view.state,fieldKit:normalizeFieldKit(view.state?.fieldKit)},selection=view.selection||null;
   let layout=vanWorkbenchLayout(size,state,selection?.group||'headphones',{},view);
@@ -142,5 +160,7 @@ export function drawVanWorkbench(view={},size={},stageRenderer=null){
   if(view.saveFailure){if(!selection){const p={x:layout.size.cols*.25,y:.65,w:layout.size.cols*.5,h:1.1};surface(p,'#cfa783');ink({x:p.x+.4,y:p.y+.22,w:p.w-.8},'SAVE FAILED',{h:.45,color:'#302720'});}action(layout.retry,view.pending?'SAVING…':'RETRY SAVE',view.focusId==='van:retry',!view.pending);}
   const hovered=layout.physical.find(r=>r.id===view.focusId);
   if(hovered&&!selection){const label=hovered.label||'FIELD CASE',w=Math.min(layout.size.cols-2,Math.max(12,label.length*.64));const p={x:clamp(hovered.x+hovered.w/2-w/2,1,layout.size.cols-w-1),y:clamp(hovered.y-.95,2.2,layout.size.rows-3.7),w,h:.85};surface(p,'#c6cbb7');ink({x:p.x+.3,y:p.y+.13,w:p.w-.6},label,{h:.46,color:'#23362a'});}
-  return{...layout,previewFinish:state.fieldKit.cosmetics.faceplate,effects:fieldKitEffects(state.fieldKit)};
+  const guide=!selection&&!view.saveFailure?vanWorkbenchGuide(state):null;
+  if(guide)drawVanBenchGuide(layout,guide);
+  return{...layout,previewFinish:state.fieldKit.cosmetics.faceplate,effects:fieldKitEffects(state.fieldKit),guide};
 }

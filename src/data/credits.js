@@ -9,6 +9,7 @@ import { DOOR_AUDIO_SOURCES } from './door-audio-assets.js';
 import { FOOTSTEP_AUDIO_SOURCES } from './footstep-audio-assets.js';
 import { HEARTBEAT_AUDIO_SOURCES } from './heartbeat-audio-assets.js';
 import {WINDOW_MEDIA_EXTENSION_SOURCES} from './window-media-sources.js';
+import {WINDOW_MEDIA_ELVD_SOURCES} from './window-media-elvd-sources.js';
 import {STILLNESS_ANATOMY} from './generated/stillness-anatomy.js';
 import {sourceRestCouperinCreditLines} from './source-rest-couperin-source.js';
 import {openingCabRadioCreditLines} from './opening-cab-radio-source.js';
@@ -110,6 +111,10 @@ export const CREDITS = Object.freeze([
       'https://creativecommons.org/licenses/by/3.0/',
       'Adapted: continuous62–78second excerpt; cropped, resized, silent; geometry composited over footage',
       ...WINDOW_MEDIA_EXTENSION_SOURCES.flatMap(source=>[
+        `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
+        `Adapted: ${source.changes}`,
+      ]),
+      ...WINDOW_MEDIA_ELVD_SOURCES.flatMap(source=>[
         `${source.title} — ${source.author} (${source.licence})`,source.url,source.licenceUrl,
         `Adapted: ${source.changes}`,
       ]),

@@ -158,10 +158,10 @@
           "id": "step.l0",
           "who": "direction",
           "text": "His shoulder catches the geometry. Put him down, change the angle, and take the threshold again.",
-          "source": "src/main.js:5207"
+          "source": "src/main.js:5209"
         }
       ],
-      "source": "src/main.js:5207"
+      "source": "src/main.js:5209"
     },
     "SIX_EXIT_LINES": {
       "id": "SIX_EXIT_LINES",
@@ -171,76 +171,76 @@
           "id": "SIX_EXIT_LINES.l0",
           "who": "you",
           "text": "from this one step the pieces line up. 6:00. 6:00 6:0 6: 6  G:00  G:0  G:  G",
-          "source": "src/main.js:7244"
+          "source": "src/main.js:7246"
         },
         {
           "id": "SIX_EXIT_LINES.l1",
           "who": "unknown",
           "text": "four point two seconds. i counted. you clicked. nothing moved.",
-          "source": "src/main.js:7245"
+          "source": "src/main.js:7247"
         },
         {
           "id": "SIX_EXIT_LINES.l2",
           "who": "you",
           "text": "eyes eyes eyes EYES e y e s  the glass has two sides  which side am i  which side are y",
-          "source": "src/main.js:7246"
+          "source": "src/main.js:7248"
         },
         {
           "id": "SIX_EXIT_LINES.l3",
           "who": "unknown",
           "text": "your face is blue. i made it blue. i see behind it.",
-          "source": "src/main.js:7247"
+          "source": "src/main.js:7249"
         },
         {
           "id": "SIX_EXIT_LINES.l4",
           "who": "you",
           "text": "-96 dB -96 dB -96 dB  quiet quiet quiet QUIET  i was quiet I WAS QUIET I WAS",
-          "source": "src/main.js:7248"
+          "source": "src/main.js:7250"
         },
         {
           "id": "SIX_EXIT_LINES.l5",
           "who": "unknown",
           "text": "the microphone was never off. i heard you swallow.",
-          "source": "src/main.js:7249"
+          "source": "src/main.js:7251"
         },
         {
           "id": "SIX_EXIT_LINES.l6",
           "who": "you",
           "text": "ears in the walls ears in the walls ears in YOUR walls ears in the w",
-          "source": "src/main.js:7250"
+          "source": "src/main.js:7252"
         },
         {
           "id": "SIX_EXIT_LINES.l7",
           "who": "unknown",
           "text": "you blink at one hertz. i only need the on.",
-          "source": "src/main.js:7251"
+          "source": "src/main.js:7253"
         },
         {
           "id": "SIX_EXIT_LINES.l8",
           "who": "you",
           "text": "five rooms four rooms three rooms two rooms one room  you room  YOU ROOM  you are the r",
-          "source": "src/main.js:7252"
+          "source": "src/main.js:7254"
         },
         {
           "id": "SIX_EXIT_LINES.l9",
           "who": "unknown",
           "text": "sixty seconds of an empty room. that is the last take.",
-          "source": "src/main.js:7253"
+          "source": "src/main.js:7255"
         },
         {
           "id": "SIX_EXIT_LINES.l10",
           "who": "you",
           "text": "same door same door same door same door same door same door same dooR SAME DOOR SAME",
-          "source": "src/main.js:7254"
+          "source": "src/main.js:7256"
         },
         {
           "id": "SIX_EXIT_LINES.l11",
           "who": "unknown",
           "text": "see you at six.",
-          "source": "src/main.js:7255"
+          "source": "src/main.js:7257"
         }
       ],
-      "source": "src/main.js:7244"
+      "source": "src/main.js:7246"
     },
     "noteStairTorchFlick": {
       "id": "noteStairTorchFlick",
@@ -250,22 +250,22 @@
           "id": "noteStairTorchFlick.l0",
           "who": "you",
           "text": "No. Not long enough in the dark to be sure of anything.",
-          "source": "src/main.js:10346"
+          "source": "src/main.js:10380"
         },
         {
           "id": "noteStairTorchFlick.l1",
           "who": "direction",
           "text": "The filament comes up on a landing, a smoke door, and a handrail that ends where handrails end.",
-          "source": "src/main.js:10350"
+          "source": "src/main.js:10384"
         },
         {
           "id": "noteStairTorchFlick.l2",
           "who": "you",
           "text": "There. That is a stair. That is an ordinary stair.",
-          "source": "src/main.js:10351"
+          "source": "src/main.js:10385"
         }
       ],
-      "source": "src/main.js:10346"
+      "source": "src/main.js:10380"
     },
     "failBellTower.tower-impact.update": {
       "id": "failBellTower.tower-impact.update",
@@ -275,10 +275,10 @@
           "id": "failBellTower.tower-impact.update.l0",
           "who": "you",
           "text": "Back to the ringing-room landing. The completed rows held.",
-          "source": "src/main.js:10639"
+          "source": "src/main.js:10673"
         }
       ],
-      "source": "src/main.js:10639"
+      "source": "src/main.js:10673"
     },
     "completeBellTower": {
       "id": "completeBellTower",
@@ -288,10 +288,10 @@
           "id": "completeBellTower.l0",
           "who": "direction",
           "text": "Bells standing. The service lock releases. Descend to the nave.",
-          "source": "src/main.js:10649"
+          "source": "src/main.js:10683"
         }
       ],
-      "source": "src/main.js:10649"
+      "source": "src/main.js:10683"
     },
     "startTenorPerformance.onComplete": {
       "id": "startTenorPerformance.onComplete",
@@ -301,10 +301,10 @@
           "id": "startTenorPerformance.onComplete.l0",
           "who": "direction",
           "text": "The touch comes round. Two rows of rounds remain. Stand clear.",
-          "source": "src/main.js:10703"
+          "source": "src/main.js:10737"
         }
       ],
-      "source": "src/main.js:10703"
+      "source": "src/main.js:10737"
     },
     "startTenorPerformance.onRelease": {
       "id": "startTenorPerformance.onRelease",
@@ -314,10 +314,10 @@
           "id": "startTenorPerformance.onRelease.l0",
           "who": "you",
           "text": "Let go. The seven carry the course until I take the tenor again.",
-          "source": "src/main.js:10718"
+          "source": "src/main.js:10752"
         }
       ],
-      "source": "src/main.js:10718"
+      "source": "src/main.js:10752"
     },
     "tickBellTower": {
       "id": "tickBellTower",
@@ -327,16 +327,16 @@
           "id": "tickBellTower.l0",
           "who": "direction",
           "text": "The bells are directly above the inner screen. The corridor is carrying more than sound.",
-          "source": "src/main.js:10727"
+          "source": "src/main.js:10761"
         },
         {
           "id": "tickBellTower.l1",
           "who": "direction",
           "text": "The tower is silent above the nave. The recorder meter is moving anyway. Put the fifth take on tape.",
-          "source": "src/main.js:10731"
+          "source": "src/main.js:10765"
         }
       ],
-      "source": "src/main.js:10727"
+      "source": "src/main.js:10761"
     },
     "answerTowerPersonalRing": {
       "id": "answerTowerPersonalRing",
@@ -346,16 +346,16 @@
           "id": "answerTowerPersonalRing.l0",
           "who": "you",
           "text": "That’s how his box starts.",
-          "source": "src/main.js:11415"
+          "source": "src/main.js:11449"
         },
         {
           "id": "answerTowerPersonalRing.l1",
           "who": "you",
           "text": "Those two. The recording is answering the ring.",
-          "source": "src/main.js:11426"
+          "source": "src/main.js:11460"
         }
       ],
-      "source": "src/main.js:11415"
+      "source": "src/main.js:11449"
     },
     "sourceReturnArrivalSpeech": {
       "id": "sourceReturnArrivalSpeech",
@@ -365,28 +365,28 @@
           "id": "sourceReturnArrivalSpeech.l0",
           "who": "you",
           "text": "No bells. Whatever is in there, I go in with the room the way I found it.",
-          "source": "src/main.js:12088"
+          "source": "src/main.js:12122"
         },
         {
           "id": "sourceReturnArrivalSpeech.l1",
           "who": "direction",
           "text": "The door is shut behind you, oak in the belfry wall. The room is the one it showed; the floor is a floor now, ten metres above the nave.",
-          "source": "src/main.js:12092"
+          "source": "src/main.js:12126"
         },
         {
           "id": "sourceReturnArrivalSpeech.l2",
           "who": "direction",
           "text": "The chapel’s eight hang here, mouth-down, four over four. Through the trap between them the crossing floor is a pale square a long way down.",
-          "source": "src/main.js:12093"
+          "source": "src/main.js:12127"
         },
         {
           "id": "sourceReturnArrivalSpeech.l3",
           "who": "you",
           "text": "Quiet past them. Everything under this floor will hear a bell.",
-          "source": "src/main.js:12094"
+          "source": "src/main.js:12128"
         }
       ],
-      "source": "src/main.js:12088"
+      "source": "src/main.js:12122"
     },
     "takeTheBag": {
       "id": "takeTheBag",
@@ -396,10 +396,10 @@
           "id": "takeTheBag.l0",
           "who": "you",
           "text": "Shut, and everything I need is on my back. Nothing in there but a blanket and a road atlas I have not opened since I got the phone.",
-          "source": "src/main.js:13239"
+          "source": "src/main.js:13286"
         }
       ],
-      "source": "src/main.js:13239"
+      "source": "src/main.js:13286"
     },
     "takeTheBag.onChooseDifficulty": {
       "id": "takeTheBag.onChooseDifficulty",
@@ -409,10 +409,10 @@
           "id": "takeTheBag.onChooseDifficulty.l0",
           "who": "you",
           "text": "The shift is ticked on the work order. In ink.",
-          "source": "src/main.js:13284"
+          "source": "src/main.js:13332"
         }
       ],
-      "source": "src/main.js:13284"
+      "source": "src/main.js:13332"
     },
     "shutTheVan": {
       "id": "shutTheVan",
@@ -422,10 +422,10 @@
           "id": "shutTheVan.l0",
           "who": "direction",
           "text": "Both leaves go over, and the light inside goes with them. The yard is only what the gate lamp reaches now.",
-          "source": "src/main.js:13459"
+          "source": "src/main.js:13507"
         }
       ],
-      "source": "src/main.js:13459"
+      "source": "src/main.js:13507"
     },
     "talkToTheLodge": {
       "id": "talkToTheLodge",
@@ -435,16 +435,16 @@
           "id": "talkToTheLodge.l0",
           "who": "you",
           "text": "Case, Survey Indicator, and the shift sheet. Finish packing before I sign for the building.",
-          "source": "src/main.js:14036"
+          "source": "src/main.js:14084"
         },
         {
           "id": "talkToTheLodge.l1",
           "who": "you",
           "text": "He has told me everything he is going to tell me. The keys are in my pocket and the job is in the basement.",
-          "source": "src/main.js:14041"
+          "source": "src/main.js:14089"
         }
       ],
-      "source": "src/main.js:14036"
+      "source": "src/main.js:14084"
     },
     "tryDockHauntingDoor": {
       "id": "tryDockHauntingDoor",
@@ -454,10 +454,10 @@
           "id": "tryDockHauntingDoor.l0",
           "who": "you",
           "text": "No. Something is holding the key.",
-          "source": "src/main.js:14548"
+          "source": "src/main.js:14596"
         }
       ],
-      "source": "src/main.js:14548"
+      "source": "src/main.js:14596"
     },
     "tryTheGreyDoor": {
       "id": "tryTheGreyDoor",
@@ -467,10 +467,10 @@
           "id": "tryTheGreyDoor.l0",
           "who": "you",
           "text": "It was here. I came through it. It was here.",
-          "source": "src/main.js:15035"
+          "source": "src/main.js:15083"
         }
       ],
-      "source": "src/main.js:15035"
+      "source": "src/main.js:15083"
     },
     "handleSetupGuideEvent": {
       "id": "handleSetupGuideEvent",
@@ -480,10 +480,10 @@
           "id": "handleSetupGuideEvent.l0",
           "who": "you",
           "text": "B3. Marked. Inner door, then down the basement stair. Follow the bearing.",
-          "source": "src/main.js:15122"
+          "source": "src/main.js:15170"
         }
       ],
-      "source": "src/main.js:15122"
+      "source": "src/main.js:15170"
     },
     "tickSetupHandoff": {
       "id": "tickSetupHandoff",
@@ -493,10 +493,10 @@
           "id": "tickSetupHandoff.l0",
           "who": "you",
           "text": "Studio B3. This is the room. The bearing brought me to the door; now I listen.",
-          "source": "src/main.js:15145"
+          "source": "src/main.js:15193"
         }
       ],
-      "source": "src/main.js:15145"
+      "source": "src/main.js:15193"
     },
     "refuseDockExit": {
       "id": "refuseDockExit",
@@ -506,16 +506,16 @@
           "id": "refuseDockExit.l0",
           "who": "you",
           "text": "No. I know this trick: leave the first check till later and later never comes. {BINDINGS.inputPrompt('recorder')}. Six quiet seconds. Then the door.",
-          "source": "src/main.js:15178"
+          "source": "src/main.js:15226"
         },
         {
           "id": "refuseDockExit.l1",
           "who": "you",
           "text": "Levels are good. One thing left: {BINDINGS.inputPrompt('bag')}, plan, mark Studio B3. Then the door.",
-          "source": "src/main.js:15182"
+          "source": "src/main.js:15230"
         }
       ],
-      "source": "src/main.js:15178"
+      "source": "src/main.js:15226"
     },
     "daydreamBeat": {
       "id": "daydreamBeat",
@@ -525,22 +525,22 @@
           "id": "daydreamBeat.l0",
           "who": "you",
           "text": "Before I do something stupid. Eyes shut. Run the worst of it in my head.",
-          "source": "src/main.js:15291"
+          "source": "src/main.js:15339"
         },
         {
           "id": "daydreamBeat.l1",
           "who": "you",
           "text": "Heh.",
-          "source": "src/main.js:15295"
+          "source": "src/main.js:15343"
         },
         {
           "id": "daydreamBeat.l2",
           "who": "direction",
           "text": "You open your eyes.",
-          "source": "src/main.js:15296"
+          "source": "src/main.js:15344"
         }
       ],
-      "source": "src/main.js:15291"
+      "source": "src/main.js:15339"
     },
     "beginDreamFigure": {
       "id": "beginDreamFigure",
@@ -550,16 +550,16 @@
           "id": "beginDreamFigure.l0",
           "who": "direction",
           "text": "Down at the far end of your light, something starts walking up the beam towards you.",
-          "source": "src/main.js:15424"
+          "source": "src/main.js:15472"
         },
         {
           "id": "beginDreamFigure.l1",
           "who": "direction",
           "text": "Somewhere ahead of you in the dark, something starts walking towards you.",
-          "source": "src/main.js:15425"
+          "source": "src/main.js:15473"
         }
       ],
-      "source": "src/main.js:15424"
+      "source": "src/main.js:15472"
     },
     "dreamFigureSpared.opened.start": {
       "id": "dreamFigureSpared.opened.start",
@@ -569,22 +569,22 @@
           "id": "dreamFigureSpared.opened.start.l0",
           "who": "direction",
           "text": "It walks into you and out the back of you, cold as a cellar step, and keeps going. Whatever it wanted, it wanted the light.",
-          "source": "src/main.js:15465"
+          "source": "src/main.js:15513"
         },
         {
           "id": "dreamFigureSpared.opened.start.l1",
           "who": "direction",
           "text": "You blink. The room is still here. Your feet are exactly where you left them.",
-          "source": "src/main.js:15466"
+          "source": "src/main.js:15514"
         },
         {
           "id": "dreamFigureSpared.opened.start.l2",
           "who": "you",
           "text": "Right. Whatever the hell that was, the light stays off.",
-          "source": "src/main.js:15467"
+          "source": "src/main.js:15515"
         }
       ],
-      "source": "src/main.js:15465"
+      "source": "src/main.js:15513"
     },
     "beginMicTest": {
       "id": "beginMicTest",
@@ -594,10 +594,10 @@
           "id": "beginMicTest.l0",
           "who": "you",
           "text": "Mic first. Say 'check, one, two' and watch the meter. The recorder is stopped. This test is not saved.",
-          "source": "src/main.js:15567"
+          "source": "src/main.js:15615"
         }
       ],
-      "source": "src/main.js:15567"
+      "source": "src/main.js:15615"
     },
     "tickMicTest": {
       "id": "tickMicTest",
@@ -607,10 +607,10 @@
           "id": "tickMicTest.l0",
           "who": "you",
           "text": "There it is. That's me on the meter — and that is exactly what a take hears if I so much as move wrong. Right. Levels.",
-          "source": "src/main.js:15614"
+          "source": "src/main.js:15662"
         }
       ],
-      "source": "src/main.js:15614"
+      "source": "src/main.js:15662"
     },
     "toggleCoverAction": {
       "id": "toggleCoverAction",
@@ -620,10 +620,10 @@
           "id": "toggleCoverAction.l0",
           "who": "you",
           "text": "Nothing here to get behind.",
-          "source": "src/main.js:15809"
+          "source": "src/main.js:15857"
         }
       ],
-      "source": "src/main.js:15809"
+      "source": "src/main.js:15857"
     },
     "noteCoverAvailable": {
       "id": "noteCoverAvailable",
@@ -633,10 +633,10 @@
           "id": "noteCoverAvailable.l0",
           "who": "you",
           "text": "There is a wall here I could put between us, if it comes to that. The torch will help me see, but that hum will carry.",
-          "source": "src/main.js:15825"
+          "source": "src/main.js:15873"
         }
       ],
-      "source": "src/main.js:15825"
+      "source": "src/main.js:15873"
     },
     "toggleTorchAction": {
       "id": "toggleTorchAction",
@@ -646,28 +646,28 @@
           "id": "toggleTorchAction.l0",
           "who": "you",
           "text": "No torch. It has the torch.",
-          "source": "src/main.js:15879"
+          "source": "src/main.js:15927"
         },
         {
           "id": "toggleTorchAction.l1",
           "who": "you",
           "text": "My flashlight is still on the workbench.",
-          "source": "src/main.js:15881"
+          "source": "src/main.js:15929"
         },
         {
           "id": "toggleTorchAction.l2",
           "who": "you",
           "text": "Flat. And this stair only answered the second click. No second click now—so I leave it by the long way, in the dark.",
-          "source": "src/main.js:15885"
+          "source": "src/main.js:15933"
         },
         {
           "id": "toggleTorchAction.l3",
           "who": "you",
           "text": "Flat. It is flat, and I have nothing to put in it.",
-          "source": "src/main.js:15886"
+          "source": "src/main.js:15934"
         }
       ],
-      "source": "src/main.js:15879"
+      "source": "src/main.js:15927"
     },
     "recordAction": {
       "id": "recordAction",
@@ -677,58 +677,58 @@
           "id": "recordAction.l0",
           "who": "you",
           "text": "The case. They are still holding it.",
-          "source": "src/main.js:15954"
+          "source": "src/main.js:16002"
         },
         {
           "id": "recordAction.l1",
           "who": "you",
           "text": "There. Off.",
-          "source": "src/main.js:15979"
+          "source": "src/main.js:16027"
         },
         {
           "id": "recordAction.l2",
           "who": "you",
           "text": "No recorder. There is no job until I have it back.",
-          "source": "src/main.js:15992"
+          "source": "src/main.js:16040"
         },
         {
           "id": "recordAction.l3",
           "who": "you",
           "text": "Levels are set. Mark Studio B3 in the plan before I start the job.",
-          "source": "src/main.js:16008"
+          "source": "src/main.js:16056"
         },
         {
           "id": "recordAction.l4",
           "who": "you",
           "text": "The nave is not the way in yet. The tower route is still live.",
-          "source": "src/main.js:16020"
+          "source": "src/main.js:16068"
         },
         {
           "id": "recordAction.l5",
           "who": "you",
           "text": "Not from the edge. All I get here is the tile answering itself. It has to be out in the middle of it.",
-          "source": "src/main.js:16027"
+          "source": "src/main.js:16075"
         },
         {
           "id": "recordAction.l6",
           "who": "you",
           "text": "No. {circuit} is still in the cans. That low note is the building, not the room. Kill it at the panel—or ask me again and I will put the mistake on tape.",
-          "source": "src/main.js:16037"
+          "source": "src/main.js:16085"
         },
         {
           "id": "recordAction.l7",
           "who": "you",
           "text": "All right. Their tape, their ballast. I will mark exactly what I heard.",
-          "source": "src/main.js:16041"
+          "source": "src/main.js:16089"
         },
         {
           "id": "recordAction.l8",
           "who": "you",
           "text": "Again. Same room, this time without the building singing through it.",
-          "source": "src/main.js:16044"
+          "source": "src/main.js:16092"
         }
       ],
-      "source": "src/main.js:15954"
+      "source": "src/main.js:16002"
     },
     "openRecorder": {
       "id": "openRecorder",
@@ -738,16 +738,16 @@
           "id": "openRecorder.l0",
           "who": "you",
           "text": "The case. They are still holding it.",
-          "source": "src/main.js:16105"
+          "source": "src/main.js:16153"
         },
         {
           "id": "openRecorder.l1",
           "who": "you",
           "text": "No recorder. There is no job until I have it back.",
-          "source": "src/main.js:16110"
+          "source": "src/main.js:16158"
         }
       ],
-      "source": "src/main.js:16105"
+      "source": "src/main.js:16153"
     },
     "finishRecordingSlate": {
       "id": "finishRecordingSlate",
@@ -757,10 +757,10 @@
           "id": "finishRecordingSlate.l0",
           "who": "you",
           "text": "Room tone. Aim for {REC.takeDuration().toFixed(0)} seconds; {REC.minimumTakeDuration().toFixed(1).replace('.0','')} clean seconds is enough with this microphone.",
-          "source": "src/main.js:16454"
+          "source": "src/main.js:16502"
         }
       ],
-      "source": "src/main.js:16454"
+      "source": "src/main.js:16502"
     },
     "tickRecordingSlate.fallback": {
       "id": "tickRecordingSlate.fallback",
@@ -770,10 +770,10 @@
           "id": "tickRecordingSlate.fallback.l0",
           "who": "direction",
           "text": "The recordist slates this take: “{slate.text}”",
-          "source": "src/main.js:16466"
+          "source": "src/main.js:16514"
         }
       ],
-      "source": "src/main.js:16466"
+      "source": "src/main.js:16514"
     },
     "tickRecordingSlate": {
       "id": "tickRecordingSlate",
@@ -783,10 +783,10 @@
           "id": "tickRecordingSlate.l0",
           "who": "direction",
           "text": "Say aloud: “{slate.text}” Then fall quiet, or press REC when finished.",
-          "source": "src/main.js:16475"
+          "source": "src/main.js:16523"
         }
       ],
-      "source": "src/main.js:16475"
+      "source": "src/main.js:16523"
     },
     "roll": {
       "id": "roll",
@@ -796,28 +796,28 @@
           "id": "roll.l0",
           "who": "you",
           "text": "No. There is a pipe hissing somewhere under this building and it is on every channel, in every room.",
-          "source": "src/main.js:16501"
+          "source": "src/main.js:16549"
         },
         {
           "id": "roll.l1",
           "who": "you",
           "text": "I am not putting that on tape and driving back here for nothing. Find it and shut it.",
-          "source": "src/main.js:16502"
+          "source": "src/main.js:16550"
         },
         {
           "id": "roll.l2",
           "who": "direction",
           "text": "[OBSCURED SLATE FRAGMENT / PRE -01.8]",
-          "source": "src/main.js:16544"
+          "source": "src/main.js:16592"
         },
         {
           "id": "roll.l3",
           "who": "you",
           "text": "Pre-roll, minus one point eight. The transport has not moved. The deck is locked.",
-          "source": "src/main.js:16555"
+          "source": "src/main.js:16603"
         }
       ],
-      "source": "src/main.js:16501"
+      "source": "src/main.js:16549"
     },
     "acceptRoomTake": {
       "id": "acceptRoomTake",
@@ -827,10 +827,10 @@
           "id": "acceptRoomTake.l0",
           "who": "direction",
           "text": "Four tolls answer from the chapel tower. Stone and floors put distance around them; the corridor gives it back.",
-          "source": "src/main.js:16615"
+          "source": "src/main.js:16663"
         }
       ],
-      "source": "src/main.js:16615"
+      "source": "src/main.js:16663"
     },
     "stopTake": {
       "id": "stopTake",
@@ -840,28 +840,28 @@
           "id": "stopTake.l0",
           "who": "you",
           "text": "I have the minute, but there is {REJECTED_CAUSE_WORDS[attempt.cause]||'noise'} on it at {Math.floor(attempt.atSec/60)}:{String(Math.floor(attempt.atSec%60)).padStart(2,'0')}. They will not take that.",
-          "source": "src/main.js:16656"
+          "source": "src/main.js:16704"
         },
         {
           "id": "stopTake.l1",
           "who": "you",
           "text": "Enough room tone. It counts, but I can hear {describeTakeContamination(contamination,id=>powerCircuitDefinition(id)?.label||id.toUpperCase())} on the take. Logging it.",
-          "source": "src/main.js:16687"
+          "source": "src/main.js:16735"
         },
         {
           "id": "stopTake.l2",
           "who": "direction",
           "text": "The transport clicks off. Somewhere back along the corridor, something that was not listening a minute ago is listening now.",
-          "source": "src/main.js:16692"
+          "source": "src/main.js:16740"
         },
         {
           "id": "stopTake.l3",
           "who": "you",
           "text": "The speakers spoiled it. That does not count. I still need a usable take from B3.",
-          "source": "src/main.js:16705"
+          "source": "src/main.js:16753"
         }
       ],
-      "source": "src/main.js:16656"
+      "source": "src/main.js:16704"
     },
     "presentTakenDialogue.taken-dialogue.onDone": {
       "id": "presentTakenDialogue.taken-dialogue.onDone",
@@ -871,10 +871,10 @@
           "id": "presentTakenDialogue.taken-dialogue.onDone.l0",
           "who": "you",
           "text": "Cassette {loss.n} is gone. {roomLabel(loss.erased[0])} was on it. / A cassette is gone. Number {loss.n}.",
-          "source": "src/main.js:16894"
+          "source": "src/main.js:16942"
         }
       ],
-      "source": "src/main.js:16894"
+      "source": "src/main.js:16942"
     },
     "tickLostCassettes": {
       "id": "tickLostCassettes",
@@ -884,10 +884,10 @@
           "id": "tickLostCassettes.l0",
           "who": "you",
           "text": "Cassette {spot.n}. {roomLabel(result.restored[0])} is still on it. / Cassette {spot.n}. One of mine.",
-          "source": "src/main.js:16953"
+          "source": "src/main.js:17001"
         }
       ],
-      "source": "src/main.js:16953"
+      "source": "src/main.js:17001"
     },
     "interactAcademicRoofProp": {
       "id": "interactAcademicRoofProp",
@@ -897,10 +897,10 @@
           "id": "interactAcademicRoofProp.l0",
           "who": "you",
           "text": "The first bolt takes the school master key. Beside it is a six-letter word lock; its service copy is kept in the gallery.",
-          "source": "src/main.js:17498"
+          "source": "src/main.js:17546"
         }
       ],
-      "source": "src/main.js:17498"
+      "source": "src/main.js:17546"
     },
     "interactAcademicRoofProp.onOpen": {
       "id": "interactAcademicRoofProp.onOpen",
@@ -910,10 +910,10 @@
           "id": "interactAcademicRoofProp.onOpen.l0",
           "who": "direction",
           "text": "The word lock releases. The door opens straight into the night. A fire escape is bolted to the outside wall, with school windows falling away below the grating.",
-          "source": "src/main.js:17517"
+          "source": "src/main.js:17565"
         }
       ],
-      "source": "src/main.js:17517"
+      "source": "src/main.js:17565"
     },
     "NATATORIUM_WATER_THOUGHT.start": {
       "id": "NATATORIUM_WATER_THOUGHT.start",
@@ -923,42 +923,42 @@
           "id": "NATATORIUM_WATER_THOUGHT.start.l0",
           "who": "direction",
           "text": "The water is too dark to reflect the ceiling. It keeps a shape anyway, low and patient, as if something under it has leaned forward.",
-          "source": "src/main.js:17917"
+          "source": "src/main.js:17965"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.start.l1",
           "who": "surfer",
           "text": "Come here.",
-          "source": "src/main.js:17918"
+          "source": "src/main.js:17966"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.start.l2",
           "who": "you",
           "text": "No. That is not how rooms work.",
-          "source": "src/main.js:17919"
+          "source": "src/main.js:17967"
         }
       ],
       "choices": [
         {
           "id": "NATATORIUM_WATER_THOUGHT.start.c0",
           "text": "step closer to the coping",
-          "source": "src/main.js:17922",
+          "source": "src/main.js:17970",
           "goto": "NATATORIUM_WATER_THOUGHT.approach"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.start.c1",
           "text": "hold the recorder over the water",
-          "source": "src/main.js:17923",
+          "source": "src/main.js:17971",
           "goto": "NATATORIUM_WATER_THOUGHT.record"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.start.c2",
           "text": "step back and name it as only water",
-          "source": "src/main.js:17924",
+          "source": "src/main.js:17972",
           "goto": "NATATORIUM_WATER_THOUGHT.refuse"
         }
       ],
-      "source": "src/main.js:17917"
+      "source": "src/main.js:17965"
     },
     "NATATORIUM_WATER_THOUGHT.approach": {
       "id": "NATATORIUM_WATER_THOUGHT.approach",
@@ -968,16 +968,16 @@
           "id": "NATATORIUM_WATER_THOUGHT.approach.l0",
           "who": "direction",
           "text": "The surface dimples in a line from the deep end to your shoes. Not a wave. A finger drawing a route.",
-          "source": "src/main.js:17930"
+          "source": "src/main.js:17978"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.approach.l1",
           "who": "surfer",
           "text": "It was full when I left it.",
-          "source": "src/main.js:17931"
+          "source": "src/main.js:17979"
         }
       ],
-      "source": "src/main.js:17930"
+      "source": "src/main.js:17978"
     },
     "NATATORIUM_WATER_THOUGHT.record": {
       "id": "NATATORIUM_WATER_THOUGHT.record",
@@ -987,16 +987,16 @@
           "id": "NATATORIUM_WATER_THOUGHT.record.l0",
           "who": "direction",
           "text": "The recorder meter rises before you arm it. The water answers with one wet click, close enough to be inside the case.",
-          "source": "src/main.js:17937"
+          "source": "src/main.js:17985"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.record.l1",
           "who": "you",
           "text": "Transport stopped, recorder disarmed. That click still moved the meter.",
-          "source": "src/main.js:17938"
+          "source": "src/main.js:17986"
         }
       ],
-      "source": "src/main.js:17937"
+      "source": "src/main.js:17985"
     },
     "NATATORIUM_WATER_THOUGHT.refuse": {
       "id": "NATATORIUM_WATER_THOUGHT.refuse",
@@ -1006,16 +1006,16 @@
           "id": "NATATORIUM_WATER_THOUGHT.refuse.l0",
           "who": "direction",
           "text": "You take one step back. The water follows by exactly one step and then remembers it has no legs.",
-          "source": "src/main.js:17944"
+          "source": "src/main.js:17992"
         },
         {
           "id": "NATATORIUM_WATER_THOUGHT.refuse.l1",
           "who": "you",
           "text": "A room. A pool. A bad memory of a pool.",
-          "source": "src/main.js:17945"
+          "source": "src/main.js:17993"
         }
       ],
-      "source": "src/main.js:17944"
+      "source": "src/main.js:17992"
     },
     "interactNatatoriumWater": {
       "id": "interactNatatoriumWater",
@@ -1025,10 +1025,10 @@
           "id": "interactNatatoriumWater.l0",
           "who": "you",
           "text": "The water moves like it is still listening.",
-          "source": "src/main.js:17966"
+          "source": "src/main.js:18014"
         }
       ],
-      "source": "src/main.js:17966"
+      "source": "src/main.js:18014"
     },
     "interactParkEyes": {
       "id": "interactParkEyes",
@@ -1038,10 +1038,10 @@
           "id": "interactParkEyes.l0",
           "who": "you",
           "text": "Black water and something under it. Not with the light off.",
-          "source": "src/main.js:18027"
+          "source": "src/main.js:18075"
         }
       ],
-      "source": "src/main.js:18027"
+      "source": "src/main.js:18075"
     },
     "interactChapelScreen": {
       "id": "interactChapelScreen",
@@ -1051,22 +1051,22 @@
           "id": "interactChapelScreen.l0",
           "who": "direction",
           "text": "The chapel is no longer an available ending in this run.",
-          "source": "src/main.js:18050"
+          "source": "src/main.js:18098"
         },
         {
           "id": "interactChapelScreen.l1",
           "who": "you",
           "text": "The collegiate chapel screen is locked from within. Four rooms remain the only honest work.",
-          "source": "src/main.js:18059"
+          "source": "src/main.js:18107"
         },
         {
           "id": "interactChapelScreen.l2",
           "who": "direction",
           "text": "The screen holds. Above it, the tower is already moving.",
-          "source": "src/main.js:18062"
+          "source": "src/main.js:18110"
         }
       ],
-      "source": "src/main.js:18050"
+      "source": "src/main.js:18098"
     },
     "interact": {
       "id": "interact",
@@ -1076,148 +1076,148 @@
           "id": "interact.l0",
           "who": "you",
           "text": "Shut. From the other side.",
-          "source": "src/main.js:18182"
+          "source": "src/main.js:18230"
         },
         {
           "id": "interact.l1",
           "who": "direction",
           "text": "You lower him onto the flags. His full weight stays where you put it.",
-          "source": "src/main.js:18203"
+          "source": "src/main.js:18251"
         },
         {
           "id": "interact.l2",
           "who": "direction",
           "text": "You take him under both arms. His heels trail; every doorway now has to admit two bodies.",
-          "source": "src/main.js:18211"
+          "source": "src/main.js:18259"
         },
         {
           "id": "interact.l3",
           "who": "direction",
           "text": "The guard opens RETURNED and puts the pen under your hand. You write your name across the ruled column.",
-          "source": "src/main.js:18223"
+          "source": "src/main.js:18271"
         },
         {
           "id": "interact.l4",
           "who": "direction",
           "text": "He turns the ledger one line down and writes ALAN beside the weight you are still carrying.",
-          "source": "src/main.js:18228"
+          "source": "src/main.js:18276"
         },
         {
           "id": "interact.l5",
           "who": "you",
           "text": "Not mid-take. It has been on that floor for three weeks; it will keep.",
-          "source": "src/main.js:18248"
+          "source": "src/main.js:18296"
         },
         {
           "id": "interact.l6",
           "who": "you",
           "text": "Not mid-take. It will keep.",
-          "source": "src/main.js:18261"
+          "source": "src/main.js:18309"
         },
         {
           "id": "interact.l7",
           "who": "you",
           "text": "Not the shop. West through the nave. The front doors.",
-          "source": "src/main.js:18278"
+          "source": "src/main.js:18326"
         },
         {
           "id": "interact.l8",
           "who": "you",
           "text": "No handle on this side.",
-          "source": "src/main.js:18289"
+          "source": "src/main.js:18337"
         },
         {
           "id": "interact.l9",
           "who": "you",
           "text": "Bell chamber. ACCESS RESTRICTED. The maintenance hasp is linked to the inner screen.",
-          "source": "src/main.js:18291"
+          "source": "src/main.js:18339"
         },
         {
           "id": "interact.l10",
           "who": "you",
           "text": "The rubber wedge comes free. The closer takes the weight.",
-          "source": "src/main.js:18308"
+          "source": "src/main.js:18356"
         },
         {
           "id": "interact.l11",
           "who": "you",
           "text": "Back on the belt. No carrier. / Back on the belt.",
-          "source": "src/main.js:18328"
+          "source": "src/main.js:18376"
         },
         {
           "id": "interact.l12",
           "who": "you",
           "text": "Not while the take is held. Find the source.",
-          "source": "src/main.js:18338"
+          "source": "src/main.js:18386"
         },
         {
           "id": "interact.l13",
           "who": "you",
           "text": "{circuit.label}. Up. For a second, nothing—then {circuit.serves} remembers electricity. Dim tubes, old ballast. Useful light with a note underneath it.",
-          "source": "src/main.js:18356"
+          "source": "src/main.js:18404"
         },
         {
           "id": "interact.l14",
           "who": "you",
           "text": "{circuit.label}. Down. The light goes first. The hum takes another breath to understand.",
-          "source": "src/main.js:18359"
+          "source": "src/main.js:18407"
         },
         {
           "id": "interact.l15",
           "who": "you",
           "text": "The lid pocket is empty. I have the cassettes.",
-          "source": "src/main.js:18376"
+          "source": "src/main.js:18424"
         },
         {
           "id": "interact.l16",
           "who": "you",
           "text": "Two blank cassettes in the lid pocket, still in their cellophane. {result.added.join(' and ')} on the sheet.",
-          "source": "src/main.js:18378"
+          "source": "src/main.js:18426"
         },
         {
           "id": "interact.l17",
           "who": "you",
           "text": "The tin is empty. I took the spare cell.",
-          "source": "src/main.js:18384"
+          "source": "src/main.js:18432"
         },
         {
           "id": "interact.l18",
           "who": "you",
           "text": "A spare torch cell. My reserve is too full to take all of it; I can leave it here and come back.",
-          "source": "src/main.js:18386"
+          "source": "src/main.js:18434"
         },
         {
           "id": "interact.l19",
           "who": "you",
           "text": "A spare torch cell, still sealed. A quarter charge into the reserve.",
-          "source": "src/main.js:18389"
+          "source": "src/main.js:18437"
         },
         {
           "id": "interact.l20",
           "who": "you",
           "text": "The empty sleeve is still in the cart. I did not imagine taking them.",
-          "source": "src/main.js:18394"
+          "source": "src/main.js:18442"
         },
         {
           "id": "interact.l21",
           "who": "you",
           "text": "Two alkaline cells in a sealed maintenance sleeve. Wrong department, right torch. Half a night, if I stop spending it on rooms I already know.",
-          "source": "src/main.js:18398"
+          "source": "src/main.js:18446"
         },
         {
           "id": "interact.l22",
           "who": "you",
           "text": "The clock hammer is already clear of the tenor. This is full-circle ringing now; the rope below is the only intervention.",
-          "source": "src/main.js:18464"
+          "source": "src/main.js:18512"
         },
         {
           "id": "interact.l23",
           "who": "you",
           "text": "The pawl is carrying the louvres, not the bells. Stopping them is a ringing-room job.",
-          "source": "src/main.js:18468"
+          "source": "src/main.js:18516"
         }
       ],
-      "source": "src/main.js:18182"
+      "source": "src/main.js:18230"
     },
     "markRoom": {
       "id": "markRoom",
@@ -1227,16 +1227,16 @@
           "id": "markRoom.l0",
           "who": "you",
           "text": "{roomLabel(room)}. Clear.",
-          "source": "src/main.js:18550"
+          "source": "src/main.js:18598"
         },
         {
           "id": "markRoom.l1",
           "who": "you",
           "text": "{roomLabel(room)}. Marked.",
-          "source": "src/main.js:18564"
+          "source": "src/main.js:18612"
         }
       ],
-      "source": "src/main.js:18550"
+      "source": "src/main.js:18598"
     },
     "markMapSpace": {
       "id": "markMapSpace",
@@ -1246,16 +1246,16 @@
           "id": "markMapSpace.l0",
           "who": "you",
           "text": "{space.label}. Clear.",
-          "source": "src/main.js:18580"
+          "source": "src/main.js:18628"
         },
         {
           "id": "markMapSpace.l1",
           "who": "you",
           "text": "{space.label}. Marked.",
-          "source": "src/main.js:18601"
+          "source": "src/main.js:18649"
         }
       ],
-      "source": "src/main.js:18580"
+      "source": "src/main.js:18628"
     },
     "clearMapTarget": {
       "id": "clearMapTarget",
@@ -1265,10 +1265,10 @@
           "id": "clearMapTarget.l0",
           "who": "you",
           "text": "Personal target cleared.",
-          "source": "src/main.js:18620"
+          "source": "src/main.js:18668"
         }
       ],
-      "source": "src/main.js:18620"
+      "source": "src/main.js:18668"
     },
     "chooseRollCassette": {
       "id": "chooseRollCassette",
@@ -1278,10 +1278,10 @@
           "id": "chooseRollCassette.l0",
           "who": "you",
           "text": "No cassettes left. Not one.",
-          "source": "src/main.js:18671"
+          "source": "src/main.js:18723"
         }
       ],
-      "source": "src/main.js:18671"
+      "source": "src/main.js:18723"
     },
     "pickCassetteToRecordOver.nodes.start": {
       "id": "pickCassetteToRecordOver.nodes.start",
@@ -1291,18 +1291,18 @@
           "id": "pickCassetteToRecordOver.nodes.start.l0",
           "who": "you",
           "text": "No blanks left. One of these goes.",
-          "source": "src/main.js:18678"
+          "source": "src/main.js:18730"
         }
       ],
       "choices": [
         {
           "id": "pickCassetteToRecordOver.nodes.start.c0",
           "text": "None of them. Not yet.",
-          "source": "src/main.js:18680",
+          "source": "src/main.js:18732",
           "targetName": "done"
         }
       ],
-      "source": "src/main.js:18678"
+      "source": "src/main.js:18730"
     },
     "bagEquipment": {
       "id": "bagEquipment",
@@ -1312,94 +1312,94 @@
           "id": "bagEquipment.l0",
           "who": "presentItem",
           "text": "light: MISSING / {Math.round(Math.min(1,REC.batteryLevel())*100)}%+ RESERVE",
-          "source": "src/main.js:18860"
+          "source": "src/main.js:18912"
         },
         {
           "id": "bagEquipment.l1",
           "who": "presentItem",
           "text": "bent rig interface: READY",
-          "source": "src/main.js:18871"
+          "source": "src/main.js:18923"
         },
         {
           "id": "bagEquipment.l2",
           "who": "presentItem",
           "text": "tuning fork: A440",
-          "source": "src/main.js:18875"
+          "source": "src/main.js:18927"
         },
         {
           "id": "bagEquipment.l3",
           "who": "presentItem",
           "text": "Survey Indicator: MISSING / LIVE",
-          "source": "src/main.js:18879"
+          "source": "src/main.js:18931"
         },
         {
           "id": "bagEquipment.l4",
           "who": "presentItem",
           "text": "radio: MISSING / {radio.phase} · {radio.activity}",
-          "source": "src/main.js:18884"
+          "source": "src/main.js:18936"
         },
         {
           "id": "bagEquipment.l5",
           "who": "presentItem",
           "text": "adjustable spanner: READY",
-          "source": "src/main.js:18891"
+          "source": "src/main.js:18943"
         },
         {
           "id": "bagEquipment.l6",
           "who": "presentItem",
           "text": "two marble eyes: CARRIED",
-          "source": "src/main.js:18895"
+          "source": "src/main.js:18947"
         },
         {
           "id": "bagEquipment.l7",
           "who": "presentItem",
           "text": "Ren's HOME cassette: UNRETURNED",
-          "source": "src/main.js:18899"
+          "source": "src/main.js:18951"
         },
         {
           "id": "bagEquipment.l8",
           "who": "presentItem",
           "text": "Iona's service tray / Iona's bottle opener / The Lyric's order book: EMPTY / TO RETURN",
-          "source": "src/main.js:18906"
+          "source": "src/main.js:18958"
         },
         {
           "id": "bagEquipment.l9",
           "who": "presentItem",
           "text": "standard keyring: {keyCount} KEY / KEYS",
-          "source": "src/main.js:18913"
+          "source": "src/main.js:18965"
         },
         {
           "id": "bagEquipment.l10",
           "who": "presentItem",
           "text": "the guard's coffee: GET COLD",
-          "source": "src/main.js:18917"
+          "source": "src/main.js:18969"
         },
         {
           "id": "bagEquipment.l11",
           "who": "presentItem",
           "text": "sheet music: {REC.sheetsCarried()} SHEET / SHEETS",
-          "source": "src/main.js:18920"
+          "source": "src/main.js:18972"
         },
         {
           "id": "bagEquipment.l12",
           "who": "presentItem",
           "text": "what the worlds left: {stationRelics().length} OF 5",
-          "source": "src/main.js:18931"
+          "source": "src/main.js:18983"
         },
         {
           "id": "bagEquipment.l13",
           "who": "presentItem",
           "text": "Lyle's jumper: WARM",
-          "source": "src/main.js:18935"
+          "source": "src/main.js:18987"
         },
         {
           "id": "bagEquipment.l14",
           "who": "presentItem",
           "text": "film badge: EXPIRED",
-          "source": "src/main.js:18938"
+          "source": "src/main.js:18990"
         }
       ],
-      "source": "src/main.js:18860"
+      "source": "src/main.js:18912"
     },
     "readSheetFromBag": {
       "id": "readSheetFromBag",
@@ -1409,10 +1409,10 @@
           "id": "readSheetFromBag.l0",
           "who": "you",
           "text": "Somebody practised this. I can hear it. / That was the last one.",
-          "source": "src/main.js:19032"
+          "source": "src/main.js:19084"
         }
       ],
-      "source": "src/main.js:19032"
+      "source": "src/main.js:19084"
     },
     "openBag": {
       "id": "openBag",
@@ -1422,16 +1422,16 @@
           "id": "openBag.l0",
           "who": "you",
           "text": "Not while rolling.",
-          "source": "src/main.js:19090"
+          "source": "src/main.js:19142"
         },
         {
           "id": "openBag.l1",
           "who": "you",
           "text": "My field case is still in the van.",
-          "source": "src/main.js:19091"
+          "source": "src/main.js:19143"
         }
       ],
-      "source": "src/main.js:19090"
+      "source": "src/main.js:19142"
     },
     "syncDroppedRadioProp.inspect": {
       "id": "syncDroppedRadioProp.inspect",
@@ -1441,16 +1441,16 @@
           "id": "syncDroppedRadioProp.inspect.l0",
           "who": "inspect",
           "text": "The radio lies where you put it. Its carrier lamp is the only moving light.",
-          "source": "src/main.js:19190"
+          "source": "src/main.js:19242"
         },
         {
           "id": "syncDroppedRadioProp.inspect.l1",
           "who": "inspect",
           "text": "(again) Still at floor level. The carrier lamp waits.",
-          "source": "src/main.js:19190"
+          "source": "src/main.js:19242"
         }
       ],
-      "source": "src/main.js:19190"
+      "source": "src/main.js:19242"
     },
     "syncStoryObjectProps.inspect": {
       "id": "syncStoryObjectProps.inspect",
@@ -1460,28 +1460,28 @@
           "id": "syncStoryObjectProps.inspect.l0",
           "who": "inspect",
           "text": "A portable recorder with its lid off. Wires loop from output back into input.",
-          "source": "src/main.js:19343"
+          "source": "src/main.js:19395"
         },
         {
           "id": "syncStoryObjectProps.inspect.l1",
           "who": "inspect",
           "text": "(again) The feedback loop waits for a hand.",
-          "source": "src/main.js:19343"
+          "source": "src/main.js:19395"
         },
         {
           "id": "syncStoryObjectProps.inspect.l2",
           "who": "inspect",
           "text": "A tuning fork lying across the desk of a music stand, where the part should be. The steel catches the torch as a thin line.",
-          "source": "src/main.js:19379"
+          "source": "src/main.js:19431"
         },
         {
           "id": "syncStoryObjectProps.inspect.l3",
           "who": "inspect",
           "text": "(again) {TUNING_FORK_ENGRAVING}. The cut letters have not changed.",
-          "source": "src/main.js:19379"
+          "source": "src/main.js:19431"
         }
       ],
-      "source": "src/main.js:19343"
+      "source": "src/main.js:19395"
     },
     "syncPlantIncidentProps.inspect": {
       "id": "syncPlantIncidentProps.inspect",
@@ -1491,16 +1491,16 @@
           "id": "syncPlantIncidentProps.inspect.l0",
           "who": "inspect",
           "text": "A cast-iron Stillson nearly two metres long. It was made for a fixed plant, not a tool bag.",
-          "source": "src/main.js:19407"
+          "source": "src/main.js:19459"
         },
         {
           "id": "syncPlantIncidentProps.inspect.l1",
           "who": "inspect",
           "text": "(again) Too large to carry. The jaw will fit the heating header.",
-          "source": "src/main.js:19407"
+          "source": "src/main.js:19459"
         }
       ],
-      "source": "src/main.js:19407"
+      "source": "src/main.js:19459"
     },
     "dropPlantHeavyWrench": {
       "id": "dropPlantHeavyWrench",
@@ -1510,16 +1510,16 @@
           "id": "dropPlantHeavyWrench.l0",
           "who": "direction",
           "text": "The iron settles flat. Behind you, the last scrape ends; the corridor holds its breath.",
-          "source": "src/main.js:19762"
+          "source": "src/main.js:19814"
         },
         {
           "id": "dropPlantHeavyWrench.l1",
           "who": "you",
           "text": "{where[0].toUpperCase()}{where.slice(1)}. I will know where to come back to.",
-          "source": "src/main.js:19763"
+          "source": "src/main.js:19815"
         }
       ],
-      "source": "src/main.js:19762"
+      "source": "src/main.js:19814"
     },
     "makePlantIsolationScene.vent": {
       "id": "makePlantIsolationScene.vent",
@@ -1529,10 +1529,10 @@
           "id": "makePlantIsolationScene.vent.l0",
           "who": "you",
           "text": "Wrong one. That is the bypass — the whole header is in the room now.",
-          "source": "src/main.js:19834"
+          "source": "src/main.js:19886"
         }
       ],
-      "source": "src/main.js:19834"
+      "source": "src/main.js:19886"
     },
     "makePlantIsolationScene.finish": {
       "id": "makePlantIsolationScene.finish",
@@ -1542,22 +1542,22 @@
           "id": "makePlantIsolationScene.finish.l0",
           "who": "direction",
           "text": "The needle has fallen. The pipe is quiet.",
-          "source": "src/main.js:19867"
+          "source": "src/main.js:19919"
         },
         {
           "id": "makePlantIsolationScene.finish.l1",
           "who": "direction",
           "text": "He turns. Grating, pump, wet concrete. The space behind him is empty, and it was not empty a moment ago.",
-          "source": "src/main.js:19868"
+          "source": "src/main.js:19920"
         },
         {
           "id": "makePlantIsolationScene.finish.l2",
           "who": "you",
           "text": "That was not the pipe.",
-          "source": "src/main.js:19869"
+          "source": "src/main.js:19921"
         }
       ],
-      "source": "src/main.js:19867"
+      "source": "src/main.js:19919"
     },
     "makePlantIsolationScene.leave": {
       "id": "makePlantIsolationScene.leave",
@@ -1567,10 +1567,10 @@
           "id": "makePlantIsolationScene.leave.l0",
           "who": "you",
           "text": "It can hiss a while longer. I am not standing here with my back to that.",
-          "source": "src/main.js:19876"
+          "source": "src/main.js:19928"
         }
       ],
-      "source": "src/main.js:19876"
+      "source": "src/main.js:19928"
     },
     "interactPlantHeader": {
       "id": "interactPlantHeader",
@@ -1580,16 +1580,16 @@
           "id": "interactPlantHeader.l0",
           "who": "you",
           "text": "The pipe is quiet. Gauge steady, valve wired open for circulation.",
-          "source": "src/main.js:20066"
+          "source": "src/main.js:20118"
         },
         {
           "id": "interactPlantHeader.l1",
           "who": "you",
           "text": "There it is. The handwheel is hot and the pipe is letting go behind it. It needs a wrench—small enough to carry, or big enough to shift this old iron.",
-          "source": "src/main.js:20074"
+          "source": "src/main.js:20126"
         }
       ],
-      "source": "src/main.js:20066"
+      "source": "src/main.js:20118"
     },
     "takeServicesKey": {
       "id": "takeServicesKey",
@@ -1599,22 +1599,22 @@
           "id": "takeServicesKey.l0",
           "who": "direction",
           "text": "The felt under the base has been packed down by something harder than a coil of cable, and further in than anybody pulling a lead out would have gone.",
-          "source": "src/main.js:20143"
+          "source": "src/main.js:20195"
         },
         {
           "id": "takeServicesKey.l1",
           "who": "you",
           "text": "PLANT SERVICES. Stamped, not written.",
-          "source": "src/main.js:20144"
+          "source": "src/main.js:20196"
         },
         {
           "id": "takeServicesKey.l2",
           "who": "you",
           "text": "He meant to come back for it.",
-          "source": "src/main.js:20145"
+          "source": "src/main.js:20197"
         }
       ],
-      "source": "src/main.js:20143"
+      "source": "src/main.js:20195"
     },
     "takeHostedPin": {
       "id": "takeHostedPin",
@@ -1624,10 +1624,10 @@
           "id": "takeHostedPin.l0",
           "who": "you",
           "text": "That is {free===1?'a spare lead':`${free} spare leads`} for the back of the recorder. {BINDINGS.inputPrompt('bag')} — the patchbay. / Every socket on the back of the recorder is carrying. Nothing spare to patch with.",
-          "source": "src/main.js:20163"
+          "source": "src/main.js:20215"
         }
       ],
-      "source": "src/main.js:20163"
+      "source": "src/main.js:20215"
     },
     "dropRadioFromBag": {
       "id": "dropRadioFromBag",
@@ -1637,10 +1637,10 @@
           "id": "dropRadioFromBag.l0",
           "who": "you",
           "text": "Set. If it clicks again, it clicks here. / Radio down. Two seconds to clear the room.",
-          "source": "src/main.js:20232"
+          "source": "src/main.js:20284"
         }
       ],
-      "source": "src/main.js:20232"
+      "source": "src/main.js:20284"
     },
     "openRadio": {
       "id": "openRadio",
@@ -1650,16 +1650,16 @@
           "id": "openRadio.l0",
           "who": "you",
           "text": "The set is where I left it. Its position is on the plan.",
-          "source": "src/main.js:20425"
+          "source": "src/main.js:20477"
         },
         {
           "id": "openRadio.l1",
           "who": "you",
           "text": "No front desk carrier here. The field plan cannot place this space.",
-          "source": "src/main.js:20434"
+          "source": "src/main.js:20486"
         }
       ],
-      "source": "src/main.js:20425"
+      "source": "src/main.js:20477"
     },
     "tickTorch": {
       "id": "tickTorch",
@@ -1669,46 +1669,46 @@
           "id": "tickTorch.l0",
           "who": "you",
           "text": "The light is shrinking and the white has gone out of it. Forty percent, perhaps. Enough to work with, for now.",
-          "source": "src/main.js:20864"
+          "source": "src/main.js:20916"
         },
         {
           "id": "tickTorch.l1",
           "who": "you",
           "text": "Brown at the edge. I don't know that it will last much longer.",
-          "source": "src/main.js:20870"
+          "source": "src/main.js:20922"
         },
         {
           "id": "tickTorch.l2",
           "who": "you",
           "text": "...no. No, no — come on. Come ON!",
-          "source": "src/main.js:20876"
+          "source": "src/main.js:20928"
         },
         {
           "id": "tickTorch.l3",
           "who": "direction",
           "text": "The torch dies in your hand, and the room does not go dark so much as stop pretending it was ever anything else.",
-          "source": "src/main.js:20877"
+          "source": "src/main.js:20929"
         },
         {
           "id": "tickTorch.l4",
           "who": "direction",
           "text": "At the chapel door, with four rooms on tape and one to go, the torch goes out.",
-          "source": "src/main.js:20888"
+          "source": "src/main.js:20940"
         },
         {
           "id": "tickTorch.l5",
           "who": "you",
           "text": "The torch cells. The good cells. Of course.",
-          "source": "src/main.js:20889"
+          "source": "src/main.js:20941"
         },
         {
           "id": "tickTorch.l6",
           "who": "direction",
           "text": "You traded a way out for a few hours of light, and the light has just handed the hours back, at the door, in front of the thing you are about to meet.",
-          "source": "src/main.js:20890"
+          "source": "src/main.js:20942"
         }
       ],
-      "source": "src/main.js:20864"
+      "source": "src/main.js:20916"
     },
     "consumeCoffee": {
       "id": "consumeCoffee",
@@ -1718,10 +1718,10 @@
           "id": "consumeCoffee.l0",
           "who": "you",
           "text": "Cold, bitter, gone in three swallows. There. Whatever that was.",
-          "source": "src/main.js:20949"
+          "source": "src/main.js:21001"
         }
       ],
-      "source": "src/main.js:20949"
+      "source": "src/main.js:21001"
     },
     "walkToEdgeDoor": {
       "id": "walkToEdgeDoor",
@@ -1731,10 +1731,10 @@
           "id": "walkToEdgeDoor.l0",
           "who": "you",
           "text": "The doors I came in by. At the wrong end of everything.",
-          "source": "src/main.js:21049"
+          "source": "src/main.js:21101"
         }
       ],
-      "source": "src/main.js:21049"
+      "source": "src/main.js:21101"
     },
     "payphoneFeedTape": {
       "id": "payphoneFeedTape",
@@ -1744,10 +1744,10 @@
           "id": "payphoneFeedTape.l0",
           "who": "you",
           "text": "Nothing on it. It won’t take it. / It’s at the end. It won’t take it.",
-          "source": "src/main.js:21166"
+          "source": "src/main.js:21218"
         }
       ],
-      "source": "src/main.js:21166"
+      "source": "src/main.js:21218"
     },
     "payphoneExpire": {
       "id": "payphoneExpire",
@@ -1757,10 +1757,10 @@
           "id": "payphoneExpire.l0",
           "who": "direction",
           "text": "[Pips. The tape has run out, and the line with it.]",
-          "source": "src/main.js:21215"
+          "source": "src/main.js:21267"
         }
       ],
-      "source": "src/main.js:21215"
+      "source": "src/main.js:21267"
     },
     "openPayphone.onTake": {
       "id": "openPayphone.onTake",
@@ -1770,10 +1770,10 @@
           "id": "openPayphone.onTake.l0",
           "who": "you",
           "text": "Folded twice. Somebody wrote the minuet out by hand.",
-          "source": "src/main.js:21579"
+          "source": "src/main.js:21631"
         }
       ],
-      "source": "src/main.js:21579"
+      "source": "src/main.js:21631"
     },
     "syncLastLight": {
       "id": "syncLastLight",
@@ -1783,10 +1783,10 @@
           "id": "syncLastLight.l0",
           "who": "direction",
           "text": "{who}: {line.text}",
-          "source": "src/main.js:22047"
+          "source": "src/main.js:22099"
         }
       ],
-      "source": "src/main.js:22047"
+      "source": "src/main.js:22099"
     },
     "beginCoastalMemoryJourney.paintOverlay": {
       "id": "beginCoastalMemoryJourney.paintOverlay",
@@ -1796,10 +1796,10 @@
           "id": "beginCoastalMemoryJourney.paintOverlay.l0",
           "who": "you",
           "text": "Lyle gave me this before his big break. So I’d have something to remember him by.",
-          "source": "src/main.js:22194"
+          "source": "src/main.js:22265"
         }
       ],
-      "source": "src/main.js:22194"
+      "source": "src/main.js:22265"
     },
     "beginChunkSurf": {
       "id": "beginChunkSurf",
@@ -1809,10 +1809,10 @@
           "id": "beginChunkSurf.l0",
           "who": "direction",
           "text": "The inner screen returns the opening of the first clean file before the transport moves.",
-          "source": "src/main.js:23186"
+          "source": "src/main.js:23257"
         }
       ],
-      "source": "src/main.js:23186"
+      "source": "src/main.js:23257"
     },
     "openHorizonBustChoice.onChoice": {
       "id": "openHorizonBustChoice.onChoice",
@@ -1822,10 +1822,10 @@
           "id": "openHorizonBustChoice.onChoice.l0",
           "who": "bust",
           "text": "The worn bevel. Down here. The choice belongs to your hand.",
-          "source": "src/main.js:23616"
+          "source": "src/main.js:23687"
         }
       ],
-      "source": "src/main.js:23616"
+      "source": "src/main.js:23687"
     },
     "openHorizonTransport.nodes.start": {
       "id": "openHorizonTransport.nodes.start",
@@ -1835,48 +1835,48 @@
           "id": "openHorizonTransport.nodes.start.l0",
           "who": "direction",
           "text": "A transport, at the edge of the field, with the tape already on it and nothing threaded. The reels are still. Past it the dark does not resolve into anything.",
-          "source": "src/main.js:23687"
+          "source": "src/main.js:23758"
         },
         {
           "id": "openHorizonTransport.nodes.start.l1",
           "who": "you",
           "text": "It wants to be told what it is holding before it will run it.",
-          "source": "src/main.js:23688"
+          "source": "src/main.js:23759"
         }
       ],
       "choices": [
         {
           "id": "openHorizonTransport.nodes.start.c0",
           "text": "[RUN LENGTH — {shown('length')}]",
-          "source": "src/main.js:23691",
+          "source": "src/main.js:23762",
           "targetName": "length"
         },
         {
           "id": "openHorizonTransport.nodes.start.c1",
           "text": "[PICTURE CENTRE — {shown('centre')}]",
-          "source": "src/main.js:23692",
+          "source": "src/main.js:23763",
           "targetName": "centre"
         },
         {
           "id": "openHorizonTransport.nodes.start.c2",
           "text": "[WHERE IT BREAKS UP — {shown('damage')}]",
-          "source": "src/main.js:23693",
+          "source": "src/main.js:23764",
           "targetName": "damage"
         },
         {
           "id": "openHorizonTransport.nodes.start.c3",
           "text": "[READ THE MACHINE]",
-          "source": "src/main.js:23694",
+          "source": "src/main.js:23765",
           "goto": "openHorizonTransport.nodes.read"
         },
         {
           "id": "openHorizonTransport.nodes.start.c4",
           "text": "[STEP BACK]",
-          "source": "src/main.js:23696",
+          "source": "src/main.js:23767",
           "targetName": "leave"
         }
       ],
-      "source": "src/main.js:23687"
+      "source": "src/main.js:23758"
     },
     "openHorizonTransport.nodes.read": {
       "id": "openHorizonTransport.nodes.read",
@@ -1886,18 +1886,18 @@
           "id": "openHorizonTransport.nodes.read.l0",
           "who": "you",
           "text": "{entry.part}. {entry.title}: {entry.reading}. {entry.note}",
-          "source": "src/main.js:23701"
+          "source": "src/main.js:23772"
         }
       ],
       "choices": [
         {
           "id": "openHorizonTransport.nodes.read.c0",
           "text": "[BACK]",
-          "source": "src/main.js:23702",
+          "source": "src/main.js:23773",
           "targetName": "leave"
         }
       ],
-      "source": "src/main.js:23701"
+      "source": "src/main.js:23772"
     },
     "openHorizonTransport": {
       "id": "openHorizonTransport",
@@ -1907,10 +1907,10 @@
           "id": "openHorizonTransport.l0",
           "who": "direction",
           "text": "The dial has three stops on it and no detent between them.",
-          "source": "src/main.js:23710"
+          "source": "src/main.js:23781"
         }
       ],
-      "source": "src/main.js:23710"
+      "source": "src/main.js:23781"
     },
     "openSourceContactWarning.start": {
       "id": "openSourceContactWarning.start",
@@ -1920,36 +1920,36 @@
           "id": "openSourceContactWarning.start.l0",
           "who": "direction",
           "text": "This is not another touch. Contact here gives the return a body to finish through.",
-          "source": "src/main.js:23751"
+          "source": "src/main.js:23822"
         },
         {
           "id": "openSourceContactWarning.start.l1",
           "who": "you",
           "text": "If I make contact and lose, I do not wake up somewhere safer. I do not walk away. That is it.",
-          "source": "src/main.js:23752"
+          "source": "src/main.js:23823"
         },
         {
           "id": "openSourceContactWarning.start.l2",
           "who": "direction",
           "text": "Whether that means death in the field or a body failing somewhere beyond it, the recording offers no distinction.",
-          "source": "src/main.js:23753"
+          "source": "src/main.js:23824"
         }
       ],
       "choices": [
         {
           "id": "openSourceContactWarning.start.c0",
           "text": "[MAKE CONTACT — NO RETURN]",
-          "source": "src/main.js:23756",
+          "source": "src/main.js:23827",
           "goto": "openSourceContactWarning.contact"
         },
         {
           "id": "openSourceContactWarning.start.c1",
           "text": "[WALK AWAY]",
-          "source": "src/main.js:23757",
+          "source": "src/main.js:23828",
           "goto": "openSourceContactWarning.away"
         }
       ],
-      "source": "src/main.js:23751"
+      "source": "src/main.js:23822"
     },
     "openSourceContactWarning.contact": {
       "id": "openSourceContactWarning.contact",
@@ -1959,16 +1959,16 @@
           "id": "openSourceContactWarning.contact.l0",
           "who": "you",
           "text": "Open channel.",
-          "source": "src/main.js:23761"
+          "source": "src/main.js:23832"
         },
         {
           "id": "openSourceContactWarning.contact.l1",
           "who": "direction",
           "text": "The fault recognizes the body that volunteered.",
-          "source": "src/main.js:23762"
+          "source": "src/main.js:23833"
         }
       ],
-      "source": "src/main.js:23761"
+      "source": "src/main.js:23832"
     },
     "openSourceContactWarning.away": {
       "id": "openSourceContactWarning.away",
@@ -1978,16 +1978,16 @@
           "id": "openSourceContactWarning.away.l0",
           "who": "you",
           "text": "No. Not on those terms.",
-          "source": "src/main.js:23765"
+          "source": "src/main.js:23836"
         },
         {
           "id": "openSourceContactWarning.away.l1",
           "who": "direction",
           "text": "The fault remains open behind you. The edge of the field resolves into tape.",
-          "source": "src/main.js:23766"
+          "source": "src/main.js:23837"
         }
       ],
-      "source": "src/main.js:23765"
+      "source": "src/main.js:23836"
     },
     "HORIZON_MARKER_LINES.street-unravels": {
       "id": "HORIZON_MARKER_LINES.street-unravels",
@@ -1997,10 +1997,10 @@
           "id": "HORIZON_MARKER_LINES.street-unravels.l0",
           "who": "you",
           "text": "The lamp was there. I passed it. I can't see the post anymore.",
-          "source": "src/main.js:23790"
+          "source": "src/main.js:23861"
         }
       ],
-      "source": "src/main.js:23790"
+      "source": "src/main.js:23861"
     },
     "HORIZON_MARKER_LINES.street-erased": {
       "id": "HORIZON_MARKER_LINES.street-erased",
@@ -2010,10 +2010,10 @@
           "id": "HORIZON_MARKER_LINES.street-erased.l0",
           "who": "you",
           "text": "I can still feel the road under my feet. The picture's arriving where the road should be.",
-          "source": "src/main.js:23791"
+          "source": "src/main.js:23862"
         }
       ],
-      "source": "src/main.js:23791"
+      "source": "src/main.js:23862"
     },
     "sourceStallNudge": {
       "id": "sourceStallNudge",
@@ -2023,10 +2023,10 @@
           "id": "sourceStallNudge.l0",
           "who": "you",
           "text": "If I lose the thread, the machine can find it.",
-          "source": "src/main.js:24089"
+          "source": "src/main.js:24160"
         }
       ],
-      "source": "src/main.js:24089"
+      "source": "src/main.js:24160"
     },
     "tickSourceSpace": {
       "id": "tickSourceSpace",
@@ -2036,16 +2036,16 @@
           "id": "tickSourceSpace.l0",
           "who": "you",
           "text": "Quiet here. Those bells are behind me.",
-          "source": "src/main.js:24161"
+          "source": "src/main.js:24232"
         },
         {
           "id": "tickSourceSpace.l1",
           "who": "you",
           "text": "Move.",
-          "source": "src/main.js:24322"
+          "source": "src/main.js:24393"
         }
       ],
-      "source": "src/main.js:24161"
+      "source": "src/main.js:24232"
     },
     "tickSourceFinalEncounter.battleOptions.onWin": {
       "id": "tickSourceFinalEncounter.battleOptions.onWin",
@@ -2055,10 +2055,10 @@
           "id": "tickSourceFinalEncounter.battleOptions.onWin.l0",
           "who": "you",
           "text": "The return channel did not resolve.",
-          "source": "src/main.js:24430"
+          "source": "src/main.js:24501"
         }
       ],
-      "source": "src/main.js:24430"
+      "source": "src/main.js:24501"
     },
     "tickStairAnomaly": {
       "id": "tickStairAnomaly",
@@ -2068,22 +2068,22 @@
           "id": "tickStairAnomaly.l0",
           "who": "you",
           "text": "This is not a stair. I have been on this long enough and it is not a stair.",
-          "source": "src/main.js:24469"
+          "source": "src/main.js:24540"
         },
         {
           "id": "tickStairAnomaly.l1",
           "who": "you",
           "text": "Right. Nothing in here is real while I can see it. So stop seeing it.",
-          "source": "src/main.js:24470"
+          "source": "src/main.js:24541"
         },
         {
           "id": "tickStairAnomaly.l2",
           "who": "you",
           "text": "{BINDINGS.inputPrompt('light')}. Torch off, stand still, count to twenty, and put it back on.",
-          "source": "src/main.js:24471"
+          "source": "src/main.js:24542"
         }
       ],
-      "source": "src/main.js:24469"
+      "source": "src/main.js:24540"
     },
     "openSourceHushRadio": {
       "id": "openSourceHushRadio",
@@ -2093,22 +2093,22 @@
           "id": "openSourceHushRadio.l0",
           "who": "you",
           "text": "The set is dead in my hand.",
-          "source": "src/main.js:24508"
+          "source": "src/main.js:24579"
         },
         {
           "id": "openSourceHushRadio.l1",
           "who": "you",
           "text": "The set is where I left it.",
-          "source": "src/main.js:24509"
+          "source": "src/main.js:24580"
         },
         {
           "id": "openSourceHushRadio.l2",
           "who": "you",
           "text": "Nothing on the carrier. No desk out here, and nothing listening yet.",
-          "source": "src/main.js:24512"
+          "source": "src/main.js:24583"
         }
       ],
-      "source": "src/main.js:24508"
+      "source": "src/main.js:24579"
     },
     "openSourceRecordingCassette.onCommit": {
       "id": "openSourceRecordingCassette.onCommit",
@@ -2118,10 +2118,10 @@
           "id": "openSourceRecordingCassette.onCommit.l0",
           "who": "you",
           "text": "{result.recording?.place||roomLabel(result.recording?.roomId)||'My recording'}. Back on the tape.",
-          "source": "src/main.js:24568"
+          "source": "src/main.js:24639"
         }
       ],
-      "source": "src/main.js:24568"
+      "source": "src/main.js:24639"
     },
     "openSourceHushContact.onChoice": {
       "id": "openSourceHushContact.onChoice",
@@ -2131,10 +2131,10 @@
           "id": "openSourceHushContact.onChoice.l0",
           "who": "you",
           "text": "{row.place||roomLabel(row.roomId)||'A recording'}. The counter reaches it, but there is nothing to play. It is somewhere in Source {row.destination.chapter}. / It finds no available recording to take.",
-          "source": "src/main.js:24601"
+          "source": "src/main.js:24672"
         }
       ],
-      "source": "src/main.js:24601"
+      "source": "src/main.js:24672"
     },
     "useAcademicGalleryPA.start": {
       "id": "useAcademicGalleryPA.start",
@@ -2144,36 +2144,36 @@
           "id": "useAcademicGalleryPA.start.l0",
           "who": "YOU",
           "text": "A tape transport feeds two battered speakers. The amplifier is at {level==='off'?'mute':level==='low'?'low level':'house level'}. The bass has found the rail before you have.",
-          "source": "src/main.js:24807"
+          "source": "src/main.js:24878"
         }
       ],
       "choices": [
         {
           "id": "useAcademicGalleryPA.start.c0",
           "text": "House level.",
-          "source": "src/main.js:24808",
+          "source": "src/main.js:24879",
           "goto": "useAcademicGalleryPA.house"
         },
         {
           "id": "useAcademicGalleryPA.start.c1",
           "text": "Turn it down.",
-          "source": "src/main.js:24809",
+          "source": "src/main.js:24880",
           "goto": "useAcademicGalleryPA.low"
         },
         {
           "id": "useAcademicGalleryPA.start.c2",
           "text": "Mute the amplifier.",
-          "source": "src/main.js:24810",
+          "source": "src/main.js:24881",
           "goto": "useAcademicGalleryPA.off"
         },
         {
           "id": "useAcademicGalleryPA.start.c3",
           "text": "Leave the controls alone.",
-          "source": "src/main.js:24811",
+          "source": "src/main.js:24882",
           "goto": "useAcademicGalleryPA.leave"
         }
       ],
-      "source": "src/main.js:24807"
+      "source": "src/main.js:24878"
     },
     "useAcademicGalleryPA.house": {
       "id": "useAcademicGalleryPA.house",
@@ -2183,10 +2183,10 @@
           "id": "useAcademicGalleryPA.house.l0",
           "who": "YOU",
           "text": "The meter lifts. The gathering has its floor again.",
-          "source": "src/main.js:24813"
+          "source": "src/main.js:24884"
         }
       ],
-      "source": "src/main.js:24813"
+      "source": "src/main.js:24884"
     },
     "useAcademicGalleryPA.low": {
       "id": "useAcademicGalleryPA.low",
@@ -2196,10 +2196,10 @@
           "id": "useAcademicGalleryPA.low.l0",
           "who": "YOU",
           "text": "The meter settles. Glass rims and low voices come forward.",
-          "source": "src/main.js:24814"
+          "source": "src/main.js:24885"
         }
       ],
-      "source": "src/main.js:24814"
+      "source": "src/main.js:24885"
     },
     "useAcademicGalleryPA.off": {
       "id": "useAcademicGalleryPA.off",
@@ -2209,10 +2209,10 @@
           "id": "useAcademicGalleryPA.off.l0",
           "who": "YOU",
           "text": "The meter falls. There are still people talking.",
-          "source": "src/main.js:24815"
+          "source": "src/main.js:24886"
         }
       ],
-      "source": "src/main.js:24815"
+      "source": "src/main.js:24886"
     },
     "useAcademicGalleryPA.leave": {
       "id": "useAcademicGalleryPA.leave",
@@ -2222,10 +2222,10 @@
           "id": "useAcademicGalleryPA.leave.l0",
           "who": "YOU",
           "text": "The tape keeps its own time.",
-          "source": "src/main.js:24816"
+          "source": "src/main.js:24887"
         }
       ],
-      "source": "src/main.js:24816"
+      "source": "src/main.js:24887"
     },
     "talkToAcademicAdmissionAdvice.scene.start": {
       "id": "talkToAcademicAdmissionAdvice.scene.start",
@@ -2235,23 +2235,23 @@
         {
           "id": "talkToAcademicAdmissionAdvice.scene.start.c0",
           "text": "Listen to their welcome.",
-          "source": "src/main.js:24968",
+          "source": "src/main.js:25039",
           "targetName": "listen"
         },
         {
           "id": "talkToAcademicAdmissionAdvice.scene.start.c1",
           "text": "Ask what the attendants are waiting for.",
-          "source": "src/main.js:24969",
+          "source": "src/main.js:25040",
           "targetName": "help"
         },
         {
           "id": "talkToAcademicAdmissionAdvice.scene.start.c2",
           "text": "Leave them to it.",
-          "source": "src/main.js:24970",
+          "source": "src/main.js:25041",
           "targetName": "leave"
         }
       ],
-      "source": "src/main.js:24968"
+      "source": "src/main.js:25039"
     },
     "syncAcademicBouncerClueProps.inspect": {
       "id": "syncAcademicBouncerClueProps.inspect",
@@ -2261,16 +2261,16 @@
           "id": "syncAcademicBouncerClueProps.inspect.l0",
           "who": "inspect",
           "text": "A staff note left on the teaching desk.",
-          "source": "src/main.js:25015"
+          "source": "src/main.js:25086"
         },
         {
           "id": "syncAcademicBouncerClueProps.inspect.l1",
           "who": "inspect",
           "text": "(again) The admission note is still here.",
-          "source": "src/main.js:25015"
+          "source": "src/main.js:25086"
         }
       ],
-      "source": "src/main.js:25015"
+      "source": "src/main.js:25086"
     },
     "syncAcademicBouncerClueProps": {
       "id": "syncAcademicBouncerClueProps",
@@ -2280,16 +2280,16 @@
           "id": "syncAcademicBouncerClueProps.l0",
           "who": "inspect",
           "text": "Small writing beside the soap dispenser.",
-          "source": "src/main.js:25035"
+          "source": "src/main.js:25106"
         },
         {
           "id": "syncAcademicBouncerClueProps.l1",
           "who": "inspect",
           "text": "(again) The pencilled instructions have not changed.",
-          "source": "src/main.js:25035"
+          "source": "src/main.js:25106"
         }
       ],
-      "source": "src/main.js:25035"
+      "source": "src/main.js:25106"
     },
     "talkToBust": {
       "id": "talkToBust",
@@ -2299,10 +2299,10 @@
           "id": "talkToBust.l0",
           "who": "you",
           "text": "Nowhere to seat them. The upper face is gone. / Not this one. This one still has its eyes.",
-          "source": "src/main.js:25428"
+          "source": "src/main.js:25499"
         }
       ],
-      "source": "src/main.js:25428"
+      "source": "src/main.js:25499"
     },
     "useRoofShortcut": {
       "id": "useRoofShortcut",
@@ -2312,16 +2312,16 @@
           "id": "useRoofShortcut.l0",
           "who": "you",
           "text": "A caged service ladder. The small brass lock takes Ren's key.",
-          "source": "src/main.js:25548"
+          "source": "src/main.js:25619"
         },
         {
           "id": "useRoofShortcut.l1",
           "who": "you",
           "text": "Something is against the ladder landing.",
-          "source": "src/main.js:25555"
+          "source": "src/main.js:25626"
         }
       ],
-      "source": "src/main.js:25548"
+      "source": "src/main.js:25619"
     },
     "sitAtYardLookBench.finishSeat": {
       "id": "sitAtYardLookBench.finishSeat",
@@ -2331,10 +2331,10 @@
           "id": "sitAtYardLookBench.finishSeat.l0",
           "who": "direction",
           "text": "He turns his back to the shelter, sits, and looks past the road to the lit gate, the lodge and Ellery rising behind them.",
-          "source": "src/main.js:25714"
+          "source": "src/main.js:25785"
         }
       ],
-      "source": "src/main.js:25714"
+      "source": "src/main.js:25785"
     },
     "driftPracticeRoom": {
       "id": "driftPracticeRoom",
@@ -2344,10 +2344,10 @@
           "id": "driftPracticeRoom.l0",
           "who": "you",
           "text": "They all moved. Every chair in the room, together, while I was looking straight at them. That is not a draught and that is not me.",
-          "source": "src/main.js:26727"
+          "source": "src/main.js:26798"
         }
       ],
-      "source": "src/main.js:26727"
+      "source": "src/main.js:26798"
     },
     "tickTalismanSightline": {
       "id": "tickTalismanSightline",
@@ -2357,10 +2357,10 @@
           "id": "tickTalismanSightline.l0",
           "who": "you",
           "text": "Steel on a music stand, in one of these rooms, throwing the torch straight back at me. Somebody left a tuning fork out.",
-          "source": "src/main.js:26802"
+          "source": "src/main.js:26873"
         }
       ],
-      "source": "src/main.js:26802"
+      "source": "src/main.js:26873"
     },
     "noteMeterDivergence": {
       "id": "noteMeterDivergence",
@@ -2370,10 +2370,10 @@
           "id": "noteMeterDivergence.l0",
           "who": "you",
           "text": "That is forty on the meter and I can hear nothing. That is not a fault — I checked it against tone at the van.",
-          "source": "src/main.js:27105"
+          "source": "src/main.js:27176"
         }
       ],
-      "source": "src/main.js:27105"
+      "source": "src/main.js:27176"
     },
     "b3Speaker.onWake": {
       "id": "b3Speaker.onWake",
@@ -2383,10 +2383,10 @@
           "id": "b3Speaker.onWake.l0",
           "who": "direction",
           "text": "[A faint sound comes through the studio speakers.]",
-          "source": "src/main.js:27476"
+          "source": "src/main.js:27547"
         }
       ],
-      "source": "src/main.js:27476"
+      "source": "src/main.js:27547"
     },
     "b3Speaker.onSilence": {
       "id": "b3Speaker.onSilence",
@@ -2396,10 +2396,10 @@
           "id": "b3Speaker.onSilence.l0",
           "who": "you",
           "text": "There. The speakers have stopped.",
-          "source": "src/main.js:27477"
+          "source": "src/main.js:27548"
         }
       ],
-      "source": "src/main.js:27477"
+      "source": "src/main.js:27548"
     },
     "b3DoorRattle": {
       "id": "b3DoorRattle",
@@ -2409,10 +2409,10 @@
           "id": "b3DoorRattle.l0",
           "who": "direction",
           "text": "[A latch rattles in the corridor.]",
-          "source": "src/main.js:27543"
+          "source": "src/main.js:27614"
         }
       ],
-      "source": "src/main.js:27543"
+      "source": "src/main.js:27614"
     },
     "armTakeHunter": {
       "id": "armTakeHunter",
@@ -2422,16 +2422,16 @@
           "id": "armTakeHunter.l0",
           "who": "you",
           "text": "They followed the torn tape here. Hold still. They close when they hear me.",
-          "source": "src/main.js:27789"
+          "source": "src/main.js:27860"
         },
         {
           "id": "armTakeHunter.l1",
           "who": "direction",
           "text": "Something in the building answers that. Not near, yet.",
-          "source": "src/main.js:27790"
+          "source": "src/main.js:27861"
         }
       ],
-      "source": "src/main.js:27789"
+      "source": "src/main.js:27860"
     },
     "tickTakeHunter": {
       "id": "tickTakeHunter",
@@ -2441,34 +2441,34 @@
           "id": "tickTakeHunter.l0",
           "who": "you",
           "text": "Take-up motor is dragging. Stop it now, before the brake holds.",
-          "source": "src/main.js:27821"
+          "source": "src/main.js:27892"
         },
         {
           "id": "tickTakeHunter.l1",
           "who": "you",
           "text": "It has lost the thread of me. Do not give it another one.",
-          "source": "src/main.js:27823"
+          "source": "src/main.js:27894"
         },
         {
           "id": "tickTakeHunter.l2",
           "who": "you",
           "text": "It stopped. Whatever it had of me, it has lost. Not a sound.",
-          "source": "src/main.js:27828"
+          "source": "src/main.js:27899"
         },
         {
           "id": "tickTakeHunter.l3",
           "who": "you",
           "text": "Whatever that was, it stopped when the tape did.",
-          "source": "src/main.js:27834"
+          "source": "src/main.js:27905"
         },
         {
           "id": "tickTakeHunter.l4",
           "who": "direction",
           "text": "It is not coming any more. It is here, and the tape is still running, and then it is not.",
-          "source": "src/main.js:27843"
+          "source": "src/main.js:27914"
         }
       ],
-      "source": "src/main.js:27821"
+      "source": "src/main.js:27892"
     },
     "wakeInstrument": {
       "id": "wakeInstrument",
@@ -2478,10 +2478,10 @@
           "id": "wakeInstrument.l0",
           "who": "you",
           "text": "Somewhere in the building, a {propLabel(prop).toLowerCase()} has started to play.",
-          "source": "src/main.js:27935"
+          "source": "src/main.js:28006"
         }
       ],
-      "source": "src/main.js:27935"
+      "source": "src/main.js:28006"
     },
     "silenceInstrument": {
       "id": "silenceInstrument",
@@ -2491,10 +2491,10 @@
           "id": "silenceInstrument.l0",
           "who": "you",
           "text": "Off. Back to the recorder. Same place, same take.",
-          "source": "src/main.js:27942"
+          "source": "src/main.js:28013"
         }
       ],
-      "source": "src/main.js:27942"
+      "source": "src/main.js:28013"
     },
     "resumeInstrumentTake": {
       "id": "resumeInstrumentTake",
@@ -2504,16 +2504,16 @@
           "id": "resumeInstrumentTake.l0",
           "who": "you",
           "text": "Not yet. I have to shut it off.",
-          "source": "src/main.js:27947"
+          "source": "src/main.js:28018"
         },
         {
           "id": "resumeInstrumentTake.l1",
           "who": "you",
           "text": "The recorder is where I left it. I have to go back.",
-          "source": "src/main.js:27949"
+          "source": "src/main.js:28020"
         }
       ],
-      "source": "src/main.js:27947"
+      "source": "src/main.js:28018"
     },
     "onTakeBroken": {
       "id": "onTakeBroken",
@@ -2523,16 +2523,16 @@
           "id": "onTakeBroken.l0",
           "who": "you",
           "text": "That was on the test. Stop, reset, and stay still.",
-          "source": "src/main.js:27991"
+          "source": "src/main.js:28062"
         },
         {
           "id": "onTakeBroken.l1",
           "who": "direction",
           "text": "A pressure hiss opens somewhere in the services. In the monitor it is already under the whole building.",
-          "source": "src/main.js:28005"
+          "source": "src/main.js:28076"
         }
       ],
-      "source": "src/main.js:27991"
+      "source": "src/main.js:28062"
     },
     "wakeAfterDefeat": {
       "id": "wakeAfterDefeat",
@@ -2542,16 +2542,16 @@
           "id": "wakeAfterDefeat.l0",
           "who": "you",
           "text": "Wasn't I in {label}?",
-          "source": "src/main.js:28244"
+          "source": "src/main.js:28315"
         },
         {
           "id": "wakeAfterDefeat.l1",
           "who": "you",
           "text": "This is not where I was.",
-          "source": "src/main.js:28245"
+          "source": "src/main.js:28316"
         }
       ],
-      "source": "src/main.js:28244"
+      "source": "src/main.js:28315"
     },
     "openTrainingBattle.onAbort": {
       "id": "openTrainingBattle.onAbort",
@@ -2561,10 +2561,10 @@
           "id": "openTrainingBattle.onAbort.l0",
           "who": "you",
           "text": "Not finished. Back on the mark; run the rehearsal again.",
-          "source": "src/main.js:28626"
+          "source": "src/main.js:28697"
         }
       ],
-      "source": "src/main.js:28626"
+      "source": "src/main.js:28697"
     },
     "warnChapelTapeDamage": {
       "id": "warnChapelTapeDamage",
@@ -2574,10 +2574,10 @@
           "id": "warnChapelTapeDamage.l0",
           "who": "you",
           "text": "{roomLabel(state.catch.damageTarget.roomId)}. Take {state.catch.damageTarget.ordinal}. Let go. Pull again and it tears.",
-          "source": "src/main.js:28672"
+          "source": "src/main.js:28743"
         }
       ],
-      "source": "src/main.js:28672"
+      "source": "src/main.js:28743"
     },
     "applyPendingChapelTapeDamage": {
       "id": "applyPendingChapelTapeDamage",
@@ -2587,10 +2587,10 @@
           "id": "applyPendingChapelTapeDamage.l0",
           "who": "you",
           "text": "That take is torn. The earlier {roomLabel(target.roomId)} recording survives. / {roomLabel(target.roomId)}. They have torn through it. I have to go back and record that room again.",
-          "source": "src/main.js:28687"
+          "source": "src/main.js:28758"
         }
       ],
-      "source": "src/main.js:28687"
+      "source": "src/main.js:28758"
     },
     "syncChapelTapeRepair": {
       "id": "syncChapelTapeRepair",
@@ -2600,10 +2600,10 @@
           "id": "syncChapelTapeRepair.l0",
           "who": "you",
           "text": "{roomLabel(room)} is back on tape. The torn passage is still there. I can leave now.",
-          "source": "src/main.js:28697"
+          "source": "src/main.js:28768"
         }
       ],
-      "source": "src/main.js:28697"
+      "source": "src/main.js:28768"
     },
     "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start": {
       "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start",
@@ -2613,24 +2613,24 @@
           "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.l0",
           "who": "YOU",
           "text": "{label} is damaged. The job is short a usable recording. I can go back, or leave with that room missing.",
-          "source": "src/main.js:28718"
+          "source": "src/main.js:28789"
         }
       ],
       "choices": [
         {
           "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.c0",
           "text": "Go back. Re-record {label}.",
-          "source": "src/main.js:28719",
+          "source": "src/main.js:28790",
           "goto": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair"
         },
         {
           "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.start.c1",
           "text": "Leave with the damaged recording.",
-          "source": "src/main.js:28720",
+          "source": "src/main.js:28791",
           "goto": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave"
         }
       ],
-      "source": "src/main.js:28718"
+      "source": "src/main.js:28789"
     },
     "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair": {
       "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair",
@@ -2640,10 +2640,10 @@
           "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.repair.l0",
           "who": "you",
           "text": "Back to the room. Same job. They are listening for me now.",
-          "source": "src/main.js:28722"
+          "source": "src/main.js:28793"
         }
       ],
-      "source": "src/main.js:28722"
+      "source": "src/main.js:28793"
     },
     "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave": {
       "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave",
@@ -2653,10 +2653,10 @@
           "id": "askChapelTapeDamageDeparture.chapel-damaged-work.nodes.leave.l0",
           "who": "you",
           "text": "I am leaving it damaged. Put that on the sheet.",
-          "source": "src/main.js:28723"
+          "source": "src/main.js:28794"
         }
       ],
-      "source": "src/main.js:28723"
+      "source": "src/main.js:28794"
     },
     "tickChapelTapeDemand": {
       "id": "tickChapelTapeDemand",
@@ -2666,10 +2666,10 @@
           "id": "tickChapelTapeDemand.l0",
           "who": "you",
           "text": "The case latch has snapped. Tape is hanging out. If they get it again, they will pull the recording apart.",
-          "source": "src/main.js:28842"
+          "source": "src/main.js:28913"
         }
       ],
-      "source": "src/main.js:28842"
+      "source": "src/main.js:28913"
     },
     "beginConfrontation": {
       "id": "beginConfrontation",
@@ -2679,10 +2679,10 @@
           "id": "beginConfrontation.l0",
           "who": "direction",
           "text": "This run already belongs to another return. The chapel has no choice left to offer it.",
-          "source": "src/main.js:29048"
+          "source": "src/main.js:29119"
         }
       ],
-      "source": "src/main.js:29048"
+      "source": "src/main.js:29119"
     },
     "startRecordistReleaseScene.scene.onCue": {
       "id": "startRecordistReleaseScene.scene.onCue",
@@ -2692,10 +2692,10 @@
           "id": "startRecordistReleaseScene.scene.onCue.l0",
           "who": "recordist",
           "text": "Wait. Let me have that breath.",
-          "source": "src/main.js:29185"
+          "source": "src/main.js:29256"
         }
       ],
-      "source": "src/main.js:29185"
+      "source": "src/main.js:29256"
     },
     "beginSurfacedCarry": {
       "id": "beginSurfacedCarry",
@@ -2705,10 +2705,10 @@
           "id": "beginSurfacedCarry.l0",
           "who": "recordist",
           "text": "The tower is quiet. Do not let the chapel choose another cut. Walk me to the public door.",
-          "source": "src/main.js:29253"
+          "source": "src/main.js:29324"
         }
       ],
-      "source": "src/main.js:29253"
+      "source": "src/main.js:29324"
     },
     "endingReferenceBeat": {
       "id": "endingReferenceBeat",
@@ -2718,22 +2718,22 @@
           "id": "endingReferenceBeat.l0",
           "who": "direction",
           "text": "The closing sheet prints REFERENCE SATURATED / {String(density).padStart(3,'0')}. It does not alter the filed result.",
-          "source": "src/main.js:29271"
+          "source": "src/main.js:29342"
         },
         {
           "id": "endingReferenceBeat.l1",
           "who": "direction",
           "text": "PRE-ROLL DISCREPANCY: the first return for {endingId.toUpperCase()} is already on the line above it.",
-          "source": "src/main.js:29272"
+          "source": "src/main.js:29343"
         },
         {
           "id": "endingReferenceBeat.l2",
           "who": "direction",
           "text": "The closing sheet leaves REFERENCE EXPOSURE unclassified.",
-          "source": "src/main.js:29274"
+          "source": "src/main.js:29345"
         }
       ],
-      "source": "src/main.js:29271"
+      "source": "src/main.js:29342"
     },
     "endSacrifice": {
       "id": "endSacrifice",
@@ -2743,10 +2743,10 @@
           "id": "endSacrifice.l0",
           "who": "direction",
           "text": "You are not going anywhere else. The inner screen is the only thing left in this building that is still where it was. / The floor has stopped going. Everything that was coming down is down, and the inner screen is still standing. / The chapel waits for a final physical answer. Return to the inner screen and put your hand on it.",
-          "source": "src/main.js:30326"
+          "source": "src/main.js:30397"
         }
       ],
-      "source": "src/main.js:30326"
+      "source": "src/main.js:30397"
     },
     "startEscape": {
       "id": "startEscape",
@@ -2756,10 +2756,10 @@
           "id": "startEscape.l0",
           "who": "direction",
           "text": "The floor is going. Get to the door you came in through.",
-          "source": "src/main.js:30369"
+          "source": "src/main.js:30440"
         }
       ],
-      "source": "src/main.js:30369"
+      "source": "src/main.js:30440"
     },
     "startCathedralCarry": {
       "id": "startCathedralCarry",
@@ -2769,16 +2769,16 @@
           "id": "startCathedralCarry.l0",
           "who": "direction",
           "text": "The Surfer is alive, collapsed beneath the open stone screen. His weight is on the floor until you take it.",
-          "source": "src/main.js:30411"
+          "source": "src/main.js:30482"
         },
         {
           "id": "startCathedralCarry.l1",
           "who": "you",
           "text": "West through the nave. Front doors. One threshold at a time.",
-          "source": "src/main.js:30412"
+          "source": "src/main.js:30483"
         }
       ],
-      "source": "src/main.js:30411"
+      "source": "src/main.js:30482"
     },
     "openCathedralFirstPhase.onWin": {
       "id": "openCathedralFirstPhase.onWin",
@@ -2788,22 +2788,22 @@
           "id": "openCathedralFirstPhase.onWin.l0",
           "who": "direction",
           "text": "A second body falls out of the tower shadow and catches the last live return.",
-          "source": "src/main.js:30534"
+          "source": "src/main.js:30605"
         },
         {
           "id": "openCathedralFirstPhase.onWin.l1",
           "who": "surfer",
           "text": "You walked all that way and brought me the big ones.",
-          "source": "src/main.js:30535"
+          "source": "src/main.js:30606"
         },
         {
           "id": "openCathedralFirstPhase.onWin.l2",
           "who": "direction",
           "text": "The Surfer lifts his hands. The bells answer harder. Nothing you spent in the first phase comes back.",
-          "source": "src/main.js:30536"
+          "source": "src/main.js:30607"
         }
       ],
-      "source": "src/main.js:30534"
+      "source": "src/main.js:30605"
     },
     "brendanBellContact": {
       "id": "brendanBellContact",
@@ -2813,10 +2813,10 @@
           "id": "brendanBellContact.l0",
           "who": "you",
           "text": "It spoke. Everything under this floor heard that. / Again. No {BINDINGS.inputPrompt('run')}, and go past them slow.",
-          "source": "src/main.js:30782"
+          "source": "src/main.js:30853"
         }
       ],
-      "source": "src/main.js:30782"
+      "source": "src/main.js:30853"
     },
     "tickFinale": {
       "id": "tickFinale",
@@ -2826,10 +2826,10 @@
           "id": "tickFinale.l0",
           "who": "recordist",
           "text": "Not here. The gate. He has a RETURNED column and I have waited eleven weeks to use it.",
-          "source": "src/main.js:30891"
+          "source": "src/main.js:30962"
         }
       ],
-      "source": "src/main.js:30891"
+      "source": "src/main.js:30962"
     },
     "stopPracticeMetronome": {
       "id": "stopPracticeMetronome",
@@ -2839,16 +2839,16 @@
           "id": "stopPracticeMetronome.l0",
           "who": "you",
           "text": "Stopped. It stays where I put it.",
-          "source": "src/main.js:31845"
+          "source": "src/main.js:31916"
         },
         {
           "id": "stopPracticeMetronome.l1",
           "who": "you",
           "text": "Finger on the pendulum. Stopped.",
-          "source": "src/main.js:31855"
+          "source": "src/main.js:31926"
         }
       ],
-      "source": "src/main.js:31845"
+      "source": "src/main.js:31916"
     }
   }
 }

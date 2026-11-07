@@ -23,21 +23,23 @@ const LANE=-1.35;
 
 export const DRIVE_TIME_SKIPS=freeze({
   // The dial: out of the picture, the van placed at the next stretch in the dark
-  // middle, and back in. Contact is cut this far ahead of it.
-  cut:freeze({seconds:.95,placeAt:.42,contactLead:.32}),
+  // middle, and back in. Contact is cut this far ahead of it. The turn stays
+  // short and soft: the road stays visible under the static, so a cut reads as
+  // the dial moving rather than as a blackout.
+  cut:freeze({seconds:.72,placeAt:.45,contactLead:.32}),
   stretches:freeze([
-    freeze({id:'road',start:freeze({d:-600,lateral:LANE,speed:13}),station:'service',until:freeze({metres:120})}),
-    freeze({id:'figure',start:freeze({d:-470,lateral:LANE,speed:13}),station:'music',rain:.06,until:freeze({metres:150,passed:true}),
+    freeze({id:'road',start:freeze({d:-600,lateral:LANE,speed:13}),station:'service',until:freeze({metres:330})}),
+    freeze({id:'figure',start:freeze({d:-470,lateral:LANE,speed:13}),station:'music',rain:.06,until:freeze({metres:300,passed:140}),
       hazard:freeze({kind:'figure',d:-392,lateral:-1.05})}),
     // Back down the road, later on. The boards say the same miles again.
-    freeze({id:'again',start:freeze({d:-560,lateral:LANE,speed:12}),station:'company',rain:.1,fog:.04,until:freeze({metres:100})}),
-    freeze({id:'oncoming',start:freeze({d:-335,lateral:LANE,speed:13}),station:'service',rain:.12,fog:.04,until:freeze({metres:190,passed:true}),
+    freeze({id:'again',start:freeze({d:-560,lateral:LANE,speed:12}),station:'company',rain:.1,fog:.04,until:freeze({metres:260})}),
+    freeze({id:'oncoming',start:freeze({d:-335,lateral:LANE,speed:13}),station:'service',rain:.12,fog:.04,until:freeze({metres:340,passed:120}),
       hazard:freeze({kind:'lorry',d:-205,lateral:1.9,speed:11,drift:freeze({from:1.9,to:-.55,start:-250,end:-285})})}),
     // The cut sets him down on the way to the stand, whichever way the lorry went, so
     // nobody misses it. The van with no lights is further on.
-    freeze({id:'stalled',start:freeze({d:-215,lateral:LANE,speed:13}),station:'music',rain:.16,fog:.06,until:freeze({metres:185,passed:true}),
+    freeze({id:'stalled',start:freeze({d:-215,lateral:LANE,speed:13}),station:'music',rain:.16,fog:.06,until:freeze({metres:260,passed:130}),
       hazard:freeze({kind:'van',d:-82,lateral:-1.25})}),
-    freeze({id:'bus',start:freeze({d:-40,lateral:LANE,speed:13}),station:'company',rain:.18,fog:.07,until:freeze({metres:150,passed:true}),
+    freeze({id:'bus',start:freeze({d:-40,lateral:LANE,speed:13}),station:'company',rain:.18,fog:.07,until:freeze({metres:200,passed:110}),
       hazard:freeze({kind:'bus',d:42,lateral:-8,to:-1.7,trigger:46,seconds:4.2})}),
     // The last stretch has no end of its own: it is the road to the queue and the edge.
     freeze({id:'edge',start:freeze({d:95,lateral:LANE,speed:13}),station:'service',rain:.2,fog:.08,until:null}),
@@ -102,7 +104,7 @@ export function contactWithin(drive,box,lead,{boxVelocity=[0,0]}={}){
  * `distanceOf(drive)` reads the van's road distance.
  */
 export function createTimeSkipDirector({skips=DRIVE_TIME_SKIPS,worldAt,distanceOf}={}){
-  let index=0,time=0,busAt=null,cuts=0,driven=0,lastD=null;
+  let index=0,time=0,busAt=null,cuts=0,driven=0,lastD=null,passedAt=null;
   const stretch=()=>skips.stretches[index];
   function box(vanD){
     const s=stretch(),h=s?.hazard;if(!h)return null;
@@ -122,12 +124,16 @@ export function createTimeSkipDirector({skips=DRIVE_TIME_SKIPS,worldAt,distanceO
       const vanD=distanceOf(drive),b=box(vanD);
       if(lastD!=null&&vanD>lastD)driven+=vanD-lastD;lastD=vanD;
       if(b&&contactWithin(drive,b,skips.cut.contactLead,{boxVelocity:b.velocity}))return{reason:'contact',from:index,to:index+1};
-      const passed=s.until.passed&&b&&vanD>b.d+b.halfZ+3;
+      // `passed` counts metres, not a flag: clearing the hazard earns the cut
+      // only after real driven distance beyond it, so each span stays long.
+      const beyond=Number(s.until.passed)||0;
+      if(beyond>0&&b&&vanD>b.d+b.halfZ+3&&passedAt==null)passedAt=driven;
+      const passed=beyond>0&&passedAt!=null&&driven>=passedAt+beyond;
       if(passed||driven>=s.until.metres)return{reason:passed?'passed':'driven',from:index,to:index+1};
       return null;
     },
     /** Move on to the next stretch; returns where and how the van starts it. */
-    advance(){index=Math.min(skips.stretches.length-1,index+1);time=0;busAt=null;driven=0;lastD=null;cuts+=1;return stretch();},
+    advance(){index=Math.min(skips.stretches.length-1,index+1);time=0;busAt=null;driven=0;lastD=null;passedAt=null;cuts+=1;return stretch();},
     driven:()=>driven,
     hazard:drive=>box(distanceOf(drive)),
   };

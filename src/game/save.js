@@ -570,6 +570,24 @@ export function saveCommit(patch = {}) {
   return save;
 }
 
+// Apply a patch to the in-memory save and normalize it without enqueuing the
+// durable write or the legacy localStorage mirror. Used where a single
+// authoritative write immediately follows (the van workbench's read-back
+// receipt): intermediate patches that are about to be superseded must not each
+// enqueue a full atomic file write on desktop.
+export function saveCommitSilent(patch = {}) {
+  const scope = transientState();
+  if (scope) {
+    Object.assign(scope.save, patch);
+    scope.save = normalizeSaveV4(scope.save, scope.meta);
+    scope.writes.push({ type: 'save', patch: structuredClone(patch) });
+    return scope.save;
+  }
+  Object.assign(save, patch);
+  save = normalizeSaveV4(save, meta);
+  return save;
+}
+
 export function metaCommit(patch = {}) {
   const scope = transientState();
   if (scope) {

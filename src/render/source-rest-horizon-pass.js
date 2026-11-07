@@ -28,9 +28,13 @@ export function sourceRestHorizonTideUniforms(frame){
 // Each vertex falls on its own path: free-fall radius r0(1-s)^(2/3), angular
 // momentum conserved, height along the spin axis flattening into the disc.
 // Nearer ends fall and orbit faster, so stretching and wrapping come from the
-// paths themselves. Returns 1 once the vertex has crossed the horizon.
+// paths themselves. The linear approach hands off to the exact asymptotic
+// solution of the free-fall proper time dτ/dt = 1 - rs/r, so the clock never
+// sees the crossing; only the growing rs (r0 under HORIZON_HANG) consumes.
+// Returns 1 once the vertex has crossed the horizon.
 export const SOURCE_REST_HORIZON_TIDE_GLSL=`
 uniform vec4 uRestHorizonCentre,uRestHorizonSpin,uRestHorizonClock;
+const float HORIZON_HANG=${f(SOURCE_REST_HORIZON.hangApproach)};
 mat3 restHorizonTurn(vec3 a,float t){a=normalize(a);float c=cos(t),s=sin(t),k=1.0-c;
   return mat3(c+a.x*a.x*k,a.y*a.x*k+a.z*s,a.z*a.x*k-a.y*s,a.x*a.y*k-a.z*s,c+a.y*a.y*k,a.z*a.y*k+a.x*s,a.x*a.z*k+a.y*s,a.y*a.z*k-a.x*s,c+a.z*a.z*k);}
 float restHorizonTide(inout vec3 world,inout vec3 normal,vec3 pivot,vec4 tide){
@@ -44,8 +48,13 @@ float restHorizonTide(inout vec3 world,inout vec3 normal,vec3 pivot,vec4 tide){
     world+=(normalize(centre-pivot)*.55+vec3(0.0,-.18,0.0))*kick*(1.0-exp(-age*1.2));
   }
   vec3 rel=world-centre,e1=normalize(cross(axis,abs(axis.y)<.95?vec3(0,1,0):vec3(1,0,0))),e2=cross(axis,e1);
-  float r0=max(length(rel)/rs,1.001),z0=dot(rel,axis)/rs,period=(6.0+.25*pow(r0,1.5))*tide.z,s=age/period;
-  if(s>=1.0-pow(1.0/r0,1.5)){world=centre;return 1.0;}
+  float r0=max(length(rel)/rs,1.001),z0=dot(rel,axis)/rs,period=(6.0+.25*pow(r0,1.5))*tide.z;
+  float last=1.0-pow(1.0/r0,1.5),linear=age/period,hang=1.0-pow(HORIZON_HANG/r0,1.5),s=linear;
+  if(hang>0.0&&linear>=hang){
+    s=last-(last-hang)*exp(-(linear-hang)*pow(r0,1.5)/(1.5*period));
+    if(s>=last)s=last*(1.0-1e-6); // exp underflow must never fake a crossing
+  }
+  if(s>=last){world=centre;return 1.0;}
   float k=pow(1.0-s,2.0/3.0),r=r0*k,z=z0*pow(k,1.5),rho=sqrt(max(r*r-z*z,0.0)),
     phase=atan(dot(rel,e2),dot(rel,e1))+uRestHorizonSpin.w*3.0*(pow(1.0-s,-1.0/3.0)-1.0);
   world=centre+rs*(axis*z+e1*rho*cos(phase)+e2*rho*sin(phase));

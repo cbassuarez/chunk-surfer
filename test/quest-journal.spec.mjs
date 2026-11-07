@@ -48,6 +48,29 @@ test('departed older saves are not told to repeat the Get In level setup', () =>
   }
 });
 
+test('the van entry walks the opening errand and reads the same guidance the HUD names', () => {
+  const yard = guidance => find({ save: { flags: {} }, guidance, job }, 'van-kit');
+  const van = { id: 'story:yard-van', label: 'GET THE KIT FROM THE VAN', required: true,
+    coordinateSpace: 'authored', authored: { x: 63.6, y: 208.0 } };
+  const fresh = yard(van);
+  assert.equal(fresh.category, 'assignment'); assert.equal(fresh.state, 'active');
+  assert.equal(fresh.next, 'Get the kit from the van'); assert.equal(fresh.nextLabel, 'NEXT');
+  assert.deepEqual(fresh.milestones.map(m => [m.id, m.state]), [
+    ['van:case', 'current'], ['van:map', 'pending'], ['van:kit', 'pending'], ['van:shut', 'pending']]);
+  const packing = { flags: { 'bag.taken': true, 'map.taken': true, 'kit.fitted': true },
+    guidance: { ...van, id: 'story:yard-van-shut', label: 'FINISH PACKING AT THE VAN' } };
+  const shut = find({ save: { flags: packing.flags }, guidance: packing.guidance, job }, 'van-kit');
+  assert.equal(shut.next, 'Finish packing at the van');
+  assert.deepEqual(shut.milestones.map(m => [m.id, m.state]), [
+    ['van:case', 'done'], ['van:map', 'done'], ['van:kit', 'done'], ['van:shut', 'current']]);
+  const done = find({ save: { flags: { ...packing.flags, 'van.closed': true } },
+    guidance: { ...van, id: 'story:lodge', label: 'CHECK IN WITH THE GUARD' }, job }, 'van-kit');
+  assert.equal(done.state, 'resolved'); assert.equal(done.commitment, 'fulfilled');
+  assert.equal(done.next, null); assert.ok(done.milestones.every(m => m.state === 'done'));
+  assert.equal(find({ save: { flags: packing.flags }, guidance: { ...van, id: 'story:get-in', label: 'ENTER THE SCENE DOCK' } }, job, 'van-kit'), undefined,
+    'the van errand closes with the yard phase');
+});
+
 test('current mandatory guidance remains active after takes and never invents a map location from world coordinates', () => {
   const save = { flags: { 'bag.taken': true, 'van.closed': true } };
   const done = { rooms: job.rooms.map(r => ({ ...r, recorded: true })) };
@@ -382,7 +405,7 @@ test('entries satisfy the presentation contract and remain stable across save re
     assert.ok([null, 'NEXT', 'CHOICE', 'OPTIONAL'].includes(e.nextLabel));
     assert.equal(typeof e.trackable, 'boolean'); assert.equal(typeof e.hasOpenCommitment, 'boolean');
     assert.equal(typeof e.trackingKey, 'string');
-    for (const m of e.milestones) assert.ok(m.id && m.label && ['done', 'current'].includes(m.state));
+    for (const m of e.milestones) assert.ok(m.id && m.label && ['done', 'current', 'pending'].includes(m.state));
     for (const r of e.records) assert.ok(r.id && r.label && r.text);
     if (e.closure) assert.ok(e.closure.label && e.closure.text);
     if (e.followUp) {

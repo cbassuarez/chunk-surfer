@@ -1,0 +1,96 @@
+{
+ "sampleRate": 44100,
+ "notes": {
+  "74": {
+   "file": "music-box/samples/note_074_+6.wav",
+   "freq": 589.23,
+   "cents": 6,
+   "occurrences": 1,
+   "seconds": 0.5
+  },
+  "75": {
+   "file": "music-box/samples/note_075_-46.wav",
+   "freq": 605.99,
+   "cents": -46,
+   "occurrences": 1,
+   "seconds": 0.5
+  },
+  "76": {
+   "file": "music-box/samples/note_076_+13.wav",
+   "freq": 664.31,
+   "cents": 13,
+   "occurrences": 21,
+   "seconds": 0.5
+  },
+  "77": {
+   "file": "music-box/samples/note_077_+16.wav",
+   "freq": 704.97,
+   "cents": 16,
+   "occurrences": 2,
+   "seconds": 0.5
+  },
+  "79": {
+   "file": "music-box/samples/note_079_+36.wav",
+   "freq": 800.53,
+   "cents": 36,
+   "occurrences": 35,
+   "seconds": 0.5
+  },
+  "80": {
+   "file": "music-box/samples/note_080_-42.wav",
+   "freq": 810.67,
+   "cents": -42,
+   "occurrences": 51,
+   "seconds": 0.5
+  },
+  "84": {
+   "file": "music-box/samples/note_084_-10.wav",
+   "freq": 1040.56,
+   "cents": -10,
+   "occurrences": 10,
+   "seconds": 0.5
+  },
+  "85": {
+   "file": "music-box/samples/note_085_+8.wav",
+   "freq": 1114.11,
+   "cents": 8,
+   "occurrences": 9,
+   "seconds": 0.5
+  },
+  "86": {
+   "file": "music-box/samples/note_086_+24.wav",
+   "freq": 1191.18,
+   "cents": 24,
+   "occurrences": 1,
+   "seconds": 0.5
+  },
+  "87": {
+   "file": "music-box/samples/note_087_-11.wav",
+   "freq": 1236.4,
+   "cents": -11,
+   "occurrences": 5,
+   "seconds": 0.5
+  },
+  "89": {
+   "file": "music-box/samples/note_089_-26.wav",
+   "freq": 1375.88,
+   "cents": -26,
+   "occurrences": 12,
+   "seconds": 0.5
+  },
+  "91": {
+   "file": "music-box/samples/note_091_-16.wav",
+   "freq": 1553.23,
+   "cents": -16,
+   "occurrences": 3,
+   "seconds": 0.5
+  },
+  "94": {
+   "file": "music-box/samples/note_094_-16.wav",
+   "freq": 1847.93,
+   "cents": -16,
+   "occurrences": 4,
+   "seconds": 0.5
+  }
+ }
+}

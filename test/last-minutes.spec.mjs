@@ -5,7 +5,7 @@ import {lastMinutesArcTarget,stepLastMinutesArc,lastMinutesFrame,lastMinutesPerc
 import {freshHypoxia,stepHypoxia,hypoxiaFrame,hypoxiaPerception} from '../src/game/hypoxia.js';
 import {MEMORY_FIELD_VISIT as V,memoryFieldForTake} from '../src/data/memory-field.js';
 import {freshMemoryField,stepMemoryField,tryMemoryField,memoryFieldTimes} from '../src/game/memory-field-scene.js';
-import {createInterruptionDirector,freshDeadDoor,pressDeadDoor,SEEP_PASTORAL,TAKEOVER_MEDIA} from '../src/game/interruption-director.js';
+import {createInterruptionDirector,freshDeadDoor,pressDeadDoor,SEEP_PASTORAL,TAKEOVER_MEDIA,TAKEOVER_CLINICAL,TAKEOVER_COMFORT} from '../src/game/interruption-director.js';
 import {ELLERY_FLORA_PROPS,ELLERY_FLORA_PLANTS,ROAD_FLORA,ROAD_FLORA_PLANTS} from '../src/data/ellery-flora.js';
 import {neuralFrame,neuralSeconds,NEURAL_TRANSITION,NEURAL_KINDS} from '../src/game/neural-transition.js';
 import {meaningLineFor,meaningFamilyFor,meaningRung,MEANING_SIGNS,MEANING_PROPS} from '../src/data/meaning-lines.js';
@@ -103,6 +103,15 @@ test('the window takes over rarely, the verbs fail lightly, and the cab comes in
   for(let at=0;at<30000;at+=20){const b=early.bleedFor({at,frame:lastMinutesFrame({arc:.12})});if(b)kinds.add(b.kind);}
   assert.ok(!kinds.has('knock')&&!kinds.has('water'),'the water and the hand come later');
   assert.equal(createInterruptionDirector().bleedFor({at:0,frame:lastMinutesFrame({arc:0})}),null);
+});
+test('verb-latched takeovers answer the verb with the body failing or the light',()=>{
+  const frame=lastMinutesFrame({arc:.9});
+  for(const [verb,pool] of [['take-arm',TAKEOVER_CLINICAL],['torch',TAKEOVER_COMFORT]]){
+    const d=createInterruptionDirector({seed:2});const media=[];
+    for(let at=0;at<40000;at+=30){const m=d.takeoverFor({at,frame,verb});if(m)media.push(m);}
+    assert.ok(media.length>0,`${verb} can take over`);
+    assert.ok(media.every(m=>pool.includes(m)),`${verb} only draws from its own pool`);
+  }
 });
 test('flora: placed by hand, outside only, modest, and daisies are not the only thing growing',()=>{
   const all=[...ELLERY_FLORA_PLANTS,...ROAD_FLORA_PLANTS].flat().filter(row=>!/-flower-/.test(row.id)),daisies=all.filter(row=>/daisy/.test(row.mesh));

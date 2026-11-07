@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {fixture} from './helpers/van-bench-fixture.mjs';
-import {vanWorkbenchComparison,vanWorkbenchOptionPresentation} from '../src/render/van-workbench-guidance.js';
+import {vanWorkbenchComparison,vanWorkbenchOptionPresentation,vanWorkbenchGuide} from '../src/render/van-workbench-guidance.js';
 import {freshFieldKit} from '../src/game/field-kit.js';
 
 test('pending Apply blocks Back, competing actions and repeated confirmation until the owner acknowledges',async()=>{
@@ -42,4 +42,18 @@ test('right click and pointer cancellation never apply a highlighted candidate',
 test('all consequential beam and battery comparisons survive the shorter action surface',()=>{
  const state={fieldKit:freshFieldKit()};const rows=vanWorkbenchComparison(state,'flashlight','throw');assert.equal(rows.length,3);assert.ok(rows.every(row=>Number.isFinite(row.current)&&Number.isFinite(row.preview)));
  const candidate=vanWorkbenchOptionPresentation(state,'microphone','directional');assert.equal(candidate.currentId,'reference');assert.equal(candidate.option.id,'directional');
+});
+test('the guided callout walks shift then case and never names the spanner',()=>{
+ const fresh={fieldKit:freshFieldKit(),difficultyLocked:false,shiftChosen:false,requirePacking:true,packedGroups:['headphones','microphone','recorder','flashlight']};
+ const shift=vanWorkbenchGuide(fresh);
+ assert.equal(shift.id,'shift');assert.equal(shift.target,'van:object:difficulty');
+ assert.equal(vanWorkbenchGuide({...fresh,shiftChosen:true}).id,'case');
+ assert.equal(vanWorkbenchGuide({...fresh,difficultyLocked:true}).id,'case');
+ assert.equal(vanWorkbenchGuide({...fresh,shiftChosen:true}).target,'van:continue');
+ const missing=vanWorkbenchGuide({...fresh,shiftChosen:true,packedGroups:['headphones','microphone','recorder']});
+ assert.equal(missing.id,'pack-flashlight');assert.equal(missing.target,'van:object:variant:flashlight:reference');
+ for(const state of [fresh,{...fresh,shiftChosen:true},missing]){
+  const guide=vanWorkbenchGuide(state);assert.notEqual(guide.target,'van:object:spanner');
+  assert.doesNotMatch(`${guide.title} ${guide.why}`,/spanner|wrench|stillson/i);
+ }
 });

@@ -11,6 +11,9 @@ export const SOURCE_REST_MEDIA_BEATS=Object.freeze([
   {id:'return',at:.45,assets:['performance-capture','mimosa-response']},
   {id:'weather',at:.61,assets:['clouds','eclipse']},
   {id:'failing',at:.77,assets:['sunflower-datamosh','flowers-seb']},
+  // The end gives way: the evidence dissolves into pure symbol, then disperses.
+  {id:'dissolution',at:.87,assets:['orion-nebula-flythrough','sea-nettle-jellyfish']},
+  {id:'dispersal',at:.95,assets:['starling-murmuration','orion-nebula-flythrough']},
 ].map(value=>Object.freeze({...value,assets:Object.freeze(value.assets)})));
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 export function sourceRestMediaBeat({phase,music={},rest={}}={}){

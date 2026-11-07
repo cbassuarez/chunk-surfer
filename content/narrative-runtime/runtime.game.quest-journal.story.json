@@ -27,10 +27,10 @@
           "id": "buildQuestJournal.serviceRecords.l0",
           "who": "record",
           "text": "Iona cannot get away from the bar. She asked for waters taken out, empty glasses collected and the tray returned. / Iona asked for a hand with waters and empty glasses; you have not heard the full arrangement.",
-          "source": "src/game/quest-journal.js:102"
+          "source": "src/game/quest-journal.js:135"
         }
       ],
-      "source": "src/game/quest-journal.js:102"
+      "source": "src/game/quest-journal.js:135"
     },
     "buildQuestJournal": {
       "id": "buildQuestJournal",
@@ -40,106 +40,106 @@
           "id": "buildQuestJournal.l0",
           "who": "record",
           "text": "You first declined, then agreed to help.",
-          "source": "src/game/quest-journal.js:105"
+          "source": "src/game/quest-journal.js:138"
         },
         {
           "id": "buildQuestJournal.l1",
           "who": "record",
           "text": "You agreed to take the waters, clear the empty glasses and return the tray.",
-          "source": "src/game/quest-journal.js:106"
+          "source": "src/game/quest-journal.js:139"
         },
         {
           "id": "buildQuestJournal.l2",
           "who": "record",
           "text": "You declined to help with the service. Iona left the choice open.",
-          "source": "src/game/quest-journal.js:107"
+          "source": "src/game/quest-journal.js:140"
         },
         {
           "id": "buildQuestJournal.l3",
           "who": "record",
           "text": "You returned the tray and empty glasses. The service you agreed to give is finished.",
-          "source": "src/game/quest-journal.js:108"
+          "source": "src/game/quest-journal.js:141"
         },
         {
           "id": "buildQuestJournal.l4",
           "who": "record",
           "text": "You declined the bottle opener / order book favor before agreeing to it.",
-          "source": "src/game/quest-journal.js:115"
+          "source": "src/game/quest-journal.js:148"
         },
         {
           "id": "buildQuestJournal.l5",
           "who": "record",
           "text": "You gave it back to Iona at The Lyric.",
-          "source": "src/game/quest-journal.js:116"
+          "source": "src/game/quest-journal.js:149"
         },
         {
           "id": "buildQuestJournal.l6",
           "who": "record",
           "text": "You agreed to bring back the bottle opener / order book.",
-          "source": "src/game/quest-journal.js:117"
+          "source": "src/game/quest-journal.js:150"
         },
         {
           "id": "buildQuestJournal.l7",
           "who": "record",
           "text": "You declined to fetch the bottle opener / order book.",
-          "source": "src/game/quest-journal.js:118"
+          "source": "src/game/quest-journal.js:151"
         },
         {
           "id": "buildQuestJournal.l8",
           "who": "record",
           "text": "Ren wants the HOME cassette back. You were asked to read the release warning before deciding what to hand over. / Ren asked about a cassette among their things in the stripped office.",
-          "source": "src/game/quest-journal.js:295"
+          "source": "src/game/quest-journal.js:329"
         },
         {
           "id": "buildQuestJournal.l9",
           "who": "record",
           "text": "The R page is missing. Its carbon intake pad may survive in the reception filing bank.",
-          "source": "src/game/quest-journal.js:298"
+          "source": "src/game/quest-journal.js:332"
         },
         {
           "id": "buildQuestJournal.l10",
           "who": "record",
           "text": "The impressed line identifies drawer seventeen and the HOME cassette: not to be released to R., at their own request.",
-          "source": "src/game/quest-journal.js:299"
+          "source": "src/game/quest-journal.js:333"
         },
         {
           "id": "buildQuestJournal.l11",
           "who": "record",
           "text": "Ren signed the refusal twice, in two different years.",
-          "source": "src/game/quest-journal.js:300"
+          "source": "src/game/quest-journal.js:334"
         },
         {
           "id": "buildQuestJournal.l12",
           "who": "record",
           "text": "You played the private cassette.",
-          "source": "src/game/quest-journal.js:301"
+          "source": "src/game/quest-journal.js:335"
         },
         {
           "id": "buildQuestJournal.l13",
           "who": "record",
           "text": "After reading the warning, you left the cassette where it was.",
-          "source": "src/game/quest-journal.js:302"
+          "source": "src/game/quest-journal.js:336"
         },
         {
           "id": "buildQuestJournal.l14",
           "who": "record",
           "text": "You returned the cassette and admitted listening. / You returned the cassette and said you had kept it sealed. / You returned the cassette without listening on your own.",
-          "source": "src/game/quest-journal.js:303"
+          "source": "src/game/quest-journal.js:337"
         },
         {
           "id": "buildQuestJournal.l15",
           "who": "record",
           "text": "You chose to keep the cassette instead of handing it to Ren.",
-          "source": "src/game/quest-journal.js:306"
+          "source": "src/game/quest-journal.js:340"
         },
         {
           "id": "buildQuestJournal.l16",
           "who": "record",
           "text": "You declined to retrieve the cassette.",
-          "source": "src/game/quest-journal.js:307"
+          "source": "src/game/quest-journal.js:341"
         }
       ],
-      "source": "src/game/quest-journal.js:105"
+      "source": "src/game/quest-journal.js:138"
     },
     "buildQuestJournal.closure": {
       "id": "buildQuestJournal.closure",
@@ -149,58 +149,58 @@
           "id": "buildQuestJournal.closure.l0",
           "who": "closure",
           "text": "The waters were served, the empty glasses collected and the tray returned to Iona.",
-          "source": "src/game/quest-journal.js:145"
+          "source": "src/game/quest-journal.js:178"
         },
         {
           "id": "buildQuestJournal.closure.l1",
           "who": "closure",
           "text": "You made no promise to help with the service.",
-          "source": "src/game/quest-journal.js:146"
+          "source": "src/game/quest-journal.js:179"
         },
         {
           "id": "buildQuestJournal.closure.l2",
           "who": "closure",
           "text": "You returned the HOME cassette to Ren.",
-          "source": "src/game/quest-journal.js:334"
+          "source": "src/game/quest-journal.js:368"
         },
         {
           "id": "buildQuestJournal.closure.l3",
           "who": "closure",
           "text": "You read the warning and left the cassette in its drawer.",
-          "source": "src/game/quest-journal.js:335"
+          "source": "src/game/quest-journal.js:369"
         },
         {
           "id": "buildQuestJournal.closure.l4",
           "who": "closure",
           "text": "You withdrew from handing it over.",
-          "source": "src/game/quest-journal.js:336"
+          "source": "src/game/quest-journal.js:370"
         },
         {
           "id": "buildQuestJournal.closure.l5",
           "who": "closure",
           "text": "You did not promise to retrieve it.",
-          "source": "src/game/quest-journal.js:336"
+          "source": "src/game/quest-journal.js:370"
         },
         {
           "id": "buildQuestJournal.closure.l6",
           "who": "closure",
           "text": "Vera and Hugh admitted you to the reception.",
-          "source": "src/game/quest-journal.js:349"
+          "source": "src/game/quest-journal.js:383"
         },
         {
           "id": "buildQuestJournal.closure.l7",
           "who": "closure",
           "text": "You delivered the invitation.",
-          "source": "src/game/quest-journal.js:376"
+          "source": "src/game/quest-journal.js:410"
         },
         {
           "id": "buildQuestJournal.closure.l8",
           "who": "closure",
           "text": "The call is over.",
-          "source": "src/game/quest-journal.js:391"
+          "source": "src/game/quest-journal.js:425"
         }
       ],
-      "source": "src/game/quest-journal.js:145"
+      "source": "src/game/quest-journal.js:178"
     },
     "buildQuestJournal.records": {
       "id": "buildQuestJournal.records",
@@ -210,46 +210,46 @@
           "id": "buildQuestJournal.records.l0",
           "who": "record",
           "text": "A room-tone take is on the recorder.",
-          "source": "src/game/quest-journal.js:284"
+          "source": "src/game/quest-journal.js:318"
         },
         {
           "id": "buildQuestJournal.records.l1",
           "who": "record",
           "text": "This source explained the reception’s welcome.",
-          "source": "src/game/quest-journal.js:348"
+          "source": "src/game/quest-journal.js:382"
         },
         {
           "id": "buildQuestJournal.records.l2",
           "who": "record",
           "text": "You lent Emile one living breath. / Emile asked for one living breath for a phrase. You can ask him or Lucien for it back, go downstairs, or let it end. / Emile wants a living breath for a phrase.",
-          "source": "src/game/quest-journal.js:358"
+          "source": "src/game/quest-journal.js:392"
         },
         {
           "id": "buildQuestJournal.records.l3",
           "who": "record",
           "text": "The person who asked did not want to call across the room and draw attention to you.",
-          "source": "src/game/quest-journal.js:372"
+          "source": "src/game/quest-journal.js:406"
         },
         {
           "id": "buildQuestJournal.records.l4",
           "who": "record",
           "text": "You told him there is room by the others. He can look again later.",
-          "source": "src/game/quest-journal.js:373"
+          "source": "src/game/quest-journal.js:407"
         },
         {
           "id": "buildQuestJournal.records.l5",
           "who": "record",
           "text": "He turned from the window for a while.",
-          "source": "src/game/quest-journal.js:374"
+          "source": "src/game/quest-journal.js:408"
         },
         {
           "id": "buildQuestJournal.records.l6",
           "who": "record",
           "text": "You returned to the person who asked.",
-          "source": "src/game/quest-journal.js:375"
+          "source": "src/game/quest-journal.js:409"
         }
       ],
-      "source": "src/game/quest-journal.js:284"
+      "source": "src/game/quest-journal.js:318"
     }
   }
 }

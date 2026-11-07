@@ -93,10 +93,13 @@ test('the scene adds the farm only in range, a lit yard, and goes before the cli
   assert.ok(stats.bytes<2e6);
 });
 
-test('the road: stone for rail with the same footprint, rock on the held side, no ridge props',()=>{
+test('the road: stone for rail with the same footprint, rock on the held side, and the ridges back beside them',()=>{
   for(const i of[0,1,2])assert.deepEqual(BOUNDARY_MESH_BOUNDS[`m62_drystone_${i}`],BOUNDARY_MESH_BOUNDS.cut_guardrail,'a van hits exactly what it hit before');
   assert.ok(new Set([-600,-597,-594,-591].map(d=>m62DrystoneMesh(d,1))).size>1,'not one stone pattern over and over');
-  assert.equal(road.includes("placed('drive_terrain_ridge'"),false);
+  // The far ridges the bends always had, restored alongside the M62 rock: the
+  // same three silhouettes out past the verge, shadowing the held bends.
+  assert.match(road,/for\(const\[at,side\]of\[\[-580,-1\],\[-370,1\],\[-165,-1\]\]\)/);
+  assert.match(road,/placed\('drive_terrain_ridge'/);
   for(const[from,to]of M62_ROAD_ROCK){assert.ok(from<to&&to<=OPENING_ROAD.join);}
   assert.match(road,/openingWorldAt\(at,openingRoadAt\(at\)\.rightWidth\+2\.75\)/,'beyond the wall, on the right, where the land climbs');
 });

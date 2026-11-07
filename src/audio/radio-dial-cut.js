@@ -32,14 +32,20 @@ export function playRadioDialCut({context,destination,seconds=.95,gain=1,reduced
   };
   for(const at of A.clicks)click(at*seconds/.95);
   click(A.land*seconds/.95,1.25);
-  // The band between stations.
-  const hiss=own(context.createBufferSource()),band=own(context.createBiquadFilter()),hg=own(context.createGain());
+  // The band between stations. White noise shaped by the IF filters (a fixed
+  // de-emphasis low-pass keeps the hiss warm, not piercing), swept through the
+  // dial, and captured the moment the needle lands on a station: the static
+  // squelches instead of fading.
+  const hiss=own(context.createBufferSource()),band=own(context.createBiquadFilter()),lp=own(context.createBiquadFilter()),hg=own(context.createGain());
   hiss.buffer=noise;band.type='bandpass';band.Q.value=1.2;
   for(const [u,hz] of A.static.sweep)band.frequency.linearRampToValueAtTime(hz,now+u*seconds);
+  lp.type='lowpass';lp.frequency.value=5200;lp.Q.value=.55;
   const level=A.static.level*(reducedFlash?.7:1);
   hg.gain.setValueAtTime(0,now);hg.gain.linearRampToValueAtTime(level,now+A.static.attack*seconds);
-  hg.gain.setValueAtTime(level,now+A.static.release*seconds*.85);hg.gain.linearRampToValueAtTime(0,now+A.static.release*seconds);
-  hiss.connect(band);band.connect(hg);hg.connect(out);hiss.start(now);hiss.stop(now+seconds+.05);
+  hg.gain.setValueAtTime(level,now+A.land*seconds);
+  hg.gain.linearRampToValueAtTime(level*.07,now+A.land*seconds+.035);
+  hg.gain.linearRampToValueAtTime(0,now+A.static.release*seconds);
+  hiss.connect(band);band.connect(lp);lp.connect(hg);hg.connect(out);hiss.start(now);hiss.stop(now+seconds+.05);
   // A carrier crossed on the way: the whistle sliding down.
   const w=own(context.createOscillator()),wg=own(context.createGain());w.type='sine';
   w.frequency.setValueAtTime(A.whistle.from,now+.08*seconds);w.frequency.exponentialRampToValueAtTime(A.whistle.to,now+(.08+A.whistle.seconds)*seconds);

@@ -2,6 +2,34 @@ import {FIELD_KIT_OPTIONS,normalizeFieldKit} from '../game/field-kit.js';
 
 export const VAN_REQUIRED_GEAR=Object.freeze(['headphones','microphone','recorder','flashlight']);
 const gearNames={headphones:'headphones',microphone:'microphone',recorder:'amp',flashlight:'flashlight'};
+
+// The bench's guided callout. It names one thing at a time, in the order the
+// recordist would actually do them: choose the shift, then take the case. The
+// standard case already arrives packed, so there is nothing to forget in the
+// bays — only the shift order and the departure itself. The spanner is never
+// named here: it stays a quiet, optional object on the shelf. Picking it is
+// still allowed; the guide simply never asks for it.
+export function vanWorkbenchGuide(state={}){
+  const packed=state.packedGroups||[];
+  if(state.difficultyLocked!==true&&state.shiftChosen!==true){
+    return{id:'shift',target:'van:object:difficulty',title:'CHOOSE YOUR SHIFT',
+      why:'THE SHIFT ORDER NAMES THE NIGHT\'S RULES. CONTRACT IS THE BASELINE — A TOUGHER SHIFT PAYS BETTER. SELECT THE ORDER TO CHANGE IT.',
+      action:'SELECT THE SHIFT ORDER'};
+  }
+  if(state.requirePacking){
+    const next=VAN_REQUIRED_GEAR.find(group=>!packed.includes(group));
+    if(next){
+      const kit=normalizeFieldKit(state.fieldKit);
+      return{id:`pack-${next}`,target:`van:object:variant:${next}:${kit[next]||'reference'}`,
+        title:`PACK THE ${gearNames[next].toUpperCase()}`,
+        why:`YOUR CASE IS STILL MISSING ${gearNames[next].toUpperCase()}. PICK ONE FROM THE SHELF AND CONFIRM IT INTO THE CASE.`,
+        action:`PACK ${gearNames[next].toUpperCase()}`};
+    }
+  }
+  return{id:'case',target:'van:continue',title:'TAKE THE CASE',
+    why:'CASE, MAP AND SHIFT ARE SET. THE STANDARD KIT IS ALREADY PACKED — SWAP ANY PIECE ON THE SHELF FIRST IF YOU WANT. TAKE THE CASE TO CLOSE THE VAN AND START.',
+    action:'TAKE CASE'};
+}
 export function vanWorkbenchProgress(state={}){
  const packed=VAN_REQUIRED_GEAR.filter(id=>state.packedGroups?.includes(id));
  const tasks=[{id:'van:case',label:'Open the field case',done:!!state.bagTaken},

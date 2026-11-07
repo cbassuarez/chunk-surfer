@@ -24,28 +24,28 @@
           "id": "DEAD_DOOR_LINES.l0",
           "who": "text",
           "text": "It isn't locked.",
-          "source": "src/game/interruption-director.js:44"
+          "source": "src/game/interruption-director.js:52"
         },
         {
           "id": "DEAD_DOOR_LINES.l1",
           "who": "text",
           "text": "Hm.",
-          "source": "src/game/interruption-director.js:44"
+          "source": "src/game/interruption-director.js:52"
         },
         {
           "id": "DEAD_DOOR_LINES.l2",
           "who": "text",
           "text": "The handle's fine.",
-          "source": "src/game/interruption-director.js:44"
+          "source": "src/game/interruption-director.js:52"
         },
         {
           "id": "DEAD_DOOR_LINES.l3",
           "who": "text",
           "text": "Stop. Try again.",
-          "source": "src/game/interruption-director.js:44"
+          "source": "src/game/interruption-director.js:52"
         }
       ],
-      "source": "src/game/interruption-director.js:44"
+      "source": "src/game/interruption-director.js:52"
     }
   }
 }

@@ -680,6 +680,414 @@
         "Resized/cropped640x360;15fps; audio removed",
         "No generated motion, still-image carrier or frame interpolation; runtime geometry occludes footage"
       ]
+    },
+    {
+      "id": "apoptosis-organelles",
+      "kind": "video",
+      "path": "window-media/apoptosis-organelles.webm",
+      "aspectRatio": 1,
+      "width": 480,
+      "height": 480,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 7,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "apoptosis-organelles.ogv",
+        "sha256": "1b407f87bcc7cb6bb557210efb1fec0254c4484efb0b9e95b84e632a7c5d1490",
+        "title": "Stage-specific changes in organelles during apoptosis (S5)",
+        "creator": "Nolin F, Michel J, Wortham L, Tchelidze P, Banchet V, Lalun N, Terryn C, Ploton D",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "url": "https://commons.wikimedia.org/wiki/File:Stage-Specific-Changes-in-the-Water-Na%2B-Cl--and-K%2B-Contents-of-Organelles-during-Apoptosis-pone.0148727.s005.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/apoptosis-organelles.webm",
+          "codec": "vp9",
+          "sha256": "ceca37bfe0c8b112cf08f34bf4bef88df6c37bf9594a933ed652e63c13fd9b3a",
+          "bytes": 659443
+        },
+        "mp4": {
+          "path": "window-media/apoptosis-organelles.mp4",
+          "codec": "h264",
+          "sha256": "5d6801806a46e0fa0f3035f3d0b629812fb0020720b1486538df6e924097f5f6",
+          "bytes": 1050422
+        },
+        "poster": {
+          "path": "window-media/apoptosis-organelles.png",
+          "codec": "png",
+          "sha256": "8b522bbc535545806ae5520bacba6f4aa7a0be5e04b287a5f7f36c03c48374f6",
+          "bytes": 159895
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "boar-corpse-decomposition",
+      "kind": "video",
+      "path": "window-media/boar-corpse-decomposition.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 5,
+        "durationSeconds": 18,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "boar-corpse-decomposition.webm",
+        "sha256": "a6509e69187dbb1ff73cdd983b3cc0958b3602eb5412d5d4c16d42ce6bbbf220",
+        "title": "Common wild pig (boar) corpse decomposition timelapse",
+        "creator": "Ant Timelapse",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+        "url": "https://commons.wikimedia.org/wiki/File:Common_wild_pig_(boar)_corpse_decomposition_timelapse_in_4K_13SpAUlZ6Qc.webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/boar-corpse-decomposition.webm",
+          "codec": "vp9",
+          "sha256": "5f6ee7a05ea28994fa6f4c839b42df570f6161aa8036720edc13d4623f64aa8d",
+          "bytes": 1690707
+        },
+        "mp4": {
+          "path": "window-media/boar-corpse-decomposition.mp4",
+          "codec": "h264",
+          "sha256": "da857a32b5df0233efc9bba516cc85323ab01b77deb2def157b7738bbebdaba3",
+          "bytes": 2116798
+        },
+        "poster": {
+          "path": "window-media/boar-corpse-decomposition.png",
+          "codec": "png",
+          "sha256": "5ecc9e4a278afa912b8c9eab00fee0a4b43deee3ff720915e09e2c9db61d6f4f",
+          "bytes": 450757
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "microfilariae",
+      "kind": "video",
+      "path": "window-media/microfilariae.webm",
+      "aspectRatio": 1.3333333333333333,
+      "width": 480,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 1.3,
+        "durationSeconds": 8,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "microfilariae.ogv",
+        "sha256": "83c2a74655a36e815cd836a9de6e9ae564f399be9240721ccaa7c08642b72fcf",
+        "title": "L. sigmodontis microfilariae (filarial worms) S9",
+        "creator": "Ziewer S, Hübner M, Dubben B, Hoffmann W, Bain O, Martin C, Hoerauf A, Specht S",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5/",
+        "url": "https://commons.wikimedia.org/wiki/File:Immunization-with-L.-sigmodontis-Microfilariae-Reduces-Peripheral-Microfilaraemia-after-Challenge-pntd.0001558.s009.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/microfilariae.webm",
+          "codec": "vp9",
+          "sha256": "e5b8a6cb063cc9b1decc59c53a70a692f013408383e3c3d0b2752f55f4004668",
+          "bytes": 1124705
+        },
+        "mp4": {
+          "path": "window-media/microfilariae.mp4",
+          "codec": "h264",
+          "sha256": "f18218954c76bb3a269f2d86ac6cf2dab5c158da463e74641a61065b85edc3b3",
+          "bytes": 1233580
+        },
+        "poster": {
+          "path": "window-media/microfilariae.png",
+          "codec": "png",
+          "sha256": "431b9652fe0804f6d157a86f84715544c91d47e2184d8af1747b86b5910deada",
+          "bytes": 349634
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "mitotic-catastrophe",
+      "kind": "video",
+      "path": "window-media/mitotic-catastrophe.webm",
+      "aspectRatio": 1,
+      "width": 480,
+      "height": 480,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 6,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "mitotic-catastrophe.ogv",
+        "sha256": "ec02ef44e2dc22747feae201507eedf9bffd44ed318c70d449d99b694ed46301",
+        "title": "Mitotic catastrophe in the absence of apoptosis (p53-null cells) S3",
+        "creator": "Fragkos M, Beard P",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5/",
+        "url": "https://commons.wikimedia.org/wiki/File:Mitotic-Catastrophe-Occurs-in-the-Absence-of-Apoptosis-in-p53-Null-Cells-with-a-Defective-G1-pone.0022946.s003.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/mitotic-catastrophe.webm",
+          "codec": "vp9",
+          "sha256": "5af0108d6c7036ad0703a890d87cc2c60a24c33724610f13aa705506bd744a5b",
+          "bytes": 441382
+        },
+        "mp4": {
+          "path": "window-media/mitotic-catastrophe.mp4",
+          "codec": "h264",
+          "sha256": "261e3d25ba9f85519747d4803325773992d3f75d9c90d9ad8af517bdd72a8f6c",
+          "bytes": 822680
+        },
+        "poster": {
+          "path": "window-media/mitotic-catastrophe.png",
+          "codec": "png",
+          "sha256": "b7b04e664929efe90ca85225ff6a222c612048b939cfb4ae1d4e8174444b8d85",
+          "bytes": 217146
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "orion-nebula-flythrough",
+      "kind": "video",
+      "path": "window-media/orion-nebula-flythrough.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 18,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "orion-nebula-flythrough.ogv",
+        "sha256": "6911fb2826dcb5200de7d2a927153e8661f737992e156c76c9880ce589e1b6f5",
+        "title": "Orion Nebula 3D fly-through (HST)",
+        "creator": "NASA, ESA, F. Summers, G. Bacon, L. Frattare, Z. Levay, K. Litaker (STScI)",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "url": "https://commons.wikimedia.org/wiki/File:Orion_Nebula_3D_Fly-Through_-_HST.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/orion-nebula-flythrough.webm",
+          "codec": "vp9",
+          "sha256": "feb2a9424e0b13667415392ed0bea33946c7d967d38cc8a724bcb2a7fa64989e",
+          "bytes": 484790
+        },
+        "mp4": {
+          "path": "window-media/orion-nebula-flythrough.mp4",
+          "codec": "h264",
+          "sha256": "5519045ba8da7e5fcce915d567de94b32515904f29e3ac01c0bfc0f2dcffa2aa",
+          "bytes": 1171947
+        },
+        "poster": {
+          "path": "window-media/orion-nebula-flythrough.png",
+          "codec": "png",
+          "sha256": "7c173e6c56eb090a0997e62796608f5e79a06647c3030c730ab926ad148f4793",
+          "bytes": 263090
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "schistosoma-eggs",
+      "kind": "video",
+      "path": "window-media/schistosoma-eggs.webm",
+      "aspectRatio": 1,
+      "width": 480,
+      "height": 480,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 8,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "clinical",
+      "source": {
+        "file": "schistosoma-eggs.ogv",
+        "sha256": "e077549888605b7a607a01a43c2b8819ed6ba1f848b813c98ac3c85f1a8acfd1",
+        "title": "Schistosoma mansoni eggs in the gut of mice (confocal) S2",
+        "creator": "Holtfreter M, Stachs O, Reichard M, Loebermann M, Guthoff R, Reisinger E",
+        "license": "CC BY 2.5",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.5/",
+        "url": "https://commons.wikimedia.org/wiki/File:Confocal-Laser-Scanning-Microscopy-for-Detection-of-Schistosoma-mansoni-Eggs-in-the-Gut-of-Mice-pone.0018799.s002.ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/schistosoma-eggs.webm",
+          "codec": "vp9",
+          "sha256": "bb94b129cfd3b296b5cfcbcf3dd4169fd393d9359e50e0253dffa606811cc77b",
+          "bytes": 1562677
+        },
+        "mp4": {
+          "path": "window-media/schistosoma-eggs.mp4",
+          "codec": "h264",
+          "sha256": "65995584ebb20a19f6addf3975b9130c4a9c9ba50d6f6aa8e51683923774d8eb",
+          "bytes": 1848118
+        },
+        "poster": {
+          "path": "window-media/schistosoma-eggs.png",
+          "codec": "png",
+          "sha256": "0163b12e67b7b9f3b6619bbfb8a0035cc76a0af22656f5cfc14482266f0cf3e9",
+          "bytes": 252691
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "sea-nettle-jellyfish",
+      "kind": "video",
+      "path": "window-media/sea-nettle-jellyfish.webm",
+      "aspectRatio": 1.3333333333333333,
+      "width": 480,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 15,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "sea-nettle-jellyfish.ogv",
+        "sha256": "c3fe3950ea2fa6ffe98b23b8f68fa1a72cfacc47c820477cacd62e0877589441",
+        "title": "Chrysaora quinquecirrha — sea nettle jellyfish",
+        "creator": "Gh5046",
+        "license": "Public domain",
+        "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+        "url": "https://commons.wikimedia.org/wiki/File:Chrysaora_quinquecirrha-Sea_nettle_(jellyfish).ogv"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/sea-nettle-jellyfish.webm",
+          "codec": "vp9",
+          "sha256": "c16d4ea3a627761ff437f4a2e367bddf36c505530de859c6db448a4bcf117f54",
+          "bytes": 377732
+        },
+        "mp4": {
+          "path": "window-media/sea-nettle-jellyfish.mp4",
+          "codec": "h264",
+          "sha256": "dd9bf3ab6181bacb0e20f94074c9beb5fa16bba797ba502cd23a32930818a948",
+          "bytes": 682827
+        },
+        "poster": {
+          "path": "window-media/sea-nettle-jellyfish.png",
+          "codec": "png",
+          "sha256": "0f955ca0300dafa6606946cb3da8cafebe2c4f362a5f0409e71a168a891820c0",
+          "bytes": 97282
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
+    },
+    {
+      "id": "starling-murmuration",
+      "kind": "video",
+      "path": "window-media/starling-murmuration.webm",
+      "aspectRatio": 1.7777777777777777,
+      "width": 640,
+      "height": 360,
+      "fps": 15,
+      "trim": {
+        "startSeconds": 0,
+        "durationSeconds": 15,
+        "loopDissolveSeconds": 0.25
+      },
+      "sensitivity": "none",
+      "source": {
+        "file": "starling-murmuration-480p.webm",
+        "sha256": "199a8e460f70acb71ff010efc0e4f73f40f907567fc5eec6d0d4df86090feef7",
+        "title": "Starling Murmuration",
+        "creator": "Karen Roe",
+        "license": "CC BY 2.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+        "url": "https://commons.wikimedia.org/wiki/File:Flock_of_starlings_(Sturnus_vulgaris).webm"
+      },
+      "derivatives": {
+        "webm": {
+          "path": "window-media/starling-murmuration.webm",
+          "codec": "vp9",
+          "sha256": "64f48915db5bb3ff7b4a9ad6ad008251f7b2710343131450661ce587997a7768",
+          "bytes": 710778
+        },
+        "mp4": {
+          "path": "window-media/starling-murmuration.mp4",
+          "codec": "h264",
+          "sha256": "93e48f0092a32215093a65dd2011c3b83bbe9feeda186b754cdc7e7c73f6fd63",
+          "bytes": 997628
+        },
+        "poster": {
+          "path": "window-media/starling-murmuration.png",
+          "codec": "png",
+          "sha256": "faa33946bf2521737012cb15d60a62ae732670598ffb832b057bbd0b54da7dc7",
+          "bytes": 180761
+        }
+      },
+      "modifications": [
+        "trimmed",
+        "loop-dissolved",
+        "resized",
+        "silent transcode",
+        "color processed"
+      ]
     }
   ],
   "extensions": {
@@ -689,6 +1097,20 @@
       "assetIds": [
         "mimosa-response",
         "performance-capture"
+      ]
+    },
+    "elvd-media": {
+      "generatedBy": "scripts/build-window-media-elvd.mjs",
+      "sourceDirectory": "artifacts/window-media-elvd/source-media",
+      "assetIds": [
+        "apoptosis-organelles",
+        "boar-corpse-decomposition",
+        "microfilariae",
+        "mitotic-catastrophe",
+        "orion-nebula-flythrough",
+        "schistosoma-eggs",
+        "sea-nettle-jellyfish",
+        "starling-murmuration"
       ]
     }
   }

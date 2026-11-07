@@ -158,7 +158,7 @@ async function environment(){
       saveSourceView:noop,outskirtsStreetAudio:null,pauseOutskirtsLastLight:noop,lowerTowerPersonalRecorder:noop,
       stopTowerPersonalWorldSignal:noop,bellPealPerformance:null,towerBellDirector:null,windowChoreography:{},
       syncPointerMode:reason=>mode.sync(reason),stopAllVoices:noop,stopWorldLayerVoice:noop,silenceAmbientDrone:noop,
-      setGainNode:noop,dialogGain:null,sfxGain:null,sfxDirectGain:null,musicGain:null,whisperBed:null,pushEvent:noop,
+      setGainNode:noop,dialogGain:null,sfxGain:null,sfxDirectGain:null,musicGain:null,whisperBed:null,hushStepBus:null,pushEvent:noop,
       applyAudioSettings:noop,startAmbientDroneAt:noop,currentAmbientTarget:()=>null,updateAudio:noop,
       setUiCueFocused:noop,recoverMotionFocus:()=>input.reset('focus-return'),refreshStageLayoutSoon:noop,ensureInteractionFocus:noop,
     });

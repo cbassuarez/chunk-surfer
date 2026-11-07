@@ -17,6 +17,7 @@ import {createHorizonApproachScene} from './game/horizon-approach-scene.js';
 import {createHorizonApproachRenderer} from './render/horizon-approach-renderer.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
 import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
+import {createPrologueDrive} from './game/source-drive/prologue-drive.js';
 import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
 import {endingDriveOffOwed} from './game/ending-drive-off.js';
 import {endingWalkOffOwed,createEndingWalkOff} from './game/ending-walk-off.js';
@@ -96,9 +97,10 @@ import {createSourceDriveRenderer,preloadSourceDriveAssets} from './game/source-
 import {makeGetInDriveTeaserScene} from './game/get-in-drive-teaser-scene.js';
 import {makeSourceReturnFlashbackScene,normalizeSourceReturnFlashbackCheckpoint} from './game/source-return-flashback-scene.js';
 import {createCoastalMemoryScene} from './game/coastal-memory-scene.js';
+import {createCoastalHandsScene} from './game/coastal-hands-scene.js';
 import {createCoastalMemoryRenderer} from './render/coastal-memory-renderer.js';
 import {COASTAL_MEMORY_TAKE,COASTAL_MEMORY_CUE,COASTAL_MEMORY_SECONDS} from './game/coastal-memory.js';
-import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,COASTAL_NOTE_THOUGHT} from './data/coastal-memory.js';
+import {COASTAL_NOTE_COPY,COASTAL_NOTE_SIGNATURE,COASTAL_NOTE_THOUGHT,coastalWorldPoint,COASTAL_WORLD_FROM_LOCAL} from './data/coastal-memory.js';
 import {playCoastalMemoryRecording,playCoastalMusicBoxIntact,COASTAL_MEMORY_BELLS} from './audio/coastal-memory.js';
 import {createSourcePubScene,normalizeSourcePubCheckpoint,sourcePubEntry} from './game/source-pub.js';
 import {createSourcePubRenderer} from './render/source-pub-renderer.js';
@@ -199,7 +201,7 @@ import { returnDefinition } from './progression/report.js';
 import { lastReturnRecord } from './progression/return-history.js';
 import { drawVfdCounter, drawVfdMeter, drawVfdWarningTriangle, withMachinePanel, drawLocationIndicator, drawVfdText } from './render/presentation.js';
 import { UI_COLOR, applyVfdSettings, vfdSettings } from './render/palette.js';
-import { saveLoadAsync, saveCommit, getSave, newGame, metaCommit, getMeta, freshSave, hasActiveRun, withTransientGameState, normalizeSourceReturnFlashbackPending, savedFlagMatches } from './game/save.js';
+import { saveLoadAsync, saveCommit, saveCommitSilent, getSave, newGame, metaCommit, getMeta, freshSave, hasActiveRun, withTransientGameState, normalizeSourceReturnFlashbackPending, savedFlagMatches } from './game/save.js';
 import { fieldKitEffects, fieldKitInspection, fieldKitOptionAvailability, normalizeFieldKit, resolveFieldKit, fieldKitCosmeticSelection } from './game/field-kit.js';
 import { mapAcquired, mapAvailable } from './game/map-ownership.js';
 import { makeVanWorkbenchScene } from './game/van-workbench.js';
@@ -7370,6 +7372,22 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
     stagingReady=true;
   }).catch(error=>{stagingError=String(error?.message||error);});
   void R3.r3dPrepareOpeningOverture?.();
+  // The rendered drive under the talk: the same van and road the door teaser
+  // uses, loaded during the prologue's own staging. If it cannot be prepared,
+  // the prologue falls back to the pure omen exactly as before.
+  const driveRenderer=createSourceDriveRenderer();
+  const driveController=createPrologueDrive();
+  let driveMetrics=null,driveReady=false,driveFailed=false;
+  void (async()=>{
+    try{
+      const response=await fetch(assetUrl('assets/source-drive/geometry/metrics.json'));
+      if(!response?.ok)throw Error('The opening drive geometry could not be loaded.');
+      driveMetrics=await response.json();
+      const acquired=await driveRenderer.initialize({coastalMemory:true});
+      if(acquired===false)throw Error('The opening drive renderer could not be initialized.');
+      driveReady=true;
+    }catch(error){driveFailed=true;console.warn('[opening-prologue] Continuing without the rendered drive:',error);}
+  })();
   const releaseRange=P3.setAuthoredPropRange(Symbol('opening-prologue'),OPENING_PROLOGUE.propRange),rainBefore=R3.r3dRainAmount?.()??1;
   // THE ROAD FIRST, THEN THE RADIO, THEN THE ROOM (src/audio/opening-prologue-audio.js).
   // The van, the rain and far thunder before any music; the Chaconne arrives
@@ -7380,8 +7398,24 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
   let stageMusic=0,chaconneStarted=false;openingPrologueMusic=chaconne;
   let scene;
   scene=makeOpeningPrologueScene({
-    getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady,error:assets?.error||stagingError};},
+    getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady&&(driveReady||driveFailed),error:assets?.error||stagingError};},
     getPresentationReady:()=>R3.r3dPresentationReady?.()===true,
+    drive:driveController,driveMetrics:()=>driveMetrics,driveLive:()=>driveReady&&!driveFailed,
+    onDriveFrame:frame=>{
+      const shown=driveRenderer.render(frame);
+      if(shown===false)console.warn('[opening-prologue] The drive frame could not be presented.');
+    },
+    onBeat:value=>{
+      if(value==='omen'){
+        // The world frame owns the omen again: back to the building look and
+        // no drive lamp state bleeding into it.
+        R3.r3dSetSourceScene({key:'source:building',corpus:[],staticInstances:[],dynamicInstances:[],look:{sunrise:0,chroma:1,paper:0}});
+        P3.setDriveStudyFrame?.(null);R3.r3dSetLocalLights?.([]);
+      }else{
+        R3.r3dSetSourceScene({key:'source:the-cut',look:{roomMemoryActive:true},staticInstances:[],dynamicInstances:[],corpus:[]});
+        if(value==='drive'){R3.r3dSetNightWarningProps?.([]);R3.r3dSetSourceRestHorizon?.(null);}
+      }
+    },
     // The night's warning channel is empty this early, and worldView runs after its tick clears it.
     setOmen:({props,horizon,rain})=>{R3.r3dSetNightWarningProps?.(props);R3.r3dSetSourceRestHorizon?.(horizon);R3.r3dSetRainAmount?.(rain??rainBefore);},
     toWorldView:frame=>openingArrivalWorldView({...frame,freeLook:false},FP,{cell:CELL,look:R3.r3dLookAngles?.()}),
@@ -7392,7 +7426,7 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
     onStart:()=>{STORY.startRain?.({fade:4});r3dCache.physicalKey='';r3dCache.physicalGroup='';r3dCache.fogSize=-1;R3.r3dSnapCameraOnNextFrame?.();},
     setMusic:level=>{stageMusic=level;},
     onDone:()=>{scenes.remove(scene);onDone();},
-    onExit:()=>{chaconne.dispose();prologueAudio.dispose();releaseRange();if(openingPrologueMusic===chaconne)openingPrologueMusic=null;if(openingPrologueScene===scene)openingPrologueScene=null;},
+    onExit:()=>{chaconne.dispose();prologueAudio.dispose();releaseRange();driveController.dispose();driveRenderer.dispose();if(openingPrologueMusic===chaconne)openingPrologueMusic=null;if(openingPrologueScene===scene)openingPrologueScene=null;},
   });
   const update=scene.update;scene.update=dt=>{
     const live=!paused&&gameplayInputLifecycleActive(),v=scene.view();
@@ -7664,7 +7698,7 @@ function maybeMemorySeep(verb){
   const blocked=!flagTest('title.shown')||usingSpecialSpace()||paused||REC.isRecording()||!!escape||nightDeadlineCommitted()||sixLoopActive()||!visualEffectsEnabled()||RENDERER!=='3d'
     ||!!R3.r3dTableauStats?.().active||(Number(presentedFearPressure()?.overall)||0)>.5;
   // Rarest first: the window that becomes the picture. If it can't run, nothing is lost.
-  const media=s.director.takeoverFor({at:s.played,frame:s.frame,regionLoss:s.loss,blocked:blocked||REC.isListening()||!flagTest(memoryFieldFlag('second'))});
+  const media=s.director.takeoverFor({at:s.played,frame:s.frame,regionLoss:s.loss,blocked:blocked||REC.isListening()||!flagTest(memoryFieldFlag('second')),verb});
   if(media&&beginWindowTakeover(media,{onDone:()=>startNeural('seep-out')})){startNeural('twitch');return true;}
   const seep=s.director.seepFor(verb,{at:s.played,frame:s.frame,regionLoss:s.loss,blocked,reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'});
   if(!seep)return false;
@@ -13224,10 +13258,23 @@ function inspectCarriedWitness(entry){
 // Preparation reports durable success only after its queued save is read back.
 // Failed writes retain the session choice; Retry must never award a second run.
 let vanPreparationWriteReceipt = {runId:null,failed:false,takeRequested:false};
+// A queued desktop write can, on a slow or stalled backend, leave the bench
+// pinned on SAVING… forever. Every bench commit is user-initiated and small, so
+// a generous ceiling converts a hung write into the same retryable SAVE FAILED
+// state every other failure uses instead of a frozen screen.
+const VAN_WORKBENCH_SAVE_TIMEOUT_MS = 10000;
+function withSaveTimeout(promise,ms=VAN_WORKBENCH_SAVE_TIMEOUT_MS){
+  return new Promise(resolve=>{
+    const timer=setTimeout(()=>resolve({ok:false,reason:'SAVE_TIMEOUT',error:'Storage did not acknowledge the write in time.'}),ms);
+    Promise.resolve(promise).then(
+      value=>{clearTimeout(timer);resolve(value);},
+      error=>{clearTimeout(timer);resolve({ok:false,reason:'SAVE_WRITE_FAILED',error:String(error?.message||error)});});
+  });
+}
 async function persistVanWorkbenchState(){
   const storage=currentStorage(),save=getSave();
-  const result=await persistVanPreparation({save,meta:getMeta(),saveGame:saveGameQueued,saveProfile:saveProfileQueued,
-    loadSave:()=>storage?.loadSave('autosave'),loadProfile:()=>storage?.loadProfile()});
+  const result=await withSaveTimeout(persistVanPreparation({save,meta:getMeta(),saveGame:saveGameQueued,saveProfile:saveProfileQueued,
+    loadSave:()=>storage?.loadSave('autosave'),loadProfile:()=>storage?.loadProfile()}));
   const runId=save.run?.id||null;
   vanPreparationWriteReceipt={runId,failed:!result.ok,
     takeRequested:vanPreparationWriteReceipt.runId===runId&&vanPreparationWriteReceipt.takeRequested};
@@ -13265,6 +13312,7 @@ function takeTheBag(){
     return {bagTaken:true,mapTaken:true,fieldKit:offer.fieldKit,caseClaimed:offer.caseClaimed,
       saveError:failedSave(),takePending:vanPreparationWriteReceipt.runId===save.run?.id&&!!vanPreparationWriteReceipt.takeRequested,
       difficultyLocked:offer.difficultyLocked,
+      shiftChosen:offer.difficultyLocked||save.vanPreparation?.difficulty!=null,
       requirePacking:true,packedGroups:packedWorkbenchGroups(offer.flags),
       spannerTaken:PLANT.hasPlantSpanner(),spannerDecided:flagTest('van.spanner.decided'),
       witness:witnessEditionStatus(meta),cosmeticMeta:{endingsSeen:meta.endingsSeen,cosmetics:meta.cosmetics},
@@ -13349,7 +13397,7 @@ function takeTheBag(){
     },
     onContinue:()=>perform(async()=>{
       const result=prepareVanCaseTake(getSave(),getMeta());if(!result.ok)return result;
-      saveCommit(result.patch);inkFinalShift();
+      saveCommitSilent(result.patch);inkFinalShiftSilent();
       vanPreparationWriteReceipt={runId:getSave().run?.id||null,failed:false,takeRequested:true};
       if(result.event)progressionEvents.emit(result.event);
       const receipt=await persistVanWorkbenchState();if(!receipt.ok)return receipt;
@@ -18648,6 +18696,10 @@ function commitCassettes(ledger){saveCommit({cassettes:ledger});return ledger;}
 // workbench (a run that skipped the cab) goes on the sheet when it is final.
 function workOrderShiftTicked(){return !!cassetteLedger().shiftChosen;}
 function inkFinalShift(){const ledger=cassetteLedger();if(!ledger.shiftChosen)commitCassettes(chooseShift(ledger,getSave().run?.rules?.currentPreset||'contract'));}
+// The take-case path applies its patches in memory and then commits one
+// authoritative write; this keeps the shift in ink without enqueuing a second
+// full desktop save for a patch that is immediately superseded.
+function inkFinalShiftSilent(){const ledger=cassetteLedger();if(!ledger.shiftChosen)saveCommitSilent({cassettes:chooseShift(ledger,getSave().run?.rules?.currentPreset||'contract')});}
 function tickShiftOnWorkOrder(){
   if(!flagTest('van.difficulty.pending')||workOrderShiftTicked()||scenes.has('difficulty-select'))return false;
   const offer=offeredVanPreparation(getSave(),getMeta());
@@ -22117,7 +22169,7 @@ function finishLastLight(){
 // The stored return is the actual grey-door step, before still ground/pass one.
 let sourcePubScene=null,sourcePubRenderer=null;
 let sourceContinuationScene=null,sourceContinuationRenderer=null,sourceContinuationAudio=null;
-let coastalMemoryScene=null,coastalMemoryRenderer=null;
+let coastalMemoryScene=null,coastalMemoryRenderer=null,coastalHandsScene=null;
 function commitCoastalMemory(){
   if(!coastalMemoryScene||!chunkSurfRuntime)return false;
   if(!chunkSurfRuntime.setCoastalMemoryState(coastalMemoryScene.serialize()))return false;
@@ -22140,6 +22192,24 @@ function releaseCoastalMemory({restore=true,position=null}={}){
     if(at){px=at.x;py=at.y;renderMove=null;motionRig=null;trail=[];chunkSurfRuntime.setPlayerPosition(at);R3.r3dSetLookAngles({yaw:at.yaw??0,pitch:at.pitch??0,immediate:true});}
     syncSourceRender({force:true});R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();
   }return !!scene;
+}
+function releaseCoastalHands(){
+  const scene=coastalHandsScene;if(!scene)return false;
+  coastalHandsScene=null;scenes.remove(scene);coastalMemoryScene?.resume?.();return true;
+}
+function beginCoastalHands(){
+  if(coastalHandsScene||!coastalMemoryScene)return false;
+  const view=coastalMemoryScene.view?.()||{},pose=view.localPose||view.pose;
+  if(!pose)return false;
+  const eye=coastalWorldPoint([pose.x,pose.feet+1.62,pose.z]);
+  const yaw=(pose.yaw||0)+Math.atan2(COASTAL_WORLD_FROM_LOCAL[2],COASTAL_WORLD_FROM_LOCAL[0]);
+  const scene=createCoastalHandsScene({
+    eye,yaw,pitch:pose.pitch||0,worldFromLocal:COASTAL_WORLD_FROM_LOCAL,
+    context:actx,destination:sfxGain||master,renderer:coastalMemoryRenderer,
+    baseFrame:{localPose:pose,elapsed:view.elapsed||0,recordingOffset:view.recordingOffset||0,wreckLightLevel:view.wreckLightLevel||0},
+    onExit:()=>releaseCoastalHands(),
+  });
+  coastalMemoryScene.pause?.();coastalHandsScene=scene;scenes.push(scene);void scene.initialize();ensureInteractionFocus();return true;
 }
 // Detached physical views borrow the carried instrument's state; their own
 // lighting/exposure still belongs to the existing scene. Only the explicitly
@@ -22175,6 +22245,7 @@ async function beginCoastalMemoryJourney({checkpoint=null}={}){
       if(itemLost('torch')||!REC.lightOn()&&REC.batteryLevel()<=0||!REC.lightOn()&&flagTest('van.bench.v2')&&!flagTest('kit.fitted')&&!flagTest('van.packed.flashlight'))return false;
       const on=REC.toggleLight();CUES.playCue(CUES.CUE.light,{gain:.5,rate:on?1:.92});saveCommit({rec:REC.saveRecState()});return true;
     },
+    onPickUp:()=>beginCoastalHands(),
     onCheckpoint:value=>{if(coastalMemoryScene===scene&&owner===chunkSurfRuntime&&owner.setCoastalMemoryState(value))saveCommit({chunkSurf:owner.state(),area:'source-space'});},
     onRecording:({checkpoint:value})=>coastalMemoryScene===scene&&owner===chunkSurfRuntime&&reconcileCoastalMemoryTake(value),
     // The first reading earns one thought, said once the note is lowered.

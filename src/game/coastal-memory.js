@@ -235,6 +235,7 @@ function frameFor(state, layout) {
   const returnCover = state.returnReceipt ? clamp(state.returnElapsed / returnSeconds(layout), 0, 1) : 0;
   const light = clamp(state.wreckLightsElapsed / COASTAL_WRECK_LIGHT_SECONDS, 0, 1);
   return { ...state, localPose: { ...state.pose }, canListen, sourceDistance: distance,
+    canPickUp: state.status === 'active' && distance <= finite(box.interactionRadius, 1.45),
     canInspectNote: state.status === 'active' && noteDistance <= finite(layout.noteRadius, finite(box.interactionRadius, 3.2)),
     returnCover, returnReady: state.status === 'return-pending' && returnCover >= 1,
     wreckLightLevel: light * light * (3 - 2 * light),

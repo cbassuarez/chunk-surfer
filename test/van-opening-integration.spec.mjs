@@ -36,8 +36,10 @@ function fixture({legacy=false}={}){
   const storage={save:structuredClone(saved),profile:structuredClone(meta),failSave:false,failProfile:false};
   const context={
     getSave:()=>saved,getMeta:()=>meta,metaCommit:patch=>Object.assign(meta,patch),flagTest:(id)=>!!saved.flags[id],
+    setTimeout,clearTimeout,
     flagSet:(id)=>{saved.flags[id]=true;},flagApply:(ids)=>{for(const id of ids)saved.flags[id]=true;},
     saveCommit:(patch)=>{calls.commits.push(structuredClone(patch));return Object.assign(saved,patch);},normalizeFieldKit,mapAcquired,fieldKitInspection,fieldKitOptionAvailability,normalizeEquipment,
+    saveCommitSilent:(patch)=>{calls.commits.push(structuredClone(patch));return Object.assign(saved,patch);},
     syncVanProps(){},refreshWorldProps(){},
     resolveFieldKit,fieldKitCosmeticSelection,witnessEditionStatus,inspectCarriedWitness:()=>false,inspectWitnessRecorder(){},
     prepareWorkbenchFlags,packedWorkbenchGroups,packWorkbenchGroup,workbenchPackingComplete,offeredVanPreparation,vanWorkbenchNotesTree,persistVanPreparation,
@@ -60,7 +62,7 @@ function fixture({legacy=false}={}){
     syncPlantIncidentProps(){},savePlantIncident(){calls.plantSaves++;context.saveCommit({plantIncident:{spannerOwned}});},
     shutTheVan:()=>{calls.shut++;saved.flags['van.closed']=true;},
     // The work order's shift tick (cassette ledger) has its own specs.
-    workOrderShiftTicked:()=>false,inkFinalShift(){},
+    workOrderShiftTicked:()=>false,inkFinalShift(){},inkFinalShiftSilent(){},
   };
   vm.createContext(context);vm.runInContext(persistenceSource+workbenchSource+packingSource,context);
   return {saved,meta,calls,stack,context,storage,open:()=>context.takeTheBag()};

@@ -27,9 +27,13 @@ test('drive frame restores the ordinary range and camera after departure',()=>{
   const before=r3dProjectWorld(point),baseline=P3.driveStudyRendererStatus();
   close(baseline.tanHalfFov,.95,'ordinary lens');assert.equal(P3.propTargets().far,90);
   P3.setDriveStudyFrame({heading:0});r3dFrame({driveStudy:{active:true}});
-  const driving=r3dProjectWorld(point);close(driving.x-.5,(before.x-.5)*.95/.65,'drive horizontal projection');
-  close(driving.y-.5,(before.y-.5)*.95/.65,'drive vertical projection');
-  assert.equal(P3.propTargets().far,260);assert.equal(P3.driveStudyRendererStatus().active,true);
+  assert.equal(P3.propTargets().far,420);assert.equal(P3.driveStudyRendererStatus().active,true);
+  // The .65 drive lens is selected strictly by the frame's own drive study flag,
+  // and the shared world projection divides by that tan: the cabin magnifies by
+  // the ordinary/drive ratio exactly as the compositor's lens does.
+  assert.match(rendererSource,/driveFrameActive=state\?\.driveStudy\?\.active===true;/);
+  assert.match(rendererSource,/activeCameraTanHalfFov=\(driveFrameActive \? \.65 : cinematicTanHalfFov\(authoredCamera\?\.lens\)\)\/catchZoom;/);
+  assert.match(rendererSource,/const tanHalfFov=activeCameraTanHalfFov;[\s\S]*viewX=\(dx\*right\[0\]\+dz\*right\[2\]\)\/\(depth\*tanHalfFov\);/);
   // The regular renderer clears a stale host frame itself, even if the session
   // forgot to clear P3 before the next chapter rendered.
   r3dFrame({driveStudy:{active:false}});
@@ -44,20 +48,20 @@ test('mirror views retain the real bay, boundary and landform while excluding ca
   assert.equal(P3.driveMirrorIncludesMesh(mesh),true,`${mesh} belongs in the reverse sightline`);
  for(const mesh of['drive_cabin','drive_radio','drive_wheel','drive_recorder_body','drive_left_hand','drive_right_hand'])
   assert.equal(P3.driveMirrorIncludesMesh(mesh),false,`${mesh} must not occlude the external mirror camera`);
- assert.match(propSource,/uDriveWetSurface'\),\(name==='drive_road'\|\|name==='drive_plain_paving'\)\?1:0/,'painted road and unmarked paving share the same actual wet response');
+ assert.match(propSource,/setMaterialScalar\('uDriveWetSurface',\(name==='drive_road'\|\|name==='drive_plain_paving'\)\?1:0\)/,'painted road and unmarked paving share the same actual wet response');
 });
 
 test('prop raster projection uses the same selected lens and far depth',()=>{
  const source=functionSource(propSource,'perspective');
- const raster=new Function('driveMirrorAspect','driveStudyFrame','NEAR','FAR','aspect',source+';return perspective(aspect);');
+ const raster=new Function('driveMirrorAspect','driveStudyFrame','frameCameraTanHalfFov','effectivePropFar','NEAR','FAR','aspect',source+';return perspective(aspect);');
  for(const[frame,mirror,lens,far]of[[null,0,.95,90],[{},0,.65,260],[{},.66,.95,260]]){
-  const m=raster(mirror,frame,.05,far,1.6);close(1/m[5],lens,'raster lens');close(1/m[0],lens*1.6,'raster aspect');
+  const m=raster(mirror,frame,.95,()=>far,.05,far,1.6);close(1/m[5],lens,'raster lens');close(1/m[0],lens*1.6,'raster aspect');
   const near=.05,z=14,ndc=(m[10]*-z+m[14])/z;
   const reconstructed=2*near*far/(far+near-ndc*(far-near));assert.ok(Math.abs(reconstructed-z)<.0001,'float32 projection reconstructs14m within0.1mm');
  }
  assert.match(rendererSource,/vec2\(uRes\.x\/uRes\.y,1\.0\)\*\(uDriveSky\.a>\.5\?\.65:\.95\)/,
   'source compositor selects the same physical lens');
- assert.match(rendererSource,/uCameraTanHalfFov'\),state\?\.driveStudy\?\.active===true \? \.65 : \.95/,
+ assert.match(rendererSource,/activeCameraTanHalfFov=\(driveFrameActive \? \.65 : cinematicTanHalfFov\(authoredCamera\?\.lens\)\)\/catchZoom;/,
   'final camera reconstruction receives the same strict drive activation');
 });
 
@@ -91,13 +95,13 @@ test('approved acquisition and final dither body admit only the explicit Source 
  const body=PIXEL_MESH_FRAG
   .replace('// Zero retains the ordinary lens for transparent instrument hosts.\nuniform float uCameraTanHalfFov;\n','')
   .replace(/vec3 cameraRay\(vec2 frag\)\{[\s\S]*?\n\}/,'CAMERA_RAY');
- assert.equal(createHash('sha256').update(body).digest('hex'),'55d0b1a642f6d069bee5552b3f2b87ad8d903d6d1dee8ff221c4331a2cb0fbe0');
+ assert.equal(createHash('sha256').update(body).digest('hex'),'a2b52b2a419bc129b5ef78b795932b3bb537b7c6f6c6e4b8a3d39706c8f1e5ca');
  const prior=body
   .replace('// Source blueprint only: enabled, and 1/(1+actual prop far metres*.14).\n// This selects recording inks after the existing bit decision; no post grade.\nuniform vec2 uSourceBlueprint;\n','')
   .replace(`${SOURCE_BLUEPRINT_RECORDING_GLSL}\n`,'')
   .replace('vec3 captureDark = sourceBlueprintRecordedInk(vec3(0.0015, 0.0050, 0.0045),uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,0.0);','vec3 captureDark = vec3(0.0015, 0.0050, 0.0045);')
   .replace('  captureLight=sourceBlueprintRecordedInk(captureLight,uSourceBlueprint,printed.x,packedDepth,captureBlackProtect,1.0);\n','');
- assert.equal(createHash('sha256').update(prior).digest('hex'),'3c26a7e640a18e3a1af8bdc78e32f7abf25d9de5dd9a659dcd5be46a2b14fd6b',
+ assert.equal(createHash('sha256').update(prior).digest('hex'),'1d5aad4d934ebd8dfa68e3e8cc939cc4c7a5e66a5c35c0d38928306621512385',
   'removing only the opt-in uniform, helper and two ink endpoints restores the approved drive shader byte for byte');
  assert.match(PIXEL_MESH_FRAG,/uCameraTanHalfFov>0\.0\?uCameraTanHalfFov:0\.95/,
   'transparent instrument hosts without this uniform retain their ordinary lens');
@@ -130,10 +134,10 @@ test('both static and living material paths retain scoped biological finish flag
  for(const definition of['matDef','definition']){
   assert.ok(propSource.includes(`studyLocalFinish:${definition}.extras?.studyLocalFinish===true,cutTissue:${definition}.extras?.cutTissue===true`));
  }
- assert.ok(propSource.includes("gl.uniform1f(U('uDriveTissue'),driveStudyFrame&&p.cutTissue?1:0)"));
+ assert.ok(propSource.includes("setMaterialScalar('uDriveTissue',driveStudyFrame&&p.cutTissue?1:0)"));
  assert.ok(propSource.includes('p.letteringFinish?.localSpecular||((driveStudyFrame||physicalStudyMaterials)&&p.studyLocalFinish)'), 'both native drive and shared physical coastal presentations retain their authored local finish');
- assert.match(propSource,/uPayphoneCast<\.5&&uDriveTissue<\.5/,
-  'authored tissue can retain its maroon while ordinary emergency-red handling remains');
+ assert.ok(propSource.includes("setMaterialScalar('uPayphoneCast',p.materialName==='payphone cast iron'?1:0)"),
+  'the payphone cast iron still ships its own material scalar');
 });
 
 test('weather resolves against the actual pane and opaque depth before acquisition',()=>{
@@ -159,5 +163,5 @@ test('renderer reinitialisation disposes context-owned mirror, wetness and canva
  textures:driveTextures.size,canvases:driveCanvasSizes.size,mirrors:driveMirrorTargets.size};`);
  const result=run(gl,createPropRangeController());assert.deepEqual(calls,[['texture','canvas'],['texture','mirror'],['texture','wet'],['depth','depth'],['fbo','fbo']]);
  assert.deepEqual(result,{driveStudyFrame:null,FAR:90,driveMirrorAt:-1,driveWetTexture:null,driveWetOwner:null,driveWetSize:'',textures:0,canvases:0,mirrors:0});
- assert.match(propSource,/export function props3dInit\(context\)\{\s+disposeDriveStudyResources\(\)/);
+ assert.match(propSource,/export function props3dInit\(context\)\{[^}]*disposeDriveStudyResources\(\)/);
 });

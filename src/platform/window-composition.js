@@ -7,7 +7,7 @@ export const WINDOW_MEDIA_SURFACE_LABELS=Object.freeze(
 );
 export const WINDOW_COMPOSITION_PURPOSES=Object.freeze(['title','death','ending','puzzle','return','sector','practice','source-warning','source-decay','source-study','takeover']);
 export const WINDOW_MEDIA_CONTENT_KINDS=Object.freeze(['video','image','snapshot','text','procedural']);
-export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment']);
+export const WINDOW_MEDIA_PROCEDURAL_PRESETS=Object.freeze(['iris-abstraction','distant-dot','empty-field','game-fragment','underwater-surface']);
 export const WINDOW_MEDIA_SHADER_PROFILES=Object.freeze(['violet-dither','nvme-sector','terminal']);
 export const WINDOW_COMPOSITION_FLASH_MODES=Object.freeze(['full','reduced','off']);
 export const WINDOW_SCORE_OPERATIONS=Object.freeze([

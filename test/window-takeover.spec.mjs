@@ -139,6 +139,20 @@ test('the policy lets a pane show, never take input, never move the window',()=>
   assert.equal(compileTakeoverPanePlan({mediaId:'empty-field'}).surfaces[0].content.kind,'procedural');
 });
 
+test('the takeover grade matches the verb the dream answered',()=>{
+  const clinical=compileTakeoverPanePlan({mediaId:'apoptosis-organelles'});
+  assert.equal(clinical.surfaces[0].shader,'nvme-sector');
+  assert.ok(clinical.fault.intensity>.4,'the body failing tears harder');
+  assert.equal(clinical.formation.mode,'impact-scatter');
+  const comfort=compileTakeoverPanePlan({mediaId:'orion-nebula-flythrough'});
+  assert.equal(comfort.surfaces[0].shader,'violet-dither');
+  assert.ok(comfort.fault.intensity<.1,'the light at the end settles');
+  assert.equal(comfort.formation.mode,'memory-unfold');
+  const ordinary=compileTakeoverPanePlan({mediaId:'clouds'});
+  assert.equal(ordinary.surfaces[0].shader,'nvme-sector');
+  assert.equal(ordinary.formation.mode,'practice-windows');
+});
+
 test('no native pane without consent, in a browser, or over a fullscreen window',async()=>{
   const director=createWindowChoreographyDirector({documentApi:null,getEnabled:()=>false,getCompositionContext:()=>({introduced:true})});
   assert.equal(await director.showTakeoverPane('clouds'),false);

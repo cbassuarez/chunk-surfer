@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ophanim infall — in-game preview — Chunk Surfer</title>
+<link rel="icon" href="data:," />
+<style>
+:root{
+  --bg:#0a0d0a;--panel:#101510;--line:#252c25;--ink:#d8d4c0;--muted:#8a9484;
+  --dim:#5f6a5c;--amber:#b39a66;--rust:#a04a2a;--green:#9fae7f;--blue:#8fb7c8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.review-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:8px 22px;min-height:56px;border-bottom:1px solid var(--line);background:#111613;
+  position:sticky;top:0;z-index:10;flex-wrap:wrap}
+.study-mark{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--muted);flex-shrink:0}
+.study-mark>b{font-size:19px;border:1px solid #53604f;padding:3px 5px;color:#ddd9c9}
+.study-mark>span{font-size:10px;letter-spacing:1.1px}
+.study-mark small{display:block;font-size:8px;color:#6f7d70;margin-top:2px}
+.transport{display:flex;align-items:center;gap:10px;flex:1;min-width:300px}
+.hardware{border:1px solid #424d40;background:#202820;color:#e6e1cb;font:inherit;
+  font-size:10px;letter-spacing:1px;padding:7px 10px;cursor:pointer}
+.hardware:hover:not(:disabled){border-color:#718269}
+.hardware.current{border-color:var(--amber);color:#f0ead2}
+select.hardware{background:#202820}
+#scrub{flex:1;accent-color:var(--amber);min-width:120px}
+#time-label{font-size:10px;color:var(--amber);white-space:nowrap}
+.jumps{display:flex;gap:6px;flex-wrap:wrap;padding:8px 22px 0}
+.jumps .hardware{font-size:9px;padding:5px 8px}
+#strip-wrap{padding:10px 22px 0}
+#strip{width:100%;height:30px;background:#0d120d;border:1px solid var(--line);cursor:crosshair}
+#phase-line{display:flex;justify-content:space-between;gap:16px;padding:6px 22px 0;
+  font-size:9px;letter-spacing:1.2px;color:var(--dim)}
+#phase-label{color:var(--amber)}
+.viewport{position:relative;margin:12px 22px 0;background:#030503;border:1px solid #0b120b}
+#scene{width:100%;display:block;image-rendering:pixelated}
+.vlabel{position:absolute;top:8px;font-size:9px;letter-spacing:1.2px;color:#d8d4c0;
+  background:rgba(8,12,8,.72);padding:3px 8px;pointer-events:none}
+#vlabel-a{left:8px}
+#vlabel-b{left:50%;margin-left:8px}
+.readouts{display:flex;gap:28px;padding:8px 22px 0;font-size:10px;color:var(--green);letter-spacing:.4px;flex-wrap:wrap}
+.readouts b{color:var(--amber);font-weight:700}
+.grounding{margin:12px 22px 0;padding:10px 12px;background:#0c110c;border:1px solid #141c14;list-style:none}
+.grounding li{font-size:9px;color:var(--muted);line-height:1.6;letter-spacing:.2px}
+.grounding b{color:var(--amber);font-weight:700}
+.grounding li.delta b{color:var(--blue)}
+.review-footer{display:flex;flex-wrap:wrap;gap:8px 30px;padding:12px 22px 22px;
+  font-size:8.5px;color:var(--dim);letter-spacing:.4px}
+.review-footer b{color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="review-bar">
+  <a class="study-mark" href="ophanim-infall-in-game.html"><b>CS</b><span>OPHANIM INFALL STUDY<small>DIRECTION C · IN-GAME SEAT VIEW · PREVIEW</small></span></a>
+  <div class="transport">
+    <button id="play" class="hardware current">▶ PLAY</button>
+    <select id="rate" class="hardware" aria-label="Playback rate">
+      <option value="1">1×</option>
+      <option value="8" selected>8×</option>
+      <option value="30">30×</option>
+      <option value="120">120×</option>
+      <option value="480">480×</option>
+    </select>
+    <input id="scrub" type="range" min="0" max="716.397868" step="0.05" value="240" aria-label="Recording clock" />
+    <span id="time-label">4:00 / 11:56</span>
+  </div>
+</header>
+<nav class="jumps" aria-label="Jump to authored events">
+  <button class="hardware" data-t="225">3:45 STREAM</button>
+  <button class="hardware" data-t="211.376">3:31 PASSAGE I</button>
+  <button class="hardware" data-t="454.398">7:34 PASSAGE II</button>
+  <button class="hardware" data-t="621.375">10:21 PASSAGE III</button>
+  <button class="hardware" data-t="660">11:00 GROWTH</button>
+  <button class="hardware" data-t="687.742">11:28 BLACKOUT</button>
+</nav>
+<div id="strip-wrap"><canvas id="strip" aria-label="Authored event schedule"></canvas></div>
+<div id="phase-line"><span id="phase-label">PASSAGE I · 5× SPIN</span><span id="rs-label">rs 0.85 m</span></div>
+
+<div class="viewport">
+  <canvas id="scene" width="380" height="108" aria-label="Split seat view: shipped snap vs dilated asymptote"></canvas>
+  <span class="vlabel" id="vlabel-a">SHIPPED · SNAP AT s ≥ last</span>
+  <span class="vlabel" id="vlabel-b">DIRECTION · dτ/dt = 1 − rs/r · HANGS AT THE HORIZON</span>
+</div>
+<div class="readouts">
+  <span id="readout-a">SHIPPED —</span>
+  <span id="readout-b">DILATED —</span>
+</div>
+
+<ul class="grounding">
+  <li><b>stream</b> src/render/source-rest-destruction.js L250–253 — each grueling passage pulls a share of the fittings, released across its span.</li>
+  <li><b>chips</b> L257–266 — every marked mistake after the first chips a stone block off a vista structure the horizon has not yet taken (kick .6).</li>
+  <li><b>drop</b> L274–280 — a pulled piece is dropped only once even its far side has crossed; the lab drops at the piece head (far side approximated).</li>
+  <li><b>curl</b> L292–300 — unit-box rest pieces are cut into short segments so a wall or island curls into a stream.</li>
+  <li><b>path</b> src/game/source-rest-horizon.js L122–131 — sourceRestHorizonInfall: s=age/period, snap to centre at s ≥ last.</li>
+  <li class="delta"><b>direction</b> — s advances in proper time with the Schwarzschild free-fall ratio dτ/dt = 1 − rs/r: the approach keeps the shipped linear clock, hands off to the exact asymptotic hang at 1.02 rs, and rests at the horizon instead of dropping.</li>
+</ul>
+
+<footer class="review-footer">
+  <span><b>CAMERA</b> seat 0 at origin: eye [−.18, 1.23, 0] → pivot [−19.5, 7.55, −.80], vertical FOV 70° assumed.</span>
+  <span><b>PASS</b> horizonTrace + horizonEmit ported from src/render/source-rest-horizon-pass.js; the shipped virtual-image reprojection (L166–176) is not ported — emission is traced directly.</span>
+  <span><b>NOISE</b> horizonFbm is a lab value-noise stand-in; block meshes are drawn as oriented segments, not the shipped props.</span>
+  <span><b>CLOCK</b> schedule from src/data/source-rest-performance.js — 127 mistakes, 3 passages, 716.397868 s. Space = play · ← → = scrub · R = restart · click the strip to seek.</span>
+</footer>
+
+<script>
+(function(){
+'use strict';
+const TAU=Math.PI*2;
+
+/* ============ AUTHORED SCHEDULE ============ */
+const DURATION=716.397868;
+const PASSAGES=[[211.376,247.392],[454.398,469.935],[621.375,DURATION]];
+const MISTAKES=[35.032,54.323,55.917,56.521,63.628,98.177,110.432,123.582,136.927,137.411,139.046,141.343,141.785,145.208,149.396,150.785,151.34,160.06,168.486,172.943,173.968,179.315,185.117,190.699,203.219,206.578,209.658,225.197,231.141,244.7,256.303,262.071,262.317,263.952,265.046,265.239,265.904,273.595,278.077,291.782,297.193,301.692,307.842,332.736,388.445,391.42,399.124,401.387,401.758,403.621,403.948,416.246,417.604,420.244,421.555,422.613,426.913,438.711,446.498,448.724,454.291,457.582,458.095,458.589,459.232,460.107,460.506,462.786,476.94,480.051,496.517,515.409,526.191,528.285,543.838,545.357,545.703,551.965,552.703,561.619,566.217,579.814,581.555,583.626,584.341,585.3,588.655,588.979,599.397,601.042,602.626,603.617,626.908,641.94,642.854,646.827,648.321,650.701,651.062,651.91,653.571,653.801,654.7,656.946,657.217,657.929,658.284,658.608,658.889,663.083,665.398,665.95,667.108,667.537,670.23,670.884,671.967,672.272,672.683,673.346,677.535,677.746,677.954,678.112,678.265,678.396,700.6];
+
+/* ============ CONSTANTS & HELPERS (ports) ============ */
+const H={radius:.85,finalRadius:2.6,growFrom:.35,growUntil:.96,
+  capture:1,dragging:4,lensRadius:12,
+  spin:{towardSeat:18,roll:-16},
+  rings:[
+    {inner:3.3,outer:4.3,precession:.045,tilt:.38,collapse:{passage:2,at:.49}},
+    {inner:5.2,outer:6.3,precession:.022,tilt:-.6,collapse:{passage:1,at:.35}},
+    {inner:7.3,outer:8.8,precession:.011,tilt:.84,collapse:{passage:1,at:.70}},
+  ],
+  collapseSeconds:7,collapsedInner:1.25,collapsedOuter:1.55,
+  eyes:8,eyeDarkSeconds:25,eyeFlashSeconds:1.2,
+  passageSpin:5,outerWobble:.45,swirl:1.6};
+const clamp=(v,lo=0,hi=1)=>Math.max(lo,Math.min(hi,v));
+const ease=v=>{const t=clamp(v);return t*t*(3-2*t);};
+const smoothstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+const add=(a,b)=>a.map((v,k)=>v+b[k]);
+const scale=(a,s)=>a.map(v=>v*s);
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const unit=a=>scale(a,1/Math.max(1e-9,Math.hypot(...a)));
+const rotate=(v,axis,angle)=>{const k=unit(axis),c=Math.cos(angle),s=Math.sin(angle);
+  return add(add(scale(v,c),scale(cross(k,v),s)),scale(k,dot(k,v)*(1-c)));};
+const wrapPi=x=>{x=(x+Math.PI)%TAU;if(x<0)x+=TAU;return x-Math.PI;};
+const mulberry=a=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+
+const schedule={
+  passages:PASSAGES.map((s,i)=>({i,start:s[0],end:s[1],span:Math.max(.001,s[1]-s[0])})),
+  mistakes:MISTAKES.map((time,index)=>({index,time,ring:index%3,eye:(index*3+Math.floor(index/3))%H.eyes})),
+  collapses:H.rings.map(ring=>{const p=PASSAGES[ring.collapse.passage];return p[0]+(p[1]-p[0])*ring.collapse.at;}),
+  growth:(()=>{const p=PASSAGES[2];return [p[0]+(p[1]-p[0])*H.growFrom,DURATION*H.growUntil];})(),
+};
+const P1=schedule.passages[0];
+
+/* Seat-0 geometry: eye from sourceRestEyePosition (src/game/source-rest-seat.js),
+   pivot seat-relative [-19.5, 7.55, -.80] (source-rest-horizon.js L23). */
+const EYE=[-0.18,1.23,0],CENTRE=[-19.5,7.55,-.80],
+  FWD=unit(add(CENTRE,scale(EYE,-1))),
+  RIGHT=unit(cross(FWD,[0,1,0])),
+  UP=unit(cross(RIGHT,FWD));
+const TANV=Math.tan(35*Math.PI/180);
+const W=190,HH=108,TANH=TANV*(W/HH);
+
+/* geometry() ported from sourceRestHorizonFrame L66-76 */
+const G=(()=>{
+  const view=unit(add(CENTRE,scale(EYE,-1))),
+    level=unit(add([0,1,0],scale(view,-dot([0,1,0],view)))),
+    toward=H.spin.towardSeat*Math.PI/180,
+    spin=unit(rotate(add(scale(level,Math.cos(toward)),scale(view,-Math.sin(toward))),view,H.spin.roll*Math.PI/180)),
+    across=unit(cross(spin,view)),along=cross(spin,across),axes=[across,along,unit(add(across,along))],
+    rings=H.rings.map((ring,k)=>unit(rotate(spin,axes[k],ring.tilt)));
+  return Object.freeze({spin,rings});
+})();
+function rsAt(t){
+  const [g0,g1]=schedule.growth;
+  return H.radius+(H.finalRadius-H.radius)*Math.pow(ease((t-g0)/Math.max(.001,g1-g0)),1.5);
+}
+function horizonFrame(t){
+  const wrapped=clamp(t,0,DURATION),clock=t,p=clamp(t/DURATION,0,1);
+  if(p>=.96)return{active:false,reason:'blackout',centre:CENTRE,radius:rsAt(t),clock,time:wrapped,progress:p,
+    spin:[...G.spin],rings:[],eyeAges:new Float32Array(0),swirl:0,spinBoost:0,breath:.5,
+    capture:H.capture,lensRadius:H.lensRadius,dragging:H.dragging};
+  const spinBoost=H.passageSpin*(0*P1.span+clamp(wrapped-P1.start,0,P1.span));
+  let alive=0,flash=0;
+  const rings=H.rings.map((ring,k)=>{
+    const precession=ring.precession*(clock+spinBoost)+.06*Math.sin(clock*.21+k),
+      normal=unit(rotate(G.rings[k],G.spin,precession)),collapseAt=schedule.collapses[k],
+      fall=ease((clock-collapseAt)/H.collapseSeconds);
+    let inner=ring.inner,outer=ring.outer;
+    if(k===2&&wrapped>P1.start&&wrapped<P1.end+6){
+      const wobble=Math.sin(wrapped*1.7)*H.outerWobble*Math.min(1,(wrapped-P1.start)/4)*Math.min(1,(P1.end+6-wrapped)/6);
+      inner+=wobble;outer+=wobble*.6;
+    }
+    inner+=(H.collapsedInner-inner)*fall;outer+=(H.collapsedOuter-outer)*fall;
+    const present=1-ease((fall-.8)/.2),burst=clock>collapseAt?1.6*Math.exp(-(clock-collapseAt)/1.5)*(1-fall):0;
+    alive+=present;flash+=burst;
+    return {normal,inner,outer,alive:present,flash:burst,collapseAt,falling:fall};
+  });
+  const eyeAges=new Float32Array(H.rings.length*H.eyes).fill(1e4);
+  for(const row of schedule.mistakes){if(row.time>wrapped)break;eyeAges[row.ring*H.eyes+row.eye]=wrapped-row.time;}
+  return {active:true,reason:null,centre:CENTRE,radius:rsAt(t),clock,time:wrapped,progress:p,
+    spin:[...G.spin],rings,eyeAges,breath:.5,swirl:H.swirl,spinBoost,alive,flash,
+    capture:H.capture,lensRadius:H.lensRadius,dragging:H.dragging};
+}
+
+/* ============ NOISE (horizonFbm stand-in) ============ */
+function hash3(x,y,z){const h=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return h-Math.floor(h);}
+function vnoise(x,y,z){
+  const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),w=zf*zf*(3-2*zf);
+  let n=0;
+  for(let dz=0;dz<2;dz++)for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
+    n+=hash3(xi+dx,yi+dy,zi+dz)*(dx?u:1-u)*(dy?v:1-v)*(dz?w:1-w);
+  }
+  return n;
+}
+function fbm3(x,y,z,seed){return .6*vnoise(x,y,z+seed)+.4*vnoise(x*2.1,y*2.1,z*2.1+seed*1.7);}
+
+/* ============ SHADER PORT ============
+   horizonEmit + horizonTrace, src/render/source-rest-horizon-pass.js L108-154. */
+function emit(p,v,k,frame){
+  const ring=frame.rings[k];
+  if(!ring||ring.alive<=0)return {x:0,y:0,z:0};
+  const r=Math.hypot(...p);
+  if(r<ring.inner||r>ring.outer)return {x:0,y:0,z:0};
+  const N=ring.normal,
+    e1=unit(cross(N,Math.abs(N[1])<.95?[0,1,0]:[1,0,0])),e2=cross(N,e1),
+    phi=Math.atan2(dot(p,e2),dot(p,e1)),
+    turn=phi-5.45*Math.pow(r,-1.5)*frame.clock,
+    edge=smoothstep(ring.inner,ring.inner+.3,r)*smoothstep(ring.outer,ring.outer-.3,r),
+    lanes=.35+fbm3(r*4.2,Math.cos(turn)*1.4,Math.sin(turn)*1.4,k*7);
+  let I=(1.25-.25*k)*edge*lanes*(.75+.6*frame.breath)*ring.alive+ring.flash*edge*2.5;
+  const mid=(ring.inner+ring.outer)*.5;
+  for(let j=0;j<H.eyes;j++){
+    const age=frame.eyeAges[k*H.eyes+j],
+      open=age<H.eyeDarkSeconds?0:1,
+      flash=age<H.eyeFlashSeconds?Math.exp(-age*3)*4:0,
+      dp=wrapPi(turn-j*.7853982);
+    I+=(open*2.4+flash)*ring.alive*Math.exp(-dp*dp*mid*mid/.16-(r-mid)*(r-mid)/.1);
+  }
+  const beta=Math.min(Math.sqrt(.5/Math.max(r-1,.8)),.62),
+    gamm=1/Math.sqrt(Math.max(1e-6,1-beta*beta)),
+    g=1/(gamm*(1+beta*dot(unit(cross(N,p)),unit(v))))*Math.sqrt(Math.max(0,1-1/r));
+  I*=Math.pow(g,2.6);
+  return {x:I,y:Math.min(I*.7,.9)*edge,z:g};
+}
+function trace(origin,dir,frame){
+  const rs=frame.radius,lens=frame.lensRadius,capture=frame.capture;
+  let x=scale(add(origin,scale(frame.centre,-1)),1/rs),v=[...dir];
+  const xv=dot(x,v),b2=dot(x,x)-xv*xv;
+  let emission=0,transmit=1,captured=0;
+  if(dot(x,x)>lens*lens){
+    if(xv>0||b2>lens*lens){
+      if(xv<0){const b=Math.sqrt(b2),a=2/b,n=scale(add(x,scale(v,-xv)),1/b);
+        return {emission,transmit,captured,outgoing:unit(add(scale(v,Math.cos(a)),scale(n,-Math.sin(a))))};}
+      return {emission,transmit,captured,outgoing:[...v]};
+    }
+    x=add(x,scale(v,-xv-Math.sqrt(lens*lens-b2)));
+  }
+  const hv=cross(x,v),h2=dot(hv,hv);
+  for(let i=0;i<160;i++){
+    const r=Math.hypot(...x);
+    if(r<capture){captured=1;break;}
+    const dt=clamp(.05*r*r,.01,1.1),drag=Math.max(r,1.2),
+      acc=add(scale(x,-1.5*h2/Math.pow(r,5)),scale(cross(frame.spin,v),frame.dragging/(drag*drag*drag)));
+    v=add(v,scale(acc,dt));
+    const next=add(x,scale(v,dt));
+    for(let k=0;k<3;k++){
+      const ring=frame.rings[k];
+      if(!ring)continue;
+      const N=ring.normal,s0=dot(x,N),s1=dot(next,N);
+      if(s0*s1<0){
+        const pt=add(x,scale(add(next,scale(x,-1)),s0/(s0-s1)));
+        const e=emit(pt,v,k,frame);
+        if(e.x>0){const w=transmit*e.x;emission+=w;transmit*=1-e.y;}
+      }
+    }
+    x=next;
+    if(r>lens+1&&dot(x,v)>0)break;
+    if(transmit<.03)break;
+  }
+  return {emission,transmit,captured,outgoing:unit(v)};
+}
+
+/* ============ THE PULLED STREAM ============ */
+// Mirrors the shipped proper-time infall (game/source-rest-horizon.js):
+// linear approach, then the exact asymptotic solution of dτ/dt = 1 - rs/r.
+// Only r0 falling under the handoff shell (the growing rs) consumes a piece.
+const HANG_STANDOFF=1.02;
+const TYPES=[['rest-stone','#7d8372'],['rest-green','#5f7a55'],['rest-oak','#6e5a3f'],['rest-copper','#a8764c'],['rest-light-strip','#e6c890']];
+function typeFor(i){const r=mulberry(i*31+7);return TYPES[r<.4?0:r<.6?1:r<.75?2:r<.9?3:4];}
+function shellPos(seed,r){
+  const a=mulberry(seed)*TAU;
+  return [Math.cos(a)*r,(mulberry(seed+11)-.5)*7,Math.sin(a)*r];
+}
+function makePieces(){
+  const list=[],counts=[16,20,24];
+  schedule.passages.forEach((p,pi)=>{
+    for(let j=0;j<counts[pi];j++){
+      const id='fitting:'+pi+':'+j;
+      list.push({id,type:typeFor(list.length),size:.35+1.6*mulberry(j*7+pi*3),
+        release:p.start+p.span*((j+.5)/counts[pi]),anchor:1,rel:shellPos(j*13+pi*31,9+5*mulberry(j*13+pi*3)),kick:0});
+    }
+  });
+  schedule.mistakes.forEach((row,index)=>{
+    if(index>0&&index%3===0)list.push({id:'chip:'+row.index,type:typeFor(list.length),size:.3+1.2*mulberry(index*17),
+      release:row.time,anchor:1,rel:shellPos(index*19+5,7.5+3*mulberry(index*19)),kick:.6});
+  });
+  return list;
+}
+function pathPoint(rel,s,frame){
+  const axis=frame.spin,rs=frame.radius,
+    e1=unit(cross(axis,Math.abs(axis[1])<.95?[0,1,0]:[1,0,0])),e2=cross(axis,e1),
+    r0=Math.max(Math.hypot(...rel)/rs,1.001),z0=dot(rel,axis)/rs,
+    k=Math.pow(1-s,2/3),r=r0*k,z=z0*Math.pow(k,1.5),rho=Math.sqrt(Math.max(r*r-z*z,0)),
+    phase=Math.atan2(dot(rel,e2),dot(rel,e1))+frame.swirl*3*(Math.pow(1-s,-1/3)-1),
+    point=add(frame.centre,scale(add(add(scale(axis,z),scale(e1,rho*Math.cos(phase))),scale(e2,rho*Math.sin(phase))),rs)),
+    gamma=Math.sqrt(Math.max(0,1-1/(r0*k)));
+  return {point,gamma};
+}
+let pieces=null,stateA=[],stateB=[];
+function initStates(){
+  pieces=makePieces();
+  stateA=pieces.map(p=>({...p,type:[...p.type],s:0,consumed:false,history:[]}));
+  stateB=pieces.map(p=>({...p,type:[...p.type],s:0,consumed:false,history:[]}));
+}
+function stepState(state,mode,dtClock,frame){
+  if(!frame.active)return;
+  for(const p of state){
+    if(p.consumed||frame.clock<=p.release)continue;
+    const rs=frame.radius,
+      r0=Math.max(Math.hypot(...p.rel)/rs,1.001),
+      p15=Math.pow(r0,1.5),
+      period=(6+.25*p15)*p.anchor,
+      last=1-1/p15;
+    if(mode==='shipped'){
+      p.s=(frame.clock-p.release)/period;
+      if(p.s>=last-1e-9){p.consumed=true;continue;}
+    }else{
+      const linear=(frame.clock-p.release)/period,hang=1-Math.pow(HANG_STANDOFF/r0,1.5);
+      p.s=linear;
+      if(hang>0&&linear>=hang){
+        p.s=last-(last-hang)*Math.exp(-(linear-hang)*Math.pow(r0,1.5)/(1.5*period));
+        if(p.s>=last)p.s=last*(1-1e-12); // exp underflow must never fake a crossing
+      }
+      if(p.s>=last){p.consumed=true;continue;}
+    }
+    p.history.push({s:p.s,t:frame.clock});
+    if(p.history.length>90)p.history.shift();
+  }
+}
+function rebuildState(state,mode,t){
+  for(const p of state){
+    p.s=0;p.consumed=false;p.history=[];
+    if(t<=p.release)continue;
+    const len=Math.hypot(...p.rel),anchor=p.anchor,
+      r0=Math.max(len/rsAt(t),1.001),
+      p15=Math.pow(r0,1.5),
+      period=(6+.25*p15)*anchor,
+      last=1-1/p15;
+    if(mode==='shipped'){
+      p.s=(t-p.release)/period;
+      if(p.s>=last-1e-9){p.consumed=true;p.s=last;continue;}
+    }else{
+      const linear=(t-p.release)/period,hang=1-Math.pow(HANG_STANDOFF/r0,1.5);
+      p.s=linear;
+      if(hang>0&&linear>=hang){
+        p.s=last-(last-hang)*Math.exp(-(linear-hang)*Math.pow(r0,1.5)/(1.5*period));
+        if(p.s>=last)p.s=last*(1-1e-12); // exp underflow must never fake a crossing
+      }
+      if(p.s>=last){p.consumed=true;p.s=last;continue;}
+    }
+    // Trail history: analytic samples of the same closed form.
+    for(let tau=Math.max(p.release+1,t-90);tau<=t;tau+=1){
+      const r0t=Math.max(len/rsAt(tau),1.001),p15t=Math.pow(r0t,1.5),
+        perT=(6+.25*p15t)*anchor,lastT=1-1/p15t;
+      let st;
+      if(mode==='shipped')st=(tau-p.release)/perT;
+      else{
+        const linT=(tau-p.release)/perT,hangT=1-Math.pow(HANG_STANDOFF/r0t,1.5);
+        st=linT;
+        if(hangT>0&&linT>=hangT){
+          st=lastT-(lastT-hangT)*Math.exp(-(linT-hangT)*Math.pow(r0t,1.5)/(1.5*perT));
+          if(st>=lastT)st=lastT*(1-1e-12);
+        }
+      }
+      if(st>=lastT-1e-9)break;
+      p.history.push({s:st,t:tau});
+    }
+  }
+}
+
+/* ============ RENDER ============ */
+const $=id=>document.getElementById(id);
+const scene=$('scene'),ctx=scene.getContext('2d'),
+  strip=$('strip'),ctxStrip=strip.getContext('2d');
+const maskA=new Uint8Array(W*H),maskB=new Uint8Array(W*H);
+function starAt(px,py){
+  const h=Math.sin(px*127.1+py*311.7)*43758.5453,hf=h-Math.floor(h);
+  return hf>.994?.08+.25*((hf-.994)/.006):0;
+}
+function renderHalf(img,half,frame,mask){
+  const off=half*W;
+  for(let py=0;py<HH;py++){
+    const v=1-2*(py+.5)/HH;
+    for(let px=0;px<W;px++){
+      const u=2*(px+.5)/W-1,
+        dir=unit(add(FWD,add(scale(RIGHT,u*TANH),scale(UP,v*TANV)))),
+        t=trace(EYE,dir,frame),
+        gx=off+px,
+        i=(py*W*2+gx)*4,
+        star=starAt(gx,py)*t.transmit,
+        e=Math.min(1,t.emission*1.1);
+      mask[py*W+px]=t.captured;
+      img.data[i]=Math.min(255,star*200+e*242);
+      img.data[i+1]=Math.min(255,star*212+e*226);
+      img.data[i+2]=Math.min(255,star*178+e*190);
+      img.data[i+3]=255;
+    }
+  }
+}
+function project(point){
+  const rel=add(point,scale(EYE,-1)),d=dot(rel,FWD);
+  if(d<.3)return null;
+  const x=dot(rel,RIGHT)/(d*TANH),y=dot(rel,UP)/(d*TANV);
+  return {x:(.5+.5*x)*W,y:(.5-.5*y)*HH,d};
+}
+function hex2rgb(hex){
+  const n=parseInt(hex.slice(1),16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function pieceColour(p,gamma){
+  const[r,g,b]=hex2rgb(p.type[1]);
+  const dim=.35+.65*gamma;
+  const warm=clamp(1-gamma,0,1)*.5; // redden toward the horizon
+  return {r:(r*dim)*(1-warm)+208*warm,g:(g*dim)*(1-warm)+138*warm,b:(b*dim)*(1-warm)+74*warm,
+    glow:p.type[0]==='rest-light-strip'};
+}
+function drawPieces(state,frame,half,mask){
+  const off=half*W;
+  for(const p of state){
+    if(p.consumed)continue;
+    if(frame.clock<=p.release+2)continue;
+    const hist=p.history;
+    let prev=null;
+    for(let i=hist.length-1;i>=0;i-=2){
+      const {point,gamma}=pathPoint(p.rel,hist[i].s,frame);
+      const pr=project(point);
+      if(!pr)break;
+      const px=off+pr.x,py=pr.y,mi=(Math.min(HH-1,Math.max(0,Math.floor(pr.y))))*W+Math.min(W-1,Math.max(0,Math.floor(pr.x)));
+      const idx=hist.length-1-i;
+      if(mask[mi]){prev=null;continue;}
+      const c=pieceColour(p,gamma);
+      const width=Math.min(3.2,Math.max(1, .5*p.size*(HH/2)/(TANV*pr.d)));
+      if(prev){
+        const fade=.55*(1-idx/hist.length);
+        ctx.strokeStyle=`rgba(${c.r|0},${c.g|0},${c.b|0},${fade.toFixed(3)})`;
+        ctx.lineWidth=width;
+        ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(px,py);ctx.stroke();
+      }
+      if(i===hist.length-1){
+        ctx.beginPath();ctx.arc(px,py,width*.8,0,TAU);
+        ctx.fillStyle=`rgba(${c.r|0},${c.g|0},${c.b|0},.95)`;
+        ctx.fill();
+      }
+      prev=[px,py];
+    }
+  }
+}
+let last=performance.now(),dirty=true;
+function tick(now){
+  const dtReal=Math.min(.1,(now-last)/1000);last=now;
+  if(S.playing){
+    const dtClock=dtReal*S.rate;
+    S.t+=dtClock;
+    if(S.t>DURATION){S.t=0;rebuildBoth();}
+    const frame=horizonFrame(S.t);
+    stepState(stateA,'shipped',dtClock,frame);
+    stepState(stateB,'dilated',dtClock,frame);
+    dirty=true;
+  }
+  if(dirty)drawAll();
+  requestAnimationFrame(tick);
+}
+const img=new ImageData(W*2,HH);
+function drawAll(){
+  const frame=horizonFrame(S.t);
+  ctx.setTransform(1,0,0,1,0,0);
+  if(frame.reason){
+    img.data.fill(0);
+    for(let i=3;i<img.data.length;i+=4)img.data[i]=255;
+    ctx.putImageData(img,0,0);
+    ctx.fillStyle='rgba(216,212,192,.5)';ctx.font='9px ui-monospace,monospace';
+    ctx.textAlign='center';ctx.fillText('BLACKOUT · P ≥ 96% · THE AUTHORED END',W,HH/2);
+    ctx.textAlign='start';
+  }else{
+    renderHalf(img,0,frame,maskA);
+    renderHalf(img,1,frame,maskB);
+    ctx.putImageData(img,0,0);
+    drawPieces(stateA,frame,0,maskA);
+    drawPieces(stateB,frame,1,maskB);
+    ctx.fillStyle='rgba(139,148,132,.35)';ctx.fillRect(W-1,0,1,HH);
+  }
+  // readouts
+  let pullA=0,consA=0,pullB=0,consB=0,hangB=0;
+  for(const p of stateA){if(p.release<=S.t){if(p.consumed)consA++;else pullA++;}}
+  for(const p of stateB){
+    if(p.release>S.t)continue;
+    if(p.consumed)consB++;
+    else{
+      pullB++;
+      const {gamma}=pathPoint(p.rel,p.s,frame);
+      if(gamma<.25)hangB++;
+    }
+  }
+  $('readout-a').innerHTML='<b>SHIPPED · SNAP</b> — PULLING '+pullA+' · CONSUMED '+consA;
+  $('readout-b').innerHTML='<b>DIRECTION · ASYMPTOTE</b> — PULLING '+pullB+' · HANGING γ&lt;.25 '+hangB+' · CONSUMED '+consB;
+  $('time-label').textContent=fmt(S.t)+' / 11:56 · '+S.rate+'×';
+  $('phase-label').textContent=phaseName(S.t);
+  $('rs-label').textContent='rs '+rsAt(S.t).toFixed(2)+' m'+(S.t>=schedule.growth[0]&&S.t<DURATION*.96?' · GROWING':'');
+  drawStrip();
+  dirty=false;
+}
+/* ============ TRANSPORT ============ */
+const S={t:240,playing:false,rate:8};
+const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+const phaseName=t=>{
+  if(t>=DURATION*.96)return 'BLACKOUT · P ≥ 96%';
+  if(t>=schedule.growth[0])return 'FINAL PASSAGE · HORIZON GROWS';
+  if(t>=schedule.passages[1].start)return 'PASSAGE II · COLLAPSE';
+  if(t<=P1.end&&t>=P1.start)return 'PASSAGE I · 5× SPIN';
+  if(t>P1.end)return 'BETWEEN I AND II';
+  return 'BEFORE PASSAGE I';};
+function drawStrip(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=strip.clientWidth,h=strip.clientHeight;
+  strip.width=Math.round(w*dpr);strip.height=Math.round(h*dpr);
+  ctxStrip.setTransform(dpr,0,0,dpr,0,0);
+  ctxStrip.fillStyle='#0d120d';ctxStrip.fillRect(0,0,w,h);
+  const x=t=>t/DURATION*w;
+  for(const p of schedule.passages){
+    ctxStrip.fillStyle='rgba(179,154,102,.30)';
+    ctxStrip.fillRect(x(p.start),4,x(p.end)-x(p.start),h-8);
+    ctxStrip.fillStyle='rgba(216,212,192,.75)';ctxStrip.font='8px ui-monospace,monospace';
+    if(x(p.end)-x(p.start)>26)ctxStrip.fillText('PASSAGE '+(p.i+1),x(p.start)+4,13);
+  }
+  const[g0,g1]=schedule.growth;
+  ctxStrip.fillStyle='rgba(159,174,127,.30)';ctxStrip.fillRect(x(g0),4,x(g1)-x(g0),h-8);
+  if(x(g1)-x(g0)>26){ctxStrip.fillStyle='rgba(216,212,192,.75)';ctxStrip.fillText('HORIZON GROWS',x(g0)+4,23);}
+  ctxStrip.fillStyle='rgba(154,164,140,.55)';
+  for(const m of schedule.mistakes)ctxStrip.fillRect(x(m.time)-.5,h-14,1,10);
+  for(const c of schedule.collapses){
+    ctxStrip.strokeStyle='rgba(160,74,42,.8)';
+    ctxStrip.beginPath();ctxStrip.moveTo(x(c)-3,6);ctxStrip.lineTo(x(c)+3,12);
+    ctxStrip.moveTo(x(c)+3,6);ctxStrip.lineTo(x(c)-3,12);ctxStrip.stroke();}
+  ctxStrip.fillStyle='#e6e2cd';ctxStrip.fillRect(x(S.t)-.75,2,1.5,h-4);
+}
+function rebuildBoth(){rebuildState(stateA,'shipped',S.t);rebuildState(stateB,'dilated',S.t);dirty=true;}
+const playBtn=$('play'),rateSel=$('rate'),scrub=$('scrub');
+let scrubTimer=0;
+function syncPlay(){playBtn.textContent=S.playing?'❚❚ PAUSE':'▶ PLAY';playBtn.classList.toggle('current',S.playing);}
+playBtn.addEventListener('click',()=>{S.playing=!S.playing;syncPlay();});
+rateSel.addEventListener('change',()=>{S.rate=Number(rateSel.value)||8;});
+scrub.addEventListener('input',()=>{
+  S.t=clamp(Number(scrub.value),0,DURATION);
+  clearTimeout(scrubTimer);
+  scrubTimer=setTimeout(()=>{rebuildBoth();},110);
+  dirty=true;
+});
+strip.addEventListener('click',e=>{
+  const r=strip.getBoundingClientRect();
+  S.t=clamp((e.clientX-r.left)/r.width*DURATION,0,DURATION);
+  rebuildBoth();
+});
+for(const b of document.querySelectorAll('.jumps .hardware'))b.addEventListener('click',()=>{
+  S.t=clamp(Number(b.dataset.t),0,DURATION);rebuildBoth();
+});
+addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='select'||tag==='textarea')return;
+  if(e.code==='Space'){e.preventDefault();S.playing=!S.playing;syncPlay();}
+  else if(e.key==='ArrowRight'){S.t=Math.min(DURATION,S.t+5);rebuildBoth();}
+  else if(e.key==='ArrowLeft'){S.t=Math.max(0,S.t-5);rebuildBoth();}
+  else if(e.key==='r'||e.key==='R'){S.t=0;rebuildBoth();}
+});
+addEventListener('resize',()=>{dirty=true;});
+initStates();
+rebuildBoth();
+syncPlay();
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

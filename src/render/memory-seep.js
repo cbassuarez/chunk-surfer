@@ -66,13 +66,137 @@ const PAINT=Object.freeze({
     const g=ctx.createRadialGradient(w*.52,h*.36,0,w*.52,h*.36,h*1.1);g.addColorStop(0,'#ffc27a');g.addColorStop(.3,'#f26a2a');g.addColorStop(.7,'#a31f12');g.addColorStop(1,'#4c0a08');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
     for(let k=0;k<22;k++){ctx.strokeStyle=`rgba(90,10,6,${.05+hash(k)*.08})`;ctx.lineWidth=1+hash(k*3)*2;const y=hash(k*5)*h;ctx.beginPath();ctx.moveTo(0,y);ctx.bezierCurveTo(w*.3,y+(hash(k*7)-.5)*h*.2,w*.7,y+(hash(k*9)-.5)*h*.2,w,y+(hash(k*11)-.5)*h*.1);ctx.stroke();}
   },
-  // On your back, under it, looking up. The light is a long way off and moving.
+  // On your back, under it, looking up. Cold, murky, the light a long way off and dying.
   'under-water'(ctx,w,h){
-    const deep=ctx.createLinearGradient(0,0,0,h);deep.addColorStop(0,'#bfe8ea');deep.addColorStop(.28,'#2f9aa8');deep.addColorStop(.72,'#0b4656');deep.addColorStop(1,'#031820');ctx.fillStyle=deep;ctx.fillRect(0,0,w,h);
-    const sun=ctx.createRadialGradient(w*.5,h*.1,0,w*.5,h*.1,h*.62);sun.addColorStop(0,'rgba(255,255,240,1)');sun.addColorStop(.28,'rgba(220,250,240,.72)');sun.addColorStop(1,'rgba(180,240,240,0)');ctx.fillStyle=sun;ctx.fillRect(0,0,w,h);
-    for(let k=0;k<18;k++){const a=-Math.PI/2+(hash(k)-.5)*1.9,l=h*(.7+hash(k*3)*.6),spread=.015+hash(k*5)*.04;ctx.fillStyle=`rgba(235,255,250,${.05+hash(k*7)*.13})`;ctx.beginPath();ctx.moveTo(w*.5,h*.06);ctx.lineTo(w*.5-Math.cos(a-spread)*l,h*.06-Math.sin(a-spread)*l);ctx.lineTo(w*.5-Math.cos(a+spread)*l,h*.06-Math.sin(a+spread)*l);ctx.closePath();ctx.fill();}
-    for(let k=0;k<70;k++){const x=hash(k*9)*w,y=h*(.08+hash(k*11)*.3),r=w*(.012+hash(k*13)*.05);ctx.strokeStyle=`rgba(255,255,245,${.1+hash(k*15)*.3})`;ctx.lineWidth=1+hash(k*17)*2;ctx.beginPath();ctx.ellipse(x,y,r,r*.3,0,0,TAU);ctx.stroke();}
-    for(let k=0;k<26;k++){const x=hash(k*19)*w,y=h*(.34+hash(k*21)*.6),r=2+hash(k*23)*7;ctx.strokeStyle='rgba(225,250,250,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.stroke();}
+    const TAU=Math.PI*2;
+    // Cold depth, mostly black — the abyss owns the frame.
+    const base=ctx.createLinearGradient(0,0,0,h);
+    base.addColorStop(0,'#15262b');base.addColorStop(.14,'#0b1b21');base.addColorStop(.38,'#051118');
+    base.addColorStop(.68,'#020910');base.addColorStop(1,'#000307');
+    ctx.fillStyle=base;ctx.fillRect(0,0,w,h);
+
+    // Snell's window: the sky seen from below, compressed to a dim cold circle
+    // overhead. This is what makes it read as UNDERWATER, not a blue screen.
+    const sx=w*.5,sy=-h*.02,windowR=h*.58;
+    const sky=ctx.createRadialGradient(sx,sy,0,sx,sy,windowR);
+    sky.addColorStop(0,'rgba(138,176,174,.26)');
+    sky.addColorStop(.45,'rgba(98,138,138,.11)');
+    sky.addColorStop(.78,'rgba(58,92,94,.04)');
+    sky.addColorStop(1,'rgba(38,68,70,0)');
+    ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+
+    // The surface thread: a rippling cold line where the window meets dark mirror.
+    ctx.save();
+    ctx.beginPath();
+    for(let x=0;x<=w;x+=3){
+      const y=h*.05+Math.sin(x*.02)*h*.012+Math.sin(x*.051+1.3)*h*.007;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='rgba(118,158,156,.26)';ctx.lineWidth=1.4;ctx.stroke();
+    ctx.restore();
+
+    // The van: a dark hull hanging under the surface, rear doors ajar. Read it
+    // as a mass first; the lamp and the door seam are what place you under it.
+    ctx.save();
+    const vx=w*.14,vy=-h*.02,vw=w*.62,vh=h*.22;
+    const hull=ctx.createLinearGradient(0,vy,0,vy+vh*1.7);
+    hull.addColorStop(0,'rgba(1,3,5,.88)');
+    hull.addColorStop(.5,'rgba(2,5,8,.48)');
+    hull.addColorStop(1,'rgba(2,5,8,0)');
+    ctx.fillStyle=hull;
+    ctx.beginPath();
+    ctx.moveTo(vx,0);
+    ctx.quadraticCurveTo(vx+vw*.10,vy+vh*.32,vx+vw*.18,vy+vh*.56);
+    ctx.lineTo(vx+vw*.44,vy+vh*.40);
+    ctx.quadraticCurveTo(vx+vw*.58,vy+vh*.56,vx+vw*.76,vy+vh*.50);
+    ctx.quadraticCurveTo(vx+vw*.88,vy+vh*.18,vx+vw*.98,vy+vh*.04);
+    ctx.lineTo(vx+vw,0);
+    ctx.closePath();ctx.fill();
+    // the rear-door seam, barely there
+    ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=2.2;
+    ctx.beginPath();ctx.moveTo(vx+vw*.50,vy+vh*.38);ctx.lineTo(vx+vw*.50,vy+vh*.60);ctx.stroke();
+    ctx.restore();
+
+    // The last light he owns: the cargo lamp, dying. The one warm thing in the
+    // frame, and it is going out. Multi-layer glow, so it bleeds, not stamps.
+    const lx=w*.46,ly=h*.155;
+    let halo=ctx.createRadialGradient(lx,ly,0,lx,ly,h*.34);
+    halo.addColorStop(0,'rgba(132,116,70,.13)');
+    halo.addColorStop(.4,'rgba(112,96,60,.05)');
+    halo.addColorStop(1,'rgba(90,80,50,0)');
+    ctx.fillStyle=halo;ctx.fillRect(0,0,w,h);
+    halo=ctx.createRadialGradient(lx,ly,0,lx,ly,h*.13);
+    halo.addColorStop(0,'rgba(152,134,82,.34)');
+    halo.addColorStop(.5,'rgba(130,112,68,.14)');
+    halo.addColorStop(1,'rgba(110,95,60,0)');
+    ctx.fillStyle=halo;ctx.fillRect(0,0,w,h);
+    // the lamp itself, slightly irregular — flickering out
+    ctx.fillStyle='rgba(168,148,94,.72)';
+    ctx.beginPath();ctx.ellipse(lx,ly,w*.0065,h*.0105,.3,0,TAU);ctx.fill();
+
+    // God rays from the lamp, faint, falling into the dark.
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    for(let k=0;k<7;k++){
+      const ox=lx+(hash(k*53)-.5)*w*.12;
+      const a=Math.PI*.5+(hash(k*59)-.5)*.9;
+      const len=h*(.5+hash(k*61)*.6);
+      const wdt=h*(.006+hash(k*67)*.02);
+      const alpha=.02+hash(k*71)*.05;
+      const g=ctx.createLinearGradient(ox,ly,ox+Math.cos(a)*len,ly+Math.sin(a)*len);
+      g.addColorStop(0,`rgba(120,142,120,${alpha})`);
+      g.addColorStop(1,'rgba(120,142,120,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.moveTo(ox-wdt,ly);ctx.lineTo(ox+wdt,ly);
+      ctx.lineTo(ox+Math.cos(a)*(len+wdt),ly+Math.sin(a)*(len+wdt));
+      ctx.lineTo(ox+Math.cos(a)*(len-wdt),ly+Math.sin(a)*(len-wdt));
+      ctx.closePath();ctx.fill();
+    }
+    ctx.restore();
+
+    // Marine snow: suspended particles that catch the light as they cross it.
+    for(let k=0;k<540;k++){
+      const x=hash(k*73)*w,y=hash(k*79)*h;
+      const d=Math.hypot(x-lx,y-ly);
+      const lit=Math.exp(-d/(h*.24));
+      const r=.4+hash(k*83)*2.2;
+      const al=(.01+hash(k*89)*.06)*(.28+lit*.85);
+      ctx.fillStyle=`rgba(150,182,176,${Math.min(.5,al)})`;
+      ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
+    }
+
+    // Sinking wreck: a few dark flecks drifting down.
+    for(let k=0;k<26;k++){
+      const x=hash(k*97)*w,y=hash(k*101)*h;
+      const s=1+hash(k*103)*4;
+      ctx.fillStyle=`rgba(0,0,0,${.1+hash(k*107)*.24})`;
+      ctx.fillRect(x,y,s,s*(.4+hash(k*109)*.6));
+    }
+
+    // His last breath: few, small, dim bubbles.
+    for(let k=0;k<46;k++){
+      const x=hash(k*113)*w,y=h*(.25+hash(k*127)*.7);
+      const r=w*(.003+hash(k*131)*.01);
+      const al=.03+hash(k*137)*.1;
+      ctx.strokeStyle=`rgba(140,160,158,${al})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.stroke();
+    }
+
+    // Grain: footage, not paint.
+    for(let k=0;k<1600;k++){
+      const x=hash(k*139)*w,y=hash(k*149)*h;
+      const a=.012+hash(k*151)*.045;
+      ctx.fillStyle=hash(k*157)>.5?`rgba(190,210,210,${a})`:`rgba(0,0,0,${a})`;
+      ctx.fillRect(x,y,1,1);
+    }
+
+    // Vignette, then the black winning from below.
+    const vign=ctx.createRadialGradient(w*.5,h*.5,h*.18,w*.5,h*.5,h*.82);
+    vign.addColorStop(0,'rgba(0,0,0,0)');vign.addColorStop(1,'rgba(0,0,0,.5)');
+    ctx.fillStyle=vign;ctx.fillRect(0,0,w,h);
+    const abyss=ctx.createLinearGradient(0,h*.5,0,h);
+    abyss.addColorStop(0,'rgba(0,2,5,0)');abyss.addColorStop(1,'rgba(0,1,4,.97)');
+    ctx.fillStyle=abyss;ctx.fillRect(0,h*.5,w,h*.5);
   },
   sky(ctx,w,h){
     const sky=ctx.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#2e6cc6');sky.addColorStop(1,'#a9d0ee');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);

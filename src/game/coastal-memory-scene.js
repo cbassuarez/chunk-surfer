@@ -41,7 +41,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   isHidden = () => globalThis.document?.hidden === true, isHeld = () => false,
   paintOverlay = () => {}, onCheckpoint = () => {}, onRecording = () => false,
   onReturn = () => false, onTorch = () => false, onExit = () => {}, onError = () => {}, onTrace = () => {},
-  onFootContact = null, clearFootContacts = () => {},
+  onPickUp = () => false, onFootContact = null, clearFootContacts = () => {},
 } = {}) {
   const options = { layout, runId, entryDoorId, returnPose };
   let state = normalizeCoastalMemory(checkpoint, options);
@@ -74,6 +74,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
     return { ...value, ready: renderReady(), closed, paused, hidden, leaving, error, recorderHeld, noteOpen,
       coverAlpha: Math.max(entryCover, value.returnCover),
       ui: { instruction: !noteOpen && value.canInspectNote && value.status === 'active' ? 'E · READ NOTE' : null,
+        pickup: !noteOpen && value.canPickUp && value.status === 'active' ? 'F · PICK UP THE BOX' : null,
         noteOpen, noteCopy: noteOpen ? COASTAL_NOTE_COPY : null, noteClose: noteOpen ? 'E · CLOSE' : null,
         error, canReturn: errorReturn, errorReturn: errorReturn ? 'X · RETURN' : null,
         canRetryReturn: returnFailed, recorderHeld },
@@ -267,6 +268,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
         if (returnFailed) scene.retryReturn();
         else if (coastalMemoryFrame(state, { layout }).canInspectNote) { flush(); apply({ dt: 0, inspectNote: true }); noteOpen = true; clear(); }
       }
+      if (!event.repeat && key === 'f' && coastalMemoryFrame(state, { layout }).canPickUp) { flush(); clear(); onPickUp(); }
       return true;
     },
     keyup(event = {}) { keys.delete(keyOf(event)); return true; },

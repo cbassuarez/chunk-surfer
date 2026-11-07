@@ -38,7 +38,11 @@ export function createGodInventory({
     write: value => { writeFlags({ 'map.taken': !!value, 'god.map-acquired': !!value }); return true; } });
   add({ id: 'kit-fitted', label: 'FIELD KIT / FITTED', group: 'Case and acquisition', read: () => !!flags()['kit.fitted'], format: value => value ? 'FITTED' : 'PACKING',
     write: value => {
-      writeFlags(value ? { 'bag.taken': true, 'kit.taken': true, 'kit.fitted': true, 'van.bench.v2': true,
+      // A fitted kit is a kitted van: the grant also settles the case's map,
+      // so the van-kit goal (case, map, kit) reads fulfilled instead of
+      // leaving the survey indicator unacquired on the same hook.
+      writeFlags(value ? { 'bag.taken': true, 'kit.taken': true, 'kit.fitted': true, 'map.taken': true,
+        'god.map-acquired': true, 'van.bench.v2': true,
         ...Object.fromEntries(BENCH_PACK_GROUPS.map(group => [`van.packed.${group}`, true])) } : { 'kit.fitted': false });
       return true;
     } });

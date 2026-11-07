@@ -28,6 +28,12 @@ export const SOURCE_REST_HORIZON=Object.freeze({
   // rays are captured at the horizon itself. The lens is integrated inside
   // lensRadius (in rs).
   capture:1,dragging:4,lensRadius:12,
+  // Proper-time infall hands off to the hang at this radius, in rs, just
+  // outside the visible horizon: free fall obeys dτ/dt = 1 - rs/r, so the
+  // recording clock never watches the crossing. A piece whose r0 falls below
+  // this shell (the growing rs overtakes it) keeps the shipped linear fall
+  // and is consumed. The hang itself asymptotes at the horizon.
+  hangApproach:1.02,
   // The disc plane sits 18 degrees off edge-on toward the seat, rolled -16.
   spin:Object.freeze({towardSeat:18,roll:-16}),
   rings:Object.freeze([
@@ -118,13 +124,27 @@ export function sourceRestHorizonFrame({time=0,unwrappedTime=null,duration=SOURC
 
 /** CPU mirror of the per-vertex infall in the prop vertex program. Each
  * point falls on its own path: nearer ends fall and orbit faster, so tidal
- * stretching and the wrapped stream emerge from the paths themselves. */
+ * stretching and the wrapped stream emerge from the paths themselves. The
+ * approach runs on the shipped linear clock; at hangApproach it hands off to
+ * the exact asymptotic solution of the free-fall proper time dτ/dt = 1 - rs/r,
+ * which decays exponentially toward the horizon, so the recording clock never
+ * sees the crossing. Only the growing rs can consume a point: once its r0
+ * falls under the handoff shell it returns to the linear law and crosses. */
 export function sourceRestHorizonInfall(point,{release=0,anchor=1},frame){
   if(!frame?.active)return{point:[...point],consumed:false};
   const age=frame.clock-release;if(age<=0)return{point:[...point],consumed:false};
   const axis=frame.spin,rs=frame.radius,rel=add(point,scale(frame.centre,-1)),
     e1=unit(cross(axis,Math.abs(axis[1])<.95?[0,1,0]:[1,0,0])),e2=cross(axis,e1),
-    r0=Math.max(Math.hypot(...rel)/rs,1.001),z0=dot(rel,axis)/rs,period=(6+.25*Math.pow(r0,1.5))*anchor,s=age/period,last=1-Math.pow(1/r0,1.5);
+    r0=Math.max(Math.hypot(...rel)/rs,1.001),z0=dot(rel,axis)/rs,period=(6+.25*Math.pow(r0,1.5))*anchor,last=1-Math.pow(1/r0,1.5);
+  // The near-horizon regime of ds/dt = (1 - (1-s)^(-2/3)/r0)/period is
+  // delta(t) = delta0 * exp(-(2/3) r0^1.5 t / period): the exact asymptotic
+  // solution, stitched to the linear approach at the handoff radius.
+  const linear=age/period,hang=1-Math.pow(SOURCE_REST_HORIZON.hangApproach/r0,1.5);
+  let s=linear;
+  if(hang>0&&linear>=hang){
+    s=last-(last-hang)*Math.exp(-(linear-hang)*Math.pow(r0,1.5)/(1.5*period));
+    if(s>=last)s=last*(1-1e-12); // exp underflow must never fake a crossing
+  }
   if(s>=last)return{point:[...frame.centre],consumed:true};
   const k=Math.pow(1-s,2/3),r=r0*k,z=z0*Math.pow(k,1.5),rho=Math.sqrt(Math.max(r*r-z*z,0)),
     phase=Math.atan2(dot(rel,e2),dot(rel,e1))+frame.swirl*3*(Math.pow(1-s,-1/3)-1);

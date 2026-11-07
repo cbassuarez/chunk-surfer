@@ -1,4 +1,4 @@
-﻿import { spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,7 @@ const tests = [
   'test/source-continuation-ambient-faults.spec.mjs',
   'test/six-loop.spec.mjs',
   'test/opening-prologue.spec.mjs',
+  'test/opening-prologue-drive.spec.mjs',
   'test/opening-prologue-audio.spec.mjs',
   'test/ending-drive-off.spec.mjs',
   'test/last-minutes.spec.mjs','test/road-cast.spec.mjs','test/cab-radio.spec.mjs','test/cab-light.spec.mjs','test/window-takeover.spec.mjs','test/ending-walk-off.spec.mjs','test/whose-life.spec.mjs',
@@ -409,6 +410,13 @@ const tests = [
   'test/coastal-memory-renderer.test.mjs',
   'test/coastal-memory-runtime.test.mjs',
   'test/coastal-memory-water.test.mjs',
+  'test/coastal-memory-winding.test.mjs',
+  'test/coastal-memory-winding-audio.test.mjs',
+  'test/coastal-memory-hands.test.mjs',
+  'test/coastal-memory-hands-scene.test.mjs',
+  'test/coastal-memory-hands-render.test.mjs',
+  'test/coastal-hands-scene.test.mjs',
+  'test/coastal-music-box-notes.test.mjs',
   'test/local-light-cone.test.mjs',
   'test/coastal-memory-sightlines.test.mjs',
   'test/get-in-door-entry.spec.mjs',

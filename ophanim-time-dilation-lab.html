@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ophanim time study — Chunk Surfer</title>
+<link rel="icon" href="data:," />
+<style>
+:root{
+  --bg:#0a0d0a;--panel:#101510;--line:#252c25;--ink:#d8d4c0;--muted:#8a9484;
+  --dim:#5f6a5c;--amber:#b39a66;--rust:#a04a2a;--green:#9fae7f;--blue:#8fb7c8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.review-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:0 22px;min-height:58px;border-bottom:1px solid var(--line);background:#111613;
+  position:sticky;top:0;z-index:10;flex-wrap:wrap}
+.study-mark{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--muted);flex-shrink:0}
+.study-mark>b{font-size:19px;border:1px solid #53604f;padding:3px 5px;color:#ddd9c9}
+.study-mark>span{font-size:10px;letter-spacing:1.1px}
+.study-mark small{display:block;font-size:8px;color:#6f7d70;margin-top:2px}
+.transport{display:flex;align-items:center;gap:10px;flex:1;min-width:320px}
+.hardware{border:1px solid #424d40;background:#202820;color:#e6e1cb;font:inherit;
+  font-size:10px;letter-spacing:1px;padding:7px 10px;cursor:pointer}
+.hardware:hover:not(:disabled){border-color:#718269}
+.hardware.current{border-color:var(--amber);color:#f0ead2}
+select.hardware{background:#202820}
+#scrub{flex:1;accent-color:var(--amber);min-width:120px}
+#time-label{font-size:10px;color:var(--amber);white-space:nowrap}
+.jumps{display:flex;gap:6px;flex-wrap:wrap}
+.jumps .hardware{font-size:9px;padding:5px 8px}
+#reduced-label{display:flex;gap:6px;align-items:center;font-size:9px;color:var(--muted);
+  letter-spacing:.6px;cursor:pointer}
+#reduced-label input{accent-color:var(--amber)}
+#strip-wrap{padding:12px 22px 0}
+#strip{width:100%;height:34px;background:#0d120d;border:1px solid var(--line);cursor:crosshair}
+#phase-line{display:flex;justify-content:space-between;gap:16px;padding:6px 22px 0;
+  font-size:9px;letter-spacing:1.2px;color:var(--dim)}
+#phase-label{color:var(--amber)}
+#panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;
+  padding:14px 22px 20px}
+.panel{background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column}
+.panel-head small{display:block;font-size:8px;letter-spacing:1.4px;color:var(--muted);margin-bottom:4px}
+.panel-head h2{font-size:15px;letter-spacing:.8px;margin:0 0 3px;color:#e6e2cd}
+.panel-head p{font-size:10px;color:var(--muted);margin:0 0 10px;max-width:56ch}
+.modes{display:flex;gap:6px;margin-bottom:10px}
+.modes .hardware{flex:1;font-size:8px;padding:6px 5px;text-align:center;line-height:1.3}
+.scene{width:100%;aspect-ratio:1/1;display:block;background:#030503;border:1px solid #0b120b}
+.readout{font-size:9px;color:var(--green);letter-spacing:.4px;margin-top:8px;min-height:13px}
+.grounding{margin:10px 0 0;padding:8px 10px;background:#0c110c;border:1px solid #141c14;list-style:none}
+.grounding li{font-size:8.5px;color:var(--muted);line-height:1.55;letter-spacing:.2px}
+.grounding b{color:var(--amber);font-weight:700}
+.grounding li.delta b{color:var(--blue)}
+.review-footer{display:flex;flex-wrap:wrap;gap:8px 30px;padding:0 22px 22px;
+  font-size:8.5px;color:var(--dim);letter-spacing:.4px}
+.review-footer b{color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="review-bar">
+  <a class="study-mark" href="ophanim-time-dilation-lab.html"><b>CS</b><span>OPHANIM TIME STUDY<small>TIME DILATION · SOURCE REST HORIZON</small></span></a>
+  <div class="transport">
+    <button id="play" class="hardware current">❚❚ PAUSE</button>
+    <select id="rate" class="hardware" aria-label="Playback rate">
+      <option value="1">1×</option>
+      <option value="8">8×</option>
+      <option value="30" selected>30×</option>
+      <option value="120">120×</option>
+      <option value="480">480×</option>
+    </select>
+    <input id="scrub" type="range" min="0" max="716.397868" step="0.05" value="0" aria-label="Recording clock" />
+    <span id="time-label">0:00 / 11:56</span>
+  </div>
+  <nav class="jumps" aria-label="Jump to authored events">
+    <button class="hardware" data-t="0">0:00</button>
+    <button class="hardware" data-t="35.032">0:35 FIRST MISTAKE</button>
+    <button class="hardware" data-t="211.376">3:31 PASSAGE I</button>
+    <button class="hardware" data-t="454.398">7:34 PASSAGE II</button>
+    <button class="hardware" data-t="621.375">10:21 PASSAGE III</button>
+    <button class="hardware" data-t="687.742">11:28 BLACKOUT</button>
+  </nav>
+  <label id="reduced-label"><input id="reduced" type="checkbox" /> REDUCED MOTION</label>
+</header>
+
+<div id="strip-wrap"><canvas id="strip" aria-label="Authored event schedule"></canvas></div>
+<div id="phase-line"><span id="phase-label">BEFORE PASSAGE I</span><span id="rs-label">rs 0.85 m</span></div>
+
+<main id="panels">
+  <section class="panel" id="panel-a">
+    <header class="panel-head">
+      <small>DIRECTION A · ADD TO THE CLOCK</small>
+      <h2>FREEZE FIELD</h2>
+      <p>The shipped horizon is a pure function of the linear recording clock. Give each wheel its own proper time, γ = √(1 − rs/r), and watch the inner wheel fall behind — until the authored 96% blackout reads as the freeze finishing the job.</p>
+      <div class="modes" role="group" aria-label="Panel A clock mode">
+        <button class="hardware" data-mode="shipped">SHIPPED · LINEAR CLOCK</button>
+        <button class="hardware current" data-mode="dilated">DIRECTION · PROPER TIME</button>
+      </div>
+    </header>
+    <canvas class="scene" id="canvas-a" aria-label="Freeze field visualization"></canvas>
+    <div class="readout" id="readout-a"></div>
+    <ul class="grounding">
+      <li><b>shipped</b> src/game/source-rest-horizon.js L9–10 — “Every value is a pure function of the recording clock.”</li>
+      <li><b>shipped</b> L90 — precession runs on <code>ring.precession*(clock+spinBoost)</code>; the boost (L87) comes from <code>passageSpin:5</code> (L42).</li>
+      <li><b>shipped</b> L24–26 + L108–109 — rs grows .85 → 2.6 over <code>growFrom .35 → growUntil .96</code>; L86 — <code>p&gt;=.96</code> returns the authored blackout.</li>
+      <li class="delta"><b>direction</b> — precession advances in proper time ∫γ dt per wheel; the blackout becomes the moment the frozen zone has swallowed the architecture.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="panel-b">
+    <header class="panel-head">
+      <small>DIRECTION B · FINISH THE SHADER'S SENTENCE</small>
+      <h2>BEAMING KNOTS</h2>
+      <p>The shipped fragment pass already dims the receding side with a Doppler term. The missing words are colour and passage coupling: blueshift the approaching limb, let Passage I's 5× spin flare it — closed eyes included.</p>
+      <div class="modes" role="group" aria-label="Panel B light mode">
+        <button class="hardware" data-mode="shipped">SHIPPED · DIM ONLY</button>
+        <button class="hardware current" data-mode="beamed">DIRECTION · HUE + FLARE</button>
+      </div>
+    </header>
+    <canvas class="scene" id="canvas-b" aria-label="Beaming knots visualization"></canvas>
+    <div class="readout" id="readout-b"></div>
+    <ul class="grounding">
+      <li><b>shipped</b> src/render/source-rest-horizon-pass.js L121–124 — “Doppler beaming and gravitational redshift dim the receding side”: β=min(√(.5/max(r−1,.8)),.62), g=1/(γ(1+β·cos))·√(1−1/r), I*=g^2.6.</li>
+      <li><b>shipped</b> L112 — knots shear with <code>5.45·r^−1.5·clock</code>; L116–119 — eyes dark 25 s and flash 1.2 s after each marked mistake.</li>
+      <li><b>shipped</b> L115 — the ring light itself is uniform in angle.</li>
+      <li class="delta"><b>direction</b> — hue carries the redshift (approaching cyan, receding red) and β couples to <code>passageSpin:5</code> (capped below c), so Passage I flares the approaching limb; the line-of-sight projection is amplified ×3 because the seat sees the disc nearly face-on.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="panel-c">
+    <header class="panel-head">
+      <small>DIRECTION C · THE MISSING TEMPORAL HALF</small>
+      <h2>THE INFALL THAT NEVER LANDS</h2>
+      <p>Shipped, an infalling point snaps to the centre at s ≥ last. Its orbital phase already diverges like (1−s)^(−1/3) — the spatial half of time dilation. Advance s in proper time instead and the stream hangs at the horizon, winding forever.</p>
+      <div class="modes" role="group" aria-label="Panel C infall mode">
+        <button class="hardware" data-mode="shipped">SHIPPED · SNAP</button>
+        <button class="hardware current" data-mode="dilated">DIRECTION · ASYMPTOTE</button>
+      </div>
+    </header>
+    <canvas class="scene" id="canvas-c" aria-label="Infall asymptote visualization"></canvas>
+    <div class="readout" id="readout-c"></div>
+    <ul class="grounding">
+      <li><b>shipped</b> src/game/source-rest-horizon.js L122–131 — <code>sourceRestHorizonInfall</code>: s=age/period (L127), <code>s&gt;=last</code> returns <code>consumed</code> and the point snaps to the centre (L128).</li>
+      <li><b>shipped</b> L130 — orbital phase winds like <code>(1−s)^(−1/3)−1</code>: the spatial half of time dilation is already in the source.</li>
+      <li><b>shipped</b> src/render/source-rest-horizon-pass.js L143 — the raymarch steps shrink as r² near the horizon.</li>
+      <li class="delta"><b>direction</b> — advance s in proper time with the Schwarzschild free-fall ratio dτ/dt = 1 − rs/r (fall from rest at infinity): the stream asymptotes at the horizon instead of snapping; recording-clock ticks bunch where time freezes.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="review-footer">
+  <span><b>SCHEDULE</b> extracted verbatim from src/data/source-rest-performance.js — 127 mistakes, 3 grueling passages, duration 716.397868.</span>
+  <span><b>LEGIBILITY</b> β, freeze shading and intensities are tuned for legibility, mirroring the shipped note at source-rest-horizon.js L27–28.</span>
+  <span><b>SEAT</b> at the real bench (~19.5 m from the pivot) γ ≈ .93 even at final rs 2.6 — dilation here is architectural visual language, not a gameplay clock change.</span>
+  <span><b>LAB</b> orthographic projection; the shipped seat camera, bent-ray lens and prop meshes are not included. Space = play/pause · ← → = scrub · R = restart · click the strip to seek.</span>
+</footer>
+
+<script>
+(function(){
+'use strict';
+const TAU=Math.PI*2;
+
+/* ============ AUTHORED SCHEDULE ============
+   Extracted verbatim from src/data/source-rest-performance.js
+   (127 mistake rows, 3 grueling passages, duration 716.397868). */
+const DURATION=716.397868;
+const PASSAGES=[[211.376,247.392],[454.398,469.935],[621.375,DURATION]];
+const MISTAKES=[35.032,54.323,55.917,56.521,63.628,98.177,110.432,123.582,136.927,137.411,139.046,141.343,141.785,145.208,149.396,150.785,151.34,160.06,168.486,172.943,173.968,179.315,185.117,190.699,203.219,206.578,209.658,225.197,231.141,244.7,256.303,262.071,262.317,263.952,265.046,265.239,265.904,273.595,278.077,291.782,297.193,301.692,307.842,332.736,388.445,391.42,399.124,401.387,401.758,403.621,403.948,416.246,417.604,420.244,421.555,422.613,426.913,438.711,446.498,448.724,454.291,457.582,458.095,458.589,459.232,460.107,460.506,462.786,476.94,480.051,496.517,515.409,526.191,528.285,543.838,545.357,545.703,551.965,552.703,561.619,566.217,579.814,581.555,583.626,584.341,585.3,588.655,588.979,599.397,601.042,602.626,603.617,626.908,641.94,642.854,646.827,648.321,650.701,651.062,651.91,653.571,653.801,654.7,656.946,657.217,657.929,658.284,658.608,658.889,663.083,665.398,665.95,667.108,667.537,670.23,670.884,671.967,672.272,672.683,673.346,677.535,677.746,677.954,678.112,678.265,678.396,700.6];
+
+/* ============ CONSTANTS ============
+   Ported from SOURCE_REST_HORIZON, src/game/source-rest-horizon.js L19–45. */
+const H={
+  radius:.85,finalRadius:2.6,growFrom:.35,growUntil:.96,
+  capture:1,dragging:4,lensRadius:12,
+  spin:{towardSeat:18,roll:-16},
+  rings:[
+    {inner:3.3,outer:4.3,precession:.045,tilt:.38,collapse:{passage:2,at:.49}},
+    {inner:5.2,outer:6.3,precession:.022,tilt:-.6,collapse:{passage:1,at:.35}},
+    {inner:7.3,outer:8.8,precession:.011,tilt:.84,collapse:{passage:1,at:.70}},
+  ],
+  collapseSeconds:7,collapsedInner:1.25,collapsedOuter:1.55,
+  eyes:8,eyeDarkSeconds:25,eyeFlashSeconds:1.2,
+  passageSpin:5,outerWobble:.45,swirl:1.6,
+};
+
+/* ============ VECTOR HELPERS ============
+   Ported verbatim from source-rest-horizon.js L12–17. */
+const clamp=(v,lo=0,hi=1)=>Math.max(lo,Math.min(hi,v));
+const ease=v=>{const t=clamp(v);return t*t*(3-2*t);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const add=(a,b)=>a.map((v,k)=>v+b[k]);
+const scale=(a,s)=>a.map(v=>v*s);
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const unit=a=>scale(a,1/Math.max(1e-9,Math.hypot(...a)));
+const rotate=(v,axis,angle)=>{const k=unit(axis),c=Math.cos(angle),s=Math.sin(angle);
+  return add(add(scale(v,c),scale(cross(k,v),s)),scale(k,dot(k,v)*(1-c)));};
+
+/* ============ SCHEDULE ============
+   Ported from sourceRestHorizonSchedule, L51–64. */
+const schedule={
+  passages:PASSAGES.map((s,i)=>({i,start:s[0],end:s[1],span:Math.max(.001,s[1]-s[0])})),
+  mistakes:MISTAKES.map((time,index)=>({index,time,ring:index%3,eye:(index*3+Math.floor(index/3))%H.eyes})),
+  collapses:H.rings.map(ring=>{const p=PASSAGES[ring.collapse.passage];return p[0]+(p[1]-p[0])*ring.collapse.at;}),
+  growth:(()=>{const p=PASSAGES[2];return [p[0]+(p[1]-p[0])*H.growFrom,DURATION*H.growUntil];})(),
+};
+const P1=schedule.passages[0];
+
+/* ============ GEOMETRY ============
+   Ported from the geometry() inside sourceRestHorizonFrame L66–76.
+   Lab camera: eye [0,0,30], centre [0,0,0], so view = [0,0,-1] and the
+   authored 18° toward-seat tilt / −16° roll land on the spin axis. */
+const G=(()=>{
+  const eye=[0,0,30],centre=[0,0,0],
+    view=unit(add(centre,scale(eye,-1))),
+    level=unit(add([0,1,0],scale(view,-dot([0,1,0],view)))),
+    toward=H.spin.towardSeat*Math.PI/180,
+    spin=unit(rotate(add(scale(level,Math.cos(toward)),scale(view,-Math.sin(toward))),view,H.spin.roll*Math.PI/180)),
+    across=unit(cross(spin,view)),along=cross(spin,across),axes=[across,along,unit(add(across,along))],
+    rings=H.rings.map((ring,k)=>unit(rotate(spin,axes[k],ring.tilt)));
+  return Object.freeze({eye,centre,view,spin,rings});
+})();
+
+/* ============ HORIZON FRAME ============
+   Ported from sourceRestHorizonFrame L80–117 (single pass: cycles=0, and a
+   fixed phrase breath of .5 because the lab has no note recognizer). */
+function rsAt(t){
+  const [g0,g1]=schedule.growth;
+  return H.radius+(H.finalRadius-H.radius)*Math.pow(ease((t-g0)/Math.max(.001,g1-g0)),1.5);
+}
+function horizonFrame(t,reducedMotion){
+  const length=schedule.duration,wrapped=clamp(t,0,length),clock=t,g=G,p=clamp(t/length,0,1);
+  if(p>=.96)return{active:false,reason:'blackout',centre:[0,0,0],radius:rsAt(t),clock,time:wrapped,cycles:0,progress:p,
+    spin:[...g.spin],rings:[],eyeAges:new Float32Array(0),swirl:0,spinBoost:0,light:0,reducedMotion:!!reducedMotion};
+  const spinBoost=H.passageSpin*(0*P1.span+clamp(wrapped-P1.start,0,P1.span));
+  let alive=0,flash=0;
+  const rings=H.rings.map((ring,k)=>{
+    const precession=reducedMotion?0:ring.precession*(clock+spinBoost)+.06*Math.sin(clock*.21+k),
+      normal=unit(rotate(g.rings[k],g.spin,precession)),collapseAt=schedule.collapses[k],
+      fall=ease((clock-collapseAt)/H.collapseSeconds);
+    let inner=ring.inner,outer=ring.outer;
+    if(k===2&&!reducedMotion&&wrapped>P1.start&&wrapped<P1.end+6){
+      const wobble=Math.sin(wrapped*1.7)*H.outerWobble*Math.min(1,(wrapped-P1.start)/4)*Math.min(1,(P1.end+6-wrapped)/6);
+      inner+=wobble;outer+=wobble*.6;
+    }
+    inner+=(H.collapsedInner-inner)*fall;outer+=(H.collapsedOuter-outer)*fall;
+    const present=1-ease((fall-.8)/.2),burst=clock>collapseAt?1.6*Math.exp(-(clock-collapseAt)/1.5)*(1-fall)*(reducedMotion?.4:1):0;
+    alive+=present;flash+=burst;
+    return {normal,inner,outer,alive:present,flash:burst,collapseAt,falling:fall};
+  });
+  const eyeAges=new Float32Array(H.rings.length*H.eyes).fill(1e4);
+  let heard=0;
+  for(const row of schedule.mistakes){if(row.time>wrapped)break;heard++;eyeAges[row.ring*H.eyes+row.eye]=wrapped-row.time;}
+  const radius=rsAt(t),
+    light=.32*(.75+.5*.5)*(.35+.65*alive/3)+flash*.25;
+  return {active:true,reason:null,centre:[0,0,0],radius,capture:H.capture,dragging:H.dragging,lensRadius:H.lensRadius,
+    clock,time:wrapped,cycles:0,progress:p,spin:[...g.spin],rings,eyeAges,breath:.5,light,
+    swirl:reducedMotion?0:H.swirl,reducedMotion:!!reducedMotion,spinBoost,alive,flash};
+}
+
+/* ============ PROPER-TIME CLOCKS (direction A) ============
+   γ at each wheel's mid radius, integrated over the recording clock.
+   Mid radii are the pre-collapse architecture: 3.8 / 5.75 / 8.05 m. */
+const MID=[3.8,5.75,8.05];
+// Shipped proper-time handoff radius, in rs (game/source-rest-horizon.js).
+const HANG_STANDOFF=1.02;
+function gammaRing(k,t){const rs=rsAt(t);return Math.sqrt(Math.max(0,1-rs/MID[k]));}
+function properClock(k,t){let acc=0;const step=.25;
+  for(let tau=step;tau<=t;tau+=step)acc+=gammaRing(k,tau-step)*step;
+  return acc;}
+function properBoost(k,t){let acc=0;const step=.25,lo=P1.start,hi=Math.min(t,P1.end);
+  for(let tau=lo+step;tau<=hi;tau+=step)acc+=H.passageSpin*gammaRing(k,tau-step)*step;
+  return acc;}
+function shipPhase(frame,k){
+  if(frame.reducedMotion)return 0;
+  return H.rings[k].precession*(frame.clock+frame.spinBoost)+.06*Math.sin(frame.clock*.21+k);}
+function dilatedPhase(frame,k){
+  if(frame.reducedMotion)return 0;
+  return H.rings[k].precession*(properClock(k,frame.clock)+properBoost(k,frame.clock))+.06*Math.sin(frame.clock*.21+k);}
+function ringNormal(k,phase){return unit(rotate(G.rings[k],G.spin,phase));}
+function ringBasis(normal){
+  const a=unit(cross(normal,Math.abs(normal[1])<.95?[0,1,0]:[1,0,0]));
+  return {a,b:cross(normal,a)};}
+
+/* ============ SHIPPED BEAMING ============
+   Ported from source-rest-horizon-pass.js L121–124. r is in units of rs;
+   cosToward is the azimuthal velocity component toward the viewer. */
+const shippedBeta=r=>Math.min(Math.sqrt(.5/Math.max(r-1,.8)),.62);
+const shippedDoppler=(r,cosToward)=>{
+  const b=shippedBeta(r),g=1/Math.sqrt(Math.max(1e-6,1-b*b));
+  return 1/(g*(1+b*cosToward))*Math.sqrt(Math.max(0,1-1/r));};
+
+/* ============ INFALL PATH ============
+   Ported from sourceRestHorizonInfall L122–131: same path function for both
+   modes; only how s advances differs. gamma here is the proper/coordinate
+   clock ratio at the point's radius, in units of rs. */
+function pathPoint(rel,s,frame){
+  const axis=frame.spin,rs=frame.radius,
+    e1=unit(cross(axis,Math.abs(axis[1])<.95?[0,1,0]:[1,0,0])),e2=cross(axis,e1),
+    r0=Math.max(Math.hypot(...rel)/rs,1.001),z0=dot(rel,axis)/rs,
+    k=Math.pow(1-s,2/3),r=r0*k,z=z0*Math.pow(k,1.5),rho=Math.sqrt(Math.max(r*r-z*z,0)),
+    phase=Math.atan2(dot(rel,e2),dot(rel,e1))+frame.swirl*3*(Math.pow(1-s,-1/3)-1),
+    point=add(frame.centre,scale(add(add(scale(axis,z),scale(e1,rho*Math.cos(phase))),scale(e2,rho*Math.sin(phase))),rs)),
+    gamma=Math.sqrt(Math.max(0,1-1/(r0*k)));
+  return {point,gamma};}
+
+/* ============ PAINT ============ */
+const GC=[[0,[124,31,18]],[.22,[160,58,30]],[.45,[138,107,47]],[.7,[88,92,58]],[.88,[40,52,44]],[1,[12,18,13]]];
+function gammaColor(g){
+  g=clamp(g,0,1);
+  for(let i=1;i<GC.length;i++)if(g<=GC[i][0]){
+    const[a,ca]=GC[i-1],[b,cb]=GC[i],f=(g-a)/(b-a);
+    return `rgb(${Math.round(ca[0]+(cb[0]-ca[0])*f)},${Math.round(ca[1]+(cb[1]-ca[1])*f)},${Math.round(ca[2]+(cb[2]-ca[2])*f)})`;
+  }
+  const c=GC[GC.length-1][1];return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function projector(canvas){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=canvas.clientWidth,h=canvas.clientHeight;
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  return {dpr,w,h,cx:w/2,cy:h*.52,S:(h*.47)/9.6,
+    px(p){return [this.cx+p[0]*this.S,this.cy-p[1]*this.S];}};
+}
+function beginDraw(ctx,P){
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  ctx.setTransform(P.dpr,0,0,P.dpr,0,0);ctx.lineJoin='round';}
+function strokeRing(ctx,P,normal,radius,alpha,width,color){
+  const{a,b}=ringBasis(normal);
+  ctx.beginPath();
+  for(let i=0;i<=128;i++){const th=i/128*TAU,pt=P.px(add(scale(a,Math.cos(th)*radius),scale(b,Math.sin(th)*radius)));
+    i?ctx.lineTo(pt[0],pt[1]):ctx.moveTo(pt[0],pt[1]);}
+  ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();ctx.globalAlpha=1;}
+function knotAt(P,normal,radius,angle){
+  const{a,b}=ringBasis(normal);
+  return P.px(add(scale(a,Math.cos(angle)*radius),scale(b,Math.sin(angle)*radius)));}
+function drawHole(ctx,P,rs){
+  ctx.beginPath();ctx.arc(P.cx,P.cy,rs*P.S,0,TAU);
+  ctx.fillStyle='#000';ctx.fill();
+  ctx.strokeStyle='rgba(179,154,102,.8)';ctx.lineWidth=1;ctx.stroke();}
+function drawLegend(ctx,P,label0,label1){
+  const y=P.h-16,x0=12,w=190;
+  for(let i=0;i<=w;i++){ctx.fillStyle=gammaColor(1-i/w);ctx.fillRect(x0+i,y,1,5);}
+  ctx.font='8px ui-monospace,monospace';ctx.fillStyle='rgba(216,212,192,.75)';
+  ctx.fillText(label0,x0,y+13);ctx.fillText(label1,x0+w-ctx.measureText(label1).width,y+13);}
+
+/* ---- direction A: freeze field ---- */
+function drawA(frame){
+  const cv=canvasA,ctx=ctxA,P=projector(cv);
+  beginDraw(ctx,P);
+  const rs=frame.radius;
+  if(frame.reason){
+    ctx.fillStyle='#000';ctx.fillRect(0,0,P.w,P.h);
+    ctx.fillStyle='rgba(216,212,192,.4)';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillText('BLACKOUT · P ≥ 96% · THE AUTHORED END',P.cx,P.cy);
+    ctx.textAlign='start';return;
+  }
+  const stops=[[rs,rs],[rs*1.15,rs*1.15],[rs*1.4,rs*1.4],[rs*1.8,rs*1.8],[rs*2.6,rs*2.6],[rs*4.2,rs*4.2],[rs*6.5,rs*6.5],[9.6,9.6]];
+  const grad=ctx.createRadialGradient(P.cx,P.cy,rs*P.S*.6,P.cx,P.cy,9.6*P.S);
+  for(const[,r] of stops)grad.addColorStop(Math.min(1,r/9.6),gammaColor(Math.sqrt(Math.max(0,1-rs/r))));
+  ctx.fillStyle=grad;ctx.fillRect(0,0,P.w,P.h);
+  const fr=rs*1.099; // radius where γ = .3
+  ctx.beginPath();ctx.arc(P.cx,P.cy,fr*P.S,0,TAU);
+  ctx.strokeStyle='rgba(160,74,42,.55)';ctx.setLineDash([4,5]);ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);
+  frame.rings.forEach((ring,k)=>{
+    if(ring.alive<=.02)return;
+    const mid=(ring.inner+ring.outer)/2,
+      nShip=ringNormal(k,shipPhase(frame,k)),
+      nDil=S.modeA==='dilated'?ringNormal(k,dilatedPhase(frame,k)):nShip,
+      nUse=S.modeA==='dilated'?nDil:nShip;
+    strokeRing(ctx,P,nUse,ring.outer,ring.alive*.5,1,'#3f463a');
+    strokeRing(ctx,P,nUse,ring.inner,ring.alive*.5,1,'#3f463a');
+    const phaseUse=S.modeA==='dilated'?dilatedPhase(frame,k):shipPhase(frame,k);
+    if(S.modeA==='dilated'){
+      for(let j=0;j<H.eyes;j++){
+        const pt=knotAt(P,nShip,mid,shipPhase(frame,k)+j*TAU/H.eyes);
+        ctx.beginPath();ctx.arc(pt[0],pt[1],2.4,0,TAU);
+        ctx.strokeStyle='rgba(170,180,150,.4)';ctx.lineWidth=1;ctx.stroke();}
+    }
+    for(let j=0;j<H.eyes;j++){
+      const age=frame.eyeAges[k*H.eyes+j],closed=age<H.eyeDarkSeconds,
+        pt=knotAt(P,nUse,mid,phaseUse+j*TAU/H.eyes);
+      ctx.beginPath();ctx.arc(pt[0],pt[1],Math.max(1.6,mid*P.S*.02),0,TAU);
+      ctx.fillStyle=closed?'rgba(30,34,26,.85)':'rgba(226,217,184,.92)';ctx.fill();
+      if(closed){ctx.strokeStyle='rgba(226,217,184,.28)';ctx.lineWidth=1;ctx.stroke();}
+    }
+  });
+  drawHole(ctx,P,rs);
+  drawLegend(ctx,P,'γ = 0 · FROZEN','γ = 1 · RECORDING CLOCK');
+}
+
+/* ---- direction B: beaming knots ---- */
+const C_BETA=1.94; // legibility scale: fastest rim β = .6 during Passage I
+function drawB(frame){
+  const cv=canvasB,ctx=ctxB,P=projector(cv);
+  beginDraw(ctx,P);
+  if(frame.reason){
+    ctx.fillStyle='#000';ctx.fillRect(0,0,P.w,P.h);
+    ctx.fillStyle='rgba(216,212,192,.4)';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillText('BLACKOUT · P ≥ 96% · THE AUTHORED END',P.cx,P.cy);
+    ctx.textAlign='start';return;
+  }
+  const rs=frame.radius,inP1=frame.clock>=P1.start&&frame.clock<P1.end;
+  let flaring=0;
+  frame.rings.forEach((ring,k)=>{
+    if(ring.alive<=.02)return;
+    const n=ringNormal(k,shipPhase(frame,k)),mid=(ring.inner+ring.outer)/2,
+      rrs=mid/rs,shear=5.45*Math.pow(mid,-1.5)*frame.clock;
+    strokeRing(ctx,P,n,ring.outer,ring.alive*.4,1,'#3a4134');
+    strokeRing(ctx,P,n,ring.inner,ring.alive*.4,1,'#3a4134');
+    for(let j=0;j<H.eyes;j++){
+      const age=frame.eyeAges[k*H.eyes+j],closed=age<H.eyeDarkSeconds,flash=age<H.eyeFlashSeconds,
+        ang=shear-j*TAU/H.eyes,
+        {a,b}=ringBasis(n),
+        p=add(scale(a,Math.cos(ang)*mid),scale(b,Math.sin(ang)*mid)),
+        pt=P.px(p),
+        vDir=unit(cross(n,p)), // azimuthal velocity, exactly the shader's cross(N,p)
+        cosToward=vDir[2];
+      let beta=shippedBeta(rrs),cosEff=cosToward;
+      if(S.modeB==='beamed'){
+        if(inP1)beta=Math.min(beta*(1+H.passageSpin),.8);
+        // Legibility: the seat sees the disc nearly face-on (18°), so the
+        // Doppler projection is amplified ×3 to read it at lab scale.
+        cosEff=clamp(cosToward*3,-1,1);
+      }
+      const gv=1/Math.sqrt(Math.max(1e-6,1-beta*beta)),
+        doppler=1/(gv*(1-beta*cosEff)), // approaching (cosEff>0) brightens,
+        redshift=Math.sqrt(Math.max(0,1-1/rrs));   // exactly the shader's sign: its v̂ points into the scene
+      let bright;
+      if(S.modeB==='shipped'){const g=doppler*redshift;bright=Math.pow(g,2.6);}
+      else bright=Math.pow(doppler,3)*redshift;
+      bright=Math.min(6,bright);
+      if(bright>1.5)flaring++;
+      let hue,lightness;
+      if(S.modeB==='shipped'){hue=44;lightness=.5*bright/(1+.25*bright);}
+      else{hue=lerp(18,205,(cosEff+1)/2);lightness=clamp(.10+.32*Math.pow(bright,.35),.07,.88);}
+      if(flash)lightness=Math.min(.95,lightness+ .4);
+      const rr=Math.max(1.6,mid*P.S*.022);
+      ctx.beginPath();ctx.arc(pt[0],pt[1],rr,0,TAU);
+      ctx.fillStyle=`hsl(${hue.toFixed(1)},60%,${(lightness*100).toFixed(0)}%)`;
+      ctx.fill();
+      if(closed&&!flash){ctx.strokeStyle='rgba(226,217,184,.25)';ctx.lineWidth=1;ctx.stroke();}
+      const len=Math.min(.9,bright*.16)*ring.outer*P.S;
+      if(len>3){
+        const vx=-vDir[0],vy=vDir[1];
+        ctx.beginPath();ctx.moveTo(pt[0],pt[1]);ctx.lineTo(pt[0]+vx*len,pt[1]-vy*len);
+        ctx.strokeStyle=`hsla(${hue.toFixed(1)},60%,${(lightness*100).toFixed(0)}%,${Math.min(.5,bright*.2).toFixed(2)})`;
+        ctx.lineWidth=Math.max(1,rr*.5);ctx.stroke();}
+    }
+  });
+  drawHole(ctx,P,rs);
+  ctx.font='8px ui-monospace,monospace';ctx.fillStyle='rgba(216,212,192,.6)';
+  ctx.fillText(`FLARING ${flaring} / ${H.eyes*3} KNOTS`,12,16);
+  if(S.modeB==='beamed')drawLegend(ctx,P,'RECEDING · RED','APPROACHING · CYAN');
+  else drawLegend(ctx,P,'DIMMED · g^2.6 LOW','DIMMED · g^2.6 HIGH');
+}
+
+/* ---- direction C: infall asymptote ---- */
+let particles=[];
+let hungCount=0,consumedCount=0;
+function makeParticles(){
+  particles=Array.from({length:120},(_,i)=>({
+    release:(i/120)*DURATION*.96+Math.random()*DURATION*.02,
+    rel:(()=>{const r0=(1.6+10.4*Math.random())*H.radius; // 1.6–12 rs0: outer stream survives the growth
+      return scale(unit([Math.random()*2-1,Math.random()*2-1,Math.random()*2-1]),r0);})(),
+    anchor:1,s:0,consumed:false,history:[]}));
+}
+function stepParticles(dtClock,frame){
+  if(!frame.active)return;
+  for(const p of particles){
+    if(p.consumed||frame.clock<=p.release)continue;
+    const rs=frame.radius,
+      r0=Math.max(Math.hypot(...p.rel)/rs,1.001),
+      period=(6+.25*Math.pow(r0,1.5))*p.anchor,
+      last=1-Math.pow(1/r0,1.5);
+    if(S.modeC==='shipped'){
+      p.s=(frame.clock-p.release)/period;
+      if(p.s>=last-1e-9){p.consumed=true;continue;}
+    }else{
+      // Shipped closed form (game/source-rest-horizon.js): linear approach,
+      // then the exact asymptotic solution of dτ/dt = 1 - rs/r. Only r0
+      // falling under the handoff shell (the growing rs) consumes a point.
+      const linear=(frame.clock-p.release)/period,hang=1-Math.pow(HANG_STANDOFF/r0,1.5);
+      p.s=linear;
+      if(hang>0&&linear>=hang){
+        p.s=last-(last-hang)*Math.exp(-(linear-hang)*Math.pow(r0,1.5)/(1.5*period));
+        if(p.s>=last)p.s=last*(1-1e-12); // exp underflow must never fake a crossing
+      }
+      if(p.s>=last){p.consumed=true;continue;}
+    }
+    p.history.push({s:p.s,t:frame.clock});
+    if(p.history.length>240)p.history.shift();
+  }
+}
+/* Rebuild the stream deterministically when scrubbing: integrate s from each
+   particle's release up to t. 1 s steps keep a full scrub under ~120 ms. */
+function rebuildParticles(t){
+  for(const p of particles){
+    p.s=0;p.consumed=false;p.history=[];
+    if(t<=p.release)continue;
+    const len=Math.hypot(...p.rel),anchor=p.anchor,
+      r0=Math.max(len/rsAt(t),1.001),
+      p15=Math.pow(r0,1.5),
+      period=(6+.25*p15)*anchor,
+      last=1-1/p15;
+    if(S.modeC==='shipped'){
+      p.s=(t-p.release)/period;
+      if(p.s>=last-1e-9){p.consumed=true;p.s=last;continue;}
+    }else{
+      const linear=(t-p.release)/period,hang=1-Math.pow(HANG_STANDOFF/r0,1.5);
+      p.s=linear;
+      if(hang>0&&linear>=hang){
+        p.s=last-(last-hang)*Math.exp(-(linear-hang)*Math.pow(r0,1.5)/(1.5*period));
+        if(p.s>=last)p.s=last*(1-1e-12); // exp underflow must never fake a crossing
+      }
+      if(p.s>=last){p.consumed=true;p.s=last;continue;}
+    }
+    // Trail history: analytic samples of the same closed form.
+    for(let tau=Math.max(p.release+1,t-240);tau<=t;tau+=1){
+      const r0t=Math.max(len/rsAt(tau),1.001),p15t=Math.pow(r0t,1.5),
+        perT=(6+.25*p15t)*anchor,lastT=1-1/p15t;
+      let st;
+      if(S.modeC==='shipped')st=(tau-p.release)/perT;
+      else{
+        const linT=(tau-p.release)/perT,hangT=1-Math.pow(HANG_STANDOFF/r0t,1.5);
+        st=linT;
+        if(hangT>0&&linT>=hangT){
+          st=lastT-(lastT-hangT)*Math.exp(-(linT-hangT)*Math.pow(r0t,1.5)/(1.5*perT));
+          if(st>=lastT)st=lastT*(1-1e-12);
+        }
+      }
+      if(st>=lastT-1e-9)break;
+      p.history.push({s:st,t:tau});
+    }
+  }
+}
+function drawC(frame){
+  const cv=canvasC,ctx=ctxC,P=projector(cv);
+  beginDraw(ctx,P);
+  if(frame.reason){
+    ctx.fillStyle='#000';ctx.fillRect(0,0,P.w,P.h);
+    ctx.fillStyle='rgba(216,212,192,.4)';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillText('BLACKOUT · P ≥ 96% · THE AUTHORED END',P.cx,P.cy);
+    ctx.textAlign='start';return;
+  }
+  hungCount=0;consumedCount=0;
+  for(const p of particles){
+    if(p.consumed){consumedCount++;continue;}
+    if(frame.clock<=p.release+2)continue;
+    const hist=p.history;
+    let prev=null;
+    for(let i=hist.length-1;i>=0;i-=2){
+      const{point,gamma}=pathPoint(p.rel,hist[i].s,frame);
+      const pt=P.px(point),idx=hist.length-1-i;
+      if(prev){
+        const fade=.55*(1-idx/hist.length);
+        ctx.beginPath();ctx.moveTo(prev[0],prev[1]);ctx.lineTo(pt[0],pt[1]);
+        ctx.strokeStyle=`hsla(${lerp(0,120,gamma).toFixed(0)},55%,${(26+22*gamma).toFixed(0)}%,${fade.toFixed(3)})`;
+        ctx.lineWidth=1;ctx.stroke();
+        if(idx%10===0){
+          const dx=pt[0]-prev[0],dy=pt[1]-prev[1],m=Math.hypot(dx,dy)||1;
+          ctx.beginPath();ctx.moveTo(pt[0]-dy/m*3,pt[1]+dx/m*3);ctx.lineTo(pt[0]+dy/m*3,pt[1]-dx/m*3);
+          ctx.strokeStyle=`hsla(0,0%,80%,${(.5*fade).toFixed(3)})`;ctx.stroke();}
+      }
+      if(i===hist.length-1){
+        ctx.beginPath();ctx.arc(pt[0],pt[1],1.8,0,TAU);
+        ctx.fillStyle=`hsla(${lerp(0,120,gamma).toFixed(0)},60%,${(40+30*gamma).toFixed(0)}%,.95)`;
+        ctx.fill();
+        if(gamma<.25)hungCount++;
+      }
+      prev=pt;
+    }
+  }
+  drawHole(ctx,P,frame.radius);
+  ctx.font='8px ui-monospace,monospace';ctx.fillStyle='rgba(216,212,192,.6)';
+  ctx.fillText(`HUNG γ<.25: ${hungCount} · CONSUMED: ${consumedCount}`,12,16);
+  if(S.modeC==='dilated')drawLegend(ctx,P,'FROZEN AT HORIZON','FAR · γ → 1');
+  else drawLegend(ctx,P,'SNAP → CENTRE','FAR · INBOUND');
+}
+
+/* ============ TRANSPORT & DOM ============ */
+const S={t:0,playing:true,rate:30,reduced:false,modeA:'dilated',modeB:'beamed',modeC:'dilated'};
+const $=id=>document.getElementById(id);
+const canvasA=$('canvas-a'),canvasB=$('canvas-b'),canvasC=$('canvas-c'),strip=$('strip'),
+  ctxA=canvasA.getContext('2d'),ctxB=canvasB.getContext('2d'),ctxC=canvasC.getContext('2d'),ctxStrip=strip.getContext('2d');
+const playBtn=$('play'),rateSel=$('rate'),scrub=$('scrub'),timeLabel=$('time-label'),
+  phaseLabel=$('phase-label'),rsLabel=$('rs-label'),reduced=$('reduced');
+let scrubTimer=0;
+const fmt=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+const phaseName=t=>{
+  if(t>=DURATION*.96)return 'BLACKOUT · P ≥ 96%';
+  if(t>=schedule.growth[0])return 'FINAL PASSAGE · HORIZON GROWS';
+  if(t>=schedule.passages[1].start)return 'PASSAGE II · COLLAPSE';
+  if(t<=P1.end&&t>=P1.start)return 'PASSAGE I · 5× SPIN';
+  if(t>P1.end)return 'BETWEEN I AND II';
+  return 'BEFORE PASSAGE I';};
+
+makeParticles();
+
+function drawStrip(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=strip.clientWidth,h=strip.clientHeight;
+  strip.width=Math.round(w*dpr);strip.height=Math.round(h*dpr);
+  ctxStrip.setTransform(dpr,0,0,dpr,0,0);
+  ctxStrip.fillStyle='#0d120d';ctxStrip.fillRect(0,0,w,h);
+  const x=t=>t/DURATION*w;
+  for(const p of schedule.passages){
+    ctxStrip.fillStyle='rgba(179,154,102,.30)';
+    ctxStrip.fillRect(x(p.start),4,x(p.end)-x(p.start),h-8);
+    ctxStrip.fillStyle='rgba(216,212,192,.75)';ctxStrip.font='8px ui-monospace,monospace';
+    if(x(p.end)-x(p.start)>26)ctxStrip.fillText('PASSAGE '+(p.i+1),x(p.start)+4,13);
+  }
+  const[g0,g1]=schedule.growth;
+  ctxStrip.fillStyle='rgba(159,174,127,.30)';ctxStrip.fillRect(x(g0),4,x(g1)-x(g0),h-8);
+  if(x(g1)-x(g0)>26){ctxStrip.fillStyle='rgba(216,212,192,.75)';ctxStrip.fillText('HORIZON GROWS',x(g0)+4,23);}
+  ctxStrip.fillStyle='rgba(154,164,140,.55)';
+  for(const m of schedule.mistakes)ctxStrip.fillRect(x(m.time)-.5,h-14,1,10);
+  for(const c of schedule.collapses){
+    ctxStrip.strokeStyle='rgba(160,74,42,.8)';
+    ctxStrip.beginPath();ctxStrip.moveTo(x(c)-3,6);ctxStrip.lineTo(x(c)+3,12);
+    ctxStrip.moveTo(x(c)+3,6);ctxStrip.lineTo(x(c)-3,12);ctxStrip.stroke();}
+  ctxStrip.fillStyle='#e6e2cd';ctxStrip.fillRect(x(S.t)-.75,2,1.5,h-4);
+}
+function syncPlay(){playBtn.textContent=S.playing?'❚❚ PAUSE':'▶ PLAY';playBtn.classList.toggle('current',S.playing);}
+function scrubTo(t){S.t=clamp(t,0,DURATION);scrub.value=S.t;rebuildParticles(S.t);drawAll();}
+function drawAll(){
+  const frame=horizonFrame(S.t,S.reduced);
+  drawA(frame);drawB(frame);drawC(frame);
+  drawStrip();
+  const gs=[0,1,2].map(k=>gammaRing(k,S.t));
+  $('readout-a').textContent=
+    'γ IN '+gs[0].toFixed(3)+' · MID '+gs[1].toFixed(3)+' · OUT '+gs[2].toFixed(3)+
+    ' · PROPER '+fmt(properClock(0,S.t))+' / '+fmt(properClock(1,S.t))+' / '+fmt(properClock(2,S.t))+' OF '+fmt(S.t)+
+    ' · FREEZE (γ<.3) r ≤ '+((rsAt(S.t)*1.099)).toFixed(2)+' m';
+  const betas=[0,1,2].map(k=>{const rs=rsAt(S.t),r=MID[k]/rs;let b=shippedBeta(r);
+    if(S.modeB==='beamed'&&S.t>=P1.start&&S.t<P1.end)b=Math.min(b*6,.8);
+    return b;});
+  $('readout-b').textContent=
+    'β IN '+betas[0].toFixed(2)+' · MID '+betas[1].toFixed(2)+' · OUT '+betas[2].toFixed(2)+
+    ' · REDSHIFT √(1−1/r) ACTIVE · '+(S.modeB==='beamed'?'DIRECTION · HUE + PASSAGE FLARE':'SHIPPED · DIM ONLY');
+  $('readout-c').textContent=
+    'MODE '+(S.modeC==='dilated'?'ds = (1−rs/r)·dt/period · ASYMPTOTE':'s = age/period · SNAP AT s ≥ last')+
+    ' · '+hungCount+' HUNG γ<.25 · '+consumedCount+' CONSUMED';
+  timeLabel.textContent=fmt(S.t)+' / 11:56 · '+S.rate+'×';
+  phaseLabel.textContent=phaseName(S.t);
+  rsLabel.textContent='rs '+(rsAt(S.t)).toFixed(2)+' m'+(S.t>=schedule.growth[0]&&S.t<DURATION*.96?' · GROWING':'');
+}
+let last=performance.now();
+function tick(now){
+  const dtReal=Math.min(.1,(now-last)/1000);last=now;
+  if(S.playing){
+    const dtClock=dtReal*S.rate;
+    S.t+=dtClock;
+    if(S.t>DURATION){S.t=0;rebuildParticles(0);}
+    const frame=horizonFrame(S.t,S.reduced);
+    stepParticles(dtClock,frame);
+  }
+  scrub.value=S.t;
+  drawAll();
+  requestAnimationFrame(tick);
+}
+
+playBtn.addEventListener('click',()=>{S.playing=!S.playing;syncPlay();});
+rateSel.addEventListener('change',()=>{S.rate=Number(rateSel.value)||30;});
+scrub.addEventListener('input',()=>{
+  S.t=clamp(Number(scrub.value),0,DURATION);
+  clearTimeout(scrubTimer);
+  scrubTimer=setTimeout(()=>{rebuildParticles(S.t);drawAll();},110);
+  drawAll();
+});
+strip.addEventListener('click',e=>{
+  const r=strip.getBoundingClientRect();
+  scrubTo((e.clientX-r.left)/r.width*DURATION);});
+for(const b of document.querySelectorAll('.jumps .hardware'))b.addEventListener('click',()=>scrubTo(Number(b.dataset.t)));
+reduced.addEventListener('change',()=>{S.reduced=reduced.checked;rebuildParticles(S.t);});
+for(const section of document.querySelectorAll('.panel'))for(const b of section.querySelectorAll('.modes .hardware')){
+  b.addEventListener('click',()=>{
+    const key=section.id==='panel-a'?'modeA':section.id==='panel-b'?'modeB':'modeC';
+    S[key]=b.dataset.mode;
+    for(const o of section.querySelectorAll('.modes .hardware'))o.classList.toggle('current',o===b);
+    if(key==='modeC')rebuildParticles(S.t);
+  });
+}
+addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='select'||tag==='textarea')return;
+  if(e.code==='Space'){e.preventDefault();S.playing=!S.playing;syncPlay();}
+  else if(e.key==='ArrowRight')scrubTo(S.t+5);
+  else if(e.key==='ArrowLeft')scrubTo(S.t-5);
+  else if(e.key==='r'||e.key==='R')scrubTo(0);
+});
+addEventListener('resize',()=>drawAll());
+
+reduced.checked=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+S.reduced=reduced.checked;
+syncPlay();
+scrubTo(0);
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
