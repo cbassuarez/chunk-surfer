@@ -1,7 +1,7 @@
 // HORIZON: the walking scene. He walks up to whoever is there. It reports what he
 // does and decides nothing: the route is raised from these events by whoever owns
 // the night.
-import {HORIZON_APPROACH as C,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
+import {HORIZON_APPROACH as C,horizonApproachVariantId,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
 
 const finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
 const actions={forward:'w',moveForward:'w',move_forward:'w',backward:'s',reverse:'s',moveBackward:'s',move_backward:'s',left:'a',moveLeft:'a',strafeLeft:'a',move_left:'a',right:'d',moveRight:'d',strafeRight:'d',move_right:'d'};
@@ -16,16 +16,27 @@ export const HORIZON_APPROACH_EVENT=Object.freeze({
 // The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
 export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
 
-export function freshHorizonApproach({occupant='daisy',condition=false,lyleBox=null,phi=0}={}){
-  return{schema:1,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:!!condition,lyleBox,
-    frame:spaceAtMap(C.space.startMetres,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,petalsPlucked:0,decided:null};
+export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0}={}){
+  const id=horizonApproachVariantId(variant),V=C.variants[id],start=V.startMetres;
+  return{schema:1,variant:id,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:!!condition,lyleBox,
+    frame:spaceAtMap(V.sign,V.radius,start,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,petalsPlucked:0,decided:null};
 }
-export const horizonApproachMap=state=>spaceMapOf(state.frame);
-export const horizonApproachDistance=state=>spaceDistance(state.frame,spaceIdentity());
+export const horizonApproachMap=state=>{const V=C.variants[state.variant];return spaceMapOf(V.sign,V.radius,state.frame);};
+export function horizonApproachDistance(state){
+  const V=C.variants[state.variant];
+  return spaceDistance(V.sign,V.radius,state.frame,spaceIdentity());
+}
 export const horizonApproachNear=state=>horizonApproachDistance(state)<C.station.reach;
-// Where a body may stand: on the roads and the two places they meet.
-export function horizonApproachOnGround(frame){
-  const V=C.space,{r,phi}=spaceMapOf(frame),end=Math.PI*V.radius;
+// Where a body may stand. The closed space is only its roads and the two places
+// they meet; the circle limit is its tiles, as far as there are any.
+export function horizonApproachOnGround(variant,frame){
+  const V=C.variants[variant],{r,phi}=spaceMapOf(V.sign,V.radius,frame);
+  if(V.sign<0)return r<V.tileRings*V.radius-1;
+  if(variant==='relativity'){
+    const{x,z}=spaceMapOf(V.sign,V.radius,frame);
+    return r<V.hub||(Math.abs(x)<=V.roadHalfWidth-C.bodyRadius&&Math.abs(z)<=V.roadEnd)||(Math.abs(z)<=V.roadHalfWidth-C.bodyRadius&&x>=0&&x<=V.roadEnd);
+  }
+  const end=Math.PI*V.radius;
   if(r<V.hub||r>end-V.hub)return true;
   const spacing=TAU/V.roads,off=Math.abs(wrapAngle(phi-Math.round(phi/spacing)*spacing));
   return V.radius*Math.sin(r/V.radius)*off<=V.roadHalfWidth-C.bodyRadius;
@@ -44,12 +55,12 @@ export function pluckHorizonApproachPetal(current){
 }
 // Straight on, in the space's own sense of straight. A wall is met by sliding along it.
 function move(state,forward,strafe,distance){
-  const length=Math.hypot(forward,strafe);if(!length)return false;
-  const heading=Math.atan2(strafe,forward)+state.yaw,centre=spaceIdentity(),now=spaceDistance(state.frame,centre);
+  const V=C.variants[state.variant],length=Math.hypot(forward,strafe);if(!length)return false;
+  const heading=Math.atan2(strafe,forward)+state.yaw,centre=spaceIdentity(),now=spaceDistance(V.sign,V.radius,state.frame,centre);
   for(const[turn,share]of[[0,1],[.7,.7],[-.7,.7],[1.2,.35],[-1.2,.35]]){
-    const a=heading+turn,frame=spaceMultiply(state.frame,spaceTranslation([Math.sin(a),0,-Math.cos(a)],distance*share)),d=spaceDistance(frame,centre);
+    const a=heading+turn,frame=spaceMultiply(state.frame,spaceTranslation(V.sign,V.radius,[Math.sin(a),0,-Math.cos(a)],distance*share)),d=spaceDistance(V.sign,V.radius,frame,centre);
     // He walks up to it, not through it.
-    if(!(d<C.station.standOff&&d<now)&&horizonApproachOnGround(frame)){state.frame=frame;return true;}
+    if(!(d<C.station.standOff&&d<now)&&horizonApproachOnGround(state.variant,frame)){state.frame=frame;return true;}
   }
   return false;
 }
@@ -75,10 +86,10 @@ export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=fals
   return{state,events};
 }
 
-export function createHorizonApproachScene({renderer,occupant='daisy',condition=false,lyleBox=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
+export function createHorizonApproachScene({renderer,variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
   onEvent=()=>{},onError=()=>{},onExit=()=>{}}={}){
   if(typeof renderer?.render!=='function')throw Error('The approach needs its renderer.');
-  let state=freshHorizonApproach({occupant,condition,lyleBox}),ready=false,closed=false,paused=false,failed=false,initializing=null;
+  let state=freshHorizonApproach({variant,occupant,condition,lyleBox}),ready=false,closed=false,paused=false,failed=false,initializing=null;
   const keys=new Set();
   const p=()=>presentation()||{},stopped=()=>{const v=p();return!!(paused||v.paused||v.hidden||v.focused===false);},
     live=()=>ready&&!closed&&!failed&&renderer.ready?.()!==false;
@@ -108,7 +119,10 @@ export function createHorizonApproachScene({renderer,occupant='daisy',condition=
     setLook(look={}){if(!scene.allowsLook)return false;state={...state,yaw:finite(look.yaw,state.yaw),pitch:Math.max(-PITCH,Math.min(PITCH,finite(look.pitch,state.pitch)))};return true;},
     place(next={}){state={...state,...next};},
     // Stands him `r` metres out on bearing `phi`, facing the object.
-    placeAt(r,phi=0,look={}){state={...state,frame:spaceAtMap(r,phi),yaw:finite(look.yaw,-phi),pitch:finite(look.pitch,0)};},
+    placeAt(r,phi=0,look={}){
+      const V=C.variants[state.variant];
+      state={...state,frame:spaceAtMap(V.sign,V.radius,r,phi),yaw:finite(look.yaw,-phi),pitch:finite(look.pitch,0)};
+    },
     walk(seconds,{forward=1,strafe=0,dt=1/30}={}){
       const events=[];
       for(let t=0;t<seconds;t+=dt){const r=stepHorizonApproach(state,{dt,forward,strafe});state=r.state;events.push(...r.events);}

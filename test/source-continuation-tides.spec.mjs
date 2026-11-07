@@ -52,7 +52,8 @@ test('a walker makes headway against the tide, even after it has gathered',()=>{
   // Like a player, the walker keeps turning to face its goal down the crossing.
   const goal={x:16,z:-3},steer=s=>({forward:1,look:{yaw:Math.atan2(goal.x-s.x,-(goal.z-s.z)),pitch:0}});
   const {state}=run(ground,7.5,(s,t)=>t<3.5?{}:steer(s));
-  assert.ok(state.feet===0&&state.x-ground.x>8,`only ${(state.x-ground.x).toFixed(2)}m of headway`);
+  // At the new walk (1.4, against the same tide), he must still make real headway.
+  assert.ok(state.feet===0&&state.x-ground.x>4,`only ${(state.x-ground.x).toFixed(2)}m of headway`);
 });
 
 test('seated is anchored: no pull, no gust, and the tide resets',()=>{

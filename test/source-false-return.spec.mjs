@@ -80,7 +80,7 @@ test('fifth door is source-bound during its swing; opening does not itself leave
   assert.deepEqual(state.sourceDoors, [counted[4]]); assert.equal(state.opened.length, 4);
   state = tick(state, { dt: .45 }).state;
   assert.equal(state.opened.length, 5); assert.equal(state.status, 'active'); assert.equal(state.exitReceipt, null);
-  r = tick(state, { dt: .7, forward: 1 });
+  r = tick(state, { dt: 1, forward: 1 });
   assert.equal(r.state.status, 'completed'); assert.equal(r.events.filter(e => e.type === 'complete').length, 1);
   assert.equal(r.state.exitReceipt.doorId, counted[4]); assert.equal(r.state.exitReceipt.delivered, false);
   assert.ok(r.state.z > -.06 && r.state.z <= 0, 'remaining movement stops at the doorway crossing');
@@ -89,7 +89,7 @@ test('fifth door is source-bound during its swing; opening does not itself leave
 
 test('after five, crossing an earlier open door also continues, without a sixth unique opening', () => {
   const state = atDoor(fiveOpen(), 0);
-  const r = tick(state, { dt: .7, forward: 1 });
+  const r = tick(state, { dt: 1, forward: 1 });
   assert.equal(r.state.status, 'completed'); assert.equal(r.state.opened.length, 5);
   assert.equal(r.state.exitReceipt.doorId, counted[0]);
   assert.equal(normalizeSourceFalseReturn(JSON.parse(JSON.stringify(r.state)), { spawn }).exitReceipt.id, r.state.exitReceipt.id);
@@ -104,7 +104,7 @@ test('closed leaf, insufficient swing and jamb margin prevent fast-step tunnelli
   let state = atDoor(fresh(), 0); state = tick(state, { interact: true }).state;
   state = tick(state, { dt: .2, forward: 1 }).state;
   assert.ok(state.z > 0); assert.equal(state.opened.length, 0);
-  state = tick(state, { dt: .6, forward: 1 }).state;
+  state = tick(state, { dt: 1, forward: 1 }).state;
   assert.ok(state.z < 0); assert.equal(state.opened.length, 1); assert.equal(state.status, 'active');
 });
 
@@ -190,7 +190,7 @@ test('a body straddling the actual door mouth prevents closing instead of becomi
   const r = tick(state, { interact: true });
   assert.equal(r.events[0].type, 'door-obstructed'); assert.equal(r.state.doorOpen[counted[0]], true);
   near(sourceFalseReturnDoorFraction(r.state, counted[0]), 1);
-  state = tick(r.state, { dt: .3, forward: -1 }).state;
+  state = tick(r.state, { dt: .7, forward: -1 }).state;
   assert.ok(state.z > .9); assert.equal(tick(state, { interact: true }).state.doorOpen[counted[0]], false);
 });
 
@@ -219,18 +219,15 @@ test('stacked floors stay on the current storey and real risers change candidate
   const layout = { spawn: at, doors: [], loops: [], supportAt,
     bounds: { minX: -1, maxX: 8, minZ: -1, maxZ: 1 },
     canOccupy(x, z, state) { return Math.abs(supportAt(x, z, state).floor - state.feet) < 1e-7; } };
+  const walk = (s, x, input = { forward: 1 }) => { let guard = 0; while ((input.forward > 0 ? s.x < x : s.x > x) && guard++ < 6000) s = tick(s, { dt: 1 / 60, ...input }, layout).state; return s; };
   let state = freshSourceFalseReturn({ spawn: at });
-  state = tick(state, { dt: 1, forward: 1 }, layout).state;
-  near(state.x, 3); near(state.feet, 1.6);
-  state = tick(state, { dt: 1, forward: 1 }, layout).state;
-  near(state.x, 6); near(state.feet, 3.2);
+  state = walk(state, 3); assert.ok(Math.abs(state.x - 3) < .03); near(state.feet, 1.6);
+  state = walk(state, 6); assert.ok(Math.abs(state.x - 6) < .03); near(state.feet, 3.2);
   state = normalizeSourceFalseReturn(JSON.parse(JSON.stringify(state)), { spawn: at });
   state = tick(state, { dt: .2, forward: 1 }, layout).state;
   near(state.feet, 3.2, 'reloading over stacked ground retains the upper storey');
-  state = tick(state, { dt: .2, forward: -1 }, layout).state;
-  state = tick(state, { dt: 1, forward: -1 }, layout).state;
-  state = tick(state, { dt: 1, forward: -1 }, layout).state;
-  near(state.x, 0); near(state.feet, 0);
+  state = walk(state, 0, { forward: -1 });
+  assert.ok(Math.abs(state.x) < .03); near(state.feet, 0);
   assert.ok(seen.some(p => p.floor > p.current + .39), 'test actually crossed authored risers');
   assert.ok(seen.every(p => Math.abs(p.floor - p.current) <= .4000001));
 });
@@ -258,7 +255,7 @@ test('the same five-opening rule accepts any five counted actual doors in the ex
     state = tick(state, { dt: .45 }, layout).state;
   }
   assert.deepEqual(state.opened, otherIds); assert.equal(state.status, 'active');
-  const r = tick(state, { dt: .7, forward: 1 }, layout);
+  const r = tick(state, { dt: 1, forward: 1 }, layout);
   assert.equal(r.state.status, 'completed'); assert.equal(r.state.exitReceipt.doorId, 'chapel-c17');
 });
 
@@ -291,7 +288,7 @@ test('an open pair cannot hand off through its inactive leaf, including reversed
     const half = door.aperture.width / 2;
     for (const [coord, expected] of [[half / 2, 'active'], [-half / 2, 'completed']]) {
       const at = yaw ? { x: 1.2, z: coord, yaw: -Math.PI / 2 } : { x: coord, z: 1.2, yaw: 0 };
-      const r = tick({ ...base, ...at, lastSafe: { ...spawn, ...at } }, { dt: .7, forward: 1 }, layout);
+      const r = tick({ ...base, ...at, lastSafe: { ...spawn, ...at } }, { dt: 1, forward: 1 }, layout);
       assert.equal(r.state.status, expected, `width ${coord}, yaw ${yaw}, normal ${normal.z}`);
       assert.equal(r.state.opened.length, 5, 'a pair remains one canonical assembly');
     }

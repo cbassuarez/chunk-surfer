@@ -192,7 +192,7 @@ test('live main renderer guards keep obsolete Source overlays out of the first v
       r3dSetSourceWhiteout(value) { calls.push(['white', value]); },
       r3dSetSourceEmergency(value) { calls.push(['red', value]); },
       r3dSetSourceFault(value) { calls.push(['fault', value]); }, r3dSetLocalLights() {}, r3dSetEmergencyShadows() {},
-    } });
+    }, windowChoreography: { sourceFrame() {} } });
   vm.runInContext(mainFunction('syncSourceRender'), context);
   assert.throws(() => context.syncSourceRender(), error => error === sentinel);
   const submittedShore=calls.find(([kind]) => kind === 'shore')?.[1];

@@ -1,32 +1,46 @@
 // HORIZON. He walks up to whoever is there, and that is all he has to do. What is
-// wrong is the place he does it in: a closed space. Everything he walks away from
-// grows, and past halfway what he walks towards shrinks before it comes to its own
-// size at his feet. Every road out arrives at the same place. The route it serves
-// stays as it was.
+// wrong is the place he does it in: the space itself is curved, so the plain things
+// a body knows about distance stop being true. The route it serves stays as it was.
 //
-// Round him the sky is full of what is left: car parts, flashlights, sheet music,
-// daisies, pieces of the moor. Far off they are enormous. They are all ordinary
-// things, the game's own, and when he goes under one it is only that.
+//   closed       A closed space. Everything he walks away from grows, and past
+//                halfway what he walks towards shrinks before it comes to its own
+//                size at his feet. Every road out arrives at the same place.
+//   circle-limit The other way. Each pace out there is more ground than the last:
+//                tiles without end inside a horizon he never gets nearer, too much
+//                room to walk round anything. After Escher's Circle Limit.
+//   relativity   A straight flat road, and round it Source II's own house of stairs
+//                hung at right angles, each with its own idea of down.
 //
 // Positions are metres in the map from the object at the origin: `r` out along a
 // straight line of the space, `phi` the bearing. `frame` is where he is, as a 4x4
 // of the space, and it is the only truth about it: walking is composing it.
 export const HORIZON_APPROACH=Object.freeze({
   walk:3,bodyRadius:.22,eye:1.62,maxFrameDelta:.1,
-  // An odd number of roads, so that none runs through his own antipode and fills the
-  // sky with itself.
-  space:Object.freeze({sign:1,radius:26,startMetres:74,roads:7,roadHalfWidth:1.5,hub:2.6}),
+  variants:Object.freeze({
+    closed:Object.freeze({sign:1,radius:26,startMetres:74,roads:7,roadHalfWidth:1.5,hub:2.6}),
+    'circle-limit':Object.freeze({sign:-1,radius:3,startMetres:15,tileRings:6.2}),
+    // Flat, to the width of a hair: the curvature is too slight to matter, and all
+    // the impossibility is in what hangs round the road.
+    relativity:Object.freeze({sign:1,radius:2000,startMetres:42,roadHalfWidth:1.5,hub:3.4,roadEnd:60,cell:62,scale:.82}),
+  }),
+  defaultVariant:'closed',
+  // Where each thing stands, as a bearing and a share of the way round the space.
   occupants:Object.freeze(['sarah','lyle','daisy','ant']),
   station:Object.freeze({reach:3.2,standOff:.7}),
   daisy:Object.freeze({petals:21,height:.46,petalRadius:.075}),
   commit:7,
+  // The closed space's sky: the game's own things, torn loose and turning. Never
+  // low enough to walk into, and never over the road he starts on.
   debris:Object.freeze({count:118,clearance:5,sightline:7,seed:0x50d5a1,rate:Object.freeze([.05,.24])}),
 });
-const C=HORIZON_APPROACH,S=C.space,TAU=Math.PI*2;
+const C=HORIZON_APPROACH,S=C.variants.closed,TAU=Math.PI*2;
+export const horizonApproachVariantIds=Object.freeze(Object.keys(C.variants));
+export const horizonApproachVariantId=id=>Object.hasOwn(C.variants,id)?id:C.defaultVariant;
 
-// What is up there. Every mesh is the game's own but the pieces of moor, which are
-// torn from the height field the drive's own land is made of. `scale` is a range,
-// `emissive` how much it shows against the sky, `sy` a part's own stretch.
+// ── WHAT IS UP THERE, IN THE CLOSED SPACE ───────────────────────────────────
+// Every mesh is the game's own but the pieces of moor, which are torn from the
+// height field the drive's own land is made of. `scale` is a range, `emissive`
+// how much it shows against the sky, `sy` a part's own stretch.
 const PAPER=Object.freeze([.9,.88,.8,.22]),METAL=Object.freeze([.6,.62,.66,.14]);
 export const HORIZON_DEBRIS_KINDS=Object.freeze([
   {id:'flashlight',weight:5,scale:[8,12],emissive:METAL,parts:['opening_cab_flashlight_reference_body','opening_cab_flashlight_reference_housing_graphite']},
@@ -90,35 +104,41 @@ export function spaceMultiply(a,b){
   return o;
 }
 // `distance` metres along the unit tangent `d`.
-export function spaceTranslation(d,distance){
-  const a=distance/S.radius,c=Math.cos(a),s=Math.sin(a),m=spaceIdentity();
-  for(let i=0;i<3;i++)for(let j=0;j<3;j++)m[i*4+j]+=(c-1)*d[i]*d[j];
-  for(let i=0;i<3;i++){m[i*4+3]=d[i]*s;m[12+i]=-d[i]*s;}
+export function spaceTranslation(sign,radius,d,distance){
+  const a=distance/radius,c=sign>0?Math.cos(a):Math.cosh(a),s=sign>0?Math.sin(a):Math.sinh(a),m=spaceIdentity(),[x,y,z]=d;
+  const D=[x,y,z];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)m[i*4+j]+=(c-1)*D[i]*D[j];
+  for(let i=0;i<3;i++){m[i*4+3]=D[i]*s;m[12+i]=(sign>0?-1:1)*D[i]*s;}
   m[15]=c;
   return m;
 }
-export const spaceInverse=m=>{
+export const spaceInverse=(sign,m)=>{
   const o=new Array(16);
-  for(let r=0;r<4;r++)for(let c=0;c<4;c++)o[r*4+c]=m[c*4+r];
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){const flip=sign<0&&(r===3)!==(c===3)?-1:1;o[r*4+c]=flip*m[c*4+r];}
   return o;
 };
-export const spaceAtMap=(r,phi)=>spaceTranslation([Math.sin(phi),0,Math.cos(phi)],r);
+export function spaceAtMap(sign,radius,r,phi){
+  return spaceTranslation(sign,radius,[Math.sin(phi),0,Math.cos(phi)],r);
+}
 // Where a frame's origin is, on the map.
-export function spaceMapOf(m){
-  const x=m[3],y=m[7],z=m[11],w=m[15],l=Math.hypot(x,y,z),r=Math.atan2(l,w)*S.radius;
+export function spaceMapOf(sign,radius,m){
+  const x=m[3],y=m[7],z=m[11],w=m[15],l=Math.hypot(x,y,z),chi=sign>0?Math.atan2(l,w):Math.asinh(l),r=chi*radius;
   return{r,phi:Math.atan2(x,z),x:l>1e-9?x/l*r:0,y:l>1e-9?y/l*r:0,z:l>1e-9?z/l*r:0};
 }
 // How far apart two frames' origins are, along the space's own line.
-export function spaceDistance(a,b){
-  const dot=a[3]*b[3]+a[7]*b[7]+a[11]*b[11]+a[15]*b[15];
-  return S.radius*Math.acos(Math.max(-1,Math.min(1,dot)));
+export function spaceDistance(sign,radius,a,b){
+  const dot=a[3]*b[3]+a[7]*b[7]+a[11]*b[11]+(sign>0?1:-1)*a[15]*b[15];
+  return radius*(sign>0?Math.acos(Math.max(-1,Math.min(1,dot))):Math.acosh(Math.max(1,-dot)));
 }
 // How large something of `size` metres looks from `distance` metres. The whole of
 // what a body can test, in one line.
-export const apparentAngle=(size,distance)=>Math.atan2(size,S.radius*Math.abs(Math.sin(distance/S.radius)));
+export function apparentAngle(sign,radius,size,distance){
+  const a=distance/radius,s=sign>0?Math.sin(a):Math.sinh(a);
+  return Math.atan2(size,radius*Math.abs(s));
+}
 // The frame the camera renders from, as a column-major uniform.
-export function spaceEyeUniform(frame,eye=C.eye){
-  const m=spaceInverse(spaceMultiply(frame,spaceTranslation([0,1,0],eye))),o=new Float32Array(16);
+export function spaceEyeUniform(sign,radius,frame,eye=C.eye){
+  const m=spaceInverse(sign,spaceMultiply(frame,spaceTranslation(sign,radius,[0,1,0],eye))),o=new Float32Array(16);
   for(let r=0;r<4;r++)for(let c=0;c<4;c++)o[c*4+r]=m[r*4+c];
   return o;
 }

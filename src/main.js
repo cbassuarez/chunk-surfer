@@ -7277,7 +7277,7 @@ function tickSixReturn(){
 // in. It borrows the same seat as the nothingness below, for the same reason.
 let horizonApproachRenderer=null;
 const horizonApproachScene=()=>firstStrikeScene?.id==='horizon-approach'?firstStrikeScene:null;
-function beginHorizonApproach({occupant='daisy',condition=false,lyleBox=null}={}){
+function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=null}={}){
   if(horizonApproachScene())return horizonApproachScene();
   if(firstStrikeScene)return null;
   horizonApproachRenderer ||= createHorizonApproachRenderer();
@@ -7285,7 +7285,7 @@ function beginHorizonApproach({occupant='daisy',condition=false,lyleBox=null}={}
   resetMotionInput('horizon-approach',{stopRenderMove:true});
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
   let scene;
-  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,occupant,condition,lyleBox,
+  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,variant,occupant,condition,lyleBox,
     presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
     onEvent:event=>{console.info('[horizon-approach]',event);pushEvent(`// horizon: ${event.type.replace('horizon-approach-','')}`);},
     onError:error=>console.error('[horizon-approach]',error),

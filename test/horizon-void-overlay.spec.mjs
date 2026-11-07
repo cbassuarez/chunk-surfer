@@ -7,6 +7,7 @@ import { UNRAVELLING_GLSL, horizonEntryDiffusion } from '../src/render/horizon3d
 import { COASTAL_MEMORY_WATER_GLSL } from '../src/render/coastal-memory-water.js';
 import { GLASS_COURT_RAIN_GLSL } from '../src/render/glass-court-weather.js';
 import { OUTSKIRTS_BUS_RAIN_GLSL } from '../src/render/outskirts-bus-weather.js';
+import { DIPPED_BEAM_GLSL } from '../src/render/dipped-beam.js';
 
 // Assemble the actual accessor and template with their actual dependencies.
 // Importing all of r3d in Node would initialize unrelated browser subsystems.
@@ -20,10 +21,10 @@ const accessor = renderer.match(/export function r3dSourceVoidPhysicalShader\(\)
 assert.ok(accessor, 'use the production shader accessor');
 const shader = runInNewContext([
   section('const COMMON_GLSL =', 'const VERT ='),
-  section('const RAIN_GLSL =', 'const MARCH_FRAG ='),
+  section('const RAIN_GLSL =', 'export const MARCH_FRAG ='),
   section('const SOURCE_VOID_PHYSICAL_FRAG =', 'export function r3dSourceVoidPhysicalShader'),
   accessor.replace('export ', ''), 'r3dSourceVoidPhysicalShader();',
-].join('\n'), { PRINTED_SURFACE_GLSL, COASTAL_MEMORY_WATER_GLSL, GLASS_COURT_RAIN_GLSL, OUTSKIRTS_BUS_RAIN_GLSL, HZ: { UNRAVELLING_GLSL } });
+].join('\n'), { PRINTED_SURFACE_GLSL, DIPPED_BEAM_GLSL, COASTAL_MEMORY_WATER_GLSL, GLASS_COURT_RAIN_GLSL, OUTSKIRTS_BUS_RAIN_GLSL, HZ: { UNRAVELLING_GLSL } });
 const executableShader = shader.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
 test('the physical void contains no screen-fixed entry cloud layer', () => {

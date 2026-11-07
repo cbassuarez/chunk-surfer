@@ -43,7 +43,7 @@ test('II warning is complete and physical waiting can be captured, then recovery
   assert.equal(state.recovery,null,'recovery returns control within its finite fixture budget');
   assert.ok(state.grace>2.9);const start=xyz(state);
   for(let n=0;n<60;n++)state=tick(state,{forward:1},events);
-  assert.equal(state.recovery,null);assert.ok(Math.hypot(state.x-start.x,state.z-start.z)>3);
+  assert.equal(state.recovery,null);assert.ok(Math.hypot(state.x-start.x,state.z-start.z)>1.2,'a walking departure moves at the new walk');
 });
 
 function catchApproach(){
@@ -127,15 +127,16 @@ test('repeated II and corridor waiting captures still leave a usable physical de
       for(let n=0;n<90;n++)state=tick(state,{forward:1},events);
     }
     else{
-      for(let n=0;n<66;n++)state=tick(state,{forward:1},events);
-      for(let n=0;n<11;n++)state=tick(state,{side:1},events);
-      for(let n=0;n<90;n++)state=tick(state,{forward:1},events);
+      // The coincident actor is faster than the walk: the departure is jogged.
+      for(let n=0;n<66;n++)state=tick(state,{forward:1,run:true},events);
+      for(let n=0;n<11;n++)state=tick(state,{side:1,run:true},events);
+      for(let n=0;n<110;n++)state=tick(state,{forward:1,run:true},events);
       assert.ok(state.z<-78.2,'the ordinary recovery departure can reach the real cabinet bypass');
       assert.ok(state.x>-146&&state.x<-144.9);assert.equal(state.corridor.phase,'settled');
     }
     assert.equal(state.recovery,null);assert.equal(state.hush.id,actor);
     assert.equal(events.filter(e=>e.type==='capture').length,captures,'accepted departure is not a repeated capture lock');
-    assert.ok(Math.hypot(state.x-start.x,state.z-start.z)>4.5);
+    assert.ok(Math.hypot(state.x-start.x,state.z-start.z)>1.8,'a walking departure moves at the new walk');
     t.diagnostic('RECOVERY_DEPARTURE '+JSON.stringify({location,capturesBeforeDeparture:captures,from:start,to:xyz(state),graceRemaining:state.grace,pursuer:xyz(state.hush),input:location==='II'?'forward in the restored route-facing view':'forward, sidestep into visible bypass, forward'}));
   }
 });

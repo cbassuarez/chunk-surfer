@@ -28,12 +28,12 @@ test('ordinary forward crossing starts finite support loading and stopping never
 });
 
 test('the player can walk and look while the visible supporting corridor lowers before breaking',()=>{
- let s=advance(committed(),C.lowering.startAt+.4).state,before={...s};s=advance(s,.2,{side:1,look:{yaw:.5,pitch:-.6}}).state;assert.ok(Math.hypot(s.x-before.x,s.z-before.z)>.5);assert.equal(s.pitch,-.6);near(s.yaw,.5);
+ let s=advance(committed(),C.lowering.startAt+.4).state,before={...s};s=advance(s,.5,{side:1,look:{yaw:.5,pitch:-.6}}).state;assert.ok(Math.hypot(s.x-before.x,s.z-before.z)>.5);assert.equal(s.pitch,-.6);near(s.yaw,.5);
  const support=sourceEarthfallSupportAt(s.x,s.z,s);near(s.feet,support.y);near(sourceEarthfallFrame(s).geometry.upperEarth.y,support.y);assert.ok(s.feet<before.feet);
 });
 
 test('precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back',()=>{
- const retreat=advance(fresh(),1,{forward:-1}).state;assert.equal(retreat.status,'returned');assert.deepEqual(retreat.returnPose,fresh().returnPose);assert.equal(retreat.committed,false);
+ const retreat=advance(fresh(),1.5,{forward:-1}).state;assert.equal(retreat.status,'returned');assert.deepEqual(retreat.returnPose,fresh().returnPose);assert.equal(retreat.committed,false);
  let s=advance(committed(),C.footingLossAt+.8).state;s={...s,z:-.001};s=step(s,{dt:1/120,forward:-1});assert.equal(s.status,'active');assert.ok(s.feet<99);assert.ok(s.z>0);
 });
 
@@ -63,7 +63,7 @@ test('air input preserves inherited motion without an invisible clamp or project
 
 test('ordinary stopped and continuously walking arrivals reach the physical receiving head',()=>{
  for(const input of[{}, {forward:1}]){
-  let s=committed();for(let i=0;i<2000&&s.phase!=='landed'&&s.status==='active';i++)s=step(s,{dt:C.fixedStep,...input});
+  let s=committed();for(let i=0;i<3000&&s.phase!=='landed'&&s.status==='active';i++)s=step(s,{dt:C.fixedStep,...input});
   assert.equal(s.phase,'landed');assert.ok(sourceEarthfallLowerContains(s.x,s.z));assert.equal(sourceEarthfallSupportAt(s.x,s.z,s).y,0);
  }
 });
@@ -71,12 +71,12 @@ test('ordinary stopped and continuously walking arrivals reach the physical rece
 test('a right-edge rubble hold remains escapable through a real lateral gap',t=>{
  // Reach the edge with ordinary movement before local bond loss; this is not
  // a staged body placed inside a pocket that ordinary controls cannot reach.
- let state=advance(committed(),C.footingLossAt-.2666666666667,{side:1}).state;
+ let state=advance(committed(),C.footingLossAt-.2666666666667,{side:1,run:true}).state;
  assert.ok(state.x>8.7&&state.x<C.earth.maxX-C.bodyRadius);
  while(state.elapsed<C.footingLossAt+9&&state.phase!=='landed')state=step(state,{dt:C.fixedStep});
  assert.equal(state.phase,'falling');assert.ok(state.feet>92,'the rubble can physically hold an arriving body');
  const held={x:state.x,z:state.z,feet:state.feet};
- const escaped=advance(state,6,{side:-1}).state;
+ const escaped=advance(state,6,{side:-1,run:true}).state;
  assert.ok(escaped.feet<88,'ordinary lateral walking must leave the ledge through geometry, not an invisible ejection');
  const landed=advance(escaped,8).state;assert.equal(landed.phase,'landed');assert.ok(sourceEarthfallLowerContains(landed.x,landed.z));
  t.diagnostic(JSON.stringify({held,afterSixSeconds:{x:escaped.x,z:escaped.z,feet:escaped.feet},landed:{x:landed.x,z:landed.z,feet:landed.feet}}));
@@ -89,9 +89,11 @@ test('contact impulses survive normalization and fixed ticks agree across caller
   for(let elapsed=0;elapsed<12-1e-8;elapsed+=frameDt)state=step(state,{dt:Math.min(frameDt,12-elapsed)});
   results.push(state);
  }
+ const nearReceipt=(a,b)=>{assert.equal(a.id,b.id);assert.equal(a.type,b.type);assert.equal(a.gain,b.gain);near(a.at,b.at,1e-9);for(const key of['x','y','z'])near(a.position[key],b.position[key],1e-9);};
  for(const state of results.slice(1)){
   for(const key of['x','z','feet','velocityX','velocityY','velocityZ','elapsed','clock'])near(state[key],results[0][key],1e-9);
-  assert.equal(state.phase,results[0].phase);assert.deepEqual(state.receipts,results[0].receipts);
+  assert.equal(state.phase,results[0].phase);assert.equal(state.receipts.length,results[0].receipts.length);
+  state.receipts.forEach((receipt,i)=>nearReceipt(receipt,results[0].receipts[i]));
  }
  const impulse={...start,velocityX:5.2,velocityZ:-6.1};
  near(normalizeSourceEarthfall(impulse).velocityX,5.2);near(normalizeSourceEarthfall(impulse).velocityZ,-6.1);
@@ -220,7 +222,7 @@ test('finite fragments remain as shallow debris instead of accelerating away to 
 
 test('an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt',()=>{
   let state={...freshSourceEarthfall({runId:'capsule-jamb'}),committed:true,phase:'landed',feet:0,z:C.passage.exitZ+.05,clock:15,elapsed:15,exitDoor:{open:true,progress:1}};
-  state=stepSourceEarthfall(state,{dt:.04,forward:1}).state;assert.ok(state.z<C.passage.exitZ&&state.z>C.passage.exitZ-C.bodyRadius);
+  state=stepSourceEarthfall(state,{dt:.12,forward:1}).state;assert.ok(state.z<C.passage.exitZ&&state.z>C.passage.exitZ-C.bodyRadius);
   for(let i=0;i<2;i++)state=stepSourceEarthfall(state,{dt:.25,side:1}).state;
   assert.ok(state.x<=C.door.width/2-C.bodyRadius+1e-7,'the body still inside the real frame cannot strafe through its post');
   let events=[];for(let i=0;i<20&&state.status==='active';i++){const r=stepSourceEarthfall(state,{dt:.1,forward:1});state=r.state;events.push(...r.events);}
