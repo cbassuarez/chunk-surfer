@@ -273,7 +273,7 @@ export function makeReturnReportScene({
     return [
       ...actions,
       ...(stage === 'details' ? [
-        { id: 'transfer-room', label: 'THE TRANSFER ROOM', disabled: !transfer.enabled },
+        { id: 'transfer-room', label: 'FIELD REPLAYS', disabled: !transfer.enabled },
         { id: 'archive', label: 'ACHIEVEMENTS & RUN HISTORY' },
       ] : []),
     ];
@@ -362,7 +362,7 @@ export function makeReturnReportScene({
       for (const [index, row] of (pages[page] || []).entries()) uiText(body.x, body.y + 2 + index, row.text, row.cls, 1, body.w);
       const links = [
         { id: 'account', label: 'BACK' },
-        { id: 'transfer-room', label: 'TRANSFER ROOM', disabled: !transferRoomCopy({ filed: filedCount() }).enabled },
+        { id: 'transfer-room', label: 'FIELD REPLAYS', disabled: !transferRoomCopy({ filed: filedCount() }).enabled },
         { id: 'archive', label: 'RUN HISTORY' },
       ];
       let foot = body.y + body.h - footerRows - 1, cx = body.x;

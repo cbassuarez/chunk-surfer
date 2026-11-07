@@ -22,8 +22,8 @@ export const POST_RUN_ACTIONS = Object.freeze([
   }),
   Object.freeze({
     id: 'transfer-room',
-    label: 'THE TRANSFER ROOM',
-    body: 'File what you carried out and read what the company already had.',
+    label: 'FIELD REPLAYS',
+    body: 'The night\'s fields and its interruptions, played for as long as you want.',
   }),
   Object.freeze({
     id: 'archive',

@@ -158,7 +158,7 @@ export function makeTitleScene({
     // THE OFFICE YOU COME BACK TO. It appears the moment there is any reason to
     // go there — the first sheet you read, or the first night you finish — and
     // never before, because an empty file is a worse introduction than no row.
-    ...(transferRoomOpen ? [{ id: 'transfer-room', label: 'the transfer room', stay: true, run: onTransferRoom }] : []),
+    ...(transferRoomOpen ? [{ id: 'transfer-room', label: 'field replays', stay: true, run: onTransferRoom }] : []),
     { id: 'beta-notice', label: 'beta notice', stay: true, run: onBetaNotice },
     { id: 'settings', label: 'settings', stay: true, run: onSettings },
   ];

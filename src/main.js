@@ -7380,6 +7380,11 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
   let driveMetrics=null,driveReady=false,driveFailed=false;
   void (async()=>{
     try{
+      // The building's own load is the night's real bandwidth. The drive packs
+      // wait for it, so the world that the omen beats look down on is whole
+      // instead of an unloaded square, and the drive joins the film when ready.
+      if(!FP.isLoaded()&&!buildingLoadPromise)loadBuilding();
+      while(buildingLoadPromise){if(!await buildingLoadPromise)throw Error('The building could not be loaded.');}
       const response=await fetch(assetUrl('assets/source-drive/geometry/metrics.json'));
       if(!response?.ok)throw Error('The opening drive geometry could not be loaded.');
       driveMetrics=await response.json();
@@ -7398,7 +7403,7 @@ function beginOpeningPrologue({onDone=()=>{}}={}){
   let stageMusic=0,chaconneStarted=false;openingPrologueMusic=chaconne;
   let scene;
   scene=makeOpeningPrologueScene({
-    getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady&&(driveReady||driveFailed),error:assets?.error||stagingError};},
+    getReady:()=>{const assets=R3.r3dOpeningOvertureStatus?.();return{ready:!!assets?.ready&&stagingReady,error:assets?.error||stagingError};},
     getPresentationReady:()=>R3.r3dPresentationReady?.()===true,
     drive:driveController,driveMetrics:()=>driveMetrics,driveLive:()=>driveReady&&!driveFailed,
     onDriveFrame:frame=>{
@@ -34309,7 +34314,7 @@ function godTabs(){
       {id:'causal-return',label:'CAUSAL RETURN / QUALIFIED',value:'[FILE]',closeMenu:true,activate:godOpenCausalReturnFork},
       {id:'credits',label:'RELEASE CREDITS',value:'[OPEN]',closeMenu:true,activate:openCredits},
       {id:'arrival-title',label:'ARRIVAL TITLE / THROUGH THE GREY DOOR',value:'[PLAY]',closeMenu:true,activate:godArrivalTitle},
-      {id:'transfer-room',label:'TRANSFER ROOM',value:'[OPEN]',closeMenu:true,activate:openTransferRoom},
+      {id:'transfer-room',label:'FIELD REPLAYS',value:'[OPEN]',closeMenu:true,activate:openTransferRoom},
       {id:'archive',label:'THE ARCHIVE',value:'[OPEN]',closeMenu:true,activate:()=>scenes.push(makeArchiveScene({meta:getMeta()}))},
       section('Tutorial'),
       {id:'tutorial-daydream',label:'DAYDREAM / THE COUNT',value:'[PLAY]',closeMenu:true,activate:godDaydream},
@@ -34896,11 +34901,20 @@ async function enterHushRun(){
   return true;
 }
 
-// THE OFFICE YOU COME BACK TO. No tape, no qualification, no run: it is a desk
-// and a filing cabinet, and it opens straight away.
+// THE EXTRAS ROOM. No tape, no qualification, no run: the night's fields and
+// its interruptions, played ad-hoc. Every playback is the game's own; nothing
+// here advances a night.
 function openTransferRoom(){
   scenes.remove('title');
-  scenes.push(makeTransferRoomScene({meta:getMeta()}));
+  scenes.push(makeTransferRoomScene({meta:getMeta(),host:{
+    viewing:()=>!!windowTakeover?.view(),
+    beginField:id=>beginWindowTakeover(id,{onDone:()=>{}}),
+    flashSeep:(id,set)=>{const plate=memorySeepPlate(id);if(!plate)return false;R3.r3dSetTableau?.(plate,{gain:1.1});if(actx)playMemorySeepSound(actx,sfxGain||master,set,{strength:lastMinutesReducedDread()?.5:1});setTimeout(()=>R3.r3dSetTableau?.(null),1200);return true;},
+    playBleed:kind=>{if(!actx)return false;playCabBleed(actx,sfxGain||master,kind,{level:.8});return true;},
+    sayLine:line=>{if(!SPEECH.isSpeaking())SPEECH.say({who:'you',text:line});},
+    deadDoorCue:()=>CUES.playCue(CUES.CUE.door,{gain:.2,rate:1.34,lowpassHz:1500,sliceSeconds:.16}),
+    deadVerb:id=>{if(id==='torch')CUES.playCue(CUES.CUE.light,{gain:.16,rate:.72});else CUES.playCue(CUES.CUE.bag,{gain:.14,rate:.74,sliceSeconds:.12});},
+  }}));
 }
 
 function makeTitle({wantFullscreen=false}={}){
