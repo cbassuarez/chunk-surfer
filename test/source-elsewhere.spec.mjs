@@ -43,7 +43,11 @@ assert.match(props, /gl\.uniform1f\(PU\('uStormFlash'\)/, 'the storm never reach
 const r3d = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
 const voidFrag = r3d.slice(r3d.indexOf('const SOURCE_VOID_PHYSICAL_FRAG'), r3d.indexOf('}`;', r3d.indexOf('const SOURCE_VOID_PHYSICAL_FRAG')));
 assert.match(voidFrag, /uniform vec4 uDoorA\[3\];/, 'no door light reaches the ground');
-assert.doesNotMatch(voidFrag, /fract\(/);
+// The drive's drystone walls tile on world position, behind uDriveLand, so they stay put on
+// the ground. That is the one use: no screen-space pattern gets into this shader.
+assert.match(voidFrag, /vec2 g=p\.xz\/vec2\(124\.0,92\.0\);/);
+assert.match(voidFrag, /if\(uDriveLand\.x>0\.0\)\{/);
+assert.doesNotMatch(voidFrag.replace(/vec3 driveLandShade\(vec3 dir,vec3 sky\)\{[\s\S]*?\r?\n\}\r?\n/, ''), /fract\(/);
 const draw = r3d.slice(r3d.indexOf('function drawSourceVoidPhysical'), r3d.indexOf('function drawTextSpace'));
 assert.ok(draw.indexOf('P3.renderSourceCrossing') > draw.indexOf("sourceVoidPhysicalU('uRain')")
   && draw.indexOf('P3.renderSourceCrossing') < draw.indexOf('presentThroughPost('), 'the crossing is not drawn over the composed void');

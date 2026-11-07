@@ -124,6 +124,7 @@ const section=(start,end)=>{
     FP:{logicalToPhysical:()=>({x:0,y:0,z:0}),zoneAt:()=>1},
     resolveLightingContext:()=>({zone:1,group:'basement'}),
     CHAPEL_TOWER_PHASE:{},chapelTowerState:()=>({}),
+    P3:{setParkedCabLight:()=>{}},
     R3:{r3dSetLightingContext:()=>{},r3dWorldYaw:()=>0,
       r3dSetEmergencyShadows:(value)=>submitted.push(value),r3dSetLocalLights:(value)=>submitted.push(value)},
     resolveLocalLights:()=>rig,liveLightCircuits:()=>new Set(),lightAnchorPosition:()=>null,

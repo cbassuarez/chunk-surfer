@@ -1,3 +1,4 @@
+import {sceneWalkSpeed} from './locomotion.js';
 import { SOURCE_IV as C, sourceIVSupportAt, sourceIVCollisionAt } from '../data/source-iv.js';
 const copy=value=>JSON.parse(JSON.stringify(value));
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
@@ -46,7 +47,7 @@ export function sourceIVFocus(value){
 }
 function move(state,input,dt,events){
   if(input.acceptedStep===false)return;
-  const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),length=Math.max(1,Math.hypot(forward,side)),amount=C.walkSpeed*dt/length;
+  const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),length=Math.max(1,Math.hypot(forward,side)),amount=sceneWalkSpeed(C.place,input.run)*dt/length;
   const dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*amount,
     dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*amount;
   const count=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.06));

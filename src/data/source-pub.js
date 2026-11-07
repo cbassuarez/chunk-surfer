@@ -1,11 +1,12 @@
 // The optional Source memory keeps The Lyric's furniture and people, then lets
 // the room repeat faster than its order book. Progress is always a chosen act.
+import {GAIT_SPEED} from '../game/locomotion.js';
 import {PUB_INTERIOR_LAYOUT} from './exterior-pub-furnishings.js';
 const freeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
 const task=(id,label,x,z,y,text,extra={})=>({id,label,x,z,y,text,...extra});
 export const SOURCE_PUB=freeze({
   id:'source-pub',encounterId:'source-pub-v1',version:2,unlockFlag:'pub.help.sourceUnlocked',
-  floor:.132,eyeHeight:1.62,walkSpeed:2.35,barrelSpeed:1.30,bodyRadius:.19,layerDrop:7.2,fallDuration:1.35,itemFallDuration:1.1,
+  floor:.132,eyeHeight:1.62,place:'interior',walkSpeed:GAIT_SPEED.walk,barrelSpeed:GAIT_SPEED.walk*1.30/2.35,bodyRadius:.19,layerDrop:7.2,fallDuration:1.35,itemFallDuration:1.1,
   spawn:{x:1.25,z:1.25,yaw:Math.PI/2,pitch:-.04},
   room:{length:16,depth:5.4,renderAnchor:{x:40,z:56},source: 'exterior_pub_interior'},
   rounds:[

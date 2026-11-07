@@ -69,7 +69,7 @@ test('production vehicle is a self-contained promoted Source asset with real ope
   assert.equal(createHash('sha256').update(bytes).digest('hex'), receipt.sha256);
   const doc = await new NodeIO().readBinary(bytes), root = doc.getRoot();
   // The radio's moving parts come from its own pack, which replaced the old unit and its needle.
-  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh).filter(mesh => !/^opening_drive_radio_(?:readout|knob|key_\d)$/.test(mesh)));
+  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh).filter(mesh => !/^opening_drive_(?:radio_(?:readout|knob|key_\d)|cabin_dash)$/.test(mesh)));
   used.add('opening_drive_radio_needle');
   assert.deepEqual(new Set(root.listMeshes().map(m => m.getName())), used);
   assert.ok(receipt.doorTriangles >= 500);

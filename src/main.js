@@ -7277,7 +7277,7 @@ function tickSixReturn(){
 // in. It borrows the same seat as the nothingness below, for the same reason.
 let horizonApproachRenderer=null;
 const horizonApproachScene=()=>firstStrikeScene?.id==='horizon-approach'?firstStrikeScene:null;
-function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=null}={}){
+function beginHorizonApproach({occupant='daisy',condition=false,lyleBox=null}={}){
   if(horizonApproachScene())return horizonApproachScene();
   if(firstStrikeScene)return null;
   horizonApproachRenderer ||= createHorizonApproachRenderer();
@@ -7285,7 +7285,7 @@ function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=
   resetMotionInput('horizon-approach',{stopRenderMove:true});
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
   let scene;
-  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,variant,occupant,condition,lyleBox,
+  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,occupant,condition,lyleBox,
     presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
     onEvent:event=>{console.info('[horizon-approach]',event);pushEvent(`// horizon: ${event.type.replace('horizon-approach-','')}`);},
     onError:error=>console.error('[horizon-approach]',error),
@@ -22035,10 +22035,11 @@ function stopCloseBreath(){
 // DA-1000 in the road under it. It is silent until he is standing where the
 // reflection was; then the transport clunks and it plays him and Sarah, and he
 // cannot stop it. The light fails on the last word, and in the dark he is on the
-// tape. The voices are Seb's to record: until public/assets/audio/outskirts/
-// last-light.mp3 exists it plays hiss and room tone and shows the script
-// (source-space.last-light) at its cue points.
+// tape. The voices are Seb's to record: public/assets/audio/outskirts/last-light.mp3
+// wins when it exists. Until then the game's own voice reads the script on its cue
+// points (tools/chunk_surfer/build-sarah-tape-fallback.mjs), over the same tape hiss.
 const LAST_LIGHT_AUDIO='assets/audio/outskirts/last-light.mp3';
+const LAST_LIGHT_FALLBACK_AUDIO='assets/audio/outskirts/sarah-tape-fallback.wav';
 const lastLight={started:false,done:false,timers:[],source:null,nodes:[],caption:null,elapsed:0,offset:0,clockAt:null,clockContext:null,mode:null,paused:false,generation:0,persistedSecond:-1,duration:0,lines:[],nextLine:0};
 function lastLightClock(){return lastLight.clockContext?lastLight.clockContext.currentTime:performance.now()/1000;}
 function lastLightElapsed(){return lastLight.clockAt==null?lastLight.elapsed:lastLight.offset+Math.max(0,lastLightClock()-lastLight.clockAt);}
@@ -22097,6 +22098,8 @@ function syncLastLight(){
     while(lastLight.nextLine<lastLight.lines.length&&Number(lastLight.lines[lastLight.nextLine].at||0)<=elapsed){
       const i=lastLight.nextLine++,line=lastLight.lines[i],who=line.who==='you'?'Him':line.who==='sarah'?'Her':'';
       lastLight.caption=SPEECH.say({who:'direction',text:who?`${who}: ${line.text}`:line.text,voice:false},{id:'last-light-recording',replace:true,interrupt:true,context:null,escapable:false});
+      // The script's last word is the machine stopping.
+      if(line.text==='[Click.]')CUES.playCue(CUES.CUE.recorder,{gain:.6,rate:.88});
     }
   }
   // Some WebViews omit onended after an interrupted output route. Playback's
@@ -22109,7 +22112,8 @@ function startLastLight(offset=0){
   lastLight.started=true;lastLight.paused=false;lastLight.elapsed=Math.max(0,Number(offset)||0);lastLight.offset=lastLight.elapsed;lastLight.clockAt=null;
   ensureCtx();
   chunkSurfRuntime?.setLastLightHold?.(true);
-  if(first&&offset<=0)CUES.playCue(CUES.CUE.door,{gain:.2,rate:1.9,lowpassHz:2400});
+  // The script opens on a click: the machine's own transport, as when he rolls.
+  if(first&&offset<=0)CUES.playCue(CUES.CUE.recorder,{gain:.55,rate:1});
   STORY.startTapeHiss?.({fade:.3});
   const lines=runtimeTree('source-space.last-light')?.recording?.lines||[];
   const scriptEnds=Math.max(0,...lines.map((line)=>Number(line.at)||0))+2.5;
@@ -22129,9 +22133,13 @@ function startLastLight(offset=0){
     // Caption progress uses the playback clock, so pause/reload cannot skip it.
     beginClock('placeholder',scriptEnds);
   };
-  fetch(String(assetUrl(LAST_LIGHT_AUDIO)))
+  // A dev server answers a missing file with a page, so a bad decode also falls through.
+  const decodeTape=path=>fetch(String(assetUrl(path)))
     .then((response)=>response.ok?response.arrayBuffer():null)
     .then((bytes)=>bytes&&actx?actx.decodeAudioData(bytes):null)
+    .catch(()=>null);
+  decodeTape(LAST_LIGHT_AUDIO)
+    .then((buffer)=>buffer||decodeTape(LAST_LIGHT_FALLBACK_AUDIO))
     .then((buffer)=>{
       if(generation!==lastLight.generation||lastLight.paused||lastLight.done)return;
       if(!buffer){placeholder();return;}

@@ -11,7 +11,7 @@ const lines=JSON.parse(readFileSync(new URL('../content/narrative/source-space.l
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 
 function harness({elapsed=0,started=false,heard=false,playbackDone=false,buffer={duration:90},fetcher=null}={}){
-  const sources=[],nodes=[],captions=[],saved=[],positions=[],requestedUrls=[],flags=new Set(heard?['outskirts.lastLight.heard']:[]),timers=new Map();
+  const cues=[],sources=[],nodes=[],captions=[],saved=[],positions=[],requestedUrls=[],flags=new Set(heard?['outskirts.lastLight.heard']:[]),timers=new Map();
   let playback={started,elapsed,done:playbackDone},fetches=0;
   const node=()=>{const n={disconnected:false,connect(){},disconnect(){this.disconnected=true;}};nodes.push(n);return n;};
   const ctx={currentTime:2,decodeAudioData:async()=>buffer,createBufferSource(){const s=node();s.starts=[];s.stops=0;s.start=(...args)=>s.starts.push(args);s.stop=()=>s.stops++;sources.push(s);return s;},
@@ -20,13 +20,13 @@ function harness({elapsed=0,started=false,heard=false,playbackDone=false,buffer=
   const sandbox={actx:ctx,sfxGain:{},master:{},paused:false,chunkSurfRuntime:runtime,performance:{now:()=>ctx.currentTime*1000},ensureCtx(){},
     runtimeTree:()=>({recording:{lines}}),assetUrl:path=>path,
     fetch:async(...args)=>{fetches++;requestedUrls.push(String(args[0]));return fetcher?fetcher(...args):{ok:!!buffer,arrayBuffer:async()=>new ArrayBuffer(1)};},
-    CUES:{CUE:{door:'door',light:'light'},playCue(){}},STORY:{startTapeHiss(){},stopTapeHiss(){}},
+    CUES:{CUE:{door:'door',light:'light',recorder:'recorder'},playCue(name,options){cues.push({name,options});}},STORY:{startTapeHiss(){},stopTapeHiss(){}},
     SPEECH:{say(line,options){const caption={line,options,cancelled:false,cancel(){this.cancelled=true;}};captions.push(caption);return caption;}},
     flagTest:key=>flags.has(key),flagApply:keys=>keys.forEach(key=>flags.add(key)),getSave:()=>({flags:Object.fromEntries([...flags].map(key=>[key,true]))}),saveCommit:value=>saved.push(value),
     setTimeout(fn){const id=timers.size+1;timers.set(id,fn);return id;},clearTimeout:id=>timers.delete(id),
     R3:{r3dFacing:()=>0},px:87,py:-2049,trail:[{x:87,y:-2048}],renderMove:{fromY:-2048},motionRig:{phase:.6},syncSourceRender(){}};
   vm.createContext(sandbox);vm.runInContext(main.slice(begin,end)+'\nglobalThis.api={syncLastLight,pauseOutskirtsLastLight,resetOutskirtsLastLight,lastLight};',sandbox);
-  return {sandbox,api:sandbox.api,ctx,runtime,sources,nodes,captions,saved,positions,requestedUrls,flags,timers,get playback(){return playback;},get fetches(){return fetches;}};
+  return {cues,sandbox,api:sandbox.api,ctx,runtime,sources,nodes,captions,saved,positions,requestedUrls,flags,timers,get playback(){return playback;},get fetches(){return fetches;}};
 }
 
 test('a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory',async()=>{
@@ -154,4 +154,45 @@ test('the performer source preserves all 21 spoken cues and nine directions verb
   assert.deepEqual(handoff.directions.map(pick),lines.filter(l=>l.who==='direction').map(expected));
   assert.equal(handoff.runtime.loaderAssetArgument,'assets/audio/outskirts/last-light.mp3');
   assert.equal(handoff.timing.actualAudioDurationOwnsCompletionAndLightOut,true);
+});
+
+test('with no performed recording the game\'s own voice plays, and a real one still wins',async()=>{
+  const missing=harness({fetcher:url=>String(url).endsWith('last-light.mp3')?{ok:false}:{ok:true,arrayBuffer:async()=>new ArrayBuffer(1)}});
+  missing.runtime.reached=true;missing.api.syncLastLight();await flush();await flush();
+  assert.deepEqual(missing.requestedUrls,['assets/audio/outskirts/last-light.mp3','assets/audio/outskirts/sarah-tape-fallback.wav']);
+  assert.equal(missing.api.lastLight.mode,'recording');assert.equal(missing.sources.length,1);
+  const badPage=harness({fetcher:url=>String(url).endsWith('last-light.mp3')?Promise.reject(Error('a page, not audio')):{ok:true,arrayBuffer:async()=>new ArrayBuffer(1)}});
+  badPage.runtime.reached=true;badPage.api.syncLastLight();await flush();await flush();assert.equal(badPage.api.lastLight.mode,'recording','a failed first choice falls through');
+  const real=harness();real.runtime.reached=true;real.api.syncLastLight();await flush();assert.deepEqual(real.requestedUrls,['assets/audio/outskirts/last-light.mp3'],'the fallback isn\'t even fetched');
+  const neither=harness({buffer:null});neither.runtime.reached=true;neither.api.syncLastLight();await flush();await flush();assert.equal(neither.api.lastLight.mode,'placeholder','and with nothing it is still hiss and captions');
+});
+
+test('the tape uses the machine\'s own transport at both ends',async()=>{
+  const h=harness({buffer:{duration:96}});h.runtime.reached=true;h.api.syncLastLight();await flush();
+  assert.equal(h.cues[0].name,'recorder','it rolls');assert.equal(h.cues.filter(c=>c.name==='door').length,0,'no door standing in for it');
+  h.cues.length=0;h.ctx.currentTime=94;h.api.syncLastLight();
+  assert.equal(h.cues.filter(c=>c.name==='recorder').length,1,'and the script\'s last word stops it');
+});
+
+test('the baked tape sits on the script: voices on their cues, quiet between, no hiss of its own',()=>{
+  const wav=readFileSync(new URL('../public/assets/audio/outskirts/sarah-tape-fallback.wav',import.meta.url));
+  assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt16LE(22),1,'mono');
+  const rate=wav.readUInt32LE(24),count=(wav.length-44)/2,at=i=>wav.readInt16LE(44+i*2)/32768;
+  const rms=(from,to)=>{const a=Math.floor(from*rate),b=Math.min(count,Math.floor(to*rate));let e=0;for(let i=a;i<b;i++)e+=at(i)**2;return Math.sqrt(e/Math.max(1,b-a));};
+  const cues=lines.map(l=>Number(l.at)||0);near(count/rate,Math.max(...cues)+2.5,.05);
+  const spoken=lines.filter(l=>l.who==='you'||l.who==='sarah');assert.ok(spoken.length>=20);
+  for(const l of spoken)assert.ok(rms(l.at,l.at+.7)>.01,`${l.at}: ${l.text}`);
+  assert.ok(rms(0,2.3)<.001,'nothing before his first word: the hiss is the game\'s');assert.ok(rms(89,count/rate)<.001,'nor after the click');
+  let peak=0;for(let i=0;i<count;i++)peak=Math.max(peak,Math.abs(at(i)));assert.ok(peak>.6&&peak<.95,`${peak}`);
+  const credits=JSON.parse(readFileSync(new URL('../public/assets/audio/outskirts/sarah-tape-fallback.credits.json',import.meta.url),'utf8'));
+  assert.deepEqual(credits.thirdParty,[]);assert.equal(credits.lines.length,spoken.length);
+  for(const row of credits.lines){assert.ok(row.seconds<=row.room+.05,`${row.at} overruns its slot: ${row.seconds} in ${row.room}`);assert.equal(/[()]/.test(row.text),false,'stage notes aren\'t spoken');}
+});
+function near(a,b,tol){assert.ok(Math.abs(a-b)<=tol,`${a} vs ${b}`);}
+
+test('it is under the lamp past the last phone box',()=>{
+  const data=readFileSync(new URL('../src/data/source-outskirts-arrival.js',import.meta.url),'utf8');
+  assert.match(data,/put\('last-light', 'yard_lamp_column', OUTSKIRT_LAST_LIGHT\.across \+ 1\.6, OUTSKIRT_LAST_LIGHT\.along/);
+  assert.match(data,/put\('last-recorder', 'ending_recorder_open', OUTSKIRT_LAST_LIGHT\.across, OUTSKIRT_LAST_LIGHT\.along/);
+  assert.match(data,/OUTSKIRT_LAST_LIGHT = freeze\(\{ along: OUTSKIRT_ROAD_END \+ 62/,'sixty metres of black after the last pass');
 });

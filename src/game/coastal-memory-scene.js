@@ -1,3 +1,4 @@
+import { sceneWalkSpeed, createSceneRunKey } from './locomotion.js';
 import { COASTAL_MEMORY_LAYOUT, COASTAL_NOTE_COPY } from '../data/coastal-memory.js';
 import { beginCoastalMemory, normalizeCoastalMemory, stepCoastalMemory, coastalMemoryFrame,
   requestCoastalReturn, acknowledgeCoastalRecording, acknowledgeCoastalReturn } from './coastal-memory.js';
@@ -13,9 +14,9 @@ const supportHeight = support => typeof support === 'number' ? support : support
 
 // Swept metre-scale walking shares the exact authored visible support and rim
 // barriers. Rejected motion slides along a real contact instead of teleporting.
-export function walkCoastalMemoryPose(pose, { dt = 0, forward = 0, side = 0 } = {}, layout = COASTAL_MEMORY_LAYOUT) {
+export function walkCoastalMemoryPose(pose, { dt = 0, forward = 0, side = 0, run = false } = {}, layout = COASTAL_MEMORY_LAYOUT) {
   const next = { ...pose }, seconds = clamp(dt, 0, .25), length = Math.max(1, Math.hypot(forward, side));
-  const amount = finite(layout.walkSpeed, 2.1) * seconds / length;
+  const amount = finite(layout.walkSpeed, sceneWalkSpeed('exterior', run)) * seconds / length;
   const dx = (Math.sin(next.yaw) * forward + Math.cos(next.yaw) * side) * amount;
   const dz = (-Math.cos(next.yaw) * forward + Math.sin(next.yaw) * side) * amount;
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .1));
@@ -55,7 +56,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
   const footClock = createFootContactClock();
   let footIndex = 0;
   const resetFeet = () => { footClock.reset(footOwner); clearFootContacts?.(footOwner); };
-  const keys = new Set(), snapshot = () => copy(state), clear = () => { keys.clear(); drag = null; resetFeet(); };
+  const keys = new Set(), runKey = createSceneRunKey(), snapshot = () => copy(state), clear = () => { keys.clear(); runKey.clear(); drag = null; resetFeet(); };
   const frozen = () => paused || hidden || heldExternal;
   const renderReady = () => ready && renderer?.ready?.() !== false;
   const live = () => renderReady() && !closed && !leaving && !frozen();
@@ -188,7 +189,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
         if (turn) pose = { ...pose, yaw: pose.yaw + turn * seconds * 1.8 };
         pose = walkCoastalMemoryPose(pose, { dt: seconds,
           forward: Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown')),
-          side: Number(keys.has('d')) - Number(keys.has('a')) }, layout);
+          side: Number(keys.has('d')) - Number(keys.has('a')), run: runKey.update(seconds, keys.size > 0) }, layout);
       }
       apply({ dt: seconds, pose, renderReady: true });
       if (typeof onFootContact === 'function' && !closed && !leaving && state.status === 'active') {
@@ -246,6 +247,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
     },
     retryReturn() { if (closed || !returnFailed || frozen()) return false; returnFailed = false; error = null; return dispatchReturn(); },
     key(event = {}) {
+      if (runKey.key(event)) return true;
       const key = keyOf(event);
       if (key === 'escape' || event.controllerAction === 'back') { flush(); clear(); save('pause-request'); return false; }
       if (closed || leaving || event.ctrlKey || event.metaKey || event.altKey) return true;
@@ -271,7 +273,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
       if (!event.repeat && key === 'f' && coastalMemoryFrame(state, { layout }).canPickUp) { flush(); clear(); onPickUp(); }
       return true;
     },
-    keyup(event = {}) { keys.delete(keyOf(event)); return true; },
+    keyup(event = {}) { runKey.keyup(event); keys.delete(keyOf(event)); return true; },
     pointer(event = {}) {
       if (!live() || noteOpen || state.status !== 'active') { drag = null; return true; }
       if (event.type === 'pointerdown' && (event.button === 2 || event.buttons === 2)) {

@@ -63,5 +63,5 @@ test('production architecture, secondary water rays, props, text, depth and acqu
   assert.match(p,/fa=effectivePropFar\(\)/);assert.match(p,/far:effectivePropFar\(\)/);
   assert.match(a,/natatoriumMetricRayPoint\(uCam\*uCellMeters,rd,gridDistance\*uCellMeters\)/);
   assert.match(r,/!pixelMeshSettings\.reduceMotion&&!state\.authoredCamera/);
-  assert.match(p,/const groups=natatoriumMetric\.k\s*\?visibleGroups\(eye,maxDistance,\{lodEye:eye,reflection,frustum:null/,'authored bounds cannot silently cull deformed props');
+  assert.match(p,/const groups=natatoriumMetric\.k\|\|curvedSpace\.sign\s*\?visibleGroups\(eye,maxDistance,\{lodEye:eye,reflection,frustum:null/,'authored bounds cannot silently cull props deformed by either metric');
 });

@@ -1,3 +1,4 @@
+import {GAIT_SPEED} from '../game/locomotion.js';
 import {SOURCE_EARTHFALL} from './source-earthfall.js';
 import {SOURCE_JOURNEY,JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_DOORS,JOURNEY_FOLDS,JOURNEY_PROPS,JOURNEY_ARRIVAL_ANCHORS,JOURNEY_REFUGES} from './source-continuation-journey.js';
 import {SOURCE_REST_ALCOVE_SOLIDS} from './source-rest-alcove.js';
@@ -14,12 +15,12 @@ export const CONTINUATION_CATCH_STAGES = freeze([
   { level: 3, id: 'binding-dish', name: 'The binding', y: -12.6, innerRadius: 1.2, outerRadius: 9.8, startAngle: -Math.PI / 2, endAngle: 2.75, material: 'case-lining', construction: 'binding', refugeAngle: .9 },
 ]);
 export const SOURCE_CONTINUATION = freeze({
-  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: 3.2,
+  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: 3.2,
   eyeHeight: 1.62, bodyRadius: .22, bodyHeight: 1.9, maximumStep: .45, gravity: 9.8,
   fixedStep: 1 / 120, jumpSpeed:4.45,doorSwingSeconds: .65, doorPassFraction: .85, doorApproachDistance: 6.5,
   recoverySeconds: 1.6, recoveryMaximumSeconds: 12, recoverySpeed: 6, recoveryRise: 3,
   revealSeconds: 0, graceSeconds: 3, bounds: {...SOURCE_JOURNEY.bounds},
-  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.65, speed: 3.2, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
+  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.15, speed: GAIT_SPEED.jog, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
     entryDelaySeconds:6,entryOutsideMetres:1.1,thresholdArrivalDelaySeconds:3,thresholdNoticeSeconds:2.5 }),
   spawn: freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
   wrongReturn: freeze({ transferX: -18, warningSeconds: 6, closureSpeed: .62,

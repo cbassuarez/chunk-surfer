@@ -12,8 +12,8 @@ export const M62_LAND = Object.freeze({
   radius: 16000, size: 512, maxHeight: 420,
   // Where the road's shelf ends and the ground is allowed to do anything.
   shelfMetres: 48, shelfY: -1.5,
-  farm: Object.freeze({ x: -172, z: 150, y: -6 }),
-  waterY: -60, basin: Object.freeze({ x: -250, z: -600, rx: 210, rz: 360 }),
+  farm: Object.freeze({ x: -125, z: 150, y: -3 }),
+  waterY: -60, basin: Object.freeze({ x: -170, z: -620, rx: 130, rz: 340 }),
   // The tall thing every West Yorkshire drive has somewhere on its skyline.
   tower: Object.freeze({ x: 4800, z: -3400, height: 330 }),
   // Off the moor's own edge, where the town is. The sky above it is lit by it.
@@ -57,7 +57,7 @@ export function m62HeightAt(x, z) {
   const off = Math.max(west, east), far = smooth((off - 120) / 900);
   let y = L.shelfY;
   // West: down off the shelf, across the valley, up the far side beyond the motorway.
-  y -= 5.5 * smooth(west / 85);
+  y -= 2.5 * smooth(west / 70);
   const centre = m62CentreX(z), beyond = Math.max(0, centre - x - 40);
   y += 210 * smooth(beyond / 1700) + 130 * smooth((beyond - 1400) / 2600);
   // East: the held flank, a slow climb, then the top.

@@ -1,3 +1,4 @@
+import {createSceneRunKey} from './locomotion.js';
 import {SOURCE_EARTHFALL as C} from '../data/source-earthfall.js';
 import {SOURCE_EARTHFALL_ELLERY_ASIDE as ASIDE} from '../data/source-earthfall-ellery-aside.js';
 import {freshSourceEarthfallElleryAside,stepSourceEarthfallElleryAside,sourceEarthfallElleryAsideFrame,sourceElleryAsideFooting} from './source-earthfall-ellery-aside.js';
@@ -23,7 +24,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
   const footClock=createFootContactClock();
   let footIndex=0;
   const keys=new Set();
-  const clear=()=>{keys.clear();drag=null;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
+  const runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
   const snapshot=()=>copy(state);
   const asideActive=()=>state.elleryAside?.status==='active';
   let asideEvents=[];
@@ -113,7 +114,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       if(!tickPresentation.protected&&!tickPresentation.hidden&&!tickPresentation.suspended&&tickPresentation.focused!==false
         &&(!asideActive()||audio?.asideGagReady?.()!==false))onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
+        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0)});
       if(closed||leaving)return;
       const frame=sourceEarthfallFrame(state),p=presentation()||{};
       if(asideActive())audio?.updateAside?.(sourceEarthfallElleryAsideFrame(state.elleryAside),{...p,events:asideEvents,suspended:!!p.suspended});
@@ -131,6 +132,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
     lookBy(yawDelta=0,pitchDelta=0){const look=scene.lookAngles();return scene.setLook({yaw:look.yaw+(Number(yawDelta)||0),pitch:look.pitch+(Number(pitchDelta)||0)});},
     setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look});return true;},
     key(e={}){
+      if(runKey.key(e))return true;
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
@@ -143,7 +145,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});
       return true;
     },
-    keyup(e={}){keys.delete(keyOf(e));return true;},
+    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
     pointer(e={}){
       if(!live()||paused||!scene.allowsLook){drag=null;return true;}
       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}

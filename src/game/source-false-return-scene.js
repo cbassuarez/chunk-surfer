@@ -1,3 +1,4 @@
+import {createSceneRunKey} from './locomotion.js';
 import {normalizeSourceFalseReturn,stepSourceFalseReturn,sourceFalseReturnFocus,sourceFalseReturnNoiseArmed,sourceFalseReturnHushCompletion} from './source-false-return.js';
 import {uiFill,uiSize,uiText} from '../render/ui.js';
 import {thresholdGagInspectionPlan} from './threshold-gag-inspection.js';
@@ -17,7 +18,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
   if(!layout||typeof renderer?.render!=='function')throw Error('The false Ellery needs its copied physical layout.');
   let state=stepSourceFalseReturn(normalizeSourceFalseReturn(checkpoint,{spawn:layout.spawn}),{dt:0},layout).state,ready=false,closed=false,paused=false,
     leaving=false,error=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=0;
-  const keys=new Set(),clear=()=>{keys.clear();drag=null;};
+  const keys=new Set(),runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;};
   const live=()=>ready&&!closed&&!error&&renderer.ready?.()!==false;
   const snapshot=()=>copy(state);
   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
@@ -82,7 +83,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
       const protectedHush=!!hushProtected();
       const playerNoise=delta>0&&getPlayerNoise(delta,{armed:!protectedHush&&sourceFalseReturnNoiseArmed(state),phase:state.noiseTrap.phase,eventId:state.noiseTrap.eventId})===true;
       apply({dt:delta,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
-        side:Number(keys.has('d'))-Number(keys.has('a')),look:{yaw:state.yaw+turn*delta*1.8,pitch:state.pitch},playerNoise,renderReady:true,reducedMotion:!!renderer.reducedMotion?.(),gagAudioReady:audio?.gagReady?.()!==false});
+        side:Number(keys.has('d'))-Number(keys.has('a')),look:{yaw:state.yaw+turn*delta*1.8,pitch:state.pitch},playerNoise,run:runKey.update(delta,keys.size>0),renderReady:true,reducedMotion:!!renderer.reducedMotion?.(),gagAudioReady:audio?.gagReady?.()!==false});
       if(leaving||closed)return;
       audio?.update?.({dt:delta,state:soundState(),focus:sourceFalseReturnFocus(state,layout),ready:true,paused:false});
       saveClock+=delta;traceClock+=delta;if(saveClock>=1){saveClock=0;save('position');}
@@ -102,6 +103,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
       return scene.setLook({yaw:state.yaw+yawDelta,pitch:state.pitch+pitchDelta});
     },
     key(e={}){
+      if(runKey.key(e))return true;
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(closed||paused||e.ctrlKey||e.metaKey||e.altKey)return true;
@@ -111,7 +113,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
       if(movement.has(key)){if(!e.repeat)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});return true;
     },
-    keyup(e={}){keys.delete(keyOf(e));return true;},
+    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
     pointer(e={}){
       if(!live()||paused||leaving){drag=null;return true;}
       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}

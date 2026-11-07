@@ -124,6 +124,45 @@ export function applySpeedFactors(speed, factors = []) {
   return clamp(v, SPEED_FLOOR, SPEED_CEILING);
 }
 
+// ── Scenes that own their keys ───────────────────────────────────────────────
+// The self-contained scenes (the pub, Source IV, earthfall, the Ellery aside,
+// the continuation, the false return, the coast, first strike) take the same two
+// rungs as the place they stand in (Seb, 2026-11-07). None gets the chase rung:
+// each one's Hush is tuned against this pair, and a sprint would outrun them all.
+export function sceneWalkSpeed(place = 'interior', run = false) {
+  return gaitSpeed(chooseGait({ place, run: !!run }));
+}
+
+// Such a scene consumes its keys before the world sees them, so it keeps its own
+// run key: Shift while it is down, or a stick click, which latches until the
+// movement keys have been at rest for a moment. Same rule as the world's.
+export function createSceneRunKey({ restSeconds = 0.22 } = {}) {
+  const shifts = new Set();
+  let latched = false, rest = 0;
+  const isRun = (e) => e?.controllerAction === 'run' || e?.key === 'Shift' || e?.code === 'ShiftLeft' || e?.code === 'ShiftRight';
+  const active = () => shifts.size > 0 || latched;
+  return {
+    key(e) {
+      if (!isRun(e)) return false;
+      if (e.controllerAction !== 'run') shifts.add(e.code || 'Shift');
+      else if (!e.repeat) { latched = !latched; rest = 0; }
+      return true;
+    },
+    keyup(e) {
+      if (!isRun(e)) return false;
+      if (e.controllerAction !== 'run') shifts.delete(e.code || 'Shift');
+      return true;
+    },
+    update(dt, moving) {
+      if (moving) rest = 0;
+      else if (latched && (rest += finite(dt)) > restSeconds) latched = false;
+      return active();
+    },
+    active,
+    clear() { shifts.clear(); latched = false; rest = 0; },
+  };
+}
+
 // The sprint is the ceiling for anything the player chooses (applySpeedFactors).
 // An authored walk may be older and faster than the ladder, so the interval
 // itself only guards against nonsense.

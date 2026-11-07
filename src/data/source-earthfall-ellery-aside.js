@@ -6,9 +6,10 @@
 // charges show only as dust jets and reports, then nothing moves, then the
 // core goes first and the walls are drawn in after it, and dust leaves every
 // base and rolls across the floor until it fills the view.
+import {GAIT_SPEED} from '../game/locomotion.js';
 export const SOURCE_EARTHFALL_ELLERY_ASIDE=Object.freeze({
  version:4,id:'source-earthfall:ellery-aside-v4',duration:7.8,fixedStep:1/120,maxFrameDelta:.25,
- walkSpeed:2.8,bodyRadius:.22,bodyHeight:1.8,eyeHeight:1.62,
+ walkSpeed:GAIT_SPEED.walk,place:'interior',bodyRadius:.22,bodyHeight:1.8,eyeHeight:1.62,
  room:Object.freeze({minX:57.25,maxX:73.25,minZ:3.25,maxZ:15.25,floor:0,ceiling:5.5}),
  center:Object.freeze({x:65.25,y:0,z:9.25}),
  spawn:Object.freeze({x:65.15,z:11.65,feet:0,yaw:-.75,pitch:-.03}),

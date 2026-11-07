@@ -1,8 +1,9 @@
 // One terminal failed-night passage in the construction the player occupies.
 // All body/collision values are world metres. Plan/prop snapshots are rebuilt
 // by the host, never serialized into a scene checkpoint.
+import {GAIT_SPEED} from '../game/locomotion.js';
 export const FIRST_STRIKE=Object.freeze({schema:1,duration:42,finalAt:35,fixedStep:1/120,maxFrameDelta:.25,
- walkSpeed:3.15,bodyRadius:.23,bodyHeight:1.82,eyeHeight:1.62,stepHeight:.32,far:110,
+ walkSpeed:GAIT_SPEED.walk,clearanceSpeed:GAIT_SPEED.run,bodyRadius:.23,bodyHeight:1.82,eyeHeight:1.62,stepHeight:.32,far:110,
  maxCells:12000,maxPieces:72,maxDust:42,slabThickness:.28,gravity:9.8,maximumFallSeconds:2.8});
 const finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
 const hash=s=>{let n=2166136261;for(const c of String(s)){n=Math.imul(n^c.charCodeAt(0),16777619);}return(n>>>0).toString(16);};
@@ -48,7 +49,7 @@ export function firstStrikePieces(entry){
  for(const c of candidates){const key=[Math.floor(c.x/1.5),Math.floor(c.z/1.5),Math.round(c.ceil*4),Math.round(c.floor*4),entry.plan?'plan':c.ceilingHostId].join(':');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(c);}
  const pieces=[...groups.values()].sort((a,b)=>Math.hypot(a[0].x-entry.origin.x,a[0].z-entry.origin.z)-Math.hypot(b[0].x-entry.origin.x,b[0].z-entry.origin.z)).slice(0,FIRST_STRIKE.maxPieces).map((cells,index)=>{
   const x=cells.reduce((n,c)=>n+c.x,0)/cells.length,z=cells.reduce((n,c)=>n+c.z,0)/cells.length,floor=cells[0].floor,ceil=cells[0].ceil,projection=firstStrikeRouteProjection(entry,x,z),radius=Math.max(...cells.map(c=>Math.hypot(c.x-x,c.z-z)+c.size*.71)),fallSeconds=Math.sqrt(Math.max(.1,ceil-floor)*2/FIRST_STRIKE.gravity);
-  return{id:'course-'+index,index,x,z,floor,ceil,cells,radius,projection,releaseAt:6+index%7*3.8+Math.floor(index/7)*.23,fallSeconds,bodyClearance:radius+FIRST_STRIKE.bodyRadius+FIRST_STRIKE.walkSpeed*fallSeconds+1};
+  return{id:'course-'+index,index,x,z,floor,ceil,cells,radius,projection,releaseAt:6+index%7*3.8+Math.floor(index/7)*.23,fallSeconds,bodyClearance:radius+FIRST_STRIKE.bodyRadius+FIRST_STRIKE.clearanceSpeed*fallSeconds+1};
  });
  const props=typeof entry.getProps==='function'?entry.getProps():entry.props;
  const remote=props.filter(p=>entry.hostBounds?.[p.id]&&!p.character&&!p.practical&&!p.decorative&&(p.structural||p.sourceStructure||/building|elevation|wall|roof|tower|facade|canopy|slab|ceiling|conservatory/i.test(p.mesh||''))).map(p=>{

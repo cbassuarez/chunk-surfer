@@ -1,3 +1,4 @@
+import {sceneWalkSpeed} from './locomotion.js';
 import {normalizeSourceEarthfallElleryAside} from './source-earthfall-ellery-aside.js';
 import {earthfallGroundMotion} from '../data/source-earthfall-quake.js';
 import { SOURCE_EARTHFALL as C, SOURCE_EARTHFALL_CUES, SOURCE_EARTHFALL_MATERIAL_CELL, earthfallContains, earthfallCatchHeight, earthfallCatchVelocity, earthfallExitDoorHeight, sourceEarthfallFracturePose, sourceEarthfallUpperHeight, sourceEarthfallLowerContains, SOURCE_EARTHFALL_STRATA, sourceEarthfallFooting, sourceEarthfallBodyContacts, SOURCE_EARTHFALL_CONSTRUCTION, sourceEarthfallCellLayout } from '../data/source-earthfall.js';
@@ -209,7 +210,7 @@ function move(state, input, dt, events) {
   const length = Math.max(1, Math.hypot(forward, side));
   const onDebris=state.phase==='falling'&&state.contactCount>0;
   const grounded = ['intact', 'fracturing', 'landed'].includes(state.phase)||onDebris;
-  const amount = (grounded ? C.walkSpeed : C.airSpeed) * dt / length;
+  const amount = (grounded ? sceneWalkSpeed(C.place, input.run) : C.airSpeed) * dt / length;
   const dx = (Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * amount;
   const dz = (-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * amount;
   const from = { x: state.x, z: state.z }, to = { x: state.x + dx, z: state.z + dz };

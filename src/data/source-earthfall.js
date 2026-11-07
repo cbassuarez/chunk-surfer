@@ -1,12 +1,14 @@
 // The one physical threshold before Source II. All coordinates are local metres.
 // These bounds describe visible earth and a real folio catch, not camera motion.
+import {GAIT_SPEED} from '../game/locomotion.js';
 const freeze = Object.freeze;
 export const SOURCE_EARTHFALL = freeze({
   version: 1,
   sequenceId: 'source-earthfall:source-II-v1',
   fixedStep: 1 / 120,
   maxFrameDelta: .25,
-  walkSpeed: 3.2,
+  walkSpeed: GAIT_SPEED.walk,
+  place: 'exterior',
   airSpeed: .4,
   bodyRadius: .22,
   eyeHeight: 1.62,

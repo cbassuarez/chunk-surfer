@@ -1,3 +1,4 @@
+import {createSceneRunKey} from './locomotion.js';
 import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry} from './source-continuation.js';
 import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
 import {portalTransformPoint} from '../render/source-mesh-portals.js';
@@ -66,7 +67,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       console.debug('SOURCE_CONTINUATION_TRACE',JSON.stringify(value));
     }
   }
-  const clear=()=>{keys.clear();drag=null;};
+  const runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;};
   const live=()=>ready&&!closed&&!leaving&&!error&&renderer.ready?.()!==false;
   const snapshot=()=>copy(state);
   const report=err=>{error=String(err?.message||err);clear();audio?.stop?.();onError(err);};
@@ -175,7 +176,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       const overhead=state.phase==='catch';
       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
         side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
-      apply({dt,forward,side,renderReady:true,environment:!!tides,anchored});
+      apply({dt,forward,side,run:runKey.update(dt,keys.size>0),renderReady:true,environment:!!tides,anchored});
       if(closed||leaving)return;
       const focus=interactionFocus();
       const soundFocus=focus&&overhead&&rotation&&typeof renderer.acousticFrame!=='function'?{...focus,...presented(focus.x,focus.z),
@@ -215,6 +216,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
     lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
     setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look,renderReady:true});return true;},
     key(e={}){
+      if(runKey.key(e))return true;
       const key=keyOf(e);
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
@@ -226,13 +228,13 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
       if(!e.repeat&&(key===' '||key==='space'||e.controllerAction==='jump')){
         const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
           side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
-        apply({dt:0,jump:true,forward,side,renderReady:true});return true;
+        apply({dt:0,jump:true,forward,side,run:runKey.active(),renderReady:true});return true;
       }
       if(movement.includes(key)){if(!e.repeat&&!state.reveal&&!state.recovery)keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});
       return true;
     },
-    keyup(e={}){keys.delete(keyOf(e));return true;},
+    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
     pointer(e={}){
       if(!scene.allowsLook){drag=null;return true;}
       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}

@@ -1,3 +1,4 @@
+import {sceneWalkSpeed} from './locomotion.js';
 import { SOURCE_CONTINUATION as C, CONTINUATION_CATCH_STAGES, continuationStage, continuationRadialPoint, continuationCatchFloor, continuationSurfaces,continuationChartSurfaces,continuationChartSolids,continuationChartDoors,continuationArrivalAnchors, continuationSolids, continuationDoors, continuationProps, continuationSurfaceY, continuationSurfaceContains, continuationSupportAt, continuationDropLip, continuationDropLips, continuationRefugeAt, continuationCatchObstacles, continuationBodyClearAt } from '../data/source-continuation.js';
 import {recoverSourceRestAlcoveCheckpoint} from './source-rest-alcove-recovery.js';
 import {freshContinuationHush,freshContinuationDoorHush,normalizeContinuationHush,recordContinuationHushWalk,recordContinuationHushDrop,recordContinuationHushFold,reconnectContinuationHush,advanceContinuationHush,continuationSupportedPath,continuationWalkSegment} from './source-continuation-hush.js';
@@ -275,7 +276,7 @@ function beginFall(state, lip, events) {
 function launchFall(state,{vx=0,vz=0,vy=0,trigger='step-off',groundedExit=false},events) {
   if(state.fall||state.recovery)return;
   state.lastSafe=supportedPose(state);
-  state.fall={x:state.x,z:state.z,feet:state.feet,chartId:state.chartId,yaw:state.yaw,pitch:state.pitch,level:state.level,vx:clamp(vx,-C.walkSpeed,C.walkSpeed),vz:clamp(vz,-C.walkSpeed,C.walkSpeed),vy,fromLevel:state.level,fromPhase:state.phase,trigger,lastSupport:supportedPose(state),elapsed:0,unsupported:!groundedExit,groundedExit,
+  state.fall={x:state.x,z:state.z,feet:state.feet,chartId:state.chartId,yaw:state.yaw,pitch:state.pitch,level:state.level,vx:clamp(vx,-C.bodySpeedLimit,C.bodySpeedLimit),vz:clamp(vz,-C.bodySpeedLimit,C.bodySpeedLimit),vy,fromLevel:state.level,fromPhase:state.phase,trigger,lastSupport:supportedPose(state),elapsed:0,unsupported:!groundedExit,groundedExit,
     voidLoop:captureContinuationVoidLoop(state)};
   recordContinuationHushDrop(state.hush,state.fall);
   if(state.phase==='catch'&&trigger==='release')wakeWeight(state,events);
@@ -283,7 +284,7 @@ function launchFall(state,{vx=0,vz=0,vy=0,trigger='step-off',groundedExit=false}
 }
 function land(state,support,events) {
   const trigger=state.fall?.trigger||'release',before=state.phase,origin=state.fall?.lastSupport||state.lastSafe;
-  state.velocity={x:clamp(state.fall?.vx||0,-C.walkSpeed,C.walkSpeed),z:clamp(state.fall?.vz||0,-C.walkSpeed,C.walkSpeed)};
+  state.velocity={x:clamp(state.fall?.vx||0,-C.bodySpeedLimit,C.bodySpeedLimit),z:clamp(state.fall?.vz||0,-C.bodySpeedLimit,C.bodySpeedLimit)};
   state.feet=support.y;state.level=support.level??0;state.phase=support.surface.region==='catch'?'catch':'wrong-return';state.fall=null;
   if(state.phase==='catch')learn(state,`catch-${state.level}`);state.lastSafe=supportedPose(state);recordContinuationHushWalk(state.hush,state,{force:true});
   updateAnchor(state,{landing:true});
@@ -446,7 +447,7 @@ function tick(state, input, dt, events, travel) {
     if(finalCrossed(state,before,events))return;
   } else {
     approachDoors(state, events);
-    const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = C.walkSpeed * dt / len;
+    const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = sceneWalkSpeed(C.place, input.run) * dt / len;
     const movementYaw=state.yaw;
     move(state, (Math.sin(movementYaw) * forward + Math.cos(movementYaw) * side) * amount, (-Math.cos(movementYaw) * forward + Math.sin(movementYaw) * side) * amount,dt,events);
     const walked=distance(before,state);
@@ -462,7 +463,7 @@ function tick(state, input, dt, events, travel) {
       }
     }
     if(input.environment&&!state.fall&&!state.cameraTransit&&!state.bodyTransit)touchRiftFault(state,events);
-    state.velocity={x:clamp((state.x-before.x)/dt,-C.walkSpeed,C.walkSpeed),z:clamp((state.z-before.z)/dt,-C.walkSpeed,C.walkSpeed)};
+    state.velocity={x:clamp((state.x-before.x)/dt,-C.bodySpeedLimit,C.bodySpeedLimit),z:clamp((state.z-before.z)/dt,-C.bodySpeedLimit,C.bodySpeedLimit)};
     crossPortal(state,before,events);
     if(!state.fall)recordContinuationHushWalk(state.hush,state,{protectedRefuge:insideRefuge(state)});
     phaseCrossing(state, before, events);
@@ -486,7 +487,7 @@ export function stepSourceContinuation(value, input = {}) {
   if(jumping&&!state.fall&&!state.recovery) {
     const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),len=Math.max(1,Math.hypot(forward,side)),yaw=state.yaw;
     const held=Math.hypot(forward,side)>0;
-    launchFall(state,{vx:held?(Math.sin(yaw)*forward+Math.cos(yaw)*side)*C.walkSpeed/len:state.velocity.x,vz:held?(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*C.walkSpeed/len:state.velocity.z,vy:C.jumpSpeed,trigger:'jump',groundedExit:false},events);
+    launchFall(state,{vx:held?(Math.sin(yaw)*forward+Math.cos(yaw)*side)*sceneWalkSpeed(C.place,input.run)/len:state.velocity.x,vz:held?(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*sceneWalkSpeed(C.place,input.run)/len:state.velocity.z,vy:C.jumpSpeed,trigger:'jump',groundedExit:false},events);
   }
   if (state.status !== 'active') return { state, event: events.at(-1) || null, events };
   state.accumulator += clamp(input.dt ?? 0, 0, .25);

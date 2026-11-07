@@ -1,3 +1,4 @@
+import {sceneWalkSpeed} from './locomotion.js';
 import {doorLeafLocalMatrix} from '../data/source-door-fields.js';
 import {SOURCE_EARTHFALL_ELLERY_ASIDE as C,SOURCE_ELLERY_ASIDE_PANELS as PANELS,SOURCE_ELLERY_ASIDE_CHARGES as CHARGES,sourceElleryAsideCollapse,sourceElleryAsideDoorFraction,sourceElleryAsideDoorLight,sourceElleryAsidePhase} from '../data/source-earthfall-ellery-aside.js';
 import {SOURCE_ELLERY_ASIDE_ASSET as ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
@@ -255,7 +256,7 @@ export function stepSourceEarthfallElleryAside(value,input={}){
     const target={x:clamp(state.x,b.minX+r,b.maxX-r),z:clamp(state.z,b.minZ+r,b.maxZ-r)},dx=target.x-state.x,dz=target.z-state.z,distance=Math.hypot(dx,dz),step=Math.min(1,C.fixedStep*5/Math.max(.001,distance));state.x+=dx*step;state.z+=dz*step;
    }
   if(state.elapsed<C.fadeEnd&&state.chase.phase!=='contact'){
-   const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),n=Math.max(1,Math.hypot(forward,side)),amount=C.walkSpeed*C.fixedStep/n;
+   const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),n=Math.max(1,Math.hypot(forward,side)),amount=sceneWalkSpeed(C.place,input.run)*C.fixedStep/n;
    const x=state.x+(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*amount,z=state.z+(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*amount;
    if(sourceElleryAsideCanStand(x,state.z,state))state.x=x;if(sourceElleryAsideCanStand(state.x,z,state))state.z=z;
   }

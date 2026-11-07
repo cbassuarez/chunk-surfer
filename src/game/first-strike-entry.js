@@ -1,6 +1,7 @@
 // Capture existing construction and find a supported clearance route. This
 // planner cannot invent a corridor, floor, doorway or return destination.
 import {CELL,F} from '../data/floorplan/legend.js';
+import {GAIT_SPEED} from './locomotion.js';
 import {FIRST_STRIKE,normalizeFirstStrikeEntry} from '../data/first-strike.js';
 const HEADROOM=FIRST_STRIKE.bodyHeight,STEP_UP=FIRST_STRIKE.stepHeight,BODY_RADIUS=FIRST_STRIKE.bodyRadius;
 
@@ -65,7 +66,7 @@ export function firstStrikeEntryFromCells({origin,yaw=0,pitch=0,region='ellery',
   const connected=queue.map(({ix,iz,...cell})=>cell),routeLength=Math.max(0,route.length-1)*size;
   return{schema:1,eventId,region,origin:{...origin},yaw,pitch,plan,props,lights,walkCells:connected,route,safeEdge,shelter,source,canStand,canTraverse,
     constructionMode:plan?'existing-plan':'existing-surfaces',
-    routeEvidence:{cells:connected.length,routeLengthMetres:routeLength,minimumSecondsAtWalk:routeLength/2.4,cellSize:size,
+    routeEvidence:{cells:connected.length,routeLengthMetres:routeLength,minimumSecondsAtWalk:routeLength/GAIT_SPEED.walk,cellSize:size,
       source:'Existing supported connectivity; no added floor area or passage.'}};
 }
 
@@ -183,13 +184,13 @@ export function firstStrikeEntryFromSubmittedGeometry({catalog,instances=[],orig
 
 export function packFirstStrikeConstruction(value){
   const e=normalizeFirstStrikeEntry(value);
-  return{schema:1,origin:e.origin,yaw:e.yaw,pitch:e.pitch,region:e.region,routeHash:e.routeHash,route:e.route,
+  return{schema:1,origin:e.origin,yaw:e.yaw,pitch:e.pitch,region:e.region,place:e.place,routeHash:e.routeHash,route:e.route,
     safeEdge:e.safeEdge,shelter:e.shelter,hostBounds:e.hostBounds||null,
     cells:e.walkCells.map(c=>[c.x,c.z,c.floor,c.ceil,c.size,c.flags||0,c.material||0,c.planIndex??-1,c.floorHostId||'',c.ceilingHostId||'',c.renderFloor??c.floor,c.renderCeil??c.ceil])};
 }
 export function restoreFirstStrikeConstruction(current,value){
   if(!current||value?.schema!==1||!Array.isArray(value.cells))return current;
-  return{...current,origin:value.origin,yaw:value.yaw,pitch:value.pitch,region:value.region,routeHash:value.routeHash,
+  return{...current,origin:value.origin,yaw:value.yaw,pitch:value.pitch,region:value.region,place:value.place??current.place,routeHash:value.routeHash,
     route:value.route,safeEdge:value.safeEdge,shelter:value.shelter,hostBounds:value.hostBounds||current.hostBounds,
     walkCells:value.cells.map(([x,z,floor,ceil,cellSize,flags,material,planIndex,floorHostId,ceilingHostId,renderFloor=floor,renderCeil=ceil])=>({x,z,floor,ceil,cellSize,flags,material,planIndex,floorHostId,ceilingHostId,renderFloor,renderCeil,walkable:true}))};
 }

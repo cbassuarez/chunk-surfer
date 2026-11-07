@@ -1,3 +1,4 @@
+import {createSceneRunKey} from './locomotion.js';
 import {normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus} from './source-iv.js';
 import {uiSize,uiCenter} from '../render/ui.js';
 import {createFootContactClock} from '../audio/foot-contact.js';
@@ -14,7 +15,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
     initializing=null,drag=null,saveClock=0,traceClock=0,stepDistance=0,footIndex=0,hold=0,dispatching=false;
   const footOwner='source-IV';
   const footClock=createFootContactClock();
-  const keys=new Set(),clear=()=>{keys.clear();drag=null;stepDistance=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
+  const keys=new Set(),runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;stepDistance=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
   const snapshot=()=>copy(state);
   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
   const protectedNow=()=>{const p=presentation()||{};return !!p.protected||!!p.suspended||!!p.hidden||p.focused===false;};
@@ -70,7 +71,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
         hold+=Math.min(.25,Math.max(0,Number(dt)||0));if(hold>=1.4)void finish();return;
       }
       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
+        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0)});
       saveClock+=Math.min(.25,Math.max(0,Number(dt)||0));if(saveClock>=.5){saveClock=0;save('position');}
       traceClock+=Math.min(.25,Math.max(0,Number(dt)||0));if(traceClock>=.1){traceClock=0;trace('pose');}
     },
@@ -80,6 +81,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
     resume(){if(closed)return false;paused=false;clear();trace('resume');return true;},
     setLook(look){if(!live()||paused||protectedNow()||state.status!=='active'){clear();return false;}apply({dt:0,look});return true;},
     key(e={}){
+      if(runKey.key(e))return true;
       const key=keyOf(e);if(closed||dispatching||e.ctrlKey||e.metaKey||e.altKey)return true;
       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
       if(paused||protectedNow()){clear();return true;}
@@ -88,7 +90,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
       if(movement.has(key)){keys.add(key);return true;}
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});return true;
     },
-    keyup(e={}){keys.delete(keyOf(e));return true;},
+    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
     pointer(e={}){
       if(!live()||paused||protectedNow()||state.status!=='active'){clear();return true;}
       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}

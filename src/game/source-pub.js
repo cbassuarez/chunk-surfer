@@ -1,3 +1,4 @@
+import {sceneWalkSpeed,createSceneRunKey} from './locomotion.js';
 import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubStations,sourcePubTask,sourcePubFloorHoles,sourcePubFallProgress} from '../data/source-pub.js';
 import {uiSize,uiText,uiCenter,uiFill} from '../render/ui.js';
 import {recordNightClockTravel} from './night-clock-travel.js';
@@ -103,7 +104,7 @@ export function stepSourcePub(value,input={}){
       // service action, and normal movement resumes on the following frame.
       return{state,event};
     }
-    const forward=clamp(input.forward,-1,1),side=clamp(input.side,-1,1),length=Math.max(1,Math.hypot(forward,side)),speed=SOURCE_PUB.walkSpeed*dt/length;
+    const forward=clamp(input.forward,-1,1),side=clamp(input.side,-1,1),length=Math.max(1,Math.hypot(forward,side)),speed=sceneWalkSpeed(SOURCE_PUB.place,input.run)*dt/length;
     const carryScale=state.carried==='barrel'?SOURCE_PUB.barrelSpeed/SOURCE_PUB.walkSpeed:1;
     const dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*speed*carryScale,dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*speed*carryScale;
     const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.075));
@@ -138,7 +139,7 @@ export function stepSourcePub(value,input={}){
 // room's motion, look and resumable service sequence. No global input listeners.
 export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
   let state=normalizeSourcePubCheckpoint(checkpoint,{runId,returnPose}),ready=false,closed=false,paused=false,leaving=false,error=null,loadPromise=null,drag=null,exitPrompt=false,saveClock=0;
-  const keys=new Set();
+  const keys=new Set(),runKey=createSceneRunKey();
   if(typeof renderer?.render!=='function')throw Error('A game-owned Source pub renderer is required.');
   if(!state.returnPose)throw Error('Capture the exact Source pose before entering The Lyric.');
   if(state.completed)throw Error('The Source bar has already been completed in this run.');
@@ -146,7 +147,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
   const snapshot=()=>clone(state);
   const report=err=>{error=String(err?.message||err);try{onError(err);}catch{/* Reporting cannot take away the way out. */}};
   const save=reason=>{const value=snapshot();try{onCheckpoint(value,{reason});}catch(err){report(err);}return value;};
-  function clearMotion(){keys.clear();drag=null;}
+  function clearMotion(){keys.clear();runKey.clear();drag=null;}
   const renderReady=()=>ready&&!closed&&renderer.ready?.()!==false;
   function leave(){
     if(closed||leaving)return false;leaving=true;clearMotion();state.status='returned';state.completed=state.stage===SOURCE_PUB.rounds.length;
@@ -180,7 +181,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
       const hostLook=typeof getLook==='function'?getLook():null;
       const before={x:state.x,z:state.z,layer:state.layer,fall:!!state.fall};
       const result=stepSourcePub(state,{dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),look:hostLook});state=result.state;
+        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0),look:hostLook});state=result.state;
       if(!before.fall&&!state.fall&&before.layer===state.layer)onAcceptedTravel(Math.hypot(state.x-before.x,state.z-before.z));
       saveClock+=Math.max(0,Number(dt)||0);if(saveClock>=1){saveClock=0;save('position');}
     },
@@ -192,6 +193,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
     lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
     setLook(look){if(!scene.allowsLook||!finite(look?.yaw)||!finite(look?.pitch))return false;state.yaw=heading(look.yaw);state.pitch=clamp(look.pitch,-.8,.75);return true;},
     key(e={}){
+      if(runKey.key(e))return true;
       const key=String(e.key||e.code||'').toLowerCase().replace(/^key/,'');
       if(key==='escape'||e.controllerAction==='back'){clearMotion();if(ready)save('pause-request');return false;}
       if(e.ctrlKey||e.metaKey||e.altKey||closed||leaving)return true;
@@ -201,7 +203,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))interact();
       return true;
     },
-    keyup(e={}){keys.delete(String(e.key||e.code||'').toLowerCase().replace(/^key/,''));return true;},
+    keyup(e={}){runKey.keyup(e);keys.delete(String(e.key||e.code||'').toLowerCase().replace(/^key/,''));return true;},
     pointer(e={}){
       if(closed||paused||leaving||exitPrompt)return true;
       if(!renderReady()){clearMotion();return true;}

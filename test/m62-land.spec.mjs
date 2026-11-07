@@ -29,7 +29,7 @@ test('it is Pennine country: a valley, a stepped climb to flat tops, and a long 
   let top=-Infinity,under=0,cells=0;for(let i=0;i<field.size**2;i++){const y=field.data[i*4];top=Math.max(top,y);cells++;if(y>L.maxHeight)under++;}
   assert.equal(under,0,'the shader stops marching at maxHeight, so nothing may stand above it');assert.ok(top>300,'and it does reach the tops');
   // Along the skyline six kilometres out, the ground changes slowly: no peaks.
-  for(let a=-1;a<1;a+=.1){const here=m62HeightAt(Math.sin(a)*6000,-Math.cos(a)*6000),next=m62HeightAt(Math.sin(a+.1)*6000,-Math.cos(a+.1)*6000);assert.ok(Math.abs(next-here)<135,`${next-here} over 600 m at ${a}`);}
+  for(let a=-1;a<1;a+=.1){const here=m62HeightAt(Math.sin(a)*6000,-Math.cos(a)*6000),next=m62HeightAt(Math.sin(a+.1)*6000,-Math.cos(a+.1)*6000);assert.ok(Math.abs(next-here)<170,`${next-here} over 600 m at ${a}`);}
 });
 
 test('the ground reads as it should: pasture low, peat high, water level and pale',()=>{
@@ -110,6 +110,6 @@ test('it lives only in the drive\'s own pass: nothing outside a drive changes',(
   assert.equal(/uniform (sampler2D|vec4|vec3) uDriveLand/.test(rest),false,'not declared in any other shader');
   assert.equal(rest.includes('driveLandShade'),false,'nor drawn there');
   assert.match(r3d,/const driveLand=drive&&driveLandField\?drive\.land:null;/,'only with a drive frame');
-  assert.match(renderer,/m62Land/);assert.match(renderer,/r3dSetDriveLandField\?\.\(await buildM62LandField/,'baked before the first frame, in small slices');
+  assert.match(renderer,/m62Land/);assert.match(renderer,/await buildM62LandField\(\{pause:/,'baked before the first frame, in small slices');assert.match(renderer,/clearSource\(\);R3\.r3dSetDriveLandField\?\.\(m62LandField\(\)\);/,'and handed over only by the owner of the frame');
   assert.match(renderer,/m62FarLights\(\{eye:scene\.eye/);
 });

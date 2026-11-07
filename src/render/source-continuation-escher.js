@@ -82,7 +82,7 @@ export const SOURCE_ESCHER_LAYOUT=Object.freeze(Object.fromEntries(CHARTS.map(ch
   if(!domains.length)return[chartId,null];
   const decks=continuationSurfaces({chartId}).filter(s=>s.region==='wrong-return'&&s.kind==='rect'&&s.role!=='inherited-earthfall');
   const shortest=Math.min(...domains.map(d=>d.translationY)),longest=Math.max(...domains.map(d=>d.translationY)),
-    drift=C.walkSpeed*Math.sqrt(2*(longest+1)/C.gravity),fit=SOURCE_ESCHER.bandFill*shortest;
+    drift=C.bodySpeedLimit*Math.sqrt(2*(longest+1)/C.gravity),fit=SOURCE_ESCHER.bandFill*shortest;
   const footprint=Object.freeze({minX:Math.min(...decks.map(s=>s.minX))-drift,maxX:Math.max(...decks.map(s=>s.maxX))+drift,
     minZ:Math.min(...decks.map(s=>s.minZ))-drift,maxZ:Math.max(...decks.map(s=>s.maxZ))+drift});
   const half=[(e.max[0]-e.min[0])/2,(e.max[2]-e.min[2])/2],tall=e.max[1]-e.min[1];

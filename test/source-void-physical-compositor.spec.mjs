@@ -41,7 +41,8 @@ assert.doesNotMatch(draw, /runDatamoshPass\(|runSourceFaultPass\(|drawTextSpace\
 assert.match(shader, /clamp\(body\.a,0\.0,1\.0\)/, 'black metal remains opaque: colour is not a coverage test');
 assert.match(shader, /texture\(uDepth,uv\)/, 'far fade uses real prop depth');
 assert.match(shader, /displayColour\(clamp\(body\.rgb/, 'preserve all material colour channels');
-assert.doesNotMatch(shader, /halftone|bayer|fract\(|uSourceEmergency|uSourceTorchMode/);
+// The drive's drystone walls tile on world position, behind uDriveLand; see source-elsewhere.
+assert.doesNotMatch(shader.replace(/vec3 driveLandShade\(vec3 dir,vec3 sky\)\{[\s\S]*?\r?\n\}\r?\n/, ''), /halftone|bayer|fract\(|uSourceEmergency|uSourceTorchMode/);
 
 // Execute the actual ground pass with a stateful GL double. The revealed path
 // is drawn after the video/bust pass, so leaking its blend or depth-write state

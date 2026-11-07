@@ -230,7 +230,7 @@ test('held W+D can freely cross the void with the same metre speed as a cardinal
     clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
     R3: { r3dStepDelta: () => [0, -1] }, usingSourceSpace: () => true,
     chunkSurfRuntime: { sourceShoreFrame: () => frame, sourceVoidFrame: () => ({ sceneDock: false }) },
-    currentMoveIntervalMs: () => 104.166667,
+    currentMoveIntervalMs: () => 104.166667, storyMode: true, isIntroActive: () => false,
   });
   for (const name of ['independentControls', 'combinedIndependentMotionAxes', 'arrowDelta', 'currentStepIntervalMs']) {
     vm.runInContext(mainFunction(name), context);

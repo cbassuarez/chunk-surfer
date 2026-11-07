@@ -22,7 +22,7 @@ export const SOURCE_TIDES=Object.freeze({
   }),
   // Seconds of stillness before the tide starts, and before it is full.
   graceSeconds:1.8,gatherSeconds:6,recoverRate:3,
-  // Metres per second. Walking speed is C.walkSpeed (3.2).
+  // Metres per second. These were set against a 3.2 walk; he walks at 1.4 and jogs at 2.6 now.
   still:1.75,moving:.34,swirl:.38,reach:45,farShare:.55,settleSeconds:.7,
   // A walking body braces into the gust; one standing still takes all of it.
   wind:Object.freeze({gust:.85,braced:.4,bearing:.6,veer:.45,veerRate:.031,depth:1.2}),
@@ -33,7 +33,7 @@ const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 
 export const freshSourceTide=()=>({still:0,vx:0,vz:0});
 export function normalizeSourceTide(value){
-  return{still:clamp(value?.still,0,60),vx:clamp(value?.vx,-C.walkSpeed,C.walkSpeed),vz:clamp(value?.vz,-C.walkSpeed,C.walkSpeed)};
+  return{still:clamp(value?.still,0,60),vx:clamp(value?.vx,-C.bodySpeedLimit,C.bodySpeedLimit),vz:clamp(value?.vz,-C.bodySpeedLimit,C.bodySpeedLimit)};
 }
 export function sourceTideWell(state){
   const well=SOURCE_TIDES.wells[state?.phase];

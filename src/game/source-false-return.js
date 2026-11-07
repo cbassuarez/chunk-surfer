@@ -1,3 +1,4 @@
+import {sceneWalkSpeed} from './locomotion.js';
 import { SOURCE_CONTINUATION } from '../data/source-continuation.js';
 import {freshThresholdGag,normalizeThresholdGag,advanceThresholdGag} from './threshold-gag.js';
 import {thresholdGagPenetration} from '../data/threshold-gag.js';
@@ -12,7 +13,6 @@ const KIND = 'source-false-return';
 const VERSION = 1;
 const BODY_RADIUS = .22;
 const BODY_HEIGHT = 1.8;
-const WALK_SPEED = 3;
 const STEP_UP = .45;
 const PASSABLE = .85;
 const SWING_SECONDS = .45;
@@ -503,12 +503,14 @@ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
   }
   const dt = clamp(input.dt, 0, 1), steps = Math.max(1, Math.ceil(dt / (1 / 60)));
   const forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), length = Math.max(1, Math.hypot(forward, side));
+  // It imitates the building, so it walks like the building. No chase rung: the Hush stays faster.
+  const walk = sceneWalkSpeed('interior', input.run);
   for (let i = 0; i < steps && state.status === 'active'; i++) {
     const eventStart=events.length;
     const h = dt / steps; state.elapsed += h; countDoors(state, layout, events);
     const held=state.noiseTrap.phase==='contact'&&!input.hushProtected;
-    const dx = held?0:(Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * WALK_SPEED * h / length;
-    const dz = held?0:(-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * WALK_SPEED * h / length;
+    const dx = held?0:(Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * walk * h / length;
+    const dz = held?0:(-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * walk * h / length;
     const before={x:state.x,z:state.z,feet:state.feet},transferred=advanceMove(state, dx, dz, layout, events, travel);
     advanceThresholdGag(state,before,h,events,{layout,reduced:!!input.reducedMotion,audioReady:input.gagAudioReady!==false});
     advanceThresholdGagInspection(state,before,h,events,{layout,reduced:!!input.reducedMotion,protectedScare:!!input.inspectionProtected});

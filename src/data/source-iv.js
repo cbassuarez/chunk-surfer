@@ -1,7 +1,8 @@
 // The lost building's underside: one continuous, finite sheet of printed Source.
 // All coordinates are physical metres. There is no new quest or puzzle here.
+import {GAIT_SPEED} from '../game/locomotion.js';
 export const SOURCE_IV = Object.freeze({ version: 1, sequenceId: 'source-IV',
-  fixedStep: 1 / 120, maxFrameDelta: .25, walkSpeed: 3.2, bodyRadius: .22,
+  fixedStep: 1 / 120, maxFrameDelta: .25, walkSpeed: GAIT_SPEED.walk, place: 'exterior', bodyRadius: .22,
   bodyHeight: 1.9, eyeHeight: 1.62, doorSeconds: .8, doorPassFraction: .95,
   bounds: Object.freeze({ minX: -36, maxX: 36, minZ: -112, maxZ: 4 }),
   spawn: Object.freeze({ x: 0, z: -2.5, feet: 0, yaw: 0, pitch: 0 }),

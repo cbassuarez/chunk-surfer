@@ -104,6 +104,7 @@ test('renderer reinitialisation clears programs and pending jobs even when WebGL
     let towerViewProgram={},towerViewProgramPending={dispose:()=>releases.push('pending-tower')},towerViewProgramFailed=true,towerViewVao={},towerViewBuffer={};
     let openingProgram={},openingVao={},openingBuffer={},crossingProgram={},crossingVao={};
     const portalUniforms=new Map([['a',1]]),towerViewUniforms=new Map([['a',1]]),crossingUniforms=new Map([['a',1]]);
+    const resetRetroreflectorProgram=()=>releases.push('retroreflector');
     ${body};resetSourceDoorPrograms();
     return {programs:[portalProgram,towerViewProgram,openingProgram,crossingProgram],pending:[portalProgramPending,towerViewProgramPending],failed:[portalProgramFailed,towerViewProgramFailed],maps:[portalUniforms.size,towerViewUniforms.size,crossingUniforms.size]};
   `)({deleteProgram:()=>releases.push('program'),deleteVertexArray:()=>{},deleteBuffer:()=>{}},releases);
@@ -111,6 +112,7 @@ test('renderer reinitialisation clears programs and pending jobs even when WebGL
   assert.deepEqual(reset.failed,[false,false]);assert.deepEqual(reset.maps,[0,0,0]);
   assert.equal(releases.filter(x=>x==='program').length,4);
   assert.ok(releases.includes('pending-portal')&&releases.includes('pending-tower'));
+  assert.ok(releases.includes('retroreflector'),'the road studs\' program is one of the ones a new context invalidates');
 });
 
 test('optional portal compile failure leaves the world pass alive and reports once',()=>{

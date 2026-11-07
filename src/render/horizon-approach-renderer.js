@@ -9,17 +9,25 @@ import {installProceduralMeshes} from './procedural-mesh-install.js';
 import {memoryFieldGeometry} from './memory-field-models.js';
 import {finishSourceContinuationArchitecture,SOURCE_CONTINUATION_ARCHITECTURE} from './source-continuation-renderer.js';
 import {horizonApproachGeometry,HORIZON_APPROACH_MESHES} from './horizon-approach-models.js';
+import {horizonDebrisMeshes} from '../data/horizon-approach.js';
+import {OPENING_CAB_ASSET} from '../data/opening-cab-objects.js';
+import {STOP_LISTENING_ASSET} from '../data/stop-listening.js';
 import {horizonApproachRenderFrame,HORIZON_CHURCH_MESH,HORIZON_ANT_MESH,HORIZON_SLAB_MESHES,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY} from './horizon-approach-frame.js';
 
-const FAR=320,CHURCH_PACK='assets/st-brendans-treatment.glb',FIGURE_PACK='assets/conservatory-props.glb';
+const FAR=320;
 const FIGURES=Object.freeze(Object.values(HORIZON_FIGURES).map(f=>f.mesh)),MASONRY=Object.freeze(Object.values(HORIZON_MASONRY));
-const FIELD=Object.freeze([HORIZON_ANT_MESH,...HORIZON_SLAB_MESHES,...HORIZON_DAISY_MESHES]);
+const OWN=new Set(HORIZON_APPROACH_MESHES),DEBRIS=Object.freeze(horizonDebrisMeshes().filter(m=>!OWN.has(m)));
+const FIELD_NAMES=new Set(memoryFieldGeometry().map(row=>row.name));
+const FIELD=Object.freeze([...new Set([HORIZON_ANT_MESH,...HORIZON_SLAB_MESHES,...HORIZON_DAISY_MESHES,...DEBRIS.filter(m=>FIELD_NAMES.has(m))])]);
 const FIELD_ROWS=()=>memoryFieldGeometry().filter(row=>FIELD.includes(row.name));
+// Where everything comes from, in the order it is looked for. Packs already resident
+// from the rest of the night are not fetched again.
+const PACKS=Object.freeze(['assets/st-brendans-treatment.glb','assets/conservatory-props.glb',SOURCE_CONTINUATION_ARCHITECTURE.asset,OPENING_CAB_ASSET,'assets/source-vehicle-interior.glb','assets/street-pilot.glb',STOP_LISTENING_ASSET]);
 
 export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{}}={}){
   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null,finish='bsod';
   const rangeOwner=Symbol('horizon-approach');
-  const required=[...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY];
+  const required=[...new Set([...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY,...DEBRIS])];
   const catalog=()=>new Set(props.propMeshCatalog?.()||[]),resident=()=>{const c=catalog();return required.every(m=>c.has(m));};
   function clearSource(){
     for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
@@ -33,11 +41,11 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
       if(await renderer.r3dBasePropsReady?.()===false)throw Error('The base model catalog is unavailable.');
       if(released)return false;
       if(props.installAuthoredPropMeshes?.((gl,pack)=>installProceduralMeshes(gl,pack,[...horizonApproachGeometry(),...FIELD_ROWS()]))===false)throw Error('The approach meshes have no context.');
-      if(!catalog().has(HORIZON_CHURCH_MESH))await props.addPropPack(resolveAsset(CHURCH_PACK));
-      if(released)return false;
-      if(FIGURES.some(m=>!catalog().has(m)))await props.addPropPack(resolveAsset(FIGURE_PACK));
-      if(released)return false;
-      if(MASONRY.some(m=>!catalog().has(m)))await props.addPropPack(resolveAsset(SOURCE_CONTINUATION_ARCHITECTURE.asset));
+      for(const pack of PACKS){
+        if(required.every(m=>catalog().has(m)))break;
+        await props.addPropPack(resolveAsset(pack));
+        if(released)return false;
+      }
       props.installAuthoredPropMeshes?.((gl,pack)=>finishSourceContinuationArchitecture(gl,pack,{maps:sourceBlueprintMaps(gl)}));
       const missing=required.filter(m=>!catalog().has(m));
       if(missing.length)throw Error('Approach meshes missing: '+missing.join(', '));
@@ -60,9 +68,9 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
   }
   const frameState=camera=>({px:camera.eye[0]/CELL-.5,py:camera.eye[2]/CELL-.5,floorH:camera.eye[1]-EYE,authoredCamera:camera,authoredPropRange:FAR,tileW:512,tileH:512,worldCount:0,
     worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false});
-  function render(state){
+  function render(state,presentation={}){
     if(!initialized||released)return false;if(error)throw Error(error);
-    last=horizonApproachRenderFrame(state);
+    last=horizonApproachRenderFrame(state,presentation);
     props.setCurvedSpaceFrame?.(last.space);
     renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
     return renderer.r3dFrame(frameState(last.authoredCamera))!==false;
