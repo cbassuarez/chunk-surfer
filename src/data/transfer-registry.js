@@ -45,7 +45,7 @@ const PROVENANCE = Object.freeze({
 // The night log, as filed. The times are the sheets' own, and they are the
 // reason this register exists: read one at a time in a bag they are ten notes,
 // and read as a column they are a clock failing.
-const LOG_DATE = Object.freeze({
+export const LOG_DATE = Object.freeze({
   'page-1': '21:40', 'page-2': '22:15', 'page-3': '23:02', 'page-4': '00:20',
   'page-5': '01:35', 'page-6': '02:10', 'page-7': '02:5?', 'page-8': '??:??',
   'page-9': '??:??', 'page-10': '—',

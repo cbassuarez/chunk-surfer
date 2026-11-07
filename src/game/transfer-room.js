@@ -21,6 +21,7 @@ import {
   SEEP_CARNAGE, SEEP_PASTORAL, CAB_BLEED, DEAD_DOOR_LINES, INTERRUPTION,
   freshDeadDoor, pressDeadDoor,
 } from './interruption-director.js';
+import { LOG_DATE } from '../data/transfer-registry.js';
 
 const MEDIA_LABEL = Object.freeze({
   'flowers-seb': 'FLOWERS', clouds: 'CLOUDS', pollination: 'POLLINATION',
@@ -39,7 +40,13 @@ const MEDIA_LABEL = Object.freeze({
 const TABS = Object.freeze([
   { id: 'fields', label: 'FIELDS' },
   { id: 'interruptions', label: 'INTERRUPTIONS' },
+  { id: 'leave', label: 'LEAVE' },
 ]);
+
+// The night log's own times, read one at a time: the room's clock, failing.
+const CLOCK_TIMES = Object.freeze(Object.values(LOG_DATE));
+const CLOCK_STEP_MS = 14000;
+const CLOCK_HOLD_MS = 26000;
 
 // The two lists, in the game's own pools. The field rows are the window that
 // becomes the picture; the interruption rows are what can break into a room.
@@ -60,21 +67,43 @@ function interruptionRows() {
   for (const bleed of CAB_BLEED) rows.push({ kind: 'bleed', id: bleed.kind, label: MEDIA_LABEL[bleed.kind], detail: 'Heard from the cab, wherever he is.' });
   return rows;
 }
+// The room's own door. Escape always works; this one is the night's.
+function leaveRow() {
+  return [{ kind: 'leave', id: 'leave', label: 'LEAVE BY THE DOOR', detail: "It answers once you stop trying. Escape always works." }];
+}
 
 export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
-  const rows = [fieldRows(), interruptionRows()];
+  const rows = [fieldRows(), interruptionRows(), leaveRow()];
 
   let tab = 0;
   let sel = 0;
   let scroll = 0;
   let door = null;
+  let leaveDoor = null;
   let verb = null;
   let note = null;
+  let seepUntil = 0;
+  let idlePlaying = false;
+  let lastActivity = Date.now();
+  let clockIndex = 0;
+  let clockAt = Date.now();
 
   const list = () => rows[tab];
   const current = () => list()[sel] || null;
   const reset = () => { sel = 0; scroll = 0; };
   const show = (text) => { note = text; };
+  const touch = () => { lastActivity = Date.now(); };
+  // The failing clock, from the night log's own times. It runs while the room
+  // is open, holds at the end the way the sheets do, and starts again.
+  function clockNow() {
+    const now = Date.now();
+    if (clockIndex < CLOCK_TIMES.length - 1 && now - clockAt >= CLOCK_STEP_MS) {
+      clockIndex += 1; clockAt = now;
+    } else if (clockIndex === CLOCK_TIMES.length - 1 && now - clockAt >= CLOCK_HOLD_MS) {
+      clockIndex = 0; clockAt = now;
+    }
+    return CLOCK_TIMES[clockIndex];
+  }
 
   // The dead door, played with the night's own pieces. It answers exactly when
   // the in-game one does, and the row says so.
@@ -106,23 +135,45 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
       show('It takes.');
     }
   }
+  // The room's own door: the dead door's rules, applied to leaving. It opens
+  // once you stop trying, exactly like the night's.
+  function pressLeave() {
+    if (!host?.deadDoorCue || !host?.sayLine) return;
+    leaveDoor = leaveDoor || freshDeadDoor('extras-leave');
+    const next = pressDeadDoor(leaveDoor, Date.now() / 1000);
+    leaveDoor = next.door;
+    host.deadDoorCue();
+    if (!next.gave) {
+      if (leaveDoor.presses === 2 || leaveDoor.presses === 4) host.sayLine(DEAD_DOOR_LINES[leaveDoor.presses % DEAD_DOOR_LINES.length]);
+      show(leaveDoor.presses === 1 ? 'The handle goes, and the door does not.' : 'It still does not. Wait, then try again.');
+    } else {
+      leaveDoor = null;
+      AUDIO.menuBack(); scenes.pop();
+    }
+  }
 
   return {
     id: 'transfer-room', blocksInput: true, blocksWorld: true, lensPreset: 'calm',
-    enter() { AUDIO.startMenuHiss(); },
+    enter() { AUDIO.startMenuHiss(); touch(); },
     exit() { AUDIO.stopMenuHiss(); },
     key(e) {
       const k = String(e.key || '').toLowerCase();
       const listRows = list();
+      touch();
       // While a field is playing, the room stays out of the way: the window's
-      // own long-press and hard limit end it.
-      if (host?.viewing?.()) return true;
+      // own long-press and hard limit end it. The idle field is the exception —
+      // any key wakes the room.
+      if (host?.viewing?.()) {
+        if (idlePlaying) { idlePlaying = false; host.cancelField?.(); touch(); }
+        return true;
+      }
+      if (Date.now() < seepUntil) return true;
       if (e.key === 'Escape' || k === 'b') { AUDIO.menuBack(); scenes.pop(); return true; }
       if (e.key === 'Tab') {
         tab = (tab + (e.shiftKey ? TABS.length - 1 : 1)) % TABS.length;
         reset(); AUDIO.menuPage(); return true;
       }
-      if (k === '1' || k === '2') {
+      if (k === '1' || k === '2' || k === '3') {
         const next = Number(k) - 1;
         if (tab !== next) { tab = next; reset(); AUDIO.menuPage(); }
         return true;
@@ -133,16 +184,26 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'e') {
         const row = current();
         if (row?.kind === 'field') { if (host?.beginField?.(row.id)) { AUDIO.menuPage(); show('Playing. Hold E to let go.'); } }
-        else if (row?.kind === 'seep') { if (host?.flashSeep?.(row.id, row.set)) AUDIO.menuPage(); }
+        else if (row?.kind === 'seep') { const ms = host?.flashSeep?.(row.id, row.set); if (ms) { seepUntil = Date.now() + ms; AUDIO.menuPage(); } }
         else if (row?.kind === 'bleed') { if (host?.playBleed?.(row.id)) AUDIO.menuPage(); }
         else if (row?.kind === 'door') pressDoor();
         else if (row?.kind === 'verb') pressVerb(row.id);
+        else if (row?.kind === 'leave') pressLeave();
         return true;
       }
       return true;
     },
     render() {
       const { cols, rows: screenRows } = uiSize();
+      // A seep owns the whole picture: the room yields it, the way the white
+      // takes the room in a run, and comes back when the flash has gone.
+      if (Date.now() < seepUntil) return;
+      // Idle long enough and the room sinks into the empty field, the night's
+      // own last image; any key wakes it.
+      if (!host?.viewing?.() && !idlePlaying && host?.beginField && Date.now() - lastActivity > 90000) {
+        idlePlaying = !!host.beginField('empty-field', { idle: true });
+        touch();
+      }
       uiFill(0, 0, cols, screenRows, UI_COLOR.glass);
       const w = Math.min(96, cols - 4), h = Math.min(38, screenRows - 4);
       const x = Math.floor((cols - w) / 2), y = Math.floor((screenRows - h) / 2);
@@ -151,7 +212,7 @@ export function makeTransferRoomScene({ meta = {}, host = null } = {}) {
 
       withMachinePanel(x, y, w, h, {
         label: 'FIELD REPLAYS',
-        source: 'EXTRAS',
+        source: 'EXTRAS · ' + clockNow(),
         footer: '↑↓ ROW · TAB LIST · ENTER PLAY · ESC CLOSE',
         meter: false,
       }, (body) => {

@@ -26469,6 +26469,14 @@ function basementWatcherSignalAllowedAt(x=px,y=py){
 }
 
 function hushActiveForPlayer(x=px,y=py){
+  // The hush and its pressure field are INTERIOR-ONLY. The basement watcher's own
+  // confinement is a further, narrower gate, but it reads nothing until the hunt
+  // resolves — before then basementWatcherSignalAllowedAt answers true everywhere,
+  // which is how the pressure leaked out into the yard and the street. Outdoors is
+  // a property of the zone (floorplan/legend.js), so ask it here: no hush, no
+  // pressure, no dread while the player stands in a dock, street, court, yard or
+  // roof zone. It begins once they are inside — the get-in and B3 included.
+  if(isOutdoorZone(FP.zoneAt(x,y)))return false;
   return PRES.isActive()&&basementWatcherSignalAllowedAt(x,y);
 }
 
@@ -34908,8 +34916,21 @@ function openTransferRoom(){
   scenes.remove('title');
   scenes.push(makeTransferRoomScene({meta:getMeta(),host:{
     viewing:()=>!!windowTakeover?.view(),
-    beginField:id=>beginWindowTakeover(id,{onDone:()=>{}}),
-    flashSeep:(id,set)=>{const plate=memorySeepPlate(id);if(!plate)return false;R3.r3dSetTableau?.(plate,{gain:1.1});if(actx)playMemorySeepSound(actx,sfxGain||master,set,{strength:lastMinutesReducedDread()?.5:1});setTimeout(()=>R3.r3dSetTableau?.(null),1200);return true;},
+    cancelField:()=>windowTakeover?.cancel?.('extras-wake')??false,
+    // The fields play by the night's own settings: the same mode, the same
+    // reduced motion, the same calm pane Reduce Dread gets in a run.
+    beginField:(id,{idle=false}={})=>{const settings=getSave().settings||{};if(beginWindowTakeover(id,{onDone:()=>{},reducedMotion:(settings.shake||'full')!=='full',
+      mode:windowTakeoverMode({enabled:!!currentPsychProfileSettings().modules.windowChoreography,native:IS_TAURI,
+        introduced:!!getMeta().windowChoreographyIntroduced,reduceDread:!!settings.reduceDread})})){startNeural('twitch');return true;}return false;},
+    // A seep the way the night plays it: the neural ramp in, the plate, the
+    // ramp out, and the room's own settings deciding how much of it shows.
+    flashSeep:(id,set)=>{const plate=memorySeepPlate(id);if(!plate)return false;const reducedDread=lastMinutesReducedDread(),reducedFlash=flashMode()!=='full',
+      lead=neuralSeconds('seep-in',neuralOptions())*1000,hold=reducedFlash?300:1200;
+      startNeural('seep-in');
+      setTimeout(()=>{if(!reducedFlash)R3.r3dSetTableau?.(plate,{gain:1.1});startNeural('seep-flash');},lead);
+      setTimeout(()=>{R3.r3dSetTableau?.(null);startNeural('seep-out');},lead+hold);
+      if(actx)playMemorySeepSound(actx,sfxGain||master,set,{strength:reducedDread?.5:1});
+      return Math.ceil(lead+hold);},
     playBleed:kind=>{if(!actx)return false;playCabBleed(actx,sfxGain||master,kind,{level:.8});return true;},
     sayLine:line=>{if(!SPEECH.isSpeaking())SPEECH.say({who:'you',text:line});},
     deadDoorCue:()=>CUES.playCue(CUES.CUE.door,{gain:.2,rate:1.34,lowpassHz:1500,sliceSeconds:.16}),
