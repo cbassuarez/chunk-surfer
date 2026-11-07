@@ -1,0 +1,29 @@
+{
+ "generator": "tools/chunk_surfer/source-drive-study/build-m62-land.mjs",
+ "bytes": 568116,
+ "sha256": "feb3f8f6d608a71bbf31fa957ecf7efbc3bd4c869dcb0d1b1a2026c63bff83e8",
+ "meshes": [
+  "m62_drystone_0",
+  "m62_drystone_1",
+  "m62_drystone_2",
+  "m62_grit_face_0",
+  "m62_grit_face_1",
+  "m62_farm",
+  "m62_farm_window",
+  "m62_sheep",
+  "m62_carriageway",
+  "m62_lorry"
+ ],
+ "triangles": {
+  "m62_drystone_0": 472,
+  "m62_drystone_1": 478,
+  "m62_drystone_2": 476,
+  "m62_grit_face_0": 252,
+  "m62_grit_face_1": 252,
+  "m62_farm": 4576,
+  "m62_farm_window": 2,
+  "m62_sheep": 288,
+  "m62_carriageway": 276,
+  "m62_lorry": 72
+ }
+}

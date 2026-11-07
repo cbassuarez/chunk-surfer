@@ -14,7 +14,7 @@ function harness(){
    sourcePlayerSensoryMix:()=>model.mix,currentFearPressure:()=>pressure,
    gameplayInputLifecycleActive:()=>model.focused,attenuateSourceFearPressure,
    FEAR:{heartbeatFrame:()=>clock,startHeartbeat:()=>calls.push(['start']),setFear:n=>calls.push(['level',n]),setHeartbeatPaused:n=>calls.push(['pause',n])},
-   setGainNode:(bus,level)=>gains.push([bus,level]),sfxGain:'world',sfxDirectGain:'direct',bodyGain:'body',dialogGain:'dialog',menuGain:'menu',
+   setGainNode:(bus,level)=>gains.push([bus,level]),sfxGain:'world',sfxDirectGain:'direct',hushStepBus:'steps',bodyGain:'body',dialogGain:'dialog',menuGain:'menu',
    radioWorldGain:()=>.5,setUiCueSfxLevel:()=>{},calls,gains,
  });
  for(const name of ['presentedFearPressure','syncHeartbeatPresentation','setSfxVolume','setDialogVolume'])vm.runInContext(production(name),ctx);

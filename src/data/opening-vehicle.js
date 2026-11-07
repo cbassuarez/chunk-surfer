@@ -27,6 +27,12 @@ export function openingVehiclePoint(anchor, local, cabin = true) {
   const c = Math.cos(anchor.yaw), s = Math.sin(anchor.yaw);
   return { x: anchor.x + c*x-s*z, y: anchor.y+y, z: anchor.z+s*x+c*z };
 }
+/** World to cab space for the parked van: the inverse of openingVehiclePoint. */
+export function openingVehicleWorldToCab(anchor) {
+  if (!anchor) return null;
+  const c = Math.cos(anchor.yaw), s = Math.sin(anchor.yaw);
+  return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, -(c*anchor.x+s*anchor.z), -anchor.y, s*anchor.x-c*anchor.z-OPENING_VEHICLE.cabinMount[2], 1];
+}
 let parkedRadioPose = cabRadioPose({ on: false });
 /** What the parked cab's keys and knob are doing. The radio's owner sets this, not the frame. */
 export function setOpeningVehicleRadioPose(pose) { parkedRadioPose = pose || cabRadioPose({ on: false }); }
@@ -41,7 +47,7 @@ export function openingVehicleInstances(anchor, { doorOpen = 0, drive = null } =
     matrix[12] = point.x; matrix[13] = point.y; matrix[14] = point.z;
     instances.push({ id: `opening:${id}`, mesh:`opening_${mesh}`, matrix, ...point, structural: true, zone: anchor.zone, cullRadius: 4 });
   }
-  part('drive_cabin'); part('drive_radio'); part('drive_radio_readout');
+  part('drive_cabin'); part('drive_cabin_dash'); part('drive_radio'); part('drive_radio_readout');
   CAB_RADIO.keys.forEach((key, i) => part(`drive_radio_key_${key.id}`, cabRadioPoint(key.x, CAB_RADIO.keyRow.y, -parkedRadioPose.keys[i])));
   part('drive_radio_knob', cabRadioVolumePoint(0), 0, parkedRadioPose.volumeAngle);
   part('drive_wheel', [.48, 1.20, -.39], -.36, -(drive?.steeringWheelAngle||0));

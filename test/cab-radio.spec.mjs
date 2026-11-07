@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {NodeIO} from '@gltf-transform/core';
-import {CAB_RADIO,CAB_RADIO_FREQUENCIES,CAB_RADIO_PACK,CAB_RADIO_ROAD_CLOCK,cabRadioKeyPoint,cabRadioLeanProject,cabRadioPoint,cabRadioPose,cabRadioVolumePoint} from '../src/data/cab-radio.js';
+import {CAB_RADIO,CAB_RADIO_FREQUENCIES,CAB_RADIO_LEAN,CAB_RADIO_PACK,CAB_RADIO_ROAD_CLOCK,cabRadioKeyPoint,cabRadioLeanAngles,cabRadioLeanProject,cabRadioPoint,cabRadioPose,cabRadioVolumePoint} from '../src/data/cab-radio.js';
 import {SEVEN_SEGMENTS,cabRadioRoadClock,cabRadioRoadView,cabRadioVfdFrame,createCabRadioFace,segmentsFor,sweptFrequency} from '../src/render/cab-radio-vfd.js';
 import {openingVehicleInstances,setOpeningVehicleRadioPose} from '../src/data/opening-vehicle.js';
+import {createDoorDriveTeaser} from '../src/game/source-drive/door-teaser.js';
+import {makeGetInDriveTeaserScene} from '../src/game/get-in-drive-teaser-scene.js';
+import {openingRoadSurfaceAt} from '../src/game/source-drive/opening-road.js';
 
 const source=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
@@ -132,4 +135,90 @@ test('it never reaches the 6:00 scene, and rides with the van where the van tumb
   const teaser=source('src/game/source-drive/teaser-scene.js');
   assert.match(teaser,/radio\(\?:_\\w\+\)\?/,'every part of it attaches to the van');
   assert.match(source('src/render/ending-drive-off-renderer.js'),/\^drive_\(\?:cabin\|radio/);
+});
+
+const metrics=JSON.parse(readFileSync(new URL('../public/assets/source-drive/geometry/metrics.json',import.meta.url),'utf8'));
+const advance=(c,seconds,input={})=>{for(let t=0;t<seconds-1e-9;){const h=Math.min(1/60,seconds-t);c.update(h,{input});t+=h;}};
+const near=(a,b,eps=1e-6)=>assert.ok(Math.abs(a-b)<eps,`${a} is not ${b}`);
+
+test('the real drive frame gives the tube its stretch and its dial turn, where the renderer reads them',()=>{
+  const c=createDoorDriveTeaser();c.start();advance(c,.81);
+  const frame=c.frame(metrics).renderFrame,view=cabRadioRoadView(frame,0);
+  assert.equal(frame.vehiclePose,undefined,'the render frame carries the pose under cinematic, not at the top');
+  assert.ok(frame.cinematic.vehiclePose.stretch?.id,'a first drive knows its stretch');
+  assert.match(view.clock,/^\d\d:\d\d$/,'so the clock runs, rather than blinking as if nobody had set it');
+  assert.equal(view.clock,cabRadioRoadClock(frame.cinematic.vehiclePose.stretch));
+});
+
+test('holding the lean takes the head to the set while the van keeps going',()=>{
+  const c=createDoorDriveTeaser();c.start();advance(c,.81);
+  const seat=c.frame(metrics).renderFrame,start=c.snapshot().driveState.z;
+  assert.equal(c.snapshot().vehiclePose.radioLean,0);
+  assert.equal(c.setRadioLean(true),true);advance(c,CAB_RADIO_LEAN.seconds*.4);
+  const part=c.snapshot().vehiclePose.radioLean;assert.ok(part>0&&part<1,'it takes a moment to get there');
+  advance(c,CAB_RADIO_LEAN.seconds);
+  const leaning=c.frame(metrics).renderFrame,scene=leaning.scene,want=scene.cabPoint(CAB_RADIO_LEAN.eye),to=cabRadioLeanAngles();
+  assert.equal(c.snapshot().vehiclePose.radioLean,1);
+  for(let i=0;i<3;i++)near(scene.eye[i],want[i],1e-5);
+  assert.ok(Math.hypot(...scene.eye.map((v,i)=>v-seat.scene.eye[i]))>.3,'the head has really moved');
+  near(c.snapshot().vehiclePose.lookYawOffset,to.yaw);near(c.snapshot().vehiclePose.lookPitchOffset,to.pitch);
+  assert.ok(Math.abs(c.snapshot().driveState.z-start)>.5,'the road is still going by');
+  const heading=c.snapshot().driveState.heading;advance(c,.6,{right:true});assert.notEqual(c.snapshot().driveState.heading,heading,'and you can still steer');
+});
+
+test('letting go puts the head back where it was looking, and it can not be looked around while it is down',()=>{
+  const c=createDoorDriveTeaser();c.start();advance(c,.81);
+  assert.equal(c.setLook({yaw:.4,pitch:-.1}),true);
+  c.setRadioLean(true,{immediate:true});
+  assert.equal(c.setLook({yaw:-.4,pitch:.2}),false);assert.equal(c.lookDelta(50,50),false);
+  c.setRadioLean(false);advance(c,CAB_RADIO_LEAN.seconds+.05);
+  const pose=c.snapshot().vehiclePose;assert.equal(pose.radioLean,0);near(pose.lookYawOffset,.4);near(pose.lookPitchOffset,-.1);
+  assert.equal(c.setLook({yaw:0,pitch:0}),true);
+});
+
+test('there is no lean before the player has the van, and it lets go when control goes',()=>{
+  const c=createDoorDriveTeaser();
+  assert.equal(c.setRadioLean(true),false);c.start();
+  assert.equal(c.snapshot().controlsEnabled,false);assert.equal(c.setRadioLean(true),false);
+  advance(c,.81);assert.equal(c.setRadioLean(true,{immediate:true}),true);
+  assert.equal(c.setRadioLean(false,{immediate:true}),true);assert.equal(c.snapshot().vehiclePose.radioLean,0);
+});
+
+test('Q and LB hold the lean, a repeat is nothing, and a menu lets go of it',()=>{
+  const calls=[];
+  const scene=makeGetInDriveTeaserScene({createRenderer:()=>({}),createIntrusion:()=>({snapshot:()=>({}),cancel(){}}),getPresentation:()=>({reducedMotion:false}),
+    createController:()=>({setPaused(){},dispose(){},setRadioLean:(on,options)=>calls.push([on,!!options?.immediate])})});
+  scene.key({key:'q'});assert.deepEqual(calls,[],'not while the picture is held');
+  scene.setPaused(false);scene.key({key:'q'});scene.key({key:'q',repeat:true});assert.deepEqual(calls,[[true,false]]);
+  scene.keyup({key:'q'});assert.deepEqual(calls.at(-1),[false,false]);
+  scene.key({key:'q',controllerAction:'tabPrev'});assert.deepEqual(calls.at(-1),[true,false]);
+  scene.setPaused(true);assert.equal(calls.at(-1)[0],false,'pausing with it held lets go');
+  const still=[];
+  const reduced=makeGetInDriveTeaserScene({createRenderer:()=>({}),createIntrusion:()=>({snapshot:()=>({}),cancel(){}}),getPresentation:()=>({reducedMotion:true}),
+    createController:()=>({setPaused(){},dispose(){},setRadioLean:(on,options)=>still.push([on,!!options?.immediate])})});
+  reduced.setPaused(false);reduced.key({key:'q'});assert.deepEqual(still,[[true,true]],'reduced motion goes straight there');
+});
+
+test('a dial cut does not lift the head, and you can come down during one',()=>{
+  const c=createDoorDriveTeaser();c.start();advance(c,.81);c.setRadioLean(true,{immediate:true});
+  const steer=()=>{const d=c.snapshot().driveState,r=openingRoadSurfaceAt(d.x,d.z),err=r.offset+1.35,head=Math.atan2(Math.sin(d.heading-r.heading),Math.cos(d.heading-r.heading)),score=err*.35+head*2.2;return{forward:true,left:score>.04,right:score<-.04};};
+  let during=null;for(let t=0;t<90&&!during;t+=1/60){c.update(1/60,{input:steer()});if(c.snapshot().vehiclePose?.tuning)during=c.snapshot().vehiclePose;}
+  assert.ok(during,'the first stretch ends in a dial cut');assert.equal(during.radioLean,1,'still down while the dial turns');
+  c.setRadioLean(false,{immediate:true});assert.equal(c.setRadioLean(true,{immediate:true}),true,'and a press during the cut counts');
+  for(let t=0;t<8&&c.snapshot().vehiclePose?.tuning;t+=1/60)c.update(1/60);
+  assert.equal(c.snapshot().vehiclePose.tuning,null);assert.equal(c.snapshot().vehiclePose.radioLean,1,'and still down when the picture comes back');
+});
+
+test('nothing in the cab stands in front of the set',async()=>{
+  const doc=await new NodeIO().read(new URL('../public/assets/source-drive/drive.glb',import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1'));
+  let right=-Infinity;const mesh=doc.getRoot().listMeshes().find(row=>row.getName()==='drive_recorder_cradle');
+  for(const primitive of mesh.listPrimitives()){const position=primitive.getAttribute('POSITION'),at=[];for(let i=0;i<position.getCount();i++){position.getElement(i,at);right=Math.max(right,at[0]);}}
+  const edge=metrics.recorder.center[0]+right,left=CAB_RADIO.center[0]-CAB_RADIO.surround.w/2;
+  assert.ok(edge<=left,`the recorder's cradle reaches ${edge.toFixed(3)}, the set starts at ${left.toFixed(3)}`);
+});
+
+test('the tube shows its detail only once the head is down',()=>{
+  const renderer=source('src/game/source-drive-renderer.js');
+  assert.match(renderer,/radioClose=\(frame\.cinematic\?\.vehiclePose\?\.radioLean\|\|0\)>\.01/);assert.match(renderer,/close:\(\)=>radioClose/);
+  const main=source('src/main.js');assert.match(main,/HOLD \$\{[^`]*'LB':'Q'\} · THE RADIO/);assert.match(main,/1 2 3 STATION   O POWER/);
 });

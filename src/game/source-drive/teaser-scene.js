@@ -5,7 +5,7 @@ import {worldAt} from './road.js';
 export const DRIVE_TEASER_BREAK=Object.freeze({distance:297,side:1,from:291,to:309});
 const IDENTITY=Object.freeze([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
 const cliffFaces=new Map();
-const VEHICLE_MESH=/^(?:ending_van_cup|drive_(?:cabin|radio(?:_\w+)?|vehicle_body|wheel|wiper|speed_needle|tyre|recorder_(?:body|cradle|readout)|mirror_(?:left|right)|(?:left|right)_(?:hand|forearm|sleeve|upper_sleeve)))$/;
+const VEHICLE_MESH=/^(?:ending_van_cup|drive_(?:cabin(?:_dash)?|radio(?:_\w+)?|vehicle_body|wheel|wiper|speed_needle|tyre|recorder_(?:body|cradle|readout)|mirror_(?:left|right)|(?:left|right)_(?:hand|forearm|sleeve|upper_sleeve)))$/;
 const point=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2]+m[12],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]+m[13],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]+m[14]];
 const vector=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2],m[1]*p[0]+m[5]*p[1]+m[9]*p[2],m[2]*p[0]+m[6]*p[1]+m[10]*p[2]];
 const unit=p=>{const length=Math.hypot(...p)||1;return p.map(v=>v/length);},dot=(a,b)=>a.reduce((sum,v,i)=>sum+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));

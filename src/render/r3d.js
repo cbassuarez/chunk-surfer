@@ -15,6 +15,7 @@
 
 import { assetUrl } from '../platform/paths.js';
 import { CAB_RADIO_PACK } from '../data/cab-radio.js';
+import { CAB_DASH_PACK } from '../data/cab-dash.js';
 import {NATATORIUM_METRIC_GLSL,NATATORIUM_METRIC_IDENTITY,normalizeNatatoriumMetric,natatoriumMetricUniform,natatoriumMetricZ} from './natatorium-metric.js';
 import { recordingEmbodimentInstances,recordingEmbodimentViewPull } from './recording-embodiment.js';
 import {normalizeRecordingViewPull} from './recording-view-pull.js';
@@ -125,6 +126,7 @@ let bounceLampGain=2.4;
 let rainAmount=1;
 // Weather forced into a space with no sky. 0 everywhere except the source hall.
 let indoorRain=0;
+const RAIN_CLEAR_OF_THE_CAB=2.1;let rainClearMetres=0;
 // Temporary ending light. 0 is the authored 21:30 night; positive profiles are
 // cutscene-only and are cleared before the institutional coda.
 let endingWorldLook=0;
@@ -375,6 +377,9 @@ float rayToSegment(vec3 ro, vec3 rd, vec3 a, vec3 b){
 // 0 is ordinary rain. 1 runs it backwards (a played-back pass of the outskirts). Every
 // program sharing this function gets 0 unless it sets it, so their rain still falls.
 uniform float uRainBack;
+// While he's riding in the van, no drop falls within this many metres of his eye: it would be
+// falling through the cab. The yard's rain doesn't know there's a roof over him.
+uniform float uRainClearM;
 float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, float reduced){
   float seed = hash01(cell.x*1.7 + 11.0, cell.y*1.3 - 7.0);
   // Rain is sparse — but not THIS sparse. At 0.90 the streaks read as the odd
@@ -399,6 +404,7 @@ float rainColumn(vec3 ro, vec3 rd, vec2 cell, float eyeY, float surfaceViewM, fl
   vec3 a = vec3(cell.x*RAIN_CELL_M + jitterX*RAIN_CELL_M, topY,
                 cell.y*RAIN_CELL_M + jitterZ*RAIN_CELL_M);
   vec3 b = a - vec3(0.29*streak, streak, 0.10*streak);
+  if(uRainClearM>0.0){vec2 off=(a.xz+b.xz)*.5-ro.xz;if(dot(off,off)<uRainClearM*uRainClearM)return 0.0;}
   if(!glassCourtTrimRain(a,b))return 0.0;
 
   // Thin in METRES, so perspective alone decides how wide it lands on screen.
@@ -3753,6 +3759,9 @@ uniform sampler2D uOpeningMask;
 uniform float uOpeningMaskReady;
 uniform vec2 uRes, uNearFar;
 uniform vec4 uDriveSky;
+uniform sampler2D uDriveLandMap;
+uniform vec4 uDriveLand;    // strength, fog
+uniform vec3 uDriveLandEye; // metres in the road's frame
 uniform float uPitch;
 uniform float uVoidDawn;
 uniform vec4 uBeacon;
@@ -3906,6 +3915,67 @@ vec3 driveSnowField(vec3 ro,vec3 rd,float end,float spacing,float layer){
  for(int i=0;i<11;i++){float travelled;if(next.x<next.y){travelled=next.x;next.x+=delta.x;cell.x+=stp.x;}else{travelled=next.y;next.y+=delta.y;cell.y+=stp.y;}if(travelled*spacing/horizontal>min(end,32.0))break;acc=max(acc,driveSnowCell(ro,rd,cell,end,spacing,layer));}
  return acc;
 }
+// THE M62 COUNTRY. A height field in the road's frame (m62-land.js), marched from the
+// eye and only where nothing solid is in the way. A one-bit print can't hold a
+// gradient but it holds a black edge against lit cloud, so the near ground goes
+// black, and each ridge further off hazes back toward the sky. Display values.
+vec4 driveLandAt(vec2 p){
+  vec2 q=clamp(p/16000.0,-1.0,1.0);
+  return textureLod(uDriveLandMap,.5+.5*sign(q)*sqrt(abs(q)),0.0);
+}
+vec3 driveLandShade(vec3 dir,vec3 sky){
+  vec2 flatDir=normalize(dir.xz+vec2(1e-5));
+  float rise=max(dir.y,0.0);
+  // The underside of the cloud is lit from below all round, most of all over the town.
+  float townward=pow(max(dot(flatDir,vec2(.62,-.78)),0.0),3.0);
+  vec3 lit=sky+displayColour(vec3(.0058,.0072,.0098)*exp(-rise*14.0)+vec3(.024,.014,.0058)*townward*exp(-rise*11.0));
+  vec3 col=lit;
+  vec3 eye=uDriveLandEye;
+  float hitT=-1.0;
+  if(dir.y<.2){
+    float t=14.0,last=t;
+    float end=dir.y>.001?min(15000.0,(420.0-eye.y)/dir.y):15000.0;
+    for(int i=0;i<72&&t<end;i++){
+      vec3 p=eye+dir*t;
+      if(p.y<=driveLandAt(p.xz).r){hitT=t;break;}
+      last=t;t+=max(3.0,t*.07);
+    }
+    if(hitT>0.0){
+      float a=last,b=hitT;
+      for(int i=0;i<6;i++){float m=(a+b)*.5;vec3 p=eye+dir*m;if(p.y<=driveLandAt(p.xz).r)b=m;else a=m;}
+      hitT=b;
+      vec3 p=eye+dir*hitT;vec4 s=driveLandAt(p.xz);
+      float e=max(5.0,hitT*.012);
+      vec3 n=normalize(vec3(driveLandAt(p.xz-vec2(e,0.0)).r-driveLandAt(p.xz+vec2(e,0.0)).r,2.0*e,driveLandAt(p.xz-vec2(0.0,e)).r-driveLandAt(p.xz+vec2(0.0,e)).r));
+      float ground=s.g*(.2+.8*n.y*n.y);
+      // Drystone walls, as dark lines on the improved ground lower down. Each row of
+      // fields is shifted against the next: they were enclosed a field at a time.
+      if(s.a>.02&&hitT<2400.0){
+        vec2 g=p.xz/vec2(124.0,92.0);
+        g.x+=.37*sin(floor(g.y)*2.3);g.y+=.21*sin(floor(g.x)*1.9);
+        vec2 edge=abs(fract(g)-.5);
+        float wide=clamp(hitT*.0012/92.0,.012,.05);
+        ground*=1.0-.92*smoothstep(.5-wide*1.7,.5-wide*.5,max(edge.x,edge.y))*s.a*(1.0-smoothstep(1500.0,2400.0,hitT));
+      }
+      vec3 land=displayColour(vec3(.040,.048,.064)*ground);
+      // Still water takes the sky and gives it back, paler than anything round it.
+      if(s.b>.5)land=mix(displayColour(vec3(.03,.038,.052)),lit,.45);
+      float haze=1.0-exp(-hitT*(1.0+uDriveLand.y*18.0)/5200.0);
+      col=mix(land,lit*.92,haze);
+    }
+    // The transmitter tower: one concrete line on the skyline, tall enough to show
+    // over everything, with its red lights in the far-light pass.
+    vec2 toTower=vec2(4800.0,-3400.0)-eye.xz;
+    float range=length(toTower),along=dot(toTower,flatDir);
+    if(along>0.0&&(hitT<0.0||hitT>range)){
+      float across=abs(flatDir.x*toTower.y-flatDir.y*toTower.x),climb=dir.y/max(.0001,length(dir.xz));
+      float h=(eye.y+climb*range-300.0)/330.0;
+      float half_=max(range*.00042,h<.66?15.0-h*14.0:2.2);
+      if(h>0.0&&h<1.0&&across<half_)col=mix(vec3(.02),lit,.3);
+    }
+  }
+  return col;
+}
 vec3 driveSnow(vec3 ro,vec3 rd,float end){
  if(uDriveImpossibleWeather.y<=.001)return vec3(0.0);
  return max(driveSnowField(ro,rd,end,.85,0.0),driveSnowField(ro,rd,end,2.1,1.0));
@@ -3960,6 +4030,12 @@ void main(){
     float billow=smoothstep(.28,.77,cloud),horizonGlow=exp(-pow((wd.y+.025)*5.5,2.0));
     vec3 skyLight=mix(vec3(.0045,.007,.012),vec3(.075,.094,.12),billow)*(1.0-.22*uDriveLoad.x)+vec3(.012,.015,.020)*horizonGlow;
     empty=mix(empty,displayColour(skyLight),smoothstep(-.05,.12,wd.y)*uDriveStorm.x);
+  }
+  if(uDriveLand.x>0.0){
+    float landNdc=texture(uDepth,uv).r*2.0-1.0;
+    float landZ=2.0*uNearFar.x*uNearFar.y/max(.0001,uNearFar.y+uNearFar.x-landNdc*(uNearFar.y-uNearFar.x));
+    // Anything solid nearer than the far-plane haze would only paint over it.
+    if(landZ>uNearFar.y*.58)empty=mix(empty,driveLandShade(wd,empty),uDriveLand.x);
   }
   if(uUnravelling.w>.5&&wd.y<-.001){
     float roadT=(uEyeCells.y*.5-uUnravelOrigin.y)/-wd.y;
@@ -4532,6 +4608,7 @@ export function r3dPixelMeshStatus() {
 }
 let rdTexA, rdTexB, rdFboA, rdFboB, rdFlip = false, rdWarm = 0;
 let waterTexA, waterTexB, waterFboA, waterFboB, waterFlip = false, waterWasActive = false;
+let driveLandField=null,driveLandTex=null,driveLandLast=null;
 let sceneTex, sceneFbo, sceneDepthRb, fogTexture, surfaceTexture=null;
 let cinematicLensPass=null,activeCameraTanHalfFov=.95;
 export function r3dCinematicLensStatus(){return cinematicLensPass?.status()||{active:false,frames:0,error:null};}
@@ -6088,6 +6165,56 @@ function drawSourceShore(now,{voidState,worldYaw,torchPower,torchColor,torchReac
   lastPostSourceFbo=sceneFbo;
 }
 
+// What's out there at night: traffic, towns, red lights on tall things. Far past the
+// prop range, so each is drawn straight onto the finished picture, on exactly the
+// rays the land was marched along, and only where nothing solid stands in front.
+const DRIVE_FAR_LIGHT_VERT=`#version 300 es
+precision highp float;
+layout(location=0) in vec4 aPoint;layout(location=1) in vec4 aColor;
+uniform vec3 uEye;uniform vec3 uView;uniform vec2 uAspect;
+out vec3 vColor;
+void main(){
+  vec3 w=aPoint.xyz-uEye;float cy=cos(uView.x),sy=sin(uView.x),cp=cos(uView.y),sp=sin(uView.y);
+  float x=w.x*cy+w.z*sy,z=w.x*sy-w.z*cy,y=w.y*cp-z*sp,d=w.y*sp+z*cp;
+  gl_Position=d>.5?vec4(x/d/(uAspect.x*.65),y/d/.65,0.0,1.0):vec4(2.0,2.0,2.0,1.0);
+  gl_PointSize=max(1.0,aPoint.w*uView.z);
+  vColor=aColor.rgb*aColor.a;
+}`;
+const DRIVE_FAR_LIGHT_FRAG=`#version 300 es
+precision highp float;
+in vec3 vColor;uniform sampler2D uDepth;
+layout(location=0) out vec4 o;
+void main(){
+  vec2 q=gl_PointCoord*2.0-1.0;if(dot(q,q)>1.0)discard;
+  if(texelFetch(uDepth,ivec2(gl_FragCoord.xy),0).r<.99999)discard;
+  o=vec4(vColor,1.0);
+}`;
+let driveFarLightProgram=null,driveFarLightVao=null,driveFarLightBuffer=null,driveFarLightFailed=false;
+function drawDriveFarLights(lights,{eye,yaw,pitch,depth}){
+  if(driveFarLightFailed)return 0;
+  if(!driveFarLightProgram){
+    const compile=(type,source)=>{const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(shader));return shader;};
+    try{
+      const made=gl.createProgram();gl.attachShader(made,compile(gl.VERTEX_SHADER,DRIVE_FAR_LIGHT_VERT));gl.attachShader(made,compile(gl.FRAGMENT_SHADER,DRIVE_FAR_LIGHT_FRAG));gl.linkProgram(made);
+      if(!gl.getProgramParameter(made,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(made));
+      driveFarLightProgram=made;
+    }catch(error){driveFarLightFailed=true;console.warn('Drive far lights unavailable',error);return 0;}
+    driveFarLightVao=gl.createVertexArray();driveFarLightBuffer=gl.createBuffer();
+    gl.bindVertexArray(driveFarLightVao);gl.bindBuffer(gl.ARRAY_BUFFER,driveFarLightBuffer);
+    gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,32,0);
+    gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.FLOAT,false,32,16);
+    gl.bindVertexArray(null);
+  }
+  const vao=gl.getParameter(gl.VERTEX_ARRAY_BINDING),program=gl.getParameter(gl.CURRENT_PROGRAM),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,view=gl.getParameter(gl.VIEWPORT);
+  gl.useProgram(driveFarLightProgram);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);
+  const uniform=name=>gl.getUniformLocation(driveFarLightProgram,name);
+  gl.uniform3f(uniform('uEye'),eye[0],eye[1],eye[2]);gl.uniform3f(uniform('uView'),yaw,pitch,view[3]/720);gl.uniform2f(uniform('uAspect'),view[2]/view[3],1);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,depth);gl.uniform1i(uniform('uDepth'),1);
+  gl.bindVertexArray(driveFarLightVao);gl.bindBuffer(gl.ARRAY_BUFFER,driveFarLightBuffer);gl.bufferData(gl.ARRAY_BUFFER,lights.data,gl.DYNAMIC_DRAW);
+  gl.drawArrays(gl.POINTS,0,lights.count);
+  gl.bindVertexArray(vao);gl.useProgram(program);
+  return lights.count;
+}
 function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.94,.96,1],torchReach,torchConeInner,torchConeOuter,torchSpill,sourceTorchMode=0,torchYawOffset=0,present=true,unravelling=null}={}){
   const eyeX=camX*CELL,eyeY=camY*CELL,eyeZ=camZ*CELL;
   const patternOriginOffsetMetres=['x','y','z'].map(axis=>Number.isFinite(voidState?.recordingOriginOffset?.[axis])?voidState.recordingOriginOffset[axis]:0);
@@ -6217,6 +6344,17 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform4fv(sourceVoidPhysicalU('uCoastLampPosition[0]'),coastal.positions);
   gl.uniform4fv(sourceVoidPhysicalU('uCoastLampDirection[0]'),coastal.directions);
   gl.uniform1f(sourceVoidPhysicalU('uPitch'),pitch);gl.uniform4f(sourceVoidPhysicalU('uDriveSky'),.016,.019,.024,drive?1:0);
+  const driveLand=drive&&driveLandField?drive.land:null;
+  if(driveLand&&!driveLandTex){
+    driveLandTex=gl.createTexture();gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,driveLandTex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,driveLandField.size,driveLandField.size,0,gl.RGBA,gl.FLOAT,driveLandField.data);
+    for(const[k,v]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+  }
+  const driveLandOn=!!(driveLand&&driveLandTex&&driveLand.strength>0);
+  driveLandLast=driveLandOn?{strength:driveLand.strength,eye:driveLand.eye,lights:drive.farLights?.count||0,vehicles:drive.farLights?.vehicles||0}:null;
+  gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,driveLandOn?driveLandTex:null);gl.uniform1i(sourceVoidPhysicalU('uDriveLandMap'),7);
+  gl.uniform4f(sourceVoidPhysicalU('uDriveLand'),driveLandOn?driveLand.strength:0,driveLand?.fog||0,0,0);
+  gl.uniform3f(sourceVoidPhysicalU('uDriveLandEye'),driveLand?.eye?.[0]??0,driveLand?.eye?.[1]??0,driveLand?.eye?.[2]??0);
   const weather=drive?.weather||null,wp=weather?.pane||{},wl=weather?.headlamps||[];gl.activeTexture(gl.TEXTURE5);const wt=P3.driveStudyWeatherTarget?.();
   gl.uniform4f(sourceVoidPhysicalU('uDriveWeather'),weather?.rain||0,weather?.extinction||0,weather?.timeSec||0,weather?.active&&wt?1:0);
   gl.uniform4f(sourceVoidPhysicalU('uDriveImpossibleWeather'),weather?.fog||0,weather?.snow||0,weather?.whiteout||0,0);
@@ -6290,6 +6428,7 @@ function drawSourceVoidPhysical(now,{voidState,worldYaw,torchPower,torchColor=[.
   gl.uniform4f(sourceVoidPhysicalU('uPuddle'),puddle[0],puddle[1],puddle[2],sourceReflection?.wet??0);
   gl.uniform1f(sourceVoidPhysicalU('uReflectDebug'),sourceReflectionDebug?1:0);
   gl.drawBuffers([gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]);gl.drawArrays(gl.TRIANGLES,0,3);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+  if(driveLandOn&&drive.farLights?.count)drawDriveFarLights(drive.farLights,{eye:[eyeX,eyeY,eyeZ],yaw:worldYaw,pitch,depth:targets.depth});
   // Walking through an open door: its world, over everything, for a few seconds.
   sourceCrossingDrawn=false;
   let physicalAcquisitionWeight=1;
@@ -6971,6 +7110,7 @@ function runPixelMeshPass(state, now, { physicalAcquisitionWeight = 0, sourceTex
   const cabin=P3.cabinVolume(),worldToVan=cabin?invertRigidMatrix(cabin.matrix):null;
   const eyeVan=worldToVan&&[0,1,2].map(r=>worldToVan[r]*camX*CELL+worldToVan[4+r]*camY*CELL+worldToVan[8+r]*camZ*CELL+worldToVan[12+r]);
   const riding=!!eyeVan&&eyeVan.every((v,i)=>v>cabin.min[i]&&v<cabin.max[i]);
+  rainClearMetres=riding?RAIN_CLEAR_OF_THE_CAB:0;
   gl.uniform1f(pixelMeshU('uVehicleActive'),riding?1:0);
   if(riding){
     gl.uniformMatrix4fv(pixelMeshU('uWorldToVehicle'),false,worldToVan);
@@ -7184,6 +7324,7 @@ export function r3dInit(mapEl) {
     waterSeed[i * 4 + 1] = 0.5;
     waterSeed[i * 4 + 3] = 1;
   }
+  driveLandTex = null;driveFarLightProgram = null;driveFarLightVao = null;driveFarLightBuffer = null;
   waterTexA = makeTex(WATER_W, WATER_H, waterSeed, 'rgba16f');
   waterTexB = makeTex(WATER_W, WATER_H, waterSeed, 'rgba16f');
   for (const t of [waterTexA, waterTexB]) {
@@ -7241,7 +7382,8 @@ export function r3dInit(mapEl) {
       void P3.addPropPack(assetUrl('assets/source-vehicle-interior.glb'))
         .then(()=>{vehicleInteriorStatus.loaded=true;vehicleInteriorStatus.error=null;
           // The dash's radio, over the old one of the same name. It keeps that one if this fails.
-          return P3.addPropPack(assetUrl(CAB_RADIO_PACK)).catch(err=>console.warn('cab radio unavailable; keeping the original unit',err));})
+          return Promise.all([P3.addPropPack(assetUrl(CAB_RADIO_PACK)).catch(err=>console.warn('cab radio unavailable; keeping the original unit',err)),
+            P3.addPropPack(assetUrl(CAB_DASH_PACK)).catch(err=>console.warn('cab dash unavailable; keeping the bare mouldings',err))]);})
         .catch((err)=>{vehicleInteriorStatus.error=String(err?.message||err);console.warn('vehicle interior unavailable',err);});
       // The opening booth and the later Wrong Fold share this actor. Begin its
       // optional decode as soon as the base catalog is installed, so unrelated
@@ -8475,6 +8617,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uRainAmount'),Number.isFinite(state.rainAmount)?state.rainAmount:rainAmount);
   gl.uniform1f(U('uGlassCourtRainShelter'),state.glassCourtRainShelter?1:0);
   gl.uniform1f(U('uRainIndoor'),indoorRain);
+  gl.uniform1f(U('uRainClearM'),rainClearMetres);
   gl.uniform1f(U('uNightSeed'),nightSeed);
   {const seen=perceptionArmed?perception:PERCEPTION_IDENTITY;gl.uniform3f(U('uMoonMeaning'),seen.moonSize,seen.moonBlood,1/Math.max(.2,seen.chroma));
    if(memorySky){gl.uniform4f(U('uMemorySun'),memorySky.sun[0],memorySky.sun[1],memorySky.sun[2],1);gl.uniform4f(U('uMemorySky'),memorySky.day,memorySky.sunScale,memorySky.fault,memorySky.cloud);}
@@ -8728,6 +8871,12 @@ function presentThroughPost(sourceTex,{torchPower=0,sourceTorchMode=0,unravellin
 export function r3dCanvas() { return canvas; }
 // Inspect the existing presentation target without allocating or restoring a
 // context. Owners must not advance a cinematic after an undrawn/lost frame.
+export function r3dDriveLandStatus(){return{field:!!driveLandField,texture:!!driveLandTex,last:driveLandLast};}
+export function r3dSetDriveLandField(field=null){
+  if(field===driveLandField)return !!field;
+  if(driveLandTex&&gl&&!gl.isContextLost())gl.deleteTexture(driveLandTex);
+  driveLandTex=null;driveLandField=field||null;return !!field;
+}
 export function r3dPresentationReady() { return !!(gl&&!gl.isContextLost()&&canvas?.width>0&&canvas?.height>0); }
 // The drawing buffer is preserved, so a frame nobody draws over stays on screen.
 // The front end with no camera to print behind it asks for black instead.

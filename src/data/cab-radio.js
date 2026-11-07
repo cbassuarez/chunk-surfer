@@ -55,6 +55,12 @@ export const CAB_RADIO_ROAD_CLOCK_LAST=freeze([21,37]);
 // Close enough to read it, from just on the driver's side of it.
 export const CAB_RADIO_LEAN=freeze({eye:freeze([.034,1.117,-.283]),target:freeze([.025,1.1,-.397]),seconds:.42});
 
+/** Which way the head is turned once it's there, relative to straight ahead down the van. */
+export function cabRadioLeanAngles(){
+  const{eye,target}=CAB_RADIO_LEAN,dx=target[0]-eye[0],dy=target[1]-eye[1],dz=target[2]-eye[2];
+  return{yaw:Math.atan2(dx,-dz),pitch:Math.atan2(dy,Math.hypot(dx,dz))};
+}
+
 const unit=v=>{const l=Math.hypot(...v)||1;return v.map(n=>n/l);},dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 /** Where a face offset lands on screen (0 to 1) from the lean, before the renderer has said. */
 export function cabRadioLeanProject(x=0,y=0,z=0,{tan=.7,aspect=16/9}={}){

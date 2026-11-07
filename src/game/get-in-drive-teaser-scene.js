@@ -43,7 +43,7 @@ export function makeGetInDriveTeaserScene({
     const visualStep=dt>0?Math.max(dt,elapsed):0;
     lastPresentationTime=Number.isFinite(now)?now:null;
     intrusion.update(visualStep,frame,{...presentation,allowTrigger:presentation.allowTrigger!==false
-      &&!drag&&frame.timeSec>=intrusionQuietUntil});
+      &&!drag&&frame.timeSec>=intrusionQuietUntil&&!(frame.vehiclePose?.radioLean>0)});
     current=intrusion.apply(frame);soundTheDial(current);return current;
   }
   function setHeld(value){
@@ -51,7 +51,7 @@ export function makeGetInDriveTeaserScene({
     lastPresentationTime=null;
     // Never freeze a collision image in a menu, or deliver its slam on return.
     if(held&&intrusion.snapshot().triggered)intrusion.cancel();
-    audio?.setPaused(held||restored);intrusionAudio?.setPaused(held||restored);recording?.setPaused?.(held||restored);controller.setPaused(held);wasHeld=held;drag=null;pressedKeys.clear();
+    audio?.setPaused(held||restored);intrusionAudio?.setPaused(held||restored);recording?.setPaused?.(held||restored);controller.setPaused(held);wasHeld=held;drag=null;pressedKeys.clear();if(held)controller.setRadioLean?.(false);
     if(ready)refreshFrame();
   }
   function disposeAudio(){intrusionAudio?.dispose();if(!audio||audioDisposed)return;audioDisposed=true;audio.dispose();}
@@ -178,6 +178,8 @@ export function makeGetInDriveTeaserScene({
       if(event.key==='Escape'){if(!event.repeat){setHeld(true);onPause();}return true;}
       const k=String(event.key||'').toLowerCase();
       if(keyInputs[k]){if(!event.repeat&&!wasHeld){pressedKeys.add(keyInputs[k]);controller.input?.(keyInputs[k],true);}return true;}
+      // Hold to lean over to the radio. Gamepad LB arrives as this key too.
+      if(k==='q'){if(!event.repeat&&!wasHeld)controller.setRadioLean?.(true,{immediate:!!getPresentation()?.reducedMotion});return true;}
       if(event.repeat||!current?.controlsEnabled||wasHeld)return true;
       if(/^[123]$/.test(k)){quietForControl();controller.selectStation?.(['service','company','music'][Number(k)-1]);}
       else if(k==='o'){quietForControl();controller.power?.();}
@@ -200,7 +202,7 @@ export function makeGetInDriveTeaserScene({
       }
       if(event.type==='pointermove'&&drag&&(Math.hypot(point.x-drag.x,point.y-drag.y)>=10||point.captured&&(event.movementX||event.movementY)))drag.cancelled=true;
       return true;
-    },keyup(event={}){const action=keyInputs[String(event.key||'').toLowerCase()];if(action){pressedKeys.delete(action);controller.input?.(action,false);}return true;},
+    },keyup(event={}){const released=String(event.key||'').toLowerCase(),action=keyInputs[released];if(action){pressedKeys.delete(action);controller.input?.(action,false);}if(released==='q')controller.setRadioLean?.(false,{immediate:!!getPresentation()?.reducedMotion});return true;},
     setPaused:setHeld,
     blur(){setHeld(true);},focus(){setHeld(!!isHeld());},
     resume(){setHeld(!!isHeld());},

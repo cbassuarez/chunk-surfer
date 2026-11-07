@@ -189,7 +189,7 @@
       "nodes": 10,
       "lines": 20,
       "choices": 0,
-      "sourceSha256": "c8926b54a87316f976dc96bcfbe3cf64846e7192cd28f04e6f38ef757cbb38aa"
+      "sourceSha256": "47b840ca7f2222c144dc0203598bd0f607819ad2584222b12adb5423e98ac4ca"
     },
     {
       "id": "runtime.data.opening-cab-objects",
@@ -450,7 +450,7 @@
       "nodes": 1,
       "lines": 1,
       "choices": 0,
-      "sourceSha256": "f45d106393bcb902184c892daf134d85863a08db16dd87f6ecf71911586eaf2f"
+      "sourceSha256": "5f8e776d66a6563be0506163ac5d16292e9cb1ccad278d49ae5e0bffe828a899"
     },
     {
       "id": "runtime.game.opening-credits",
@@ -549,7 +549,7 @@
       "nodes": 8,
       "lines": 9,
       "choices": 0,
-      "sourceSha256": "7ac51120484d2caee41b02d60c49f99a54f983d5c04fd84369b37d80ce75a3ec"
+      "sourceSha256": "bfff22fd11662577ed5eb8fde4402aeabdb027b47b9c5baa810001a358a5bd2a"
     },
     {
       "id": "runtime.game.van-workbench-preparation",
@@ -567,7 +567,7 @@
       "nodes": 135,
       "lines": 269,
       "choices": 21,
-      "sourceSha256": "9470c82998038e7bf779d5f1c7972b13d064070f084e8ffc9129ad9766b0f57d"
+      "sourceSha256": "42553f6a7ff6aa652a3daddae55ef119f6772097abb53ce2b03d8e5ec77f7b35"
     },
     {
       "id": "runtime.render.bag-view",

@@ -268,7 +268,7 @@
     "cradleMesh": "drive_recorder_cradle",
     "readoutMesh": "drive_recorder_readout",
     "center": [
-      -0.18,
+      -0.25,
       1.115,
       -0.34
     ],

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {HUSH_FOOTFALL as F,createHushFootfallTracker,hushFootfallPlan,hushFootfallCaption} from '../src/game/hush-footfall.js';
+import {HUSH_FOOTFALL as F,SOURCE_FOOTFALL as SF,createHushFootfallTracker,createTravelFootfallTracker,hushFootfallPlan,hushFootfallCaption} from '../src/game/hush-footfall.js';
 import {freshPressureGait,stepPressureGait,PRESSURE_GAIT} from '../src/game/pressure-gait.js';
 
 const main=readFileSync('src/main.js','utf8');
@@ -50,6 +50,11 @@ test('arriving mid-stride invents nothing, and a redirect through the atlas is n
   assert.deepEqual(t2.step({...g,phase:'arrest',redirect:true}),[]);
   const t3=createHushFootfallTracker();t3.step(g);t3.step({...g,phase:'load'});t3.step({...g,phase:'advance',progress:.2});
   assert.equal(t3.step({...g,phase:'recover'})[0].kind,'blocked','it walks into something');
+  t3.step({...g,phase:'arrest'});t3.step({...g,phase:'load'});t3.step({...g,phase:'advance',progress:.2});
+  assert.deepEqual(t3.step({...g,phase:'recover'}),[],'held at a wall, it does not knock forever');
+  t3.step({...g,phase:'arrest'});t3.step({...g,phase:'load'});t3.step({...g,phase:'advance',progress:.9});t3.step({...g,phase:'arrest'});
+  t3.step({...g,phase:'load'});t3.step({...g,phase:'advance',progress:.2});
+  assert.equal(t3.step({...g,phase:'recover'})[0].kind,'blocked','but a real step later, it can meet something new');
   assert.deepEqual(t3.step(null),[],'and gone is gone');
   const t4=createHushFootfallTracker();t4.step(g);t4.step({...g,phase:'load'});t4.step({...g,phase:'advance',pivot:true,progress:.1});
   assert.equal(t4.step({...g,phase:'advance',pivot:true,progress:.9})[0].kind,'pivot','a turn scrapes');
@@ -57,7 +62,7 @@ test('arriving mid-stride invents nothing, and a redirect through the atlas is n
 
 test('proximity: louder and heavier as it nears, then silent at arm\'s length',()=>{
   const close=plan({metres:2}),mid=plan({metres:6}),far=plan({metres:20}),end=plan({metres:70});
-  assert.ok(close.dryGain>mid.dryGain&&mid.dryGain>far.dryGain);assert.ok(close.thump.peak>mid.thump.peak*1.4,'the thump falls off faster than the heel');
+  assert.ok(close.dryGain>mid.dryGain&&mid.dryGain>far.dryGain);assert.ok(close.body.fromHz>150&&close.body.peak>0,'weight small speakers can play');assert.ok(close.thump.peak>mid.thump.peak*1.4,'the thump falls off faster than the heel');
   assert.equal(end.audible,false,'a long way off is a long way off');
   assert.equal(plan({metres:F.silentMetres-.01}).audible,false);assert.equal(plan({metres:F.silentMetres+.01}).audible,true);
   assert.ok(F.silentMetres>.72,'it stops before the catch radius, so the hit has silence');
@@ -67,7 +72,7 @@ test('proximity: louder and heavier as it nears, then silent at arm\'s length',(
 });
 
 test('occlusion: a wall takes the level and the top, and leaves the low end',()=>{
-  const open=plan(),wall=plan({occlusionDb:15}),thick=plan({occlusionDb:36});
+  const open=plan(),wall=plan({occlusionDb:15}),thick=plan({occlusionDb:30});
   assert.ok(wall.dryGain<open.dryGain*.2);assert.ok(wall.lowpassHz<open.lowpassHz/2);assert.ok(thick.lowpassHz<wall.lowpassHz);
   assert.equal(wall.highpassHz,28,'no thinning through a wall');assert.ok(open.highpassHz>28);
   assert.ok(wall.wet<open.wet);
@@ -91,8 +96,9 @@ test('Pressure: the field eats its top and the room\'s answer, and the room fall
   assert.match(body('playHushFootfall'),/absorption:hushFieldFrame\?\.presentation\?\.audio\?\?hushFieldFrame\?\.absorption\?\.audio\?\?0/,'the setting-scaled reading');
 });
 
-test('its rhythm: every other stride drags, each foot a little different',()=>{
-  assert.equal(plan({cycle:2}).drag,null);const drag=plan({cycle:3}).drag;assert.ok(drag&&drag.delay>.3&&drag.gain<plan({cycle:3}).dryGain*.5);
+test('its rhythm: heavy strides, tiny shuffles between them, and a drag on some',()=>{
+  assert.equal(plan({cycle:2}).drag,null);assert.equal(plan({cycle:3}).drag,null);const drag=plan({cycle:5}).drag;assert.ok(drag&&drag.delay>.3&&drag.gain<plan({cycle:5}).dryGain*.5);
+  const shuffle=plan({strideMetres:.08,cycle:5}),stride=plan({strideMetres:.42,cycle:5});assert.equal(shuffle.thump,null,'a correction carries no weight');assert.equal(shuffle.body,null);assert.equal(shuffle.drag,null);assert.equal(shuffle.caption,false);assert.equal(shuffle.clip,'scuff');assert.ok(shuffle.dryGain<stride.dryGain*.5);assert.ok(stride.thump.peak>0);
   assert.equal(plan({kind:'pivot',cycle:3}).clip,'scuff');assert.equal(plan({kind:'pivot',cycle:3}).drag,null);
   const rates=new Set([1,2,3,4,5,6,7].map(cycle=>plan({cycle}).rate));assert.ok(rates.size>3);
   for(const r of rates)assert.ok(r<.8,'slowed until it carries weight');
@@ -103,8 +109,8 @@ test('the monitor hears it better than the man, and it lands on the needle',()=>
   assert.ok(can.dryGain>ear.dryGain*1.9);assert.equal(ear.needle,0);assert.ok(can.needle>0&&can.needle<=.4);
   assert.match(main,/return Math\.max\(hushStepNeedle\(\),Math\.min\(1,/);
   assert.equal(hushFootfallPlan({metres:30,occlusionDb:40}).audible,false);
-  assert.equal(hushFootfallPlan({metres:30,occlusionDb:30,monitoring:true}).audible,true,'audible on the cans through what the ear can\'t hear');
-  assert.equal(hushFootfallPlan({metres:30,occlusionDb:30}).audible,false);
+  assert.equal(hushFootfallPlan({metres:20,occlusionDb:24,monitoring:true}).audible,true,'audible on the cans through what the ear can\'t hear');
+  assert.equal(hushFootfallPlan({metres:20,occlusionDb:24}).audible,false);
 });
 
 test('it has no authority: no noise, no spoil, no hearing, and reduced settings hold',()=>{
@@ -118,4 +124,49 @@ test('captions say what and where, for those who can\'t hear it',()=>{
   assert.equal(hushFootfallCaption({bearing:Math.PI}),'A HEAVY STEP, BEHIND YOU');
   assert.equal(hushFootfallCaption({bearing:1.4,occlusionDb:15}),'A HEAVY STEP, THROUGH THE WALL, TO YOUR RIGHT');
   assert.equal(hushFootfallCaption({kind:'pivot',bearing:0}),'A FOOT TURNS, AHEAD');
+});
+
+const source=(metresPerSecond,seconds,{dt=1/60,tracker=createTravelFootfallTracker(),id='rear',x0=0}={})=>{
+  const events=[];let x=x0;tracker.step([{id,x,y:0}],dt);
+  for(let t=0;t<seconds;t+=dt){x+=metresPerSecond*dt;for(const event of tracker.step([{id,x,y:0}],dt))events.push({...event,t,x});}
+  return {events,x,tracker};
+};
+
+test('Source: a walking beat that holds whatever the pace, from the body\'s own travel',()=>{
+  for(const pace of [1.4,4.1,6.3,18]){
+    const {events}=source(pace,20),gaps=events.slice(1).map((e,i)=>e.t-events[i].t),mean=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const floor=SF.minStrideMetres/pace;
+    assert.ok(mean>Math.max(.45,floor*.9)&&mean<Math.max(.8,floor*1.2),`${pace} m/s: ${mean}`);
+    assert.ok(new Set(gaps.map(g=>g.toFixed(2))).size>2,'never metronomic, so it never answers one for one');
+  }
+});
+
+test('Source: nothing for standing still, one last foot on stopping, and a cut is not a walk',()=>{
+  const still=createTravelFootfallTracker();for(let i=0;i<300;i++)assert.deepEqual(still.step([{id:'a',x:5,y:5}],1/60),[]);
+  const {tracker,x}=source(4.1,.5);let last=[];for(let i=0;i<60;i++)last=last.concat(tracker.step([{id:'rear',x,y:0}],1/60));
+  assert.ok(last.length<=1,'a single settling foot at most');
+  const cut=createTravelFootfallTracker();cut.step([{id:'a',x:0,y:0}],1/60);assert.deepEqual(cut.step([{id:'a',x:200,y:0}],1/60),[],'a fall cut back is no footstep');
+  assert.deepEqual(cut.step([{id:'a',x:200,y:0}],1/60),[]);
+  const gone=createTravelFootfallTracker();gone.step([{id:'a',x:0,y:0}],1/60);gone.step([],1/60);assert.deepEqual(gone.step([{id:'a',x:50,y:0}],1/60),[],'coming back is a new body, not a long stride');
+  const two=createTravelFootfallTracker();two.step([{id:'rear',x:0,y:0},{id:'front',x:9,y:0}],.1);
+  let ids=new Set();for(let i=1;i<40;i++)for(const e of two.step([{id:'rear',x:i*.4,y:0},{id:'front',x:9,y:0}],.1))ids.add(e.id);
+  assert.deepEqual([...ids],['rear'],'each body answers for itself');
+});
+
+test('Source: heard at its own scale, a man\'s feet in the courts, and quiet to the ear on erased ground',()=>{
+  const here=plan({metres:18}),there=plan({metres:18,reach:SF.reach});assert.ok(there.dryGain>here.dryGain,'a twenty-metre gap is close in Source');
+  assert.ok(there.caption,'and captioned as close');
+  const heavy=plan({metres:4}),man=plan({metres:4,human:true});assert.ok(man.rate>heavy.rate);assert.ok(man.thump.peak<heavy.thump.peak*.5);
+  const bare=plan({metres:18,reach:SF.reach,extraLossDb:SF.erasedDb});assert.ok(bare.dryGain<there.dryGain*.2);
+  const main2=body('playSourceHushFootfall');assert.match(main2,/footing\?\.profile==='erased'&&!monitoring\?SOURCE_FOOTFALL\.erasedDb:0/);
+  assert.match(main2,/human:actor\.performance\?\.role==='court-trace'/);assert.match(main2,/view\.eye\.x\/CELL/,'from where the camera really is');
+});
+
+test('Source: presentation only, and never over a recorded reprise',()=>{
+  const tick=body('tickSourceHushFootfall'),play=body('playSourceHushFootfall');
+  assert.match(tick,/!pressurePerformance\.isReplay\(\)/);assert.match(tick,/usingSourceSpace\(\)/);assert.match(tick,/!lastExposureEvent/);
+  for(const role of ['source-rear','source-front','court-trace'])assert.ok(tick.includes(role),role);
+  assert.doesNotMatch(tick+play,/REC\.emitNoise|markHeard|offerSoundTarget|REC\.spoil|hushFollow\.|updatePresence/);
+  assert.match(body('tickPressurePerformance'),/tickSourceHushFootfall\(dt\)/,'only when the bodies themselves advanced');
+  assert.ok(body('hushFootfallAudible').includes('!usingSourceSpace()'),'the two paths never both speak');
 });

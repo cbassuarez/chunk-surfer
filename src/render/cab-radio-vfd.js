@@ -54,7 +54,7 @@ export function cabRadioVfdFrame({on=true,preset=-1,name='',clock=null,tuning=nu
 
 /** What to show for a drive frame. Reads only what every drive frame carries. */
 export function cabRadioRoadView(frame={},seconds=0){
-  const drive=frame.driveState||{},pose=frame.vehiclePose||{},station=drive.station||'service';
+  const drive=frame.driveState||{},pose=frame.vehiclePose||frame.cinematic?.vehiclePose||{},station=drive.station||'service';
   return{on:drive.radioOn!==false,preset:CAB_RADIO_ROAD_STATIONS.indexOf(station),name:CAB_RADIO_ROAD_NAMES[station]||'',volume:drive.volume,
     tuning:pose.tuning||null,clock:cabRadioRoadClock(pose.stretch),seconds};
 }
@@ -117,8 +117,8 @@ export function drawCabRadioVfd(ctx,frame,{close=true}={}){
     [8,122,240,368].forEach((x,i)=>digit(ctx,digits[i],x,y,98,tall,heavy,{glow:18}));
     dot(ctx,350,y+tall-14,13,!!frame.point,14);
     const clock=String(frame.clock||BLANK_CLOCK).padEnd(5,' ');
-    [[clock[0],492],[clock[1],588],[clock[3],698],[clock[4],794]].forEach(([c,x])=>digit(ctx,c,x,y,86,tall,26,{glow:14}));
-    dot(ctx,688,y+66,10,!!frame.colon,10);dot(ctx,688,y+146,10,!!frame.colon,10);
+    [[clock[0],488],[clock[1],578],[clock[3],704],[clock[4],796]].forEach(([c,x])=>digit(ctx,c,x,y,86,tall,26,{glow:14}));
+    dot(ctx,692,y+66,10,!!frame.colon,10);dot(ctx,688,y+146,10,!!frame.colon,10);
     ctx.restore();return;
   }
   // The big digits.

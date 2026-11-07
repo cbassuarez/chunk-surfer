@@ -1,4 +1,5 @@
 // Promoted from the verified Source drive study; game lifecycle is source-drive-session.js.
+import{CAB_SOURCES,cabLightFrame,rigidInverse}from'../../render/cab-light.js';
 import{roadAt,worldAt,roadSurfaceAt}from'./road.js';
 import{routeLayoutBetween,ORDINARY_BRIDGE,ORDINARY_DESTINATION}from'./route-layout.js';
 import{doorAssembly,doorLeafLocalMatrix}from'../../data/source-door-fields.js';
@@ -34,7 +35,7 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  const bodyPoint=p=>transform(body,p),cabPoint=p=>bodyPoint(offset(p,mount));
  const cabMatrix=(p=[0,0,0],rx=0,rz=0)=>{const m=multiply(body,rotation(rx,0,rz)),q=cabPoint(p);m[12]=q[0];m[13]=q[1];m[14]=q[2];return m;};
  const cab=(mesh,p=[0,0,0],rx=0,rz=0,extra={})=>{const instance=placed(mesh,cabMatrix(p,rx,rz),extra);props.push(instance);return instance;};
- cab('drive_cabin');cab('drive_radio');props.push(placed('drive_vehicle_body',body,{skyExposed:true,cabinVolume:{min:metrics.body.min,max:metrics.body.max}}));
+ cab('drive_cabin');cab('drive_cabin_dash');cab('drive_radio');props.push(placed('drive_vehicle_body',body,{skyExposed:true,cabinVolume:{min:metrics.body.min,max:metrics.body.max}}));
  cab('drive_wheel',metrics.wheel.center,metrics.wheel.tiltX,-s.steeringWheelAngle);
  const toWheel=(p,point=true)=>{const a=metrics.wheel.tiltX,c=Math.cos(a),sn=Math.sin(a),d=point?p.map((v,i)=>v-metrics.wheel.center[i]):p;return[d[0],c*d[1]+sn*d[2],-sn*d[1]+c*d[2]];};
  const recorderKeys=Object.fromEntries(['record','play','stop'].map((id,i)=>[id,[.0340638587+i*99*.274/736,-.05547011,.0299]])),rc=metrics.recorder,ct=Math.cos(rc.tiltX),st=Math.sin(rc.tiltX);
@@ -68,14 +69,16 @@ export function makeDriveScene(s,metrics,{headlights=true,wipers=false,showHands
  props.push(placed(assembly.frameMesh,doorM,{id:'canonical-goods-frame',skyExposed:true}));for(let i=0;i<2;i++)props.push(placed(assembly.leafMesh,multiply(doorM,doorLeafLocalMatrix(assembly,i,doorCrossing.open)),{id:'canonical-goods-leaf-'+i,skyExposed:true}));
  const threshold=rotation();threshold[0]=3.45;threshold[13]=.012;props.push(placed('door_threshold_slab',multiply(doorM,threshold),{id:'canonical-goods-threshold',skyExposed:true}));
  const lamps=(metrics.body?.headlamps||[[-.66,1.02,-3.215],[.66,1.02,-3.215]]).map((p,i)=>{const q=bodyPoint(p);return{id:'drive-headlamp-'+i,x:q[0],y:q[1],z:q[2],color:[1,.89,.72],intensity:headlights?5:0,radius:95,penetration:1,castsShadow:i===0,shadowYaw:s.heading,shadowPitch:attitude.pitch-.02};});
- // The receiver/instrument spill originates at the fascia. A floating point
- // beside the driver's head bleached the roof before final acquisition.
- const cabinLamp=cabPoint([.20,1.10,-.35]);lamps.push({id:'drive-instrument-bounce',x:cabinLamp[0],y:cabinLamp[1],z:cabinLamp[2],color:[.72,.66,.52],intensity:.62,radius:1.65,penetration:1});
+ // The panel lamps, in the binnacle, on with the sidelights. The rest of the cab's light has
+ // somewhere of its own to come from (render/cab-light.js); this one is a real lamp so that it
+ // lands on his hands as well. It keeps this slot: the shader lets the cab alone see lamp 2.
+ const cabinLamp=cabPoint(CAB_SOURCES.binnacle);lamps.push({id:'drive-instrument-bounce',x:cabinLamp[0],y:cabinLamp[1],z:cabinLamp[2],color:[.70,.84,.50],intensity:headlights?.55:0,radius:.86,penetration:1});
  for(let i=0;i<3;i++)targets.push({id:'tune',preset:i,label:`PRESET ${i+1} · ${['SERVICE','COMPANY','MUSIC'][i]}`,point:cabPoint(cabRadioKeyPoint(i))});
  targets.push({id:'power',label:'VOLUME / OFF',point:cabPoint(cabRadioVolumePoint())},{id:'record',label:'REC / STOP · R',point:transform(recM,recorderKeys.record)});
  targets.push({id:'play',label:'PLAY LAST TAKE · E',point:transform(recM,recorderKeys.play)},{id:'stop',label:'STOP TRANSPORT · X',point:transform(recM,recorderKeys.stop)});
  const evolution=driveEvolutionFrame(s),cut=makeCutScene(s,evolution),predicaments=makePredicamentScene(s);props.push(...cut.props,...predicaments.props);lamps.push(...cut.lights,...predicaments.lights);const mic=offset(metrics.eye,mount),cabinSource=source=>{const d=source.world.map((v,i)=>v-body[12+i]);return{...source,position:[body[0]*d[0]+body[1]*d[1]+body[2]*d[2]-mic[0],body[4]*d[0]+body[5]*d[1]+body[6]*d[2]-mic[1],body[8]*d[0]+body[9]*d[1]+body[10]*d[2]-mic[2]]};};cut.sources=cut.sources.map(cabinSource);predicaments.sources=predicaments.sources.map(cabinSource);
  const rainShelter={x:bridge.matrix[12],y:bridge.y+ORDINARY_BRIDGE.clearance,z:bridge.matrix[14],heading:bridge.heading};
  props.push(...vanBrandInstances(props));
- const eye=transform(head,offset(metrics.eye,mount));return{cut,predicaments,evolution,props,colliders,eye,lamps,mirrors,targets,body,bridge,rainShelter,doorCrossing,recorderMatrix:recM,cabPoint,roadPitch:attitude.pitch,retroreflectors};
+ const cabLight=cabLightFrame({worldToCab:rigidInverse(cabMatrix()),gain:.2,radio:s.radioOn===false?0:1,road:headlights?1:.08,sky:.8});
+ const eye=transform(head,offset(metrics.eye,mount));return{cut,predicaments,evolution,props,colliders,eye,lamps,mirrors,targets,body,bridge,rainShelter,doorCrossing,recorderMatrix:recM,cabPoint,roadPitch:attitude.pitch,retroreflectors,cabLight};
 }

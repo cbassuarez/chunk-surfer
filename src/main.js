@@ -1,5 +1,5 @@
 import {createPlayDurationClock} from './game/play-duration.js';
-import {createHushFootfallTracker,hushFootfallPlan,hushFootfallCaption} from './game/hush-footfall.js';
+import {SOURCE_FOOTFALL,createHushFootfallTracker,createTravelFootfallTracker,hushFootfallPlan,hushFootfallCaption} from './game/hush-footfall.js';
 import {createHushFootstepPlayer} from './audio/hush-footsteps.js';
 import {SET_PIECE,createScareDirector,createSetPiece,createStartleMeter} from './game/set-pieces.js';
 import {HUSH_CATCH,HUSH_CATCH_AFTERIMAGE_DELAY,hushCatchPlan,hushCatchFrame,hushCatchAfterimageAlpha,hushCatchVacuumLevel} from './game/hush-catch.js';
@@ -13,8 +13,8 @@ import {createFirstStrikeRenderer,prewarmFirstStrikeMeshes,firstStrikeWarningFra
 import {SIX_LOOP,sixCrashDue,sixLoopActive,stageSixCrash,syncSixLoopDebugOverlay,clearSixLoop,sixReturnPending,leaveSixLoop,sixOrdinaryTakes,showSixDebugOverlay,sixLoopDebugBuild} from './game/six-loop.js';
 import {createSixNothingnessScene} from './game/six-nothingness-scene.js';
 import {createSixNothingnessRenderer} from './render/six-nothingness-renderer.js';
-import {createHorizonMirrorScene} from './game/horizon-mirror-scene.js';
-import {createHorizonMirrorRenderer} from './render/horizon-mirror-renderer.js';
+import {createHorizonApproachScene} from './game/horizon-approach-scene.js';
+import {createHorizonApproachRenderer} from './render/horizon-approach-renderer.js';
 import {createThresholdGagAudio} from './audio/threshold-gag.js';
 import {makeOpeningPrologueScene} from './game/opening-prologue-scene.js';
 import {makeEndingDriveOffScene} from './game/ending-drive-off-scene.js';
@@ -491,7 +491,8 @@ import {
 import { makeArrivalScene, makeArrivalTitleScene, makeBoothDownbeatHoldScene, makeColdOpenScene, makeWorldTitleScene } from './game/coldopen.js';
 import { makeOpeningVehicleScene } from './game/opening-vehicle-scene.js';
 import { OPENING_CAB_ASSET, OPENING_CAB_REQUIRED_MESHES, openingCabInstances, openingCabTargets, makeOpeningCabInspectionScene } from './game/opening-cab-inspection.js';
-import { openingVehicleInstances, openingVehiclePending, openingVehiclePoint } from './data/opening-vehicle.js';
+import { openingVehicleInstances, openingVehiclePending, openingVehiclePoint, openingVehicleWorldToCab } from './data/opening-vehicle.js';
+import { CAB_SOURCES, cabLightFrame } from './render/cab-light.js';
 import { vanBrandInstances } from './render/van-brand.js';
 import { makeOpeningOvertureScene } from './game/opening-overture-scene.js';
 import { OPENING_OVERTURE, OPENING_OVERTURE_SHOTS } from './data/opening-overture.js';
@@ -1344,7 +1345,8 @@ let hushHitTimer=null;
 let hushJumpTimer=null;
 let lastExposureEvent=null;
 let hushStepBus=null,hushStepNeedleLevel=0,hushStepNeedleAt=-Infinity,hushFootfallSurface=null,hushFootfallLast=null;
-const hushFootfallTracker=createHushFootfallTracker();
+const hushFootfallTracker=createHushFootfallTracker(),sourceFootfallTracker=createTravelFootfallTracker();
+let sourceFootfallPreparedAt=-Infinity;
 const hushFootstepPlayer=createHushFootstepPlayer({getContext:()=>actx,getDestination:()=>hushStepBus});
 let scareDirector=null,scareDirectorRun=null,setPiece=null,setPieceActor=null,setPieceShown=false,setPieceMeterPinned=false,setPieceVacuumAt=1;
 const setPieceWatch={recorder:0,page:0,quiet:0,lit:0,dark:0};
@@ -3200,7 +3202,7 @@ function retainLastExposure(){
 }
 // ── its feet ─────────────────────────────────────────────────────────────────
 // The ordinary hunter's real gait, heard from where the listener really is. Source's
-// authored bodies have no gait and aren't heard this way.
+// bodies have no gait, so theirs come from their real travel (tickSourceHushFootfall).
 function hushFootfallAudible(){
   return storyMode&&!paused&&!document.hidden&&!lastExposureEvent&&PRES.isActive()&&hushActiveForPlayer()
     &&usingPlan()&&!usingSpecialSpace()&&!usingSourceSpace();
@@ -3214,7 +3216,7 @@ function playHushFootfall(event,actor=PRES.presenceState()){
   const yaw=R3.r3dWorldYaw?.()??mapWorldHeading(),bearing=Math.atan2(dx,-dz)-yaw;
   const listener=acousticSpatialAt(px,py),occlusionDb=acousticOcclusionDb(hush,listener)+basementWatcherAcousticFirewallDb(hush,listener);
   const settings=getSave().settings||{},surface=playerFootingAt(actor.x,actor.y)?.surface||'concrete';
-  const plan=hushFootfallPlan({kind:event.kind,cycle:event.cycle,bearing,occlusionDb,riseM:rise,metres:Math.hypot(dx*CELL,dz*CELL,rise+1.5),
+  const plan=hushFootfallPlan({kind:event.kind,cycle:event.cycle,strideMetres:event.strideMetres,bearing,occlusionDb,riseM:rise,metres:Math.hypot(dx*CELL,dz*CELL,rise+1.5),
     absorption:hushFieldFrame?.presentation?.audio??hushFieldFrame?.absorption?.audio??0,monitoring:REC.isMonitoring(),softened:settings.hushSuddenCuts==='softened'});
   hushFootfallLast={...plan,occlusionDb,bearing,surface};
   if(!plan.audible)return plan;
@@ -3224,6 +3226,49 @@ function playHushFootfall(event,actor=PRES.presenceState()){
   if(plan.shake>0&&shakeMode()==='full'&&!scenes.blocksInput())CR.fx.shake(plan.shake,110);
   if(plan.caption&&settings.hushCueCaptions)pushEvent(`// [${hushFootfallCaption({kind:event.kind,bearing,occlusionDb})}]`);
   return plan;
+}
+// What stands between the listener and a body in Source. Its open ground has no
+// walls, so this only ever speaks in its rooms and round its corners.
+function sourceBodyOcclusionDb(x,y){
+  const geometry=activeGeometry(),steps=Math.max(2,Math.min(30,Math.ceil(Math.hypot(x-px,y-py)/3)));
+  if(!geometry?.isSolid)return 0;
+  let blocked=0;
+  for(let i=1;i<steps;i++)if(geometry.isSolid(px+(x-px)*i/steps,py+(y-py)*i/steps))blocked++;
+  return 24*blocked/Math.max(1,steps-1);
+}
+function playSourceHushFootfall(event,actor){
+  const view=R3.r3dViewCamera?.();
+  if(!view?.eye)return null;
+  const dx=actor.x-view.eye.x/CELL,dz=actor.y-view.eye.z/CELL,rise=(Number(actor.floorH)||0)-view.eye.y;
+  const bearing=Math.atan2(dx,-dz)-view.yaw,footing=playerFootingAt(actor.x,actor.y),surface=footing?.surface||'source';
+  const monitoring=REC.isMonitoring()||scenes.has(RECORDER_SCENE_ID),settings=getSave().settings||{};
+  const occlusionDb=sourceBodyOcclusionDb(actor.x,actor.y);
+  const plan=hushFootfallPlan({kind:event.kind,cycle:event.cycle,strideMetres:event.strideMetres,bearing,occlusionDb,riseM:rise,monitoring,
+    metres:Math.hypot(dx*CELL,dz*CELL,rise),reach:SOURCE_FOOTFALL.reach,human:actor.performance?.role==='court-trace',
+    // Where the ground has no sound of its own he is quiet to the ear and plain on the tape.
+    extraLossDb:footing?.profile==='erased'&&!monitoring?SOURCE_FOOTFALL.erasedDb:0,
+    absorption:hushFieldFrame?.presentation?.audio??hushFieldFrame?.absorption?.audio??0,softened:settings.hushSuddenCuts==='softened'});
+  hushFootfallLast={...plan,id:event.id,occlusionDb,bearing,surface,profile:footing?.profile||null};
+  if(!plan.audible)return plan;
+  hushFootstepPlayer.play(plan,{surface});
+  if(plan.needle>0){hushStepNeedleLevel=plan.needle;hushStepNeedleAt=performance.now();}
+  if(plan.shake>0&&shakeMode()==='full'&&!scenes.blocksInput())CR.fx.shake(plan.shake,110);
+  if(plan.caption&&settings.hushCueCaptions)pushEvent(`// [${hushFootfallCaption({kind:event.kind,bearing,occlusionDb})}]`);
+  return plan;
+}
+function tickSourceHushFootfall(dt){
+  const frame=usingSourceSpace()&&storyMode&&!lastExposureEvent&&!pressurePerformance.isReplay()?pressurePerformance.snapshot():null;
+  const actors=[frame?.primary,frame?.secondary].filter(actor=>actor&&['source-rear','source-front','court-trace'].includes(actor.performance?.role)
+    &&actor.strength*(actor.performance.manifestation||0)>.05&&actor.mode!=='off');
+  const events=sourceFootfallTracker.step(actors.map(actor=>({id:actor.id,x:actor.x*CELL,y:actor.y*CELL})),dt);
+  if(!actors.length)return;
+  const now=performance.now();
+  if(now-sourceFootfallPreparedAt>1500){
+    sourceFootfallPreparedAt=now;
+    const surface=playerFootingAt(actors[0].x,actors[0].y)?.surface||'source';
+    if(surface!==hushFootfallSurface){hushFootfallSurface=surface;void hushFootstepPlayer.prepare(surface);}
+  }
+  for(const event of events){const actor=actors.find(a=>a.id===event.id);if(actor)playSourceHushFootfall(event,actor);}
 }
 function hushStepNeedle(){
   const age=performance.now()-hushStepNeedleAt;
@@ -4441,9 +4486,10 @@ function locomotionFactors(place){
   // A limp: the step off the weak leg is longer than the one onto it.
   if(usingSourceSpace()&&outskirtsStepIndex%2===1)factors.push(1/(1+.22*outskirtsLosing()));
   if(PLANT.heavyWrenchDragging())factors.push(.65);
-  if(worldBoundaryFriction>0)factors.push(1/(1+worldBoundaryFriction*(WORLD_BOUNDARY_FRICTION.maxMult-1)));
   if(dockHauntingFrame&&!dockHauntingFrame.resolved)factors.push(1/dockHauntingMoveScale(dockHauntingFrame.pressure));
-  if(curPlayerCtx&&!curPlayerCtx.onTerrain)factors.push(1/(VOID_TRUDGE.startPenalty+(VOID_TRUDGE.maxPenalty-VOID_TRUDGE.startPenalty)*voidFatigue));
+  // Not the procedural world's seam friction or void trudge. Story mode is never
+  // "on terrain", so those would halve every walk in the building; the old clamp
+  // hid that for as long as it ate every slow-down.
   return factors;
 }
 function currentLocomotion(nowMs=performance.now()){
@@ -4459,7 +4505,7 @@ function currentLocomotion(nowMs=performance.now()){
     ?Math.max(SPEED_FLOOR,Math.min(LEGACY_GRID_MPS,factors.reduce((v,f)=>v*f,base)))
     :applySpeedFactors(base,factors);
   if(!Number.isFinite(speed)||speed<=0)speed=GAIT_SPEED.walk;
-  lastLocomotionFrame={place:place.kind,reason:place.reason,gait,run,chase,speed,authored:place.kind==='authored'};
+  lastLocomotionFrame={place:place.kind,reason:place.reason,gait,run,chase,speed,factors,authored:place.kind==='authored'};
   return lastLocomotionFrame;
 }
 function currentMoveIntervalMs(){
@@ -7224,25 +7270,24 @@ function tickSixReturn(){
   architectureDoorCauses.set(id,true);syncArchitectureDoorAudio();pumpDoorAudioEvents(0);
   saveCommit({doors:FP.saveDoorState()});facilityMapCache={key:null,model:null};syncDoorDynamicProps();
 }
-// HORIZON, THE MIRROR. Stage 1 of docs/plans/horizon-mirror.md: the place alone,
-// reachable only from the probe. It reports what he does and commits nothing; the
-// live Horizon is untouched until stage 3 wires it in. It borrows the same seat as
-// the nothingness below, for the same reason.
-let horizonMirrorRenderer=null;
-const horizonMirrorScene=()=>firstStrikeScene?.id==='horizon-mirror'?firstStrikeScene:null;
-function beginHorizonMirror({occupant='daisy'}={}){
-  if(horizonMirrorScene())return horizonMirrorScene();
+// HORIZON. Stage 1: the place alone, reachable only from the probe. It reports what
+// he does and commits nothing; the live Horizon is untouched until stage 3 wires it
+// in. It borrows the same seat as the nothingness below, for the same reason.
+let horizonApproachRenderer=null;
+const horizonApproachScene=()=>firstStrikeScene?.id==='horizon-approach'?firstStrikeScene:null;
+function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=null}={}){
+  if(horizonApproachScene())return horizonApproachScene();
   if(firstStrikeScene)return null;
-  horizonMirrorRenderer ||= createHorizonMirrorRenderer();
-  void horizonMirrorRenderer.prepare().catch(error=>console.error('[horizon-mirror]',error));
-  resetMotionInput('horizon-mirror',{stopRenderMove:true});
+  horizonApproachRenderer ||= createHorizonApproachRenderer();
+  void horizonApproachRenderer.prepare().catch(error=>console.error('[horizon-approach]',error));
+  resetMotionInput('horizon-approach',{stopRenderMove:true});
   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
   let scene;
-  scene=createHorizonMirrorScene({renderer:horizonMirrorRenderer,occupant,
+  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,variant,occupant,condition,lyleBox,
     presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
-    onEvent:event=>{console.info('[horizon-mirror]',event);pushEvent(`// horizon mirror: ${event.type.replace('horizon-mirror-','')}`);},
-    onError:error=>console.error('[horizon-mirror]',error),
-    onExit:()=>{if(firstStrikeScene===scene){firstStrikeScene=null;horizonMirrorRenderer=null;}},
+    onEvent:event=>{console.info('[horizon-approach]',event);pushEvent(`// horizon: ${event.type.replace('horizon-approach-','')}`);},
+    onError:error=>console.error('[horizon-approach]',error),
+    onExit:()=>{if(firstStrikeScene===scene){firstStrikeScene=null;horizonApproachRenderer=null;}},
   });
   const update=scene.update;
   scene.update=dt=>{if(paused||!gameplayInputLifecycleActive()){scene.pause();return;}scene.resume();update(dt);};
@@ -9830,7 +9875,9 @@ function syncArchitecturalLocalLights(group,{logicalX=px,logicalY=py,suppressAct
     return{id:`opening-headlamp-${index}`,x:arrivalAnchor.x+c*side+n*2.25,y:arrivalAnchor.y+.72,z:arrivalAnchor.z+n*side-c*2.25,
       color:[1,.88,.69],intensity:4,radius:20,direction:[n,-.075,-c],coneOuterCos:.82,coneInnerCos:.94,
       penetration:0,kind:'fitting',maintained:true,castsShadow:false};
-  }),{id:'opening-dashboard-light',x:arrivalAnchor.x,y:arrivalAnchor.y+1.25,z:arrivalAnchor.z,color:[.77,.82,.62],intensity:.55,radius:2.4,penetration:0,kind:'fitting',maintained:true}]:[];
+  }),(()=>{const panel=openingVehiclePoint(arrivalAnchor,CAB_SOURCES.binnacle);return{id:'opening-dashboard-light',...panel,color:[.70,.84,.50],intensity:arrivalFrame.phase==='exiting'?0:.55,radius:.86,penetration:1,kind:'fitting',maintained:true};})()]:[];
+  // The rest of the parked cab's light (render/cab-light.js). The van is drawn with the building here.
+  P3.setParkedCabLight(arrivalAnchor?cabLightFrame({worldToCab:openingVehicleWorldToCab(arrivalAnchor),radio:openingCabRadio?.snapshot()?.on?1:0,road:arrivalFrame.phase==='driving'?.55:.12,sky:.8}):null);
   const openingRoomFill=shouldStageOpeningCinematic(openingCinematicFrame())&&openingShot.renderGroup!=='ground'?{id:'opening-room-bounce',x:openingShot.physicalEye[0],y:openingShot.physicalEye[1]+.45,z:openingShot.physicalEye[2],color:[1,.87,.71],intensity:2.2,radius:14,penetration:0,kind:'fitting',maintained:true,castsShadow:false}:null;
   const roomPresentation=[...(openingRoomFill?[openingRoomFill]:[]),...arrivalLights,...informantLights,...litPresentation,...chandelierLights];
   chapelDressingLights=group==='upper'?litPresentation:[];
@@ -14630,6 +14677,8 @@ function beginGetInDriveTeaser({onDone=()=>TUT.startTutorial()}={}){
       const tuning=frame?.vehiclePose?.tuning;
       if(tuning)uiDraw(({ctx})=>paintRadioDialStatic(ctx,{width:ctx.canvas.width,height:ctx.canvas.height,fraction:tuning.fraction,time:frame.timeSec,reducedFlash:flashMode()!=='full'}));
       if(frame.controlsEnabled&&frame.timeSec<8){uiFill(2,rows-3,cols-4,2,'rgba(0,0,0,.78)');uiCenter(rows-2,`W / S PEDALS   A / D STEER   SPACE BRAKE   ${BINDINGS.activeInputPromptDevice()==='controller'?'RIGHT STICK':'MOUSE'} · LOOK`,'t-chunk');}
+      else if(frame.controlsEnabled&&frame.vehiclePose?.radioLean>.6)uiCenter(rows-2,'1 2 3 STATION   O POWER','t-chunk');
+      else if(frame.controlsEnabled&&Math.abs((frame.vehiclePose?.lookYawOffset??0)+.65)<.34&&(frame.vehiclePose?.lookPitchOffset??0)<-.28)uiCenter(rows-2,`HOLD ${BINDINGS.activeInputPromptDevice()==='controller'?'LB':'Q'} · THE RADIO`,'t-chunk');
       const caption=radio?.caption?.text;if(caption){const words=caption.split(/\s+/);let line='',lines=[];for(const word of words){if(line.length+word.length+1>Math.min(76,cols-8)){lines.push(line);line=word;}else line+=(line?' ':'')+word;}if(line)lines.push(line);for(let i=0;i<Math.min(2,lines.length);i++)uiCenter(rows-5+i,lines[i],'t-trail-1');}
       if(error)uiCenter(rows-1,String(error).slice(0,cols-4),'ui-danger');
     },
@@ -35890,7 +35939,7 @@ function installProbe(){
     locomotion:()=>{const frame=currentLocomotion(),eye=renderedPlayerPoint(),body=physicalPointFor(px,py);
       return{...frame,intervalMs:currentMoveIntervalMs(),breath:{...playerBreath},exertion:breathExertion(playerBreath),
         breathAudio:exertionBreath.snapshot(),padRunLatched,cell:{x:px,y:py},
-        body:{x:body.x*CELL,z:body.z*CELL},eye:{x:eye.x*CELL,z:eye.z*CELL},glide:!!renderMove?.glide,steps:stepCount,
+        body:{x:body.x*CELL,z:body.z*CELL},eye:{x:eye.x*CELL,z:eye.z*CELL},glide:!!renderMove?.glide,steps:stepCount,plants:playerFootIndex,
         noise:REC.recState().noise,recorderGait:REC.recState().gait};},
     // Harness only: open the chase rung for a while without staging a hunt.
     locomotionChase:(seconds=10)=>{chaseGaitUntilMs=performance.now()+Math.max(0,Number(seconds)||0)*1000;return true;},
@@ -36423,10 +36472,11 @@ function installProbe(){
       driveOff:{begin:(endingId='')=>beginEndingDriveOff({endingId,onDone:()=>{}}),view:()=>endingDriveOffScene?.view?.()||null,controller:()=>endingDriveOffScene?.review?.controller||null},
       prologue:{begin:()=>beginOpeningPrologue({onDone:()=>{}}),seekStage:key=>openingPrologueScene?.seekStage?.(key),pose:stage=>openingPrologueScene?.pose?.(stage),key:event=>openingPrologueScene?.key?.(event),view:()=>openingPrologueScene?.view?.()||null,state:()=>({horizon:R3.r3dSourceRestHorizonStatus?.(),rain:R3.r3dRainAmount?.(),music:openingPrologueMusic?.snapshot?.()||null})},
       render:()=>sixNothingnessScene()?.render?.(),renderer:()=>sixNothingnessRenderer?.diagnostics?.()||null,save:()=>structuredClone(getSave()),keyring:()=>syncPrologueKeyring()},
-    horizonMirror:{enter:(occupant='daisy')=>!!beginHorizonMirror({occupant}),view:()=>horizonMirrorScene()?.view?.()||null,place:next=>horizonMirrorScene()?.place?.(next),
-      occupant:id=>horizonMirrorScene()?.setOccupant?.(id),pluck:()=>!!horizonMirrorScene()?.interact?.(),renderer:()=>horizonMirrorRenderer?.diagnostics?.()||null,
-      captureImage:()=>R3.r3dTowerViewImage?.()||null,captureDepth:()=>R3.r3dTowerViewDepthStats?.()||null,
-      leave:()=>{const s=horizonMirrorScene();if(!s)return false;scenes.remove(s);s.exit?.();return true;}},
+    horizonApproach:{enter:(options={})=>!!beginHorizonApproach(options),view:()=>horizonApproachScene()?.view?.()||null,place:next=>horizonApproachScene()?.place?.(next),placeAt:(r,phi,look)=>horizonApproachScene()?.placeAt?.(r,phi,look),
+      walk:(seconds,input)=>horizonApproachScene()?.walk?.(seconds,input)||null,render:()=>horizonApproachScene()?.render?.(),
+      occupant:(id,options)=>horizonApproachScene()?.setOccupant?.(id,options),finish:id=>horizonApproachRenderer?.setFinish?.(id),pluck:()=>!!horizonApproachScene()?.interact?.(),
+      renderer:()=>horizonApproachRenderer?.diagnostics?.()||null,
+      leave:()=>{const s=horizonApproachScene();if(!s)return false;scenes.remove(s);s.exit?.();return true;}},
     godWarpBay:()=>godWarpBayApron(),
     godWarpGetIn:()=>godWarpToHook('get-in'),
     godWarpHook:(id)=>godWarpToHook(String(id||'')),
@@ -38716,6 +38766,7 @@ function tickPressurePerformance(dt){
   const suspended=replay||paused||document.hidden||!document.hasFocus()||(scenes.blocksWorld()&&!authoredPresentation);
   if(suspended)return;
   pressurePerformance.tick(dt,{...pressurePresentationInputs(),reducedMotion:shakeMode()!=='full'});
+  tickSourceHushFootfall(dt);
   if(typeof hushMotionStudyDriver!=='undefined'&&hushMotionStudyDriver){
     const a=pressurePerformance.snapshot().primary;
     hushMotionStudyOutput=hushMotionStudyEnabled&&a?hushMotionStudyDriver.tick(dt,a,{reducedMotion:shakeMode()!=='full'}):null;

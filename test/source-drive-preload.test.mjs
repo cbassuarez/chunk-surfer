@@ -10,7 +10,7 @@ const staticMeshes={
  'drive.glb':['drive_cabin','drive_radio','drive_road','drive_recorder_body'],
  'van-brand.glb':['van_brand_yard','van_brand_drive'],
  'cut-static.glb':['cut_geology','cut_retaining'],
- 'cut-roadside.glb':['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges'],
+ 'cut-roadside.glb':['cut_guardrail','drive_plain_paving','drive_uk_edge_markings','drive_uk_centre_and_edges','drive_uk_double_white'],
  'drive-predicaments.glb':['dp_wreck_saloon','dp_road_fold','dp_whiteout_pylon'],
  'road-cast.glb':['rc_flatbed','rc_tarp','rc_hoarding','rc_cat_eye'],
  'cab-radio.glb':['drive_radio_readout','drive_radio_knob','drive_radio_key_1'],

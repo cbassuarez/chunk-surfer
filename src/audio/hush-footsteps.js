@@ -6,6 +6,8 @@
 import { assetUrl } from '../platform/paths.js';
 
 const MAX_CLIPS = 4;
+// The bank's floors are recorded at very different levels. Its weight shouldn't be.
+const HEEL_PEAK_DB = -8, MAX_TRIM = 3;
 
 export function createHushFootstepPlayer({ getContext, getDestination, fetcher = (...args) => fetch(...args), urlFor = assetUrl, manifestUrl = 'audio/footsteps/manifest.json' } = {}) {
   let chain = null, manifest = null, manifestPending = null, noise = null;
@@ -71,7 +73,8 @@ export function createHushFootstepPlayer({ getContext, getDestination, fetcher =
     try {
       const response = await fetcher(urlFor(manifest.clips[id].url));
       if (!response.ok) throw new Error(String(response.status));
-      clips.set(id, await ctx.decodeAudioData(await response.arrayBuffer()));
+      const peakDb = Number(manifest.clips[id].samplePeakDbfs);
+      clips.set(id, { buffer: await ctx.decodeAudioData(await response.arrayBuffer()), trim: Math.min(MAX_TRIM, Number.isFinite(peakDb) ? 10 ** ((HEEL_PEAK_DB - peakDb) / 20) : 1) });
     } catch (_) { wanted.delete(id); }
   }
   function pick(surface, clip) {
@@ -81,10 +84,10 @@ export function createHushFootstepPlayer({ getContext, getDestination, fetcher =
     uses.set(key, used + 1);
     return clips.get(choices[used % choices.length]);
   }
-  function sample(c, buffer, at, gain, rate) {
-    if (!buffer || gain <= 0) return;
+  function sample(c, clip, at, gain, rate) {
+    if (!clip || gain <= 0) return;
     const source = c.ctx.createBufferSource(), env = c.ctx.createGain();
-    source.buffer = buffer; source.playbackRate.setValueAtTime(rate, at); env.gain.setValueAtTime(gain, at);
+    source.buffer = clip.buffer; source.playbackRate.setValueAtTime(rate, at); env.gain.setValueAtTime(gain * clip.trim, at);
     source.connect(env); env.connect(c.input); source.start(at);
     source.onended = () => { try { source.disconnect(); env.disconnect(); } catch (_) {} };
   }
@@ -117,6 +120,9 @@ export function createHushFootstepPlayer({ getContext, getDestination, fetcher =
     // Fetching is never permission to play: a slow load misses a step, it doesn't delay one.
     async prepare(surface) {
       const ctx = getContext?.();
+      // Now, not on the first footfall: the browser's HRTF data arrives late, and a
+      // panner built on the step itself would swallow it.
+      emitter();
       if (!ctx || !await loadManifest()) return false;
       await Promise.all(['slow', 'scuff'].flatMap(clip => ids(surface, clip)).map(id => load(ctx, id)));
       return true;
@@ -137,6 +143,7 @@ export function createHushFootstepPlayer({ getContext, getDestination, fetcher =
       if (plan.creak) creak(c, now, plan.creak);
       if (plan.dryGain > 0) sample(c, pick(surface, plan.clip), now, plan.dryGain, plan.rate);
       if (plan.thump) thump(c, now + plan.thump.delay, plan.thump);
+      if (plan.body) thump(c, now + plan.body.delay, plan.body);
       if (plan.drag) sample(c, pick(surface, 'scuff'), now + plan.drag.delay, plan.drag.gain, plan.drag.rate);
       return true;
     },

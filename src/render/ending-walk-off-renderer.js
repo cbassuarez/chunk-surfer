@@ -63,7 +63,7 @@ export function endingWalkOffRenderFrame(controller,metrics,memory={}){
   // in van space: its edges fall just outside the rails, not across the tarmac.
   weather.returnBlack={amount:v.gone,worldToBody:inverse(scene.body),min:[-6.5,-1,metrics.body.min[2]-reach],max:[4.1,4,metrics.body.max[2]+.4]};
   return{scene,look,driveState:{...s,heading:s.heading},weather,evolution:driveEvolutionFrame(s),coastalMemory:null,recording:{level:0},
-    cinematicLook:true,physicalHeadlampCones:true,timeSec:v.time,reducedMotion:v.reducedMotion};
+    cinematicLook:true,timeSec:v.time,reducedMotion:v.reducedMotion};
 }
 export function createEndingWalkOffRenderer({createRenderer=createSourceDriveRenderer,props=P3,resolveAsset=assetUrl}={}){
   const renderer=createRenderer(),memory={};let last=null,release=null,disposed=false,initialized=false,initializing=null;

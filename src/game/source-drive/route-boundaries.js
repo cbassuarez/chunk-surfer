@@ -4,6 +4,11 @@ import {roadAt,worldAt,roadSurfaceAt} from './road.js';
 import {driveBodyCorners,vehiclePoseIntersects} from './vehicle-contacts.js';
 export const BOUNDARY_MESH_BOUNDS=Object.freeze({
  cut_guardrail:{min:[-.095,-.1,-1.54],max:[.1359,.95,1.54]},
+ // The opening road's drystone: the same collision footprint as the rail, thicker
+ // only on the side the van can't reach.
+ m62_drystone_0:{min:[-.095,-.1,-1.54],max:[.1359,.95,1.54]},
+ m62_drystone_1:{min:[-.095,-.1,-1.54],max:[.1359,.95,1.54]},
+ m62_drystone_2:{min:[-.095,-.1,-1.54],max:[.1359,.95,1.54]},
  drive_retaining_wall:{min:[-.22,0,-.5],max:[.34,1.35,.5]},
 });
 export const FINITE_ROAD=Object.freeze({start:-32,end:1244,segmentLength:3,normalClearance:1.2641,bayClearance:.91});

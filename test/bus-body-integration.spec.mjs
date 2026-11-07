@@ -87,8 +87,8 @@ test('the complete production movement interval gives the coach and living footi
  context.setRun(true);assert.equal(context.interval(),Math.round(1000*CELL/1.4),'the living body offers only a walk');context.setRun(false);
  for(const destination of['bus','organ']){
   place=destination;context.outskirtsStepIndex=1;context.worldBoundaryFriction=.25;
-  const expected=Math.round((1000*CELL/(destination==='bus'?1.4:.7))*(1+.22*.212)*(1+.25*(WORLD_BOUNDARY_FRICTION.maxMult-1)));
-  assert.equal(context.interval(),expected,'weak-leg and seam friction ride on the place gait');
+  const expected=Math.round((1000*CELL/(destination==='bus'?1.4:.7))*(1+.22*.212));
+  assert.equal(context.interval(),expected,'the weak leg rides on the place gait; the procedural world seam does not');
  }
  place='outside';context.outskirtsStepIndex=0;context.worldBoundaryFriction=0;
  assert.equal(context.interval(),before,'leaving the bus keeps its local slow pace');

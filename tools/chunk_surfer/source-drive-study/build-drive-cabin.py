@@ -765,7 +765,7 @@ receipt={'schema':1,'kind':'source-drive-isolated-geometry','units':'metres','fo
  'gauges':[{'kind':k,'center':[x,1.207,-.623],'radius':r}for k,x,r in V['gauges']],
  'road':{'mesh':'drive_road','length':1,'width':6.5,'shoulderWidth':1.6,'topY':0,'note':'Do not scale cabin or arbitrary world objects along with repeating unit road segment.'},
  'mirrors':[{'mesh':'drive_mirror_'+side,'center':list(mirror_at(sign)),'normal':[0,0,1],'size':[.127,.197],'uv':[0,0,1,1],'rearLookDirection':[0,0,1]}for side,sign in [('left',-1),('right',1)]],
- 'recorder':{'bodyMesh':'drive_recorder_body','cradleMesh':'drive_recorder_cradle','readoutMesh':'drive_recorder_readout','center':[-.18,1.115,-.34],'tiltX':-.55,'dimensions':[W,H,D],'readoutLocalCenter':[0,H/2-195.5*W/736,RECORDER_READOUT_Z],'readoutSize':[666*W/736,239*W/736],'uv':[0,0,1,1],'normal':[0,0,1],'artworkPixels':[666,239]},
+ 'recorder':{'bodyMesh':'drive_recorder_body','cradleMesh':'drive_recorder_cradle','readoutMesh':'drive_recorder_readout','center':[-.25,1.115,-.34],'tiltX':-.55,'dimensions':[W,H,D],'readoutLocalCenter':[0,H/2-195.5*W/736,RECORDER_READOUT_Z],'readoutSize':[666*W/736,239*W/736],'uv':[0,0,1,1],'normal':[0,0,1],'artworkPixels':[666,239]},
  'parts':rows,'triangles':sum(r['triangles']for r in rows),'materials':len(M),'textures':7,
  'sha256':hashlib.sha256(open(path,'rb').read()).hexdigest()}
 receipt['cabinRevision']='transit-'+'mk3'

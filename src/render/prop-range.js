@@ -3,7 +3,7 @@
 export function createPropRangeController(){
   let owner=null,far=90;
   return {
-    current:({drive=false}={})=>drive?260:far,
+    current:({drive=false}={})=>drive?420:far,
     acquire(token,value=90){
       if(!token||owner&&owner!==token)throw Error('Another scene owns the prop range.');
       if(!Number.isFinite(value)||value<90||value>320)throw Error('Invalid authored prop range.');

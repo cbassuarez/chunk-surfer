@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { locomotionSandbox } from './helpers/locomotion-sandbox.mjs';
 import {
   GAIT_ORDER, GAIT_SPEED, GAIT_NOISE, PLACE_GAITS, BREATH,
   chooseGait, gaitsForPlace, gaitSpeed, gaitNoise, applySpeedFactors,
@@ -68,6 +69,23 @@ test('cell timing is metres per second, and a diagonal is its real length', () =
   // Metres per second along a diagonal equal metres per second along an axis.
   const diag = (Math.SQRT2 * 0.5) / (stepIntervalMs(2.6, 1, 1) / 1000);
   assert.ok(Math.abs(diag - 2.6) < 1e-9);
+});
+
+test('a walk stays a walk however far he goes: the procedural world never slows the story', () => {
+  // Story mode is never "on terrain". The void trudge and the world seam belong to the old
+  // procedural walk; let them through and 1.4 m/s sinks to .69 over a few dozen steps.
+  const tired = { curPlayerCtx: { onTerrain: false }, voidFatigue: 1, worldBoundaryFriction: 1 };
+  const sandbox = locomotionSandbox(tired);
+  assert.equal(sandbox.locomotion().speed, GAIT_SPEED.walk);
+  assert.equal(sandbox.interval(), Math.round(1000 * 0.5 / GAIT_SPEED.walk));
+  sandbox.setRun(true);
+  assert.equal(sandbox.locomotion().speed, GAIT_SPEED.jog);
+  const outside = locomotionSandbox({ ...tired, isOutdoorZone: () => true });
+  outside.setRun(true);
+  assert.equal(outside.locomotion().speed, GAIT_SPEED.run);
+  // The real slow-downs still ride on top.
+  const wrench = locomotionSandbox({ ...tired, PLANT: { heavyWrenchDragging: () => true } });
+  assert.ok(Math.abs(wrench.locomotion().speed - GAIT_SPEED.walk * 0.65) < 1e-9);
 });
 
 test('a sprint lasts six to eight seconds, fear spends it faster, the run is free', () => {

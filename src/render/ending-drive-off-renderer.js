@@ -49,7 +49,7 @@ export function endingDriveOffRenderFrame(controller,metrics,memory={}){
   weather.rain*=1-gone;weather.extinction*=1-gone;weather.cloud*=1-gone;weather.groundY=p.position.y;
   weather.returnBlack={amount:gone,worldToBody:inverse(p.bodyMatrix),min:metrics.body.min,max:metrics.body.max};
   return{scene,look:scene.look,driveState:{...s,heading:p.heading},weather,evolution:driveEvolutionFrame(s),coastalMemory:null,recording:{level:0},
-    cinematicLook:true,physicalHeadlampCones:true,timeSec:v.time,reducedMotion:v.reducedMotion};
+    cinematicLook:true,timeSec:v.time,reducedMotion:v.reducedMotion};
 }
 export function createEndingDriveOffRenderer({createRenderer=createSourceDriveRenderer,props=P3,resolveAsset=assetUrl}={}){
   const renderer=createRenderer(),memory={};let last=null,release=null,disposed=false,initialized=false,initializing=null;

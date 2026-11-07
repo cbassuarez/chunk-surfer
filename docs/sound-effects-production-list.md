@@ -57,7 +57,7 @@ If only one recording sprint is possible, finish ranks 1–3. If one design spri
 Best polish does not mean attaching a cue to every state change.
 
 - Ordinary visual inspections remain silent unless a hand physically moves or touches something.
-- HUSH locomotion has footsteps, by the director's ruling of 2026-11-06 (this replaces the earlier no-footsteps rule): one spatialized footfall per stride of its real Pressure gait, silent while it listens and inside arm's length (`src/game/hush-footfall.js`). Room absorption, mimicry and the sounds it disturbs remain its other distance language.
+- HUSH locomotion has footsteps, by the director's ruling of 2026-11-06 (this replaces the earlier no-footsteps rule): one spatialized footfall per stride of its real Pressure gait, silent while it listens and inside arm's length; Source's gaitless bodies step from their real travel at a walking beat, quiet to the ear on erased ground and plain on the monitor (`src/game/hush-footfall.js`). Room absorption, mimicry and the sounds it disturbs remain its other distance language.
 - The playback guest gets no reveal sting. The player must notice it rising on the take.
 - Autosave does not click on every position write; only meaningful checkpoint/file commits may use a very quiet trusted signal.
 - Successful conversation choices do not get moral approval tones.
