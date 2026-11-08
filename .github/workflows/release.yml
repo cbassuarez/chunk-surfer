@@ -207,7 +207,7 @@ jobs:
         timeout-minutes: 10
         env:
           FEATURE_SMOKE_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '540000' || '300000' }}
-          FEATURE_SMOKE_FRAME_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '60000' || matrix.platform == 'windows-latest' && '30000' || '10000' }}
+          FEATURE_SMOKE_FRAME_TIMEOUT_MS: ${{ matrix.platform == 'ubuntu-22.04' && '60000' || matrix.platform == 'windows-2022' && '30000' || '10000' }}
         run: npm run test:feature-smoke
 
       - name: Upload visual parity captures
@@ -223,7 +223,7 @@ jobs:
         run: npm run tauri:check
 
       - name: Run Windows native process tests
-        if: ${{ matrix.platform == 'windows-latest' && (github.event_name == 'push' || inputs.skip_tests != true) }}
+        if: ${{ matrix.platform == 'windows-2022' && (github.event_name == 'push' || inputs.skip_tests != true) }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 
@@ -317,7 +317,7 @@ jobs:
           if-no-files-found: error
 
       - name: Package Windows portable zip
-        if: matrix.platform == 'windows-latest'
+        if: matrix.platform == 'windows-2022'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'

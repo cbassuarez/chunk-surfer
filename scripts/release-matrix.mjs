@@ -16,7 +16,10 @@ const targets = Object.freeze({
   },
   windows: {
     name: 'Windows x64',
-    platform: 'windows-latest',
+    // windows-latest now ships the VS 18 Enterprise toolchain, whose link.exe
+    // chokes on rustc 1.98's rlib templates; windows-2022 keeps the VS 17
+    // toolchain the last green release (2026-11-02) built with.
+    platform: 'windows-2022',
     artifact: 'chunk-surfer-windows-x64',
     target: 'x86_64-pc-windows-msvc',
     rust_target: 'x86_64-pc-windows-msvc',
