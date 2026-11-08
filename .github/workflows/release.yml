@@ -225,7 +225,7 @@ jobs:
         run: npm run tauri:build -- ${{ matrix.args }}
 
       - name: Verify delivered macOS DMG contents
-        if: matrix.platform == 'macos-14'
+        if: matrix.platform == 'macos-15'
         shell: bash
         run: |
           set -euo pipefail

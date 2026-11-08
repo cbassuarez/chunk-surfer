@@ -5,7 +5,9 @@ import { appendFileSync } from 'node:fs';
 const targets = Object.freeze({
   macos: {
     name: 'macOS Apple Silicon',
-    platform: 'macos-14',
+    // macOS 14 runners retired on 2026-11-02; macos-15 is the current
+    // Apple Silicon image.
+    platform: 'macos-15',
     artifact: 'chunk-surfer-macos-arm64',
     target: 'aarch64-apple-darwin',
     rust_target: 'aarch64-apple-darwin',
