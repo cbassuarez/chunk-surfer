@@ -171,12 +171,16 @@ jobs:
       # The requested version is written into package.json, package-lock.json,
       # Cargo.toml, Cargo.lock, tauri.conf.json and (when missing) a CHANGELOG
       # section, and RELEASE_TAG/RELEASE_VERSION are exported for later steps.
+      # PowerShell does not expand a bare $VAR from the step env, so the
+      # Windows runner must use bash here or the version arrives empty.
       - name: Apply release version
+        shell: bash
         env:
           RELEASE_VERSION: ${{ needs.configure.outputs.tag }}
         run: node scripts/apply-release-version.mjs "$RELEASE_VERSION"
 
       - name: Validate release source and tag
+        shell: bash
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
       - name: Run frontend tests
@@ -390,6 +394,7 @@ jobs:
       # downloaded artifact names against it, so the requested version must be
       # applied here too.
       - name: Apply release version
+        shell: bash
         env:
           RELEASE_VERSION: ${{ needs.configure.outputs.tag }}
         run: node scripts/apply-release-version.mjs "$RELEASE_VERSION"
