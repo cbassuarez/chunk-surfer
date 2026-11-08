@@ -1,6 +1,6 @@
 // The Dock tile while Chunk Surfer is not running.
 //
-// The bundle and this plug-in use the same transparent van. This plug-in
+// The bundle and this plug-in use the same transparent ear. This plug-in
 // keeps the closed-app tile static; the running app owns its one-shot
 // assembly animation through src/dock_tile.rs.
 //
@@ -19,7 +19,7 @@
     // nil means the plug-in is being detached; the view goes with the tile.
     if (dockTile == nil) return;
     NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-    // DockTile.icns carries the approved van at every supported Dock size.
+    // DockTile.icns carries the approved ear at every supported Dock size.
     NSImage *image = [bundle imageForResource:@"DockTile"];
     if (image == nil) return;
     NSSize size = dockTile.size;

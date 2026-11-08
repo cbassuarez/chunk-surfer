@@ -1,7 +1,5 @@
-// Package the approved cut-out van from one canonical transparent PNG.
-// The PNG is generated from assets/brand/van-icon-geometry.json by
-// scripts/generate-van-icon-art.mjs; the ear cut-out remains preserved
-// for the settings ritual.
+// Package the approved cut-out ear from one canonical transparent PNG.
+// The PNG owns the artwork, including the opaque black cavity.
 import {copyFileSync,mkdtempSync,mkdirSync,readFileSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve,dirname} from 'node:path';
@@ -41,5 +39,5 @@ try{
   header.writeUInt32LE(png.length,entry+8);header.writeUInt32LE(offset,entry+12);offset+=png.length;
  }
  writeFileSync(join(root,'src-tauri/icons/icon.ico'),Buffer.concat([header,...layers.map(x=>x.png)]));
- console.log('Packaged transparent van for bundle, closed Dock plug-in, running Dock, PNG and ICO.');
+ console.log('Packaged transparent ear for bundle, closed Dock plug-in, running Dock, PNG and ICO.');
 }finally{rmSync(temporary,{recursive:true,force:true});}

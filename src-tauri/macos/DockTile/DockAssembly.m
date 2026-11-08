@@ -1,25 +1,35 @@
-// The approved van builds in place once when the native app starts, out of
-// the same geometry as the static icon (scripts/generate-van-icon-art.mjs
-// writes DockAssemblyGeometry.inc from assets/brand/van-icon-geometry.json).
-// The closed app's Dock plug-in remains static; macOS retains ownership of
-// launch bounce. The lamps are the payoff: they resolve last, then flash once
-// with the game's own lamp cadence.
+// The approved ear builds in place once when the native app starts. The closed
+// app's Dock plug-in remains static; macOS retains ownership of launch bounce.
 #import <AppKit/AppKit.h>
 #include <math.h>
 #include <stdint.h>
 
 static const NSUInteger CSDockMaskSide = 256;
 static const NSTimeInterval CSDockAssemblyDuration = 2.7;
-// The lamp flash window, in the game's own cue timing: the dead door's quiet
-// window is 1.8s; the scare rush is .16s; the lamps strike at 2.15 and the
-// flash is gone before the assembly hands the tile back at 2.7.
-static const NSTimeInterval CSLampFlashStart = 2.15;
-static const NSTimeInterval CSLampFlashSeconds = 0.60;
 
 typedef struct { double x, y; } CSPoint;
 typedef struct { double distance, position; } CSStroke;
 
-#import "DockAssemblyGeometry.inc"
+static const CSPoint CSHelix[] = {
+    {.425,.86},{.50,.78},{.54,.68},{.62,.57},{.695,.445},{.735,.31},
+    {.715,.215},{.665,.15},{.59,.10},{.52,.092},{.45,.135},{.395,.215},
+    {.365,.31},{.333,.405}
+};
+static const CSPoint CSFold[] = {
+    {.38,.42},{.47,.39},{.57,.42},{.616,.365},{.607,.29},{.568,.225},
+    {.514,.20},{.458,.23},{.416,.29},{.395,.36}
+};
+static const CSPoint CSBowl[] = {
+    {.38,.43},{.48,.47},{.573,.50},{.565,.57},{.50,.65},{.435,.70}
+};
+// The new opaque, lightless cavity resolves last. There is no separate figure.
+static const CSPoint CSCavity[] = {
+    {.32,.438},{.34,.413},{.375,.413},{.413,.444},{.444,.466},
+    {.446,.682},{.325,.682}
+};
+static const CSPoint CSCavityRim[] = {
+    {.333,.66},{.332,.48},{.36,.423},{.414,.46},{.44,.68}
+};
 
 static double CSClamp(double value, double low, double high) {
     return fmax(low, fmin(high, value));
@@ -60,42 +70,21 @@ static double CSGrain(uint32_t x, uint32_t y) {
     return (double)(n^(n>>16))/4294967295.0;
 }
 
-// One flash, the game's own lamp cue: up over the first half of the window,
-// gone by the end of it. Peak 0.75 at the midpoint, never clipped.
-static void CSFillLampRect(CGContextRef ctx, const CSPoint *lamp, NSRect bounds, double alpha) {
-    double minX=1,minY=1,maxX=0,maxY=0;
-    for (NSUInteger i=0;i<4;i++) {
-        minX=fmin(minX,lamp[i].x); maxX=fmax(maxX,lamp[i].x);
-        minY=fmin(minY,lamp[i].y); maxY=fmax(maxY,lamp[i].y);
-    }
-    CGContextSetFillColorWithColor(ctx, [NSColor colorWithSRGBRed:.847 green:.263 blue:.184 alpha:alpha].CGColor);
-    CGContextFillRect(ctx, CGRectMake(minX*bounds.size.width, minY*bounds.size.height,
-        (maxX-minX)*bounds.size.width, (maxY-minY)*bounds.size.height));
-}
-
-static double CSLampFlashAlpha(NSTimeInterval elapsed) {
-    double u = (elapsed - CSLampFlashStart) / CSLampFlashSeconds;
-    if (u < 0 || u > 1) return 0;
-    return .75 * sin(M_PI * u);
-}
-
 static double CSArrival(double x, double y, NSUInteger pixelX, NSUInteger pixelY) {
     double grain=CSGrain((uint32_t)(pixelX/2),(uint32_t)(pixelY/2))*.095
         + CSGrain((uint32_t)pixelX,(uint32_t)pixelY)*.018;
-    // The lamps resolve last: the body is assembled and the doors are drawn
-    // before the red comes up. Their flash rides on top in drawRect.
-    if (CSInside(x,y,CSVanLampL,sizeof(CSVanLampL)/sizeof(CSVanLampL[0]))
-        return 1.78 + CSNearestStroke(x,y,CSVanLampL,sizeof(CSVanLampL)/sizeof(CSVanLampL[0])).position*.18 + grain*.5;
-    if (CSInside(x,y,CSVanLampR,sizeof(CSVanLampR)/sizeof(CSVanLampR[0])))
-        return 1.78 + CSNearestStroke(x,y,CSVanLampR,sizeof(CSVanLampR)/sizeof(CSVanLampR[0])).position*.18 + grain*.5;
-    CSStroke body=CSNearestStroke(x,y,CSVanBody,sizeof(CSVanBody)/sizeof(CSVanBody[0]));
-    CSStroke seam=CSNearestStroke(x,y,CSVanSeam,sizeof(CSVanSeam)/sizeof(CSVanSeam[0]));
-    CSStroke bumper=CSNearestStroke(x,y,CSVanBumper,sizeof(CSVanBumper)/sizeof(CSVanBumper[0]));
-    double bodyGrowth=.05+hypot((x-.5)*1.35,(y-.53)*1.7)*2.7;
-    double rimGrowth=.22+body.position*.78+pow(body.distance/.05,1.3)*.25;
-    double seamGrowth=1.02+seam.position*.26;
-    double bumperGrowth=1.28+bumper.position*.16;
-    return fmin(2.56,fmin(fmin(bodyGrowth,rimGrowth),fmin(seamGrowth,bumperGrowth))+grain);
+    if (CSInside(x,y,CSCavity,sizeof(CSCavity)/sizeof(CSCavity[0]))) {
+        CSStroke cavity=CSNearestStroke(x,y,CSCavityRim,sizeof(CSCavityRim)/sizeof(CSCavityRim[0]));
+        return 2.10+cavity.position*.27+grain*.5;
+    }
+    CSStroke helix=CSNearestStroke(x,y,CSHelix,sizeof(CSHelix)/sizeof(CSHelix[0]));
+    CSStroke fold=CSNearestStroke(x,y,CSFold,sizeof(CSFold)/sizeof(CSFold[0]));
+    CSStroke bowl=CSNearestStroke(x,y,CSBowl,sizeof(CSBowl)/sizeof(CSBowl[0]));
+    double lobeGrowth=.055+hypot((x-.415)*1.4,y-.858)*3.2;
+    double rimGrowth=.21+helix.position*.80+pow(helix.distance/.045,1.3)*.25;
+    double foldGrowth=.82+fold.position*.45+pow(fold.distance/.035,1.2)*.25;
+    double bowlGrowth=1.48+bowl.position*.24+bowl.distance*1.8;
+    return fmin(2.56,fmin(fmin(lobeGrowth,rimGrowth),fmin(foldGrowth,bowlGrowth))+grain);
 }
 
 static void CSInstallStaticImage(NSDockTile *tile, NSImage *image) {
@@ -231,13 +220,6 @@ static void CSInstallStaticImage(NSDockTile *tile, NSImage *image) {
     [frame drawInRect:self.bounds fromRect:NSZeroRect operation:NSCompositingOperationSourceOver
         fraction:1 respectFlipped:YES hints:@{NSImageHintInterpolation:@(NSImageInterpolationNone)}];
     CGImageRelease(partial);
-    // The lamp cue: a single flash over the resolved red, the game's own
-    // lamp cadence, gone before the assembly hands the tile back.
-    double flash=CSLampFlashAlpha(_elapsed);
-    if (flash>0) {
-        CSFillLampRect(drawingContext,CSVanLampL,self.bounds,flash);
-        CSFillLampRect(drawingContext,CSVanLampR,self.bounds,flash);
-    }
 }
 
 - (void)dealloc {

@@ -15,7 +15,6 @@
     "assets:window-media": "node scripts/build-window-media.mjs",
     "media:validate": "node scripts/validate-window-media.mjs",
     "assets:doors": "node scripts/build-door-pack.mjs",
-    "assets:icon": "node scripts/generate-van-icon-art.mjs && npx tauri icon assets/brand/app-icon-cutout.png && node scripts/build-app-icons.mjs",
     "assets:van-kit": "node scripts/build-van-kit-models.mjs",
     "dev": "vite",
     "assets:tuning-fork": "node scripts/generate-tuning-fork-glb.mjs",
