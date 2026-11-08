@@ -270,7 +270,7 @@
       "nodes": 1,
       "lines": 28,
       "choices": 0,
-      "sourceSha256": "d6486ac1dbf7208c15fb09042c605f2857dd6a3b09b02c905241a6ac723e44f3"
+      "sourceSha256": "347fdd9f326a949c3cd73b315d76b43b9fa6ee5c549836db1cf241ae5a1d790e"
     },
     {
       "id": "runtime.data.source-rest-conversation",
@@ -294,10 +294,10 @@
       "id": "runtime.data.source-rest-earthly",
       "path": "narrative-runtime/runtime.data.source-rest-earthly.story.json",
       "module": "src/data/source-rest-earthly.js",
-      "nodes": 7,
-      "lines": 36,
+      "nodes": 8,
+      "lines": 41,
       "choices": 0,
-      "sourceSha256": "c3dd1e9c983d20a2e4ceb5207bacbce9229ea3a4aad9e9817c9c428c83f915e9"
+      "sourceSha256": "c15a3ea4067fe218ee31c8815fd26116799ac3b434741c4f325c39785e098ce7"
     },
     {
       "id": "runtime.data.source-rest-questions",
@@ -567,7 +567,7 @@
       "nodes": 135,
       "lines": 269,
       "choices": 21,
-      "sourceSha256": "f25dc528ed874b239d0ed6ad59e94b5bcbd00455c4ca407321248a9c9b60cb11"
+      "sourceSha256": "b3a939fe21ce30610fde1dcd6c79b2b70316e5a325337b84a2f647b84457742a"
     },
     {
       "id": "runtime.render.bag-view",

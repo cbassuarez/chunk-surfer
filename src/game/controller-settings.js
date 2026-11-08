@@ -110,9 +110,11 @@ export function makeControllerSettingsScene({
       captureAction,
       padName: getPadName(),
       // Live hardware, read fresh every render: pressed buttons light and the
-      // sticks deflect, so this screen is also the pad diagnostic.
+      // sticks deflect, so this screen is also the pad diagnostic. The raw
+      // values drive the tester readout beneath the pad.
       heldButtons: getControllerSnapshot?.().buttons || null,
       axes: getControllerSnapshot?.().axes || null,
+      raw: getControllerSnapshot?.().rawValues || null,
     });
   }
 
@@ -121,6 +123,27 @@ export function makeControllerSettingsScene({
     // out into the pad column's margins, which is why it gets the larger share.
     const w = Math.max(30, Math.round(body.w * 0.60));
     return { x: body.x, y: body.y, w, h: body.h - 2 };
+  }
+
+  // The raw tester: what the device is actually reporting, under the pad. The
+  // fastest way a player can tell a mis-mapped or half-broken pad from a wrong
+  // binding is to watch these numbers while pressing the real hardware.
+  function drawRawTester(pad, m, { cols }) {
+    const raw = m.raw;
+    const y0 = pad.y + pad.h - 2.2;
+    if (!raw || !m.live) {
+      uiText(pad.x + 2, y0, 'NO CONTROLLER — THE PAD LIGHTS LIVE WHEN ONE IS CONNECTED', 'ui-secondary', 1);
+      return;
+    }
+    const fmt = (v) => `${v < 0 ? '-' : '+'}${Math.abs(v).toFixed(2).slice(1)}`;
+    const [lx, ly, rx, ry] = (raw.axes || []).slice(0, 4).map((v) => Number(v) || 0);
+    uiText(pad.x + 2, y0, `LX ${fmt(lx)}  LY ${fmt(ly)}  RX ${fmt(rx)}  RY ${fmt(ry)}`, 'ui-secondary', 1);
+    const lt = Number(raw.buttons?.leftTrigger || 0);
+    const rt = Number(raw.buttons?.rightTrigger || 0);
+    const parts = [`LT ${lt.toFixed(2)}  RT ${rt.toFixed(2)}`];
+    const heldIds = Object.keys(raw.buttons || {}).filter((id) => Number(raw.buttons[id]) >= 0.5 && id !== 'leftTrigger' && id !== 'rightTrigger');
+    if (heldIds.length) parts.push(`HELD ${heldIds.map((id) => id.toUpperCase()).join(' ')}`);
+    uiText(pad.x + 2, y0 + 1, parts.join('   '), 'ui-counter', 1);
   }
 
   const scene = {
@@ -198,6 +221,7 @@ export function makeControllerSettingsScene({
       const blink = vfdBlinkOn(now);
       const pad = padRect(body);
       drawPadDiagram(pad, m, { cols, blinkOn: blink });
+      drawRawTester(pad, m, { cols });
 
       const listX = body.x + pad.w + 2;
       const listW = Math.max(18, body.x + body.w - listX);

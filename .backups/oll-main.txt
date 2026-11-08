@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory
+ok 1 - a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory
+  ---
+  duration_ms: 3.585167
+  type: 'test'
+  ...
+# Subtest: missing authored voices show only the remaining unchanged script, with no synthetic voice or skipped ending
+ok 2 - missing authored voices show only the remaining unchanged script, with no synthetic voice or skipped ending
+  ---
+  duration_ms: 1.042792
+  type: 'test'
+  ...
+# Subtest: a completed memory cannot replay after reload and an abandoned pending decode cannot revive after a warp
+ok 3 - a completed memory cannot replay after reload and an abandoned pending decode cannot revive after a warp
+  ---
+  duration_ms: 0.938125
+  type: 'test'
+  ...
+# Subtest: an active memory keeps its clock and finishes after the player leaves the trigger area
+ok 4 - an active memory keeps its clock and finishes after the player leaves the trigger area
+  ---
+  duration_ms: 1.061833
+  type: 'test'
+  ...
+# Subtest: the playback clock releases the body even when the browser omits the audio ended event
+ok 5 - the playback clock releases the body even when the browser omits the audio ended event
+  ---
+  duration_ms: 0.643875
+  type: 'test'
+  ...
+# Subtest: a restored completion releases an existing recording hold (heard)
+ok 6 - a restored completion releases an existing recording hold (heard)
+  ---
+  duration_ms: 0.307625
+  type: 'test'
+  ...
+# Subtest: a restored completion releases an existing recording hold (playbackDone)
+ok 7 - a restored completion releases an existing recording hold (playbackDone)
+  ---
+  duration_ms: 0.357625
+  type: 'test'
+  ...
+# Subtest: completion clears the final caption and reset always releases the body
+ok 8 - completion clears the final caption and reset always releases the body
+  ---
+  duration_ms: 0.76775
+  type: 'test'
+  ...
+# Subtest: the canonical Last Light URL matches its documented public/assets delivery
+ok 9 - the canonical Last Light URL matches its documented public/assets delivery
+  ---
+  duration_ms: 0.760291
+  type: 'test'
+  ...
+# Subtest: real performed audio dispatches the canonical captions from the audio clock
+ok 10 - real performed audio dispatches the canonical captions from the audio clock
+  ---
+  duration_ms: 0.823125
+  type: 'test'
+  ...
+# Subtest: an exact-cue pause resumes real audio without duplicating or delaying the next caption
+ok 11 - an exact-cue pause resumes real audio without duplicating or delaying the next caption
+  ---
+  duration_ms: 0.665541
+  type: 'test'
+  ...
+# Subtest: a restored real-audio offset skips elapsed cue boundaries and retains the genuine master duration
+ok 12 - a restored real-audio offset skips elapsed cue boundaries and retains the genuine master duration
+  ---
+  duration_ms: 0.45775
+  type: 'test'
+  ...
+# Subtest: a shorter real master owns completion and never captions later unheard material
+ok 13 - a shorter real master owns completion and never captions later unheard material
+  ---
+  duration_ms: 0.868666
+  type: 'test'
+  ...
+# Subtest: the performer source preserves all 21 spoken cues and nine directions verbatim
+ok 14 - the performer source preserves all 21 spoken cues and nine directions verbatim
+  ---
+  duration_ms: 0.902209
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.654667

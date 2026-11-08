@@ -289,7 +289,7 @@ const BATHS_APPROACH_LEVELS=[
   {id:'baths-west-court-wall',replace:true,layer:'ground',space:'baths_courtyard',renderGroup:'ground',
     origin:{x:GLASS_COURT.westCourtWall.x,y:GLASS_COURT.westCourtWall.z0},physicalOrigin:{x:GLASS_COURT.westCourtWall.x,y:GLASS_COURT.westCourtWall.z0},base:0,
     rows:Array.from({length:GLASS_COURT.westCourtWall.z1-GLASS_COURT.westCourtWall.z0},(_,i)=>GLASS_COURT.westCourtWall.z0+i===GLASS_COURT.westCourtWall.door.z?'+':'#')},
-  {id:'natatorium_glasshouse',replace:true,layer:'ground',space:'front_atrium',renderGroup:'ground',origin:{x:82,y:15},physicalOrigin:{x:82,y:15},base:0,
+  {id:'natatorium_glasshouse',replace:true,layer:'ground',space:'greenhouse',renderGroup:'ground',origin:{x:82,y:15},physicalOrigin:{x:82,y:15},base:0,
    rows:Array(12).fill('T'.repeat(4)),profile:bathsApproachProfile(ZONE.glasshouse)},
   {id:'natatorium_changing',replace:true,layer:'ground',space:'natatorium',renderGroup:'ground',origin:{x:81,y:28},physicalOrigin:{x:81,y:28},base:0,
    rows:Array(3).fill('T'.repeat(6)),profile:bathsApproachProfile(ZONE.poolChanging)},

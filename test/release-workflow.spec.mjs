@@ -9,7 +9,7 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const tauri = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
 const windowsTauri = JSON.parse(fs.readFileSync('src-tauri/tauri.windows.conf.json', 'utf8'));
 
-assert.equal(pkg.scripts['tauri:build'], 'tauri build', 'standard Tauri builds never attach the SD lens overlay');
+assert.match(pkg.scripts['tauri:build'], /^node scripts\/build-lock\.mjs wrap tauri build$/, 'standard Tauri builds never attach the SD lens overlay');
 assert.match(pkg.scripts['tauri:build:steam'], /steamworks:verify/, 'Steam builds verify their redistributables');
 assert.match(pkg.scripts['beta:build:mac'], /npm run tauri:build -- --target aarch64-apple-darwin --bundles dmg/,
   'local mac beta builds the lean app');

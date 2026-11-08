@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { controllerDiagramModel } from '../src/game/controller-ui.js';
+import { controllerDiagramModel, PAD_OUTLINE } from '../src/game/controller-ui.js';
 import { makeControllerSettingsScene } from '../src/game/controller-settings.js';
 import { normalizeControllerSettings } from '../src/game/bindings.js';
 
@@ -124,4 +124,27 @@ test('the pad silhouette is symmetric and closed', async () => {
   assert.ok(widest > topRight, 'the sides bulge out past the top corners');
   const ratio = (widest - Math.min(...xs)) / (lowest - Math.min(...ys));
   assert.ok(ratio > 1.4 && ratio < 2.1, `a pad is wider than tall, got ${ratio.toFixed(2)}`);
+});
+
+test('each family draws its own silhouette and arrangement', () => {
+  const model = (family) => controllerDiagramModel({
+    settings: { family, bindings: {} }, padName: family === 'auto' ? '' : family, width: 960, height: 540,
+  });
+  const ps = model('playstation'), ns = model('nintendo'), xb = model('xbox');
+  // PlayStation: both sticks low and level, touchpad across the top shelf.
+  const stickY = (m, id) => m.buttons.find((b) => b.id === id).pos.y;
+  assert.ok(Math.abs(stickY(ps, 'leftStick') - stickY(ps, 'rightStick')) < 0.01, 'PS sticks are level');
+  assert.ok(stickY(ps, 'leftStick') > 50, 'PS sticks sit low');
+  // Switch: the left stick rides high and the d-pad lives below it.
+  assert.ok(stickY(ns, 'leftStick') < 45, 'Switch left stick rides high');
+  assert.ok(ns.buttons.find((b) => b.id === 'dpadDown').pos.y > 60, 'Switch d-pad is low');
+  // Xbox keeps its asymmetric high-left stick.
+  assert.ok(stickY(xb, 'leftStick') < 45 && stickY(xb, 'rightStick') > 50, 'Xbox sticks stay asymmetric');
+  // Every family's silhouette is mirrored and closed.
+  for (const m of [ps, ns, xb]) {
+    assert.equal(m.outline.length, PAD_OUTLINE.length);
+    for (const [x, y] of m.outline) {
+      assert.ok(m.outline.some(([mx, my]) => Math.abs(mx - (100 - x)) < 0.001 && Math.abs(my - y) < 0.001), `${m.family} outline has no mirror for (${x},${y})`);
+    }
+  }
 });

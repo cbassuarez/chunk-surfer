@@ -68,7 +68,7 @@ test('actual full-body airborne crossings dispatch return, onward phase and fina
   state=at(gate.x+.04,gate.z,gate.y,'wrong-return',0,4);events=[];state.doorOpen[gate.doorId]=true;
   state=tick(state,{dt:0,jump:true,forward:1,run:true,look:{yaw:-Math.PI/2}},events);
   state=until(state,s=>s.phase==='catch',events);assert.ok(events.some(e=>e.type==='fold'),'the threshold crossing dispatches while airborne');
-  state=at(C.catch.finalDoor.x-.04,C.catch.finalDoor.z,-12.6,'catch',3);events=[];state.doorOpen['catch-final']=true;
+  state=at(C.catch.finalDoor.x-.04,C.catch.finalDoor.z,C.catch.finalDoor.y,'catch',0);events=[];state.doorOpen['catch-final']=true;
   state=tick(state,{dt:0,jump:true,side:1,run:true},events);state=until(state,s=>s.completed,events);
   assert.equal(events.filter(e=>e.type==='complete').length,1);assert.equal(events.find(e=>e.type==='complete').airborne,true);
   assert.equal(stepSourceContinuation(state,{dt:.25,jump:true,side:1}).events.length,0);
@@ -150,18 +150,13 @@ test('a missed upper-west edge follows the fixed same-floor gluing without unloc
   assert.equal(state.fall,null,'a fresh inward input makes a usable retry');assert.ok(state.z<departure.z-.5);
 });
 
-test('Catch voids retry the exact earned floor departure instead of granting a remote refuge or final approach',()=>{
-  for(const [level,angle,radius]of [[1,.45,12.47],[3,2.6,9.77]]) {
-    const x=C.catch.center.x+Math.cos(angle)*radius,z=C.catch.center.z+Math.sin(angle)*radius,feet=level===1?2.4:-12.6;
-    let state=at(x,z,feet,'catch',level),events=[];
-    for(let k=0;k<80&&!state.fall;k++)state=tick(state,{side:Math.cos(angle),forward:-Math.sin(angle)},events);
-    assert.ok(state.fall);const departure=structuredClone(state.fall.lastSupport);
-    state=until(state,s=>!!s.recovery,events);
-    assert.deepEqual([state.recovery.target.x,state.recovery.target.z,state.recovery.target.feet],[departure.x,departure.z,departure.feet]);
-    state=until(state,s=>!s.recovery,events);
-    assert.equal(state.phase,'catch');assert.equal(state.level,level);assert.equal(state.completed,false);assert.equal(state.doorOpen['catch-final'],undefined);
-    assert.deepEqual([state.x,state.z,state.feet],[departure.x,departure.z,departure.feet]);
-    for(let k=0;k<24;k++)state=tick(state,{side:-Math.cos(angle),forward:Math.sin(angle)},events);
-    assert.equal(state.fall,null);assert.ok(continuationSupportAt(state.x,state.z,state));
-  }
+test('Catch voids wrap the body back above the top crescent instead of recovering',()=>{
+  const [level,angle,radius]=[1,.45,12.47];
+  const x=C.catch.center.x+Math.cos(angle)*radius,z=C.catch.center.z+Math.sin(angle)*radius,feet=2.4;
+  let state=at(x,z,feet,'catch',level),events=[];
+  for(let k=0;k<80&&!state.fall;k++)state=tick(state,{side:Math.cos(angle),forward:-Math.sin(angle)},events);
+  assert.ok(state.fall);
+  state=until(state,s=>!!s.lastSpaceWrap,events);
+  assert.ok(state.lastSpaceWrap,'the catch fall wraps non-euclideanly instead of recovering');
+  assert.equal(state.recovery,null,'no remote refuge or floor retry: the descent is a loop');
 });

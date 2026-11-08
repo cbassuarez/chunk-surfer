@@ -1,0 +1,3 @@
+public/assets/audio/outskirts/sarah-tape-fallback.credits.json
+public/assets/audio/outskirts/sarah-tape-fallback.wav
+tools/chunk_surfer/build-sarah-playback-tape-fallback.mjs

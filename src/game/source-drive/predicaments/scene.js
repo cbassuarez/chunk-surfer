@@ -58,6 +58,28 @@ const whiteout=[
  car('whiteout-abandoned-reference','estate',1055,32.75,{yaw:.18,pitchWithRoad:false,horn:false}),
 ];
 export const PREDICAMENT_LAYOUT=Object.freeze([...carnage,...cliffs,...whiteout]);
+// The cliff as a place, hand-placed the way the yard's flora is
+// (src/data/ellery-flora.js): daisies belong to the last intact verge before
+// the break, the askew rail is the repaired stretch that ends, and the
+// boulders sit on the face below the road. Nothing here is solid and nothing
+// means anything; the van drives past them.
+export const CLIFF_DRESSING=Object.freeze([
+  row('cliff-dressing-daisies','vegetation_daisy_drift',258,-4.1,{yaw:.3,scale:[.9,.9,.9]}),
+  row('cliff-dressing-grass','vegetation_grass_edge',268,4.1,{yaw:-.2,scale:[.8,.8,.8]}),
+  row('cliff-dressing-weeds','vegetation_weed_cluster',283,-4.15,{yaw:.4,scale:[.75,.75,.75]}),
+  row('cliff-dressing-daisies-edge','vegetation_daisy_drift',290,-3.9,{yaw:.1}),
+  row('cliff-dressing-repaired-rail','cut_guardrail',285,4.62,{yaw:.05,pitchWithRoad:false}),
+  row('cliff-dressing-repair-post','drive_reflector',286,4.45,{yaw:.3,pitchWithRoad:false}),
+  // The boulders keep to the lane side: the fall's corridor to the sea stays
+  // open (the teaser's own test pins that no geometry sits under the release).
+  row('cliff-dressing-boulder-lip','cd_gritstone_boulder',296,-5.4,{yaw:.6,scale:[.42,.38,.42],pitchWithRoad:false,lift:-.4}),
+  row('cliff-dressing-boulder-face','cd_gritstone_boulder',300,-5.1,{yaw:1.1,scale:[.5,.45,.5],pitchWithRoad:false,lift:-3}),
+  row('cliff-dressing-boulder-face-far','cd_gritstone_boulder',308,-5.4,{yaw:-.7,scale:[.38,.34,.38],pitchWithRoad:false,lift:-5}),
+  // The rail's own end: torn outward over its snapped post, the break facing
+  // the void. Behind the release point, so the fall's corridor stays open.
+  row('cliff-dressing-broken-rail','cd_broken_rail',295.5,4.6,{yaw:.06,pitchWithRoad:false}),
+  row('cliff-dressing-scree','cd_scree',302,-5.5,{yaw:.4,scale:[1.1,1,1.1],pitchWithRoad:false,lift:-4.6}),
+]);
 // Short fields keep the damaged lamps local to the queue. Preserve the lens
 // mounts and saved-clock voltage phases; spend more light on nearby panels,
 // rather than carrying a weak unshadowed fill across the complete cabin.
@@ -97,5 +119,6 @@ export function predicamentPracticalFrame(s){const d=-s.z,t=s.programTime||0,pro
 export function makePredicamentScene(s,{reach=235}={}){const d=-s.z,t=s.programTime||0,props=[],sources=[],rendered=[];for(const p of PREDICAMENT_LAYOUT){const radius=p.mesh==='dp_road_fold'?90:p.mesh==='dp_cliff_mass'?36:8;if(Math.abs(p.d-d)>reach+radius)continue;const m=predicamentPlacementMatrix(p,t);props.push({id:p.id,mesh:p.mesh,matrix:m,x:m[12],y:m[13],z:m[14],structural:true,skyExposed:true,cullRadius:radius,sourceStructure:'drive-predicament'});rendered.push(p.id);
   if(p.horn&&Math.abs(p.d-d)<95){const q=transformPredicamentPoint(m,[0,.64,-1.45]);sources.push({id:p.id+'-horn',kind:'wreck-horn',world:q,distance:p.d,seed:PREDICAMENT_LAYOUT.indexOf(p),overhead:p.motion==='suspended',load:Math.max(0,1-Math.abs(p.d-d)/95)});}
  }
+ for(const r of CLIFF_DRESSING)if(Math.abs(r.d-d)<=reach+8){const m=predicamentPlacementMatrix(r,t);props.push({id:r.id,mesh:r.mesh,matrix:m,x:m[12],y:m[13],z:m[14],structural:false,decorative:true,noReflection:true,skyExposed:true,cullRadius:8,sourceStructure:'drive-cliff-dressing'});rendered.push(r.id);}
  const practical=predicamentPracticalFrame(s);props.push(...practical.props);sources.sort((a,b)=>Math.abs(a.distance-d)-Math.abs(b.distance-d));return{props,lights:practical.lights,sources:sources.slice(0,4),diagnostics:{sections:PREDICAMENT_SECTIONS,active:PREDICAMENT_SECTIONS.find(p=>d>=p.start&&d<=p.end)?.id||null,rendered,meshCount:props.length,geometryPack:'assets/source-drive/predicaments/drive-predicaments.glb',groundSolidsStatic:true,overheadMotionUsesSavedProgrammeClock:true,roadSurfaceOwnedByRoute:true,practicals:practical.lights.map(l=>({id:l.id,car:l.car,anchor:l.anchor,world:[l.x,l.y,l.z],intensity:l.intensity,radius:l.radius})),maximumActiveCarPracticals:4}};
 }

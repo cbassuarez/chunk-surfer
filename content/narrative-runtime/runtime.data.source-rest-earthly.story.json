@@ -12,6 +12,7 @@
     "QUESTIONS.sarah.answer",
     "QUESTIONS.ellery.answer",
     "QUESTIONS.rain.answer",
+    "CHUNK_SURFER_QUESTION.chunk-surfer.answer",
     "sourceRestEarthlyNodes.nodes.earthly-choice"
   ],
   "tags": [
@@ -30,40 +31,40 @@
           "id": "LEADS.wrong-return.l0",
           "who": "you",
           "text": "You have sat here before.",
-          "source": "src/data/source-rest-earthly.js:26"
+          "source": "src/data/source-rest-earthly.js:28"
         },
         {
           "id": "LEADS.wrong-return.l1",
           "who": "other",
           "text": "Yes.",
-          "source": "src/data/source-rest-earthly.js:27"
+          "source": "src/data/source-rest-earthly.js:29"
         },
         {
           "id": "LEADS.wrong-return.l2",
           "who": "you",
           "text": "Not for the music. For this part.",
-          "source": "src/data/source-rest-earthly.js:28"
+          "source": "src/data/source-rest-earthly.js:30"
         },
         {
           "id": "LEADS.wrong-return.l3",
           "who": "other",
           "text": "For this part.",
-          "source": "src/data/source-rest-earthly.js:29"
+          "source": "src/data/source-rest-earthly.js:31"
         },
         {
           "id": "LEADS.wrong-return.l4",
           "who": "you",
           "text": "Then you know what happens out there. Afterwards.",
-          "source": "src/data/source-rest-earthly.js:30"
+          "source": "src/data/source-rest-earthly.js:32"
         },
         {
           "id": "LEADS.wrong-return.l5",
           "who": "other",
           "text": "Some of it.",
-          "source": "src/data/source-rest-earthly.js:31"
+          "source": "src/data/source-rest-earthly.js:33"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:26"
+      "source": "src/data/source-rest-earthly.js:28"
     },
     "LEADS.catch": {
       "id": "LEADS.catch",
@@ -73,34 +74,34 @@
           "id": "LEADS.catch.l0",
           "who": "you",
           "text": "You are not new to this.",
-          "source": "src/data/source-rest-earthly.js:34"
+          "source": "src/data/source-rest-earthly.js:36"
         },
         {
           "id": "LEADS.catch.l1",
           "who": "you",
           "text": "Other people have sat where I am.",
-          "source": "src/data/source-rest-earthly.js:36"
+          "source": "src/data/source-rest-earthly.js:38"
         },
         {
           "id": "LEADS.catch.l2",
           "who": "other",
           "text": "Some have.",
-          "source": "src/data/source-rest-earthly.js:37"
+          "source": "src/data/source-rest-earthly.js:39"
         },
         {
           "id": "LEADS.catch.l3",
           "who": "you",
           "text": "And you know what became of what they left.",
-          "source": "src/data/source-rest-earthly.js:38"
+          "source": "src/data/source-rest-earthly.js:40"
         },
         {
           "id": "LEADS.catch.l4",
           "who": "other",
           "text": "Some of it.",
-          "source": "src/data/source-rest-earthly.js:39"
+          "source": "src/data/source-rest-earthly.js:41"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:34"
+      "source": "src/data/source-rest-earthly.js:36"
     },
     "QUESTIONS.lyle.answer": {
       "id": "QUESTIONS.lyle.answer",
@@ -110,40 +111,40 @@
           "id": "QUESTIONS.lyle.answer.l0",
           "who": "other",
           "text": "He has a full life. A long one, and most of it good.",
-          "source": "src/data/source-rest-earthly.js:46"
+          "source": "src/data/source-rest-earthly.js:48"
         },
         {
           "id": "QUESTIONS.lyle.answer.l1",
           "who": "other",
           "text": "He moves twice, and stays the second time. Someone loves him for years, and he lets them.",
-          "source": "src/data/source-rest-earthly.js:47"
+          "source": "src/data/source-rest-earthly.js:49"
         },
         {
           "id": "QUESTIONS.lyle.answer.l2",
           "who": "other",
           "text": "He wears the green jumper until it is more darn than jumper.",
-          "source": "src/data/source-rest-earthly.js:48"
+          "source": "src/data/source-rest-earthly.js:50"
         },
         {
           "id": "QUESTIONS.lyle.answer.l3",
           "who": "you",
           "text": "Does he think about me?",
-          "source": "src/data/source-rest-earthly.js:49"
+          "source": "src/data/source-rest-earthly.js:51"
         },
         {
           "id": "QUESTIONS.lyle.answer.l4",
           "who": "other",
           "text": "Sometimes. Not often enough to hurt him.",
-          "source": "src/data/source-rest-earthly.js:50"
+          "source": "src/data/source-rest-earthly.js:52"
         },
         {
           "id": "QUESTIONS.lyle.answer.l5",
           "who": "you",
           "text": "Good.",
-          "source": "src/data/source-rest-earthly.js:51"
+          "source": "src/data/source-rest-earthly.js:53"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:46"
+      "source": "src/data/source-rest-earthly.js:48"
     },
     "QUESTIONS.sarah.answer": {
       "id": "QUESTIONS.sarah.answer",
@@ -153,34 +154,34 @@
           "id": "QUESTIONS.sarah.answer.l0",
           "who": "other",
           "text": "I am not going to tell you that.",
-          "source": "src/data/source-rest-earthly.js:54"
+          "source": "src/data/source-rest-earthly.js:56"
         },
         {
           "id": "QUESTIONS.sarah.answer.l1",
           "who": "you",
           "text": "You know, though.",
-          "source": "src/data/source-rest-earthly.js:55"
+          "source": "src/data/source-rest-earthly.js:57"
         },
         {
           "id": "QUESTIONS.sarah.answer.l2",
           "who": "other",
           "text": "I know. It is hers. She has not said I could.",
-          "source": "src/data/source-rest-earthly.js:56"
+          "source": "src/data/source-rest-earthly.js:58"
         },
         {
           "id": "QUESTIONS.sarah.answer.l3",
           "who": "you",
           "text": "I only want to know she is all right.",
-          "source": "src/data/source-rest-earthly.js:57"
+          "source": "src/data/source-rest-earthly.js:59"
         },
         {
           "id": "QUESTIONS.sarah.answer.l4",
           "who": "other",
           "text": "Then want it for her. You do not need to have it as well.",
-          "source": "src/data/source-rest-earthly.js:58"
+          "source": "src/data/source-rest-earthly.js:60"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:54"
+      "source": "src/data/source-rest-earthly.js:56"
     },
     "QUESTIONS.ellery.answer": {
       "id": "QUESTIONS.ellery.answer",
@@ -190,52 +191,52 @@
           "id": "QUESTIONS.ellery.answer.l0",
           "who": "other",
           "text": "It comes down. You knew that much.",
-          "source": "src/data/source-rest-earthly.js:61"
+          "source": "src/data/source-rest-earthly.js:63"
         },
         {
           "id": "QUESTIONS.ellery.answer.l1",
           "who": "other",
           "text": "Then flats. A man on the fourth floor teaches piano in his front room for thirty years.",
-          "source": "src/data/source-rest-earthly.js:62"
+          "source": "src/data/source-rest-earthly.js:64"
         },
         {
           "id": "QUESTIONS.ellery.answer.l2",
           "who": "other",
           "text": "Then offices. Then a building with no windows that hums all night, full of other people’s photographs.",
-          "source": "src/data/source-rest-earthly.js:63"
+          "source": "src/data/source-rest-earthly.js:65"
         },
         {
           "id": "QUESTIONS.ellery.answer.l3",
           "who": "other",
           "text": "Then a park, for a long while. There is a dip in the grass where the hall was. Children roll down it.",
-          "source": "src/data/source-rest-earthly.js:64"
+          "source": "src/data/source-rest-earthly.js:66"
         },
         {
           "id": "QUESTIONS.ellery.answer.l4",
           "who": "other",
           "text": "Then houses again, and after those, things you would not have words for.",
-          "source": "src/data/source-rest-earthly.js:65"
+          "source": "src/data/source-rest-earthly.js:67"
         },
         {
           "id": "QUESTIONS.ellery.answer.l5",
           "who": "other",
           "text": "Two hundred years on, someone digging a drain finds an organ stop in the clay. It still says Vox Humana.",
-          "source": "src/data/source-rest-earthly.js:66"
+          "source": "src/data/source-rest-earthly.js:68"
         },
         {
           "id": "QUESTIONS.ellery.answer.l6",
           "who": "you",
           "text": "The human voice.",
-          "source": "src/data/source-rest-earthly.js:67"
+          "source": "src/data/source-rest-earthly.js:69"
         },
         {
           "id": "QUESTIONS.ellery.answer.l7",
           "who": "other",
           "text": "They keep it on a windowsill.",
-          "source": "src/data/source-rest-earthly.js:68"
+          "source": "src/data/source-rest-earthly.js:70"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:61"
+      "source": "src/data/source-rest-earthly.js:63"
     },
     "QUESTIONS.rain.answer": {
       "id": "QUESTIONS.rain.answer",
@@ -245,34 +246,71 @@
           "id": "QUESTIONS.rain.answer.l0",
           "who": "other",
           "text": "A little before six.",
-          "source": "src/data/source-rest-earthly.js:71"
+          "source": "src/data/source-rest-earthly.js:73"
         },
         {
           "id": "QUESTIONS.rain.answer.l1",
           "who": "other",
           "text": "The gutters run for an hour after. Then a blackbird starts up on the lodge roof.",
-          "source": "src/data/source-rest-earthly.js:72"
+          "source": "src/data/source-rest-earthly.js:74"
         },
         {
           "id": "QUESTIONS.rain.answer.l2",
           "who": "other",
           "text": "The light comes up grey over the yard. It is an ordinary morning.",
-          "source": "src/data/source-rest-earthly.js:73"
+          "source": "src/data/source-rest-earthly.js:75"
         },
         {
           "id": "QUESTIONS.rain.answer.l3",
           "who": "you",
           "text": "Is it a good one?",
-          "source": "src/data/source-rest-earthly.js:74"
+          "source": "src/data/source-rest-earthly.js:76"
         },
         {
           "id": "QUESTIONS.rain.answer.l4",
           "who": "other",
           "text": "As they go. Yes.",
-          "source": "src/data/source-rest-earthly.js:75"
+          "source": "src/data/source-rest-earthly.js:77"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:71"
+      "source": "src/data/source-rest-earthly.js:73"
+    },
+    "CHUNK_SURFER_QUESTION.chunk-surfer.answer": {
+      "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer",
+      "type": "line",
+      "lines": [
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l0",
+          "who": "you",
+          "text": "The chunk-surfer. Is any of that real?",
+          "source": "src/data/source-rest-earthly.js:87"
+        },
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l1",
+          "who": "you",
+          "text": "None of it?",
+          "source": "src/data/source-rest-earthly.js:89"
+        },
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l2",
+          "who": "other",
+          "text": "It is a story you made up. You have been on the way out for a long while, and it was the best thing you had.",
+          "source": "src/data/source-rest-earthly.js:90"
+        },
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l3",
+          "who": "you",
+          "text": "So I am not really getting out of this.",
+          "source": "src/data/source-rest-earthly.js:91"
+        },
+        {
+          "id": "CHUNK_SURFER_QUESTION.chunk-surfer.answer.l4",
+          "who": "other",
+          "text": "No. You are not.",
+          "source": "src/data/source-rest-earthly.js:92"
+        }
+      ],
+      "source": "src/data/source-rest-earthly.js:87"
     },
     "sourceRestEarthlyNodes.nodes.earthly-choice": {
       "id": "sourceRestEarthlyNodes.nodes.earthly-choice",
@@ -282,10 +320,10 @@
           "id": "sourceRestEarthlyNodes.nodes.earthly-choice.l0",
           "who": "other",
           "text": "There is time for one thing.",
-          "source": "src/data/source-rest-earthly.js:89"
+          "source": "src/data/source-rest-earthly.js:103"
         }
       ],
-      "source": "src/data/source-rest-earthly.js:89"
+      "source": "src/data/source-rest-earthly.js:103"
     }
   }
 }

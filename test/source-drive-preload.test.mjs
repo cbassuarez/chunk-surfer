@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {r3dPresentationReady} from '../src/render/r3d.js';
 import {stepWindLeaves,windLeafProps} from '../src/world/wind-leaves.js';
 import {windVector} from '../src/world/wind.js';
+import {createCrashDebris} from '../src/game/source-drive/crash-debris.js';
 
 const source=readFileSync(new URL('../src/game/source-drive-renderer.js',import.meta.url),'utf8');
 const staticMeshes={
@@ -34,7 +35,7 @@ function fixture(){
  const R3=new Proxy({r3dBasePropsReady:()=>base.ready,r3dPresentationReady:()=>presentation.ready,r3dPixelMeshStatus:()=>({...presentation}),r3dFrame:(...args)=>{world.push(['r3dFrame',...args]);if(!presentation.skipFinal)presentation.framesRendered++;if(presentation.loseDuringDraw)presentation.ready=false;return presentation.rejectDraw?false:undefined;}},{get:(target,name)=>target[name]||((...args)=>world.push([name,...args]))});
  const document={createElement:name=>{world.push(['canvas',name]);return{getContext:()=>({})};}};
  const moduleSource=source.replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
- const api=new Function('createCabRadioFace','cabRadioRoadView','ensureFloraMeshes','R3','P3','FP','F','CELL','MATERIAL','assetUrl','drawRecorderReadoutCanvas','document','stepWindLeaves','windLeafProps','windVector','buildM62LandField','m62FarLights','m62FieldHeight','m62LandField',moduleSource+'\nreturn{preloadSourceDriveAssets,createSourceDriveRenderer};')(()=>({sync(){}}),()=>({}),()=>{},R3,P3,{encodeH:x=>x},{SKY:1},1,{serviceConcrete:2},path=>'asset:'+String(path).replace(/^\/+/,''),()=>{},document,stepWindLeaves,windLeafProps,windVector,async()=>null,()=>null,()=>0,()=>null);
+ const api=new Function('createCabRadioFace','cabRadioRoadView','ensureFloraMeshes','R3','P3','FP','F','CELL','MATERIAL','assetUrl','drawRecorderReadoutCanvas','document','stepWindLeaves','windLeafProps','windVector','buildM62LandField','m62FarLights','m62FieldHeight','m62LandField','createCrashDebris',moduleSource+'\nreturn{preloadSourceDriveAssets,createSourceDriveRenderer};')(()=>({sync(){}}),()=>({}),()=>{},R3,P3,{encodeH:x=>x},{SKY:1},1,{serviceConcrete:2},path=>'asset:'+String(path).replace(/^\/+/,''),()=>{},document,stepWindLeaves,windLeafProps,windVector,async()=>null,()=>null,()=>0,()=>null,createCrashDebris);
  return{...api,loads,world,catalog,gates,failures,characters,presentation,base,owner:()=>api.createSourceDriveRenderer({onRelease:()=>{released++;}}),released:()=>released};
 }
 

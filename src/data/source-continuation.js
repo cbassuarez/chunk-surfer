@@ -13,6 +13,9 @@ export const CONTINUATION_CATCH_STAGES = freeze([
   { level: 1, id: 'soundboard-fan', name: 'The soundboard', y: 2.4, innerRadius: 4.2, outerRadius: 12.5, startAngle: -.35, endAngle: Math.PI, material: 'piano-wood', construction: 'soundboard', refugeAngle: 2.35 },
   { level: 2, id: 'masonry-counterarc', name: 'The counterarc', y: -4.8, innerRadius: 2.6, outerRadius: 11.5, startAngle: 2.5, endAngle: Math.PI * 1.5, material: 'cold-stone', construction: 'masonry', refugeAngle: 4.13 },
   { level: 3, id: 'binding-dish', name: 'The binding', y: -12.6, innerRadius: 1.2, outerRadius: 9.8, startAngle: -Math.PI / 2, endAngle: 2.75, material: 'case-lining', construction: 'binding', refugeAngle: .9 },
+  { level: 4, id: 'silver-fan', name: 'The silver fan', y: -18.6, innerRadius: 2.2, outerRadius: 11, startAngle: .8, endAngle: Math.PI * 1.7, material: 'cold-stone', construction: 'soundboard', refugeAngle: 5.2 },
+  { level: 5, id: 'ash-arc', name: 'The ash arc', y: -24.6, innerRadius: 1.6, outerRadius: 10, startAngle: -2.2, endAngle: .9, material: 'case-lining', construction: 'masonry', refugeAngle: 2.6 },
+  { level: 6, id: 'deep-binding', name: 'The deep binding', y: -30.6, innerRadius: 1.0, outerRadius: 9, startAngle: 1.8, endAngle: Math.PI * 2 - .8, material: 'piano-wood', construction: 'binding', refugeAngle: 4.6 },
 ]);
 export const SOURCE_CONTINUATION = freeze({
   version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: 3.2,
@@ -30,8 +33,8 @@ export const SOURCE_CONTINUATION = freeze({
     levels: CONTINUATION_CATCH_STAGES.length, ringHalfExtent: 13,
     outer: { minX: -187, maxX: -157, minZ: -107, maxZ: -77 },
     centers: CONTINUATION_CATCH_STAGES.map(() => ({ x: -172, z: -92 })),
-    finalApproach: { x: -140.3, z: -92, feet: -12.6, yaw: Math.PI / 2, pitch: 0 },
-    finalDoor: { x: -139, z: -92, y: -12.6 },
+    finalApproach: { x: -140.3, z: -92, feet: 8.4, yaw: Math.PI / 2, pitch: 0 },
+    finalDoor: { x: -139, z: -92, y: 8.4 },
     refuge: { x: -172 + Math.cos(.92) * 14.25, z: -92 + Math.sin(.92) * 14.25 }, counterweightRadius: .72,
     counterweightSpeed: 1.15, counterweightWarningSeconds: 6,
     hoist: { shaft: { x: -188, z: -92 }, start: { x: -164.29, z: -83.27 },
@@ -109,53 +112,26 @@ export const CONTINUATION_RETURN_CATCHES = freeze([
   { level: 3, angle: 3.35, landingRadius: 1.6, joinAngle: 2.6 },
 ]);
 for (const branch of CONTINUATION_RETURN_CATCHES) {
-  const stage = CONTINUATION_CATCH_STAGES[branch.level], at = continuationRadialPoint(branch.landingRadius, branch.angle);
-  const pocketRadius = .64, neckRadius = stage.outerRadius - .7;
-  catchSurfaces.push(rect(`catch-${branch.level}-wrong-pocket`, 'catch', at.x-pocketRadius, at.x+pocketRadius, at.z-pocketRadius, at.z+pocketRadius, stage.y,
-    {level:stage.level, role:'wrong-catch', material:'case-lining', construction:'case'}));
-  // Short overlapping tread plates form a physically continuous diagonal neck.
-  const count = Math.ceil((neckRadius-branch.landingRadius)/.45);
-  for(let k=0;k<=count;k++) {
-    const p=continuationRadialPoint(branch.landingRadius+(neckRadius-branch.landingRadius)*k/count,branch.angle);
-    catchSurfaces.push(rect(`catch-${branch.level}-wrong-neck-${k}`, 'catch', p.x-.49,p.x+.49,p.z-.49,p.z+.49,stage.y,
-      {level:stage.level,role:'wrong-catch-neck',material:'piano-wood',construction:'binding'}));
-  }
+  const stage = CONTINUATION_CATCH_STAGES[branch.level], neckRadius = stage.outerRadius - .7, bound = stage.outerRadius + 1.5;
+  const wedge = (id, inner, outer, start, end, role, material, construction) => catchSurfaces.push({ id: `catch-${branch.level}-${id}`, phase: 'catch', region: 'catch', kind: 'sector', center: { ...C.catch.center },
+    minX: C.catch.center.x - bound, maxX: C.catch.center.x + bound, minZ: C.catch.center.z - bound, maxZ: C.catch.center.z + bound,
+    innerRadius: inner, outerRadius: outer, startAngle: start, endAngle: end, y: stage.y, thickness: .35, level: stage.level, role, material, construction, angularSegments: 24 });
+  // The landing pocket is a small crescent wedge, not a square pad.
+  wedge('wrong-pocket', branch.landingRadius - .78, branch.landingRadius + .78, branch.angle - .3, branch.angle + .3, 'wrong-catch', 'case-lining', 'case');
+  // The neck is one radial wedge (a crescent cut), not a chain of squares.
+  wedge('wrong-neck', branch.landingRadius - .55, neckRadius + .55, branch.angle - .17, branch.angle + .17, 'wrong-catch-neck', 'piano-wood', 'binding');
   const radius=stage.outerRadius;
   catchSurfaces.push({id:`catch-${branch.level}-wrong-return-arc`,phase:'catch',region:'catch',kind:'sector',center:{...C.catch.center},
     minX:C.catch.center.x-radius,maxX:C.catch.center.x+radius,minZ:C.catch.center.z-radius,maxZ:C.catch.center.z+radius,
     innerRadius:radius-1.4,outerRadius:radius,startAngle:Math.min(branch.angle,branch.joinAngle)-.045,endAngle:Math.max(branch.angle,branch.joinAngle)+.045,
     y:stage.y,thickness:.35,level:stage.level,role:'wrong-catch-return',material:'case-lining',construction:'binding',angularSegments:24});
 }
-// The spindle is one island in an archipelago. Narrow causeways join distinct
-// floating destinations; all are real supports, including the quiet detours.
-// Their varying silhouettes and cuts leave the void visible between them.
+// The crescents are the islands. Two functional pads carry the rest and the
+// exit; every other reachable destination is a crescent itself. No causeways.
 const island=(id,bounds,y,level,role='island')=>catchSurfaces.push(rect(id,'catch',...bounds,y,
   {level,role,material:'cold-stone',construction:'masonry',thickness:.72}));
-const causeway=(id,bounds,y,level)=>catchSurfaces.push(rect(id,'catch',...bounds,y,
-  {level,role:'island-causeway',material:'piano-wood',construction:'binding',thickness:.28}));
-// The counterarc's return pocket leads to the separate listening island.
-causeway('catch-seat-causeway',[-190,-179,-99,-97],-4.8,2);
-causeway('catch-seat-causeway-bend',[-190,-188,-103,-97],-4.8,2);
 island('catch-seat-island',[-197,-189,-110,-101],-4.8,2,'seat-island');
-// A route of two intermediary islands leads east to the unmistakable door.
-causeway('catch-final-balcony',[-167.5,-157,-93.2,-90.8],-12.6,3);
-island('catch-east-island',[-158,-151,-96,-88],-12.6,3);
-causeway('catch-east-causeway',[-152,-142,-93.2,-90.8],-12.6,3);
-island('catch-door-island',[-143,-135,-97,-87],-12.6,3,'door-island');
-// Two other destinations make this a place to navigate, not a single pier.
-causeway('catch-north-causeway',[-168,-166,-111,-99],-12.6,3);
-island('catch-north-island',[-171,-163,-118,-110],-12.6,3);
-causeway('catch-south-causeway',[-173,-171,-83,-74],-12.6,3);
-island('catch-south-island',[-176,-168,-75,-68],-12.6,3);
-// Farther islands remain connected at the real height of their own layer, so
-// landing on one cannot leave the player stranded on an unearned floor.
-causeway('catch-upper-satellite-way',[-192,-163,-81.6,-79.6],8.4,0);
-island('catch-upper-satellite',[-196,-190,-82,-76],8.4,0);
-causeway('catch-lower-satellite-way',[-201,-170,-116.8,-114.8],-12.6,3);
-island('catch-lower-satellite',[-204,-198,-119,-113],-12.6,3);
-causeway('catch-far-satellite-way',[-193,-148,-107,-105],-4.8,2);
-causeway('catch-far-satellite-bend',[-150,-148,-111,-105],-4.8,2);
-island('catch-far-satellite',[-151,-145,-115,-109],-4.8,2);
+island('catch-door-island',[-143,-135,-97,-87],8.4,0,'door-island');
 const wall = (id, minX, maxX, minZ, maxZ, minY, maxY, extra = {}) => ({ id, phase: 'wrong-return', region: 'wrong-return', minX, maxX, minZ, maxZ, minY, maxY, material: 'cold-wall', ...extra });
 const walls = [
   wall('wrong-entry-back-west', -1.8, -1.58, 3.38, 3.62, 0, 3.3), wall('wrong-entry-back-east', 1.58, 1.8, 3.38, 3.62, 0, 3.3),
@@ -252,9 +228,21 @@ export function continuationSurfaceContains(surface, x, z, margin = 0) {
   return projection >= surface.innerRadius*Math.cos(delta/2)+margin-1e-7 && projection <= surface.outerRadius*Math.cos(delta/2)-margin+1e-7 && a >= surface.startAngle + angularMargin - 1e-7 && a <= surface.startAngle + span - angularMargin + 1e-7;
 }
 // Always persistent: callers must not remove the place behind the player.
-export const continuationSurfaces = value =>Number.isInteger(value?.chartId)?allSurfaces.filter(s=>(s.chartId??0)===value.chartId):allSurfaces;
-export const continuationChartId=value=>Number.isInteger(value?.chartId)?value.chartId:0;
-export const continuationChartSurfaces=value=>allSurfaces.filter(s=>(s.chartId??0)===continuationChartId(value));
+// The Catch crescents drift on a slow circle so a landing is never the same
+// footprint twice; collision and render both read this same sway.
+export function continuationCrescentSway(level, elapsed) {
+  const t = Number(elapsed) || 0, phase = (Number(level) || 0) * 2.1, a = t * .19 + phase;
+  return { x: Math.cos(a) * .3, z: Math.sin(a) * .3 };
+}
+const swaySector = (s, elapsed) => {
+  if (s.kind !== 'sector' || s.phase !== 'catch') return s;
+  const sw = continuationCrescentSway(s.level, elapsed);
+  return { ...s, center: { x: s.center.x + sw.x, z: s.center.z + sw.z } };
+};
+const swayRows = (rows, elapsed) => (Number(elapsed) ? rows.map(s => swaySector(s, elapsed)) : rows);
+export const continuationSurfaces = value => swayRows(Number.isInteger(value?.chartId) ? allSurfaces.filter(s => (s.chartId ?? 0) === value.chartId) : allSurfaces, value?.elapsed);
+export const continuationChartId = value => Number.isInteger(value?.chartId) ? value.chartId : 0;
+export const continuationChartSurfaces = value => swayRows(allSurfaces.filter(s => (s.chartId ?? 0) === continuationChartId(value)), value?.elapsed);
 export function continuationSolids(value = {}) {
   const result = [...walls,...JOURNEY_JOINT_SOLIDS,...SOURCE_REST_ALCOVE_SOLIDS,...corridorCollisionSolids(value)];
   if (value.closure?.mode === 'closing') { const x = Number(value.closure.frontX) || 0; result.push(wall('wrong-closing-front', x - .16, x + .16, -14, -10, 8.4, 11.4, { role: 'closure', material: 'dark-metal' })); }

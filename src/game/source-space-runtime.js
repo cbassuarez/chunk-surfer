@@ -2442,6 +2442,22 @@ export function createSourceSpaceRuntime({
     return standingPressure;
   }
 
+  // The haystack's pressure as a deinhibition term for the Last Minutes. The
+  // corridor is the local expression of the same nervous system, so its
+  // 0.64..0.985 pressure must reach the interruption director directly.
+  function haystackLocalDeinhibition() {
+    if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK) return 0;
+    return clamp01(refreshStandingPressure());
+  }
+
+  // The corridor's own fear spike, so the Last Minutes can hold its recovery
+  // while the mosh is happening instead of firing both at once.
+  function haystackMoshAmount() {
+    if (state.phase !== CHUNK_SURF_PHASE.HAYSTACK) return 0;
+    const pressure = clamp01(refreshStandingPressure());
+    return haystackMoshFrame({ elapsed: searchElapsed, seed: state.seed, pressure }).amount;
+  }
+
   function pressureFrame({ reducedMotion = false, time = 0 } = {}) {
     if (state.phase === CHUNK_SURF_PHASE.HAYSTACK) {
       const standing = refreshStandingPressure();
@@ -4096,9 +4112,14 @@ export function createSourceSpaceRuntime({
           seed: state.seed, slot: state.interactivePageSlot, margin: .3,
         })) continue;
         const spin = reducedMotion ? (c - 0.5) * 0.3 : time * (1.2 + d * 2.6) + i * 0.61;
+        // A quarter of the airborne litter is car parts from the wrecked van
+        // (torn panel shards, the lost bumper, a hubcap, a headlamp), not paper.
+        // They are real meshes, so they carry no paperIndex and no paper semantic.
+        const CAR_PARTS = ['cm_van_panel_shard_0', 'cm_van_panel_shard_1', 'cm_van_panel_shard_2', 'cm_van_bumper', 'cm_van_hubcap', 'cm_van_headlamp'];
+        const carPart = i % 4 === 0 ? CAR_PARTS[i % CAR_PARTS.length] : null;
         out.push({
           id: `source-wind-sheet-${i}`,
-          mesh: 'loose_note',
+          mesh: carPart || 'loose_note',
           matrix: sourceMatrix({
             x: wx,
             y: lift,
@@ -4112,9 +4133,9 @@ export function createSourceSpaceRuntime({
           }),
           zone: ZONE.sourceSpace,
           structural: false,
-          paperIndex: paperAtlasIndex(ambientPaperDocumentId(state.seed, 10000 + i)),
-          noShadow: true,
-          semantic: 'source-wind-paper',
+          ...(carPart
+            ? { noShadow: true, semantic: 'source-wind-debris' }
+            : { paperIndex: paperAtlasIndex(ambientPaperDocumentId(state.seed, 10000 + i)), noShadow: true, semantic: 'source-wind-paper' }),
         });
       }
     }
@@ -8749,6 +8770,8 @@ export function createSourceSpaceRuntime({
         graceSeconds: restartGraceRemaining,
       },
       haystack: pressureFrame({ reducedMotion: false }),
+      haystackLocalDeinhibition,
+      haystackMoshAmount,
       bracket: sourceBracketFrame(),
       hallDesign: { regime: sourceHallRegime(state.hallMaxDistance).id, targetSeconds: SOURCE_HALL.targetSeconds },
       geometryBoundary: {

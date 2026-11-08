@@ -1,0 +1,225 @@
+TAP version 13
+# Subtest: the five identities are actual unique Ellery assemblies, with independent local state
+ok 1 - the five identities are actual unique Ellery assemblies, with independent local state
+  ---
+  duration_ms: 1.623542
+  type: 'test'
+  ...
+# Subtest: only the untouched forward entrance receives this insertion; existing journeys stay intact
+ok 2 - only the untouched forward entrance receives this insertion; existing journeys stay intact
+  ---
+  duration_ms: 4.378208
+  type: 'test'
+  ...
+# Subtest: E starts a real saved swing; unique opening counts only when physically passable
+ok 3 - E starts a real saved swing; unique opening counts only when physically passable
+  ---
+  duration_ms: 1.153458
+  type: 'test'
+  ...
+# Subtest: fifth door is source-bound during its swing; opening does not itself leave Ellery
+ok 4 - fifth door is source-bound during its swing; opening does not itself leave Ellery
+  ---
+  duration_ms: 1.539542
+  type: 'test'
+  ...
+# Subtest: after five, crossing an earlier open door also continues, without a sixth unique opening
+ok 5 - after five, crossing an earlier open door also continues, without a sixth unique opening
+  ---
+  duration_ms: 2.158
+  type: 'test'
+  ...
+# Subtest: closed leaf, insufficient swing and jamb margin prevent fast-step tunnelling
+not ok 6 - closed leaf, insufficient swing and jamb margin prevent fast-step tunnelling
+  ---
+  duration_ms: 4.5885
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-false-return.spec.mjs:98:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(state.z < 0)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:108:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: entry and chapel loop preserve opened identities and consume the rest of held movement
+ok 7 - entry and chapel loop preserve opened identities and consume the rest of held movement
+  ---
+  duration_ms: 0.705917
+  type: 'test'
+  ...
+# Subtest: other ordinary doors remain locked before five and never add progress
+ok 8 - other ordinary doors remain locked before five and never add progress
+  ---
+  duration_ms: 0.272583
+  type: 'test'
+  ...
+# Subtest: entry-return bounds become inert after five; only its real open plane can continue while chapel still loops
+ok 9 - entry-return bounds become inert after five; only its real open plane can continue while chapel still loops
+  ---
+  duration_ms: 2.586125
+  type: 'test'
+  ...
+# Subtest: closed outer doors cannot finish through loop bounds; an open Source plane needs no old floor on the far side
+ok 10 - closed outer doors cannot finish through loop bounds; an open Source plane needs no old floor on the far side
+  ---
+  duration_ms: 2.734292
+  type: 'test'
+  ...
+# Subtest: pause/readiness freeze swing, look and motion; reload and reversal preserve physical fraction
+ok 11 - pause/readiness freeze swing, look and motion; reload and reversal preserve physical fraction
+  ---
+  duration_ms: 0.692041
+  type: 'test'
+  ...
+# Subtest: a body straddling the actual door mouth prevents closing instead of becoming an invalid saved pose
+not ok 12 - a body straddling the actual door mouth prevents closing instead of becoming an invalid saved pose
+  ---
+  duration_ms: 0.522834
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-false-return.spec.mjs:187:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(state.z > .9)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:194:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: valid local poses persist; corrupt unsupported pose recovers to finite support without touching host or layout
+ok 13 - valid local poses persist; corrupt unsupported pose recovers to finite support without touching host or layout
+  ---
+  duration_ms: 0.260333
+  type: 'test'
+  ...
+# Subtest: stacked floors stay on the current storey and real risers change candidate feet before collision
+not ok 14 - stacked floors stay on the current storey and real risers change candidate feet before collision
+  ---
+  duration_ms: 0.475917
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-false-return.spec.mjs:209:1'
+  failureType: 'testCodeFailure'
+  error: '1.400000000000001 != 3'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    near (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:27:31)
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:224:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a stair cannot jump an oversized riser, and co-located doors focus only at their real height
+ok 15 - a stair cannot jump an oversized riser, and co-located doors focus only at their real height
+  ---
+  duration_ms: 0.261709
+  type: 'test'
+  ...
+# Subtest: the same five-opening rule accepts any five counted actual doors in the expanded floorset
+not ok 16 - the same five-opening rule accepts any five counted actual doors in the expanded floorset
+  ---
+  duration_ms: 1.302458
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-false-return.spec.mjs:250:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'active'
+    - 'completed'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'completed'
+  actual: 'active'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:262:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: actual one-active-leaf pairs admit only that physical half, independently of normal direction
+ok 17 - actual one-active-leaf pairs admit only that physical half, independently of normal direction
+  ---
+  duration_ms: 0.131541
+  type: 'test'
+  ...
+# Subtest: an open pair cannot hand off through its inactive leaf, including reversed normals and rotated width axes
+not ok 18 - an open pair cannot hand off through its inactive leaf, including reversed normals and rotated width axes
+  ---
+  duration_ms: 1.917167
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-false-return.spec.mjs:281:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    width -0.525, yaw 0, normal 1
+    + actual - expected
+    
+    + 'active'
+    - 'completed'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'completed'
+  actual: 'active'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-false-return.spec.mjs:295:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: opening and reopening an actual pair counts one assembly regardless of its active leaf count
+ok 19 - opening and reopening an actual pair counts one assembly regardless of its active leaf count
+  ---
+  duration_ms: 1.771417
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 14
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38.9645

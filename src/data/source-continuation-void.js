@@ -39,6 +39,18 @@ export const continuationVoidDomains = Object.freeze(rows.map(([surfaceId, minX,
     crossingPoint: 'body-centre', translationY: entryY - exitY });
 }));
 const byId = new Map(continuationVoidDomains.map(d => [d.id, d]));
+// Source III's cascade is non-Euclidean: dropping through its bottom wraps the
+// body back above the top crescent, where the exit door waits high up. This is
+// a vertical-only identification — no horizontal tile — so a full descent loop
+// returns to the entry height rather than sliding the deck sideways.
+const catchDomain = Object.freeze({
+  version: 1, id: 'source-iii-void:catch', chartId: 0, elevation: C.catch.top, surfaceId: 'catch-0-case-crescent',
+  minX: C.catch.outer.minX, maxX: C.catch.outer.maxX, minZ: C.catch.outer.minZ, maxZ: C.catch.outer.maxZ,
+  periodX: 0, periodZ: 0, exitY: -36, entryY: C.catch.top + 2.75,
+  entryFeetY: C.catch.top + 2.75 - C.bodyHeight / 2, exitFeetY: -36 - C.bodyHeight / 2,
+  crossingPoint: 'body-centre', translationY: (C.catch.top + 2.75) - (-36),
+});
+byId.set(catchDomain.id, catchDomain);
 const byPlane = new Map(continuationVoidDomains.map(d => [key(d.chartId, d.elevation), d]));
 const uniqueChart = new Map([1,2,3,4].map(chartId => [chartId, continuationVoidDomains.find(d => d.chartId === chartId)]));
 export const continuationVoidDomainForChart = chartId => uniqueChart.get(chartId) || null;

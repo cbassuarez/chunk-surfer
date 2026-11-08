@@ -64,9 +64,9 @@ test('ordinary accepted movement still reaches the lodge, both bay stair approac
   for(const target of[body(45.75,4.75),body(45.75,10.75)])assert.ok(courtyardWalk(FP,PROPS,window,vec(target)),'public window reaches real bay stair approach through the actual open gate');
   for(const id of['pub-west-entry','pub-east-entry']){const p=pubExteriorLogicalAt(id),goal=[Math.floor(p.x*2),Math.floor(p.y*2)];assert.ok(districtPubWalk(FP,PROPS,start,goal),id);}
   const lodge=CONSERVATORY_PROPS.find(p=>p.id==='yard-booth');
-  assert.deepEqual([lodge.x,lodge.y,lodge.yaw],[74,214,-Math.PI/2]);assert.deepEqual(lodge.inspectAt,{x:75.7,y:214});assert.equal(lodge.action,'gate-lodge');
+  assert.deepEqual([lodge.x,lodge.y,lodge.yaw],[74,214,Math.PI/2]);assert.deepEqual(lodge.inspectAt,{x:72.3,y:214});assert.equal(lodge.action,'gate-lodge');
   for(const id of['yard-booth-interior','yard-booth-practicals','yard-booth-glazing','yard-booth-guard-idle','yard-booth-guard-ledger','yard-booth-guard-handoff','yard-booth-handoff']){
-    const p=CONSERVATORY_PROPS.find(p=>p.id===id);assert.deepEqual([p.x,p.y,p.yaw],[74,214,-Math.PI/2],id);
+    const p=CONSERVATORY_PROPS.find(p=>p.id===id);assert.deepEqual([p.x,p.y,p.yaw],[74,214,Math.PI/2],id);
   }
 });
 

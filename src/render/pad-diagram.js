@@ -17,7 +17,7 @@
 import { uiCellMetrics, uiDraw, uiText } from './ui.js';
 import { themeRoleColor, themeRoleDim, uiBrightness } from './palette.js';
 import { drawVfdGlyph } from './vfd-font.js';
-import { PAD_OUTLINE, BUTTON_POSITIONS } from '../game/controller-ui.js';
+import { padLayoutFor } from '../game/controller-ui.js';
 
 // The drawing box. Wider than the pad itself because the leader labels run out
 // into margins either side — projecting only 0..100 put every right-hand label
@@ -48,8 +48,8 @@ export function padProjection(rect) {
 // A closed outline through the profile points. Quadratic segments between
 // successive midpoints round every corner without needing hand-placed control
 // points, which is what keeps the mirrored halves identical.
-function traceOutline(ctx, p) {
-  const pts = PAD_OUTLINE;
+function traceOutline(ctx, p, points) {
+  const pts = points;
   const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const start = mid(pts[pts.length - 1], pts[0]);
   ctx.beginPath();
@@ -115,6 +115,7 @@ const DPAD_ARROW = Object.freeze({
 // `rect` is in UI cells. Returns nothing — this paints straight onto the layer.
 export function drawPadDiagram(rect, model, { cols = 120, blinkOn = true } = {}) {
   const proj = padProjection(rect);
+  const outline = model?.outline || padLayoutFor(model?.family || 'generic').outline;
   uiDraw(({ ctx, dpr, cellW, cellH }) => {
     const p = {
       x: (v) => proj.cx(v) * cellW * dpr,
@@ -135,7 +136,7 @@ export function drawPadDiagram(rect, model, { cols = 120, blinkOn = true } = {})
     ctx.lineCap = 'round';
 
     // The shell is silkscreen: printed on the panel, not lit by it.
-    traceOutline(ctx, p);
+    traceOutline(ctx, p, outline);
     ctx.fillStyle = glass;
     ctx.fill();
     ctx.strokeStyle = silkscreen;

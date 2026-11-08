@@ -1,0 +1,2623 @@
+diff --git a/public/assets/audio/outskirts/sarah-tape-fallback.credits.json b/public/assets/audio/outskirts/sarah-tape-fallback.credits.json
+new file mode 100644
+index 00000000..91c902b2
+--- /dev/null
++++ b/public/assets/audio/outskirts/sarah-tape-fallback.credits.json
+@@ -0,0 +1,198 @@
++{
++ "generator": "tools/chunk_surfer/build-sarah-tape-fallback.mjs",
++ "authored": "Rendered in this repository by the game's local formant voice (src/audio/sam-voice.js). No third-party audio and no sam-js output.",
++ "thirdParty": [],
++ "sha256": "587d14a32551eee54398940bb96734948776ed49efebbc2e1ce85cd664bfe315",
++ "seconds": 91.5,
++ "lines": [
++  {
++   "at": 2.5,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 2.38,
++   "room": 2.38,
++   "hurry": 1.44,
++   "text": "Testing. Testing. This is... what is this."
++  },
++  {
++   "at": 5,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 2.38,
++   "room": 2.38,
++   "hurry": 1.1,
++   "text": "It's the street. Tell them it's the street."
++  },
++  {
++   "at": 7.5,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 1.87,
++   "room": 4.38,
++   "hurry": 1,
++   "text": "This... is the street."
++  },
++  {
++   "at": 12,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 4.88,
++   "room": 4.88,
++   "hurry": 1.04,
++   "text": "Here we see the lamp post, in its natural habitat. Solitary. Nocturnal."
++  },
++  {
++   "at": 17,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 0.89,
++   "room": 1.38,
++   "hurry": 1,
++   "text": "He's lonely."
++  },
++  {
++   "at": 18.5,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 2.38,
++   "room": 2.38,
++   "hurry": 1.09,
++   "text": "He's not lonely. He's got a job to do."
++  },
++  {
++   "at": 21,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 3,
++   "room": 7.88,
++   "hurry": 1,
++   "text": "I light the pavement. Nobody thanks me."
++  },
++  {
++   "at": 29,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 2.96,
++   "room": 5.88,
++   "hurry": 1,
++   "text": "Keep it down, keep it down, there's one coming."
++  },
++  {
++   "at": 35,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 4.76,
++   "room": 4.88,
++   "hurry": 1,
++   "text": "The night bus. Nobody knows where it goes. Nobody has ever come back."
++  },
++  {
++   "at": 40,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 2.53,
++   "room": 2.88,
++   "hurry": 1,
++   "text": "It's the forty-two. It goes to my mum's."
++  },
++  {
++   "at": 43,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 2.8,
++   "room": 6.88,
++   "hurry": 1,
++   "text": "Nobody has ever come back from your mum's."
++  },
++  {
++   "at": 50,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 2.55,
++   "room": 5.88,
++   "hurry": 1,
++   "text": "Give it here. Give it. It's my turn."
++  },
++  {
++   "at": 56,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 4.87,
++   "room": 4.88,
++   "hurry": 1,
++   "text": "And here we have the recordist. Rare. Very shy. Only comes out at night."
++  },
++  {
++   "at": 61,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 0.45,
++   "room": 1.38,
++   "hurry": 1,
++   "text": "Don't."
++  },
++  {
++   "at": 62.5,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 3.7,
++   "room": 3.88,
++   "hurry": 1,
++   "text": "He's pretending he isn't listening. He's always listening."
++  },
++  {
++   "at": 66.5,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 3.39,
++   "room": 6.38,
++   "hurry": 1,
++   "text": "He thinks he's recording the street. He's recording me."
++  },
++  {
++   "at": 73,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 1.03,
++   "room": 1.88,
++   "hurry": 1,
++   "text": "...Yeah."
++  },
++  {
++   "at": 75,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 2.08,
++   "room": 2.38,
++   "hurry": 1,
++   "text": "What are we going to do with this?"
++  },
++  {
++   "at": 77.5,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 2.46,
++   "room": 3.38,
++   "hurry": 1,
++   "text": "Keep it. We'll play it when we're old."
++  },
++  {
++   "at": 81,
++   "who": "sarah",
++   "speaker": "sarah",
++   "seconds": 2.48,
++   "room": 2.88,
++   "hurry": 1,
++   "text": "We'll do another one. We'll do loads."
++  },
++  {
++   "at": 84,
++   "who": "you",
++   "speaker": "recordist",
++   "seconds": 0.55,
++   "room": 7.3,
++   "hurry": 1,
++   "text": "Loads."
++  }
++ ]
++}
+diff --git a/public/assets/audio/outskirts/sarah-tape-fallback.wav b/public/assets/audio/outskirts/sarah-tape-fallback.wav
+new file mode 100644
+index 00000000..afdff6e8
+Binary files /dev/null and b/public/assets/audio/outskirts/sarah-tape-fallback.wav differ
+diff --git a/src/data/first-strike.js b/src/data/first-strike.js
+index f5fe106f..bc5a8211 100644
+--- a/src/data/first-strike.js
++++ b/src/data/first-strike.js
+@@ -1,8 +1,9 @@
+ // One terminal failed-night passage in the construction the player occupies.
+ // All body/collision values are world metres. Plan/prop snapshots are rebuilt
+ // by the host, never serialized into a scene checkpoint.
++import {GAIT_SPEED} from '../game/locomotion.js';
+ export const FIRST_STRIKE=Object.freeze({schema:1,duration:42,finalAt:35,fixedStep:1/120,maxFrameDelta:.25,
+- walkSpeed:3.15,bodyRadius:.23,bodyHeight:1.82,eyeHeight:1.62,stepHeight:.32,far:110,
++ walkSpeed:GAIT_SPEED.walk,clearanceSpeed:GAIT_SPEED.run,bodyRadius:.23,bodyHeight:1.82,eyeHeight:1.62,stepHeight:.32,far:110,
+  maxCells:12000,maxPieces:72,maxDust:42,slabThickness:.28,gravity:9.8,maximumFallSeconds:2.8});
+ const finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
+ const hash=s=>{let n=2166136261;for(const c of String(s)){n=Math.imul(n^c.charCodeAt(0),16777619);}return(n>>>0).toString(16);};
+@@ -48,7 +49,7 @@ export function firstStrikePieces(entry){
+  for(const c of candidates){const key=[Math.floor(c.x/1.5),Math.floor(c.z/1.5),Math.round(c.ceil*4),Math.round(c.floor*4),entry.plan?'plan':c.ceilingHostId].join(':');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(c);}
+  const pieces=[...groups.values()].sort((a,b)=>Math.hypot(a[0].x-entry.origin.x,a[0].z-entry.origin.z)-Math.hypot(b[0].x-entry.origin.x,b[0].z-entry.origin.z)).slice(0,FIRST_STRIKE.maxPieces).map((cells,index)=>{
+   const x=cells.reduce((n,c)=>n+c.x,0)/cells.length,z=cells.reduce((n,c)=>n+c.z,0)/cells.length,floor=cells[0].floor,ceil=cells[0].ceil,projection=firstStrikeRouteProjection(entry,x,z),radius=Math.max(...cells.map(c=>Math.hypot(c.x-x,c.z-z)+c.size*.71)),fallSeconds=Math.sqrt(Math.max(.1,ceil-floor)*2/FIRST_STRIKE.gravity);
+-  return{id:'course-'+index,index,x,z,floor,ceil,cells,radius,projection,releaseAt:6+index%7*3.8+Math.floor(index/7)*.23,fallSeconds,bodyClearance:radius+FIRST_STRIKE.bodyRadius+FIRST_STRIKE.walkSpeed*fallSeconds+1};
++  return{id:'course-'+index,index,x,z,floor,ceil,cells,radius,projection,releaseAt:6+index%7*3.8+Math.floor(index/7)*.23,fallSeconds,bodyClearance:radius+FIRST_STRIKE.bodyRadius+FIRST_STRIKE.clearanceSpeed*fallSeconds+1};
+  });
+  const props=typeof entry.getProps==='function'?entry.getProps():entry.props;
+  const remote=props.filter(p=>entry.hostBounds?.[p.id]&&!p.character&&!p.practical&&!p.decorative&&(p.structural||p.sourceStructure||/building|elevation|wall|roof|tower|facade|canopy|slab|ceiling|conservatory/i.test(p.mesh||''))).map(p=>{
+diff --git a/src/data/horizon-approach.js b/src/data/horizon-approach.js
+index 4e26e3b4..00c55e86 100644
+--- a/src/data/horizon-approach.js
++++ b/src/data/horizon-approach.js
+@@ -1,38 +1,84 @@
+ // HORIZON. He walks up to whoever is there, and that is all he has to do. What is
+-// wrong is the place he does it in: the space itself is curved, so the plain things
+-// a body knows about distance stop being true. The route it serves stays as it was.
++// wrong is the place he does it in: a closed space. Everything he walks away from
++// grows, and past halfway what he walks towards shrinks before it comes to its own
++// size at his feet. Every road out arrives at the same place. The route it serves
++// stays as it was.
+ //
+-//   closed       A closed space. Everything he walks away from grows, and past
+-//                halfway what he walks towards shrinks before it comes to its own
+-//                size at his feet. Every road out arrives at the same place.
+-//   circle-limit The other way. Each pace out there is more ground than the last:
+-//                tiles without end inside a horizon he never gets nearer, too much
+-//                room to walk round anything. After Escher's Circle Limit.
+-//   relativity   A straight flat road, and round it Source II's own house of stairs
+-//                hung at right angles, each with its own idea of down.
++// Round him the sky is full of what is left: car parts, flashlights, sheet music,
++// daisies, pieces of the moor. Far off they are enormous. They are all ordinary
++// things, the game's own, and when he goes under one it is only that.
+ //
+ // Positions are metres in the map from the object at the origin: `r` out along a
+ // straight line of the space, `phi` the bearing. `frame` is where he is, as a 4x4
+ // of the space, and it is the only truth about it: walking is composing it.
+ export const HORIZON_APPROACH=Object.freeze({
+   walk:3,bodyRadius:.22,eye:1.62,maxFrameDelta:.1,
+-  variants:Object.freeze({
+-    closed:Object.freeze({sign:1,radius:26,startMetres:74,roads:7,roadHalfWidth:1.5,hub:2.6}),
+-    'circle-limit':Object.freeze({sign:-1,radius:3,startMetres:15,tileRings:6.2}),
+-    // Flat, to the width of a hair: the curvature is too slight to matter, and all
+-    // the impossibility is in what hangs round the road.
+-    relativity:Object.freeze({sign:1,radius:2000,startMetres:42,roadHalfWidth:1.5,hub:3.4,roadEnd:60,cell:62,scale:.82}),
+-  }),
+-  defaultVariant:'closed',
+-  // Where each thing stands, as a bearing and a share of the way round the space.
++  // An odd number of roads, so that none runs through his own antipode and fills the
++  // sky with itself.
++  space:Object.freeze({sign:1,radius:26,startMetres:74,roads:7,roadHalfWidth:1.5,hub:2.6}),
+   occupants:Object.freeze(['sarah','lyle','daisy','ant']),
+-  station:Object.freeze({reach:3.2}),
++  station:Object.freeze({reach:3.2,standOff:.7}),
+   daisy:Object.freeze({petals:21,height:.46,petalRadius:.075}),
+   commit:7,
++  debris:Object.freeze({count:118,clearance:5,sightline:7,seed:0x50d5a1,rate:Object.freeze([.05,.24])}),
+ });
+-const C=HORIZON_APPROACH;
+-export const horizonApproachVariantIds=Object.freeze(Object.keys(C.variants));
+-export const horizonApproachVariantId=id=>Object.hasOwn(C.variants,id)?id:C.defaultVariant;
++const C=HORIZON_APPROACH,S=C.space,TAU=Math.PI*2;
++
++// What is up there. Every mesh is the game's own but the pieces of moor, which are
++// torn from the height field the drive's own land is made of. `scale` is a range,
++// `emissive` how much it shows against the sky, `sy` a part's own stretch.
++const PAPER=Object.freeze([.9,.88,.8,.22]),METAL=Object.freeze([.6,.62,.66,.14]);
++export const HORIZON_DEBRIS_KINDS=Object.freeze([
++  {id:'flashlight',weight:5,scale:[8,12],emissive:METAL,parts:['opening_cab_flashlight_reference_body','opening_cab_flashlight_reference_housing_graphite']},
++  {id:'flashlight-throw',weight:4,scale:[8,12],emissive:METAL,parts:['opening_cab_flashlight_throw_body','opening_cab_flashlight_throw_housing_olive']},
++  {id:'flashlight-flood',weight:4,scale:[8,12],emissive:METAL,parts:['opening_cab_flashlight_flood_body','opening_cab_flashlight_flood_housing_ivory']},
++  {id:'steering-wheel',weight:6,scale:[4,6],emissive:METAL,parts:['opening_drive_wheel']},
++  {id:'tyre',weight:7,scale:[2.4,3.6],emissive:METAL,parts:['opening_drive_tyre']},
++  {id:'wiper',weight:3,scale:[5,8],emissive:METAL,parts:['opening_drive_wiper']},
++  {id:'car',weight:3,scale:[1,1.3],emissive:METAL,parts:['street_pilot_car_body']},
++  {id:'wheel',weight:4,scale:[2,3],emissive:METAL,parts:['street_pilot_car_wheel']},
++  {id:'van-door',weight:5,scale:[1.2,1.8],parts:['mf_door_leaf','mf_door_glass','mf_door_trim','mf_door_metal']},
++  {id:'hubcap',weight:5,scale:[5,8],parts:['mf_hubcap']},
++  {id:'daisy',weight:14,scale:[10,17],parts:['mf_hero_petal','mf_hero_disc',{mesh:'mf_hero_stem',sy:.2}]},
++  {id:'score',weight:8,scale:[5,8],emissive:PAPER,parts:['open_score']},
++  {id:'loose-pages',weight:8,scale:[4,7],emissive:PAPER,parts:['loose_pages']},
++  {id:'take-sheet',weight:4,scale:[7,12],emissive:PAPER,parts:['stop_listening_take_sheet']},
++  {id:'programme',weight:2,scale:[7,10],emissive:PAPER,parts:['opening_cab_recital_programme']},
++  {id:'music-stand',weight:3,scale:[2,3],emissive:METAL,parts:['music_stand']},
++  {id:'metronome',weight:3,scale:[5,8],emissive:METAL,parts:['metronome']},
++  {id:'cable',weight:3,scale:[3,5],emissive:METAL,parts:['cable_coil']},
++  {id:'recorder',weight:3,scale:[9,14],emissive:METAL,parts:['opening_cab_field_recorder_body','opening_cab_field_recorder_faceplate_olive']},
++  {id:'headphones',weight:3,scale:[7,10],emissive:METAL,parts:['opening_cab_headphones_reference']},
++  {id:'field-case',weight:2,scale:[2,3],emissive:METAL,parts:['opening_cab_field_case']},
++  {id:'jumper',weight:2,scale:[1.5,2],parts:['mf_jumper']},
++  {id:'bag',weight:2,scale:[1.5,2.5],parts:['the_bag_0']},
++  {id:'moor-0',weight:4,scale:[.8,1.3],clear:12,parts:['ha_moor_0','ha_moor_under_0']},
++  {id:'moor-1',weight:4,scale:[.8,1.3],clear:12,parts:['ha_moor_1','ha_moor_under_1']},
++  {id:'moor-2',weight:4,scale:[.8,1.3],clear:12,parts:['ha_moor_2','ha_moor_under_2']},
++].map(k=>Object.freeze({...k,scale:Object.freeze(k.scale),parts:Object.freeze(k.parts.map(p=>Object.freeze(typeof p==='string'?{mesh:p}:p)))})));
++export const horizonDebrisMeshes=()=>[...new Set(HORIZON_DEBRIS_KINDS.flatMap(k=>k.parts.map(p=>p.mesh)))];
++const seeded=seed=>{let a=seed>>>0;return()=>{a=a+0x6d2b79f5>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};};
++let field=null;
++// The same sky every time. Spread evenly through the whole of the space, above the
++// ground and below it, and never low enough to walk into.
++export function horizonDebrisField(){
++  if(field)return field;
++  const random=seeded(C.debris.seed),gauss=()=>Math.sqrt(-2*Math.log(1-random()))*Math.cos(TAU*random()),
++    total=HORIZON_DEBRIS_KINDS.reduce((sum,k)=>sum+k.weight,0),rows=[];
++  while(rows.length<C.debris.count){
++    let pick=random()*total,kind=HORIZON_DEBRIS_KINDS[0];
++    for(const k of HORIZON_DEBRIS_KINDS){pick-=k.weight;if(pick<=0){kind=k;break;}}
++    const q=[gauss(),gauss(),gauss(),gauss()],n=Math.hypot(...q),[x,y,z,w]=q.map(v=>v/n),l=Math.hypot(x,y,z),chi=Math.atan2(l,w);
++    if(Math.abs(Math.asin(y))*S.radius<C.debris.clearance+(kind.clear||0))continue;
++    // Nothing hangs right over the road he starts on: nothing should be mistaken for
++    // whoever is at the end of it.
++    if(Math.abs(Math.asin(x))*S.radius<C.debris.sightline)continue;
++    const axis=[gauss(),gauss(),gauss()],a=Math.hypot(...axis),[lo,hi]=C.debris.rate;
++    rows.push(Object.freeze({id:rows.length,kind:kind.id,base:Object.freeze([x/l*chi*S.radius,y/l*chi*S.radius,z/l*chi*S.radius]),
++      axis:Object.freeze(axis.map(v=>v/a)),phase:random()*TAU,rate:(lo+(hi-lo)*random())*(random()<.5?-1:1),scale:kind.scale[0]+(kind.scale[1]-kind.scale[0])*random()}));
++  }
++  field=Object.freeze(rows);return field;
++}
+ 
+ // ── THE SPACE ───────────────────────────────────────────────────────────────
+ // Column vectors, row-major arrays of 16. x,y,z are the tangent directions at the
+@@ -44,41 +90,35 @@ export function spaceMultiply(a,b){
+   return o;
+ }
+ // `distance` metres along the unit tangent `d`.
+-export function spaceTranslation(sign,radius,d,distance){
+-  const a=distance/radius,c=sign>0?Math.cos(a):Math.cosh(a),s=sign>0?Math.sin(a):Math.sinh(a),m=spaceIdentity(),[x,y,z]=d;
+-  const D=[x,y,z];
+-  for(let i=0;i<3;i++)for(let j=0;j<3;j++)m[i*4+j]+=(c-1)*D[i]*D[j];
+-  for(let i=0;i<3;i++){m[i*4+3]=D[i]*s;m[12+i]=(sign>0?-1:1)*D[i]*s;}
++export function spaceTranslation(d,distance){
++  const a=distance/S.radius,c=Math.cos(a),s=Math.sin(a),m=spaceIdentity();
++  for(let i=0;i<3;i++)for(let j=0;j<3;j++)m[i*4+j]+=(c-1)*d[i]*d[j];
++  for(let i=0;i<3;i++){m[i*4+3]=d[i]*s;m[12+i]=-d[i]*s;}
+   m[15]=c;
+   return m;
+ }
+-export const spaceInverse=(sign,m)=>{
++export const spaceInverse=m=>{
+   const o=new Array(16);
+-  for(let r=0;r<4;r++)for(let c=0;c<4;c++){const flip=sign<0&&(r===3)!==(c===3)?-1:1;o[r*4+c]=flip*m[c*4+r];}
++  for(let r=0;r<4;r++)for(let c=0;c<4;c++)o[r*4+c]=m[c*4+r];
+   return o;
+ };
+-export function spaceAtMap(sign,radius,r,phi){
+-  return spaceTranslation(sign,radius,[Math.sin(phi),0,Math.cos(phi)],r);
+-}
++export const spaceAtMap=(r,phi)=>spaceTranslation([Math.sin(phi),0,Math.cos(phi)],r);
+ // Where a frame's origin is, on the map.
+-export function spaceMapOf(sign,radius,m){
+-  const x=m[3],y=m[7],z=m[11],w=m[15],l=Math.hypot(x,y,z),chi=sign>0?Math.atan2(l,w):Math.asinh(l),r=chi*radius;
++export function spaceMapOf(m){
++  const x=m[3],y=m[7],z=m[11],w=m[15],l=Math.hypot(x,y,z),r=Math.atan2(l,w)*S.radius;
+   return{r,phi:Math.atan2(x,z),x:l>1e-9?x/l*r:0,y:l>1e-9?y/l*r:0,z:l>1e-9?z/l*r:0};
+ }
+ // How far apart two frames' origins are, along the space's own line.
+-export function spaceDistance(sign,radius,a,b){
+-  const dot=a[3]*b[3]+a[7]*b[7]+a[11]*b[11]+(sign>0?1:-1)*a[15]*b[15];
+-  return radius*(sign>0?Math.acos(Math.max(-1,Math.min(1,dot))):Math.acosh(Math.max(1,-dot)));
++export function spaceDistance(a,b){
++  const dot=a[3]*b[3]+a[7]*b[7]+a[11]*b[11]+a[15]*b[15];
++  return S.radius*Math.acos(Math.max(-1,Math.min(1,dot)));
+ }
+ // How large something of `size` metres looks from `distance` metres. The whole of
+ // what a body can test, in one line.
+-export function apparentAngle(sign,radius,size,distance){
+-  const a=distance/radius,s=sign>0?Math.sin(a):Math.sinh(a);
+-  return Math.atan2(size,radius*Math.abs(s));
+-}
++export const apparentAngle=(size,distance)=>Math.atan2(size,S.radius*Math.abs(Math.sin(distance/S.radius)));
+ // The frame the camera renders from, as a column-major uniform.
+-export function spaceEyeUniform(sign,radius,frame,eye=C.eye){
+-  const m=spaceInverse(sign,spaceMultiply(frame,spaceTranslation(sign,radius,[0,1,0],eye))),o=new Float32Array(16);
++export function spaceEyeUniform(frame,eye=C.eye){
++  const m=spaceInverse(spaceMultiply(frame,spaceTranslation([0,1,0],eye))),o=new Float32Array(16);
+   for(let r=0;r<4;r++)for(let c=0;c<4;c++)o[c*4+r]=m[r*4+c];
+   return o;
+ }
+diff --git a/src/data/m62-land.js b/src/data/m62-land.js
+index 218db52a..8d1034e9 100644
+--- a/src/data/m62-land.js
++++ b/src/data/m62-land.js
+@@ -12,8 +12,8 @@ export const M62_LAND = Object.freeze({
+   radius: 16000, size: 512, maxHeight: 420,
+   // Where the road's shelf ends and the ground is allowed to do anything.
+   shelfMetres: 48, shelfY: -1.5,
+-  farm: Object.freeze({ x: -172, z: 150, y: -6 }),
+-  waterY: -60, basin: Object.freeze({ x: -250, z: -600, rx: 210, rz: 360 }),
++  farm: Object.freeze({ x: -125, z: 150, y: -3 }),
++  waterY: -60, basin: Object.freeze({ x: -170, z: -620, rx: 130, rz: 340 }),
+   // The tall thing every West Yorkshire drive has somewhere on its skyline.
+   tower: Object.freeze({ x: 4800, z: -3400, height: 330 }),
+   // Off the moor's own edge, where the town is. The sky above it is lit by it.
+@@ -57,7 +57,7 @@ export function m62HeightAt(x, z) {
+   const off = Math.max(west, east), far = smooth((off - 120) / 900);
+   let y = L.shelfY;
+   // West: down off the shelf, across the valley, up the far side beyond the motorway.
+-  y -= 5.5 * smooth(west / 85);
++  y -= 2.5 * smooth(west / 70);
+   const centre = m62CentreX(z), beyond = Math.max(0, centre - x - 40);
+   y += 210 * smooth(beyond / 1700) + 130 * smooth((beyond - 1400) / 2600);
+   // East: the held flank, a slow climb, then the top.
+diff --git a/src/data/source-continuation.js b/src/data/source-continuation.js
+index 575629a0..a053115e 100644
+--- a/src/data/source-continuation.js
++++ b/src/data/source-continuation.js
+@@ -1,3 +1,4 @@
++import {GAIT_SPEED} from '../game/locomotion.js';
+ import {SOURCE_EARTHFALL} from './source-earthfall.js';
+ import {SOURCE_JOURNEY,JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_DOORS,JOURNEY_FOLDS,JOURNEY_PROPS,JOURNEY_ARRIVAL_ANCHORS,JOURNEY_REFUGES} from './source-continuation-journey.js';
+ import {SOURCE_REST_ALCOVE_SOLIDS} from './source-rest-alcove.js';
+@@ -14,12 +15,12 @@ export const CONTINUATION_CATCH_STAGES = freeze([
+   { level: 3, id: 'binding-dish', name: 'The binding', y: -12.6, innerRadius: 1.2, outerRadius: 9.8, startAngle: -Math.PI / 2, endAngle: 2.75, material: 'case-lining', construction: 'binding', refugeAngle: .9 },
+ ]);
+ export const SOURCE_CONTINUATION = freeze({
+-  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: 3.2,
++  version: 1, layoutVersion: 4, encounterId: 'source-wrong-return-catch', walkSpeed: GAIT_SPEED.walk, place: 'interior', bodySpeedLimit: 3.2,
+   eyeHeight: 1.62, bodyRadius: .22, bodyHeight: 1.9, maximumStep: .45, gravity: 9.8,
+   fixedStep: 1 / 120, jumpSpeed:4.45,doorSwingSeconds: .65, doorPassFraction: .85, doorApproachDistance: 6.5,
+   recoverySeconds: 1.6, recoveryMaximumSeconds: 12, recoverySpeed: 6, recoveryRise: 3,
+   revealSeconds: 0, graceSeconds: 3, bounds: {...SOURCE_JOURNEY.bounds},
+-  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.65, speed: 3.2, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
++  hush: freeze({ warningSeconds: 4.5, noticeSeconds: .8, teachingSpeed: 2.15, speed: GAIT_SPEED.jog, radius: .26, contactDistance: .7, refugeStandOff: 2.8,
+     entryDelaySeconds:6,entryOutsideMetres:1.1,thresholdArrivalDelaySeconds:3,thresholdNoticeSeconds:2.5 }),
+   spawn: freeze({ x: 0, z: 2, feet: 0, yaw: 0, pitch: 0 }),
+   wrongReturn: freeze({ transferX: -18, warningSeconds: 6, closureSpeed: .62,
+diff --git a/src/data/source-earthfall-ellery-aside.js b/src/data/source-earthfall-ellery-aside.js
+index a0a94955..afa42aa9 100644
+--- a/src/data/source-earthfall-ellery-aside.js
++++ b/src/data/source-earthfall-ellery-aside.js
+@@ -6,9 +6,10 @@
+ // charges show only as dust jets and reports, then nothing moves, then the
+ // core goes first and the walls are drawn in after it, and dust leaves every
+ // base and rolls across the floor until it fills the view.
++import {GAIT_SPEED} from '../game/locomotion.js';
+ export const SOURCE_EARTHFALL_ELLERY_ASIDE=Object.freeze({
+  version:4,id:'source-earthfall:ellery-aside-v4',duration:7.8,fixedStep:1/120,maxFrameDelta:.25,
+- walkSpeed:2.8,bodyRadius:.22,bodyHeight:1.8,eyeHeight:1.62,
++ walkSpeed:GAIT_SPEED.walk,place:'interior',bodyRadius:.22,bodyHeight:1.8,eyeHeight:1.62,
+  room:Object.freeze({minX:57.25,maxX:73.25,minZ:3.25,maxZ:15.25,floor:0,ceiling:5.5}),
+  center:Object.freeze({x:65.25,y:0,z:9.25}),
+  spawn:Object.freeze({x:65.15,z:11.65,feet:0,yaw:-.75,pitch:-.03}),
+diff --git a/src/data/source-earthfall.js b/src/data/source-earthfall.js
+index 040c510a..b0ff94f4 100644
+--- a/src/data/source-earthfall.js
++++ b/src/data/source-earthfall.js
+@@ -1,12 +1,14 @@
+ // The one physical threshold before Source II. All coordinates are local metres.
+ // These bounds describe visible earth and a real folio catch, not camera motion.
++import {GAIT_SPEED} from '../game/locomotion.js';
+ const freeze = Object.freeze;
+ export const SOURCE_EARTHFALL = freeze({
+   version: 1,
+   sequenceId: 'source-earthfall:source-II-v1',
+   fixedStep: 1 / 120,
+   maxFrameDelta: .25,
+-  walkSpeed: 3.2,
++  walkSpeed: GAIT_SPEED.walk,
++  place: 'exterior',
+   airSpeed: .4,
+   bodyRadius: .22,
+   eyeHeight: 1.62,
+diff --git a/src/data/source-iv.js b/src/data/source-iv.js
+index c740b3a4..3e962a78 100644
+--- a/src/data/source-iv.js
++++ b/src/data/source-iv.js
+@@ -1,7 +1,8 @@
+ // The lost building's underside: one continuous, finite sheet of printed Source.
+ // All coordinates are physical metres. There is no new quest or puzzle here.
++import {GAIT_SPEED} from '../game/locomotion.js';
+ export const SOURCE_IV = Object.freeze({ version: 1, sequenceId: 'source-IV',
+-  fixedStep: 1 / 120, maxFrameDelta: .25, walkSpeed: 3.2, bodyRadius: .22,
++  fixedStep: 1 / 120, maxFrameDelta: .25, walkSpeed: GAIT_SPEED.walk, place: 'exterior', bodyRadius: .22,
+   bodyHeight: 1.9, eyeHeight: 1.62, doorSeconds: .8, doorPassFraction: .95,
+   bounds: Object.freeze({ minX: -36, maxX: 36, minZ: -112, maxZ: 4 }),
+   spawn: Object.freeze({ x: 0, z: -2.5, feet: 0, yaw: 0, pitch: 0 }),
+diff --git a/src/data/source-pub.js b/src/data/source-pub.js
+index 98dfa93d..97c31be5 100644
+--- a/src/data/source-pub.js
++++ b/src/data/source-pub.js
+@@ -1,11 +1,12 @@
+ // The optional Source memory keeps The Lyric's furniture and people, then lets
+ // the room repeat faster than its order book. Progress is always a chosen act.
++import {GAIT_SPEED} from '../game/locomotion.js';
+ import {PUB_INTERIOR_LAYOUT} from './exterior-pub-furnishings.js';
+ const freeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.values(value).forEach(freeze);Object.freeze(value);}return value;};
+ const task=(id,label,x,z,y,text,extra={})=>({id,label,x,z,y,text,...extra});
+ export const SOURCE_PUB=freeze({
+   id:'source-pub',encounterId:'source-pub-v1',version:2,unlockFlag:'pub.help.sourceUnlocked',
+-  floor:.132,eyeHeight:1.62,walkSpeed:2.35,barrelSpeed:1.30,bodyRadius:.19,layerDrop:7.2,fallDuration:1.35,itemFallDuration:1.1,
++  floor:.132,eyeHeight:1.62,place:'interior',walkSpeed:GAIT_SPEED.walk,barrelSpeed:GAIT_SPEED.walk*1.30/2.35,bodyRadius:.19,layerDrop:7.2,fallDuration:1.35,itemFallDuration:1.1,
+   spawn:{x:1.25,z:1.25,yaw:Math.PI/2,pitch:-.04},
+   room:{length:16,depth:5.4,renderAnchor:{x:40,z:56},source: 'exterior_pub_interior'},
+   rounds:[
+diff --git a/src/game/coastal-memory-scene.js b/src/game/coastal-memory-scene.js
+index fccfc801..bb9e5403 100644
+--- a/src/game/coastal-memory-scene.js
++++ b/src/game/coastal-memory-scene.js
+@@ -1,3 +1,4 @@
++import { sceneWalkSpeed, createSceneRunKey } from './locomotion.js';
+ import { COASTAL_MEMORY_LAYOUT, COASTAL_NOTE_COPY } from '../data/coastal-memory.js';
+ import { beginCoastalMemory, normalizeCoastalMemory, stepCoastalMemory, coastalMemoryFrame,
+   requestCoastalReturn, acknowledgeCoastalRecording, acknowledgeCoastalReturn } from './coastal-memory.js';
+@@ -13,9 +14,9 @@ const supportHeight = support => typeof support === 'number' ? support : support
+ 
+ // Swept metre-scale walking shares the exact authored visible support and rim
+ // barriers. Rejected motion slides along a real contact instead of teleporting.
+-export function walkCoastalMemoryPose(pose, { dt = 0, forward = 0, side = 0 } = {}, layout = COASTAL_MEMORY_LAYOUT) {
++export function walkCoastalMemoryPose(pose, { dt = 0, forward = 0, side = 0, run = false } = {}, layout = COASTAL_MEMORY_LAYOUT) {
+   const next = { ...pose }, seconds = clamp(dt, 0, .25), length = Math.max(1, Math.hypot(forward, side));
+-  const amount = finite(layout.walkSpeed, 2.1) * seconds / length;
++  const amount = finite(layout.walkSpeed, sceneWalkSpeed('exterior', run)) * seconds / length;
+   const dx = (Math.sin(next.yaw) * forward + Math.cos(next.yaw) * side) * amount;
+   const dz = (-Math.cos(next.yaw) * forward + Math.sin(next.yaw) * side) * amount;
+   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .1));
+@@ -55,7 +56,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
+   const footClock = createFootContactClock();
+   let footIndex = 0;
+   const resetFeet = () => { footClock.reset(footOwner); clearFootContacts?.(footOwner); };
+-  const keys = new Set(), snapshot = () => copy(state), clear = () => { keys.clear(); drag = null; resetFeet(); };
++  const keys = new Set(), runKey = createSceneRunKey(), snapshot = () => copy(state), clear = () => { keys.clear(); runKey.clear(); drag = null; resetFeet(); };
+   const frozen = () => paused || hidden || heldExternal;
+   const renderReady = () => ready && renderer?.ready?.() !== false;
+   const live = () => renderReady() && !closed && !leaving && !frozen();
+@@ -188,7 +189,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
+         if (turn) pose = { ...pose, yaw: pose.yaw + turn * seconds * 1.8 };
+         pose = walkCoastalMemoryPose(pose, { dt: seconds,
+           forward: Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown')),
+-          side: Number(keys.has('d')) - Number(keys.has('a')) }, layout);
++          side: Number(keys.has('d')) - Number(keys.has('a')), run: runKey.update(seconds, keys.size > 0) }, layout);
+       }
+       apply({ dt: seconds, pose, renderReady: true });
+       if (typeof onFootContact === 'function' && !closed && !leaving && state.status === 'active') {
+@@ -246,6 +247,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
+     },
+     retryReturn() { if (closed || !returnFailed || frozen()) return false; returnFailed = false; error = null; return dispatchReturn(); },
+     key(event = {}) {
++      if (runKey.key(event)) return true;
+       const key = keyOf(event);
+       if (key === 'escape' || event.controllerAction === 'back') { flush(); clear(); save('pause-request'); return false; }
+       if (closed || leaving || event.ctrlKey || event.metaKey || event.altKey) return true;
+@@ -271,7 +273,7 @@ export function createCoastalMemoryScene({ checkpoint, runId, entryDoorId, retur
+       if (!event.repeat && key === 'f' && coastalMemoryFrame(state, { layout }).canPickUp) { flush(); clear(); onPickUp(); }
+       return true;
+     },
+-    keyup(event = {}) { keys.delete(keyOf(event)); return true; },
++    keyup(event = {}) { runKey.keyup(event); keys.delete(keyOf(event)); return true; },
+     pointer(event = {}) {
+       if (!live() || noteOpen || state.status !== 'active') { drag = null; return true; }
+       if (event.type === 'pointerdown' && (event.button === 2 || event.buttons === 2)) {
+diff --git a/src/game/first-strike-entry.js b/src/game/first-strike-entry.js
+index 8f1183af..0de69c83 100644
+--- a/src/game/first-strike-entry.js
++++ b/src/game/first-strike-entry.js
+@@ -1,6 +1,7 @@
+ // Capture existing construction and find a supported clearance route. This
+ // planner cannot invent a corridor, floor, doorway or return destination.
+ import {CELL,F} from '../data/floorplan/legend.js';
++import {GAIT_SPEED} from './locomotion.js';
+ import {FIRST_STRIKE,normalizeFirstStrikeEntry} from '../data/first-strike.js';
+ const HEADROOM=FIRST_STRIKE.bodyHeight,STEP_UP=FIRST_STRIKE.stepHeight,BODY_RADIUS=FIRST_STRIKE.bodyRadius;
+ 
+@@ -65,7 +66,7 @@ export function firstStrikeEntryFromCells({origin,yaw=0,pitch=0,region='ellery',
+   const connected=queue.map(({ix,iz,...cell})=>cell),routeLength=Math.max(0,route.length-1)*size;
+   return{schema:1,eventId,region,origin:{...origin},yaw,pitch,plan,props,lights,walkCells:connected,route,safeEdge,shelter,source,canStand,canTraverse,
+     constructionMode:plan?'existing-plan':'existing-surfaces',
+-    routeEvidence:{cells:connected.length,routeLengthMetres:routeLength,minimumSecondsAtWalk:routeLength/2.4,cellSize:size,
++    routeEvidence:{cells:connected.length,routeLengthMetres:routeLength,minimumSecondsAtWalk:routeLength/GAIT_SPEED.walk,cellSize:size,
+       source:'Existing supported connectivity; no added floor area or passage.'}};
+ }
+ 
+@@ -183,13 +184,13 @@ export function firstStrikeEntryFromSubmittedGeometry({catalog,instances=[],orig
+ 
+ export function packFirstStrikeConstruction(value){
+   const e=normalizeFirstStrikeEntry(value);
+-  return{schema:1,origin:e.origin,yaw:e.yaw,pitch:e.pitch,region:e.region,routeHash:e.routeHash,route:e.route,
++  return{schema:1,origin:e.origin,yaw:e.yaw,pitch:e.pitch,region:e.region,place:e.place,routeHash:e.routeHash,route:e.route,
+     safeEdge:e.safeEdge,shelter:e.shelter,hostBounds:e.hostBounds||null,
+     cells:e.walkCells.map(c=>[c.x,c.z,c.floor,c.ceil,c.size,c.flags||0,c.material||0,c.planIndex??-1,c.floorHostId||'',c.ceilingHostId||'',c.renderFloor??c.floor,c.renderCeil??c.ceil])};
+ }
+ export function restoreFirstStrikeConstruction(current,value){
+   if(!current||value?.schema!==1||!Array.isArray(value.cells))return current;
+-  return{...current,origin:value.origin,yaw:value.yaw,pitch:value.pitch,region:value.region,routeHash:value.routeHash,
++  return{...current,origin:value.origin,yaw:value.yaw,pitch:value.pitch,region:value.region,place:value.place??current.place,routeHash:value.routeHash,
+     route:value.route,safeEdge:value.safeEdge,shelter:value.shelter,hostBounds:value.hostBounds||current.hostBounds,
+     walkCells:value.cells.map(([x,z,floor,ceil,cellSize,flags,material,planIndex,floorHostId,ceilingHostId,renderFloor=floor,renderCeil=ceil])=>({x,z,floor,ceil,cellSize,flags,material,planIndex,floorHostId,ceilingHostId,renderFloor,renderCeil,walkable:true}))};
+ }
+diff --git a/src/game/first-strike-scene.js b/src/game/first-strike-scene.js
+index 1ebc25cd..9c25f6f8 100644
+--- a/src/game/first-strike-scene.js
++++ b/src/game/first-strike-scene.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed,createSceneRunKey} from './locomotion.js';
+ import {FIRST_STRIKE as C,normalizeFirstStrikeEntry,firstStrikeFooting,firstStrikeCellAt,firstStrikePieces,firstStrikePiecePose,firstStrikeRouteProjection} from '../data/first-strike.js';
+ import {uiSize,uiText,uiFill} from '../render/ui.js';
+ const copy=v=>JSON.parse(JSON.stringify(v)),finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
+@@ -32,8 +33,8 @@ export function stepFirstStrike(current,entryValue,input={}){
+  let remaining=Math.max(0,Math.min(C.maxFrameDelta,finite(input.dt))),travel=0;
+  const receipt=(type,id,position,at=state.elapsed)=>{if(state.receipts.includes(id))return;state.receipts.push(id);events.push({type,id,position,at,age:Math.max(0,state.elapsed-at),gain:1});};
+  while(remaining>1e-9){const dt=Math.min(C.fixedStep,remaining);remaining-=dt;const prior=state.elapsed;state.elapsed=Math.min(C.duration,state.elapsed+dt);state.phase=phaseAt(state.elapsed);
+-  const forward=Math.max(-1,Math.min(1,finite(input.forward))),side=Math.max(-1,Math.min(1,finite(input.side))),length=Math.hypot(forward,side)||1,
+-   dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)/Math.max(1,length)*C.walkSpeed*dt,dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)/Math.max(1,length)*C.walkSpeed*dt;
++  const forward=Math.max(-1,Math.min(1,finite(input.forward))),side=Math.max(-1,Math.min(1,finite(input.side))),length=Math.hypot(forward,side)||1,walk=sceneWalkSpeed(entry.place,input.run),
++   dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)/Math.max(1,length)*walk*dt,dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)/Math.max(1,length)*walk*dt;
+   const beforeX=state.x,beforeZ=state.z;
+   for(const axis of[0,1]){const x=state.x+(axis===0?dx:0),z=state.z+(axis===1?dz:0),support=firstStrikeCanStand(entry,state,x,z,pieces);if(support){state.x=x;state.z=z;state.feet=support.y;}}
+   travel+=Math.hypot(state.x-beforeX,state.z-beforeZ);
+@@ -61,7 +62,7 @@ export function stepFirstStrike(current,entryValue,input={}){
+ export function firstStrikeFrame(state,entryValue,presentation={}){const entry=normalizeFirstStrikeEntry(entryValue);return{sequenceId:state.eventId,active:!state.completionDelivered,elapsed:state.elapsed,phase:state.phase,outcome:state.outcome,eye:[state.x,state.feet+C.eyeHeight,state.z],yaw:state.yaw,pitch:state.pitch,safeReached:state.safeReached,released:copy(state.released),dust:Math.max(0,Math.min(1,(state.elapsed-1)/34)),darkness:state.outcome==='enclosed'?1:Math.max(0,Math.min(.72,(state.elapsed-35)/9)),region:entry.region,reducedMotion:!!presentation.reducedMotion,events:[]};}
+ export function createFirstStrikeScene({entry:entryValue,checkpoint,renderer,audio=null,presentation=()=>({}),onCheckpoint=()=>{},onComplete=()=>false,onTorch=()=>{},onAcceptedTravel=()=>{},onError=()=>{},onTrace=()=>{},onExit=()=>{}}={}){
+  if(typeof renderer?.render!=='function')throw Error('First Strike needs its actual construction renderer.');const entry=normalizeFirstStrikeEntry(entryValue);let state=normalizeFirstStrike(checkpoint,entry),ready=false,closed=false,paused=false,leaving=false,error=null,initializing=null,saveAge=0,traceAge=0,drag=null,terminalRendered=false;const keys=new Set();
+- const clear=()=>{keys.clear();drag=null;},save=reason=>{const checkpoint=copy(state);onCheckpoint(checkpoint,{reason});return checkpoint;},p=()=>presentation()||{},protectedNow=()=>{const v=p();return!!(paused||v.paused||v.protected||v.hidden||v.suspended||v.focused===false||v.foreground===false);},live=()=>ready&&!closed&&!error&&renderer.ready?.()!==false;
++ const runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;},save=reason=>{const checkpoint=copy(state);onCheckpoint(checkpoint,{reason});return checkpoint;},p=()=>presentation()||{},protectedNow=()=>{const v=p();return!!(paused||v.paused||v.protected||v.hidden||v.suspended||v.focused===false||v.foreground===false);},live=()=>ready&&!closed&&!error&&renderer.ready?.()!==false;
+  function fail(reason){error=String(reason?.message||reason);terminalRendered=false;clear();audio?.stop?.();onError(reason);}
+  function complete(){
+   if(leaving||closed||error||!state.outcome||state.completionDelivered||!terminalRendered||protectedNow()||!live())return;
+@@ -79,11 +80,11 @@ export function createFirstStrikeScene({entry:entryValue,checkpoint,renderer,aud
+  const scene={id:'first-strike',blocksWorld:true,blocksInput:true,suppressesHud:true,worldPresentation:'hidden',handlesEscape:false,lookProfile:'explore',
+   get allowsLook(){return live()&&!protectedNow()&&!leaving;},
+   initialize(){if(initializing)return initializing;save('preparation');initializing=Promise.all([renderer.initialize?.(),Promise.resolve().then(()=>audio?.ready?.()).catch(()=>false)]).then(([ok])=>{if(closed)return false;if(ok===false)throw Error('The existing span is not ready.');if(entry.route.length<2||Math.hypot(entry.safeEdge.x-entry.origin.x,entry.safeEdge.z-entry.origin.z)<1.5)throw Error('No existing supported clearance route has resolved.');if(state.routeHash!==entry.routeHash)throw Error('The clearance construction changed; reload its saved supported route before resuming.');if(!firstStrikeCanStand(entry,state,state.x,state.z))throw Error('The saved body no longer has its real clearance footing.');ready=true;save('ready');return true;}).catch(reason=>{fail(reason);return false;});return initializing;},
+-  enter(){void scene.initialize();},update(dt){if(closed||leaving)return;if(!live()||protectedNow()){clear();audio?.stop?.();return;}const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));apply({dt:step,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});saveAge+=step;traceAge+=step;if(saveAge>=.5){saveAge=0;save('body');}if(traceAge>=.1){traceAge=0;onTrace({type:'pose',...copy(state)});}},
++  enter(){void scene.initialize();},update(dt){if(closed||leaving)return;if(!live()||protectedNow()){clear();audio?.stop?.();return;}const step=Math.max(0,Math.min(C.maxFrameDelta,finite(dt)));apply({dt:step,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(step,keys.size>0)});saveAge+=step;traceAge+=step;if(saveAge>=.5){saveAge=0;save('body');}if(traceAge>=.1){traceAge=0;onTrace({type:'pose',...copy(state)});}},
+   view:()=>({ready:live(),paused,closed,leaving,error,entryKey:entry.routeHash,state:copy(state),frame:firstStrikeFrame(state,entry,p()),focus:null}),serialize:()=>copy(state),checkpoint:()=>save('requested'),
+   pause(){if(paused||closed)return;paused=true;terminalRendered=false;clear();audio?.stop?.();save('pause');},resume(){paused=false;clear();},blur(){scene.pause();},suspend(){scene.pause();},
+   lookAngles:()=>({yaw:state.yaw,pitch:state.pitch}),lookBy(yaw,pitch){if(!scene.allowsLook)return false;apply({dt:0,look:{yaw:state.yaw+finite(yaw),pitch:state.pitch+finite(pitch)}});return true;},setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look});return true;},
+-  key(e={}){const k=keyOf(e);if(k==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;if(error){if(!e.repeat&&k==='e'){error=null;terminalRendered=false;initializing=null;void scene.initialize();}return true;}if(!live()||protectedNow())return true;if(!e.repeat&&k==='f'){onTorch();return true;}if(keysOf.has(k)&&!e.repeat)keys.add(k);return true;},keyup(e={}){keys.delete(keyOf(e));return true;},input(name,value=true){const key=actions[name]||name;if(!keysOf.has(key))return false;if(!value)keys.delete(key);else if(live()&&!protectedNow())keys.add(key);return true;},
++  key(e={}){if(runKey.key(e))return true;const k=keyOf(e);if(k==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;if(error){if(!e.repeat&&k==='e'){error=null;terminalRendered=false;initializing=null;void scene.initialize();}return true;}if(!live()||protectedNow())return true;if(!e.repeat&&k==='f'){onTorch();return true;}if(keysOf.has(k)&&!e.repeat)keys.add(k);return true;},keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},input(name,value=true){const key=actions[name]||name;if(!keysOf.has(key))return false;if(!value)keys.delete(key);else if(live()&&!protectedNow())keys.add(key);return true;},
+   pointer(e={}){if(!scene.allowsLook){drag=null;return true;}if(e.type==='pointerdown'&&(e.button===2||e.buttons===2))drag={x:e.clientX,y:e.clientY};if(e.type==='pointerup'||e.type==='pointercancel')drag=null;if(e.type==='pointermove'&&drag){scene.lookBy((e.clientX-drag.x)*.004,-(e.clientY-drag.y)*.003);drag={x:e.clientX,y:e.clientY};}return true;},
+   render(){if(closed)return;if(ready)try{if(renderer.render(state,p())===false)throw Error('The failing construction view was interrupted.');if(state.elapsed<9&&!state.outcome){const size=uiSize();uiText(2,Math.max(5,(size.rows||24)-3),'CLEAR THE SPAN · FIND A LOW GREEN LAMP','ui-primary',1,Math.max(20,(size.cols||80)-4));}if(state.outcome){terminalRendered=!protectedNow();if(terminalRendered)complete();}}catch(reason){ready=false;fail(reason);}if(!ready||error){const size=uiSize(),cols=Math.max(20,size.cols||80),rows=Math.max(8,size.rows||24);uiFill(0,rows-5,cols,5,'#050706');uiText(2,rows-4,error?'THE VIEW IS HELD':'THE SPAN IS RESOLVING','ui-primary',1,cols-4);if(error)uiText(2,rows-2,'[E] RETRY · PAUSE FOR NEW GAME / TITLE','ui-secondary',1,cols-4);}},
+   exit(){if(closed)return;closed=true;clear();audio?.stop?.();if(!state.completionDelivered)save('interrupted');renderer.dispose?.();onExit({checkpoint:copy(state)});},
+diff --git a/src/game/horizon-approach-scene.js b/src/game/horizon-approach-scene.js
+index aaf32f1d..592562c2 100644
+--- a/src/game/horizon-approach-scene.js
++++ b/src/game/horizon-approach-scene.js
+@@ -1,7 +1,7 @@
+ // HORIZON: the walking scene. He walks up to whoever is there. It reports what he
+ // does and decides nothing: the route is raised from these events by whoever owns
+ // the night.
+-import {HORIZON_APPROACH as C,horizonApproachVariantId,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
++import {HORIZON_APPROACH as C,spaceAtMap,spaceMapOf,spaceMultiply,spaceTranslation,spaceDistance,spaceIdentity} from '../data/horizon-approach.js';
+ 
+ const finite=(n,f=0)=>typeof n==='number'&&Number.isFinite(n)?n:f;
+ const actions={forward:'w',moveForward:'w',move_forward:'w',backward:'s',reverse:'s',moveBackward:'s',move_backward:'s',left:'a',moveLeft:'a',strafeLeft:'a',move_left:'a',right:'d',moveRight:'d',strafeRight:'d',move_right:'d'};
+@@ -16,27 +16,16 @@ export const HORIZON_APPROACH_EVENT=Object.freeze({
+ // The bearing St Brendan's lies on, from the object. Anywhere else out is the chapel.
+ export const HORIZON_TOWER_BEARING=Math.PI*.5,HORIZON_TOWER_SECTOR=.42;
+ 
+-export function freshHorizonApproach({variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,phi=0}={}){
+-  const id=horizonApproachVariantId(variant),V=C.variants[id],start=V.startMetres;
+-  return{schema:1,variant:id,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:!!condition,lyleBox,
+-    frame:spaceAtMap(V.sign,V.radius,start,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,petalsPlucked:0,decided:null};
+-}
+-export const horizonApproachMap=state=>{const V=C.variants[state.variant];return spaceMapOf(V.sign,V.radius,state.frame);};
+-export function horizonApproachDistance(state){
+-  const V=C.variants[state.variant];
+-  return spaceDistance(V.sign,V.radius,state.frame,spaceIdentity());
++export function freshHorizonApproach({occupant='daisy',condition=false,lyleBox=null,phi=0}={}){
++  return{schema:1,occupant:C.occupants.includes(occupant)?occupant:'daisy',condition:!!condition,lyleBox,
++    frame:spaceAtMap(C.space.startMetres,phi),yaw:-phi,pitch:0,elapsed:0,arrived:false,offerOpen:false,petalsPlucked:0,decided:null};
+ }
++export const horizonApproachMap=state=>spaceMapOf(state.frame);
++export const horizonApproachDistance=state=>spaceDistance(state.frame,spaceIdentity());
+ export const horizonApproachNear=state=>horizonApproachDistance(state)<C.station.reach;
+-// Where a body may stand. The closed space is only its roads and the two places
+-// they meet; the circle limit is its tiles, as far as there are any.
+-export function horizonApproachOnGround(variant,frame){
+-  const V=C.variants[variant],{r,phi}=spaceMapOf(V.sign,V.radius,frame);
+-  if(V.sign<0)return r<V.tileRings*V.radius-1;
+-  if(variant==='relativity'){
+-    const{x,z}=spaceMapOf(V.sign,V.radius,frame);
+-    return r<V.hub||(Math.abs(x)<=V.roadHalfWidth-C.bodyRadius&&Math.abs(z)<=V.roadEnd)||(Math.abs(z)<=V.roadHalfWidth-C.bodyRadius&&x>=0&&x<=V.roadEnd);
+-  }
+-  const end=Math.PI*V.radius;
++// Where a body may stand: on the roads and the two places they meet.
++export function horizonApproachOnGround(frame){
++  const V=C.space,{r,phi}=spaceMapOf(frame),end=Math.PI*V.radius;
+   if(r<V.hub||r>end-V.hub)return true;
+   const spacing=TAU/V.roads,off=Math.abs(wrapAngle(phi-Math.round(phi/spacing)*spacing));
+   return V.radius*Math.sin(r/V.radius)*off<=V.roadHalfWidth-C.bodyRadius;
+@@ -55,11 +44,12 @@ export function pluckHorizonApproachPetal(current){
+ }
+ // Straight on, in the space's own sense of straight. A wall is met by sliding along it.
+ function move(state,forward,strafe,distance){
+-  const V=C.variants[state.variant],length=Math.hypot(forward,strafe);if(!length)return false;
+-  const heading=Math.atan2(strafe,forward)+state.yaw;
++  const length=Math.hypot(forward,strafe);if(!length)return false;
++  const heading=Math.atan2(strafe,forward)+state.yaw,centre=spaceIdentity(),now=spaceDistance(state.frame,centre);
+   for(const[turn,share]of[[0,1],[.7,.7],[-.7,.7],[1.2,.35],[-1.2,.35]]){
+-    const a=heading+turn,d=[Math.sin(a),0,-Math.cos(a)],frame=spaceMultiply(state.frame,spaceTranslation(V.sign,V.radius,d,distance*share));
+-    if(horizonApproachOnGround(state.variant,frame)){state.frame=frame;return true;}
++    const a=heading+turn,frame=spaceMultiply(state.frame,spaceTranslation([Math.sin(a),0,-Math.cos(a)],distance*share)),d=spaceDistance(frame,centre);
++    // He walks up to it, not through it.
++    if(!(d<C.station.standOff&&d<now)&&horizonApproachOnGround(frame)){state.frame=frame;return true;}
+   }
+   return false;
+ }
+@@ -85,10 +75,10 @@ export function stepHorizonApproach(current,{dt=0,forward=0,strafe=0,paused=fals
+   return{state,events};
+ }
+ 
+-export function createHorizonApproachScene({renderer,variant=C.defaultVariant,occupant='daisy',condition=false,lyleBox=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
++export function createHorizonApproachScene({renderer,occupant='daisy',condition=false,lyleBox=null,presentation=()=>({}),isInteract=e=>keyOf(e)==='e'||e?.controllerAction==='interact',
+   onEvent=()=>{},onError=()=>{},onExit=()=>{}}={}){
+   if(typeof renderer?.render!=='function')throw Error('The approach needs its renderer.');
+-  let state=freshHorizonApproach({variant,occupant,condition,lyleBox}),ready=false,closed=false,paused=false,failed=false,initializing=null;
++  let state=freshHorizonApproach({occupant,condition,lyleBox}),ready=false,closed=false,paused=false,failed=false,initializing=null;
+   const keys=new Set();
+   const p=()=>presentation()||{},stopped=()=>{const v=p();return!!(paused||v.paused||v.hidden||v.focused===false);},
+     live=()=>ready&&!closed&&!failed&&renderer.ready?.()!==false;
+@@ -118,10 +108,7 @@ export function createHorizonApproachScene({renderer,variant=C.defaultVariant,oc
+     setLook(look={}){if(!scene.allowsLook)return false;state={...state,yaw:finite(look.yaw,state.yaw),pitch:Math.max(-PITCH,Math.min(PITCH,finite(look.pitch,state.pitch)))};return true;},
+     place(next={}){state={...state,...next};},
+     // Stands him `r` metres out on bearing `phi`, facing the object.
+-    placeAt(r,phi=0,look={}){
+-      const V=C.variants[state.variant];
+-      state={...state,frame:spaceAtMap(V.sign,V.radius,r,phi),yaw:finite(look.yaw,-phi),pitch:finite(look.pitch,0)};
+-    },
++    placeAt(r,phi=0,look={}){state={...state,frame:spaceAtMap(r,phi),yaw:finite(look.yaw,-phi),pitch:finite(look.pitch,0)};},
+     walk(seconds,{forward=1,strafe=0,dt=1/30}={}){
+       const events=[];
+       for(let t=0;t<seconds;t+=dt){const r=stepHorizonApproach(state,{dt,forward,strafe});state=r.state;events.push(...r.events);}
+diff --git a/src/game/locomotion.js b/src/game/locomotion.js
+index 06010ddb..4829551e 100644
+--- a/src/game/locomotion.js
++++ b/src/game/locomotion.js
+@@ -124,6 +124,45 @@ export function applySpeedFactors(speed, factors = []) {
+   return clamp(v, SPEED_FLOOR, SPEED_CEILING);
+ }
+ 
++// ── Scenes that own their keys ───────────────────────────────────────────────
++// The self-contained scenes (the pub, Source IV, earthfall, the Ellery aside,
++// the continuation, the false return, the coast, first strike) take the same two
++// rungs as the place they stand in (Seb, 2026-11-07). None gets the chase rung:
++// each one's Hush is tuned against this pair, and a sprint would outrun them all.
++export function sceneWalkSpeed(place = 'interior', run = false) {
++  return gaitSpeed(chooseGait({ place, run: !!run }));
++}
++
++// Such a scene consumes its keys before the world sees them, so it keeps its own
++// run key: Shift while it is down, or a stick click, which latches until the
++// movement keys have been at rest for a moment. Same rule as the world's.
++export function createSceneRunKey({ restSeconds = 0.22 } = {}) {
++  const shifts = new Set();
++  let latched = false, rest = 0;
++  const isRun = (e) => e?.controllerAction === 'run' || e?.key === 'Shift' || e?.code === 'ShiftLeft' || e?.code === 'ShiftRight';
++  const active = () => shifts.size > 0 || latched;
++  return {
++    key(e) {
++      if (!isRun(e)) return false;
++      if (e.controllerAction !== 'run') shifts.add(e.code || 'Shift');
++      else if (!e.repeat) { latched = !latched; rest = 0; }
++      return true;
++    },
++    keyup(e) {
++      if (!isRun(e)) return false;
++      if (e.controllerAction !== 'run') shifts.delete(e.code || 'Shift');
++      return true;
++    },
++    update(dt, moving) {
++      if (moving) rest = 0;
++      else if (latched && (rest += finite(dt)) > restSeconds) latched = false;
++      return active();
++    },
++    active,
++    clear() { shifts.clear(); latched = false; rest = 0; },
++  };
++}
++
+ // The sprint is the ceiling for anything the player chooses (applySpeedFactors).
+ // An authored walk may be older and faster than the ladder, so the interval
+ // itself only guards against nonsense.
+diff --git a/src/game/source-continuation-scene.js b/src/game/source-continuation-scene.js
+index c9347086..a13e4c45 100644
+--- a/src/game/source-continuation-scene.js
++++ b/src/game/source-continuation-scene.js
+@@ -1,3 +1,4 @@
++import {createSceneRunKey} from './locomotion.js';
+ import {normalizeSourceContinuation,stepSourceContinuation,continuationFocus,sourceContinuationThreatTelemetry} from './source-continuation.js';
+ import {SOURCE_CONTINUATION} from '../data/source-continuation.js';
+ import {portalTransformPoint} from '../render/source-mesh-portals.js';
+@@ -66,7 +67,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
+       console.debug('SOURCE_CONTINUATION_TRACE',JSON.stringify(value));
+     }
+   }
+-  const clear=()=>{keys.clear();drag=null;};
++  const runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;};
+   const live=()=>ready&&!closed&&!leaving&&!error&&renderer.ready?.()!==false;
+   const snapshot=()=>copy(state);
+   const report=err=>{error=String(err?.message||err);clear();audio?.stop?.();onError(err);};
+@@ -175,7 +176,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
+       const overhead=state.phase==='catch';
+       const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+         side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
+-      apply({dt,forward,side,renderReady:true,environment:!!tides,anchored});
++      apply({dt,forward,side,run:runKey.update(dt,keys.size>0),renderReady:true,environment:!!tides,anchored});
+       if(closed||leaving)return;
+       const focus=interactionFocus();
+       const soundFocus=focus&&overhead&&rotation&&typeof renderer.acousticFrame!=='function'?{...focus,...presented(focus.x,focus.z),
+@@ -215,6 +216,7 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
+     lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
+     setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look,renderReady:true});return true;},
+     key(e={}){
++      if(runKey.key(e))return true;
+       const key=keyOf(e);
+       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
+       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
+@@ -226,13 +228,13 @@ export function createSourceContinuationScene({checkpoint,renderer,audio=null,st
+       if(!e.repeat&&(key===' '||key==='space'||e.controllerAction==='jump')){
+         const forward=Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+           side=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
+-        apply({dt:0,jump:true,forward,side,renderReady:true});return true;
++        apply({dt:0,jump:true,forward,side,run:runKey.active(),renderReady:true});return true;
+       }
+       if(movement.includes(key)){if(!e.repeat&&!state.reveal&&!state.recovery)keys.add(key);return true;}
+       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});
+       return true;
+     },
+-    keyup(e={}){keys.delete(keyOf(e));return true;},
++    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
+     pointer(e={}){
+       if(!scene.allowsLook){drag=null;return true;}
+       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}
+diff --git a/src/game/source-continuation-tides.js b/src/game/source-continuation-tides.js
+index 8174ef94..85f9563c 100644
+--- a/src/game/source-continuation-tides.js
++++ b/src/game/source-continuation-tides.js
+@@ -22,7 +22,7 @@ export const SOURCE_TIDES=Object.freeze({
+   }),
+   // Seconds of stillness before the tide starts, and before it is full.
+   graceSeconds:1.8,gatherSeconds:6,recoverRate:3,
+-  // Metres per second. Walking speed is C.walkSpeed (3.2).
++  // Metres per second. These were set against a 3.2 walk; he walks at 1.4 and jogs at 2.6 now.
+   still:1.75,moving:.34,swirl:.38,reach:45,farShare:.55,settleSeconds:.7,
+   // A walking body braces into the gust; one standing still takes all of it.
+   wind:Object.freeze({gust:.85,braced:.4,bearing:.6,veer:.45,veerRate:.031,depth:1.2}),
+@@ -33,7 +33,7 @@ const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+ 
+ export const freshSourceTide=()=>({still:0,vx:0,vz:0});
+ export function normalizeSourceTide(value){
+-  return{still:clamp(value?.still,0,60),vx:clamp(value?.vx,-C.walkSpeed,C.walkSpeed),vz:clamp(value?.vz,-C.walkSpeed,C.walkSpeed)};
++  return{still:clamp(value?.still,0,60),vx:clamp(value?.vx,-C.bodySpeedLimit,C.bodySpeedLimit),vz:clamp(value?.vz,-C.bodySpeedLimit,C.bodySpeedLimit)};
+ }
+ export function sourceTideWell(state){
+   const well=SOURCE_TIDES.wells[state?.phase];
+diff --git a/src/game/source-continuation.js b/src/game/source-continuation.js
+index 222d81fc..dd623e9d 100644
+--- a/src/game/source-continuation.js
++++ b/src/game/source-continuation.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed} from './locomotion.js';
+ import { SOURCE_CONTINUATION as C, CONTINUATION_CATCH_STAGES, continuationStage, continuationRadialPoint, continuationCatchFloor, continuationSurfaces,continuationChartSurfaces,continuationChartSolids,continuationChartDoors,continuationArrivalAnchors, continuationSolids, continuationDoors, continuationProps, continuationSurfaceY, continuationSurfaceContains, continuationSupportAt, continuationDropLip, continuationDropLips, continuationRefugeAt, continuationCatchObstacles, continuationBodyClearAt } from '../data/source-continuation.js';
+ import {recoverSourceRestAlcoveCheckpoint} from './source-rest-alcove-recovery.js';
+ import {freshContinuationHush,freshContinuationDoorHush,normalizeContinuationHush,recordContinuationHushWalk,recordContinuationHushDrop,recordContinuationHushFold,reconnectContinuationHush,advanceContinuationHush,continuationSupportedPath,continuationWalkSegment} from './source-continuation-hush.js';
+@@ -275,7 +276,7 @@ function beginFall(state, lip, events) {
+ function launchFall(state,{vx=0,vz=0,vy=0,trigger='step-off',groundedExit=false},events) {
+   if(state.fall||state.recovery)return;
+   state.lastSafe=supportedPose(state);
+-  state.fall={x:state.x,z:state.z,feet:state.feet,chartId:state.chartId,yaw:state.yaw,pitch:state.pitch,level:state.level,vx:clamp(vx,-C.walkSpeed,C.walkSpeed),vz:clamp(vz,-C.walkSpeed,C.walkSpeed),vy,fromLevel:state.level,fromPhase:state.phase,trigger,lastSupport:supportedPose(state),elapsed:0,unsupported:!groundedExit,groundedExit,
++  state.fall={x:state.x,z:state.z,feet:state.feet,chartId:state.chartId,yaw:state.yaw,pitch:state.pitch,level:state.level,vx:clamp(vx,-C.bodySpeedLimit,C.bodySpeedLimit),vz:clamp(vz,-C.bodySpeedLimit,C.bodySpeedLimit),vy,fromLevel:state.level,fromPhase:state.phase,trigger,lastSupport:supportedPose(state),elapsed:0,unsupported:!groundedExit,groundedExit,
+     voidLoop:captureContinuationVoidLoop(state)};
+   recordContinuationHushDrop(state.hush,state.fall);
+   if(state.phase==='catch'&&trigger==='release')wakeWeight(state,events);
+@@ -283,7 +284,7 @@ function launchFall(state,{vx=0,vz=0,vy=0,trigger='step-off',groundedExit=false}
+ }
+ function land(state,support,events) {
+   const trigger=state.fall?.trigger||'release',before=state.phase,origin=state.fall?.lastSupport||state.lastSafe;
+-  state.velocity={x:clamp(state.fall?.vx||0,-C.walkSpeed,C.walkSpeed),z:clamp(state.fall?.vz||0,-C.walkSpeed,C.walkSpeed)};
++  state.velocity={x:clamp(state.fall?.vx||0,-C.bodySpeedLimit,C.bodySpeedLimit),z:clamp(state.fall?.vz||0,-C.bodySpeedLimit,C.bodySpeedLimit)};
+   state.feet=support.y;state.level=support.level??0;state.phase=support.surface.region==='catch'?'catch':'wrong-return';state.fall=null;
+   if(state.phase==='catch')learn(state,`catch-${state.level}`);state.lastSafe=supportedPose(state);recordContinuationHushWalk(state.hush,state,{force:true});
+   updateAnchor(state,{landing:true});
+@@ -446,7 +447,7 @@ function tick(state, input, dt, events, travel) {
+     if(finalCrossed(state,before,events))return;
+   } else {
+     approachDoors(state, events);
+-    const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = C.walkSpeed * dt / len;
++    const before = {...state}, forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), len = Math.max(1, Math.hypot(forward, side)), amount = sceneWalkSpeed(C.place, input.run) * dt / len;
+     const movementYaw=state.yaw;
+     move(state, (Math.sin(movementYaw) * forward + Math.cos(movementYaw) * side) * amount, (-Math.cos(movementYaw) * forward + Math.sin(movementYaw) * side) * amount,dt,events);
+     const walked=distance(before,state);
+@@ -462,7 +463,7 @@ function tick(state, input, dt, events, travel) {
+       }
+     }
+     if(input.environment&&!state.fall&&!state.cameraTransit&&!state.bodyTransit)touchRiftFault(state,events);
+-    state.velocity={x:clamp((state.x-before.x)/dt,-C.walkSpeed,C.walkSpeed),z:clamp((state.z-before.z)/dt,-C.walkSpeed,C.walkSpeed)};
++    state.velocity={x:clamp((state.x-before.x)/dt,-C.bodySpeedLimit,C.bodySpeedLimit),z:clamp((state.z-before.z)/dt,-C.bodySpeedLimit,C.bodySpeedLimit)};
+     crossPortal(state,before,events);
+     if(!state.fall)recordContinuationHushWalk(state.hush,state,{protectedRefuge:insideRefuge(state)});
+     phaseCrossing(state, before, events);
+@@ -486,7 +487,7 @@ export function stepSourceContinuation(value, input = {}) {
+   if(jumping&&!state.fall&&!state.recovery) {
+     const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),len=Math.max(1,Math.hypot(forward,side)),yaw=state.yaw;
+     const held=Math.hypot(forward,side)>0;
+-    launchFall(state,{vx:held?(Math.sin(yaw)*forward+Math.cos(yaw)*side)*C.walkSpeed/len:state.velocity.x,vz:held?(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*C.walkSpeed/len:state.velocity.z,vy:C.jumpSpeed,trigger:'jump',groundedExit:false},events);
++    launchFall(state,{vx:held?(Math.sin(yaw)*forward+Math.cos(yaw)*side)*sceneWalkSpeed(C.place,input.run)/len:state.velocity.x,vz:held?(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*sceneWalkSpeed(C.place,input.run)/len:state.velocity.z,vy:C.jumpSpeed,trigger:'jump',groundedExit:false},events);
+   }
+   if (state.status !== 'active') return { state, event: events.at(-1) || null, events };
+   state.accumulator += clamp(input.dt ?? 0, 0, .25);
+diff --git a/src/game/source-drive-renderer.js b/src/game/source-drive-renderer.js
+index 8154cdfd..57141515 100644
+--- a/src/game/source-drive-renderer.js
++++ b/src/game/source-drive-renderer.js
+@@ -46,8 +46,8 @@ export async function preloadSourceDriveAssets({assets={},coastalMemory=false}={
+  // journey can resume before that asynchronous install finishes on a cold
+  // boot; installing hero packs first let the later building erase the cabin.
+  const baseReady=await R3.r3dBasePropsReady?.();
+- R3.r3dSetDriveLandField?.(await buildM62LandField({pause:()=>new Promise(resolve=>setTimeout(resolve))}));
+  if(baseReady===false)throw Error('The drive base prop catalog could not be loaded.');
++ await buildM62LandField({pause:()=>new Promise(resolve=>setTimeout(resolve))});
+  ensureFloraMeshes();
+  // P3 reinitialisation disposes character bundles. Forget static ready bits as
+  // well, since matching old catalog names alone cannot prove live GPU objects.
+@@ -78,7 +78,7 @@ export function createSourceDriveRenderer({onRelease=()=>{}}={}){
+  let initialized=false,released=false,canvas=null,initPromise=null,leaves=null;
+  let radioClose=false;const radioFace=createCabRadioFace({mesh:'drive_radio_readout',close:()=>radioClose,upload:(mesh,source)=>P3.setDriveStudyCanvas(mesh,source,{mipmaps:true})});
+  function clearSource(){R3.r3dSetHorizon?.(null);R3.r3dSetSourceShore?.(null);R3.r3dSetSourceEmergency?.(0);R3.r3dSetSourceWhiteout?.(0);R3.r3dSetSourceFault?.(0);R3.r3dSetLocalLights([]);R3.r3dSetEmergencyShadows?.([]);R3.r3dSetSourcePortals?.([]);R3.r3dSetSourceTowerView?.(null);R3.r3dSetSourceOpenings?.([]);R3.r3dSetSourceDoorLights?.([]);R3.r3dSetSourceCrossing?.(null);R3.r3dSetSourceReflection?.(null);R3.r3dSetIndoorRain?.(0);}
+- function initialize({assets={},coastalMemory=false}={}){if(released)return Promise.resolve(false);if(initPromise)return initPromise;initPromise=(async()=>{await preloadSourceDriveAssets({assets,coastalMemory});if(released)return false;clearSource();const w=256,h=256,rgba=new Uint8Array(w*h*4),material=new Uint8Array(w*h).fill(MATERIAL.serviceConcrete);for(let i=0;i<w*h;i++)rgba.set([FP.encodeH(0),FP.encodeH(6),F.SKY,0],i*4);R3.r3dSetPlan(rgba,w,h,material);R3.r3dSetSourceScene({key:'source:the-cut',look:{roomMemoryActive:true},staticInstances:[],dynamicInstances:[],corpus:[]});R3.r3dSetDynamicProps([]);R3.r3dSetLookProfile('explore',{transitionMs:0});R3.r3dSetLightingContext({ambientColor:[.64,.66,.6],ambientIntensity:.065,captureExposure:5.5,whitePointScale:1,screen:'stochastic'});canvas=document.createElement('canvas');canvas.width=666;canvas.height=239;R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();initialized=true;return true;})().catch(error=>{initPromise=null;throw error;});return initPromise;}
++ function initialize({assets={},coastalMemory=false}={}){if(released)return Promise.resolve(false);if(initPromise)return initPromise;initPromise=(async()=>{await preloadSourceDriveAssets({assets,coastalMemory});if(released)return false;clearSource();R3.r3dSetDriveLandField?.(m62LandField());const w=256,h=256,rgba=new Uint8Array(w*h*4),material=new Uint8Array(w*h).fill(MATERIAL.serviceConcrete);for(let i=0;i<w*h;i++)rgba.set([FP.encodeH(0),FP.encodeH(6),F.SKY,0],i*4);R3.r3dSetPlan(rgba,w,h,material);R3.r3dSetSourceScene({key:'source:the-cut',look:{roomMemoryActive:true},staticInstances:[],dynamicInstances:[],corpus:[]});R3.r3dSetDynamicProps([]);R3.r3dSetLookProfile('explore',{transitionMs:0});R3.r3dSetLightingContext({ambientColor:[.64,.66,.6],ambientIntensity:.065,captureExposure:5.5,whitePointScale:1,screen:'stochastic'});canvas=document.createElement('canvas');canvas.width=666;canvas.height=239;R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();initialized=true;return true;})().catch(error=>{initPromise=null;throw error;});return initPromise;}
+  function setRecorderReadout(view){if(!canvas)return;drawRecorderReadoutCanvas(canvas.getContext('2d'),view||{counter:'00:00',mode:'idle',note:'FIELD TAKE · READY'});P3.setDriveStudyCanvas('drive_recorder_readout',canvas);}
+  function render(frame){if(!initialized||released||!R3.r3dPresentationReady())return false;const scene=frame.scene,weather=frame.weather,look=frame.look,drive=frame.driveState;if(!scene||!look||!drive)return false;const radioSeconds=performance.now()/1000;radioClose=(frame.cinematic?.vehiclePose?.radioLean||0)>.01;radioFace.sync(cabRadioRoadView(frame,radioSeconds),radioSeconds);R3.r3dSetProps(scene.props);const leafTime=Number(frame.timeSec??weather?.timeSec)||0,cab=scene.eye;leaves=frame.reducedMotion?null:stepWindLeaves(leaves,{key:'drive',time:leafTime,body:{x:cab[0],y:cab[1],z:cab[2]},wind:windVector(leafTime),settings:DRIVE_LEAVES});R3.r3dSetDynamicProps?.(windLeafProps(leaves,{prefix:'drive-leaf'}).filter(p=>Math.hypot(p.x-cab[0],p.y-cab[1],p.z-cab[2])>CAB_CLEARANCE));if(frame.cinematicLook&&R3.r3dSetCinematicLook)R3.r3dSetCinematicLook(look);else R3.r3dSetLookAngles({yaw:look.yaw,pitch:look.pitch,immediate:true});R3.r3dSetLocalLights(scene.lamps);const landField=scene.driveLand&&m62LandField(),land=landField?{...scene.driveLand,fog:weather?.fog||0}:null,farLights=land?m62FarLights({eye:scene.eye,time:land.time,fog:weather?.fog||0,rain:weather?.rain||0,height:(x,z)=>m62FieldHeight(landField,x,z)}):null;
+  const driveFrame={active:true,heading:drive.heading,lampDip:.020-scene.roadPitch,retroreflectors:scene.retroreflectors||null,land,farLights,physicalHeadlampCones:frame.physicalHeadlampCones===true,cabLight:scene.cabLight||null,mirrors:scene.mirrors,inspectionLights:scene.cut.lights,rainShelter:scene.rainShelter,weather};P3.setDriveStudyFrame(driveFrame);const eye=scene.eye,before=R3.r3dPixelMeshStatus().framesRendered,submitted=R3.r3dFrame({px:eye[0]/CELL-.5,py:eye[2]/CELL-.5,floorH:eye[1]-1.62,tileW:256,tileH:256,worldCount:0,worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:frame.recording?.level||0,light:0,plan:true,water:{active:false},sensoryProfile:'story',sourceVoidPhysical:true,driveStudy:driveFrame,coastalMemory:frame.coastalMemory||null}),final=R3.r3dPixelMeshStatus();return submitted!==false&&R3.r3dPresentationReady()&&final.shaderReady===true&&final.supported===true&&final.framesRendered>before;}
+diff --git a/src/game/source-earthfall-ellery-aside.js b/src/game/source-earthfall-ellery-aside.js
+index dd822599..73292273 100644
+--- a/src/game/source-earthfall-ellery-aside.js
++++ b/src/game/source-earthfall-ellery-aside.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed} from './locomotion.js';
+ import {doorLeafLocalMatrix} from '../data/source-door-fields.js';
+ import {SOURCE_EARTHFALL_ELLERY_ASIDE as C,SOURCE_ELLERY_ASIDE_PANELS as PANELS,SOURCE_ELLERY_ASIDE_CHARGES as CHARGES,sourceElleryAsideCollapse,sourceElleryAsideDoorFraction,sourceElleryAsideDoorLight,sourceElleryAsidePhase} from '../data/source-earthfall-ellery-aside.js';
+ import {SOURCE_ELLERY_ASIDE_ASSET as ASSET} from '../data/generated/source-earthfall-ellery-aside.js';
+@@ -255,7 +256,7 @@ export function stepSourceEarthfallElleryAside(value,input={}){
+     const target={x:clamp(state.x,b.minX+r,b.maxX-r),z:clamp(state.z,b.minZ+r,b.maxZ-r)},dx=target.x-state.x,dz=target.z-state.z,distance=Math.hypot(dx,dz),step=Math.min(1,C.fixedStep*5/Math.max(.001,distance));state.x+=dx*step;state.z+=dz*step;
+    }
+   if(state.elapsed<C.fadeEnd&&state.chase.phase!=='contact'){
+-   const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),n=Math.max(1,Math.hypot(forward,side)),amount=C.walkSpeed*C.fixedStep/n;
++   const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),n=Math.max(1,Math.hypot(forward,side)),amount=sceneWalkSpeed(C.place,input.run)*C.fixedStep/n;
+    const x=state.x+(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*amount,z=state.z+(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*amount;
+    if(sourceElleryAsideCanStand(x,state.z,state))state.x=x;if(sourceElleryAsideCanStand(state.x,z,state))state.z=z;
+   }
+diff --git a/src/game/source-earthfall-scene.js b/src/game/source-earthfall-scene.js
+index 7c264e5c..6db89838 100644
+--- a/src/game/source-earthfall-scene.js
++++ b/src/game/source-earthfall-scene.js
+@@ -1,3 +1,4 @@
++import {createSceneRunKey} from './locomotion.js';
+ import {SOURCE_EARTHFALL as C} from '../data/source-earthfall.js';
+ import {SOURCE_EARTHFALL_ELLERY_ASIDE as ASIDE} from '../data/source-earthfall-ellery-aside.js';
+ import {freshSourceEarthfallElleryAside,stepSourceEarthfallElleryAside,sourceEarthfallElleryAsideFrame,sourceElleryAsideFooting} from './source-earthfall-ellery-aside.js';
+@@ -23,7 +24,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+   const footClock=createFootContactClock();
+   let footIndex=0;
+   const keys=new Set();
+-  const clear=()=>{keys.clear();drag=null;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
++  const runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
+   const snapshot=()=>copy(state);
+   const asideActive=()=>state.elleryAside?.status==='active';
+   let asideEvents=[];
+@@ -113,7 +114,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       if(!tickPresentation.protected&&!tickPresentation.hidden&&!tickPresentation.suspended&&tickPresentation.focused!==false
+         &&(!asideActive()||audio?.asideGagReady?.()!==false))onInstrumentTick(Math.min(.25,Math.max(0,Number(dt)||0)));
+       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
++        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0)});
+       if(closed||leaving)return;
+       const frame=sourceEarthfallFrame(state),p=presentation()||{};
+       if(asideActive())audio?.updateAside?.(sourceEarthfallElleryAsideFrame(state.elleryAside),{...p,events:asideEvents,suspended:!!p.suspended});
+@@ -131,6 +132,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+     lookBy(yawDelta=0,pitchDelta=0){const look=scene.lookAngles();return scene.setLook({yaw:look.yaw+(Number(yawDelta)||0),pitch:look.pitch+(Number(pitchDelta)||0)});},
+     setLook(look){if(!scene.allowsLook)return false;apply({dt:0,look});return true;},
+     key(e={}){
++      if(runKey.key(e))return true;
+       const key=keyOf(e);
+       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
+       if(closed||leaving||e.ctrlKey||e.metaKey||e.altKey)return true;
+@@ -143,7 +145,7 @@ export function createSourceEarthfallScene({checkpoint,renderer,audio=null,
+       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});
+       return true;
+     },
+-    keyup(e={}){keys.delete(keyOf(e));return true;},
++    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
+     pointer(e={}){
+       if(!live()||paused||!scene.allowsLook){drag=null;return true;}
+       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}
+diff --git a/src/game/source-earthfall.js b/src/game/source-earthfall.js
+index ada57780..115431fc 100644
+--- a/src/game/source-earthfall.js
++++ b/src/game/source-earthfall.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed} from './locomotion.js';
+ import {normalizeSourceEarthfallElleryAside} from './source-earthfall-ellery-aside.js';
+ import {earthfallGroundMotion} from '../data/source-earthfall-quake.js';
+ import { SOURCE_EARTHFALL as C, SOURCE_EARTHFALL_CUES, SOURCE_EARTHFALL_MATERIAL_CELL, earthfallContains, earthfallCatchHeight, earthfallCatchVelocity, earthfallExitDoorHeight, sourceEarthfallFracturePose, sourceEarthfallUpperHeight, sourceEarthfallLowerContains, SOURCE_EARTHFALL_STRATA, sourceEarthfallFooting, sourceEarthfallBodyContacts, SOURCE_EARTHFALL_CONSTRUCTION, sourceEarthfallCellLayout } from '../data/source-earthfall.js';
+@@ -209,7 +210,7 @@ function move(state, input, dt, events) {
+   const length = Math.max(1, Math.hypot(forward, side));
+   const onDebris=state.phase==='falling'&&state.contactCount>0;
+   const grounded = ['intact', 'fracturing', 'landed'].includes(state.phase)||onDebris;
+-  const amount = (grounded ? C.walkSpeed : C.airSpeed) * dt / length;
++  const amount = (grounded ? sceneWalkSpeed(C.place, input.run) : C.airSpeed) * dt / length;
+   const dx = (Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * amount;
+   const dz = (-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * amount;
+   const from = { x: state.x, z: state.z }, to = { x: state.x + dx, z: state.z + dz };
+diff --git a/src/game/source-false-return-scene.js b/src/game/source-false-return-scene.js
+index 1cc2cf99..518f98b2 100644
+--- a/src/game/source-false-return-scene.js
++++ b/src/game/source-false-return-scene.js
+@@ -1,3 +1,4 @@
++import {createSceneRunKey} from './locomotion.js';
+ import {normalizeSourceFalseReturn,stepSourceFalseReturn,sourceFalseReturnFocus,sourceFalseReturnNoiseArmed,sourceFalseReturnHushCompletion} from './source-false-return.js';
+ import {uiFill,uiSize,uiText} from '../render/ui.js';
+ import {thresholdGagInspectionPlan} from './threshold-gag-inspection.js';
+@@ -17,7 +18,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
+   if(!layout||typeof renderer?.render!=='function')throw Error('The false Ellery needs its copied physical layout.');
+   let state=stepSourceFalseReturn(normalizeSourceFalseReturn(checkpoint,{spawn:layout.spawn}),{dt:0},layout).state,ready=false,closed=false,paused=false,
+     leaving=false,error=null,initializing=null,drag=null,saveClock=0,traceClock=0,handoff=0;
+-  const keys=new Set(),clear=()=>{keys.clear();drag=null;};
++  const keys=new Set(),runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;};
+   const live=()=>ready&&!closed&&!error&&renderer.ready?.()!==false;
+   const snapshot=()=>copy(state);
+   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
+@@ -82,7 +83,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
+       const protectedHush=!!hushProtected();
+       const playerNoise=delta>0&&getPlayerNoise(delta,{armed:!protectedHush&&sourceFalseReturnNoiseArmed(state),phase:state.noiseTrap.phase,eventId:state.noiseTrap.eventId})===true;
+       apply({dt:delta,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+-        side:Number(keys.has('d'))-Number(keys.has('a')),look:{yaw:state.yaw+turn*delta*1.8,pitch:state.pitch},playerNoise,renderReady:true,reducedMotion:!!renderer.reducedMotion?.(),gagAudioReady:audio?.gagReady?.()!==false});
++        side:Number(keys.has('d'))-Number(keys.has('a')),look:{yaw:state.yaw+turn*delta*1.8,pitch:state.pitch},playerNoise,run:runKey.update(delta,keys.size>0),renderReady:true,reducedMotion:!!renderer.reducedMotion?.(),gagAudioReady:audio?.gagReady?.()!==false});
+       if(leaving||closed)return;
+       audio?.update?.({dt:delta,state:soundState(),focus:sourceFalseReturnFocus(state,layout),ready:true,paused:false});
+       saveClock+=delta;traceClock+=delta;if(saveClock>=1){saveClock=0;save('position');}
+@@ -102,6 +103,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
+       return scene.setLook({yaw:state.yaw+yawDelta,pitch:state.pitch+pitchDelta});
+     },
+     key(e={}){
++      if(runKey.key(e))return true;
+       const key=keyOf(e);
+       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
+       if(closed||paused||e.ctrlKey||e.metaKey||e.altKey)return true;
+@@ -111,7 +113,7 @@ export function createSourceFalseReturnScene({checkpoint,layout,renderer,audio=n
+       if(movement.has(key)){if(!e.repeat)keys.add(key);return true;}
+       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true,renderReady:true});return true;
+     },
+-    keyup(e={}){keys.delete(keyOf(e));return true;},
++    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
+     pointer(e={}){
+       if(!live()||paused||leaving){drag=null;return true;}
+       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}
+diff --git a/src/game/source-false-return.js b/src/game/source-false-return.js
+index 454c8552..67a6ac7a 100644
+--- a/src/game/source-false-return.js
++++ b/src/game/source-false-return.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed} from './locomotion.js';
+ import { SOURCE_CONTINUATION } from '../data/source-continuation.js';
+ import {freshThresholdGag,normalizeThresholdGag,advanceThresholdGag} from './threshold-gag.js';
+ import {thresholdGagPenetration} from '../data/threshold-gag.js';
+@@ -12,7 +13,6 @@ const KIND = 'source-false-return';
+ const VERSION = 1;
+ const BODY_RADIUS = .22;
+ const BODY_HEIGHT = 1.8;
+-const WALK_SPEED = 3;
+ const STEP_UP = .45;
+ const PASSABLE = .85;
+ const SWING_SECONDS = .45;
+@@ -503,12 +503,14 @@ export function stepSourceFalseReturn(value, input = {}, layout = {}) {
+   }
+   const dt = clamp(input.dt, 0, 1), steps = Math.max(1, Math.ceil(dt / (1 / 60)));
+   const forward = clamp(input.forward ?? 0, -1, 1), side = clamp(input.side ?? 0, -1, 1), length = Math.max(1, Math.hypot(forward, side));
++  // It imitates the building, so it walks like the building. No chase rung: the Hush stays faster.
++  const walk = sceneWalkSpeed('interior', input.run);
+   for (let i = 0; i < steps && state.status === 'active'; i++) {
+     const eventStart=events.length;
+     const h = dt / steps; state.elapsed += h; countDoors(state, layout, events);
+     const held=state.noiseTrap.phase==='contact'&&!input.hushProtected;
+-    const dx = held?0:(Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * WALK_SPEED * h / length;
+-    const dz = held?0:(-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * WALK_SPEED * h / length;
++    const dx = held?0:(Math.sin(state.yaw) * forward + Math.cos(state.yaw) * side) * walk * h / length;
++    const dz = held?0:(-Math.cos(state.yaw) * forward + Math.sin(state.yaw) * side) * walk * h / length;
+     const before={x:state.x,z:state.z,feet:state.feet},transferred=advanceMove(state, dx, dz, layout, events, travel);
+     advanceThresholdGag(state,before,h,events,{layout,reduced:!!input.reducedMotion,audioReady:input.gagAudioReady!==false});
+     advanceThresholdGagInspection(state,before,h,events,{layout,reduced:!!input.reducedMotion,protectedScare:!!input.inspectionProtected});
+diff --git a/src/game/source-iv-scene.js b/src/game/source-iv-scene.js
+index b6c1d7c5..78e79a7a 100644
+--- a/src/game/source-iv-scene.js
++++ b/src/game/source-iv-scene.js
+@@ -1,3 +1,4 @@
++import {createSceneRunKey} from './locomotion.js';
+ import {normalizeSourceIV,stepSourceIV,sourceIVFrame,sourceIVFocus} from './source-iv.js';
+ import {uiSize,uiCenter} from '../render/ui.js';
+ import {createFootContactClock} from '../audio/foot-contact.js';
+@@ -14,7 +15,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
+     initializing=null,drag=null,saveClock=0,traceClock=0,stepDistance=0,footIndex=0,hold=0,dispatching=false;
+   const footOwner='source-IV';
+   const footClock=createFootContactClock();
+-  const keys=new Set(),clear=()=>{keys.clear();drag=null;stepDistance=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
++  const keys=new Set(),runKey=createSceneRunKey(),clear=()=>{keys.clear();runKey.clear();drag=null;stepDistance=0;footClock.reset(footOwner);clearFootContacts?.(footOwner);};
+   const snapshot=()=>copy(state);
+   const save=reason=>{const value=snapshot();onCheckpoint(value,{reason});return value;};
+   const protectedNow=()=>{const p=presentation()||{};return !!p.protected||!!p.suspended||!!p.hidden||p.focused===false;};
+@@ -70,7 +71,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
+         hold+=Math.min(.25,Math.max(0,Number(dt)||0));if(hold>=1.4)void finish();return;
+       }
+       apply({dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'))});
++        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0)});
+       saveClock+=Math.min(.25,Math.max(0,Number(dt)||0));if(saveClock>=.5){saveClock=0;save('position');}
+       traceClock+=Math.min(.25,Math.max(0,Number(dt)||0));if(traceClock>=.1){traceClock=0;trace('pose');}
+     },
+@@ -80,6 +81,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
+     resume(){if(closed)return false;paused=false;clear();trace('resume');return true;},
+     setLook(look){if(!live()||paused||protectedNow()||state.status!=='active'){clear();return false;}apply({dt:0,look});return true;},
+     key(e={}){
++      if(runKey.key(e))return true;
+       const key=keyOf(e);if(closed||dispatching||e.ctrlKey||e.metaKey||e.altKey)return true;
+       if(key==='escape'||e.controllerAction==='back'){clear();save('pause-request');return false;}
+       if(paused||protectedNow()){clear();return true;}
+@@ -88,7 +90,7 @@ export function createSourceIVScene({checkpoint,renderer,presentation=()=>({}),
+       if(movement.has(key)){keys.add(key);return true;}
+       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))apply({dt:0,interact:true});return true;
+     },
+-    keyup(e={}){keys.delete(keyOf(e));return true;},
++    keyup(e={}){runKey.keyup(e);keys.delete(keyOf(e));return true;},
+     pointer(e={}){
+       if(!live()||paused||protectedNow()||state.status!=='active'){clear();return true;}
+       if(e.type==='pointerdown'&&(e.button===2||e.buttons===2)){drag={x:Number(e.clientX??e.x)||0,y:Number(e.clientY??e.y)||0};e.preventDefault?.();}
+diff --git a/src/game/source-iv.js b/src/game/source-iv.js
+index 3076c3fc..78eaab6e 100644
+--- a/src/game/source-iv.js
++++ b/src/game/source-iv.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed} from './locomotion.js';
+ import { SOURCE_IV as C, sourceIVSupportAt, sourceIVCollisionAt } from '../data/source-iv.js';
+ const copy=value=>JSON.parse(JSON.stringify(value));
+ const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
+@@ -46,7 +47,7 @@ export function sourceIVFocus(value){
+ }
+ function move(state,input,dt,events){
+   if(input.acceptedStep===false)return;
+-  const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),length=Math.max(1,Math.hypot(forward,side)),amount=C.walkSpeed*dt/length;
++  const forward=clamp(input.forward??0,-1,1),side=clamp(input.side??0,-1,1),length=Math.max(1,Math.hypot(forward,side)),amount=sceneWalkSpeed(C.place,input.run)*dt/length;
+   const dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*amount,
+     dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*amount;
+   const count=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.06));
+diff --git a/src/game/source-pub.js b/src/game/source-pub.js
+index 03bc2226..3f648fdf 100644
+--- a/src/game/source-pub.js
++++ b/src/game/source-pub.js
+@@ -1,3 +1,4 @@
++import {sceneWalkSpeed,createSceneRunKey} from './locomotion.js';
+ import {SOURCE_PUB,sourcePubRound,sourcePubStretch,sourcePubStations,sourcePubTask,sourcePubFloorHoles,sourcePubFallProgress} from '../data/source-pub.js';
+ import {uiSize,uiText,uiCenter,uiFill} from '../render/ui.js';
+ import {recordNightClockTravel} from './night-clock-travel.js';
+@@ -103,7 +104,7 @@ export function stepSourcePub(value,input={}){
+       // service action, and normal movement resumes on the following frame.
+       return{state,event};
+     }
+-    const forward=clamp(input.forward,-1,1),side=clamp(input.side,-1,1),length=Math.max(1,Math.hypot(forward,side)),speed=SOURCE_PUB.walkSpeed*dt/length;
++    const forward=clamp(input.forward,-1,1),side=clamp(input.side,-1,1),length=Math.max(1,Math.hypot(forward,side)),speed=sceneWalkSpeed(SOURCE_PUB.place,input.run)*dt/length;
+     const carryScale=state.carried==='barrel'?SOURCE_PUB.barrelSpeed/SOURCE_PUB.walkSpeed:1;
+     const dx=(Math.sin(state.yaw)*forward+Math.cos(state.yaw)*side)*speed*carryScale,dz=(-Math.cos(state.yaw)*forward+Math.sin(state.yaw)*side)*speed*carryScale;
+     const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/.075));
+@@ -138,7 +139,7 @@ export function stepSourcePub(value,input={}){
+ // room's motion, look and resumable service sequence. No global input listeners.
+ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onCheckpoint=()=>{},onReturn=()=>{},say=()=>{},getLook=null,onError=()=>{},onExit=()=>{},onAcceptedTravel=recordNightClockTravel}={}){
+   let state=normalizeSourcePubCheckpoint(checkpoint,{runId,returnPose}),ready=false,closed=false,paused=false,leaving=false,error=null,loadPromise=null,drag=null,exitPrompt=false,saveClock=0;
+-  const keys=new Set();
++  const keys=new Set(),runKey=createSceneRunKey();
+   if(typeof renderer?.render!=='function')throw Error('A game-owned Source pub renderer is required.');
+   if(!state.returnPose)throw Error('Capture the exact Source pose before entering The Lyric.');
+   if(state.completed)throw Error('The Source bar has already been completed in this run.');
+@@ -146,7 +147,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
+   const snapshot=()=>clone(state);
+   const report=err=>{error=String(err?.message||err);try{onError(err);}catch{/* Reporting cannot take away the way out. */}};
+   const save=reason=>{const value=snapshot();try{onCheckpoint(value,{reason});}catch(err){report(err);}return value;};
+-  function clearMotion(){keys.clear();drag=null;}
++  function clearMotion(){keys.clear();runKey.clear();drag=null;}
+   const renderReady=()=>ready&&!closed&&renderer.ready?.()!==false;
+   function leave(){
+     if(closed||leaving)return false;leaving=true;clearMotion();state.status='returned';state.completed=state.stage===SOURCE_PUB.rounds.length;
+@@ -180,7 +181,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
+       const hostLook=typeof getLook==='function'?getLook():null;
+       const before={x:state.x,z:state.z,layer:state.layer,fall:!!state.fall};
+       const result=stepSourcePub(state,{dt,forward:Number(keys.has('w')||keys.has('arrowup'))-Number(keys.has('s')||keys.has('arrowdown')),
+-        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),look:hostLook});state=result.state;
++        side:Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft')),run:runKey.update(dt,keys.size>0),look:hostLook});state=result.state;
+       if(!before.fall&&!state.fall&&before.layer===state.layer)onAcceptedTravel(Math.hypot(state.x-before.x,state.z-before.z));
+       saveClock+=Math.max(0,Number(dt)||0);if(saveClock>=1){saveClock=0;save('position');}
+     },
+@@ -192,6 +193,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
+     lookBy(yawDelta=0,pitchDelta=0){return scene.setLook({yaw:state.yaw+(Number(yawDelta)||0),pitch:state.pitch+(Number(pitchDelta)||0)});},
+     setLook(look){if(!scene.allowsLook||!finite(look?.yaw)||!finite(look?.pitch))return false;state.yaw=heading(look.yaw);state.pitch=clamp(look.pitch,-.8,.75);return true;},
+     key(e={}){
++      if(runKey.key(e))return true;
+       const key=String(e.key||e.code||'').toLowerCase().replace(/^key/,'');
+       if(key==='escape'||e.controllerAction==='back'){clearMotion();if(ready)save('pause-request');return false;}
+       if(e.ctrlKey||e.metaKey||e.altKey||closed||leaving)return true;
+@@ -201,7 +203,7 @@ export function createSourcePubScene({checkpoint,runId,returnPose,renderer,onChe
+       if(!e.repeat&&(key==='e'||key==='enter'||e.controllerAction==='interact'||e.controllerAction==='confirm'))interact();
+       return true;
+     },
+-    keyup(e={}){keys.delete(String(e.key||e.code||'').toLowerCase().replace(/^key/,''));return true;},
++    keyup(e={}){runKey.keyup(e);keys.delete(String(e.key||e.code||'').toLowerCase().replace(/^key/,''));return true;},
+     pointer(e={}){
+       if(closed||paused||leaving||exitPrompt)return true;
+       if(!renderReady()){clearMotion();return true;}
+diff --git a/src/main.js b/src/main.js
+index e32e8111..faa647c2 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -7277,7 +7277,7 @@ function tickSixReturn(){
+ // in. It borrows the same seat as the nothingness below, for the same reason.
+ let horizonApproachRenderer=null;
+ const horizonApproachScene=()=>firstStrikeScene?.id==='horizon-approach'?firstStrikeScene:null;
+-function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=null}={}){
++function beginHorizonApproach({occupant='daisy',condition=false,lyleBox=null}={}){
+   if(horizonApproachScene())return horizonApproachScene();
+   if(firstStrikeScene)return null;
+   horizonApproachRenderer ||= createHorizonApproachRenderer();
+@@ -7285,7 +7285,7 @@ function beginHorizonApproach({variant,occupant='daisy',condition=false,lyleBox=
+   resetMotionInput('horizon-approach',{stopRenderMove:true});
+   STORY.stopAll();SPEECH.clearSpeech();stopAllVoices();stopWorldLayerVoice();silenceAmbientDrone();RT.setBed(0,.05);
+   let scene;
+-  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,variant,occupant,condition,lyleBox,
++  scene=createHorizonApproachScene({renderer:horizonApproachRenderer,occupant,condition,lyleBox,
+     presentation:()=>({paused,hidden:document.hidden,focused:gameplayInputLifecycleActive(),reducedMotion:shakeMode()!=='full'}),
+     onEvent:event=>{console.info('[horizon-approach]',event);pushEvent(`// horizon: ${event.type.replace('horizon-approach-','')}`);},
+     onError:error=>console.error('[horizon-approach]',error),
+@@ -22035,10 +22035,11 @@ function stopCloseBreath(){
+ // DA-1000 in the road under it. It is silent until he is standing where the
+ // reflection was; then the transport clunks and it plays him and Sarah, and he
+ // cannot stop it. The light fails on the last word, and in the dark he is on the
+-// tape. The voices are Seb's to record: until public/assets/audio/outskirts/
+-// last-light.mp3 exists it plays hiss and room tone and shows the script
+-// (source-space.last-light) at its cue points.
++// tape. The voices are Seb's to record: public/assets/audio/outskirts/last-light.mp3
++// wins when it exists. Until then the game's own voice reads the script on its cue
++// points (tools/chunk_surfer/build-sarah-tape-fallback.mjs), over the same tape hiss.
+ const LAST_LIGHT_AUDIO='assets/audio/outskirts/last-light.mp3';
++const LAST_LIGHT_FALLBACK_AUDIO='assets/audio/outskirts/sarah-tape-fallback.wav';
+ const lastLight={started:false,done:false,timers:[],source:null,nodes:[],caption:null,elapsed:0,offset:0,clockAt:null,clockContext:null,mode:null,paused:false,generation:0,persistedSecond:-1,duration:0,lines:[],nextLine:0};
+ function lastLightClock(){return lastLight.clockContext?lastLight.clockContext.currentTime:performance.now()/1000;}
+ function lastLightElapsed(){return lastLight.clockAt==null?lastLight.elapsed:lastLight.offset+Math.max(0,lastLightClock()-lastLight.clockAt);}
+@@ -22097,6 +22098,8 @@ function syncLastLight(){
+     while(lastLight.nextLine<lastLight.lines.length&&Number(lastLight.lines[lastLight.nextLine].at||0)<=elapsed){
+       const i=lastLight.nextLine++,line=lastLight.lines[i],who=line.who==='you'?'Him':line.who==='sarah'?'Her':'';
+       lastLight.caption=SPEECH.say({who:'direction',text:who?`${who}: ${line.text}`:line.text,voice:false},{id:'last-light-recording',replace:true,interrupt:true,context:null,escapable:false});
++      // The script's last word is the machine stopping.
++      if(line.text==='[Click.]')CUES.playCue(CUES.CUE.recorder,{gain:.6,rate:.88});
+     }
+   }
+   // Some WebViews omit onended after an interrupted output route. Playback's
+@@ -22109,7 +22112,8 @@ function startLastLight(offset=0){
+   lastLight.started=true;lastLight.paused=false;lastLight.elapsed=Math.max(0,Number(offset)||0);lastLight.offset=lastLight.elapsed;lastLight.clockAt=null;
+   ensureCtx();
+   chunkSurfRuntime?.setLastLightHold?.(true);
+-  if(first&&offset<=0)CUES.playCue(CUES.CUE.door,{gain:.2,rate:1.9,lowpassHz:2400});
++  // The script opens on a click: the machine's own transport, as when he rolls.
++  if(first&&offset<=0)CUES.playCue(CUES.CUE.recorder,{gain:.55,rate:1});
+   STORY.startTapeHiss?.({fade:.3});
+   const lines=runtimeTree('source-space.last-light')?.recording?.lines||[];
+   const scriptEnds=Math.max(0,...lines.map((line)=>Number(line.at)||0))+2.5;
+@@ -22129,9 +22133,13 @@ function startLastLight(offset=0){
+     // Caption progress uses the playback clock, so pause/reload cannot skip it.
+     beginClock('placeholder',scriptEnds);
+   };
+-  fetch(String(assetUrl(LAST_LIGHT_AUDIO)))
++  // A dev server answers a missing file with a page, so a bad decode also falls through.
++  const decodeTape=path=>fetch(String(assetUrl(path)))
+     .then((response)=>response.ok?response.arrayBuffer():null)
+     .then((bytes)=>bytes&&actx?actx.decodeAudioData(bytes):null)
++    .catch(()=>null);
++  decodeTape(LAST_LIGHT_AUDIO)
++    .then((buffer)=>buffer||decodeTape(LAST_LIGHT_FALLBACK_AUDIO))
+     .then((buffer)=>{
+       if(generation!==lastLight.generation||lastLight.paused||lastLight.done)return;
+       if(!buffer){placeholder();return;}
+diff --git a/src/render/horizon-approach-frame.js b/src/render/horizon-approach-frame.js
+index 0b5f776b..b997caeb 100644
+--- a/src/render/horizon-approach-frame.js
++++ b/src/render/horizon-approach-frame.js
+@@ -1,16 +1,14 @@
+ // What is there, as prop instances, placed on the map. The renderer's curved space
+ // takes it from here: nothing in this file knows the space is curved.
+ import {EYE,ZONE} from '../data/floorplan/legend.js';
+-import {HORIZON_APPROACH as C,spaceEyeUniform} from '../data/horizon-approach.js';
++import {HORIZON_APPROACH as C,HORIZON_DEBRIS_KINDS,horizonDebrisField,spaceEyeUniform} from '../data/horizon-approach.js';
+ import {HORIZON_TOWER_BEARING} from '../game/horizon-approach-scene.js';
+ import {meshForApparitionPose} from '../game/emergency-light-runtime.js';
+-import {horizonStairsMeshes} from './horizon-approach-models.js';
+-import {SOURCE_ESCHER_EXTENT} from './source-continuation-escher.js';
+ 
+ const TAU=Math.PI*2;
+ const SHARED={structural:false,decorative:true,zone:ZONE.sourceSpace,noReflection:true,noShadow:true};
+ export const HORIZON_CHURCH_MESH='brendan_church_treated';
+-export const HORIZON_MASONRY=Object.freeze({bay:'source_ii_ellery_bay',corner:'source_ii_ellery_corner',buttress:'source_ii_chapel_buttress',arch:'source_ii_arch_voussoirs',cap:'source_ii_tower_cap'});
++export const HORIZON_MASONRY=Object.freeze({buttress:'source_ii_chapel_buttress',arch:'source_ii_arch_voussoirs'});
+ export const HORIZON_ANT_MESH='mf_ant_0';
+ export const HORIZON_SLAB_MESHES=Object.freeze(['mf_ant_slab_side','mf_ant_slab_top','mf_ant_slab_crack']);
+ export const HORIZON_DAISY_MESHES=Object.freeze(['mf_hero_disc','mf_hero_stem']);
+@@ -23,10 +21,14 @@ export const HORIZON_FIGURES=Object.freeze({
+ function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let v=0;for(let k=0;k<4;k++)v+=a[k*4+r]*b[c*4+k];o[c*4+r]=v;}return o;}
+ const translate=(x,y,z)=>new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,x,y,z,1]);
+ const scaled=(s,sy=s,sz=s)=>new Float32Array([s,0,0,0,0,sy,0,0,0,0,sz,0,0,0,0,1]);
+-const I4=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
+ const aboutY=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]);};
+ const aboutZ=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1]);};
+ const aboutX=a=>{const c=Math.cos(a),s=Math.sin(a);return new Float32Array([1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]);};
++// A turn of `a` about the unit `axis`.
++function aboutAxis([x,y,z],a){
++  const c=Math.cos(a),s=Math.sin(a),t=1-c;
++  return new Float32Array([t*x*x+c,t*x*y+s*z,t*x*z-s*y,0, t*x*y-s*z,t*y*y+c,t*y*z+s*x,0, t*x*z+s*y,t*y*z-s*x,t*z*z+c,0, 0,0,0,1]);
++}
+ function inst(mesh,id,matrix,extra={}){return{...SHARED,id:'ha:'+id,mesh,matrix,x:matrix[12],y:matrix[13],z:matrix[14],cullRadius:400,...extra};}
+ const atMap=(r,phi,y=0)=>[r*Math.sin(phi),y,r*Math.cos(phi)];
+ // Stood at r on bearing phi, facing the object.
+@@ -34,7 +36,7 @@ const standing=(r,phi,{scale=1,turn=0,y=0}={})=>multiply(multiply(translate(...a
+ 
+ // The object, at the origin of the map, facing the way he came.
+ export function horizonApproachObjectProps(state,phi=0){
+-  const base=multiply(aboutY(phi),scaled(1)),props=[],occupant=state.occupant;
++  const base=aboutY(phi),props=[],occupant=state.occupant;
+   if(occupant==='daisy'){
+     const H=C.daisy.height,head=multiply(multiply(multiply(base,translate(0,H,0)),aboutX(-.35)),scaled(2));
+     props.push(inst('mf_hero_stem','daisy:stem',multiply(multiply(base,translate(0,H,0)),scaled(2,H,2))),inst('mf_hero_disc','daisy:disc',head));
+@@ -50,49 +52,36 @@ export function horizonApproachObjectProps(state,phi=0){
+   }
+   return props;
+ }
+-// One arch of Source's own over every road, twice on the way. That is all the closed
+-// space needs: the rest is what the space does to the roads.
+-function closedLandscape(){
+-  const V=C.variants.closed,end=Math.PI*V.radius,props=[],spacing=TAU/V.roads;
++// One arch of Source's own over every road, twice on the way.
++function landscape(){
++  const V=C.space,end=Math.PI*V.radius,props=[],spacing=TAU/V.roads;
+   for(let k=0;k<V.roads;k++)for(const share of[.34,.66])props.push(inst(HORIZON_MASONRY.arch,`road:${k}:${share}`,standing(end*share,k*spacing,{scale:.72})));
+   return props;
+ }
+-function circleLimitLandscape(){
+-  const R=C.variants['circle-limit'].radius,props=[];
+-  // Masonry stood on the rings, the same walls again and again, smaller and smaller.
+-  for(const[share,count,mesh,scale]of[[1.6,5,HORIZON_MASONRY.corner,.1],[2.6,10,HORIZON_MASONRY.bay,.1],[3.4,20,HORIZON_MASONRY.corner,.13]]){
+-    for(let k=0;k<count;k++)props.push(inst(mesh,`ring:${share}:${k}`,standing(share*R,(k+.5)/count*TAU,{scale,turn:Math.PI/2})));
+-  }
++function destinations(){
++  const V=C.space,far=Math.PI*V.radius*.84,s=.55;
++  const props=[inst(HORIZON_CHURCH_MESH,'church',standing(far,HORIZON_TOWER_BEARING,{scale:s,turn:Math.PI}),{structural:true})];
++  for(const[k,side]of[[0,-1],[1,1],[2,-1],[3,1]])props.push(inst(HORIZON_MASONRY.buttress,`chapel:${k}`,standing(far,-HORIZON_TOWER_BEARING+side*.09+k*.02,{scale:.6*s,turn:Math.PI/2*side})));
+   return props;
+ }
+-// The construction Source II falls through, a cell at a time. Its own turnings: each
+-// cell's down is at right angles to its neighbours'.
+-function relativityLandscape(){
+-  const V=C.variants.relativity,e=SOURCE_ESCHER_EXTENT.center,P=V.cell,props=[],meshes=horizonStairsMeshes();
+-  const centre=translate(-e[0],-e[1],-e[2]),turns=[I4,aboutZ(Math.PI/2),aboutX(Math.PI/2),aboutZ(Math.PI),aboutX(-Math.PI/2),aboutZ(-Math.PI/2)];
+-  for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=1;iy++)for(let iz=-3;iz<=3;iz++){
+-    // The column the road runs through is left clear.
+-    if(ix===0&&iy===0)continue;
+-    const turn=turns[((ix+1)*5+(iy+1)*3+(iz+3))%turns.length],m=multiply(multiply(multiply(translate(ix*P,iy*P,iz*P+6),turn),scaled(V.scale)),centre);
+-    for(const mesh of meshes)props.push(inst(mesh,`stairs:${ix}:${iy}:${iz}:${mesh}`,m));
++const KIND=new Map(HORIZON_DEBRIS_KINDS.map(k=>[k.id,k]));
++// Everything that came loose. It turns over slowly, each piece at its own rate, and
++// stops turning for anyone who has asked for less motion.
++export function horizonDebrisProps(elapsed=0,{reducedMotion=false}={}){
++  const props=[];
++  for(const piece of horizonDebrisField()){
++    const kind=KIND.get(piece.kind),a=piece.phase+(reducedMotion?0:piece.rate*elapsed),m=multiply(multiply(translate(...piece.base),aboutAxis(piece.axis,a)),scaled(piece.scale));
++    for(const part of kind.parts)props.push(inst(part.mesh,`debris:${piece.id}:${part.mesh}`,part.sy?multiply(m,scaled(1,part.sy,1)):m,kind.emissive?{emissive:[...kind.emissive]}:{}));
+   }
+   return props;
+ }
+-function destinations(variant){
+-  const V=C.variants[variant],closed=variant==='closed',far=closed?Math.PI*V.radius*.84:variant==='relativity'?V.roadEnd:V.radius*3.4,s=variant==='circle-limit'?.16:closed?.55:1;
+-  const props=[inst(HORIZON_CHURCH_MESH,'church',standing(far,HORIZON_TOWER_BEARING,{scale:s,turn:Math.PI}),{structural:true})];
+-  for(const[k,side]of[[0,-1],[1,1],[2,-1],[3,1]])props.push(inst(HORIZON_MASONRY.buttress,`chapel:${k}`,standing(far,(variant==='relativity'?Math.PI:-HORIZON_TOWER_BEARING)+side*.09+k*.02,{scale:.6*s,turn:Math.PI/2*side})));
+-  return props;
+-}
+-const GROUND=Object.freeze({closed:['ha_closed_road','ha_closed_hub','ha_closed_line'],'circle-limit':['ha_tile_dark','ha_tile_light','ha_tile_line'],relativity:['ha_road','ha_road_line','ha_hub']});
+-const LANDSCAPE=Object.freeze({closed:closedLandscape,'circle-limit':circleLimitLandscape,relativity:relativityLandscape});
+-export function horizonApproachRenderFrame(state){
+-  const V=C.variants[state.variant],I=translate(0,0,0),props=[];
+-  for(const mesh of GROUND[state.variant])props.push(inst(mesh,mesh,I));
+-  if(state.variant==='relativity'&&state.offerOpen)props.push(inst('ha_side','side',I),inst('ha_side_line','side-line',I));
+-  props.push(...LANDSCAPE[state.variant](),...destinations(state.variant),...horizonApproachObjectProps(state));
++const GROUND=Object.freeze(['ha_road','ha_hub','ha_road_line']);
++export function horizonApproachRenderFrame(state,{reducedMotion=false}={}){
++  const V=C.space,I=translate(0,0,0),props=[];
++  for(const mesh of GROUND)props.push(inst(mesh,mesh,I));
++  props.push(...landscape(),...destinations(),...horizonDebrisProps(state.elapsed,{reducedMotion}),...horizonApproachObjectProps(state));
+   const lights=[{id:'ha:key',x:.5,y:1.5,z:1.4,radius:3.2,intensity:2.2,color:[.9,.93,1],penetration:0},
+     {id:'ha:over',x:0,y:3.4,z:-.5,radius:4,intensity:.8,color:[.86,.9,.98],penetration:0}];
+   const eye=[0,EYE,0];
+-  return{props,lights,eye,authoredCamera:{eye,yaw:state.yaw,pitch:state.pitch},space:{sign:V.sign,radius:V.radius,eyeHeight:EYE,eye:spaceEyeUniform(V.sign,V.radius,state.frame,EYE)}};
++  return{props,lights,eye,authoredCamera:{eye,yaw:state.yaw,pitch:state.pitch},space:{sign:V.sign,radius:V.radius,eyeHeight:EYE,eye:spaceEyeUniform(state.frame,EYE)}};
+ }
+diff --git a/src/render/horizon-approach-models.js b/src/render/horizon-approach-models.js
+index 456af077..222e118a 100644
+--- a/src/render/horizon-approach-models.js
++++ b/src/render/horizon-approach-models.js
+@@ -1,8 +1,9 @@
+ // What the space needs that nothing else in the game has: ground laid out along its
+-// own straight lines. Everything that stands on it is the game's own: Source's
+-// masonry, St Brendan's, the field's daisy and ant, the apparition bodies.
++// own straight lines, and pieces torn from the moor the drive crosses. Everything
++// else that is there is the game's own: Source's masonry, St Brendan's, the field's
++// daisy and ant, the cab's flashlights, the apparition bodies.
+ import {HORIZON_APPROACH as C} from '../data/horizon-approach.js';
+-import {sourceContinuationEscherGeometryLibrary} from './source-continuation-escher.js';
++import {m62HeightAt} from '../data/m62-land.js';
+ 
+ const TAU=Math.PI*2;
+ const target=()=>({p:[],i:[]});
+@@ -11,12 +12,11 @@ const tri=(g,a,b,c)=>{const o=push(g,a,b,c);g.i.push(o,o+1,o+2);};
+ const quad=(g,a,b,c,d)=>{tri(g,a,b,c);tri(g,a,c,d);};
+ const atMap=(r,phi,y=0)=>[r*Math.sin(phi),y,r*Math.cos(phi)];
+ 
+-// ── THE CLOSED SPACE ────────────────────────────────────────────────────────
+ // Every road leaves the place he starts and arrives at the object, the way every
+ // meridian leaves one pole for the other. They are the same width all the way, so
+ // on the map they fan out and close again.
+-function closedGround(){
+-  const V=C.variants.closed,R=V.radius,end=Math.PI*R,w=V.roadHalfWidth,road=target(),line=target(),hub=target(),N=72;
++function ground(){
++  const V=C.space,R=V.radius,end=Math.PI*R,w=V.roadHalfWidth,road=target(),line=target(),hub=target(),N=72;
+   const half=(r,width)=>width/(R*Math.max(.02,Math.sin(r/R)));
+   for(let k=0;k<V.roads;k++){
+     const phi=k/V.roads*TAU;
+@@ -27,8 +27,8 @@ function closedGround(){
+     }
+   }
+   // The two places they all meet.
+-  const rings=6,S=48,top=[0,end];
+-  for(const pole of top){
++  const rings=6,S=48;
++  for(const pole of[0,end]){
+     const r=t=>pole===0?V.hub*t:end-V.hub*t;
+     for(let q=0;q<rings;q++)for(let s=0;s<S;s++){
+       const a=s/S*TAU,b=(s+1)/S*TAU,r0=r(q/rings),r1=r((q+1)/rings);
+@@ -37,93 +37,35 @@ function closedGround(){
+     }
+   }
+   return[
+-    {name:'ha_closed_road',...road,base:[.03,.032,.045,1],roughness:1},
+-    {name:'ha_closed_hub',...hub,base:[.3,.23,.15,1],emissive:[.1,.075,.045],roughness:1},
+-    {name:'ha_closed_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
++    {name:'ha_road',...road,base:[.03,.032,.045,1],roughness:1},
++    {name:'ha_hub',...hub,base:[.1,.075,.05,1],emissive:[.1,.075,.045],roughness:1},
++    {name:'ha_road_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+   ];
+ }
+-
+-// ── THE CIRCLE LIMIT ────────────────────────────────────────────────────────
+-// Pentagons, four to a corner, which is too many for a flat floor: the ground has
+-// to be a space with more room in it than a plane. Worked on the hyperboloid and
+-// written out on the map, so the tiles stay the same size wherever he stands.
+-const hMul=(a,b)=>{const o=[0,0,0,0,0,0,0,0,0];for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let k=0;k<3;k++)o[r*3+c]+=a[r*3+k]*b[k*3+c];return o;};
+-const hApply=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+-const hRot=a=>{const c=Math.cos(a),s=Math.sin(a);return[c,-s,0,s,c,0,0,0,1];};
+-const hBoost=d=>{const c=Math.cosh(d),s=Math.sinh(d);return[c,0,s,0,1,0,s,0,c];};
+-// The geodesic between two points of the hyperboloid, `t` of the way along.
+-const hLerp=(a,b,t)=>{const v=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],n=Math.sqrt(Math.max(1e-9,v[2]*v[2]-v[0]*v[0]-v[1]*v[1]));return[v[0]/n,v[1]/n,v[2]/n];};
+-const toMap=(v,R,y=0)=>{const l=Math.hypot(v[0],v[1]),r=R*Math.asinh(l);return l<1e-9?[0,y,0]:[v[0]/l*r,y,v[1]/l*r];};
+-const INRADIUS=Math.acosh(Math.cos(Math.PI/4)/Math.sin(Math.PI/5)),CIRCUMRADIUS=Math.acosh(1/(Math.tan(Math.PI/5)*Math.tan(Math.PI/4)));
+-export function circleLimitTiles(limit=C.variants['circle-limit'].tileRings){
+-  const seen=new Map(),queue=[{m:[1,0,0,0,1,0,0,0,1],colour:0}];
+-  const key=m=>`${Math.round(m[2]*40)}:${Math.round(m[5]*40)}`;
+-  seen.set(key(queue[0].m),queue[0]);
+-  while(queue.length){
+-    const t=queue.shift();
+-    for(let k=0;k<5;k++){
+-      const m=hMul(hMul(t.m,hRot(k/5*TAU)),hMul(hBoost(INRADIUS*2),hRot(Math.PI)));
+-      if(Math.acosh(Math.max(1,m[8]))>limit||seen.has(key(m)))continue;
+-      const next={m,colour:1-t.colour};seen.set(key(m),next);queue.push(next);
++// A piece of the moor, torn out: the top is the drive's own land at this spot, cut
++// to a ragged edge, with the peat it came away with hanging under it.
++const MOOR=Object.freeze([[1500,-800],[-2600,700],[2400,1800]]);
++function moorPieces(){
++  const rows=[],R=9,span=380,rings=12,S=36,f=2*R/span;
++  MOOR.forEach(([x0,z0],k)=>{
++    const top=target(),under=target(),h0=m62HeightAt(x0,z0);
++    const rim=t=>R*(.74+.14*Math.sin(t*3+k*2.1)+.08*Math.sin(t*7+k)+.04*Math.sin(t*13+k*3));
++    const surface=(t,q)=>{const r=rim(t)*q,x=Math.cos(t)*r,z=Math.sin(t)*r;return[x,(m62HeightAt(x0+x/f,z0+z/f)-h0)*f*1.6,z];};
++    const below=(t,q)=>{const p=surface(t,1),d=(1-q*q)*(2.6+.9*Math.sin(t*5+k));return[p[0]*q,p[1]*q-d-.1,p[2]*q];};
++    for(let i=0;i<rings;i++)for(let s=0;s<S;s++){
++      const a=s/S*TAU,b=(s+1)/S*TAU,q0=i/rings,q1=(i+1)/rings;
++      if(i===0)tri(top,surface(a,0),surface(a,q1),surface(b,q1));
++      else quad(top,surface(a,q0),surface(a,q1),surface(b,q1),surface(b,q0));
+     }
+-  }
+-  return[...seen.values()];
+-}
+-function circleLimitGround(){
+-  const R=C.variants['circle-limit'].radius,light=target(),dark=target(),line=target(),tiles=circleLimitTiles();
+-  const corner=k=>{const a=(k+.5)/5*TAU,s=Math.sinh(CIRCUMRADIUS),c=Math.cosh(CIRCUMRADIUS);return[s*Math.cos(a),s*Math.sin(a),c];},centre=[0,0,1];
+-  for(const tile of tiles){
+-    const g=tile.colour?light:dark,P=v=>hApply(tile.m,v),d=Math.acosh(Math.max(1,tile.m[8])),n=d<2.6?4:d<4.4?2:1;
+-    for(let k=0;k<5;k++){
+-      const A=corner(k),B=corner(k+1);
+-      for(let j=0;j<n;j++){
+-        const a=hLerp(A,B,j/n),b=hLerp(A,B,(j+1)/n);
+-        // Three rings in from the edge, so the tile bends with the space.
+-        const ring=(v,t)=>toMap(P(hLerp(centre,v,t)),R);
+-        tri(g,ring(a,.34),ring(b,.34),toMap(P(centre),R));
+-        quad(g,ring(a,.68),ring(b,.68),ring(b,.34),ring(a,.34));
+-        quad(g,ring(a,1),ring(b,1),ring(b,.68),ring(a,.68));
+-        const lift=(v,t)=>toMap(P(hLerp(centre,v,t)),R,.012);
+-        quad(line,lift(a,1),lift(b,1),lift(b,.96),lift(a,.96));
+-      }
++    for(let i=0;i<6;i++)for(let s=0;s<S;s++){
++      const a=s/S*TAU,b=(s+1)/S*TAU,q0=1-i/6,q1=1-(i+1)/6;
++      quad(under,below(a,q0),below(a,q1),below(b,q1),below(b,q0));
+     }
+-  }
+-  return[
+-    {name:'ha_tile_dark',...dark,base:[.03,.032,.045,1],roughness:1},
+-    {name:'ha_tile_light',...light,base:[.62,.47,.3,1],emissive:[.1,.075,.045],roughness:1},
+-    {name:'ha_tile_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+-  ];
++    rows.push({name:`ha_moor_${k}`,...top,base:[.15,.14,.07,1],emissive:[.028,.032,.012],roughness:1},
++      {name:`ha_moor_under_${k}`,...under,base:[.1,.08,.055,1],emissive:[.035,.027,.018],roughness:1});
++  });
++  return rows;
+ }
+-
+-// ── THE ROAD THROUGH THE HOUSE OF STAIRS ─────────────────────────────────────
+-// Straight on, and one way off to the side that is only there once it is offered.
+-// What hangs round it is the same construction Source II falls through.
+-function relativityGround(){
+-  const V=C.variants.relativity,w=V.roadHalfWidth,E=V.roadEnd,road=target(),line=target(),side=target(),sideLine=target(),N=24;
+-  for(let k=0;k<N;k++){
+-    const a=-E+2*E*k/N,b=-E+2*E*(k+1)/N;
+-    quad(road,[-w,0,a],[w,0,a],[w,0,b],[-w,0,b]);
+-    for(const s of[-1,1])quad(line,[s*w,.012,a],[s*(w-.1),.012,a],[s*(w-.1),.012,b],[s*w,.012,b]);
+-    if(k>=N/2){quad(side,[a,0,-w],[a,0,w],[b,0,w],[b,0,-w]);for(const s of[-1,1])quad(sideLine,[a,.012,s*w],[a,.012,s*(w-.1)],[b,.012,s*(w-.1)],[b,.012,s*w]);}
+-  }
+-  const hub=target(),S=32;
+-  for(let s=0;s<S;s++){const a=s/S*TAU,b=(s+1)/S*TAU;tri(hub,atMap(0,0,.006),atMap(V.hub,a,.006),atMap(V.hub,b,.006));}
+-  const lib=sourceContinuationEscherGeometryLibrary(),rows=[];
+-  for(const[key,g]of Object.entries(lib)){
+-    if(!key.startsWith('escher-ii-')||key.startsWith('escher-ii-chart-'))continue;
+-    rows.push({name:'ha_stairs_'+key.slice('escher-ii-'.length),p:g.p,i:g.i,base:[.62,.47,.3,1],emissive:[.1,.075,.045],roughness:1});
+-  }
+-  return[
+-    {name:'ha_road',...road,base:[.03,.032,.045,1],roughness:1},
+-    {name:'ha_road_line',...line,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+-    {name:'ha_side',...side,base:[.03,.032,.045,1],roughness:1},
+-    {name:'ha_side_line',...sideLine,base:[.82,.86,.94,1],emissive:[.62,.66,.74],roughness:1},
+-    {name:'ha_hub',...hub,base:[.3,.23,.15,1],emissive:[.1,.075,.045],roughness:1},
+-    ...rows,
+-  ];
+-}
+-export const horizonStairsMeshes=()=>horizonApproachGeometry().filter(row=>row.name.startsWith('ha_stairs_')).map(row=>row.name);
+-
+ // One of the field's daisy petals on its own, the same shape as the ones
+ // `mf_hero_petal` is made of, so that a petal can be taken away by not drawing it.
+ // In the head's plane, pointing up from its disc.
+@@ -138,7 +80,7 @@ function daisyPetal(){
+ let library=null;
+ export function horizonApproachGeometry(){
+   if(library)return library;
+-  library=Object.freeze([...closedGround(),...circleLimitGround(),...relativityGround(),daisyPetal()]);
++  library=Object.freeze([...ground(),...moorPieces(),daisyPetal()]);
+   return library;
+ }
+ export const HORIZON_APPROACH_MESHES=Object.freeze(horizonApproachGeometry().map(row=>row.name));
+diff --git a/src/render/horizon-approach-renderer.js b/src/render/horizon-approach-renderer.js
+index 51f7cf7a..8c6b622b 100644
+--- a/src/render/horizon-approach-renderer.js
++++ b/src/render/horizon-approach-renderer.js
+@@ -9,17 +9,25 @@ import {installProceduralMeshes} from './procedural-mesh-install.js';
+ import {memoryFieldGeometry} from './memory-field-models.js';
+ import {finishSourceContinuationArchitecture,SOURCE_CONTINUATION_ARCHITECTURE} from './source-continuation-renderer.js';
+ import {horizonApproachGeometry,HORIZON_APPROACH_MESHES} from './horizon-approach-models.js';
++import {horizonDebrisMeshes} from '../data/horizon-approach.js';
++import {OPENING_CAB_ASSET} from '../data/opening-cab-objects.js';
++import {STOP_LISTENING_ASSET} from '../data/stop-listening.js';
+ import {horizonApproachRenderFrame,HORIZON_CHURCH_MESH,HORIZON_ANT_MESH,HORIZON_SLAB_MESHES,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY} from './horizon-approach-frame.js';
+ 
+-const FAR=320,CHURCH_PACK='assets/st-brendans-treatment.glb',FIGURE_PACK='assets/conservatory-props.glb';
++const FAR=320;
+ const FIGURES=Object.freeze(Object.values(HORIZON_FIGURES).map(f=>f.mesh)),MASONRY=Object.freeze(Object.values(HORIZON_MASONRY));
+-const FIELD=Object.freeze([HORIZON_ANT_MESH,...HORIZON_SLAB_MESHES,...HORIZON_DAISY_MESHES]);
++const OWN=new Set(HORIZON_APPROACH_MESHES),DEBRIS=Object.freeze(horizonDebrisMeshes().filter(m=>!OWN.has(m)));
++const FIELD_NAMES=new Set(memoryFieldGeometry().map(row=>row.name));
++const FIELD=Object.freeze([...new Set([HORIZON_ANT_MESH,...HORIZON_SLAB_MESHES,...HORIZON_DAISY_MESHES,...DEBRIS.filter(m=>FIELD_NAMES.has(m))])]);
+ const FIELD_ROWS=()=>memoryFieldGeometry().filter(row=>FIELD.includes(row.name));
++// Where everything comes from, in the order it is looked for. Packs already resident
++// from the rest of the night are not fetched again.
++const PACKS=Object.freeze(['assets/st-brendans-treatment.glb','assets/conservatory-props.glb',SOURCE_CONTINUATION_ARCHITECTURE.asset,OPENING_CAB_ASSET,'assets/source-vehicle-interior.glb','assets/street-pilot.glb',STOP_LISTENING_ASSET]);
+ 
+ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset=assetUrl,onRelease=()=>{}}={}){
+   let preparing=null,initialized=false,released=false,error=null,releaseRange=null,last=null,finish='bsod';
+   const rangeOwner=Symbol('horizon-approach');
+-  const required=[...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY];
++  const required=[...new Set([...HORIZON_APPROACH_MESHES,...FIELD,HORIZON_CHURCH_MESH,...FIGURES,...MASONRY,...DEBRIS])];
+   const catalog=()=>new Set(props.propMeshCatalog?.()||[]),resident=()=>{const c=catalog();return required.every(m=>c.has(m));};
+   function clearSource(){
+     for(const name of['r3dSetHorizon','r3dSetSourceShore','r3dSetSourceTowerView','r3dSetSourceCrossing','r3dSetSourceReflection'])renderer[name]?.(null);
+@@ -33,11 +41,11 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
+       if(await renderer.r3dBasePropsReady?.()===false)throw Error('The base model catalog is unavailable.');
+       if(released)return false;
+       if(props.installAuthoredPropMeshes?.((gl,pack)=>installProceduralMeshes(gl,pack,[...horizonApproachGeometry(),...FIELD_ROWS()]))===false)throw Error('The approach meshes have no context.');
+-      if(!catalog().has(HORIZON_CHURCH_MESH))await props.addPropPack(resolveAsset(CHURCH_PACK));
+-      if(released)return false;
+-      if(FIGURES.some(m=>!catalog().has(m)))await props.addPropPack(resolveAsset(FIGURE_PACK));
+-      if(released)return false;
+-      if(MASONRY.some(m=>!catalog().has(m)))await props.addPropPack(resolveAsset(SOURCE_CONTINUATION_ARCHITECTURE.asset));
++      for(const pack of PACKS){
++        if(required.every(m=>catalog().has(m)))break;
++        await props.addPropPack(resolveAsset(pack));
++        if(released)return false;
++      }
+       props.installAuthoredPropMeshes?.((gl,pack)=>finishSourceContinuationArchitecture(gl,pack,{maps:sourceBlueprintMaps(gl)}));
+       const missing=required.filter(m=>!catalog().has(m));
+       if(missing.length)throw Error('Approach meshes missing: '+missing.join(', '));
+@@ -60,9 +68,9 @@ export function createHorizonApproachRenderer({renderer=R3,props=P3,resolveAsset
+   }
+   const frameState=camera=>({px:camera.eye[0]/CELL-.5,py:camera.eye[2]/CELL-.5,floorH:camera.eye[1]-EYE,authoredCamera:camera,authoredPropRange:FAR,tileW:512,tileH:512,worldCount:0,
+     worldTints:Array.from({length:5},()=>[1,1,1]),chunks:[],key:null,door:null,hush:null,audio:0,light:0,plan:true,water:{active:false},sensoryProfile:'story',textSpace:true,sourceVoidPhysical:false});
+-  function render(state){
++  function render(state,presentation={}){
+     if(!initialized||released)return false;if(error)throw Error(error);
+-    last=horizonApproachRenderFrame(state);
++    last=horizonApproachRenderFrame(state,presentation);
+     props.setCurvedSpaceFrame?.(last.space);
+     renderer.r3dSetProps(last.props);renderer.r3dSetDynamicProps?.([]);renderer.r3dSetLocalLights(last.lights);
+     return renderer.r3dFrame(frameState(last.authoredCamera))!==false;
+diff --git a/src/render/source-continuation-escher.js b/src/render/source-continuation-escher.js
+index 83c56518..d4aaf5a3 100644
+--- a/src/render/source-continuation-escher.js
++++ b/src/render/source-continuation-escher.js
+@@ -82,7 +82,7 @@ export const SOURCE_ESCHER_LAYOUT=Object.freeze(Object.fromEntries(CHARTS.map(ch
+   if(!domains.length)return[chartId,null];
+   const decks=continuationSurfaces({chartId}).filter(s=>s.region==='wrong-return'&&s.kind==='rect'&&s.role!=='inherited-earthfall');
+   const shortest=Math.min(...domains.map(d=>d.translationY)),longest=Math.max(...domains.map(d=>d.translationY)),
+-    drift=C.walkSpeed*Math.sqrt(2*(longest+1)/C.gravity),fit=SOURCE_ESCHER.bandFill*shortest;
++    drift=C.bodySpeedLimit*Math.sqrt(2*(longest+1)/C.gravity),fit=SOURCE_ESCHER.bandFill*shortest;
+   const footprint=Object.freeze({minX:Math.min(...decks.map(s=>s.minX))-drift,maxX:Math.max(...decks.map(s=>s.maxX))+drift,
+     minZ:Math.min(...decks.map(s=>s.minZ))-drift,maxZ:Math.max(...decks.map(s=>s.maxZ))+drift});
+   const half=[(e.max[0]-e.min[0])/2,(e.max[2]-e.min[2])/2],tall=e.max[1]-e.min[1];
+diff --git a/test/horizon-approach.spec.mjs b/test/horizon-approach.spec.mjs
+index b07516be..b85d36c4 100644
+--- a/test/horizon-approach.spec.mjs
++++ b/test/horizon-approach.spec.mjs
+@@ -1,15 +1,15 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ import {readFileSync} from 'node:fs';
+-import {HORIZON_APPROACH as C,horizonApproachVariantIds,spaceIdentity,spaceMultiply,spaceTranslation,spaceInverse,spaceAtMap,spaceMapOf,spaceDistance,spaceEyeUniform,apparentAngle,
++import {HORIZON_APPROACH as C,HORIZON_DEBRIS_KINDS,horizonDebrisField,horizonDebrisMeshes,spaceIdentity,spaceMultiply,spaceTranslation,spaceInverse,spaceAtMap,spaceMapOf,spaceDistance,spaceEyeUniform,apparentAngle,
+   horizonOccupantConditions,horizonOccupantLeaning,chooseHorizonOccupant,horizonDaisyWord} from '../src/data/horizon-approach.js';
+ import {freshHorizonApproach,stepHorizonApproach,horizonApproachDistance,horizonApproachOnGround,horizonApproachNear,horizonApproachMap,pluckHorizonApproachPetal,HORIZON_APPROACH_EVENT as E,HORIZON_TOWER_BEARING} from '../src/game/horizon-approach-scene.js';
+-import {horizonApproachGeometry,HORIZON_APPROACH_MESHES,circleLimitTiles} from '../src/render/horizon-approach-models.js';
+-import {horizonApproachRenderFrame,horizonApproachObjectProps,HORIZON_ANT_MESH,HORIZON_CHURCH_MESH,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY,HORIZON_SLAB_MESHES} from '../src/render/horizon-approach-frame.js';
++import {horizonApproachGeometry,HORIZON_APPROACH_MESHES} from '../src/render/horizon-approach-models.js';
++import {horizonApproachRenderFrame,horizonApproachObjectProps,horizonDebrisProps,HORIZON_ANT_MESH,HORIZON_CHURCH_MESH,HORIZON_DAISY_MESHES,HORIZON_FIGURES,HORIZON_MASONRY,HORIZON_SLAB_MESHES} from '../src/render/horizon-approach-frame.js';
+ import {CURVED_SPACE_GLSL,CURVED_SPACE_OFF,curvedSpaceUniforms} from '../src/render/curved-space.js';
+ 
+ const close=(a,b,e=1e-6)=>Math.abs(a-b)<=e;
+-const TAU=Math.PI*2;
++const TAU=Math.PI*2,V=C.space;
+ const apply=(m,v)=>[0,1,2,3].map(r=>m[r*4]*v[0]+m[r*4+1]*v[1]+m[r*4+2]*v[2]+m[r*4+3]*v[3]);
+ const sameMatrix=(a,b,e=1e-9)=>a.every((v,k)=>close(v,b[k],e));
+ function walk(state,seconds,input={forward:1},dt=1/30){
+@@ -17,41 +17,39 @@ function walk(state,seconds,input={forward:1},dt=1/30){
+   for(let t=0;t<seconds;t+=dt){const r=stepHorizonApproach(state,{dt,...input});state=r.state;events.push(...r.events);}
+   return{state,events};
+ }
+-// The vertex shader's own sums, on the CPU, so the two can be held to each other.
+-function curvedPoint(sign,R,eyeMatrix,w,base=[0,0,0]){
+-  const local=w.map((v,k)=>v-base[k]),lr=Math.hypot(...local),la=lr/R,br=Math.hypot(...base),ba=br/R;
++// The vertex shader's own sums, on the CPU, so the two can be checked against each other.
++function curvedPoint(eyeMatrix,w,base=[0,0,0]){
++  const R=V.radius,local=w.map((v,k)=>v-base[k]),lr=Math.hypot(...local),la=lr/R,br=Math.hypot(...base),ba=br/R;
+   const ln=lr>1e-5?local.map(v=>v/lr):[0,0,0],bn=br>1e-5?base.map(v=>v/br):[0,0,1];
+-  const lc=sign>0?Math.cos(la):Math.cosh(la),ls=sign>0?Math.sin(la):Math.sinh(la),bc=sign>0?Math.cos(ba):Math.cosh(ba),bs=sign>0?Math.sin(ba):Math.sinh(ba);
+-  const p=ln.map(v=>v*ls),along=p[0]*bn[0]+p[1]*bn[1]+p[2]*bn[2],next=along*bc+lc*bs,nextW=sign>0?lc*bc-along*bs:lc*bc+along*bs;
++  const lc=Math.cos(la),ls=Math.sin(la),bc=Math.cos(ba),bs=Math.sin(ba);
++  const p=ln.map(v=>v*ls),along=p[0]*bn[0]+p[1]*bn[1]+p[2]*bn[2],next=along*bc+lc*bs,nextW=lc*bc-along*bs;
+   const q=[p[0]+bn[0]*(next-along),p[1]+bn[1]*(next-along),p[2]+bn[2]*(next-along),nextW];
+   const v=[0,1,2,3].map(r=>eyeMatrix[r]*q[0]+eyeMatrix[4+r]*q[1]+eyeMatrix[8+r]*q[2]+eyeMatrix[12+r]*q[3]);
+-  const l=Math.hypot(v[0],v[1],v[2]),chi=sign>0?Math.atan2(l,v[3]):Math.asinh(l);
++  const l=Math.hypot(v[0],v[1],v[2]),chi=Math.atan2(l,v[3]);
+   return v.slice(0,3).map(c=>l>1e-6?c/l*chi*R:0);
+ }
+ 
+ test('a move in the space is a true move: it keeps the space, and undoes',()=>{
+-  for(const sign of[1,-1]){
+-    const R=7,T=spaceTranslation(sign,R,[.6,0,.8],5),I=spaceMultiply(T,spaceInverse(sign,T)),id=spaceIdentity();
+-    assert.ok(sameMatrix(I,id,1e-9),`${sign}: inverse`);
+-    const q=apply(T,[0,0,0,1]);
+-    assert.ok(close(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+(sign>0?1:-1)*q[3]*q[3],sign,1e-9),'stays on the space');
+-    assert.ok(close(spaceDistance(sign,R,T,id),5,1e-9),'and goes as far as it was told');
+-    const m=spaceMapOf(sign,R,spaceAtMap(sign,R,5,1.1));
+-    assert.ok(close(m.r,5,1e-9)&&close(m.phi,1.1,1e-9),'the map reads it back');
+-  }
++  const T=spaceTranslation([.6,0,.8],5),id=spaceIdentity();
++  assert.ok(sameMatrix(spaceMultiply(T,spaceInverse(T)),id,1e-9),'inverse');
++  const q=apply(T,[0,0,0,1]);
++  assert.ok(close(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3],1,1e-9),'stays on the space');
++  assert.ok(close(spaceDistance(T,id),5,1e-9),'and goes as far as it was told');
++  const m=spaceMapOf(spaceAtMap(5,1.1));
++  assert.ok(close(m.r,5,1e-9)&&close(m.phi,1.1,1e-9),'the map reads it back');
+ });
+ test('the shader and the sums agree: from a frame, a point is where the space says it is',()=>{
+-  for(const sign of[1,-1]){
+-    const R=sign>0?26:3,frame=spaceAtMap(sign,R,sign>0?20:4,.7),eye=spaceEyeUniform(sign,R,frame,0);
+-    // Standing on it, the point under him is at his feet.
+-    const under=curvedPoint(sign,R,eye,[20*0+spaceMapOf(sign,R,frame).x,0,spaceMapOf(sign,R,frame).z]);
+-    assert.ok(Math.hypot(...under)<1e-5,`${sign}: ${under}`);
+-    // The object at the origin is as far away as the space says, whichever way it lies.
+-    const toObject=curvedPoint(sign,R,eye,[0,0,0]);
+-    assert.ok(close(Math.hypot(...toObject),spaceDistance(sign,R,frame,spaceIdentity()),1e-3),`${sign}: distance`);
+-    // And it lies straight back along the way he came.
+-    assert.ok(close(toObject[0]/Math.hypot(...toObject),-Math.sin(.7),1e-3)&&close(toObject[2]/Math.hypot(...toObject),-Math.cos(.7),1e-3),'bearing');
+-  }
++  const frame=spaceAtMap(20,.7),eye=spaceEyeUniform(frame,0),at=spaceMapOf(frame);
++  const under=curvedPoint(eye,[at.x,0,at.z]);
++  assert.ok(Math.hypot(...under)<1e-5,`under him: ${under}`);
++  const toObject=curvedPoint(eye,[0,0,0]);
++  assert.ok(close(Math.hypot(...toObject),spaceDistance(frame,spaceIdentity()),1e-3),'distance');
++  assert.ok(close(toObject[0]/Math.hypot(...toObject),-Math.sin(.7),1e-3)&&close(toObject[2]/Math.hypot(...toObject),-Math.cos(.7),1e-3),'it lies straight back along the way he came');
++  // A piece of debris is rigid where it is put: its own metres are metres.
++  const base=[9,14,-6],a=curvedPoint(eye,[9,14,-6],base),b=curvedPoint(eye,[9.5,14,-6],base),near=spaceEyeUniform(spaceAtMap(1,0),0);
++  assert.ok(Math.hypot(...a)>0&&Math.hypot(...b)>0);
++  const c=curvedPoint(near,[.5,1,0],[.5,1,0]),d=curvedPoint(near,[.8,1,0],[.5,1,0]);
++  assert.ok(close(Math.hypot(c[0]-d[0],c[1]-d[1],c[2]-d[2]),.3,.01),'close to, a third of a metre is a third of a metre');
+   assert.match(CURVED_SPACE_GLSL,/if\(sign_==0\.0\)return w;/,'off, it is exactly the plain world');
+   assert.deepEqual(curvedSpaceUniforms(CURVED_SPACE_OFF).space.slice(0,1),[0]);
+   const props=readFileSync(new URL('../src/render/props3d.js',import.meta.url),'utf8');
+@@ -59,76 +57,85 @@ test('the shader and the sums agree: from a frame, a point is where the space sa
+   assert.match(props,/natatoriumMetric\.k\|\|curvedSpace\.sign/,'and old frustum planes are not trusted while it is on');
+ });
+ test('the body can test it: walking away from something makes it bigger',()=>{
+-  const V=C.variants.closed,R=V.radius,near=apparentAngle(1,R,1.7,V.radius*Math.PI/2),far=apparentAngle(1,R,1.7,V.startMetres);
++  const R=V.radius,near=apparentAngle(1.7,R*Math.PI/2),far=apparentAngle(1.7,V.startMetres);
+   assert.ok(far>near*2,`past halfway it grows: ${far} against ${near}`);
+-  const at5=apparentAngle(1,R,1.7,5);assert.ok(close(at5,Math.atan2(1.7,5),.02),'close to, it is the size things are');
+-  const sizes=[10,25,40,55,70,78].map(d=>apparentAngle(1,R,1.7,d));
++  assert.ok(close(apparentAngle(1.7,5),Math.atan2(1.7,5),.02),'close to, it is the size things are');
++  const sizes=[10,25,40,55,70,78].map(d=>apparentAngle(1.7,d));
+   assert.ok(sizes[0]>sizes[1]&&sizes[1]>sizes[2],'shrinks as he goes out');
+   assert.ok(sizes[3]>sizes[2]&&sizes[4]>sizes[3]&&sizes[5]>sizes[4],'and past halfway grows the further he goes');
+-  const L=C.variants['circle-limit'],flat=Math.atan2(1.7,10);
+-  assert.ok(apparentAngle(-1,L.radius,1.7,10)<flat/3,'the other way, it falls away faster than it should');
+ });
+-test('every road in the closed space goes to the object',()=>{
+-  const V=C.variants.closed;
++test('every road goes to the object',()=>{
+   assert.equal(V.roads%2,1,'an odd number: none runs through his own antipode, or it would fill the sky');
+   for(let k=0;k<V.roads;k++){
+-    const phi=k/V.roads*TAU;
+-    let s={...freshHorizonApproach({variant:'closed',phi})};
+-    const{state,events}=walk(s,V.startMetres/C.walk+3);
++    const{state,events}=walk(freshHorizonApproach({phi:k/V.roads*TAU}),V.startMetres/C.walk+3);
+     assert.equal(events.filter(e=>e.type===E.ARRIVED).length,1,`road ${k}`);
+     assert.ok(state.arrived,`road ${k} arrives`);
+   }
+ });
+ test('turned right round at the start, the only thing behind him is the place the roads all leave',()=>{
+-  const V=C.variants.closed;
+-  let s=freshHorizonApproach({variant:'closed'});s={...s,yaw:s.yaw+Math.PI};
++  let s=freshHorizonApproach();s={...s,yaw:s.yaw+Math.PI};
+   const{state}=walk(s,(Math.PI*V.radius-V.startMetres)/C.walk);
+-  const r=horizonApproachMap(state).r;
+-  assert.ok(r>Math.PI*V.radius-V.hub,`he has reached it: ${r}`);
++  assert.ok(horizonApproachMap(state).r>Math.PI*V.radius-V.hub,'he has reached it');
+   assert.equal(state.arrived,false,'and it is not where he was going');
+-  assert.ok(apparentAngle(1,V.radius,1.7,horizonApproachDistance(state))>apparentAngle(1,V.radius,1.7,V.startMetres),'and walking away, the object has grown');
+-});
+-test('he stays on the roads; the circle limit has an end he never reaches',()=>{
+-  const V=C.variants.closed,r=V.radius*Math.PI/2,off=(V.roadHalfWidth+1)/V.radius;
+-  assert.equal(horizonApproachOnGround('closed',spaceAtMap(1,V.radius,r,0)),true,'on a road');
+-  assert.equal(horizonApproachOnGround('closed',spaceAtMap(1,V.radius,r,off)),false,'off it');
+-  assert.equal(horizonApproachOnGround('closed',spaceAtMap(1,V.radius,1,1.3)),true,'at the place they meet');
+-  const{state}=walk({...freshHorizonApproach({variant:'closed'}),yaw:.7},6);
+-  assert.ok(horizonApproachOnGround('closed',state.frame),'he cannot walk off it');
+-  const L=C.variants['circle-limit'];
+-  assert.equal(horizonApproachOnGround('circle-limit',spaceAtMap(-1,L.radius,L.tileRings*L.radius+1,0)),false);
+-  assert.equal(horizonApproachOnGround('circle-limit',spaceAtMap(-1,L.radius,L.startMetres,2.2)),true);
+-  assert.ok(L.startMetres<L.tileRings*L.radius-1,'he starts on the tiles');
+-  const R=C.variants.relativity;
+-  assert.equal(horizonApproachOnGround('relativity',spaceAtMap(1,R.radius,20,0)),true,'on the road');
+-  assert.equal(horizonApproachOnGround('relativity',spaceAtMap(1,R.radius,20,.4)),false,'off the road');
+-});
+-test('the tiles are a real tiling: four to a corner, two colours, every neighbour the other colour',()=>{
+-  const tiles=circleLimitTiles(3);
+-  assert.ok(tiles.length>20);
+-  assert.equal(tiles[0].colour,0);
+-  const dist=(a,b)=>Math.acosh(Math.max(1,a.m[8]*b.m[8]-a.m[2]*b.m[2]-a.m[5]*b.m[5]));
+-  const across=2*Math.acosh(Math.cos(Math.PI/4)/Math.sin(Math.PI/5));
+-  let pairs=0;for(let i=0;i<tiles.length;i++)for(let j=i+1;j<tiles.length;j++)if(close(dist(tiles[i],tiles[j]),across,1e-6)){pairs++;assert.notEqual(tiles[i].colour,tiles[j].colour,`${i},${j}`);}
+-  assert.ok(pairs>=tiles.length-1,`${pairs} neighbours`);
+-});
+-function arrive(variant='closed',extra={}){
+-  const s=freshHorizonApproach({variant,...extra});
+-  const V=C.variants[variant];
+-  return{...s,frame:spaceAtMap(V.sign,V.radius,C.station.reach-.6,0),yaw:0};
++  assert.ok(apparentAngle(1.7,horizonApproachDistance(state))>apparentAngle(1.7,V.startMetres),'and walking away, the object has grown');
++});
++test('he stays on the roads',()=>{
++  const r=V.radius*Math.PI/2,off=(V.roadHalfWidth+1)/V.radius;
++  assert.equal(horizonApproachOnGround(spaceAtMap(r,0)),true,'on a road');
++  assert.equal(horizonApproachOnGround(spaceAtMap(r,off)),false,'off it');
++  assert.equal(horizonApproachOnGround(spaceAtMap(1,1.3)),true,'at the place they meet');
++  const{state}=walk({...freshHorizonApproach(),yaw:.7},6);
++  assert.ok(horizonApproachOnGround(state.frame),'he cannot walk off it');
++});
++test('the sky is full of the game\'s own things, and it is the same sky every time',()=>{
++  const field=horizonDebrisField();
++  assert.equal(field.length,C.debris.count);
++  assert.strictEqual(horizonDebrisField(),field,'one field');
++  const kinds=new Set(field.map(d=>d.kind));
++  for(const id of['flashlight','steering-wheel','tyre','car','van-door','hubcap','daisy','score','loose-pages','moor-0'])assert.ok(kinds.has(id),`${id} is up there`);
++  // Above the ground and below it, and clear of a walking head everywhere.
++  assert.ok(field.some(d=>d.base[1]>0)&&field.some(d=>d.base[1]<0));
++  for(const d of field){
++    const k=HORIZON_DEBRIS_KINDS.find(k=>k.id===d.kind),l=Math.hypot(...d.base),h=l>0?Math.abs(Math.sin(l/V.radius)*d.base[1]/l)*V.radius:0;
++    assert.ok(Math.asin(Math.min(1,h/V.radius))*V.radius>=C.debris.clearance+(k.clear||0)-1e-6,`${d.id}:${d.kind}`);
++    assert.ok(l<Math.PI*V.radius,'inside the space');
++    assert.ok(Math.asin(Math.abs(Math.sin(l/V.radius)*d.base[0]/l))*V.radius>=C.debris.sightline-1e-6,`${d.id}: clear of the road he starts on`);
++    assert.ok(close(Math.hypot(...d.axis),1));
++  }
++  // It turns, slowly, and not for anyone who has asked for less motion.
++  const at=(t,o)=>horizonDebrisProps(t,o)[0].matrix;
++  assert.ok(!sameMatrix(at(0),at(3),1e-6),'it turns');
++  assert.ok(sameMatrix(at(0,{reducedMotion:true}),at(3,{reducedMotion:true}),1e-6),'and can be asked not to');
++  for(const d of field){const[lo,hi]=C.debris.rate;assert.ok(Math.abs(d.rate)>=lo&&Math.abs(d.rate)<=hi);}
++  // Only the moor is made here, from the drive's own land.
++  const made=new Set(HORIZON_APPROACH_MESHES);
++  for(const mesh of horizonDebrisMeshes())if(made.has(mesh))assert.match(mesh,/^ha_moor/,mesh);
++  assert.match(readFileSync(new URL('../src/render/horizon-approach-models.js',import.meta.url),'utf8'),/m62HeightAt/,'the moor is the M62');
++  const frame=horizonApproachRenderFrame(freshHorizonApproach({occupant:'sarah'}));
++  assert.ok(frame.props.filter(p=>p.id.startsWith('ha:debris:')).length>=C.debris.count,'and it is all drawn');
++});
++function arrive(extra={}){
++  return{...freshHorizonApproach(extra),frame:spaceAtMap(C.station.reach-.6,0),yaw:0};
+ }
++test('he walks up to it, not through it',()=>{
++  // Straight at it, for long enough to have gone through: he slides round it instead.
++  let s=arrive({occupant:'sarah'}),nearest=Infinity;
++  for(let t=0;t<4;t+=1/30){s=stepHorizonApproach(s,{dt:1/30,forward:1}).state;nearest=Math.min(nearest,horizonApproachDistance(s));}
++  assert.ok(nearest>=C.station.standOff-1e-6,`${nearest}`);
++  assert.ok(nearest<C.station.standOff+.2,`and he does get right up to it: ${nearest}`);
++});
+ test('walking up to it gives the truth; only a met condition opens the offer',()=>{
+   for(const occupant of['sarah','lyle','ant']){
+-    const met=stepHorizonApproach(arrive('closed',{occupant,condition:true}),{dt:.05}),unmet=stepHorizonApproach(arrive('closed',{occupant,condition:false}),{dt:.05});
++    const met=stepHorizonApproach(arrive({occupant,condition:true}),{dt:.05}),unmet=stepHorizonApproach(arrive({occupant,condition:false}),{dt:.05});
+     assert.deepEqual(met.events.map(e=>e.type),[E.ARRIVED,E.OPENED],occupant);assert.equal(met.state.offerOpen,true);
+     assert.deepEqual(unmet.events.map(e=>e.type),[E.ARRIVED],occupant+': the truth, with no offer');assert.equal(unmet.state.offerOpen,false);
+   }
+-  const lyle=stepHorizonApproach(arrive('closed',{occupant:'lyle',condition:true,lyleBox:'broken'}),{dt:.05});
++  const lyle=stepHorizonApproach(arrive({occupant:'lyle',condition:true,lyleBox:'broken'}),{dt:.05});
+   assert.equal(lyle.events[0].lyleBox,'broken','Lyle knows which box');
+-  assert.deepEqual(stepHorizonApproach(arrive('closed',{occupant:'daisy'}),{dt:.05}).events.map(e=>e.type),[E.ARRIVED]);
++  assert.deepEqual(stepHorizonApproach(arrive({occupant:'daisy'}),{dt:.05}).events.map(e=>e.type),[E.ARRIVED]);
+ });
+ test('standing still decides nothing, ever',()=>{
+-  let s=arrive('closed',{occupant:'sarah',condition:true});const events=[];
++  let s=arrive({occupant:'sarah',condition:true});const events=[];
+   for(let k=0;k<20000;k++){const r=stepHorizonApproach(s,{dt:.1});s=r.state;events.push(...r.events);}
+   assert.equal(s.decided,null);
+   assert.equal(events.filter(e=>e.type===E.ACCEPTED||e.type===E.DECLINED).length,0);
+@@ -136,35 +143,32 @@ test('standing still decides nothing, ever',()=>{
+ });
+ // Out from the object on the given bearing, from the middle of it.
+ function goingOut(state,phi){
+-  const V=C.variants[state.variant];
+-  return{...state,arrived:true,frame:spaceAtMap(V.sign,V.radius,1,phi),yaw:Math.PI-phi};
++  return{...state,arrived:true,frame:spaceAtMap(1,phi),yaw:Math.PI-phi};
+ }
+ test('walking on declines, and it is the chapel; past it on St Brendan\'s bearing accepts, only if offered',()=>{
+-  for(const variant of horizonApproachVariantIds){
+-    const V=C.variants[variant],road=variant==='closed'?Math.round(HORIZON_TOWER_BEARING/(TAU/V.roads))*(TAU/V.roads):HORIZON_TOWER_BEARING;
+-    // Not offered: any way out is the chapel, even that one.
+-    let{state,events}=walk(goingOut(freshHorizonApproach({variant,occupant:'sarah'}),road),5);
+-    assert.equal(state.decided,'declined',variant);assert.equal(events.filter(e=>e.type===E.DECLINED)[0]?.exit,'chapel');
+-    // Offered: that way is the tower.
+-    ({state,events}=walk(goingOut({...freshHorizonApproach({variant,occupant:'sarah',condition:true}),offerOpen:true},road),5));
+-    assert.equal(state.decided,'accepted',variant);assert.equal(events.filter(e=>e.type===E.ACCEPTED)[0]?.exit,'tower');
+-    assert.equal(events.filter(e=>e.type===E.DECLINED).length,0);
+-    // Offered, the other way out is still the chapel.
+-    ({state}=walk(goingOut({...freshHorizonApproach({variant,occupant:'sarah',condition:true}),offerOpen:true},variant==='closed'?road+TAU/V.roads*2:Math.PI),5));
+-    assert.equal(state.decided,'declined',variant);
+-    const after=stepHorizonApproach(state,{dt:.05,forward:1}).state;assert.ok(sameMatrix(after.frame,state.frame),'and then nothing moves here');
+-  }
++  const spacing=TAU/V.roads,road=Math.round(HORIZON_TOWER_BEARING/spacing)*spacing;
++  // Not offered: any way out is the chapel, even that one.
++  let{state,events}=walk(goingOut(freshHorizonApproach({occupant:'sarah'}),road),5);
++  assert.equal(state.decided,'declined');assert.equal(events.filter(e=>e.type===E.DECLINED)[0]?.exit,'chapel');
++  // Offered: that way is the tower.
++  ({state,events}=walk(goingOut({...freshHorizonApproach({occupant:'sarah',condition:true}),offerOpen:true},road),5));
++  assert.equal(state.decided,'accepted');assert.equal(events.filter(e=>e.type===E.ACCEPTED)[0]?.exit,'tower');
++  assert.equal(events.filter(e=>e.type===E.DECLINED).length,0);
++  // Offered, the other way out is still the chapel.
++  ({state}=walk(goingOut({...freshHorizonApproach({occupant:'sarah',condition:true}),offerOpen:true},road+spacing*2),5));
++  assert.equal(state.decided,'declined');
++  const after=stepHorizonApproach(state,{dt:.05,forward:1}).state;assert.ok(sameMatrix(after.frame,state.frame),'and then nothing moves here');
+   // Walking out before he has been there at all commits nothing.
+-  const{state}=walk(freshHorizonApproach({variant:'circle-limit'}),.5);assert.equal(state.decided,null);
++  assert.equal(walk(freshHorizonApproach(),.5).state.decided,null);
+ });
+ test('the daisy: an odd number of petals, one at a time, at the object, and the last says loves me',()=>{
+   assert.equal(C.daisy.petals%2,1);assert.equal(horizonDaisyWord(C.daisy.petals),'loves me');assert.equal(horizonDaisyWord(C.daisy.petals-1),'loves me not');
+   const away=freshHorizonApproach({occupant:'daisy'});assert.equal(horizonApproachNear(away),false);assert.equal(pluckHorizonApproachPetal(away),null,'not from the far side of the space');
+-  let s=arrive('closed',{occupant:'daisy'}),opened=0;
++  let s=arrive({occupant:'daisy'}),opened=0;
+   for(let k=0;k<C.daisy.petals+3;k++){const r=pluckHorizonApproachPetal(s);if(!r)continue;s=r.state;opened+=r.events.filter(e=>e.type===E.OPENED).length;
+     if(k<C.daisy.petals-1)assert.equal(s.offerOpen,false,'not until the last');}
+   assert.equal(s.petalsPlucked,C.daisy.petals);assert.equal(s.offerOpen,true);assert.equal(opened,1);
+-  assert.equal(pluckHorizonApproachPetal(arrive('closed',{occupant:'lyle'})),null,'only the daisy has petals');
++  assert.equal(pluckHorizonApproachPetal(arrive({occupant:'lyle'})),null,'only the daisy has petals');
+   const petals=n=>horizonApproachObjectProps({occupant:'daisy',petalsPlucked:n}).filter(p=>p.mesh==='ha_daisy_petal').length;
+   assert.equal(petals(0),C.daisy.petals);assert.equal(petals(5),C.daisy.petals-5);assert.equal(petals(C.daisy.petals),0);
+ });
+@@ -178,15 +182,11 @@ test('everything that stands there is the game\'s own',()=>{
+   assert.ok(ant.includes(HORIZON_ANT_MESH));for(const m of HORIZON_SLAB_MESHES)assert.ok(ant.includes(m));
+   const daisy=horizonApproachObjectProps({occupant:'daisy'}).map(p=>p.mesh);
+   for(const m of HORIZON_DAISY_MESHES)assert.ok(daisy.includes(m));
+-  const made=new Set(HORIZON_APPROACH_MESHES);
+-  for(const variant of horizonApproachVariantIds){
+-    const frame=horizonApproachRenderFrame(freshHorizonApproach({variant,occupant:'sarah'}));
+-    const meshes=new Set(frame.props.map(p=>p.mesh));
+-    assert.ok(meshes.has(HORIZON_CHURCH_MESH),variant+': St Brendan\'s');
+-    assert.ok(meshes.has(HORIZON_MASONRY.buttress),variant+': the chapel');
+-    // Only ground is procedural. Anything standing up is from a pack.
+-    for(const m of meshes)if(made.has(m))assert.match(m,/^ha_(closed_|tile_|road|hub|side|stairs_)/,m);
+-  }
++  const made=new Set(HORIZON_APPROACH_MESHES),meshes=new Set(horizonApproachRenderFrame(freshHorizonApproach({occupant:'sarah'})).props.map(p=>p.mesh));
++  assert.ok(meshes.has(HORIZON_CHURCH_MESH),'St Brendan\'s');
++  assert.ok(meshes.has(HORIZON_MASONRY.buttress),'the chapel');
++  // Only the ground and the moor are made here. Anything else is from a pack.
++  for(const m of meshes)if(made.has(m))assert.match(m,/^ha_(road|hub|moor)/,m);
+ });
+ test('option C: the night leans first, and if it cannot be met someone who can comes instead',()=>{
+   assert.deepEqual(horizonOccupantConditions({}),{sarah:false,lyle:false,daisy:true,ant:false});
+diff --git a/test/m62-land.spec.mjs b/test/m62-land.spec.mjs
+index f3c99894..2e69aa81 100644
+--- a/test/m62-land.spec.mjs
++++ b/test/m62-land.spec.mjs
+@@ -29,7 +29,7 @@ test('it is Pennine country: a valley, a stepped climb to flat tops, and a long
+   let top=-Infinity,under=0,cells=0;for(let i=0;i<field.size**2;i++){const y=field.data[i*4];top=Math.max(top,y);cells++;if(y>L.maxHeight)under++;}
+   assert.equal(under,0,'the shader stops marching at maxHeight, so nothing may stand above it');assert.ok(top>300,'and it does reach the tops');
+   // Along the skyline six kilometres out, the ground changes slowly: no peaks.
+-  for(let a=-1;a<1;a+=.1){const here=m62HeightAt(Math.sin(a)*6000,-Math.cos(a)*6000),next=m62HeightAt(Math.sin(a+.1)*6000,-Math.cos(a+.1)*6000);assert.ok(Math.abs(next-here)<135,`${next-here} over 600 m at ${a}`);}
++  for(let a=-1;a<1;a+=.1){const here=m62HeightAt(Math.sin(a)*6000,-Math.cos(a)*6000),next=m62HeightAt(Math.sin(a+.1)*6000,-Math.cos(a+.1)*6000);assert.ok(Math.abs(next-here)<170,`${next-here} over 600 m at ${a}`);}
+ });
+ 
+ test('the ground reads as it should: pasture low, peat high, water level and pale',()=>{
+@@ -110,6 +110,6 @@ test('it lives only in the drive\'s own pass: nothing outside a drive changes',(
+   assert.equal(/uniform (sampler2D|vec4|vec3) uDriveLand/.test(rest),false,'not declared in any other shader');
+   assert.equal(rest.includes('driveLandShade'),false,'nor drawn there');
+   assert.match(r3d,/const driveLand=drive&&driveLandField\?drive\.land:null;/,'only with a drive frame');
+-  assert.match(renderer,/m62Land/);assert.match(renderer,/r3dSetDriveLandField\?\.\(await buildM62LandField/,'baked before the first frame, in small slices');
++  assert.match(renderer,/m62Land/);assert.match(renderer,/await buildM62LandField\(\{pause:/,'baked before the first frame, in small slices');assert.match(renderer,/clearSource\(\);R3\.r3dSetDriveLandField\?\.\(m62LandField\(\)\);/,'and handed over only by the owner of the frame');
+   assert.match(renderer,/m62FarLights\(\{eye:scene\.eye/);
+ });
+diff --git a/test/natatorium-metric.spec.mjs b/test/natatorium-metric.spec.mjs
+index f23b2cd3..26d665ca 100644
+--- a/test/natatorium-metric.spec.mjs
++++ b/test/natatorium-metric.spec.mjs
+@@ -63,5 +63,5 @@ test('production architecture, secondary water rays, props, text, depth and acqu
+   assert.match(p,/fa=effectivePropFar\(\)/);assert.match(p,/far:effectivePropFar\(\)/);
+   assert.match(a,/natatoriumMetricRayPoint\(uCam\*uCellMeters,rd,gridDistance\*uCellMeters\)/);
+   assert.match(r,/!pixelMeshSettings\.reduceMotion&&!state\.authoredCamera/);
+-  assert.match(p,/const groups=natatoriumMetric\.k\s*\?visibleGroups\(eye,maxDistance,\{lodEye:eye,reflection,frustum:null/,'authored bounds cannot silently cull deformed props');
++  assert.match(p,/const groups=natatoriumMetric\.k\|\|curvedSpace\.sign\s*\?visibleGroups\(eye,maxDistance,\{lodEye:eye,reflection,frustum:null/,'authored bounds cannot silently cull props deformed by either metric');
+ });
+diff --git a/test/opening-vehicle.spec.mjs b/test/opening-vehicle.spec.mjs
+index c2985d58..5f127c6c 100644
+--- a/test/opening-vehicle.spec.mjs
++++ b/test/opening-vehicle.spec.mjs
+@@ -69,7 +69,7 @@ test('production vehicle is a self-contained promoted Source asset with real ope
+   assert.equal(createHash('sha256').update(bytes).digest('hex'), receipt.sha256);
+   const doc = await new NodeIO().readBinary(bytes), root = doc.getRoot();
+   // The radio's moving parts come from its own pack, which replaced the old unit and its needle.
+-  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh).filter(mesh => !/^opening_drive_radio_(?:readout|knob|key_\d)$/.test(mesh)));
++  const used = new Set(openingVehicleInstances(anchor).map(p => p.mesh).filter(mesh => !/^opening_drive_(?:radio_(?:readout|knob|key_\d)|cabin_dash)$/.test(mesh)));
+   used.add('opening_drive_radio_needle');
+   assert.deepEqual(new Set(root.listMeshes().map(m => m.getName())), used);
+   assert.ok(receipt.doorTriangles >= 500);
+diff --git a/test/outskirts-last-light.spec.mjs b/test/outskirts-last-light.spec.mjs
+index 316b041f..9c709c07 100644
+--- a/test/outskirts-last-light.spec.mjs
++++ b/test/outskirts-last-light.spec.mjs
+@@ -11,7 +11,7 @@ const lines=JSON.parse(readFileSync(new URL('../content/narrative/source-space.l
+ const flush=()=>new Promise(resolve=>setImmediate(resolve));
+ 
+ function harness({elapsed=0,started=false,heard=false,playbackDone=false,buffer={duration:90},fetcher=null}={}){
+-  const sources=[],nodes=[],captions=[],saved=[],positions=[],requestedUrls=[],flags=new Set(heard?['outskirts.lastLight.heard']:[]),timers=new Map();
++  const cues=[],sources=[],nodes=[],captions=[],saved=[],positions=[],requestedUrls=[],flags=new Set(heard?['outskirts.lastLight.heard']:[]),timers=new Map();
+   let playback={started,elapsed,done:playbackDone},fetches=0;
+   const node=()=>{const n={disconnected:false,connect(){},disconnect(){this.disconnected=true;}};nodes.push(n);return n;};
+   const ctx={currentTime:2,decodeAudioData:async()=>buffer,createBufferSource(){const s=node();s.starts=[];s.stops=0;s.start=(...args)=>s.starts.push(args);s.stop=()=>s.stops++;sources.push(s);return s;},
+@@ -20,13 +20,13 @@ function harness({elapsed=0,started=false,heard=false,playbackDone=false,buffer=
+   const sandbox={actx:ctx,sfxGain:{},master:{},paused:false,chunkSurfRuntime:runtime,performance:{now:()=>ctx.currentTime*1000},ensureCtx(){},
+     runtimeTree:()=>({recording:{lines}}),assetUrl:path=>path,
+     fetch:async(...args)=>{fetches++;requestedUrls.push(String(args[0]));return fetcher?fetcher(...args):{ok:!!buffer,arrayBuffer:async()=>new ArrayBuffer(1)};},
+-    CUES:{CUE:{door:'door',light:'light'},playCue(){}},STORY:{startTapeHiss(){},stopTapeHiss(){}},
++    CUES:{CUE:{door:'door',light:'light',recorder:'recorder'},playCue(name,options){cues.push({name,options});}},STORY:{startTapeHiss(){},stopTapeHiss(){}},
+     SPEECH:{say(line,options){const caption={line,options,cancelled:false,cancel(){this.cancelled=true;}};captions.push(caption);return caption;}},
+     flagTest:key=>flags.has(key),flagApply:keys=>keys.forEach(key=>flags.add(key)),getSave:()=>({flags:Object.fromEntries([...flags].map(key=>[key,true]))}),saveCommit:value=>saved.push(value),
+     setTimeout(fn){const id=timers.size+1;timers.set(id,fn);return id;},clearTimeout:id=>timers.delete(id),
+     R3:{r3dFacing:()=>0},px:87,py:-2049,trail:[{x:87,y:-2048}],renderMove:{fromY:-2048},motionRig:{phase:.6},syncSourceRender(){}};
+   vm.createContext(sandbox);vm.runInContext(main.slice(begin,end)+'\nglobalThis.api={syncLastLight,pauseOutskirtsLastLight,resetOutskirtsLastLight,lastLight};',sandbox);
+-  return {sandbox,api:sandbox.api,ctx,runtime,sources,nodes,captions,saved,positions,requestedUrls,flags,timers,get playback(){return playback;},get fetches(){return fetches;}};
++  return {cues,sandbox,api:sandbox.api,ctx,runtime,sources,nodes,captions,saved,positions,requestedUrls,flags,timers,get playback(){return playback;},get fetches(){return fetches;}};
+ }
+ 
+ test('a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory',async()=>{
+@@ -155,3 +155,44 @@ test('the performer source preserves all 21 spoken cues and nine directions verb
+   assert.equal(handoff.runtime.loaderAssetArgument,'assets/audio/outskirts/last-light.mp3');
+   assert.equal(handoff.timing.actualAudioDurationOwnsCompletionAndLightOut,true);
+ });
++
++test('with no performed recording the game\'s own voice plays, and a real one still wins',async()=>{
++  const missing=harness({fetcher:url=>String(url).endsWith('last-light.mp3')?{ok:false}:{ok:true,arrayBuffer:async()=>new ArrayBuffer(1)}});
++  missing.runtime.reached=true;missing.api.syncLastLight();await flush();await flush();
++  assert.deepEqual(missing.requestedUrls,['assets/audio/outskirts/last-light.mp3','assets/audio/outskirts/sarah-tape-fallback.wav']);
++  assert.equal(missing.api.lastLight.mode,'recording');assert.equal(missing.sources.length,1);
++  const badPage=harness({fetcher:url=>String(url).endsWith('last-light.mp3')?Promise.reject(Error('a page, not audio')):{ok:true,arrayBuffer:async()=>new ArrayBuffer(1)}});
++  badPage.runtime.reached=true;badPage.api.syncLastLight();await flush();await flush();assert.equal(badPage.api.lastLight.mode,'recording','a failed first choice falls through');
++  const real=harness();real.runtime.reached=true;real.api.syncLastLight();await flush();assert.deepEqual(real.requestedUrls,['assets/audio/outskirts/last-light.mp3'],'the fallback isn\'t even fetched');
++  const neither=harness({buffer:null});neither.runtime.reached=true;neither.api.syncLastLight();await flush();await flush();assert.equal(neither.api.lastLight.mode,'placeholder','and with nothing it is still hiss and captions');
++});
++
++test('the tape uses the machine\'s own transport at both ends',async()=>{
++  const h=harness({buffer:{duration:96}});h.runtime.reached=true;h.api.syncLastLight();await flush();
++  assert.equal(h.cues[0].name,'recorder','it rolls');assert.equal(h.cues.filter(c=>c.name==='door').length,0,'no door standing in for it');
++  h.cues.length=0;h.ctx.currentTime=94;h.api.syncLastLight();
++  assert.equal(h.cues.filter(c=>c.name==='recorder').length,1,'and the script\'s last word stops it');
++});
++
++test('the baked tape sits on the script: voices on their cues, quiet between, no hiss of its own',()=>{
++  const wav=readFileSync(new URL('../public/assets/audio/outskirts/sarah-tape-fallback.wav',import.meta.url));
++  assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt16LE(22),1,'mono');
++  const rate=wav.readUInt32LE(24),count=(wav.length-44)/2,at=i=>wav.readInt16LE(44+i*2)/32768;
++  const rms=(from,to)=>{const a=Math.floor(from*rate),b=Math.min(count,Math.floor(to*rate));let e=0;for(let i=a;i<b;i++)e+=at(i)**2;return Math.sqrt(e/Math.max(1,b-a));};
++  const cues=lines.map(l=>Number(l.at)||0);near(count/rate,Math.max(...cues)+2.5,.05);
++  const spoken=lines.filter(l=>l.who==='you'||l.who==='sarah');assert.ok(spoken.length>=20);
++  for(const l of spoken)assert.ok(rms(l.at,l.at+.7)>.01,`${l.at}: ${l.text}`);
++  assert.ok(rms(0,2.3)<.001,'nothing before his first word: the hiss is the game\'s');assert.ok(rms(89,count/rate)<.001,'nor after the click');
++  let peak=0;for(let i=0;i<count;i++)peak=Math.max(peak,Math.abs(at(i)));assert.ok(peak>.6&&peak<.95,`${peak}`);
++  const credits=JSON.parse(readFileSync(new URL('../public/assets/audio/outskirts/sarah-tape-fallback.credits.json',import.meta.url),'utf8'));
++  assert.deepEqual(credits.thirdParty,[]);assert.equal(credits.lines.length,spoken.length);
++  for(const row of credits.lines){assert.ok(row.seconds<=row.room+.05,`${row.at} overruns its slot: ${row.seconds} in ${row.room}`);assert.equal(/[()]/.test(row.text),false,'stage notes aren\'t spoken');}
++});
++function near(a,b,tol){assert.ok(Math.abs(a-b)<=tol,`${a} vs ${b}`);}
++
++test('it is under the lamp past the last phone box',()=>{
++  const data=readFileSync(new URL('../src/data/source-outskirts-arrival.js',import.meta.url),'utf8');
++  assert.match(data,/put\('last-light', 'yard_lamp_column', OUTSKIRT_LAST_LIGHT\.across \+ 1\.6, OUTSKIRT_LAST_LIGHT\.along/);
++  assert.match(data,/put\('last-recorder', 'ending_recorder_open', OUTSKIRT_LAST_LIGHT\.across, OUTSKIRT_LAST_LIGHT\.along/);
++  assert.match(data,/OUTSKIRT_LAST_LIGHT = freeze\(\{ along: OUTSKIRT_ROAD_END \+ 62/,'sixty metres of black after the last pass');
++});
+diff --git a/test/run-all.mjs b/test/run-all.mjs
+index 5d1234cb..9a4accf2 100644
+--- a/test/run-all.mjs
++++ b/test/run-all.mjs
+@@ -110,6 +110,7 @@ const tests = [
+   'test/hush-catch.spec.mjs',
+   'test/set-pieces.spec.mjs',
+   'test/hush-footfall.spec.mjs',
++  'test/m62-land.spec.mjs',
+   'test/night-deadline-media.spec.mjs',
+   'test/night-deadline-main.spec.mjs',
+   'test/source-drive-deadline.spec.mjs',
+@@ -397,6 +398,7 @@ const tests = [
+   'test/source-drive-teaser-scene.test.mjs',
+   'test/source-drive-opening-road.test.mjs',
+   'test/uk-road-conventions.spec.mjs',
++  'test/uk-road-markings.spec.mjs',
+   'test/uk-exterior-road-meshes.spec.mjs',
+   'test/source-drive-opening-audio.test.mjs',
+   'test/source-drive-bumper-intrusion.test.mjs',
+diff --git a/test/source-door-render-performance.spec.mjs b/test/source-door-render-performance.spec.mjs
+index 9b42266c..94812e37 100644
+--- a/test/source-door-render-performance.spec.mjs
++++ b/test/source-door-render-performance.spec.mjs
+@@ -104,6 +104,7 @@ test('renderer reinitialisation clears programs and pending jobs even when WebGL
+     let towerViewProgram={},towerViewProgramPending={dispose:()=>releases.push('pending-tower')},towerViewProgramFailed=true,towerViewVao={},towerViewBuffer={};
+     let openingProgram={},openingVao={},openingBuffer={},crossingProgram={},crossingVao={};
+     const portalUniforms=new Map([['a',1]]),towerViewUniforms=new Map([['a',1]]),crossingUniforms=new Map([['a',1]]);
++    const resetRetroreflectorProgram=()=>releases.push('retroreflector');
+     ${body};resetSourceDoorPrograms();
+     return {programs:[portalProgram,towerViewProgram,openingProgram,crossingProgram],pending:[portalProgramPending,towerViewProgramPending],failed:[portalProgramFailed,towerViewProgramFailed],maps:[portalUniforms.size,towerViewUniforms.size,crossingUniforms.size]};
+   `)({deleteProgram:()=>releases.push('program'),deleteVertexArray:()=>{},deleteBuffer:()=>{}},releases);
+@@ -111,6 +112,7 @@ test('renderer reinitialisation clears programs and pending jobs even when WebGL
+   assert.deepEqual(reset.failed,[false,false]);assert.deepEqual(reset.maps,[0,0,0]);
+   assert.equal(releases.filter(x=>x==='program').length,4);
+   assert.ok(releases.includes('pending-portal')&&releases.includes('pending-tower'));
++  assert.ok(releases.includes('retroreflector'),'the road studs\' program is one of the ones a new context invalidates');
+ });
+ 
+ test('optional portal compile failure leaves the world pass alive and reports once',()=>{
+diff --git a/test/source-drive-preload.test.mjs b/test/source-drive-preload.test.mjs
+index 3feec572..b3dc2530 100644
+--- a/test/source-drive-preload.test.mjs
++++ b/test/source-drive-preload.test.mjs
+@@ -34,7 +34,7 @@ function fixture(){
+  const R3=new Proxy({r3dBasePropsReady:()=>base.ready,r3dPresentationReady:()=>presentation.ready,r3dPixelMeshStatus:()=>({...presentation}),r3dFrame:(...args)=>{world.push(['r3dFrame',...args]);if(!presentation.skipFinal)presentation.framesRendered++;if(presentation.loseDuringDraw)presentation.ready=false;return presentation.rejectDraw?false:undefined;}},{get:(target,name)=>target[name]||((...args)=>world.push([name,...args]))});
+  const document={createElement:name=>{world.push(['canvas',name]);return{getContext:()=>({})};}};
+  const moduleSource=source.replace(/^import .*;\n/gm,'').replace(/^export /gm,'');
+- const api=new Function('createCabRadioFace','cabRadioRoadView','ensureFloraMeshes','buildM62LandField','m62FarLights','m62FieldHeight','m62LandField','R3','P3','FP','F','CELL','MATERIAL','assetUrl','drawRecorderReadoutCanvas','document','stepWindLeaves','windLeafProps','windVector',moduleSource+'\nreturn{preloadSourceDriveAssets,createSourceDriveRenderer};')(()=>({sync(){}}),()=>({}),()=>{},async()=>null,()=>null,()=>0,()=>null,R3,P3,{encodeH:x=>x},{SKY:1},1,{serviceConcrete:2},path=>'asset:'+String(path).replace(/^\/+/,''),()=>{},document,stepWindLeaves,windLeafProps,windVector);
++ const api=new Function('createCabRadioFace','cabRadioRoadView','ensureFloraMeshes','R3','P3','FP','F','CELL','MATERIAL','assetUrl','drawRecorderReadoutCanvas','document','stepWindLeaves','windLeafProps','windVector','buildM62LandField','m62FarLights','m62FieldHeight','m62LandField',moduleSource+'\nreturn{preloadSourceDriveAssets,createSourceDriveRenderer};')(()=>({sync(){}}),()=>({}),()=>{},R3,P3,{encodeH:x=>x},{SKY:1},1,{serviceConcrete:2},path=>'asset:'+String(path).replace(/^\/+/,''),()=>{},document,stepWindLeaves,windLeafProps,windVector,async()=>null,()=>null,()=>0,()=>null);
+  return{...api,loads,world,catalog,gates,failures,characters,presentation,base,owner:()=>api.createSourceDriveRenderer({onRelease:()=>{released++;}}),released:()=>released};
+ }
+ 
+@@ -50,14 +50,14 @@ test('cold saved-drive preparation waits for the replacing building catalog befo
+ 
+ test('a failed base catalog cannot acquire a drive and a later explicit retry can recover',async()=>{
+  const h=fixture(),owner=h.owner();h.base.ready=Promise.resolve(false);
+- await assert.rejects(owner.initialize(),/base prop catalog/);assert.equal(h.loads.length,0);assert.deepEqual(plainWorld(h),[]);assert.equal(owner.ready(),false);
++ await assert.rejects(owner.initialize(),/base prop catalog/);assert.equal(h.loads.length,0);assert.deepEqual(h.world,[]);assert.equal(owner.ready(),false);
+  h.base.ready=Promise.resolve(true);assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,12);
+ });
+ 
+ test('door prewarming loads the twelve P3 packs including physical van paint without acquiring the scene, camera or canvas',async()=>{
+  const h=fixture();assert.equal(await h.preloadSourceDriveAssets(),true);
+  assert.deepEqual(h.loads.map(x=>x.url),['asset:assets/source-drive/drive.glb','asset:assets/van-brand.glb',...['geometry/wheel-hands.glb','cut/cut-static.glb','cut/cut-living.glb','cut/cut-roadside.glb','cut/cut-landscape.glb','predicaments/drive-predicaments.glb','road-cast/road-cast.glb','m62-land/m62-land.glb','cab-radio/cab-radio.glb','cab-dash/cab-dash.glb'].map(x=>'asset:assets/source-drive/'+x)]);
+- assert.equal(h.loads.filter(x=>x.kind==='character').length,3);assert.deepEqual(plainWorld(h),[]);assert.ok(h.catalog.has('source_existing_wall'));
++ assert.equal(h.loads.filter(x=>x.kind==='character').length,3);assert.deepEqual(h.world,[]);assert.ok(h.catalog.has('source_existing_wall'));
+  await h.preloadSourceDriveAssets();assert.equal(h.loads.length,12,'ready packs are reused rather than fetched and uploaded again');
+  assert.doesNotMatch(source,/getContext\(['"]webgl|new\s+(?:WebGLRenderer|Worker)|requestAnimationFrame\(/,'prewarming cannot create another renderer or animation loop');
+ });
+@@ -73,27 +73,27 @@ test('door warm, repeated warm and concurrent initialization share loads and acq
+ test('one failed pack rejects all shared waiters, keeps successful packs, and permits renderer initialization retry',async()=>{
+  const h=fixture(),owner=h.owner();h.failures.add('cut-living.glb');
+  const failed=await Promise.allSettled([h.preloadSourceDriveAssets(),owner.initialize()]);
+- assert.ok(failed.every(x=>x.status==='rejected'&&/failed cut-living/.test(x.reason.message)));assert.equal(owner.ready(),false);assert.deepEqual(plainWorld(h),[]);
++ assert.ok(failed.every(x=>x.status==='rejected'&&/failed cut-living/.test(x.reason.message)));assert.equal(owner.ready(),false);assert.deepEqual(h.world,[]);
+  assert.equal(await owner.initialize(),true);assert.equal(h.loads.length,13);assert.equal(h.loads.filter(x=>x.url.endsWith('cut-living.glb')).length,2);
+  for(const name of['drive.glb','wheel-hands.glb','cut-static.glb','cut-roadside.glb','cut-landscape.glb'])assert.equal(h.loads.filter(x=>x.url.endsWith('/'+name)).length,1,name);
+  await h.preloadSourceDriveAssets();assert.equal(h.loads.length,13);
+ });
+ 
+ test('disposing during warm never clears the still-owned Source view and cannot acquire it after release',async()=>{
+- const h=fixture();let release;h.gates.set('drive.glb',new Promise(resolve=>{release=resolve;}));const owner=h.owner(),loading=owner.initialize();await flush();assert.equal(owner.dispose(),true);assert.equal(owner.dispose(),false);assert.equal(h.released(),1);assert.deepEqual(plainWorld(h),[]);
+- release();assert.equal(await loading,false);assert.equal(await owner.initialize(),false);assert.equal(owner.ready(),false);assert.deepEqual(plainWorld(h),[]);
++ const h=fixture();let release;h.gates.set('drive.glb',new Promise(resolve=>{release=resolve;}));const owner=h.owner(),loading=owner.initialize();await flush();assert.equal(owner.dispose(),true);assert.equal(owner.dispose(),false);assert.equal(h.released(),1);assert.deepEqual(h.world,[]);
++ release();assert.equal(await loading,false);assert.equal(await owner.initialize(),false);assert.equal(owner.ready(),false);assert.deepEqual(h.world,[]);
+  const next=h.owner();assert.equal(await next.initialize(),true);assert.equal(h.loads.length,12,'cancellation leaves successfully warmed packs reusable');next.dispose();assert.equal(h.world.filter(x=>x[0]==='driveFrame'&&x[1]===null).length,1,'a real owner still releases its scoped drive frame');
+ });
+ 
+ test('P3 character-cache invalidation also invalidates stale static GPU cache records',async()=>{
+  const h=fixture();await h.preloadSourceDriveAssets();h.characters.clear(); // The real P3 re-init removes its context-owned bundles, while static names can remain.
+- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,24);assert.deepEqual(plainWorld(h),[]);
++ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,24);assert.deepEqual(h.world,[]);
+ });
+ 
+ test('a missing static pack and a changed override are reloaded without replacing unrelated warmed packs',async()=>{
+  const h=fixture();await h.preloadSourceDriveAssets();h.catalog.delete('cut_guardrail');await h.preloadSourceDriveAssets();assert.equal(h.loads.length,13);assert.ok(h.loads.at(-1).url.endsWith('cut-roadside.glb'));
+- await h.preloadSourceDriveAssets({assets:{drive:'fixture://alternative/drive.glb'}});assert.equal(h.loads.length,16);assert.equal(h.loads.at(-3).url,'fixture://alternative/drive.glb');assert.ok(h.loads.at(-2).url.endsWith('cab-radio.glb'),'the radio goes back over whichever drive pack just landed');assert.ok(h.loads.at(-1).url.endsWith('cab-dash.glb'),'the dash follows its drive pack too');
+- await h.preloadSourceDriveAssets();assert.equal(h.loads.length,19,'returning to the canonical variant cannot reuse the replaced GPU meshes');assert.equal(h.loads.at(-3).url,'asset:assets/source-drive/drive.glb');assert.deepEqual(plainWorld(h),[]);
++ await h.preloadSourceDriveAssets({assets:{drive:'fixture://alternative/drive.glb'}});assert.equal(h.loads.length,16);assert.equal(h.loads.at(-3).url,'fixture://alternative/drive.glb');assert.ok(h.loads.at(-2).url.endsWith('cab-radio.glb'),'the radio goes back over whichever drive pack just landed');assert.ok(h.loads.at(-1).url.endsWith('cab-dash.glb'),'and so does the dash');
++ await h.preloadSourceDriveAssets();assert.equal(h.loads.length,19,'returning to the canonical variant cannot reuse the replaced GPU meshes');assert.equal(h.loads.at(-3).url,'asset:assets/source-drive/drive.glb');assert.deepEqual(h.world,[]);
+ });
+ 
+ test('presentation readiness requires the existing live context and a nonzero canvas',()=>{
+@@ -117,7 +117,7 @@ test('the production drive renderer refuses unavailable, lost or unacquired fram
+  h.presentation.rejectDraw=false;assert.equal(owner.render(frame),true);assert.equal(owner.ready(),true);assert.ok(h.world.some(call=>call[0]==='r3dFrame'));
+ });
+ 
+-test('opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh',async()=>{const h=fixture();for(const name of['cm_limestone_coast','cm_seabed','cm_distant_pier'])h.catalog.add(name);await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,13);for(let i=0;i<4;i++)assert.ok(h.catalog.has('cm_limestone_outcrop_'+i));h.catalog.delete('cm_limestone_outcrop_2');await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,14);assert.ok(h.loads.at(-1).url.endsWith('coastal-memory.glb'));assert.ok(h.catalog.has('cm_limestone_outcrop_2'));assert.deepEqual(plainWorld(h),[]);});
++test('opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh',async()=>{const h=fixture();for(const name of ['cm_limestone_coast','cm_seabed','cm_distant_pier'])h.catalog.add(name);await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,13);for(let i=0;i<4;i++)assert.ok(h.catalog.has('cm_limestone_outcrop_'+i));h.catalog.delete('cm_limestone_outcrop_2');await h.preloadSourceDriveAssets({coastalMemory:true});assert.equal(h.loads.length,14);assert.ok(h.loads.at(-1).url.endsWith('coastal-memory.glb'));assert.ok(h.catalog.has('cm_limestone_outcrop_2'));assert.deepEqual(h.world,[]);});
+ 
+ test('missing UK paint invalidates the roadside cache rather than silently leaving the road unmarked',async()=>{
+  for(const name of['drive_uk_edge_markings','drive_uk_centre_and_edges']){
+diff --git a/test/source-elsewhere.spec.mjs b/test/source-elsewhere.spec.mjs
+index e8843aab..a727d8b7 100644
+--- a/test/source-elsewhere.spec.mjs
++++ b/test/source-elsewhere.spec.mjs
+@@ -43,7 +43,11 @@ assert.match(props, /gl\.uniform1f\(PU\('uStormFlash'\)/, 'the storm never reach
+ const r3d = readFileSync(new URL('../src/render/r3d.js', import.meta.url), 'utf8');
+ const voidFrag = r3d.slice(r3d.indexOf('const SOURCE_VOID_PHYSICAL_FRAG'), r3d.indexOf('}`;', r3d.indexOf('const SOURCE_VOID_PHYSICAL_FRAG')));
+ assert.match(voidFrag, /uniform vec4 uDoorA\[3\];/, 'no door light reaches the ground');
+-assert.doesNotMatch(voidFrag, /fract\(/);
++// The drive's drystone walls tile on world position, behind uDriveLand, so they stay put on
++// the ground. That is the one use: no screen-space pattern gets into this shader.
++assert.match(voidFrag, /vec2 g=p\.xz\/vec2\(124\.0,92\.0\);/);
++assert.match(voidFrag, /if\(uDriveLand\.x>0\.0\)\{/);
++assert.doesNotMatch(voidFrag.replace(/vec3 driveLandShade\(vec3 dir,vec3 sky\)\{[\s\S]*?\r?\n\}\r?\n/, ''), /fract\(/);
+ const draw = r3d.slice(r3d.indexOf('function drawSourceVoidPhysical'), r3d.indexOf('function drawTextSpace'));
+ assert.ok(draw.indexOf('P3.renderSourceCrossing') > draw.indexOf("sourceVoidPhysicalU('uRain')")
+   && draw.indexOf('P3.renderSourceCrossing') < draw.indexOf('presentThroughPost('), 'the crossing is not drawn over the composed void');
+diff --git a/test/source-reprise-integration.spec.mjs b/test/source-reprise-integration.spec.mjs
+index 8c82a73b..602e1655 100644
+--- a/test/source-reprise-integration.spec.mjs
++++ b/test/source-reprise-integration.spec.mjs
+@@ -124,6 +124,7 @@ const section=(start,end)=>{
+     FP:{logicalToPhysical:()=>({x:0,y:0,z:0}),zoneAt:()=>1},
+     resolveLightingContext:()=>({zone:1,group:'basement'}),
+     CHAPEL_TOWER_PHASE:{},chapelTowerState:()=>({}),
++    P3:{setParkedCabLight:()=>{}},
+     R3:{r3dSetLightingContext:()=>{},r3dWorldYaw:()=>0,
+       r3dSetEmergencyShadows:(value)=>submitted.push(value),r3dSetLocalLights:(value)=>submitted.push(value)},
+     resolveLocalLights:()=>rig,liveLightCircuits:()=>new Set(),lightAnchorPosition:()=>null,
+diff --git a/test/source-shore-sensory.spec.mjs b/test/source-shore-sensory.spec.mjs
+index f437416b..03e79e45 100644
+--- a/test/source-shore-sensory.spec.mjs
++++ b/test/source-shore-sensory.spec.mjs
+@@ -230,7 +230,7 @@ test('held W+D can freely cross the void with the same metre speed as a cardinal
+     clamp: (value, low, high) => Math.max(low, Math.min(high, value)),
+     R3: { r3dStepDelta: () => [0, -1] }, usingSourceSpace: () => true,
+     chunkSurfRuntime: { sourceShoreFrame: () => frame, sourceVoidFrame: () => ({ sceneDock: false }) },
+-    currentMoveIntervalMs: () => 104.166667,
++    currentMoveIntervalMs: () => 104.166667, storyMode: true, isIntroActive: () => false,
+   });
+   for (const name of ['independentControls', 'combinedIndependentMotionAxes', 'arrowDelta', 'currentStepIntervalMs']) {
+     vm.runInContext(mainFunction(name), context);
+diff --git a/test/source-void-physical-compositor.spec.mjs b/test/source-void-physical-compositor.spec.mjs
+index dc7c1bbc..39933a2d 100644
+--- a/test/source-void-physical-compositor.spec.mjs
++++ b/test/source-void-physical-compositor.spec.mjs
+@@ -41,7 +41,8 @@ assert.doesNotMatch(draw, /runDatamoshPass\(|runSourceFaultPass\(|drawTextSpace\
+ assert.match(shader, /clamp\(body\.a,0\.0,1\.0\)/, 'black metal remains opaque: colour is not a coverage test');
+ assert.match(shader, /texture\(uDepth,uv\)/, 'far fade uses real prop depth');
+ assert.match(shader, /displayColour\(clamp\(body\.rgb/, 'preserve all material colour channels');
+-assert.doesNotMatch(shader, /halftone|bayer|fract\(|uSourceEmergency|uSourceTorchMode/);
++// The drive's drystone walls tile on world position, behind uDriveLand; see source-elsewhere.
++assert.doesNotMatch(shader.replace(/vec3 driveLandShade\(vec3 dir,vec3 sky\)\{[\s\S]*?\r?\n\}\r?\n/, ''), /halftone|bayer|fract\(|uSourceEmergency|uSourceTorchMode/);
+ 
+ // Execute the actual ground pass with a stateful GL double. The revealed path
+ // is drawn after the video/bust pass, so leaking its blend or depth-write state
+diff --git a/tools/chunk_surfer/build-sarah-playback-tape-fallback.mjs b/tools/chunk_surfer/build-sarah-playback-tape-fallback.mjs
+new file mode 100644
+index 00000000..de040915
+--- /dev/null
++++ b/tools/chunk_surfer/build-sarah-playback-tape-fallback.mjs
+@@ -0,0 +1,134 @@
++// Render the Sarah tape through the game's own dialog TTS (SAM) as a fallback,
++// using the exact voice profiles from src/audio/sam-voice.js — sarah (band-limited,
++// smeared) and recordist (tape hiss + wobble) — then stitch it with tape hiss and
++// gaps into one recording.
++//
++// Run: node tools/chunk_surfer/build-sarah-playback-tape-fallback.mjs
++import { renderSamSamples, profileFor } from '../../src/audio/sam-voice.js';
++import { writeFileSync, mkdirSync } from 'node:fs';
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++import { dirname } from 'node:path';
++
++const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
++const RATE = 22050;
++const GAP = 0.42;
++
++const LINES = [
++  { who: 'sarah', text: 'Row F. You had the recorder on your knee. You were setting a level while I said it.' },
++  { who: 'sarah', text: "Don't record this." },
++  { who: 'recordist', text: "I'm not recording." },
++  { who: 'sarah', text: "You're always recording." },
++  { who: 'sarah', text: 'You never played me back. Not once. I used to think it was kindness.' },
++  { who: 'recordist', text: 'It was. You hated it.' },
++  { who: 'sarah', text: 'I hated hearing myself. You liked that I hated it. It meant you got to keep it all and never once be asked about it.' },
++  { who: 'sarah', text: 'You kept all of it, then.' },
++  { who: 'recordist', text: 'I keep everything. That is the job. That has always been the job.' },
++  { who: 'sarah', text: 'You kept me changing. You never once kept me working.' },
++  { who: 'sarah', text: 'You were so good about it. Every appointment. Every form. You told people you were proud of me.' },
++  { who: 'recordist', text: 'I was proud of you.' },
++  { who: 'sarah', text: 'You were proud of the change. You liked who I was turning into and you liked being the one standing next to her.' },
++  { who: 'sarah', text: "You never asked what I wanted to make. Not in three years. You asked what I wanted to be called." },
++  { who: 'recordist', text: 'Sarah.' },
++  { who: 'recordist', text: 'I never asked her what she wanted to be called. I asked her three hundred times and never once about that.' },
++];
++
++// --- offline DSP matching the voice profiles ---
++function biquad(samples, type, f0, Q, rate = RATE) {
++  const w0 = 2 * Math.PI * f0 / rate, alpha = Math.sin(w0) / (2 * Q);
++  const out = new Float32Array(samples.length);
++  let b0, b1, b2, a0, a1, a2;
++  if (type === 'lowpass') { b0 = (1 - Math.cos(w0)) / 2; b1 = 1 - Math.cos(w0); b2 = b0; a0 = 1 + alpha; a1 = -2 * Math.cos(w0); a2 = 1 - alpha; }
++  else { b0 = (1 + Math.cos(w0)) / 2; b1 = -(1 + Math.cos(w0)); b2 = b0; a0 = 1 + alpha; a1 = -2 * Math.cos(w0); a2 = 1 - alpha; }
++  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
++  for (let i = 0; i < samples.length; i++) {
++    const x = samples[i], y = (b0 / a0) * x + (b1 / a0) * x1 + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2;
++    x2 = x1; x1 = x; y2 = y1; y1 = y; out[i] = y;
++  }
++  return out;
++}
++function resample(samples, factor) { // factor >1 speeds up (raises pitch)
++  const out = new Float32Array(Math.round(samples.length / factor));
++  for (let i = 0; i < out.length; i++) {
++    const src = i * factor, a = Math.floor(src), b = Math.min(samples.length - 1, a + 1), f = src - a;
++    out[i] = samples[a] * (1 - f) + samples[b] * f;
++  }
++  return out;
++}
++function smear(samples, { time = 0.11, feedback = 0.3, mix = 0.35 }) {
++  const d = Math.max(1, Math.round(time * RATE)), buf = new Float32Array(d), out = new Float32Array(samples.length);
++  let idx = 0;
++  for (let i = 0; i < samples.length; i++) {
++    const delayed = buf[idx];
++    buf[idx] = samples[i] + delayed * feedback;
++    out[i] = samples[i] + delayed * mix;
++    idx = (idx + 1) % d;
++  }
++  return out;
++}
++function hiss(seconds, level = 0.01) {
++  const n = Math.round(seconds * RATE), out = new Float32Array(n);
++  let seed = 0x9e3779b9 >>> 0, lp = 0;
++  for (let i = 0; i < n; i++) {
++    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
++    const noise = seed / 2147483648 - 1; lp += (noise - lp) * 0.15;
++    out[i] = lp * level;
++  }
++  return out;
++}
++function gain(samples, g) { const out = new Float32Array(samples.length); for (let i = 0; i < samples.length; i++) out[i] = samples[i] * g; return out; }
++
++function processVoice(samples, who) {
++  const p = profileFor(who) || {};
++  let s = samples;
++  if (p.rate && p.rate !== 1) s = resample(s, p.rate);
++  if (p.hp) s = biquad(s, 'highpass', p.hp, 0.7);
++  if (p.lp) s = biquad(s, 'lowpass', p.lp, 0.7);
++  if (p.smear) s = smear(s, p.smear);
++  if (p.gain) s = gain(s, p.gain);
++  return { samples: s, hissLevel: p.hiss || 0 };
++}
++
++function writeWav(path, samples, rate = RATE) {
++  const buf = Buffer.alloc(44 + samples.length * 2);
++  buf.write('RIFF', 0); buf.writeUInt32LE(36 + samples.length * 2, 4); buf.write('WAVE', 8);
++  buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
++  buf.writeUInt32LE(rate, 24); buf.writeUInt32LE(rate * 2, 28); buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
++  buf.write('data', 36); buf.writeUInt32LE(samples.length * 2, 40);
++  for (let i = 0; i < samples.length; i++) buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, samples[i])) * 32767), 44 + i * 2);
++  writeFileSync(path, buf);
++}
++
++// Render each line, keep its voice hiss, and lay the tape.
++const chunks = [];
++for (const line of LINES) {
++  const r = await renderSamSamples(line.text, { speaker: line.who });
++  if (!r?.samples?.length) { console.log('  (skip) ' + line.text); continue; }
++  const { samples, hissLevel } = processVoice(r.samples, line.who);
++  chunks.push({ samples, hissLevel });
++  console.log(`  ${line.who.padEnd(10)} ${line.text.slice(0, 52)}`);
++}
++
++// Assemble: line, then a gap of tape hiss; a continuous hiss bed runs under it.
++let total = 0;
++for (const c of chunks) total += c.samples.length + Math.round(GAP * RATE);
++const master = new Float32Array(total);
++let pos = 0;
++for (const c of chunks) {
++  master.set(c.samples, pos); pos += c.samples.length;
++  const gap = Math.round(GAP * RATE);
++  const g = hiss(GAP, 0.006); // the tape's idle hiss between lines
++  master.set(g.subarray(0, Math.min(gap, g.length)), pos); pos += gap;
++}
++// A very low room/tape bed under everything.
++const bed = hiss(master.length / RATE, 0.0035);
++for (let i = 0; i < master.length; i++) master[i] += bed[i];
++
++// Gentle fades.
++const fin = Math.round(0.3 * RATE), fout = Math.round(1.2 * RATE);
++for (let i = 0; i < fin; i++) master[i] *= i / fin;
++for (let i = 0; i < fout; i++) master[master.length - 1 - i] *= i / fout;
++
++const out = join(root, 'assets', 'music-box', 'sarah-tape-fallback.wav');
++writeWav(out, master);
++console.log(`wrote ${out}  (${(master.length / RATE).toFixed(1)}s)`);
+diff --git a/tools/chunk_surfer/build-sarah-tape-fallback.mjs b/tools/chunk_surfer/build-sarah-tape-fallback.mjs
+index 24144494..b7069a82 100644
+--- a/tools/chunk_surfer/build-sarah-tape-fallback.mjs
++++ b/tools/chunk_surfer/build-sarah-tape-fallback.mjs
+@@ -1,134 +1,116 @@
+-// Render the Sarah tape through the game's own dialog TTS (SAM) as a fallback,
+-// using the exact voice profiles from src/audio/sam-voice.js — sarah (band-limited,
+-// smeared) and recordist (tape hiss + wobble) — then stitch it with tape hiss and
+-// gaps into one recording.
++// THE TAPE UNDER THE LAST LIGHT, until Seb records the real one. Each spoken line of
++// source-space.last-light goes through the game's own local formant voice and the
++// same voice profile the live dialog uses, then lands on its script cue, so the
++// captions stay in step and a real last-light.mp3 can replace this with no other change.
+ //
+-// Run: node tools/chunk_surfer/build-sarah-tape-fallback.mjs
+-import { renderSamSamples, profileFor } from '../../src/audio/sam-voice.js';
+-import { writeFileSync, mkdirSync } from 'node:fs';
+-import { join } from 'node:path';
++// Voices only. The room's hiss is the game's own tape hiss, started by main alongside
++// this; a bed baked in here would double it, and would stop where this file stops.
++//   node tools/chunk_surfer/build-sarah-tape-fallback.mjs
++import fs from 'node:fs';
++import path from 'node:path';
++import crypto from 'node:crypto';
+ import { fileURLToPath } from 'node:url';
+-import { dirname } from 'node:path';
+-
+-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+-const RATE = 22050;
+-const GAP = 0.42;
++import { renderSamSamples, profileFor } from '../../src/audio/sam-voice.js';
+ 
+-const LINES = [
+-  { who: 'sarah', text: 'Row F. You had the recorder on your knee. You were setting a level while I said it.' },
+-  { who: 'sarah', text: "Don't record this." },
+-  { who: 'recordist', text: "I'm not recording." },
+-  { who: 'sarah', text: "You're always recording." },
+-  { who: 'sarah', text: 'You never played me back. Not once. I used to think it was kindness.' },
+-  { who: 'recordist', text: 'It was. You hated it.' },
+-  { who: 'sarah', text: 'I hated hearing myself. You liked that I hated it. It meant you got to keep it all and never once be asked about it.' },
+-  { who: 'sarah', text: 'You kept all of it, then.' },
+-  { who: 'recordist', text: 'I keep everything. That is the job. That has always been the job.' },
+-  { who: 'sarah', text: 'You kept me changing. You never once kept me working.' },
+-  { who: 'sarah', text: 'You were so good about it. Every appointment. Every form. You told people you were proud of me.' },
+-  { who: 'recordist', text: 'I was proud of you.' },
+-  { who: 'sarah', text: 'You were proud of the change. You liked who I was turning into and you liked being the one standing next to her.' },
+-  { who: 'sarah', text: "You never asked what I wanted to make. Not in three years. You asked what I wanted to be called." },
+-  { who: 'recordist', text: 'Sarah.' },
+-  { who: 'recordist', text: 'I never asked her what she wanted to be called. I asked her three hundred times and never once about that.' },
+-];
++const ROOT = fileURLToPath(new URL('../../', import.meta.url));
++const OUT = path.join(ROOT, 'public/assets/audio/outskirts');
++const lines = JSON.parse(fs.readFileSync(path.join(ROOT, 'content/narrative/source-space.last-light.story.json'), 'utf8')).nodes.recording.lines;
++const RATE = 16000, TAIL = 2.5, LEAD = .12, MAX_HURRY = 1.75;
++// Who is heard through what. `you` is him, on tape, not him here and now.
++const VOICE = { you: 'recordist', sarah: 'sarah' };
++// Stage notes are the actors', not the words': how a line sits, then gone from the text.
++const DELIVERY = [[/whisper/i, { gain: .52, rate: 1 }], [/\blow\b/i, { gain: .82, rate: .9 }]];
+ 
+-// --- offline DSP matching the voice profiles ---
+-function biquad(samples, type, f0, Q, rate = RATE) {
+-  const w0 = 2 * Math.PI * f0 / rate, alpha = Math.sin(w0) / (2 * Q);
+-  const out = new Float32Array(samples.length);
+-  let b0, b1, b2, a0, a1, a2;
+-  if (type === 'lowpass') { b0 = (1 - Math.cos(w0)) / 2; b1 = 1 - Math.cos(w0); b2 = b0; a0 = 1 + alpha; a1 = -2 * Math.cos(w0); a2 = 1 - alpha; }
+-  else { b0 = (1 + Math.cos(w0)) / 2; b1 = -(1 + Math.cos(w0)); b2 = b0; a0 = 1 + alpha; a1 = -2 * Math.cos(w0); a2 = 1 - alpha; }
++function biquad(input, type, hz, q = .707) {
++  const w = 2 * Math.PI * hz / RATE, cos = Math.cos(w), alpha = Math.sin(w) / (2 * q);
++  const b = type === 'lp' ? [(1 - cos) / 2, 1 - cos, (1 - cos) / 2] : [(1 + cos) / 2, -(1 + cos), (1 + cos) / 2];
++  const a0 = 1 + alpha, a1 = -2 * cos, a2 = 1 - alpha, out = new Float32Array(input.length);
+   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+-  for (let i = 0; i < samples.length; i++) {
+-    const x = samples[i], y = (b0 / a0) * x + (b1 / a0) * x1 + (b2 / a0) * x2 - (a1 / a0) * y1 - (a2 / a0) * y2;
+-    x2 = x1; x1 = x; y2 = y1; y1 = y; out[i] = y;
++  for (let i = 0; i < input.length; i++) {
++    const x = input[i], y = (b[0] * x + b[1] * x1 + b[2] * x2 - a1 * y1 - a2 * y2) / a0;
++    out[i] = y; x2 = x1; x1 = x; y2 = y1; y1 = y;
+   }
+   return out;
+ }
+-function resample(samples, factor) { // factor >1 speeds up (raises pitch)
+-  const out = new Float32Array(Math.round(samples.length / factor));
+-  for (let i = 0; i < out.length; i++) {
+-    const src = i * factor, a = Math.floor(src), b = Math.min(samples.length - 1, a + 1), f = src - a;
+-    out[i] = samples[a] * (1 - f) + samples[b] * f;
++// `rate` is pitch and pace at once, as playbackRate is in the live voice. The wobble
++// is the same slow LFO on that rate: a tape that doesn't quite hold its speed.
++function retime(samples, fromRate, rate, wobble) {
++  const out = [], step = fromRate / RATE * rate;
++  let at = 0, t = 0;
++  while (at < samples.length - 1) {
++    const i = Math.floor(at), f = at - i;
++    out.push(samples[i] * (1 - f) + samples[i + 1] * f);
++    at += step * (1 + wobble * Math.sin(2 * Math.PI * .95 * t)); t += 1 / RATE;
+   }
+-  return out;
++  return Float32Array.from(out);
+ }
+-function smear(samples, { time = 0.11, feedback = 0.3, mix = 0.35 }) {
+-  const d = Math.max(1, Math.round(time * RATE)), buf = new Float32Array(d), out = new Float32Array(samples.length);
+-  let idx = 0;
+-  for (let i = 0; i < samples.length; i++) {
+-    const delayed = buf[idx];
+-    buf[idx] = samples[i] + delayed * feedback;
+-    out[i] = samples[i] + delayed * mix;
+-    idx = (idx + 1) % d;
++// A line too long for its slot is tightened, not pitched up: `rate` is the character's
++// voice, and a line that needed hurrying shouldn't become somebody else.
++function tighten(input, factor) {
++  if (factor <= 1.001) return input;
++  const frame = Math.round(RATE * .036), out = new Float32Array(Math.ceil(input.length / factor) + frame), weight = new Float32Array(out.length), hop = Math.round(frame / 2);
++  for (let k = 0; ; k++) {
++    const from = Math.round(k * hop * factor), to = k * hop;
++    if (from + frame >= input.length) break;
++    for (let i = 0; i < frame; i++) { const w = Math.sin(Math.PI * (i + .5) / frame) ** 2; out[to + i] += input[from + i] * w; weight[to + i] += w; }
+   }
+-  return out;
++  let end = out.length; while (end > 0 && weight[end - 1] === 0) end--;
++  const result = new Float32Array(end);
++  for (let i = 0; i < end; i++) result[i] = weight[i] > .001 ? out[i] / weight[i] : 0;
++  return result;
+ }
+-function hiss(seconds, level = 0.01) {
+-  const n = Math.round(seconds * RATE), out = new Float32Array(n);
+-  let seed = 0x9e3779b9 >>> 0, lp = 0;
+-  for (let i = 0; i < n; i++) {
+-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+-    const noise = seed / 2147483648 - 1; lp += (noise - lp) * 0.15;
+-    out[i] = lp * level;
++function smear(input, { time, feedback, mix }) {
++  const delay = Math.max(1, Math.round(time * RATE)), out = new Float32Array(input.length + delay * 5), tap = new Float32Array(out.length);
++  for (let i = 0; i < out.length; i++) {
++    const dry = input[i] || 0, wet = i >= delay ? dry0(input, i - delay) + tap[i - delay] * feedback : 0;
++    tap[i] = wet; out[i] = dry + wet * mix;
+   }
+   return out;
+ }
+-function gain(samples, g) { const out = new Float32Array(samples.length); for (let i = 0; i < samples.length; i++) out[i] = samples[i] * g; return out; }
++const dry0 = (input, i) => input[i] || 0;
++let noiseState = 0x51ac7e;
++const noise = () => { noiseState = noiseState + 0x6d2b79f5 >>> 0; let t = noiseState; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296 * 2 - 1; };
+ 
+-function processVoice(samples, who) {
+-  const p = profileFor(who) || {};
+-  let s = samples;
+-  if (p.rate && p.rate !== 1) s = resample(s, p.rate);
+-  if (p.hp) s = biquad(s, 'highpass', p.hp, 0.7);
+-  if (p.lp) s = biquad(s, 'lowpass', p.lp, 0.7);
+-  if (p.smear) s = smear(s, p.smear);
+-  if (p.gain) s = gain(s, p.gain);
+-  return { samples: s, hissLevel: p.hiss || 0 };
++const spoken = lines.map((line, index) => ({ line, index })).filter(({ line }) => VOICE[line.who]);
++const nextCue = spoken.map(({ line }, i) => spoken[i + 1]?.line.at ?? Infinity);
++const seconds = Math.max(...lines.map(l => Number(l.at) || 0)) + TAIL;
++const mix = new Float32Array(Math.ceil(seconds * RATE));
++const report = [];
++for (let i = 0; i < spoken.length; i++) {
++  const { line } = spoken[i], speaker = VOICE[line.who], profile = profileFor(speaker);
++  const note = /^\(([^)]*)\)/.exec(line.text)?.[1] || '', text = line.text.replace(/\([^)]*\)/g, ' ').trim();
++  const delivery = DELIVERY.find(([test]) => test.test(note))?.[1] || { gain: 1, rate: 1 };
++  const { samples, sampleRate, provider } = await renderSamSamples(text, { speaker });
++  if (provider === 'sam-js') throw Error('This bake must use the local voice: sam-js is not ours to redistribute.');
++  // The script's beats win: a line too long for its slot speeds up, within reason.
++  const room = nextCue[i] === Infinity ? seconds - line.at - .2 : nextCue[i] - line.at - LEAD;
++  const natural = samples.length / sampleRate / (profile.rate * delivery.rate), hurry = Math.max(1, Math.min(MAX_HURRY, natural / room));
++  let voice = tighten(retime(samples, sampleRate, profile.rate * delivery.rate, profile.wobble || 0), hurry);
++  // The line's own length, before the smear's quiet tail runs on under the next cue.
++  const said = voice.length / RATE;
++  voice = biquad(biquad(voice, 'hp', profile.hp), 'lp', profile.lp);
++  if (profile.smear) voice = smear(voice, profile.smear);
++  const start = Math.round(line.at * RATE), gain = profile.gain * delivery.gain;
++  for (let s = 0; s < voice.length && start + s < mix.length; s++) mix[start + s] += voice[s] * gain;
++  // His tape has its own hiss under him; it comes and goes with him, as in the live voice.
++  if (profile.hiss) for (let s = 0; s < voice.length && start + s < mix.length; s++) mix[start + s] += noise() * profile.hiss;
++  report.push({ at: line.at, who: line.who, speaker, seconds: +said.toFixed(2), room: +room.toFixed(2), hurry: +hurry.toFixed(2), text });
+ }
+-
+-function writeWav(path, samples, rate = RATE) {
+-  const buf = Buffer.alloc(44 + samples.length * 2);
+-  buf.write('RIFF', 0); buf.writeUInt32LE(36 + samples.length * 2, 4); buf.write('WAVE', 8);
+-  buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
+-  buf.writeUInt32LE(rate, 24); buf.writeUInt32LE(rate * 2, 28); buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
+-  buf.write('data', 36); buf.writeUInt32LE(samples.length * 2, 40);
+-  for (let i = 0; i < samples.length; i++) buf.writeInt16LE(Math.round(Math.max(-1, Math.min(1, samples[i])) * 32767), 44 + i * 2);
+-  writeFileSync(path, buf);
+-}
+-
+-// Render each line, keep its voice hiss, and lay the tape.
+-const chunks = [];
+-for (const line of LINES) {
+-  const r = await renderSamSamples(line.text, { speaker: line.who });
+-  if (!r?.samples?.length) { console.log('  (skip) ' + line.text); continue; }
+-  const { samples, hissLevel } = processVoice(r.samples, line.who);
+-  chunks.push({ samples, hissLevel });
+-  console.log(`  ${line.who.padEnd(10)} ${line.text.slice(0, 52)}`);
++let peak = 0; for (const v of mix) peak = Math.max(peak, Math.abs(v));
++const scale = .82 / (peak || 1), pcm = Buffer.alloc(mix.length * 2);
++for (let i = 0; i < mix.length; i++) {
++  // No click where the file starts and ends.
++  const fade = Math.min(1, i / (RATE * .02), (mix.length - 1 - i) / (RATE * .05));
++  pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, mix[i] * scale * fade)) * 32767), i * 2);
+ }
+-
+-// Assemble: line, then a gap of tape hiss; a continuous hiss bed runs under it.
+-let total = 0;
+-for (const c of chunks) total += c.samples.length + Math.round(GAP * RATE);
+-const master = new Float32Array(total);
+-let pos = 0;
+-for (const c of chunks) {
+-  master.set(c.samples, pos); pos += c.samples.length;
+-  const gap = Math.round(GAP * RATE);
+-  const g = hiss(GAP, 0.006); // the tape's idle hiss between lines
+-  master.set(g.subarray(0, Math.min(gap, g.length)), pos); pos += gap;
+-}
+-// A very low room/tape bed under everything.
+-const bed = hiss(master.length / RATE, 0.0035);
+-for (let i = 0; i < master.length; i++) master[i] += bed[i];
+-
+-// Gentle fades.
+-const fin = Math.round(0.3 * RATE), fout = Math.round(1.2 * RATE);
+-for (let i = 0; i < fin; i++) master[i] *= i / fin;
+-for (let i = 0; i < fout; i++) master[master.length - 1 - i] *= i / fout;
+-
+-const out = join(root, 'assets', 'music-box', 'sarah-tape-fallback.wav');
+-writeWav(out, master);
+-console.log(`wrote ${out}  (${(master.length / RATE).toFixed(1)}s)`);
++const header = Buffer.alloc(44);
++header.write('RIFF', 0); header.writeUInt32LE(36 + pcm.length, 4); header.write('WAVEfmt ', 8); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
++header.writeUInt32LE(RATE, 24); header.writeUInt32LE(RATE * 2, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34); header.write('data', 36); header.writeUInt32LE(pcm.length, 40);
++const bytes = Buffer.concat([header, pcm]), file = path.join(OUT, 'sarah-tape-fallback.wav');
++fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(file, bytes);
++fs.writeFileSync(path.join(OUT, 'sarah-tape-fallback.credits.json'), JSON.stringify({
++  generator: 'tools/chunk_surfer/build-sarah-tape-fallback.mjs', authored: 'Rendered in this repository by the game\'s local formant voice (src/audio/sam-voice.js). No third-party audio and no sam-js output.',
++  thirdParty: [], sha256: crypto.createHash('sha256').update(bytes).digest('hex'), seconds: +(mix.length / RATE).toFixed(2), lines: report,
++}, null, 1) + '\n');
++console.log(`sarah-tape-fallback.wav ${(bytes.length / 1048576).toFixed(2)} MB, ${(mix.length / RATE).toFixed(1)} s, ${report.length} spoken lines, ${report.filter(r => r.hurry > 1).length} hurried, ${report.filter(r => r.seconds > r.room).length} over their slot`);
++for (const r of report) if (r.hurry > 1 || r.seconds > r.room) console.log(String(r.at).padStart(5), r.speaker.padEnd(9), `${r.seconds}s in ${r.room}s x${r.hurry}`, r.text.slice(0, 44));

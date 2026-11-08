@@ -15,7 +15,11 @@ function button(pressed = false, value = pressed ? 1 : 0) {
 }
 
 function pad(id, { axes = [0, 0, 0, 0], buttons = {} } = {}) {
-  const list = Array.from({ length: 18 }, (_, index) => button(!!buttons[index]));
+  const list = Array.from({ length: 18 }, (_, index) => {
+    const entry = buttons[index];
+    if (entry && typeof entry === 'object') return { pressed: !!entry.pressed || (entry.value ?? 0) >= 0.5, value: Number(entry.value ?? 0) };
+    return button(!!entry);
+  });
   return { id, axes, buttons: list, mapping: 'standard' };
 }
 
@@ -37,6 +41,27 @@ test('normalizes standard gamepad axes, buttons, and family', () => {
   assert.ok(snap.axes.turnX > 0);
   assert.ok(snap.axes.lookY > 0);
   assert.ok(snap.buttons.has('south'));
+});
+
+test('scene-declared modal actions fire in the world, not only in menus', () => {
+  controller.controllerResetForTest();
+  controller.setControllerNavigatorForTest(nav([
+    pad('Xbox Wireless Controller', { buttons: { 12: true } }), // d-pad up = mark
+  ]));
+  const pressed = [];
+  controller.gamepadTick({
+    menuContext: false,
+    modalActions: ['mark'],
+    onPress: (action) => pressed.push(action),
+  });
+  assert.ok(pressed.includes('mark'), 'mark reaches the world when its scene declares it');
+  controller.gamepadTick({
+    menuContext: false,
+    modalActions: ['mark'],
+    onPress: () => {},
+    onRelease: () => {},
+  });
+  controller.controllerResetForTest();
 });
 
 test('active controller follows latest pad activity', () => {
@@ -206,4 +231,90 @@ test('tower haptics support dual rumble, reduction, and explicit off', async () 
   const beforeOff=calls.length;
   assert.equal((await controller.pulseControllerHaptics({mode:'off'})).reason,'disabled');
   assert.equal(calls.length,beforeOff);
+});
+
+test('a half-pulled trigger turns on once and stays on: no flicker at the threshold', () => {
+  controller.controllerResetForTest();
+  const trigPad = (lt) => pad('Xbox Wireless Controller', { buttons: { 6: { value: lt } } });
+  controller.setControllerNavigatorForTest(nav([trigPad(0.56)]));
+  const pressed = [];
+  controller.gamepadTick({ onPress: (a) => pressed.push(a) });
+  assert.ok(pressed.includes('hide'), 'trigger turns on at the threshold');
+  // Now the pull drifts 0.56 -> 0.47 -> 0.46: still held until it clearly
+  // falls back through 0.45, instead of toggling every frame.
+  controller.setControllerNavigatorForTest(nav([trigPad(0.47)]));
+  controller.gamepadTick({ onPress: () => {}, onRelease: () => {} });
+  assert.ok(controller.controllerSnapshot().actions.has('hide'), 'held through threshold chatter');
+  controller.setControllerNavigatorForTest(nav([trigPad(0.44)]));
+  controller.gamepadTick({ onPress: () => {}, onRelease: () => {} });
+  assert.ok(!controller.controllerSnapshot().actions.has('hide'), 'released below the drop-out');
+  controller.controllerResetForTest();
+});
+
+test('a worn stick is calibrated at rest so drift stops walking the player', () => {
+  controller.controllerResetForTest();
+  // Left stick reports +0.18 at rest: a real worn-pad value.
+  const drifting = () => pad('Xbox Wireless Controller', { axes: [0.18, 0, 0, 0] });
+  controller.setControllerNavigatorForTest(nav([drifting()]));
+  for (let i = 0; i < 35; i++) controller.gamepadTick();
+  const atRest = controller.controllerSnapshot();
+  assert.ok(Math.abs(atRest.axes.moveX) < 0.02, 'rest drift is calibrated away');
+  // A real push still moves: 0.8 - 0.18 rest = 0.62 past the deadzone.
+  controller.setControllerNavigatorForTest(nav([pad('Xbox Wireless Controller', { axes: [0.8, 0, 0, 0] })]));
+  controller.gamepadTick();
+  assert.ok(controller.controllerSnapshot().axes.moveX > 0.5, 'real input survives calibration');
+  controller.controllerResetForTest();
+});
+
+test('the look curve flattens the middle: half deflection is not half speed', () => {
+  controller.controllerResetForTest();
+  controller.setControllerNavigatorForTest(nav([
+    pad('Xbox Wireless Controller', { axes: [0, 0, 0.5, 0] }),
+  ]));
+  controller.gamepadTick();
+  const curved = controller.controllerSnapshot().axes.turnX;
+  // At the default curve of 1.35, half deflection reads as ~0.44 of full.
+  // Linear would be (0.5-0.16)/0.84 = 0.405; the 1.35 curve reads lower.
+  assert.ok(curved > 0.2 && curved < 0.4, `curve shapes the middle (${curved})`);
+  controller.controllerResetForTest();
+});
+
+test('a swapped-layout pad reads its real buttons through the database', () => {
+  controller.controllerResetForTest();
+  // The 3 In 1 Conversion Box: physical button 2 IS the south face button.
+  controller.setControllerNavigatorForTest(nav([
+    pad('Vendor: 0f30 Product: 010a 3 In 1 Conversion Box', { buttons: { 2: true } }),
+  ]));
+  controller.gamepadTick();
+  const snap = controller.controllerSnapshot();
+  assert.ok(snap.buttons.has('south'), 'physical 2 reads as south on this device');
+  assert.ok(!snap.buttons.has('west'), 'the standard-mapping guess would have said west');
+  controller.controllerResetForTest();
+});
+
+test('connection listeners hear the pad arrive and leave', () => {
+  controller.controllerResetForTest();
+  const events = [];
+  const off = controller.onControllerConnection((event) => events.push(event));
+  controller.setControllerNavigatorForTest(nav([pad('Xbox Wireless Controller', { buttons: { 0: true } })]));
+  controller.gamepadTick();
+  controller.setControllerNavigatorForTest(nav([]));
+  controller.gamepadTick();
+  off();
+  assert.equal(events.length, 2);
+  assert.equal(events[0].connected, true);
+  assert.equal(events[1].connected, false);
+  controller.controllerResetForTest();
+});
+
+test('the snapshot carries raw values for the settings-screen tester', () => {
+  controller.controllerResetForTest();
+  controller.setControllerNavigatorForTest(nav([
+    pad('Xbox Wireless Controller', { axes: [0.4, -0.2, 0, 0], buttons: { 0: true } }),
+  ]));
+  controller.gamepadTick();
+  const snap = controller.controllerSnapshot();
+  assert.deepEqual(snap.rawValues.axes.slice(0, 4), [0.4, -0.2, 0, 0]);
+  assert.equal(snap.rawValues.buttons.south, 1);
+  controller.controllerResetForTest();
 });

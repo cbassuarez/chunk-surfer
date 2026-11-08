@@ -124,7 +124,24 @@ export function drawPadGlyph(id, x, y, {
       pressed ? ctx.fill() : ctx.stroke();
     }
 
-    if (label && !DPAD.has(id)) {
+    // PlayStation's four marks are shapes, not letters: the LCD matrix has no
+    // ✕○□△ and silently rendered tofu in their place.
+    const MARK = family==='playstation'
+      ? { south: 'cross', east: 'circle', west: 'square', north: 'triangle' }
+      : null;
+    if (MARK?.[id]) {
+      ctx.save();
+      ctx.strokeStyle = pressed ? (UI_COLOR.glass||'#050505') : stroke;
+      ctx.lineWidth = Math.max(1, r * 0.34);
+      ctx.beginPath();
+      const mark = MARK[id];
+      if (mark === 'cross') { ctx.moveTo(cx-r*.55,cy-r*.55); ctx.lineTo(cx+r*.55,cy+r*.55); ctx.moveTo(cx+r*.55,cy-r*.55); ctx.lineTo(cx-r*.55,cy+r*.55); }
+      else if (mark === 'circle') { ctx.arc(cx, cy, r*.52, 0, Math.PI*2); }
+      else if (mark === 'square') { ctx.rect(cx-r*.52, cy-r*.52, r*1.04, r*1.04); }
+      else { ctx.moveTo(cx, cy-r*.58); ctx.lineTo(cx+r*.6, cy+r*.5); ctx.lineTo(cx-r*.6, cy+r*.5); ctx.closePath(); }
+      ctx.stroke();
+      ctx.restore();
+    } else if (label && !DPAD.has(id)) {
       // This is an icon inside the electronic display, not the real plastic
       // button. Its letter is formed by the same LCD matrix as its readout.
       drawElectronicText(ctx,label,cx,cy+ph*.02,{mode:'lcd',fontSize:ph*.52,

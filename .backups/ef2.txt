@@ -1,0 +1,446 @@
+TAP version 13
+# Subtest: a finite corridor stands100m above a separate visible landing head and3.6m SourceII spine
+ok 1 - a finite corridor stands100m above a separate visible landing head and3.6m SourceII spine
+  ---
+  duration_ms: 3336.165459
+  type: 'test'
+  ...
+# Subtest: waiting, looking, interacting or restored positions do not invent a crossing or start demolition
+ok 2 - waiting, looking, interacting or restored positions do not invent a crossing or start demolition
+  ---
+  duration_ms: 12.658
+  type: 'test'
+  ...
+# Subtest: ordinary forward crossing starts finite support loading and stopping never cancels it
+ok 3 - ordinary forward crossing starts finite support loading and stopping never cancels it
+  ---
+  duration_ms: 1034.380667
+  type: 'test'
+  ...
+# Subtest: the player can walk and look while the visible supporting corridor lowers before breaking
+ok 4 - the player can walk and look while the visible supporting corridor lowers before breaking
+  ---
+  duration_ms: 355.88425
+  type: 'test'
+  ...
+# Subtest: precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back
+ok 5 - precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back
+  ---
+  duration_ms: 893.075958
+  type: 'test'
+  ...
+# Subtest: pause, protected recording, unavailable assets and unavailable rendering freeze physical state and clocks
+ok 6 - pause, protected recording, unavailable assets and unavailable rendering freeze physical state and clocks
+  ---
+  duration_ms: 1960.388542
+  type: 'test'
+  ...
+# Subtest: the full100m descent belongs to the body, crosses3distinct strata and lands on a fixed lower surface
+ok 7 - the full100m descent belongs to the body, crosses3distinct strata and lands on a fixed lower surface
+  ---
+  duration_ms: 1090.389041
+  type: 'test'
+  ...
+# Subtest: air input preserves inherited motion without an invisible clamp or projection
+ok 8 - air input preserves inherited motion without an invisible clamp or projection
+  ---
+  duration_ms: 0.896917
+  type: 'test'
+  ...
+# Subtest: ordinary stopped and continuously walking arrivals reach the physical receiving head
+ok 9 - ordinary stopped and continuously walking arrivals reach the physical receiving head
+  ---
+  duration_ms: 2707.167958
+  type: 'test'
+  ...
+# Subtest: a right-edge rubble hold remains escapable through a real lateral gap
+not ok 10 - a right-edge rubble hold remains escapable through a real lateral gap
+  ---
+  duration_ms: 750.902958
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:71:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(state.x>8.7&&state.x<C.earth.maxX-C.bodyRadius)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:75:9)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: contact impulses survive normalization and fixed ticks agree across caller frame frequencies
+not ok 11 - contact impulses survive normalization and fixed ticks agree across caller frame frequencies
+  ---
+  duration_ms: 3179.266542
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:85:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    ... Skipped lines
+    
+      [
+        {
+          at: 0.5000000000000007,
+          gain: 0.52,
+          id: 'source-earthfall:source-II-v1:earthfall-test:strain',
+    ...
+        {
+    +     at: 4.700000000000023,
+    -     at: 4.700000000000103,
+          gain: 0.5,
+          id: 'source-earthfall:source-II-v1:earthfall-test:load-transfer',
+          position: {
+            x: 2.3011124716390623,
+            y: 99.93935860058309,
+    ...
+        {
+    +     at: 6.6750000000001215,
+    -     at: 6.675000000000201,
+          gain: 0.64,
+          id: 'source-earthfall:source-II-v1:earthfall-test:footing-loss',
+          position: {
+    +       x: -0.000038786044599844845,
+    +       y: 99.8954849789632,
+    +       z: -2.400041598953962
+    -       x: -0.00003878604460050115,
+    -       y: 99.89548497896315,
+    -       z: -2.4000415989539623
+          },
+          type: 'footing-loss'
+        },
+        {
+    +     at: 8.083333333333515,
+    -     at: 8.083333333333595,
+          gain: 0.4,
+          id: 'source-earthfall:source-II-v1:earthfall-test:stratum-0',
+          position: {
+    +       x: -0.5153775580796013,
+    -       x: -0.5153775580796274,
+            y: 74,
+    +       z: -3.7857061294769916
+    -       z: -3.78570612947701
+          },
+          type: 'stratum-0'
+        },
+        {
+    +     at: 9.066666666666793,
+    -     at: 9.066666666666872,
+          gain: 0.4,
+          id: 'source-earthfall:source-II-v1:earthfall-test:stratum-1',
+          position: {
+    +       x: -1.5615632800078096,
+    -       x: -1.5615632800078372,
+            y: 49,
+    +       z: -6.604268098568951
+    -       z: -6.60426809856897
+          },
+          type: 'stratum-1'
+        },
+        {
+    +     at: 9.99166666666674,
+    -     at: 9.99166666666682,
+          gain: 0.4,
+          id: 'source-earthfall:source-II-v1:earthfall-test:stratum-2',
+          position: {
+    +       x: -1.7368094337258393,
+    -       x: -1.7368094337258668,
+            y: 25,
+    +       z: -7.076404506848101
+    -       z: -7.076404506848121
+          },
+          type: 'stratum-2'
+        },
+        {
+    +     at: 12.399999999999936,
+    -     at: 12.400000000000016,
+          gain: 0.4,
+          id: 'source-earthfall:source-II-v1:earthfall-test:catch',
+          position: {
+    +       x: -1.7771728199140424,
+    -       x: -1.77717281991407,
+            y: 0,
+    +       z: -7.185148828914907
+    -       z: -7.185148828914928
+          },
+          type: 'catch'
+        }
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      id: 'source-earthfall:source-II-v1:earthfall-test:strain'
+      type: 'strain'
+      at: 0.5000000000000007
+      position:
+        x: 0
+        y: 100
+        z: -14
+      gain: 0.52
+    1:
+      id: 'source-earthfall:source-II-v1:earthfall-test:fracture'
+      type: 'fracture'
+      at: 2.2999999999999945
+      position:
+        x: 0
+        y: 100
+        z: -14
+      gain: 0.7
+    2:
+      id: 'source-earthfall:source-II-v1:earthfall-test:load-transfer'
+      type: 'load-transfer'
+      at: 4.700000000000103
+      position:
+        x: 2.3011124716390623
+        y: 99.93935860058309
+        z: -14.156634272464085
+      gain: 0.5
+    3:
+      id: 'source-earthfall:source-II-v1:earthfall-test:footing-loss'
+      type: 'footing-loss'
+      at: 6.675000000000201
+      position:
+        x: -0.00003878604460050115
+        y: 99.89548497896315
+        z: -2.4000415989539623
+      gain: 0.64
+    4:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-0'
+      type: 'stratum-0'
+      at: 8.083333333333595
+      position:
+        x: -0.5153775580796274
+        y: 74
+        z: -3.78570612947701
+      gain: 0.4
+    5:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-1'
+      type: 'stratum-1'
+      at: 9.066666666666872
+      position:
+        x: -1.5615632800078372
+        y: 49
+        z: -6.60426809856897
+      gain: 0.4
+    6:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-2'
+      type: 'stratum-2'
+      at: 9.99166666666682
+      position:
+        x: -1.7368094337258668
+        y: 25
+        z: -7.076404506848121
+      gain: 0.4
+    7:
+      id: 'source-earthfall:source-II-v1:earthfall-test:catch'
+      type: 'catch'
+      at: 12.400000000000016
+      position:
+        x: -1.77717281991407
+        y: 0
+        z: -7.185148828914928
+      gain: 0.4
+  actual:
+    0:
+      id: 'source-earthfall:source-II-v1:earthfall-test:strain'
+      type: 'strain'
+      at: 0.5000000000000007
+      position:
+        x: 0
+        y: 100
+        z: -14
+      gain: 0.52
+    1:
+      id: 'source-earthfall:source-II-v1:earthfall-test:fracture'
+      type: 'fracture'
+      at: 2.2999999999999945
+      position:
+        x: 0
+        y: 100
+        z: -14
+      gain: 0.7
+    2:
+      id: 'source-earthfall:source-II-v1:earthfall-test:load-transfer'
+      type: 'load-transfer'
+      at: 4.700000000000023
+      position:
+        x: 2.3011124716390623
+        y: 99.93935860058309
+        z: -14.156634272464085
+      gain: 0.5
+    3:
+      id: 'source-earthfall:source-II-v1:earthfall-test:footing-loss'
+      type: 'footing-loss'
+      at: 6.6750000000001215
+      position:
+        x: -0.000038786044599844845
+        y: 99.8954849789632
+        z: -2.400041598953962
+      gain: 0.64
+    4:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-0'
+      type: 'stratum-0'
+      at: 8.083333333333515
+      position:
+        x: -0.5153775580796013
+        y: 74
+        z: -3.7857061294769916
+      gain: 0.4
+    5:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-1'
+      type: 'stratum-1'
+      at: 9.066666666666793
+      position:
+        x: -1.5615632800078096
+        y: 49
+        z: -6.604268098568951
+      gain: 0.4
+    6:
+      id: 'source-earthfall:source-II-v1:earthfall-test:stratum-2'
+      type: 'stratum-2'
+      at: 9.99166666666674
+      position:
+        x: -1.7368094337258393
+        y: 25
+        z: -7.076404506848101
+      gain: 0.4
+    7:
+      id: 'source-earthfall:source-II-v1:earthfall-test:catch'
+      type: 'catch'
+      at: 12.399999999999936
+      position:
+        x: -1.7771728199140424
+        y: 0
+        z: -7.185148828914907
+      gain: 0.4
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:94:53)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: impact is a brief partial blink at zero height, while normal look resumes after it
+ok 12 - impact is a brief partial blink at zero height, while normal look resumes after it
+  ---
+  duration_ms: 2.789458
+  type: 'test'
+  ...
+# Subtest: the lower threshold opens on approach but must still be physically crossed; an off-axis step cannot grant SourceII
+ok 13 - the lower threshold opens on approach but must still be physically crossed; an off-axis step cannot grant SourceII
+  ---
+  duration_ms: 1088.52225
+  type: 'test'
+  ...
+# Subtest: a borrowed manual-door policy blocks approach until interaction while ordinary SourceII keeps automatic opening
+ok 14 - a borrowed manual-door policy blocks approach until interaction while ordinary SourceII keeps automatic opening
+  ---
+  duration_ms: 1072.175375
+  type: 'test'
+  ...
+# Subtest: the extended receiving spine adds a sustained walk while retaining continuous physical footing
+ok 15 - the extended receiving spine adds a sustained walk while retaining continuous physical footing
+  ---
+  duration_ms: 1115.186458
+  type: 'test'
+  ...
+# Subtest: the lower leaves begin once at approach range, keep moving through retreat/reload, and ignore redundant interaction
+ok 16 - the lower leaves begin once at approach range, keep moving through retreat/reload, and ignore redundant interaction
+  ---
+  duration_ms: 1053.196
+  type: 'test'
+  ...
+# Subtest: an auto-opening door still blocks the capsule until its visible leaves finish, including a nearby restored save
+ok 17 - an auto-opening door still blocks the capsule until its visible leaves finish, including a nearby restored save
+  ---
+  duration_ms: 1068.736
+  type: 'test'
+  ...
+# Subtest: upper architecture and the lower destination retain100m separation rather than descending into a copied floor
+ok 18 - upper architecture and the lower destination retain100m separation rather than descending into a copied floor
+  ---
+  duration_ms: 0.292209
+  type: 'test'
+  ...
+# Subtest: save/reload retains the exact physical fall and receipts without replaying support failures
+ok 19 - save/reload retains the exact physical fall and receipts without replaying support failures
+  ---
+  duration_ms: 1081.248666
+  type: 'test'
+  ...
+# Subtest: one-time migration rescues retired broad-floor saves without projecting an ordinary live fall
+ok 20 - one-time migration rescues retired broad-floor saves without projecting an ordinary live fall
+  ---
+  duration_ms: 1.223834
+  type: 'test'
+  ...
+# Subtest: a completed old-approach receipt retains doorway clearance once while active old saves keep their exact body
+ok 21 - a completed old-approach receipt retains doorway clearance once while active old saves keep their exact body
+  ---
+  duration_ms: 1057.494625
+  type: 'test'
+  ...
+# Subtest: finite fragments remain as shallow debris instead of accelerating away to clear the lower view
+ok 22 - finite fragments remain as shallow debris instead of accelerating away to clear the lower view
+  ---
+  duration_ms: 2.301333
+  type: 'test'
+  ...
+# Subtest: an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt
+not ok 23 - an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt
+  ---
+  duration_ms: 1.398959
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:221:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(state.z<C.passage.exitZ&&state.z>C.passage.exitZ-C.bodyRadius)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-earthfall.spec.mjs:223:68)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: closed leaves and open frame posts block the full body from both sides and on diagonal approaches
+ok 24 - closed leaves and open frame posts block the full body from both sides and on diagonal approaches
+  ---
+  duration_ms: 1.835125
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 21
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22880.370375

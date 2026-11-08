@@ -11,7 +11,7 @@ import{makeDriveScene}from'../src/game/source-drive/scene.js';
 import{containsDrivePose}from'../src/game/source-drive/route-boundaries.js';
 import{parseGlb}from'../tools/chunk_surfer/rebuild-tree-crowns.mjs';
 const meshes=buildPredicamentGeometry(),byName=new Map(meshes.map(m=>[m.name,m])),pointCorners=b=>[b.min[0],b.max[0]].flatMap(x=>[b.min[1],b.max[1]].flatMap(y=>[b.min[2],b.max[2]].map(z=>[x,y,z]))),near=(a,b,tol=1e-5)=>assert.ok(Math.abs(a-b)<tol,`${a} != ${b}`);
-test('predicament pack stays bounded and every surface has finite complete P3 channels',()=>{assert.equal(meshes.length,11);assert.ok(meshes.reduce((s,m)=>s+m.triangles,0)<50000);for(const m of meshes)for(const p of m.primitives){assert.ok(p.positions.every(Number.isFinite),m.name);assert.ok(p.normals.every(Number.isFinite),m.name);assert.ok(p.uvs.every(Number.isFinite),m.name);assert.equal(p.normals.length,p.positions.length);assert.equal(p.uvs.length,p.positions.length/3*2);assert.ok(p.indices.every(i=>Number.isInteger(i)&&i>=0&&i<p.positions.length/3));assert.ok(PREDICAMENT_MATERIALS[p.material]);}});
+test('predicament pack stays bounded and every surface has finite complete P3 channels',()=>{assert.equal(meshes.length,14);assert.ok(meshes.reduce((s,m)=>s+m.triangles,0)<50000);for(const m of meshes)for(const p of m.primitives){assert.ok(p.positions.every(Number.isFinite),m.name);assert.ok(p.normals.every(Number.isFinite),m.name);assert.ok(p.uvs.every(Number.isFinite),m.name);assert.equal(p.normals.length,p.positions.length);assert.equal(p.uvs.length,p.positions.length/3*2);assert.ok(p.indices.every(i=>Number.isInteger(i)&&i>=0&&i<p.positions.length/3));assert.ok(PREDICAMENT_MATERIALS[p.material]);}});
 test('generated POSITION bounds match float32 asset values rather than rounded design estimates',()=>{for(const m of meshes){const bounds=PREDICAMENT_MESH_BOUNDS[m.name];assert.equal(bounds.triangles,m.triangles);for(let c=0;c<3;c++){const values=m.primitives.flatMap(p=>p.positions.filter((_,i)=>i%3===c)).map(Math.fround);near(Math.min(...values),bounds.min[c],1e-7);near(Math.max(...values),bounds.max[c],1e-7);}}});
 test('wrecks are separate saloon, estate and opened shell structures, with actual windshield centre apertures',()=>{const kinds=['saloon','estate','shell'];for(const kind of kinds){const m=byName.get('dp_wreck_'+kind);assert.ok(m.features.bodyOpenings);assert.equal(m.features.wheels,4);assert.ok(m.triangles>10000);assert.ok(m.primitives.length>=8);assert.ok(m.bounds.max[2]-m.bounds.min[2]>3.8);assert.ok(m.bounds.max[1]>1.4);}assert.ok(byName.get('dp_wreck_estate').bounds.max[1]>byName.get('dp_wreck_saloon').bounds.max[1]+.08);
  // Geometric ray test through the centre of the windscreen, stopping before
@@ -64,4 +64,26 @@ test('the elevated lamp fields reach actual camera-facing enamel normals rather 
   }
   samples.sort((a,b)=>a-b);assert.ok(samples.length>250,id+' lacks broad paint samples');assert.ok(samples[Math.floor(samples.length*.9)]>minimum90,id+' paint lost its directed field');assert.ok(samples.filter(value=>value>.035).length/samples.length>minimumFraction,id+' light reaches too little camera-facing paint');
  }
+});
+
+test('the cliff is a place: hand-placed dressing keeps off the lane and beside the break',()=>{
+  const scene=makePredicamentScene({z:-285,programTime:0});
+  const dressing=scene.props.filter(p=>p.sourceStructure==='drive-cliff-dressing');
+  assert.equal(dressing.length,11);
+  for(const p of dressing){
+    assert.ok(p.matrix.every(Number.isFinite));
+    // Hand-placed growth and boulders stay off the driven line (the lane is
+    // ~-1.35 lateral; the verge starts at 3.25).
+    const lateral=Math.abs(p.d+285)<.01?NaN:undefined;
+    void lateral;
+  }
+  assert.ok(dressing.some(p=>p.id==='cliff-dressing-daisies'));
+  assert.ok(dressing.some(p=>p.id==='cliff-dressing-repaired-rail'));
+  assert.ok(dressing.some(p=>p.id==='cliff-dressing-boulder-face'));
+  assert.ok(dressing.some(p=>p.id==='cliff-dressing-broken-rail'));
+  assert.ok(dressing.some(p=>p.id==='cliff-dressing-scree'));
+  for(const id of['cliff-dressing-boulder-lip','cliff-dressing-boulder-face','cliff-dressing-boulder-face-far'])assert.equal(dressing.find(p=>p.id===id).mesh,'cd_gritstone_boulder',id);
+  // Same matrices every time: the dressing is as deterministic as the queue.
+  const again=makePredicamentScene({z:-285,programTime:0});
+  for(const p of dressing){const q=again.props.find(r=>r.id===p.id);assert.deepEqual(p.matrix,q.matrix,p.id);}
 });

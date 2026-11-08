@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {makeOpeningPrologueScene} from '../src/game/opening-prologue-scene.js';
+import {openingOmenBendProps} from '../src/render/opening-omen.js';
 
 // A drive host whose picture is a fixed eye; the scene owns the beats.
 function fakeDrive(eye=[-8,1.6,-600]){
-  const calls={start:0,update:0,frame:0,dispose:0};
-  const snapshot=()=>({phase:'free-drive',driveState:{heading:0,z:600}});
-  const frame=()=>({scene:{eye:[...eye]},look:{},weather:{},driveState:{heading:0}});
-  const drive={start(){calls.start++;},update(){calls.update++;},frame(){calls.frame++;return frame();},snapshot,dispose(){calls.dispose++;}};
+  const calls={start:0,update:0,frame:0,dispose:0,lookBy:0};
+  const snapshot=()=>({phase:'free-drive',driveState:{heading:0,z:600},look:{yaw:0,pitch:-.04}});
+  const frame=()=>({scene:{eye:[...eye]},look:{yaw:0,pitch:-.04},weather:{},driveState:{heading:0}});
+  const drive={start(){calls.start++;},update(){calls.update++;},frame(){calls.frame++;return frame();},snapshot,dispose(){calls.dispose++;},
+    lookAngles(){return{yaw:0,pitch:-.04};},lookBy(){calls.lookBy++;return true;}};
   return{drive,calls};
 }
 function host({drive=null,metrics=null,driveLive=()=>true}={}){
@@ -89,5 +91,47 @@ test('the beat veil covers the picture switch and decays',()=>{
   assert.ok(h.scene.view().beatVeil>0,'the switch carries a veil');
   for(let k=0;k<30;k++)h.scene.update(1/60);
   assert.equal(h.scene.view().beatVeil,0,'the veil clears');
+  h.scene.exit();
+});
+
+
+test('the talk owns the pedals: WASD is swallowed, look turns the eye only on drive beats',()=>{
+  const f=fakeDrive(),h=host({drive:f.drive,metrics:{eye:[0,1.6,-2]}});
+  startFilm(h);
+  h.scene.seekStage('dark');h.scene.update(1/30);
+  assert.equal(h.scene.allowsLook,true);
+  assert.equal(h.scene.lookBy(.4,-.2),true);assert.equal(f.calls.lookBy,1);
+  for(const key of['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'])assert.equal(h.scene.key({key}),true,key);
+  h.scene.seekStage('inner');h.scene.update(1/30);
+  assert.equal(h.scene.allowsLook,false);
+  assert.equal(h.scene.lookBy(.4,0),false,'look does not turn the pure omen');
+  for(const key of['w','a','s','d'])assert.equal(h.scene.key({key}),true,key);
+  h.scene.exit();
+});
+
+test('the bend on the lobe: a dilated little road and van ride the outer wheel',()=>{
+  const centre=[80,70.5,-16],eye=[90,62.5,-9],radius=5,normal=[0,1,0];
+  const band=(7.3+8.8)/2*radius;
+  const t0=openingOmenBendProps({eye,centre,radius,normal,time:0});
+  assert.equal(t0.filter(p=>p.id.startsWith('omen-bend:road')).length,9);
+  assert.ok(t0.some(p=>p.id==='omen-bend:van'));
+  assert.ok(t0.some(p=>p.id.startsWith('omen-bend:tyre')));
+  for(const p of t0){
+    const d=Math.hypot(p.x-centre[0],p.y-centre[1],p.z-centre[2]);
+    assert.ok(d>band-16&&d<band+16,`${p.id} sits on the lobe band (${d.toFixed(1)} vs ${band.toFixed(1)})`);
+  }
+  // The van follows the bend over time.
+  const t1=openingOmenBendProps({eye,centre,radius,normal,time:1.5});
+  const van0=t0.find(p=>p.id==='omen-bend:van'),van1=t1.find(p=>p.id==='omen-bend:van');
+  assert.ok(Math.hypot(van1.x-van0.x,van1.z-van0.z)>.01,'the van moves');
+});
+
+test('the last word puts the van on the lobe: bend props ride the omen picture',()=>{
+  const f=fakeDrive(),h=host({drive:f.drive,metrics:{eye:[0,1.6,-2]}});
+  startFilm(h);
+  h.scene.seekStage('last');h.scene.worldView();
+  assert.ok(h.calls.omen.at(-1).props.some(p=>p.id==='omen-bend:van'),'the lobe vision rides the omen picture');
+  h.scene.seekStage('inner');h.scene.worldView();
+  assert.ok(!h.calls.omen.at(-1).props.some(p=>p.id.startsWith('omen-bend:')),'other beats keep the pure omen');
   h.scene.exit();
 });

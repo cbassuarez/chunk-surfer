@@ -104,9 +104,18 @@ export function shouldHideCrossEnvelopeProp(instance,{observerZone=null,exterior
     ||Number(instance?.y)>=16.7
   ))return false;
   if(isLoadingBaySightlineProp(instance))return false;
-  // The exterior hero mesh is the complete visible envelope of Ellery. Large
-  // interior structures must not substitute for an exterior elevation through
-  // recessed courts. Ordinary yard props live outside this footprint.
+  // Interior props must not draw through the civic shell from the yard. Outdoors
+  // is a property of the ZONE (floorplan/legend.js), not of where a prop happens
+  // to sit: the old X/Z envelope hid only the main block and let the stair tower,
+  // the academic wing, the plant room and the bell tower float their wall art and
+  // panels straight through the shell. Separate civic buildings (pub, stationers,
+  // church) keep their own envelopes, so their indoors are not hidden this way.
+  const zone=instance?.zone;
+  if(zone!==undefined&&zone!==null){
+    return !isOutdoorZone(zone)&&![ZONE.pub,ZONE.stationers,ZONE.church].includes(zone);
+  }
+  // No zone (unit fixtures without a compiled plan): keep the original positional
+  // envelope of the main block.
   return Number(instance?.x)>=49.5&&Number(instance?.x)<=129.0
     &&Number(instance?.z)>=-.5&&Number(instance?.z)<=93.5;
 }

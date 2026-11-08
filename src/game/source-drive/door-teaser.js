@@ -2,6 +2,7 @@
 import {createDrive,stepDrive,selectStation as tuneDrive,power as powerDrive} from './drive-state.js';
 import {CAB_RADIO_LEAN,cabRadioLeanAngles} from '../../data/cab-radio.js';
 import {worldAt,roadSurfaceAt} from './road.js';
+import {createCliffFall,CLIFF_FALL} from './cliff-fall.js';
 import {makeDriveScene,multiply,rotation} from './scene.js';
 import {driveEvolutionFrame} from './evolution.js';
 import {programmeFrame} from './radio-programmes.js';
@@ -28,17 +29,27 @@ function groundedPose(t){const q=distanceAt(t),road=worldAt(q.distance),u=clamp(
  // The rear axle supports the nose until release. No preflight whole-body sink.
  if(frontLoss>0){let support=0;for(const side of[-1,1]){const p=point(body,[side*.84,0,1.75]),r=roadSurfaceAt(p[0]-32,p[2]-32);support+=r.height-p[1];}body[13]+=support/2;}
  return{distance:q.distance,lateral,position:baseFromBody(body),heading,pitch,speed:q.velocity*road.longitudinalScale,bodyMatrix:Array.from(body)};}
-const release=groundedPose(C.fallStart),velocityWorld=[Math.sin(release.heading)*6.5+Math.cos(release.heading)*1.8,-.3,-Math.cos(release.heading)*6.5+Math.sin(release.heading)*1.8],velocityLocal=[COASTAL_WORLD_FROM_LOCAL[0]*velocityWorld[0]+COASTAL_WORLD_FROM_LOCAL[2]*velocityWorld[2],-.3,COASTAL_WORLD_FROM_LOCAL[8]*velocityWorld[0]+COASTAL_WORLD_FROM_LOCAL[10]*velocityWorld[2]];
-function airPose(s){const position={x:release.position.x+velocityWorld[0]*s,y:release.position.y-.3*s-4.905*s*s,z:release.position.z+velocityWorld[2]*s},heading=release.heading+.025*ease(s/2.5),pitch=mix(release.pitch,-1.14,ease(s/2.3));return{position,heading,pitch,bodyMatrix:Array.from(bodyAt(position,heading,pitch))};}
-function lowestHullY(body){let y=Infinity;for(const x of[-1.04,1.04])for(const z of[-3.25,2.55])y=Math.min(y,localPoint(point(body,[x,0,z]))[1]);return y;}
-let low=0,high=4;for(let i=0;i<48;i++){const mid=(low+high)/2;if(lowestHullY(airPose(mid).bodyMatrix)>COASTAL_MEMORY_LAYOUT.seaY)low=mid;else high=mid;}
-export const DOOR_DRIVE_WATER_ENTRY=C.fallStart+(low+high)/2;
-const contactFlight=DOOR_DRIVE_WATER_ENTRY-C.fallStart,contact=airPose(contactFlight),contactLocal=localPoint([32+contact.position.x,contact.position.y,32+contact.position.z]),contactVelocity=[velocityLocal[0],-.3-9.81*contactFlight,velocityLocal[2]],hydroSeconds=1.4;
-const wetPosition=s=>contactLocal.map((v,i)=>v+contactVelocity[i]/(i===1?8:2.6)*(1-Math.exp(-(i===1?8:2.6)*s))),wetEnd=wetPosition(hydroSeconds),wetVelocity=contactVelocity.map((v,i)=>v*Math.exp(-(i===1?8:2.6)*hydroSeconds));
+const release=groundedPose(C.fallStart),velocityWorld=[Math.sin(release.heading)*6.5+Math.cos(release.heading)*1.8,-.3,-Math.cos(release.heading)*6.5+Math.sin(release.heading)*1.8];
+// The plunge as physics (src/game/source-drive/cliff-fall.js): rear-axle
+// pivot, ballistic flight, water impact and the damped descent to the wreck.
+// The phase names and cue times keep their meaning; only the motion changed.
+const coastalToLocal=p=>localPoint([32+p[0],p[1],32+p[2]]),coastalToWorld=p=>{const w=point(COASTAL_WORLD_FROM_LOCAL,p);return[w[0]-32,w[1],w[2]-32];},
+  coastalDirToLocal=v=>{const m=COASTAL_WORLD_FROM_LOCAL;return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[4]*v[0]+m[5]*v[1]+m[6]*v[2],m[8]*v[0]+m[9]*v[1]+m[10]*v[2]];};
+const referenceFall=createCliffFall({
+  release:{position:[release.position.x,release.position.y,release.position.z],velocity:[...velocityWorld],heading:release.heading,pitch:release.pitch,roll:0},
+  seaY:COASTAL_MEMORY_LAYOUT.seaY,
+  settledMatrix:multiply(COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL),
+  settledAtLocal:C.settledStart-C.fallStart,
+  toLocal:coastalToLocal,toWorld:coastalToWorld,toLocalDir:coastalDirToLocal,
+});
+export const DOOR_DRIVE_WATER_ENTRY=C.fallStart+referenceFall.entryTime;
+const contactFlight=referenceFall.entryTime;
+function fallPoseShape(state,{distance,lateral,speed,fallSeconds=null,waterSeconds=null}){const s=state;return{position:{x:s.position[0],y:s.position[1],z:s.position[2]},heading:s.heading,pitch:s.pitch,roll:s.roll,bodyMatrix:Array.from(s.bodyMatrix),distance,lateral,speed,verticalVelocity:s.verticalVelocity,splash:s.splash||0,...(fallSeconds!=null?{fallSeconds}:{}),...(waterSeconds!=null?{waterSeconds}:{})};}
 function wheelRotationAt(p){const base=(p.distance-C.startDistance)/.34+6.5/.34*p.fallSeconds;if(!p.waterSeconds)return base;const coast=6.5/.34/2,early=base+coast*Math.min(1,p.waterSeconds),final=Math.ceil((base+coast)/(Math.PI*2))*Math.PI*2;return p.waterSeconds<1?early:mix(early,final,ease((p.waterSeconds-1)/(C.settledStart-DOOR_DRIVE_WATER_ENTRY-1)));}
-function submergedPose(t){const elapsed=t-DOOR_DRIVE_WATER_ENTRY,span=C.settledStart-DOOR_DRIVE_WATER_ENTRY-hydroSeconds,u=clamp((elapsed-hydroSeconds)/span),settled=COASTAL_MEMORY_LAYOUT.settledPose,p=elapsed<hydroSeconds?wetPosition(elapsed):wetEnd.map((v,i)=>hermite(v,settled.position[i],wetVelocity[i],0,span,u)),angle=ease(clamp(elapsed/(C.settledStart-DOOR_DRIVE_WATER_ENTRY))),heading=mix(contact.heading,siteYaw+settled.heading,angle),pitch=mix(contact.pitch,settled.pitch,angle),world=point(COASTAL_WORLD_FROM_LOCAL,p),position={x:world[0]-32,y:world[1],z:world[2]-32};return{position,heading,pitch,bodyMatrix:t>=C.settledStart?Array.from(multiply(COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL)):Array.from(bodyAt(position,heading,pitch))};}
 const phaseAt=t=>t<C.soundLeadEnd?'sound-lead':t<C.queueStart?'approach':t<C.climbStart?'queue':t<C.loadedStart?'climb':t<C.departureStart?'loaded':t<C.fallStart?'departure':t<DOOR_DRIVE_WATER_ENTRY?'fall':t<C.settledStart?'submerge':t<C.impactStart?'submerged-hold':t<C.returnStart?'impact-black':t<C.duration?'return':'complete';
-export function doorDriveTeaserPoseAt(timeSec=0){const t=clamp(finite(timeSec),0,C.duration),flight=clamp(t-C.fallStart,0,contactFlight),wet=Math.max(0,t-DOOR_DRIVE_WATER_ENTRY),p=t<C.fallStart?groundedPose(t):t<DOOR_DRIVE_WATER_ENTRY?{...airPose(flight),distance:C.releaseDistance,lateral:C.releaseLateral,speed:6.5}:{...submergedPose(t),distance:C.releaseDistance,lateral:C.releaseLateral,speed:6.5*Math.exp(-2.6*wet)},lookUp=.18*smooth((t-30)/10)*(1-smooth((t-60)/5)),lookDown=.13*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),lookPitchOffset=t>=C.fallStart?-.035:.025+lookUp-lookDown,lookYawOffset=-.10*smooth((t-17)/3)*(1-smooth((t-29)/3))+.15*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),coverAlpha=t<C.soundLeadEnd?1:t<C.pictureFadeEnd?1-smooth((t-C.soundLeadEnd)/(C.pictureFadeEnd-C.soundLeadEnd)):t<C.impactFadeStart?0:t<C.impactStart?smooth((t-C.impactFadeStart)/(C.impactStart-C.impactFadeStart)):t<C.returnStart?1:1-smooth((t-C.returnStart)/(C.duration-C.returnStart)),sceneAnchor=worldAt(p.distance);return{...p,timeSec:t,phase:phaseAt(t),coverAlpha,worldOwner:t<C.impactStart?'drive':'return',cliffCommitted:t>=C.departureStart,controlOwner:'opening-cinematic',sceneAnchor:{x:sceneAnchor.x,y:sceneAnchor.y,z:sceneAnchor.z,heading:sceneAnchor.heading},roll:0,verticalVelocity:t<C.fallStart?0:t<DOOR_DRIVE_WATER_ENTRY?-.3-9.81*flight:contactVelocity[1]*Math.exp(-8*wet),fallSeconds:flight,waterSeconds:wet,waterEntryTime:DOOR_DRIVE_WATER_ENTRY,lookPitchOffset,lookYawOffset,breakEdge:{...DRIVE_TEASER_BREAK}};}
+export function doorDriveTeaserPoseAt(timeSec=0){const t=clamp(finite(timeSec),0,C.duration),flight=clamp(t-C.fallStart,0,contactFlight),wet=Math.max(0,t-DOOR_DRIVE_WATER_ENTRY),p=t<C.fallStart?groundedPose(t):fallPoseShape(referenceFall.state(t-C.fallStart),{distance:C.releaseDistance,lateral:C.releaseLateral,speed:t<DOOR_DRIVE_WATER_ENTRY?6.5:6.5*Math.exp(-2.6*wet)}),lookUp=.18*smooth((t-30)/10)*(1-smooth((t-60)/5)),lookDown=.13*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),// The fall's shot: a held level beat at release, then the eye follows the
+// drop down as the sea comes up, easing back as the splash covers it.
+lookPitchOffset=t>=C.fallStart?(-.035-.205*ease(clamp((t-C.fallStart-.35)/1.2,0,1))*(1-smooth((t-DOOR_DRIVE_WATER_ENTRY)/.4))):.025+lookUp-lookDown,lookYawOffset=-.10*smooth((t-17)/3)*(1-smooth((t-29)/3))+.15*smooth((t-63)/1.4)*(1-smooth((t-68)/1.5)),coverAlpha=t<C.soundLeadEnd?1:t<C.pictureFadeEnd?1-smooth((t-C.soundLeadEnd)/(C.pictureFadeEnd-C.soundLeadEnd)):t<C.impactFadeStart?0:t<C.impactStart?smooth((t-C.impactFadeStart)/(C.impactStart-C.impactFadeStart)):t<C.returnStart?1:1-smooth((t-C.returnStart)/(C.duration-C.returnStart)),sceneAnchor=worldAt(p.distance);return{...p,timeSec:t,phase:phaseAt(t),coverAlpha,worldOwner:t<C.impactStart?'drive':'return',cliffCommitted:t>=C.departureStart,controlOwner:'opening-cinematic',sceneAnchor:{x:sceneAnchor.x,y:sceneAnchor.y,z:sceneAnchor.z,heading:sceneAnchor.heading},roll:t<C.fallStart?0:p.roll,verticalVelocity:t<C.fallStart?0:p.verticalVelocity,splash:p.splash||0,fallSeconds:flight,waterSeconds:wet,waterEntryTime:DOOR_DRIVE_WATER_ENTRY,lookPitchOffset,lookYawOffset,breakEdge:{...DRIVE_TEASER_BREAK}};}
 export function doorDriveCinematicFrame(timeSec){const t=clamp(finite(timeSec),0,C.duration),wet=Math.max(0,t-DOOR_DRIVE_WATER_ENTRY),pulse=(at,width=.4)=>Math.exp(-(((t-at)/width)**2)),submerged=smooth(wet/1.8);return{schema:1,timeSec:t,phase:phaseAt(t),controlsLocked:true,waterEntryTime:DOOR_DRIVE_WATER_ENTRY,queueLoad:smooth((t-33)/16)*(1-smooth((t-72)/1)),metalStrain:clamp(pulse(49.6,.65)+pulse(58.8,.85)+pulse(68.1,.55)),wheelRelease:smooth((t-64)/.25),audio:{waterImpact:pulse(DOOR_DRIVE_WATER_ENTRY,.09),bodyGrind:pulse(71.7,.55),metalStrain:clamp(pulse(49.6,.65)+pulse(58.8,.85)+pulse(68.1,.55)),submerged,enginePower:1-smooth(wet/.7),radioPower:1-smooth((wet-1.2)/2.2),windOpen:smooth((t-C.fallStart)/.25)*(1-submerged)},cues:[{id:'first-queue',time:16},{id:'vertical-chain',time:33},{id:'loaded-roof',time:49.6},{id:'second-strain',time:58.8},{id:'wheel-falls',time:64},{id:'last-strain',time:68.1},{id:'body-grind',time:71.7},{id:'sea-impact',time:DOOR_DRIVE_WATER_ENTRY},{id:'settled-van',time:88}],underwater:submerged,rigRollApplied:false,groundReferenceOnly:true};}
 // The reference poses above describe the shared fall/aftermath, not a timer
 // that drives the player. Entry, free driving and cliff commitment are distinct.
@@ -75,19 +86,25 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
  }
  const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
  function airborne(f,seconds){
-  const a=f.release,velocity=f.releaseVelocity,position={x:a.position.x+velocity[0]*seconds,y:a.position.y+velocity[1]*seconds-4.905*seconds*seconds,z:a.position.z+velocity[2]*seconds},u=ease(seconds/2.3),pitch=mix(a.pitch,f.airPitch,u),roll=mix(a.roll||0,f.airRoll,u),heading=a.heading+.025*ease(seconds/2.5);
-  return{position,heading,pitch,roll,bodyMatrix:Array.from(bodyAt(position,heading,pitch,roll)),speed:f.travelSign*Math.hypot(velocity[0],velocity[2]),distance:a.distance,lateral:a.lateral,fallSeconds:seconds,waterSeconds:0,verticalVelocity:velocity[1]-9.81*seconds};
+  const s=f.fall.state(seconds);
+  return fallPoseShape(s,{distance:f.release.distance,lateral:f.release.lateral,speed:f.travelSign*Math.hypot(f.releaseVelocity[0],f.releaseVelocity[2]),fallSeconds:seconds});
  }
  function commit({edge=false,support=null}={}){
   const capture=livePose(),vx=Math.sin(drive.heading)*drive.speed+Math.cos(drive.heading)*drive.lateralSpeed,vz=-Math.cos(drive.heading)*drive.speed+Math.sin(drive.heading)*drive.lateralSpeed,velocity=[vx,(drive.heaveVelocity||0)+Math.sin(capture.pitch)*drive.speed,vz],rearFirst=Math.cos(capture.heading-anchor.heading)<0;
   const length=Math.hypot(release.position.x-capture.position.x,release.position.z-capture.position.z),lead=edge?0:clamp(2*length/(Math.abs(drive.speed)+6.5),1,3);
   const endHeading=rearFirst||edge?capture.heading:capture.heading+angleDelta(release.heading,capture.heading),endPitch=edge?capture.pitch:rearFirst?-release.pitch:release.pitch;
   const end=edge?capture:{...release,heading:endHeading,pitch:endPitch,roll:0,bodyMatrix:Array.from(bodyAt(release.position,endHeading,endPitch))};
-  const f={age:0,lead,capture,velocity,release:end,releaseVelocity:edge?velocity:velocityWorld,travelSign:Math.sign(drive.speed)||1,rearFirst,wheelRate:edge?drive.speed/.34:(rearFirst?-1:1)*6.5/.34,reason:edge?'actual-cliff-support-loss':'forward-road-plane-crossing',support,look:{...look},programmeStart:drive.programTime,wheelStart:drive.wheelRotation,airPitch:rearFirst?1.14:-1.14,airRoll:0};
-  // The camera supports yaw/pitch. Retain a level long axis for a side
-  // departure; do not claim an unapplied camera roll. Rear-first stays rear-first.
-  if(edge){const forward=[Math.sin(capture.heading),-Math.cos(capture.heading)],seaward=[COASTAL_WORLD_FROM_LOCAL[0],COASTAL_WORLD_FROM_LOCAL[2]],fore=forward[0]*seaward[0]+forward[1]*seaward[1];f.airPitch=-fore*1.05;f.airRoll=0;}
-  let lo=0,hi=4;for(let i=0;i<48;i++){const t=(lo+hi)/2;if(lowestHullY(airborne(f,t).bodyMatrix)>COASTAL_MEMORY_LAYOUT.seaY)lo=t;else hi=t;}f.contactFlight=(lo+hi)/2;f.contact=airborne(f,f.contactFlight);f.contactLocal=localPoint([32+f.contact.position.x,f.contact.position.y,32+f.contact.position.z]);f.contactVelocity=[f.releaseVelocity[0],f.releaseVelocity[1]-9.81*f.contactFlight,f.releaseVelocity[2]];f.coveredAt=lead+f.contactFlight+.28;f.finishedAt=f.coveredAt+2.4;force=f;keys.clear();handControl=null;
+  const f={age:0,lead,capture,velocity,release:end,releaseVelocity:edge?velocity:velocityWorld,travelSign:Math.sign(drive.speed)||1,rearFirst,wheelRate:edge?drive.speed/.34:(rearFirst?-1:1)*6.5/.34,reason:edge?'actual-cliff-support-loss':'forward-road-plane-crossing',support,look:{...look},programmeStart:drive.programTime,wheelStart:drive.wheelRotation};
+  // The fall, integrated from the actual capture: the holding axle pivots
+  // (or neither does, off the edge), then gravity owns the rest.
+  f.fall=createCliffFall({
+    release:{position:[end.position.x,end.position.y,end.position.z],velocity:[...f.releaseVelocity],heading:end.heading,pitch:end.pitch,roll:end.roll||0},
+    seaY:COASTAL_MEMORY_LAYOUT.seaY,
+    settledMatrix:multiply(COASTAL_WORLD_FROM_LOCAL,COASTAL_SETTLED_BODY_LOCAL),
+    settledAtLocal:14,pivotSeconds:edge?0:CLIFF_FALL.pivotSeconds,direction:rearFirst?-1:1,attitude:'hold',
+    toLocal:coastalToLocal,toWorld:coastalToWorld,toLocalDir:coastalDirToLocal,
+  });
+  f.contactFlight=f.fall.entryTime;f.contact=airborne(f,f.contactFlight);f.coveredAt=lead+f.contactFlight+.28;f.finishedAt=f.coveredAt+2.4;force=f;keys.clear();handControl=null;
  }
  function forcedPose(){
   const age=force.age;let p,story;
@@ -98,10 +115,10 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
   }else{
    const flight=age-force.lead;
    if(flight<force.contactFlight){p=airborne(force,flight);story=73+flight/force.contactFlight*contactFlight;}
-   else{const wet=flight-force.contactFlight,pos=force.contact.position;const position={x:pos.x+force.contactVelocity[0]/2.6*(1-Math.exp(-2.6*wet)),y:pos.y+force.contactVelocity[1]/8*(1-Math.exp(-8*wet)),z:pos.z+force.contactVelocity[2]/2.6*(1-Math.exp(-2.6*wet))};p={...force.contact,position,bodyMatrix:Array.from(bodyAt(position,force.contact.heading,force.contact.pitch,force.contact.roll)),speed:force.contact.speed*Math.exp(-2.6*wet),fallSeconds:force.contactFlight,waterSeconds:wet,verticalVelocity:force.contactVelocity[1]*Math.exp(-8*wet)};story=DOOR_DRIVE_WATER_ENTRY+wet;}
+   else{const wet=flight-force.contactFlight;p=fallPoseShape(force.fall.state(force.contactFlight+wet),{distance:force.contact.distance,lateral:force.contact.lateral,speed:force.contact.speed*Math.exp(-2.6*wet),fallSeconds:force.contactFlight,waterSeconds:wet});story=DOOR_DRIVE_WATER_ENTRY+wet;}
   }
   const phase=age<force.lead?'departure':age<force.lead+force.contactFlight?'fall':age<force.coveredAt?'submerge':age<force.coveredAt+1.25?'impact-black':age<force.finishedAt?'return':'complete',alpha=age<force.coveredAt-.14?0:age<force.coveredAt?smooth((age-force.coveredAt+.14)/.14):age<force.coveredAt+1.25?1:1-smooth((age-force.coveredAt-1.25)/1.15),lookMix=ease(age/Math.max(.2,force.lead));
-  return{...p,timeSec,cinematicTime:story,phase,coverAlpha:clamp(alpha),worldOwner:age<force.coveredAt?'drive':'return',cliffCommitted:true,commitReason:force.reason,rearFirst:force.rearFirst,controlOwner:'opening-cinematic',controlsEnabled:false,sceneAnchor:{x:anchor.x,y:anchor.y,z:anchor.z,heading:anchor.heading},lookYawOffset:force.look.yaw*(1-lookMix),lookPitchOffset:mix(force.look.pitch,-.035,lookMix),waterEntryTime:force.lead+force.contactFlight,breakEdge:{...DRIVE_TEASER_BREAK}};
+  return{...p,timeSec,cinematicTime:story,phase,coverAlpha:clamp(alpha),worldOwner:age<force.coveredAt?'drive':'return',cliffCommitted:true,commitReason:force.reason,rearFirst:force.rearFirst,controlOwner:'opening-cinematic',controlsEnabled:false,sceneAnchor:{x:anchor.x,y:anchor.y,z:anchor.z,heading:anchor.heading},lookYawOffset:force.look.yaw*(1-lookMix),lookPitchOffset:age<force.lead?mix(force.look.pitch,-.035,lookMix):-.035-.205*ease(clamp((age-force.lead-.35)/1.2,0,1)),waterEntryTime:force.lead+force.contactFlight,breakEdge:{...DRIVE_TEASER_BREAK}};
  }
  // The dial cut's picture: a dark middle while the van is moved, around the static.
  function cutCover(){if(!cut)return 0;const u=cut.age/timeSkips.cut.seconds,mid=timeSkips.cut.placeAt/timeSkips.cut.seconds;return clamp(1-Math.abs(u-mid)/.24)*.5;}
@@ -117,7 +134,7 @@ export function createDoorDriveTeaser({onComplete=()=>{},onCoveredReturn=()=>{},
  function step(h){
   timeSec+=h;
   if(skip){skip.age+=h;if(skip.age>=.98)complete();}
-  else if(force){force.age+=h;synchronize();if(force.age>=force.finishedAt)complete();}
+  else if(force){const rate=force.age<.55?.8:1;force.age+=h*rate;synchronize();if(force.age>=force.finishedAt)complete();}
   else if(cut){
    // The dial turns: out of the picture, the van set down in the dark middle on
    // the next stretch with the radio on its new station, and back in.

@@ -27,8 +27,10 @@ test('ordinary bundle never declares a lens executable or model resource', () =>
   const workflow = read('.github/workflows/release.yml');
   assert.deepEqual(config.bundle.resources, { '../LEGAL/EULA.md': 'EULA.md', 'steamworks-runtime/': 'steamworks/' });
   assert.equal(config.bundle.externalBin, undefined);
-  assert.equal(pkg.scripts['tauri:build'], 'tauri build');
-  assert.match(pkg.scripts.build,/vite build\s*&&\s*npm run lean:verify -- dist$/,
+  assert.equal(pkg.scripts['tauri:build'], 'node scripts/build-lock.mjs wrap tauri build');
+  assert.match(pkg.scripts.build,/^node scripts\/build-lock\.mjs wrap npm run build:chain$/,
+    'every frontend build runs under the dist-write mutex so a concurrent build cannot wipe assets while generate_context! embeds them');
+  assert.match(pkg.scripts['build:chain'],/vite build\s*&&\s*npm run lean:verify -- dist$/,
     'the frontend tree is scanned before its assets can be embedded into a native executable');
   assert.ok(!read('scripts/package-windows-portable.mjs').includes('cpSync(sidecar'));
   assert.match(main, /const SD_DEV_ENABLED=import\.meta\.env\.DEV && import\.meta\.env\.VITE_STABLE_DIFFUSION==='1'/);

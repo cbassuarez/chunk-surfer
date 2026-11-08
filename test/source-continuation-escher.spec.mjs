@@ -52,9 +52,9 @@ test('live fall frames preserve the native receiver and bound the separate Esche
   for(const pitch of [-1.3,-.6,0,.6,1.3]){
     const frame=sourceContinuationRenderFrame(falling({pitch}));
     assert.equal(frame.voidLoop.omittedVisible,0,`pitch ${pitch}: receiver geometry was dropped`);
-    assert.ok(frame.props.length<=760,`pitch ${pitch}: native budget exceeded`);
+    assert.ok(frame.props.length<=800,`pitch ${pitch}: native budget exceeded`);
     assert.equal(frame.escher.props.length,176);
-    assert.ok(frame.props.length+frame.escher.props.length<=936,`pitch ${pitch}: total bounded submission exceeded`);
+    assert.ok(frame.props.length+frame.escher.props.length<=976,`pitch ${pitch}: total bounded submission exceeded`);
     assert.ok(frame.escher.props.every(p=>p.matrix.length===16&&Array.from(p.matrix).every(Number.isFinite)));
   }
 });

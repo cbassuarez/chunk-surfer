@@ -120,7 +120,7 @@ const foyerSuiteSeating = acquisitions.filter((prop) => ['acq-foyer-sofa-01', 'a
 const hallSofas = acquisitions.filter((prop) => prop.mesh === 'sofa_02');
 assert.equal(foyerSofa.scale, 1.55);
 assert.deepEqual(foyerSuiteSeating.map((prop) => prop.x), [75.5, 75.5, 75.5]);
-assert.deepEqual(foyerSuiteSeating.map((prop) => prop.y), [19, 17.7, 20.3]);
+assert.deepEqual(foyerSuiteSeating.map((prop) => prop.y), [6, 4.5, 7.5]);
 assert.ok(foyerSuiteSeating.every((prop) => prop.yaw === -Math.PI / 2));
 assert.ok(hallSofas.every((prop) => prop.scale === 1.35));
 assert.ok(acquisitions.filter((prop) => prop.provenance.cohort === 'hall_lighting_refit')

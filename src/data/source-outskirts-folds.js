@@ -71,8 +71,11 @@ export function outskirtsFoldLayout(k, originals) {
     let set = strip.map(p => {
       // Copy geometry and finish only. There are no fake working phones,
       // duplicated people, inspection targets, sound emitters or lamp pools.
-      const { mesh, canonicalId, scale, scaleX, scaleY, scaleZ } = p;
-      const piece = { id: `fold-${frame.id}-${p.id}`, mesh, canonicalId,
+      const { mesh, canonicalId, scale, scaleX, scaleY, scaleZ, fallbackMesh } = p;
+      // The remembered street copies keep the whole van (its fallback), never the
+      // wrecked hull the base placement shows; the wreck's bounds live in another
+      // pack, so the folds must address a mesh PROP_BOUNDS can resolve.
+      const piece = { id: `fold-${frame.id}-${p.id}`, mesh: fallbackMesh || mesh, canonicalId,
         across: frame.across + p.across * cr - p.y * sr, y: p.across * sr + p.y * cr,
         along: p.along, yaw: p.yaw, foldRoll: frame.roll, folded: true, foldFrame: frame.id,
         foldSource: p.id, collision: 'none', structural: true,

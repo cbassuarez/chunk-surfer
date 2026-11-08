@@ -19,6 +19,7 @@ ophanim-infall-in-game.preview-*.png
 assets/music-box/voice-test/
 .lens-build/
 *.log
+.chunk-surfer-build.lock
 __pycache__/
 *.pyc
 

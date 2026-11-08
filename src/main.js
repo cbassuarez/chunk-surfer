@@ -634,6 +634,8 @@ import { GAIT_SPEED, SPEED_FLOOR, chooseGait, gaitSpeed, applySpeedFactors, cell
 import { createExertionBreath } from './audio/exertion-breath.js';
 import { attenuateSourceFearPressure, attenuateSourceHushAudioField, sourceShoreOutside, sourceShoreSensoryFrame } from './game/source-sensory.js';
 import * as CONTROLLER from './game/controller.js';
+import {createGamepadTraceRecorder} from './game/gamepad-trace.js';
+let gamepadTraceRecorder=null;
 import * as BINDINGS from './game/bindings.js';
 import { drawPromptParts, promptPartsWidth } from './render/prompt-glyphs.js';
 import {
@@ -5190,6 +5192,16 @@ function step(dx,dy){
   const nx=planRedirect?.x??px+sx;
   const ny=planRedirect?.y??py+sy;
   if(nx===px&&ny===py) return;
+  // The last-light recording holds the body in place, and a refused step must
+  // say so instead of swallowing the input as if the game had broken.
+  if(usingSourceSpace()&&chunkSurfRuntime?.outskirtsLastLight?.()?.hold&&!chunkSurfRuntime?.outskirtsLastLight?.()?.out){
+    const refusalNow=performance.now();
+    if(refusalNow-(lastLightRefusalAt||0)>2200){
+      lastLightRefusalAt=refusalNow;
+      SPEECH.say({who:'direction',text:'Your body won\u2019t move. As much as you\u2019d like it to.'},{id:'last-light-held',replace:true,interrupt:true,context:null,escapable:false});
+    }
+    return;
+  }
   // The collapsed Surfer occupies the same geometry as the player. Work out
   // the follower before committing the player step: if his body cannot follow
   // through a door or around a wall, neither body teleports and the step is
@@ -5962,6 +5974,11 @@ function setGameplayPaused(next, { announce=true }={}){
   if(paused){b3SpeakerAudio.pause();b3Speaker.flush();}
   if(storyMode&&inRogue)syncChapelTapeDemandTimelineHold();
   getInDriveTeaserScene?.setPaused(paused||!gameplayInputLifecycleActive());
+  // Dev trace capture: hand the recorded pad session over on disconnect.
+  if(gamepadTraceRecorder&&!CONTROLLER.controllerConnected()&&gamepadTraceRecorder.frames()>1){
+    gamepadTraceRecorder.download(`gamepad-trace-${new Date().toISOString().replace(/[:.]/g,'-')}.json`);
+    gamepadTraceRecorder=null;
+  }
   if(openingVehicleScene){
     if(paused){openingVehicleScene.suspend?.();openingArrivalAudio?.stop();openingCabRadio?.pause();}
     else if(gameplayInputLifecycleActive())openingVehicleScene.resume?.();
@@ -7517,7 +7534,13 @@ function tickLastMinutes(dt){
   const arc=stepLastMinutesArc(s.arc,target);
   // On the sheet of flags, so a reload is no cure. Whichever save comes next carries it.
   if(arc>=s.arc+.01||(arc>s.arc&&Number(flagGet('last.arc')||0)+.01<=arc))flagSet('last.arc',arc.toFixed(3));
-  s.arc=arc;s.frame=lastMinutesFrame({arc,played:s.played,seed:s.seed});
+  // The Source haystack is the local expression of the same nervous system: its
+  // pressure feeds the frame's deinhibition, so the seeps/takeovers respond to
+  // the corridor instead of running on the global arc alone.
+  const sourceLocal=chunkSurfRuntime?.haystackLocalDeinhibition?.()||0;
+  // One body: a mosh spike holds the surge for its sub-second.
+  const moshHold=chunkSurfRuntime?.haystackMoshAmount?.()||0;
+  s.arc=arc;s.frame=lastMinutesFrame({arc,played:s.played,seed:s.seed,sourceLocal,moshHold});
   if(usingPlan()&&!usingSpecialSpace()){
     if(!s.origin){
       const door=FP.doorState().find(d=>d.id===GREY_DOOR_ID),at=door?(FP.logicalPointToPhysical?.(door.cx,door.cy)||FP.logicalToPhysical(door.cx,door.cy)):null;
@@ -8228,6 +8251,9 @@ function loop(){
       onPress: controllerPress,
       onRelease: controllerRelease,
     });
+    // ?gamepadTrace: record the live pad, one frame per poll, and hand the
+    // player a JSON file of the session when the pad disconnects.
+    if(gamepadTraceRecorder)gamepadTraceRecorder.record(CONTROLLER.controllerSnapshot());
     if(inRogue){
       // Keep keyboard focus on the play surface to avoid intermittent movement deadlocks.
       if((tick % 10)===0) ensureInteractionFocus();
@@ -8770,7 +8796,7 @@ function exteriorActorHeadYaw(id){
   const origin=booth?BOOTH_GUARD_STAGE.origin:[0,0,0],c=Math.cos(prop.yaw||0),s=Math.sin(prop.yaw||0);
   const actorX=prop.x+origin[0]*c-origin[2]*s,actorZ=prop.z+origin[0]*s+origin[2]*c;
   const p=FP.logicalToPhysical(px,py),target=Math.atan2((p.x+.5)*CELL-actorX,-((p.z+.5)*CELL-actorZ));
-  const yaw=(prop.yaw||0)+(booth?Math.PI:0);
+  const yaw=(prop.yaw||0);
   return Math.max(-.48,Math.min(.48,Math.atan2(Math.sin(yaw-target),Math.cos(yaw-target))));
 }
 function noteExteriorConversation(id,{active=true,line=null,speaking=false}={}){
@@ -14006,7 +14032,7 @@ function boothPoseForLine(line){
 
 function createBoothCameraFraming(){
   const origin={x:px,y:py,...(R3.r3dLookAngles?.()||{yaw:mapHeading(),pitch:0})};
-  const inside=FP.toRuntimePoint({x:73.85,y:214});
+  const inside=FP.toRuntimePoint({x:74.15,y:214});
   const startedAt=performance.now();
   return{
     view:()=>boothCameraFrame({origin,target:inside,startedAt,nowMs:performance.now()}),
@@ -22049,6 +22075,7 @@ function stopCloseBreath(){
 const LAST_LIGHT_AUDIO='assets/audio/outskirts/last-light.mp3';
 const LAST_LIGHT_FALLBACK_AUDIO='assets/audio/outskirts/sarah-tape-fallback.wav';
 const lastLight={started:false,done:false,timers:[],source:null,nodes:[],caption:null,elapsed:0,offset:0,clockAt:null,clockContext:null,mode:null,paused:false,generation:0,persistedSecond:-1,duration:0,lines:[],nextLine:0};
+let lastLightRefusalAt=0;
 function lastLightClock(){return lastLight.clockContext?lastLight.clockContext.currentTime:performance.now()/1000;}
 function lastLightElapsed(){return lastLight.clockAt==null?lastLight.elapsed:lastLight.offset+Math.max(0,lastLightClock()-lastLight.clockAt);}
 function persistLastLightPlayback(done=false,force=false){
@@ -40551,6 +40578,7 @@ async function boot(){
           audio:firstStrikeAudio?.snapshot?.(),trace:nightDeadlineTrace.slice(-4)}),
       });
     }
+    if(import.meta.env.DEV&&qp.has('gamepadTrace')){gamepadTraceRecorder=createGamepadTraceRecorder();}
     if(import.meta.env.DEV&&qp.has('openingReview')){
       const {createOpeningOvertureReview}=await import('./dev/opening-overture-review.js');
       createOpeningOvertureReview({

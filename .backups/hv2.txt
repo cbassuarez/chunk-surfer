@@ -1,0 +1,15 @@
+evalmachine.<anonymous>:220
+${DIPPED_BEAM_GLSL}
+  ^
+
+ReferenceError: DIPPED_BEAM_GLSL is not defined
+    at evalmachine.<anonymous>:220:3
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at runInNewContext (node:vm:310:38)
+    at file:///Users/seb/chunk-surfer/test/horizon-void-overlay.spec.mjs:21:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0

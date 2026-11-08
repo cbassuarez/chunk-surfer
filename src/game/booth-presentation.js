@@ -13,12 +13,15 @@ const GUARD_AT=Object.freeze({x:BOOTH_GUARD_STAGE.origin[0],y:BOOTH_GUARD_STAGE.
 export function boothGuardRenderInstance(instance,options={}){
   if(!/^yard-booth-guard-(idle|ledger|handoff)$/.test(instance?.id||''))return instance;
   const yaw=instance.yaw||0,c=Math.cos(yaw),s=Math.sin(yaw),scale=instance.scale||1;
+  // The lodge window and its counter face the public approach; the guard
+  // stands at the stage spot facing through the clear window light the same
+  // way — the booth prop already carries the whole turn.
   return{...instance,mesh:'overworld_booth_guard',fallbackMesh:instance.mesh,
     fallbackTransform:{x:instance.x,y:instance.y,z:instance.z,yaw:instance.yaw},
     x:instance.x+(GUARD_AT.x*c-GUARD_AT.z*s)*scale,
     y:instance.y+GUARD_AT.y*scale,
     z:instance.z+(GUARD_AT.x*s+GUARD_AT.z*c)*scale,
-    yaw:yaw+Math.PI,
+    yaw,
     character:boothGuardDescriptor({pose:instance.id.slice('yard-booth-guard-'.length),...options}),
   };
 }

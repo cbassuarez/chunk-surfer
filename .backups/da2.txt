@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: II keeps one hidden supported body behind the real leaf until six accepted seconds; pause, loading and reload retain its clock
+ok 1 - II keeps one hidden supported body behind the real leaf until six accepted seconds; pause, loading and reload retain its clock
+  ---
+  duration_ms: 90.083042
+  type: 'test'
+  ...
+# Subtest: II warning is complete and physical waiting can be captured, then recovery gives a usable departure
+ok 2 - II warning is complete and physical waiting can be captured, then recovery gives a usable departure
+  ---
+  duration_ms: 168.713292
+  type: 'test'
+  ...
+# Subtest: III receives the same actor through the actual gate fold after restored agency, with persistent provenance and a finite visible warning
+ok 3 - III receives the same actor through the actual gate fold after restored agency, with persistent provenance and a finite visible warning
+  ---
+  duration_ms: 115.260208
+  type: 'test'
+  ...
+# Subtest: III preserves the captured entry refuge wait, then physically pursues continued walking onto the Catch
+ok 4 - III preserves the captured entry refuge wait, then physically pursues continued walking onto the Catch
+  ---
+  duration_ms: 570.527041
+  type: 'test'
+  ...
+# III_REFUGE_CONTINUATION {"nativeStop":{"x":-157.23333333333423,"z":-92},"refugeWaitSeconds":30,"refugeActor":{"x":-152.0016666666662,"z":-92,"feet":8.4},"exposedPlayer":{"x":-162.4666666666567,"z":-92,"feet":8.450000000000001},"pursuerAtCapture":{"x":-161.7733333333368,"z":-92,"feet":8.4},"sameActor":"source-continuation-hush","arrivalCount":1}
+# Subtest: repeated II and corridor waiting captures still leave a usable physical departure, even when the Hush has reached the restored body
+not ok 5 - repeated II and corridor waiting captures still leave a usable physical departure, even when the Hush has reached the restored body
+  ---
+  duration_ms: 799.979208
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-continuation-door-arrival.spec.mjs:107:1'
+  failureType: 'testCodeFailure'
+  error: 'the ordinary recovery departure can reach the real cabinet bypass'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-continuation-door-arrival.spec.mjs:133:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# RECOVERY_DEPARTURE {"location":"II","capturesBeforeDeparture":2,"from":{"x":0,"z":2,"feet":0},"to":{"x":0,"z":-0.10000000000000572,"feet":0},"graceRemaining":1.5000000000000053,"pursuer":{"x":0,"z":0.18000000000001587,"feet":0},"input":"forward in the restored route-facing view"}
+# Subtest: explicitly disabled diagnostic actors stay disabled and ordinary existing actors do not acquire an arrival reset
+ok 6 - explicitly disabled diagnostic actors stay disabled and ordinary existing actors do not acquire an arrival reset
+  ---
+  duration_ms: 162.110166
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 5
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1914.521542

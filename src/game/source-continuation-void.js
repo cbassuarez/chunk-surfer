@@ -13,13 +13,16 @@ export function normalizeContinuationVoidLoop(value) {
 }
 
 export function captureContinuationVoidLoop(value) {
-  if (value?.phase === 'catch') return null;
-  const domain = continuationVoidDomain(value);
+  const domain = value?.phase === 'catch' ? continuationVoidDomain('source-iii-void:catch') : continuationVoidDomain(value);
   return domain ? { version: 1, domainId: domain.id, wrapCount: 0 } : null;
 }
 
 export function continuationVoidLoopForFall(fall, { chartId = fall?.chartId ?? 0 } = {}) {
   if (Object.hasOwn(fall || {}, 'voidLoop')) return normalizeContinuationVoidLoop(fall.voidLoop);
+  if (fall?.fromPhase === 'catch') {
+    const domain = continuationVoidDomain('source-iii-void:catch');
+    return domain ? { version: 1, domainId: domain.id, wrapCount: 0 } : null;
+  }
   if (fall?.fromPhase !== 'wrong-return') return null;
   const owned = captureContinuationVoidLoop({ chartId, feet: fall.lastSupport?.feet ?? fall.feet, phase: 'wrong-return' });
   if (owned) return owned;
@@ -45,8 +48,8 @@ export function normalizeContinuationSpaceWrap(value) {
 export function wrapContinuationVoid(fall) {
   const state = normalizeContinuationVoidLoop(fall?.voidLoop), domain = continuationVoidDomain(state);
   if (!domain || fall.feet + C.bodyHeight / 2 >= domain.exitY || fall.vy >= 0 || (fall.chartId ?? domain.chartId) !== domain.chartId) return null;
-  const tileX = Math.floor((fall.x - domain.minX) / domain.periodX);
-  const tileZ = Math.floor((fall.z - domain.minZ) / domain.periodZ);
+  const tileX = domain.periodX ? Math.floor((fall.x - domain.minX) / domain.periodX) : 0;
+  const tileZ = domain.periodZ ? Math.floor((fall.z - domain.minZ) / domain.periodZ) : 0;
   const translation = [tileX ? -tileX * domain.periodX : 0, domain.translationY, tileZ ? -tileZ * domain.periodZ : 0];
   const before = point({ ...fall, chartId: domain.chartId });
   fall.x += translation[0]; fall.feet += translation[1]; fall.z += translation[2];

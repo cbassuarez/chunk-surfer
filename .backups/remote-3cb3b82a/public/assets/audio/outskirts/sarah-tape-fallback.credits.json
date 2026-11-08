@@ -1,0 +1,198 @@
+{
+ "generator": "tools/chunk_surfer/build-sarah-tape-fallback.mjs",
+ "authored": "Rendered in this repository by the game's local formant voice (src/audio/sam-voice.js). No third-party audio and no sam-js output.",
+ "thirdParty": [],
+ "sha256": "587d14a32551eee54398940bb96734948776ed49efebbc2e1ce85cd664bfe315",
+ "seconds": 91.5,
+ "lines": [
+  {
+   "at": 2.5,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 2.38,
+   "room": 2.38,
+   "hurry": 1.44,
+   "text": "Testing. Testing. This is... what is this."
+  },
+  {
+   "at": 5,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 2.38,
+   "room": 2.38,
+   "hurry": 1.1,
+   "text": "It's the street. Tell them it's the street."
+  },
+  {
+   "at": 7.5,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 1.87,
+   "room": 4.38,
+   "hurry": 1,
+   "text": "This... is the street."
+  },
+  {
+   "at": 12,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 4.88,
+   "room": 4.88,
+   "hurry": 1.04,
+   "text": "Here we see the lamp post, in its natural habitat. Solitary. Nocturnal."
+  },
+  {
+   "at": 17,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 0.89,
+   "room": 1.38,
+   "hurry": 1,
+   "text": "He's lonely."
+  },
+  {
+   "at": 18.5,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 2.38,
+   "room": 2.38,
+   "hurry": 1.09,
+   "text": "He's not lonely. He's got a job to do."
+  },
+  {
+   "at": 21,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 3,
+   "room": 7.88,
+   "hurry": 1,
+   "text": "I light the pavement. Nobody thanks me."
+  },
+  {
+   "at": 29,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 2.96,
+   "room": 5.88,
+   "hurry": 1,
+   "text": "Keep it down, keep it down, there's one coming."
+  },
+  {
+   "at": 35,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 4.76,
+   "room": 4.88,
+   "hurry": 1,
+   "text": "The night bus. Nobody knows where it goes. Nobody has ever come back."
+  },
+  {
+   "at": 40,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 2.53,
+   "room": 2.88,
+   "hurry": 1,
+   "text": "It's the forty-two. It goes to my mum's."
+  },
+  {
+   "at": 43,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 2.8,
+   "room": 6.88,
+   "hurry": 1,
+   "text": "Nobody has ever come back from your mum's."
+  },
+  {
+   "at": 50,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 2.55,
+   "room": 5.88,
+   "hurry": 1,
+   "text": "Give it here. Give it. It's my turn."
+  },
+  {
+   "at": 56,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 4.87,
+   "room": 4.88,
+   "hurry": 1,
+   "text": "And here we have the recordist. Rare. Very shy. Only comes out at night."
+  },
+  {
+   "at": 61,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 0.45,
+   "room": 1.38,
+   "hurry": 1,
+   "text": "Don't."
+  },
+  {
+   "at": 62.5,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 3.7,
+   "room": 3.88,
+   "hurry": 1,
+   "text": "He's pretending he isn't listening. He's always listening."
+  },
+  {
+   "at": 66.5,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 3.39,
+   "room": 6.38,
+   "hurry": 1,
+   "text": "He thinks he's recording the street. He's recording me."
+  },
+  {
+   "at": 73,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 1.03,
+   "room": 1.88,
+   "hurry": 1,
+   "text": "...Yeah."
+  },
+  {
+   "at": 75,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 2.08,
+   "room": 2.38,
+   "hurry": 1,
+   "text": "What are we going to do with this?"
+  },
+  {
+   "at": 77.5,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 2.46,
+   "room": 3.38,
+   "hurry": 1,
+   "text": "Keep it. We'll play it when we're old."
+  },
+  {
+   "at": 81,
+   "who": "sarah",
+   "speaker": "sarah",
+   "seconds": 2.48,
+   "room": 2.88,
+   "hurry": 1,
+   "text": "We'll do another one. We'll do loads."
+  },
+  {
+   "at": 84,
+   "who": "you",
+   "speaker": "recordist",
+   "seconds": 0.55,
+   "room": 7.3,
+   "hurry": 1,
+   "text": "Loads."
+  }
+ ]
+}

@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
+import { createHallChandelierRuntime } from '../src/game/hall-chandelier-runtime.js';
+import { hallChandelierInstances, hallChandelierLights } from '../src/data/hall-chandelier-treatment.js';
+import {waterWakeSource} from '../src/game/water-bodies.js';
+import {selectW3OutlookLights,ELLERY_HYBRID_LIGHTS} from '../src/render/ellery-hybrid-lighting.js';
+import {ELLERY_PUBLIC_FRONT_LIGHTS} from '../src/data/ellery-public-front.js';
+
+const main=await readFile(new URL('../src/main.js',import.meta.url),'utf8');
+const section=(start,end)=>{
+  const from=main.indexOf(start),to=main.indexOf(end,from+start.length);
+  assert.ok(from>=0&&to>from,`missing integration section: ${start}`);
+  return main.slice(from,to);
+};
+
+// Execute the actual main-loop lease and autosave together. A reprise may stay
+// open indefinitely (including beneath pause), long enough for many autosaves.
+// The render override must never become an ordinary-world body checkpoint.
+{
+  const calls=[];
+  const sourceState={active:true,phase:'final',checkpointId:'final'};
+  const radioState={schema:5,concernRemainingMs:15000};
+  const runtime={state:()=>sourceState,sourceSurfaceLines:()=>['SOURCE BODY']};
+  let camera={yaw:1.73,pitch:-.22};
+  const sandbox={
+    chunkSurfRuntime:runtime,FP:{isLoaded:()=>true},RENDERER:'3d',
+    sourceReturnFlashbackScene:null,standingTearScene:null,
+    sourceDriveSession:null,sourcePubScene:null,sourceContinuationScene:null,coastalMemoryScene:null,
+    saveAcademicGhostClub:()=>{},
+    getInDriveTeaserOrigin:null,costumeInspectionScene:null,costumeInspectionOrigin:null,studentStrikeReturnPose:null,
+    usingSourceSpace:()=>sandbox.chunkSurfRuntime!==null,
+    R3:{
+      r3dLookAngles:()=>({...camera}),r3dFacing:()=>2,
+      r3dSetLookAngles:(look)=>{camera={yaw:look.yaw,pitch:look.pitch};calls.push('look');},
+      ...Object.fromEntries(['r3dSetSourceSurface','r3dSetHorizon','r3dSetSourceEmergency',
+        'r3dSetSourceWhiteout','r3dSetSourceFault','r3dSetLocalLights','r3dSetEmergencyShadows',
+        'r3dSetSourceScene'].map((name)=>[name,()=>{}])),
+    },
+    PROPS:{setLooseProp:()=>{}},r3dCache:{},syncSourceRender:()=>calls.push('source-render'),
+    px:12,py:-444,stepCount:700,storyMode:true,usingStairAnomaly:()=>false,
+    CHAPEL_TOWER_PHASE:{TOWER_ACTIVE:'tower-active'},
+    chapelTowerState:()=>({phase:'source-ready'}),bellTowerRuntime:null,towerBellDirector:null,
+    hushAudioRuntime:null,getSave:()=>({area:'source-space',playSeconds:0,view:{yaw:1.73,pitch:-.22}}),
+    RADIO:{saveRadioState:()=>radioState},
+    sourceCameraPatch:()=>({}),
+    rememberChapelTapeDemandDeparture(){}, // No pending Chapel demand in this Source lease.
+    saveCommit:(value)=>calls.push(value),
+  };
+  const api=vm.runInNewContext(`${section('let sourceRepriseWorldLease=null;','function sourceReplayMovementInterlude')}
+    ${section('let saveAcc=0;','// One question, two geometry providers')}
+    ({begin:beginSourceRepriseWorldLease,save:saveTick,lease:()=>sourceRepriseWorldLease});`,sandbox);
+  const lease=api.begin();
+  assert.ok(lease);
+  assert.equal(sandbox.chunkSurfRuntime,null,'the old room owns only render geometry');
+  camera={yaw:-2.1,pitch:.5};
+  api.save(4);
+  const checkpoint=calls.find((call)=>typeof call==='object');
+  assert.equal(checkpoint.area,'source-space');
+  assert.equal(checkpoint.px,12);
+  assert.equal(checkpoint.py,-444);
+  assert.equal(checkpoint.chunkSurf,sourceState);
+  assert.equal(checkpoint.radio,radioState,'the borrowed room does not discard the radio timer');
+  assert.equal('view' in checkpoint,false,'the borrowed camera is not persisted as the live body');
+  assert.equal('cameraRevision' in checkpoint,false);
+  assert.equal(lease.release(),true);
+  assert.equal(sandbox.chunkSurfRuntime,runtime);
+  assert.equal(api.lease(),null);
+  assert.deepEqual(camera,{yaw:1.73,pitch:-.22});
+  assert.ok(calls.indexOf('look')<calls.indexOf('source-render'),'restore the head before Source geometry');
+  assert.equal(lease.release(),false,'scene exit after title cleanup is harmless');
+
+  // Replacing the world through a diagnostic/ending must not resurrect the old
+  // runtime or move the new world's head when the stale lease finally exits.
+  const stale=api.begin(),replacement={};
+  sandbox.chunkSurfRuntime=replacement;
+  camera={yaw:.2,pitch:.1};
+  stale.release();
+  assert.equal(sandbox.chunkSurfRuntime,replacement);
+  assert.deepEqual(camera,{yaw:.2,pitch:.1});
+}
+
+// A camera in the copied swimming bath resolves that bath and its waterline,
+// even while the real player's coordinates remain far outside the building.
+{
+  const queries=[],ripples=[];
+  const body={id:'natatorium',bounds:{minX:0,minY:0,maxX:10,maxY:10,count:100},levelM:1,murk:.3,ripples:true};
+  const sandbox={
+    px:800,py:-900,currentNatatoriumWaterRun:()=>({}),waterBodies:[body],FP:{logicalToPhysical:(x,y)=>({x,z:y,y:0})},
+    WATERBODY:{
+      nearestWaterBody:(_bodies,x,y)=>{queries.push({x,y});return body;},
+      pointInBounds:(x,y)=>x===4&&y===5,waterFlowSources:()=>[],waterWakeSource,
+    },
+    WATER:{makeNatatoriumRippleSources:({player})=>{ripples.push(player);return[];}},
+    getSave:()=>({settings:{shake:'reduced'}}),floorHere:()=>12,
+    natatoriumSoaked:()=>false,performance:{now:()=>100},
+  };
+  const render=vm.runInNewContext(`${section('const waterWakeLast=new Map();','// The water the renderer should draw')}
+    ${section('function currentWaterRenderState','// The bath specifically')}
+    currentWaterRenderState;`,sandbox);
+  const water=render({audio:.5,view:{x:4,y:5,floorH:-2}});
+  assert.equal(queries[0].x,4);assert.equal(queries[0].y,5);
+  assert.equal(water.cameraSubmerged,true);
+  assert.ok(Math.abs(water.submersionDepthM-1.38)<.0001);
+  assert.equal(ripples[0].x,4);assert.equal(ripples[0].y,5);
+  render();
+  assert.equal(queries[1].x,800,'ordinary rendering retains the real body by default');
+}
+
+// Actor suppression is applied at the architectural light boundary too; a
+// replay cannot generate fresh emergency apparitions beside its copied actor.
+{
+  const submitted=[],enabled=[];
+  const rig=[{id:'practical'}];
+  const chandelierContext={runId:'reprise-light-boundary',eligible:true,consumedCount:0},chandelierSaves=[];
+  const sandbox={
+    activeEndingCutscene:null,escape:null,storyMode:false,studentStrikePresentationFrame:()=>null,openingCinematicFrame:()=>null,shouldStageOpeningCinematic:()=>false,
+    openingPresentationView:()=>null,openingVehicleScene:null,towerWarningReady:false,
+    planName:'conservatory',usingSpecialSpace:()=>false,sourceRepriseWorldLease:null,usingPlan:()=>true,
+    buildingWindowForObserver:()=>null,selectW3OutlookLights,ELLERY_HYBRID_LIGHTS,ELLERY_PUBLIC_FRONT_LIGHTS,
+    pubHospitalityReady:()=>false,vanDoorOpenFraction:()=>0,vanRearCargoLight:()=>null,
+    exteriorHeadlightLights:()=>[],streetPilotTime:()=>0,
+    px:0,py:0,getSave:()=>({settings:{flash:'full'}}),performance:{now:()=>0},
+    FP:{logicalToPhysical:()=>({x:0,y:0,z:0}),zoneAt:()=>1},
+    resolveLightingContext:()=>({zone:1,group:'basement'}),
+    CHAPEL_TOWER_PHASE:{},chapelTowerState:()=>({}),
+    R3:{r3dSetLightingContext:()=>{},r3dWorldYaw:()=>0,
+      r3dSetEmergencyShadows:(value)=>submitted.push(value),r3dSetLocalLights:(value)=>submitted.push(value)},
+    resolveLocalLights:()=>rig,liveLightCircuits:()=>new Set(),lightAnchorPosition:()=>null,
+    CELL:1,ZONE:{plant:2,street:3,civicCourt:4,dock:5},PLANT:{plantHissing:()=>false},
+    dockHauntingStagingPoint:null,dockHauntingFrame:null,plantIsolationPresentation:null,
+    apparitionDirector:{suspend:()=>{}},apparitionProbeLightId:null,
+    buildEmergencyShadowFrame:(_lights,options)=>{enabled.push(options.enabled);return null;},
+    noteEmergencyApparitions:()=>{},lastEmergencyShadowFrame:null,syncApparitionApplause:()=>{},
+    REC:{lightOn:()=>false,batteryLevel:()=>0},
+    brendanLightPresentation:(lights)=>lights,
+    hallChandelierLights,
+    hallChandelierRendered:hallChandelierInstances([{id:'acq-hall-chandelier-west',x:5,y:7,z:9,zone:1}]).filter(instance=>instance.practicalFixture),
+  };
+  sandbox.hallChandelierRuntime=createHallChandelierRuntime({
+    readContext:()=>chandelierContext,budgetReady:()=>true,reserveBudget:()=>true,
+    persistConsumed:count=>{chandelierContext.consumedCount=count;chandelierSaves.push(count);return true;},
+  });
+  sandbox.hallChandelierRuntime.configureReview({firstQuietSeconds:[.01,.01]});
+  sandbox.hallChandelierRuntime.tick(.02);sandbox.hallChandelierRuntime.tick(.2);
+  assert.equal(hallChandelierLights(sandbox.hallChandelierRendered,sandbox.hallChandelierRuntime.view()).length,3,
+    'negative control: the real active fixture supplies its three local sectors');
+  const sync=vm.runInNewContext(`${section('function syncArchitecturalLocalLights','function liveLightCircuits')}
+    syncArchitecturalLocalLights;`,sandbox);
+  chandelierContext.suppressActors=true;
+  sync('hall',{suppressActors:true});
+  assert.equal(enabled[0],false);
+  assert.equal(submitted[0].length,0);
+  assert.equal(submitted[1].length,rig.length,'the reconstruction keeps only its ordinary practicals');
+  assert.equal(submitted[1][0],rig[0],'the reconstruction keeps the original practical light');
+  assert.equal(sandbox.hallChandelierRuntime.view().active,false,'the suppression boundary cancels an already emitted Hall glow');
+  assert.equal(sandbox.hallChandelierRuntime.view().reason,'occupied');
+  assert.deepEqual(chandelierSaves,[1],'the render guard cannot spend another saved episode');
+  chandelierContext.eligible=false;chandelierContext.suppressActors=false;
+  sync('basement');
+  assert.equal(enabled[1],true,'ordinary room apparitions keep their authored behavior');
+}
+
+const title=section('function returnToTitle()','function showReturnReport');
+assert.ok(title.indexOf('sourceRepriseWorldLease?.release()')<title.indexOf('saveCommit('),
+  'quit-to-title must release the borrowed view before taking a title checkpoint');
+console.log('Source reprise integration specs passed');

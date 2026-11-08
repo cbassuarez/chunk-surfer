@@ -11,6 +11,7 @@ import {
   setActiveInputDevice,
   setControllerSettings as setBindingControllerSettings,
 } from './bindings.js';
+import { deviceLayoutFor } from './controller-device.js';
 
 const MOVE = Object.freeze({ up: 'move_up', down: 'move_down', left: 'move_left', right: 'move_right' });
 const REPEATABLE = new Set([...Object.values(MOVE), 'tabPrev', 'tabNext']);
@@ -51,6 +52,19 @@ let capture = null;
 let settings = normalizeControllerSettings(controllerSettings());
 let navigatorOverride = null;
 let lastState = emptyState();
+let lastRawPadId = '';
+let deviceLayout = null; // the physical layout of the pad currently in hand
+let calibration = null; // sampled rest state, subtracted from the live axes
+let calibrationFrames = 0;
+let triggerLatched = new Set(); // triggers hold their on/off state: no flicker
+let rawValues = {}; // raw axis/button values for the settings screen's tester
+const CALIBRATION_FRAMES = 30;
+const connectionListeners = new Set();
+
+export function onControllerConnection(callback) {
+  connectionListeners.add(callback);
+  return () => connectionListeners.delete(callback);
+}
 
 function emptyState() {
   return {
@@ -99,10 +113,70 @@ function normalizePadName(pad) {
   return String(pad?.id || 'GAMEPAD').replace(/\s*\([^)]*\)\s*/g, ' ').trim().slice(0, 36);
 }
 
+function physicalButtonId(layout, index) {
+  if (layout?.buttons?.has(index)) return layout.buttons.get(index);
+  return BUTTON_BY_INDEX[index] || null;
+}
+
+// A trigger flickers if it is read at the threshold each frame: it turns on
+// and off a dozen times a second on a half-pulled pull. Latched edges fix it:
+// once on, it stays on until the value falls clearly back. The physical value
+// comes from the device's own row (trigger-as-axis) or the bound button.
+function triggerHeld(layout, pad, id, threshold) {
+  const axisIndex = layout?.triggerAxes?.get(id);
+  let value;
+  if (axisIndex != null) {
+    value = Number(pad?.axes?.[axisIndex] || 0) * (layout.invert.has(`a${axisIndex}`) ? -1 : 1);
+  } else {
+    let index = null;
+    for (const [i, semantic] of layout?.buttons || []) if (semantic === id) { index = i; break; }
+    if (index == null) index = id === 'leftTrigger' ? 6 : 7;
+    const entry = pad?.buttons?.[index];
+    value = Number(entry?.value || (entry?.pressed ? 1 : 0) || 0);
+  }
+  const on = value >= threshold;
+  const off = value < threshold * 0.82;
+  if (on) triggerLatched.add(id);
+  else if (off) triggerLatched.delete(id);
+  return triggerLatched.has(id);
+}
+
+// Rest-state drift: worn sticks and triggers report a few percent at rest.
+// The first half-second of a pad's session is sampled and subtracted, so a
+// drifting left stick stops walking the player sideways.
+function calibratedAxis(value, index, role) {
+  const raw = Number(value) || 0;
+  if (role === 'leftx' || role === 'lefty') {
+    if (calibration && calibrationFrames >= CALIBRATION_FRAMES) return raw - calibration[index];
+    // Still sampling: report zero rather than the drifting rest.
+    if (Math.abs(raw) < 0.5) return 0;
+  }
+  return raw;
+}
+
+function sampleCalibration(pad) {
+  if (calibrationFrames >= CALIBRATION_FRAMES || !pad?.axes?.length) return;
+  if ((pad.axes || []).some((axis) => Math.abs(Number(axis) || 0) > 0.6)) return; // in use: do not learn
+  calibration = calibration || new Array(pad.axes.length).fill(0);
+  for (let i = 0; i < pad.axes.length; i++) {
+    const value = Number(pad.axes[i]) || 0;
+    calibration[i] = (calibration[i] * calibrationFrames + value) / (calibrationFrames + 1);
+  }
+  calibrationFrames++;
+}
+
+// The look curve: sensitivity is the peak; the curve shapes the middle so a
+// small nudge tracks slowly and a full push reaches the full rate.
+function curveAxis(value, curve) {
+  const n = Number(value) || 0;
+  if (!n) return 0;
+  return Math.sign(n) * Math.pow(Math.abs(n), curve);
+}
+
 function rawButtons(pad, threshold = settings.triggerThreshold) {
   const out = new Set();
   pad?.buttons?.forEach((button, index) => {
-    const id = BUTTON_BY_INDEX[index];
+    const id = physicalButtonId(deviceLayout, index);
     if (id && buttonPressed(button, threshold, id)) out.add(id);
   });
   return out;
@@ -133,14 +207,23 @@ function selectPad(list) {
 
 function axesFor(pad) {
   if (!pad) return { moveX: 0, moveY: 0, turnX: 0, lookY: 0 };
+  // The physical axis indices, from the device's own database row when there
+  // is one, the standard mapping when there is not.
+  const roles = { leftx: 0, lefty: 1, rightx: 2, righty: 3 };
+  for (const [index, role] of deviceLayout?.axes || []) roles[role] = index;
+  const signFor = (role, fallback) => deviceLayout?.invert.has(`a${roles[role]}`) ? -1 : fallback;
+  const leftX = signFor('leftx', 1) * calibratedAxis(pad.axes?.[roles.leftx], roles.leftx, 'leftx');
+  const leftY = signFor('lefty', -1) * calibratedAxis(pad.axes?.[roles.lefty], roles.lefty, 'lefty');
+  const rightX = signFor('rightx', 1) * calibratedAxis(pad.axes?.[roles.rightx], roles.rightx, 'rightx');
+  const rightY = signFor('righty', -1) * calibratedAxis(pad.axes?.[roles.righty], roles.righty, 'righty');
   const lookSign = settings.invertLookY ? -1 : 1;
-  const lookY = -(Number(pad.axes?.[3]) || 0) * lookSign;
+  const curve = settings.lookCurve ?? 1.35;
   const sensitivity = settings.lookSensitivity;
   return {
-    moveX: clampAxis(deadzone(Number(pad.axes?.[0]) || 0, settings.moveDeadzone)),
-    moveY: clampAxis(deadzone(-(Number(pad.axes?.[1]) || 0), settings.moveDeadzone)),
-    turnX: clampAxis(deadzone(Number(pad.axes?.[2]) || 0, settings.lookDeadzone) * sensitivity),
-    lookY: clampAxis(deadzone(lookY, settings.lookDeadzone) * sensitivity),
+    moveX: clampAxis(deadzone(leftX, settings.moveDeadzone)),
+    moveY: clampAxis(deadzone(leftY, settings.moveDeadzone)),
+    turnX: clampAxis(curveAxis(deadzone(rightX, settings.lookDeadzone), curve) * sensitivity),
+    lookY: clampAxis(curveAxis(deadzone(rightY * lookSign, settings.lookDeadzone), curve) * sensitivity),
   };
 }
 
@@ -161,9 +244,12 @@ function axesWithDpad(axes, buttons) {
   };
 }
 
-function actionPressed(action, buttons) {
+function actionPressed(action, buttons, pad, rawButtonsSet) {
   const binding = controllerActionBinding(action);
-  return binding?.kind === 'button' && buttons.has(binding.id);
+  if (binding?.kind !== 'button') return false;
+  const id = binding.id;
+  if (id === 'leftTrigger' || id === 'rightTrigger') return triggerHeld(deviceLayout, pad, id, settings.triggerThreshold);
+  return buttons.has(id);
 }
 
 function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = [], independentMotion = false) {
@@ -171,9 +257,9 @@ function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = 
   const actions = independentMotion && !menuContext ? new Set() : movementFromAxes(axes, buttons);
   const buttonActions = menuContext
     ? [...new Set([...MENU_ACTIONS, ...extraActions])]
-    : WORLD_ACTIONS;
+    : [...new Set([...WORLD_ACTIONS, ...extraActions])];
   for (const action of buttonActions) {
-    if (actionPressed(action, buttons)) actions.add(action);
+    if (actionPressed(action, buttons, pad, buttons)) actions.add(action);
   }
   return { axes, buttons, actions };
 }
@@ -205,6 +291,14 @@ function releaseAll(onRelease) {
   activePadId = '';
   activePadIndex = -1;
   capture = null;
+  if (lastRawPadId) {
+    lastRawPadId = '';
+    for (const listener of connectionListeners) listener({ connected: false, name: '' });
+  }
+  deviceLayout = null;
+  calibration = null;
+  calibrationFrames = 0;
+  triggerLatched = new Set();
   setActiveInputDevice('keyboard', { viable: false, controllerFamily: 'generic' });
   lastState = emptyState();
 }
@@ -218,7 +312,7 @@ export function setControllerSettings(next = {}) {
 export function controllerName() { return padName || 'NO CONTROLLER'; }
 export function controllerConnected() { return !!padName; }
 export function controllerRemapAction() { return capture?.action || null; }
-export function controllerSnapshot() { return { ...lastState, buttons: new Set(lastState.buttons), pressed: new Set(lastState.pressed), released: new Set(lastState.released), actions: new Set(lastState.actions) }; }
+export function controllerSnapshot() { return { ...lastState, rawValues, buttons: new Set(lastState.buttons), pressed: new Set(lastState.pressed), released: new Set(lastState.released), actions: new Set(lastState.actions) }; }
 export function controllerMotionAxes() { return lastState.connected && settings.enabled ? { ...lastState.axes } : { moveX: 0, moveY: 0, turnX: 0, lookY: 0 }; }
 
 // A single conservative haptics surface for authored gameplay. Browsers expose
@@ -273,7 +367,21 @@ export function gamepadTick({ menuContext = false, independentMotion = false, mo
   }
   padName = normalizePadName(pad);
   rawPadId = String(pad?.id || '');
+  if (rawPadId !== lastRawPadId) {
+    lastRawPadId = rawPadId;
+    deviceLayout = deviceLayoutFor(rawPadId);
+    calibration = null;
+    calibrationFrames = 0;
+    triggerLatched = new Set();
+    for (const listener of connectionListeners) listener({ connected: !!pad, name: pad ? normalizePadName(pad) : '' });
+  }
+  sampleCalibration(pad);
   const raw = rawButtons(pad);
+  rawValues = { axes: [...(pad?.axes || [])], buttons: {} };
+  pad?.buttons?.forEach((button, index) => {
+    const id = physicalButtonId(deviceLayout, index);
+    if (id) rawValues.buttons[id] = Number(button?.value || 0);
+  });
   if (raw.size || rawActivity(pad)) {
     setActiveInputDevice('controller', {
       viable: true,

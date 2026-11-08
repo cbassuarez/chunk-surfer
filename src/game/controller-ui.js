@@ -23,32 +23,51 @@ export const CONTROLLER_REMAP_ACTIONS = Object.freeze([
   { id: 'tabNext', group: 'UI' },
 ]);
 
-// The shell, as a half-profile that gets mirrored.
+// One silhouette and one layout per family, so the diagram draws the pad the
+// player is holding instead of one Xbox shape relabelled for everyone.
 //
-// It was a hand-written blob before, and it read as a blob. A gamepad has four
-// features that make the silhouette legible and it had none of them: a wide
-// domed top, sides that bulge past the top corners, grips that sweep down AND
-// outward before turning back in, and a concave waist between them. These are
-// the right-hand points from top-centre round to bottom-centre; mirroring is
-// what guarantees the two halves match, which hand-authoring never did.
-export const PAD_PROFILE = Object.freeze([
+// Each outline is the right-hand half from top-centre round to bottom-centre;
+// mirroring is what guarantees the two halves match, which hand-authoring
+// never did. The shapes come from the hardware's own proportions: Xbox's
+// domed top with deep asymmetric grips, PlayStation's slimmer symmetric slab
+// with the touchpad shelf, and the Switch Pro's wide flat wing.
+const PROFILE_XBOX = Object.freeze([
   [50, 32.0], [66, 30.5], [78, 31.5], [85, 35.0], [88.5, 42.0],
   [89.0, 50.5], [87.5, 60.0], [84.0, 69.0], [78.5, 76.5], [72.0, 79.0],
   [66.5, 76.0], [63.0, 71.0], [59.5, 67.5], [55.0, 66.2], [50, 66],
 ].map(Object.freeze));
+const PROFILE_PLAYSTATION = Object.freeze([
+  [50, 26.0], [64, 24.0], [75, 25.5], [82, 30.5], [85.5, 39.0],
+  [86.5, 51.0], [85.0, 62.5], [81.5, 71.5], [75.5, 77.0], [68.5, 78.5],
+  [64.5, 75.0], [62.0, 70.0], [58.5, 67.0], [54.0, 66.2], [50, 66],
+].map(Object.freeze));
+const PROFILE_NINTENDO = Object.freeze([
+  [50, 24.0], [65, 22.0], [77, 23.5], [84, 28.5], [86.5, 36.5],
+  [86.5, 46.5], [85.0, 55.5], [82.0, 63.0], [77.0, 69.0], [71.0, 72.5],
+  [67.0, 70.5], [64.0, 66.5], [59.5, 64.5], [54.5, 63.5], [50, 63],
+].map(Object.freeze));
+const PROFILE_GENERIC = PROFILE_XBOX;
 
-// The closed outline in the 100x86 drawing box, left half derived from the
-// right so the pad cannot go lopsided.
-export const PAD_OUTLINE = Object.freeze([
-  ...PAD_PROFILE,
-  ...PAD_PROFILE.slice(1, -1).reverse().map(([x, y]) => Object.freeze([100 - x, y])),
-]);
+function mirroredOutline(profile) {
+  return Object.freeze([
+    ...profile,
+    ...profile.slice(1, -1).reverse().map(([x, y]) => Object.freeze([100 - x, y])),
+  ]);
+}
 
-// Real Xbox arrangement: left stick high-left, d-pad below it, face cluster
-// high-right, right stick below that. Every element is laid out so nothing
-// overlaps at any scale — the first table stacked the left stick on top of the
-// d-pad and drew the stick a second time somewhere else entirely.
-export const BUTTON_POSITIONS = Object.freeze({
+export const PAD_OUTLINES = Object.freeze({
+  xbox: mirroredOutline(PROFILE_XBOX),
+  playstation: mirroredOutline(PROFILE_PLAYSTATION),
+  nintendo: mirroredOutline(PROFILE_NINTENDO),
+  generic: mirroredOutline(PROFILE_GENERIC),
+});
+
+// Real arrangements, per family. Xbox: left stick high-left, d-pad below it,
+// face cluster high-right, right stick below that. PlayStation: both sticks
+// low and level, d-pad and face cluster high, the touchpad across the shelf
+// between them. Switch Pro: left stick high-centre, d-pad below it, face
+// cluster mirrored on the right, the two menu buttons on the lower shelf.
+const LAYOUT_XBOX = Object.freeze({
   north: { x: 72, y: 37.6, r: 4.3 },
   west: { x: 64.6, y: 45, r: 4.3 },
   east: { x: 79.4, y: 45, r: 4.3 },
@@ -67,6 +86,62 @@ export const BUTTON_POSITIONS = Object.freeze({
   dpadLeft: { x: 33, y: 58, w: 5.2, h: 4.6 },
   dpadRight: { x: 43, y: 58, w: 5.2, h: 4.6 },
 });
+const LAYOUT_PLAYSTATION = Object.freeze({
+  north: { x: 69.6, y: 36.4, r: 4.1 },
+  west: { x: 62.4, y: 42.8, r: 4.1 },
+  east: { x: 76.8, y: 42.8, r: 4.1 },
+  south: { x: 69.6, y: 49.2, r: 4.1 },
+  leftShoulder: { x: 30, y: 17, w: 19, h: 6 },
+  rightShoulder: { x: 70, y: 17, w: 19, h: 6 },
+  leftTrigger: { x: 30, y: 8, w: 19, h: 6 },
+  rightTrigger: { x: 70, y: 8, w: 19, h: 6 },
+  touchpad: { x: 50, y: 32.2, w: 14.5, h: 5 },
+  view: { x: 42.2, y: 27.6, r: 2.2 },
+  menu: { x: 57.8, y: 27.6, r: 2.2 },
+  leftStick: { x: 31.5, y: 52.5, r: 5.7 },
+  rightStick: { x: 68.5, y: 52.5, r: 5.7 },
+  dpadUp: { x: 30, y: 40.4, w: 4.4, h: 5 },
+  dpadDown: { x: 30, y: 48, w: 4.4, h: 5 },
+  dpadLeft: { x: 25.4, y: 44.2, w: 5, h: 4.4 },
+  dpadRight: { x: 34.6, y: 44.2, w: 5, h: 4.4 },
+});
+const LAYOUT_NINTENDO = Object.freeze({
+  north: { x: 65.6, y: 37.4, r: 3.9 },
+  west: { x: 58.8, y: 43.4, r: 3.9 },
+  east: { x: 72.4, y: 43.4, r: 3.9 },
+  south: { x: 65.6, y: 49.4, r: 3.9 },
+  leftShoulder: { x: 29, y: 19.5, w: 21, h: 6 },
+  rightShoulder: { x: 71, y: 19.5, w: 21, h: 6 },
+  leftTrigger: { x: 29, y: 10.5, w: 21, h: 6 },
+  rightTrigger: { x: 71, y: 10.5, w: 21, h: 6 },
+  touchpad: { x: 50, y: 31, w: 11, h: 4 },
+  view: { x: 46.2, y: 46.6, r: 2.4 },
+  menu: { x: 53.8, y: 46.6, r: 2.4 },
+  leftStick: { x: 34.5, y: 40, r: 5.8 },
+  rightStick: { x: 65.5, y: 55.5, r: 5.8 },
+  dpadUp: { x: 34.5, y: 57, w: 4.4, h: 4.9 },
+  dpadDown: { x: 34.5, y: 64.4, w: 4.4, h: 4.9 },
+  dpadLeft: { x: 30, y: 60.7, w: 4.9, h: 4.4 },
+  dpadRight: { x: 39, y: 60.7, w: 4.9, h: 4.4 },
+});
+const LAYOUT_GENERIC = LAYOUT_XBOX;
+
+// The original exports, kept under their old names: the Xbox layout is the
+// baseline the older callers and tests still read.
+export const PAD_PROFILE = PROFILE_XBOX;
+export const PAD_OUTLINE = PAD_OUTLINES.xbox;
+export const BUTTON_POSITIONS = Object.freeze(LAYOUT_XBOX);
+
+export const PAD_LAYOUTS = Object.freeze({
+  xbox: Object.freeze({ outline: PAD_OUTLINES.xbox, buttons: LAYOUT_XBOX }),
+  playstation: Object.freeze({ outline: PAD_OUTLINES.playstation, buttons: LAYOUT_PLAYSTATION }),
+  nintendo: Object.freeze({ outline: PAD_OUTLINES.nintendo, buttons: LAYOUT_NINTENDO }),
+  generic: Object.freeze({ outline: PAD_OUTLINES.generic, buttons: LAYOUT_GENERIC }),
+});
+
+export function padLayoutFor(family) {
+  return PAD_LAYOUTS[family] || PAD_LAYOUTS.generic;
+}
 
 // How far a fully deflected stick travels, in SVG units. Small enough to stay
 // inside its own collar so the mark reads as a stick and not a stray dot.
@@ -116,12 +191,12 @@ export function diagramGlyph(id, family = 'generic') {
 // so drawing them too would stack two leaders on one anchor and turn every
 // label into "INTERACT / CONFIRM". The action list on the right still lists
 // every binding; this is the map, not the index.
-export function controllerCalloutModel({ actions = [], selectedAction = null } = {}) {
+export function controllerCalloutModel({ actions = [], selectedAction = null, buttons = BUTTON_POSITIONS } = {}) {
   const byButton = new Map();
   for (const action of actions) {
     if (!String(action.group || '').startsWith('WORLD')) continue;
     const id = action.binding?.id;
-    const pos = id ? BUTTON_POSITIONS[id] : null;
+    const pos = id ? buttons[id] : null;
     if (!pos) continue;
     if (!byButton.has(id)) byButton.set(id, { id, pos, labels: [], selected: false });
     const entry = byButton.get(id);
@@ -179,6 +254,7 @@ export function controllerDiagramModel({
   // press a button and watch whether the right element lights.
   heldButtons = null,
   axes = null,
+  raw = null,
 } = {}) {
   const family = resolveControllerFamily(settings, padName);
   const bindings = settings?.bindings || {};
@@ -218,7 +294,8 @@ export function controllerDiagramModel({
     left: { x: Number(axes?.moveX) || 0, y: -(Number(axes?.moveY) || 0) },
     right: { x: Number(axes?.turnX) || 0, y: -(Number(axes?.lookY) || 0) },
   };
-  const buttons = Object.entries(BUTTON_POSITIONS).map(([id, pos]) => {
+  const layout = padLayoutFor(family);
+  const buttons = Object.entries(layout.buttons).map(([id, pos]) => {
     // A stick physically moves, so its element moves — the deflection lands on
     // the same circle the player is looking at rather than on a second phantom
     // stick drawn somewhere else.
@@ -243,6 +320,7 @@ export function controllerDiagramModel({
   return {
     mode,
     family,
+    outline: layout.outline,
     selectedAction,
     captureAction,
     activeButton,
@@ -252,7 +330,8 @@ export function controllerDiagramModel({
     sticks,
     // Stacked has no room either side of the pad, and the action list sits
     // directly beneath it there anyway.
-    callouts: mode === 'split' ? controllerCalloutModel({ actions, selectedAction }) : [],
+    callouts: mode === 'split' ? controllerCalloutModel({ actions, selectedAction, buttons: layout.buttons }) : [],
     live: !!heldButtons,
+    raw,
   };
 }

@@ -27,7 +27,7 @@ test('case, soundboard and tower caps retain their native model support heights 
  for(const a of CONTINUATION_ASSEMBLIES.filter(a=>a.supportId)){const m=byName[a.mesh];assert.ok(m,a.mesh);const y=a.y+m.bounds.max[1]*a.scaleY;const support=continuationSupportAt(a.x,a.z,{feet:y},{minY:y-.01,maxY:y+.01});assert.ok(support,a.supportId);assert.ok(Math.abs(support.y-y)<1e-5,a.id);}
 });
 test('catch framing has distinct fabrication and stays below the physical sector surface',()=>{
- for(const stage of CONTINUATION_CATCH_STAGES){const row=stats.meshes.find(m=>m.mesh==='source_iii_catch_frame_'+stage.level);assert.ok(row);assert.ok(row.bounds.max[1]<=0);assert.ok(row.bounds.min[1]<-1);assert.ok(row.triangles>1000);}const s=stats.meshes.find(m=>m.mesh==='source_iii_spindle');assert.ok(s.bounds.min[1]<=-25&&s.bounds.max[1]>=17);
+ for(const stage of CONTINUATION_CATCH_STAGES){const frameIndex={case:0,soundboard:1,masonry:2,binding:3}[stage.construction]??0;const row=stats.meshes.find(m=>m.mesh==='source_iii_catch_frame_'+frameIndex);assert.ok(row);assert.ok(row.bounds.max[1]<=0);assert.ok(row.bounds.min[1]<-1);assert.ok(row.triangles>1000);}const s=stats.meshes.find(m=>m.mesh==='source_iii_spindle');assert.ok(s.bounds.min[1]<=-25&&s.bounds.max[1]>=17);
 });
 test('required II circulation has no authored macro model ceiling intruding into standing headroom',()=>{
  const state={...freshSourceContinuation(),status:'active'},f=sourceContinuationRenderFrame(state),instances=f.props.filter(p=>p.assemblyId||p.opening),modelTriangles=new Map();for(const p of instances){const asset=mesh(authored,p.mesh)?authored:main;const world=triangles(asset,p.mesh).map(ps=>ps.map(q=>xyz(p.matrix,q)));modelTriangles.set(p.id,world);}

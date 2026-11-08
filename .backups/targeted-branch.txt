@@ -1,0 +1,2605 @@
+TAP version 13
+# Subtest: a move in the space is a true move: it keeps the space, and undoes
+ok 1 - a move in the space is a true move: it keeps the space, and undoes
+  ---
+  duration_ms: 0.804125
+  type: 'test'
+  ...
+# Subtest: the shader and the sums agree: from a frame, a point is where the space says it is
+ok 2 - the shader and the sums agree: from a frame, a point is where the space says it is
+  ---
+  duration_ms: 1.244708
+  type: 'test'
+  ...
+# Subtest: the body can test it: walking away from something makes it bigger
+ok 3 - the body can test it: walking away from something makes it bigger
+  ---
+  duration_ms: 0.116375
+  type: 'test'
+  ...
+# Subtest: every road in the closed space goes to the object
+ok 4 - every road in the closed space goes to the object
+  ---
+  duration_ms: 9.359417
+  type: 'test'
+  ...
+# Subtest: turned right round at the start, the only thing behind him is the place the roads all leave
+ok 5 - turned right round at the start, the only thing behind him is the place the roads all leave
+  ---
+  duration_ms: 0.149458
+  type: 'test'
+  ...
+# Subtest: he stays on the roads; the circle limit has an end he never reaches
+ok 6 - he stays on the roads; the circle limit has an end he never reaches
+  ---
+  duration_ms: 0.438125
+  type: 'test'
+  ...
+# Subtest: the tiles are a real tiling: four to a corner, two colours, every neighbour the other colour
+ok 7 - the tiles are a real tiling: four to a corner, two colours, every neighbour the other colour
+  ---
+  duration_ms: 0.316208
+  type: 'test'
+  ...
+# Subtest: the sky is full of the game's own things, and it is the same sky every time
+ok 8 - the sky is full of the game's own things, and it is the same sky every time
+  ---
+  duration_ms: 3.381959
+  type: 'test'
+  ...
+# Subtest: he walks up to it, not through it
+ok 9 - he walks up to it, not through it
+  ---
+  duration_ms: 0.446375
+  type: 'test'
+  ...
+# Subtest: walking up to it gives the truth; only a met condition opens the offer
+ok 10 - walking up to it gives the truth; only a met condition opens the offer
+  ---
+  duration_ms: 0.380666
+  type: 'test'
+  ...
+# Subtest: standing still decides nothing, ever
+ok 11 - standing still decides nothing, ever
+  ---
+  duration_ms: 3.437875
+  type: 'test'
+  ...
+# Subtest: walking on declines, and it is the chapel; past it on St Brendan's bearing accepts, only if offered
+ok 12 - walking on declines, and it is the chapel; past it on St Brendan's bearing accepts, only if offered
+  ---
+  duration_ms: 0.935625
+  type: 'test'
+  ...
+# Subtest: the daisy: an odd number of petals, one at a time, at the object, and the last says loves me
+ok 13 - the daisy: an odd number of petals, one at a time, at the object, and the last says loves me
+  ---
+  duration_ms: 0.286417
+  type: 'test'
+  ...
+# Subtest: everything that stands there is the game's own
+ok 14 - everything that stands there is the game's own
+  ---
+  duration_ms: 0.756083
+  type: 'test'
+  ...
+# Subtest: option C: the night leans first, and if it cannot be met someone who can comes instead
+ok 15 - option C: the night leans first, and if it cannot be met someone who can comes instead
+  ---
+  duration_ms: 0.5405
+  type: 'test'
+  ...
+# Subtest: every mesh is real and the set is cheap
+ok 16 - every mesh is real and the set is cheap
+  ---
+  duration_ms: 0.046083
+  type: 'test'
+  ...
+# Subtest: the copy never says the word Seb has ruled out, and Lyle is he
+ok 17 - the copy never says the word Seb has ruled out, and Lyle is he
+  ---
+  duration_ms: 0.337084
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28.96125
+horizon specs passed
+horizon bust asset and audience specs passed
+{"kind":"horizon-cloud-presentation","entryWitnesses":[{"entry":0.2,"depth":1,"minimum":255,"maximum":255,"mean":255},{"entry":0.5,"depth":1,"minimum":255,"maximum":255,"mean":255},{"entry":0.85,"depth":1,"minimum":255,"maximum":255,"mean":255}],"nearby":{"entry":0.35,"depth":1,"minimum":255,"maximum":255,"mean":255},"beyondArrival":{"entry":0.35,"depth":60,"minimum":0,"maximum":0,"mean":0},"arrivedNear":{"entry":1,"depth":1,"minimum":255,"maximum":255,"mean":255},"arrivedFar":{"entry":1,"depth":80,"minimum":255,"maximum":255,"mean":255},"glError":0}
+TAP version 13
+# Subtest: the playhead glides across a grid step and snaps across a warp
+ok 1 - the playhead glides across a grid step and snaps across a warp
+  ---
+  duration_ms: 1.455042
+  type: 'test'
+  ...
+# Subtest: the score is one point at the checkpoint, panned by where the head is turned
+ok 2 - the score is one point at the checkpoint, panned by where the head is turned
+  ---
+  duration_ms: 0.906
+  type: 'test'
+  ...
+# Subtest: grains are folded to mono before they are placed
+ok 3 - grains are folded to mono before they are placed
+  ---
+  duration_ms: 4.740875
+  type: 'test'
+  ...
+# Subtest: the collapse takes the top off, not just the level
+ok 4 - the collapse takes the top off, not just the level
+  ---
+  duration_ms: 0.221458
+  type: 'test'
+  ...
+# Subtest: a slow frame still books a continuous stream of grains
+ok 5 - a slow frame still books a continuous stream of grains
+  ---
+  duration_ms: 0.199209
+  type: 'test'
+  ...
+# Subtest: standing still thins the stream to a held tone instead of holding it at full level
+ok 6 - standing still thins the stream to a held tone instead of holding it at full level
+  ---
+  duration_ms: 0.744541
+  type: 'test'
+  ...
+# Subtest: the pitch bend is a gesture at walking pace, not a switch pinned to its clamp
+ok 7 - the pitch bend is a gesture at walking pace, not a switch pinned to its clamp
+  ---
+  duration_ms: 0.492458
+  type: 'test'
+  ...
+# Subtest: pace is measured the same at 30fps and at 120fps
+ok 8 - pace is measured the same at 30fps and at 120fps
+  ---
+  duration_ms: 0.263917
+  type: 'test'
+  ...
+# Subtest: a failed low-memory decode falls back instead of going silent
+ok 9 - a failed low-memory decode falls back instead of going silent
+  ---
+  duration_ms: 0.407583
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15.074875
+TAP version 13
+# Subtest: the answers are measured off the bake, never authored beside it
+ok 1 - the answers are measured off the bake, never authored beside it
+  ---
+  duration_ms: 0.683209
+  type: 'test'
+  ...
+# Subtest: the readings in the room carry every figure the dials ask for
+ok 2 - the readings in the room carry every figure the dials ask for
+  ---
+  duration_ms: 0.7295
+  type: 'test'
+  ...
+# Subtest: the transport is solvable with every window effect refused
+ok 3 - the transport is solvable with every window effect refused
+  ---
+  duration_ms: 0.166584
+  type: 'test'
+  ...
+# Subtest: a wrong setting refuses, says how many, and never says which
+ok 4 - a wrong setting refuses, says how many, and never says which
+  ---
+  duration_ms: 0.172125
+  type: 'test'
+  ...
+# Subtest: garbage settings cannot thread the machine
+ok 5 - garbage settings cannot thread the machine
+  ---
+  duration_ms: 0.576625
+  type: 'test'
+  ...
+# Subtest: the clue windows are three display-only surfaces and nothing is gated on them
+ok 6 - the clue windows are three display-only surfaces and nothing is gated on them
+  ---
+  duration_ms: 0.580333
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8.270583
+TAP version 13
+# Subtest: the physical void contains no screen-fixed entry cloud layer
+ok 1 - the physical void contains no screen-fixed entry cloud layer
+  ---
+  duration_ms: 0.704292
+  type: 'test'
+  ...
+# Subtest: street dissolution still samples physical depth and world-anchored damage
+ok 2 - street dissolution still samples physical depth and world-anchored damage
+  ---
+  duration_ms: 0.1155
+  type: 'test'
+  ...
+# Subtest: existing overcast and world-anchored rain remain weather, independent of the removed entry mask
+ok 3 - existing overcast and world-anchored rain remain weather, independent of the removed entry mask
+  ---
+  duration_ms: 0.085084
+  type: 'test'
+  ...
+# Subtest: the tape still arrives over lived metres and uses the physical camera
+ok 4 - the tape still arrives over lived metres and uses the physical camera
+  ---
+  duration_ms: 0.209083
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6.08
+TAP version 13
+# Subtest: the outer wheels fall at the semiangel bearing moments and the last in the final passage
+ok 1 - the outer wheels fall at the semiangel bearing moments and the last in the final passage
+  ---
+  duration_ms: 1.757792
+  type: 'test'
+  ...
+# Subtest: every marked mistake closes exactly one eye for a bounded time; nothing invents mistakes
+ok 2 - every marked mistake closes exactly one eye for a bounded time; nothing invents mistakes
+  ---
+  duration_ms: 0.40225
+  type: 'test'
+  ...
+# Subtest: the horizon is a pure function of the recording clock and honours blackout and reduced motion
+ok 3 - the horizon is a pure function of the recording clock and honours blackout and reduced motion
+  ---
+  duration_ms: 0.275458
+  type: 'test'
+  ...
+# Subtest: the CPU infall mirror pulls nearer ends faster, winds around the spin axis and parks at the horizon instead of crossing
+ok 4 - the CPU infall mirror pulls nearer ends faster, winds around the spin axis and parks at the horizon instead of crossing
+  ---
+  duration_ms: 0.303875
+  type: 'test'
+  ...
+# Subtest: mistakes take outside fittings and chips, passages take architecture, protected supports never move
+ok 5 - mistakes take outside fittings and chips, passages take architecture, protected supports never move
+  ---
+  duration_ms: 7.207
+  type: 'test'
+  ...
+# Subtest: the GPU contract packs tides into the non-paper slot and binds an inert frame when absent
+ok 6 - the GPU contract packs tides into the non-paper slot and binds an inert frame when absent
+  ---
+  duration_ms: 0.234958
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17.782458
+TAP version 13
+# Subtest: the land never comes up through the road it was cut for
+ok 1 - the land never comes up through the road it was cut for
+  ---
+  duration_ms: 1.983042
+  type: 'test'
+  ...
+# Subtest: it is Pennine country: a valley, a stepped climb to flat tops, and a long skyline
+ok 2 - it is Pennine country: a valley, a stepped climb to flat tops, and a long skyline
+  ---
+  duration_ms: 2.488208
+  type: 'test'
+  ...
+# Subtest: the ground reads as it should: pasture low, peat high, water level and pale
+ok 3 - the ground reads as it should: pasture low, peat high, water level and pale
+  ---
+  duration_ms: 0.075208
+  type: 'test'
+  ...
+# Subtest: the farm sits between the carriageways, which part for it and close again
+ok 4 - the farm sits between the carriageways, which part for it and close again
+  ---
+  duration_ms: 0.057833
+  type: 'test'
+  ...
+# Subtest: from the small road you can see it: nothing but air in the way over the bend
+ok 5 - from the small road you can see it: nothing but air in the way over the bend
+  ---
+  duration_ms: 0.46875
+  type: 'test'
+  ...
+# Subtest: traffic keeps left, both ways, on its own carriageway, and moves at motorway speed
+ok 6 - traffic keeps left, both ways, on its own carriageway, and moves at motorway speed
+  ---
+  duration_ms: 0.966667
+  type: 'test'
+  ...
+# Subtest: far lights: white coming, red going, hidden by the ground, thinned by weather
+ok 7 - far lights: white coming, red going, hidden by the ground, thinned by weather
+  ---
+  duration_ms: 3.674917
+  type: 'test'
+  ...
+# Subtest: the scene adds the farm only in range, a lit yard, and goes before the cliff
+ok 8 - the scene adds the farm only in range, a lit yard, and goes before the cliff
+  ---
+  duration_ms: 0.623791
+  type: 'test'
+  ...
+# Subtest: the road: stone for rail with the same footprint, rock on the held side, and the ridges back beside them
+ok 9 - the road: stone for rail with the same footprint, rock on the held side, and the ridges back beside them
+  ---
+  duration_ms: 0.3045
+  type: 'test'
+  ...
+# Subtest: it lives only in the drive's own pass: nothing outside a drive changes
+ok 10 - it lives only in the drive's own pass: nothing outside a drive changes
+  ---
+  duration_ms: 0.977833
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17.629125
+TAP version 13
+# Subtest: the full longitudinal mapping is monotone, invertible and identity around the body
+ok 1 - the full longitudinal mapping is monotone, invertible and identity around the body
+  ---
+  duration_ms: 9.293042
+  type: 'test'
+  ...
+# Subtest: near and tangent seams preserve slope and lengthening genuinely changes scene geometry
+ok 2 - near and tangent seams preserve slope and lengthening genuinely changes scene geometry
+  ---
+  duration_ms: 0.278125
+  type: 'test'
+  ...
+# Subtest: actual natatorium interaction fixtures fit inside the untouched neighborhood
+ok 3 - actual natatorium interaction fixtures fit inside the untouched neighborhood
+  ---
+  duration_ms: 0.702583
+  type: 'test'
+  ...
+# Subtest: temporary depth range restores the existing owner without acquiring camera or range ownership
+ok 4 - temporary depth range restores the existing owner without acquiring camera or range ownership
+  ---
+  duration_ms: 0.233833
+  type: 'test'
+  ...
+# Subtest: exact mapped grid traversal matches independent slab intersections, including reverse and oblique rays
+ok 5 - exact mapped grid traversal matches independent slab intersections, including reverse and oblique rays
+  ---
+  duration_ms: 22.132583
+  type: 'test'
+  ...
+# Subtest: production architecture, secondary water rays, props, text, depth and acquisition share the metric
+ok 6 - production architecture, secondary water rays, props, text, depth and acquisition share the metric
+  ---
+  duration_ms: 2.761208
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 40.672166
+TAP version 13
+# Subtest: new runs and an interrupted vehicle arrival resume inside; exited and legacy runs do not replay it
+ok 1 - new runs and an interrupted vehicle arrival resume inside; exited and legacy runs do not replay it
+  ---
+  duration_ms: 0.594583
+  type: 'test'
+  ...
+# Subtest: vehicle begins at Source driver eye and physically opens the right door before the player steps out
+ok 2 - vehicle begins at Source driver eye and physically opens the right door before the player steps out
+  ---
+  duration_ms: 1.218958
+  type: 'test'
+  ...
+# Subtest: waiting, pause, repeat keys and teardown cannot complete or retain the opening movement hold
+ok 3 - waiting, pause, repeat keys and teardown cannot complete or retain the opening movement hold
+  ---
+  duration_ms: 2.519
+  type: 'test'
+  ...
+# Subtest: asset load failure leaves an explicit exit path instead of an indefinite movement lock
+ok 4 - asset load failure leaves an explicit exit path instead of an indefinite movement lock
+  ---
+  duration_ms: 0.360417
+  type: 'test'
+  ...
+# Subtest: production vehicle is a self-contained promoted Source asset with real openings and detached door
+ok 5 - production vehicle is a self-contained promoted Source asset with real openings and detached door
+  ---
+  duration_ms: 13.067458
+  type: 'test'
+  ...
+# Subtest: cold cab objects wait for actual residency, recover after catalog loss, and cannot disable the van exit on failure
+ok 6 - cold cab objects wait for actual residency, recover after catalog loss, and cannot disable the van exit on failure
+  ---
+  duration_ms: 5.734
+  type: 'test'
+  ...
+# Subtest: real main opening persists the exit once, starts the overture and is replayable after canceled entry
+ok 7 - real main opening persists the exit once, starts the overture and is replayable after canceled entry
+  ---
+  duration_ms: 6.935584
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33.385166
+TAP version 13
+# Subtest: a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory
+ok 1 - a restored recording resumes at its saved offset and gameplay pause cannot consume the remaining memory
+  ---
+  duration_ms: 3.573875
+  type: 'test'
+  ...
+# Subtest: missing authored voices show only the remaining unchanged script, with no synthetic voice or skipped ending
+ok 2 - missing authored voices show only the remaining unchanged script, with no synthetic voice or skipped ending
+  ---
+  duration_ms: 1.311042
+  type: 'test'
+  ...
+# Subtest: a completed memory cannot replay after reload and an abandoned pending decode cannot revive after a warp
+ok 3 - a completed memory cannot replay after reload and an abandoned pending decode cannot revive after a warp
+  ---
+  duration_ms: 1.383041
+  type: 'test'
+  ...
+# Subtest: an active memory keeps its clock and finishes after the player leaves the trigger area
+ok 4 - an active memory keeps its clock and finishes after the player leaves the trigger area
+  ---
+  duration_ms: 0.87775
+  type: 'test'
+  ...
+# Subtest: the playback clock releases the body even when the browser omits the audio ended event
+ok 5 - the playback clock releases the body even when the browser omits the audio ended event
+  ---
+  duration_ms: 0.5645
+  type: 'test'
+  ...
+# Subtest: a restored completion releases an existing recording hold (heard)
+ok 6 - a restored completion releases an existing recording hold (heard)
+  ---
+  duration_ms: 0.324958
+  type: 'test'
+  ...
+# Subtest: a restored completion releases an existing recording hold (playbackDone)
+ok 7 - a restored completion releases an existing recording hold (playbackDone)
+  ---
+  duration_ms: 0.325334
+  type: 'test'
+  ...
+# Subtest: completion clears the final caption and reset always releases the body
+ok 8 - completion clears the final caption and reset always releases the body
+  ---
+  duration_ms: 0.9935
+  type: 'test'
+  ...
+# Subtest: the canonical Last Light URL matches its documented public/assets delivery
+ok 9 - the canonical Last Light URL matches its documented public/assets delivery
+  ---
+  duration_ms: 0.668667
+  type: 'test'
+  ...
+# Subtest: real performed audio dispatches the canonical captions from the audio clock
+ok 10 - real performed audio dispatches the canonical captions from the audio clock
+  ---
+  duration_ms: 0.722625
+  type: 'test'
+  ...
+# Subtest: an exact-cue pause resumes real audio without duplicating or delaying the next caption
+ok 11 - an exact-cue pause resumes real audio without duplicating or delaying the next caption
+  ---
+  duration_ms: 0.61725
+  type: 'test'
+  ...
+# Subtest: a restored real-audio offset skips elapsed cue boundaries and retains the genuine master duration
+ok 12 - a restored real-audio offset skips elapsed cue boundaries and retains the genuine master duration
+  ---
+  duration_ms: 0.913042
+  type: 'test'
+  ...
+# Subtest: a shorter real master owns completion and never captions later unheard material
+ok 13 - a shorter real master owns completion and never captions later unheard material
+  ---
+  duration_ms: 0.541791
+  type: 'test'
+  ...
+# Subtest: the performer source preserves all 21 spoken cues and nine directions verbatim
+ok 14 - the performer source preserves all 21 spoken cues and nine directions verbatim
+  ---
+  duration_ms: 0.4735
+  type: 'test'
+  ...
+# Subtest: with no performed recording the game's own voice plays, and a real one still wins
+ok 15 - with no performed recording the game's own voice plays, and a real one still wins
+  ---
+  duration_ms: 1.68125
+  type: 'test'
+  ...
+# Subtest: the tape uses the machine's own transport at both ends
+ok 16 - the tape uses the machine's own transport at both ends
+  ---
+  duration_ms: 0.703833
+  type: 'test'
+  ...
+# Subtest: the baked tape sits on the script: voices on their cues, quiet between, no hiss of its own
+ok 17 - the baked tape sits on the script: voices on their cues, quiet between, no hiss of its own
+  ---
+  duration_ms: 6.158167
+  type: 'test'
+  ...
+# Subtest: it is under the lamp past the last phone box
+ok 18 - it is under the lamp past the last phone box
+  ---
+  duration_ms: 0.267666
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27.470708
+TAP version 13
+# Subtest: Source scenery outside the camera can be omitted without clipping boundary volumes
+ok 1 - Source scenery outside the camera can be omitted without clipping boundary volumes
+  ---
+  duration_ms: 0.701542
+  type: 'test'
+  ...
+# Subtest: a doorway crossing the near plane stays visible; a quad entirely behind is rejected
+ok 2 - a doorway crossing the near plane stays visible; a quad entirely behind is rejected
+  ---
+  duration_ms: 0.107
+  type: 'test'
+  ...
+# Subtest: actual portal pass chooses four visible apertures before applying its budget
+ok 3 - actual portal pass chooses four visible apertures before applying its budget
+  ---
+  duration_ms: 1.153584
+  type: 'test'
+  ...
+# Subtest: tower door depth comes from the identical vertex plane, allowing early depth rejection
+ok 4 - tower door depth comes from the identical vertex plane, allowing early depth rejection
+  ---
+  duration_ms: 0.237791
+  type: 'test'
+  ...
+# Subtest: large door programs start during loading and poll readiness without forcing link completion
+ok 5 - large door programs start during loading and poll readiness without forcing link completion
+  ---
+  duration_ms: 0.151916
+  type: 'test'
+  ...
+# Subtest: pending compilation tolerates loss, disposes once, and validates drivers without KHR
+ok 6 - pending compilation tolerates loss, disposes once, and validates drivers without KHR
+  ---
+  duration_ms: 0.193916
+  type: 'test'
+  ...
+# Subtest: renderer reinitialisation clears programs and pending jobs even when WebGL reuses the same JS context
+ok 7 - renderer reinitialisation clears programs and pending jobs even when WebGL reuses the same JS context
+  ---
+  duration_ms: 0.256166
+  type: 'test'
+  ...
+# Subtest: optional portal compile failure leaves the world pass alive and reports once
+ok 8 - optional portal compile failure leaves the world pass alive and reports once
+  ---
+  duration_ms: 0.333625
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.051167
+TAP version 13
+# Subtest: cold saved-drive preparation waits for the replacing building catalog before merging hero packs
+ok 1 - cold saved-drive preparation waits for the replacing building catalog before merging hero packs
+  ---
+  duration_ms: 5.067
+  type: 'test'
+  ...
+# Subtest: a failed base catalog cannot acquire a drive and a later explicit retry can recover
+ok 2 - a failed base catalog cannot acquire a drive and a later explicit retry can recover
+  ---
+  duration_ms: 3.321875
+  type: 'test'
+  ...
+# Subtest: door prewarming loads the twelve P3 packs including physical van paint without acquiring the scene, camera or canvas
+ok 3 - door prewarming loads the twelve P3 packs including physical van paint without acquiring the scene, camera or canvas
+  ---
+  duration_ms: 0.395208
+  type: 'test'
+  ...
+# Subtest: door warm, repeated warm and concurrent initialization share loads and acquire ownership only after completion
+ok 4 - door warm, repeated warm and concurrent initialization share loads and acquire ownership only after completion
+  ---
+  duration_ms: 4.496708
+  type: 'test'
+  ...
+# Subtest: one failed pack rejects all shared waiters, keeps successful packs, and permits renderer initialization retry
+ok 5 - one failed pack rejects all shared waiters, keeps successful packs, and permits renderer initialization retry
+  ---
+  duration_ms: 3.692958
+  type: 'test'
+  ...
+# Subtest: disposing during warm never clears the still-owned Source view and cannot acquire it after release
+ok 6 - disposing during warm never clears the still-owned Source view and cannot acquire it after release
+  ---
+  duration_ms: 1.67475
+  type: 'test'
+  ...
+# Subtest: P3 character-cache invalidation also invalidates stale static GPU cache records
+ok 7 - P3 character-cache invalidation also invalidates stale static GPU cache records
+  ---
+  duration_ms: 0.419958
+  type: 'test'
+  ...
+# Subtest: a missing static pack and a changed override are reloaded without replacing unrelated warmed packs
+ok 8 - a missing static pack and a changed override are reloaded without replacing unrelated warmed packs
+  ---
+  duration_ms: 0.386916
+  type: 'test'
+  ...
+# Subtest: presentation readiness requires the existing live context and a nonzero canvas
+ok 9 - presentation readiness requires the existing live context and a nonzero canvas
+  ---
+  duration_ms: 1.686125
+  type: 'test'
+  ...
+# Subtest: the production drive renderer refuses unavailable, lost or unacquired frames and resumes on a successful final draw
+ok 10 - the production drive renderer refuses unavailable, lost or unacquired frames and resumes on a successful final draw
+  ---
+  duration_ms: 3.216417
+  type: 'test'
+  ...
+# Subtest: opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh
+ok 11 - opening preload replaces an earlier coast catalog missing any revised physical outcrop mesh
+  ---
+  duration_ms: 0.384666
+  type: 'test'
+  ...
+# Subtest: missing UK paint invalidates the roadside cache rather than silently leaving the road unmarked
+ok 12 - missing UK paint invalidates the roadside cache rather than silently leaving the road unmarked
+  ---
+  duration_ms: 0.392875
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31.170958
+source elsewhere specs passed
+Source reprise integration specs passed
+TAP version 13
+# Subtest: edge sounds follow physical distance, with no elapsed-walk trigger
+ok 1 - edge sounds follow physical distance, with no elapsed-walk trigger
+  ---
+  duration_ms: 0.893459
+  type: 'test'
+  ...
+# Subtest: shore light is soft physical light, preserving off, battery, perception and fitted reach
+ok 2 - shore light is soft physical light, preserving off, battery, perception and fitted reach
+  ---
+  duration_ms: 0.54825
+  type: 'test'
+  ...
+# Subtest: the open volume carries one constant air keynote; room leakage ends, even when standing still
+ok 3 - the open volume carries one constant air keynote; room leakage ends, even when standing still
+  ---
+  duration_ms: 2.581166
+  type: 'test'
+  ...
+# Subtest: each piece of the building carries its room, heard only close by and gone when it is
+ok 4 - each piece of the building carries its room, heard only close by and gone when it is
+  ---
+  duration_ms: 1.136458
+  type: 'test'
+  ...
+# Subtest: lift motion owns one quiet voice and an observed stop, never a loading or upload transient
+ok 5 - lift motion owns one quiet voice and an observed stop, never a loading or upload transient
+  ---
+  duration_ms: 0.435708
+  type: 'test'
+  ...
+# Subtest: metal returns require real nearby steps; suspension cancels scheduled returns and does not replay a stop
+ok 6 - metal returns require real nearby steps; suspension cancels scheduled returns and does not replay a stop
+  ---
+  duration_ms: 0.57675
+  type: 'test'
+  ...
+# Subtest: late audio ownership cannot turn an unobserved lift arrival into a contact
+ok 7 - late audio ownership cannot turn an unobserved lift arrival into a contact
+  ---
+  duration_ms: 0.33425
+  type: 'test'
+  ...
+# Subtest: live main renderer guards keep obsolete Source overlays out of the first void
+ok 8 - live main renderer guards keep obsolete Source overlays out of the first void
+  ---
+  duration_ms: 1.239208
+  type: 'test'
+  ...
+# Subtest: live main selects physical shore torch and retains the later Source mode
+ok 9 - live main selects physical shore torch and retains the later Source mode
+  ---
+  duration_ms: 0.530709
+  type: 'test'
+  ...
+# Subtest: held W+D can freely cross the void with the same metre speed as a cardinal step
+ok 10 - held W+D can freely cross the void with the same metre speed as a cardinal step
+  ---
+  duration_ms: 1.089208
+  type: 'test'
+  ...
+# Subtest: a real mid-rise save restores exact yaw and pitch without replacing the ordinary camera save
+ok 11 - a real mid-rise save restores exact yaw and pitch without replacing the ordinary camera save
+  ---
+  duration_ms: 28.126917
+  type: 'test'
+  ...
+# Subtest: away from the shore a Source save resumes facing the way it was taken, and only at the cell it was taken
+ok 12 - away from the shore a Source save resumes facing the way it was taken, and only at the cell it was taken
+  ---
+  duration_ms: 15.171167
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59.25375
+source physical void compositor specs passed
+TAP version 13
+# Subtest: double white lines go only where the bends are tight, and every one is approached on a warning line
+ok 1 - double white lines go only where the bends are tight, and every one is approached on a warning line
+  ---
+  duration_ms: 1.812292
+  type: 'test'
+  ...
+# Subtest: the Source switchbacks stay unmarked, as the route authored them
+ok 2 - the Source switchbacks stay unmarked, as the route authored them
+  ---
+  duration_ms: 0.239166
+  type: 'test'
+  ...
+# Subtest: studs sit in the gaps of the line they belong to, at that line's spacing
+ok 3 - studs sit in the gaps of the line they belong to, at that line's spacing
+  ---
+  duration_ms: 0.852666
+  type: 'test'
+  ...
+# Subtest: a warning line is twice the paint of a centre line on the same 6 m module
+ok 4 - a warning line is twice the paint of a centre line on the same 6 m module
+  ---
+  duration_ms: 0.105791
+  type: 'test'
+  ...
+# Subtest: the double white tile is two continuous 100 mm lines 100 mm apart, with the edges
+ok 5 - the double white tile is two continuous 100 mm lines 100 mm apart, with the edges
+  ---
+  duration_ms: 1.026
+  type: 'test'
+  ...
+# Subtest: the dipped beam is flat on the offside, kicks up on the nearside, and reaches down the road
+ok 6 - the dipped beam is flat on the offside, kicks up on the nearside, and reaches down the road
+  ---
+  duration_ms: 0.370875
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.540875
+TAP version 13
+# Subtest: the ladder is ordered, human and priced
+ok 1 - the ladder is ordered, human and priced
+  ---
+  duration_ms: 1.074542
+  type: 'test'
+  ...
+# Subtest: every place offers exactly two speeds, and all five gaits appear somewhere
+ok 2 - every place offers exactly two speeds, and all five gaits appear somewhere
+  ---
+  duration_ms: 0.192833
+  type: 'test'
+  ...
+# Subtest: the run key moves one rung; a winded sprint is a run
+ok 3 - the run key moves one rung; a winded sprint is a run
+  ---
+  duration_ms: 0.107167
+  type: 'test'
+  ...
+# Subtest: speed factors only slow, and nothing escapes the floor or the sprint
+ok 4 - speed factors only slow, and nothing escapes the floor or the sprint
+  ---
+  duration_ms: 0.06725
+  type: 'test'
+  ...
+# Subtest: cell timing is metres per second, and a diagonal is its real length
+ok 5 - cell timing is metres per second, and a diagonal is its real length
+  ---
+  duration_ms: 0.068958
+  type: 'test'
+  ...
+# Subtest: a walk stays a walk however far he goes: the procedural world never slows the story
+ok 6 - a walk stays a walk however far he goes: the procedural world never slows the story
+  ---
+  duration_ms: 1.439
+  type: 'test'
+  ...
+# Subtest: a sprint lasts six to eight seconds, fear spends it faster, the run is free
+ok 7 - a sprint lasts six to eight seconds, fear spends it faster, the run is free
+  ---
+  duration_ms: 1.321333
+  type: 'test'
+  ...
+# Subtest: walking gives the sprint back in about ten seconds, and only past half
+ok 8 - walking gives the sprint back in about ten seconds, and only past half
+  ---
+  duration_ms: 0.454375
+  type: 'test'
+  ...
+# Subtest: the breath is heard only once it is being spent, and loudest winded
+ok 9 - the breath is heard only once it is being spent, and loudest winded
+  ---
+  duration_ms: 0.253125
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10.670125
+TAP version 13
+# Subtest: entry keeps exact world body, actual construction and original plan/props at the first frame
+ok 1 - entry keeps exact world body, actual construction and original plan/props at the first frame
+  ---
+  duration_ms: 7.164625
+  type: 'test'
+  ...
+# Subtest: a stationary player still sees real joints fail and body-safe suspended mass rather than only a light fade
+ok 2 - a stationary player still sees real joints fail and body-safe suspended mass rather than only a light fade
+  ---
+  duration_ms: 9.405792
+  type: 'test'
+  ...
+# Subtest: ordinary collision-aware branch/rejoin walking reaches the real clear edge and retains a distinct survived-failure outcome
+ok 3 - ordinary collision-aware branch/rejoin walking reaches the real clear edge and retains a distinct survived-failure outcome
+  ---
+  duration_ms: 181.857334
+  type: 'test'
+  ...
+# Subtest: the existing shelter is a separate supported survival choice, not an invented new destination
+ok 4 - the existing shelter is a separate supported survival choice, not an invented new destination
+  ---
+  duration_ms: 146.993833
+  type: 'test'
+  ...
+# Subtest: survival requires current clearance at the terminal frame; an earlier visit is not an immunity token
+ok 5 - survival requires current clearance at the terminal frame; an earlier visit is not an immunity token
+  ---
+  duration_ms: 1.741417
+  type: 'test'
+  ...
+# Subtest: clearance lamps sit on actual support below step height and remain physically lit when room lighting fails
+ok 6 - clearance lamps sit on actual support below step height and remain physically lit when room lighting fails
+  ---
+  duration_ms: 1.54825
+  type: 'test'
+  ...
+# Subtest: stopping or failing to clear the real obstruction ends enclosed, with no hidden injury or forced camera
+ok 7 - stopping or failing to clear the real obstruction ends enclosed, with no hidden injury or forced camera
+  ---
+  duration_ms: 97.101292
+  type: 'test'
+  ...
+# Subtest: pause, protected transport, unready assets and focus holding spend neither event time nor body movement/look
+ok 8 - pause, protected transport, unready assets and focus holding spend neither event time nor body movement/look
+  ---
+  duration_ms: 1.621375
+  type: 'test'
+  ...
+# Subtest: large frame gaps are bounded and fixed-rate runs preserve terminal decisions without catch-up
+ok 9 - large frame gaps are bounded and fixed-rate runs preserve terminal decisions without catch-up
+  ---
+  duration_ms: 490.728083
+  type: 'test'
+  ...
+# Subtest: checkpoint reload keeps progress, released construction and receipts, without replaying past strikes
+ok 10 - checkpoint reload keeps progress, released construction and receipts, without replaying past strikes
+  ---
+  duration_ms: 6.968583
+  type: 'test'
+  ...
+# Subtest: checkpoint normalization rejects future construction releases and an early forged terminal receipt
+ok 11 - checkpoint normalization rejects future construction releases and an early forged terminal receipt
+  ---
+  duration_ms: 1.184875
+  type: 'test'
+  ...
+# Subtest: Source uses the actual overhead host once, removes the original, and retains the actual independent floor
+ok 12 - Source uses the actual overhead host once, removes the original, and retains the actual independent floor
+  ---
+  duration_ms: 8.666708
+  type: 'test'
+  ...
+# Subtest: an open-sky room fails its actual nearby architectural host, keeping a tall host sweep outside body clearance
+ok 13 - an open-sky room fails its actual nearby architectural host, keeping a tall host sweep outside body clearance
+  ---
+  duration_ms: 7.817667
+  type: 'test'
+  ...
+# Subtest: a whole grounded host overlapping retained walkable space cannot rock through that supported region
+ok 14 - a whole grounded host overlapping retained walkable space cannot rock through that supported region
+  ---
+  duration_ms: 4.114167
+  type: 'test'
+  ...
+# Subtest: only released ceiling flags change; walls, floor heights, materials and the input snapshot stay exact
+ok 15 - only released ceiling flags change; walls, floor heights, materials and the input snapshot stay exact
+  ---
+  duration_ms: 4.109041
+  type: 'test'
+  ...
+# Subtest: warning causes come from actual closed ceiling joints; open sky only gets verified edge dust and protected motion stays quiet
+ok 16 - warning causes come from actual closed ceiling joints; open sky only gets verified edge dust and protected motion stays quiet
+  ---
+  duration_ms: 2.074542
+  type: 'test'
+  ...
+# Subtest: warning pools, joints, lamps and falling slabs follow encoded render planes without changing raw collision footing
+ok 17 - warning pools, joints, lamps and falling slabs follow encoded render planes without changing raw collision footing
+  ---
+  duration_ms: 3.577958
+  type: 'test'
+  ...
+# Subtest: original procedural materials have finite outward normals, real thickness and bounded geometry
+ok 18 - original procedural materials have finite outward normals, real thickness and bounded geometry
+  ---
+  duration_ms: 0.696958
+  type: 'test'
+  ...
+# Subtest: shallow puddles have real liquid slopes and a broken rough sediment edge, with no emitted fill or body-floor change
+ok 19 - shallow puddles have real liquid slopes and a broken rough sediment edge, with no emitted fill or body-floor change
+  ---
+  duration_ms: 2.649958
+  type: 'test'
+  ...
+# Subtest: water shares finite unit normals across triangle edges after nonuniform world scaling; dry and structural meshes stay flat
+ok 20 - water shares finite unit normals across triangle edges after nonuniform world scaling; dry and structural meshes stay flat
+  ---
+  duration_ms: 0.654458
+  type: 'test'
+  ...
+# Subtest: settled floor dust uses disconnected coplanar upward patches, while the airborne grit keeps its original particle geometry
+ok 21 - settled floor dust uses disconnected coplanar upward patches, while the airborne grit keeps its original particle geometry
+  ---
+  duration_ms: 5.456167
+  type: 'test'
+  ...
+# Subtest: Source renderer keeps room-memory final dither with the text-space path; ordinary world rendering retains its own owner
+ok 22 - Source renderer keeps room-memory final dither with the text-space path; ordinary world rendering retains its own owner
+  ---
+  duration_ms: 4.142833
+  type: 'test'
+  ...
+# Subtest: scene waits for a real terminal render before one durable completion and reload never applies injury
+ok 23 - scene waits for a real terminal render before one durable completion and reload never applies injury
+  ---
+  duration_ms: 2.201958
+  type: 'test'
+  ...
+# Subtest: terminal outcome waits through pause, hidden focus and protected ownership until a fresh active draw
+ok 24 - terminal outcome waits through pause, hidden focus and protected ownership until a fresh active draw
+  ---
+  duration_ms: 9.50975
+  type: 'test'
+  ...
+# Subtest: a final draw loses delivery authority if protection starts before its queued host callback
+ok 25 - a final draw loses delivery authority if protection starts before its queued host callback
+  ---
+  duration_ms: 1.716333
+  type: 'test'
+  ...
+# Subtest: pause then resume or scene exit before queued delivery cannot reuse the earlier final draw
+ok 26 - pause then resume or scene exit before queued delivery cannot reuse the earlier final draw
+  ---
+  duration_ms: 3.781875
+  type: 'test'
+  ...
+# Subtest: an interrupted terminal render can be retried visibly without resetting the outcome or deadlocking readiness
+ok 27 - an interrupted terminal render can be retried visibly without resetting the outcome or deadlocking readiness
+  ---
+  duration_ms: 1.91575
+  type: 'test'
+  ...
+# Subtest: a rejected host filing retries only after a fresh final draw and never applies a second structural sequence
+ok 28 - a rejected host filing retries only after a fresh final draw and never applies a second structural sequence
+  ---
+  duration_ms: 1.412166
+  type: 'test'
+  ...
+# Subtest: unsupported or changed restored construction holds visibly for retry rather than reseating the body
+ok 29 - unsupported or changed restored construction holds visibly for retry rather than reseating the body
+  ---
+  duration_ms: 2.786833
+  type: 'test'
+  ...
+1..29
+# tests 29
+# suites 0
+# pass 29
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1026.965209
+{"evidence":"first-strike-entry-moderate-cpu-fixture","submittedTriangles":242,"connectedCells":484,"elapsedMs":43.85341699999999,"scope":"CPU synthetic geometry, not measured game capture or GPU"}
+TAP version 13
+# Subtest: actual plan origin, negative floor, Float32 heights and byte materials survive snapshot
+ok 1 - actual plan origin, negative floor, Float32 heights and byte materials survive snapshot
+  ---
+  duration_ms: 5.39325
+  type: 'test'
+  ...
+# Subtest: encoded-height fallback and RGBA material format use their actual channels
+ok 2 - encoded-height fallback and RGBA material format use their actual channels
+  ---
+  duration_ms: 0.471375
+  type: 'test'
+  ...
+# Subtest: solid, bricked and physically closed doors separate the actual connected component
+ok 3 - solid, bricked and physically closed doors separate the actual connected component
+  ---
+  duration_ms: 1.118583
+  type: 'test'
+  ...
+# Subtest: an existing open threshold rejoins existing cells without inventing support
+ok 4 - an existing open threshold rejoins existing cells without inventing support
+  ---
+  duration_ms: 1.623708
+  type: 'test'
+  ...
+# Subtest: planner and runtime share .32m steps and 1.82m bodily clearance
+ok 5 - planner and runtime share .32m steps and 1.82m bodily clearance
+  ---
+  duration_ms: 0.361333
+  type: 'test'
+  ...
+# Subtest: occupancy callback excludes an actual obstruction and receives physical feet coordinates
+ok 6 - occupancy callback excludes an actual obstruction and receives physical feet coordinates
+  ---
+  duration_ms: 0.594584
+  type: 'test'
+  ...
+# Subtest: submitted Source has no fallback floor when only walls or excluded characters are present
+ok 7 - submitted Source has no fallback floor when only walls or excluded characters are present
+  ---
+  duration_ms: 2.281708
+  type: 'test'
+  ...
+# Subtest: real mesh floor/ceiling hosts and whole host bounds retain geometry outside the local capture
+ok 8 - real mesh floor/ceiling hosts and whole host bounds retain geometry outside the local capture
+  ---
+  duration_ms: 8.910334
+  type: 'test'
+  ...
+# Subtest: separate submitted floor and ceiling retain their actual distinct host IDs
+ok 9 - separate submitted floor and ceiling retain their actual distinct host IDs
+  ---
+  duration_ms: 5.355209
+  type: 'test'
+  ...
+# Subtest: instance yaw, anisotropic scale and GLB node transform compose in renderer order
+ok 10 - instance yaw, anisotropic scale and GLB node transform compose in renderer order
+  ---
+  duration_ms: 3.822417
+  type: 'test'
+  ...
+# Subtest: a .42m strip cannot pretend to fit the .46m body diameter
+ok 11 - a .42m strip cannot pretend to fit the .46m body diameter
+  ---
+  duration_ms: 0.794917
+  type: 'test'
+  ...
+# Subtest: a missing floor region does not become an invented connected corridor
+ok 12 - a missing floor region does not become an invented connected corridor
+  ---
+  duration_ms: 0.992291
+  type: 'test'
+  ...
+# Subtest: a wall exactly between sampled centres blocks traversal rather than becoming a doorway
+ok 13 - a wall exactly between sampled centres blocks traversal rather than becoming a doorway
+  ---
+  duration_ms: 2.062875
+  type: 'test'
+  ...
+# Subtest: an unsupported starting point cannot borrow a disconnected floor half a metre away
+ok 14 - an unsupported starting point cannot borrow a disconnected floor half a metre away
+  ---
+  duration_ms: 0.232834
+  type: 'test'
+  ...
+# Subtest: actual .31m mesh riser remains usable while .40m is beyond the scene body contract
+ok 15 - actual .31m mesh riser remains usable while .40m is beyond the scene body contract
+  ---
+  duration_ms: 7.007
+  type: 'test'
+  ...
+# Subtest: a low sloping ceiling must clear the whole body radius, not just its centre
+ok 16 - a low sloping ceiling must clear the whole body radius, not just its centre
+  ---
+  duration_ms: 0.516375
+  type: 'test'
+  ...
+# Subtest: nonfinite or oversized capture radii cannot create unbounded traversal
+ok 17 - nonfinite or oversized capture radii cannot create unbounded traversal
+  ---
+  duration_ms: 10.016583
+  type: 'test'
+  ...
+# Subtest: durable construction roundtrip retains route/support while reusing current real mesh collision
+ok 18 - durable construction roundtrip retains route/support while reusing current real mesh collision
+  ---
+  duration_ms: 5.009708
+  type: 'test'
+  ...
+# Subtest: submitted facade bounds retain real remote mass rather than fabricating an open-sky ceiling
+ok 19 - submitted facade bounds retain real remote mass rather than fabricating an open-sky ceiling
+  ---
+  duration_ms: 0.827417
+  type: 'test'
+  ...
+# Subtest: host boxes use exact node/model transforms and include actual mass near the player despite a remote anchor
+ok 20 - host boxes use exact node/model transforms and include actual mass near the player despite a remote anchor
+  ---
+  duration_ms: 0.152041
+  type: 'test'
+  ...
+# Subtest: host-only capture fails closed for unsubmitted/anonymous/ambiguous or excluded bodies
+ok 21 - host-only capture fails closed for unsubmitted/anonymous/ambiguous or excluded bodies
+  ---
+  duration_ms: 0.094125
+  type: 'test'
+  ...
+# Subtest: moderate actual triangle stress stays within a bounded capture and connected cells
+ok 22 - moderate actual triangle stress stays within a bounded capture and connected cells
+  ---
+  duration_ms: 45.401917
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 111.593417
+TAP version 13
+# Subtest: the shipped horn is exactly what the tool renders, within a small budget
+ok 1 - the shipped horn is exactly what the tool renders, within a small budget
+  ---
+  duration_ms: 154.342209
+  type: 'test'
+  ...
+# Subtest: it is a horn under water: two notes carry it, and the top of the sound is gone
+ok 2 - it is a horn under water: two notes carry it, and the top of the sound is gone
+  ---
+  duration_ms: 936.931375
+  type: 'test'
+  ...
+# Subtest: its battery is dying: the pitch sags, it sputters, then the last air goes up
+ok 3 - its battery is dying: the pitch sags, it sputters, then the last air goes up
+  ---
+  duration_ms: 24.121459
+  type: 'test'
+  ...
+# Subtest: only the 06:00 warning uses it, unplaced and from nowhere in the building
+ok 4 - only the 06:00 warning uses it, unplaced and from nowhere in the building
+  ---
+  duration_ms: 3.004042
+  type: 'test'
+  ...
+# Subtest: it honours the same protections, and a missing file costs only itself
+ok 5 - it honours the same protections, and a missing file costs only itself
+  ---
+  duration_ms: 2.836292
+  type: 'test'
+  ...
+# Subtest: the game sends the 06:00 warning even with no structure nearby to place it on
+ok 6 - the game sends the 06:00 warning even with no structure nearby to place it on
+  ---
+  duration_ms: 2.89925
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1127.1965
+TAP version 13
+# Subtest: standing still in Source II, the tide slides the body off and the construction loops it back onto itself
+ok 1 - standing still in Source II, the tide slides the body off and the construction loops it back onto itself
+  ---
+  duration_ms: 641.750291
+  type: 'test'
+  ...
+# Subtest: the pull gathers with stillness, stays shallow while walking, and points at the hole with a swirl
+ok 2 - the pull gathers with stillness, stays shallow while walking, and points at the hole with a swirl
+  ---
+  duration_ms: 0.164625
+  type: 'test'
+  ...
+# Subtest: the gust is the night wind shared with the opening, and the field is deterministic
+ok 3 - the gust is the night wind shared with the opening, and the field is deterministic
+  ---
+  duration_ms: 0.867583
+  type: 'test'
+  ...
+# Subtest: a walker makes headway against the tide, even after it has gathered
+ok 4 - a walker makes headway against the tide, even after it has gathered
+  ---
+  duration_ms: 111.207875
+  type: 'test'
+  ...
+# Subtest: seated is anchored: no pull, no gust, and the tide resets
+ok 5 - seated is anchored: no pull, no gust, and the tide resets
+  ---
+  duration_ms: 196.39225
+  type: 'test'
+  ...
+# Subtest: without the live environment the pure physics is unchanged
+ok 6 - without the live environment the pure physics is unchanged
+  ---
+  duration_ms: 180.819833
+  type: 'test'
+  ...
+# Subtest: in Source III the tide pulls across the causeways, off the islands, and recovery returns the body
+ok 7 - in Source III the tide pulls across the causeways, off the islands, and recovery returns the body
+  ---
+  duration_ms: 198.993625
+  type: 'test'
+  ...
+# Subtest: the tide survives a save round trip and never exceeds walking speed
+ok 8 - the tide survives a save round trip and never exceeds walking speed
+  ---
+  duration_ms: 21.142667
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1359.373208
+TAP version 13
+# Subtest: the merged upright construction includes the actual receiving deck at its real coordinates
+ok 1 - the merged upright construction includes the actual receiving deck at its real coordinates
+  ---
+  duration_ms: 1.018125
+  type: 'test'
+  ...
+# Subtest: the upright image matches the actual lattice wrap, including a nonzero horizontal tile
+ok 2 - the upright image matches the actual lattice wrap, including a nonzero horizontal tile
+  ---
+  duration_ms: 2.820792
+  type: 'test'
+  ...
+# Subtest: the house unfolds during the fall and folds away after landing
+ok 3 - the house unfolds during the fall and folds away after landing
+  ---
+  duration_ms: 1.492625
+  type: 'test'
+  ...
+# Subtest: live fall frames preserve the native receiver and bound the separate Escher submission
+ok 4 - live fall frames preserve the native receiver and bound the separate Escher submission
+  ---
+  duration_ms: 75.464875
+  type: 'test'
+  ...
+# Subtest: every outward Source II chart repeats its own receiving construction across its actual wrap
+ok 5 - every outward Source II chart repeats its own receiving construction across its actual wrap
+  ---
+  duration_ms: 90.97725
+  type: 'test'
+  ...
+# Subtest: turned copies stand clear of every chart footprint and fit inside one loop band
+ok 6 - turned copies stand clear of every chart footprint and fit inside one loop band
+  ---
+  duration_ms: 3.41925
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 200.8975
+TAP version 13
+# Subtest: island causeways really carry the player to the listening and door islands
+ok 1 - island causeways really carry the player to the listening and door islands
+  ---
+  duration_ms: 14.87925
+  type: 'test'
+  ...
+# Subtest: the onward island has a tall, persistent visible marker
+ok 2 - the onward island has a tall, persistent visible marker
+  ---
+  duration_ms: 19.32675
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39.11975
+TAP version 13
+# Subtest: the Catch is one island in a universe that fills the void above and below
+ok 1 - the Catch is one island in a universe that fills the void above and below
+  ---
+  duration_ms: 0.640792
+  type: 'test'
+  ...
+# Subtest: no unreachable island enters built construction, or the stack view of the door island
+ok 2 - no unreachable island enters built construction, or the stack view of the door island
+  ---
+  duration_ms: 2.482625
+  type: 'test'
+  ...
+# Subtest: every reachable island hangs on a root beneath its own deck
+ok 3 - every reachable island hangs on a root beneath its own deck
+  ---
+  duration_ms: 0.361208
+  type: 'test'
+  ...
+# Subtest: the universe belongs to the Catch frame only and sways slowly within the native budget
+ok 4 - the universe belongs to the Catch frame only and sways slowly within the native budget
+  ---
+  duration_ms: 37.887042
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 46.006042
+TAP version 13
+# Subtest: II keeps one hidden supported body behind the real leaf until six accepted seconds; pause, loading and reload retain its clock
+ok 1 - II keeps one hidden supported body behind the real leaf until six accepted seconds; pause, loading and reload retain its clock
+  ---
+  duration_ms: 89.766458
+  type: 'test'
+  ...
+# Subtest: II warning is complete and physical waiting can be captured, then recovery gives a usable departure
+ok 2 - II warning is complete and physical waiting can be captured, then recovery gives a usable departure
+  ---
+  duration_ms: 170.491
+  type: 'test'
+  ...
+# Subtest: III receives the same actor through the actual gate fold after restored agency, with persistent provenance and a finite visible warning
+ok 3 - III receives the same actor through the actual gate fold after restored agency, with persistent provenance and a finite visible warning
+  ---
+  duration_ms: 115.855458
+  type: 'test'
+  ...
+# Subtest: III preserves the captured entry refuge wait, then physically pursues continued walking onto the Catch
+ok 4 - III preserves the captured entry refuge wait, then physically pursues continued walking onto the Catch
+  ---
+  duration_ms: 577.2705
+  type: 'test'
+  ...
+# III_REFUGE_CONTINUATION {"nativeStop":{"x":-157.23333333333423,"z":-92},"refugeWaitSeconds":30,"refugeActor":{"x":-152.0016666666662,"z":-92,"feet":8.4},"exposedPlayer":{"x":-162.4666666666567,"z":-92,"feet":8.450000000000001},"pursuerAtCapture":{"x":-161.7733333333368,"z":-92,"feet":8.4},"sameActor":"source-continuation-hush","arrivalCount":1}
+# Subtest: repeated II and corridor waiting captures still leave a usable physical departure, even when the Hush has reached the restored body
+ok 5 - repeated II and corridor waiting captures still leave a usable physical departure, even when the Hush has reached the restored body
+  ---
+  duration_ms: 813.856167
+  type: 'test'
+  ...
+# RECOVERY_DEPARTURE {"location":"II","capturesBeforeDeparture":2,"from":{"x":0,"z":2,"feet":0},"to":{"x":0,"z":-0.10000000000000572,"feet":0},"graceRemaining":1.5000000000000053,"pursuer":{"x":0,"z":0.18000000000001587,"feet":0},"input":"forward in the restored route-facing view"}
+# RECOVERY_DEPARTURE {"location":"corridor","capturesBeforeDeparture":5,"from":{"x":-146,"z":-71,"feet":8.4},"to":{"x":-145.52333333333314,"z":-78.62666666666473,"feet":8.4},"graceRemaining":0,"pursuer":{"x":-145.52333333333314,"z":-76.7735060182173,"feet":8.4},"input":"forward, sidestep into visible bypass, forward"}
+# Subtest: explicitly disabled diagnostic actors stay disabled and ordinary existing actors do not acquire an arrival reset
+ok 6 - explicitly disabled diagnostic actors stay disabled and ordinary existing actors do not acquire an arrival reset
+  ---
+  duration_ms: 165.832083
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1941.215834
+TAP version 13
+# Subtest: II and III contain distinct dense clusters with a smaller uneven outward distribution
+ok 1 - II and III contain distinct dense clusters with a smaller uneven outward distribution
+  ---
+  duration_ms: 0.658375
+  type: 'test'
+  ...
+# Subtest: every added sheet is flat, fixed world geometry with the original Source ink
+ok 2 - every added sheet is flat, fixed world geometry with the original Source ink
+  ---
+  duration_ms: 0.943875
+  type: 'test'
+  ...
+# Subtest: real frame selects only the current region and keeps its scenery fixed as body and clock change
+ok 3 - real frame selects only the current region and keeps its scenery fixed as body and clock change
+  ---
+  duration_ms: 80.967375
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 87.416292
+TAP version 13
+# Subtest: the earlier Source has sparse unequal clusters, with II, III and Earthfall carrying the densest fields
+ok 1 - the earlier Source has sparse unequal clusters, with II, III and Earthfall carrying the densest fields
+  ---
+  duration_ms: 0.606458
+  type: 'test'
+  ...
+# Subtest: early fragments keep their world addresses as the listener and clock change
+ok 2 - early fragments keep their world addresses as the listener and clock change
+  ---
+  duration_ms: 0.875542
+  type: 'test'
+  ...
+# Subtest: real Source runtime submits local faults in the hall, shore, field and road
+ok 3 - real Source runtime submits local faults in the hall, shore, field and road
+  ---
+  duration_ms: 87.323208
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 93.023
+TAP version 13
+# Subtest: Source IV keeps sparse, uneven, world-fixed non-colliding fault remnants
+ok 1 - Source IV keeps sparse, uneven, world-fixed non-colliding fault remnants
+  ---
+  duration_ms: 6.030084
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.368292
+TAP version 13
+# Subtest: one foot per stride of its real gait, and the floor takes the load first
+ok 1 - one foot per stride of its real gait, and the floor takes the load first
+  ---
+  duration_ms: 9.872875
+  type: 'test'
+  ...
+# Subtest: the steps slow down as it gets closer
+ok 2 - the steps slow down as it gets closer
+  ---
+  duration_ms: 11.835958
+  type: 'test'
+  ...
+# Subtest: nothing while it listens or stands, and a long frame still lands the foot
+ok 3 - nothing while it listens or stands, and a long frame still lands the foot
+  ---
+  duration_ms: 1.364375
+  type: 'test'
+  ...
+# Subtest: arriving mid-stride invents nothing, and a redirect through the atlas is not a step
+ok 4 - arriving mid-stride invents nothing, and a redirect through the atlas is not a step
+  ---
+  duration_ms: 0.65625
+  type: 'test'
+  ...
+# Subtest: proximity: louder and heavier as it nears, then silent at arm's length
+ok 5 - proximity: louder and heavier as it nears, then silent at arm's length
+  ---
+  duration_ms: 0.359083
+  type: 'test'
+  ...
+# Subtest: occlusion: a wall takes the level and the top, and leaves the low end
+ok 6 - occlusion: a wall takes the level and the top, and leaves the low end
+  ---
+  duration_ms: 0.257459
+  type: 'test'
+  ...
+# Subtest: spatial: the plan puts it where the body really is, around and above or below the head
+ok 7 - spatial: the plan puts it where the body really is, around and above or below the head
+  ---
+  duration_ms: 0.251
+  type: 'test'
+  ...
+# Subtest: Pressure: the field eats its top and the room's answer, and the room falling away leaves the feet
+ok 8 - Pressure: the field eats its top and the room's answer, and the room falling away leaves the feet
+  ---
+  duration_ms: 0.121791
+  type: 'test'
+  ...
+# Subtest: its rhythm: heavy strides, tiny shuffles between them, and a drag on some
+ok 9 - its rhythm: heavy strides, tiny shuffles between them, and a drag on some
+  ---
+  duration_ms: 0.282875
+  type: 'test'
+  ...
+# Subtest: the monitor hears it better than the man, and it lands on the needle
+ok 10 - the monitor hears it better than the man, and it lands on the needle
+  ---
+  duration_ms: 0.4705
+  type: 'test'
+  ...
+# Subtest: it has no authority: no noise, no spoil, no hearing, and reduced settings hold
+ok 11 - it has no authority: no noise, no spoil, no hearing, and reduced settings hold
+  ---
+  duration_ms: 0.281416
+  type: 'test'
+  ...
+# Subtest: captions say what and where, for those who can't hear it
+ok 12 - captions say what and where, for those who can't hear it
+  ---
+  duration_ms: 0.0575
+  type: 'test'
+  ...
+# Subtest: Source: a walking beat that holds whatever the pace, from the body's own travel
+ok 13 - Source: a walking beat that holds whatever the pace, from the body's own travel
+  ---
+  duration_ms: 2.357542
+  type: 'test'
+  ...
+# Subtest: Source: nothing for standing still, one last foot on stopping, and a cut is not a walk
+ok 14 - Source: nothing for standing still, one last foot on stopping, and a cut is not a walk
+  ---
+  duration_ms: 0.597208
+  type: 'test'
+  ...
+# Subtest: Source: heard at its own scale, a man's feet in the courts, and quiet to the ear on erased ground
+ok 15 - Source: heard at its own scale, a man's feet in the courts, and quiet to the ear on erased ground
+  ---
+  duration_ms: 0.122875
+  type: 'test'
+  ...
+# Subtest: Source: presentation only, and never over a recorded reprise
+ok 16 - Source: presentation only, and never over a recorded reprise
+  ---
+  duration_ms: 0.509209
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 35.685875
+TAP version 13
+# Subtest: the camera turns to the real body, faster than it could be looked at
+ok 1 - the camera turns to the real body, faster than it could be looked at
+  ---
+  duration_ms: 0.994875
+  type: 'test'
+  ...
+# Subtest: nothing in the plan moves the body or invents a place for it
+ok 2 - nothing in the plan moves the body or invents a place for it
+  ---
+  duration_ms: 0.16025
+  type: 'test'
+  ...
+# Subtest: the hit: one white frame behind the body, its negative, a stutter, then the zoom lets go
+ok 3 - the hit: one white frame behind the body, its negative, a stutter, then the zoom lets go
+  ---
+  duration_ms: 0.257459
+  type: 'test'
+  ...
+# Subtest: a slow machine still gets the white frame and its negative
+ok 4 - a slow machine still gets the white frame and its negative
+  ---
+  duration_ms: 0.071083
+  type: 'test'
+  ...
+# Subtest: reduced flash has no white field and no burn-in, reduced motion never touches the camera
+ok 5 - reduced flash has no white field and no burn-in, reduced motion never touches the camera
+  ---
+  duration_ms: 0.30925
+  type: 'test'
+  ...
+# Subtest: the sound: a crack at the grab, the thump on the flash, then a dull room
+ok 6 - the sound: a crack at the grab, the thump on the flash, then a dull room
+  ---
+  duration_ms: 0.067708
+  type: 'test'
+  ...
+# Subtest: the burn-in is one pale figure, gone inside two seconds
+ok 7 - the burn-in is one pale figure, gone inside two seconds
+  ---
+  duration_ms: 0.095333
+  type: 'test'
+  ...
+# Subtest: every contact path gets it, and the world keeps a clean frame loop
+ok 8 - every contact path gets it, and the world keeps a clean frame loop
+  ---
+  duration_ms: 1.4485
+  type: 'test'
+  ...
+# Subtest: the room falls away as it closes, so the hit has silence to land in
+ok 9 - the room falls away as it closes, so the hit has silence to land in
+  ---
+  duration_ms: 0.299958
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.849166
+TAP version 13
+# Subtest: a new coast uses separate source identity and retains an exact copied Source pose
+ok 1 - a new coast uses separate source identity and retains an exact copied Source pose
+  ---
+  duration_ms: 2.209
+  type: 'test'
+  ...
+# Subtest: legacy completion, wrong versions and other runs cannot become a heard coast
+ok 2 - legacy completion, wrong versions and other runs cannot become a heard coast
+  ---
+  duration_ms: 0.392917
+  type: 'test'
+  ...
+# Subtest: walking preserves deliberate gaze, uses authored support and rejects unsupported or occupied poses
+ok 3 - walking preserves deliberate gaze, uses authored support and rejects unsupported or occupied poses
+  ---
+  duration_ms: 0.250166
+  type: 'test'
+  ...
+# Subtest: the anonymous note is independent of recording, progression and the return
+ok 4 - the anonymous note is independent of recording, progression and the return
+  ---
+  duration_ms: 0.825625
+  type: 'test'
+  ...
+# Subtest: only audible running monitor evidence at the box earns the new receipt
+ok 5 - only audible running monitor evidence at the box earns the new receipt
+  ---
+  duration_ms: 0.417625
+  type: 'test'
+  ...
+# Subtest: monitor flushes may report real audio with dt zero; simulation time never stands in for audio
+ok 6 - monitor flushes may report real audio with dt zero; simulation time never stands in for audio
+  ---
+  duration_ms: 0.672
+  type: 'test'
+  ...
+# Subtest: the unmonitored physical musicbox phase persists without earning listening credit
+ok 7 - the unmonitored physical musicbox phase persists without earning listening credit
+  ---
+  duration_ms: 0.139833
+  type: 'test'
+  ...
+# Subtest: pause, hidden, interrupted and unavailable rendering freeze actions, audio, movement and the cover
+ok 8 - pause, hidden, interrupted and unavailable rendering freeze actions, audio, movement and the cover
+  ---
+  duration_ms: 0.357084
+  type: 'test'
+  ...
+# Subtest: the finite directed descent plane returns without note or listening gates
+ok 9 - the finite directed descent plane returns without note or listening gates
+  ---
+  duration_ms: 0.260125
+  type: 'test'
+  ...
+# Subtest: return remains durable and unacknowledgeable until covered; acknowledgement is one-shot
+ok 10 - return remains durable and unacknowledgeable until covered; acknowledgement is one-shot
+  ---
+  duration_ms: 0.358375
+  type: 'test'
+  ...
+# Subtest: the full-cover ready event emits once and reload does not restart the fade
+ok 11 - the full-cover ready event emits once and reload does not restart the fade
+  ---
+  duration_ms: 0.177459
+  type: 'test'
+  ...
+# Subtest: retreat restores its Source pose; a new visit recaptures current body and door without inventing completion
+ok 12 - retreat restores its Source pose; a new visit recaptures current body and door without inventing completion
+  ---
+  duration_ms: 0.188042
+  type: 'test'
+  ...
+# Subtest: new entry after retreat preserves the committed musicbox receipt, note and phase while recapturing only Source ownership
+ok 13 - new entry after retreat preserves the committed musicbox receipt, note and phase while recapturing only Source ownership
+  ---
+  duration_ms: 0.170542
+  type: 'test'
+  ...
+# Subtest: recording and reward receipts commit independently, persist and cannot overwrite another take
+ok 14 - recording and reward receipts commit independently, persist and cannot overwrite another take
+  ---
+  duration_ms: 0.190167
+  type: 'test'
+  ...
+# Subtest: derived frames are copies and do not change persisted state or seize exploration gaze
+ok 15 - derived frames are copies and do not change persisted state or seize exploration gaze
+  ---
+  duration_ms: 0.077667
+  type: 'test'
+  ...
+# Subtest: submerged lights wait for a real unobstructed glance, rise over time and persist without a reward
+ok 16 - submerged lights wait for a real unobstructed glance, rise over time and persist without a reward
+  ---
+  duration_ms: 0.282208
+  type: 'test'
+  ...
+# Subtest: recognition rejects actual stone footprints even when the bank height ray is clear
+ok 17 - recognition rejects actual stone footprints even when the bank height ray is clear
+  ---
+  duration_ms: 0.181792
+  type: 'test'
+  ...
+# Subtest: the authored shingle supports box-side listening and its return under the point without old pocket gates
+ok 18 - the authored shingle supports box-side listening and its return under the point without old pocket gates
+  ---
+  duration_ms: 222.863042
+  type: 'test'
+  ...
+# Subtest: the cliff-foot and swash-line routes both cross the end of the shingle without hidden box gates
+ok 19 - the cliff-foot and swash-line routes both cross the end of the shingle without hidden box gates
+  ---
+  duration_ms: 2.817708
+  type: 'test'
+  ...
+# Subtest: the van in the surf is hidden from the old clifftop box site and in plain sight from the shingle
+ok 20 - the van in the surf is hidden from the old clifftop box site and in plain sight from the shingle
+  ---
+  duration_ms: 3.871625
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 247.529792
+TAP version 13
+# Subtest: swept walking normalizes diagonals, follows support, slides and never tunnels across a blocked strip
+ok 1 - swept walking normalizes diagonals, follows support, slides and never tunnels across a blocked strip
+  ---
+  duration_ms: 1.050667
+  type: 'test'
+  ...
+# Subtest: loading stays covered and late initialization after exit releases borrowed rendering once
+ok 2 - loading stays covered and late initialization after exit releases borrowed rendering once
+  ---
+  duration_ms: 1.685
+  type: 'test'
+  ...
+# Subtest: a failed picture exposes X return and restores Source once under cover without movement or audio credit
+ok 3 - a failed picture exposes X return and restores Source once under cover without movement or audio credit
+  ---
+  duration_ms: 1.091792
+  type: 'test'
+  ...
+# Subtest: ordinary controls walk, turn and look without changing the exact saved Source return
+ok 4 - ordinary controls walk, turn and look without changing the exact saved Source return
+  ---
+  duration_ms: 0.766125
+  type: 'test'
+  ...
+# Subtest: explicit technical placement rejects unsupported bodies and records every accepted assignment
+ok 5 - explicit technical placement rejects unsupported bodies and records every accepted assignment
+  ---
+  duration_ms: 0.458584
+  type: 'test'
+  ...
+# Subtest: R is a non-repeating monitor toggle; proximity and simulation do not manufacture heard seconds
+ok 6 - R is a non-repeating monitor toggle; proximity and simulation do not manufacture heard seconds
+  ---
+  duration_ms: 1.903792
+  type: 'test'
+  ...
+# Subtest: L calls the real host torch only once per live press and never during lifecycle holds
+ok 7 - L calls the real host torch only once per live press and never during lifecycle holds
+  ---
+  duration_ms: 0.394834
+  type: 'test'
+  ...
+# Subtest: E opens a voluntary readable note in range, clears movement and uses identical physical copy
+ok 8 - E opens a voluntary readable note in range, clears movement and uses identical physical copy
+  ---
+  duration_ms: 0.3025
+  type: 'test'
+  ...
+# Subtest: pause flushes the previous actually audible interval before freezing and clears held movement
+ok 9 - pause flushes the previous actually audible interval before freezing and clears held movement
+  ---
+  duration_ms: 0.465375
+  type: 'test'
+  ...
+# Subtest: blur remains held while the document is visible; hidden and external pause freeze controls
+ok 10 - blur remains held while the document is visible; hidden and external pause freeze controls
+  ---
+  duration_ms: 0.613584
+  type: 'test'
+  ...
+# Subtest: recording callback must explicitly succeed; an undelivered receipt survives reload and retries without new audio
+ok 11 - recording callback must explicitly succeed; an undelivered receipt survives reload and retries without new audio
+  ---
+  duration_ms: 0.403333
+  type: 'test'
+  ...
+# Subtest: return callback occurs only under full cover, is one-shot and may synchronously release the owner
+ok 12 - return callback occurs only under full cover, is one-shot and may synchronously release the owner
+  ---
+  duration_ms: 0.238334
+  type: 'test'
+  ...
+# Subtest: a failed restore remains covered and undelivered until explicit retry succeeds
+ok 13 - a failed restore remains covered and undelivered until explicit retry succeeds
+  ---
+  duration_ms: 0.227917
+  type: 'test'
+  ...
+# Subtest: return fade reload resumes its durable cover without changing Source pose or requiring the box
+ok 14 - return fade reload resumes its durable cover without changing Source pose or requiring the box
+  ---
+  duration_ms: 0.138709
+  type: 'test'
+  ...
+# Subtest: actual authored spawn has a supported continuous approach to the box without a third driving control
+ok 15 - actual authored spawn has a supported continuous approach to the box without a third driving control
+  ---
+  duration_ms: 2074.501791
+  type: 'test'
+  ...
+# Subtest: ordinary look lease and relative input update the coastal camera without borrowing the saved Source view
+ok 16 - ordinary look lease and relative input update the coastal camera without borrowing the saved Source view
+  ---
+  duration_ms: 0.362792
+  type: 'test'
+  ...
+# Subtest: coastal shared contacts follow supported walking, not placement, blocked input or resumed stride debt
+ok 17 - coastal shared contacts follow supported walking, not placement, blocked input or resumed stride debt
+  ---
+  duration_ms: 2.012708
+  type: 'test'
+  ...
+# Subtest: coastal gait follows accepted metre speed and ends with travel rather than a fixed distance bank
+ok 18 - coastal gait follows accepted metre speed and ends with travel rather than a fixed distance bank
+  ---
+  duration_ms: 9.57775
+  type: 'test'
+  ...
+# Subtest: F near the box asks the host to pick the keepsake up
+ok 19 - F near the box asks the host to pick the keepsake up
+  ---
+  duration_ms: 0.317541
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2104.653625
+TAP version 13
+# Subtest: only the optional favor flag opens the Source leg, with a run-scoped exact return pose
+ok 1 - only the optional favor flag opens the Source leg, with a run-scoped exact return pose
+  ---
+  duration_ms: 1.981208
+  type: 'test'
+  ...
+# Subtest: idle time, wrong-facing E, and out-of-range E cannot serve any order
+ok 2 - idle time, wrong-facing E, and out-of-range E cannot serve any order
+  ---
+  duration_ms: 4.399417
+  type: 'test'
+  ...
+# Subtest: all five rounds require actual service, barrel work and two chosen descents
+ok 3 - all five rounds require actual service, barrel work and two chosen descents
+  ---
+  duration_ms: 1.463958
+  type: 'test'
+  ...
+# Subtest: WASD owns actual collision and the stretched public aisle remains connected
+ok 4 - WASD owns actual collision and the stretched public aisle remains connected
+  ---
+  duration_ms: 15.58675
+  type: 'test'
+  ...
+# Subtest: scene Escape pauses without returning, explicit door confirmation restores the exact original pose once
+ok 5 - scene Escape pauses without returning, explicit door confirmation restores the exact original pose once
+  ---
+  duration_ms: 0.792958
+  type: 'test'
+  ...
+# Subtest: RMB drag changes local look, held keys clear on pause and an interrupted scene preserves progress
+ok 6 - RMB drag changes local look, held keys clear on pause and an interrupted scene preserves progress
+  ---
+  duration_ms: 0.227041
+  type: 'test'
+  ...
+# Subtest: failed or interrupted loading never steals the renderer after release, and still allows a safe return
+ok 7 - failed or interrupted loading never steals the renderer after release, and still allows a safe return
+  ---
+  duration_ms: 0.261792
+  type: 'test'
+  ...
+# Subtest: loading is checkpointed immediately and X can return before a stalled asset finishes
+ok 8 - loading is checkpointed immediately and X can return before a stalled asset finishes
+  ---
+  duration_ms: 0.122833
+  type: 'test'
+  ...
+# Subtest: stalled residency repair exposes loading and a safe road return without advancing its checkpoint
+ok 9 - stalled residency repair exposes loading and a safe road return without advancing its checkpoint
+  ---
+  duration_ms: 0.7035
+  type: 'test'
+  ...
+# Subtest: successful residency repair requires fresh movement input and preserves an interrupted fall
+ok 10 - successful residency repair requires fresh movement input and preserves an interrupted fall
+  ---
+  duration_ms: 0.519375
+  type: 'test'
+  ...
+# Subtest: both E and X recover a rejected or false renderer load without having to focus the door
+ok 11 - both E and X recover a rejected or false renderer load without having to focus the door
+  ---
+  duration_ms: 0.306708
+  type: 'test'
+  ...
+# Subtest: a frame failure becomes the same recoverable state and preserves the exact return pose
+ok 12 - a frame failure becomes the same recoverable state and preserves the exact return pose
+  ---
+  duration_ms: 0.546792
+  type: 'test'
+  ...
+# Subtest: a failed host return rolls the saved checkpoint back to active and permits a retry
+ok 13 - a failed host return rolls the saved checkpoint back to active and permits a retry
+  ---
+  duration_ms: 0.355917
+  type: 'test'
+  ...
+# Subtest: a failed persistence/reporting callback cannot disable the return control
+ok 14 - a failed persistence/reporting callback cannot disable the return control
+  ---
+  duration_ms: 0.110167
+  type: 'test'
+  ...
+# Subtest: nonfinite body coordinates are rejected before they can bypass furniture collision
+ok 15 - nonfinite body coordinates are rejected before they can bypass furniture collision
+  ---
+  duration_ms: 0.037375
+  type: 'test'
+  ...
+# Subtest: the midpoint drops an item first; only a deliberate disclosed descent moves the player
+ok 16 - the midpoint drops an item first; only a deliberate disclosed descent moves the player
+  ---
+  duration_ms: 0.843333
+  type: 'test'
+  ...
+# Subtest: open floor blocks ordinary walking, while chosen falls resume over an intact destination layer
+ok 17 - open floor blocks ordinary walking, while chosen falls resume over an intact destination layer
+  ---
+  duration_ms: 0.820084
+  type: 'test'
+  ...
+# Subtest: a barrel is physical carried work with bounded movement, never a timed order gate
+ok 18 - a barrel is physical carried work with bounded movement, never a timed order gate
+  ---
+  duration_ms: 0.560041
+  type: 'test'
+  ...
+# Subtest: version-one saves migrate progress, completion and exact exterior pose without replaying served rounds
+ok 19 - version-one saves migrate progress, completion and exact exterior pose without replaying served rounds
+  ---
+  duration_ms: 0.205416
+  type: 'test'
+  ...
+# Subtest: ordinary look lease and relative input belong to the loaded bar camera, with modal holds respected
+ok 20 - ordinary look lease and relative input belong to the loaded bar camera, with modal holds respected
+  ---
+  duration_ms: 0.163625
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.646875
+TAP version 13
+# Subtest: a finite corridor stands100m above a separate visible landing head and3.6m SourceII spine
+ok 1 - a finite corridor stands100m above a separate visible landing head and3.6m SourceII spine
+  ---
+  duration_ms: 3342.577167
+  type: 'test'
+  ...
+# Subtest: waiting, looking, interacting or restored positions do not invent a crossing or start demolition
+ok 2 - waiting, looking, interacting or restored positions do not invent a crossing or start demolition
+  ---
+  duration_ms: 12.830958
+  type: 'test'
+  ...
+# Subtest: ordinary forward crossing starts finite support loading and stopping never cancels it
+ok 3 - ordinary forward crossing starts finite support loading and stopping never cancels it
+  ---
+  duration_ms: 1025.028875
+  type: 'test'
+  ...
+# Subtest: the player can walk and look while the visible supporting corridor lowers before breaking
+ok 4 - the player can walk and look while the visible supporting corridor lowers before breaking
+  ---
+  duration_ms: 357.8265
+  type: 'test'
+  ...
+# Subtest: precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back
+ok 5 - precommit retreat restores the same Source pose; a door left above the dished support cannot teleport the lowered body back
+  ---
+  duration_ms: 891.728458
+  type: 'test'
+  ...
+# Subtest: pause, protected recording, unavailable assets and unavailable rendering freeze physical state and clocks
+ok 6 - pause, protected recording, unavailable assets and unavailable rendering freeze physical state and clocks
+  ---
+  duration_ms: 1963.878875
+  type: 'test'
+  ...
+# Subtest: the full100m descent belongs to the body, crosses3distinct strata and lands on a fixed lower surface
+ok 7 - the full100m descent belongs to the body, crosses3distinct strata and lands on a fixed lower surface
+  ---
+  duration_ms: 1092.512375
+  type: 'test'
+  ...
+# Subtest: air input preserves inherited motion without an invisible clamp or projection
+ok 8 - air input preserves inherited motion without an invisible clamp or projection
+  ---
+  duration_ms: 0.373
+  type: 'test'
+  ...
+# Subtest: ordinary stopped and continuously walking arrivals reach the physical receiving head
+ok 9 - ordinary stopped and continuously walking arrivals reach the physical receiving head
+  ---
+  duration_ms: 2709.728958
+  type: 'test'
+  ...
+# Subtest: a right-edge rubble hold remains escapable through a real lateral gap
+ok 10 - a right-edge rubble hold remains escapable through a real lateral gap
+  ---
+  duration_ms: 2644.402708
+  type: 'test'
+  ...
+# {"held":{"x":7.738840752299313,"z":-5.597698481350327,"feet":92.650002},"afterSixSeconds":{"x":4.976495006830603,"z":-7.414829329365728,"feet":48.694687608176},"landed":{"x":4.9764978147222285,"z":-7.414832659506149,"feet":0}}
+# Subtest: contact impulses survive normalization and fixed ticks agree across caller frame frequencies
+ok 11 - contact impulses survive normalization and fixed ticks agree across caller frame frequencies
+  ---
+  duration_ms: 3173.002583
+  type: 'test'
+  ...
+# Subtest: impact is a brief partial blink at zero height, while normal look resumes after it
+ok 12 - impact is a brief partial blink at zero height, while normal look resumes after it
+  ---
+  duration_ms: 2.746625
+  type: 'test'
+  ...
+# Subtest: the lower threshold opens on approach but must still be physically crossed; an off-axis step cannot grant SourceII
+ok 13 - the lower threshold opens on approach but must still be physically crossed; an off-axis step cannot grant SourceII
+  ---
+  duration_ms: 1104.773125
+  type: 'test'
+  ...
+# Subtest: a borrowed manual-door policy blocks approach until interaction while ordinary SourceII keeps automatic opening
+ok 14 - a borrowed manual-door policy blocks approach until interaction while ordinary SourceII keeps automatic opening
+  ---
+  duration_ms: 1068.985292
+  type: 'test'
+  ...
+# Subtest: the extended receiving spine adds a sustained walk while retaining continuous physical footing
+ok 15 - the extended receiving spine adds a sustained walk while retaining continuous physical footing
+  ---
+  duration_ms: 1087.76575
+  type: 'test'
+  ...
+# Subtest: the lower leaves begin once at approach range, keep moving through retreat/reload, and ignore redundant interaction
+ok 16 - the lower leaves begin once at approach range, keep moving through retreat/reload, and ignore redundant interaction
+  ---
+  duration_ms: 1065.06775
+  type: 'test'
+  ...
+# Subtest: an auto-opening door still blocks the capsule until its visible leaves finish, including a nearby restored save
+ok 17 - an auto-opening door still blocks the capsule until its visible leaves finish, including a nearby restored save
+  ---
+  duration_ms: 1061.855625
+  type: 'test'
+  ...
+# Subtest: upper architecture and the lower destination retain100m separation rather than descending into a copied floor
+ok 18 - upper architecture and the lower destination retain100m separation rather than descending into a copied floor
+  ---
+  duration_ms: 0.265333
+  type: 'test'
+  ...
+# Subtest: save/reload retains the exact physical fall and receipts without replaying support failures
+ok 19 - save/reload retains the exact physical fall and receipts without replaying support failures
+  ---
+  duration_ms: 1087.833417
+  type: 'test'
+  ...
+# Subtest: one-time migration rescues retired broad-floor saves without projecting an ordinary live fall
+ok 20 - one-time migration rescues retired broad-floor saves without projecting an ordinary live fall
+  ---
+  duration_ms: 1.05325
+  type: 'test'
+  ...
+# Subtest: a completed old-approach receipt retains doorway clearance once while active old saves keep their exact body
+ok 21 - a completed old-approach receipt retains doorway clearance once while active old saves keep their exact body
+  ---
+  duration_ms: 1086.935875
+  type: 'test'
+  ...
+# Subtest: finite fragments remain as shallow debris instead of accelerating away to clear the lower view
+ok 22 - finite fragments remain as shallow debris instead of accelerating away to clear the lower view
+  ---
+  duration_ms: 2.604625
+  type: 'test'
+  ...
+# Subtest: an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt
+ok 23 - an opened threshold retains capsule jamb occupancy after centre crossing and cannot skip its onward receipt
+  ---
+  duration_ms: 0.269958
+  type: 'test'
+  ...
+# Subtest: closed leaves and open frame posts block the full body from both sides and on diagonal approaches
+ok 24 - closed leaves and open frame posts block the full body from both sides and on diagonal approaches
+  ---
+  duration_ms: 1.371917
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24795.148375
+TAP version 13
+# Subtest: the five identities are actual unique Ellery assemblies, with independent local state
+ok 1 - the five identities are actual unique Ellery assemblies, with independent local state
+  ---
+  duration_ms: 1.354625
+  type: 'test'
+  ...
+# Subtest: only the untouched forward entrance receives this insertion; existing journeys stay intact
+ok 2 - only the untouched forward entrance receives this insertion; existing journeys stay intact
+  ---
+  duration_ms: 5.177625
+  type: 'test'
+  ...
+# Subtest: E starts a real saved swing; unique opening counts only when physically passable
+ok 3 - E starts a real saved swing; unique opening counts only when physically passable
+  ---
+  duration_ms: 1.145917
+  type: 'test'
+  ...
+# Subtest: fifth door is source-bound during its swing; opening does not itself leave Ellery
+ok 4 - fifth door is source-bound during its swing; opening does not itself leave Ellery
+  ---
+  duration_ms: 1.487
+  type: 'test'
+  ...
+# Subtest: after five, crossing an earlier open door also continues, without a sixth unique opening
+ok 5 - after five, crossing an earlier open door also continues, without a sixth unique opening
+  ---
+  duration_ms: 1.337667
+  type: 'test'
+  ...
+# Subtest: closed leaf, insufficient swing and jamb margin prevent fast-step tunnelling
+ok 6 - closed leaf, insufficient swing and jamb margin prevent fast-step tunnelling
+  ---
+  duration_ms: 0.847916
+  type: 'test'
+  ...
+# Subtest: entry and chapel loop preserve opened identities and consume the rest of held movement
+ok 7 - entry and chapel loop preserve opened identities and consume the rest of held movement
+  ---
+  duration_ms: 0.585375
+  type: 'test'
+  ...
+# Subtest: other ordinary doors remain locked before five and never add progress
+ok 8 - other ordinary doors remain locked before five and never add progress
+  ---
+  duration_ms: 0.343125
+  type: 'test'
+  ...
+# Subtest: entry-return bounds become inert after five; only its real open plane can continue while chapel still loops
+ok 9 - entry-return bounds become inert after five; only its real open plane can continue while chapel still loops
+  ---
+  duration_ms: 2.427083
+  type: 'test'
+  ...
+# Subtest: closed outer doors cannot finish through loop bounds; an open Source plane needs no old floor on the far side
+ok 10 - closed outer doors cannot finish through loop bounds; an open Source plane needs no old floor on the far side
+  ---
+  duration_ms: 2.941708
+  type: 'test'
+  ...
+# Subtest: pause/readiness freeze swing, look and motion; reload and reversal preserve physical fraction
+ok 11 - pause/readiness freeze swing, look and motion; reload and reversal preserve physical fraction
+  ---
+  duration_ms: 0.712166
+  type: 'test'
+  ...
+# Subtest: a body straddling the actual door mouth prevents closing instead of becoming an invalid saved pose
+ok 12 - a body straddling the actual door mouth prevents closing instead of becoming an invalid saved pose
+  ---
+  duration_ms: 0.453792
+  type: 'test'
+  ...
+# Subtest: valid local poses persist; corrupt unsupported pose recovers to finite support without touching host or layout
+ok 13 - valid local poses persist; corrupt unsupported pose recovers to finite support without touching host or layout
+  ---
+  duration_ms: 0.290541
+  type: 'test'
+  ...
+# Subtest: stacked floors stay on the current storey and real risers change candidate feet before collision
+ok 14 - stacked floors stay on the current storey and real risers change candidate feet before collision
+  ---
+  duration_ms: 5.497792
+  type: 'test'
+  ...
+# Subtest: a stair cannot jump an oversized riser, and co-located doors focus only at their real height
+ok 15 - a stair cannot jump an oversized riser, and co-located doors focus only at their real height
+  ---
+  duration_ms: 0.284083
+  type: 'test'
+  ...
+# Subtest: the same five-opening rule accepts any five counted actual doors in the expanded floorset
+ok 16 - the same five-opening rule accepts any five counted actual doors in the expanded floorset
+  ---
+  duration_ms: 1.197792
+  type: 'test'
+  ...
+# Subtest: actual one-active-leaf pairs admit only that physical half, independently of normal direction
+ok 17 - actual one-active-leaf pairs admit only that physical half, independently of normal direction
+  ---
+  duration_ms: 0.130792
+  type: 'test'
+  ...
+# Subtest: an open pair cannot hand off through its inactive leaf, including reversed normals and rotated width axes
+ok 18 - an open pair cannot hand off through its inactive leaf, including reversed normals and rotated width axes
+  ---
+  duration_ms: 4.790459
+  type: 'test'
+  ...
+# Subtest: opening and reopening an actual pair counts one assembly regardless of its active leaf count
+ok 19 - opening and reopening an actual pair counts one assembly regardless of its active leaf count
+  ---
+  duration_ms: 1.519291
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 51.050791
+TAP version 13
+# Subtest: teaser moves the complete attached van once while every retained world matrix stays fixed
+ok 1 - teaser moves the complete attached van once while every retained world matrix stays fixed
+  ---
+  duration_ms: 15.81475
+  type: 'test'
+  ...
+# Subtest: actual skinned hands keep their evaluated bone palettes local and receive only the instance delta
+ok 2 - actual skinned hands keep their evaluated bone palettes local and receive only the instance delta
+  ---
+  duration_ms: 20.197417
+  type: 'test'
+  ...
+# Subtest: the fixed break has a visible closed pavement lip and matching absent rail contacts from the first frame
+ok 3 - the fixed break has a visible closed pavement lip and matching absent rail contacts from the first frame
+  ---
+  duration_ms: 3.979542
+  type: 'test'
+  ...
+# Subtest: the gap stays fixed through approach and falling transforms rather than opening on demand
+ok 4 - the gap stays fixed through approach and falling transforms rather than opening on demand
+  ---
+  duration_ms: 10.648083
+  type: 'test'
+  ...
+# Subtest: eye, controls, recorder, mirrors and vehicle lamps follow the same cabin frame; world lamps stay put
+ok 5 - eye, controls, recorder, mirrors and vehicle lamps follow the same cabin frame; world lamps stay put
+  ---
+  duration_ms: 3.291125
+  type: 'test'
+  ...
+# Subtest: weather pane inverse remains cabin-local while external source anchors stay in the world
+ok 6 - weather pane inverse remains cabin-local while external source anchors stay in the world
+  ---
+  duration_ms: 2.686667
+  type: 'test'
+  ...
+# Subtest: transient gap is optional and malformed scaled matrices cannot distort the vehicle
+ok 7 - transient gap is optional and malformed scaled matrices cannot distort the vehicle
+  ---
+  duration_ms: 2.362833
+  type: 'test'
+  ...
+# Subtest: the fallback road helper retains real nearby terrain without support beneath the reference airborne path
+ok 8 - the fallback road helper retains real nearby terrain without support beneath the reference airborne path
+  ---
+  duration_ms: 276.273125
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 345.64975
+TAP version 13
+# Subtest: two visible approach bends are the actual tyre surface and join the unchanged route continuously
+ok 1 - two visible approach bends are the actual tyre surface and join the unchanged route continuously
+  ---
+  duration_ms: 0.919542
+  type: 'test'
+  ...
+# Subtest: opening sampler changes real wheel grip on the bend rather than moving only the camera and mesh
+ok 2 - opening sampler changes real wheel grip on the bend rather than moving only the camera and mesh
+  ---
+  duration_ms: 0.8785
+  type: 'test'
+  ...
+# Subtest: default Source vehicle integration is exactly identical to the explicitly supplied original sampler
+ok 3 - default Source vehicle integration is exactly identical to the explicitly supplied original sampler
+  ---
+  duration_ms: 42.401334
+  type: 'test'
+  ...
+# Subtest: the opening return cap is a real swept contact and the old -32 cap is absent
+ok 4 - the opening return cap is a real swept contact and the old -32 cap is absent
+  ---
+  duration_ms: 270.570042
+  type: 'test'
+  ...
+# Subtest: opening-only missing rails match the visible break while the ordinary Source perimeter remains intact
+ok 5 - opening-only missing rails match the visible break while the ordinary Source perimeter remains intact
+  ---
+  duration_ms: 1.064458
+  type: 'test'
+  ...
+# Subtest: actual coastal triangles support the bank beyond the road, while two lost tyres expose the true cliff
+ok 6 - actual coastal triangles support the bank beyond the road, while two lost tyres expose the true cliff
+  ---
+  duration_ms: 0.432292
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 324.580792
+TAP version 13
+# Subtest: the drive failure retains its existing road/car pose, finite location, known courses and meaningful safe edge
+ok 1 - the drive failure retains its existing road/car pose, finite location, known courses and meaningful safe edge
+  ---
+  duration_ms: 2.657583
+  type: 'test'
+  ...
+# Subtest: each moved native roadside course has exactly the same transformed bounds as its vehicle collider
+ok 2 - each moved native roadside course has exactly the same transformed bounds as its vehicle collider
+  ---
+  duration_ms: 1.872334
+  type: 'test'
+  ...
+# Subtest: a car touching the moving bank keeps continuous physical contact and never clips a newly rendered course or teleports
+ok 3 - a car touching the moving bank keeps continuous physical contact and never clips a newly rendered course or teleports
+  ---
+  duration_ms: 1310.575667
+  type: 'test'
+  ...
+# Subtest: visible course transformations replace the same native instances without adding a generic road, prop flood or moved cabin
+ok 4 - visible course transformations replace the same native instances without adding a generic road, prop flood or moved cabin
+  ---
+  duration_ms: 2.097167
+  type: 'test'
+  ...
+# Subtest: survival requires the complete supported van on the real shoulder with a deliberate stopped dwell, not a centre-lane brake or timer
+ok 5 - survival requires the complete supported van on the real shoulder with a deliberate stopped dwell, not a centre-lane brake or timer
+  ---
+  duration_ms: 88.910583
+  type: 'test'
+  ...
+# Subtest: driving clear of the actual failed span is another body-safe choice, and genuine whole-door crossing can finish a failed drive
+ok 6 - driving clear of the actual failed span is another body-safe choice, and genuine whole-door crossing can finish a failed drive
+  ---
+  duration_ms: 0.852375
+  type: 'test'
+  ...
+# Subtest: pause/protected capture freezes destruction/effects; reload preserves course receipts and no prior strike repeats
+ok 7 - pause/protected capture freezes destruction/effects; reload preserves course receipts and no prior strike repeats
+  ---
+  duration_ms: 3.408416
+  type: 'test'
+  ...
+# Subtest: a pending deadline does not interrupt an actual open field take or playback, and starts only after its existing owner seals
+ok 8 - a pending deadline does not interrupt an actual open field take or playback, and starts only after its existing owner seals
+  ---
+  duration_ms: 78.608375
+  type: 'test'
+  ...
+# Subtest: the saved claim precedes physical changes while the existing already-moving car keeps steering/pedals and momentum
+ok 9 - the saved claim precedes physical changes while the existing already-moving car keeps steering/pedals and momentum
+  ---
+  duration_ms: 73.95325
+  type: 'test'
+  ...
+# Subtest: the live drive failure is finite and host finalization requires a successful actual final frame, exactly once
+ok 10 - the live drive failure is finite and host finalization requires a successful actual final frame, exactly once
+  ---
+  duration_ms: 940.251958
+  type: 'test'
+  ...
+# Subtest: a drive-failure checkpoint preserves real moving continuity, controls and clocks across focus/reload
+ok 11 - a drive-failure checkpoint preserves real moving continuity, controls and clocks across focus/reload
+  ---
+  duration_ms: 69.184125
+  type: 'test'
+  ...
+# Subtest: new drive transport starts are denied after pending, and the current physical driven-door commitment retains its handoff
+ok 12 - new drive transport starts are denied after pending, and the current physical driven-door commitment retains its handoff
+  ---
+  duration_ms: 80.897792
+  type: 'test'
+  ...
+# Subtest: an already-claimed failure can physically drive the entire goods doorway and finalize once as survived failure without an ordinary onward return
+ok 13 - an already-claimed failure can physically drive the entire goods doorway and finalize once as survived failure without an ordinary onward return
+  ---
+  duration_ms: 161.904542
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2825.443709

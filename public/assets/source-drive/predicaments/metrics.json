@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "kind": "source-drive-predicament-assets",
-  "revision": "car-nage-whiteout-2",
-  "bytes": 2090512,
-  "sha256": "c0569920213cbd7d7184ce9e47bfde9829f32131283dbc6f55c917e335a5490f",
-  "triangles": 45599,
+  "revision": "car-nage-whiteout-3",
+  "bytes": 2118752,
+  "sha256": "daf09e84d2da55d3aaba3a484084d5145d16f46959018234653d6b94ee429702",
+  "triangles": 46369,
   "coordinateContract": {
     "units": "metres",
     "axes": {
@@ -279,6 +279,72 @@
         "type": "powered-broken-car-lamp-inset",
         "mount": "Generated deformed head/rear lens anchors; local -Z is outward.",
         "emitterFaceLocalZ": -0.006
+      }
+    },
+    "cd_gritstone_boulder": {
+      "name": "cd_gritstone_boulder",
+      "triangles": 336,
+      "vertices": 177,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.9398351311683655,
+          -0.05999999865889549,
+          -0.9252772927284241
+        ],
+        "max": [
+          0.9423838257789612,
+          1.5800000429153442,
+          0.9907776117324829
+        ]
+      },
+      "features": {
+        "type": "gritstone-boulder",
+        "localContract": "Rests on Y≈0 with a chamfered face; strata step along Y; the joint crack faces +Z. Scaled by placement for hand-placed scatter."
+      }
+    },
+    "cd_broken_rail": {
+      "name": "cd_broken_rail",
+      "triangles": 114,
+      "vertices": 97,
+      "primitives": 2,
+      "bounds": {
+        "min": [
+          -0.2800000011920929,
+          -0.23999999463558197,
+          -3
+        ],
+        "max": [
+          0.9850000143051147,
+          0.5199999809265137,
+          3.2899999618530273
+        ]
+      },
+      "features": {
+        "type": "torn-guardrail",
+        "localContract": "Runs along Z; the break tears +Z: the beam bends outward and down to a jagged end over its snapped post. Mount at the cliff edge, break end toward the void."
+      }
+    },
+    "cd_scree": {
+      "name": "cd_scree",
+      "triangles": 320,
+      "vertices": 192,
+      "primitives": 1,
+      "bounds": {
+        "min": [
+          -0.9438410997390747,
+          0.07999999821186066,
+          -0.7273160815238953
+        ],
+        "max": [
+          0.8245875835418701,
+          0.36000001430511475,
+          0.8706579208374023
+        ]
+      },
+      "features": {
+        "type": "gritstone-scree",
+        "localContract": "A hand-placed cluster of four worn stones around the origin, resting on Y≈0."
       }
     }
   },

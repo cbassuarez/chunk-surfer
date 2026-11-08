@@ -153,8 +153,9 @@ export const OUTSKIRT_STRETCH = freeze([
   put('postbox', 'district_post_box', 9.4, 15.2, { yaw: Math.PI / 2, inspect: 'postbox', interact: [0, -0.48], closeReach: 1.6 }),
   put('bin', 'district_bin_cluster', 9.2, 19.4, { yaw: Math.PI / 2, inspect: 'bin', interact: [0, -0.65], closeReach: 1.6 }),
   put('bench', 'district_bench', 9.0, 28.4, { yaw: Math.PI / 2, inspect: 'bench', interact: [0, -0.75], closeReach: 1.6 }),
-  // The van, back doors open toward him.
-  freeze({id:'van',...outskirtsTownPlacement('yard-van'),inspect:'van',interact:[0,2.35],closeReach:1.8}),
+  // The van, wrecked: its bent hull replaces the whole body, with the whole
+  // yard-van kept as the fallback for the folded memory copies.
+  freeze({id:'van',...outskirtsTownPlacement('yard-van',{mesh:'van_wreck_hull',fallbackMesh:'yard_van'}),inspect:'van',interact:[0,2.35],closeReach:1.8}),
   freeze({id:'van-lamp',...outskirtsTownPlacement('yard-van-lamp'),glow:[1,.86,.6,2.4]}),
 ]);
 

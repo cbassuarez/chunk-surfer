@@ -60,13 +60,20 @@ export function lastMinutesSurge(arc,played,seed=0){
   return Math.min(1,u/.12)*(1-smooth(.12,1,u))*mix(.55,1,reach);
 }
 
-export function lastMinutesFrame({arc=0,played=0,seed=0}={}){
-  const a=clamp01(arc),surge=lastMinutesSurge(a,played,seed);
+export function lastMinutesFrame({arc=0,played=0,seed=0,sourceLocal=0,moshHold=0}={}){
+  const a=clamp01(arc),local=clamp01(sourceLocal),mosh=clamp01(moshHold);
+  // Mosh and surge are opposite motions and must not overlap: a fear spike wins
+  // for its sub-second, then the recovery returns. Sequencing here keeps one body.
+  const surge=lastMinutesSurge(a,played,seed)*(1-mosh);
+  // The Source haystack is the local expression of the same nervous system: its
+  // pressure feeds deinhibition rather than running beside it, so the search's
+  // 0.64..0.985 pressure actually opens the seeps and takeovers.
   return Object.freeze({
     arc:a,surge,
     exposureFloor:C.floorPeak*Math.pow(smooth(.04,1,a),1.5),
-    deinhibition:smooth(.02,.92,a),
+    deinhibition:Math.max(smooth(.02,.92,a),local),
     meaning:clamp01(Math.pow(smooth(0,.85,a),.8)+surge*.25),
+    sourceLocal:local,moshHold:mosh,
   });
 }
 export function lastMinutesExposureFloor(frame,tolerance=1){

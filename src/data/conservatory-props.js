@@ -680,17 +680,17 @@ export const CONSERVATORY_PROPS = [
   // THE LODGE, which is the only thing in the game you talk to a person through.
   // `inspectAt` is the window rather than the middle of the building, so the
   // reticle and the walk-up both land where his face is.
-  P('yard-booth','yard_booth',74.0,214.0,-Math.PI/2,{
+  P('yard-booth','yard_booth',74.0,214.0,Math.PI/2,{
     structural:true,blocks:true,action:'gate-lodge',label:'the lodge window',
-    inspectAt:{x:75.7,y:214.0},
+    inspectAt:{x:72.3,y:214.0},
   }),
-  P('yard-booth-interior','yard_booth_interior',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('yard-booth-practicals','yard_booth_practicals',74.0,214.0,-Math.PI/2,{interactive:false,structural:true,lightColor:[1,.76,.48],lightMaintained:true}),
-  P('yard-booth-glazing','yard_booth_glazing',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('yard-booth-guard-idle','yard_booth_guard_idle',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('yard-booth-guard-ledger','yard_booth_guard_ledger',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('yard-booth-guard-handoff','yard_booth_guard_handoff',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
-  P('yard-booth-handoff','yard_booth_handoff',74.0,214.0,-Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-interior','yard_booth_interior',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-practicals','yard_booth_practicals',74.0,214.0,Math.PI/2,{interactive:false,structural:true,lightColor:[1,.76,.48],lightMaintained:true}),
+  P('yard-booth-glazing','yard_booth_glazing',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-guard-idle','yard_booth_guard_idle',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-guard-ledger','yard_booth_guard_ledger',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-guard-handoff','yard_booth_guard_handoff',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
+  P('yard-booth-handoff','yard_booth_handoff',74.0,214.0,Math.PI/2,{interactive:false,structural:true}),
   // ── THINGS TO READ ON THE WAY IN ────────────────────────────────────────
   //
   // The walk from the road to the grey door was sixty metres with exactly one
@@ -1362,17 +1362,17 @@ export const CONSERVATORY_PROPS = [
   // The formal waiting-room order survives as a coherent set. Its stamped
   // numbers make the purchase legible even where the upholstery was repaired
   // at different times.
-  P('acq-foyer-sofa-01','sofa_01',75.5,19.0,-Math.PI/2,{
+  P('acq-foyer-sofa-01','sofa_01',75.5,6.0,-Math.PI/2,{
     scale:1.55,
     provenance:provenance('foyer_suite','FOH/F-01','reupholstered once'),
     inspectAt:{x:76.1,y:19.0},
     inspect:inspect('A pale foyer sofa from the formal front-of-house suite. FOH/F-01 is stamped beneath the centre rail; one cushion was rebuilt in a slightly firmer foam.','FOH/F-01. The replacement cushion still sits higher than the others.'),
   }),
-  P('acq-foyer-armchair-01','arm_chair_01',75.5,17.7,-Math.PI/2,{
+  P('acq-foyer-armchair-01','arm_chair_01',75.5,4.5,-Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-02','original upholstery, repaired arm'),
     inspect:inspect('The first armchair of the foyer suite. FOH/F-02 remains on the rear rail, beside a hand-stitched repair where the public-facing arm wore through.','FOH/F-02. The repaired arm has gone smooth again.'),
   }),
-  P('acq-foyer-armchair-02','arm_chair_01',75.5,20.3,-Math.PI/2,{
+  P('acq-foyer-armchair-02','arm_chair_01',75.5,7.5,-Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-03','replacement castor blocks'),
     inspect:inspect('The matching armchair, FOH/F-03. Two dark blocks under the front feet are later than the chair and exactly the right height.','FOH/F-03. A matched chair on unmatched blocks.'),
   }),
@@ -1391,31 +1391,31 @@ export const CONSERVATORY_PROPS = [
   // Ids are `deadend-` and not `corridor-`/`ground-spine-`: tools/.../props.mjs
   // fails any decorative prop whose id marks it as circulation, and it is right
   // to — a stair approach with furniture in it is a hazard, not a room.
-  P('deadend-ground-armchair','arm_chair_01',72.4,22.4,Math.PI/2,{
+  P('deadend-ground-armchair','arm_chair_01',75.4,22.4,Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-06','withdrawn from the front room'),
     inspect:inspect('An armchair from the front-of-house suite, FOH/F-06, faced into the corner. The stamp matches the two still out in the atrium through this wall.','FOH/F-06. It has been sat in since it was put here.'),
   }),
-  P('deadend-ground-chair','wooden_chair_01',72.4,24.6,Math.PI/2,{
+  P('deadend-ground-chair','wooden_chair_01',75.4,24.6,Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-07','odd chair, never matched'),
     inspect:inspect('A tall-backed chair with dark green paint worn down to the wood. It belongs to no set: older than the suite and half a head higher, and somebody put it here facing the same way as the armchair, as though the two of them were waiting together.','FOH/F-07. Two chairs, one conversation, nobody in either.'),
   }),
-  P('deadend-ground-credenza','classic_console_01',73.6,23.5,-Math.PI/2,{
+  P('deadend-ground-credenza','classic_console_01',76.6,23.5,-Math.PI/2,{
     provenance:provenance('foyer_suite','FOH/F-08','east table, drawer swollen'),
-    inspectAt:{x:72.8,y:23.5},
+    inspectAt:{x:75.8,y:23.5},
     inspect:inspect('The last console of the suite, FOH/F-08, pushed against the atrium wall. The drawer is swollen shut and has been forced before — the lip is bright where somebody worked at it.','FOH/F-08. Bright wood where the drawer was forced.'),
   }),
   // Hung on the picture rail the atrium relief puts through this wall, which is
   // the only reason a painting can touch a wall in a service corridor and look
   // like it was always meant to. Its measured rear meets the wall's west face;
   // the painted +Z face looks west into the room rather than through the wall.
-  P('deadend-ground-painting','portrait_frame',74.0,21.5,Math.PI/2,{
+  P('deadend-ground-painting','portrait_frame',75.0,21.5,Math.PI/2,{
     mount:'wall',mountNormal:{nx:-1,ny:0},elevation:1.55,scale:2.2,portraitIndex:1,
     inspect:inspect('A large canvas, hung high on a picture rail that has no business being in a service corridor. It is the atrium\'s rail — the panelling comes through the wall here, half a metre of plaster between this room and the public one. The painting has been given the better half.','Too big for the room and hung too high, on somebody else\'s rail.'),
   }),
-  P('deadend-ground-chandelier','chandelier_03',73.0,23.5,0,{
+  P('deadend-ground-chandelier','chandelier_03',76.0,23.5,0,{
     scale:1.6,elevation:3.35,
     lightColor:[.78,.74,.62],lightCircuit:'sp03',
-    inspectAt:{x:73.0,y:24.6},
+    inspectAt:{x:76.0,y:24.6},
     inspect:inspect('A chandelier, in a corridor, over two chairs and a table. Nothing about this room was planned; all of it was moved here. Somebody went to the trouble of wiring it.','It is still on the front-of-house circuit.'),
   }),
   P('acq-foyer-console-01','classic_console_01',88.5,4.25,Math.PI,{
@@ -2203,7 +2203,7 @@ export const CONSERVATORY_PROPS = [
   // lighting. Its battery supply does not energise the desk or S/P-01.
   P('light-b3-exit-casing','tower_bulkhead',14.25,18.25,Math.PI,{elevation:2.15,renderOffsetZ:.25,interactive:false,structural:true,lightMaintained:true,lightColor:[1,.84,.63]}),
   P('light-dance-work-casing','tower_bulkhead',32,6,0,{elevation:2.45,renderOffsetZ:-.25,interactive:false,structural:true,lightCircuit:'sp01',lightColor:[.78,.78,.65]}),
-  P('light-foh-west-casing','tower_bulkhead',75,18.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
+  P('light-foh-west-casing','tower_bulkhead',75,5.5,-Math.PI/2,{elevation:3.25,renderOffsetX:-.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-foh-east-casing','tower_bulkhead',92,10.5,Math.PI,{elevation:3.25,renderOffsetZ:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[.74,.82,.78]}),
   P('light-foh-emergency-casing','tower_bulkhead',96.5,18.5,Math.PI/2,{elevation:2.15,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp03',lightColor:[1,.018,.008]}),
   P('light-pool-service-a-casing','tower_bulkhead',95.5,43,Math.PI/2,{elevation:3.3,renderOffsetX:.25,interactive:false,structural:true,lightCircuit:'sp02',lightColor:[.69,.83,.78]}),

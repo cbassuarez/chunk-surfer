@@ -80,7 +80,7 @@ const isMetal=material=>/metal|steel|iron/.test(material||'');
 const isSource=material=>!isMetal(material)&&!['asphalt','earthfall-backing','wood','piano-wood','case-lining','linen','operator-canvas','lip-paint','dark','refuge','warning','source-error'].includes(material);
 
 export const SOURCE_CONTINUATION_ARCHITECTURE=Object.freeze({
-  asset:'assets/source-continuation-architecture.glb',far:SOURCE_SURROUNDINGS.farClip,maxInstances:760,maxLights:8,
+  asset:'assets/source-continuation-architecture.glb',far:SOURCE_SURROUNDINGS.farClip,maxInstances:800,maxLights:8,
   meshes:Object.freeze(['source_ii_ellery_bay','source_ii_ellery_corner','source_ii_chapel_buttress','source_iii_spindle','source_iii_bearing',
     'source_iii_catch_frame_0','source_iii_catch_frame_1','source_iii_catch_frame_2','source_iii_catch_frame_3','source_ii_arch_voussoirs','source_ii_stringer','source_ii_case_hinge',
     'source_ii_case_floor','source_ii_case_lid','source_ii_piano_soundboard','source_ii_tower_cap']),
@@ -553,7 +553,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   for(const piece of sourceContinuationGeometry(state)){
     const row=piece.descriptor;if(row.role==='spindle'||row.role==='arch-pier')continue;
     if(globalThis.__scReviewCamera&&row.kind==='rect')continue;const b=boundsOf(piece.p),isSurface=piece.kind==='surface';
-    put(piece.id,piece.name,...b.center,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,chartId:chartOf(row),...(row.role==='rest-alcove'?{restPlace:true}:{}),
+    const sw=(!globalThis.__scReviewCamera&&row.kind==='sector'&&regionOf(row)==='catch')?continuationData.continuationCrescentSway(row.level,finite(state.elapsed)):{x:0,z:0};
+    put(piece.id,piece.name,b.center[0]+sw.x,b.center[1],b.center[2]+sw.z,0,1,1,1,{continuation:true,physicalKind:piece.kind,descriptorId:row.id,region:regionOf(row),level:row.level,role:row.role,chartId:chartOf(row),...(row.role==='rest-alcove'?{restPlace:true}:{}),
       physicalBounds:{min:b.min,max:b.max},cullRadius:Math.hypot((b.max[0]-b.min[0])/2,(b.max[2]-b.min[2])/2)});
     if(Number.isInteger(row.level))shownLevels.add(row.level);
     if(isSurface&&row.kind!=='sector'&&row.role!=='stair'){
@@ -573,7 +574,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
     const stage=catchStage(level),y=catchFloor(level);
     if(globalThis.__scReviewCamera)continue;
     put('radial-bearing-'+level,'source_iii_bearing',center.x,y,center.z,0,1,1,1,{architecture:true,region:'catch',bearing:true,level});
-    put('fabricated-catch-'+level,'source_iii_catch_frame_'+level,center.x,y-.20,center.z,0,1,1,1,{architecture:true,region:'catch',catchConstruction:stage.construction,level,cullRadius:16});
+    const frameIndex={case:0,soundboard:1,masonry:2,binding:3}[stage.construction]??0;
+    put('fabricated-catch-'+level,'source_iii_catch_frame_'+frameIndex,center.x,y-.20,center.z,0,1,1,1,{architecture:true,region:'catch',catchConstruction:stage.construction,level,cullRadius:16});
     const r=stage.outerRadius||13,t=stage.refugeAngle||0,rx=center.x+Math.cos(t)*(r+1.25),rz=center.z+Math.sin(t)*(r+1.25);
     put('refuge-rib-'+level,PREFIX+'worn-block',rx,y-.85,rz,0,2.7,.65,2.7,{architecture:true,region:'catch',refugeStructure:true,level});
     // A remote load brace bears each partial shelf without filling its hole.
@@ -703,15 +705,15 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   const destination=SOURCE_CONTINUATION.catch.finalDoor;
   for(const side of [-1,1]){
     const z=destination.z+side*3.4;
-    beam('door-island-beacon-'+side,[destination.x,destination.y,z],[destination.x,destination.y+7,z],.12,'worn-block',{architecture:true,region:'catch',level:3,islandBeacon:true});
-    beam('door-island-light-'+side,[destination.x-.08,destination.y+1,z],[destination.x-.08,destination.y+6.6,z],.055,'rest-sky-wire',{region:'catch',level:3,islandBeacon:true});
-    lights.push({id:PREFIX+'island-beacon-light-'+side,x:origin.x+destination.x,y:origin.y+destination.y+5,z:origin.z+z,radius:13,intensity:1.7,color:[.94,.73,.40],penetration:0,region:'catch',level:3});
+    beam('door-island-beacon-'+side,[destination.x,destination.y,z],[destination.x,destination.y+7,z],.12,'worn-block',{architecture:true,region:'catch',level:0,islandBeacon:true});
+    beam('door-island-light-'+side,[destination.x-.08,destination.y+1,z],[destination.x-.08,destination.y+6.6,z],.055,'rest-sky-wire',{region:'catch',level:0,islandBeacon:true});
+    lights.push({id:PREFIX+'island-beacon-light-'+side,x:origin.x+destination.x,y:origin.y+destination.y+5,z:origin.z+z,radius:13,intensity:1.7,color:[.94,.73,.40],penetration:0,region:'catch',level:0});
   }
-  beam('door-island-crown',[destination.x,destination.y+7,destination.z-3.4],[destination.x,destination.y+7,destination.z+3.4],.11,'rest-sky-wire',{region:'catch',level:3,islandBeacon:true});
-  for(const x of [-158,-153,-148,-143])put('door-route-light-'+x,PREFIX+'rest-lamp-light',x,-12.48,-93,0,.17,.10,.17,{region:'catch',level:3,islandBeacon:true,practical:true});
+  beam('door-island-crown',[destination.x,destination.y+7,destination.z-3.4],[destination.x,destination.y+7,destination.z+3.4],.11,'rest-sky-wire',{region:'catch',level:0,islandBeacon:true});
+  if(!globalThis.__scReviewCamera)for(const x of [-158,-153,-148,-143])put('door-route-light-'+x,PREFIX+'rest-lamp-light',x,8.52,-93,0,.17,.10,.17,{region:'catch',level:0,islandBeacon:true,practical:true});
   // One lit thread rises from the door island through the whole universe,
   // so the right island is legible from any shelf, causeway or seat.
-  if(phaseOf(state)==='catch'&&!globalThis.__scReviewCamera)beam('door-island-thread',[destination.x+.6,destination.y+7,destination.z],[destination.x+.6,destination.y+96,destination.z],.07,'rest-sky-mote',{region:'catch',level:3,islandBeacon:true,cullRadius:92});
+  if(phaseOf(state)==='catch'&&!globalThis.__scReviewCamera)beam('door-island-thread',[destination.x+.6,destination.y+7,destination.z],[destination.x+.6,destination.y+96,destination.z],.07,'rest-sky-mote',{region:'catch',level:0,islandBeacon:true,cullRadius:92});
   // The Catch is one island among many; only the Catch frame carries them.
   // Review mode drops the seeded universe so the reachable archipelago alone
   // carries the layout decision.

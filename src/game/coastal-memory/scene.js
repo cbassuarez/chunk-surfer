@@ -71,10 +71,10 @@ export function makeCoastalMemoryScene({timeSec=0,musicBoxTime=0,worldFromLocal=
  for(let i=0;i<42;i++){const z=-130+i*8.5,x=coastalRimX(z)+4.6+(i%4)*1.3;if(z>COASTAL_BEACH.zSouth-1&&z<COASTAL_BEACH.zNorth+1)continue;add('cm_limestone_block',transform(x,-2.7+(i%3)*.45,z,i*.83,[1.2+(i%4)*.3,1.1+(i%3)*.35,1.7+(i%5)*.18]),'coastal-toe-block-'+i,8);}
  const box=L.musicBox,held=hands?.handling===true&&hands?.heldLocal?.length===16&&hands.heldLocal.every(Number.isFinite)?hands.heldLocal:null;const boxMatrix=held??transform(box.x,box.y,box.z,box.yaw??(-Math.PI/2-.16)),mechanism=held?coastalHandsMechanism(hands.winding):coastalMusicBoxMechanism(musicBoxTime);
  if(!held)add('cm_music_box_plinth',transform(box.x,box.groundY,box.z),'coastal-music-box-plinth',3);add('cm_broken_music_box',boxMatrix,box.id,3);
- for(const[mesh,center,angle,id]of[['cm_music_box_cylinder',COASTAL_MUSIC_BOX_MECHANISM.cylinderCenter,mechanism.cylinderAngle,'cylinder'],['cm_music_box_gear',COASTAL_MUSIC_BOX_MECHANISM.gearCenter,mechanism.gearAngle,'gear']])add(mesh,coastalMultiply(coastalMultiply(boxMatrix,transform(...center)),rotX(angle)),'coastal-music-box-'+id,3);
- for(const[t,tine]of mechanism.liveTines.entries())add('cm_music_box_live_tine',coastalMultiply(coastalMultiply(boxMatrix,transform(tine.x,tine.tipY,tine.rootZ,tine.bend||0)),coastalMultiply(rotX(tine.deflection),transform(0,0,0,0,[1,1,tine.length]))),'coastal-music-box-live-tine-'+t,3);
- // The key turns itself to wind it; the governor fan spins with the cylinder.
- add('cm_music_box_key',coastalMultiply(coastalMultiply(boxMatrix,transform(...COASTAL_MUSIC_BOX_MECHANISM.keyCenter)),rotX(mechanism.keyAngle)),'coastal-music-box-key',3);add('cm_music_box_fan',coastalMultiply(boxMatrix,transform(...COASTAL_MUSIC_BOX_MECHANISM.fanCenter,mechanism.fanAngle)),'coastal-music-box-fan',3);
+ // The real box is a CLOSED cream-plastic case: the comb/cylinder live inside.
+ // The mechanism is still modelled (musicBoxMechanism below) and still drives the
+ // audio, but nothing of it is drawn through the shell.
+ void mechanism;
  add('cm_damp_note',transform(...L.note.position,-.12),L.note.id,3);
  const pier=L.pier;add('cm_distant_pier',transform(...pier.position,pier.heading),pier.id,350);
  const pierFrame=coastalMultiply(worldFromLocal,transform(...pier.position,pier.heading));for(const fixture of pier.fixtures){const pierBulb=coastalWorldPoint(fixture.aperture,pierFrame),pierTarget=coastalWorldPoint(fixture.shadowTarget,pierFrame),beam=pierTarget.map((v,i)=>v-pierBulb[i]);lamps.push({id:fixture.id,x:pierBulb[0],y:pierBulb[1],z:pierBulb[2],color:fixture.color,intensity:fixture.intensity,radius:fixture.radius,penetration:1,castsShadow:false,shadowYaw:Math.atan2(beam[0],-beam[2]),shadowPitch:Math.atan2(beam[1],Math.hypot(beam[0],beam[2])),fixture:'caged pier marker',anchorMesh:'cm_distant_pier'});}

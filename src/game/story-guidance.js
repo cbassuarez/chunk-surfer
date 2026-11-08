@@ -12,7 +12,7 @@ import { SCENE_DOCK_LABEL } from '../data/space-labels.js';
 export const STORY_GUIDANCE_ANCHORS = Object.freeze({
   van: Object.freeze({ x:63.6, y:208.0 }),
   lookBench: Object.freeze({ x:53.25, y:205.0 }),
-  lodge: Object.freeze({ x:75.7, y:214.0 }),
+  lodge: Object.freeze({ x:72.3, y:214.0 }),
   getIn: Object.freeze({ x:57.5, y:10.0 }),
   page6: Object.freeze({ x:138, y:27 }),
   rekeyLedger: Object.freeze({ x:92.25, y:12.25 }),

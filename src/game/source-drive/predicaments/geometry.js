@@ -1,6 +1,6 @@
 // Original, metre-scaled Source drive catastrophe kit. Authoring only: the
 // runtime imports generated bounds.js and the small placement module instead.
-export const PREDICAMENT_REVISION='car-nage-whiteout-2';
+export const PREDICAMENT_REVISION='car-nage-whiteout-3';
 const TAU=Math.PI*2;
 const add=(a,b)=>a.map((v,i)=>v+b[i]),sub=(a,b)=>a.map((v,i)=>v-b[i]),mul=(v,s)=>v.map(x=>x*s);
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -197,4 +197,67 @@ function brokenLamp(){const m=mesh('dp_wreck_broken_lamp',{type:'powered-broken-
  // damaged assembly. Only selected car placements receive this powered inset.
  grid(glow,12,5,(u,v)=>[(u-.5)*.192,(v-.5)*.080,-.006+.0015*Math.cos(u*Math.PI*12)],{flip:true});
  return finish(m);}
-export function buildPredicamentGeometry(){return[wreck('saloon'),wreck('estate'),wreck('shell'),looseWheel(),tornSheet(),cliffMass(),cliffSupport(),roadFold(),pylon(),snowPaving(),brokenLamp()];}
+// THE CLIFF AS A PLACE (dressing pack additions): a Millstone Grit boulder
+// with stepped strata and a joint crack, the torn guardrail that ends at the
+// break, and a small scree scatter. Hand-placed by the dressing rows; the
+// same 'cliff' and 'steel' finishes as the rest of the drive.
+function gritstoneBoulder(){const m=mesh('cd_gritstone_boulder',{type:'gritstone-boulder',localContract:'Rests on Y\u22480 with a chamfered face; strata step along Y; the joint crack faces +Z. Scaled by placement for hand-placed scatter.'}),g=stock(m,'cliff');
+ const rings=16,bands=10,n=g.positions.length/3;
+ const smoothstep=(x)=>x<=0?0:x>=1?1:x*x*(3-2*x);
+ for(let j=0;j<=bands;j++)for(let k=0;k<rings;k++){
+  const v=j/bands,a=k/rings*TAU,y=-.06+v*1.62;
+  const belly=Math.sqrt(Math.max(0,1-(2*v-1)*(2*v-1)))*.72+.18;
+  let r=belly*(1+.05*Math.sin(a*5+j*1.7)+.028*Math.sin(a*11-j*2.3));
+  r*=(1+.045*((Math.floor(y/.22)%3)-1)); // strata steps
+  if(v<.12)r*=smoothstep(v/.12)*.86; // chamfered resting base
+  if(Math.abs((a+.9)%TAU-TAU*.09)<.055)r-=.11; // the windward joint crack
+  vertex(g,[Math.cos(a)*r,y,Math.sin(a)*r],[k/rings,(1-v)*.6]);
+ }
+ for(let j=0;j<bands;j++)for(let k=0;k<rings;k++){
+  const a=n+j*rings+k,b=a+1,c=b+rings,d=a+rings;
+  g.indices.push(a,b,d,a,d,c);
+ }
+ const cap=vertex(g,[0,1.58,.05],[.5,.5]);
+ for(let k=0;k<rings;k++)tri(g,cap,n+bands*rings+k,n+bands*rings+(k+1)%rings);
+ return finish(m);
+}
+function brokenRail(){const m=mesh('cd_broken_rail',{type:'torn-guardrail',localContract:'Runs along Z; the break tears +Z: the beam bends outward and down to a jagged end over its snapped post. Mount at the cliff edge, break end toward the void.'}),steel=stock(m,'steel'),rust=stock(m,'rust');
+ // The W-beam: an extruded profile, bending and tearing over the last stretch.
+ const slices=12,profile=[[-.28,.30],[-.15,.50],[0,.44],[.15,.50],[.28,.30]];
+ const rowIndex=[];
+ for(let j=0;j<=slices;j++){
+  rowIndex.push(steel.positions.length/3);
+  const z=-3+j*(6/slices),u=j/slices;
+  const bx=u<.66?0:((u-.66)/.34)**2*.62,by=u<.66?0:((u-.66)/.34)*.42;
+  for(const [x,y] of profile)vertex(steel,[x+bx,y-by+(j===slices?.05*(x+.28):0),z+(j===slices?-.12:0)]);
+ }
+ for(let j=0;j<slices;j++)for(let i=0;i<profile.length-1;i++){const a=rowIndex[j]+i,b=a+1,c=rowIndex[j+1]+i+1,d=rowIndex[j+1]+i;steel.indices.push(a,b,d,a,d,c);}
+ // The jagged torn end: the top flange folds over, the web shreds.
+ const e=rowIndex[slices];
+ for(let i=0;i<profile.length-1;i++){
+  const [x,y]=profile[i],bx=((1-.66)/.34)**2*.62,by=((1-.66)/.34)*.42;
+  const tip=[x+bx+.5*(x+.28),y-by-.12,3.22+(i%2)*.07];
+  tri(steel,e+i,e+i+1,vertex(steel,tip));
+ }
+ // The snapped post just inside the break.
+ const post=[[-.06,0,-1.2],[.06,0,-1.2],[.06,.52,-1.2],[-.06,.52,-1.2]];
+ closedPanel(steel,post,.07);
+ const torn=[post[2],post[3],[.09,.44,-1.0],[-.08,.42,-1.06]];
+ triangles(rust,torn,[[0,1,2,3]]);
+ return finish(m);
+}
+function scree(){const m=mesh('cd_scree',{type:'gritstone-scree',localContract:'A hand-placed cluster of four worn stones around the origin, resting on Y\u22480.'}),g=stock(m,'cliff');
+ const stones=[[-.4,.14,-.2,.9],[.05,.10,.1,1.15],[-.15,.08,.42,.75],[.34,.12,-.05,.8]];
+ for(const [x,y,z,r] of stones){
+  const rings=8,bands=5,n=g.positions.length/3;
+  for(let j=0;j<=bands;j++)for(let k=0;k<rings;k++){
+   const v=j/bands,a=k/rings*TAU,hh=y+v*.22;
+   const belly=Math.sqrt(Math.max(0,1-(2*v-1)*(2*v-1)))*r*.5+.12*r;
+   const rr=belly*(1+.06*Math.sin(a*4+j*1.9)+.03*Math.sin(a*9-j*2.4));
+   vertex(g,[x+Math.cos(a)*rr*(v<.15?v/.15:1),hh,z+Math.sin(a)*rr],[k/rings,v]);
+  }
+  for(let j=0;j<bands;j++)for(let k=0;k<rings;k++){const a=n+j*rings+k,b=n+j*rings+(k+1)%rings,c=b+rings,d=a+rings;g.indices.push(a,b,d,a,d,c);}
+ }
+ return finish(m);
+}
+export function buildPredicamentGeometry(){return[wreck('saloon'),wreck('estate'),wreck('shell'),looseWheel(),tornSheet(),cliffMass(),cliffSupport(),roadFold(),pylon(),snowPaving(),brokenLamp(),gritstoneBoulder(),brokenRail(),scree()];}

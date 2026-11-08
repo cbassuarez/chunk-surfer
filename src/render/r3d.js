@@ -7348,6 +7348,14 @@ export function r3dInit(mapEl) {
     .then(async pack=>{
       await P3.addPropPack(assetUrl('assets/outskirts-bus-passage.glb'));
       await P3.addPropPack(assetUrl('assets/van-brand.glb'));
+      // The wrecked van at the telephone box reuses the coastal crash model: its
+      // bent hull and doors live in van-wreck.glb, and its torn-off bumper, hubcap,
+      // headlamp and panel shards live in coastal-memory.glb. Both are optional so
+      // a missing pack keeps the whole yard-van rather than breaking the street.
+      void P3.addPropPack(assetUrl('assets/source-drive/coastal-memory/van-wreck.glb'))
+        .catch((err)=>console.warn('van wreck unavailable; retaining the whole yard-van',err));
+      void P3.addPropPack(assetUrl('assets/source-drive/coastal-memory/coastal-memory.glb'))
+        .catch((err)=>console.warn('coastal memory debris unavailable',err));
       await loadBusStudioPacks(busStudioState);
       return pack;
     });

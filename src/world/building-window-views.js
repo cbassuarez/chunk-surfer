@@ -5,7 +5,7 @@ import {GLASS_COURT_SIGHTLINES as S} from '../data/glass-court-sightlines.js';
 
 const foyerWindow=()=>BUILDING_WINDOWS.find(w=>w.id===S.windowId);
 export function isGreenhouseBorrowedViewObserver({x,z,y,spaceId,renderGroup}={}){
- return renderGroup==='ground'&&spaceId==='natatorium'&&y>-.6&&y<.6
+ return renderGroup==='ground'&&spaceId==='greenhouse'&&y>-.6&&y<.6
    &&x>=C.bounds.x0&&x<C.bounds.x1&&z>=C.bounds.z0&&z<C.bounds.z1;
 }
 

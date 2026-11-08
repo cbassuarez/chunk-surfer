@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: edge sounds follow physical distance, with no elapsed-walk trigger
+ok 1 - edge sounds follow physical distance, with no elapsed-walk trigger
+  ---
+  duration_ms: 0.916083
+  type: 'test'
+  ...
+# Subtest: shore light is soft physical light, preserving off, battery, perception and fitted reach
+ok 2 - shore light is soft physical light, preserving off, battery, perception and fitted reach
+  ---
+  duration_ms: 0.662333
+  type: 'test'
+  ...
+# Subtest: the open volume carries one constant air keynote; room leakage ends, even when standing still
+ok 3 - the open volume carries one constant air keynote; room leakage ends, even when standing still
+  ---
+  duration_ms: 1.913709
+  type: 'test'
+  ...
+# Subtest: each piece of the building carries its room, heard only close by and gone when it is
+ok 4 - each piece of the building carries its room, heard only close by and gone when it is
+  ---
+  duration_ms: 0.8935
+  type: 'test'
+  ...
+# Subtest: lift motion owns one quiet voice and an observed stop, never a loading or upload transient
+ok 5 - lift motion owns one quiet voice and an observed stop, never a loading or upload transient
+  ---
+  duration_ms: 1.1285
+  type: 'test'
+  ...
+# Subtest: metal returns require real nearby steps; suspension cancels scheduled returns and does not replay a stop
+ok 6 - metal returns require real nearby steps; suspension cancels scheduled returns and does not replay a stop
+  ---
+  duration_ms: 0.37125
+  type: 'test'
+  ...
+# Subtest: late audio ownership cannot turn an unobserved lift arrival into a contact
+ok 7 - late audio ownership cannot turn an unobserved lift arrival into a contact
+  ---
+  duration_ms: 0.193417
+  type: 'test'
+  ...
+# Subtest: live main renderer guards keep obsolete Source overlays out of the first void
+not ok 8 - live main renderer guards keep obsolete Source overlays out of the first void
+  ---
+  duration_ms: 1.602542
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:177:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The validation function is expected to return "true". Received false
+    
+    Caught error:
+    
+    ReferenceError: windowChoreography is not defined
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  actual:
+  error: 'windowChoreography is not defined'
+  name: 'ReferenceError'
+  stack: |-
+    Object.syncSourceRender (evalmachine.<anonymous>:39:3)
+    submittedShore (file:///Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:197:31)
+    getActual (node:assert:609:5)
+    Function.throws (node:assert:757:24)
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:197:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+  operator: 'throws'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:197:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: live main selects physical shore torch and retains the later Source mode
+ok 9 - live main selects physical shore torch and retains the later Source mode
+  ---
+  duration_ms: 0.536875
+  type: 'test'
+  ...
+# Subtest: held W+D can freely cross the void with the same metre speed as a cardinal step
+not ok 10 - held W+D can freely cross the void with the same metre speed as a cardinal step
+  ---
+  duration_ms: 0.853834
+  type: 'test'
+  location: '/Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:225:1'
+  failureType: 'testCodeFailure'
+  error: 'storyMode is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    Object.currentStepIntervalMs (evalmachine.<anonymous>:6:3)
+    TestContext.<anonymous> (file:///Users/seb/chunk-surfer/test/source-shore-sensory.spec.mjs:239:38)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a real mid-rise save restores exact yaw and pitch without replacing the ordinary camera save
+ok 11 - a real mid-rise save restores exact yaw and pitch without replacing the ordinary camera save
+  ---
+  duration_ms: 28.034291
+  type: 'test'
+  ...
+# Subtest: away from the shore a Source save resumes facing the way it was taken, and only at the cell it was taken
+ok 12 - away from the shore a Source save resumes facing the way it was taken, and only at the cell it was taken
+  ---
+  duration_ms: 14.791458
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 10
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 58.700458
