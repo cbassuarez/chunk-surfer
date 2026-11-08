@@ -229,7 +229,10 @@ jobs:
 
       - name: Build Tauri bundles
         if: matrix.platform != 'ubuntu-22.04'
-        run: npm run tauri:build -- ${{ matrix.args }}
+        # Invoke the CLI directly: CI is sequential, so the build-lock wrapper
+        # (which routes through cmd.exe on Windows) is unnecessary here, and
+        # --verbose surfaces the full linker command if the link ever fails.
+        run: npx tauri build ${{ matrix.args }} --verbose
 
       - name: Verify delivered macOS DMG contents
         if: matrix.platform == 'macos-15'

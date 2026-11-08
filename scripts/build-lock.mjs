@@ -152,14 +152,23 @@ async function wrap() {
   process.on('SIGINT', forward);
   process.on('SIGTERM', forward);
 
-  // Windows npm scripts expose tauri.cmd/npm.cmd, which spawn cannot resolve
-  // without a shell; cmd.exe handles them. All wrapped args are simple enough
-  // for cmd quoting.
-  child = spawn(command, args, {
-    stdio: 'inherit',
-    env: process.env,
-    shell: process.platform === 'win32',
-  });
+  // On Windows, prefer the CLI's JavaScript entry point directly: spawning
+  // tauri.cmd/npm.cmd through cmd.exe re-parses the concatenated command and
+  // has proven to change the child process context enough to matter. The
+  // shell fallback remains only for commands with no JS entry.
+  if (process.platform === 'win32' && command === 'tauri') {
+    child = spawn(
+      process.execPath,
+      [path.join(repoRoot, 'node_modules/@tauri-apps/cli/tauri.js'), ...args],
+      { stdio: 'inherit', env: process.env },
+    );
+  } else {
+    child = spawn(command, args, {
+      stdio: 'inherit',
+      env: process.env,
+      shell: process.platform === 'win32',
+    });
+  }
   let outcome = await waitChild(child);
   if (outcome.error) {
     if ((outcome.error.code === 'ENOENT' || outcome.error.code === 'EINVAL') && command === 'tauri') {
