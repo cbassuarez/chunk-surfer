@@ -29,3 +29,10 @@ dispatch2 = { version = "0.3.1", default-features = false, features = ["std"] }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Console", "Win32_System_Threading", "Win32_System_SystemInformation"] }
+
+# Release links through rustc's LTO path, which consumes the workspace rlib
+# itself instead of handing the archive to the MSVC linker. Recent link.exe
+# revisions (14.44+) reject the freshly written chunk_surfer_lib.rlib on the
+# release runners (LNK4003), and the LTO path sidesteps that handoff.
+[profile.release]
+lto = "thin"
