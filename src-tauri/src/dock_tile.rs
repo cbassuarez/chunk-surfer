@@ -1,4 +1,4 @@
-// The native ear builds in place once at startup, then retains the same
+// The native van builds in place once at startup, then retains the same
 // transparent, size-selected artwork as the closed-app Dock plug-in. AppKit
 // owns rendering and Reduce Motion; macOS still owns its launch bounce.
 
