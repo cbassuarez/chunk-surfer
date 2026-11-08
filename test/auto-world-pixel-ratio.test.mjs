@@ -23,9 +23,9 @@ test('sustained slow frames step down with warmup, two windows, cooldown and a f
  const h=harness();h.frame(1);h.run(5,40);assert.equal(h.policy.snapshot().ratio,1,'no early reaction');
  h.run(3,40);assert.equal(h.policy.snapshot().ratio,.875);
  const firstLower=h.changes.find(c=>c.reason==='lower');
- h.run(40,40);assert.equal(h.policy.snapshot().ratio,.5);const drops=h.changes.filter(c=>c.reason==='lower');
- assert.equal(drops.length,4);assert.ok(drops.every((x,i)=>i===0||x.time-drops[i-1].time>=5000));assert.ok(firstLower.time>=6000);
- h.run(30,40);assert.equal(h.policy.snapshot().ratio,.5,'never below minimum');
+ h.run(40,40);assert.equal(h.policy.snapshot().ratio,.375);const drops=h.changes.filter(c=>c.reason==='lower');
+ assert.equal(drops.length,5);assert.ok(drops.every((x,i)=>i===0||x.time-drops[i-1].time>=5000));assert.ok(firstLower.time>=6000);
+ h.run(30,40);assert.equal(h.policy.snapshot().ratio,.375,'never below the extended floor');
 });
 
 test('very low but continuous frame rates still trigger reduction',()=>{

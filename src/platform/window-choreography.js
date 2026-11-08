@@ -191,17 +191,18 @@ export function compileWindowChoreographyPlan({
 }
 
 // The single OS pane a takeover opens with, away to the side of the main window.
-export function compileTakeoverPanePlan({mediaId='',reducedMotion=false,flashMode='full',epochMs=Date.now()}={}){
+export function compileTakeoverPanePlan({mediaId='',reducedMotion=false,flashMode='full',epochMs=Date.now(),name=null}={}){
   const asset=windowMediaAsset(mediaId);
-  const content=asset?.kind==='video'?{kind:'video',assetId:asset.id}:mediaId==='empty-field'?{kind:'procedural',preset:'empty-field'}:null;
+  const proceduralPreset=['empty-field','paper-close'].includes(mediaId)?mediaId:null;
+  const content=asset?.kind==='video'?{kind:'video',assetId:asset.id}:proceduralPreset?{kind:'procedural',preset:proceduralPreset,...(proceduralPreset==='paper-close'&&name?{name}:{})}:null;
   if(!content)return null;
   // The verb's answer grades the pane. The body failing arrives hard and torn
   // (nvme-sector, fault accelerating); the light at the end arrives quiet and
-  // settles (violet-dither, almost no fault). The ordinary arc stays as it was.
-  const clinical=TAKEOVER_CLINICAL.includes(mediaId),comfort=TAKEOVER_COMFORT.includes(mediaId);
+  // settles (violet-dither, almost no fault). The paper search settles too.
+  const clinical=TAKEOVER_CLINICAL.includes(mediaId),comfort=TAKEOVER_COMFORT.includes(mediaId),paper=mediaId==='paper-close';
   const grade=clinical
     ?{shader:'nvme-sector',fault:{profile:'nvme-sector',intensity:.55,seed:41,cadenceMs:reducedMotion?900:280},formation:{mode:'impact-scatter',durationMs:360,staggerMs:35}}
-    :comfort
+    :comfort||paper
       ?{shader:'violet-dither',fault:{profile:'violet-dither',intensity:.02,seed:219,cadenceMs:900},formation:{mode:'memory-unfold',durationMs:450,staggerMs:0}}
       :{shader:'nvme-sector',fault:{profile:'nvme-sector',intensity:.12,seed:17,cadenceMs:reducedMotion?900:480},formation:{mode:'practice-windows',durationMs:0,staggerMs:0}};
   return compileWindowCompositionPlan({
@@ -1134,7 +1135,7 @@ export function createWindowChoreographyDirector({
     if(!nativeDesired()||!compositionContext().introduced||transaction||transactionOpening||sourceDesktop||battle||ending)return false;
     const nativeApi=await loadApi();
     if(!nativeApi?.invoke||await measuredFullscreen(nativeApi))return false;
-    const plan=compileTakeoverPanePlan({mediaId,reducedMotion,flashMode:compositionContext().flashMode});
+    const plan=compileTakeoverPanePlan({mediaId,reducedMotion,flashMode:compositionContext().flashMode,name:getSourceIdentity?.()?.operatorName||null});
     if(!plan)return false;
     const result=await runPlan(plan);
     return !!result?.native;

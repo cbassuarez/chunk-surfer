@@ -1254,8 +1254,15 @@ function characterSnapshot(instance,mesh=pack?.catalog.get(instance?.mesh)){
   const snapshot={key:characterFramePoses.length,mesh:mesh.name,id:instance.id??null,pose};
   characterSnapshots.set(instance,snapshot);characterFramePoses.push(snapshot);return snapshot;
 }
+// Character poses are cached per frame. Re-sampling every rAF tick at display
+// rate doubles the skinning cost above the 30 fps bar and doubles the GC from
+// pose allocation for nothing visible: the clips are authored and reviewed at
+// 30 Hz. Quantizing the frame time to 30 Hz lets frames above the bar share a
+// pose; at or below the bar behaviour is unchanged.
+const CHARACTER_FRAME_HZ = 30;
 export function prepareCharacterFrame(frameTime=0){
-  if(frameTime!==characterFrameTime||characterFrameDirty){characterSnapshots=new WeakMap();characterFramePoses=[];characterFrameTime=frameTime;characterFrameDirty=false;}
+  const quantized=Math.round(Number(frameTime||0)*CHARACTER_FRAME_HZ)/CHARACTER_FRAME_HZ;
+  if(quantized!==characterFrameTime||characterFrameDirty){characterSnapshots=new WeakMap();characterFramePoses=[];characterFrameTime=quantized;characterFrameDirty=false;}
   for(const instance of [...staticInstances,...dynamicInstances,...emergencyShadowInstances,...pressureInstances,...pressureSurfaceInstances,...(propDiagnosticsEnabled?diagnosticInstances:[])])characterSnapshot(instance);
   return characterFramePoses.length;
 }
@@ -1448,7 +1455,18 @@ function uploadInstances(mesh,list,matrices=null,{sourceCode=false}={}){
     data[at+25]=Number(handling[0])||0;if(handling[0]===-1)data[at+25]=-1;data[at+26]=Number(handling[1])||0;data[at+27]=Number(handling[2])||0;data[at+28]=Number(handling[3])||0;
     if(paperIndex<0&&list[k].horizonTide)writePropHorizonTide(data,at,list[k].horizonTide);
   }
+  // Static props produce byte-identical instance data frame after frame, and
+  // the same per-mesh buffer is re-uploaded for every pass. Re-uploading costs
+  // a driver copy plus the CPU build on every pass; track what the buffer
+  // holds and skip uploads that would write identical bytes.
+  const held=mesh.instanceBufferContent;
+  if(held&&held.buffer===mesh.instanceBuffer&&held.data.length===data.length){
+    let same=true;
+    for(let k=0;k<data.length;k++){if(held.data[k]!==data[k]){same=false;break;}}
+    if(same)return;
+  }
   gl.bindBuffer(gl.ARRAY_BUFFER,mesh.instanceBuffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+  mesh.instanceBufferContent={buffer:mesh.instanceBuffer,data};
 }
 function renderShadowPass(eye,yaw,pitch,light,shadowLight=null,{timeSec=0,reducedMotion=false,lodEye=eye,torchFrame=null,torch={},patternOriginOffsetMetres=[0,0,0]}={}){
   if(!gl||!shadowProgram||gl.isContextLost())return false;
@@ -1460,6 +1478,29 @@ function renderShadowPass(eye,yaw,pitch,light,shadowLight=null,{timeSec=0,reduce
   const lightPitch=practical&&Number.isFinite(practical.shadowPitch)?practical.shadowPitch:lamp.pitch;
   const lightEye=practical?[practical.x,practical.y,practical.z]:lamp.origin;
   const shadowFov=practical?104*Math.PI/180:Math.min(140*Math.PI/180,Math.max(40*Math.PI/180,2*Math.acos(Math.max(-.99,optics.coneInner-.045))));
+  // The shadow map only needs a fresh render when something it can see moved.
+  // Re-drawing the whole catalogue every frame was the single most expensive
+  // prop pass; a static scene with a still torch now reuses the previous map.
+  // Scenes with dynamic/pressure/roof-watcher/emergency actors keep the
+  // per-frame render because those actors move without list changes.
+  const gateableScene=dynamicInstances.length===0&&pressureInstances.length===0&&pressureSurfaceInstances.length===0
+    &&stillnessReliefDrawInstances.length===0&&roofWatcherInstances.length===0&&emergencyShadowInstances.length===0;
+  if(gateableScene){
+    // Quantised to the same 30 Hz grid as character poses, so a shared pose
+    // frame and a shared shadow frame always show the same silhouette.
+    const quantizedTime=Math.round(Number(timeSec||0)*30)/30;
+    const gateKey=[
+      (Math.round(Number(light)*1000)/1000).toFixed(3),
+      lightYaw.toFixed(4),lightPitch.toFixed(4),
+      lightEye[0].toFixed(3),lightEye[1].toFixed(3),lightEye[2].toFixed(3),
+      shadowFov.toFixed(4),quantizedTime,
+      patternOriginOffsetMetres.map(v=>v.toFixed(2)).join(','),
+      lodEye[0].toFixed(3),lodEye[1].toFixed(3),lodEye[2].toFixed(3),
+      staticRevision,
+    ].join('|');
+    if(gateKey===lastShadowGateKey&&shadowActive)return true;
+    lastShadowGateKey=gateKey;
+  }else lastShadowGateKey=null;
   shadowMatrix=multiply(perspectiveFov(shadowFov,1,.05,64),view(lightEye,lightYaw,lightPitch));
   // A normal torch shadow map contains the room. The red apparition pass is a
   // projection event: admitting every chair, portal and handrail buried the
@@ -1484,8 +1525,10 @@ export function preparePropShadowPass({camX,camY,camZ,yaw,pitch=0,light=1,shadow
 let cabinVolumeInstance=null;
 export function cabinVolume(){const i=cabinVolumeInstance;return i?.matrix&&i.cabinVolume?{matrix:i.matrix,min:i.cabinVolume.min,max:i.cabinVolume.max}:null;}
 function findCabinVolume(){cabinVolumeInstance=staticInstances.find(i=>i?.cabinVolume&&!i.sourceCodeOnly)||dynamicInstances.find(i=>i?.cabinVolume&&!i.sourceCodeOnly)||null;}
+let staticRevision=0;
+let lastShadowGateKey=null;
 export function setPropInstances(next){
-  staticInstances=Array.isArray(next)?next:[];findCabinVolume();
+  staticInstances=Array.isArray(next)?next:[];staticRevision+=1;findCabinVolume();
   roofWatcherAnchor=staticInstances.find(i=>i.id==='academic-roof-structure'&&i.mesh==='academic_roof_structure')||null;
   if(!roofWatcherAnchor)clearRoofWatcherFrame('no-roof-structure');
   vegetationLodState.clear();characterFrameDirty=true;

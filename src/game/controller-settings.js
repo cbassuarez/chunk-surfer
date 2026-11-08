@@ -92,12 +92,17 @@ export function makeControllerSettingsScene({
     cancelControllerRemap?.();
   }
 
+  let swapNotice = null; // "SWAPPED WITH X", shown for a beat after a steal
   function bindToken(token) {
     if (!captureAction) return false;
-    const ok = setControllerBinding(captureAction, token);
+    const result = setControllerBinding(captureAction, token);
+    const swapped = result?.swapped || null;
     captureAction = null;
-    if (ok) save();
-    return ok;
+    if (result?.ok) {
+      save();
+      if (swapped) swapNotice = { text: `SWAPPED WITH ${controllerActionLabel(swapped)}`, until: performance.now() + 2600 };
+    }
+    return !!result?.ok;
   }
 
   function model() {
@@ -222,6 +227,9 @@ export function makeControllerSettingsScene({
       const pad = padRect(body);
       drawPadDiagram(pad, m, { cols, blinkOn: blink });
       drawRawTester(pad, m, { cols });
+      if (swapNotice && performance.now() < swapNotice.until) {
+        uiText(pad.x + 2, pad.y + pad.h - 3.4, swapNotice.text, 'ui-counter', 1);
+      }
 
       const listX = body.x + pad.w + 2;
       const listW = Math.max(18, body.x + body.w - listX);

@@ -29,7 +29,7 @@ test('an authored lens is copied without mutating the walking camera or caller',
 });
 test('the physical lens basis reaches architecture, mesh, engraving and world projection and resets every frame',()=>{
   const r=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8');
-  assert.match(r,/activeCameraTanHalfFov=driveFrameActive \? \.65 : cinematicTanHalfFov\(authoredCamera\?\.lens\)/);
+  assert.match(r,/activeCameraTanHalfFov=\(driveFrameActive \? \.65 : cinematicTanHalfFov\(authoredCamera\?\.lens\)\)\/catchZoom/);
   assert.match(r,/P3\.setFrameCameraTanHalfFov\(activeCameraTanHalfFov\)/);
   assert.match(r,/uv\.x\*rgt\*uCameraTanHalfFov \+ uv\.y\*up\*uCameraTanHalfFov/);
   assert.match(r,/pixelMeshU\('uCameraTanHalfFov'\),activeCameraTanHalfFov/);

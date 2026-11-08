@@ -22,7 +22,7 @@ const props=readFileSync('src/render/props3d.js','utf8');
 assert.match(props,/aPaperHandling/);
 assert.match(props,/PAPER_ATLAS_HANDLING/);
 assert.match(props,/Float32Array\(list\.length\*PROP_INSTANCE_FLOATS\)/);
-const uploadStart=props.indexOf('function uploadInstances(mesh,list){'),uploadEnd=props.indexOf('\nfunction renderShadowPass(',uploadStart);
+const uploadStart=props.indexOf('function uploadInstances(mesh,list'),uploadEnd=props.indexOf('\nfunction renderShadowPass(',uploadStart);
 assert.ok(uploadStart>=0&&uploadEnd>uploadStart,'execute the actual complete prop instance uploader');
 let uploaded=null;
 const upload=runInNewContext(props.slice(uploadStart,uploadEnd)+'\nuploadInstances;',{

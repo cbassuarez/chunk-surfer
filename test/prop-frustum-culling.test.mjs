@@ -102,7 +102,7 @@ test('ordinary primitives skip character morph GL calls while animated meshes bi
   vm.createContext(ctx);vm.runInContext(source.slice(start,end),ctx);
   const uniform=name=>name,staticMesh={},animatedMesh={characterAsset:{}},primitive={characterMorphCount:2,characterVertexCount:17,characterMorphTexture:'atlas',characterMorphSize:[8,5]};
   ctx.bindCharacterPose(uniform,staticMesh,{});ctx.bindMeshCharacterMorph(uniform,staticMesh,primitive);
-  assert.deepEqual(calls,[['enable','uCharacterEnabled',0]],'disabled deformation needs no per-primitive bindings');
+  assert.deepEqual(calls,[['enable','uCharacterEnabled',0],['enable','uFigureFade',0]],'disabled deformation needs no per-primitive bindings');
   calls.length=0;ctx.bindCharacterPose(uniform,animatedMesh,{});ctx.bindMeshCharacterMorph(uniform,animatedMesh,primitive);
   assert.ok(calls.some(c=>c[0]==='enable'&&c[2]===1));
   assert.ok(calls.some(c=>c[0]==='int'&&c[1]==='uCharacterMorphCount'&&c[2]===2));

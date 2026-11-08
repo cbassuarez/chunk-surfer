@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "padId": "Wireless Controller (Vendor: 054c Product: 09cc)",
+  "note": "A DualShock 4 check-in: rest, a section step on the left shoulder, interact on south (physical 1 per the SDL row), and a worn stick resting at 0.06.",
+  "frames": [
+    { "axes": [0, 0, 0, 0], "buttons": {} },
+    { "axes": [0, 0, 0, 0], "buttons": { "leftShoulder": 1 } },
+    { "axes": [0, 0, 0, 0], "buttons": { "leftShoulder": 0 } },
+    { "axes": [0.06, 0, 0, 0], "buttons": {} },
+    { "axes": [0.06, 0, 0, 0], "buttons": { "south": 1 } },
+    { "axes": [0.06, 0, 0, 0], "buttons": { "south": 0 } }
+  ]
+}

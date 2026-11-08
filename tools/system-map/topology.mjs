@@ -236,7 +236,7 @@ export const SYSTEM_NODES = Object.freeze([
       // Anchored on the head of the script, not the whole chain. The full string
       // was pinned here and every step added to `build` took the system map down
       // with it — the same brittleness as the index.html cache-buster below.
-      cite('package.json', '"build": "npm run studio:validate', 'Production build pipeline'),
+      cite('package.json', '"build:chain": "npm run studio:validate', 'Production build pipeline'),
       cite('vite.config.js', 'export default defineConfig(({ command }) => ({', 'Game Vite configuration and debug-only feature gate'),
     ],
   },
@@ -248,7 +248,7 @@ export const SYSTEM_NODES = Object.freeze([
     evidence: [
       cite('src-tauri/tauri.conf.json', '"bundle": {', 'Desktop bundle configuration'),
       cite('.github/workflows/release.yml', 'name: Release Desktop Builds', 'Cross-platform release workflow'),
-      cite('package.json', '"tauri:build": "tauri build",', 'Desktop build command'),
+      cite('package.json', '"tauri:build": "node scripts/build-lock.mjs wrap tauri build",', 'Desktop build command'),
       cite('package.json', '"tauri:build:steam": "npm run steamworks:verify && npm run tauri:build --",', 'Steam desktop build command'),
     ],
   },
@@ -268,7 +268,7 @@ export const SYSTEM_EDGES = Object.freeze([
   { id: 'narrative-to-audio', from: 'narrative-runtime', to: 'audio-acoustics', kind: 'event', label: 'Authored cue dispatch', payload: 'Stable cue IDs attached to node, line, choice and gameplay events', evidence: [cite('src/narrative/runtime-content.js', 'export function runtimeCuesForLine(documentId, line = {}) {', 'Line-to-cue lookup')] },
   { id: 'scenes-to-audio', from: 'scene-orchestration', to: 'audio-acoustics', kind: 'control', label: 'Sound and recording commands', payload: 'Cue recipes, record/playback actions, ambience, spatial position and mix state', evidence: [cite('src/main.js', 'CUES.playCue(CUES.CUE.recorder,{gain:drop ? .055+impact*.035 : .045,rate:drop ? .46-impact*.12 : .62});', 'Traversal sound command')] },
   { id: 'audio-to-scenes', from: 'audio-acoustics', to: 'scene-orchestration', kind: 'event', label: 'Semantic acoustic event', payload: 'schema, kind, source, spatial position, dB/spectrum and audibility semantics', evidence: [cite('src/audio/acoustic-events.js', 'for (const listener of [...listeners]) {', 'Noise event broadcast')] },
-  { id: 'scenes-to-save', from: 'scene-orchestration', to: 'save-progression', kind: 'persistence', label: 'Run and profile patches', payload: 'Position, flags, items, takes, encounters, settings, run ledger and achievements', evidence: [cite('src/game/save.js', 'Object.assign(save, patch);', 'Save patch application')] },
+  { id: 'scenes-to-save', from: 'scene-orchestration', to: 'save-progression', kind: 'persistence', label: 'Run and profile patches', payload: 'Position, flags, items, takes, encounters, settings, run ledger and achievements', evidence: [cite('src/game/save.js', 'export function saveCommit(patch = {}) {', 'Save patch application')] },
   { id: 'save-to-storage', from: 'save-progression', to: 'storage-backends', kind: 'persistence', label: 'Queued envelopes', payload: 'Normalized settings, profile, autosave and causal-session envelopes', evidence: [cite('src/platform/storage/storageService.js', 'return enqueue(() => storage.saveGame(SAVE_SLOT_AUTOSAVE, save).then(() => true));', 'Serialized save write')] },
   { id: 'storage-to-save', from: 'storage-backends', to: 'save-progression', kind: 'data', label: 'Loaded state', payload: 'Migrated settings, profile and autosave with safe defaults and backup recovery', evidence: [cite('src/platform/storage/storageService.js', 'return { settings, profile, save: save ? normalizePersistedSave({ ...save, settings: save.settings || settings }, { profile, settings }) : null };', 'Normalized load result')] },
   { id: 'render-to-lens', from: 'render-stack', to: 'lens-client', kind: 'control', label: 'Visible material demand', payload: 'Visible slots, active look bank, source albedo/height and optional scene/depth burst', evidence: [cite('src/main.js', 'captureBurstFrame:async(size)=>{', 'Renderer capture callback')] },

@@ -74,7 +74,7 @@ test('invalid requests do not reset and numeric bounds are enforced',()=>{
   const before=h.allocations();
   for(const value of [0,-1,NaN,Infinity,'bad'])assert.equal(c.r3dSetOutputPixelRatio(value),.75);
   assert.equal(h.allocations(),before);
-  assert.equal(c.r3dSetOutputPixelRatio(.1),.5);assert.equal(c.r3dSetOutputPixelRatio(9),4);
+  assert.equal(c.r3dSetOutputPixelRatio(.1),.375);assert.equal(c.r3dSetOutputPixelRatio(9),4);
   assert.match(src,/canvas\.style\.cssText = 'display:block;width:100%;height:100%;'/);
   assert.match(src.slice(src.indexOf('export function r3dInit('),src.indexOf('function resize() {')),/\bresize\(\)/);
 });

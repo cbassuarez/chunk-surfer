@@ -3,8 +3,8 @@ name: Release Desktop Builds
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release tag to validate or publish, for example v0.3.0'
+      version:
+        description: 'Version to build and propagate, e.g. 0.3.1 or v0.3.1'
         required: true
         type: string
       publish:
@@ -14,6 +14,11 @@ on:
         type: boolean
       allow_test_failures:
         description: 'Continue building and publishing even if tests fail'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: 'Skip the frontend, acoustic, desktop-menu, visual-smoke and native test suites'
         required: false
         default: false
         type: boolean
@@ -37,8 +42,31 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+
+      # The version field is the single source of truth for a release: it is
+      # normalized here (v0.3.1 and 0.3.1 are both accepted) and propagated
+      # into the checked-out metadata by scripts/apply-release-version.mjs in
+      # each job that needs it, instead of checksumming the checked-in files.
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+        run: |
+          set -euo pipefail
+          requested="${REQUESTED_VERSION#"${REQUESTED_VERSION%%[![:space:]]*}"}"
+          requested="${requested%"${requested##*[![:space:]]}"}"
+          version="${requested#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$ ]]; then
+            echo "Invalid release version: ${requested}" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Select release platforms
         id: matrix
@@ -140,24 +168,34 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Validate release source and tag
+      # The requested version is written into package.json, package-lock.json,
+      # Cargo.toml, Cargo.lock, tauri.conf.json and (when missing) a CHANGELOG
+      # section, and RELEASE_TAG/RELEASE_VERSION are exported for later steps.
+      - name: Apply release version
         env:
-          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}
+          RELEASE_VERSION: ${{ needs.configure.outputs.tag }}
+        run: node scripts/apply-release-version.mjs "$RELEASE_VERSION"
+
+      - name: Validate release source and tag
         run: node scripts/release-preflight.mjs "$RELEASE_TAG"
 
       - name: Run frontend tests
+        if: ${{ github.event_name == 'push' || inputs.skip_tests != true }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm test
 
       - name: Run acoustic catalogue checks
+        if: ${{ github.event_name == 'push' || inputs.skip_tests != true }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm run test:acoustic
 
       - name: Run desktop menu tests
+        if: ${{ github.event_name == 'push' || inputs.skip_tests != true }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: npm run test:desktop-menu
 
       - name: Run cross-platform visual smoke
+        if: ${{ github.event_name == 'push' || inputs.skip_tests != true }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         timeout-minutes: 10
         env:
@@ -166,7 +204,7 @@ jobs:
         run: npm run test:feature-smoke
 
       - name: Upload visual parity captures
-        if: always()
+        if: ${{ always() && (github.event_name == 'push' || inputs.skip_tests != true) }}
         uses: actions/upload-artifact@v4
         with:
           name: visual-smoke-${{ matrix.target }}
@@ -174,10 +212,11 @@ jobs:
           if-no-files-found: warn
 
       - name: Check Tauri Rust
+        if: ${{ github.event_name == 'push' || inputs.skip_tests != true }}
         run: npm run tauri:check
 
       - name: Run Windows native process tests
-        if: matrix.platform == 'windows-latest'
+        if: ${{ matrix.platform == 'windows-latest' && (github.event_name == 'push' || inputs.skip_tests != true) }}
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures == true }}
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets
 
@@ -326,7 +365,7 @@ jobs:
 
   publish-itch:
     name: Publish itch beta channels
-    needs: build
+    needs: [configure, build]
     if: github.event_name == 'push' || inputs.publish == true
     runs-on: ubuntu-latest
     env:
@@ -346,6 +385,14 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
+
+      # itch staging reads the version out of package.json and matches the
+      # downloaded artifact names against it, so the requested version must be
+      # applied here too.
+      - name: Apply release version
+        env:
+          RELEASE_VERSION: ${{ needs.configure.outputs.tag }}
+        run: node scripts/apply-release-version.mjs "$RELEASE_VERSION"
 
       - name: Verify itch environment
         shell: bash
@@ -375,28 +422,35 @@ jobs:
 
   publish-prerelease:
     name: Publish beta prerelease
-    needs: [build, publish-itch]
+    needs: [configure, build, publish-itch]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
       - name: Resolve release tag
         id: tag
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            tag="${{ inputs.tag }}"
-          fi
+          tag="${{ needs.configure.outputs.tag }}"
           if ! [[ "$tag" =~ ^v[0-9A-Za-z._-]+$ ]]; then
             echo "Invalid release tag: $tag" >&2
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # The prerelease notes are read from the tag's CHANGELOG section; apply
+      # the requested version so a fresh version still has a section to read.
+      - name: Apply release version
+        env:
+          RELEASE_VERSION: ${{ needs.configure.outputs.tag }}
+        run: node scripts/apply-release-version.mjs "$RELEASE_VERSION"
 
       - name: Download built bundles
         uses: actions/download-artifact@v4

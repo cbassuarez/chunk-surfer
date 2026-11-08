@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
 import * as controller from '../src/game/controller.js';
 import { gamepadTraceNavigator, traceFrameFromSnapshot, createGamepadTraceRecorder } from '../src/game/gamepad-trace.js';
+
+const FIXTURES = new URL('./fixtures/gamepad-traces/', import.meta.url);
 
 // A DualShock 4-shaped session, recorded the way the dev capture records it:
 // raw axes and per-button values per polled frame. The pad id carries the
@@ -66,4 +69,24 @@ test('the capture side produces frames the replay side accepts', () => {
   const roundTrip = traceFrameFromSnapshot(controller.controllerSnapshot());
   assert.ok(Array.isArray(roundTrip.axes) && typeof roundTrip.buttons === 'object');
   controller.controllerResetForTest();
+});
+
+
+test('every committed real-device fixture replays, well-formed, into real actions', () => {
+  const files = readdirSync(FIXTURES).filter((name) => name.endsWith('.json'));
+  assert.ok(files.length >= 1, 'fixtures are committed');
+  for (const file of files) {
+    const raw = JSON.parse(readFileSync(new URL(file, FIXTURES), 'utf8'));
+    assert.equal(raw.schema, 1, file);
+    assert.ok(Array.isArray(raw.frames) && raw.frames.length > 0, file);
+    controller.controllerResetForTest();
+    const pressed = [];
+    controller.setControllerNavigatorForTest(gamepadTraceNavigator({ frames: raw.frames, padId: raw.padId }));
+    for (const frame of raw.frames) {
+      void frame;
+      controller.gamepadTick({ onPress: (action) => pressed.push(action), onRelease: () => {} });
+    }
+    assert.ok(pressed.length > 0, `${file} produces at least one action`);
+    controller.controllerResetForTest();
+  }
 });

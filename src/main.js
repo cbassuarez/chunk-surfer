@@ -7723,12 +7723,17 @@ function maybeMemorySeep(verb){
   const s=lastMinutes;if(!s.director||s.seep||!storyMode)return false;
   // Everything but Source, from the first door past the get-in door, which is also where
   // the opening stops having to match the crash loop.
-  const blocked=!flagTest('title.shown')||usingSpecialSpace()||paused||REC.isRecording()||!!escape||nightDeadlineCommitted()||sixLoopActive()||!visualEffectsEnabled()||RENDERER!=='3d'
-    ||!!R3.r3dTableauStats?.().active||(Number(presentedFearPressure()?.overall)||0)>.5;
+  const inHaystack=chunkSurfRuntime?.state?.()?.phase==='haystack';
+  const baseBlocked=!flagTest('title.shown')||paused||REC.isRecording()||!!escape||nightDeadlineCommitted()||sixLoopActive()||!visualEffectsEnabled()||RENDERER!=='3d'
+    ||!!R3.r3dTableauStats?.().active;
+  // The seep stays out of Source; the window takeover is allowed in the haystack,
+  // where its authored paper scenes are the point, and rides the fear high.
+  const takeoverBlocked=baseBlocked||(!inHaystack&&usingSpecialSpace())||(Number(presentedFearPressure()?.overall)||0)>(inHaystack?.94:.5);
+  const seepBlocked=baseBlocked||usingSpecialSpace()||(Number(presentedFearPressure()?.overall)||0)>.5;
   // Rarest first: the window that becomes the picture. If it can't run, nothing is lost.
-  const media=s.director.takeoverFor({at:s.played,frame:s.frame,regionLoss:s.loss,blocked:blocked||REC.isListening()||!flagTest(memoryFieldFlag('second')),verb});
+  const media=s.director.takeoverFor({at:s.played,frame:s.frame,regionLoss:s.loss,blocked:takeoverBlocked||REC.isListening()||!flagTest(memoryFieldFlag('second')),verb,haystack:inHaystack});
   if(media&&beginWindowTakeover(media,{onDone:()=>startNeural('seep-out')})){startNeural('twitch');return true;}
-  const seep=s.director.seepFor(verb,{at:s.played,frame:s.frame,regionLoss:s.loss,blocked,reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'});
+  const seep=s.director.seepFor(verb,{at:s.played,frame:s.frame,regionLoss:s.loss,blocked:seepBlocked,reducedDread:lastMinutesReducedDread(),reducedFlash:flashMode()!=='full'});
   if(!seep)return false;
   if(!showMemorySeep(seep.id,{seconds:seep.seconds,gain:seep.gain}))return false;
   if(verb!=='take-arm'&&actx)playMemorySeepSound(actx,sfxGain||master,seep.set,{strength:lastMinutesReducedDread()?.5:1});
@@ -39337,7 +39342,7 @@ function controllerPress(action,repeat=false){
   if(!['menu','back'].includes(action)&&!standingTearInputGate.update(CONTROLLER.controllerSnapshot()))return;
   // The stick click is a latch in the world: it stays on until the stick comes
   // back to rest (tickLocomotion). Modal scenes still see an ordinary Shift.
-  if(action==='run'&&!repeat&&!scenes.blocksInput())padRunLatched=!padRunLatched;
+  if(action==='run'&&!repeat&&!scenes.blocksInput()&&CONTROLLER.controllerSettings?.().runMode!=='hold')padRunLatched=!padRunLatched;
   if(CONTROLLER_KEY[action])onKey(controllerEvent(action,repeat));
 }
 function controllerRelease(action){ if(CONTROLLER_KEY[action]) onKeyUp(controllerEvent(action,false)); }
@@ -40579,6 +40584,10 @@ async function boot(){
       });
     }
     if(import.meta.env.DEV&&qp.has('gamepadTrace')){gamepadTraceRecorder=createGamepadTraceRecorder();}
+    // The pad sampler runs faster than rendering so a tap inside a long frame
+    // is never lost: the browser only refreshes gamepad state per RAF, and
+    // this interval is what turns that into accumulated edges.
+    setInterval(()=>CONTROLLER.controllerPollSample(),8);
     if(import.meta.env.DEV&&qp.has('openingReview')){
       const {createOpeningOvertureReview}=await import('./dev/opening-overture-review.js');
       createOpeningOvertureReview({

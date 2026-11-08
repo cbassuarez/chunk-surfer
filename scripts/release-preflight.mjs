@@ -38,10 +38,13 @@ for (const [source, version] of Object.entries(versions)) {
 // if a developer has staged model resources or exported VITE_STABLE_DIFFUSION=1.
 // Tauri embeds frontend assets into the executable. Inspecting only the outer
 // .app/portable tree cannot detect a model accidentally copied into public/.
-if (!/vite build\s*&&\s*npm run lean:verify -- dist$/.test(pkg.scripts?.build || '')) {
+// `build` runs the chain under the dist-write mutex (scripts/build-lock.mjs);
+// the chain itself must still scan dist before Tauri embeds it.
+if (!/^node scripts\/build-lock\.mjs wrap npm run build:chain$/.test(pkg.scripts?.build || '') ||
+    !/vite build\s*&&\s*npm run lean:verify -- dist$/.test(pkg.scripts?.['build:chain'] || '')) {
   throw new Error('production frontend build must reject SD payloads before Tauri embeds dist');
 }
-if (pkg.scripts?.['tauri:build'] !== 'tauri build') {
+if (pkg.scripts?.['tauri:build'] !== 'node scripts/build-lock.mjs wrap tauri build') {
   throw new Error('tauri:build must use the lean base Tauri config without a lens overlay');
 }
 if (pkg.scripts?.['beta:build:mac']?.includes('lens:bundle') ||

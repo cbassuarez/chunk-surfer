@@ -1,7 +1,10 @@
 // A transient presentation policy. It never writes display settings: null means
 // the renderer should use its ordinary native pixel ratio for explicit quality.
 // The policy observes only uninterrupted, foreground world frames.
-const MIN_RATIO = .5;
+// The floor sits below half resolution: the recorded pixel look stays coherent
+// because the dither grid tracks the applied ratio, and a machine that needs
+// this step needs every pixel gone before it can clear the 30 fps bar.
+const MIN_RATIO = .375;
 const STEP = .125;
 const SETTLE_MS = 2000;
 const WINDOW_MS = 2000;

@@ -26,6 +26,14 @@ assert.match(pkg.scripts['itch:push'], /scripts\/itch-release\.mjs push/, 'itch 
 assert.match(pkg.scripts['test:feature-smoke'], /run-feature-regression-smoke\.mjs/, 'cross-platform visual smoke has one portable entrypoint');
 assert.match(yml, /publish:[\s\S]*default: false[\s\S]*type: boolean/, 'manual release validation does not publish unless explicitly requested');
 assert.match(yml, /platform:[\s\S]*type: choice[\s\S]*- linux/, 'manual validation can target only the failed native platform');
+assert.match(yml, /version:\s*\n\s+description: 'Version to build and propagate[\s\S]*?required: true[\s\S]*?type: string/,
+  'the version input is the one-stop release version field');
+assert.doesNotMatch(yml, /\n\s+tag:\s*\n\s+description: 'Release tag/, 'the checksummed tag input is replaced by the normalized version field');
+assert.match(yml, /skip_tests:[\s\S]*?type: boolean/, 'a checkbox bypasses the test suites for quick pipeline builds');
+assert.match(yml, /node scripts\/apply-release-version\.mjs "\$RELEASE_VERSION"/,
+  'each release job propagates the requested version into the checked-out metadata');
+assert.match(yml, /inputs\.skip_tests != true/, 'the test steps are gated by the skip_tests checkbox');
+assert.match(yml, /needs\.configure\.outputs\.tag/, 'publish jobs resolve the normalized tag from the configure job');
 assert.match(yml, /matrix: \$\{\{ fromJSON\(needs\.configure\.outputs\.matrix\) \}\}/, 'release jobs consume the selected platform matrix');
 assert.match(releaseMatrix, /Windows x64[\s\S]*args: '--no-bundle'/, 'windows release skips installers and validates its portable build');
 assert.match(releaseMatrix, /release\/windows\/\*\.zip/, 'windows portable zip artifact path is uploaded');
@@ -38,12 +46,12 @@ assert.doesNotMatch(yml, /Windows x64[\s\S]*args: --bundles (?:nsis|msi)/, 'wind
 assert.match(yml, /Prepare release upload assets[\s\S]*split -b 1900M/, 'release upload splits assets larger than GitHub release limits');
 assert.match(yml, /Public beta downloads are staged on itch\.io first/, 'GitHub release notes point players to itch first');
 assert.match(yml, /developer mirror/, 'GitHub release notes identify split assets as a developer mirror');
-assert.match(yml, /publish-itch:[\s\S]*needs: build[\s\S]*BUTLER_API_KEY: \$\{\{ secrets\.BUTLER_API_KEY \}\}/, 'itch publish job runs after platform builds with Butler secret');
+assert.match(yml, /publish-itch:[\s\S]*needs: \[configure, build\][\s\S]*BUTLER_API_KEY: \$\{\{ secrets\.BUTLER_API_KEY \}\}/, 'itch publish job runs after the versioned platform builds with Butler secret');
 assert.match(yml, /publish-itch:[\s\S]*if: github\.event_name == 'push' \|\| inputs\.publish == true/, 'tag pushes publish automatically while manual validation remains safe');
 assert.match(yml, /publish-itch:[\s\S]*ITCH_TARGET: \$\{\{ vars\.ITCH_TARGET \}\}/, 'itch publish job reads the target from repository variables');
 assert.match(yml, /curl -L -o butler\.zip https:\/\/broth\.itch\.zone\/butler\/linux-amd64\/LATEST\/archive\/default/, 'itch publish job installs Butler on Ubuntu');
 assert.match(yml, /publish-itch:[\s\S]*npm run itch:stage[\s\S]*npm run itch:preview[\s\S]*npm run itch:push/, 'itch publish job stages, previews, and pushes all channels');
-assert.match(yml, /publish-prerelease:[\s\S]*needs: \[build, publish-itch\]/, 'GitHub mirror waits for itch publication');
+assert.match(yml, /publish-prerelease:[\s\S]*needs: \[configure, build, publish-itch\]/, 'GitHub mirror waits for itch publication');
 assert.match(yml, /sha256sum "\$file" > "release-upload-assets\/\$name\.sha256"/, 'split release assets get checksum manifests');
 assert.match(yml, /gh release delete-asset/, 'release upload clears stale beta assets before uploading current assets');
 assert.ok(!tauri.bundle.targets.includes('nsis'), 'default Tauri bundle targets do not include NSIS');
@@ -78,7 +86,7 @@ assert.match(yml, /Run cross-platform visual smoke[\s\S]*npm run test:feature-sm
 assert.match(yml, /Run cross-platform visual smoke[\s\S]*timeout-minutes: 10/, 'visual parity validation cannot hang a release runner indefinitely');
 assert.match(yml, /FEATURE_SMOKE_TIMEOUT_MS: \$\{\{ matrix\.platform == 'ubuntu-22\.04' && '540000' \|\| '300000' \}\}/, 'Linux software rendering receives a bounded extended visual-smoke window');
 assert.match(yml, /FEATURE_SMOKE_FRAME_TIMEOUT_MS: \$\{\{ matrix\.platform == 'ubuntu-22\.04' && '60000' \|\| matrix\.platform == 'windows-latest' && '30000' \|\| '10000' \}\}/, 'slow hosted renderers receive a bounded window to collect real performance samples');
-assert.match(yml, /Run Windows native process tests[\s\S]*if: matrix\.platform == 'windows-latest'[\s\S]*cargo test --manifest-path src-tauri\/Cargo\.toml --all-targets/, 'windows native process tests are preserved');
+assert.match(yml, /Run Windows native process tests[\s\S]*matrix\.platform == 'windows-latest' && [\s\S]*cargo test --manifest-path src-tauri\/Cargo\.toml --all-targets/, 'windows native process tests are preserved');
 assert.match(featureSmoke, /enable-unsafe-swiftshader/, 'linux visual parity explicitly enables Chromium software WebGL');
 assert.match(featureSmoke, /fs\.rmSync\(output/, 'visual parity cannot upload stale captures after a failed boot');
 assert.match(featureSmoke, /FEATURE_SMOKE_OUTPUT/, 'local smoke validation can write outside the tracked visual evidence directory');

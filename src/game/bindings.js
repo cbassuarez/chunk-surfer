@@ -124,6 +124,8 @@ export const DEFAULT_CONTROLLER_SETTINGS = Object.freeze({
   lookDeadzone: 0.16,
   triggerThreshold: 0.55,
   invertLookY: false,
+  inputDebounceMs: 0,
+  runMode: 'latch',
   family: 'auto',
   bindings: DEFAULT_CONTROLLER_BINDINGS,
 });
@@ -292,6 +294,10 @@ export function normalizeControllerSettings(value = {}, legacyBindings = null) {
     lookDeadzone: clampNumber(source.lookDeadzone, DEFAULT_CONTROLLER_SETTINGS.lookDeadzone, 0, 0.7),
     triggerThreshold: clampNumber(source.triggerThreshold, DEFAULT_CONTROLLER_SETTINGS.triggerThreshold, 0.1, 0.95),
     invertLookY: !!source.invertLookY,
+    // Tremor suppression: an action re-pressed within this window is one
+    // press. Run is a latch by default, or an ordinary hold when asked.
+    inputDebounceMs: clampNumber(source.inputDebounceMs, 0, 0, 300),
+    runMode: source.runMode === 'hold' ? 'hold' : 'latch',
     family: CONTROLLER_FAMILIES.includes(source.family) ? source.family : 'auto',
     bindings,
   };
@@ -356,14 +362,15 @@ export function setControllerBinding(action, token) {
   if (!id) return false;
   const bindings = { ...controller.bindings };
   const old = bindings[action] || DEFAULT_CONTROLLER_BINDINGS[action];
+  let swapped = null;
   for (const group of PAD_GROUPS) {
     if (!group.includes(action)) continue;
     const conflict = group.find((peer) => peer !== action && bindings[peer]?.id === id);
-    if (conflict) bindings[conflict] = old;
+    if (conflict) { bindings[conflict] = old; swapped = conflict; }
   }
   bindings[action] = { kind: 'button', id };
   controller = normalizeControllerSettings({ ...controller, bindings });
-  return true;
+  return { ok: true, swapped };
 }
 
 export function controllerSettings() {

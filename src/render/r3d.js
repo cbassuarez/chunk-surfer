@@ -180,7 +180,7 @@ export function r3dSetOutputPixelRatio(value=null){
   const numeric=Number(value);
   // Do not turn malformed or non-positive input into a surprising reset.
   if(value!==null&&(!Number.isFinite(numeric)||numeric<=0))return outputPixelRatioOverride;
-  outputPixelRatioOverride=value===null?null:Math.max(.5,Math.min(4,numeric));
+  outputPixelRatioOverride=value===null?null:Math.max(.375,Math.min(4,numeric));
   // A display move can change native DPR while the configured value stays
   // null. Compare with what was actually allocated, not just the old setting.
   const next=r3dEffectiveOutputPixelRatio();
@@ -5499,6 +5499,38 @@ const postUniformCache = new Map();
 const textSpaceUniformCache = new Map();
 const sourceRoomUniformCache = new Map();
 const sourceIdentityUniformCache = new Map();
+const rdUniformCache = new Map();
+const waterUniformCache = new Map();
+// Hoisted sampler bindings and scratch buffers: per-frame array literals and
+// typed-array allocations in the frame loop cost real milliseconds on weak
+// CPUs and pressure the GC into pause spikes, so these are reused instead.
+const SURF_SAMPLER_UNITS = [['uSurfAlbedo',6],['uSurfNormal',7],['uSurfMaterial',8],['uSurfDream',9],['uSurfDreamNext',11],['uSurfMarks',10]];
+const chunkScratchA = new Float32Array(MAX_CHUNKS * 4);
+const chunkScratchC = new Float32Array(MAX_CHUNKS * 3);
+const waterPackedScratch = new Float32Array(MAX_WATER_SOURCES * 4);
+let cachedWorldTints = null;
+let cachedWorldTintsFlat = new Float32Array(0);
+function worldTintsFlat(tints){
+  const list = Array.isArray(tints) ? tints : [];
+  if (cachedWorldTints && cachedWorldTints.length === list.length) {
+    let same = true;
+    for (let i = 0; i < list.length; i += 1) {
+      const a = cachedWorldTints[i], b = list[i];
+      if (a === b) continue;
+      if (!a || !b || a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2]) { same = false; break; }
+    }
+    if (same) return cachedWorldTintsFlat;
+  }
+  if (cachedWorldTintsFlat.length !== list.length * 3) cachedWorldTintsFlat = new Float32Array(Math.max(3, list.length * 3));
+  for (let i = 0; i < list.length; i += 1) {
+    const c = list[i] || [0, 0, 0];
+    cachedWorldTintsFlat[i * 3] = c[0];
+    cachedWorldTintsFlat[i * 3 + 1] = c[1];
+    cachedWorldTintsFlat[i * 3 + 2] = c[2];
+  }
+  cachedWorldTints = list;
+  return cachedWorldTintsFlat;
+}
 const GL_ERROR_AUDIT_FRAMES = 60;
 const pixelMeshStatus = {
   supported: false,
@@ -6044,7 +6076,19 @@ function pixelMeshU(name) {
 }
 
 let frontEndPlate = normalizeFrontEndPlate(FRONT_END_PLATE_PRESETS.gameplay);
-export function r3dSetFrontEndPlate(value='gameplay'){ frontEndPlate=normalizeFrontEndPlate(value); return {...frontEndPlate}; }
+let frontEndPlatePresetId = null;
+export function r3dSetFrontEndPlate(value='gameplay'){
+  // main.js sets the plate every frame. Preset ids are the steady state; an
+  // unchanged id keeps the last normalized plate without re-clamping it.
+  if(typeof value==='string'&&value===frontEndPlatePresetId)return frontEndPlate;
+  const next=normalizeFrontEndPlate(value);
+  if(typeof value==='string')frontEndPlatePresetId=value;
+  if(next.negative===frontEndPlate.negative&&next.print===frontEndPlate.print&&next.amount===frontEndPlate.amount
+    &&next.detailRetention===frontEndPlate.detailRetention&&next.chromaRetention===frontEndPlate.chromaRetention
+    &&next.exposureStops===frontEndPlate.exposureStops&&next.shoulder===frontEndPlate.shoulder&&next.toe===frontEndPlate.toe)return frontEndPlate;
+  frontEndPlate=next;
+  return frontEndPlate;
+}
 export function r3dFrontEndPlate(){ return {...frontEndPlate}; }
 
 function postU(name) {
@@ -8261,14 +8305,18 @@ function updateWaterField(water, dt) {
   gl.viewport(0, 0, WATER_W, WATER_H);
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, src);
-  gl.uniform1i(gl.getUniformLocation(progWater, 'uPrev'), 0);
-  gl.uniform2f(gl.getUniformLocation(progWater, 'uTexel'), 1 / WATER_W, 1 / WATER_H);
-  gl.uniform1f(gl.getUniformLocation(progWater, 'uDt'), Math.max(0.05, Math.min(1.6, dt * 60)));
-  gl.uniform1f(gl.getUniformLocation(progWater, 'uDamping'), 0.985);
-  gl.uniform1f(gl.getUniformLocation(progWater, 'uReduceMotion'), water.reduceMotion ? 1 : 0);
+  const waterU = (name) => {
+    if (!waterUniformCache.has(name)) waterUniformCache.set(name, gl.getUniformLocation(progWater, name));
+    return waterUniformCache.get(name);
+  };
+  gl.uniform1i(waterU('uPrev'), 0);
+  gl.uniform2f(waterU('uTexel'), 1 / WATER_W, 1 / WATER_H);
+  gl.uniform1f(waterU('uDt'), Math.max(0.05, Math.min(1.6, dt * 60)));
+  gl.uniform1f(waterU('uDamping'), 0.985);
+  gl.uniform1f(waterU('uReduceMotion'), water.reduceMotion ? 1 : 0);
   const rawSources = Array.isArray(water.rippleSources) ? water.rippleSources : [];
   const n = Math.min(MAX_WATER_SOURCES, rawSources.length);
-  const packed = new Float32Array(MAX_WATER_SOURCES * 4);
+  const packed = waterPackedScratch;
   for (let i = 0; i < n; i += 1) {
     const source = rawSources[i] || {};
     packed.set([
@@ -8278,10 +8326,10 @@ function updateWaterField(water, dt) {
       Math.max(0.015, Math.min(0.75, Number(source.radius) || 0.1)),
     ], i * 4);
   }
-  gl.uniform1i(gl.getUniformLocation(progWater, 'uSourceCount'), n);
-  gl.uniform1f(gl.getUniformLocation(progWater, 'uRainDrops'), water.outdoor ? Math.max(0, Math.min(1, Number(water.rainAmount ?? rainAmount) || 0)) : 0);
-  gl.uniform1f(gl.getUniformLocation(progWater, 'uRainSeed'), (waterRainSeed = (waterRainSeed + 1) % 4096));
-  gl.uniform4fv(gl.getUniformLocation(progWater, 'uSources[0]'), packed);
+  gl.uniform1i(waterU('uSourceCount'), n);
+  gl.uniform1f(waterU('uRainDrops'), water.outdoor ? Math.max(0, Math.min(1, Number(water.rainAmount ?? rainAmount) || 0)) : 0);
+  gl.uniform1f(waterU('uRainSeed'), (waterRainSeed = (waterRainSeed + 1) % 4096));
+  gl.uniform4fv(waterU('uSources[0]'), packed);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   waterFlip = !waterFlip;
@@ -8465,7 +8513,8 @@ export function r3dFrame(state) {
 
   gl.disable(gl.DEPTH_TEST);
   textSpaceActive = !!state.textSpace;
-  canvas.dataset.sourceRoomMemory=textSpaceActive&&sourceLook.roomMemoryActive?'true':'false';
+  const roomMemoryFlag = textSpaceActive&&sourceLook.roomMemoryActive?'true':'false';
+  if(canvas.dataset.sourceRoomMemory!==roomMemoryFlag)canvas.dataset.sourceRoomMemory=roomMemoryFlag;
   sourceVoidPhysicalActive=!!state.sourceVoidPhysical&&!horizonState.active;
   sourceVoidDawn=Math.max(0,Math.min(1,Number(state.sourceVoidDawn)||0));
   sourceVoidBeacon=state.sourceVoidBeacon&&Number.isFinite(state.sourceVoidBeacon.bearing)?state.sourceVoidBeacon:null;
@@ -8473,7 +8522,7 @@ export function r3dFrame(state) {
   sourceRainShelter=state.sourceRainShelter||null;
   sourceBusLighting=state.sourceBusLighting||null;
   sourceBusInterior=state.sourceBusInterior||null;
-  canvas.dataset.sourceVoidPhysical=sourceVoidPhysicalActive?'true':'false';
+  if(canvas.dataset.sourceVoidPhysical!==(sourceVoidPhysicalActive?'true':'false'))canvas.dataset.sourceVoidPhysical=sourceVoidPhysicalActive?'true':'false';
 
   // Beyond the telephone street, its physical props and recorded splats share
   // one camera, ground and gradually failing image. The building's raymarch
@@ -8526,15 +8575,18 @@ export function r3dFrame(state) {
   // only needs a couple to keep crawling
   const rdSteps = rdWarm < 400 ? 12 : 2;
   rdWarm += rdSteps;
+  const rdPrevU = rdUniformCache.get('uPrev') ?? (rdUniformCache.set('uPrev', gl.getUniformLocation(progRD, 'uPrev')), rdUniformCache.get('uPrev'));
+  const rdFeedU = rdUniformCache.get('uFeed') ?? (rdUniformCache.set('uFeed', gl.getUniformLocation(progRD, 'uFeed')), rdUniformCache.get('uFeed'));
+  const rdKillU = rdUniformCache.get('uKill') ?? (rdUniformCache.set('uKill', gl.getUniformLocation(progRD, 'uKill')), rdUniformCache.get('uKill'));
   for (let i = 0; i < rdSteps; i++) {
     const src = rdFlip ? rdTexB : rdTexA;
     const dst = rdFlip ? rdFboA : rdFboB;
     gl.bindFramebuffer(gl.FRAMEBUFFER, dst);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, src);
-    gl.uniform1i(gl.getUniformLocation(progRD, 'uPrev'), 0);
-    gl.uniform1f(gl.getUniformLocation(progRD, 'uFeed'), 0.037 + state.audio * 0.012);
-    gl.uniform1f(gl.getUniformLocation(progRD, 'uKill'), 0.06 - state.audio * 0.004);
+    gl.uniform1i(rdPrevU, 0);
+    gl.uniform1f(rdFeedU, 0.037 + state.audio * 0.012);
+    gl.uniform1f(rdKillU, 0.06 - state.audio * 0.004);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     rdFlip = !rdFlip;
   }
@@ -8601,7 +8653,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uB3GlassReturned'),state.studioB3GlassReturned?1:0);
   gl.uniform2f(U('uTile'), state.tileW, state.tileH);
   gl.uniform1f(U('uWorldCount'), state.worldCount);
-  gl.uniform3fv(U('uWorldTint[0]'), state.worldTints.flat());
+  gl.uniform3fv(U('uWorldTint[0]'), worldTintsFlat(state.worldTints));
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, rdTex);
   gl.uniform1i(U('uRD'), 0);
@@ -8698,7 +8750,7 @@ export function r3dFrame(state) {
   gl.uniform1f(U('uSurfacesReady'),surfacesManifestation);
   // Sampler types need distinct units even while the asset-dependent branch
   // is disabled. Default zero aliases these arrays with the 2D uRD sampler.
-  for(const[name,unit]of [['uSurfAlbedo',6],['uSurfNormal',7],['uSurfMaterial',8],['uSurfDream',9],['uSurfDreamNext',11],['uSurfMarks',10]])gl.uniform1i(U(name),unit);
+  for(const[name,unit]of SURF_SAMPLER_UNITS)gl.uniform1i(U(name),unit);
   if(surfAlbedoTex&&surfNormalTex&&surfMaterialTex){
     gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfAlbedoTex);gl.uniform1i(U('uSurfAlbedo'),6);
     gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D_ARRAY,surfNormalTex);gl.uniform1i(U('uSurfNormal'),7);
@@ -8734,7 +8786,8 @@ export function r3dFrame(state) {
   gl.uniform1i(U('uChunkCount'), n);
   let hasChunkGlow=false;
   if (n > 0) {
-    const a = new Float32Array(MAX_CHUNKS * 4), c = new Float32Array(MAX_CHUNKS * 3);
+    const a = chunkScratchA, c = chunkScratchC;
+    a.fill(0); c.fill(0);
     for (let i = 0; i < n; i++) {
       const ch = state.chunks[i];
       a.set([ch.x, ch.y, ch.r, ch.act], i * 4);

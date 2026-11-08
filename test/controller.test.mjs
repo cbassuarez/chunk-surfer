@@ -153,8 +153,11 @@ test('capture binds only fresh physical buttons and suppresses the bound press',
   assert.deepEqual(captured, { kind: 'button', id: 'north' });
   assert.equal(controller.controllerRemapAction(), null);
 
-  assert.equal(setControllerBinding('interact', captured), true);
+  const bound = setControllerBinding('interact', captured);
+  assert.equal(bound.ok, true);
+  assert.equal(bound.swapped, 'light', 'the world action that held north swaps to interact\u2019s old south');
   assert.equal(controllerBindings().interact.id, 'north');
+  assert.equal(controllerBindings().light.id, 'south');
   const presses = [];
   controller.gamepadTick({ onPress: (action) => presses.push(action) });
   assert.deepEqual(presses, []);
@@ -206,7 +209,9 @@ test('radio remaps swap only world conflicts and migrate without stealing an exi
   assert.notEqual(migrated.bindings.radio.id,'rightShoulder');
   assert.equal(migrated.bindings.tabNext.id,'rightShoulder');
   setControllerSettings({});
-  assert.equal(setControllerBinding('radio',{kind:'button',id:'rightTrigger'}),true);
+  const remap=setControllerBinding('radio',{kind:'button',id:'rightTrigger'});
+  assert.equal(remap.ok,true);
+  assert.equal(remap.swapped,'recorder','recorder held the right trigger and takes radio\u2019s old shoulder');
   assert.equal(controllerBindings().radio.id,'rightTrigger');
   assert.equal(controllerBindings().recorder.id,'rightShoulder');
   assert.equal(controllerBindings().tabNext.id,'rightShoulder');
@@ -316,5 +321,46 @@ test('the snapshot carries raw values for the settings-screen tester', () => {
   const snap = controller.controllerSnapshot();
   assert.deepEqual(snap.rawValues.axes.slice(0, 4), [0.4, -0.2, 0, 0]);
   assert.equal(snap.rawValues.buttons.south, 1);
+  controller.controllerResetForTest();
+});
+
+test('a tap pressed and released inside one long frame is never lost', () => {
+  controller.controllerResetForTest();
+  controller.setControllerNavigatorForTest(nav([pad('Pad')]));
+  const presses = [];
+  controller.gamepadTick({ onPress: (a) => presses.push(a) });
+  // A hitch: the tap happens entirely between two rendered ticks. The
+  // fixed-rate sampler sees both edges; the next tick must surface the press.
+  controller.controllerPollSample(); // still nothing
+  controller.setControllerNavigatorForTest(nav([pad('Pad', { buttons: { 0: true } })]));
+  controller.controllerPollSample(); // down
+  controller.setControllerNavigatorForTest(nav([pad('Pad')]));
+  controller.controllerPollSample(); // up, all inside the frame
+  controller.gamepadTick({ onPress: (a) => presses.push(a) });
+  assert.ok(presses.includes('interact'), 'the in-frame tap fired');
+  assert.equal(presses.length, 1);
+  controller.controllerResetForTest();
+});
+
+test('tremor suppression folds rapid re-presses into one press', () => {
+  controller.controllerResetForTest();
+  const settings = normalizeControllerSettings({ inputDebounceMs: 120 });
+  controller.setControllerSettings(settings);
+  const presses = [];
+  const press = (v) => {
+    controller.setControllerNavigatorForTest(nav([pad('Pad', { buttons: { 0: { value: v } } })]));
+    controller.gamepadTick({ onPress: (a) => presses.push(a) });
+  };
+  press(1); press(0); press(1); press(0); press(1); press(0);
+  assert.equal(presses.length, 1, 'one press across the stutter');
+  controller.controllerResetForTest();
+});
+
+test('run is a latch by default and an ordinary hold when asked', () => {
+  controller.controllerResetForTest();
+  assert.equal(controllerSettings().runMode, 'latch');
+  const held = normalizeControllerSettings({ runMode: 'hold' });
+  assert.equal(held.runMode, 'hold');
+  assert.equal(normalizeControllerSettings({ runMode: 'nonsense' }).runMode, 'latch', 'unknown modes fall back to the latch');
   controller.controllerResetForTest();
 });

@@ -12,6 +12,9 @@ import {
   validatePaneScoreEnvelope,
   windowMediaContentId,
 } from './platform/window-composition.js';
+import { physicalPrintPixels } from './render/physical-source-print.js';
+import { worldLetteringFont, worldLetteringFontsStatus, ensureWorldLetteringFonts } from './render/world-lettering-fonts.js';
+import { fitWorldLetteringLine } from './render/world-lettering-layout.js';
 
 const canvas=document.getElementById('media');
 const fallback=document.getElementById('fallback');
@@ -19,7 +22,8 @@ const grip=document.getElementById('grip');
 const assetById=new Map((mediaManifest.assets||[]).map((asset)=>[asset.id,asset]));
 const BLUE_NOISE_SIZE=64;
 let envelope=null,assignment=null,source=null,video=null,poster=null;
-let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,raf=0;
+let gl=null,program=null,texture=null,staleTexture=null,outgoingTexture=null,blueNoiseTexture=null,nameTexture=null,paperTexture=null,raf=0;
+let nameReady=false,nameCanvas=null,paperReady=false,paperSerial=0;
 let frontEndNegative=0;
 let frozen=false,scoreSuspended=false,lastSeekAt=0,lastStaleAt=0,staleReady=false,assignmentSerial=0;
 let pendingPlay=null,failedMedia=null,faultRunState=null;
@@ -33,7 +37,7 @@ const pendingScoreEvents=[];
 const vertex=`#version 300 es
 in vec2 p;out vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
 const fragment=`#version 300 es
-precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform float time;uniform int procedural;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int terminal;uniform int transitionMode;uniform float transitionProgress;uniform float negative;uniform vec4 terminalGrid;uniform vec3 faultRun;uniform float terminalTick;uniform float terminalReduced;
+precision highp float;in vec2 uv;out vec4 outColor;uniform sampler2D image;uniform sampler2D staleImage;uniform sampler2D outgoingImage;uniform sampler2D blueNoise;uniform sampler2D nameTexture;uniform sampler2D paperTexture;uniform vec4 crop;uniform vec2 desktopOrigin;uniform vec2 framebufferSize;uniform vec2 blueNoiseSize;uniform float dpr;uniform float time;uniform int procedural;uniform float nameEnabled;uniform float paperEnabled;uniform float coherence;uniform float faultIntensity;uniform float faultTick;uniform float faultSeed;uniform int flashMode;uniform int nvme;uniform int terminal;uniform int transitionMode;uniform float transitionProgress;uniform float negative;uniform vec4 terminalGrid;uniform vec3 faultRun;uniform float terminalTick;uniform float terminalReduced;
 float blueNoiseRank(vec2 at){vec2 cell=mod(floor(at),blueNoiseSize);return texture(blueNoise,(cell+.5)/blueNoiseSize).r;}
 float hash21(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
 // UNDERWATER, LOOKING UP AT THE SURFACE. Bright is the lit surface and the
@@ -51,7 +55,21 @@ float underwaterSurface(vec2 q){
   float base=.02+.05*(1.-q.y);
   return clamp(base+surface*.9+shafts*.65+caustic*.12+bubbles*.5,0.,1.);
 }
-float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;if(procedural==5)return underwaterSurface(q);return .10+.08*sin((q.x+q.y)*30.);}
+float paperClose(vec2 q){
+  float a=.12*sin(time*.6);
+  vec2 p=q-.5;p=mat2(cos(a),-sin(a),sin(a),cos(a))*p;
+  float sheet=(1.-smoothstep(.30,.34,abs(p.x)))*(1.-smoothstep(.38,.42,abs(p.y)));
+  float ruled=0.;
+  for(int i=0;i<5;i++){
+    float y=-.28+float(i)*.14;
+    ruled=max(ruled,smoothstep(.008,0.,abs(p.y-y-.02*sin(p.x*12.+float(i)*2.3))));
+  }
+  float head=smoothstep(.01,0.,abs(p.y-.30-.015*sin(p.x*12.)));
+  float ink=1.-.5*ruled-.42*head;
+  if(nameEnabled>.5){float nm=texture(nameTexture,vec2(q.x*.92+.04,q.y)).r;ink=min(ink,1.-nm*.88);}
+  return clamp(sheet*ink,0.,1.);
+}
+float form(vec2 q){vec2 c=q*2.-1.;if(procedural==1){float iris=1.-smoothstep(.20,.72,length(vec2(c.x,c.y*1.35)));float pupil=1.-smoothstep(.08,.20,length(c));return max(iris*.62,pupil);}if(procedural==2)return 1.-smoothstep(.012,.028,length(c));if(procedural==3)return .025;if(procedural==5)return underwaterSurface(q);if(procedural==6)return paperEnabled>.5?texture(paperTexture,q).r:paperClose(q);return .10+.08*sin((q.x+q.y)*30.);}
 vec3 mediaAt(vec2 q,bool stale){if(procedural>0)return vec3(form(q));return stale?texture(staleImage,q).rgb:texture(image,q).rgb;}
 // A TERMINAL FAILS IN ROWS AND CELLS, NEVER IN PIXELS. The world's bad-sector
 // run (game/source-faults.js) crosses this pane as it crosses its lane: rows
@@ -140,6 +158,59 @@ function makeBlueNoiseTexture(){
   const value=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,value);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,1,1,0,gl.RED,gl.UNSIGNED_BYTE,new Uint8Array([128]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);
   const image=new Image();image.onload=()=>{gl.bindTexture(gl.TEXTURE_2D,value);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,image);};image.onerror=()=>{};image.src=assetUrl('assets/blue-noise-64.png');return value;
 }
+function renderName(name){
+  if(!gl||!nameTexture)return;
+  const text=String(name||'').slice(0,32).trim();
+  if(!text){nameReady=false;return;}
+  if(!nameCanvas){nameCanvas=document.createElement('canvas');nameCanvas.width=256;nameCanvas.height=64;}
+  const ctx=nameCanvas.getContext('2d');if(!ctx)return;
+  ctx.clearRect(0,0,256,64);ctx.fillStyle='#000';ctx.fillRect(0,0,256,64);
+  ctx.fillStyle='#fff';ctx.font='700 22px "Courier New", monospace';ctx.textBaseline='middle';
+  ctx.fillText(text,14,32);
+  gl.bindTexture(gl.TEXTURE_2D,nameTexture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,gl.RED,gl.UNSIGNED_BYTE,nameCanvas);
+  nameReady=true;
+}
+// The name goes onto the page in the world's own hand, in the source print's
+// A note he finds on the ground: the operator's name, then a question that any
+// of his possible voices could ask. No instruction -- just the address and the
+// question, in the world's own hand.
+function paintHaystackNote(c,m,name){
+  const ink='#445a46',inkStrong='#2f4232',rule='#70816b';
+  const text=(str,x,y,size,role='serif',colour=inkStrong)=>{
+    c.font=m.font=worldLetteringFont(size,role);
+    c.fillStyle=colour;m.fillStyle='#fff';
+    c.textBaseline=m.textBaseline='alphabetic';c.textAlign=m.textAlign='left';c.fontKerning='none';
+    c.fillText(str,x,y);m.fillText(str,x,y);
+  };
+  const ruleAt=(y,h=1,colour=rule)=>{c.fillStyle=colour;m.fillStyle='#fff';c.fillRect(40,y,432,h);m.fillRect(40,y,432,h);};
+  text((name||'you')+'\u2009\u2014',40,86,27,'serif',inkStrong);
+  ruleAt(108,1);
+  text('this isn\u2019t going well',40,196,32,'serif',inkStrong);
+  text('is it?',40,244,32,'serif',inkStrong);
+  ruleAt(272,1);
+}
+// Bake a real source page -- the same physical-print pipeline as the in-Source
+// paper: stock, crease/bleed finish, the authored source lines with syntax
+// colours, and the name inked into the margin.
+async function bakePaper(name){
+  const serial=++paperSerial;
+  paperReady=false;
+  const text=String(name||'').slice(0,32).trim();
+  try{
+    if(!worldLetteringFontsStatus().ready)await ensureWorldLetteringFonts({});
+    const bitmap=physicalPrintPixels({width:512,height:512,ground:'#d6d9d0',pigmentOnly:true,
+      finish:{profile:'paper',widthM:0.2,heightM:0.2,seed:'haystack-paper',repeat:false},
+      draw(c,m){paintHaystackNote(c,m,text);}});
+    if(serial!==paperSerial||!gl||!paperTexture)return;
+    gl.bindTexture(gl.TEXTURE_2D,paperTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bitmap.width,bitmap.height,0,gl.RGBA,gl.UNSIGNED_BYTE,bitmap.pixels);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    paperReady=true;
+  }catch(_){/* print pipeline unavailable: the synthetic sheet stays */}
+}
 function initGl(){
   gl=canvas.getContext('webgl2',{alpha:false,depth:true,antialias:false,preserveDrawingBuffer:true});
   if(!gl)return false;
@@ -147,7 +218,7 @@ function initGl(){
   if(!gl.getProgramParameter(program,gl.LINK_STATUS))return false;
   const buffer=gl.createBuffer();mediaQuadVao=gl.createVertexArray();gl.bindVertexArray(mediaQuadVao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
   gl.useProgram(program);const p=gl.getAttribLocation(program,'p');gl.enableVertexAttribArray(p);gl.vertexAttribPointer(p,2,gl.FLOAT,false,0,0);
-  texture=makeMediaTexture();staleTexture=makeMediaTexture();outgoingTexture=makeMediaTexture();blueNoiseTexture=makeBlueNoiseTexture();return true;
+  texture=makeMediaTexture();staleTexture=makeMediaTexture();outgoingTexture=makeMediaTexture();blueNoiseTexture=makeBlueNoiseTexture();nameTexture=makeMediaTexture();paperTexture=makeMediaTexture();return true;
 }
 function assetUrl(path){return new URL(`./${String(path||'').replace(/^\/+/, '')}`,document.baseURI||location.href).href;}
 function clearEventTimers(){for(const timer of eventTimers)clearTimeout(timer);eventTimers.clear();pendingScoreEvents.length=0;}
@@ -191,6 +262,8 @@ function loadAssignment(next,{transition:mode='cut',durationMs=0}={}){
   beginTransition(mode,durationMs);destroySource();assignment=next;
   videoClock?.assign(next,Date.now());
   const serial=assignmentSerial,content=assignment.content||{};
+  renderName(content.name||null);
+  if(content.preset==='paper-close')void bakePaper(content.name||null);
   document.documentElement.dataset.contentId=windowMediaContentId(content);
   if(content.kind==='snapshot'){
     const initialToken=envelope?.score?.initial?.content?.token;
@@ -309,7 +382,7 @@ function draw(at){
     const transitionState=transitionUniform(clockNow);
     gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(program,'image'),0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,staleTexture);gl.uniform1i(gl.getUniformLocation(program,'staleImage'),1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,outgoingTexture);gl.uniform1i(gl.getUniformLocation(program,'outgoingImage'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,blueNoiseTexture);gl.uniform1i(gl.getUniformLocation(program,'blueNoise'),3);
     gl.uniform4f(gl.getUniformLocation(program,'crop'),Number(assignment?.crop?.x)||0,Number(assignment?.crop?.y)||0,Number(assignment?.crop?.w)||1,Number(assignment?.crop?.h)||1);gl.uniform2f(gl.getUniformLocation(program,'desktopOrigin'),Number(envelope?.desktopOrigin?.x)||0,Number(envelope?.desktopOrigin?.y)||0);gl.uniform2f(gl.getUniformLocation(program,'framebufferSize'),w,h);gl.uniform2f(gl.getUniformLocation(program,'blueNoiseSize'),BLUE_NOISE_SIZE,BLUE_NOISE_SIZE);gl.uniform1f(gl.getUniformLocation(program,'dpr'),dpr);gl.uniform1f(gl.getUniformLocation(program,'negative'),frontEndNegative);
-    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:preset==='underwater-surface'?5:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'time'),(envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/1000);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);const grid=envelope?.fault?.grid;gl.uniform4f(gl.getUniformLocation(program,'terminalGrid'),Number(grid?.originU)||.02,Number(grid?.originV)||.03,Number(grid?.cellU)||.0216,Number(grid?.rowV)||.0764);gl.uniform3f(gl.getUniformLocation(program,'faultRun'),faultRunState?(clockNow-faultRunState.startedAt)/1000:-1,faultRunState?faultRunState.durationMs/1000:1,faultRunState?.direction||1);gl.uniform1f(gl.getUniformLocation(program,'terminalTick'),envelope?.reducedMotion?0:Math.floor(clockNow/90));gl.uniform1f(gl.getUniformLocation(program,'terminalReduced'),envelope?.reducedMotion||envelope?.fault?.flashMode==='off'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
+    const preset=assignment?.content?.preset,mode=envelope?.fault?.flashMode;gl.uniform1i(gl.getUniformLocation(program,'procedural'),preset==='iris-abstraction'?1:preset==='distant-dot'?2:preset==='empty-field'?3:preset==='underwater-surface'?5:preset==='paper-close'?6:assignment?.content?.kind==='procedural'?4:0);gl.uniform1f(gl.getUniformLocation(program,'time'),(envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/1000);gl.uniform1f(gl.getUniformLocation(program,'nameEnabled'),nameReady?1:0);gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,nameTexture);gl.uniform1i(gl.getUniformLocation(program,'nameTexture'),4);gl.uniform1f(gl.getUniformLocation(program,'paperEnabled'),paperReady?1:0);gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,paperTexture);gl.uniform1i(gl.getUniformLocation(program,'paperTexture'),5);gl.uniform1f(gl.getUniformLocation(program,'coherence'),envelope?.coherent?1:0);gl.uniform1f(gl.getUniformLocation(program,'faultIntensity'),Math.max(0,Math.min(1,Number(envelope?.fault?.intensity)||0)));gl.uniform1f(gl.getUniformLocation(program,'faultTick'),Math.floor((envelope?.reducedMotion?Number(envelope?.score?.epochMs)||0:clockNow)/cadence));gl.uniform1f(gl.getUniformLocation(program,'faultSeed'),Number(envelope?.fault?.seed)||0);gl.uniform1i(gl.getUniformLocation(program,'flashMode'),mode==='off'?2:mode==='reduced'?1:0);gl.uniform1i(gl.getUniformLocation(program,'nvme'),envelope?.shader==='nvme-sector'?1:0);gl.uniform1i(gl.getUniformLocation(program,'terminal'),envelope?.shader==='terminal'?1:0);const grid=envelope?.fault?.grid;gl.uniform4f(gl.getUniformLocation(program,'terminalGrid'),Number(grid?.originU)||.02,Number(grid?.originV)||.03,Number(grid?.cellU)||.0216,Number(grid?.rowV)||.0764);gl.uniform3f(gl.getUniformLocation(program,'faultRun'),faultRunState?(clockNow-faultRunState.startedAt)/1000:-1,faultRunState?faultRunState.durationMs/1000:1,faultRunState?.direction||1);gl.uniform1f(gl.getUniformLocation(program,'terminalTick'),envelope?.reducedMotion?0:Math.floor(clockNow/90));gl.uniform1f(gl.getUniformLocation(program,'terminalReduced'),envelope?.reducedMotion||envelope?.fault?.flashMode==='off'?1:0);gl.uniform1i(gl.getUniformLocation(program,'transitionMode'),transitionState.mode);gl.uniform1f(gl.getUniformLocation(program,'transitionProgress'),transitionState.progress);gl.drawArrays(gl.TRIANGLES,0,6);
     architecture?.draw({width:w,height:h,dpr,desktopOrigin:envelope?.desktopOrigin||{x:0,y:0},blueNoiseTexture,coherence:envelope?.coherent?1:0,negative:frontEndNegative});
   }else if(source?.src){fallback.style.display='block';fallback.src=source.src;}
   raf=requestAnimationFrame(draw);

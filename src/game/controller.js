@@ -58,8 +58,65 @@ let calibration = null; // sampled rest state, subtracted from the live axes
 let calibrationFrames = 0;
 let triggerLatched = new Set(); // triggers hold their on/off state: no flicker
 let rawValues = {}; // raw axis/button values for the settings screen's tester
+const lastEmitted = new Map(); // per-action emit clock, for tremor suppression
 const CALIBRATION_FRAMES = 30;
 const connectionListeners = new Set();
+// The sub-frame sampler. The browser refreshes gamepad state only once per
+// rendered frame, so a tap pressed and released INSIDE one long frame (a
+// hitch, a shader compile, a GC) is simply lost. A small fixed-rate poller
+// accumulates edges between frames; gamepadTick drains the accumulation, so
+// no press can die inside a frame. One merged buffer, no re-entrancy.
+let accumulated = { padId: null, raw: null, axes: null, rawAxes: null, pressed: new Set(), released: new Set() };
+
+/** The interval body: sample the hardware and merge into the accumulator.
+ *  Also exposed for tests, which simulate hitches by calling it directly. */
+export function controllerPollSample() {
+  settings = normalizeControllerSettings(controllerSettings());
+  // A hidden page does not render, so edges accumulated now would fire as
+  // stale presses on resume. Drop them.
+  if (typeof document !== 'undefined' && document.hidden) {
+    accumulated = { padId: accumulated.padId, raw: accumulated.raw, axes: accumulated.axes, pressed: new Set(), released: new Set() };
+    return;
+  }
+  const list = pads();
+  const pad = selectPad(list);
+  if (!pad) {
+    if (accumulated.padId) {
+      accumulated = { padId: null, raw: null, axes: null, pressed: new Set(), released: new Set() };
+      for (const listener of connectionListeners) listener({ connected: false, name: '' });
+    }
+    return;
+  }
+  const rawPadId = String(pad?.id || '');
+  if (accumulated.padId !== rawPadId) {
+    accumulated = { padId: rawPadId, raw: null, axes: null, pressed: new Set(), released: new Set() };
+    deviceLayout = deviceLayoutFor(rawPadId);
+    calibration = null;
+    calibrationFrames = 0;
+    triggerLatched = new Set();
+    for (const listener of connectionListeners) listener({ connected: !!pad, name: normalizePadName(pad) });
+  }
+  sampleCalibration(pad);
+  const raw = rawButtons(pad);
+  if (accumulated.raw) {
+    for (const token of raw) if (!accumulated.raw.has(token)) accumulated.pressed.add(token);
+    for (const token of accumulated.raw) if (!raw.has(token)) accumulated.released.add(token);
+  } else {
+    for (const token of raw) accumulated.pressed.add(token);
+  }
+  accumulated.raw = raw;
+  accumulated.axes = axesFor(pad);
+  accumulated.rawAxes = [...(pad?.axes || [])];
+  const values = {};
+  pad?.buttons?.forEach((entry, index) => {
+    const id = physicalButtonId(deviceLayout, index);
+    if (id) values[id] = Number(entry?.value || (entry?.pressed ? 1 : 0) || 0);
+  });
+  for (const [id, axisIndex] of deviceLayout?.triggerAxes || []) {
+    values[id] = Number(pad?.axes?.[axisIndex] || 0) * (deviceLayout.invert.has(`a${axisIndex}`) ? -1 : 1);
+  }
+  accumulated.rawButtonValues = values;
+}
 
 export function onControllerConnection(callback) {
   connectionListeners.add(callback);
@@ -122,18 +179,8 @@ function physicalButtonId(layout, index) {
 // and off a dozen times a second on a half-pulled pull. Latched edges fix it:
 // once on, it stays on until the value falls clearly back. The physical value
 // comes from the device's own row (trigger-as-axis) or the bound button.
-function triggerHeld(layout, pad, id, threshold) {
-  const axisIndex = layout?.triggerAxes?.get(id);
-  let value;
-  if (axisIndex != null) {
-    value = Number(pad?.axes?.[axisIndex] || 0) * (layout.invert.has(`a${axisIndex}`) ? -1 : 1);
-  } else {
-    let index = null;
-    for (const [i, semantic] of layout?.buttons || []) if (semantic === id) { index = i; break; }
-    if (index == null) index = id === 'leftTrigger' ? 6 : 7;
-    const entry = pad?.buttons?.[index];
-    value = Number(entry?.value || (entry?.pressed ? 1 : 0) || 0);
-  }
+function triggerHeld(layout, rawValues, id, threshold) {
+  const value = Number(rawValues?.[id] || 0);
   const on = value >= threshold;
   const off = value < threshold * 0.82;
   if (on) triggerLatched.add(id);
@@ -248,12 +295,12 @@ function actionPressed(action, buttons, pad, rawButtonsSet) {
   const binding = controllerActionBinding(action);
   if (binding?.kind !== 'button') return false;
   const id = binding.id;
-  if (id === 'leftTrigger' || id === 'rightTrigger') return triggerHeld(deviceLayout, pad, id, settings.triggerThreshold);
+  if (id === 'leftTrigger' || id === 'rightTrigger') return triggerHeld(deviceLayout, accumulated.rawButtonValues, id, settings.triggerThreshold);
   return buttons.has(id);
 }
 
-function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = [], independentMotion = false) {
-  const axes = axesWithDpad(axesFor(pad), buttons);
+function actionsFor(pad, menuContext, buttons, extraActions = [], independentMotion = false, sampledAxes = null) {
+  const axes = axesWithDpad(sampledAxes || axesFor(pad), buttons);
   const actions = independentMotion && !menuContext ? new Set() : movementFromAxes(axes, buttons);
   const buttonActions = menuContext
     ? [...new Set([...MENU_ACTIONS, ...extraActions])]
@@ -264,7 +311,7 @@ function actionsFor(pad, menuContext, buttons = rawButtons(pad), extraActions = 
   return { axes, buttons, actions };
 }
 
-function updateLastState(pad, buttons, axes, actions) {
+function updateLastState(pad, buttons, axes, actions, pressedEdges, releasedEdges) {
   const name = normalizePadName(pad);
   const family = settings.family === 'auto' ? controllerFamilyFromName(name) : settings.family;
   lastState = {
@@ -274,8 +321,8 @@ function updateLastState(pad, buttons, axes, actions) {
     family,
     axes,
     buttons: new Set(buttons),
-    pressed: new Set([...buttons].filter((token) => !previousButtons.has(token))),
-    released: new Set([...previousButtons].filter((token) => !buttons.has(token))),
+    pressed: new Set([...(pressedEdges || []), ...[...buttons].filter((token) => !previousButtons.has(token))]),
+    released: new Set([...(releasedEdges || []), ...[...previousButtons].filter((token) => !buttons.has(token))]),
     actions: new Set(actions),
   };
   setActiveInputDevice(null, { controllerFamily: family, viable: true });
@@ -299,6 +346,7 @@ function releaseAll(onRelease) {
   calibration = null;
   calibrationFrames = 0;
   triggerLatched = new Set();
+  accumulated = { padId: null, raw: null, axes: null, rawAxes: null, pressed: new Set(), released: new Set() };
   setActiveInputDevice('keyboard', { viable: false, controllerFamily: 'generic' });
   lastState = emptyState();
 }
@@ -359,30 +407,24 @@ export function cancelControllerRemap() { capture = null; }
 
 export function gamepadTick({ menuContext = false, independentMotion = false, modalActions = [], onPress = () => {}, onRelease = () => {} } = {}) {
   settings = normalizeControllerSettings(controllerSettings());
-  const list = pads();
-  const pad = selectPad(list);
-  if (!pad) {
+  // The sampler owns the hardware. Sampling here too is harmless — the
+  // interval merges the same state and adds no edges — and it keeps the tick
+  // correct for callers without the interval.
+  controllerPollSample();
+  if (!accumulated.padId) {
     releaseAll(onRelease);
     return;
   }
+  const pad = { id: accumulated.padId, axes: [], buttons: [] };
   padName = normalizePadName(pad);
-  rawPadId = String(pad?.id || '');
-  if (rawPadId !== lastRawPadId) {
-    lastRawPadId = rawPadId;
-    deviceLayout = deviceLayoutFor(rawPadId);
-    calibration = null;
-    calibrationFrames = 0;
-    triggerLatched = new Set();
-    for (const listener of connectionListeners) listener({ connected: !!pad, name: pad ? normalizePadName(pad) : '' });
-  }
-  sampleCalibration(pad);
-  const raw = rawButtons(pad);
-  rawValues = { axes: [...(pad?.axes || [])], buttons: {} };
-  pad?.buttons?.forEach((button, index) => {
-    const id = physicalButtonId(deviceLayout, index);
-    if (id) rawValues.buttons[id] = Number(button?.value || 0);
-  });
-  if (raw.size || rawActivity(pad)) {
+  rawPadId = accumulated.padId;
+  const raw = accumulated.raw || new Set();
+  const freshPressed = new Set(accumulated.pressed);
+  const freshReleased = new Set(accumulated.released);
+  accumulated.pressed.clear();
+  accumulated.released.clear();
+  rawValues = { axes: [...(accumulated.rawAxes || [])], buttons: { ...(accumulated.rawButtonValues || {}) } };
+  if (raw.size) {
     setActiveInputDevice('controller', {
       viable: true,
       controllerFamily: settings.family === 'auto' ? controllerFamilyFromName(rawPadId || padName) : settings.family,
@@ -390,11 +432,20 @@ export function gamepadTick({ menuContext = false, independentMotion = false, mo
   }
   for (const token of [...suppressedButtons]) if (!raw.has(token)) suppressedButtons.delete(token);
   const buttons = new Set([...raw].filter((token) => !suppressedButtons.has(token)));
-  const { axes, actions } = actionsFor(pad, menuContext, buttons, modalActions, independentMotion);
-  updateLastState(pad, buttons, axes, actions);
+  const { axes, actions } = actionsFor(pad, menuContext, buttons, modalActions, independentMotion, accumulated.axes);
+  // A button pressed AND released inside this frame is not down now, but its
+  // edge is real: its action must exist for exactly this tick.
+  const buttonActions = menuContext
+    ? [...new Set([...MENU_ACTIONS, ...modalActions])]
+    : [...new Set([...WORLD_ACTIONS, ...modalActions])];
+  for (const action of buttonActions) {
+    const binding = controllerActionBinding(action);
+    if (binding?.kind === 'button' && freshPressed.has(binding.id)) actions.add(action);
+  }
+  updateLastState(pad, buttons, axes, actions, freshPressed, freshReleased);
 
   if (capture) {
-    const fresh = [...raw].find((token) => !previousButtons.has(token) && CONTROLLER_BUTTON_IDS.includes(token));
+    const fresh = [...freshPressed].find((token) => CONTROLLER_BUTTON_IDS.includes(token));
     previousButtons = raw;
     previous = new Set();
     if (fresh) {
@@ -409,6 +460,14 @@ export function gamepadTick({ menuContext = false, independentMotion = false, mo
   const now = performance.now();
   for (const action of actions) {
     if (!previous.has(action)) {
+      // Tremor suppression: the same action re-pressed inside the debounce
+      // window is one press, not a stutter.
+      const debounce = settings.inputDebounceMs || 0;
+      if (debounce > 0 && now - (lastEmitted.get(action) || -Infinity) < debounce) {
+        repeatedAt.set(action, now + 360);
+        continue;
+      }
+      lastEmitted.set(action, now);
       onPress(action, false);
       repeatedAt.set(action, now + 360);
     } else if (menuContext && REPEATABLE.has(action) && now >= (repeatedAt.get(action) || Infinity)) {
@@ -440,6 +499,13 @@ export function controllerResetForTest() {
   activePadIndex = -1;
   capture = null;
   navigatorOverride = null;
+  lastRawPadId = '';
+  deviceLayout = null;
+  calibration = null;
+  calibrationFrames = 0;
+  triggerLatched = new Set();
+  lastEmitted.clear();
+  accumulated = { padId: null, raw: null, axes: null, rawAxes: null, pressed: new Set(), released: new Set() };
   settings = normalizeControllerSettings();
   setBindingControllerSettings(settings);
   lastState = emptyState();

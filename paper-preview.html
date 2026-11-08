@@ -1,0 +1,48 @@
+<!doctype html><html><body style="margin:0;background:#05060a;display:flex;gap:12px;align-items:flex-start">
+<canvas id="c" width="512" height="512" style="image-rendering:pixelated;border:1px solid #222"></canvas>
+<pre id="info" style="color:#9fb;font:12px monospace;white-space:pre-wrap"></pre>
+<script type="module">
+import { physicalPrintPixels } from '/src/render/physical-source-print.js';
+import { worldLetteringFont, ensureWorldLetteringFonts } from '/src/render/world-lettering-fonts.js';
+const info = document.getElementById('info');
+const NAME = 'seb';
+function paintNote(c, m, name) {
+  const ink='#445a46', inkStrong='#2f4232', rule='#70816b';
+  const text=(str,x,y,size,role='mono',colour=ink)=>{
+    c.font=m.font=worldLetteringFont(size,role);
+    c.fillStyle=colour;m.fillStyle='#fff';
+    c.textBaseline=m.textBaseline='alphabetic';c.textAlign=m.textAlign='left';c.fontKerning='none';
+    c.fillText(str,x,y);m.fillText(str,x,y);
+  };
+  const ruleAt=(y,h=2,colour=rule)=>{c.fillStyle=colour;m.fillStyle='#fff';c.fillRect(40,y,432,h);m.fillRect(40,y,432,h);};
+  text('ELLERY WORKS · EQUIPMENT ISSUE / RETURN',40,64,21,'monoBold');
+  ruleAt(82,2);
+  text('ITEM 1 · RECORDER',52,126,19,'mono');
+  text('ITEM 2 · HEADPHONES',52,160,19,'mono');
+  text('ITEM 3 · TORCH',52,194,19,'mono');
+  ruleAt(222,1);
+  text('SIGN AFTER COUNT',40,282,34,'serif',inkStrong);
+  ruleAt(300,1);
+  text('CONTRACTOR · '+(name||'—'),52,356,22,'serif',inkStrong);
+}
+try {
+  await ensureWorldLetteringFonts({});
+  info.textContent += 'fonts: ready\n';
+  const bitmap = physicalPrintPixels({
+    width: 512, height: 512, ground: '#d6d9d0', pigmentOnly: true,
+    finish: { profile: 'paper', widthM: 0.2, heightM: 0.2, seed: 'haystack-paper', repeat: false },
+    draw(cc, mm) { paintNote(cc, mm, NAME); },
+  });
+  const rgba = new Uint8ClampedArray(512 * 512 * 4);
+  for (let i = 0; i < 512 * 512; i++) {
+    rgba[i*4] = bitmap.pixels[i*4]; rgba[i*4+1] = bitmap.pixels[i*4+1]; rgba[i*4+2] = bitmap.pixels[i*4+2]; rgba[i*4+3] = 255;
+  }
+  document.getElementById('c').getContext('2d').putImageData(new ImageData(rgba, 512, 512), 0, 0);
+  info.textContent += 'baked: ' + bitmap.width + 'x' + bitmap.height + '\nname: ' + NAME;
+  window.__done = true;
+} catch (e) {
+  info.textContent += 'ERROR: ' + (e?.stack || e);
+  window.__done = false;
+}
+</script>
+</body></html>
