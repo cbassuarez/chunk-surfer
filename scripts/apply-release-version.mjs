@@ -92,7 +92,9 @@ rewrite('src-tauri/Cargo.toml', (source) => {
 
 // Cargo.lock: the entry for the workspace's own package.
 rewrite('src-tauri/Cargo.lock', (source) => {
-  const pattern = /(name = "chunk-surfer"\nversion = )"[^"]+"/;
+  // Git for Windows checks text files out CRLF; the lockfile match must accept
+  // either ending or the Windows release job fails at the first rewrite.
+  const pattern = /(name = "chunk-surfer"\r?\nversion = )"[^"]+"/;
   if (!pattern.test(source)) throw new Error('no chunk-surfer package entry');
   return source.replace(pattern, `$1"${version}"`);
 });
@@ -111,7 +113,7 @@ function ensureChangelogSection() {
   const file = 'CHANGELOG.md';
   const source = readFileSync(file, 'utf8');
   const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  if (new RegExp(`(^|\\n)## ${escaped}(?:\\s|$)`).test(source)) return;
+  if (new RegExp(`(^|\\r?\\n)## ${escaped}(?:\\s|$)`).test(source)) return;
   const stub = [
     `## ${version}`,
     '',
@@ -121,7 +123,7 @@ function ensureChangelogSection() {
     'before publishing this version.',
     '',
   ].join('\n');
-  const firstSection = source.indexOf('\n## ');
+  const firstSection = source.search(/\r?\n## /);
   const next =
     firstSection === -1
       ? source.replace(/\s*$/, `\n\n${stub}`)

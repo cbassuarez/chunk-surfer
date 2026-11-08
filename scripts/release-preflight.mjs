@@ -27,7 +27,7 @@ const surfacesManifest = JSON.parse(readFileSync('public/assets/surfaces/surface
 
 const packageLock=JSON.parse(readFileSync('package-lock.json','utf8'));
 const cargoLock=readFileSync('src-tauri/Cargo.lock','utf8');
-const cargoLockVersion=cargoLock.match(/\[\[package\]\]\nname = "chunk-surfer"\nversion = "([^"]+)"/)?.[1];
+const cargoLockVersion=cargoLock.match(/\[\[package\]\]\r?\nname = "chunk-surfer"\r?\nversion = "([^"]+)"/)?.[1];
 const versions = { package: pkg.version, packageLock: packageLock.version, packageLockRoot: packageLock.packages?.['']?.version, tauri: tauri.version, cargo: cargoVersion, cargoLock: cargoLockVersion };
 for (const [source, version] of Object.entries(versions)) {
   if (version !== expectedVersion) {
