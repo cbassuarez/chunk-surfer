@@ -1,0 +1,8 @@
+[toolchain]
+# Pinned to the toolchain the shell is developed against. The release workflow
+# used rust-toolchain@stable, and Rust 1.99's Windows MSVC link step rejected
+# the chunk_surfer_lib rlib ("invalid library format") where 1.98.1 links the
+# same tree cleanly. Bump deliberately, with a green Windows release run.
+channel = "1.98.1"
+targets = ["aarch64-apple-darwin", "x86_64-pc-windows-msvc", "x86_64-unknown-linux-gnu"]
+profile = "minimal"

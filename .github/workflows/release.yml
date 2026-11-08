@@ -157,7 +157,10 @@ jobs:
               env_file.write(f'CHUNK_SURFER_LETTERING_PYTHON={interpreter}\n')
           PYTHON
 
-      - uses: dtolnay/rust-toolchain@stable
+      # Matches src-tauri/rust-toolchain.toml: Rust 1.99's Windows MSVC
+      # link step rejected the chunk_surfer_lib rlib where 1.98.1 links the
+      # same tree cleanly (LNK4003 + unresolved chunk_surfer_lib::run).
+      - uses: dtolnay/rust-toolchain@1.98.1
         with:
           targets: ${{ matrix.rust_target }}
 
