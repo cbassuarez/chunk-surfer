@@ -21,6 +21,7 @@ import { access, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { ROOT, citationReader } from '../shared.mjs';
+import { HORIZON_APPROACH } from '../../../src/data/horizon-approach.js';
 import { auditById } from '../registry.mjs';
 import { PUZZLES } from '../puzzles/audit.mjs';
 
@@ -487,8 +488,8 @@ export const STAGES = Object.freeze([
     ],
     phases:[P.HORIZON],finale:[S.HORIZON],objectives:['horizon-walk'],checkpoints:[],
     next:[{to:'bell-passage',when:'accept the earned offer and walk toward the tower',branch:true},{to:'chapel-outskirts',when:'walk onward after the truth'}],
-    span:()=>148,
-    measure:()=>[['Initial approach','74 m'],['Roads','7'],['Real debris instances','118']],
+    span:()=>HORIZON_APPROACH.variants.closed.startMetres/CELL,
+    measure:()=>[['Initial approach',`${number(HORIZON_APPROACH.variants.closed.startMetres)} m`],['Roads',String(HORIZON_APPROACH.variants.closed.roads)],['Real debris instances',String(HORIZON_APPROACH.debris.count)]],
     cites:[
       ['The interruption',at(MAIN,'function beginHorizonInterruption(')],
       ['The far edge',at(RUNTIME,'horizonApproachDue:()=>')],
@@ -743,7 +744,7 @@ function layout(stages, k) {
   const contactEnd = place(['contact'], 'contact', forkAt + MOMENT / 2);
   const tapeEnd = place(['grey-doors', 'wrong-return', 'catch', 'source-drive', 'nothing', 'arrival-night', 'tape'], 'shared', awayAt);
   const tapeStart = tapeEnd - (by.get('tape').length || 0);
-  const offerAt = tapeStart + 148;
+  const offerAt = tapeStart + (by.get('tape').length || 0);
   // The home errand is a side trip listed below, not extra distance between the
   // tape and the chapel. The strip keeps the main road's physical length.
   const chapelEnd = place(['chapel-outskirts', 'chapel-station', 'chapel-door'], 'shared', tapeEnd);

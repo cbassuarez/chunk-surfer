@@ -29,7 +29,7 @@ const delay = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 const url = new URL(base);
 for (const [key, value] of Object.entries({ firstStrikeReview: '1', silentReview: '1', mode: 'story', skiptut: '1', nodisplaynotice: '1', skipwarn: '1', nomic: '1', sam: '0' })) url.searchParams.set(key, value);
 report.url = url.href;
-const args = ['--mute-audio', '--no-first-run', '--no-default-browser-check', '--autoplay-policy=user-gesture-required',
+const args = ['--mute-audio', '--no-first-run', '--no-default-browser-check', '--autoplay-policy=no-user-gesture-required',
   '--disable-background-timer-throttling', '--disable-renderer-backgrounding'];
 if (process.platform === 'darwin') args.push('--use-angle=metal');
 if (process.env.SOURCE_HUSH_CAPTURE_ANGLE) args.push(`--use-angle=${process.env.SOURCE_HUSH_CAPTURE_ANGLE}`);
@@ -45,7 +45,7 @@ async function inspect() {
       status: value.status, elapsed: value.elapsed, grace: value.grace, recovery: value.recovery || null,
       contactHeld: value.contactHeld || null, hush: value.hush ? { x: value.hush.x, z: value.hush.z, feet: value.hush.feet,
         active: value.hush.active, mode: value.hush.mode, defeated: value.hush.defeated, density: value.hush.density } : null } : null;
-    return { wall: performance.now(), scene: state.scene, run: state.run, paused: state.paused, foreground: state.foreground,
+    return { wall: performance.now(), scene: state.scene, dialogue:top?.sourceContactDialogue?top.view?.():null,run: state.run, paused: state.paused, foreground: state.foreground,
       focused: document.hasFocus(), visibility: document.visibilityState, camera: state.camera, output: state.output,
       contact: { ...state.contact, checkpoint: physical(state.contact?.checkpoint) }, continuation: physical(live),
       recording: state.recording,
@@ -158,6 +158,8 @@ try {
     };
     const consoleError=console.error.bind(console);
     console.error=(...args)=>{if(args[0]==='boot failed')window.__sourceHushCaptureBootError=String(args[1]?.stack||args[1]);consoleError(...args);};
+    addEventListener('error',event=>{if(event.error)window.__sourceHushCaptureBootError=String(event.error.stack||event.message);});
+    addEventListener('unhandledrejection',event=>{window.__sourceHushCaptureBootError=String(event.reason?.stack||event.reason);});
     window.__sourceHushCaptureContexts = [];
     const original = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (kind, ...options) {
@@ -182,6 +184,7 @@ try {
     await page.evaluate(async chapter => { await document.querySelector('#first-strike-review').reviewApi.contactFixture(chapter, false, { captured: true }); }, chapterId);
     const captured = await until(value => value.scene?.startsWith('source-contact:'), `Source ${chapterId} capture conversation`, { chapter });
     chapter.captured = captured;
+    await delay(1200);
     assert.equal(captured.contact.status.chapter, chapterId); assert.equal(captured.contact.status.activeBattleId, null);
     assert.equal(captured.contact.checkpoint.recovery?.reason, 'hush-pressure');
     assert.equal(captured.contact.checkpoint.recovery?.contact, 'pending');

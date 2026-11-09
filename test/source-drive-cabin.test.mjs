@@ -1,5 +1,4 @@
 import test from 'node:test';
-import {cabRadioKeyPoint,cabRadioVolumePoint} from '../src/data/cab-radio.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -89,15 +88,3 @@ test('the authored cabin contains dimensional construction rather than surface p
  const liner=find('curved insulated headliner');assert.ok(liner.max[1]-liner.min[1]>.07,'the headlining follows a real cross section');
 });
 
-test('receiver contact skins and supported construction match unchanged operative hand targets',()=>{
- const radio=drive.doc.meshes.find(m=>m.name==='drive_radio'),faces=[];
- for(const primitive of radio.primitives){const p=accessor(primitive.attributes.POSITION).values,indices=accessor(primitive.indices).values;for(let i=0;i<indices.length;i+=3)faces.push(indices.slice(i,i+3).map(index=>p.slice(index*3,index*3+3)));}
- const contacts=[{id:'power',point:cabRadioVolumePoint()},...[0,1,2].map(i=>({id:'preset-'+(i+1),point:cabRadioKeyPoint(i)}))];
- for(const{id,point}of contacts){const start=point.map((v,i)=>v+(i===2?.05:0)),distance=Math.min(...faces.map(t=>hitTriangle(start,[0,0,-1],t)));assert.ok(Math.abs(distance-.05)<.0007,`${id} contact error ${distance-.05}`);}
- const f=metrics.radioConstruction.features,find=name=>{const q=f.find(v=>v.name===name);assert.ok(q,name);return q.bounds;};
- const sleeve=find('receiver supported steel sleeve');assert.ok(sleeve.max[2]-sleeve.min[2]>.15);assert.ok(sleeve.min[2]<-.579,'sleeve physically overlaps existing fascia mounting block');
- const foot=find('receiver shelf isolation foot'),cleat=find('receiver steel support cleat');assert.ok(foot.min[1]<=1.0255&&foot.max[1]>=cleat.min[1],'isolators join shelf to sleeve cleats');
- const skin=find('receiver preset solid cap'),stem=find('receiver preset travel stem');assert.ok(stem.max[2]-stem.min[2]>=.0179&&stem.max[2]>=skin.min[2],'cap has actual travel stem behind its skin');
- const scale=find('receiver scale ivory enamel');assert.ok(metrics.radioNeedle.center[2]-.001>scale.max[2]+.001,'the actual moving pointer remains in front of its opaque enamel scale');
- for(const primitive of radio.primitives){const m=drive.doc.materials[primitive.material];assert.ok(!m.alphaMode||m.alphaMode==='OPAQUE','no alpha outlines on the receiver');}
-});

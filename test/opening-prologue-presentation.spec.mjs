@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as scenes from '../src/game/scenes.js';
-import {makeOpeningPrologueScene,openingPrologueChoiceWindow,openingPrologueActFrame} from '../src/game/opening-prologue-scene.js';
+import {makeOpeningPrologueScene,openingPrologueActFrame,openingPrologueCaptionPlacement} from '../src/game/opening-prologue-scene.js';
+import {cinematicConversationLayout} from '../src/render/cinematic-conversation.js';
+import {uiSetLayoutSize} from '../src/render/ui.js';
 import {openingPrologueSpeechActive} from '../src/audio/opening-prologue-audio.js';
 import {OPENING_PROLOGUE} from '../src/data/opening-prologue.js';
 import {openingHorizonFrame} from '../src/render/opening-omen.js';
@@ -14,7 +16,8 @@ import {sourceMaterialRecordedInk,sourcePrismaticInk} from '../src/render/source
 
 function host(){
   scenes.clear();const calls={omen:[],done:0,look:[]};
-  const drive={start(){},update(){},snapshot:()=>({driveState:{heading:0}}),
+  let elapsed=0,paused=false;
+  const drive={start(){},update(dt){if(!paused)elapsed+=dt;},setPaused(value){paused=!!value;},snapshot:()=>({timeSec:elapsed,paused,driveState:{heading:0}}),
     frame:()=>({scene:{eye:[-8,1.6,-600]},look:{yaw:0,pitch:-.035}}),
     lookAngles:()=>({yaw:0,pitch:-.035}),lookBy:(yaw,pitch)=>{calls.look.push([yaw,pitch]);return true;}};
   let scene;
@@ -86,13 +89,44 @@ test('the music stays ducked for the actual voice handle, including a long line 
 
 test('every ending question stays wholly readable and selectable at enlarged text scale',()=>{
   for(const options of [OPENING_PROLOGUE.nodes.fate.choices,OPENING_PROLOGUE.nodes.file.choices])for(let selected=0;selected<options.length;selected++){
-    const window=openingPrologueChoiceWindow(options,20,12.4,selected);
-    assert.ok(window.blocks.some(row=>row.k===selected));
-    assert.ok(window.blocks.every(row=>row.rows.every(text=>text.length<=18)));
-    const rows=window.blocks.reduce((sum,block)=>sum+block.rows.length*1.22+.2,0);
-    assert.ok(rows<=12.4);
-    assert.equal(window.before+window.blocks.length+window.after,options.length);
+    const layout=cinematicConversationLayout({history:[{who:'unknown',text:'What else?'}],pending:{kind:'branch',index:selected,options}},
+      {cols:76,rows:24,prompt:'UP/DOWN SELECT · ENTER REPLY · Q REVIEW'});
+    assert.equal(layout.selectedChoiceComplete,true);
+    assert.equal(layout.choices.rows.filter(row=>row.kind==='choice'&&row.selected).map(row=>row.bodyText).join(' ').replace(/\s+/g,' ').trim(),options[selected].text);
+    assert.ok((layout.y+layout.height)*layout.scale<=23);
   }
+});
+
+test('Cinematic anchors preserve the cab hands and the upper sky/school picture',()=>{
+  for(const intent of['road','windshield','body','reminder','return'])assert.equal(openingPrologueCaptionPlacement(intent),'top');
+  for(const intent of['wheels','school','near','fates','avert'])assert.equal(openingPrologueCaptionPlacement(intent),'bottom');
+  assert.equal(openingPrologueCaptionPlacement(null,'grip'),'top');
+});
+
+test('opening Review holds the exact live utterance, stage, drive and partial skip without completing the line',()=>{
+  uiSetLayoutSize({cols:140,rows:40});const h=host();
+  try{
+    advance(h.scene,4);h.scene.key({key:' '});advance(h.scene,.1);
+    h.scene.key({key:'e'});advance(h.scene,.25);
+    const before=h.scene.view();assert.ok(before.captionHistory.length>0);
+    h.scene.key({key:'q'});const held=h.scene.view();assert.equal(held.reviewActive,true);assert.equal(held.paused,true);assert.equal(held.skip,0);assert.equal(h.scene.allowsLook,false);
+    advance(h.scene,1);const after=h.scene.view();
+    assert.deepEqual([after.nodeId,after.lineSerial,after.typed,after.stage.time,after.drive.timeSec],[before.nodeId,before.lineSerial,before.typed,before.stage.time,before.drive.timeSec]);
+    assert.equal(h.scene.key({key:'Escape'}),true,'Escape closes this review without opening global pause');
+    assert.equal(h.scene.view().reviewActive,false);assert.equal(h.scene.allowsLook,true);
+    advance(h.scene,.2);assert.ok(h.scene.view().drive.timeSec>after.drive.timeSec);assert.equal(h.calls.done,0);
+  }finally{scenes.clear();uiSetLayoutSize(null);}
+});
+
+test('closing Review cannot release an independently paused opening',()=>{
+  uiSetLayoutSize({cols:140,rows:40});const h=host();
+  try{
+    advance(h.scene,4);h.scene.key({key:' '});advance(h.scene,.1);h.scene.key({key:'q'});h.scene.pause();
+    const before=h.scene.view();h.scene.key({key:'q'});advance(h.scene,.5);const after=h.scene.view();
+    assert.equal(after.reviewActive,false);assert.equal(after.paused,true);assert.equal(after.presentationPaused,true);
+    assert.equal(after.drive.timeSec,before.drive.timeSec);assert.equal(after.typed,before.typed);
+    h.scene.resume();advance(h.scene,.2);assert.equal(h.scene.view().presentationPaused,false);assert.ok(h.scene.view().drive.timeSec>after.drive.timeSec);
+  }finally{scenes.clear();uiSetLayoutSize(null);}
 });
 
 test('a chosen act leaves one real eye shut through the rest of the encounter, without a saved penalty',()=>{

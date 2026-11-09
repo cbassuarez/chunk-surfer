@@ -253,8 +253,8 @@ assert.doesNotMatch(runtimeSource,/emitNoise|MONITOR\./,'Source weather, contact
     runtime.completeNormalExit();
     assert.equal(completion,null,'the tape has not been walked yet');
     if(exit==='tower'){
-      for(let beat=0;beat<3;beat+=1)runtime.talkToHorizonBust();
-      runtime.decideHorizonBust(true);
+      runtime.recognizeHorizonApproach({eligible:true});
+      runtime.decideHorizonApproach(true);
     }
     const chosen=runtime.chooseHorizonExit(exit);
     assert.equal(chosen.handled,true);

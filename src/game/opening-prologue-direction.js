@@ -13,7 +13,7 @@ const vector=(m,p)=>[m[0]*p[0]+m[4]*p[1]+m[8]*p[2],m[1]*p[0]+m[5]*p[1]+m[9]*p[2]
 const aim=(eye,yaw=0,pitch=-.035)=>[eye[0]+Math.sin(yaw)*Math.cos(pitch)*20,eye[1]+Math.sin(pitch)*20,eye[2]-Math.cos(yaw)*Math.cos(pitch)*20];
 const bezier=(a,b,c,d,t)=>a.map((n,k)=>n*(1-t)**3+3*b[k]*t*(1-t)**2+3*c[k]*t*t*(1-t)+d[k]*t**3);
 const cabModes=new Set(['road','windshield','body','reminder','return']);
-export const OPENING_JOURNEY=Object.freeze({departureSeconds:8.4,schoolSeconds:7.2,returnSeconds:7.8,bodySeconds:3.8,minimumEstablishment:.8,framingShift:.38});
+export const OPENING_JOURNEY=Object.freeze({departureSeconds:8.4,schoolSeconds:7.2,returnSeconds:7.8,bodySeconds:3.8,minimumEstablishment:.8,framingShift:0});
 
 function instanceMatrix(p){if(p.matrix?.length===16)return p.matrix;const m=rotation(0,p.yaw||0);m[12]=p.x||0;m[13]=p.y||0;m[14]=p.z||0;return m;}
 function placed(p,m){return{...p,matrix:m,x:m[12],y:m[13],z:m[14]};}
@@ -47,16 +47,18 @@ export function openingJourneyIntent({semanticPhase='road',stageId='dark',nodeId
 export function createOpeningPrologueDirection({reducedMotion=false,memoryInstances=openingMemoryInstances()}={}){
   let intent=null,from=null,to=null,pose=null,age=0,duration=0,clock=0,presented=0,last=null;
   function desired(kind,stage,cabEye,wheel,roadPitch=0){
-    const root={eye:[...cabEye],target:aim(cabEye,0,roadPitch-.035),hole:[0,14,-115],shift:.18,radius:1.8,departure:0};
+    // Cinematic captions share the whole picture. Aim at the actual subject
+    // instead of biasing every shot left to make room for the former column.
+    const root={eye:[...cabEye],target:aim(cabEye,0,roadPitch-.035),hole:[0,14,-115],shift:OPENING_JOURNEY.framingShift,radius:1.8,departure:0};
     if(kind==='road')return{...root,radius:0};
     if(kind==='windshield')return root;
-    if(kind==='body')return{...root,target:wheel||[.2,1.08,-2],hole:pose?.hole||[0,44,-115],shift:.16,radius:1.15,departure:0};
+    if(kind==='body')return{...root,target:wheel||[.2,1.08,-2],hole:pose?.hole||[0,44,-115],radius:1.15,departure:0};
     if(kind==='reminder'||kind==='return')return{...root,hole:pose?.hole||[0,60,-115],radius:kind==='return'?0:1.8};
-    if(kind==='school')return{eye:[16,2.65,-87],target:[0,7,-131],hole:[0,17,-115],shift:.20,radius:1.1,departure:1};
-    if(kind==='avert')return{eye:[-12,42,-97],target:[-32,38,-73],hole:[0,44,-115],shift:.05,radius:1.15,departure:1};
-    if(kind==='near')return{eye:[-4.8,45,-105],target:[0,44,-115],hole:[0,44,-115],shift:.32,radius:1.8,departure:1};
-    if(kind==='fates')return{eye:[-14,54,-97],target:[0,58,-115],hole:[0,58,-115],shift:.38,radius:2.1,departure:1};
-    return{eye:[-12,42,-97],target:[0,44,-115],hole:[0,44,-115],shift:.38,radius:1.15,departure:1};
+    if(kind==='school')return{eye:[16,2.65,-87],target:[0,7,-131],hole:[0,17,-115],shift:0,radius:1.1,departure:1};
+    if(kind==='avert')return{eye:[-12,42,-97],target:[-32,38,-73],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
+    if(kind==='near')return{eye:[-4.8,45,-105],target:[0,44,-115],hole:[0,44,-115],shift:0,radius:1.8,departure:1};
+    if(kind==='fates')return{eye:[-14,54,-97],target:[0,58,-115],hole:[0,58,-115],shift:0,radius:2.1,departure:1};
+    return{eye:[-12,42,-97],target:[0,44,-115],hole:[0,44,-115],shift:0,radius:1.15,departure:1};
   }
   function compose(frame,{dt=0,stage={},stageId='dark',nodeId='start',semanticPhase='road',snap=false,override=null}={}){
     const scene=frame?.scene;if(!scene?.eye)return null;

@@ -96,3 +96,13 @@ test('a capture victory restores grounded agency without spending the queued pun
  s.update(.25);assert.equal(s.serialize().hush.mode,'yield');assert.equal(s.serialize().recovery,null);
  assert.deepEqual([s.serialize().x,s.serialize().z,s.serialize().feet],[pose.x,pose.z,pose.feet]);s.exit();
 });
+
+test('an earned chapter win preserves the delayed door arrival as a passive repeat-Contact presence',()=>{
+ let s={...freshSourceContinuation({runId:'legacy-won-chapter'}),status:'active'};
+ const origin=[s.hush.x,s.hush.z,s.hush.feet];
+ for(let i=0;i<120&&!s.hush.active;i++)s=stepSourceContinuation(s,{dt:.25,hushDefeated:true}).state;
+ assert.equal(s.hush.active,true,'a migrated victory must not erase the physical repeat-Contact presence');
+ s=stepSourceContinuation(s,{dt:.25,hushDefeated:true}).state;
+ assert.equal(s.hush.mode,'yield');assert.equal(s.recovery,null);
+ assert.deepEqual([s.hush.x,s.hush.z,s.hush.feet],origin,'winning does not invent a new actor position');
+});

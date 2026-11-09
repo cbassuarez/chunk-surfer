@@ -6,10 +6,12 @@ import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import puppeteer from 'puppeteer-core';
 import {shaderDeclaration} from './export-pressure-review-shaders.mjs';
-import * as HZ from '../../src/render/horizon3d.js';
 const base=process.env.HUSH_FINAL_URL||'http://127.0.0.1:5595';
 const out=resolve('artifacts/source-hush-transitions/renderer');await mkdir(out,{recursive:true});
-const sha=b=>createHash('sha256').update(b).digest('hex'),source=await readFile('src/render/r3d.js','utf8'),bindings={HZ};
+const tag=process.env.HUSH_FINAL_TAG||'',stillsOnly=process.env.HUSH_FINAL_STILLS_ONLY==='1';
+if(!/^[a-zA-Z0-9_-]*$/.test(tag))throw Error('Capture tag must be a simple filename suffix');
+const suffix=tag?'-'+tag:'',reportFile='report'+suffix+'.json';
+const sha=b=>createHash('sha256').update(b).digest('hex'),source=await readFile('src/render/r3d.js','utf8'),bindings={};
 for(const m of source.matchAll(/^import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/gm)){
  if(!m[1].includes('GLSL'))continue;
  const mod=await import(new URL(m[2],new URL('../../src/render/r3d.js',import.meta.url)));
@@ -26,6 +28,13 @@ await writeFile(join(out,fixtureName),fixtureSource);
 const html=(await readFile(join(out,'index.html'),'utf8')).replace(/src="\/artifacts\/source-hush-transitions\/renderer\/renderer[^"?]*\.js[^\"]*"/, 'src="/artifacts/source-hush-transitions/renderer/'+fixtureName+'"');
 await writeFile(join(out,'index.html'),html);
 const report={scope:'Staged Chromium/Metal renderer fixture: actual final GLB, current P3 deformation/pressure, acquisition and POST. Synthetic accepted-movement trace, no earned route, AI pursuit/capture fairness, native app, sound or human acceptance.',silent:true,errors:[],sourceHashes,assetSha256:sha(await readFile('public/assets/hush-density.glb')),frames:[]};
+let reference=null;try{reference=JSON.parse(await readFile(join(out,'report.json'),'utf8'));}catch{}
+report.captureMode=stillsOnly?'matched-stills-only':'chase-film-and-stills';report.captureTag=tag;
+report.snapshotFiles={shaderBundle:bundleName,fixtureModule:fixtureName};
+if(process.env.HUSH_FINAL_PREPARE_ONLY==='1'){
+ await writeFile(join(out,'prepared'+suffix+'.json'),JSON.stringify({prepared:true,gpuStarted:false,assetSha256:report.assetSha256,sourceHashes,snapshotFiles:report.snapshotFiles,matchedStudy:{fixtureTime:3.7,actorDistanceM:3.2,eyeHeightM:1.62,light:'front',views:['front','profile']},priorMotionScope:'Existing chase-stop.webm predates contrast revision3 and remains model-motion evidence only.'},null,2));
+ console.log(JSON.stringify({prepared:true,gpuStarted:false,files:report.snapshotFiles}));process.exit(0);
+}
 let browser,page;
 try{
  browser=await puppeteer.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true,pipe:true,protocolTimeout:120000,
@@ -54,6 +63,7 @@ try{
  const preflight=await page.evaluate(()=>{window.__hushFocused.seek(3.7);return window.__hushFocused.pixels();});
  report.preflight=preflight;
  assert.ok(preflight.core>200&&preflight.marked>50&&preflight.purple>10,'preflight: covered Hush must retain visible violet marks');
+ if(!stillsOnly){
  let prior=null;if(process.env.HUSH_FINAL_REUSE_VIDEO==='1')try{prior=JSON.parse(await readFile(join(out,'report.json'),'utf8'));}catch{}
  const video=prior?.assetSha256===report.assetSha256&&prior?.video?.final?.fixtureTime>=11.9?null:await page.evaluate(async()=>{
   window.__hushFocused.seek(0);window.__hushCaptureFrames=[];
@@ -69,19 +79,21 @@ try{
  assert.ok(report.video.final.fixtureTime>=11.9,'the staged chase-stop film must reach its retained end');
  assert.ok(report.video.frames.some(f=>f.density.drive>.75&&f.character.blend?.clip==='density_chase'),'actual current performance driver must select chase');
  assert.ok(report.video.frames.every(f=>f.pressureDraws>0&&!f.poseErrors?.length));
+ }else report.priorMotion={file:'chase-stop.webm',scope:'Before contrast revision3: valid model/chase study, not the current cosmic material.',sourceHashes:reference?.video?.sourceHashes||reference?.sourceHashes};
  for(const [label,side]of[['front',false],['profile',true]]){
   const result=await page.evaluate(side=>{
    const before=window.__hushFocused.seek(3.7),root=before.capturedFrame.primary,rx=(root.x+.5)*.5,rz=(root.y+.5)*.5;
    const snapshot=window.__hushFocused.seek(3.7,side?[rx+3.2,1.62,rz]:[rx,1.62,rz-3.2]);
    return{snapshot,pixels:window.__hushFocused.pixels(),image:document.querySelector('#scene').toDataURL('image/png')};
   },side);
-  await writeFile(join(out,label+'.png'),Buffer.from(result.image.split(',')[1],'base64'));report.frames.push({label,pixels:result.pixels,...result.snapshot});assert.ok(result.pixels.core>200&&result.pixels.marked>50&&result.pixels.purple>10,'actual covered Hush pixels must retain readable nonblack violet marks');
+  const matched=reference?.frames?.find(f=>f.label===label);if(stillsOnly&&matched){assert.equal(result.snapshot.fixtureTime,matched.fixtureTime);assert.deepEqual(result.snapshot.camera.eye,matched.camera.eye);assert.equal(result.snapshot.prescribedLighting.preset,matched.prescribedLighting.preset);}
+  await writeFile(join(out,label+suffix+'.png'),Buffer.from(result.image.split(',')[1],'base64'));report.frames.push({label,pixels:result.pixels,...result.snapshot});assert.ok(result.pixels.core>200&&result.pixels.marked>50&&result.pixels.purple>10,'actual covered Hush pixels must retain readable nonblack violet marks');
  }
  report.gl=await page.evaluate(()=>{const c=document.querySelector('#scene'),gl=c.getContext('webgl2'),ext=gl.getExtension('WEBGL_debug_renderer_info');return{error:gl.getError(),renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)};});
  assert.equal(report.gl.error,0);assert.deepEqual(report.errors,[]);
  report.passed=true;
-}catch(error){report.passed=false;report.failure=String(error?.stack||error);process.exitCode=1;if(page)await page.screenshot({path:join(out,'failure.png')}).catch(()=>{});}
-finally{await browser?.close();await writeFile(join(out,'report.json'),JSON.stringify(report,null,2));}
+}catch(error){report.passed=false;report.failure=String(error?.stack||error);process.exitCode=1;if(page)await page.screenshot({path:join(out,'failure'+suffix+'.png')}).catch(()=>{});}
+finally{await browser?.close();await writeFile(join(out,reportFile),JSON.stringify(report,null,2));}
 console.log(JSON.stringify({passed:report.passed,failure:report.failure,assetSha256:report.assetSha256,frames:report.frames.length,videoFrames:report.video?.frames.length,gl:report.gl,errors:report.errors},null,2));
 // Imported game modules can retain ordinary housekeeping timers in Node.
 // The browser has closed and all evidence writes completed at this boundary.

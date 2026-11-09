@@ -4,7 +4,8 @@ import {ARCHIPELAGO_ISLANDS,ARCHIPELAGO_SURFACES,ARCHIPELAGO_SOLIDS} from '../sr
 import {SOURCE_CONTINUATION as C,continuationSupportAt} from '../src/data/source-continuation.js';
 import {freshSourceContinuation} from '../src/game/source-continuation.js';
 import {JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
-import {sourceContinuationGeometry,sourceContinuationFlightGeometry,sourceContinuationMeshPayload,sourceContinuationRenderFrame,installSourceContinuationMeshes,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
+import {sourceContinuationGeometry,sourceContinuationFlightGeometry,sourceContinuationExitBatchGeometry,sourceContinuationMeshPayload,sourceContinuationRenderFrame,installSourceContinuationMeshes,SOURCE_CONTINUATION_ARCHITECTURE} from '../src/render/source-continuation-renderer.js';
+import {sourceExitPassageRenderParts,sourceExitPassageGeometryLibrary} from '../src/render/source-exit-passage.js';
 import {sourceContinuationIslandGeometryLibrary} from '../src/render/source-continuation-islands.js';
 
 const transform=(m,p)=>[0,1,2].map(k=>m[k]*p[0]+m[k+4]*p[1]+m[k+8]*p[2]+m[k+12]);
@@ -151,4 +152,26 @@ test('native mesh installation retains new island wood and cloth instead of appl
   }
   const spindle=geometry.get('catch-0-case-crescent');
   assert.equal(pack.catalog.get(spindle.name).primitives[0].materialRole,'source-silver-catch','the original machine keeps its approved silver finish');
+});
+
+test('distant exit batches preserve every physical box and stock material while nearby fittings stay individual',()=>{
+  const portal=JOURNEY_PORTALS[0],frame=sourceContinuationRenderFrame({...freshSourceContinuation(),status:'active',...portal.a.approach,chartId:0});
+  const parts=sourceExitPassageRenderParts(),library=new Map(sourceContinuationExitBatchGeometry().map(piece=>[piece.id,piece])),stock=sourceExitPassageGeometryLibrary();
+  const batches=frame.props.filter(p=>p.exitPassageBatch&&!p.portalDestination);
+  assert.ok(batches.length>0&&batches.length<parts.length);
+  assert.equal(frame.canonicalProps.filter(p=>p.exitPassage&&!p.exitPassageBatch).length,parts.length);
+  for(const prop of batches){
+    const piece=library.get(prop.descriptorId),payload=sourceContinuationMeshPayload(piece),vertices=[];
+    for(let i=0;i<payload.positions.length;i+=3)vertices.push(transform(prop.matrix,Array.from(payload.positions.slice(i,i+3))));
+    assert.equal(payload.triangles,piece.members.length*12);
+    for(const id of piece.members){
+      const part=parts.find(p=>p.id===id);assert.equal(piece.material,stock[part.mesh].material);assert.deepEqual(piece.base,stock[part.mesh].base);
+      const {min,max}=part.physicalBounds;
+      for(const x of[min[0],max[0]])for(const y of[min[1],max[1]])for(const z of[min[2],max[2]])assert.ok(vertices.some(p=>Math.hypot(p[0]-x,p[1]-y,p[2]-z)<.0002),`${id}: original world-space corner`);
+    }
+  }
+  const close=sourceContinuationRenderFrame(pose({...C.catch.finalApproach,level:0},{yaw:Math.PI/2,pitch:0}));
+  assert.equal(close.props.some(p=>p.exitPassageBatch),false);
+  assert.ok(close.props.some(p=>p.descriptorId==='source-exit-floor-service-road'&&p.physicalKind==='surface'));
+  assert.equal(frame.voidLoop.omittedVisible,0);
 });

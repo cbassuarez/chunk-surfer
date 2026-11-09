@@ -7373,7 +7373,7 @@ function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,ret
     if(!state.offerOpen){speakTruth(state);return true;}
     if(!offerRead)return false;
     presentFinale(horizonApproachProposition(state.occupant,{lyleBox:state.lyleBox,defeats:state.defeats,reducedDread:!dreadAllowed()}),{
-      replayId:`horizon:${state.occupant}:${state.defeats||0}`,embodied:true,
+      replayId:`horizon:${state.occupant}:${state.defeats||0}`,embodied:true,transcriptBackground:'rgba(2,4,5,.94)',
       onDone:persist,
     });return true;
   };
@@ -7394,7 +7394,7 @@ function beginHorizonApproach({variant,occupant,condition,lyleBox,live=false,ret
     const arrive=()=>{
       scenes.remove(scene);SPEECH.clearSpeech();
       if(!live){syncSourceRender({force:true});return;}
-      if(returning){openCathedralFirstPhase();return;}
+      if(returning){resumeHorizonCathedralFight();return;}
       arriveFromHorizonApproach(exit);
     };
     if(live&&visualEffectsEnabled())startNeural('enter',{onPeak:arrive});else arrive();
@@ -11966,9 +11966,7 @@ function syncSourceRender({ force=false,x=px,y=py }={}){
     R3.r3dSetSourceFault?.(0);
     return false;
   }
-  // The recording grows out of the telephone road. Keep submitting the same
-  // physical street throughout the overlap so the compositor can remove it
-  // piece by piece, rather than replacing the world at the tape seam.
+  // Keep the telephone road physical until the final edge interrupts it.
   const horizon=chunkSurfRuntime.horizonFrame?.();
   syncSourceDockDoorAudio(chunkSurfRuntime.landingPortalFrame?.());
   const shore=chunkSurfRuntime.sourceShoreFrame?.();
@@ -12621,9 +12619,18 @@ function activateSourceSpace(state,{position=null,resume=false}={}){
   return chunkSurfRuntime;
 }
 
+function resumeHorizonCathedralFight(){
+  r3dCache.physicalKey=null;r3dCache.physicalGroup=null;r3dCache.fogSize=-1;
+  syncBuildingRender();syncDoorDynamicProps();
+  resetMotionInput('horizon-cathedral-return',{stopRenderMove:true});
+  R3.r3dSnapCameraOnNextFrame?.();R3.r3dResetVfdMemory?.();
+  return openCathedralFirstPhase();
+}
 function resumeHorizonReturnFromSave(){
   const saved=flagGet(HORIZON_APPROACH_SAVE)?.scene,finale=normalizeChunkSurfState(getSave().chunkSurf).finale;
-  if(!saved?.returning||saved.decided||saved.defeats!==finale.bust.defeats||finale.stage!==SOURCE_FINALE_STAGE.CATHEDRAL)return false;
+  if(!saved?.returning||saved.defeats!==finale.bust.defeats||finale.stage!==SOURCE_FINALE_STAGE.CATHEDRAL)return false;
+  if(saved.decided==='accepted')return resumeHorizonCathedralFight();
+  if(saved.decided)return false;
   return beginHorizonInterruption({returning:true,defeats:saved.defeats});
 }
 function resumeSourceSpaceFromSave(){
@@ -12631,13 +12638,8 @@ function resumeSourceSpaceFromSave(){
   if(!state.active)return false;
   const sx=Number(getSave().px),sy=Number(getSave().py);
   activateSourceSpace(state,{position:Number.isFinite(sx)&&Number.isFinite(sy)?{x:sx,y:sy,facing:state.returnPoint?.facing??0}:null,resume:true});
-  // THE TAPE IS FETCHED AT THE THRESHOLD, AND A RESUME HAS NO THRESHOLD.
-  //
-  // The 1.8MB bake is loaded lazily by enterHorizon (and the god warp) because
-  // a run that never goes out there should not pay for it. But quitting inside
-  // the horizon and loading back in crosses no threshold, so nothing ever
-  // called it: horizonReadyState stayed false and drawHorizon cleared to the
-  // void and returned. You resumed into an empty magenta room.
+  // Complete a saved route choice before presenting another offer. An earlier
+  // street checkpoint remains on the physical road until its final edge.
   if(state.phase===CHUNK_SURF_PHASE.HORIZON){
     queueMicrotask(()=>{
       const exit=state.finale?.bust?.decision==='accepted'?'tower':state.finale?.bust?.decision==='declined'?'chapel':null;
@@ -14998,7 +15000,7 @@ function beginGetInDriveTeaser({onDone=()=>beginGetInCrashAftermath()}={}){
       if(splash>.01){const alpha=Math.min(1,splash*.55)*(flashMode()==='reduced'?.5:1);uiFill(0,0,cols,rows,`rgba(255,255,255,${alpha})`);}
       if(frame.controlsEnabled&&frame.timeSec<8){uiFill(2,rows-3,cols-4,2,'rgba(0,0,0,.78)');uiCenter(rows-2,`W / S PEDALS   A / D STEER   SPACE BRAKE   ${BINDINGS.activeInputPromptDevice()==='controller'?'RIGHT STICK':'MOUSE'} · LOOK`,'t-chunk');}
       else if(frame.controlsEnabled&&frame.vehiclePose?.radioLean>.6)uiCenter(rows-2,'1 2 3 STATION   O POWER','t-chunk');
-      else if(frame.controlsEnabled&&Math.abs((frame.vehiclePose?.lookYawOffset??0)+.65)<.34&&(frame.vehiclePose?.lookPitchOffset??0)<-.28)uiCenter(rows-2,`HOLD ${BINDINGS.activeInputPromptDevice()==='controller'?'LB':'Q'} · THE RADIO`,'t-chunk');
+      else if(frame.controlsEnabled&&Math.abs((frame.vehiclePose?.lookYawOffset??0)+.65)<.34&&(frame.vehiclePose?.lookPitchOffset??0)<-.28)uiCenter(rows-2,`${BINDINGS.activeInputPromptDevice()==='controller'?'LB':'Q'} · THE RADIO`,'t-chunk');
       const caption=radio?.caption?.text;if(caption){const words=caption.split(/\s+/);let line='',lines=[];for(const word of words){if(line.length+word.length+1>Math.min(76,cols-8)){lines.push(line);line=word;}else line+=(line?' ':'')+word;}if(line)lines.push(line);for(let i=0;i<Math.min(2,lines.length);i++)uiCenter(rows-5+i,lines[i],'t-trail-1');}
       if(error)uiCenter(rows-1,String(error).slice(0,cols-4),'ui-danger');
     },
@@ -29118,7 +29120,7 @@ const isNamed=()=> flagGet('confession.kind')==='name' && flagGet('confession.va
 
 // Put a finale beat sequence (array) or node tree (object) on the cold-open
 // surface — the same presenter the guard and the tape use.
-function presentFinale(content, { slate='', replayId='finale', startAt='start', onDone=()=>{}, onChoice, onLine, onExit=null, embodied=false, cutscene=null, transcriptPlacement='bottom', vfdOnly=false }={}){
+function presentFinale(content, { slate='', replayId='finale', startAt='start', onDone=()=>{}, onChoice, onLine, onExit=null, embodied=false, cutscene=null, transcriptPlacement='bottom', transcriptBackground='rgba(2,4,5,.58)', vfdOnly=false }={}){
   ensureCtx();
   const nodes = content && !Array.isArray(content);
   const scene=makeColdOpenScene({
@@ -29133,7 +29135,7 @@ function presentFinale(content, { slate='', replayId='finale', startAt='start', 
     allowsLook:embodied&&(cutscene?.camera?.allowsLook!==false),
     suppressesHud:embodied,
     worldUnderlay:embodied,
-    worldView:embodied?endingCutsceneWorldView:null,transcriptPlacement,
+    worldView:embodied?endingCutsceneWorldView:null,transcriptPlacement,transcriptBackground,
     onLine,
     onChoice: (choice)=>{ applyStoryChoice(choice); onChoice?.(choice); }, onDone,
   });
@@ -30594,9 +30596,8 @@ function resolveCathedralLoss(){
   openHorizonBustReturn(next.finale?.bust?.defeats||1);
 }
 
-// The second and third conversations. Presented rather than walked back to:
-// the bust is a voice and a face, and presentFinale is how it spoke the first
-// time. On the way out the cathedral fight opens again from the top.
+// Defeat returns to the same occupant in the closed space. Only walking toward
+// the tower can continue this bargain; no route buttons decide it.
 function openHorizonBustReturn(defeats=1){
   return beginHorizonInterruption({returning:true,defeats});
 }
@@ -40581,8 +40582,10 @@ async function boot(){
           const owner=chunkSurfRuntime,stored=owner.setContinuationCheckpoint(checkpoint);
           const reviewPose=value=>value?{x:value.x,z:value.z,feet:value.feet,chartId:value.chartId,phase:value.phase,yaw:value.yaw,
             hush:value.hush?{x:value.hush.x,z:value.hush.z,feet:value.hush.feet,active:value.hush.active,mode:value.hush.mode}:null}:null;
+          // Captured staging runs real tides and pursuit before its first
+          // receipt. Permit millimetric accepted motion, never a spawn reset.
           const matches=value=>value&&value.phase===checkpoint.phase&&value.chartId===checkpoint.chartId
-            &&['x','z','feet'].every(key=>Math.abs(value[key]-checkpoint[key])<1e-6);
+            &&['x','z','feet'].every(key=>Math.abs(value[key]-checkpoint[key])<(captured?.005:1e-6));
           sourceContinuationTrace.push({type:'DEV-contact-initial-state',stagedChapterWins:wins,chapter,repeat,recovery,earnedProgression:false,
             stagedNoticeSeconds:captured?0:120,captured,requested:reviewPose(checkpoint),stored:reviewPose(stored)});
           if(!matches(stored))throw Error('The review Contact checkpoint was not retained.');

@@ -8,8 +8,29 @@ import {openingVehicleInstances,setOpeningVehicleRadioPose} from '../src/data/op
 import {createDoorDriveTeaser} from '../src/game/source-drive/door-teaser.js';
 import {makeGetInDriveTeaserScene} from '../src/game/get-in-drive-teaser-scene.js';
 import {openingRoadSurfaceAt} from '../src/game/source-drive/opening-road.js';
+import {makeDriveScene} from '../src/game/source-drive/scene.js';
+import {createDrive} from '../src/game/source-drive/drive-state.js';
+import {wheelHandInstances,wheelHandDiagnostics,resetWheelHands} from '../src/game/source-drive/geometry/wheel-hands-pose.js';
 
 const source=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+
+test('the exported receiver control surfaces meet the current hand targets',async()=>{
+  const doc=await new NodeIO().read(new URL(`../public/${CAB_RADIO_PACK}`,import.meta.url).pathname.replace(/^\/([A-Za-z]:)/,'$1'));
+  const meshes=new Map(doc.getRoot().listMeshes().map(mesh=>[mesh.getName(),mesh]));
+  const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((n,v,i)=>n+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const ray=(origin,[a,b,c])=>{const d=[0,0,-1],e1=sub(b,a),e2=sub(c,a),p=cross(d,e2),det=dot(e1,p);if(Math.abs(det)<1e-10)return Infinity;const t=sub(origin,a),u=dot(t,p)/det,q=cross(t,e1),v=dot(d,q)/det;return u<0||u>1||v<0||u+v>1?Infinity:dot(e2,q)/det;};
+  const controls=[{mesh:'drive_radio_knob',point:cabRadioVolumePoint(),base:cabRadioVolumePoint(0)},...CAB_RADIO.keys.map((key,i)=>({mesh:`drive_radio_key_${key.id}`,point:cabRadioKeyPoint(i),base:cabRadioKeyPoint(i,0)}))];
+  for(const control of controls){
+    const mesh=meshes.get(control.mesh);assert.ok(mesh,control.mesh);
+    const origin=sub(control.point,control.base);origin[2]+=.05;let distance=Infinity;
+    for(const primitive of mesh.listPrimitives()){
+      const positions=primitive.getAttribute('POSITION'),indices=primitive.getIndices().getArray();
+      for(let i=0;i<indices.length;i+=3){const triangle=Array.from(indices.slice(i,i+3),index=>positions.getElement(index,[])),hit=ray(origin,triangle);if(hit>=0)distance=Math.min(distance,hit);}
+      assert.equal(primitive.getMaterial().getAlphaMode(),'OPAQUE');
+    }
+    assert.ok(Math.abs(distance-.05)<.0007,`${control.mesh}: contact error ${distance-.05}`);
+  }
+});
 
 test('the pack replaces the old radio by name, in both the drive and the parked cab, and adds what moves',async()=>{
   const file=new URL(`../public/${CAB_RADIO_PACK}`,import.meta.url);
@@ -19,7 +40,7 @@ test('the pack replaces the old radio by name, in both the drive and the parked 
     assert.ok(names.has(base),base);assert.ok(names.has(`opening_${base}`),`opening_${base}`);
   }
   const renderer=source('src/game/source-drive-renderer.js');
-  assert.match(renderer,/key:'cabRadio'[^\n]*after:'drive'/,'it lands after the pack holding the mesh it replaces');
+  assert.match(renderer,/key:'cabRadio'[^\n]*after:'drive'/,'it loads after the pack containing the mesh it replaces');
 });
 
 test('the print names no maker',()=>{
@@ -150,7 +171,7 @@ test('the real drive frame gives the tube its stretch and its dial turn, where t
   assert.equal(view.clock,cabRadioRoadClock(frame.cinematic.vehiclePose.stretch));
 });
 
-test('holding the lean takes the head to the set while the van keeps going',()=>{
+test('leaning toward the set moves the head while the van keeps going',()=>{
   const c=createDoorDriveTeaser();c.start();advance(c,.81);
   const seat=c.frame(metrics).renderFrame,start=c.snapshot().driveState.z;
   assert.equal(c.snapshot().vehiclePose.radioLean,0);
@@ -184,15 +205,15 @@ test('there is no lean before the player has the van, and it lets go when contro
   assert.equal(c.setRadioLean(false,{immediate:true}),true);assert.equal(c.snapshot().vehiclePose.radioLean,0);
 });
 
-test('Q and LB hold the lean, a repeat is nothing, and a menu lets go of it',()=>{
+test('Q and LB keep the head down, repeats do nothing, and a menu releases it',()=>{
   const calls=[];
   const scene=makeGetInDriveTeaserScene({createRenderer:()=>({}),createIntrusion:()=>({snapshot:()=>({}),cancel(){}}),getPresentation:()=>({reducedMotion:false}),
     createController:()=>({setPaused(){},dispose(){},setRadioLean:(on,options)=>calls.push([on,!!options?.immediate])})});
-  scene.key({key:'q'});assert.deepEqual(calls,[],'not while the picture is held');
+  scene.key({key:'q'});assert.deepEqual(calls,[],'not while the picture is paused');
   scene.setPaused(false);scene.key({key:'q'});scene.key({key:'q',repeat:true});assert.deepEqual(calls,[[true,false]]);
   scene.keyup({key:'q'});assert.deepEqual(calls.at(-1),[false,false]);
   scene.key({key:'q',controllerAction:'tabPrev'});assert.deepEqual(calls.at(-1),[true,false]);
-  scene.setPaused(true);assert.equal(calls.at(-1)[0],false,'pausing with it held lets go');
+  scene.setPaused(true);assert.equal(calls.at(-1)[0],false,'pausing releases the lean');
   const still=[];
   const reduced=makeGetInDriveTeaserScene({createRenderer:()=>({}),createIntrusion:()=>({snapshot:()=>({}),cancel(){}}),getPresentation:()=>({reducedMotion:true}),
     createController:()=>({setPaused(){},dispose(){},setRadioLean:(on,options)=>still.push([on,!!options?.immediate])})});
@@ -220,5 +241,27 @@ test('nothing in the cab stands in front of the set',async()=>{
 test('the tube shows its detail only once the head is down',()=>{
   const renderer=source('src/game/source-drive-renderer.js');
   assert.match(renderer,/radioClose=\(frame\.cinematic\?\.vehiclePose\?\.radioLean\|\|0\)>\.01/);assert.match(renderer,/close:\(\)=>radioClose/);
-  const main=source('src/main.js');assert.match(main,/HOLD \$\{[^`]*'LB':'Q'\} · THE RADIO/);assert.match(main,/1 2 3 STATION   O POWER/);
+  const main=source('src/main.js');assert.match(main,/`\$\{[^`]*'LB':'Q'\} · THE RADIO/);assert.match(main,/1 2 3 STATION   O POWER/);
+});
+
+
+test('the moved recorder stays reachable with fixed arm lengths and the right hand on the wheel',()=>{
+  for(const kind of ['record','play','stop']){
+    resetWheelHands();const state=createDrive();let contact=null,maxAdvance=0;
+    for(let step=0;step<=78;step++){
+      const elapsed=step/100;state.programTime=10+elapsed;
+      makeDriveScene(state,metrics,{cabOnly:true,handControl:elapsed<.72?{kind,elapsed}:null});
+      const diagnostic=wheelHandDiagnostics(),reach=diagnostic.reach;
+      assert.ok(!reach?.rejected,`${kind}: ${reach?.reason}`);
+      for(const side of ['left','right']){const arm=diagnostic.hands[side];assert.equal(arm.unreachable,false,`${kind} ${side} at ${elapsed}`);near(arm.upperLength,.34,1e-8);near(arm.forearmLength,.32,1e-8);}
+      assert.equal(diagnostic.hands.right.controlReach,false);assert.equal(diagnostic.hands.right.open,0);
+      assert.deepEqual(diagnostic.hands.right.shoulder,[.16,.03,.69]);
+      if(reach?.atContact){contact=reach;assert.ok(reach.contactErrorM<1e-8);}
+      if(reach?.shoulderAdvance)maxAdvance=Math.max(maxAdvance,Math.hypot(...reach.shoulderAdvance));
+      if(elapsed>.72)assert.deepEqual(diagnostic.hands.left.shoulder,[-.16,.03,.69]);
+    }
+    assert.ok(contact,`${kind} reaches the actual key`);assert.ok(maxAdvance<=.06);
+  }
+  resetWheelHands();wheelHandInstances([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],0,{timeSec:0,reach:{kind:'record',elapsed:0,target:[-3,0,0]}});
+  assert.equal(wheelHandDiagnostics().reach.rejected,true);resetWheelHands();
 });

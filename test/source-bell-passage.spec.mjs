@@ -303,53 +303,27 @@ import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
   });
   runtime.setPlayerPosition(built.position);
   runtime.completeNormalExit();
-  for (let beat = 0; beat < 3; beat += 1) runtime.talkToHorizonBust();
-  runtime.decideHorizonBust(true);
-
-  // Taking the detour reveals a physical path. It neither teleports the body
-  // nor leaves the horizon; crossing the seam on foot opens the bell field.
-  const before = runtime.horizonFrame();
-  const taken = runtime.takeHorizonBustDetour();
-  assert.equal(taken.pathOpened, true);
-  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.HORIZON);
-  assert.equal(runtime.horizonFrame().depth, before.depth);
-  assert.equal(runtime.horizonFrame().lateral, before.lateral);
-  assert.equal(runtime.state().active, true);
-  assert.equal(runtime.state().completed, false);
-  assert.equal(completions.length, 0, 'nothing is reported to the world yet');
-  // The route commits at the bust, so a reload in the passage cannot re-choose.
-  assert.equal(runtime.state().finale.route, SOURCE_FINALE_ROUTE.TOWER);
-  assert.equal(runtime.state().finale.stage, SOURCE_FINALE_STAGE.TOWER_COMMITTED);
-
-  const origin = runtime.state().landscapeOrigin || { x: 0, y: -252 };
-  // Begin where a player can actually speak to the bust, not already standing
-  // on its new road. The near-side bend must clear the solid pedestal too.
-  let from = { x: origin.x, y: origin.y + SOURCE_HORIZON.from - 168 };
-  runtime.setPlayerPosition({ ...from, facing: 0 });
-  for (const target of taken.path) {
-    const world = { x: origin.x + target.x, y: origin.y + target.y };
-    const start = { ...from }, steps = Math.ceil(Math.hypot(world.x - from.x, world.y - from.y) / 0.75);
-    for (let i = 1; i <= steps; i += 1) {
-      const to = { x: start.x + (world.x - start.x) * i / steps, y: start.y + (world.y - start.y) * i / steps };
-      const cell = runtime.geometry.cellAt(to.x, to.y);
-      assert.ok(cell, 'revealed path owns every cell along its visible ribbon');
-      assert.equal(cell.ceil, null, 'the tower road has open sky, not a zero-height roof');
-      assert.ok(cell.flags & F.SKY, 'the packed render plan must preserve its no-ceiling intent');
-      assert.equal(runtime.geometry.canStep(from.x, from.y, to.x, to.y).ok, true,
-        'no-ceiling ground must not fail the headroom check');
-      runtime.onStep(from, to);
-      from = to;
-    }
-  }
-  assert.equal(runtime.state().phase, CHUNK_SURF_PHASE.BELLS);
-  const head = runtime.bellsFrame();
-  assert.equal(head.active, true);
-  assert.equal(head.depth, SOURCE_BELLS.from - taken.path.at(-1).y, 'the walked position survives the seam unchanged');
-  assert.equal(head.resolve, 0);
-  assert.equal(head.atRoom, false);
-  for (const entry of SOURCE_BELL_PASSAGE.filter((entry) => entry.contact)) {
-    assert.ok(runtime.geometry.cellAt(origin.x + entry.x, origin.y + entry.y),
-      `${entry.id} uses soft body contact, not an impassable cell`);
+  runtime.recognizeHorizonApproach({eligible:true});
+  runtime.decideHorizonApproach(true);
+  assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.HORIZON);
+  assert.equal(runtime.state().finale.route,SOURCE_FINALE_ROUTE.TOWER);
+  assert.equal(runtime.state().finale.stage,SOURCE_FINALE_STAGE.TOWER_COMMITTED);
+  assert.equal(runtime.state().completed,false);
+  assert.equal(completions.length,0);
+  assert.equal(runtime.chooseHorizonExit('tower').entered,CHUNK_SURF_PHASE.BELLS);
+  const origin=runtime.state().landscapeOrigin||{x:0,y:-252};
+  const arrival=runtime.checkpointPosition();runtime.setPlayerPosition(arrival);
+  const ground=runtime.geometry.cellAt(arrival.x,arrival.y);
+  assert.ok(ground);assert.equal(ground.ceil,null);assert.ok(ground.flags&F.SKY);
+  const next={x:arrival.x,y:arrival.y-.5};
+  assert.equal(runtime.geometry.canStep(arrival.x,arrival.y,next.x,next.y).ok,true);
+  runtime.onStep(arrival,next);
+  const head=runtime.bellsFrame();
+  assert.equal(head.active,true);
+  assert.equal(head.depth,SOURCE_BELLS.from-(next.y-origin.y));
+  assert.equal(head.resolve,0);assert.equal(head.atRoom,false);
+  for(const piece of SOURCE_BELL_PASSAGE.filter(piece=>piece.contact)){
+    assert.ok(runtime.geometry.cellAt(origin.x+piece.x,origin.y+piece.y));
   }
 
   const entry = SOURCE_BELL_PASSAGE.find((entry) => entry.id === 'bells-field-14');

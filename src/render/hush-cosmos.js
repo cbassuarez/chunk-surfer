@@ -2,9 +2,9 @@
 // mask; stars belong to world directions and never follow the actor, camera
 // rotation, surface UVs, elapsed time, or the output viewport.
 export const HUSH_COSMOS = Object.freeze({
-  revision: 'world-fixed-violet-stellar-2',
+  revision: 'world-fixed-violet-stellar-3',
   darkInk: Object.freeze([.004, .0007, .016]),
-  violetInk: Object.freeze([.20, .022, .46]),
+  violetInk: Object.freeze([.26, .035, .56]),
   stellarInk: Object.freeze([.98, .79, 1]),
   space: 'world-direction',
 });
@@ -33,17 +33,19 @@ function noise(p) {
 }
 function star(p, plane, footprint) {
   const cell = p.map(Math.floor), seed = hash([cell[0], cell[1], plane]);
-  if (seed < .80) return 0;
-  const cx = .2 + .6 * hash([cell[0] + 19.1, cell[1] - 7.3, plane + 2.7]);
-  const cy = .2 + .6 * hash([cell[0] - 11.7, cell[1] + 8.9, plane + 6.1]);
-  const radius = .045 + .055 * hash([cell[0] + 3.1, cell[1] + 4.7, plane + 1.8]);
-  const distance = Math.hypot(fract(p[0]) - cx, fract(p[1]) - cy), aa = clamp(footprint, .004, .6);
+  if (seed < .70) return 0;
+  const cx = .26 + .48 * hash([cell[0] + 19.1, cell[1] - 7.3, plane + 2.7]);
+  const cy = .26 + .48 * hash([cell[0] - 11.7, cell[1] + 8.9, plane + 6.1]);
+  const radius = .09 + .07 * hash([cell[0] + 3.1, cell[1] + 4.7, plane + 1.8]);
+  const distance = Math.hypot(fract(p[0]) - cx, fract(p[1]) - cy), aa = clamp(footprint, .004, .16);
   const coverage = 1 - smooth(Math.max(0, radius - aa * .5), radius + aa * .5, distance);
   return coverage * (.72 + .28 * seed);
 }
-const rawNova = [[.055, .025, -1], [.72, -.19, .67], [-.75, .34, -.56]];
+// The observed 3.2 m front camera looks along +Z. Put its broad fractured
+// landmark in that world direction once; it never turns to follow HUSH.
+const rawNova = [[.015, -.12, 1], [.72, -.19, .67], [-.75, .34, -.56]];
 export const HUSH_COSMOS_NOVAE = Object.freeze(rawNova.map(value => Object.freeze(unit(value))));
-const novaScales = [.032, .065, .047];
+const novaScales = [.075, .065, .047];
 function nova(d, centre, scale) {
   const delta = d.map((v, i) => v - centre[i]);
   if (Math.hypot(...delta) > scale * 5) return 0;
@@ -56,31 +58,31 @@ function nova(d, centre, scale) {
   const y = d.reduce((sum, value, i) => sum + value * up[i], 0) / scale;
   const r = Math.hypot(x, y), angle = Math.atan2(y, x + 1e-8);
   const shellRadius = 1 + .13 * Math.sin(angle * 7 + .7) + .065 * Math.sin(angle * 13);
-  const broken = .26 + .74 * smooth(-.35, .55, Math.sin(angle * 5 + 1.2) + .3 * Math.sin(angle * 11));
-  const gap = (r - shellRadius) / .16, shell = Math.exp(-gap * gap) * broken * .64;
-  const rays = Math.abs(Math.sin(angle * 4 + .6)) ** 18 * Math.exp(-r * 1.4) * .55;
+  const broken = .16 + .84 * smooth(-.35, .55, Math.sin(angle * 5 + 1.2) + .3 * Math.sin(angle * 11));
+  const gap = (r - shellRadius) / .24, shell = Math.exp(-gap * gap) * broken * .72;
+  const rays = Math.abs(Math.sin(angle * 4 + .6)) ** 12 * Math.exp(-r * 1.4) * .55;
   return clamp(Math.exp(-r * r * 34) + shell + rays + .1 * Math.exp(-r * r * .5));
 }
 
 // One scalar survives the existing five-bit material transport. All renderers
 // reconstruct this palette from that same scalar; POST cannot paint new stars.
 export function hushCosmosSignalMaterial(signal) {
-  const s = clamp(Number.isFinite(signal) ? signal : 0), cloud = smooth(.02, .62, s), heat = smooth(.52, .98, s);
+  const s = clamp(Number.isFinite(signal) ? signal : 0), cloud = smooth(.015, .42, s), heat = smooth(.52, .98, s);
   const color = HUSH_COSMOS.darkInk.map((v, i) => mix(mix(v, HUSH_COSMOS.violetInk[i], cloud), HUSH_COSMOS.stellarInk[i], heat));
   return { color, heat };
 }
 
 export function hushCosmosWorldField(worldDirection, { footprint = 1 / 1600 } = {}) {
   const d = unit(worldDirection), scale = 74;
-  const weights = d.map(v => Math.abs(v) ** 6), sum = weights.reduce((a, b) => a + b, 0);
+  const weights = d.map(v => Math.abs(v) ** 6), peakWeight = Math.max(...weights);
   const aa = Math.max(0, Number.isFinite(footprint) ? footprint : 1 / 1600) * scale;
   const stars = Math.max(
-    star([d[1] * scale + 13, d[2] * scale + 7], 1, aa) * weights[0] / sum,
-    star([d[2] * scale - 9, d[0] * scale + 21], 2, aa) * weights[1] / sum,
-    star([d[0] * scale + 17, d[1] * scale - 11], 3, aa) * weights[2] / sum,
+    star([d[1] * scale + 13, d[2] * scale + 7], 1, aa) * weights[0] / peakWeight,
+    star([d[2] * scale - 9, d[0] * scale + 21], 2, aa) * weights[1] / peakWeight,
+    star([d[0] * scale + 17, d[1] * scale - 11], 3, aa) * weights[2] / peakWeight,
   );
   const cloud = noise(d.map((v, i) => v * 4.3 + [3.7, 1.2, 7.9][i]));
-  const nebula = .025 + .14 * smooth(.25, .82, cloud);
+  const nebula = .018 + .32 * smooth(.25, .82, cloud);
   let explosion = 0;
   for (let i = 0; i < HUSH_COSMOS_NOVAE.length; i++) explosion = Math.max(explosion, nova(d, HUSH_COSMOS_NOVAE[i], novaScales[i]));
   const signal = clamp(nebula + Math.max(stars, explosion));
@@ -112,10 +114,10 @@ float hushCosmosNoise(vec3 p){
 }
 float hushCosmosStar(vec2 p,float plane,float aa){
  vec2 i=floor(p);float seed=hushCosmosHash(vec3(i,plane));
- if(seed<.80)return 0.0;
- vec2 centre=.2+.6*vec2(hushCosmosHash(vec3(i+vec2(19.1,-7.3),plane+2.7)),hushCosmosHash(vec3(i+vec2(-11.7,8.9),plane+6.1)));
- float radius=.045+.055*hushCosmosHash(vec3(i+vec2(3.1,4.7),plane+1.8));
- aa=clamp(aa,.004,.6);
+ if(seed<.70)return 0.0;
+ vec2 centre=.26+.48*vec2(hushCosmosHash(vec3(i+vec2(19.1,-7.3),plane+2.7)),hushCosmosHash(vec3(i+vec2(-11.7,8.9),plane+6.1)));
+ float radius=.09+.07*hushCosmosHash(vec3(i+vec2(3.1,4.7),plane+1.8));
+ aa=clamp(aa,.004,.16);
  return (1.0-smoothstep(max(0.0,radius-aa*.5),radius+aa*.5,length(fract(p)-centre)))*(.72+.28*seed);
 }
 float hushCosmosNova(vec3 d,vec3 centre,float scale){
@@ -124,22 +126,22 @@ float hushCosmosNova(vec3 d,vec3 centre,float scale){
  vec2 q=vec2(dot(d,right),dot(d,up))/scale;
  float r=length(q),a=atan(q.y,q.x+1e-8);
  float shellRadius=1.0+.13*sin(a*7.0+.7)+.065*sin(a*13.0);
- float broken=.26+.74*smoothstep(-.35,.55,sin(a*5.0+1.2)+.3*sin(a*11.0));
- float gap=(r-shellRadius)/.16,shell=exp(-gap*gap)*broken*.64;
- float rays=pow(abs(sin(a*4.0+.6)),18.0)*exp(-r*1.4)*.55;
+ float broken=.16+.84*smoothstep(-.35,.55,sin(a*5.0+1.2)+.3*sin(a*11.0));
+ float gap=(r-shellRadius)/.24,shell=exp(-gap*gap)*broken*.72;
+ float rays=pow(abs(sin(a*4.0+.6)),12.0)*exp(-r*1.4)*.55;
  return clamp(exp(-r*r*34.0)+shell+rays+.1*exp(-r*r*.5),0.0,1.0);
 }
 vec4 hushCosmosSignalMaterial(float signal){
- float s=clamp(signal,0.0,1.0),cloud=smoothstep(.02,.62,s),heat=smoothstep(.52,.98,s);
- vec3 color=mix(mix(vec3(.004,.0007,.016),vec3(.20,.022,.46),cloud),vec3(.98,.79,1.0),heat);
+ float s=clamp(signal,0.0,1.0),cloud=smoothstep(.015,.42,s),heat=smoothstep(.52,.98,s);
+ vec3 color=mix(mix(vec3(.004,.0007,.016),vec3(.26,.035,.56),cloud),vec3(.98,.79,1.0),heat);
  return vec4(color,heat);
 }
 vec4 hushCosmosWorldField(vec3 worldDirection){
- vec3 d=normalize(worldDirection),w=pow(abs(d),vec3(6.0));w/=w.x+w.y+w.z;
+ vec3 d=normalize(worldDirection),w=pow(abs(d),vec3(6.0));w/=max(w.x,max(w.y,w.z));
  vec2 x=d.yz*74.0+vec2(13,7),y=d.zx*74.0+vec2(-9,21),z=d.xy*74.0+vec2(17,-11);
  float stars=max(hushCosmosStar(x,1.0,length(fwidth(x)))*w.x,max(hushCosmosStar(y,2.0,length(fwidth(y)))*w.y,hushCosmosStar(z,3.0,length(fwidth(z)))*w.z));
- float cloud=hushCosmosNoise(d*4.3+vec3(3.7,1.2,7.9)),nebula=.025+.14*smoothstep(.25,.82,cloud);
- float explosion=max(hushCosmosNova(d,normalize(vec3(.055,.025,-1.0)),.032),max(hushCosmosNova(d,normalize(vec3(.72,-.19,.67)),.065),hushCosmosNova(d,normalize(vec3(-.75,.34,-.56)),.047)));
+ float cloud=hushCosmosNoise(d*4.3+vec3(3.7,1.2,7.9)),nebula=.018+.32*smoothstep(.25,.82,cloud);
+ float explosion=max(hushCosmosNova(d,normalize(vec3(.015,-.12,1.0)),.075),max(hushCosmosNova(d,normalize(vec3(.72,-.19,.67)),.065),hushCosmosNova(d,normalize(vec3(-.75,.34,-.56)),.047)));
  float signal=clamp(nebula+max(stars,explosion),0.0,1.0);
  return vec4(hushCosmosSignalMaterial(signal).rgb,signal);
 }

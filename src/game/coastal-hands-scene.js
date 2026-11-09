@@ -153,7 +153,7 @@ export function createCoastalHandsScene({
       }
       return true;
     },
-    wheel(event={}) {if(frozen())return true;inspectionDistance=clamp(inspectionDistance*Math.exp(finite(event.deltaY)*.001),.09,.3);return true;},
+    wheel(event={}) {if(frozen())return true;inspectionDistance=clamp(inspectionDistance*Math.exp(finite(event.deltaY)*.001),.10,.3);return true;},
     render() {
       if (closed) return false;
       const value = frame();

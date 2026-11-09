@@ -113,10 +113,10 @@ const archipelagoOwned=value=>value?.archipelago===true||String(value?.id||'').s
 const dot3=(a,b)=>a.reduce((s,v,k)=>s+v*b[k],0);
 const basisMatrix=b=>[...b.right,0,...b.up,0,...b.forward.map(v=>-v),0,0,0,0,1];
 // Retain the complete canonical construction for portal and void images. Only
-// the newly expanded islands use this additional draw selection; an exact AABB
+// the newly expanded islands and exit use this draw selection; an exact AABB
 // outside the camera cone cannot hide a nearby tread or a visible broad slab.
 function archipelagoVisible(prop,view,origin,toCurrent=null){
-  if(!prop.archipelago)return true;
+  if(!prop.archipelago&&!prop.exitPassage)return true;
   const at=[prop.x-origin.x,prop.y-origin.y,prop.z-origin.z],radius=Math.max(.1,finite(prop.cullRadius,.6)),
     source=prop.physicalBounds||{min:at.map(v=>v-radius),max:at.map(v=>v+radius)};
   let min=source.min,max=source.max;
@@ -334,10 +334,31 @@ function archipelagoFlightGeometry(){
     return{id:'archipelago-flight-'+stairId,name:PREFIX+'archipelago-flight-'+stairId,kind:'flight',stairId,region:'catch',material:'cold-stone',members:rows.map(row=>row.id),...mesh};
   });
 }
-function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...archipelagoFlightGeometry(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary(),...sourceContinuationAmbientFaultGeometry(),...sourceParserGeometryLibrary()];}
+function exitBatchGeometry(){
+  const groups=new Map();
+  for(const part of sourceExitPassageRenderParts()){
+    if(!groups.has(part.mesh))groups.set(part.mesh,[]);groups.get(part.mesh).push(part);
+  }
+  return [...groups].map(([mesh,parts])=>{
+    const geometry={p:[],i:[]};
+    for(const part of parts){const {min,max}=part.physicalBounds;appendGeometry(geometry,solidGeometry({minX:min[0],maxX:max[0],minY:min[1],maxY:max[1],minZ:min[2],maxZ:max[2]}));}
+    return{...canonical[mesh],...geometry,id:'exit-batch-'+mesh,name:PREFIX+'exit-batch-'+mesh,kind:'exit-batch',region:'catch',members:parts.map(part=>part.id)};
+  });
+}
+function allGeometry(){const rows=[...sourceContinuationGeometry({phase:'wrong-return'}),...sourceContinuationGeometry({phase:'wrong-return',closure:{mode:'closing',frontZ:0}}),...sourceContinuationGeometry({phase:'catch'}),...sourceContinuationEdgeGeometry()];return[...new Map(rows.map(row=>[row.name,row])).values(),...archipelagoFlightGeometry(),...exitBatchGeometry(),...Object.entries(canonical).map(([id,g])=>({id,name:PREFIX+id,kind:'detail',...g})),...sourceSurroundingsGeometryLibrary(),...sourceContinuationAmbientFaultGeometry(),...sourceParserGeometryLibrary()];}
 const meshLibrary=allGeometry(),meshTriangles=meshLibrary.reduce((n,p)=>n+p.i.length/3,0),rimLibrary=meshLibrary.filter(p=>p.kind==='edge').map(p=>({...p,center:boundsOf(p.p).center})),
   flightLibrary=meshLibrary.filter(p=>p.kind==='flight').map(p=>({...p,bounds:boundsOf(p.p)})),flightByMember=new Map(flightLibrary.flatMap(piece=>piece.members.map(id=>[id,piece])));
 export const sourceContinuationFlightGeometry=()=>flightLibrary;
+const exitBatchLibrary=meshLibrary.filter(piece=>piece.kind==='exit-batch').map(piece=>({...piece,bounds:boundsOf(piece.p)}));
+export const sourceContinuationExitBatchGeometry=()=>exitBatchLibrary;
+function batchDistantExit(props,view,origin){
+  const selected=exitBatchLibrary.filter(piece=>props.some(p=>p.exitPassage&&!p.portalDestination&&piece.members.includes(p.descriptorId))&&Math.hypot(...view.eye.map((v,k)=>v-Math.max(piece.bounds.min[k],Math.min(piece.bounds.max[k],v))))>60);
+  if(!selected.length)return;
+  const remove=new Set(selected.flatMap(piece=>piece.members)),retained=props.filter(p=>p.portalDestination||!p.exitPassage||!remove.has(p.descriptorId));
+  for(const piece of selected){const at=piece.bounds.center,member=props.find(p=>piece.members.includes(p.descriptorId));retained.push(positioned(PREFIX+piece.id,piece.name,matrix(origin.x+at[0],origin.y+at[1],origin.z+at[2]),
+    {chartId:0,region:'catch',exitPassage:true,exitPassageBatch:true,physicalKind:'solid',descriptorId:piece.id,memberIds:piece.members,level:0,portalExcludePlanes:member?.portalExcludePlanes||null,physicalBounds:{min:piece.bounds.min,max:piece.bounds.max},cullRadius:Math.hypot(...piece.bounds.max.map((v,k)=>(v-piece.bounds.min[k])/2))}));}
+  props.splice(0,props.length,...retained);
+}
 function batchDistantArchipelagoFlights(props,view,origin){
   const selected=new Map();
   for(const prop of props){
@@ -650,8 +671,8 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   if(!globalThis.__scReviewCamera)for(const piece of rimLibrary.filter(piece=>piece.material==='edge-steel')){put(piece.id,piece.name,...piece.center,0,1,1,1,{catchRim:true,level:piece.level,elevation:piece.elevation});}
   // The four sectors are framed as four different fabricated objects. All
   // frames are below the exact support mesh, and the spindle is continuous.
-  const spindleTop=camera.strictOverhead?camera.aimTarget[1]+2.4:17,spindleScale=(spindleTop+25)/42;
-  if(!globalThis.__scReviewCamera)put('continuous-spindle','source_iii_spindle',center.x,-25+25*spindleScale,center.z,0,1,spindleScale,1,{architecture:true,region:'catch',continuousSpindle:true,cutawayTop:spindleTop,cullRadius:45});
+  const spindleTop=camera.strictOverhead?camera.aimTarget[1]+2.4:17,spindleBottom=SOURCE_CONTINUATION.catch.spindleBottom,spindleScale=(spindleTop-spindleBottom)/42;
+  if(!globalThis.__scReviewCamera)put('continuous-spindle','source_iii_spindle',center.x,spindleBottom+25*spindleScale,center.z,0,1,spindleScale,1,{architecture:true,region:'catch',continuousSpindle:true,cutawayTop:spindleTop,cullRadius:60});
   for(let level=0;level<SOURCE_CONTINUATION.catch.levels;level++){
     const stage=catchStage(level),y=catchFloor(level);
     if(globalThis.__scReviewCamera)continue;
@@ -947,6 +968,7 @@ export function sourceContinuationRenderFrame(state,{anchor={x:0,y:0,z:0},viewpo
   const islandView={...presentation,aspect:viewportAspect,tanHalfFov:viewportTanHalfFov};
   props.splice(0,props.length,...allProps.filter(p=>chartOf(p)===chartId&&archipelagoVisible(p,islandView,origin)).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   if(!state.sourceRestView)batchDistantArchipelagoFlights(props,islandView,origin);
+  if(!state.sourceRestView)batchDistantExit(props,islandView,origin);
   sourceCodeInstances.push(...canonicalCode.filter(p=>chartOf(p)===chartId&&archipelagoVisible(p,islandView,origin)).map(p=>({...p,portalExcludePlanes:sourceExcludes.length?sourceExcludes:null})));
   lights.splice(0,lights.length,...allLights.filter(l=>chartOf(l)===chartId));
   const submitTransform=(p,m,extra={})=>{const q=transform(m,[p.x,p.y,p.z]);return{...p,...extra,matrix:multiply(m,p.matrix),x:q[0],y:q[1],z:q[2],...(p.surroundings?{sourceWorldMatrix:portalMultiply(m,p.sourceWorldMatrix||identity())}:{})};};

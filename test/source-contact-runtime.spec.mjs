@@ -206,8 +206,8 @@ for (const accepted of [false, true]) test('the outskirts return stays open unti
   assert.equal(runtime.hushMode().contactAvailable, true);
   runtime.setPlayerPosition(field);
   runtime.onStep(field, outskirts);
-  for (let beat = 0; beat < 3; beat++) runtime.talkToHorizonBust();
-  assert.equal(runtime.decideHorizonBust(accepted).decision, accepted ? 'accepted' : 'declined');
+  if(accepted)runtime.recognizeHorizonApproach({eligible:true});
+  assert.equal(runtime.decideHorizonApproach(accepted).decision, accepted ? 'accepted' : 'declined');
   runtime.onStep(outskirts, field);
   assert.equal(runtime.state().phase, 'horizon', 'a bust decision ends the return-to-contact option');
   assert.equal(runtime.beginHushContact(), null);

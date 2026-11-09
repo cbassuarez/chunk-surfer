@@ -909,8 +909,7 @@ import { createStationRealm, normalizeStationRealmHomeState,
   stationRealmSeed, stationRealmFrame as realmFrame, moveStationRealm as moveRealm,
   beginStationRealmReturn, stationRealmAtWindow } from './station-realms.js';
 import {
-  advanceSourceUnravelling, normalizeSourceUnravelling, sourceUnravellingFrame,
-  sourceStreetRemnantVisible, SOURCE_UNRAVELLING_HALF_WIDTH_CELLS,
+  normalizeSourceUnravelling, sourceUnravellingFrame, SOURCE_UNRAVELLING_HALF_WIDTH_CELLS,
 } from './source-unravelling.js';
 
 export function createSourceSpaceRuntime({
@@ -3017,7 +3016,7 @@ export function createSourceSpaceRuntime({
   function outskirtsBodyFrame({ time = 0, reducedMotion = false } = {}) {
     const dark = state.phase === CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS || state.phase === CHUNK_SURF_PHASE.HORIZON;
     if (!dark) return null;
-    const residue = sourceUnravellingFrame(horizonUnravelling).bodyResidue;
+    const residue = sourceUnravellingFrame(null).bodyResidue;
     if (residue <= .0001) return null;
     const gait = outskirtsGaitAt(time, state.seed, { reducedMotion });
     const transit=streetExperience.busTransitState(),age=!transit.exited||!transit.interior||transit.crossedAt==null?Infinity:Math.max(0,transit.clock-transit.crossedAt);
@@ -3028,7 +3027,7 @@ export function createSourceSpaceRuntime({
       stumble: gait.stumble * residue, eyeDropM: (gait.eyeDropM+.10*expulsion) * residue, residue,expulsion };
   }
   function horizonMovementMultiplier(time = 0, reducedMotion = false) {
-    const residue = sourceUnravellingFrame(horizonUnravelling).bodyResidue;
+    const residue = sourceUnravellingFrame(null).bodyResidue;
     const streetPace = outskirtsGaitAt(time, state.seed, { reducedMotion }).pace * (1 + .45 * outskirtsLosing());
     return streetPace * residue + HORIZON_PACE * (1 - residue);
   }
@@ -4925,11 +4924,7 @@ export function createSourceSpaceRuntime({
   const inStreetRemnantView = () => state.phase === CHUNK_SURF_PHASE.HORIZON
     && player.y - landscapeOrigin().y <= SOURCE_PRE_TAPE.from
     && player.y - landscapeOrigin().y >= SOURCE_HORIZON.to;
-  function streetPieceVisible(piece) {
-    if (!horizonUnravelling.active) return true;
-    if (/^last-guide|^last-rail|^last-service-stop/.test(piece.key)) return false;
-    return sourceStreetRemnantVisible(piece.id, horizonUnravelling.amount);
-  }
+  function streetPieceVisible(){return true;}
   function streetRenderPieces() {
     const pieces = outskirtPieces();
     return [...pieces, ...outskirtCache.remnants];
@@ -5186,8 +5181,8 @@ export function createSourceSpaceRuntime({
     const onsetY = landscapeOrigin().y + SOURCE_HORIZON.from + 50 / CELL;
     // Once the late-road depletion has been lived, the old tape boundary
     // cannot restore the torch, breath, steps or recorder to a clean state.
-    if (horizonUnravelling.active || py <= landscapeOrigin().y + SOURCE_HORIZON.from) {
-      return roadLosingAt(onsetY) * sourceUnravellingFrame(horizonUnravelling).bodyResidue;
+    if (py <= landscapeOrigin().y + SOURCE_HORIZON.from) {
+      return roadLosingAt(onsetY);
     }
     return inOutskirtsView() ? roadLosingAt(py) : 0;
   }
@@ -5327,16 +5322,6 @@ export function createSourceSpaceRuntime({
     return { handled };
   }
   function outskirtsStreetFrame({ time = edgeDoorClock(), viewYaw = 0, reducedMotion = false } = {}) {
-    if (inStreetRemnantView() && horizonUnravelling.active) {
-      const eye = outskirtsEye(), decay = sourceUnravellingFrame(horizonUnravelling);
-      outskirtPieces();
-      const anchors = outskirtCache.remnants.filter(piece => piece.key === 'remnant-lamp');
-      return { beds: anchors.filter(streetPieceVisible).map(piece => ({
-        id: `${piece.id}:hum`, kind: 'lodge', x: piece.x, z: piece.z,
-        distance: Math.hypot(piece.x - eye.x, piece.z - eye.z),
-        gain: .10 * decay.street, pass: OUTSKIRT_STRETCH_COUNT - 1,
-      })), events: [], encounter: null, along: outskirtsAlong(), pass: OUTSKIRT_STRETCH_COUNT - 1 };
-    }
     if (!inOutskirtsView()) return { beds: [], events: [], encounter: null };
     if(streetExperience.busTransitState().interior?.active){const eye=outskirtsEye();return{beds:[{id:'bus-organ',kind:'body',...eye,distance:0,gain:.3,pass:7}],events:streetExperience.events(),encounter:null,along:outskirtsAlong(),pass:7};}
     streetReducedMotion = reducedMotion;

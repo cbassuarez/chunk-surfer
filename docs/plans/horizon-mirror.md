@@ -17,7 +17,7 @@ The truth is always given. An earned condition opens an additional tower offer. 
 | Occupant | Truth | Offer evidence |
 |---|---|---|
 | Sarah | The boundary was hers; she never said he could. | A known refusal and no call to her. |
-| Lyle (he/him) | It never worked, and that was all right. | The recorded music-box encounter: broken on the coast, or whole in the cab. Broken takes precedence when both are known. |
+| Lyle (he/him) | It never worked, and that was all right. | A completed coast encounter or the complete cab tune opens the offer using the broken-box dialogue. The earlier whole-box record remains readable for older saves. |
 | Daisy | The final petal says loves me. | Complete all 21 petals here. |
 | Ant | It gets across. | The field records that the player stopped to watch it cross. |
 

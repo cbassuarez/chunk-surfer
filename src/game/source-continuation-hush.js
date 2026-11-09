@@ -370,7 +370,7 @@ function blockedLeaf(actor,next,player,events) {
   return false;
 }
 function advanceContinuationHushBody(actor,{dt,player,protectedRefuge=false,refuge=null,frozen=false,defeated=false,events=[],pace:paceOverride=null}={}) {
-  if(defeated&&!actor.fall&&!actor.recovery&&!actor.bodyTransit){
+  if(defeated&&actor.active&&!actor.fall&&!actor.recovery&&!actor.bodyTransit){
     // The chapter's earned victory ends pursuit, while leaving the real body
     // available for the separately warned repeat Contact/cassette consequence.
     actor.mode='yield';actor.velocity={x:0,z:0};return false;

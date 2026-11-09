@@ -26,7 +26,7 @@ import {
   normalizeChunkSurfState,
   reduceChunkSurf,
 } from '../src/game/chunk-surf-state.js';
-import { createSourceSpaceRuntime, horizonBustEyeEvidence } from '../src/game/source-space-runtime.js';
+import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 import { nextSourceContact, resolveSourceContact } from '../src/game/source-contact.js';
 import { ENDING_IDS } from '../src/progression/schema.js';
 import { RETURN_DEFS } from '../src/progression/report.js';
@@ -84,63 +84,37 @@ const finalState=()=>buildChunkSurfGodPreset(CHUNK_SURF_GOD_PRESET.EXPOSED_BATTL
   assert.deepEqual(dispatch(lost,'SOURCE_NORMAL_EXIT'),lost);
 }
 
-// Walking onward leaves contact open until the bust. The eyes prove a past act;
-// they are neither consumed nor made eligible merely by having been offered.
+// Walking onward leaves Contact available until the physical road decision.
 {
   const walked=dispatch(finalState(),'SOURCE_NORMAL_EXIT');
   assert.equal(walked.phase,CHUNK_SURF_PHASE.HORIZON);
   assert.equal(walked.horizon.reason,HORIZON_REASON.WALKED_AWAY);
-  assert.equal(walked.finalEncounter.outcome,null,'passing into the outskirts is not a fight result');
-  assert.equal(walked.finale.route,null,'the bust has not closed the return route yet');
-  assert.equal(horizonBustEyeEvidence('carried').eligible,true);
-  assert.equal(horizonBustEyeEvidence('returned').eligible,true);
-  assert.equal(horizonBustEyeEvidence('declined').eligible,false);
-  assert.equal(horizonBustEyeEvidence('in-the-water').eligible,false);
-  assert.equal(horizonBustEyeEvidence(null).eligible,false);
-
+  assert.equal(walked.finalEncounter.outcome,null);
+  assert.equal(walked.finale.route,null);
   const returned={...walked,profile:{...walked.profile,marbleEyes:'returned'}};
   const runtime=createSourceSpaceRuntime({initialState:returned});
-  for(let beat=0;beat<3;beat+=1)runtime.talkToHorizonBust();
-  assert.equal(runtime.state().finale.bust.recognized,true);
-  assert.equal(runtime.decideHorizonBust(true).decision,'accepted');
-  assert.equal(runtime.state().profile.marbleEyes,'returned','eye evidence is not consumed');
-  // The detour opens the bell passage rather than closing the chapter; the
-  // route commits here and the completion arrives four hundred metres later,
-  // when the body walks into the room. See test/horizon.spec.mjs for the walk.
-  const tower=runtime.takeHorizonBustDetour();
-  assert.equal(tower.pathOpened,true,'the bust opens a path instead of teleporting to the bells');
+  assert.equal(runtime.recognizeHorizonApproach({eligible:true}).recognized,true);
+  assert.equal(runtime.decideHorizonApproach(true).decision,'accepted');
+  assert.equal(runtime.state().profile.marbleEyes,'returned','gallery history stays separate');
   assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.HORIZON);
   assert.equal(runtime.state().finale.route,SOURCE_FINALE_ROUTE.TOWER);
   assert.equal(runtime.state().completed,false);
-  const origin=runtime.state().landscapeOrigin;
-  let position={x:origin.x+tower.path[0].x,y:origin.y+tower.path[0].y};
-  runtime.setPlayerPosition(position);
-  for(const point of tower.path.slice(1)){
-    const target={x:origin.x+point.x,y:origin.y+point.y};
-    const start={...position},steps=Math.ceil(Math.hypot(target.x-start.x,target.y-start.y));
-    for(let step=1;step<=steps;step++){
-      const next={x:start.x+(target.x-start.x)*step/steps,y:start.y+(target.y-start.y)*step/steps};
-      assert.equal(runtime.geometry.canStep(position.x,position.y,next.x,next.y).ok,true,'the bust path is physically walkable');
-      runtime.onStep(position,next);
-      position=next;
-    }
-  }
-  assert.equal(runtime.state().phase,CHUNK_SURF_PHASE.BELLS,'walking the opened path reaches the field');
+  assert.equal(runtime.chooseHorizonExit(HORIZON_EXIT.TOWER).entered,CHUNK_SURF_PHASE.BELLS);
+  runtime.setPlayerPosition(runtime.checkpointPosition());
+  assert.equal(runtime.geometry.cellAt(runtime.checkpointPosition().x,runtime.checkpointPosition().y).ceil,null);
   const towerDone=runtime.enterBellsRoom();
   assert.equal(towerDone.completion.route,SOURCE_FINALE_ROUTE.TOWER);
   assert.equal(towerDone.completion.transitionTarget,'cathedral');
-
-  let chapel={...walked,profile:{...walked.profile,marbleEyes:'declined'}};
-  const noEyes=createSourceSpaceRuntime({initialState:chapel});
-  assert.equal(noEyes.talkToHorizonBust().eligible,false);
-  assert.equal(noEyes.state().finale.route,SOURCE_FINALE_ROUTE.CHAPEL);
-  const chapelExit=noEyes.chooseHorizonExit(HORIZON_EXIT.CHAPEL);
-  assert.equal(chapelExit.entered,CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS,'straight on still ends at the last frame of the tape');
-  assert.equal(noEyes.state().completed,false);
-  assert.equal(noEyes.enterChapelDoor().completion.transitionTarget,'chapel');
+  const chapel=createSourceSpaceRuntime({initialState:{...walked,profile:{...walked.profile,marbleEyes:'declined'}}});
+  assert.equal(chapel.recognizeHorizonApproach({eligible:false}).eligible,false);
+  assert.equal(chapel.state().finale.route,null,'truth alone never chooses for the player');
+  assert.equal(chapel.decideHorizonApproach(false).decision,'declined');
+  assert.equal(chapel.chooseHorizonExit(HORIZON_EXIT.CHAPEL).entered,CHUNK_SURF_PHASE.CHAPEL_OUTSKIRTS);
+  assert.equal(chapel.state().completed,false);
+  assert.equal(chapel.enterChapelDoor().completion.transitionTarget,'chapel');
 }
 
-// A recognized bust decision permanently partitions Tower from Chapel. Tower
+// A recognized occupant offer permanently partitions Tower from Chapel. Tower
 // then advances through machinery, Cathedral, fight, carry, and one ending.
 {
   let state=dispatch(finalState(),'SOURCE_NORMAL_EXIT');

@@ -108,7 +108,7 @@
       "nodes": 5,
       "lines": 371,
       "choices": 0,
-      "sourceSha256": "70b76b9dc3807f49a9d518856707cd0c11124c150afefc1b686a7708f771ce0b"
+      "sourceSha256": "38ec45e5e1206d36e69ef114e871510d31c9a733740fa1d6ab4cda5fddc855dc"
     },
     {
       "id": "runtime.data.conservatory-script",
@@ -201,6 +201,15 @@
       "sourceSha256": "d167a060f361a86fb66761161156508f1876919eac31cc958ec5136d2c7ac296"
     },
     {
+      "id": "runtime.data.horizon-approach-dialogue",
+      "path": "narrative-runtime/runtime.data.horizon-approach-dialogue.story.json",
+      "module": "src/data/horizon-approach-dialogue.js",
+      "nodes": 12,
+      "lines": 28,
+      "choices": 5,
+      "sourceSha256": "6cfec7014b70ed7d6ec9d047449b187cc8cdee4bcaf1b423f28f293800924a48"
+    },
+    {
       "id": "runtime.data.meaning-lines",
       "path": "narrative-runtime/runtime.data.meaning-lines.story.json",
       "module": "src/data/meaning-lines.js",
@@ -222,10 +231,10 @@
       "id": "runtime.data.opening-prologue",
       "path": "narrative-runtime/runtime.data.opening-prologue.story.json",
       "module": "src/data/opening-prologue.js",
-      "nodes": 64,
-      "lines": 173,
-      "choices": 47,
-      "sourceSha256": "627df500933e094820d5d620ff2352b0f66acefdebb6451066b7d163d935de7b"
+      "nodes": 66,
+      "lines": 172,
+      "choices": 48,
+      "sourceSha256": "0d32c79bce9ea3ef354ae803901556b40807e36c01afd668f38b0e14b1dd216e"
     },
     {
       "id": "runtime.data.plaza-shopfronts",
@@ -502,9 +511,9 @@
       "path": "narrative-runtime/runtime.game.source-contact.story.json",
       "module": "src/game/source-contact.js",
       "nodes": 1,
-      "lines": 2,
+      "lines": 6,
       "choices": 0,
-      "sourceSha256": "349c7fce8907b1e953791e4bba823d46af3a289530cdf6ed8e8e7e4d8797cd1a"
+      "sourceSha256": "3228ca98f3fa2c509f1f2dd26fa37bd9bbd15ddbf5f2d6706f68581f416e3acb"
     },
     {
       "id": "runtime.game.source-continuation-contact",
@@ -513,7 +522,7 @@
       "nodes": 1,
       "lines": 1,
       "choices": 0,
-      "sourceSha256": "f60366ff321d1407d35e8390839a03a1d43f3ceacd59ad9a674be7e3965da503"
+      "sourceSha256": "82754ff2daa3e14c0b82dd29f8396f187d05c9817c38452bec3eca762db3c676"
     },
     {
       "id": "runtime.game.source-last-reception",
@@ -546,10 +555,10 @@
       "id": "runtime.game.source-space-runtime",
       "path": "narrative-runtime/runtime.game.source-space-runtime.story.json",
       "module": "src/game/source-space-runtime.js",
-      "nodes": 3,
-      "lines": 5,
+      "nodes": 1,
+      "lines": 3,
       "choices": 0,
-      "sourceSha256": "940560674cfd859dcaba43b36f6188acfc8bfbe6c936e99de59f29f72e24a28b"
+      "sourceSha256": "9eb3e9623cb934763be32db47803b37afbfec1b70a82f08626631591566d9f29"
     },
     {
       "id": "runtime.game.threshold-gag-inspection",
@@ -600,10 +609,10 @@
       "id": "runtime.main",
       "path": "narrative-runtime/runtime.main.story.json",
       "module": "src/main.js",
-      "nodes": 138,
-      "lines": 273,
-      "choices": 21,
-      "sourceSha256": "b9ebc6e25cff4c6096c4723267d31a1747eacd8c6c654e48867c823ac859300a"
+      "nodes": 132,
+      "lines": 267,
+      "choices": 15,
+      "sourceSha256": "3b7182a707fbcd540ea1d41196be04c820234e4b69665d4d5b8d28b64c0dc311"
     },
     {
       "id": "runtime.render.arrival-title-options",

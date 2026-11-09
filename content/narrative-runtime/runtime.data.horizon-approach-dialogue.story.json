@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "id": "runtime.data.horizon-approach-dialogue",
+  "title": "Runtime · data/horizon-approach-dialogue.js",
+  "status": "reference",
+  "readOnly": true,
+  "entry": "horizonApproachTruth",
+  "entries": [
+    "horizonApproachTruth",
+    "horizonApproachReturnLines",
+    "horizonApproachOfferLines",
+    "horizonApproachProposition.start",
+    "horizonApproachProposition.start.otherwise-again",
+    "horizonApproachProposition.questions",
+    "horizonApproachProposition.identity",
+    "horizonApproachProposition.history",
+    "horizonApproachProposition.route",
+    "horizonApproachProposition.consequence",
+    "horizonApproachProposition.decision.when-again",
+    "horizonApproachProposition.decision.otherwise-again"
+  ],
+  "tags": [
+    "runtime",
+    "derived"
+  ],
+  "regions": [],
+  "module": "src/data/horizon-approach-dialogue.js",
+  "notes": "Generated from src/data/horizon-approach-dialogue.js by scripts/export-runtime-narrative.mjs. Read-only: the game reads the module, not this document. Edit the module (or move the dialogue into content/narrative) and relaunch the studio.",
+  "nodes": {
+    "horizonApproachTruth": {
+      "id": "horizonApproachTruth",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachTruth.l0",
+          "who": "you",
+          "text": "The boundary was mine.",
+          "source": "src/data/horizon-approach-dialogue.js:12"
+        },
+        {
+          "id": "horizonApproachTruth.l1",
+          "who": "you",
+          "text": "You could leave that part to me. / I never said you could.",
+          "source": "src/data/horizon-approach-dialogue.js:13"
+        },
+        {
+          "id": "horizonApproachTruth.l2",
+          "who": "you",
+          "text": "The spring gives out in the seventh bar. / You brought the one from the cab. / The part that would not play.",
+          "source": "src/data/horizon-approach-dialogue.js:16"
+        },
+        {
+          "id": "horizonApproachTruth.l3",
+          "who": "you",
+          "text": "It never worked. That was all right.",
+          "source": "src/data/horizon-approach-dialogue.js:17"
+        },
+        {
+          "id": "horizonApproachTruth.l4",
+          "who": "you",
+          "text": "I can finish it.",
+          "source": "src/data/horizon-approach-dialogue.js:18"
+        },
+        {
+          "id": "horizonApproachTruth.l5",
+          "who": "you",
+          "text": "It gets across.",
+          "source": "src/data/horizon-approach-dialogue.js:20"
+        },
+        {
+          "id": "horizonApproachTruth.l6",
+          "who": "you",
+          "text": "Twenty-one petals.",
+          "source": "src/data/horizon-approach-dialogue.js:21"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:12"
+    },
+    "horizonApproachReturnLines": {
+      "id": "horizonApproachReturnLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachReturnLines.l0",
+          "who": "you",
+          "text": "Two attempts remain. A third defeat is final. / One attempt remains. A third defeat is final.",
+          "source": "src/data/horizon-approach-dialogue.js:33"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:33"
+    },
+    "horizonApproachOfferLines": {
+      "id": "horizonApproachOfferLines",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachOfferLines.l0",
+          "who": "you",
+          "text": "The tower is my only way now. / The tower is the only way now.",
+          "source": "src/data/horizon-approach-dialogue.js:40"
+        },
+        {
+          "id": "horizonApproachOfferLines.l1",
+          "who": "you",
+          "text": "Two attempts remain. A third defeat is final. / One attempt remains. A third defeat is final.",
+          "source": "src/data/horizon-approach-dialogue.js:41"
+        },
+        {
+          "id": "horizonApproachOfferLines.l2",
+          "who": "you",
+          "text": "It's easier as long as you don't lose.",
+          "source": "src/data/horizon-approach-dialogue.js:46"
+        },
+        {
+          "id": "horizonApproachOfferLines.l3",
+          "who": "you",
+          "text": "And if I lose?",
+          "source": "src/data/horizon-approach-dialogue.js:47"
+        },
+        {
+          "id": "horizonApproachOfferLines.l4",
+          "who": "you",
+          "text": "I come back here, with no choice but to continue. The chapel way will be closed. / You come back here, with no choice but to continue. The chapel way will be closed.",
+          "source": "src/data/horizon-approach-dialogue.js:48"
+        },
+        {
+          "id": "horizonApproachOfferLines.l5",
+          "who": "you",
+          "text": "The first two defeats bring you back. The third is final.",
+          "source": "src/data/horizon-approach-dialogue.js:49"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:40"
+    },
+    "horizonApproachProposition.start": {
+      "id": "horizonApproachProposition.start",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.start.l0",
+          "who": "you",
+          "text": "There is another way. / You can go another way. / There is another way.",
+          "source": "src/data/horizon-approach-dialogue.js:60"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:60",
+      "targetName": "decision / questions"
+    },
+    "horizonApproachProposition.start.otherwise-again": {
+      "id": "horizonApproachProposition.start.otherwise-again",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.start.otherwise-again.l0",
+          "who": "you",
+          "text": "There is another way. / You can go another way. / There is another way.",
+          "source": "src/data/horizon-approach-dialogue.js:60"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:60"
+    },
+    "horizonApproachProposition.questions": {
+      "id": "horizonApproachProposition.questions",
+      "type": "choice",
+      "lines": [],
+      "choices": [
+        {
+          "id": "horizonApproachProposition.questions.c0",
+          "text": "Who is there?",
+          "source": "src/data/horizon-approach-dialogue.js:62",
+          "goto": "horizonApproachProposition.identity"
+        },
+        {
+          "id": "horizonApproachProposition.questions.c1",
+          "text": "What happened?",
+          "source": "src/data/horizon-approach-dialogue.js:63",
+          "goto": "horizonApproachProposition.history"
+        },
+        {
+          "id": "horizonApproachProposition.questions.c2",
+          "text": "Where does it go?",
+          "source": "src/data/horizon-approach-dialogue.js:64",
+          "goto": "horizonApproachProposition.route"
+        },
+        {
+          "id": "horizonApproachProposition.questions.c3",
+          "text": "What does it cost?",
+          "source": "src/data/horizon-approach-dialogue.js:65",
+          "goto": "horizonApproachProposition.consequence"
+        },
+        {
+          "id": "horizonApproachProposition.questions.c4",
+          "text": "That is enough.",
+          "source": "src/data/horizon-approach-dialogue.js:66",
+          "targetName": "decision"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:62"
+    },
+    "horizonApproachProposition.identity": {
+      "id": "horizonApproachProposition.identity",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.identity.l0",
+          "who": "you",
+          "text": "Who is there?",
+          "source": "src/data/horizon-approach-dialogue.js:68"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:68",
+      "goto": "horizonApproachProposition.questions"
+    },
+    "horizonApproachProposition.history": {
+      "id": "horizonApproachProposition.history",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.history.l0",
+          "who": "you",
+          "text": "What happened?",
+          "source": "src/data/horizon-approach-dialogue.js:69"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:69",
+      "goto": "horizonApproachProposition.questions"
+    },
+    "horizonApproachProposition.route": {
+      "id": "horizonApproachProposition.route",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.route.l0",
+          "who": "you",
+          "text": "Where does it go?",
+          "source": "src/data/horizon-approach-dialogue.js:70"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:70",
+      "goto": "horizonApproachProposition.questions"
+    },
+    "horizonApproachProposition.consequence": {
+      "id": "horizonApproachProposition.consequence",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.consequence.l0",
+          "who": "you",
+          "text": "What does it cost?",
+          "source": "src/data/horizon-approach-dialogue.js:72"
+        },
+        {
+          "id": "horizonApproachProposition.consequence.l1",
+          "who": "you",
+          "text": "The tower becomes the only way. The chapel will not open again.",
+          "source": "src/data/horizon-approach-dialogue.js:73"
+        },
+        {
+          "id": "horizonApproachProposition.consequence.l2",
+          "who": "you",
+          "text": "It's easier as long as you don't lose.",
+          "source": "src/data/horizon-approach-dialogue.js:74"
+        },
+        {
+          "id": "horizonApproachProposition.consequence.l3",
+          "who": "you",
+          "text": "And if I lose?",
+          "source": "src/data/horizon-approach-dialogue.js:75"
+        },
+        {
+          "id": "horizonApproachProposition.consequence.l4",
+          "who": "you",
+          "text": "You come back here, with no choice but to continue. / I come back here, with no choice but to continue.",
+          "source": "src/data/horizon-approach-dialogue.js:76"
+        },
+        {
+          "id": "horizonApproachProposition.consequence.l5",
+          "who": "you",
+          "text": "The first two defeats bring you back. The third is final.",
+          "source": "src/data/horizon-approach-dialogue.js:77"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:72",
+      "goto": "horizonApproachProposition.questions"
+    },
+    "horizonApproachProposition.decision.when-again": {
+      "id": "horizonApproachProposition.decision.when-again",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.decision.when-again.l0",
+          "who": "you",
+          "text": "The chapel way is closed. The tower way is still there.",
+          "source": "src/data/horizon-approach-dialogue.js:80"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:80"
+    },
+    "horizonApproachProposition.decision.otherwise-again": {
+      "id": "horizonApproachProposition.decision.otherwise-again",
+      "type": "line",
+      "lines": [
+        {
+          "id": "horizonApproachProposition.decision.otherwise-again.l0",
+          "who": "you",
+          "text": "Towards the tower, you take this way. Walk on elsewhere, and it is the chapel.",
+          "source": "src/data/horizon-approach-dialogue.js:82"
+        },
+        {
+          "id": "horizonApproachProposition.decision.otherwise-again.l1",
+          "who": "you",
+          "text": "There is time to decide.",
+          "source": "src/data/horizon-approach-dialogue.js:83"
+        }
+      ],
+      "source": "src/data/horizon-approach-dialogue.js:82"
+    }
+  }
+}

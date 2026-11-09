@@ -35,6 +35,7 @@ import { promptLine, activeInputPromptDevice } from './bindings.js';
 import {sourceRestSubtitleLayout} from '../render/source-rest-subtitle.js';
 import {renderArrivalTitleOption} from '../render/arrival-title-options.js';
 import {hardwareMotionReduced} from '../render/hardware-material.js';
+import {cinematicConversationLayout,drawCinematicConversation} from '../render/cinematic-conversation.js';
 
 const COL_W = 86;
 const KEEP = 12;
@@ -62,16 +63,51 @@ export function makeColdOpenScene({
   worldUnderlay = false, worldView = null, presentation = worldUnderlay ? 'cinematic' : 'monitor',
   transcriptBackground = 'rgba(2,4,5,.58)',
   transcriptPlacement = 'bottom', presentationView = null, automatic = false,
+  cinematicPreset = null, cinematicReview = false, onCinematicReviewChange = null,
 } = {}) {
   let scene = null;
   let completed = false;
   let exited = false;
   let choiceScrollOffset=0,choiceScrollKey='',choiceScrollMax=0;
+  let captionPage=0,captionPageKey='',reviewActive=false,reviewPage=0,externalPresentationHold=false;
   function choiceView(){
     const raw=convo.view(),view=typeof presentationView==='function'?(presentationView(raw)||raw):raw;
     const key=`${view.nodeId||''}:${view.pending?.kind||''}:${view.pending?.index??''}`;
     if(key!==choiceScrollKey){choiceScrollKey=key;choiceScrollOffset=0;choiceScrollMax=0;}
     return {...view,choiceScrollOffset};
+  }
+  const scenePreset=presentation==='cinematic'&&cinematicPreset==='scene';
+  const reviewEvent=e=>e.controllerAction?e.controllerAction==='tabPrev':String(e.code||e.key||'').toLowerCase()==='keyq'||String(e.key||'').toLowerCase()==='q';
+  function setReview(next){
+    next=!!next;if(next===reviewActive)return false;
+    reviewActive=next;reviewPage=0;
+    if(next)convo.presentationPause?.();else if(!externalPresentationHold&&!exited)convo.presentationResume?.();
+    onCinematicReviewChange?.(next);return true;
+  }
+  function measureCinematic(){
+    const view=choiceView(),size=uiSize(),key=`${view.nodeId||''}:${view.lineSerial||0}:${view.pending?.kind||''}`;
+    if(key!==captionPageKey){captionPageKey=key;captionPage=0;}
+    const captionView={...view,captionPlacement:view.captionPlacement||transcriptPlacement};
+    const history=Array.isArray(view.captionHistory)?view.captionHistory:view.history||[];
+    const canReview=cinematicReview&&history.length>0&&!view.captionHidden;
+    let prompt='';
+    if(reviewActive)prompt=promptLine([{action:'tabPrev',label:'RETURN'},{action:'set',label:'READ PAGE'}]);
+    else{
+      if(view.presentationPrompt!=null)prompt=String(view.presentationPrompt);
+      else if(view.captionReady!==false){
+        if(view.pending?.options?.length)prompt=promptLine([{action:'select',label:'SELECT'},{action:'confirm',label:view.pending.kind==='say'?'SAY':'REPLY'}]);
+        else if(!automatic&&!view.captionAutomatic)prompt=promptLine([{action:'continue',label:view.typing?'REVEAL':'CONTINUE'}]);
+      }
+      if(canReview)prompt+=(prompt?' · ':'')+promptLine([{action:'tabPrev',label:'REVIEW'}]);
+    }
+    let layout=cinematicConversationLayout(captionView,{...size,page:captionPage,selectedOffset:choiceScrollOffset,prompt,review:reviewActive,reviewPage});
+    if(reviewActive||layout.bodyPages>1||layout.choices.selectedScroll){
+      if(reviewActive)prompt+=` · ${layout.bodyPage+1}/${layout.bodyPages}`;
+      else if(layout.bodyPages>1)prompt+=` · ${layout.bodyPage+1}/${layout.bodyPages} · ${promptLine([{action:'set',label:'READ PAGE'}])}`;
+      if(layout.choices.selectedScroll)prompt+=' · '+promptLine([{action:'set',label:'READ PAGE'}]);
+      layout=cinematicConversationLayout(captionView,{...size,page:captionPage,selectedOffset:choiceScrollOffset,prompt,review:reviewActive,reviewPage});
+    }
+    return layout;
   }
   const active = () => !exited && (presentation !== 'cinematic' || scenes.top() === scene);
   const convo = createConversation({
@@ -103,19 +139,49 @@ export function makeColdOpenScene({
       if (ambient) { audio?.startSoundtrack?.(); audio?.startBoothTone?.(); }
       convo.start();
     },
-    exit() { exited = true; convo.stop(); audio?.stopTyping?.(); },
+    exit() { exited = true; if(reviewActive)setReview(false);convo.stop(); audio?.stopTyping?.(); },
     update(dt) { if (active()) convo.update(dt); },
-    view() { return { ...choiceView(), presentation, transcriptBackground }; }, // for the headless suites
+    view() { return { ...choiceView(), presentation, transcriptBackground, ...(scenePreset?{cinematicPreset,reviewActive}: {}) }; }, // for the headless suites
     textReviewSuspend() { convo.textReviewSuspend?.(); },
     textReviewResume() { convo.textReviewResume?.(); },
-    presentationPause() { return convo.presentationPause?.(); },
-    presentationResume() { return convo.presentationResume?.(); },
+    presentationPause() { externalPresentationHold=true;return convo.presentationPause?.(); },
+    presentationResume() { externalPresentationHold=false;return reviewActive?false:convo.presentationResume?.(); },
+    cinematicReviewActive() { return reviewActive; },
+    cinematicPresentationLayout() {
+      if(!scenePreset)return null;
+      const layout=measureCinematic();
+      return JSON.parse(JSON.stringify({...layout,
+        bounds:{x:layout.x*layout.scale,y:layout.y*layout.scale,w:layout.width*layout.scale,h:layout.height*layout.scale},
+        visibleChoices:[...new Set(layout.choices.rows.filter(row=>row.kind==='choice').map(row=>row.choiceIndex))],
+      }));
+    },
     keyup(e) { return convo.keyup?.(e) || false; },
     key(e) {
       if (!active()) return true;
+      if(scenePreset){
+        if(reviewActive){
+          if(e.key==='Escape'||e.controllerAction==='back'||reviewEvent(e)){if(!e.repeat)setReview(false);return true;}
+          const layout=measureCinematic();
+          if(['ArrowRight','ArrowDown','s','PageDown'].includes(e.key))reviewPage=Math.min(layout.bodyPages-1,reviewPage+1);
+          else if(['ArrowLeft','ArrowUp','w','PageUp'].includes(e.key))reviewPage=Math.max(0,reviewPage-1);
+          return true;
+        }
+        if(cinematicReview&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&reviewEvent(e)){
+          const v=choiceView(),history=Array.isArray(v.captionHistory)?v.captionHistory:v.history||[];
+          if(!e.repeat&&history.length&&!v.captionHidden)setReview(true);return true;
+        }
+        const layout=measureCinematic();
+        choiceScrollMax=layout.choices.selectedMaxOffset||0;
+        const pageNext=e.key==='PageDown'||e.key==='ArrowRight',pagePrev=e.key==='PageUp'||e.key==='ArrowLeft';
+        if(choiceScrollMax&&(pageNext||pagePrev)){choiceScrollOffset=Math.max(0,Math.min(choiceScrollMax,choiceScrollOffset+(pageNext?1:-1)));return true;}
+        if(!choiceScrollMax&&(pageNext||pagePrev)&&layout.bodyPages>1){captionPage=Math.max(0,Math.min(layout.bodyPages-1,captionPage+(pageNext?1:-1)));return true;}
+        const v=choiceView(),progress=[' ','Enter','z'].includes(e.key);
+        if(v.captionReady===false&&!v.typing&&(progress||/^[1-9]$/.test(String(e.key||''))))return true;
+        if(progress&&!v.pending&&!v.typing&&captionPage<layout.bodyPages-1){captionPage++;return true;}
+      }
       if (e.key === 'Escape') return true;   // no way out of a conversation
       const v=choiceView();
-      const choicePageNext=e.key==='PageDown'||e.controllerAction==='tabNext',choicePagePrev=e.key==='PageUp'||e.controllerAction==='tabPrev';
+      const choicePageNext=e.key==='PageDown'||(!scenePreset&&e.controllerAction==='tabNext'),choicePagePrev=e.key==='PageUp'||(!scenePreset&&e.controllerAction==='tabPrev');
       if(v.pending?.options?.length&&choiceScrollMax>0&&(choicePageNext||choicePagePrev)){
         choiceScrollOffset=Math.max(0,Math.min(choiceScrollMax,choiceScrollOffset+(choicePageNext?1:-1)));return true;
       }
@@ -130,7 +196,7 @@ export function makeColdOpenScene({
         // Endings remain in the world. Their transcript is an instrument panel
         // over the physical image, not a cut to the old full-screen black
         // monitor. Other conversations retain the opaque cold-open surface.
-        if (!worldUnderlay) uiFill(0, 0, cols, rows, UI_COLOR.glass);
+        if (!worldUnderlay&&!scenePreset) uiFill(0, 0, cols, rows, UI_COLOR.glass);
 
         // A terminal ending is a shot with words in it, not a web page laid over
         // a shot. Keep only the live exchange and its choices in a low glass
@@ -138,6 +204,10 @@ export function makeColdOpenScene({
         // lane, modal card or centered column here: the transformed room is the
         // primary image and remains legible while the player reads.
         if (presentation === 'cinematic') {
+          if(scenePreset){
+            const layout=measureCinematic();choiceScrollMax=layout.choices.selectedMaxOffset||0;
+            drawCinematicConversation(layout);return;
+          }
           if(v.restSubtitle){
             const scale=1.55,localCols=Math.floor(cols/scale),localRows=Math.floor(rows/scale);
             const width=Math.max(18,Math.min(86,localCols-8));

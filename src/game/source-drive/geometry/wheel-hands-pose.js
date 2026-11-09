@@ -14,7 +14,7 @@ function qrotate(v,q){const u=q.slice(0,3),t=mul(cross(u,v),2);return add(v,add(
 function align(v,a,b){const d=clamp(dot(a,b),-1,1);if(d>.999999)return v;if(d<-.999999){const axis=unit(cross(a,Math.abs(a[0])<.8?[1,0,0]:[0,1,0]));return sub(mul(axis,2*dot(axis,v)),v);}const c=cross(a,b);const q=[...c,1+d],n=Math.hypot(...q);return qrotate(v,q.map(x=>x/n));}
 function multiply(a,b){const m=Array(16).fill(0);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let i=0;i<4;i++)m[c*4+r]+=a[i*4+r]*b[c*4+i];return m;}
 function armMap(rest,start,end,twist,restLength){const basis=[[1,0,0],[0,1,0],[0,0,1]].map(v=>qrotate(v,rest.q)),current=basis.map(v=>typeof twist==='number'?rz(v,twist):qrotate(v,twist)),from=mul(current[1],-1),to=unit(sub(end,start));const target=current.map(v=>align(v,from,to)),scale=norm(sub(end,start))/restLength,m=Array(16).fill(0);for(let c=0;c<3;c++)for(let r=0;r<3;r++)m[c*4+r]=target[0][r]*basis[0][c]+target[1][r]*basis[1][c]*scale+target[2][r]*basis[2][c];for(let r=0;r<3;r++)m[12+r]=start[r]-m[r]*rest.p[0]-m[4+r]*rest.p[1]-m[8+r]*rest.p[2];m[15]=1;return m;}
-function elbowAt(side,wrist){const sign=side==='right'?1:-1,shoulder=[sign*.16,.03,.69],delta=sub(wrist,shoulder),actual=norm(delta),d=clamp(actual,Math.abs(UPPER-FOREARM)+1e-5,UPPER+FOREARM-1e-5),axis=unit(delta),along=(UPPER*UPPER-FOREARM*FOREARM+d*d)/(2*d),height=Math.sqrt(Math.max(0,UPPER*UPPER-along*along)),pole=[sign*.15,-1,.06],radial=unit(sub(pole,mul(axis,dot(pole,axis)))),elbow=add(add(shoulder,mul(axis,along)),mul(radial,height));return{shoulder,elbow,reach:actual,unreachable:actual>=UPPER+FOREARM,upperLength:norm(sub(elbow,shoulder)),forearmLength:norm(sub(wrist,elbow))};}
+function elbowAt(side,wrist,advance=[0,0,0]){const sign=side==='right'?1:-1,shoulder=add([sign*.16,.03,.69],advance),delta=sub(wrist,shoulder),actual=norm(delta),d=clamp(actual,Math.abs(UPPER-FOREARM)+1e-5,UPPER+FOREARM-1e-5),axis=unit(delta),along=(UPPER*UPPER-FOREARM*FOREARM+d*d)/(2*d),height=Math.sqrt(Math.max(0,UPPER*UPPER-along*along)),pole=[sign*.15,-1,.06],radial=unit(sub(pole,mul(axis,dot(pole,axis)))),elbow=add(add(shoulder,mul(axis,along)),mul(radial,height));return{shoulder,elbow,reach:actual,unreachable:actual>=UPPER+FOREARM,upperLength:norm(sub(elbow,shoulder)),forearmLength:norm(sub(wrist,elbow))};}
 let controller=null,lastDiagnostics=null;
 export function resetWheelHands(){controller=null;lastDiagnostics=null;}
 export function wheelHandDiagnostics(){return lastDiagnostics?structuredClone(lastDiagnostics):null;}
@@ -38,17 +38,23 @@ function qalign(a,b){a=unit(a);b=unit(b);const d=clamp(dot(a,b),-1,1);if(d<-.999
 function qslerp(a,b,t){let d=dot(a,b);if(d<0){b=b.map(v=>-v);d=-d;}if(d>.9995){const q=lerp(a,b,t),n=Math.hypot(...q);return q.map(v=>v/n);}const angle=Math.acos(clamp(d,-1,1)),den=Math.sin(angle);return a.map((v,i)=>(v*Math.sin((1-t)*angle)+b[i]*Math.sin(t*angle))/den);}
 function readReach(value){if(!value)return null;if(!['tune','power','record','play','stop'].includes(value.kind))throw Error('Unknown wheel-hand control kind.');if(!Array.isArray(value.target)||value.target.length!==3||value.target.some(v=>!Number.isFinite(v)))throw Error('Control target must be a finite wheel-local fingertip point.');if(!Number.isFinite(value.elapsed)||value.elapsed<0)throw Error('Control reach needs nonnegative elapsed simulation seconds.');const normal=value.normal||[0,-.3522742333,.9358968237];if(!Array.isArray(normal)||normal.length!==3||normal.some(v=>!Number.isFinite(v))||norm(normal)<1e-8)throw Error('Control normal must be a finite outward vector.');return{...value,target:[...value.target],normal:unit(normal)};}
 function indexSupport(rotation,normal){const points=INDEX_REACH_SUPPORT.map(p=>({p,d:dot(qrotate(p,rotation),normal)})),front=Math.min(...points.map(p=>p.d)),near=points.filter(p=>p.d<=front+.00025);return{point:mul(near.reduce((a,b)=>add(a,b.p),[0,0,0]),1/near.length),skinPlaneOffset:front-near.reduce((a,b)=>a+b.d,0)/near.length};}
+// A small posture change lets the left arm reach the recorder at its dash position.
+// Radio reaches keep their seated anchor; neither arm segment changes length.
+function controlArm(kind,wrist){
+ const shoulder=[-.16,.03,.69],delta=sub(wrist,shoulder),distance=norm(delta),recorder=['record','play','stop'].includes(kind),amount=recorder?Math.min(.06,Math.max(0,distance-(UPPER+FOREARM-.012))):0,advance=mul(unit(delta),amount);
+ return{...elbowAt('left',wrist,advance),advance};
+}
 function makeReach(request,time){
  const h=controller.hands.left,rest=REST.left,shoulder=[-.16,.03,.69],aim=unit(sub(request.target,shoulder)),baseRotation=qalign(REACH_PAD,aim);let rotation=baseRotation,wrist,ik,support;
  // Pick the real skin's foremost fingertip surface, not the pad centre hidden
  // behind it. The button-facing support hull also prevents finger penetration.
  for(let iteration=0;iteration<5;iteration++){
-  support=indexSupport(rotation,request.normal);wrist=sub(request.target,qrotate(support.point,rotation));ik=elbowAt('left',wrist);
+  support=indexSupport(rotation,request.normal);wrist=sub(request.target,qrotate(support.point,rotation));ik=controlArm(request.kind,wrist);
   const native=qrotate(qrotate([0,-1,0],rest.q),baseRotation),desired=unit(sub(ik.elbow,wrist)),a=sub(native,mul(aim,dot(native,aim))),b=sub(desired,mul(aim,dot(desired,aim)));let roll=0;if(norm(a)>1e-7&&norm(b)>1e-7)roll=clamp(Math.atan2(dot(aim,cross(unit(a),unit(b))),dot(unit(a),unit(b))),-1.2,1.2);rotation=qmul([...mul(aim,Math.sin(roll/2)),Math.cos(roll/2)],baseRotation);
  }
- support=indexSupport(rotation,request.normal);wrist=sub(request.target,qrotate(support.point,rotation));ik=elbowAt('left',wrist);
- if(ik.unreachable)return{rejected:true,reason:'Target exceeds anchored arm plus open index reach.',target:request.target,requiredWristReachM:ik.reach};
- const theta=h.theta,fromRotation=[0,0,Math.sin(theta/2),Math.cos(theta/2)];return{kind:request.kind,target:request.target,normal:request.normal,startTime:time-request.elapsed,theta,fromWrist:add(rz(rest.p,theta),[0,0,h.lift]),fromRotation,fromOpen:h.open,wrist,rotation,contactVector:support.point,skinPlaneOffsetM:support.skinPlaneOffset,approachAngleDegrees:Math.acos(clamp(dot(aim,mul(request.normal,-1)),-1,1))*180/Math.PI,pending:false};
+ support=indexSupport(rotation,request.normal);wrist=sub(request.target,qrotate(support.point,rotation));ik=controlArm(request.kind,wrist);
+ if(ik.unreachable)return{rejected:true,reason:'Target exceeds supported arm and index reach.',target:request.target,requiredWristReachM:ik.reach};
+ const theta=h.theta,fromRotation=[0,0,Math.sin(theta/2),Math.cos(theta/2)];return{kind:request.kind,target:request.target,normal:request.normal,startTime:time-request.elapsed,theta,fromWrist:add(rz(rest.p,theta),[0,0,h.lift]),fromRotation,fromOpen:h.open,wrist,rotation,shoulderAdvance:ik.advance,contactVector:support.point,skinPlaneOffsetM:support.skinPlaneOffset,approachAngleDegrees:Math.acos(clamp(dot(aim,mul(request.normal,-1)),-1,1))*180/Math.PI,pending:false};
 }
 function controlPose(request,time){let r=controller.reach;
  if(!r&&request&&request.elapsed<WHEEL_HAND_REACH.totalSeconds){
@@ -67,7 +73,7 @@ function controlPose(request,time){let r=controller.reach;
  // A driver-side lift clears the torus during both departure and return. The
  // contact endpoint is the separately calibrated outer skin surface.
  const arc=Math.sin(Math.PI*clamp(t,0,1))*.10,wrist=add(lerp(start,r.wrist,weight),[0,0,arc]),rotation=qslerp(r.fromRotation,r.rotation,weight),open=returning?weight:r.fromOpen+(1-r.fromOpen)*weight;
- return{...r,elapsed,phase:elapsed<out?'reach':returning?'return':'contact',atContact:elapsed>=out&&elapsed<=contactEnd,complete:false,weight,open,wrist,rotation,contactErrorM:elapsed>=out&&elapsed<=contactEnd?norm(sub(add(wrist,qrotate(r.contactVector,rotation)),r.target)):null};
+ return{...r,elapsed,phase:elapsed<out?'reach':returning?'return':'contact',atContact:elapsed>=out&&elapsed<=contactEnd,complete:false,weight,open,wrist,rotation,shoulderAdvance:mul(r.shoulderAdvance,weight),contactErrorM:elapsed>=out&&elapsed<=contactEnd?norm(sub(add(wrist,qrotate(r.contactVector,rotation)),r.target)):null};
 }
 function fingerJoints(side,open,reachWeight){const joints={};for(const finger of ['index','middle','ring','pinky'])for(const[i,part]of['proximal','intermediate','distal'].entries()){const normal=[.38,.68,.40][i]*open,goal=finger==='index'?[.03,.08,.04][i]:[.20,.35,.18][i],a=side==='left'&&reachWeight!=null?normal*(1-reachWeight)+(LEFT_GRIP[finger][i]-goal)*reachWeight:normal;joints[`drive_${side}_${finger}-finger-phalanx-${part}`]={rotation:[Math.sin(a/2),0,0,Math.cos(a/2)]};}for(const[i,part]of['proximal','distal'].entries()){const normal=[.28,.20][i]*open,a=side==='left'&&reachWeight!=null?normal*(1-reachWeight)+(LEFT_GRIP.thumb[i]-[.10,.08][i])*reachWeight:normal;joints[`drive_${side}_thumb-phalanx-${part}`]={rotation:[Math.sin(a/2),0,0,Math.cos(a/2)]};}return joints;}
 export function wheelHandInstances(matrix,steeringAngle=0,options={}){
@@ -80,7 +86,7 @@ export function wheelHandInstances(matrix,steeringAngle=0,options={}){
   // open the fingers with the thumb still planted. Ordinary driving/reaches
   // leave these explicit overrides absent and retain their existing solver.
   const performance=options.embodiment?.hands?.[side],theta=Number.isFinite(performance?.theta)?performance.theta:h.theta,open=Number.isFinite(performance?.open)?clamp(performance.open,-.22,1):h.open,lift=performance?0:h.lift;
-  const wrist=isReach?reach.wrist:add(rz(rest.p,theta),[0,0,lift]),rotation=isReach?reach.rotation:[0,0,Math.sin(theta/2),Math.cos(theta/2)],ik=elbowAt(side,wrist),translation=sub(wrist,qrotate(rest.p,rotation)),joints={drive_wheel_hands_root:{rotation,translation},...fingerJoints(side,isReach?reach.open:open,isReach?reach.weight:null)};
+  const wrist=isReach?reach.wrist:add(rz(rest.p,theta),[0,0,lift]),rotation=isReach?reach.rotation:[0,0,Math.sin(theta/2),Math.cos(theta/2)],ik=elbowAt(side,wrist,isReach?reach.shoulderAdvance:undefined),translation=sub(wrist,qrotate(rest.p,rotation)),joints={drive_wheel_hands_root:{rotation,translation},...fingerJoints(side,isReach?reach.open:open,isReach?reach.weight:null)};
   if(performance?.keepThumb&&!isReach)for(const part of['proximal','distal'])joints[`drive_${side}_thumb-phalanx-${part}`]={rotation:[0,0,0,1]};
   instances.push({mesh:`drive_${side}_hand`,id:`drive_${side}_hand`,matrix:Array.from(matrix),character:{joints}});
   const forearm=multiply(matrix,armMap(rest,wrist,ik.elbow,rotation,.621));for(const part of ['forearm','sleeve'])instances.push({mesh:`drive_${side}_${part}`,id:`drive_${side}_${part}`,matrix:forearm,character:{}});

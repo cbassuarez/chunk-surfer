@@ -158,7 +158,7 @@ export function makeOpeningVehicleScene({
       }
       return true;
     },
-    wheel(event={}){if(!inspectAt)return false;inspectDistance=clamp(inspectDistance*Math.exp(finite(event.deltaY)*.001),.09,.3);return true;},
+    wheel(event={}){if(!inspectAt)return false;inspectDistance=clamp(inspectDistance*Math.exp(finite(event.deltaY)*.001),.10,.3);return true;},
     keyup(event={}){const control=action(event);if(control)pressed.delete(control);const key=String(event.code||event.key||'').toLowerCase().replace(/^key/,'').replace('bracketleft','[').replace('bracketright',']');inspectKeys.delete(key);return true;},
     blur(){held=true;clearInput();},suspend(){held=true;clearInput();},resume(){held=false;clearInput();},
     exit(){if(exited)return;exited=true;clearInput();onExit({completed,checkpoint:serialize(),anchor:currentAnchor()});},

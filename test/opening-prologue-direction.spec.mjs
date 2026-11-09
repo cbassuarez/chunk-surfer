@@ -55,6 +55,20 @@ test('a precise level look remains level rather than being treated as a missing 
  const d=createPrologueDrive();d.start();const raw=d.frame(metrics);raw.look={yaw:raw.driveState.heading,pitch:0};const f=createOpeningPrologueDirection().compose(raw,{semanticPhase:'road',snap:true});close(f.look.pitch,0,1e-7);d.dispose();
 });
 
+test('the full-width Cinematic frame aims at its real subject without the removed right-column yaw bias',()=>{
+ const d=createPrologueDrive();d.start();d.lookBy(.12,0);const raw=d.frame(metrics),direction=createOpeningPrologueDirection();
+ try{
+  for(const spec of[{semanticPhase:'road',stageId:'dark'},{semanticPhase:'recognition',stageId:'interval'},{semanticPhase:'recognition',stageId:'grip'},
+   {semanticPhase:'ellery',stageId:'ellery'},{semanticPhase:'personal',stageId:'fate3'}]){
+   const f=direction.compose(raw,{...spec,snap:true}),j=f.journey,delta=j.target.map((n,k)=>n-j.eye[k]);
+   close(j.yaw-Math.atan2(delta[0],-delta[2]),.12,1e-6,'head look remains responsive without a column offset');
+   if(spec.stageId==='grip'){
+    const wheel=f.scene.props.find(p=>p.mesh==='drive_wheel');close3(j.target,[wheel.x,wheel.y+.05,wheel.z]);
+   }
+  }
+ }finally{d.dispose();}
+});
+
 test('the actual physical-drive branch acquires the horizon before the shared dither rather than bypassing it',()=>{
  const renderer=readFileSync(new URL('../src/render/r3d.js',import.meta.url),'utf8'),driveRenderer=readFileSync(new URL('../src/game/source-drive-renderer.js',import.meta.url),'utf8');
  assert.match(driveRenderer,/r3dFrame\(\{[\s\S]*?sourceVoidPhysical:true/,'the opening really enters the physical acquisition branch');

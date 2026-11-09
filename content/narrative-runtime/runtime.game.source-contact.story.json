@@ -22,18 +22,42 @@
       "lines": [
         {
           "id": "sourceContactDialogue.l0",
-          "who": "you",
-          "text": "I already broke free of it here. This will not be another fight. If I touch it again, it will take one available recording. I will have to find that recording here or in the next Source to hear it again. If none remain, it has nothing to take. I can still lower my hand.",
-          "source": "src/game/source-contact.js:188"
+          "who": "direction",
+          "text": "The pressure reaches you. The floor is still beneath your feet. There is nowhere left between you and it.",
+          "source": "src/game/source-contact.js:189"
         },
         {
           "id": "sourceContactDialogue.l1",
+          "who": "hands",
+          "text": "It has reached you. You have not reached for it. Those are different things.",
+          "source": "src/game/source-contact.js:190"
+        },
+        {
+          "id": "sourceContactDialogue.l2",
+          "who": "you",
+          "text": "I can let it carry me back. Or I can put my hand out and fight.",
+          "source": "src/game/source-contact.js:191"
+        },
+        {
+          "id": "sourceContactDialogue.l3",
+          "who": "direction",
+          "text": "You keep your hand against your own chest. The pressure takes your weight.",
+          "source": "src/game/source-contact.js:194"
+        },
+        {
+          "id": "sourceContactDialogue.l4",
+          "who": "you",
+          "text": "I already broke free of it here. This will not be another fight. If I touch it again, it will take one available recording. I will have to find that recording here or in the next Source to hear it again. If none remain, it has nothing to take. I can still lower my hand.",
+          "source": "src/game/source-contact.js:197"
+        },
+        {
+          "id": "sourceContactDialogue.l5",
           "who": "direction",
           "text": "Its fingers close. The tape does not move.",
-          "source": "src/game/source-contact.js:194"
+          "source": "src/game/source-contact.js:203"
         }
       ],
-      "source": "src/game/source-contact.js:188"
+      "source": "src/game/source-contact.js:189"
     }
   }
 }

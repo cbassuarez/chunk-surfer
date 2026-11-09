@@ -173,7 +173,7 @@ export function makeGetInDriveTeaserScene({
         restore();
       }
       if(!restored)audio?.setPaused(false);
-      // A dial cut clears the pedals, but the foot is still down: what's held comes back with the picture.
+      // A dial cut clears the pedals; pressed pedals resume with the picture.
       controller.update(step,{input:Object.fromEntries([...pressedKeys].map(action=>[action,true]))});refreshFrame(step);
       if(current.phase==='impact-black'&&!impact){impact=true;audio?.joint({strength:1});}
       if(current.worldOwner==='return'&&!restored){
@@ -208,7 +208,7 @@ export function makeGetInDriveTeaserScene({
       if(event.key==='Escape'){if(!event.repeat){setHeld(true);onPause();}return true;}
       const k=String(event.key||'').toLowerCase();
       if(keyInputs[k]){if(!event.repeat&&!wasHeld){pressedKeys.add(keyInputs[k]);controller.input?.(keyInputs[k],true);}return true;}
-      // Hold to lean over to the radio. Gamepad LB arrives as this key too.
+      // Keep Q or LB pressed to lean toward the radio; both use this key.
       if(k==='q'){if(!event.repeat&&!wasHeld)controller.setRadioLean?.(true,{immediate:!!getPresentation()?.reducedMotion});return true;}
       if(event.repeat||!current?.controlsEnabled||wasHeld)return true;
       if(/^[123]$/.test(k)){quietForControl();controller.selectStation?.(['service','company','music'][Number(k)-1]);}

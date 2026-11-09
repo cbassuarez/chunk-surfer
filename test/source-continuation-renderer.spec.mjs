@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {SOURCE_CONTINUATION as C,continuationSurfaces,continuationSolids,continuationSurfaceY,continuationCatchFloor,continuationSupportAt,continuationDoors,continuationProps,continuationSurfaceContains,CONTINUATION_CATCH_STAGES,CONTINUATION_ASSEMBLIES} from '../src/data/source-continuation.js';
+import {SOURCE_CONTINUATION as C,continuationSurfaces,continuationSolids,continuationSurfaceY,continuationCatchFloor,continuationSupportAt,continuationDoors,continuationProps,continuationSurfaceContains,CONTINUATION_CATCH_STAGES,CONTINUATION_ASSEMBLIES,CONTINUATION_DROP_LIPS} from '../src/data/source-continuation.js';
 import {freshSourceContinuation,sourceContinuationFrame,stepSourceContinuation} from '../src/game/source-continuation.js';
-import {sourceContinuationGeometry,sourceContinuationEdges,sourceContinuationEdgeGeometry,sourceContinuationMeshPayload,installSourceContinuationMeshes,finishSourceContinuationArchitecture,prewarmSourceContinuationAssets,sourceContinuationCamera,sourceContinuationRenderFrame,createSourceContinuationRenderer,SOURCE_CONTINUATION_ARCHITECTURE,SOURCE_CONTINUATION_LIGHTING,sourceContinuationLighting} from '../src/render/source-continuation-renderer.js';
+import {sourceContinuationGeometry,sourceContinuationFlightGeometry,sourceContinuationEdges,sourceContinuationEdgeGeometry,sourceContinuationMeshPayload,installSourceContinuationMeshes,finishSourceContinuationArchitecture,prewarmSourceContinuationAssets,sourceContinuationCamera,sourceContinuationRenderFrame,createSourceContinuationRenderer,SOURCE_CONTINUATION_ARCHITECTURE,SOURCE_CONTINUATION_LIGHTING,sourceContinuationLighting} from '../src/render/source-continuation-renderer.js';
 import {sourceContinuationAmbientFaultGeometry} from '../src/render/source-continuation-faults.js';
 import {sourceParserGeometryLibrary} from '../src/render/source-parser-architecture.js';
 import {doorAssembly} from '../src/data/source-door-fields.js';
@@ -19,7 +19,10 @@ import * as R3 from '../src/render/r3d.js';
 import {createPropRangeController} from '../src/render/prop-range.js';
 import {pressureInstances,pressureSurfaceInstances} from '../src/render/pressure-volume.js';
 import {CELL} from '../src/data/floorplan/legend.js';
-import {JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS} from '../src/data/source-continuation-journey.js';
+import {JOURNEY_SURFACES,JOURNEY_JOINT_SOLIDS,JOURNEY_PORTALS} from '../src/data/source-continuation-journey.js';
+import {ARCHIPELAGO_ISLANDS,ARCHIPELAGO_SURFACES} from '../src/data/source-continuation-archipelago.js';
+import {SOURCE_EXIT_PASSAGE,SOURCE_EXIT_PASSAGE_SURFACES,SOURCE_EXIT_PASSAGE_SOLIDS} from '../src/data/source-exit-passage.js';
+import {sourceExitPassageGeometryLibrary} from '../src/render/source-exit-passage.js';
 import {SOURCE_ESCHER_MESHES_BY_CHART} from '../src/render/source-continuation-escher.js';
 
 const fresh=()=>({...freshSourceContinuation({runId:'render-proof',returnPose:{x:12,y:34,yaw:.7,pitch:-.1}}),status:'active'});
@@ -90,8 +93,8 @@ test('actual uploaded triangles agree with rectangular treads and real annular s
   assert.ok(samples>700);
 });
 test('radial catch holes have no uploaded floor and each sector has a distinct physical outline',()=>{
-  const sectors=sourceContinuationGeometry(fresh()).filter(p=>p.descriptor.kind==='sector'&&p.role==='catch');assert.equal(sectors.length,4);
-  assert.equal(new Set(sectors.map(p=>[p.descriptor.innerRadius,p.descriptor.outerRadius,p.descriptor.startAngle,p.descriptor.endAngle].join(':'))).size,4);
+  const sectors=sourceContinuationGeometry(fresh()).filter(p=>p.descriptor.kind==='sector'&&p.role==='catch');assert.equal(sectors.length,C.catch.levels);
+  assert.equal(new Set(sectors.map(p=>[p.descriptor.innerRadius,p.descriptor.outerRadius,p.descriptor.startAngle,p.descriptor.endAngle].join(':'))).size,C.catch.levels);
   for(const p of sectors){const q=sourceContinuationMeshPayload(p),d=p.descriptor;const radius=d.innerRadius*.65,a=(d.startAngle+d.endAngle)/2,x=d.center.x+Math.cos(a)*radius,z=d.center.z+Math.sin(a)*radius;
     for(let k=0;k<q.positions.length;k+=9)if(q.normals[k+1]>.9){const ps=[0,1,2].map(j=>[0,1,2].map(ax=>q.positions[k+j*3+ax]+q.bounds.center[ax]));assert.equal(triangleY(ps,x,z),null,'central void must remain a real aperture');}
   }
@@ -106,12 +109,14 @@ test('physical print installation is bounded and idempotent with all material ch
   const escherNames=new Set(Object.values(SOURCE_ESCHER_MESHES_BY_CHART).flat().map(name=>'source-continuation-'+name));
   const ambientNames=new Set(sourceContinuationAmbientFaultGeometry().map(piece=>piece.name));
   const parserNames=new Set(sourceParserGeometryLibrary().map(piece=>piece.name));
-  assert.equal(islandNames.size,18,'the archipelago has a bounded set of physical supports');
+  assert.equal(islandNames.size,2+ARCHIPELAGO_ISLANDS.filter(i=>!i.existing).length*2,'two retained islands and two supported slabs per new destination');
   assert.equal(escherNames.size,16,'each chart fall is merged into its used materials');
   assert.ok(ambientNames.size<=36,'fixed sheets batch into at most six inks per region');
-  assert.equal(parserNames.size,18,'the existing entrances and real Catch releases have one bounded scope library');
+  assert.equal(parserNames.size,JOURNEY_PORTALS.length*2+CONTINUATION_DROP_LIPS.length+1,'each actual portal side, release and exit has one scope mesh');
   for(const name of [...islandNames,...escherNames,...ambientNames,...parserNames])assert.ok(originalNames.includes(name),name);
-  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-')&&!islandNames.has(name)&&!escherNames.has(name)&&!ambientNames.has(name)&&!parserNames.has(name));
+  const addedArchipelago=new Set([...sourceContinuationGeometry().filter(p=>p.descriptor.archipelago).map(p=>p.name),...sourceContinuationFlightGeometry().map(p=>p.name)]);
+  for(const name of addedArchipelago)assert.ok(originalNames.includes(name),'every expanded physical descriptor and exact distant flight has an installed mesh');
+  const retainedOriginal=originalNames.filter(name=>!name.includes('-journey-')&&!name.startsWith('source-continuation-rest-')&&!islandNames.has(name)&&!escherNames.has(name)&&!ambientNames.has(name)&&!parserNames.has(name)&&!addedArchipelago.has(name));
   assert.ok(retainedOriginal.length>80&&retainedOriginal.length<240,'the retained original asset budget is unchanged; added geometry is bounded separately');
   assert.equal(names.length,originalNames.length+surroundings.size,'the added catalogue is exactly the declared static surroundings library');
   assert.deepEqual(installSourceContinuationMeshes(g.gl,pack,{maps}),names);assert.equal(g.buffers.length,count);
@@ -207,7 +212,7 @@ test('the active continuation chooses silicon for II and bismuth for III without
 test('semantic Source sheets retain chapter stock with syntax on only the eight approved silver walkways',()=>{
   const g=fakeGl(),pack={catalog:new Map()},maps={blueprint:true,texture:{},normalTexture:{},ormTexture:{},letteringFinish:{}};installSourceContinuationMeshes(g.gl,pack,{maps});let sheets=0,routes=0;
     let catchRoutes=0;
-  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;const route=sourceSilverWalkwaySurface(piece),catchRoute=sourceSilverCatchSurface(piece);if(route)routes++;if(catchRoute)catchRoutes++;assert.equal(p.printedSurface,route?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:catchRoute?SOURCE_SILVER_CATCH_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,piece.id);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
+  for(const piece of sourceContinuationGeometry(fresh())){const p=pack.catalog.get(piece.name).primitives[0];if(!p.printedSurface)continue;if(piece.kind==='surface'&&piece.role!=='inherited-earthfall')sheets++;const route=sourceSilverWalkwaySurface(piece),catchRoute=sourceSilverCatchSurface(piece)&&!piece.descriptor.archipelago;if(route)routes++;if(catchRoute)catchRoutes++;assert.equal(p.printedSurface,route?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:catchRoute?SOURCE_SILVER_CATCH_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,piece.id);assert.deepEqual(p.base,[1,1,1,1]);assert.deepEqual(p.emissive,[0,0,0]);assert.equal(p.texture,maps.texture);assert.equal(p.normalTexture,maps.normalTexture);assert.equal(p.ormTexture,maps.ormTexture);}
   assert.ok(catchRoutes>30,'the whole walkable catch route carries its own silver descriptor');
   for(const id of['wrong-entry','wrong-ground-cross','wrong-upper-west']){const piece=sourceContinuationGeometry(fresh()).find(p=>p.id===id);assert.equal(pack.catalog.get(piece.name).primitives[0].printedSurface,sourceSilverWalkwaySurface(piece)?SOURCE_SILVER_WALKWAY_PRINT_SURFACE:SOURCE_BLUEPRINT_PRINT_SURFACE,id);}
   assert.equal(routes,8);
@@ -249,22 +254,22 @@ test('both physical regions and every Catch shelf persist in the first-person co
   assert.ok(start.props.filter(p=>p.physicalKind==='surface'&&!p.portalDestination).every(p=>(p.chartId??0)===0),'ordinary submitted floors belong to the active chart');
   assert.ok(start.props.filter(p=>p.portalDestination).every(p=>p.portalClipPlanes?.length===5),'neighbor floors enter only through a finite aperture');
   assert.equal(start.props.find(p=>p.upperRemnant).y,100);assert.ok(start.props.some(p=>p.orientation==='sideways'));assert.ok(start.props.some(p=>p.orientation==='inverted'));
-  for(let level=0;level<4;level++){
+  for(let level=0;level<C.catch.levels;level++){
     const f=sourceContinuationRenderFrame(catchState(level));assert.deepEqual(f.geometry.surfaces.map(p=>p.id).sort(),ids);
     assert.deepEqual(f.hiddenAbove,[]);assert.deepEqual(f.architecture.persistentRegions,['wrong-return','catch']);
     assert.ok(f.props.some(p=>!p.portalDestination&&p.region==='catch'));
     assert.ok(f.props.some(p=>!p.portalDestination&&p.region==='wrong-return'),'the same-chart construction remains behind the player');
     assert.ok(f.props.filter(p=>p.portalDestination).every(p=>p.portalClipPlanes?.length===5),'other charts still need finite apertures');
-    for(let shelf=0;shelf<4;shelf++)assert.ok(f.props.some(p=>p.physicalKind==='surface'&&p.level===shelf),`stage ${level} retains shelf ${shelf}`);
+    for(let shelf=0;shelf<C.catch.levels;shelf++)assert.ok(f.canonicalProps.some(p=>p.physicalKind==='surface'&&p.level===shelf),`stage ${level} retains canonical shelf ${shelf}`);
   }
 });
 test('drawn simulation boxes share exact collision bounds; asset poles and arch piers avoid proxy duplication',()=>{
   const s={...fresh(),closure:{mode:'closing',elapsed:20,frontX:7}},f=sourceContinuationRenderFrame(s);
-  for(const d of continuationSolids(s)){const p=f.canonicalProps.find(p=>p.physicalKind==='solid'&&p.descriptorId===d.id);if(['spindle','arch-pier'].includes(d.role)){assert.equal(p,undefined);continue;}assert.ok(p,d.id);const g=sourceContinuationGeometry(s).find(p=>p.kind==='solid'&&p.id===d.id),q=sourceContinuationMeshPayload(g);for(const[a,lo,hi]of[[0,d.minX,d.maxX],[1,d.minY,d.maxY],[2,d.minZ,d.maxZ]]){let values=[];for(let k=0;k<q.positions.length;k+=3)values.push(transform(p.matrix,[...q.positions.slice(k,k+3)])[a]);assert.ok(Math.abs(Math.min(...values)-lo)<1e-5);assert.ok(Math.abs(Math.max(...values)-hi)<1e-5);}}
+  for(const d of continuationSolids(s)){const p=f.canonicalProps.find(p=>p.physicalKind==='solid'&&p.descriptorId===d.id);if(d.role==='spindle'||d.role==='arch-pier'&&!d.archipelago){assert.equal(p,undefined);continue;}assert.ok(p,d.id);const g=d.exitPassage?{...sourceExitPassageGeometryLibrary()[p.mesh.replace('source-continuation-','')],kind:'detail'}:sourceContinuationGeometry(s).find(p=>p.kind==='solid'&&p.id===d.id),q=sourceContinuationMeshPayload(g);for(const[a,lo,hi]of[[0,d.minX,d.maxX],[1,d.minY,d.maxY],[2,d.minZ,d.maxZ]]){let values=[];for(let k=0;k<q.positions.length;k+=3)values.push(transform(p.matrix,[...q.positions.slice(k,k+3)])[a]);assert.ok(Math.abs(Math.min(...values)-lo)<1e-5);assert.ok(Math.abs(Math.max(...values)-hi)<1e-5);}}
 });
 test('II and every Catch level keep the physical eye and player-controlled first-person view',()=>{
   const ii={...fresh(),yaw:.63,pitch:-.78},first=sourceContinuationRenderFrame(ii);assert.deepEqual(first.eye,[ii.x,ii.feet+C.eyeHeight,ii.z]);assert.equal(first.pitch,-.78);assert.equal(first.yaw,.63);assert.equal(first.strictOverhead,false);assert.equal(first.counts.body,0);
-  for(let level=0;level<4;level++){
+  for(let level=0;level<C.catch.levels;level++){
     const s=catchState(level,{yaw:.63,pitch:-.78,heading:1.1}),f=sourceContinuationRenderFrame(s);
     assert.deepEqual(f.eye,[s.x,s.feet+C.eyeHeight,s.z]);assert.equal(f.pitch,s.pitch);assert.equal(f.yaw,s.yaw);assert.equal(f.strictOverhead,false);
     assert.equal(f.cameraAimTarget,null);assert.equal(f.counts.body,0);assert.equal(f.props.some(p=>p.playerBody),false);
@@ -272,7 +277,7 @@ test('II and every Catch level keep the physical eye and player-controlled first
   }
 });
 test('physical mouse-look can frame each chosen release edge at wide and portrait sizes without moving the eye',()=>{
-  for(const aspect of[16/9,3/4])for(let level=0;level<4;level++){
+  for(const aspect of[16/9,3/4])for(let level=0;level<C.catch.levels;level++){
     const state=catchState(level),base=sourceContinuationRenderFrame(state,{viewportAspect:aspect});
     for(const lip of continuationProps().filter(p=>p.kind==='release-lip'&&p.level===level)){
       const dx=lip.x-state.x,dz=lip.z-state.z,aim={...state,yaw:Math.atan2(dx,-dz),pitch:Math.atan2(lip.y-base.eye[1],Math.hypot(dx,dz))},
@@ -282,8 +287,10 @@ test('physical mouse-look can frame each chosen release edge at wide and portrai
       assert.ok(Math.abs(dot(basis.right)/(depth*.95*aspect))<1e-8);assert.ok(Math.abs(dot(basis.up)/(depth*.95))<1e-8);
       assert.ok(frame.props.some(p=>p.releaseTread&&p.lipId===lip.id));
       assert.ok(frame.props.some(p=>p.physicalKind==='surface'&&p.level===level));
+      const edge=sourceContinuationRenderFrame({...state,x:lip.x-lip.dx*.35,z:lip.z-lip.dz*.35,yaw:Math.atan2(lip.dx,-lip.dz),pitch:-.9},{viewportAspect:aspect});
+      assert.ok(edge.props.some(p=>!p.portalDestination&&p.physicalKind==='surface'&&p.level===level+1),`${lip.id} reveals actual receiving support before release`);
     }
-    assert.ok(base.props.some(p=>p.physicalKind==='surface'&&p.level===level));if(level<3)assert.ok(base.props.some(p=>p.physicalKind==='surface'&&p.level===level+1));
+    assert.ok(base.props.some(p=>p.physicalKind==='surface'&&p.level===level));if(level<C.catch.levels-1)assert.ok(base.canonicalProps.some(p=>p.physicalKind==='surface'&&p.level===level+1));
   }
 });
 test('one actual density core and fitted return preserve saved identity, material phase and portal transforms',()=>{
@@ -305,9 +312,9 @@ test('one actual density core and fitted return preserve saved identity, materia
   assert.equal(sourceContinuationRenderFrame({...state,hush:{...actor,mode:'yield'}}).hush.performance.clip,'pressure_hold');
 });
 test('first-person traversal retains the complete spindle, hoist and previous construction',()=>{
-  for(let level=0;level<4;level++){
+  for(let level=0;level<C.catch.levels;level++){
     const frame=sourceContinuationRenderFrame(catchState(level)),spindle=frame.props.find(p=>p.continuousSpindle);
-    assert.ok(Math.abs(transform(spindle.matrix,[0,17,0])[1]-17)<1e-5);assert.ok(Math.abs(transform(spindle.matrix,[0,-25,0])[1]+25)<1e-5);
+    assert.ok(Math.abs(transform(spindle.matrix,[0,17,0])[1]-17)<1e-5);assert.ok(Math.abs(transform(spindle.matrix,[0,-25,0])[1]-C.catch.spindleBottom)<1e-5);
     assert.equal(spindle.cutawayTop,17);assert.ok(frame.props.some(p=>p.hoistRail));assert.ok(frame.props.some(p=>p.hoistTrolley));
     assert.ok(frame.props.some(p=>p.surroundings),'the huge pressure world remains actual submitted geometry');assert.ok(frame.geometry.surfaces.some(s=>s.region==='wrong-return'),'the same world still contains physical II');
   }
@@ -341,9 +348,9 @@ test('door hardware stays with the actual saved leaf swing, including partially 
   const id='source-continuation-door-'+d.id+'-leaf-0',get=f=>f.props.find(p=>p.id===id);
   assert.notDeepEqual([...get(closed).matrix],[...get(partial).matrix]);assert.notDeepEqual([...get(partial).matrix],[...get(open).matrix]);assert.ok(partial.props.some(p=>p.doorHandle&&p.doorId===d.id&&p.focused));
 });
-test('42 real stair treads and their stringers retain physically open sides',()=>{
-  const f=sourceContinuationRenderFrame(fresh());assert.equal(f.architecture.stairTreads,42);assert.equal(f.props.filter(p=>p.stairStructure).length,3);assert.equal(f.props.some(p=>p.handrail||p.baluster),false,'open stair edges have no decorative ghost barriers');const lower=sourceContinuationRenderFrame(catchState(3));assert.equal(lower.architecture.stairTreads,42);assert.equal(lower.props.filter(p=>p.stairStructure).length,3);assert.equal(new Set(lower.props.filter(p=>p.stairId).map(p=>p.stairId)).size,3,'first-person retains the physical stairs above rather than applying the old map cutaway');
-  const treads=continuationSurfaces().filter(p=>p.role==='stair');assert.equal(new Set(treads.map(p=>p.stairId)).size,3);for(const id of new Set(treads.map(p=>p.stairId))){const heights=treads.filter(p=>p.stairId===id).map(p=>p.y).sort((a,b)=>a-b);for(let k=1;k<heights.length;k++)assert.ok(Math.abs(heights[k]-heights[k-1]-.3)<1e-6);}
+test('original and expanded real stair treads retain physically open sides and climbable risers',()=>{
+  const treads=continuationSurfaces().filter(p=>p.role==='stair'),original=treads.filter(p=>!p.archipelago),added=treads.filter(p=>p.archipelago),f=sourceContinuationRenderFrame(fresh());assert.equal(original.length,42);assert.equal(added.length,ARCHIPELAGO_SURFACES.filter(p=>p.role==='stair').length);assert.equal(f.architecture.stairTreads,treads.length);assert.equal(f.props.filter(p=>p.stairStructure).length,3);assert.equal(f.props.some(p=>p.handrail||p.baluster),false,'open stair edges have no decorative ghost barriers');const lower=sourceContinuationRenderFrame(catchState(3));assert.equal(lower.architecture.stairTreads,treads.length);assert.equal(lower.props.filter(p=>p.stairStructure).length,3);
+  assert.equal(new Set(original.map(p=>p.stairId)).size,3);for(const id of new Set(treads.map(p=>p.stairId))){const heights=treads.filter(p=>p.stairId===id).map(p=>p.y).sort((a,b)=>a-b);for(let k=1;k<heights.length;k++)assert.ok(heights[k]-heights[k-1]>.29&&heights[k]-heights[k-1]<.300001,'every original and expanded stair has a real <=30cm rise');}
 });
 test('native macro architecture has supported tops and no source model appears as an invisible collision cube',()=>{
   const f=sourceContinuationRenderFrame(fresh());for(const a of CONTINUATION_ASSEMBLIES){const p=f.props.find(p=>p.assemblyId===a.id);assert.ok(p);assert.equal(p.mesh,a.mesh);assert.ok(p.matrix.every(Number.isFinite));}
@@ -354,15 +361,19 @@ test('lights belong to fixed architectural fixtures rather than following the cu
   const fixed=f=>f.props.filter(p=>p.practical&&!Number.isInteger(p.level)).map(p=>[p.id,p.x,p.y,p.z]);assert.deepEqual(fixed(a),fixed(b));assert.ok(a.lights.length<=8&&b.lights.length<=8);assert.ok([...a.lights,...b.lights].every(p=>p.penetration===0));
 });
 test('the continuous spindle and each partial catch have visible bearing and tension members',()=>{
-  const f=sourceContinuationRenderFrame(catchState(2));assert.equal(f.props.filter(p=>p.continuousSpindle).length,1);
+  const f=sourceContinuationRenderFrame(catchState(2)),canonical=f.props.filter(p=>!p.portalDestination);assert.equal(canonical.filter(p=>p.continuousSpindle).length,1);
   for(const stage of CONTINUATION_CATCH_STAGES){
-    assert.equal(f.props.filter(p=>p.bearing&&p.level===stage.level).length,1);
-    assert.equal(f.props.filter(p=>p.catchConstruction&&p.level===stage.level).length,1);
-    assert.equal(f.props.filter(p=>p.tensionMember&&p.level===stage.level).length,2);
+    assert.equal(canonical.filter(p=>p.bearing&&p.level===stage.level).length,1);
+    assert.equal(canonical.filter(p=>p.catchConstruction&&p.level===stage.level).length,1);
+    assert.equal(canonical.filter(p=>p.tensionMember&&p.level===stage.level).length,2);
   }
 });
-test('the final doorway previews the measured existing6.5m service road without a new progression owner',()=>{
-  const f=sourceContinuationRenderFrame(catchState(3)),p=f.props.find(p=>p.previewOf==='existing-source-drive'),d=C.catch.finalDoor;assert.ok(p);assert.ok(Math.abs(p.y-d.y)<1e-5);assert.equal(p.matrix[10],6.5);assert.ok(p.x>d.x);assert.equal(f.props.filter(p=>p.onwardPreview&&p.kerb).length,2);
+test('the final doorway retains a physically supported12m service passage with matching submitted bounds',()=>{
+  const f=sourceContinuationRenderFrame(catchState(0)),parts=f.canonicalProps.filter(p=>p.exitPassage),d=C.catch.finalDoor;
+  assert.equal(SOURCE_EXIT_PASSAGE.length,12);assert.equal(parts.length,SOURCE_EXIT_PASSAGE_SURFACES.length+SOURCE_EXIT_PASSAGE_SOLIDS.length);
+  for(const row of SOURCE_EXIT_PASSAGE_SURFACES){const p=parts.find(p=>p.descriptorId===row.id);assert.ok(p);assert.equal(p.physicalKind,'surface');assert.deepEqual(p.physicalBounds,{min:[row.minX,row.y-row.thickness,row.minZ],max:[row.maxX,row.y,row.maxZ]});assert.ok(Math.abs(p.matrix[10]-6.5)<1e-5);}
+  for(let x=d.x;x<=SOURCE_EXIT_PASSAGE.completionX;x+=.25)assert.ok(continuationSupportAt(x,d.z,{feet:d.y}),'the onward passage has actual support to its completion plane');
+  assert.equal(f.props.some(p=>p.onwardPreview),false,'the retained exit is an actual passage');
 });
 test('the disclosed transfer study rotates the entire persistent construction rigidly',()=>{
   const s={...catchState(1),yaw:.7},a=sourceContinuationRenderFrame(s),b=sourceContinuationRenderFrame(s,{studyRotation:Math.PI});assert.ok(Math.abs(b.eye[0]-(2*C.catch.center.x-a.eye[0]))<1e-5);assert.ok(Math.abs(b.eye[2]-(2*C.catch.center.z-a.eye[2]))<1e-5);assert.ok(Math.abs(Math.atan2(Math.sin(b.yaw-a.yaw-Math.PI),Math.cos(b.yaw-a.yaw-Math.PI)))<1e-6);assert.equal(a.props.length,b.props.length);

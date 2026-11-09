@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildChunkSurfGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
-import { SOURCE_HORIZON } from '../src/data/source-level.js';
+import { buildChunkSurfGodPreset, buildPreTapeGodPreset, CHUNK_SURF_GOD_PRESET } from '../src/game/chunk-surf-god.js';
+import { SOURCE_HORIZON, SOURCE_PRE_TAPE } from '../src/data/source-level.js';
 import { createSourceSpaceRuntime } from '../src/game/source-space-runtime.js';
 
 function atHorizon({ onState = () => {} } = {}) {
@@ -97,4 +97,21 @@ test('walking across the far edge needs no dial, eye or interaction action', () 
   assert.equal(runtime.state().phase,'horizon');
   assert.equal(runtime.state().finale.route,null);
   assert.equal(runtime.state().profile.marbleEyes,null);
+});
+
+test('old image decay cannot erase the preserved street or its sound and body cues', () => {
+  const built=buildPreTapeGodPreset(SOURCE_PRE_TAPE.stillLength+500,{seed:4417});
+  const old={...built.state,horizon:{...built.state.horizon,unravelling:{active:true,amount:.96,
+    furthestMetres:256,elapsedSeconds:500,markers:['street-unravels','street-erased']}}};
+  const clean=createSourceSpaceRuntime({initialState:built.state}),legacy=createSourceSpaceRuntime({initialState:old});
+  clean.setPlayerPosition(built.position);legacy.setPlayerPosition(built.position);
+  const history=JSON.parse(JSON.stringify(legacy.state().horizon));
+  const options={time:0,reducedMotion:true};
+  const pieces=runtime=>runtime.propInstances(built.position.x,built.position.y,options)
+    .map(piece=>({id:piece.id,mesh:piece.mesh,matrix:piece.matrix?Array.from(piece.matrix):null}));
+  assert.deepEqual(pieces(legacy),pieces(clean));
+  assert.deepEqual(legacy.outskirtsBodyFrame(options),clean.outskirtsBodyFrame(options));
+  assert.deepEqual(legacy.outskirtsStreetFrame(options),clean.outskirtsStreetFrame(options));
+  assert.deepEqual(legacy.state().horizon,history,'saved history is preserved independently of presentation');
+  assert.equal(legacy.state().finale.bust.decision,null);
 });

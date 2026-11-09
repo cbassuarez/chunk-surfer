@@ -24,10 +24,10 @@
           "id": "sourceContinuationContactFocus.l0",
           "who": "source-contact",
           "text": "It has already yielded here. Contact it again. / Reach toward the presence.",
-          "source": "src/game/source-continuation-contact.js:120"
+          "source": "src/game/source-continuation-contact.js:131"
         }
       ],
-      "source": "src/game/source-continuation-contact.js:120"
+      "source": "src/game/source-continuation-contact.js:131"
     }
   }
 }

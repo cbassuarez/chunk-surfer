@@ -40,16 +40,43 @@ test('the field has deep purple darkness, isolated stars and stationary exploded
     if (field.signal > .75) bright++;
     if (field.signal > .3) intermediate++;
   }
-  assert.ok(dark > 18000, `${dark} dark samples: stars must not turn the whole body into a flat luminous material`);
-  assert.ok(bright > 20 && intermediate > bright, 'point stars and shaped explosions both survive in the dark field');
-  for (const centre of HUSH_COSMOS_NOVAE) {
+  assert.ok(dark > 6000 && dark < 16000, `${dark} dark samples: preserve black space without returning to the observed nearly empty mask`);
+  assert.ok(bright > 100 && bright < 2000 && intermediate > bright, 'point stars remain distinct from the readable purple carrier');
+  for (const [index, centre] of HUSH_COSMOS_NOVAE.entries()) {
     assert.ok(hushCosmosWorldField(centre).signal > .98);
     const right = unit([centre[2], 0, -centre[0]]);
-    const shell = hushCosmosWorldField(unit(centre.map((value, i) => value + right[i] * .032)));
+    const shellRadius = [.075, .065, .047][index];
+    const shell = hushCosmosWorldField(unit(centre.map((value, i) => value + right[i] * shellRadius)));
     assert.ok(shell.signal > .15, 'the star has an exploded body rather than only an isolated white pixel');
   }
   assert.ok(HUSH_COSMOS.darkInk[2] > HUSH_COSMOS.darkInk[0] && HUSH_COSMOS.darkInk[0] > HUSH_COSMOS.darkInk[1]);
   assert.ok(Object.isFrozen(HUSH_COSMOS));
+});
+
+test('the observed 3.2 m front/profile direction patches retain black gaps and readable five-bit purple structure', () => {
+  // These angular patches follow the captured +Z front / -X profile bearings.
+  // They are a palette/transport check, not a substitute for actual mesh pixels.
+  const stats = directions => {
+    let dark = 0, carrier = 0, stellar = 0, luminance = 0;
+    for (const direction of directions) {
+      const bits = Math.round(hushCosmosWorldField(direction).signal * 31), color = hushCosmosSignalMaterial(bits / 31).color;
+      if (Math.max(...color) < .12) dark++;
+      if (color[2] > .12 && bits < 20) carrier++;
+      if (bits >= 24) stellar++;
+      luminance += color[0] * .2126 + color[1] * .7152 + color[2] * .0722;
+    }
+    return { dark: dark / directions.length, carrier: carrier / directions.length, stellar: stellar / directions.length, luminance: luminance / directions.length };
+  };
+  const front = [], profile = [];
+  for (let y = 0; y < 70; y++) for (let x = 0; x < 16; x++) {
+    const a = (x / 15 - .5) * .09, b = -.36 + y / 69 * .61;
+    front.push([a, b, 1]); profile.push([-1, b, a]);
+  }
+  const f = stats(front), p = stats(profile);
+  assert.ok(f.carrier > .35 && f.dark > .1 && f.stellar > .02);
+  assert.ok(p.carrier > .2 && p.dark > .35 && p.stellar > .007);
+  assert.ok(f.luminance > .04 && f.luminance < .18 && p.luminance > .02 && p.luminance < .12,
+    'the carrier must survive acquisition without becoming an overall bright surface');
 });
 
 test('normalization and triplanar boundaries do not create seams or invalid samples', () => {

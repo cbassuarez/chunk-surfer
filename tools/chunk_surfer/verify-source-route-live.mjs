@@ -106,23 +106,14 @@ try{
   const bellMove=await move('w');assert.ok(Math.hypot(bellMove.a.x-bellMove.b.x,bellMove.a.y-bellMove.b.y)>.4,'bell field movement');
   snapshots.bells=await page.evaluate(()=>({frame:window.__probe.bellsFrame(),props:window.__probe.sourceProps(),source:window.__probe.chunkSurf(),lighting:window.__probe.r3dLighting()}));
   await shot('bell-field');checks.push('Bell field permits real turn and locomotion and submits shipped bell meshes.');
-  await page.evaluate(()=>window.__probe.horizonPreset(168));await sleep(1800);
-  await page.evaluate(()=>window.__probe.lookAtWorld(-Math.PI/2,0));await sleep(250);
-  await shot('horizon-bust');snapshots.horizon=await page.evaluate(()=>window.__probe.horizonFrame());
-  for(let n=0;n<12&&!await top();n++){await clearSpeech();await press('e');}
-  assert.equal(await top(),'finale','real interact reaches bust proposition');
-  await chooseLabel('Show me the choice');
-  const beforeChoice=await pos();
-  await chooseLabel('Set your hand');await finish();await clearSpeech();
-  const path=await page.evaluate(()=>window.__probe.horizonFrame().towerPath);
-  assert.equal(path.length,4,'acceptance reveals path');
-  assert.deepEqual(await pos(),beforeChoice,'bust does not teleport player');
-  await page.evaluate(()=>window.__probe.lookAtWorld(-Math.PI/2,-.14));await sleep(400);await shot('tower-path-revealed');
-  const originY=beforeChoice.y+168;
-  for(const point of path)await walkTo({x:point.x,y:originY-point.depth});
-  snapshots.walkedTower=await page.evaluate(()=>({phase:window.__probe.chunkSurf().phase,position:window.__chunkSurferMotion.status(),bells:window.__probe.bellsFrame()}));
-  assert.equal(snapshots.walkedTower.phase,'bells','walking revealed route reaches bell field');
-  await shot('walked-into-bells');checks.push('Real bust interaction reveals a path without teleport; held movement walks the whole route into bells.');
+  await page.evaluate(()=>window.__probe.horizonPreset(0));
+  await page.waitForFunction(()=>window.__probe.horizonApproach.view()?.ready,{timeout:45000});
+  snapshots.horizon=await page.evaluate(()=>window.__probe.horizonApproach.view());
+  assert.equal(snapshots.horizon.state.variant,'closed');
+  assert.ok(['sarah','lyle','daisy','ant'].includes(snapshots.horizon.state.occupant));
+  await shot('horizon-approach');
+  checks.push('The live Horizon entry initializes the closed approach. This bounded check does not certify either complete departure.');
+  await page.evaluate(()=>window.__probe.horizonApproach.leave());
   // Combat entry uses the same spoken warning, not a debug commit.
   await page.evaluate(()=>window.__probe.sourcePreset('first-contact'));await sleep(2000);
   await page.evaluate(()=>{const p=window.__probe.presence(),s=window.__sourceSave.getSave();window.__probe.lookAtWorld(Math.atan2(p.x-s.px,-(p.y-s.py)),0);});
